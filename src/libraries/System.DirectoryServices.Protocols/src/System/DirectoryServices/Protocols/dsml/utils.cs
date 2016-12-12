@@ -1,3 +1,7 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
 //------------------------------------------------------------------------------
 // <copyright file="AuthTypes.cs" company="Microsoft">
 //     Copyright (c) Microsoft Corporation.  All rights reserved.
@@ -7,26 +11,27 @@
 /*
  */
 
-namespace System.DirectoryServices.Protocols {
+namespace System.DirectoryServices.Protocols
+{
     using System;
     using System.Xml;
     using System.Collections;
     using System.Diagnostics;
     using System.Runtime.InteropServices;
 
-    internal class NamespaceUtils {
+    internal class NamespaceUtils
+    {
+        private NamespaceUtils() { }
 
-        private NamespaceUtils() {}
-
-        private static XmlNamespaceManager xmlNamespace = new XmlNamespaceManager(new NameTable());
+        private static XmlNamespaceManager s_xmlNamespace = new XmlNamespaceManager(new NameTable());
 
         static NamespaceUtils()
         {
-            xmlNamespace.AddNamespace("se",   DsmlConstants.SoapUri);
-            xmlNamespace.AddNamespace("dsml", DsmlConstants.DsmlUri);
-            xmlNamespace.AddNamespace("ad",   DsmlConstants.ADSessionUri);
-            xmlNamespace.AddNamespace("xsd",  DsmlConstants.XsdUri);
-            xmlNamespace.AddNamespace("xsi",  DsmlConstants.XsiUri);
+            s_xmlNamespace.AddNamespace("se", DsmlConstants.SoapUri);
+            s_xmlNamespace.AddNamespace("dsml", DsmlConstants.DsmlUri);
+            s_xmlNamespace.AddNamespace("ad", DsmlConstants.ADSessionUri);
+            s_xmlNamespace.AddNamespace("xsd", DsmlConstants.XsdUri);
+            s_xmlNamespace.AddNamespace("xsi", DsmlConstants.XsiUri);
         }
 
         /// <summary>
@@ -36,63 +41,64 @@ namespace System.DirectoryServices.Protocols {
         /// passed between different classes in the API, without worrying that they may
         /// use different prefixes to represent the same namespace.
         /// </summary>
-	static public XmlNamespaceManager GetDsmlNamespaceManager()
-	{
-            return xmlNamespace;
+        static public XmlNamespaceManager GetDsmlNamespaceManager()
+        {
+            return s_xmlNamespace;
         }
     }
 
-    internal class Utility {
-        private static bool platformSupported = false;
-        private static bool isWin2kOS = false;
-        private static bool isWin2k3Above = false;
-        
+    internal class Utility
+    {
+        private static bool s_platformSupported = false;
+        private static bool s_isWin2kOS = false;
+        private static bool s_isWin2k3Above = false;
+
         static Utility()
         {
             // check the platform first
             // S.DS.Protocols only supported on W2K above
             //    
             OperatingSystem osVersion = Environment.OSVersion;
-            if((osVersion.Platform == PlatformID.Win32NT) && (osVersion.Version.Major >= 5))
+            if ((osVersion.Platform == PlatformID.Win32NT) && (osVersion.Version.Major >= 5))
             {
-                platformSupported = true;                 
-                if(osVersion.Version.Major == 5 && osVersion.Version.Minor == 0)
-                    isWin2kOS = true;
+                s_platformSupported = true;
+                if (osVersion.Version.Major == 5 && osVersion.Version.Minor == 0)
+                    s_isWin2kOS = true;
 
                 // win2k3's major version is 5, minor version is 2
-                if(osVersion.Version.Major > 5 || osVersion.Version.Minor >= 2)
-                    isWin2k3Above = true;
+                if (osVersion.Version.Major > 5 || osVersion.Version.Minor >= 2)
+                    s_isWin2k3Above = true;
             }
         }
 
         internal static void CheckOSVersion()
         {
-            if(!platformSupported)
+            if (!s_platformSupported)
                 throw new PlatformNotSupportedException(Res.GetString(Res.SupportedPlatforms));
-
-        }       
+        }
 
         internal static bool IsWin2kOS
         {
             get
             {
-                return isWin2kOS;
+                return s_isWin2kOS;
             }
         }
 
         internal static bool IsWin2k3AboveOS
         {
-            get {
-                return isWin2k3Above;
+            get
+            {
+                return s_isWin2k3Above;
             }
         }
 
         internal static bool IsLdapError(LdapError error)
         {
-            if(error == LdapError.IsLeaf || error == LdapError.InvalidCredentials || error == LdapError.SendTimeOut)
+            if (error == LdapError.IsLeaf || error == LdapError.InvalidCredentials || error == LdapError.SendTimeOut)
                 return true;
 
-            if(error >= LdapError.ServerDown && error <= LdapError.ReferralLimitExceeded)
+            if (error >= LdapError.ServerDown && error <= LdapError.ReferralLimitExceeded)
                 return true;
 
             return false;
@@ -100,22 +106,22 @@ namespace System.DirectoryServices.Protocols {
 
         internal static bool IsResultCode(ResultCode code)
         {
-            if(code >= ResultCode.Success && code <= ResultCode.SaslBindInProgress)
+            if (code >= ResultCode.Success && code <= ResultCode.SaslBindInProgress)
                 return true;
 
-            if(code >= ResultCode.NoSuchAttribute && code <= ResultCode.InvalidAttributeSyntax)
+            if (code >= ResultCode.NoSuchAttribute && code <= ResultCode.InvalidAttributeSyntax)
                 return true;
 
-            if(code >= ResultCode.NoSuchObject && code <= ResultCode.InvalidDNSyntax)
-                return true;            
-
-            if(code >= ResultCode.InsufficientAccessRights && code <= ResultCode.LoopDetect)
+            if (code >= ResultCode.NoSuchObject && code <= ResultCode.InvalidDNSyntax)
                 return true;
 
-            if(code >= ResultCode.NamingViolation && code <= ResultCode.AffectsMultipleDsas)
+            if (code >= ResultCode.InsufficientAccessRights && code <= ResultCode.LoopDetect)
                 return true;
 
-            if(code == ResultCode.AliasDereferencingProblem || code == ResultCode.InappropriateAuthentication || code == ResultCode.SortControlMissing || code == ResultCode.OffsetRangeError || code == ResultCode.VirtualListViewError || code == ResultCode.Other)
+            if (code >= ResultCode.NamingViolation && code <= ResultCode.AffectsMultipleDsas)
+                return true;
+
+            if (code == ResultCode.AliasDereferencingProblem || code == ResultCode.InappropriateAuthentication || code == ResultCode.SortControlMissing || code == ResultCode.OffsetRangeError || code == ResultCode.VirtualListViewError || code == ResultCode.Other)
                 return true;
 
             return false;
@@ -136,5 +142,4 @@ namespace System.DirectoryServices.Protocols {
             return intPtrArray;
         }
     }
-
 }

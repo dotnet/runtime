@@ -1,3 +1,6 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 /*++
 
@@ -5,7 +8,6 @@ Copyright (c) 2004  Microsoft Corporation
 
 Module Name:
 
-    SAMStoreCtx_Query.cs
 
 Abstract:
 
@@ -16,7 +18,7 @@ History:
     10-June-2004    MattRim     Created
 
 --*/
- 
+
 using System;
 using System.Diagnostics;
 using System.Collections;
@@ -34,16 +36,15 @@ namespace System.DirectoryServices.AccountManagement
 #pragma warning disable 618    // Have not migrated to v4 transparency yet
     [System.Security.SecurityCritical(System.Security.SecurityCriticalScope.Everything)]
 #pragma warning restore 618
-    partial class SAMStoreCtx : StoreCtx
+    internal partial class SAMStoreCtx : StoreCtx
     {
-
         //
         // Query operations
         //
 
         // Returns true if this store has native support for search (and thus a wormhole).
         // Returns true for everything but SAM (both reg-SAM and MSAM).
-        internal override bool SupportsSearchNatively{ get {return false;} }
+        internal override bool SupportsSearchNatively { get { return false; } }
 
         // Returns a type indicating the type of object that would be returned as the wormhole for the specified
         // PrincipalSearcher.
@@ -81,10 +82,10 @@ namespace System.DirectoryServices.AccountManagement
                 filters = BuildQbeFilterDescription(qbeFilter);
             else
                 filters = new QbeFilterDescription();
-            
+
             return filters;
         }
-        
+
 
         // The core query operation.
         // Given a PrincipalSearcher containg a query filter, transforms it into the store schema 
@@ -98,19 +99,19 @@ namespace System.DirectoryServices.AccountManagement
         internal override ResultSet Query(PrincipalSearcher ps, int sizeLimit)
         {
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "SAMStoreCtx", "Query");
-        
+
             Debug.Assert(sizeLimit >= -1);
 
             // Build the description of the properties we'll filter by.  In SAMStoreCtx, the "native" searcher
             // is simply the QbeFilterDescription, which will be passed to the SAMQuerySet to use to
             // manually filter out non-matching results.
-            QbeFilterDescription propertiesToMatch = (QbeFilterDescription) PushFilterToNativeSearcher(ps);
-            
+            QbeFilterDescription propertiesToMatch = (QbeFilterDescription)PushFilterToNativeSearcher(ps);
+
             // Get the entries we'll iterate over.  Write access to Children is controlled through the
             // ctxBaseLock, but we don't want to have to hold that lock while we're iterating over all
             // the child entries.  So we have to clone the ctxBase --- not ideal, but it prevents
             // multithreading issues.
-            DirectoryEntries entries = SDSUtils.BuildDirectoryEntry(this.ctxBase.Path, this.credentials, this.authTypes).Children;
+            DirectoryEntries entries = SDSUtils.BuildDirectoryEntry(_ctxBase.Path, _credentials, _authTypes).Children;
             Debug.Assert(entries != null);
 
             // Determine the principal types of interest.  The SAMQuerySet will use this to restrict
@@ -118,22 +119,22 @@ namespace System.DirectoryServices.AccountManagement
             Type qbeFilterType = typeof(Principal);
             if (ps.QueryFilter != null)
                 qbeFilterType = ps.QueryFilter.GetType();
-                
+
             List<string> schemaTypes = GetSchemaFilter(qbeFilterType);
 
             // Create the ResultSet that will perform the client-side filtering
             SAMQuerySet resultSet = new SAMQuerySet(
-                                                schemaTypes, 
-                                                entries, 
-                                                this.ctxBase, 
-                                                sizeLimit, 
+                                                schemaTypes,
+                                                entries,
+                                                _ctxBase,
+                                                sizeLimit,
                                                 this,
                                                 new QbeMatcher(propertiesToMatch));
-            
-            return resultSet;       
+
+            return resultSet;
         }
 
-        List<string> GetSchemaFilter(Type principalType)
+        private List<string> GetSchemaFilter(Type principalType)
         {
             List<string> schemaTypes = new List<string>();
 

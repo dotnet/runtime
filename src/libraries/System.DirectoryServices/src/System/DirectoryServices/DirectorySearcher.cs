@@ -1,16 +1,20 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
 //------------------------------------------------------------------------------
-// <copyright file="DirectorySearcher.cs" company="Microsoft">
 //     Copyright (c) Microsoft Corporation.  All rights reserved.
 // </copyright>                                                                
 //------------------------------------------------------------------------------
 
 using INTPTR_INTPTRCAST = System.IntPtr;
-using INTPTR_INTCAST    = System.Int32;
-      
+using INTPTR_INTCAST = System.Int32;
+
 /*
  */
-namespace System.DirectoryServices {
 
+namespace System.DirectoryServices
+{
     using System;
     using System.Runtime.InteropServices;
     using System.Collections;
@@ -28,43 +32,43 @@ namespace System.DirectoryServices {
     ///    <para> Performs queries against the Active Directory hierarchy.</para>
     /// </devdoc>
     [
-    DirectoryServicesPermission(SecurityAction.LinkDemand, Unrestricted=true),
+    DirectoryServicesPermission(SecurityAction.LinkDemand, Unrestricted = true),
     DSDescriptionAttribute(Res.DirectorySearcherDesc)
     ]
-    public class DirectorySearcher : Component {
+    public class DirectorySearcher : Component
+    {
+        private DirectoryEntry _searchRoot;
+        private string _filter = defaultFilter;
+        private StringCollection _propertiesToLoad;
+        private bool _disposed = false;
 
-        private DirectoryEntry searchRoot;
-        private string filter = defaultFilter;
-        private StringCollection propertiesToLoad;
-        private bool disposed = false;
-
-        private static readonly TimeSpan minusOneSecond = new TimeSpan(0, 0, -1);
+        private static readonly TimeSpan s_minusOneSecond = new TimeSpan(0, 0, -1);
 
         // search preference variables
-        private SearchScope scope = System.DirectoryServices.SearchScope.Subtree;
-        private bool scopeSpecified = false;
-        private int sizeLimit = 0;
-        private TimeSpan serverTimeLimit = minusOneSecond;
-        private bool propertyNamesOnly = false;
-        private TimeSpan clientTimeout = minusOneSecond;
-        private int pageSize = 0;
-        private TimeSpan serverPageTimeLimit = minusOneSecond;
-        private ReferralChasingOption referralChasing = ReferralChasingOption.External;
-        private SortOption sort = new SortOption();
-        private bool cacheResults = true;
-        private bool cacheResultsSpecified = false;
-        private bool rootEntryAllocated = false;             // true: if a temporary entry inside Searcher has been created
-        private string assertDefaultNamingContext = null;
-        private bool asynchronous = false;
-        private bool tombstone = false;
-        private string attributeScopeQuery = "";
-        private bool attributeScopeQuerySpecified = false;
-        private DereferenceAlias derefAlias = DereferenceAlias.Never;
-        private SecurityMasks securityMask = SecurityMasks.None;
-        private ExtendedDN extendedDN = ExtendedDN.None;        
-        private DirectorySynchronization sync = null;
+        private SearchScope _scope = System.DirectoryServices.SearchScope.Subtree;
+        private bool _scopeSpecified = false;
+        private int _sizeLimit = 0;
+        private TimeSpan _serverTimeLimit = s_minusOneSecond;
+        private bool _propertyNamesOnly = false;
+        private TimeSpan _clientTimeout = s_minusOneSecond;
+        private int _pageSize = 0;
+        private TimeSpan _serverPageTimeLimit = s_minusOneSecond;
+        private ReferralChasingOption _referralChasing = ReferralChasingOption.External;
+        private SortOption _sort = new SortOption();
+        private bool _cacheResults = true;
+        private bool _cacheResultsSpecified = false;
+        private bool _rootEntryAllocated = false;             // true: if a temporary entry inside Searcher has been created
+        private string _assertDefaultNamingContext = null;
+        private bool _asynchronous = false;
+        private bool _tombstone = false;
+        private string _attributeScopeQuery = "";
+        private bool _attributeScopeQuerySpecified = false;
+        private DereferenceAlias _derefAlias = DereferenceAlias.Never;
+        private SecurityMasks _securityMask = SecurityMasks.None;
+        private ExtendedDN _extendedDN = ExtendedDN.None;
+        private DirectorySynchronization _sync = null;
         internal bool directorySynchronizationSpecified = false;
-        private DirectoryVirtualListView vlv = null;
+        private DirectoryVirtualListView _vlv = null;
         internal bool directoryVirtualListViewSpecified = false;
         internal SearchResultCollection searchResult = null;
 
@@ -77,10 +81,11 @@ namespace System.DirectoryServices {
         /// <see cref='System.DirectoryServices.DirectorySearcher.Filter'/>, <see cref='System.DirectoryServices.DirectorySearcher.PropertiesToLoad'/>, and <see cref='System.DirectoryServices.DirectorySearcher.SearchScope'/> set to their default values.</para>
         /// </devdoc>
         [
-            DirectoryServicesPermission(SecurityAction.Demand, Unrestricted=true)
+            DirectoryServicesPermission(SecurityAction.Demand, Unrestricted = true)
         ]
-        public DirectorySearcher() : this(null, defaultFilter, null, System.DirectoryServices.SearchScope.Subtree) {
-            scopeSpecified = false;
+        public DirectorySearcher() : this(null, defaultFilter, null, System.DirectoryServices.SearchScope.Subtree)
+        {
+            _scopeSpecified = false;
         }
 
         /// <include file='doc\DirectorySearcher.uex' path='docs/doc[@for="DirectorySearcher.DirectorySearcher1"]/*' />
@@ -90,10 +95,11 @@ namespace System.DirectoryServices {
         ///    values, and <see cref='System.DirectoryServices.DirectorySearcher.SearchRoot'/> set to the given value.</para>
         /// </devdoc>
         [
-            DirectoryServicesPermission(SecurityAction.Demand, Unrestricted=true)
+            DirectoryServicesPermission(SecurityAction.Demand, Unrestricted = true)
         ]
-        public DirectorySearcher(DirectoryEntry searchRoot) : this(searchRoot, defaultFilter, null, System.DirectoryServices.SearchScope.Subtree) {
-            scopeSpecified = false;
+        public DirectorySearcher(DirectoryEntry searchRoot) : this(searchRoot, defaultFilter, null, System.DirectoryServices.SearchScope.Subtree)
+        {
+            _scopeSpecified = false;
         }
 
         /// <include file='doc\DirectorySearcher.uex' path='docs/doc[@for="DirectorySearcher.DirectorySearcher2"]/*' />
@@ -103,11 +109,11 @@ namespace System.DirectoryServices {
         ///    values, and <see cref='System.DirectoryServices.DirectorySearcher.SearchRoot'/> and <see cref='System.DirectoryServices.DirectorySearcher.Filter'/> set to the respective given values.</para>
         /// </devdoc>
         [
-            DirectoryServicesPermission(SecurityAction.Demand, Unrestricted=true)
+            DirectoryServicesPermission(SecurityAction.Demand, Unrestricted = true)
         ]
-        public DirectorySearcher(DirectoryEntry searchRoot, string filter) : this(searchRoot, filter, null, System.DirectoryServices.SearchScope.Subtree) {
-            scopeSpecified = false;
-
+        public DirectorySearcher(DirectoryEntry searchRoot, string filter) : this(searchRoot, filter, null, System.DirectoryServices.SearchScope.Subtree)
+        {
+            _scopeSpecified = false;
         }
 
         /// <include file='doc\DirectorySearcher.uex' path='docs/doc[@for="DirectorySearcher.DirectorySearcher3"]/*' />
@@ -117,10 +123,11 @@ namespace System.DirectoryServices {
         ///    value, and <see cref='System.DirectoryServices.DirectorySearcher.SearchRoot'/>, <see cref='System.DirectoryServices.DirectorySearcher.Filter'/>, and <see cref='System.DirectoryServices.DirectorySearcher.PropertiesToLoad'/> set to the respective given values.</para>
         /// </devdoc>
         [
-            DirectoryServicesPermission(SecurityAction.Demand, Unrestricted=true)
+            DirectoryServicesPermission(SecurityAction.Demand, Unrestricted = true)
         ]
-        public DirectorySearcher(DirectoryEntry searchRoot, string filter, string[] propertiesToLoad) : this(searchRoot, filter, propertiesToLoad, System.DirectoryServices.SearchScope.Subtree) {
-            scopeSpecified = false;
+        public DirectorySearcher(DirectoryEntry searchRoot, string filter, string[] propertiesToLoad) : this(searchRoot, filter, propertiesToLoad, System.DirectoryServices.SearchScope.Subtree)
+        {
+            _scopeSpecified = false;
         }
 
         /// <include file='doc\DirectorySearcher.uex' path='docs/doc[@for="DirectorySearcher.DirectorySearcher4"]/*' />
@@ -130,10 +137,11 @@ namespace System.DirectoryServices {
         ///    values, and <see cref='System.DirectoryServices.DirectorySearcher.Filter'/> set to the given value.</para>
         /// </devdoc>
         [
-            DirectoryServicesPermission(SecurityAction.Demand, Unrestricted=true)
+            DirectoryServicesPermission(SecurityAction.Demand, Unrestricted = true)
         ]
-        public DirectorySearcher(string filter) : this(null, filter, null, System.DirectoryServices.SearchScope.Subtree) {
-             scopeSpecified = false;
+        public DirectorySearcher(string filter) : this(null, filter, null, System.DirectoryServices.SearchScope.Subtree)
+        {
+            _scopeSpecified = false;
         }
 
         /// <include file='doc\DirectorySearcher.uex' path='docs/doc[@for="DirectorySearcher.DirectorySearcher5"]/*' />
@@ -143,10 +151,11 @@ namespace System.DirectoryServices {
         /// values, and <see cref='System.DirectoryServices.DirectorySearcher.Filter'/> and <see cref='System.DirectoryServices.DirectorySearcher.PropertiesToLoad'/> set to the respective given values.</para>
         /// </devdoc>
         [
-            DirectoryServicesPermission(SecurityAction.Demand, Unrestricted=true)
+            DirectoryServicesPermission(SecurityAction.Demand, Unrestricted = true)
         ]
-        public DirectorySearcher(string filter, string[] propertiesToLoad) : this(null, filter, propertiesToLoad, System.DirectoryServices.SearchScope.Subtree) {
-            scopeSpecified = false;
+        public DirectorySearcher(string filter, string[] propertiesToLoad) : this(null, filter, propertiesToLoad, System.DirectoryServices.SearchScope.Subtree)
+        {
+            _scopeSpecified = false;
         }
 
         /// <include file='doc\DirectorySearcher.uex' path='docs/doc[@for="DirectorySearcher.DirectorySearcher6"]/*' />
@@ -155,9 +164,10 @@ namespace System.DirectoryServices {
         ///    value, and <see cref='System.DirectoryServices.DirectorySearcher.Filter'/>, <see cref='System.DirectoryServices.DirectorySearcher.PropertiesToLoad'/>, and <see cref='System.DirectoryServices.DirectorySearcher.SearchScope'/> set to the respective given values.</para>
         /// </devdoc>
         [
-            DirectoryServicesPermission(SecurityAction.Demand, Unrestricted=true)
+            DirectoryServicesPermission(SecurityAction.Demand, Unrestricted = true)
         ]
-        public DirectorySearcher(string filter, string[] propertiesToLoad, SearchScope scope) : this(null, filter, propertiesToLoad, scope) {            
+        public DirectorySearcher(string filter, string[] propertiesToLoad, SearchScope scope) : this(null, filter, propertiesToLoad, scope)
+        {
         }
 
         /// <include file='doc\DirectorySearcher.uex' path='docs/doc[@for="DirectorySearcher.DirectorySearcher7"]/*' />
@@ -166,11 +176,12 @@ namespace System.DirectoryServices {
         ///    values.</para>
         /// </devdoc>
         [
-            DirectoryServicesPermission(SecurityAction.Demand, Unrestricted=true)
+            DirectoryServicesPermission(SecurityAction.Demand, Unrestricted = true)
         ]
-        public DirectorySearcher(DirectoryEntry searchRoot, string filter, string[] propertiesToLoad, SearchScope scope) {            
-            this.searchRoot = searchRoot;
-            this.filter = filter;
+        public DirectorySearcher(DirectoryEntry searchRoot, string filter, string[] propertiesToLoad, SearchScope scope)
+        {
+            _searchRoot = searchRoot;
+            _filter = filter;
             if (propertiesToLoad != null)
                 PropertiesToLoad.AddRange(propertiesToLoad);
             this.SearchScope = scope;
@@ -179,14 +190,16 @@ namespace System.DirectoryServices {
         /// <include file='doc\DirectorySearcher.uex' path='docs/doc[@for="DirectorySearcher.Dispose"]/*' />
         /// <devdoc>        
         /// </devdoc>
-        protected override void Dispose(bool disposing) {
+        protected override void Dispose(bool disposing)
+        {
             // safe to call while finalizing or disposing
             //
-            if ( !this.disposed && disposing) {
-                if ( rootEntryAllocated )
-                    searchRoot.Dispose();
-                rootEntryAllocated = false;    
-                this.disposed = true;
+            if (!_disposed && disposing)
+            {
+                if (_rootEntryAllocated)
+                    _searchRoot.Dispose();
+                _rootEntryAllocated = false;
+                _disposed = true;
             }
             base.Dispose(disposing);
         }
@@ -199,21 +212,24 @@ namespace System.DirectoryServices {
         ///    </para>
         /// </devdoc>
         [
-            DefaultValue(true), 
+            DefaultValue(true),
             DSDescriptionAttribute(Res.DSCacheResults)
-        ]                            
-        public bool CacheResults {
-            get {
-                return cacheResults;
+        ]
+        public bool CacheResults
+        {
+            get
+            {
+                return _cacheResults;
             }
-            set {
-            	  // user explicitly set CacheResults to true and also want VLV
-                if(directoryVirtualListViewSpecified == true && value == true)
+            set
+            {
+                // user explicitly set CacheResults to true and also want VLV
+                if (directoryVirtualListViewSpecified == true && value == true)
                     throw new ArgumentException(Res.GetString(Res.DSBadCacheResultsVLV));
-                
-                cacheResults = value;
 
-                cacheResultsSpecified = true;
+                _cacheResults = value;
+
+                _cacheResultsSpecified = true;
             }
         }
 
@@ -225,19 +241,22 @@ namespace System.DirectoryServices {
         /// </devdoc>
         [
             DSDescriptionAttribute(Res.DSClientTimeout)
-        ]                    
-        public TimeSpan ClientTimeout {
-            get {
-                return clientTimeout;
+        ]
+        public TimeSpan ClientTimeout
+        {
+            get
+            {
+                return _clientTimeout;
             }
-            set {
+            set
+            {
                 // prevent integer overflow
-                if(value.TotalSeconds > Int32.MaxValue)
+                if (value.TotalSeconds > Int32.MaxValue)
                 {
-                     throw new ArgumentException(Res.GetString(Res.TimespanExceedMax), "value");
+                    throw new ArgumentException(Res.GetString(Res.TimespanExceedMax), "value");
                 }
-                
-                clientTimeout = value;
+
+                _clientTimeout = value;
             }
         }
 
@@ -247,15 +266,18 @@ namespace System.DirectoryServices {
         ///       properties or the names and values of requested properties.</para>
         /// </devdoc>        
         [
-            DefaultValue(false), 
+            DefaultValue(false),
             DSDescriptionAttribute(Res.DSPropertyNamesOnly)
         ]
-        public bool PropertyNamesOnly {
-            get {
-                return propertyNamesOnly;
+        public bool PropertyNamesOnly
+        {
+            get
+            {
+                return _propertyNamesOnly;
             }
-            set {
-                propertyNamesOnly = value;
+            set
+            {
+                _propertyNamesOnly = value;
             }
         }
 
@@ -266,19 +288,22 @@ namespace System.DirectoryServices {
         ///    <![CDATA[ (objectClass=*) (!(objectClass=user)) (&(objectClass=user)(sn=Jones)) ]]>
         ///    </devdoc>
         [
-            DefaultValue(defaultFilter), 
-            DSDescriptionAttribute(Res.DSFilter),            
+            DefaultValue(defaultFilter),
+            DSDescriptionAttribute(Res.DSFilter),
             TypeConverter("System.Diagnostics.Design.StringValueConverter, " + AssemblyRef.SystemDesign),
             SettingsBindable(true)
         ]
-        public string Filter {
-            get {
-                return filter;
+        public string Filter
+        {
+            get
+            {
+                return _filter;
             }
-            set {
+            set
+            {
                 if (value == null || value.Length == 0)
                     value = defaultFilter;
-                filter = value;
+                _filter = value;
             }
         }
 
@@ -287,22 +312,25 @@ namespace System.DirectoryServices {
         ///    <para>Gets or sets the page size in a paged search.</para>
         /// </devdoc>
         [
-            DefaultValue(0), 
-            DSDescriptionAttribute(Res.DSPageSize)                        
+            DefaultValue(0),
+            DSDescriptionAttribute(Res.DSPageSize)
         ]
-        public int PageSize {
-            get {
-                return pageSize;
+        public int PageSize
+        {
+            get
+            {
+                return _pageSize;
             }
-            set {
+            set
+            {
                 if (value < 0)
                     throw new ArgumentException(Res.GetString(Res.DSBadPageSize));
 
                 // specify non-zero pagesize explicitly and also want dirsync
-                if(directorySynchronizationSpecified == true && value !=0)
+                if (directorySynchronizationSpecified == true && value != 0)
                     throw new ArgumentException(Res.GetString(Res.DSBadPageSizeDirsync));
-                
-                pageSize = value;
+
+                _pageSize = value;
             }
         }
 
@@ -316,12 +344,15 @@ namespace System.DirectoryServices {
             DesignerSerializationVisibility(DesignerSerializationVisibility.Content),
             Editor("System.Windows.Forms.Design.StringCollectionEditor, " + AssemblyRef.SystemDesign, "System.Drawing.Design.UITypeEditor, " + AssemblyRef.SystemDrawing)
         ]
-        public StringCollection PropertiesToLoad {
-            get {
-                if (propertiesToLoad == null) {
-                    propertiesToLoad = new StringCollection();
+        public StringCollection PropertiesToLoad
+        {
+            get
+            {
+                if (_propertiesToLoad == null)
+                {
+                    _propertiesToLoad = new StringCollection();
                 }
-                return propertiesToLoad;
+                return _propertiesToLoad;
             }
         }
 
@@ -330,21 +361,24 @@ namespace System.DirectoryServices {
         ///    <para>Gets or sets how referrals are chased.</para>
         /// </devdoc>
         [
-            DefaultValue(ReferralChasingOption.External), 
-            DSDescriptionAttribute(Res.DSReferralChasing)                                    
+            DefaultValue(ReferralChasingOption.External),
+            DSDescriptionAttribute(Res.DSReferralChasing)
         ]
-        public ReferralChasingOption ReferralChasing {
-            get {
-                return referralChasing;
+        public ReferralChasingOption ReferralChasing
+        {
+            get
+            {
+                return _referralChasing;
             }
-            set {
+            set
+            {
                 if (value != ReferralChasingOption.None &&
                     value != ReferralChasingOption.Subordinate &&
                     value != ReferralChasingOption.External &&
-                    value != ReferralChasingOption.All) 
+                    value != ReferralChasingOption.All)
                     throw new InvalidEnumArgumentException("value", (int)value, typeof(ReferralChasingOption));
-                    
-                referralChasing = value;
+
+                _referralChasing = value;
             }
         }
 
@@ -353,27 +387,30 @@ namespace System.DirectoryServices {
         ///    <para>Gets or sets the scope of the search that should be observed by the server.</para>
         /// </devdoc>
         [
-            DefaultValue(SearchScope.Subtree), 
-            DSDescriptionAttribute(Res.DSSearchScope),                                                
+            DefaultValue(SearchScope.Subtree),
+            DSDescriptionAttribute(Res.DSSearchScope),
             SettingsBindable(true)
         ]
-        public SearchScope SearchScope {
-            get {
-                return scope;
+        public SearchScope SearchScope
+        {
+            get
+            {
+                return _scope;
             }
-            set {
-                if (value < SearchScope.Base || value > SearchScope.Subtree) 
+            set
+            {
+                if (value < SearchScope.Base || value > SearchScope.Subtree)
                     throw new InvalidEnumArgumentException("value", (int)value, typeof(SearchScope));
 
                 // user explicitly set SearchScope to something other than Base and also want to do ASQ, it is not supported
-                if(attributeScopeQuerySpecified == true && value != SearchScope.Base)
+                if (_attributeScopeQuerySpecified == true && value != SearchScope.Base)
                 {
                     throw new ArgumentException(Res.GetString(Res.DSBadASQSearchScope));
                 }
-                    
-                scope = value;
 
-                scopeSpecified = true;                
+                _scope = value;
+
+                _scopeSpecified = true;
             }
         }
 
@@ -386,18 +423,21 @@ namespace System.DirectoryServices {
         [
             DSDescriptionAttribute(Res.DSServerPageTimeLimit)
         ]
-        public TimeSpan ServerPageTimeLimit {
-            get {
-                return serverPageTimeLimit;
+        public TimeSpan ServerPageTimeLimit
+        {
+            get
+            {
+                return _serverPageTimeLimit;
             }
-            set {
+            set
+            {
                 // prevent integer overflow
-                if(value.TotalSeconds > Int32.MaxValue)
+                if (value.TotalSeconds > Int32.MaxValue)
                 {
-                     throw new ArgumentException(Res.GetString(Res.TimespanExceedMax), "value");
+                    throw new ArgumentException(Res.GetString(Res.TimespanExceedMax), "value");
                 }
-                
-                serverPageTimeLimit = value;
+
+                _serverPageTimeLimit = value;
             }
         }
 
@@ -409,18 +449,21 @@ namespace System.DirectoryServices {
         [
              DSDescriptionAttribute(Res.DSServerTimeLimit)
         ]
-        public TimeSpan ServerTimeLimit {
-            get {
-                return serverTimeLimit;
+        public TimeSpan ServerTimeLimit
+        {
+            get
+            {
+                return _serverTimeLimit;
             }
-            set {
+            set
+            {
                 // prevent integer overflow
-                if(value.TotalSeconds > Int32.MaxValue)
+                if (value.TotalSeconds > Int32.MaxValue)
                 {
-                     throw new ArgumentException(Res.GetString(Res.TimespanExceedMax), "value");
+                    throw new ArgumentException(Res.GetString(Res.TimespanExceedMax), "value");
                 }
-                
-                serverTimeLimit = value;
+
+                _serverTimeLimit = value;
             }
         }
 
@@ -430,18 +473,21 @@ namespace System.DirectoryServices {
         ///       server should return in a search.</para>
         /// </devdoc>
         [
-            DefaultValue(0), 
-            DSDescriptionAttribute(Res.DSSizeLimit)            
+            DefaultValue(0),
+            DSDescriptionAttribute(Res.DSSizeLimit)
         ]
-        public int SizeLimit {
-            get {
-                return sizeLimit;
+        public int SizeLimit
+        {
+            get
+            {
+                return _sizeLimit;
             }
-            set {
+            set
+            {
                 if (value < 0)
                     throw new ArgumentException(Res.GetString(Res.DSBadSizeLimit));
-                sizeLimit = value;
-            }                                                                                 
+                _sizeLimit = value;
+            }
         }
 
         /// <include file='doc\DirectorySearcher.uex' path='docs/doc[@for="DirectorySearcher.SearchRoot"]/*' />
@@ -451,34 +497,36 @@ namespace System.DirectoryServices {
         /// </devdoc>
         [
             DSDescriptionAttribute(Res.DSSearchRoot),
-            DefaultValueAttribute(null)            
+            DefaultValueAttribute(null)
         ]
-        public DirectoryEntry SearchRoot {
-            get {
-                if (searchRoot == null && !DesignMode) {                    
-                                                                                        
+        public DirectoryEntry SearchRoot
+        {
+            get
+            {
+                if (_searchRoot == null && !DesignMode)
+                {
                     // get the default naming context. This should be the default root for the search.
                     DirectoryEntry rootDSE = new DirectoryEntry("LDAP://RootDSE", true, null, null, AuthenticationTypes.Secure);
-                    
+
                     //SECREVIEW: Searching the root of the DS will demand browse permissions
                     //                     on "*" or "LDAP://RootDSE".
-                    string defaultNamingContext = (string) rootDSE.Properties["defaultNamingContext"][0];
+                    string defaultNamingContext = (string)rootDSE.Properties["defaultNamingContext"][0];
                     rootDSE.Dispose();
-                                                            
-                    searchRoot = new DirectoryEntry("LDAP://" + defaultNamingContext, true, null, null, AuthenticationTypes.Secure);
-                    rootEntryAllocated = true;    
-                    assertDefaultNamingContext = "LDAP://" + defaultNamingContext;
-                    
-                }
-                return searchRoot;
-            }
-            set {
-                if ( rootEntryAllocated )
-                    searchRoot.Dispose();
-                rootEntryAllocated = false;    
 
-                assertDefaultNamingContext = null;
-                searchRoot = value;
+                    _searchRoot = new DirectoryEntry("LDAP://" + defaultNamingContext, true, null, null, AuthenticationTypes.Secure);
+                    _rootEntryAllocated = true;
+                    _assertDefaultNamingContext = "LDAP://" + defaultNamingContext;
+                }
+                return _searchRoot;
+            }
+            set
+            {
+                if (_rootEntryAllocated)
+                    _searchRoot.Dispose();
+                _rootEntryAllocated = false;
+
+                _assertDefaultNamingContext = null;
+                _searchRoot = value;
             }
         }
 
@@ -492,16 +540,19 @@ namespace System.DirectoryServices {
             TypeConverterAttribute(typeof(ExpandableObjectConverter)),
             DesignerSerializationVisibility(DesignerSerializationVisibility.Content)
         ]
-        public SortOption Sort {
-            get {
-                return sort;
+        public SortOption Sort
+        {
+            get
+            {
+                return _sort;
             }
-            
-            set {
+
+            set
+            {
                 if (value == null)
                     throw new ArgumentNullException("value");
-                
-                sort = value;                    
+
+                _sort = value;
             }
         }
 
@@ -511,18 +562,21 @@ namespace System.DirectoryServices {
         ///       way.</para>
         /// </devdoc>
         [
-            DefaultValue(false), 
+            DefaultValue(false),
             DSDescriptionAttribute(Res.DSAsynchronous),
             ComVisible(false)
         ]
-        public bool Asynchronous {
-            get{
-            	return asynchronous;
+        public bool Asynchronous
+        {
+            get
+            {
+                return _asynchronous;
             }
-            set {
-            	asynchronous = value;
+            set
+            {
+                _asynchronous = value;
             }
-        }        
+        }
 
         /// <include file='doc\DirectorySearcher.uex' path='docs/doc[@for="DirectorySearcher.Tombstone"]/*' />
         /// <devdoc>
@@ -534,15 +588,18 @@ namespace System.DirectoryServices {
             DSDescriptionAttribute(Res.DSTombstone),
             ComVisible(false)
         ]
-        public bool Tombstone {
-            get{
-            	return tombstone;
+        public bool Tombstone
+        {
+            get
+            {
+                return _tombstone;
             }
-            set{
-            	tombstone = value;
+            set
+            {
+                _tombstone = value;
             }
         }
-        
+
         /// <include file='doc\DirectorySearcher.uex' path='docs/doc[@for="DirectorySearcher.AttributeScopeQuery"]/*' />
         /// <devdoc>
         ///    <para>Gets or sets an attribute name to indicate that an attribute-scoped query search should be   
@@ -554,35 +611,37 @@ namespace System.DirectoryServices {
             TypeConverter("System.Diagnostics.Design.StringValueConverter, " + AssemblyRef.SystemDesign),
             ComVisible(false)
         ]
-        public string AttributeScopeQuery {
-            get{
-            	return attributeScopeQuery;
+        public string AttributeScopeQuery
+        {
+            get
+            {
+                return _attributeScopeQuery;
             }
-            set {
+            set
+            {
                 if (value == null)
                     value = "";
 
                 // user explicitly set AttributeScopeQuery and value is not null or empty string
                 if (value.Length != 0)
-                {                    
-                    if(scopeSpecified == true && SearchScope != SearchScope.Base)
+                {
+                    if (_scopeSpecified == true && SearchScope != SearchScope.Base)
                     {
                         throw new ArgumentException(Res.GetString(Res.DSBadASQSearchScope));
                     }
 
                     // if user did not explicitly set search scope
-                    scope = SearchScope.Base;                    
+                    _scope = SearchScope.Base;
 
-                    attributeScopeQuerySpecified = true;
+                    _attributeScopeQuerySpecified = true;
                 }
                 else
                 // user explicitly sets the value to default one and doesn't want to do asq
                 {
-                    attributeScopeQuerySpecified = false;
+                    _attributeScopeQuerySpecified = false;
                 }
-                
-                attributeScopeQuery = value;                
-                	
+
+                _attributeScopeQuery = value;
             }
         }
 
@@ -593,21 +652,23 @@ namespace System.DirectoryServices {
         /// </devdoc>
         [
             DefaultValue(DereferenceAlias.Never),
-            DSDescriptionAttribute(Res.DSDerefAlias),        	
+            DSDescriptionAttribute(Res.DSDerefAlias),
             ComVisible(false)
         ]
-        public DereferenceAlias DerefAlias {
-            get {
-            	return derefAlias;
+        public DereferenceAlias DerefAlias
+        {
+            get
+            {
+                return _derefAlias;
             }
 
-            set {
-            	if (value < DereferenceAlias.Never || value > DereferenceAlias.Always) 
+            set
+            {
+                if (value < DereferenceAlias.Never || value > DereferenceAlias.Always)
                     throw new InvalidEnumArgumentException("value", (int)value, typeof(DereferenceAlias));
-                    
-                derefAlias = value;
+
+                _derefAlias = value;
             }
-        
         }
 
         /// <include file='doc\DirectorySearcher.uex' path='docs/doc[@for="DirectorySearcher.SecurityMasks"]/*' />
@@ -620,16 +681,19 @@ namespace System.DirectoryServices {
             DSDescriptionAttribute(Res.DSSecurityMasks),
             ComVisible(false)
         ]
-        public SecurityMasks SecurityMasks{
-            get {
-            	return securityMask;
+        public SecurityMasks SecurityMasks
+        {
+            get
+            {
+                return _securityMask;
             }
-            set { 
+            set
+            {
                 // make sure the behavior is consistent with native ADSI
-                if(value > (SecurityMasks.None | SecurityMasks.Owner | SecurityMasks.Group | SecurityMasks.Dacl | SecurityMasks.Sacl))
+                if (value > (SecurityMasks.None | SecurityMasks.Owner | SecurityMasks.Group | SecurityMasks.Dacl | SecurityMasks.Sacl))
                     throw new InvalidEnumArgumentException("value", (int)value, typeof(SecurityMasks));
-                
-            	securityMask = value;
+
+                _securityMask = value;
             }
         }
 
@@ -643,16 +707,18 @@ namespace System.DirectoryServices {
             DSDescriptionAttribute(Res.DSExtendedDn),
             ComVisible(false)
         ]
-        public ExtendedDN ExtendedDN{
-            get {
-            	return extendedDN;
+        public ExtendedDN ExtendedDN
+        {
+            get
+            {
+                return _extendedDN;
             }
-            set {
-            	if (value < ExtendedDN.None || value > ExtendedDN.Standard) 
+            set
+            {
+                if (value < ExtendedDN.None || value > ExtendedDN.Standard)
                     throw new InvalidEnumArgumentException("value", (int)value, typeof(ExtendedDN));
 
-            	extendedDN = value;
-
+                _extendedDN = value;
             }
         }
 
@@ -667,34 +733,36 @@ namespace System.DirectoryServices {
             Browsable(false),
             ComVisible(false)
         ]
-        public DirectorySynchronization DirectorySynchronization {
-            get {            	
+        public DirectorySynchronization DirectorySynchronization
+        {
+            get
+            {
                 // if user specifies dirsync search preference and search is executed
-            	if(directorySynchronizationSpecified && searchResult != null)
-            	{
-            	    sync.ResetDirectorySynchronizationCookie(searchResult.DirsyncCookie);
-            	}   
-            	return sync;
+                if (directorySynchronizationSpecified && searchResult != null)
+                {
+                    _sync.ResetDirectorySynchronizationCookie(searchResult.DirsyncCookie);
+                }
+                return _sync;
             }
 
-            set {
+            set
+            {
                 // specify non-zero pagesize explicitly and also want dirsync      
-            	if(value != null)
-            	{
-            	    if(PageSize != 0)
+                if (value != null)
+                {
+                    if (PageSize != 0)
                         throw new ArgumentException(Res.GetString(Res.DSBadPageSizeDirsync));
-            	    
-            	    directorySynchronizationSpecified = true;
-            	}
-            	else
+
+                    directorySynchronizationSpecified = true;
+                }
+                else
                 // user explicitly sets the value to default one and doesn't want to do dirsync
                 {
                     directorySynchronizationSpecified = false;
                 }
 
-            	sync = value;
+                _sync = value;
             }
-            
         }
 
         /// <include file='doc\DirectorySearcher.uex' path='docs/doc[@for="DirectorySearcher.VirtualListView"]/*' />
@@ -708,40 +776,43 @@ namespace System.DirectoryServices {
             Browsable(false),
             ComVisible(false)
         ]
-        public DirectoryVirtualListView VirtualListView {
-            get {
+        public DirectoryVirtualListView VirtualListView
+        {
+            get
+            {
                 // if user specifies dirsync search preference and search is executed
-                if(directoryVirtualListViewSpecified && searchResult != null)
+                if (directoryVirtualListViewSpecified && searchResult != null)
                 {
                     DirectoryVirtualListView tempval = searchResult.VLVResponse;
-                    vlv.Offset = tempval.Offset;
-                    vlv.ApproximateTotal = tempval.ApproximateTotal;
-                    vlv.DirectoryVirtualListViewContext = tempval.DirectoryVirtualListViewContext;
-                    if(vlv.ApproximateTotal != 0)
-                        vlv.TargetPercentage = (int) ((double)vlv.Offset/vlv.ApproximateTotal*100);
+                    _vlv.Offset = tempval.Offset;
+                    _vlv.ApproximateTotal = tempval.ApproximateTotal;
+                    _vlv.DirectoryVirtualListViewContext = tempval.DirectoryVirtualListViewContext;
+                    if (_vlv.ApproximateTotal != 0)
+                        _vlv.TargetPercentage = (int)((double)_vlv.Offset / _vlv.ApproximateTotal * 100);
                     else
-                        vlv.TargetPercentage = 0;
+                        _vlv.TargetPercentage = 0;
                 }
-            	return vlv;
+                return _vlv;
             }
-            set {
+            set
+            {
                 // if user explicitly set CacheResults to true and also want to set VLV                
-            	if(value != null)
-            	{
-            	    if(cacheResultsSpecified == true && CacheResults == true)
+                if (value != null)
+                {
+                    if (_cacheResultsSpecified == true && CacheResults == true)
                         throw new ArgumentException(Res.GetString(Res.DSBadCacheResultsVLV));
-            	    
-            	    directoryVirtualListViewSpecified = true;
-            	    // if user does not explicit specify cache results to true and also do vlv, then cache results is default to false
-            	    cacheResults = false;
-            	}
-            	else
+
+                    directoryVirtualListViewSpecified = true;
+                    // if user does not explicit specify cache results to true and also do vlv, then cache results is default to false
+                    _cacheResults = false;
+                }
+                else
                 // user explicitly sets the value to default one and doesn't want to do vlv
                 {
                     directoryVirtualListViewSpecified = false;
                 }
-                
-            	vlv = value;
+
+                _vlv = value;
             }
         }
 
@@ -751,8 +822,9 @@ namespace System.DirectoryServices {
         /// <devdoc>
         ///    <para>Executes the search and returns only the first entry that is found.</para>
         /// </devdoc>                
-        public SearchResult FindOne() {
-            DirectorySynchronization tempsync = null;	
+        public SearchResult FindOne()
+        {
+            DirectorySynchronization tempsync = null;
             DirectoryVirtualListView tempvlv = null;
             SearchResult resultEntry = null;
 
@@ -760,27 +832,28 @@ namespace System.DirectoryServices {
 
             try
             {
-                foreach (SearchResult entry in results) {
+                foreach (SearchResult entry in results)
+                {
                     // need to get the dirsync cookie
-                    if(directorySynchronizationSpecified)
+                    if (directorySynchronizationSpecified)
                         tempsync = DirectorySynchronization;
 
                     // need to get the vlv response
-                    if(directoryVirtualListViewSpecified)
-                        tempvlv = VirtualListView;                    
-                    
+                    if (directoryVirtualListViewSpecified)
+                        tempvlv = VirtualListView;
+
                     resultEntry = entry;
                     break;
                 }
             }
             finally
-            {            
+            {
                 searchResult = null;
-                
+
                 // still need to properly release the resource
                 results.Dispose();
             }
-            
+
             return resultEntry;
         }
 
@@ -788,22 +861,26 @@ namespace System.DirectoryServices {
         /// <devdoc>
         ///    <para> Executes the search and returns a collection of the entries that are found.</para>
         /// </devdoc>                
-        public SearchResultCollection FindAll() {
+        public SearchResultCollection FindAll()
+        {
             return FindAll(true);
         }
-        
-        private SearchResultCollection FindAll(bool findMoreThanOne) {
-            searchResult = null;            
-                        
+
+        private SearchResultCollection FindAll(bool findMoreThanOne)
+        {
+            searchResult = null;
+
             DirectoryEntry clonedRoot = null;
-            if (assertDefaultNamingContext == null) {                 
+            if (_assertDefaultNamingContext == null)
+            {
                 clonedRoot = SearchRoot.CloneBrowsable();
-            }                
-            else {                                                                                                             
+            }
+            else
+            {
                 clonedRoot = SearchRoot.CloneBrowsable();
-            }    
-            
-            UnsafeNativeMethods.IAds adsObject = clonedRoot.AdsObject;                        
+            }
+
+            UnsafeNativeMethods.IAds adsObject = clonedRoot.AdsObject;
             if (!(adsObject is UnsafeNativeMethods.IDirectorySearch))
                 throw new NotSupportedException(Res.GetString(Res.DSSearchUnsupported, SearchRoot.Path));
 
@@ -813,172 +890,179 @@ namespace System.DirectoryServices {
             // It is especially important for virtuallistview case, in order to reuse the vlv response, the search must be performed on the same ldap connection
 
             // only do it when vlv is used
-            if(directoryVirtualListViewSpecified)
+            if (directoryVirtualListViewSpecified)
             {
-                SearchRoot.Bind(true);                 
+                SearchRoot.Bind(true);
             }
-                                                                    
-            UnsafeNativeMethods.IDirectorySearch adsSearch = (UnsafeNativeMethods.IDirectorySearch) adsObject;
+
+            UnsafeNativeMethods.IDirectorySearch adsSearch = (UnsafeNativeMethods.IDirectorySearch)adsObject;
             SetSearchPreferences(adsSearch, findMoreThanOne);
 
             string[] properties = null;
-            if (PropertiesToLoad.Count > 0) {
-                if ( !PropertiesToLoad.Contains("ADsPath") ) {
+            if (PropertiesToLoad.Count > 0)
+            {
+                if (!PropertiesToLoad.Contains("ADsPath"))
+                {
                     // if we don't get this property, we won't be able to return a list of DirectoryEntry objects!                
                     PropertiesToLoad.Add("ADsPath");
                 }
                 properties = new string[PropertiesToLoad.Count];
                 PropertiesToLoad.CopyTo(properties, 0);
             }
-            
+
             IntPtr resultsHandle;
-            if ( properties != null )
+            if (properties != null)
                 adsSearch.ExecuteSearch(Filter, properties, properties.Length, out resultsHandle);
-            else {
+            else
+            {
                 adsSearch.ExecuteSearch(Filter, null, -1, out resultsHandle);
-                properties = new string[0];                    
-            }                
-            
+                properties = new string[0];
+            }
+
             SearchResultCollection result = new SearchResultCollection(clonedRoot, resultsHandle, properties, this);
             searchResult = result;
-            return  result;         
+            return result;
         }
 
-        private unsafe void SetSearchPreferences(UnsafeNativeMethods.IDirectorySearch adsSearch, bool findMoreThanOne) {
+        private unsafe void SetSearchPreferences(UnsafeNativeMethods.IDirectorySearch adsSearch, bool findMoreThanOne)
+        {
             ArrayList prefList = new ArrayList();
             AdsSearchPreferenceInfo info;
 
             // search scope
             info = new AdsSearchPreferenceInfo();
-            info.dwSearchPref = (int) AdsSearchPreferences.SEARCH_SCOPE;
-            info.vValue = new AdsValueHelper((int) SearchScope).GetStruct();
+            info.dwSearchPref = (int)AdsSearchPreferences.SEARCH_SCOPE;
+            info.vValue = new AdsValueHelper((int)SearchScope).GetStruct();
             prefList.Add(info);
 
             // size limit
-            if (sizeLimit != 0 || !findMoreThanOne) {
+            if (_sizeLimit != 0 || !findMoreThanOne)
+            {
                 info = new AdsSearchPreferenceInfo();
-                info.dwSearchPref = (int) AdsSearchPreferences.SIZE_LIMIT;
+                info.dwSearchPref = (int)AdsSearchPreferences.SIZE_LIMIT;
                 info.vValue = new AdsValueHelper(findMoreThanOne ? SizeLimit : 1).GetStruct();
                 prefList.Add(info);
             }
 
             // time limit
-            if (ServerTimeLimit >= new TimeSpan(0)) {
+            if (ServerTimeLimit >= new TimeSpan(0))
+            {
                 info = new AdsSearchPreferenceInfo();
-                info.dwSearchPref = (int) AdsSearchPreferences.TIME_LIMIT;
-                info.vValue = new AdsValueHelper((int) ServerTimeLimit.TotalSeconds).GetStruct();
+                info.dwSearchPref = (int)AdsSearchPreferences.TIME_LIMIT;
+                info.vValue = new AdsValueHelper((int)ServerTimeLimit.TotalSeconds).GetStruct();
                 prefList.Add(info);
             }
 
             // propertyNamesOnly
             info = new AdsSearchPreferenceInfo();
-            info.dwSearchPref = (int) AdsSearchPreferences.ATTRIBTYPES_ONLY;
+            info.dwSearchPref = (int)AdsSearchPreferences.ATTRIBTYPES_ONLY;
             info.vValue = new AdsValueHelper(PropertyNamesOnly).GetStruct();
             prefList.Add(info);
 
             // Timeout
-            if (ClientTimeout >= new TimeSpan(0)) {
+            if (ClientTimeout >= new TimeSpan(0))
+            {
                 info = new AdsSearchPreferenceInfo();
-                info.dwSearchPref = (int) AdsSearchPreferences.TIMEOUT;
-                info.vValue = new AdsValueHelper((int) ClientTimeout.TotalSeconds).GetStruct();
+                info.dwSearchPref = (int)AdsSearchPreferences.TIMEOUT;
+                info.vValue = new AdsValueHelper((int)ClientTimeout.TotalSeconds).GetStruct();
                 prefList.Add(info);
             }
 
             // page size
-            if (PageSize != 0) {
+            if (PageSize != 0)
+            {
                 info = new AdsSearchPreferenceInfo();
-                info.dwSearchPref = (int) AdsSearchPreferences.PAGESIZE;
+                info.dwSearchPref = (int)AdsSearchPreferences.PAGESIZE;
                 info.vValue = new AdsValueHelper(PageSize).GetStruct();
                 prefList.Add(info);
             }
 
             // page time limit
-            if (ServerPageTimeLimit >= new TimeSpan(0)) {
+            if (ServerPageTimeLimit >= new TimeSpan(0))
+            {
                 info = new AdsSearchPreferenceInfo();
-                info.dwSearchPref = (int) AdsSearchPreferences.PAGED_TIME_LIMIT;
-                info.vValue = new AdsValueHelper((int) ServerPageTimeLimit.TotalSeconds).GetStruct();
+                info.dwSearchPref = (int)AdsSearchPreferences.PAGED_TIME_LIMIT;
+                info.vValue = new AdsValueHelper((int)ServerPageTimeLimit.TotalSeconds).GetStruct();
                 prefList.Add(info);
             }
 
             // chase referrals
             info = new AdsSearchPreferenceInfo();
-            info.dwSearchPref = (int) AdsSearchPreferences.CHASE_REFERRALS;
-            info.vValue = new AdsValueHelper((int) ReferralChasing).GetStruct();
+            info.dwSearchPref = (int)AdsSearchPreferences.CHASE_REFERRALS;
+            info.vValue = new AdsValueHelper((int)ReferralChasing).GetStruct();
             prefList.Add(info);
 
             // asynchronous
-            if(Asynchronous == true)
+            if (Asynchronous == true)
             {
                 info = new AdsSearchPreferenceInfo();
-                info.dwSearchPref = (int) AdsSearchPreferences.ASYNCHRONOUS;
+                info.dwSearchPref = (int)AdsSearchPreferences.ASYNCHRONOUS;
                 info.vValue = new AdsValueHelper(Asynchronous).GetStruct();
                 prefList.Add(info);
             }
 
             // tombstone
-            if(Tombstone == true)
+            if (Tombstone == true)
             {
                 info = new AdsSearchPreferenceInfo();
-                info.dwSearchPref = (int) AdsSearchPreferences.TOMBSTONE;
+                info.dwSearchPref = (int)AdsSearchPreferences.TOMBSTONE;
                 info.vValue = new AdsValueHelper(Tombstone).GetStruct();
                 prefList.Add(info);
             }
 
             // attributescopequery
-            if (attributeScopeQuerySpecified)
+            if (_attributeScopeQuerySpecified)
             {
                 info = new AdsSearchPreferenceInfo();
-                info.dwSearchPref = (int) AdsSearchPreferences.ATTRIBUTE_QUERY;
+                info.dwSearchPref = (int)AdsSearchPreferences.ATTRIBUTE_QUERY;
                 info.vValue = new AdsValueHelper(AttributeScopeQuery, AdsType.ADSTYPE_CASE_IGNORE_STRING).GetStruct();
                 prefList.Add(info);
             }
 
             // derefalias
-            if(DerefAlias != DereferenceAlias.Never)
+            if (DerefAlias != DereferenceAlias.Never)
             {
                 info = new AdsSearchPreferenceInfo();
-                info.dwSearchPref = (int) AdsSearchPreferences.DEREF_ALIASES;
-                info.vValue = new AdsValueHelper((int) DerefAlias).GetStruct();
+                info.dwSearchPref = (int)AdsSearchPreferences.DEREF_ALIASES;
+                info.vValue = new AdsValueHelper((int)DerefAlias).GetStruct();
                 prefList.Add(info);
             }
 
             // securitymask
-            if(SecurityMasks != SecurityMasks.None)
+            if (SecurityMasks != SecurityMasks.None)
             {
                 info = new AdsSearchPreferenceInfo();
-                info.dwSearchPref = (int) AdsSearchPreferences.SECURITY_MASK;
-                info.vValue = new AdsValueHelper((int) SecurityMasks).GetStruct();
+                info.dwSearchPref = (int)AdsSearchPreferences.SECURITY_MASK;
+                info.vValue = new AdsValueHelper((int)SecurityMasks).GetStruct();
                 prefList.Add(info);
             }
 
             // extendeddn
-            if(ExtendedDN != ExtendedDN.None)
+            if (ExtendedDN != ExtendedDN.None)
             {
                 info = new AdsSearchPreferenceInfo();
-                info.dwSearchPref = (int) AdsSearchPreferences.EXTENDED_DN;
-                info.vValue = new AdsValueHelper((int) ExtendedDN).GetStruct();
+                info.dwSearchPref = (int)AdsSearchPreferences.EXTENDED_DN;
+                info.vValue = new AdsValueHelper((int)ExtendedDN).GetStruct();
                 prefList.Add(info);
             }
 
             // dirsync
-            if(directorySynchronizationSpecified)
+            if (directorySynchronizationSpecified)
             {
                 info = new AdsSearchPreferenceInfo();
-                info.dwSearchPref = (int) AdsSearchPreferences.DIRSYNC;                    
+                info.dwSearchPref = (int)AdsSearchPreferences.DIRSYNC;
                 info.vValue = new AdsValueHelper(DirectorySynchronization.GetDirectorySynchronizationCookie(), AdsType.ADSTYPE_PROV_SPECIFIC).GetStruct();
-                prefList.Add(info);                     
+                prefList.Add(info);
 
-                if(DirectorySynchronization.Option != DirectorySynchronizationOptions.None)
+                if (DirectorySynchronization.Option != DirectorySynchronizationOptions.None)
                 {
                     info = new AdsSearchPreferenceInfo();
-                    info.dwSearchPref = (int) AdsSearchPreferences.DIRSYNC_FLAG;
+                    info.dwSearchPref = (int)AdsSearchPreferences.DIRSYNC_FLAG;
                     info.vValue = new AdsValueHelper((int)DirectorySynchronization.Option).GetStruct();
                     prefList.Add(info);
-                    
                 }
-                    
             }
-            
+
 
 
 
@@ -986,11 +1070,13 @@ namespace System.DirectoryServices {
             IntPtr ptrVLVToFree = (IntPtr)0;
             IntPtr ptrVLVContexToFree = (IntPtr)0;
 
-            try {
+            try
+            {
                 // sort
-                if (Sort.PropertyName != null && Sort.PropertyName.Length > 0) {
+                if (Sort.PropertyName != null && Sort.PropertyName.Length > 0)
+                {
                     info = new AdsSearchPreferenceInfo();
-                    info.dwSearchPref = (int) AdsSearchPreferences.SORT_ON;
+                    info.dwSearchPref = (int)AdsSearchPreferences.SORT_ON;
                     AdsSortKey sortKey = new AdsSortKey();
                     sortKey.pszAttrType = Marshal.StringToCoTaskMemUni(Sort.PropertyName);
                     ptrToFree = sortKey.pszAttrType; // so we can free it later.
@@ -1003,170 +1089,176 @@ namespace System.DirectoryServices {
                 }
 
                 // vlv
-                if(directoryVirtualListViewSpecified) {
+                if (directoryVirtualListViewSpecified)
+                {
                     info = new AdsSearchPreferenceInfo();
-                    info.dwSearchPref = (int) AdsSearchPreferences.VLV;
+                    info.dwSearchPref = (int)AdsSearchPreferences.VLV;
                     AdsVLV vlvValue = new AdsVLV();
-                    vlvValue.beforeCount = vlv.BeforeCount;
-                    vlvValue.afterCount = vlv.AfterCount;
-                    vlvValue.offset = vlv.Offset;
+                    vlvValue.beforeCount = _vlv.BeforeCount;
+                    vlvValue.afterCount = _vlv.AfterCount;
+                    vlvValue.offset = _vlv.Offset;
                     //we need to treat the empty string as null here
-                    if(vlv.Target.Length != 0)
-                        vlvValue.target = Marshal.StringToCoTaskMemUni(vlv.Target);
+                    if (_vlv.Target.Length != 0)
+                        vlvValue.target = Marshal.StringToCoTaskMemUni(_vlv.Target);
                     else
                         vlvValue.target = IntPtr.Zero;
                     ptrVLVToFree = vlvValue.target;
-                    if(vlv.DirectoryVirtualListViewContext == null)
+                    if (_vlv.DirectoryVirtualListViewContext == null)
                     {
                         vlvValue.contextIDlength = 0;
                         vlvValue.contextID = (IntPtr)0;
                     }
                     else
                     {
-                        vlvValue.contextIDlength = vlv.DirectoryVirtualListViewContext.context.Length;
+                        vlvValue.contextIDlength = _vlv.DirectoryVirtualListViewContext.context.Length;
                         vlvValue.contextID = Marshal.AllocCoTaskMem(vlvValue.contextIDlength);
                         ptrVLVContexToFree = vlvValue.contextID;
-                        Marshal.Copy(vlv.DirectoryVirtualListViewContext.context, 0, vlvValue.contextID, vlvValue.contextIDlength);                	    
+                        Marshal.Copy(_vlv.DirectoryVirtualListViewContext.context, 0, vlvValue.contextID, vlvValue.contextIDlength);
                     }
                     IntPtr vlvPtr = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(AdsVLV)));
                     byte[] vlvBytes = new byte[Marshal.SizeOf(vlvValue)];
                     try
                     {
                         Marshal.StructureToPtr(vlvValue, vlvPtr, false);
-                        Marshal.Copy(vlvPtr, vlvBytes, 0, vlvBytes.Length);                        
+                        Marshal.Copy(vlvPtr, vlvBytes, 0, vlvBytes.Length);
                     }
                     finally
                     {
-                        Marshal.FreeHGlobal(vlvPtr);                    
+                        Marshal.FreeHGlobal(vlvPtr);
                     }
                     info.vValue = new AdsValueHelper(vlvBytes, AdsType.ADSTYPE_PROV_SPECIFIC).GetStruct();
-                    prefList.Add(info);                    
+                    prefList.Add(info);
                 }
 
 
 
                 // cacheResults
-                if(cacheResultsSpecified)
+                if (_cacheResultsSpecified)
                 {
                     info = new AdsSearchPreferenceInfo();
-                    info.dwSearchPref = (int) AdsSearchPreferences.CACHE_RESULTS;
+                    info.dwSearchPref = (int)AdsSearchPreferences.CACHE_RESULTS;
                     info.vValue = new AdsValueHelper(CacheResults).GetStruct();
                     prefList.Add(info);
                 }
-                
+
                 //
                 // now make the call
                 //                
                 AdsSearchPreferenceInfo[] prefs = new AdsSearchPreferenceInfo[prefList.Count];
-                for (int i = 0; i < prefList.Count; i++) {
-                    prefs[i] = (AdsSearchPreferenceInfo) prefList[i];
+                for (int i = 0; i < prefList.Count; i++)
+                {
+                    prefs[i] = (AdsSearchPreferenceInfo)prefList[i];
                 }
 
-	        DoSetSearchPrefs(adsSearch, prefs);
+                DoSetSearchPrefs(adsSearch, prefs);
             }
-            finally {
+            finally
+            {
                 if (ptrToFree != (IntPtr)0)
                     Marshal.FreeCoTaskMem(ptrToFree);
 
-                if(ptrVLVToFree != (IntPtr)0)
+                if (ptrVLVToFree != (IntPtr)0)
                     Marshal.FreeCoTaskMem(ptrVLVToFree);
 
-                if(ptrVLVContexToFree != (IntPtr)0)
+                if (ptrVLVContexToFree != (IntPtr)0)
                     Marshal.FreeCoTaskMem(ptrVLVContexToFree);
-
             }
         }
 
-        private static void DoSetSearchPrefs(UnsafeNativeMethods.IDirectorySearch adsSearch, AdsSearchPreferenceInfo[] prefs) {
+        private static void DoSetSearchPrefs(UnsafeNativeMethods.IDirectorySearch adsSearch, AdsSearchPreferenceInfo[] prefs)
+        {
             int structSize = Marshal.SizeOf(typeof(AdsSearchPreferenceInfo));
             IntPtr ptr = Marshal.AllocHGlobal((IntPtr)(structSize * prefs.Length));
-            try {
+            try
+            {
                 IntPtr tempPtr = ptr;
-                for (int i = 0; i < prefs.Length; i++) {
-                    Marshal.StructureToPtr( prefs[i], tempPtr, false );
-                    tempPtr = IntPtr.Add( tempPtr , structSize );
+                for (int i = 0; i < prefs.Length; i++)
+                {
+                    Marshal.StructureToPtr(prefs[i], tempPtr, false);
+                    tempPtr = IntPtr.Add(tempPtr, structSize);
                 }
- 
-                adsSearch.SetSearchPreference(ptr, prefs.Length);   
-                
+
+                adsSearch.SetSearchPreference(ptr, prefs.Length);
+
                 // Check for the result status for all preferences
                 tempPtr = ptr;
-                for (int i = 0; i < prefs.Length; i++) {
+                for (int i = 0; i < prefs.Length; i++)
+                {
                     int status = Marshal.ReadInt32(tempPtr, 32);
-                    if ( status != 0 ) {
+                    if (status != 0)
+                    {
                         int prefIndex = prefs[i].dwSearchPref;
                         string property = "";
-                        switch (prefIndex) {
-                            case (int) AdsSearchPreferences.SEARCH_SCOPE:
+                        switch (prefIndex)
+                        {
+                            case (int)AdsSearchPreferences.SEARCH_SCOPE:
                                 property = "SearchScope";
-                                break; 
-                            case (int) AdsSearchPreferences.SIZE_LIMIT:
+                                break;
+                            case (int)AdsSearchPreferences.SIZE_LIMIT:
                                 property = "SizeLimit";
-                                break; 
-                            case (int) AdsSearchPreferences.TIME_LIMIT:
+                                break;
+                            case (int)AdsSearchPreferences.TIME_LIMIT:
                                 property = "ServerTimeLimit";
-                                break; 
-                            case (int) AdsSearchPreferences.ATTRIBTYPES_ONLY:
+                                break;
+                            case (int)AdsSearchPreferences.ATTRIBTYPES_ONLY:
                                 property = "PropertyNamesOnly";
-                                break;                                 
-                            case (int) AdsSearchPreferences.TIMEOUT:
+                                break;
+                            case (int)AdsSearchPreferences.TIMEOUT:
                                 property = "ClientTimeout";
-                                break;                                                                 
-                            case (int) AdsSearchPreferences.PAGESIZE:
+                                break;
+                            case (int)AdsSearchPreferences.PAGESIZE:
                                 property = "PageSize";
-                                break;                                                                 
-                            case (int) AdsSearchPreferences.PAGED_TIME_LIMIT:
+                                break;
+                            case (int)AdsSearchPreferences.PAGED_TIME_LIMIT:
                                 property = "ServerPageTimeLimit";
-                                break;                                                                                                 
-                            case (int) AdsSearchPreferences.CHASE_REFERRALS:
+                                break;
+                            case (int)AdsSearchPreferences.CHASE_REFERRALS:
                                 property = "ReferralChasing";
-                                break;                                                                                                                                                                                                                                        
-                            case (int) AdsSearchPreferences.SORT_ON:
+                                break;
+                            case (int)AdsSearchPreferences.SORT_ON:
                                 property = "Sort";
-                                break;           
-                            case (int) AdsSearchPreferences.CACHE_RESULTS:
+                                break;
+                            case (int)AdsSearchPreferences.CACHE_RESULTS:
                                 property = "CacheResults";
-                                break;                                                                   
-                            case (int) AdsSearchPreferences.ASYNCHRONOUS:
-                            	property = "Asynchronous";
-                            	break;
-                            case (int) AdsSearchPreferences.TOMBSTONE:
-                            	property = "Tombstone";
-                            	break;
-                            case (int) AdsSearchPreferences.ATTRIBUTE_QUERY:
-                            	property = "AttributeScopeQuery";
-                            	break;
-                            case (int) AdsSearchPreferences.DEREF_ALIASES:
-                            	property = "DerefAlias";
-                            	break;
-                            case (int) AdsSearchPreferences.SECURITY_MASK:
-                            	property = "SecurityMasks";
-                            	break;
-                            case (int) AdsSearchPreferences.EXTENDED_DN:
-                            	property = "ExtendedDn";
-                            	break;
-                            case (int) AdsSearchPreferences.DIRSYNC:
-                            	property = "DirectorySynchronization";
-                            	break;
-                            case (int) AdsSearchPreferences.DIRSYNC_FLAG:
-                            	property = "DirectorySynchronizationFlag";
-                            	break;                            
-                            case (int) AdsSearchPreferences.VLV:
-                            	property = "VirtualListView";
-                            	break;
-
+                                break;
+                            case (int)AdsSearchPreferences.ASYNCHRONOUS:
+                                property = "Asynchronous";
+                                break;
+                            case (int)AdsSearchPreferences.TOMBSTONE:
+                                property = "Tombstone";
+                                break;
+                            case (int)AdsSearchPreferences.ATTRIBUTE_QUERY:
+                                property = "AttributeScopeQuery";
+                                break;
+                            case (int)AdsSearchPreferences.DEREF_ALIASES:
+                                property = "DerefAlias";
+                                break;
+                            case (int)AdsSearchPreferences.SECURITY_MASK:
+                                property = "SecurityMasks";
+                                break;
+                            case (int)AdsSearchPreferences.EXTENDED_DN:
+                                property = "ExtendedDn";
+                                break;
+                            case (int)AdsSearchPreferences.DIRSYNC:
+                                property = "DirectorySynchronization";
+                                break;
+                            case (int)AdsSearchPreferences.DIRSYNC_FLAG:
+                                property = "DirectorySynchronizationFlag";
+                                break;
+                            case (int)AdsSearchPreferences.VLV:
+                                property = "VirtualListView";
+                                break;
                         }
                         throw new InvalidOperationException(Res.GetString(Res.DSSearchPreferencesNotAccepted, property));
-                    }                        
-                        
+                    }
+
                     tempPtr = IntPtr.Add(tempPtr, structSize);
-                }             
+                }
             }
-            finally {
-                    Marshal.FreeHGlobal(ptr);
+            finally
+            {
+                Marshal.FreeHGlobal(ptr);
             }
-        }        
-
+        }
     }
-
 }

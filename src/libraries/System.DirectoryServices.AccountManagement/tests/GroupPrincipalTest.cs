@@ -1,10 +1,13 @@
-﻿using System.DirectoryServices.AccountManagement;
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+using System.DirectoryServices.AccountManagement;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
+
 namespace AccountManagementUnitTests
 {
-    
-    
     /// <summary>
     ///This is a test class for GroupPrincipalTest and is intended
     ///to contain all GroupPrincipalTest Unit Tests
@@ -12,7 +15,6 @@ namespace AccountManagementUnitTests
     [TestClass()]
     public class GroupPrincipalTest : PrincipalTest
     {
-
         #region Additional test attributes
         // 
         //You can use the following additional attributes as you write your tests:

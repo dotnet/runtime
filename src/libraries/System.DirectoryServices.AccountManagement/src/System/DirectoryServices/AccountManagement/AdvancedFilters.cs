@@ -1,10 +1,13 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
 /*++
 
 Copyright (c) 2004  Microsoft Corporation
 
 Module Name:
 
-    AdvancedFilters.cs
 
 Abstract:
 
@@ -31,146 +34,142 @@ namespace System.DirectoryServices.AccountManagement
     [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.InheritanceDemand, Unrestricted = true)]
     public class AdvancedFilters
     {
-        internal protected  AdvancedFilters(Principal p)
-        {         
-            this.p = p;
+        internal protected AdvancedFilters(Principal p)
+        {
+            _p = p;
         }
 
-        bool badPasswordAttemptChanged = false;
-        QbeMatchType badPasswordAttemptVal = null;
-        Principal p;
+        private bool _badPasswordAttemptChanged = false;
+        private QbeMatchType _badPasswordAttemptVal = null;
+        private Principal _p;
 
-        public void LastBadPasswordAttempt(DateTime lastAttempt, MatchType match) 
+        public void LastBadPasswordAttempt(DateTime lastAttempt, MatchType match)
         {
-        
-            if ( lastAttempt == null )
+            if (lastAttempt == null)
             {
-                expirationTimeChanged = false;
-                expirationTimeVal = null;
+                _expirationTimeChanged = false;
+                _expirationTimeVal = null;
             }
             else
             {
-
-                if (null == badPasswordAttemptVal)
-                    badPasswordAttemptVal = new QbeMatchType(lastAttempt, match);
+                if (null == _badPasswordAttemptVal)
+                    _badPasswordAttemptVal = new QbeMatchType(lastAttempt, match);
                 else
                 {
-                    badPasswordAttemptVal.Match = match;
-                    badPasswordAttemptVal.Value = lastAttempt;
+                    _badPasswordAttemptVal.Match = match;
+                    _badPasswordAttemptVal.Value = lastAttempt;
                 }
-                badPasswordAttemptChanged = true;                   
-            }        
+                _badPasswordAttemptChanged = true;
+            }
         }
 
-        bool expirationTimeChanged = false;
-        QbeMatchType expirationTimeVal = null;
-        
-        public void AccountExpirationDate(DateTime expirationTime, MatchType match) 
+        private bool _expirationTimeChanged = false;
+        private QbeMatchType _expirationTimeVal = null;
+
+        public void AccountExpirationDate(DateTime expirationTime, MatchType match)
         {
-            if ( expirationTime == null )
+            if (expirationTime == null)
             {
-                expirationTimeChanged = false;
-                expirationTimeVal = null;
+                _expirationTimeChanged = false;
+                _expirationTimeVal = null;
             }
             else
             {
-
-                if (null == expirationTimeVal)
-                    expirationTimeVal = new QbeMatchType(expirationTime, match);
+                if (null == _expirationTimeVal)
+                    _expirationTimeVal = new QbeMatchType(expirationTime, match);
                 else
                 {
-                    expirationTimeVal.Match = match;
-                    expirationTimeVal.Value = expirationTime;
+                    _expirationTimeVal.Match = match;
+                    _expirationTimeVal.Value = expirationTime;
                 }
-                expirationTimeChanged = true;                   
-            }        
+                _expirationTimeChanged = true;
+            }
         }
 
-        bool lockoutTimeChanged = false;
-        QbeMatchType lockoutTimeVal = null;
-        
-        public void AccountLockoutTime(DateTime lockoutTime, MatchType match) 
+        private bool _lockoutTimeChanged = false;
+        private QbeMatchType _lockoutTimeVal = null;
+
+        public void AccountLockoutTime(DateTime lockoutTime, MatchType match)
         {
-            
-            if ( lockoutTime == null )
+            if (lockoutTime == null)
             {
-                lockoutTimeChanged = false;
-                lockoutTimeVal = null;
+                _lockoutTimeChanged = false;
+                _lockoutTimeVal = null;
             }
             else
             {
-                if (null == lockoutTimeVal)
-                    lockoutTimeVal = new QbeMatchType(lockoutTime, match);
+                if (null == _lockoutTimeVal)
+                    _lockoutTimeVal = new QbeMatchType(lockoutTime, match);
                 else
                 {
-                    lockoutTimeVal.Match = match;
-                    lockoutTimeVal.Value = lockoutTime;
+                    _lockoutTimeVal.Match = match;
+                    _lockoutTimeVal.Value = lockoutTime;
                 }
-                lockoutTimeChanged = true;                
-            }           
+                _lockoutTimeChanged = true;
+            }
         }
 
-        bool badLogonCountChanged = false;
-        QbeMatchType badLogonCountVal = null;
-        
-        public void BadLogonCount(int badLogonCount, MatchType match) 
+        private bool _badLogonCountChanged = false;
+        private QbeMatchType _badLogonCountVal = null;
+
+        public void BadLogonCount(int badLogonCount, MatchType match)
         {
-            if (null == badLogonCountVal) {
-                badLogonCountVal = new QbeMatchType(badLogonCount, match);
+            if (null == _badLogonCountVal)
+            {
+                _badLogonCountVal = new QbeMatchType(badLogonCount, match);
             }
             else
             {
-                badLogonCountVal.Match = match;
-                badLogonCountVal.Value = badLogonCount;
+                _badLogonCountVal.Match = match;
+                _badLogonCountVal.Value = badLogonCount;
             }
-            badLogonCountChanged = true;                   
+            _badLogonCountChanged = true;
         }
 
-        bool logonTimeChanged = false;
-        QbeMatchType logonTimeVal = null;
-        
-        public void LastLogonTime(DateTime logonTime, MatchType match) 
+        private bool _logonTimeChanged = false;
+        private QbeMatchType _logonTimeVal = null;
+
+        public void LastLogonTime(DateTime logonTime, MatchType match)
         {
-            if ( logonTime == null )
+            if (logonTime == null)
             {
-                logonTimeChanged = false;
-                logonTimeVal = null;
+                _logonTimeChanged = false;
+                _logonTimeVal = null;
             }
             else
             {
-                if (null == logonTimeVal)
-                    logonTimeVal = new QbeMatchType(logonTime, match);
+                if (null == _logonTimeVal)
+                    _logonTimeVal = new QbeMatchType(logonTime, match);
                 else
                 {
-                    logonTimeVal.Match = match;
-                    logonTimeVal.Value = logonTime;
+                    _logonTimeVal.Match = match;
+                    _logonTimeVal.Value = logonTime;
                 }
-                 logonTimeChanged = true;
-            }           
+                _logonTimeChanged = true;
+            }
         }
 
-        bool passwordSetTimeChanged = false;
-        QbeMatchType passwordSetTimeVal = null;
-        
-        public void LastPasswordSetTime(DateTime passwordSetTime, MatchType match) 
+        private bool _passwordSetTimeChanged = false;
+        private QbeMatchType _passwordSetTimeVal = null;
+
+        public void LastPasswordSetTime(DateTime passwordSetTime, MatchType match)
         {
-            if ( passwordSetTime == null )
+            if (passwordSetTime == null)
             {
-                passwordSetTimeChanged = false;
-                passwordSetTimeVal = null;
+                _passwordSetTimeChanged = false;
+                _passwordSetTimeVal = null;
             }
             else
             {
-                if (null == passwordSetTimeVal)
-                    passwordSetTimeVal = new QbeMatchType(passwordSetTime, match);
+                if (null == _passwordSetTimeVal)
+                    _passwordSetTimeVal = new QbeMatchType(passwordSetTime, match);
                 else
                 {
-                    passwordSetTimeVal.Match = match;
-                    passwordSetTimeVal.Value = passwordSetTime;
+                    _passwordSetTimeVal.Match = match;
+                    _passwordSetTimeVal.Value = passwordSetTime;
                 }
-                passwordSetTimeChanged = true;
-
-            }           
+                _passwordSetTimeChanged = true;
+            }
         }
 
 
@@ -179,9 +178,9 @@ namespace System.DirectoryServices.AccountManagement
         // <ReferencesCritical Name="Method: Principal.AdvancedFilterSet(System.String,System.Object,System.Type,System.DirectoryServices.AccountManagement.MatchType):System.Void" Ring="1" />
         // </SecurityKernel>
         [System.Security.SecurityCritical]
-        protected void AdvancedFilterSet(string attribute, object  value, Type objectType, MatchType mt)
+        protected void AdvancedFilterSet(string attribute, object value, Type objectType, MatchType mt)
         {
-            p.AdvancedFilterSet(attribute, value, objectType, mt);
+            _p.AdvancedFilterSet(attribute, value, objectType, mt);
         }
 
         //
@@ -195,23 +194,23 @@ namespace System.DirectoryServices.AccountManagement
             switch (propertyName)
             {
                 case PropertyNames.PwdInfoLastBadPasswordAttempt:
-                    return this.badPasswordAttemptChanged;
+                    return _badPasswordAttemptChanged;
 
                 case PropertyNames.AcctInfoExpiredAccount:
-                    return this.expirationTimeChanged;
+                    return _expirationTimeChanged;
 
                 case PropertyNames.AcctInfoBadLogonCount:
-                    return this.badLogonCountChanged;
-                    
+                    return _badLogonCountChanged;
+
                 case PropertyNames.AcctInfoLastLogon:
-                    return this.logonTimeChanged;
+                    return _logonTimeChanged;
 
                 case PropertyNames.AcctInfoAcctLockoutTime:
-                    return this.lockoutTimeChanged;                    
+                    return _lockoutTimeChanged;
 
                 case PropertyNames.PwdInfoLastPasswordSet:
-                    return this.passwordSetTimeChanged;
-                    
+                    return _passwordSetTimeChanged;
+
                 default:
                     return null;
             }
@@ -235,28 +234,28 @@ namespace System.DirectoryServices.AccountManagement
             switch (propertyName)
             {
                 case PropertyNames.PwdInfoLastBadPasswordAttempt:
-                    return this.badPasswordAttemptVal;
+                    return _badPasswordAttemptVal;
 
                 case PropertyNames.AcctInfoExpiredAccount:
-                    return this.expirationTimeVal;
+                    return _expirationTimeVal;
 
                 case PropertyNames.AcctInfoBadLogonCount:
-                    return this.badLogonCountVal;
-                    
+                    return _badLogonCountVal;
+
                 case PropertyNames.AcctInfoLastLogon:
-                    return this.logonTimeVal;
+                    return _logonTimeVal;
 
                 case PropertyNames.AcctInfoAcctLockoutTime:
-                    return this.lockoutTimeVal;                    
+                    return _lockoutTimeVal;
 
                 case PropertyNames.PwdInfoLastPasswordSet:
-                    return this.passwordSetTimeVal;
-                    
+                    return _passwordSetTimeVal;
+
                 default:
                     return null;
             }
         }
-        
+
         // Reset all change-tracking status for all properties on the object to "unchanged".
         // This is used by StoreCtx.Insert() and StoreCtx.Update() to reset the change-tracking after they
         // have persisted all current changes to the store.
@@ -264,12 +263,12 @@ namespace System.DirectoryServices.AccountManagement
         internal virtual void ResetAllChangeStatus()
         {
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "Principal", "ResetAllChangeStatus");
-           
-            this.badPasswordAttemptChanged = false;
-            this.expirationTimeChanged = false;
-            this.logonTimeChanged = false;
-            this.lockoutTimeChanged = false;                    
-            this.passwordSetTimeChanged = false;
-        }        
+
+            _badPasswordAttemptChanged = false;
+            _expirationTimeChanged = false;
+            _logonTimeChanged = false;
+            _lockoutTimeChanged = false;
+            _passwordSetTimeChanged = false;
+        }
     }
 }

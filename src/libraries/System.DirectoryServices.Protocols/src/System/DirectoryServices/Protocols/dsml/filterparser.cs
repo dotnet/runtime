@@ -1,5 +1,8 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
 //------------------------------------------------------------------------------
-// <copyright file=FilterParser.cs" company="Microsoft">
 //     Copyright (c) Microsoft Corporation.  All rights reserved.
 // </copyright>                                                                
 //------------------------------------------------------------------------------
@@ -7,8 +10,8 @@
 /*
  */
 
-namespace System.DirectoryServices.Protocols {
-
+namespace System.DirectoryServices.Protocols
+{
     using System;
     using System.Collections;
     using System.Diagnostics;
@@ -21,16 +24,17 @@ namespace System.DirectoryServices.Protocols {
     /// Utility class to perform conversion of an string representation of 
     /// na LDAP filter to ADFilter.
     /// </summary>
-    internal class FilterParser {        
-
-        public static ADFilter ParseFilterString(string filter) {
+    internal class FilterParser
+    {
+        public static ADFilter ParseFilterString(string filter)
+        {
             Debug.Assert(filter != null);
 
             //perfomr the matthing. On success all info we are interested in 
             //will be stored in the named captures.
             try
             {
-                Match m = mFilter.Match(filter);
+                Match m = s_mFilter.Match(filter);
                 if (!m.Success)
                 {
                     return null;
@@ -88,8 +92,6 @@ namespace System.DirectoryServices.Protocols {
 
                                 //treat like a parse error 
                                 return null;
-
-
                         }
                     }
                     else if (m.Groups["substr"].ToString().Length != 0)
@@ -112,7 +114,6 @@ namespace System.DirectoryServices.Protocols {
 
                         substr.Name = m.Groups["substrattr"].ToString();
                         result.Filter.Substrings = substr;
-
                     }
                     else if (m.Groups["extensible"].ToString().Length != 0)
                     {
@@ -136,7 +137,6 @@ namespace System.DirectoryServices.Protocols {
                         //treat like a parse error 
                         return null;
                     }
-
                 }
                 else
                 {
@@ -160,7 +160,6 @@ namespace System.DirectoryServices.Protocols {
 
                         while (strIdx < filterList.Length && !gotSubfilter)
                         {
-
                             if (filterList[strIdx] == '(')
                             {
                                 left++;
@@ -269,7 +268,6 @@ namespace System.DirectoryServices.Protocols {
                 Debug.WriteLine("The input filter String: {0} exceeded the regex match timeout of {1} seconds.", filter, mFilterTimeOutInSeconds);
                 return null;
             }
-
         }
 
         /// <summary>
@@ -282,9 +280,10 @@ namespace System.DirectoryServices.Protocols {
         /// </remarks>
         /// <param name="strVal"> String representation of the filter. </param>
         /// <returns>Returns a properly initialized ADValue </returns>
-        protected static ADValue StringFilterValueToADValue(string strVal) 
+        protected static ADValue StringFilterValueToADValue(string strVal)
         {
-            if (strVal == null || strVal.Length == 0) {
+            if (strVal == null || strVal.Length == 0)
+            {
                 return null;
             }
 
@@ -294,14 +293,17 @@ namespace System.DirectoryServices.Protocols {
             // like \20 we will convert the entire value to binary 
             // something like \30va\2c\lue will be converted as follows:
             // 30,UTF8 binary representation of "va", 2c, UTF8 bin representation of "lue"
-            String[] parts = strVal.Split(new char[] {'\\'});
+            String[] parts = strVal.Split(new char[] { '\\' });
 
-            if (parts.Length == 1) {
+            if (parts.Length == 1)
+            {
                 //we have no binary data in the value
                 val.IsBinary = false;
                 val.StringVal = strVal;
                 val.BinaryVal = null;
-            } else {
+            }
+            else
+            {
                 ArrayList binChunks = new ArrayList(parts.Length);
                 UTF8Encoding utf8 = new UTF8Encoding();
 
@@ -310,24 +312,27 @@ namespace System.DirectoryServices.Protocols {
                 //parts = {"", "30va", "2c", "lue"}
                 val.IsBinary = true;
                 val.StringVal = null;
-                
-                if (parts[0].Length != 0) {
+
+                if (parts[0].Length != 0)
+                {
                     //parts[0] is either empty of doesn't have 2 char hex prefix
                     binChunks.Add(utf8.GetBytes(parts[0]));
                 }
-             
-                for (int i = 1; i < parts.Length; i++) {
+
+                for (int i = 1; i < parts.Length; i++)
+                {
                     //we must have a 2 character hex prefix 
-                    Debug.Assert(parts[i].Length >= 2, 
-                        "FilterParser.ProcessStringFilterValue: Unexpected value. " + 
+                    Debug.Assert(parts[i].Length >= 2,
+                        "FilterParser.ProcessStringFilterValue: Unexpected value. " +
                         "The the value matching regular expression must be incorrect");
 
-                    string hexPrefix = parts[i].Substring(0,2);
+                    string hexPrefix = parts[i].Substring(0, 2);
 
                     //handle the prefix 
-                    binChunks.Add(new Byte[] {Byte.Parse(hexPrefix, NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture)});
-                    
-                    if (parts[i].Length > 2) {
+                    binChunks.Add(new Byte[] { Byte.Parse(hexPrefix, NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture) });
+
+                    if (parts[i].Length > 2)
+                    {
                         //handle the string portion
                         binChunks.Add(utf8.GetBytes(parts[i].Substring(2)));
                     }
@@ -336,17 +341,19 @@ namespace System.DirectoryServices.Protocols {
                 //now we have all the binary chunks. Put them together
                 //figure out the size we need
                 int lenghtNeeded = 0;
-                foreach(Byte[] chunk in binChunks) {
-                    lenghtNeeded+= chunk.Length;
+                foreach (Byte[] chunk in binChunks)
+                {
+                    lenghtNeeded += chunk.Length;
                 }
 
                 val.BinaryVal = new Byte[lenghtNeeded];
 
                 //do the actual copying
                 int currIdx = 0;
-                foreach (Byte[] chunk in binChunks) {
+                foreach (Byte[] chunk in binChunks)
+                {
                     chunk.CopyTo(val.BinaryVal, currIdx);
-                    currIdx+= chunk.Length;
+                    currIdx += chunk.Length;
                 }
             }
 
@@ -359,7 +366,7 @@ namespace System.DirectoryServices.Protocols {
         private const UInt32 mFilterTimeOutInSeconds = 3;
 
         //the filter regEx that does most of the work for us
-        private static Regex mFilter = new Regex(mFilterRE, RegexOptions.ExplicitCapture, TimeSpan.FromSeconds(mFilterTimeOutInSeconds));       
+        private static Regex s_mFilter = new Regex(mFilterRE, RegexOptions.ExplicitCapture, TimeSpan.FromSeconds(mFilterTimeOutInSeconds));
 
         //The filter grammar
         //This is nothing more but a regular expression representation of the LDAP filter
@@ -406,7 +413,7 @@ namespace System.DirectoryServices.Protocols {
         private const string mMatchRuleOptionalRE = @"(\:(?<matchrule>([a-zA-Z][a-zA-Z0-9]*)|([0-9]+(\.[0-9]+)+))){0,1}\s*";
         private const string mMatchRuleRE = @"(\:(?<matchrule>([a-zA-Z][a-zA-Z0-9]*)|([0-9]+(\.[0-9]+)+)))\s*";
         private const string mExtenRE = @"(?<extensible>((" + mExtenAttrRE + mDNAttrRE + mMatchRuleOptionalRE + @")|" +
-                                                      @"(" + mDNAttrRE + mMatchRuleRE + @"))\:\=\s*" + mExtenValueRE + @")\s*"; 
+                                                      @"(" + mDNAttrRE + mMatchRuleRE + @"))\:\=\s*" + mExtenValueRE + @")\s*";
 
 
         // substr filter grammar 
@@ -414,7 +421,7 @@ namespace System.DirectoryServices.Protocols {
         private const string mInitialRE = @"\s*(?<initialvalue>" + mValueRE + @"){0,1}\s*";
         private const string mFinalRE = @"\s*(?<finalvalue>" + mValueRE + @"){0,1}\s*";
         private const string mAnyRE = @"(\*\s*((?<anyvalue>" + mValueRE + @")\*\s*)*)";
-        private const string mSubstrRE = @"(?<substr>" + mSubstrAttrRE + @"\=\s*" + 
+        private const string mSubstrRE = @"(?<substr>" + mSubstrAttrRE + @"\=\s*" +
                              mInitialRE + mAnyRE + mFinalRE + @")\s*";
 
         // simple filter grammar
@@ -422,12 +429,12 @@ namespace System.DirectoryServices.Protocols {
         private const string mSimpleAttrRE = @"(?<simpleattr>" + mAttrRE + @")\s*";
         private const string mFiltertypeRE = @"(?<filtertype>\=|\~\=|\>\=|\<\=)\s*";
         private const string mSimpleRE = @"(?<simple>" + mSimpleAttrRE + mFiltertypeRE + mSimpleValueRE + @")\s*";
-        
+
         //present filter grammar
         private const string mPresentRE = @"(?<present>(?<presentattr>" + mAttrRE + @")\=\*)\s*";
 
         //highlevel filter grammar 
-        private const string mItemRE = @"(?<item>" + mSimpleRE + "|" + mPresentRE + "|" + mSubstrRE + "|" +  mExtenRE + @")\s*";
+        private const string mItemRE = @"(?<item>" + mSimpleRE + "|" + mPresentRE + "|" + mSubstrRE + "|" + mExtenRE + @")\s*";
         private const string mFiltercompRE = @"(?<filtercomp>\!|\&|\|)\s*";
         private const string mFilterlistRE = @"(?<filterlist>.+)\s*";        //needs postprocessing
         private const string mFilterRE = @"^\s*\(\s*((" + mFiltercompRE + mFilterlistRE + ")|(" + mItemRE + @"))\)\s*$";

@@ -1,3 +1,6 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 /*++
 
@@ -5,7 +8,6 @@ Copyright (c) 2004  Microsoft Corporation
 
 Module Name:
 
-    Context.cs
 
 Abstract:
 
@@ -34,95 +36,93 @@ using System.Threading;
 using System.Collections;
 using System.Security.Permissions;
 
-[assembly:System.Security.SecurityCritical]
+[assembly: System.Security.SecurityCritical]
 
 namespace System.DirectoryServices.AccountManagement
 {
+    internal struct ServerProperties
+    {
+        public string dnsHostName;
+        public DomainControllerMode OsVersion;
+        public ContextType contextType;
+        public string[] SupportCapabilities;
+        public int portSSL;
+        public int portLDAP;
+    };
 
-        internal struct ServerProperties
-        {
-            public string dnsHostName;
-            public DomainControllerMode OsVersion;
-            public ContextType contextType;
-            public string[] SupportCapabilities;
-            public int portSSL;
-            public int portLDAP;
-        };
-        
-        internal enum DomainControllerMode
-        {
-            Win2k = 0,
-            Win2k3 = 2,
-            WinLH = 3
-        };
-        
-        static internal class CapabilityMap
-        {
-            public const string LDAP_CAP_ACTIVE_DIRECTORY_OID = "1.2.840.113556.1.4.800";
-            public const string LDAP_CAP_ACTIVE_DIRECTORY_V51_OID = "1.2.840.113556.1.4.1670";
-            public const string LDAP_CAP_ACTIVE_DIRECTORY_LDAP_INTEG_OID = "1.2.840.113556.1.4.1791";
-            public const string LDAP_CAP_ACTIVE_DIRECTORY_ADAM_OID = "1.2.840.113556.1.4.1851";
-            public const string LDAP_CAP_ACTIVE_DIRECTORY_PARTIAL_SECRETS_OID = "1.2.840.113556.1.4.1920";
-            public const string LDAP_CAP_ACTIVE_DIRECTORY_V61_OID = "1.2.840.113556.1.4.1935";
-        }
+    internal enum DomainControllerMode
+    {
+        Win2k = 0,
+        Win2k3 = 2,
+        WinLH = 3
+    };
+
+    static internal class CapabilityMap
+    {
+        public const string LDAP_CAP_ACTIVE_DIRECTORY_OID = "1.2.840.113556.1.4.800";
+        public const string LDAP_CAP_ACTIVE_DIRECTORY_V51_OID = "1.2.840.113556.1.4.1670";
+        public const string LDAP_CAP_ACTIVE_DIRECTORY_LDAP_INTEG_OID = "1.2.840.113556.1.4.1791";
+        public const string LDAP_CAP_ACTIVE_DIRECTORY_ADAM_OID = "1.2.840.113556.1.4.1851";
+        public const string LDAP_CAP_ACTIVE_DIRECTORY_PARTIAL_SECRETS_OID = "1.2.840.113556.1.4.1920";
+        public const string LDAP_CAP_ACTIVE_DIRECTORY_V61_OID = "1.2.840.113556.1.4.1935";
+    }
 
 
 
     internal sealed class CredentialValidator
     {
-        enum AuthMethod
+        private enum AuthMethod
         {
             Simple = 1,
             Negotiate = 2
         }
 
-        bool fastConcurrentSupported = true;
+        private bool _fastConcurrentSupported = true;
 
-        Hashtable connCache = new Hashtable(4);        
-        LdapDirectoryIdentifier  directoryIdent;
-        object cacheLock = new object();
+        private Hashtable _connCache = new Hashtable(4);
+        private LdapDirectoryIdentifier _directoryIdent;
+        private object _cacheLock = new object();
 
-        AuthMethod lastBindMethod = AuthMethod.Simple;
-        string serverName;
-        ContextType contextType;
-        ServerProperties serverProperties;
+        private AuthMethod _lastBindMethod = AuthMethod.Simple;
+        private string _serverName;
+        private ContextType _contextType;
+        private ServerProperties _serverProperties;
 
-        const ContextOptions defaultContextOptionsNegotiate = ContextOptions.Signing | ContextOptions.Sealing | ContextOptions.Negotiate;
-        const ContextOptions defaultContextOptionsSimple = ContextOptions.SecureSocketLayer | ContextOptions.SimpleBind;
+        private const ContextOptions defaultContextOptionsNegotiate = ContextOptions.Signing | ContextOptions.Sealing | ContextOptions.Negotiate;
+        private const ContextOptions defaultContextOptionsSimple = ContextOptions.SecureSocketLayer | ContextOptions.SimpleBind;
 
         public CredentialValidator(ContextType contextType, string serverName, ServerProperties serverProperties)
         {
-            fastConcurrentSupported = !(serverProperties.OsVersion == DomainControllerMode.Win2k);
+            _fastConcurrentSupported = !(serverProperties.OsVersion == DomainControllerMode.Win2k);
 
-            if ( contextType == ContextType.Machine && serverName == null )
+            if (contextType == ContextType.Machine && serverName == null)
             {
-                this.serverName = Environment.MachineName;
+                _serverName = Environment.MachineName;
             }
             else
             {
-                this.serverName = serverName;
+                _serverName = serverName;
             }
-            
-            this.contextType = contextType;
-            this.serverProperties = serverProperties;
+
+            _contextType = contextType;
+            _serverProperties = serverProperties;
         }
 
-        [System.Security.SecurityCritical]    
-        bool BindSam(string target, string userName, string password)
+        [System.Security.SecurityCritical]
+        private bool BindSam(string target, string userName, string password)
         {
-            StringBuilder adsPath= new StringBuilder();
+            StringBuilder adsPath = new StringBuilder();
             adsPath.Append("WinNT://");
-            adsPath.Append(serverName);
+            adsPath.Append(_serverName);
             adsPath.Append(",computer");
-             Guid g = new Guid("fd8256d0-fd15-11ce-abc4-02608c9e7553"); // IID_IUnknown                
+            Guid g = new Guid("fd8256d0-fd15-11ce-abc4-02608c9e7553"); // IID_IUnknown                
             object value = null;
             // always attempt secure auth..
             int authenticationType = 1;
-            object unmanagedResult = null;            
-            
+            object unmanagedResult = null;
+
             try
             {
-
                 if (Thread.CurrentThread.GetApartmentState() == ApartmentState.Unknown)
                     Thread.CurrentThread.SetApartmentState(ApartmentState.MTA);
                 // We need the credentials to be in the form <machine>\\<user>
@@ -132,15 +132,15 @@ namespace System.DirectoryServices.AccountManagement
                     int index = userName.IndexOf("\\", StringComparison.Ordinal);
                     if (index == -1)
                     {
-                        userName = serverName + "\\" + userName;
+                        userName = _serverName + "\\" + userName;
                     }
                 }
-                
+
                 int hr = UnsafeNativeMethods.ADsOpenObject(adsPath.ToString(), userName, password, (int)authenticationType, ref g, out value);
-                
-                if (hr != 0 )
+
+                if (hr != 0)
                 {
-                    if ( hr == unchecked((int)(ExceptionHelper.ERROR_HRESULT_LOGON_FAILURE )))
+                    if (hr == unchecked((int)(ExceptionHelper.ERROR_HRESULT_LOGON_FAILURE)))
                     {
                         // This is the invalid credetials case.  We want to return false
                         // instead of throwing an exception
@@ -151,55 +151,53 @@ namespace System.DirectoryServices.AccountManagement
                         throw ExceptionHelper.GetExceptionFromErrorCode(hr);
                     }
                 }
-                
-	         unmanagedResult  = ((UnsafeNativeMethods.IADs)value).Get("name");
-             
+
+                unmanagedResult = ((UnsafeNativeMethods.IADs)value).Get("name");
             }
-            catch(System.Runtime.InteropServices.COMException e )
+            catch (System.Runtime.InteropServices.COMException e)
             {
-                if (e.ErrorCode == unchecked((int)(ExceptionHelper.ERROR_HRESULT_LOGON_FAILURE )))
-                {         
+                if (e.ErrorCode == unchecked((int)(ExceptionHelper.ERROR_HRESULT_LOGON_FAILURE)))
+                {
                     return false;
                 }
-                else 
+                else
                 {
                     throw ExceptionHelper.GetExceptionFromCOMException(e);
                 }
             }
             finally
             {
-                if ( value != null )
+                if (value != null)
                     System.Runtime.InteropServices.Marshal.ReleaseComObject(value);
             }
 
             return true;
         }
 
-        bool BindLdap(NetworkCredential creds, ContextOptions contextOptions)
+        private bool BindLdap(NetworkCredential creds, ContextOptions contextOptions)
         {
-
             LdapConnection current = null;
             bool useSSL = (ContextOptions.SecureSocketLayer & contextOptions) > 0;
 
-            if ( contextType == ContextType.ApplicationDirectory )
+            if (_contextType == ContextType.ApplicationDirectory)
             {
-                directoryIdent = new LdapDirectoryIdentifier( serverProperties.dnsHostName, useSSL ? serverProperties.portSSL : serverProperties.portLDAP );
+                _directoryIdent = new LdapDirectoryIdentifier(_serverProperties.dnsHostName, useSSL ? _serverProperties.portSSL : _serverProperties.portLDAP);
             }
             else
             {
-                directoryIdent = new LdapDirectoryIdentifier(this.serverName, useSSL ? LdapConstants.LDAP_SSL_PORT : LdapConstants.LDAP_PORT);
+                _directoryIdent = new LdapDirectoryIdentifier(_serverName, useSSL ? LdapConstants.LDAP_SSL_PORT : LdapConstants.LDAP_PORT);
             }
-           
-            bool attemptFastConcurrent = useSSL && fastConcurrentSupported;
+
+            bool attemptFastConcurrent = useSSL && _fastConcurrentSupported;
             int index = Convert.ToInt32(attemptFastConcurrent) * 2 + Convert.ToInt32(useSSL);
-            
-            if (!connCache.Contains(index))
+
+            if (!_connCache.Contains(index))
             {
-                lock( cacheLock )
-                {                    
-                    if (!connCache.Contains(index))
-                    {                
-                        current = new LdapConnection(directoryIdent);
+                lock (_cacheLock)
+                {
+                    if (!_connCache.Contains(index))
+                    {
+                        current = new LdapConnection(_directoryIdent);
                         // First attempt to turn on SSL
                         current.SessionOptions.SecureSocketLayer = useSSL;
 
@@ -213,40 +211,38 @@ namespace System.DirectoryServices.AccountManagement
                             {
                                 current.Dispose();
                                 current = null;
-                                fastConcurrentSupported = false;
+                                _fastConcurrentSupported = false;
                                 index = Convert.ToInt32(useSSL);
-                                current = new LdapConnection(directoryIdent);
+                                current = new LdapConnection(_directoryIdent);
                                 // We have fallen back to another connection so we need to set SSL again.
                                 current.SessionOptions.SecureSocketLayer = useSSL;
-                                
                             }
                         }
 
-                        connCache.Add(index, current);
+                        _connCache.Add(index, current);
                     }
                     else
                     {
-                        current = (LdapConnection)connCache[index];
+                        current = (LdapConnection)_connCache[index];
                     }
-                 }
-                
+                }
             }
             else
             {
-                current = (LdapConnection)connCache[index];
+                current = (LdapConnection)_connCache[index];
             }
 
             // If we are performing fastConcurrentBind there is no need to prevent multithreadaccess.  FSB is thread safe and multi cred safe
             // FSB also always has the same contextoptions so there is no need to lock the code that is modifying the current connection
-            if ( attemptFastConcurrent && fastConcurrentSupported )
+            if (attemptFastConcurrent && _fastConcurrentSupported)
             {
-                lockedLdapBind( current, creds, contextOptions);
+                lockedLdapBind(current, creds, contextOptions);
             }
             else
             {
-                lock( cacheLock )
+                lock (_cacheLock)
                 {
-                    lockedLdapBind( current, creds, contextOptions);
+                    lockedLdapBind(current, creds, contextOptions);
                 }
             }
             return true;
@@ -257,53 +253,50 @@ namespace System.DirectoryServices.AccountManagement
         // <SatisfiesLinkDemand Name="LdapConnection.Bind(System.Net.NetworkCredential):System.Void" />
         // </SecurityKernel>
         [System.Security.SecuritySafeCritical]
-        void lockedLdapBind( LdapConnection current, NetworkCredential creds, ContextOptions contextOptions)
+        private void lockedLdapBind(LdapConnection current, NetworkCredential creds, ContextOptions contextOptions)
         {
-                current.AuthType = ((ContextOptions.SimpleBind & contextOptions) > 0 ? AuthType.Basic : AuthType.Negotiate);
-                current.SessionOptions.Signing = ((ContextOptions.Signing & contextOptions) > 0 ? true : false);
-                current.SessionOptions.Sealing = ((ContextOptions.Sealing & contextOptions) > 0 ? true : false);
-                if ( (null == creds.UserName) && (null == creds.Password) )
-                {
-    			current.Bind();
-    		   }
-    		   else
-    		   {
-    			current.Bind(creds);
-    		   }
-       
+            current.AuthType = ((ContextOptions.SimpleBind & contextOptions) > 0 ? AuthType.Basic : AuthType.Negotiate);
+            current.SessionOptions.Signing = ((ContextOptions.Signing & contextOptions) > 0 ? true : false);
+            current.SessionOptions.Sealing = ((ContextOptions.Sealing & contextOptions) > 0 ? true : false);
+            if ((null == creds.UserName) && (null == creds.Password))
+            {
+                current.Bind();
+            }
+            else
+            {
+                current.Bind(creds);
+            }
         }
 
 
-       // <SecurityKernel Critical="True" Ring="0">
-       // <Asserts Name="Declarative: [DirectoryServicesPermission(SecurityAction.Assert, Unrestricted = true)]" />
-       // <ReferencesCritical Name="Method: BindSam(String, String, String):Boolean" Ring="1" />
-       // <ReferencesCritical Name="Method: BindLdap(NetworkCredential, ContextOptions):Boolean" Ring="2" />
-       // </SecurityKernel>
-       [System.Security.SecurityCritical]
-       [DirectoryServicesPermission(SecurityAction.Assert, Unrestricted=true)]        
+        // <SecurityKernel Critical="True" Ring="0">
+        // <Asserts Name="Declarative: [DirectoryServicesPermission(SecurityAction.Assert, Unrestricted = true)]" />
+        // <ReferencesCritical Name="Method: BindSam(String, String, String):Boolean" Ring="1" />
+        // <ReferencesCritical Name="Method: BindLdap(NetworkCredential, ContextOptions):Boolean" Ring="2" />
+        // </SecurityKernel>
+        [System.Security.SecurityCritical]
+        [DirectoryServicesPermission(SecurityAction.Assert, Unrestricted = true)]
         public bool Validate(string userName, string password)
         {
-
-            NetworkCredential networkCredential = new NetworkCredential( userName, password );
+            NetworkCredential networkCredential = new NetworkCredential(userName, password);
 
             // empty username and password on the local box
             // causes authentication to succeed.  If the username is empty we should just fail it
             // here.
             if (userName != null && userName.Length == 0)
                 return false;
-            
-        
-            if (contextType == ContextType.Domain || contextType == ContextType.ApplicationDirectory)
-            {
 
+
+            if (_contextType == ContextType.Domain || _contextType == ContextType.ApplicationDirectory)
+            {
                 try
                 {
-                    if (lastBindMethod == AuthMethod.Simple && (fastConcurrentSupported || contextType == ContextType.ApplicationDirectory))
+                    if (_lastBindMethod == AuthMethod.Simple && (_fastConcurrentSupported || _contextType == ContextType.ApplicationDirectory))
                     {
                         try
                         {
-                            BindLdap(networkCredential , defaultContextOptionsSimple );
-                            lastBindMethod = AuthMethod.Simple;
+                            BindLdap(networkCredential, defaultContextOptionsSimple);
+                            _lastBindMethod = AuthMethod.Simple;
                             return true;
                         }
                         catch (LdapException)
@@ -311,18 +304,17 @@ namespace System.DirectoryServices.AccountManagement
                             // we don't return false here even if we failed with ERROR_LOGON_FAILURE. We must check Negotiate
                             // because there might be cases in which SSL fails and Negotiate succeeds
                         }
-                        
-                        BindLdap(networkCredential , defaultContextOptionsNegotiate);
-                        lastBindMethod = AuthMethod.Negotiate;
+
+                        BindLdap(networkCredential, defaultContextOptionsNegotiate);
+                        _lastBindMethod = AuthMethod.Negotiate;
                         return true;
                     }
                     else
                     {
-
                         try
                         {
-                            BindLdap(networkCredential , defaultContextOptionsNegotiate);
-                            lastBindMethod = AuthMethod.Negotiate;
+                            BindLdap(networkCredential, defaultContextOptionsNegotiate);
+                            _lastBindMethod = AuthMethod.Negotiate;
                             return true;
                         }
                         catch (LdapException)
@@ -331,8 +323,8 @@ namespace System.DirectoryServices.AccountManagement
                             // because there might be cases in which Negotiate fails and SSL succeeds
                         }
 
-                        BindLdap(networkCredential , defaultContextOptionsSimple);
-                        lastBindMethod = AuthMethod.Simple;
+                        BindLdap(networkCredential, defaultContextOptionsSimple);
+                        _lastBindMethod = AuthMethod.Simple;
                         return true;
                     }
                 }
@@ -349,33 +341,31 @@ namespace System.DirectoryServices.AccountManagement
             }
             else
             {
-                Debug.Assert( contextType == ContextType.Machine );
-                return ( BindSam(serverName, userName, password) );
+                Debug.Assert(_contextType == ContextType.Machine);
+                return (BindSam(_serverName, userName, password));
             }
-
         }
 
-       // <SecurityKernel Critical="True" Ring="0">
-       // <Asserts Name="Declarative: [DirectoryServicesPermission(SecurityAction.Assert, Unrestricted = true)]" />
-       // <ReferencesCritical Name="Method: BindSam(String, String, String):Boolean" Ring="1" />
-       // <ReferencesCritical Name="Method: BindLdap(NetworkCredential, ContextOptions):Boolean" Ring="2" />
-       // </SecurityKernel>
-       [System.Security.SecurityCritical]
-       [DirectoryServicesPermission(SecurityAction.Assert, Unrestricted=true)]        
+        // <SecurityKernel Critical="True" Ring="0">
+        // <Asserts Name="Declarative: [DirectoryServicesPermission(SecurityAction.Assert, Unrestricted = true)]" />
+        // <ReferencesCritical Name="Method: BindSam(String, String, String):Boolean" Ring="1" />
+        // <ReferencesCritical Name="Method: BindLdap(NetworkCredential, ContextOptions):Boolean" Ring="2" />
+        // </SecurityKernel>
+        [System.Security.SecurityCritical]
+        [DirectoryServicesPermission(SecurityAction.Assert, Unrestricted = true)]
         public bool Validate(string userName, string password, ContextOptions connectionMethod)
         {
-
             // empty username and password on the local box
             // causes authentication to succeed.  If the username is empty we should just fail it
             // here.
             if (userName != null && userName.Length == 0)
                 return false;
-        
-            if (contextType == ContextType.Domain || contextType == ContextType.ApplicationDirectory)
+
+            if (_contextType == ContextType.Domain || _contextType == ContextType.ApplicationDirectory)
             {
                 try
                 {
-                    NetworkCredential networkCredential = new NetworkCredential( userName, password );                    
+                    NetworkCredential networkCredential = new NetworkCredential(userName, password);
                     BindLdap(networkCredential, connectionMethod);
                     return true;
                 }
@@ -391,12 +381,12 @@ namespace System.DirectoryServices.AccountManagement
             }
             else
             {
-                return ( BindSam(serverName, userName, password) );
+                return (BindSam(_serverName, userName, password));
             }
         }
     }
-// ********************************************
-    [System.Security.Permissions.SecurityPermission(System.Security.Permissions.SecurityAction.Assert, 
+    // ********************************************
+    [System.Security.Permissions.SecurityPermission(System.Security.Permissions.SecurityAction.Assert,
                                                 Flags = System.Security.Permissions.SecurityPermissionFlag.UnmanagedCode)]
     // <SecurityKernel Critical="True" Ring="0">
     // <Asserts Name="Declarative: [SecurityPermission(SecurityAction.Assert, Flags = SecurityPermissionFlag.UnmanagedCode)]" />
@@ -406,65 +396,70 @@ namespace System.DirectoryServices.AccountManagement
 #pragma warning restore 618
     [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.LinkDemand, Unrestricted = true)]
     [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.InheritanceDemand, Unrestricted = true)]
-//    [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.Assert, Unrestricted=true)]
+    //    [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.Assert, Unrestricted=true)]
     public class PrincipalContext : IDisposable
     {
-
         //
         // Public Constructors
         //
 
         [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.Demand, Unrestricted = true)]
         public PrincipalContext(ContextType contextType) :
-            this(contextType, null, null, PrincipalContext.GetDefaultOptionForStore(contextType) , null, null) {}
-            
+            this(contextType, null, null, PrincipalContext.GetDefaultOptionForStore(contextType), null, null)
+        { }
+
         [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.Demand, Unrestricted = true)]
         public PrincipalContext(ContextType contextType, string name) :
-            this(contextType, name, null, PrincipalContext.GetDefaultOptionForStore(contextType) , null, null) { }
-        
+            this(contextType, name, null, PrincipalContext.GetDefaultOptionForStore(contextType), null, null)
+        { }
+
         [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.Demand, Unrestricted = true)]
         public PrincipalContext(ContextType contextType, string name, string container) :
-            this(contextType, name, container, PrincipalContext.GetDefaultOptionForStore(contextType) , null, null) {}
+            this(contextType, name, container, PrincipalContext.GetDefaultOptionForStore(contextType), null, null)
+        { }
 
         [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.Demand, Unrestricted = true)]
         public PrincipalContext(ContextType contextType, string name, string container, ContextOptions options) :
-            this(contextType, name, container, options, null, null) {}
+            this(contextType, name, container, options, null, null)
+        { }
 
         [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.Demand, Unrestricted = true)]
         public PrincipalContext(ContextType contextType, string name, string userName, string password) :
-            this(contextType, name, null, PrincipalContext.GetDefaultOptionForStore(contextType), userName, password) { }
+            this(contextType, name, null, PrincipalContext.GetDefaultOptionForStore(contextType), userName, password)
+        { }
 
         [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.Demand, Unrestricted = true)]
         public PrincipalContext(ContextType contextType, string name, string container, string userName, string password) :
-            this(contextType, name, container, PrincipalContext.GetDefaultOptionForStore(contextType), userName, password) { }
+            this(contextType, name, container, PrincipalContext.GetDefaultOptionForStore(contextType), userName, password)
+        { }
 
         [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.Demand, Unrestricted = true)]
         public PrincipalContext(
                     ContextType contextType, string name, string container, ContextOptions options, string userName, string password)
         {
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalContext", "Entering ctor");
-        
+
             if ((userName == null && password != null) ||
                 (userName != null && password == null))
                 throw new ArgumentException(StringResources.ContextBadUserPwdCombo);
 
-            if ( (options & ~(ContextOptions.Signing | ContextOptions.Negotiate | ContextOptions.Sealing | ContextOptions.SecureSocketLayer | ContextOptions.SimpleBind | ContextOptions.ServerBind )) != 0)
+            if ((options & ~(ContextOptions.Signing | ContextOptions.Negotiate | ContextOptions.Sealing | ContextOptions.SecureSocketLayer | ContextOptions.SimpleBind | ContextOptions.ServerBind)) != 0)
                 throw new InvalidEnumArgumentException("options", (int)options, typeof(ContextOptions));
 
 
-            if ( contextType == ContextType.Machine && ((options & ~ContextOptions.Negotiate) != 0))
+            if (contextType == ContextType.Machine && ((options & ~ContextOptions.Negotiate) != 0))
             {
                 throw new ArgumentException(StringResources.InvalidContextOptionsForMachine);
             }
 
-            if ( ( contextType == ContextType.Domain || contextType == ContextType.ApplicationDirectory) && 
-                ((( options & (ContextOptions.Negotiate | ContextOptions.SimpleBind)) == 0 ) || 
-                ((( options & (ContextOptions.Negotiate | ContextOptions.SimpleBind)) == ((ContextOptions.Negotiate | ContextOptions.SimpleBind))  )))) 
+            if ((contextType == ContextType.Domain || contextType == ContextType.ApplicationDirectory) &&
+                (((options & (ContextOptions.Negotiate | ContextOptions.SimpleBind)) == 0) ||
+                (((options & (ContextOptions.Negotiate | ContextOptions.SimpleBind)) == ((ContextOptions.Negotiate | ContextOptions.SimpleBind))))))
             {
                 throw new ArgumentException(StringResources.InvalidContextOptionsForAD);
-            }                        
-                        
-            if ((contextType != ContextType.Machine) && 
+            }
+
+            if ((contextType != ContextType.Machine) &&
                 (contextType != ContextType.Domain) &&
                 (contextType != ContextType.ApplicationDirectory)
 #if TESTHOOK                
@@ -477,21 +472,21 @@ namespace System.DirectoryServices.AccountManagement
 
             if ((contextType == ContextType.Machine) && (container != null))
                 throw new ArgumentException(StringResources.ContextNoContainerForMachineCtx);
-                
+
             if ((contextType == ContextType.ApplicationDirectory) && ((String.IsNullOrEmpty(container)) || (String.IsNullOrEmpty(name))))
                 throw new ArgumentException(StringResources.ContextNoContainerForApplicationDirectoryCtx);
 
-            this.contextType = contextType;
-            this.name = name;
-            this.container = container;
-            this.options = options;
+            _contextType = contextType;
+            _name = name;
+            _container = container;
+            _options = options;
 
-            this.username = userName;
-            this.password = password;
+            _username = userName;
+            _password = password;
 
             DoServerVerifyAndPropRetrieval();
 
-            this.credValidate = new CredentialValidator(contextType, name, serverProperties);            
+            _credValidate = new CredentialValidator(contextType, name, _serverProperties);
         }
 
 
@@ -504,8 +499,8 @@ namespace System.DirectoryServices.AccountManagement
             get
             {
                 CheckDisposed();
-                            
-                return this.contextType;
+
+                return _contextType;
             }
         }
 
@@ -515,7 +510,7 @@ namespace System.DirectoryServices.AccountManagement
             {
                 CheckDisposed();
 
-                return this.name;
+                return _name;
             }
         }
 
@@ -525,7 +520,7 @@ namespace System.DirectoryServices.AccountManagement
             {
                 CheckDisposed();
 
-                return this.container;
+                return _container;
             }
         }
 
@@ -535,7 +530,7 @@ namespace System.DirectoryServices.AccountManagement
             {
                 CheckDisposed();
 
-                return this.username;
+                return _username;
             }
         }
 
@@ -544,8 +539,8 @@ namespace System.DirectoryServices.AccountManagement
             get
             {
                 CheckDisposed();
-                            
-                return this.options;
+
+                return _options;
             }
         }
 
@@ -558,26 +553,25 @@ namespace System.DirectoryServices.AccountManagement
                 Initialize();
 
                 // Unless we're not initialized, connectedServer should not be null
-                Debug.Assert(this.connectedServer != null || this.initialized == false);
+                Debug.Assert(_connectedServer != null || _initialized == false);
 
                 // connectedServer should never be an empty string
-                Debug.Assert(this.connectedServer == null || this.connectedServer.Length != 0);
+                Debug.Assert(_connectedServer == null || _connectedServer.Length != 0);
 
-                return this.connectedServer;                                
+                return _connectedServer;
             }
         }
 
-        
+
         /// <summary>
         /// Validate the passed credentials against the directory supplied.
         //   This function will use the best determined method to do the evaluation
         /// </summary>
-        
+
         public bool ValidateCredentials(string userName, string password)
         {
-
             CheckDisposed();
-            
+
             if ((userName == null && password != null) ||
                 (userName != null && password == null))
                 throw new ArgumentException(StringResources.ContextBadUserPwdCombo);
@@ -588,10 +582,10 @@ namespace System.DirectoryServices.AccountManagement
                     return true;
                 }
 #endif
-        
-            return ( credValidate.Validate( userName, password) );            
+
+            return (_credValidate.Validate(userName, password));
         }
-        
+
         /// <summary>
         /// Validate the passed credentials against the directory supplied.
         //   The supplied options will determine the directory method for credential validation.
@@ -605,7 +599,7 @@ namespace System.DirectoryServices.AccountManagement
                 (userName != null && password == null))
                 throw new ArgumentException(StringResources.ContextBadUserPwdCombo);
 
-            if ( options != ContextOptions.Negotiate  && contextType == ContextType.Machine )
+            if (options != ContextOptions.Negotiate && _contextType == ContextType.Machine)
                 throw new ArgumentException(StringResources.ContextOptionsNotValidForMachineStore);
 
 #if TESTHOOK
@@ -616,27 +610,26 @@ namespace System.DirectoryServices.AccountManagement
 #endif
 
 
-            return ( credValidate.Validate( userName, password, options ) );
-
+            return (_credValidate.Validate(userName, password, options));
         }
 
 
         //
         // Private methods for initialization
         //                
-       [DirectoryServicesPermission(SecurityAction.Assert, Unrestricted=true)]        
-        void Initialize()
+        [DirectoryServicesPermission(SecurityAction.Assert, Unrestricted = true)]
+        private void Initialize()
         {
-            if (!this.initialized)
-            {        
-                lock (this.initializationLock)
+            if (!_initialized)
+            {
+                lock (_initializationLock)
                 {
-                    if (this.initialized)
+                    if (_initialized)
                         return;
 
                     GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalContext", "Initializing Context");
 
-                    switch (this.contextType)
+                    switch (_contextType)
                     {
                         case ContextType.Domain:
                             DoDomainInit();
@@ -656,25 +649,25 @@ namespace System.DirectoryServices.AccountManagement
 #endif
                         default:
                             // Internal error
-                            Debug.Fail("PrincipalContext.Initialize: fell off end looking for " + this.contextType.ToString());
+                            Debug.Fail("PrincipalContext.Initialize: fell off end looking for " + _contextType.ToString());
                             break;
                     }
 
-                    this.initialized = true;
+                    _initialized = true;
                 }
             }
         }
 
 
-        void DoApplicationDirectoryInit()
+        private void DoApplicationDirectoryInit()
         {
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalContext", "Entering DoApplicationDirecotryInit");
-        
-            Debug.Assert(this.contextType == ContextType.ApplicationDirectory);        
 
-            if (this.container == null)
+            Debug.Assert(_contextType == ContextType.ApplicationDirectory);
+
+            if (_container == null)
             {
-                GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalContext", "DoApplicationDirecotryInit: using no-container path");            
+                GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalContext", "DoApplicationDirecotryInit: using no-container path");
                 DoLDAPDirectoryInitNoContainer();
             }
             else
@@ -682,55 +675,54 @@ namespace System.DirectoryServices.AccountManagement
                 GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalContext", "DoApplicationDirecotryInit: using container path");
                 DoLDAPDirectoryInit();
             }
-            
         }
 
-        void DoMachineInit()
+        private void DoMachineInit()
         {
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalContext", "Entering DoMachineInit");
-        
-            Debug.Assert(this.contextType == ContextType.Machine);
-            Debug.Assert(this.container == null);
+
+            Debug.Assert(_contextType == ContextType.Machine);
+            Debug.Assert(_container == null);
 
             DirectoryEntry de = null;
 
             try
             {
-                string hostname = this.name;
+                string hostname = _name;
 
                 if (hostname == null)
                     hostname = Utils.GetComputerFlatName();
 
-                GlobalDebug.WriteLineIf(GlobalDebug.Info,"PrincipalContext",  "DoMachineInit: hostname is " + hostname);
+                GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalContext", "DoMachineInit: hostname is " + hostname);
 
                 // use the options they specified
-                AuthenticationTypes authTypes = SDSUtils.MapOptionsToAuthTypes(this.options);
+                AuthenticationTypes authTypes = SDSUtils.MapOptionsToAuthTypes(_options);
 
-                GlobalDebug.WriteLineIf(GlobalDebug.Info,"PrincipalContext",  "DoMachineInit: authTypes is " + authTypes.ToString());
+                GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalContext", "DoMachineInit: authTypes is " + authTypes.ToString());
 
-                de = new DirectoryEntry("WinNT://" + hostname + ",computer", this.username, this.password, authTypes);
+                de = new DirectoryEntry("WinNT://" + hostname + ",computer", _username, _password, authTypes);
 
                 // Force ADSI to connect so we detect if the server is down or if the servername is invalid
                 de.RefreshCache();
 
                 StoreCtx storeCtx = CreateContextFromDirectoryEntry(de);
-                
-                this.queryCtx = storeCtx;
-                this.userCtx = storeCtx;
-                this.groupCtx = storeCtx;
-                this.computerCtx = storeCtx;
-                
-                this.connectedServer = hostname;
+
+                _queryCtx = storeCtx;
+                _userCtx = storeCtx;
+                _groupCtx = storeCtx;
+                _computerCtx = storeCtx;
+
+                _connectedServer = hostname;
                 de = null;
             }
             catch (Exception e)
             {
                 GlobalDebug.WriteLineIf(GlobalDebug.Error,
                                                   "PrincipalContext",
-                                                  "DoMachineInit: caught exception of type " 
+                                                  "DoMachineInit: caught exception of type "
                                                    + e.GetType().ToString() +
                                                    " and message " + e.Message);
-            
+
                 // Cleanup the DE on failure
                 if (de != null)
                     de.Dispose();
@@ -739,15 +731,15 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-        void DoDomainInit()
+        private void DoDomainInit()
         {
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalContext", "Entering DoDomainInit");
-        
-            Debug.Assert(this.contextType == ContextType.Domain);
 
-            if (this.container == null)
+            Debug.Assert(_contextType == ContextType.Domain);
+
+            if (_container == null)
             {
-                GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalContext", "DoDomainInit: using no-container path");            
+                GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalContext", "DoDomainInit: using no-container path");
                 DoLDAPDirectoryInitNoContainer();
                 return;
             }
@@ -757,76 +749,72 @@ namespace System.DirectoryServices.AccountManagement
                 DoLDAPDirectoryInit();
                 return;
             }
-
         }
 
 
-        void DoServerVerifyAndPropRetrieval()
-        {        
-            this.serverProperties = new ServerProperties();
-            if ( this.contextType == ContextType.ApplicationDirectory || this.contextType == ContextType.Domain )
+        private void DoServerVerifyAndPropRetrieval()
+        {
+            _serverProperties = new ServerProperties();
+            if (_contextType == ContextType.ApplicationDirectory || _contextType == ContextType.Domain)
             {
-                ReadServerConfig(this.name, ref this.serverProperties);
-                
-                if ( this.serverProperties.contextType != this.contextType )
+                ReadServerConfig(_name, ref _serverProperties);
+
+                if (_serverProperties.contextType != _contextType)
                 {
-                    throw new ArgumentException(string.Format(CultureInfo.CurrentCulture, StringResources.PassedContextTypeDoesNotMatchDetectedType, this.serverProperties.contextType.ToString()));
+                    throw new ArgumentException(string.Format(CultureInfo.CurrentCulture, StringResources.PassedContextTypeDoesNotMatchDetectedType, _serverProperties.contextType.ToString()));
                 }
             }
         }
 
-        
-        void DoLDAPDirectoryInit()
-        {
 
+        private void DoLDAPDirectoryInit()
+        {
             // use the servername if they gave us one, else let ADSI figure it out
             string serverName = "";
 
-            if (this.name != null)
+            if (_name != null)
             {
-                if ( contextType == ContextType.ApplicationDirectory )
+                if (_contextType == ContextType.ApplicationDirectory)
                 {
-                    serverName = this.serverProperties.dnsHostName + ":" +
-                        ((ContextOptions.SecureSocketLayer & this.options) > 0 ? this.serverProperties.portSSL : this.serverProperties.portLDAP );
+                    serverName = _serverProperties.dnsHostName + ":" +
+                        ((ContextOptions.SecureSocketLayer & _options) > 0 ? _serverProperties.portSSL : _serverProperties.portLDAP);
                 }
                 else
                 {
-                    serverName = this.name;
+                    serverName = _name;
                 }
-                
+
                 serverName += "/";
             }
 
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalContext", "DoLDAPDirectoryInit: serverName is " + serverName);
 
             // use the options they specified
-            AuthenticationTypes authTypes = SDSUtils.MapOptionsToAuthTypes(this.options);
+            AuthenticationTypes authTypes = SDSUtils.MapOptionsToAuthTypes(_options);
 
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalContext", "DoLDAPDirectoryInit: authTypes is " + authTypes.ToString());
 
-            DirectoryEntry de = new DirectoryEntry("LDAP://" + serverName + this.container, this.username, this.password, authTypes);
+            DirectoryEntry de = new DirectoryEntry("LDAP://" + serverName + _container, _username, _password, authTypes);
 
             try
             {
-
-
                 // Set the password port to the ssl port read off of the rootDSE.  Without this
                 // password change/set won't work when we connect without SSL and ADAM is running
                 // on non-standard port numbers.  We have already verified directory connectivity at this point
                 // so this should always succeed.
-                if (this.serverProperties.portSSL > 0)
+                if (_serverProperties.portSSL > 0)
                 {
-                    de.Options.PasswordPort = this.serverProperties.portSSL;
+                    de.Options.PasswordPort = _serverProperties.portSSL;
                 }
 
                 StoreCtx storeCtx = CreateContextFromDirectoryEntry(de);
 
-                this.queryCtx = storeCtx;
-                this.userCtx = storeCtx;
-                this.groupCtx = storeCtx;
-                this.computerCtx = storeCtx;
+                _queryCtx = storeCtx;
+                _userCtx = storeCtx;
+                _groupCtx = storeCtx;
+                _computerCtx = storeCtx;
 
-                this.connectedServer = ADUtils.GetServerName(de);
+                _connectedServer = ADUtils.GetServerName(de);
                 de = null;
             }
             catch (System.Runtime.InteropServices.COMException e)
@@ -848,15 +836,13 @@ namespace System.DirectoryServices.AccountManagement
                 // Cleanup the DE on failure
                 if (de != null)
                     de.Dispose();
-
             }
-
         }
 
-        void DoLDAPDirectoryInitNoContainer()
+        private void DoLDAPDirectoryInitNoContainer()
         {
-            byte[] USERS_CONTAINER_GUID     = new byte[]{0xa9,0xd1,0xca,0x15,0x76,0x88,0x11,0xd1,0xad,0xed,0x00,0xc0,0x4f,0xd8,0xd5,0xcd};
-            byte[] COMPUTERS_CONTAINER_GUID = new byte[]{0xaa,0x31,0x28,0x25,0x76,0x88,0x11,0xd1,0xad,0xed,0x00,0xc0,0x4f,0xd8,0xd5,0xcd};
+            byte[] USERS_CONTAINER_GUID = new byte[] { 0xa9, 0xd1, 0xca, 0x15, 0x76, 0x88, 0x11, 0xd1, 0xad, 0xed, 0x00, 0xc0, 0x4f, 0xd8, 0xd5, 0xcd };
+            byte[] COMPUTERS_CONTAINER_GUID = new byte[] { 0xaa, 0x31, 0x28, 0x25, 0x76, 0x88, 0x11, 0xd1, 0xad, 0xed, 0x00, 0xc0, 0x4f, 0xd8, 0xd5, 0xcd };
 
             // The StoreCtxs that will be used in the PrincipalContext, and their associated DirectoryEntry objects.
             DirectoryEntry deUserGroupOrg = null;
@@ -879,29 +865,29 @@ namespace System.DirectoryServices.AccountManagement
 
             // use the servername if they gave us one, else let ADSI figure it out
             string serverName = "";
-            if (this.name != null)
+            if (_name != null)
             {
-                serverName = this.name + "/";
+                serverName = _name + "/";
             }
 
 
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalContext", "DoLDAPDirectoryInitNoContainer: serverName is " + serverName);
 
             // use the options they specified
-            AuthenticationTypes authTypes = SDSUtils.MapOptionsToAuthTypes(this.options);
+            AuthenticationTypes authTypes = SDSUtils.MapOptionsToAuthTypes(_options);
 
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalContext", "DoLDAPDirectoryInitNoContainer: authTypes is " + authTypes.ToString());
-            
+
             try
             {
-                deRootDse = new DirectoryEntry("LDAP://" + serverName + "rootDse", this.username, this.password, authTypes);
+                deRootDse = new DirectoryEntry("LDAP://" + serverName + "rootDse", _username, _password, authTypes);
 
                 // This will also detect if the server is down or nonexistent
-                string domainNC = (string) deRootDse.Properties["defaultNamingContext"][0];
+                string domainNC = (string)deRootDse.Properties["defaultNamingContext"][0];
                 adsPathBase = "LDAP://" + serverName + domainNC;
 
                 GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalContext", "DoLDAPDirectoryInitNoContainer: domainNC is " + domainNC);
-                GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalContext", "DoLDAPDirectoryInitNoContainer: adsPathBase is " + adsPathBase);                
+                GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalContext", "DoLDAPDirectoryInitNoContainer: adsPathBase is " + adsPathBase);
             }
             finally
             {
@@ -913,16 +899,16 @@ namespace System.DirectoryServices.AccountManagement
             try
             {
                 // Build a DE for the root of the domain using the retrieved naming context
-                deBase = new DirectoryEntry(adsPathBase, this.username, this.password, authTypes);
+                deBase = new DirectoryEntry(adsPathBase, _username, _password, authTypes);
 
                 // Set the password port to the ssl port read off of the rootDSE.  Without this
                 // password change/set won't work when we connect without SSL and ADAM is running
                 // on non-standard port numbers.  We have already verified directory connectivity at this point
                 // so this should always succeed.
-                if ( this.serverProperties.portSSL > 0 )
+                if (_serverProperties.portSSL > 0)
                 {
-                    deBase.Options.PasswordPort = this.serverProperties.portSSL;
-                }                
+                    deBase.Options.PasswordPort = _serverProperties.portSSL;
+                }
 
                 //
                 // Use the wellKnownObjects attribute to determine the default location
@@ -934,28 +920,28 @@ namespace System.DirectoryServices.AccountManagement
                 PropertyValueCollection wellKnownObjectValues = deBase.Properties["wellKnownObjects"];
 
                 foreach (UnsafeNativeMethods.IADsDNWithBinary value in wellKnownObjectValues)
-                {                
-                    if (Utils.AreBytesEqual(USERS_CONTAINER_GUID, (byte[]) value.BinaryValue))
-                    {                    
+                {
+                    if (Utils.AreBytesEqual(USERS_CONTAINER_GUID, (byte[])value.BinaryValue))
+                    {
                         Debug.Assert(adsPathUserGroupOrg == null);
                         adsPathUserGroupOrg = "LDAP://" + serverName + value.DNString;
 
                         GlobalDebug.WriteLineIf(
-                                GlobalDebug.Info, 
-                                "PrincipalContext", 
-                                "DoLDAPDirectoryInitNoContainer: found USER, adsPathUserGroupOrg is " + adsPathUserGroupOrg);                        
+                                GlobalDebug.Info,
+                                "PrincipalContext",
+                                "DoLDAPDirectoryInitNoContainer: found USER, adsPathUserGroupOrg is " + adsPathUserGroupOrg);
                     }
 
                     // Is it the computer container?
-                    if (Utils.AreBytesEqual(COMPUTERS_CONTAINER_GUID, (byte[]) value.BinaryValue))
+                    if (Utils.AreBytesEqual(COMPUTERS_CONTAINER_GUID, (byte[])value.BinaryValue))
                     {
                         Debug.Assert(adsPathComputer == null);
                         adsPathComputer = "LDAP://" + serverName + value.DNString;
 
                         GlobalDebug.WriteLineIf(
                                 GlobalDebug.Info,
-                                "PrincipalContext", 
-                                "DoLDAPDirectoryInitNoContainer: found COMPUTER, adsPathComputer is " + adsPathComputer);                        
+                                "PrincipalContext",
+                                "DoLDAPDirectoryInitNoContainer: found COMPUTER, adsPathComputer is " + adsPathComputer);
                     }
                 }
 
@@ -974,35 +960,33 @@ namespace System.DirectoryServices.AccountManagement
                 // be default create principals in the root of their directory.  When a search happens the base context is used so that
                 // the whole directory will be covered.
                 //
-                deUserGroupOrg = new DirectoryEntry(adsPathUserGroupOrg, this.username, this.password, authTypes);
-                deComputer = new DirectoryEntry(adsPathComputer, this.username, this.password, authTypes);
-                
-                StoreCtx userStore = CreateContextFromDirectoryEntry( deUserGroupOrg);
-                
-                this.userCtx = userStore;
-                this.groupCtx = userStore;
+                deUserGroupOrg = new DirectoryEntry(adsPathUserGroupOrg, _username, _password, authTypes);
+                deComputer = new DirectoryEntry(adsPathComputer, _username, _password, authTypes);
+
+                StoreCtx userStore = CreateContextFromDirectoryEntry(deUserGroupOrg);
+
+                _userCtx = userStore;
+                _groupCtx = userStore;
                 deUserGroupOrg = null;  // since we handed off ownership to the StoreCtx
-                
-                this.computerCtx = CreateContextFromDirectoryEntry( deComputer);
-                
+
+                _computerCtx = CreateContextFromDirectoryEntry(deComputer);
+
                 deComputer = null;
 
-                this.queryCtx = CreateContextFromDirectoryEntry(deBase);
-                
-                this.connectedServer = ADUtils.GetServerName(deBase);
+                _queryCtx = CreateContextFromDirectoryEntry(deBase);
+
+                _connectedServer = ADUtils.GetServerName(deBase);
 
                 deBase = null;
- 
-
             }
             catch (Exception e)
             {
                 GlobalDebug.WriteLineIf(GlobalDebug.Error,
-                                        "PrincipalContext", 
-                                        "DoLDAPDirectoryInitNoContainer: caught exception of type " 
+                                        "PrincipalContext",
+                                        "DoLDAPDirectoryInitNoContainer: caught exception of type "
                                          + e.GetType().ToString() +
                                          " and message " + e.Message);
-            
+
                 // Cleanup on failure.  Once a DE has been successfully handed off to a ADStoreCtx,
                 // that ADStoreCtx will handle Dispose()'ing it
                 if (deUserGroupOrg != null)
@@ -1010,24 +994,24 @@ namespace System.DirectoryServices.AccountManagement
 
                 if (deComputer != null)
                     deComputer.Dispose();
-                    
+
                 if (deBase != null)
                     deBase.Dispose();
-                    
+
                 if (storeCtxUserGroupOrg != null)
                     storeCtxUserGroupOrg.Dispose();
-                    
+
                 if (storeCtxComputer != null)
                     storeCtxComputer.Dispose();
-                    
+
                 if (storeCtxBase != null)
                     storeCtxBase.Dispose();
 
                 throw;
-            }               
+            }
         }
-        
-        
+
+
 
 #if TESTHOOK
 
@@ -1083,33 +1067,33 @@ namespace System.DirectoryServices.AccountManagement
 
         public void Dispose()
         {
-            if (!this.disposed)
+            if (!_disposed)
             {
-                GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalContext", "Dispose: disposing");                        
+                GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalContext", "Dispose: disposing");
 
-            
+
                 // Note that we may end up calling Dispose multiple times on the same
                 // StoreCtx (since, for example, it might be that userCtx == groupCtx).
                 // This is okay, since StoreCtxs allow multiple Dispose() calls, and ignore
                 // all but the first call.
-            
-                if (this.userCtx != null)
-                    this.userCtx.Dispose();
 
-                if (this.groupCtx != null)
-                    this.groupCtx.Dispose();
+                if (_userCtx != null)
+                    _userCtx.Dispose();
 
-                if (this.computerCtx != null)
-                    this.computerCtx.Dispose();
+                if (_groupCtx != null)
+                    _groupCtx.Dispose();
 
-                if (this.queryCtx != null)
-                    this.queryCtx.Dispose();
+                if (_computerCtx != null)
+                    _computerCtx.Dispose();
 
-                this.disposed = true;
+                if (_queryCtx != null)
+                    _queryCtx.Dispose();
+
+                _disposed = true;
                 GC.SuppressFinalize(this);
             }
         }
-        
+
 
         //
         // Private Implementation
@@ -1117,40 +1101,40 @@ namespace System.DirectoryServices.AccountManagement
 
 
         // Are we initialized?
-        bool initialized = false;        
-        object initializationLock = new object();
+        private bool _initialized = false;
+        private object _initializationLock = new object();
 
         // Have we been disposed?
-        bool disposed = false;
-        internal bool Disposed { get {return this.disposed;} }
+        private bool _disposed = false;
+        internal bool Disposed { get { return _disposed; } }
 
         // Our constructor parameters
- 
+
         // encryption nor zeroing out the string when you're done with it.
-        string username;
-        string password;
- 
+        private string _username;
+        private string _password;
+
 
         // Cached connections to the server for fast credential validation
-        CredentialValidator credValidate;
-        ServerProperties serverProperties;
+        private CredentialValidator _credValidate;
+        private ServerProperties _serverProperties;
 
         internal ServerProperties ServerInformation
         {
             get
             {
-                return serverProperties;
+                return _serverProperties;
             }
         }
-        
-        
-        string name;
-        string container;
-        ContextOptions options;
-        ContextType contextType;
+
+
+        private string _name;
+        private string _container;
+        private ContextOptions _options;
+        private ContextType _contextType;
 
         // The server we're connected to
-        string connectedServer = null;
+        private string _connectedServer = null;
 
         // The reason there are different contexts for groups, users and computers is so that
         // when a principal is created it will go into the appropriate default container.  This is so users don't 
@@ -1160,42 +1144,41 @@ namespace System.DirectoryServices.AccountManagement
 
         // The StoreCtx to be used when inserting a new User/Computer/Group Principal into this
         // PrincipalContext.
-        StoreCtx userCtx     = null;
-        StoreCtx computerCtx = null;
-        StoreCtx groupCtx    = null;
-       
-        
+        private StoreCtx _userCtx = null;
+        private StoreCtx _computerCtx = null;
+        private StoreCtx _groupCtx = null;
+
+
         // The StoreCtx to be used when querying against this PrincipalContext for Principals
-        StoreCtx queryCtx = null;
-        
-        internal StoreCtx QueryCtx 
+        private StoreCtx _queryCtx = null;
+
+        internal StoreCtx QueryCtx
         {
-            [System.Security.SecuritySafeCritical]        
-            get 
+            [System.Security.SecuritySafeCritical]
+            get
             {
                 Initialize();
-                return this.queryCtx;
-            } 
+                return _queryCtx;
+            }
 
             set
             {
-                this.queryCtx = value;
+                _queryCtx = value;
             }
         }
 
 
-       [DirectoryServicesPermission(SecurityAction.Assert, Unrestricted=true)]        
-        internal void ReadServerConfig( string serverName, ref ServerProperties properties )
+        [DirectoryServicesPermission(SecurityAction.Assert, Unrestricted = true)]
+        internal void ReadServerConfig(string serverName, ref ServerProperties properties)
         {
-
-            string[] proplist = new string[] { "msDS-PortSSL", "msDS-PortLDAP", "domainControllerFunctionality", "dnsHostName", "supportedCapabilities"};
+            string[] proplist = new string[] { "msDS-PortSSL", "msDS-PortLDAP", "domainControllerFunctionality", "dnsHostName", "supportedCapabilities" };
             LdapConnection ldapConnection = null;
 
             try
             {
-                bool useSSL = (this.options & ContextOptions.SecureSocketLayer) > 0;
+                bool useSSL = (_options & ContextOptions.SecureSocketLayer) > 0;
 
-                if (useSSL && contextType == ContextType.Domain)
+                if (useSSL && _contextType == ContextType.Domain)
                 {
                     LdapDirectoryIdentifier directoryid = new LdapDirectoryIdentifier(serverName, LdapConstants.LDAP_SSL_PORT);
                     ldapConnection = new LdapConnection(directoryid);
@@ -1284,29 +1267,29 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-        StoreCtx CreateContextFromDirectoryEntry(DirectoryEntry entry)
+        private StoreCtx CreateContextFromDirectoryEntry(DirectoryEntry entry)
         {
             StoreCtx storeCtx;
 
             Debug.Assert(entry != null);
 
-            GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalContext", "CreateContextFromDirectoryEntry: path is " + entry.Path);                        
-            
+            GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalContext", "CreateContextFromDirectoryEntry: path is " + entry.Path);
+
             if (entry.Path.StartsWith("LDAP:", StringComparison.Ordinal))
             {
-                if ( this.ContextType == ContextType.ApplicationDirectory)
+                if (this.ContextType == ContextType.ApplicationDirectory)
                 {
-                    storeCtx = new ADAMStoreCtx(entry, true, this.username, this.password, this.name, this.options);
+                    storeCtx = new ADAMStoreCtx(entry, true, _username, _password, _name, _options);
                 }
                 else
                 {
-                    storeCtx = new ADStoreCtx(entry, true, this.username, this.password, this.options);
+                    storeCtx = new ADStoreCtx(entry, true, _username, _password, _options);
                 }
             }
             else
             {
                 Debug.Assert(entry.Path.StartsWith("WinNT:", StringComparison.Ordinal));
-                storeCtx = new SAMStoreCtx(entry, true, this.username, this.password, this.options);
+                storeCtx = new SAMStoreCtx(entry, true, _username, _password, _options);
             }
 
             storeCtx.OwningContext = this;
@@ -1317,51 +1300,51 @@ namespace System.DirectoryServices.AccountManagement
         // exception if so.
         internal void CheckDisposed()
         {
-            if (this.disposed)
+            if (_disposed)
             {
-                GlobalDebug.WriteLineIf(GlobalDebug.Warn, "PrincipalContext", "CheckDisposed: accessing disposed object");                        
-            
+                GlobalDebug.WriteLineIf(GlobalDebug.Warn, "PrincipalContext", "CheckDisposed: accessing disposed object");
+
                 throw new ObjectDisposedException("PrincipalContext");
             }
         }
 
         // Match the default context options to the store type.
-        private static ContextOptions GetDefaultOptionForStore( ContextType storeType )
+        private static ContextOptions GetDefaultOptionForStore(ContextType storeType)
         {
-            if ( storeType == ContextType.Machine )
+            if (storeType == ContextType.Machine)
             {
                 return DefaultContextOptions.MachineDefaultContextOption;
             }
             else
-            {   
-                Debug.Assert( storeType == ContextType.Domain || storeType == ContextType.ApplicationDirectory);
+            {
+                Debug.Assert(storeType == ContextType.Domain || storeType == ContextType.ApplicationDirectory);
                 return DefaultContextOptions.ADDefaultContextOption;
-            }            
+            }
         }
 
         // Helper method: given a typeof(User/Computer/etc.), returns the userCtx/computerCtx/etc.
         internal StoreCtx ContextForType(Type t)
         {
-            GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalContext",  "ContextForType: type is " + t.ToString());                        
-        
+            GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalContext", "ContextForType: type is " + t.ToString());
+
             Initialize();
-        
+
             if (t == typeof(System.DirectoryServices.AccountManagement.UserPrincipal) || t.IsSubclassOf(typeof(System.DirectoryServices.AccountManagement.UserPrincipal)))
             {
-                return this.userCtx;
+                return _userCtx;
             }
             else if (t == typeof(System.DirectoryServices.AccountManagement.ComputerPrincipal) || t.IsSubclassOf(typeof(System.DirectoryServices.AccountManagement.ComputerPrincipal)))
             {
-                return this.computerCtx;
+                return _computerCtx;
             }
             else if (t == typeof(System.DirectoryServices.AccountManagement.AuthenticablePrincipal) || t.IsSubclassOf(typeof(System.DirectoryServices.AccountManagement.AuthenticablePrincipal)))
             {
-                return this.userCtx;
+                return _userCtx;
             }
             else
             {
                 Debug.Assert(t == typeof(System.DirectoryServices.AccountManagement.GroupPrincipal) || t.IsSubclassOf(typeof(System.DirectoryServices.AccountManagement.GroupPrincipal)));
-                return this.groupCtx;                
+                return _groupCtx;
             }
         }
     }

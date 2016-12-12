@@ -1,16 +1,20 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
 //------------------------------------------------------------------------------
-// <copyright file="ReferalChasingOption.cs" company="Microsoft">
 //     Copyright (c) Microsoft Corporation.  All rights reserved.
 // </copyright>                                                                
 //------------------------------------------------------------------------------
 
-namespace System.DirectoryServices {
-
+namespace System.DirectoryServices
+{
     /// <include file='doc\ReferalChasingOption.uex' path='docs/doc[@for="ReferralChasingOption"]/*' />
     /// <devdoc>
     ///    <para>Specifies if and how referral chasing is pursued.</para>
     /// </devdoc>
-    public enum ReferralChasingOption {
+    public enum ReferralChasingOption
+    {
         /// <include file='doc\ReferalChasingOption.uex' path='docs/doc[@for="ReferralChasingOption.None"]/*' />
         /// <devdoc>
         ///    <para> Never chase the referred-to server. Setthing this option 
@@ -35,5 +39,4 @@ namespace System.DirectoryServices {
         /// </devdoc>
         All = Subordinate | External
     }
-
 }

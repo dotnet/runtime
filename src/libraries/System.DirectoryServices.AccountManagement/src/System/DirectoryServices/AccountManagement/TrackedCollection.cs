@@ -1,10 +1,13 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
 /*++
 
 Copyright (c) 2004  Microsoft Corporation
 
 Module Name:
 
-    TrackedCollection.cs
 
 Abstract:
 
@@ -23,9 +26,8 @@ using System.Collections.Generic;
 
 namespace System.DirectoryServices.AccountManagement
 {
-    class TrackedCollection<T> : ICollection<T>, ICollection, IEnumerable<T>, IEnumerable
-    {   
-    
+    internal class TrackedCollection<T> : ICollection<T>, ICollection, IEnumerable<T>, IEnumerable
+    {
         //
         // ICollection
         //
@@ -37,7 +39,7 @@ namespace System.DirectoryServices.AccountManagement
 
             if (array == null)
                 throw new ArgumentNullException("array");
-        
+
             if (array.Rank != 1)
                 throw new ArgumentException(StringResources.TrackedCollectionNotOneDimensional);
 
@@ -45,24 +47,24 @@ namespace System.DirectoryServices.AccountManagement
                 throw new ArgumentException(StringResources.TrackedCollectionIndexNotInArray);
 
             // Make sure the array has enough space, allowing for the "index" offset
-            if ( (array.GetLength(0) - index) < this.combinedValues.Count )
+            if ((array.GetLength(0) - index) < this.combinedValues.Count)
                 throw new ArgumentException(StringResources.TrackedCollectionArrayTooSmall);
-        
+
             // Copy out the original and inserted values
             foreach (ValueEl el in this.combinedValues)
             {
                 array.SetValue(el.GetCurrentValue(), index);
-                checked {index++;}
+                checked { index++; }
             }
         }
-        
+
         int ICollection.Count
         {
             get
             {
                 return Count;
             }
-        }   
+        }
 
         bool ICollection.IsSynchronized
         {
@@ -89,17 +91,17 @@ namespace System.DirectoryServices.AccountManagement
         IEnumerator IEnumerable.GetEnumerator()
         {
             Debug.Fail("TrackedCollection.IEnumerable.GetEnumerator(): should not be here");
-            return (IEnumerator) GetEnumerator();
+            return (IEnumerator)GetEnumerator();
         }
 
 
         //
         // ICollection<T>
         //
-        
+
         public void CopyTo(T[] array, int index)
         {
-            ((ICollection)this).CopyTo((Array) array, index);
+            ((ICollection)this).CopyTo((Array)array, index);
         }
 
         public bool IsReadOnly
@@ -109,7 +111,7 @@ namespace System.DirectoryServices.AccountManagement
                 return false;
             }
         }
-        
+
         public int Count
         {
             get
@@ -125,7 +127,7 @@ namespace System.DirectoryServices.AccountManagement
         //
         public IEnumerator<T> GetEnumerator()
         {
-            Debug.Fail("TrackedCollection.GetEnumerator(): should not be here");        
+            Debug.Fail("TrackedCollection.GetEnumerator(): should not be here");
             return new TrackedCollectionEnumerator<T>("TrackedCollectionEnumerator", this, this.combinedValues);
         }
 
@@ -136,19 +138,19 @@ namespace System.DirectoryServices.AccountManagement
         public bool Contains(T value)
         {
             // Is it one of the inserted or original values?
-            foreach(ValueEl el in this.combinedValues)
+            foreach (ValueEl el in this.combinedValues)
             {
                 if (el.GetCurrentValue().Equals(value))
                     return true;
             }
 
             return false;
-        }        
+        }
 
         public void Clear()
         {
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "TrackedCollection", "Clear");
-        
+
             MarkChange();
 
             // Move all original values to the removed values list
@@ -169,13 +171,13 @@ namespace System.DirectoryServices.AccountManagement
         public void Add(T o)
         {
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "TrackedCollection", "Add({0})", o.ToString());
-        
+
             MarkChange();
 
             ValueEl el = new ValueEl();
             el.isInserted = true;
             el.insertedValue = o;
-            
+
             this.combinedValues.Add(el);
         }
 
@@ -186,7 +188,7 @@ namespace System.DirectoryServices.AccountManagement
         public bool Remove(T value)
         {
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "TrackedCollection", "Remove({0})", value.ToString());
-        
+
             MarkChange();
 
             foreach (ValueEl el in this.combinedValues)
@@ -194,7 +196,7 @@ namespace System.DirectoryServices.AccountManagement
                 if (el.isInserted && el.insertedValue.Equals(value))
                 {
                     GlobalDebug.WriteLineIf(GlobalDebug.Info, "TrackedCollection", "found value to remove on inserted");
-                
+
                     this.combinedValues.Remove(el);
                     return true;
                 }
@@ -202,7 +204,7 @@ namespace System.DirectoryServices.AccountManagement
                 if (!el.isInserted && el.originalValue.Right.Equals(value))
                 {
                     GlobalDebug.WriteLineIf(GlobalDebug.Info, "TrackedCollection", "found value to remove on original");
-                
+
                     this.combinedValues.Remove(el);
                     this.removedValues.Add(el.originalValue.Left);
                     return true;
@@ -222,9 +224,9 @@ namespace System.DirectoryServices.AccountManagement
             public bool isInserted;
 
             //public T insertedValue = T.default;
-            public T insertedValue ;
+            public T insertedValue;
 
-            public Pair<T,T> originalValue = null;
+            public Pair<T, T> originalValue = null;
 
             public T GetCurrentValue()
             {
@@ -245,21 +247,21 @@ namespace System.DirectoryServices.AccountManagement
 
         // Contains values removed by the application for which the removal has not yet been committed
         // to the store.
-        internal List<T> removedValues  = new List<T>();
+        internal List<T> removedValues = new List<T>();
 
         // Used so our enumerator can detect changes to the collection and throw an exception
-        DateTime lastChange = DateTime.UtcNow;
+        private DateTime _lastChange = DateTime.UtcNow;
 
         internal DateTime LastChange
         {
-            get {return this.lastChange;}
+            get { return _lastChange; }
         }
 
         internal void MarkChange()
         {
-            this.lastChange = DateTime.UtcNow;
+            _lastChange = DateTime.UtcNow;
         }
-        
+
         //
         // Shared Load/Store implementation
         //
@@ -276,7 +278,7 @@ namespace System.DirectoryServices.AccountManagement
                         insertedValues.Add(el.insertedValue);
                 }
 
-                return insertedValues;                
+                return insertedValues;
             }
         }
 
@@ -288,11 +290,11 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-        internal List<Pair<T,T>> ChangedValues
+        internal List<Pair<T, T>> ChangedValues
         {
             get
             {
-                List<Pair<T,T>> changedList = new List<Pair<T,T>>();
+                List<Pair<T, T>> changedList = new List<Pair<T, T>>();
 
                 foreach (ValueEl el in this.combinedValues)
                 {
@@ -302,7 +304,7 @@ namespace System.DirectoryServices.AccountManagement
                         {
                             // Don't need to worry about whether we need to copy the T,
                             // since we're not handing it out to the app and we'll internally treat it as read-only                    
-                            changedList.Add(new Pair<T,T>(el.originalValue.Left, el.originalValue.Right));
+                            changedList.Add(new Pair<T, T>(el.originalValue.Left, el.originalValue.Right));
                         }
                     }
                 }
@@ -334,6 +336,5 @@ namespace System.DirectoryServices.AccountManagement
                 return false;
             }
         }
-
     }
 }

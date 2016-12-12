@@ -1,3 +1,6 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 /*++
 
@@ -5,7 +8,6 @@ Copyright (c) 2004  Microsoft Corporation
 
 Module Name:
 
-    SAMStoreCtx.cs
 
 Abstract:
 
@@ -16,7 +18,7 @@ History:
     04-May-2004    MattRim     Created
 
 --*/
- 
+
 using System;
 using System.Diagnostics;
 using System.Collections;
@@ -30,53 +32,53 @@ using System.DirectoryServices;
 
 namespace System.DirectoryServices.AccountManagement
 {
-    [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.Assert, Unrestricted=true)]
-    partial class SAMStoreCtx : StoreCtx
+    [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.Assert, Unrestricted = true)]
+    internal partial class SAMStoreCtx : StoreCtx
     {
-        DirectoryEntry ctxBase;
-        object ctxBaseLock = new object(); // when mutating ctxBase
-        
-        bool ownCtxBase;    // if true, we "own" ctxBase and must Dispose of it when we're done
+        private DirectoryEntry _ctxBase;
+        private object _ctxBaseLock = new object(); // when mutating ctxBase
 
-        bool disposed = false;
+        private bool _ownCtxBase;    // if true, we "own" ctxBase and must Dispose of it when we're done
 
-        internal NetCred Credentials { get {return this.credentials;} }
-        NetCred credentials = null;
+        private bool _disposed = false;
 
-        internal AuthenticationTypes AuthTypes { get {return this.authTypes;} }
-        AuthenticationTypes authTypes;
+        internal NetCred Credentials { get { return _credentials; } }
+        private NetCred _credentials = null;
 
-        ContextOptions contextOptions;
+        internal AuthenticationTypes AuthTypes { get { return _authTypes; } }
+        private AuthenticationTypes _authTypes;
+
+        private ContextOptions _contextOptions;
 
         static SAMStoreCtx()
         {
             //
             // Load the *PropertyMappingTableByProperty and *PropertyMappingTableByWinNT tables
             //
-            userPropertyMappingTableByProperty  = new Hashtable();
-            userPropertyMappingTableByWinNT = new Hashtable();
+            s_userPropertyMappingTableByProperty = new Hashtable();
+            s_userPropertyMappingTableByWinNT = new Hashtable();
 
-            groupPropertyMappingTableByProperty = new Hashtable();
-            groupPropertyMappingTableByWinNT = new Hashtable();
+            s_groupPropertyMappingTableByProperty = new Hashtable();
+            s_groupPropertyMappingTableByWinNT = new Hashtable();
 
-            computerPropertyMappingTableByProperty = new Hashtable();
-            computerPropertyMappingTableByWinNT = new Hashtable();
+            s_computerPropertyMappingTableByProperty = new Hashtable();
+            s_computerPropertyMappingTableByWinNT = new Hashtable();
 
-            ValidPropertyMap = new Dictionary<string,ObjectMask>();
+            s_validPropertyMap = new Dictionary<string, ObjectMask>();
 
-            MaskMap = new Dictionary<Type, ObjectMask >();
-            MaskMap.Add( typeof(UserPrincipal), ObjectMask.User);
-            MaskMap.Add( typeof(ComputerPrincipal), ObjectMask.Computer);
-            MaskMap.Add( typeof(GroupPrincipal), ObjectMask.Group);
-            MaskMap.Add( typeof(Principal), ObjectMask.Principal);
-            
-            for (int i=0; i<propertyMappingTableRaw.GetLength(0);i++)
+            s_maskMap = new Dictionary<Type, ObjectMask>();
+            s_maskMap.Add(typeof(UserPrincipal), ObjectMask.User);
+            s_maskMap.Add(typeof(ComputerPrincipal), ObjectMask.Computer);
+            s_maskMap.Add(typeof(GroupPrincipal), ObjectMask.Group);
+            s_maskMap.Add(typeof(Principal), ObjectMask.Principal);
+
+            for (int i = 0; i < s_propertyMappingTableRaw.GetLength(0); i++)
             {
-                string propertyName = propertyMappingTableRaw[i, 0] as string;
-                Type principalType =  propertyMappingTableRaw[i, 1] as Type;
-                string winNTAttribute = propertyMappingTableRaw[i, 2] as string;
-                FromWinNTConverterDelegate fromWinNT = propertyMappingTableRaw[i,3] as FromWinNTConverterDelegate;
-                ToWinNTConverterDelegate toWinNT = propertyMappingTableRaw[i,4] as ToWinNTConverterDelegate;
+                string propertyName = s_propertyMappingTableRaw[i, 0] as string;
+                Type principalType = s_propertyMappingTableRaw[i, 1] as Type;
+                string winNTAttribute = s_propertyMappingTableRaw[i, 2] as string;
+                FromWinNTConverterDelegate fromWinNT = s_propertyMappingTableRaw[i, 3] as FromWinNTConverterDelegate;
+                ToWinNTConverterDelegate toWinNT = s_propertyMappingTableRaw[i, 4] as ToWinNTConverterDelegate;
 
                 Debug.Assert(propertyName != null);
                 Debug.Assert((winNTAttribute != null && fromWinNT != null) || (fromWinNT == null));
@@ -97,36 +99,36 @@ namespace System.DirectoryServices.AccountManagement
                 List<Hashtable> byWinNTTables = new List<Hashtable>();
 
                 ObjectMask BitMask = 0;
-                
+
                 if (principalType == typeof(UserPrincipal))
                 {
-                    byPropertyTables.Add(userPropertyMappingTableByProperty);
-                    byWinNTTables.Add(userPropertyMappingTableByWinNT);                    
+                    byPropertyTables.Add(s_userPropertyMappingTableByProperty);
+                    byWinNTTables.Add(s_userPropertyMappingTableByWinNT);
                     BitMask = ObjectMask.User;
                 }
                 else if (principalType == typeof(ComputerPrincipal))
                 {
-                    byPropertyTables.Add(computerPropertyMappingTableByProperty);
-                    byWinNTTables.Add(computerPropertyMappingTableByWinNT);                    
+                    byPropertyTables.Add(s_computerPropertyMappingTableByProperty);
+                    byWinNTTables.Add(s_computerPropertyMappingTableByWinNT);
                     BitMask = ObjectMask.Computer;
                 }
                 else if (principalType == typeof(GroupPrincipal))
                 {
-                    byPropertyTables.Add(groupPropertyMappingTableByProperty);
-                    byWinNTTables.Add(groupPropertyMappingTableByWinNT);                    
+                    byPropertyTables.Add(s_groupPropertyMappingTableByProperty);
+                    byWinNTTables.Add(s_groupPropertyMappingTableByWinNT);
                     BitMask = ObjectMask.Group;
                 }
                 else
                 {
                     Debug.Assert(principalType == typeof(Principal));
 
-                    byPropertyTables.Add(userPropertyMappingTableByProperty);
-                    byPropertyTables.Add(computerPropertyMappingTableByProperty);
-                    byPropertyTables.Add(groupPropertyMappingTableByProperty);
-                    
-                    byWinNTTables.Add(userPropertyMappingTableByWinNT);                    
-                    byWinNTTables.Add(computerPropertyMappingTableByWinNT);                    
-                    byWinNTTables.Add(groupPropertyMappingTableByWinNT);                    
+                    byPropertyTables.Add(s_userPropertyMappingTableByProperty);
+                    byPropertyTables.Add(s_computerPropertyMappingTableByProperty);
+                    byPropertyTables.Add(s_groupPropertyMappingTableByProperty);
+
+                    byWinNTTables.Add(s_userPropertyMappingTableByWinNT);
+                    byWinNTTables.Add(s_computerPropertyMappingTableByWinNT);
+                    byWinNTTables.Add(s_groupPropertyMappingTableByWinNT);
                     BitMask = ObjectMask.Principal;
                 }
 
@@ -135,30 +137,30 @@ namespace System.DirectoryServices.AccountManagement
                 {
                     BitMask = ObjectMask.None;
                 }
-                
+
                 ObjectMask currentMask;
-                if (ValidPropertyMap.TryGetValue(propertyName, out currentMask))
+                if (s_validPropertyMap.TryGetValue(propertyName, out currentMask))
                 {
-                    ValidPropertyMap[propertyName] = currentMask | BitMask;
+                    s_validPropertyMap[propertyName] = currentMask | BitMask;
                 }
                 else
                 {
-                    ValidPropertyMap.Add(propertyName, BitMask);                    
+                    s_validPropertyMap.Add(propertyName, BitMask);
                 }
 
                 // *PropertyMappingTableByProperty
                 // If toWinNT is null, there's no PAPI->WinNT mapping for this property
                 // (it's probably read-only, e.g., "LastLogon").
-//                if (toWinNT != null)
-//                {
-                    foreach (Hashtable propertyMappingTableByProperty in byPropertyTables)
-                    {
-                        if (propertyMappingTableByProperty[propertyName] == null)
-                            propertyMappingTableByProperty[propertyName] = new ArrayList();
+                //                if (toWinNT != null)
+                //                {
+                foreach (Hashtable propertyMappingTableByProperty in byPropertyTables)
+                {
+                    if (propertyMappingTableByProperty[propertyName] == null)
+                        propertyMappingTableByProperty[propertyName] = new ArrayList();
 
-                        ((ArrayList)propertyMappingTableByProperty[propertyName]).Add(propertyEntry);    
-                    }
-//                }
+                    ((ArrayList)propertyMappingTableByProperty[propertyName]).Add(propertyEntry);
+                }
+                //                }
 
                 // *PropertyMappingTableByWinNT
                 // If fromLdap is null, there's no direct WinNT->PAPI mapping for this property.
@@ -168,7 +170,7 @@ namespace System.DirectoryServices.AccountManagement
                     string winNTAttributeLower = winNTAttribute.ToLower(CultureInfo.InvariantCulture);
 
                     foreach (Hashtable propertyMappingTableByWinNT in byWinNTTables)
-                    {                
+                    {
                         if (propertyMappingTableByWinNT[winNTAttributeLower] == null)
                             propertyMappingTableByWinNT[winNTAttributeLower] = new ArrayList();
 
@@ -183,38 +185,38 @@ namespace System.DirectoryServices.AccountManagement
         public SAMStoreCtx(DirectoryEntry ctxBase, bool ownCtxBase, string username, string password, ContextOptions options)
         {
             Debug.Assert(ctxBase != null);
-            GlobalDebug.WriteLineIf(GlobalDebug.Info, "SAMStoreCtx", "Constructing SAMStoreCtx for {0}", ctxBase.Path);           
+            GlobalDebug.WriteLineIf(GlobalDebug.Info, "SAMStoreCtx", "Constructing SAMStoreCtx for {0}", ctxBase.Path);
 
             Debug.Assert(SAMUtils.IsOfObjectClass(ctxBase, "Computer"));
-                
-            this.ctxBase = ctxBase; 
-            this.ownCtxBase = ownCtxBase;
-            
+
+            _ctxBase = ctxBase;
+            _ownCtxBase = ownCtxBase;
+
             if (username != null && password != null)
-                this.credentials = new NetCred(username, password);
-                
-            this.contextOptions = options;
-            this.authTypes = SDSUtils.MapOptionsToAuthTypes(options);         
+                _credentials = new NetCred(username, password);
+
+            _contextOptions = options;
+            _authTypes = SDSUtils.MapOptionsToAuthTypes(options);
         }
 
         public override void Dispose()
         {
             try
             {
-                if (!disposed)
+                if (!_disposed)
                 {
-                    GlobalDebug.WriteLineIf(GlobalDebug.Info, "SAMStoreCtx", "Dispose: disposing, ownCtxBase={0}", ownCtxBase);    
-                    
-                    if (ownCtxBase)
-                        ctxBase.Dispose();
- 
-                    disposed = true;
+                    GlobalDebug.WriteLineIf(GlobalDebug.Info, "SAMStoreCtx", "Dispose: disposing, ownCtxBase={0}", _ownCtxBase);
+
+                    if (_ownCtxBase)
+                        _ctxBase.Dispose();
+
+                    _disposed = true;
                 }
             }
             finally
-            {            
-                 base.Dispose();
-            }              
+            {
+                base.Dispose();
+            }
         }
 
 
@@ -223,12 +225,12 @@ namespace System.DirectoryServices.AccountManagement
         //
 
         // Retrieves the Path (ADsPath) of the object used as the base of the StoreCtx
-        internal override string BasePath 
+        internal override string BasePath
         {
             get
             {
-                Debug.Assert(this.ctxBase != null);
-                return this.ctxBase.Path;
+                Debug.Assert(_ctxBase != null);
+                return _ctxBase.Path;
             }
         }
 
@@ -253,8 +255,8 @@ namespace System.DirectoryServices.AccountManagement
                                 p,
                                 this,
                                 new SDSUtils.GroupMembershipUpdater(UpdateGroupMembership),
-                                this.credentials,
-                                this.authTypes,
+                                _credentials,
+                                _authTypes,
                                 false   // handled in PushChangesToNative
                                 );
 
@@ -263,39 +265,37 @@ namespace System.DirectoryServices.AccountManagement
 
                 // Load in the StoreKey
                 Debug.Assert(p.Key == null); // since it was previously unpersisted
-                
+
                 Debug.Assert(p.UnderlyingObject != null); // since we just persisted it
                 Debug.Assert(p.UnderlyingObject is DirectoryEntry);
-                DirectoryEntry de = (DirectoryEntry) p.UnderlyingObject;
+                DirectoryEntry de = (DirectoryEntry)p.UnderlyingObject;
 
                 // We just created a principal, so it should have an objectSid
-                Debug.Assert( (de.Properties["objectSid"] != null) && (de.Properties["objectSid"].Count == 1) );
-                
+                Debug.Assert((de.Properties["objectSid"] != null) && (de.Properties["objectSid"].Count == 1));
+
                 SAMStoreKey key = new SAMStoreKey(
                                             this.MachineFlatName,
-                                            (byte[]) de.Properties["objectSid"].Value
+                                            (byte[])de.Properties["objectSid"].Value
                                             );
                 p.Key = key;
-                            
+
 
                 // Reset the change tracking
                 p.ResetAllChangeStatus();
-                
-                GlobalDebug.WriteLineIf(GlobalDebug.Info, "SAMStoreCtx", "Insert: new SID is ", Utils.ByteArrayToString((byte[]) de.Properties["objectSid"].Value));
-               
+
+                GlobalDebug.WriteLineIf(GlobalDebug.Info, "SAMStoreCtx", "Insert: new SID is ", Utils.ByteArrayToString((byte[])de.Properties["objectSid"].Value));
             }
             catch (System.Runtime.InteropServices.COMException e)
             {
                 throw ExceptionHelper.GetExceptionFromCOMException(e);
-            }                       
-
+            }
         }
-        
+
         internal override void Update(Principal p)
         {
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "SAMStoreCtx", "Update");
-        
-            Debug.Assert(p.fakePrincipal == false);        
+
+            Debug.Assert(p.fakePrincipal == false);
             Debug.Assert(p.unpersisted == false);
             Debug.Assert(p.UnderlyingObject != null);
             Debug.Assert(p.UnderlyingObject is DirectoryEntry);
@@ -307,8 +307,8 @@ namespace System.DirectoryServices.AccountManagement
                                             p,
                                             this,
                                             new SDSUtils.GroupMembershipUpdater(UpdateGroupMembership),
-                                            this.credentials,
-                                            this.authTypes
+                                            _credentials,
+                                            _authTypes
                                             );
 
                 // Reset the change tracking
@@ -317,19 +317,18 @@ namespace System.DirectoryServices.AccountManagement
             catch (System.Runtime.InteropServices.COMException e)
             {
                 throw ExceptionHelper.GetExceptionFromCOMException(e);
-            }            
-                
+            }
         }
-        
+
         internal override void Delete(Principal p)
         {
-            GlobalDebug.WriteLineIf(GlobalDebug.Info, "SAMStoreCtx", "Delete");        
+            GlobalDebug.WriteLineIf(GlobalDebug.Info, "SAMStoreCtx", "Delete");
             Debug.Assert(p.fakePrincipal == false);
-        
+
             // Principal.Delete() shouldn't be calling us on an unpersisted Principal.
             Debug.Assert(p.unpersisted == false);
             Debug.Assert(p.UnderlyingObject != null);
-            
+
             Debug.Assert(p.UnderlyingObject is DirectoryEntry);
 
             try
@@ -339,18 +338,15 @@ namespace System.DirectoryServices.AccountManagement
             catch (System.Runtime.InteropServices.COMException e)
             {
                 throw ExceptionHelper.GetExceptionFromCOMException(e);
-            }            
-            
+            }
         }
 
-        internal override bool AccessCheck( Principal p, PrincipalAccessMask  targetPermission )
+        internal override bool AccessCheck(Principal p, PrincipalAccessMask targetPermission)
         {
+            GlobalDebug.WriteLineIf(GlobalDebug.Info, "SAMStoreCtx", "AccessCheck " + targetPermission.ToString());
 
-            GlobalDebug.WriteLineIf(GlobalDebug.Info, "SAMStoreCtx", "AccessCheck " + targetPermission.ToString() );
-        
-            switch ( targetPermission )
+            switch (targetPermission)
             {
-
                 case PrincipalAccessMask.ChangePassword:
 
                     PropertyValueCollection values = ((DirectoryEntry)p.GetUnderlyingObject()).Properties["UserFlags"];
@@ -360,24 +356,23 @@ namespace System.DirectoryServices.AccountManagement
                         Debug.Assert(values.Count == 1);
                         Debug.Assert(values[0] is int);
 
-                        return ( SDSUtils.StatusFromAccountControl( (int) values[0], PropertyNames.PwdInfoCannotChangePassword) );
+                        return (SDSUtils.StatusFromAccountControl((int)values[0], PropertyNames.PwdInfoCannotChangePassword));
                     }
 
                     Debug.Fail("SAMStoreCtx.AccessCheck:  user entry has an empty UserFlags value");
 
-                    GlobalDebug.WriteLineIf(GlobalDebug.Info, "SAMStoreCtx", "AccessCheck Unable to read userAccountControl" );                    
+                    GlobalDebug.WriteLineIf(GlobalDebug.Info, "SAMStoreCtx", "AccessCheck Unable to read userAccountControl");
 
                     break;
-                        
+
                 default:
 
                     Debug.Fail("SAMStoreCtx.AccessCheck: Fell off end looking for " + targetPermission.ToString());
-                                        
+
                     break;
-                }
-            
-                return false;
-                           
+            }
+
+            return false;
         }
 
         internal override void Move(StoreCtx originalStore, Principal p)
@@ -404,59 +399,58 @@ namespace System.DirectoryServices.AccountManagement
             Debug.Assert(p.unpersisted == true); // should only ever be called for new principals            
 
             // set the userAccountControl bits on the underlying directory entry
-            DirectoryEntry de = (DirectoryEntry) p.UnderlyingObject;
+            DirectoryEntry de = (DirectoryEntry)p.UnderlyingObject;
             Debug.Assert(de != null);
-            Type principalType = p.GetType();            
+            Type principalType = p.GetType();
 
-            if ((principalType == typeof(UserPrincipal)) || (principalType.IsSubclassOf(typeof(UserPrincipal)))) 
+            if ((principalType == typeof(UserPrincipal)) || (principalType.IsSubclassOf(typeof(UserPrincipal))))
             {
                 de.Properties["userFlags"].Value = SDSUtils.SAM_DefaultUAC;
             }
         }
-        
+
         internal override bool IsLockedOut(AuthenticablePrincipal p)
         {
             Debug.Assert(p.fakePrincipal == false);
-        
+
             Debug.Assert(p.unpersisted == false);
 
-            DirectoryEntry de = (DirectoryEntry) p.UnderlyingObject;
+            DirectoryEntry de = (DirectoryEntry)p.UnderlyingObject;
             Debug.Assert(de != null);
 
             try
             {
                 de.RefreshCache();
-                return (bool) de.InvokeGet("IsAccountLocked");
+                return (bool)de.InvokeGet("IsAccountLocked");
             }
             catch (System.Reflection.TargetInvocationException e)
-            {            
+            {
                 if (e.InnerException is System.Runtime.InteropServices.COMException)
                 {
-                    throw ( ExceptionHelper.GetExceptionFromCOMException((System.Runtime.InteropServices.COMException)e.InnerException));
+                    throw (ExceptionHelper.GetExceptionFromCOMException((System.Runtime.InteropServices.COMException)e.InnerException));
                 }
                 throw;
             }
-            
         }
-        
+
         internal override void UnlockAccount(AuthenticablePrincipal p)
         {
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "SAMStoreCtx", "UnlockAccount");
-        
+
             Debug.Assert(p.fakePrincipal == false);
-        
+
             Debug.Assert(p.unpersisted == false);
 
             // Computer accounts are never locked out, so nothing to do
             if (p is ComputerPrincipal)
             {
-                GlobalDebug.WriteLineIf(GlobalDebug.Info, "SAMStoreCtx", "UnlockAccount: computer acct, skipping");            
+                GlobalDebug.WriteLineIf(GlobalDebug.Info, "SAMStoreCtx", "UnlockAccount: computer acct, skipping");
                 return;
             }
 
-            DirectoryEntry de = (DirectoryEntry) p.UnderlyingObject;
+            DirectoryEntry de = (DirectoryEntry)p.UnderlyingObject;
             Debug.Assert(de != null);
-            
+
 
             // After setting the property, we need to commit the change to the store.
             // We do it in a copy of de, so that we don't inadvertently commit any other
@@ -465,18 +459,18 @@ namespace System.DirectoryServices.AccountManagement
 
             try
             {
-                copyOfDe = SDSUtils.BuildDirectoryEntry(de.Path, this.credentials, this.authTypes);
+                copyOfDe = SDSUtils.BuildDirectoryEntry(de.Path, _credentials, _authTypes);
 
                 Debug.Assert(copyOfDe != null);
-                copyOfDe.InvokeSet("IsAccountLocked", new object[]{false});
+                copyOfDe.InvokeSet("IsAccountLocked", new object[] { false });
                 copyOfDe.CommitChanges();
             }
             catch (System.Runtime.InteropServices.COMException e)
             {
                 // ADSI threw an exception trying to write the change
-                GlobalDebug.WriteLineIf(GlobalDebug.Error, "SAMStoreCtx", "UnlockAccount: caught COMException, message={0}", e.Message);                
-                throw ExceptionHelper.GetExceptionFromCOMException(e);                
-            }            
+                GlobalDebug.WriteLineIf(GlobalDebug.Error, "SAMStoreCtx", "UnlockAccount: caught COMException, message={0}", e.Message);
+                throw ExceptionHelper.GetExceptionFromCOMException(e);
+            }
             finally
             {
                 if (copyOfDe != null)
@@ -488,7 +482,7 @@ namespace System.DirectoryServices.AccountManagement
         internal override void SetPassword(AuthenticablePrincipal p, string newPassword)
         {
             Debug.Assert(p.fakePrincipal == false);
-        
+
             Debug.Assert(p is UserPrincipal || p is ComputerPrincipal);
 
             // Shouldn't be being called if this is the case
@@ -497,23 +491,23 @@ namespace System.DirectoryServices.AccountManagement
             // ********** In SAM, computer accounts don't have a set password method
             if (p is ComputerPrincipal)
             {
-                GlobalDebug.WriteLineIf(GlobalDebug.Warn, "SAMStoreCtx", "SetPassword: computer acct, can't reset");                        
+                GlobalDebug.WriteLineIf(GlobalDebug.Warn, "SAMStoreCtx", "SetPassword: computer acct, can't reset");
                 throw new InvalidOperationException(StringResources.SAMStoreCtxNoComputerPasswordSet);
             }
 
             Debug.Assert(p != null);
             Debug.Assert(newPassword != null);  // but it could be an empty string
 
-            DirectoryEntry de = (DirectoryEntry) p.UnderlyingObject;
+            DirectoryEntry de = (DirectoryEntry)p.UnderlyingObject;
             Debug.Assert(de != null);
-            
+
             SDSUtils.SetPassword(de, newPassword);
         }
-        
+
         internal override void ChangePassword(AuthenticablePrincipal p, string oldPassword, string newPassword)
         {
             Debug.Assert(p.fakePrincipal == false);
-        
+
             Debug.Assert(p is UserPrincipal || p is ComputerPrincipal);
 
             // Shouldn't be being called if this is the case
@@ -522,7 +516,7 @@ namespace System.DirectoryServices.AccountManagement
             // ********** In SAM, computer accounts don't have a change password method
             if (p is ComputerPrincipal)
             {
-                GlobalDebug.WriteLineIf(GlobalDebug.Warn, "SAMStoreCtx", "ChangePassword: computer acct, can't change");                                    
+                GlobalDebug.WriteLineIf(GlobalDebug.Warn, "SAMStoreCtx", "ChangePassword: computer acct, can't change");
                 throw new InvalidOperationException(StringResources.SAMStoreCtxNoComputerPasswordSet);
             }
 
@@ -530,87 +524,87 @@ namespace System.DirectoryServices.AccountManagement
             Debug.Assert(newPassword != null);  // but it could be an empty string
             Debug.Assert(oldPassword != null);  // but it could be an empty string
 
-            DirectoryEntry de = (DirectoryEntry) p.UnderlyingObject;
+            DirectoryEntry de = (DirectoryEntry)p.UnderlyingObject;
             Debug.Assert(de != null);
 
-            SDSUtils.ChangePassword(de, oldPassword, newPassword);            
+            SDSUtils.ChangePassword(de, oldPassword, newPassword);
         }
-        
+
         internal override void ExpirePassword(AuthenticablePrincipal p)
-        {          
+        {
             Debug.Assert(p.fakePrincipal == false);
-        
+
             // ********** In SAM, computer accounts don't have a password-expired property
             if (p is ComputerPrincipal)
             {
-                GlobalDebug.WriteLineIf(GlobalDebug.Warn, "SAMStoreCtx", "ExpirePassword: computer acct, can't expire");                                                
+                GlobalDebug.WriteLineIf(GlobalDebug.Warn, "SAMStoreCtx", "ExpirePassword: computer acct, can't expire");
                 throw new InvalidOperationException(StringResources.SAMStoreCtxNoComputerPasswordExpire);
             }
-        
+
             WriteAttribute(p, "PasswordExpired", 1);
         }
-        
+
         internal override void UnexpirePassword(AuthenticablePrincipal p)
         {
             Debug.Assert(p.fakePrincipal == false);
-        
+
             // ********** In SAM, computer accounts don't have a password-expired property
             if (p is ComputerPrincipal)
             {
-                GlobalDebug.WriteLineIf(GlobalDebug.Warn, "SAMStoreCtx", "UnexpirePassword: computer acct, can't unexpire");            
+                GlobalDebug.WriteLineIf(GlobalDebug.Warn, "SAMStoreCtx", "UnexpirePassword: computer acct, can't unexpire");
                 throw new InvalidOperationException(StringResources.SAMStoreCtxNoComputerPasswordExpire);
             }
-        
+
             WriteAttribute(p, "PasswordExpired", 0);
         }
 
-        void WriteAttribute(AuthenticablePrincipal p, string attribute, int value)
+        private void WriteAttribute(AuthenticablePrincipal p, string attribute, int value)
         {
             Debug.Assert(p is UserPrincipal || p is ComputerPrincipal);
 
             Debug.Assert(p != null);
-            
-            DirectoryEntry de = (DirectoryEntry) p.UnderlyingObject;
 
-            SDSUtils.WriteAttribute(de.Path, attribute, value, this.credentials, this.authTypes);
+            DirectoryEntry de = (DirectoryEntry)p.UnderlyingObject;
+
+            SDSUtils.WriteAttribute(de.Path, attribute, value, _credentials, _authTypes);
         }
 
 
         //
         // the various FindBy* methods
         //
-        
+
         internal override ResultSet FindByLockoutTime(
-        	DateTime dt, MatchType matchType, Type principalType)
+            DateTime dt, MatchType matchType, Type principalType)
         {
             throw new NotSupportedException(StringResources.StoreNotSupportMethod);
         }
 
         internal override ResultSet FindByBadPasswordAttempt(
-        	DateTime dt, MatchType matchType, Type principalType)
+            DateTime dt, MatchType matchType, Type principalType)
         {
             throw new NotSupportedException(StringResources.StoreNotSupportMethod);
         }
-        	
+
         internal override ResultSet FindByLogonTime(
-        	DateTime dt, MatchType matchType, Type principalType)
+            DateTime dt, MatchType matchType, Type principalType)
         {
             return FindByDate(FindByDateMatcher.DateProperty.LogonTime, matchType, dt, principalType);
         }
-        	
+
         internal override ResultSet FindByPasswordSetTime(
-        	DateTime dt, MatchType matchType, Type principalType)
+            DateTime dt, MatchType matchType, Type principalType)
         {
             return FindByDate(FindByDateMatcher.DateProperty.PasswordSetTime, matchType, dt, principalType);
         }
-        	        	
+
         internal override ResultSet FindByExpirationTime(
-        	DateTime dt, MatchType matchType, Type principalType)
+            DateTime dt, MatchType matchType, Type principalType)
         {
             return FindByDate(FindByDateMatcher.DateProperty.AccountExpirationTime, matchType, dt, principalType);
         }
 
-        ResultSet FindByDate(
+        private ResultSet FindByDate(
                         FindByDateMatcher.DateProperty property,
                         MatchType matchType,
                         DateTime value,
@@ -619,29 +613,29 @@ namespace System.DirectoryServices.AccountManagement
         {
             // We use the same SAMQuery set that we use for query-by-example, but with a different
             // SAMMatcher class to perform the date-range filter.
-        
+
             // Get the entries we'll iterate over.  Write access to Children is controlled through the
             // ctxBaseLock, but we don't want to have to hold that lock while we're iterating over all
             // the child entries.  So we have to clone the ctxBase --- not ideal, but it prevents
             // multithreading issues.
-            DirectoryEntries entries = SDSUtils.BuildDirectoryEntry(this.ctxBase.Path, this.credentials, this.authTypes).Children;
+            DirectoryEntries entries = SDSUtils.BuildDirectoryEntry(_ctxBase.Path, _credentials, _authTypes).Children;
             Debug.Assert(entries != null);
 
-             // The SAMQuerySet will use this to restrict the types of DirectoryEntry objects returned.
+            // The SAMQuerySet will use this to restrict the types of DirectoryEntry objects returned.
             List<string> schemaTypes = GetSchemaFilter(principalType);
 
             // Create the ResultSet that will perform the client-side filtering
             SAMQuerySet resultSet = new SAMQuerySet(
-                                                schemaTypes, 
-                                                entries, 
-                                                this.ctxBase, 
+                                                schemaTypes,
+                                                entries,
+                                                _ctxBase,
                                                 -1,             // no size limit 
                                                 this,
                                                 new FindByDateMatcher(property, matchType, value));
-            
-            return resultSet;       
-        }                 
-       	
+
+            return resultSet;
+        }
+
 
         // Get groups of which p is a direct member
         internal override ResultSet GetGroupsMemberOf(Principal p)
@@ -651,65 +645,64 @@ namespace System.DirectoryServices.AccountManagement
 
             if (!p.fakePrincipal)
             {
-                GlobalDebug.WriteLineIf(GlobalDebug.Info, "SAMStoreCtx", "GetGroupsMemberOf: is real principal");            
-            
+                GlobalDebug.WriteLineIf(GlobalDebug.Info, "SAMStoreCtx", "GetGroupsMemberOf: is real principal");
+
                 // No nested groups or computers as members of groups in SAM
                 if (!(p is UserPrincipal))
                 {
-                    GlobalDebug.WriteLineIf(GlobalDebug.Info, "SAMStoreCtx", "GetGroupsMemberOf: not a user, returning empty set");                            
+                    GlobalDebug.WriteLineIf(GlobalDebug.Info, "SAMStoreCtx", "GetGroupsMemberOf: not a user, returning empty set");
                     return new EmptySet();
                 }
-                    
+
                 Debug.Assert(p.UnderlyingObject != null);
 
-                DirectoryEntry userDE = (DirectoryEntry) p.UnderlyingObject;
+                DirectoryEntry userDE = (DirectoryEntry)p.UnderlyingObject;
 
-                UnsafeNativeMethods.IADsMembers iadsMembers = (UnsafeNativeMethods.IADsMembers) userDE.Invoke("Groups");
+                UnsafeNativeMethods.IADsMembers iadsMembers = (UnsafeNativeMethods.IADsMembers)userDE.Invoke("Groups");
 
-                ResultSet resultSet = new SAMGroupsSet(iadsMembers, this, this.ctxBase);
+                ResultSet resultSet = new SAMGroupsSet(iadsMembers, this, _ctxBase);
                 return resultSet;
             }
             else
             {
-            
                 // ADSI's IADsGroups doesn't work for fake principals like NT AUTHORITY\NETWORK SERVICE
 
                 // We use the same SAMQuery set that we use for query-by-example, but with a different
                 // SAMMatcher class to match groups which contain the specified principal as a member
-            
+
                 // Get the entries we'll iterate over.  Write access to Children is controlled through the
                 // ctxBaseLock, but we don't want to have to hold that lock while we're iterating over all
                 // the child entries.  So we have to clone the ctxBase --- not ideal, but it prevents
                 // multithreading issues.
-                DirectoryEntries entries = SDSUtils.BuildDirectoryEntry(this.ctxBase.Path, this.credentials, this.authTypes).Children;
+                DirectoryEntries entries = SDSUtils.BuildDirectoryEntry(_ctxBase.Path, _credentials, _authTypes).Children;
                 Debug.Assert(entries != null);
 
-                 // The SAMQuerySet will use this to restrict the types of DirectoryEntry objects returned.
+                // The SAMQuerySet will use this to restrict the types of DirectoryEntry objects returned.
                 List<string> schemaTypes = GetSchemaFilter(typeof(GroupPrincipal));
 
                 SecurityIdentifier principalSid = p.Sid;
                 byte[] SidB = new byte[principalSid.BinaryLength];
                 principalSid.GetBinaryForm(SidB, 0);
-                
+
                 if (principalSid == null)
                 {
-                    GlobalDebug.WriteLineIf(GlobalDebug.Warn, "SAMStoreCtx", "GetGroupsMemberOf: bad SID IC");                                            
+                    GlobalDebug.WriteLineIf(GlobalDebug.Warn, "SAMStoreCtx", "GetGroupsMemberOf: bad SID IC");
                     throw new InvalidOperationException(StringResources.StoreCtxNeedValueSecurityIdentityClaimToQuery);
                 }
 
                 // Create the ResultSet that will perform the client-side filtering
                 SAMQuerySet resultSet = new SAMQuerySet(
-                                                    schemaTypes, 
-                                                    entries, 
-                                                    this.ctxBase, 
+                                                    schemaTypes,
+                                                    entries,
+                                                    _ctxBase,
                                                     -1,             // no size limit 
                                                     this,
                                                     new GroupMemberMatcher(SidB));
-                
-                return resultSet;                  
+
+                return resultSet;
             }
         }
-        
+
 
         // Get groups from this ctx which contain a principal corresponding to foreignPrincipal
         // (which is a principal from foreignContext)
@@ -719,19 +712,19 @@ namespace System.DirectoryServices.AccountManagement
             // We'll skip straight to GetGroupsMemberOf(Principal), which will lookup the groups to which it belongs via its SID.
             if (foreignPrincipal.fakePrincipal)
             {
-                GlobalDebug.WriteLineIf(GlobalDebug.Info, "SAMStoreCtx", "GetGroupsMemberOf(ctx): is fake principal");                        
+                GlobalDebug.WriteLineIf(GlobalDebug.Info, "SAMStoreCtx", "GetGroupsMemberOf(ctx): is fake principal");
                 return GetGroupsMemberOf(foreignPrincipal);
             }
 
             // Get the Principal's SID, so we can look it up by SID in our store
             SecurityIdentifier Sid = foreignPrincipal.Sid;
 
-            if (Sid == null )
+            if (Sid == null)
             {
-                GlobalDebug.WriteLineIf(GlobalDebug.Warn, "SAMStoreCtx", "GetGroupsMemberOf(ctx): no SID IC");                                    
+                GlobalDebug.WriteLineIf(GlobalDebug.Warn, "SAMStoreCtx", "GetGroupsMemberOf(ctx): no SID IC");
                 throw new InvalidOperationException(StringResources.StoreCtxNeedValueSecurityIdentityClaimToQuery);
             }
-            
+
             // In SAM, only users can be member of SAM groups (no nested groups)
             UserPrincipal u = UserPrincipal.FindByIdentity(this.OwningContext, IdentityType.Sid, Sid.ToString());
 
@@ -748,7 +741,7 @@ namespace System.DirectoryServices.AccountManagement
             return GetGroupsMemberOf(u);
         }
 
-        
+
         // Get groups of which p is a member, using AuthZ S4U APIs for recursive membership
         internal override ResultSet GetGroupsMemberOfAZ(Principal p)
         {
@@ -759,31 +752,31 @@ namespace System.DirectoryServices.AccountManagement
             // Get the user SID that AuthZ will use.
             SecurityIdentifier Sid = p.Sid;
 
-            if (Sid == null )
+            if (Sid == null)
             {
-                GlobalDebug.WriteLineIf(GlobalDebug.Warn, "SAMStoreCtx", "GetGroupsMemberOfAZ: no SID IC");            
+                GlobalDebug.WriteLineIf(GlobalDebug.Warn, "SAMStoreCtx", "GetGroupsMemberOfAZ: no SID IC");
                 throw new InvalidOperationException(StringResources.StoreCtxNeedValueSecurityIdentityClaimToQuery);
             }
 
             byte[] Sidb = new byte[Sid.BinaryLength];
             Sid.GetBinaryForm(Sidb, 0);
-                        
-            if (Sidb== null)
+
+            if (Sidb == null)
             {
-                GlobalDebug.WriteLineIf(GlobalDebug.Warn, "SAMStoreCtx", "GetGroupsMemberOfAZ: Bad SID IC");                        
+                GlobalDebug.WriteLineIf(GlobalDebug.Warn, "SAMStoreCtx", "GetGroupsMemberOfAZ: Bad SID IC");
                 throw new ArgumentException(StringResources.StoreCtxSecurityIdentityClaimBadFormat);
             }
 
             try
             {
-                return new AuthZSet(Sidb, this.credentials, this.contextOptions, this.MachineFlatName, this, this.ctxBase);
+                return new AuthZSet(Sidb, _credentials, _contextOptions, this.MachineFlatName, this, _ctxBase);
             }
             catch (System.Runtime.InteropServices.COMException e)
             {
                 throw ExceptionHelper.GetExceptionFromCOMException(e);
-            }              
+            }
         }
-        
+
 
         // Get members of group g
         internal override BookmarkableResultSet GetGroupMembership(GroupPrincipal g, bool recursive)
@@ -795,23 +788,23 @@ namespace System.DirectoryServices.AccountManagement
             // (they don't even exist in the store)
             if (g.fakePrincipal)
             {
-                GlobalDebug.WriteLineIf(GlobalDebug.Info, "SAMStoreCtx", "GetGroupMembership: is fake principal, returning empty set");            
+                GlobalDebug.WriteLineIf(GlobalDebug.Info, "SAMStoreCtx", "GetGroupMembership: is fake principal, returning empty set");
                 return new EmptySet();
             }
-            
+
             Debug.Assert(g.UnderlyingObject != null);
 
-            DirectoryEntry groupDE = (DirectoryEntry) g.UnderlyingObject;
-        
-            UnsafeNativeMethods.IADsGroup iADsGroup = (UnsafeNativeMethods.IADsGroup) groupDE.NativeObject;
+            DirectoryEntry groupDE = (DirectoryEntry)g.UnderlyingObject;
 
-            BookmarkableResultSet resultSet = new SAMMembersSet(groupDE.Path, iADsGroup, recursive, this, this.ctxBase);
+            UnsafeNativeMethods.IADsGroup iADsGroup = (UnsafeNativeMethods.IADsGroup)groupDE.NativeObject;
+
+            BookmarkableResultSet resultSet = new SAMMembersSet(groupDE.Path, iADsGroup, recursive, this, _ctxBase);
             return resultSet;
         }
 
         // Is p a member of g in the store?
-        internal override bool SupportsNativeMembershipTest { get {return false;} }
-        
+        internal override bool SupportsNativeMembershipTest { get { return false; } }
+
         internal override bool IsMemberOfInStore(GroupPrincipal g, Principal p)
         {
             Debug.Fail("SAMStoreCtx.IsMemberOfInStore: Shouldn't be here.");
@@ -832,10 +825,10 @@ namespace System.DirectoryServices.AccountManagement
         internal override bool CanGroupMemberBeRemoved(GroupPrincipal g, Principal member, out string explanationForFailure)
         {
             // Always true for this type of StoreCtx
-            explanationForFailure = null;            
+            explanationForFailure = null;
             return true;
         }
-        
+
 
         //
         // Cross-store support
@@ -850,37 +843,37 @@ namespace System.DirectoryServices.AccountManagement
         // This method is typically used by ResultSet implementations, when they're iterating over a collection
         // (e.g., of group membership) and encounter a entry that represents a foreign principal.
         internal override Principal ResolveCrossStoreRefToPrincipal(object o)
-        {         
+        {
             Debug.Assert(o is DirectoryEntry);
 
             // Get the SID of the foreign principal
-            DirectoryEntry foreignDE = (DirectoryEntry) o;
+            DirectoryEntry foreignDE = (DirectoryEntry)o;
 
             if (foreignDE.Properties["objectSid"].Count == 0)
             {
-                GlobalDebug.WriteLineIf(GlobalDebug.Warn, "SAMStoreCtx", "ResolveCrossStoreRefToPrincipal: no objectSid found");                        
+                GlobalDebug.WriteLineIf(GlobalDebug.Warn, "SAMStoreCtx", "ResolveCrossStoreRefToPrincipal: no objectSid found");
                 throw new PrincipalOperationException(StringResources.SAMStoreCtxCantRetrieveObjectSidForCrossStore);
             }
 
             Debug.Assert(foreignDE.Properties["objectSid"].Count == 1);
 
-            byte[] sid = (byte[]) foreignDE.Properties["objectSid"].Value;
+            byte[] sid = (byte[])foreignDE.Properties["objectSid"].Value;
 
             // Ask the OS to resolve the SID to its target.
             int accountUsage = 0;
             string name;
             string domainName;
 
-            int err = Utils.LookupSid(this.MachineUserSuppliedName, this.credentials, sid, out name, out domainName, out accountUsage);
+            int err = Utils.LookupSid(this.MachineUserSuppliedName, _credentials, sid, out name, out domainName, out accountUsage);
 
             if (err != 0)
             {
-                GlobalDebug.WriteLineIf(GlobalDebug.Warn, 
+                GlobalDebug.WriteLineIf(GlobalDebug.Warn,
                                         "SAMStoreCtx",
                                         "ResolveCrossStoreRefToPrincipal: LookupSid failed, err={0}, server={1}",
-                                        err, 
-                                        this.MachineUserSuppliedName);                        
-            
+                                        err,
+                                        this.MachineUserSuppliedName);
+
                 throw new PrincipalOperationException(
                             String.Format(CultureInfo.CurrentCulture,
                                           StringResources.SAMStoreCtxCantResolveSidForCrossStore,
@@ -898,7 +891,7 @@ namespace System.DirectoryServices.AccountManagement
             // Build a PrincipalContext for the store which owns the principal
             // Use the ad default options so we turn sign and seal back on.
 #if USE_CTX_CACHE
-            PrincipalContext remoteCtx = SDSCache.Domain.GetContext(domainName, this.credentials, DefaultContextOptions.ADDefaultContextOption);
+            PrincipalContext remoteCtx = SDSCache.Domain.GetContext(domainName, _credentials, DefaultContextOptions.ADDefaultContextOption);
 #else
             PrincipalContext remoteCtx = new PrincipalContext(
                             ContextType.Domain,
@@ -911,7 +904,7 @@ namespace System.DirectoryServices.AccountManagement
 #endif
 
 
-            SecurityIdentifier sidObj = new SecurityIdentifier(sid,0);
+            SecurityIdentifier sidObj = new SecurityIdentifier(sid, 0);
 
             Principal p = remoteCtx.QueryCtx.FindPrincipalByIdentRef(
                                             typeof(Principal),
@@ -923,8 +916,8 @@ namespace System.DirectoryServices.AccountManagement
                 return p;
             else
             {
-                GlobalDebug.WriteLineIf(GlobalDebug.Warn, "SAMStoreCtx", "ResolveCrossStoreRefToPrincipal: no matching principal");            
-                throw new PrincipalOperationException(StringResources.SAMStoreCtxFailedFindCrossStoreTarget); 
+                GlobalDebug.WriteLineIf(GlobalDebug.Warn, "SAMStoreCtx", "ResolveCrossStoreRefToPrincipal: no matching principal");
+                throw new PrincipalOperationException(StringResources.SAMStoreCtxFailedFindCrossStoreTarget);
             }
         }
 
@@ -933,7 +926,7 @@ namespace System.DirectoryServices.AccountManagement
         // Data Validation
         //
 
-    
+
         // Returns true if AccountInfo is supported for the specified principal, false otherwise.
         // Used when a application tries to access the AccountInfo property of a newly-inserted
         // (not yet persisted) AuthenticablePrincipal, to determine whether it should be allowed.
@@ -942,11 +935,11 @@ namespace System.DirectoryServices.AccountManagement
             // Fake principals do not have store objects, so they certainly don't have stored account info.
             if (p.fakePrincipal)
                 return false;
-        
+
             // Both Computer and User support accounts.
             return true;
         }
-        
+
 
         // Returns the set of credential types supported by this store for the specified principal.
         // Used when a application tries to access the PasswordInfo property of a newly-inserted
@@ -956,8 +949,8 @@ namespace System.DirectoryServices.AccountManagement
         {
             // Fake principals do not have store objects, so they certainly don't have stored creds.
             if (p.fakePrincipal)
-                return (CredentialTypes) 0;
-        
+                return (CredentialTypes)0;
+
             CredentialTypes supportedTypes = CredentialTypes.Password;
 
             // Longhorn SAM supports certificate-based authentication
@@ -972,18 +965,18 @@ namespace System.DirectoryServices.AccountManagement
         // "\Everyone" or "NT AUTHORITY\NETWORK SERVICE"
         //
         internal override Principal ConstructFakePrincipalFromSID(byte[] sid)
-        {        
-            GlobalDebug.WriteLineIf(GlobalDebug.Info, 
+        {
+            GlobalDebug.WriteLineIf(GlobalDebug.Info,
                                     "SAMStoreCtx",
                                     "ConstructFakePrincipalFromSID: sid={0}, machine={1}",
                                     Utils.ByteArrayToString(sid),
-                                    this.MachineFlatName);                
-        
+                                    this.MachineFlatName);
+
             Principal p = Utils.ConstructFakePrincipalFromSID(
                                                         sid,
                                                         this.OwningContext,
                                                         this.MachineUserSuppliedName,
-                                                        this.credentials,
+                                                        _credentials,
                                                         this.MachineUserSuppliedName);
 
             // Assign it a StoreKey
@@ -998,21 +991,21 @@ namespace System.DirectoryServices.AccountManagement
         // Private data
         //
 
-        bool IsLSAM  // IsLonghornSAM (also called MSAM or LH-SAM)
+        private bool IsLSAM  // IsLonghornSAM (also called MSAM or LH-SAM)
         {
             get
             {
-                if (!this.isLSAM.HasValue)
+                if (!_isLSAM.HasValue)
                 {
-                    lock (this.computerInfoLock)
+                    lock (_computerInfoLock)
                     {
-                        if (!isLSAM.HasValue)
+                        if (!_isLSAM.HasValue)
                             LoadComputerInfo();
                     }
                 }
 
-                Debug.Assert(this.isLSAM.HasValue);
-                return this.isLSAM.Value;
+                Debug.Assert(_isLSAM.HasValue);
+                return _isLSAM.Value;
             }
         }
 
@@ -1020,17 +1013,17 @@ namespace System.DirectoryServices.AccountManagement
         {
             get
             {
-                if (this.machineUserSuppliedName == null)
+                if (_machineUserSuppliedName == null)
                 {
-                    lock (this.computerInfoLock)
+                    lock (_computerInfoLock)
                     {
-                        if (this.machineUserSuppliedName == null)
+                        if (_machineUserSuppliedName == null)
                             LoadComputerInfo();
                     }
                 }
 
-                Debug.Assert(this.machineUserSuppliedName != null);
-                return this.machineUserSuppliedName;
+                Debug.Assert(_machineUserSuppliedName != null);
+                return _machineUserSuppliedName;
             }
         }
 
@@ -1038,32 +1031,32 @@ namespace System.DirectoryServices.AccountManagement
         {
             get
             {
-                if (this.machineFlatName == null)
+                if (_machineFlatName == null)
                 {
-                    lock (this.computerInfoLock)
+                    lock (_computerInfoLock)
                     {
-                        if (this.machineFlatName == null)
+                        if (_machineFlatName == null)
                             LoadComputerInfo();
                     }
                 }
 
-                Debug.Assert(this.machineFlatName != null);
-                return this.machineFlatName;
+                Debug.Assert(_machineFlatName != null);
+                return _machineFlatName;
             }
         }
 
-        object computerInfoLock = new object();
-        Nullable<bool> isLSAM = null;
-        string machineUserSuppliedName = null;
-        string machineFlatName = null;
+        private object _computerInfoLock = new object();
+        private Nullable<bool> _isLSAM = null;
+        private string _machineUserSuppliedName = null;
+        private string _machineFlatName = null;
 
         // computerInfoLock must be held coming in here
-        void LoadComputerInfo()
+        private void LoadComputerInfo()
         {
-            GlobalDebug.WriteLineIf(GlobalDebug.Info, "SAMStoreCtx", "LoadComputerInfo");           
-        
-            Debug.Assert(this.ctxBase != null);
-            Debug.Assert(SAMUtils.IsOfObjectClass(this.ctxBase, "Computer"));
+            GlobalDebug.WriteLineIf(GlobalDebug.Info, "SAMStoreCtx", "LoadComputerInfo");
+
+            Debug.Assert(_ctxBase != null);
+            Debug.Assert(SAMUtils.IsOfObjectClass(_ctxBase, "Computer"));
 
             //
             // Target OS version
@@ -1071,7 +1064,7 @@ namespace System.DirectoryServices.AccountManagement
             int versionMajor;
             int versionMinor;
 
-            if (!SAMUtils.GetOSVersion(this.ctxBase, out versionMajor, out versionMinor))
+            if (!SAMUtils.GetOSVersion(_ctxBase, out versionMajor, out versionMinor))
             {
                 throw new PrincipalOperationException(StringResources.SAMStoreCtxUnableToRetrieveVersion);
             }
@@ -1080,11 +1073,11 @@ namespace System.DirectoryServices.AccountManagement
             Debug.Assert(versionMinor >= 0);
 
             if (versionMajor >= 6)      // 6.0 == Longhorn
-                this.isLSAM = true;
+                _isLSAM = true;
             else
-                this.isLSAM = false;
+                _isLSAM = false;
 
-            GlobalDebug.WriteLineIf(GlobalDebug.Info, "SAMStoreCtx", "LoadComputerInfo: ver={0}.{1}", versionMajor, versionMinor);             
+            GlobalDebug.WriteLineIf(GlobalDebug.Info, "SAMStoreCtx", "LoadComputerInfo: ver={0}.{1}", versionMajor, versionMinor);
 
 
             //
@@ -1093,12 +1086,12 @@ namespace System.DirectoryServices.AccountManagement
 
             // This ADSI property stores the machine name as supplied by the user in the ADsPath.
             // It could be a flat name or a DNS name.
-            if (this.ctxBase.Properties["Name"].Count > 0)
+            if (_ctxBase.Properties["Name"].Count > 0)
             {
-                Debug.Assert(this.ctxBase.Properties["Name"].Count == 1);
+                Debug.Assert(_ctxBase.Properties["Name"].Count == 1);
 
-                this.machineUserSuppliedName = (string) this.ctxBase.Properties["Name"].Value;
-                GlobalDebug.WriteLineIf(GlobalDebug.Info, "SAMStoreCtx", "LoadComputerInfo: machineUserSuppliedName={0}", this.machineUserSuppliedName);                             
+                _machineUserSuppliedName = (string)_ctxBase.Properties["Name"].Value;
+                GlobalDebug.WriteLineIf(GlobalDebug.Info, "SAMStoreCtx", "LoadComputerInfo: machineUserSuppliedName={0}", _machineUserSuppliedName);
             }
             else
             {
@@ -1114,14 +1107,14 @@ namespace System.DirectoryServices.AccountManagement
             try
             {
                 // This function takes in a flat or DNS name, and returns the flat name of the computer
-                int err = UnsafeNativeMethods.NetWkstaGetInfo(this.machineUserSuppliedName, 100, ref buffer);
+                int err = UnsafeNativeMethods.NetWkstaGetInfo(_machineUserSuppliedName, 100, ref buffer);
                 if (err == 0)
                 {
-                    UnsafeNativeMethods.WKSTA_INFO_100 wkstaInfo = 
-                        (UnsafeNativeMethods.WKSTA_INFO_100) Marshal.PtrToStructure(buffer, typeof(UnsafeNativeMethods.WKSTA_INFO_100)); 
+                    UnsafeNativeMethods.WKSTA_INFO_100 wkstaInfo =
+                        (UnsafeNativeMethods.WKSTA_INFO_100)Marshal.PtrToStructure(buffer, typeof(UnsafeNativeMethods.WKSTA_INFO_100));
 
-                    this.machineFlatName = wkstaInfo.wki100_computername;
-                    GlobalDebug.WriteLineIf(GlobalDebug.Info, "SAMStoreCtx", "LoadComputerInfo: machineFlatName={0}", this.machineFlatName);                    
+                    _machineFlatName = wkstaInfo.wki100_computername;
+                    GlobalDebug.WriteLineIf(GlobalDebug.Info, "SAMStoreCtx", "LoadComputerInfo: machineFlatName={0}", _machineFlatName);
                 }
                 else
                 {
@@ -1141,12 +1134,11 @@ namespace System.DirectoryServices.AccountManagement
 
         internal override bool IsValidProperty(Principal p, string propertyName)
         {
-
             ObjectMask value = ObjectMask.None;
-            
-            if ( ValidPropertyMap.TryGetValue(propertyName, out value))
+
+            if (s_validPropertyMap.TryGetValue(propertyName, out value))
             {
-                return ( ( MaskMap[p.GetType()] & value) > 0 ? true : false );
+                return ((s_maskMap[p.GetType()] & value) > 0 ? true : false);
             }
             else
             {
@@ -1154,7 +1146,6 @@ namespace System.DirectoryServices.AccountManagement
                 return false;
             }
         }
-        
     }
 }
 

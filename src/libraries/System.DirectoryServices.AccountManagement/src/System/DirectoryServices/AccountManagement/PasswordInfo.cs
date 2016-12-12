@@ -1,10 +1,13 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
 /*++
 
 Copyright (c) 2004  Microsoft Corporation
 
 Module Name:
 
-    PasswordInfo.cs
 
 Abstract:
 
@@ -27,7 +30,7 @@ namespace System.DirectoryServices.AccountManagement
     public class PasswordInfo
 #else
     [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.LinkDemand, Unrestricted = true)]
-    class PasswordInfo
+    internal class PasswordInfo
 #endif
     {
         //
@@ -35,9 +38,9 @@ namespace System.DirectoryServices.AccountManagement
         //
 
         // LastPasswordSet
-        Nullable<DateTime> lastPasswordSet = null;
-        LoadState lastPasswordSetLoaded = LoadState.NotSet;
-        
+        private Nullable<DateTime> _lastPasswordSet = null;
+        private LoadState _lastPasswordSetLoaded = LoadState.NotSet;
+
         public Nullable<DateTime> LastPasswordSet
         {
             // <SecurityKernel Critical="True" Ring="0">
@@ -47,15 +50,15 @@ namespace System.DirectoryServices.AccountManagement
             // </SecurityKernel>
             [System.Security.SecurityCritical]
             get
-            {           
-                return this.owningPrincipal.HandleGet<Nullable<DateTime>>(ref this.lastPasswordSet, PropertyNames.PwdInfoLastPasswordSet, ref lastPasswordSetLoaded);                                                                                
+            {
+                return _owningPrincipal.HandleGet<Nullable<DateTime>>(ref _lastPasswordSet, PropertyNames.PwdInfoLastPasswordSet, ref _lastPasswordSetLoaded);
             }
         }
 
         // LastBadPasswordAttempt
-        Nullable<DateTime> lastBadPasswordAttempt = null;
-        LoadState lastBadPasswordAttemptLoaded = LoadState.NotSet;
-        
+        private Nullable<DateTime> _lastBadPasswordAttempt = null;
+        private LoadState _lastBadPasswordAttemptLoaded = LoadState.NotSet;
+
         public Nullable<DateTime> LastBadPasswordAttempt
         {
             // <SecurityKernel Critical="True" Ring="0">
@@ -65,14 +68,14 @@ namespace System.DirectoryServices.AccountManagement
             // </SecurityKernel>
             [System.Security.SecurityCritical]
             get
-            {           
-                return this.owningPrincipal.HandleGet<Nullable<DateTime>>(ref this.lastBadPasswordAttempt, PropertyNames.PwdInfoLastBadPasswordAttempt, ref lastBadPasswordAttemptLoaded);                    
+            {
+                return _owningPrincipal.HandleGet<Nullable<DateTime>>(ref _lastBadPasswordAttempt, PropertyNames.PwdInfoLastBadPasswordAttempt, ref _lastBadPasswordAttemptLoaded);
             }
         }
 
         // PasswordNotRequired
-        bool passwordNotRequired = false;
-        LoadState passwordNotRequiredChanged = LoadState.NotSet;
+        private bool _passwordNotRequired = false;
+        private LoadState _passwordNotRequiredChanged = LoadState.NotSet;
 
         public bool PasswordNotRequired
         {
@@ -83,8 +86,8 @@ namespace System.DirectoryServices.AccountManagement
             // </SecurityKernel>
             [System.Security.SecurityCritical]
             get
-            {           
-                return this.owningPrincipal.HandleGet<bool>(ref this.passwordNotRequired, PropertyNames.PwdInfoPasswordNotRequired, ref passwordNotRequiredChanged);                
+            {
+                return _owningPrincipal.HandleGet<bool>(ref _passwordNotRequired, PropertyNames.PwdInfoPasswordNotRequired, ref _passwordNotRequiredChanged);
             }
 
             // <SecurityKernel Critical="True" Ring="0">
@@ -95,14 +98,14 @@ namespace System.DirectoryServices.AccountManagement
             [System.Security.SecurityCritical]
             set
             {
-                this.owningPrincipal.HandleSet<bool>(ref this.passwordNotRequired, value, ref this.passwordNotRequiredChanged,
+                _owningPrincipal.HandleSet<bool>(ref _passwordNotRequired, value, ref _passwordNotRequiredChanged,
                                   PropertyNames.PwdInfoPasswordNotRequired);
             }
         }
 
         // PasswordNeverExpires
-        bool passwordNeverExpires = false;
-        LoadState passwordNeverExpiresChanged = LoadState.NotSet;
+        private bool _passwordNeverExpires = false;
+        private LoadState _passwordNeverExpiresChanged = LoadState.NotSet;
 
         public bool PasswordNeverExpires
         {
@@ -113,8 +116,8 @@ namespace System.DirectoryServices.AccountManagement
             // </SecurityKernel>
             [System.Security.SecurityCritical]
             get
-            {           
-                return this.owningPrincipal.HandleGet<bool>(ref this.passwordNeverExpires, PropertyNames.PwdInfoPasswordNeverExpires, ref passwordNeverExpiresChanged);                
+            {
+                return _owningPrincipal.HandleGet<bool>(ref _passwordNeverExpires, PropertyNames.PwdInfoPasswordNeverExpires, ref _passwordNeverExpiresChanged);
             }
 
             // <SecurityKernel Critical="True" Ring="0">
@@ -125,15 +128,15 @@ namespace System.DirectoryServices.AccountManagement
             [System.Security.SecurityCritical]
             set
             {
-                this.owningPrincipal.HandleSet<bool>(ref this.passwordNeverExpires, value, ref this.passwordNeverExpiresChanged,
-                                  PropertyNames.PwdInfoPasswordNeverExpires);                
+                _owningPrincipal.HandleSet<bool>(ref _passwordNeverExpires, value, ref _passwordNeverExpiresChanged,
+                                  PropertyNames.PwdInfoPasswordNeverExpires);
             }
         }
 
         // UserCannotChangePassword
-        bool cannotChangePassword = false;
-        LoadState cannotChangePasswordChanged = LoadState.NotSet;
-        bool cannotChangePasswordRead = false;
+        private bool _cannotChangePassword = false;
+        private LoadState _cannotChangePasswordChanged = LoadState.NotSet;
+        private bool _cannotChangePasswordRead = false;
 
         // For this property we are doing an on demand load.  The store will not load this property when load is called beacuse
         // the loading of this property is perf intensive.  HandleGet still needs to be called to load the other object properties if 
@@ -150,17 +153,15 @@ namespace System.DirectoryServices.AccountManagement
             [System.Security.SecurityCritical]
             get
             {
+                _owningPrincipal.HandleGet<bool>(ref _cannotChangePassword, PropertyNames.PwdInfoCannotChangePassword, ref _cannotChangePasswordChanged);
 
-                this.owningPrincipal.HandleGet<bool>(ref this.cannotChangePassword, PropertyNames.PwdInfoCannotChangePassword, ref cannotChangePasswordChanged);
-                
-                if ( (cannotChangePasswordChanged != LoadState.Changed) && !cannotChangePasswordRead  && !this.owningPrincipal.unpersisted )
+                if ((_cannotChangePasswordChanged != LoadState.Changed) && !_cannotChangePasswordRead && !_owningPrincipal.unpersisted)
                 {
-                    cannotChangePassword = this.owningPrincipal.GetStoreCtxToUse().AccessCheck(this.owningPrincipal, PrincipalAccessMask.ChangePassword);
-                    cannotChangePasswordRead = true;
+                    _cannotChangePassword = _owningPrincipal.GetStoreCtxToUse().AccessCheck(_owningPrincipal, PrincipalAccessMask.ChangePassword);
+                    _cannotChangePasswordRead = true;
                 }
-                                
-                return cannotChangePassword;
-                
+
+                return _cannotChangePassword;
             }
 
             // <SecurityKernel Critical="True" Ring="0">
@@ -171,14 +172,14 @@ namespace System.DirectoryServices.AccountManagement
             [System.Security.SecurityCritical]
             set
             {
-                this.owningPrincipal.HandleSet<bool>(ref this.cannotChangePassword, value, ref this.cannotChangePasswordChanged,
-                                  PropertyNames.PwdInfoCannotChangePassword);                                
+                _owningPrincipal.HandleSet<bool>(ref _cannotChangePassword, value, ref _cannotChangePasswordChanged,
+                                  PropertyNames.PwdInfoCannotChangePassword);
             }
         }
 
         // AllowReversiblePasswordEncryption
-        bool allowReversiblePasswordEncryption = false;
-        LoadState allowReversiblePasswordEncryptionChanged = LoadState.NotSet;
+        private bool _allowReversiblePasswordEncryption = false;
+        private LoadState _allowReversiblePasswordEncryptionChanged = LoadState.NotSet;
 
         public bool AllowReversiblePasswordEncryption
         {
@@ -189,8 +190,8 @@ namespace System.DirectoryServices.AccountManagement
             // </SecurityKernel>
             [System.Security.SecurityCritical]
             get
-            {           
-                return this.owningPrincipal.HandleGet<bool>(ref this.allowReversiblePasswordEncryption, PropertyNames.PwdInfoAllowReversiblePasswordEncryption, ref allowReversiblePasswordEncryptionChanged);                
+            {
+                return _owningPrincipal.HandleGet<bool>(ref _allowReversiblePasswordEncryption, PropertyNames.PwdInfoAllowReversiblePasswordEncryption, ref _allowReversiblePasswordEncryptionChanged);
             }
 
             // <SecurityKernel Critical="True" Ring="0">
@@ -201,18 +202,18 @@ namespace System.DirectoryServices.AccountManagement
             [System.Security.SecurityCritical]
             set
             {
-                this.owningPrincipal.HandleSet<bool>(ref this.allowReversiblePasswordEncryption, value, ref this.allowReversiblePasswordEncryptionChanged,
-                                  PropertyNames.PwdInfoAllowReversiblePasswordEncryption);                
+                _owningPrincipal.HandleSet<bool>(ref _allowReversiblePasswordEncryption, value, ref _allowReversiblePasswordEncryptionChanged,
+                                  PropertyNames.PwdInfoAllowReversiblePasswordEncryption);
             }
         }
-        
+
 
         //
         // Methods exposed to the public through AuthenticablePrincipal
         //
 
-         string storedNewPassword = null;
-        
+        private string _storedNewPassword = null;
+
         // <SecurityKernel Critical="True" Ring="0">
         // <SatisfiesLinkDemand Name="Principal.GetStoreCtxToUse():System.DirectoryServices.AccountManagement.StoreCtx" />
         // <ReferencesCritical Name="Field: owningPrincipal" Ring="1" />
@@ -222,18 +223,18 @@ namespace System.DirectoryServices.AccountManagement
         public void SetPassword(string newPassword)
         {
             if (newPassword == null)
-                throw new ArgumentNullException("newPassword");               
-        
+                throw new ArgumentNullException("newPassword");
+
             // If we're not persisted, we just save up the change until we're Saved
-            if (this.owningPrincipal.unpersisted)
+            if (_owningPrincipal.unpersisted)
             {
-                GlobalDebug.WriteLineIf(GlobalDebug.Info, "PasswordInfo", "SetPassword: saving until persisted");            
-                this.storedNewPassword = newPassword;
+                GlobalDebug.WriteLineIf(GlobalDebug.Info, "PasswordInfo", "SetPassword: saving until persisted");
+                _storedNewPassword = newPassword;
             }
             else
             {
                 GlobalDebug.WriteLineIf(GlobalDebug.Info, "PasswordInfo", "SetPassword: sending request");
-                this.owningPrincipal.GetStoreCtxToUse().SetPassword(this.owningPrincipal, newPassword);            
+                _owningPrincipal.GetStoreCtxToUse().SetPassword(_owningPrincipal, newPassword);
             }
         }
 
@@ -246,22 +247,22 @@ namespace System.DirectoryServices.AccountManagement
         public void ChangePassword(string oldPassword, string newPassword)
         {
             if (oldPassword == null)
-                throw new ArgumentNullException("oldPassword");                
+                throw new ArgumentNullException("oldPassword");
 
             if (newPassword == null)
-                throw new ArgumentNullException("newPassword");                
+                throw new ArgumentNullException("newPassword");
 
-        
+
             // While you can reset the password on an unpersisted principal (and it will be used as the initial password
             // for the pricipal), changing the password on a principal that doesn't exist yet doesn't make sense
-            if (this.owningPrincipal.unpersisted)
+            if (_owningPrincipal.unpersisted)
                 throw new InvalidOperationException(StringResources.PasswordInfoChangePwdOnUnpersistedPrinc);
 
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "PasswordInfo", "ChangePassword: sending request");
-            this.owningPrincipal.GetStoreCtxToUse().ChangePassword(this.owningPrincipal, oldPassword, newPassword);            
+            _owningPrincipal.GetStoreCtxToUse().ChangePassword(_owningPrincipal, oldPassword, newPassword);
         }
 
-        bool expirePasswordImmediately = false;
+        private bool _expirePasswordImmediately = false;
 
         // <SecurityKernel Critical="True" Ring="0">
         // <SatisfiesLinkDemand Name="Principal.GetStoreCtxToUse():System.DirectoryServices.AccountManagement.StoreCtx" />
@@ -272,15 +273,15 @@ namespace System.DirectoryServices.AccountManagement
         public void ExpirePasswordNow()
         {
             // If we're not persisted, we just save up the change until we're Saved        
-            if (this.owningPrincipal.unpersisted)
+            if (_owningPrincipal.unpersisted)
             {
                 GlobalDebug.WriteLineIf(GlobalDebug.Info, "PasswordInfo", "ExpirePasswordNow: saving until persisted");
-                this.expirePasswordImmediately = true;
+                _expirePasswordImmediately = true;
             }
             else
             {
                 GlobalDebug.WriteLineIf(GlobalDebug.Info, "PasswordInfo", "ExpirePasswordNow: sending request");
-                this.owningPrincipal.GetStoreCtxToUse().ExpirePassword(this.owningPrincipal);            
+                _owningPrincipal.GetStoreCtxToUse().ExpirePassword(_owningPrincipal);
             }
         }
 
@@ -293,18 +294,18 @@ namespace System.DirectoryServices.AccountManagement
         public void RefreshExpiredPassword()
         {
             // If we're not persisted, we undo the expiration we saved up when ExpirePasswordNow was called (if it was).
-            if (this.owningPrincipal.unpersisted)
+            if (_owningPrincipal.unpersisted)
             {
-                GlobalDebug.WriteLineIf(GlobalDebug.Info,"PasswordInfo",  "RefreshExpiredPassword: saving until persisted");
-                this.expirePasswordImmediately = false;
+                GlobalDebug.WriteLineIf(GlobalDebug.Info, "PasswordInfo", "RefreshExpiredPassword: saving until persisted");
+                _expirePasswordImmediately = false;
             }
             else
             {
-                GlobalDebug.WriteLineIf(GlobalDebug.Info,"PasswordInfo",  "RefreshExpiredPassword: sending request");
-                this.owningPrincipal.GetStoreCtxToUse().UnexpirePassword(this.owningPrincipal);
+                GlobalDebug.WriteLineIf(GlobalDebug.Info, "PasswordInfo", "RefreshExpiredPassword: sending request");
+                _owningPrincipal.GetStoreCtxToUse().UnexpirePassword(_owningPrincipal);
             }
         }
-        
+
 
         //
         // Internal constructor
@@ -315,32 +316,32 @@ namespace System.DirectoryServices.AccountManagement
         [System.Security.SecurityCritical]
         internal PasswordInfo(AuthenticablePrincipal principal)
         {
-            this.owningPrincipal = principal;
+            _owningPrincipal = principal;
         }
 
         //
         // Private implementation
         //
-        AuthenticablePrincipal owningPrincipal;
-/*
-        // These methods implement the logic shared by all the get/set accessors for the internal properties
-        T HandleGet<T>(ref T currentValue, string name)
-        {
-            // Check that we actually support this propery in our store
-            //this.owningPrincipal.CheckSupportedProperty(name);
+        private AuthenticablePrincipal _owningPrincipal;
+        /*
+                // These methods implement the logic shared by all the get/set accessors for the internal properties
+                T HandleGet<T>(ref T currentValue, string name)
+                {
+                    // Check that we actually support this propery in our store
+                    //this.owningPrincipal.CheckSupportedProperty(name);
 
-            return currentValue;
-        }
+                    return currentValue;
+                }
 
-        void HandleSet<T>(ref T currentValue, T newValue, ref bool changed, string name)
-        {
-            // Check that we actually support this propery in our store
-            //this.owningPrincipal.CheckSupportedProperty(name);
+                void HandleSet<T>(ref T currentValue, T newValue, ref bool changed, string name)
+                {
+                    // Check that we actually support this propery in our store
+                    //this.owningPrincipal.CheckSupportedProperty(name);
 
-            currentValue = newValue;
-            changed = true;
-        }
-        */
+                    currentValue = newValue;
+                    changed = true;
+                }
+                */
 
         //
         // Load/Store
@@ -351,42 +352,42 @@ namespace System.DirectoryServices.AccountManagement
         //
 
         internal void LoadValueIntoProperty(string propertyName, object value)
-        {           
-            if ( value != null  )
+        {
+            if (value != null)
             {
                 GlobalDebug.WriteLineIf(GlobalDebug.Info, "PasswordInfo", "LoadValueIntoProperty: name=" + propertyName + " value=" + value.ToString());
             }
-            
+
             switch (propertyName)
             {
-                case(PropertyNames.PwdInfoLastPasswordSet):
-                    this.lastPasswordSet = (Nullable<DateTime>) value;
-                    lastPasswordSetLoaded = LoadState.Loaded;
+                case (PropertyNames.PwdInfoLastPasswordSet):
+                    _lastPasswordSet = (Nullable<DateTime>)value;
+                    _lastPasswordSetLoaded = LoadState.Loaded;
                     break;
 
-                case(PropertyNames.PwdInfoLastBadPasswordAttempt):
-                    this.lastBadPasswordAttempt = (Nullable<DateTime>)value;
-                    lastBadPasswordAttemptLoaded = LoadState.Loaded;                    
+                case (PropertyNames.PwdInfoLastBadPasswordAttempt):
+                    _lastBadPasswordAttempt = (Nullable<DateTime>)value;
+                    _lastBadPasswordAttemptLoaded = LoadState.Loaded;
                     break;
 
-                case(PropertyNames.PwdInfoPasswordNotRequired):
-                    this.passwordNotRequired = (bool) value;
-                    this.passwordNotRequiredChanged = LoadState.Loaded;
+                case (PropertyNames.PwdInfoPasswordNotRequired):
+                    _passwordNotRequired = (bool)value;
+                    _passwordNotRequiredChanged = LoadState.Loaded;
                     break;
 
-                case(PropertyNames.PwdInfoPasswordNeverExpires):
-                    this.passwordNeverExpires = (bool) value;
-                    this.passwordNeverExpiresChanged = LoadState.Loaded;
+                case (PropertyNames.PwdInfoPasswordNeverExpires):
+                    _passwordNeverExpires = (bool)value;
+                    _passwordNeverExpiresChanged = LoadState.Loaded;
                     break;
 
-                case(PropertyNames.PwdInfoCannotChangePassword):
-                    this.cannotChangePassword = (bool) value;
-                    this.cannotChangePasswordChanged = LoadState.Loaded;
+                case (PropertyNames.PwdInfoCannotChangePassword):
+                    _cannotChangePassword = (bool)value;
+                    _cannotChangePasswordChanged = LoadState.Loaded;
                     break;
 
-                case(PropertyNames.PwdInfoAllowReversiblePasswordEncryption):
-                    this.allowReversiblePasswordEncryption = (bool) value;
-                    this.allowReversiblePasswordEncryptionChanged = LoadState.Loaded;
+                case (PropertyNames.PwdInfoAllowReversiblePasswordEncryption):
+                    _allowReversiblePasswordEncryption = (bool)value;
+                    _allowReversiblePasswordEncryptionChanged = LoadState.Loaded;
                     break;
 
                 default:
@@ -402,28 +403,28 @@ namespace System.DirectoryServices.AccountManagement
 
         // Given a property name, returns true if that property has changed since it was loaded, false otherwise.
         internal bool GetChangeStatusForProperty(string propertyName)
-        {            
+        {
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "PasswordInfo", "GetChangeStatusForProperty: name=" + propertyName);
-        
+
             switch (propertyName)
             {
-                case(PropertyNames.PwdInfoPasswordNotRequired):
-                    return this.passwordNotRequiredChanged == LoadState.Changed;
+                case (PropertyNames.PwdInfoPasswordNotRequired):
+                    return _passwordNotRequiredChanged == LoadState.Changed;
 
-                case(PropertyNames.PwdInfoPasswordNeverExpires):
-                    return this.passwordNeverExpiresChanged == LoadState.Changed;
+                case (PropertyNames.PwdInfoPasswordNeverExpires):
+                    return _passwordNeverExpiresChanged == LoadState.Changed;
 
-                case(PropertyNames.PwdInfoCannotChangePassword):
-                    return this.cannotChangePasswordChanged == LoadState.Changed;
+                case (PropertyNames.PwdInfoCannotChangePassword):
+                    return _cannotChangePasswordChanged == LoadState.Changed;
 
-                case(PropertyNames.PwdInfoAllowReversiblePasswordEncryption):
-                    return this.allowReversiblePasswordEncryptionChanged == LoadState.Changed;
+                case (PropertyNames.PwdInfoAllowReversiblePasswordEncryption):
+                    return _allowReversiblePasswordEncryptionChanged == LoadState.Changed;
 
-                case(PropertyNames.PwdInfoPassword):
-                    return (this.storedNewPassword != null);
+                case (PropertyNames.PwdInfoPassword):
+                    return (_storedNewPassword != null);
 
-                case(PropertyNames.PwdInfoExpireImmediately):
-                    return (this.expirePasswordImmediately != false);
+                case (PropertyNames.PwdInfoExpireImmediately):
+                    return (_expirePasswordImmediately != false);
 
                 default:
                     Debug.Fail(String.Format(CultureInfo.CurrentCulture, "PasswordInfo.GetChangeStatusForProperty: fell off end looking for {0}", propertyName));
@@ -433,32 +434,32 @@ namespace System.DirectoryServices.AccountManagement
 
         // Given a property name, returns the current value for the property.
         internal object GetValueForProperty(string propertyName)
-        {        
+        {
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "PasswordInfo", "GetValueForProperty: name=" + propertyName);
 
             switch (propertyName)
             {
-                case(PropertyNames.PwdInfoPasswordNotRequired):
-                    return this.passwordNotRequired;
+                case (PropertyNames.PwdInfoPasswordNotRequired):
+                    return _passwordNotRequired;
 
-                case(PropertyNames.PwdInfoPasswordNeverExpires):
-                    return this.passwordNeverExpires;
+                case (PropertyNames.PwdInfoPasswordNeverExpires):
+                    return _passwordNeverExpires;
 
-                case(PropertyNames.PwdInfoCannotChangePassword):
-                    return this.cannotChangePassword;
+                case (PropertyNames.PwdInfoCannotChangePassword):
+                    return _cannotChangePassword;
 
-                case(PropertyNames.PwdInfoAllowReversiblePasswordEncryption):
-                    return this.allowReversiblePasswordEncryption;
+                case (PropertyNames.PwdInfoAllowReversiblePasswordEncryption):
+                    return _allowReversiblePasswordEncryption;
 
-                case(PropertyNames.PwdInfoPassword):
-                    return this.storedNewPassword;
+                case (PropertyNames.PwdInfoPassword):
+                    return _storedNewPassword;
 
-                case(PropertyNames.PwdInfoExpireImmediately):
-                    return this.expirePasswordImmediately;
+                case (PropertyNames.PwdInfoExpireImmediately):
+                    return _expirePasswordImmediately;
 
                 default:
                     Debug.Fail(String.Format(CultureInfo.CurrentCulture, "PasswordInfo.GetValueForProperty: fell off end looking for {0}", propertyName));
-                    return null;        
+                    return null;
             }
         }
 
@@ -466,14 +467,14 @@ namespace System.DirectoryServices.AccountManagement
         internal void ResetAllChangeStatus()
         {
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "PasswordInfo", "ResetAllChangeStatus");
-        
-            this.passwordNotRequiredChanged =  ( this.passwordNotRequiredChanged ==  LoadState.Changed ) ?  LoadState.Loaded : LoadState.NotSet;
-            this.passwordNeverExpiresChanged =   ( this.passwordNeverExpiresChanged ==  LoadState.Changed ) ?  LoadState.Loaded : LoadState.NotSet;
-            this.cannotChangePasswordChanged = ( this.cannotChangePasswordChanged ==  LoadState.Changed ) ?  LoadState.Loaded : LoadState.NotSet;
-            this.allowReversiblePasswordEncryptionChanged = ( this.allowReversiblePasswordEncryptionChanged ==  LoadState.Changed ) ?  LoadState.Loaded : LoadState.NotSet;
 
-            this.storedNewPassword = null;
-            this.expirePasswordImmediately = false;
-        }        
+            _passwordNotRequiredChanged = (_passwordNotRequiredChanged == LoadState.Changed) ? LoadState.Loaded : LoadState.NotSet;
+            _passwordNeverExpiresChanged = (_passwordNeverExpiresChanged == LoadState.Changed) ? LoadState.Loaded : LoadState.NotSet;
+            _cannotChangePasswordChanged = (_cannotChangePasswordChanged == LoadState.Changed) ? LoadState.Loaded : LoadState.NotSet;
+            _allowReversiblePasswordEncryptionChanged = (_allowReversiblePasswordEncryptionChanged == LoadState.Changed) ? LoadState.Loaded : LoadState.NotSet;
+
+            _storedNewPassword = null;
+            _expirePasswordImmediately = false;
+        }
     }
 }

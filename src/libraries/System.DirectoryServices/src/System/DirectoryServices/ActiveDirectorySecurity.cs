@@ -1,5 +1,8 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
 //------------------------------------------------------------------------------
-// <copyright file="ActiveDirectorySecurity.cs" company="Microsoft">
 //     Copyright (c) Microsoft Corporation.  All rights reserved.
 // </copyright>                                                                
 //------------------------------------------------------------------------------
@@ -15,30 +18,29 @@ namespace System.DirectoryServices
     using System.Security.AccessControl;
     using System.Runtime.InteropServices;
     using System.DirectoryServices.Interop;
-    
+
     [Flags]
     public enum ActiveDirectoryRights
     {
-        Delete                  = 0x10000,
-        ReadControl             = 0x20000,
-        WriteDacl               = 0x40000,
-        WriteOwner              = 0x80000,
-        Synchronize             = 0x100000,
-        AccessSystemSecurity    = 0x1000000,
-        GenericRead             = ReadControl | ListChildren | ReadProperty | ListObject,
-        GenericWrite            = ReadControl | Self | WriteProperty,
-        GenericExecute          = ReadControl | ListChildren,
-        GenericAll              = Delete | ReadControl | WriteDacl | WriteOwner | CreateChild | DeleteChild | ListChildren | Self | ReadProperty | WriteProperty | DeleteTree | ListObject | ExtendedRight,
-        CreateChild             = 0x1,
-        DeleteChild             = 0x2,
-        ListChildren            = 0x4,
-        Self                    = 0x8,
-        ReadProperty            = 0x10,
-        WriteProperty           = 0x20,
-        DeleteTree              = 0x40,
-        ListObject              = 0x80,
-        ExtendedRight           = 0x100
-
+        Delete = 0x10000,
+        ReadControl = 0x20000,
+        WriteDacl = 0x40000,
+        WriteOwner = 0x80000,
+        Synchronize = 0x100000,
+        AccessSystemSecurity = 0x1000000,
+        GenericRead = ReadControl | ListChildren | ReadProperty | ListObject,
+        GenericWrite = ReadControl | Self | WriteProperty,
+        GenericExecute = ReadControl | ListChildren,
+        GenericAll = Delete | ReadControl | WriteDacl | WriteOwner | CreateChild | DeleteChild | ListChildren | Self | ReadProperty | WriteProperty | DeleteTree | ListObject | ExtendedRight,
+        CreateChild = 0x1,
+        DeleteChild = 0x2,
+        ListChildren = 0x4,
+        Self = 0x8,
+        ReadProperty = 0x10,
+        WriteProperty = 0x20,
+        DeleteTree = 0x40,
+        ListObject = 0x80,
+        ExtendedRight = 0x100
     }
 
     public enum ActiveDirectorySecurityInheritance
@@ -58,26 +60,26 @@ namespace System.DirectoryServices
 
     public class ActiveDirectorySecurity : DirectoryObjectSecurity
     {
-        private SecurityMasks securityMaskUsedInRetrieval = SecurityMasks.Owner | SecurityMasks.Group | SecurityMasks.Dacl | SecurityMasks.Sacl;
+        private SecurityMasks _securityMaskUsedInRetrieval = SecurityMasks.Owner | SecurityMasks.Group | SecurityMasks.Dacl | SecurityMasks.Sacl;
 
         #region Constructors
 
         public ActiveDirectorySecurity()
-            :base()
+            : base()
         {
         }
 
         internal ActiveDirectorySecurity(byte[] sdBinaryForm, SecurityMasks securityMask)
-            :base(new CommonSecurityDescriptor(true, true, sdBinaryForm, 0))
+            : base(new CommonSecurityDescriptor(true, true, sdBinaryForm, 0))
         {
-            this.securityMaskUsedInRetrieval = securityMask;
+            _securityMaskUsedInRetrieval = securityMask;
         }
 
         #endregion
 
         #region Public methods
 
-        
+
         //
         // DiscretionaryAcl related methods
         //
@@ -88,7 +90,7 @@ namespace System.DirectoryServices
             {
                 throw new InvalidOperationException(Res.GetString(Res.CannotModifyDacl));
             }
-              
+
             base.AddAccessRule(rule);
         }
 
@@ -98,7 +100,7 @@ namespace System.DirectoryServices
             {
                 throw new InvalidOperationException(Res.GetString(Res.CannotModifyDacl));
             }
-            
+
             base.SetAccessRule(rule);
         }
 
@@ -108,24 +110,24 @@ namespace System.DirectoryServices
             {
                 throw new InvalidOperationException(Res.GetString(Res.CannotModifyDacl));
             }
-            
+
             base.ResetAccessRule(rule);
         }
 
         public void RemoveAccess(IdentityReference identity, AccessControlType type)
-        {       
+        {
             if (!DaclRetrieved())
             {
                 throw new InvalidOperationException(Res.GetString(Res.CannotModifyDacl));
             }
-            
+
             //
             // Create a new rule
             //
             ActiveDirectoryAccessRule rule = new ActiveDirectoryAccessRule(
-                                      identity, 
+                                      identity,
                                       ActiveDirectoryRights.GenericRead, // will be ignored
-                                      type, 
+                                      type,
                                       ActiveDirectorySecurityInheritance.None);
 
             base.RemoveAccessRuleAll(rule);
@@ -137,7 +139,7 @@ namespace System.DirectoryServices
             {
                 throw new InvalidOperationException(Res.GetString(Res.CannotModifyDacl));
             }
-            
+
             return base.RemoveAccessRule(rule);
         }
 
@@ -147,7 +149,7 @@ namespace System.DirectoryServices
             {
                 throw new InvalidOperationException(Res.GetString(Res.CannotModifyDacl));
             }
-            
+
             base.RemoveAccessRuleSpecific(rule);
         }
 
@@ -180,7 +182,7 @@ namespace System.DirectoryServices
             {
                 throw new InvalidOperationException(Res.GetString(Res.CannotModifySacl));
             }
-                        
+
             base.AddAuditRule(rule);
         }
 
@@ -190,24 +192,24 @@ namespace System.DirectoryServices
             {
                 throw new InvalidOperationException(Res.GetString(Res.CannotModifySacl));
             }
-            
+
             base.SetAuditRule(rule);
         }
 
         public void RemoveAudit(IdentityReference identity)
-        {       
+        {
             if (!SaclRetrieved())
             {
                 throw new InvalidOperationException(Res.GetString(Res.CannotModifySacl));
             }
-            
+
             //
             // Create a new rule
             //
             ActiveDirectoryAuditRule rule = new ActiveDirectoryAuditRule(
-                                     identity, 
+                                     identity,
                                      ActiveDirectoryRights.GenericRead, // will be ignored
-                                     AuditFlags.Success | AuditFlags.Failure, 
+                                     AuditFlags.Success | AuditFlags.Failure,
                                      ActiveDirectorySecurityInheritance.None);
 
             base.RemoveAuditRuleAll(rule);
@@ -219,7 +221,7 @@ namespace System.DirectoryServices
             {
                 throw new InvalidOperationException(Res.GetString(Res.CannotModifySacl));
             }
-            
+
             return base.RemoveAuditRule(rule);
         }
 
@@ -229,7 +231,7 @@ namespace System.DirectoryServices
             {
                 throw new InvalidOperationException(Res.GetString(Res.CannotModifySacl));
             }
-            
+
             base.RemoveAuditRuleSpecific(rule);
         }
 
@@ -254,98 +256,98 @@ namespace System.DirectoryServices
         }
 
         #endregion
-       
+
         #region Factories
-        
+
         public sealed override AccessRule AccessRuleFactory(
-            IdentityReference identityReference, 
-            int accessMask, 
-            bool isInherited, 
-            InheritanceFlags inheritanceFlags, 
-            PropagationFlags propagationFlags, 
+            IdentityReference identityReference,
+            int accessMask,
+            bool isInherited,
+            InheritanceFlags inheritanceFlags,
+            PropagationFlags propagationFlags,
             AccessControlType type)
         {
             return new ActiveDirectoryAccessRule(
-                identityReference, 
-                accessMask, 
+                identityReference,
+                accessMask,
                 type,
                 Guid.Empty,
-                isInherited, 
+                isInherited,
                 inheritanceFlags,
                 propagationFlags,
                 Guid.Empty);
         }
 
         public sealed override AccessRule AccessRuleFactory(
-            IdentityReference identityReference, 
-            int accessMask, 
-            bool isInherited, 
-            InheritanceFlags inheritanceFlags, 
+            IdentityReference identityReference,
+            int accessMask,
+            bool isInherited,
+            InheritanceFlags inheritanceFlags,
             PropagationFlags propagationFlags,
             AccessControlType type,
             Guid objectGuid,
             Guid inheritedObjectGuid)
         {
             return new ActiveDirectoryAccessRule(
-                identityReference, 
+                identityReference,
                 accessMask,
                 type,
                 objectGuid,
-                isInherited, 
-                inheritanceFlags, 
-                propagationFlags, 
+                isInherited,
+                inheritanceFlags,
+                propagationFlags,
                 inheritedObjectGuid);
         }
 
         public sealed override AuditRule AuditRuleFactory(
-            IdentityReference identityReference, 
-            int accessMask, 
-            bool isInherited, 
-            InheritanceFlags inheritanceFlags, 
-            PropagationFlags propagationFlags, 
+            IdentityReference identityReference,
+            int accessMask,
+            bool isInherited,
+            InheritanceFlags inheritanceFlags,
+            PropagationFlags propagationFlags,
             AuditFlags flags)
         {
             return new ActiveDirectoryAuditRule(
-                identityReference, 
-                accessMask, 
+                identityReference,
+                accessMask,
                 flags,
                 Guid.Empty,
-                isInherited, 
+                isInherited,
                 inheritanceFlags,
                 propagationFlags,
                 Guid.Empty);
         }
 
-        public  sealed override AuditRule AuditRuleFactory(
-            IdentityReference identityReference, 
-            int accessMask, 
-            bool isInherited, 
-            InheritanceFlags inheritanceFlags, 
-            PropagationFlags propagationFlags, 
+        public sealed override AuditRule AuditRuleFactory(
+            IdentityReference identityReference,
+            int accessMask,
+            bool isInherited,
+            InheritanceFlags inheritanceFlags,
+            PropagationFlags propagationFlags,
             AuditFlags flags,
             Guid objectGuid,
             Guid inheritedObjectGuid)
         {
             return new ActiveDirectoryAuditRule(
-                identityReference, 
+                identityReference,
                 accessMask,
-                flags, 
-                objectGuid, 
-                isInherited, 
-                inheritanceFlags, 
+                flags,
+                objectGuid,
+                isInherited,
+                inheritanceFlags,
                 propagationFlags,
                 inheritedObjectGuid);
         }
 
-        internal bool IsModified() 
+        internal bool IsModified()
         {
             ReadLock();
 
             try
             {
-                return ( OwnerModified || GroupModified || AccessRulesModified || AuditRulesModified );
+                return (OwnerModified || GroupModified || AccessRulesModified || AuditRulesModified);
             }
-            finally 
+            finally
             {
                 ReadUnlock();
             }
@@ -353,14 +355,14 @@ namespace System.DirectoryServices
 
         private bool DaclRetrieved()
         {
-            return ((securityMaskUsedInRetrieval & SecurityMasks.Dacl) != 0 );
+            return ((_securityMaskUsedInRetrieval & SecurityMasks.Dacl) != 0);
         }
 
         private bool SaclRetrieved()
         {
-            return ((securityMaskUsedInRetrieval & SecurityMasks.Sacl) != 0 );
+            return ((_securityMaskUsedInRetrieval & SecurityMasks.Sacl) != 0);
         }
-       
+
         #endregion
 
         #region some overrides
@@ -368,12 +370,12 @@ namespace System.DirectoryServices
         {
             get { return typeof(System.DirectoryServices.ActiveDirectoryRights); }
         }
-        
+
         public override Type AccessRuleType
         {
             get { return typeof(System.DirectoryServices.ActiveDirectoryAccessRule); }
         }
-        
+
         public override Type AuditRuleType
         {
             get { return typeof(System.DirectoryServices.ActiveDirectoryAuditRule); }
@@ -381,12 +383,12 @@ namespace System.DirectoryServices
         #endregion
 
 
-    }  
+    }
 
     internal sealed class ActiveDirectoryRightsTranslator
     {
         #region Access mask to rights translation
-        
+
         internal static int AccessMaskFromRights(ActiveDirectoryRights adRights)
         {
             return (int)adRights;
@@ -402,24 +404,25 @@ namespace System.DirectoryServices
     internal sealed class PropertyAccessTranslator
     {
         #region PropertyAccess to access mask translation
-        
+
         internal static int AccessMaskFromPropertyAccess(PropertyAccess access)
         {
             int accessMask = 0;
 
-            if (access < PropertyAccess.Read || access > PropertyAccess.Write) {
-                throw new InvalidEnumArgumentException("access", (int) access, typeof(PropertyAccess));
+            if (access < PropertyAccess.Read || access > PropertyAccess.Write)
+            {
+                throw new InvalidEnumArgumentException("access", (int)access, typeof(PropertyAccess));
             }
 
             switch (access)
             {
-                case PropertyAccess.Read :
+                case PropertyAccess.Read:
                     {
                         accessMask = ActiveDirectoryRightsTranslator.AccessMaskFromRights(ActiveDirectoryRights.ReadProperty);
                         break;
                     }
 
-                case PropertyAccess.Write :
+                case PropertyAccess.Write:
                     {
                         accessMask = ActiveDirectoryRightsTranslator.AccessMaskFromRights(ActiveDirectoryRights.WriteProperty);
                         break;
@@ -455,18 +458,18 @@ namespace System.DirectoryServices
         //  Children            ContainerInherit        InheritOnly | NoPropagateInherit
         //
         internal static InheritanceFlags[] ITToIF = new InheritanceFlags[] {
-            InheritanceFlags.None, 
-            InheritanceFlags.ContainerInherit, 
-            InheritanceFlags.ContainerInherit, 
-            InheritanceFlags.ContainerInherit, 
+            InheritanceFlags.None,
+            InheritanceFlags.ContainerInherit,
+            InheritanceFlags.ContainerInherit,
+            InheritanceFlags.ContainerInherit,
             InheritanceFlags.ContainerInherit
         };
 
         internal static PropagationFlags[] ITToPF = new PropagationFlags[] {
-            PropagationFlags.None, 
-            PropagationFlags.None, 
-            PropagationFlags.InheritOnly, 
-            PropagationFlags.NoPropagateInherit, 
+            PropagationFlags.None,
+            PropagationFlags.None,
+            PropagationFlags.InheritOnly,
+            PropagationFlags.NoPropagateInherit,
             PropagationFlags.InheritOnly | PropagationFlags.NoPropagateInherit
         };
 
@@ -474,17 +477,17 @@ namespace System.DirectoryServices
         {
             if (inheritanceType < ActiveDirectorySecurityInheritance.None || inheritanceType > ActiveDirectorySecurityInheritance.Children)
             {
-                throw new InvalidEnumArgumentException("inheritanceType", (int) inheritanceType, typeof(ActiveDirectorySecurityInheritance));
+                throw new InvalidEnumArgumentException("inheritanceType", (int)inheritanceType, typeof(ActiveDirectorySecurityInheritance));
             }
 
             return ITToIF[(int)inheritanceType];
         }
 
         internal static PropagationFlags GetPropagationFlags(ActiveDirectorySecurityInheritance inheritanceType)
-        { 
+        {
             if (inheritanceType < ActiveDirectorySecurityInheritance.None || inheritanceType > ActiveDirectorySecurityInheritance.Children)
             {
-                throw new InvalidEnumArgumentException("inheritanceType", (int) inheritanceType, typeof(ActiveDirectorySecurityInheritance));
+                throw new InvalidEnumArgumentException("inheritanceType", (int)inheritanceType, typeof(ActiveDirectorySecurityInheritance));
             }
 
             return ITToPF[(int)inheritanceType];
@@ -498,32 +501,32 @@ namespace System.DirectoryServices
             {
                 switch (propagationFlags)
                 {
-                    case PropagationFlags.None :
+                    case PropagationFlags.None:
                         {
                             inheritanceType = ActiveDirectorySecurityInheritance.All;
                             break;
                         }
 
-                    case PropagationFlags.InheritOnly :
+                    case PropagationFlags.InheritOnly:
                         {
                             inheritanceType = ActiveDirectorySecurityInheritance.Descendents;
                             break;
                         }
 
-                    case PropagationFlags.NoPropagateInherit :
+                    case PropagationFlags.NoPropagateInherit:
                         {
                             inheritanceType = ActiveDirectorySecurityInheritance.SelfAndChildren;
                             break;
                         }
 
-                    case PropagationFlags.InheritOnly | PropagationFlags.NoPropagateInherit :
+                    case PropagationFlags.InheritOnly | PropagationFlags.NoPropagateInherit:
                         {
                             inheritanceType = ActiveDirectorySecurityInheritance.Children;
                             break;
                         }
 
-                    default: 
-                       
+                    default:
+
                         //
                         // This should not happen. Indicates a problem with the 
                         // internal logic.
@@ -537,16 +540,15 @@ namespace System.DirectoryServices
         }
 
         #endregion
-        
     }
 
-    public class ActiveDirectoryAccessRule: ObjectAccessRule
+    public class ActiveDirectoryAccessRule : ObjectAccessRule
     {
         #region Constructors
-            
+
         public ActiveDirectoryAccessRule(
-            IdentityReference identity, 
-            ActiveDirectoryRights adRights, 
+            IdentityReference identity,
+            ActiveDirectoryRights adRights,
             AccessControlType type)
             : this(
                 identity,
@@ -562,8 +564,8 @@ namespace System.DirectoryServices
         }
 
         public ActiveDirectoryAccessRule(
-            IdentityReference identity, 
-            ActiveDirectoryRights adRights, 
+            IdentityReference identity,
+            ActiveDirectoryRights adRights,
             AccessControlType type,
             Guid objectType)
             : this(
@@ -579,9 +581,9 @@ namespace System.DirectoryServices
         }
 
         public ActiveDirectoryAccessRule(
-            IdentityReference identity, 
-            ActiveDirectoryRights adRights, 
-            AccessControlType type, 
+            IdentityReference identity,
+            ActiveDirectoryRights adRights,
+            AccessControlType type,
             ActiveDirectorySecurityInheritance inheritanceType)
             : this(
                 identity,
@@ -596,9 +598,9 @@ namespace System.DirectoryServices
         }
 
         public ActiveDirectoryAccessRule(
-            IdentityReference identity, 
-            ActiveDirectoryRights adRights, 
-            AccessControlType type, 
+            IdentityReference identity,
+            ActiveDirectoryRights adRights,
+            AccessControlType type,
             Guid objectType,
             ActiveDirectorySecurityInheritance inheritanceType)
             : this(
@@ -614,10 +616,10 @@ namespace System.DirectoryServices
         }
 
         public ActiveDirectoryAccessRule(
-            IdentityReference identity, 
-            ActiveDirectoryRights adRights, 
-            AccessControlType type, 
-            ActiveDirectorySecurityInheritance inheritanceType, 
+            IdentityReference identity,
+            ActiveDirectoryRights adRights,
+            AccessControlType type,
+            ActiveDirectorySecurityInheritance inheritanceType,
             Guid inheritedObjectType)
             : this(
                 identity,
@@ -632,11 +634,11 @@ namespace System.DirectoryServices
         }
 
         public ActiveDirectoryAccessRule(
-            IdentityReference identity, 
-            ActiveDirectoryRights adRights, 
-            AccessControlType type, 
+            IdentityReference identity,
+            ActiveDirectoryRights adRights,
+            AccessControlType type,
             Guid objectType,
-            ActiveDirectorySecurityInheritance inheritanceType, 
+            ActiveDirectorySecurityInheritance inheritanceType,
             Guid inheritedObjectType)
             : this(
                 identity,
@@ -651,23 +653,23 @@ namespace System.DirectoryServices
         }
 
         internal ActiveDirectoryAccessRule(
-            IdentityReference identity, 
-            int accessMask, 
+            IdentityReference identity,
+            int accessMask,
             AccessControlType type,
-            Guid objectType, 
-            bool isInherited, 
-            InheritanceFlags inheritanceFlags, 
-            PropagationFlags propagationFlags,  
-            Guid inheritedObjectType 
+            Guid objectType,
+            bool isInherited,
+            InheritanceFlags inheritanceFlags,
+            PropagationFlags propagationFlags,
+            Guid inheritedObjectType
             )
-            :base(identity, 
-				accessMask, 
-				isInherited,
-				inheritanceFlags, 
-				propagationFlags, 
-				objectType, 
-				inheritedObjectType,
-				type)
+            : base(identity,
+                accessMask,
+                isInherited,
+                inheritanceFlags,
+                propagationFlags,
+                objectType,
+                inheritedObjectType,
+                type)
         {
         }
 
@@ -677,16 +679,16 @@ namespace System.DirectoryServices
 
         public ActiveDirectoryRights ActiveDirectoryRights
         {
-            get 
-            { 
-                return ActiveDirectoryRightsTranslator.RightsFromAccessMask(base.AccessMask); 
+            get
+            {
+                return ActiveDirectoryRightsTranslator.RightsFromAccessMask(base.AccessMask);
             }
         }
 
-        public ActiveDirectorySecurityInheritance InheritanceType 
+        public ActiveDirectorySecurityInheritance InheritanceType
         {
-            get 
-            { 
+            get
+            {
                 return ActiveDirectoryInheritanceTranslator.GetEffectiveInheritanceFlags(base.InheritanceFlags, base.PropagationFlags);
             }
         }
@@ -694,16 +696,16 @@ namespace System.DirectoryServices
         #endregion
     }
 
-    public sealed class ListChildrenAccessRule: ActiveDirectoryAccessRule
+    public sealed class ListChildrenAccessRule : ActiveDirectoryAccessRule
     {
         #region Constructors
 
         public ListChildrenAccessRule(
-            IdentityReference identity, 
+            IdentityReference identity,
             AccessControlType type)
             : base(
                 identity,
-                (int) ActiveDirectoryRights.ListChildren,
+                (int)ActiveDirectoryRights.ListChildren,
                 type,
                 Guid.Empty,
                 false,
@@ -715,12 +717,12 @@ namespace System.DirectoryServices
         }
 
         public ListChildrenAccessRule(
-            IdentityReference identity,  
-            AccessControlType type, 
+            IdentityReference identity,
+            AccessControlType type,
             ActiveDirectorySecurityInheritance inheritanceType)
             : base(
                 identity,
-                (int) ActiveDirectoryRights.ListChildren,
+                (int)ActiveDirectoryRights.ListChildren,
                 type,
                 Guid.Empty,
                 false,
@@ -731,13 +733,13 @@ namespace System.DirectoryServices
         }
 
         public ListChildrenAccessRule(
-            IdentityReference identity,  
-            AccessControlType type, 
-            ActiveDirectorySecurityInheritance inheritanceType, 
+            IdentityReference identity,
+            AccessControlType type,
+            ActiveDirectorySecurityInheritance inheritanceType,
             Guid inheritedObjectType)
             : base(
                 identity,
-                (int) ActiveDirectoryRights.ListChildren,
+                (int)ActiveDirectoryRights.ListChildren,
                 type,
                 Guid.Empty,
                 false,
@@ -750,32 +752,32 @@ namespace System.DirectoryServices
         #endregion constructors
     }
 
-    public sealed class CreateChildAccessRule: ActiveDirectoryAccessRule
+    public sealed class CreateChildAccessRule : ActiveDirectoryAccessRule
     {
         #region Constructors
 
-       public CreateChildAccessRule(
-            IdentityReference identity, 
-            AccessControlType type)
-            : base(
-                identity,
-                (int) ActiveDirectoryRights.CreateChild,
-                type,
-                Guid.Empty, // all child objects
-                false,
-                InheritanceFlags.None,
-                PropagationFlags.None,
-                Guid.Empty)
+        public CreateChildAccessRule(
+             IdentityReference identity,
+             AccessControlType type)
+             : base(
+                 identity,
+                 (int)ActiveDirectoryRights.CreateChild,
+                 type,
+                 Guid.Empty, // all child objects
+                 false,
+                 InheritanceFlags.None,
+                 PropagationFlags.None,
+                 Guid.Empty)
         {
         }
 
         public CreateChildAccessRule(
-            IdentityReference identity,  
+            IdentityReference identity,
             AccessControlType type,
             Guid childType)
             : base(
                 identity,
-                (int) ActiveDirectoryRights.CreateChild,
+                (int)ActiveDirectoryRights.CreateChild,
                 type,
                 childType,
                 false,
@@ -786,12 +788,12 @@ namespace System.DirectoryServices
         }
 
         public CreateChildAccessRule(
-            IdentityReference identity, 
-            AccessControlType type, 
+            IdentityReference identity,
+            AccessControlType type,
             ActiveDirectorySecurityInheritance inheritanceType)
             : base(
                 identity,
-                (int) ActiveDirectoryRights.CreateChild,
+                (int)ActiveDirectoryRights.CreateChild,
                 type,
                 Guid.Empty, // all child objects
                 false,
@@ -802,13 +804,13 @@ namespace System.DirectoryServices
         }
 
         public CreateChildAccessRule(
-            IdentityReference identity,  
-            AccessControlType type, 
-            Guid childType, 
+            IdentityReference identity,
+            AccessControlType type,
+            Guid childType,
             ActiveDirectorySecurityInheritance inheritanceType)
             : base(
                 identity,
-                (int) ActiveDirectoryRights.CreateChild,
+                (int)ActiveDirectoryRights.CreateChild,
                 type,
                 childType,
                 false,
@@ -819,13 +821,13 @@ namespace System.DirectoryServices
         }
 
         public CreateChildAccessRule(
-            IdentityReference identity, 
-            AccessControlType type, 
-            ActiveDirectorySecurityInheritance inheritanceType, 
+            IdentityReference identity,
+            AccessControlType type,
+            ActiveDirectorySecurityInheritance inheritanceType,
             Guid inheritedObjectType)
             : base(
                 identity,
-                (int) ActiveDirectoryRights.CreateChild,
+                (int)ActiveDirectoryRights.CreateChild,
                 type,
                 Guid.Empty, // all child objects
                 false,
@@ -836,13 +838,13 @@ namespace System.DirectoryServices
         }
 
         public CreateChildAccessRule(
-            IdentityReference identity, AccessControlType type, 
-            Guid childType, 
-            ActiveDirectorySecurityInheritance inheritanceType, 
+            IdentityReference identity, AccessControlType type,
+            Guid childType,
+            ActiveDirectorySecurityInheritance inheritanceType,
             Guid inheritedObjectType)
             : base(
                 identity,
-                (int) ActiveDirectoryRights.CreateChild,
+                (int)ActiveDirectoryRights.CreateChild,
                 type,
                 childType,
                 false,
@@ -855,16 +857,16 @@ namespace System.DirectoryServices
         #endregion constructors
     }
 
-    public sealed class DeleteChildAccessRule: ActiveDirectoryAccessRule
+    public sealed class DeleteChildAccessRule : ActiveDirectoryAccessRule
     {
         #region Constructors
 
         public DeleteChildAccessRule(
-            IdentityReference identity, 
+            IdentityReference identity,
             AccessControlType type)
             : base(
                 identity,
-                (int) ActiveDirectoryRights.DeleteChild,
+                (int)ActiveDirectoryRights.DeleteChild,
                 type,
                 Guid.Empty, // all child objects
                 false,
@@ -875,12 +877,12 @@ namespace System.DirectoryServices
         }
 
         public DeleteChildAccessRule(
-            IdentityReference identity,  
+            IdentityReference identity,
             AccessControlType type,
             Guid childType)
             : base(
                 identity,
-                (int) ActiveDirectoryRights.DeleteChild,
+                (int)ActiveDirectoryRights.DeleteChild,
                 type,
                 childType,
                 false,
@@ -891,12 +893,12 @@ namespace System.DirectoryServices
         }
 
         public DeleteChildAccessRule(
-            IdentityReference identity, 
-            AccessControlType type, 
+            IdentityReference identity,
+            AccessControlType type,
             ActiveDirectorySecurityInheritance inheritanceType)
             : base(
                 identity,
-                (int) ActiveDirectoryRights.DeleteChild,
+                (int)ActiveDirectoryRights.DeleteChild,
                 type,
                 Guid.Empty, // all child objects
                 false,
@@ -907,13 +909,13 @@ namespace System.DirectoryServices
         }
 
         public DeleteChildAccessRule(
-            IdentityReference identity,  
-            AccessControlType type, 
-            Guid childType, 
+            IdentityReference identity,
+            AccessControlType type,
+            Guid childType,
             ActiveDirectorySecurityInheritance inheritanceType)
             : base(
                 identity,
-                (int) ActiveDirectoryRights.DeleteChild,
+                (int)ActiveDirectoryRights.DeleteChild,
                 type,
                 childType,
                 false,
@@ -924,13 +926,13 @@ namespace System.DirectoryServices
         }
 
         public DeleteChildAccessRule(
-            IdentityReference identity, 
-            AccessControlType type, 
-            ActiveDirectorySecurityInheritance inheritanceType, 
+            IdentityReference identity,
+            AccessControlType type,
+            ActiveDirectorySecurityInheritance inheritanceType,
             Guid inheritedObjectType)
             : base(
                 identity,
-                (int) ActiveDirectoryRights.DeleteChild,
+                (int)ActiveDirectoryRights.DeleteChild,
                 type,
                 Guid.Empty, // all child objects
                 false,
@@ -941,13 +943,13 @@ namespace System.DirectoryServices
         }
 
         public DeleteChildAccessRule(
-            IdentityReference identity, AccessControlType type, 
-            Guid childType, 
-            ActiveDirectorySecurityInheritance inheritanceType, 
+            IdentityReference identity, AccessControlType type,
+            Guid childType,
+            ActiveDirectorySecurityInheritance inheritanceType,
             Guid inheritedObjectType)
             : base(
                 identity,
-                (int) ActiveDirectoryRights.DeleteChild,
+                (int)ActiveDirectoryRights.DeleteChild,
                 type,
                 childType,
                 false,
@@ -959,17 +961,17 @@ namespace System.DirectoryServices
         #endregion constructors
     }
 
-    public sealed class PropertyAccessRule: ActiveDirectoryAccessRule
+    public sealed class PropertyAccessRule : ActiveDirectoryAccessRule
     {
         #region Constructors
 
         public PropertyAccessRule(
-            IdentityReference identity, 
-            AccessControlType type, 
+            IdentityReference identity,
+            AccessControlType type,
             PropertyAccess access)
             : base(
                 identity,
-                (int) PropertyAccessTranslator.AccessMaskFromPropertyAccess(access),
+                (int)PropertyAccessTranslator.AccessMaskFromPropertyAccess(access),
                 type,
                 Guid.Empty, // all properties
                 false,
@@ -980,13 +982,13 @@ namespace System.DirectoryServices
         }
 
         public PropertyAccessRule(
-            IdentityReference identity,  
+            IdentityReference identity,
             AccessControlType type,
             PropertyAccess access,
             Guid propertyType)
             : base(
                 identity,
-                (int) PropertyAccessTranslator.AccessMaskFromPropertyAccess(access),
+                (int)PropertyAccessTranslator.AccessMaskFromPropertyAccess(access),
                 type,
                 propertyType,
                 false,
@@ -997,13 +999,13 @@ namespace System.DirectoryServices
         }
 
         public PropertyAccessRule(
-            IdentityReference identity, 
-            AccessControlType type, 
-            PropertyAccess access, 
+            IdentityReference identity,
+            AccessControlType type,
+            PropertyAccess access,
             ActiveDirectorySecurityInheritance inheritanceType)
             : base(
                 identity,
-                (int) PropertyAccessTranslator.AccessMaskFromPropertyAccess(access),
+                (int)PropertyAccessTranslator.AccessMaskFromPropertyAccess(access),
                 type,
                 Guid.Empty, // all properties
                 false,
@@ -1014,14 +1016,14 @@ namespace System.DirectoryServices
         }
 
         public PropertyAccessRule(
-            IdentityReference identity,  
-            AccessControlType type, 
-            PropertyAccess access, 
-            Guid propertyType, 
+            IdentityReference identity,
+            AccessControlType type,
+            PropertyAccess access,
+            Guid propertyType,
             ActiveDirectorySecurityInheritance inheritanceType)
             : base(
                 identity,
-                (int) PropertyAccessTranslator.AccessMaskFromPropertyAccess(access),
+                (int)PropertyAccessTranslator.AccessMaskFromPropertyAccess(access),
                 type,
                 propertyType,
                 false,
@@ -1032,14 +1034,14 @@ namespace System.DirectoryServices
         }
 
         public PropertyAccessRule(
-            IdentityReference identity, 
-            AccessControlType type, 
-            PropertyAccess access, 
-            ActiveDirectorySecurityInheritance inheritanceType, 
+            IdentityReference identity,
+            AccessControlType type,
+            PropertyAccess access,
+            ActiveDirectorySecurityInheritance inheritanceType,
             Guid inheritedObjectType)
             : base(
                 identity,
-                (int) PropertyAccessTranslator.AccessMaskFromPropertyAccess(access),
+                (int)PropertyAccessTranslator.AccessMaskFromPropertyAccess(access),
                 type,
                 Guid.Empty, // all properties
                 false,
@@ -1050,15 +1052,15 @@ namespace System.DirectoryServices
         }
 
         public PropertyAccessRule(
-            IdentityReference identity, 
-            AccessControlType type, 
-            PropertyAccess access, 
-            Guid propertyType, 
-            ActiveDirectorySecurityInheritance inheritanceType, 
+            IdentityReference identity,
+            AccessControlType type,
+            PropertyAccess access,
+            Guid propertyType,
+            ActiveDirectorySecurityInheritance inheritanceType,
             Guid inheritedObjectType)
             : base(
                 identity,
-                (int) PropertyAccessTranslator.AccessMaskFromPropertyAccess(access),
+                (int)PropertyAccessTranslator.AccessMaskFromPropertyAccess(access),
                 type,
                 propertyType,
                 false,
@@ -1071,18 +1073,18 @@ namespace System.DirectoryServices
         #endregion constructors
     }
 
-    public sealed class PropertySetAccessRule: ActiveDirectoryAccessRule
+    public sealed class PropertySetAccessRule : ActiveDirectoryAccessRule
     {
         #region Constructors
 
         public PropertySetAccessRule(
-            IdentityReference identity,  
+            IdentityReference identity,
             AccessControlType type,
             PropertyAccess access,
             Guid propertySetType)
             : base(
                 identity,
-                (int) PropertyAccessTranslator.AccessMaskFromPropertyAccess(access),
+                (int)PropertyAccessTranslator.AccessMaskFromPropertyAccess(access),
                 type,
                 propertySetType,
                 false,
@@ -1093,14 +1095,14 @@ namespace System.DirectoryServices
         }
 
         public PropertySetAccessRule(
-            IdentityReference identity,  
-            AccessControlType type, 
-            PropertyAccess access, 
-            Guid propertySetType, 
+            IdentityReference identity,
+            AccessControlType type,
+            PropertyAccess access,
+            Guid propertySetType,
             ActiveDirectorySecurityInheritance inheritanceType)
             : base(
                 identity,
-                (int) PropertyAccessTranslator.AccessMaskFromPropertyAccess(access),
+                (int)PropertyAccessTranslator.AccessMaskFromPropertyAccess(access),
                 type,
                 propertySetType,
                 false,
@@ -1110,15 +1112,15 @@ namespace System.DirectoryServices
         {
         }
 
-        public PropertySetAccessRule(IdentityReference identity, 
-            AccessControlType type, 
-            PropertyAccess access, 
-            Guid propertySetType, 
-            ActiveDirectorySecurityInheritance inheritanceType, 
+        public PropertySetAccessRule(IdentityReference identity,
+            AccessControlType type,
+            PropertyAccess access,
+            Guid propertySetType,
+            ActiveDirectorySecurityInheritance inheritanceType,
             Guid inheritedObjectType)
             : base(
                 identity,
-                (int) PropertyAccessTranslator.AccessMaskFromPropertyAccess(access),
+                (int)PropertyAccessTranslator.AccessMaskFromPropertyAccess(access),
                 type,
                 propertySetType,
                 false,
@@ -1131,16 +1133,16 @@ namespace System.DirectoryServices
         #endregion constructors
     }
 
-    public sealed class ExtendedRightAccessRule: ActiveDirectoryAccessRule
+    public sealed class ExtendedRightAccessRule : ActiveDirectoryAccessRule
     {
         #region Constructors
 
         public ExtendedRightAccessRule(
-            IdentityReference identity, 
+            IdentityReference identity,
             AccessControlType type)
             : base(
                 identity,
-                (int) ActiveDirectoryRights.ExtendedRight,
+                (int)ActiveDirectoryRights.ExtendedRight,
                 type,
                 Guid.Empty, // all extended rights
                 false,
@@ -1151,12 +1153,12 @@ namespace System.DirectoryServices
         }
 
         public ExtendedRightAccessRule(
-            IdentityReference identity,  
+            IdentityReference identity,
             AccessControlType type,
             Guid extendedRightType)
             : base(
                 identity,
-                (int) ActiveDirectoryRights.ExtendedRight,
+                (int)ActiveDirectoryRights.ExtendedRight,
                 type,
                 extendedRightType,
                 false,
@@ -1167,12 +1169,12 @@ namespace System.DirectoryServices
         }
 
         public ExtendedRightAccessRule(
-            IdentityReference identity, 
-            AccessControlType type, 
+            IdentityReference identity,
+            AccessControlType type,
             ActiveDirectorySecurityInheritance inheritanceType)
             : base(
                 identity,
-                (int) ActiveDirectoryRights.ExtendedRight,
+                (int)ActiveDirectoryRights.ExtendedRight,
                 type,
                 Guid.Empty, // all extended rights
                 false,
@@ -1183,13 +1185,13 @@ namespace System.DirectoryServices
         }
 
         public ExtendedRightAccessRule(
-            IdentityReference identity,  
-            AccessControlType type, 
-            Guid extendedRightType, 
+            IdentityReference identity,
+            AccessControlType type,
+            Guid extendedRightType,
             ActiveDirectorySecurityInheritance inheritanceType)
             : base(
                 identity,
-                (int) ActiveDirectoryRights.ExtendedRight,
+                (int)ActiveDirectoryRights.ExtendedRight,
                 type,
                 extendedRightType,
                 false,
@@ -1200,13 +1202,13 @@ namespace System.DirectoryServices
         }
 
         public ExtendedRightAccessRule(
-            IdentityReference identity, 
-            AccessControlType type, 
-            ActiveDirectorySecurityInheritance inheritanceType, 
+            IdentityReference identity,
+            AccessControlType type,
+            ActiveDirectorySecurityInheritance inheritanceType,
             Guid inheritedObjectType)
             : base(
                 identity,
-                (int) ActiveDirectoryRights.ExtendedRight,
+                (int)ActiveDirectoryRights.ExtendedRight,
                 type,
                 Guid.Empty, // all extended rights
                 false,
@@ -1216,14 +1218,14 @@ namespace System.DirectoryServices
         {
         }
 
-        public ExtendedRightAccessRule(IdentityReference identity, 
-            AccessControlType type, 
-            Guid extendedRightType, 
-            ActiveDirectorySecurityInheritance inheritanceType, 
+        public ExtendedRightAccessRule(IdentityReference identity,
+            AccessControlType type,
+            Guid extendedRightType,
+            ActiveDirectorySecurityInheritance inheritanceType,
             Guid inheritedObjectType)
             : base(
                 identity,
-                (int) ActiveDirectoryRights.ExtendedRight,
+                (int)ActiveDirectoryRights.ExtendedRight,
                 type,
                 extendedRightType,
                 false,
@@ -1236,18 +1238,18 @@ namespace System.DirectoryServices
         #endregion constructors
     }
 
-    public sealed class DeleteTreeAccessRule: ActiveDirectoryAccessRule
+    public sealed class DeleteTreeAccessRule : ActiveDirectoryAccessRule
     {
         #region Constructors
 
         public DeleteTreeAccessRule(
-            IdentityReference identity, 
+            IdentityReference identity,
             AccessControlType type)
             : base(
                 identity,
-                (int) ActiveDirectoryRights.DeleteTree,
+                (int)ActiveDirectoryRights.DeleteTree,
                 type,
-                Guid.Empty, 
+                Guid.Empty,
                 false,
                 InheritanceFlags.None,
                 PropagationFlags.None,
@@ -1256,12 +1258,12 @@ namespace System.DirectoryServices
         }
 
         public DeleteTreeAccessRule(
-            IdentityReference identity, 
-            AccessControlType type, 
+            IdentityReference identity,
+            AccessControlType type,
             ActiveDirectorySecurityInheritance inheritanceType)
             : base(
                 identity,
-                (int) ActiveDirectoryRights.DeleteTree,
+                (int)ActiveDirectoryRights.DeleteTree,
                 type,
                 Guid.Empty,
                 false,
@@ -1272,15 +1274,15 @@ namespace System.DirectoryServices
         }
 
         public DeleteTreeAccessRule(
-            IdentityReference identity, 
-            AccessControlType type, 
-            ActiveDirectorySecurityInheritance inheritanceType, 
+            IdentityReference identity,
+            AccessControlType type,
+            ActiveDirectorySecurityInheritance inheritanceType,
             Guid inheritedObjectType)
             : base(
                 identity,
-                (int) ActiveDirectoryRights.DeleteTree,
+                (int)ActiveDirectoryRights.DeleteTree,
                 type,
-                Guid.Empty, 
+                Guid.Empty,
                 false,
                 ActiveDirectoryInheritanceTranslator.GetInheritanceFlags(inheritanceType),
                 ActiveDirectoryInheritanceTranslator.GetPropagationFlags(inheritanceType),
@@ -1291,13 +1293,13 @@ namespace System.DirectoryServices
         #endregion constructors
     }
 
-    public class ActiveDirectoryAuditRule: ObjectAuditRule
+    public class ActiveDirectoryAuditRule : ObjectAuditRule
     {
         #region Constructors
-            
+
         public ActiveDirectoryAuditRule(
-            IdentityReference identity, 
-            ActiveDirectoryRights adRights, 
+            IdentityReference identity,
+            ActiveDirectoryRights adRights,
             AuditFlags auditFlags)
             : this(
                 identity,
@@ -1313,9 +1315,9 @@ namespace System.DirectoryServices
         }
 
         public ActiveDirectoryAuditRule(
-            IdentityReference identity, 
-            ActiveDirectoryRights adRights, 
-            AuditFlags auditFlags, 
+            IdentityReference identity,
+            ActiveDirectoryRights adRights,
+            AuditFlags auditFlags,
             Guid objectType)
             : this(
                 identity,
@@ -1330,9 +1332,9 @@ namespace System.DirectoryServices
         }
 
         public ActiveDirectoryAuditRule(
-            IdentityReference identity, 
-            ActiveDirectoryRights adRights, 
-            AuditFlags auditFlags, 
+            IdentityReference identity,
+            ActiveDirectoryRights adRights,
+            AuditFlags auditFlags,
             ActiveDirectorySecurityInheritance inheritanceType)
             : this(
                 identity,
@@ -1347,9 +1349,9 @@ namespace System.DirectoryServices
         }
 
         public ActiveDirectoryAuditRule(
-            IdentityReference identity, 
-            ActiveDirectoryRights adRights, 
-            AuditFlags auditFlags, 
+            IdentityReference identity,
+            ActiveDirectoryRights adRights,
+            AuditFlags auditFlags,
             Guid objectType,
             ActiveDirectorySecurityInheritance inheritanceType)
             : this(
@@ -1365,10 +1367,10 @@ namespace System.DirectoryServices
         }
 
         public ActiveDirectoryAuditRule(
-            IdentityReference identity, 
-            ActiveDirectoryRights adRights, 
-            AuditFlags auditFlags, 
-            ActiveDirectorySecurityInheritance inheritanceType, 
+            IdentityReference identity,
+            ActiveDirectoryRights adRights,
+            AuditFlags auditFlags,
+            ActiveDirectorySecurityInheritance inheritanceType,
             Guid inheritedObjectType)
             : this(
                 identity,
@@ -1383,11 +1385,11 @@ namespace System.DirectoryServices
         }
 
         public ActiveDirectoryAuditRule(
-            IdentityReference identity, 
-            ActiveDirectoryRights adRights, 
-            AuditFlags auditFlags, 
+            IdentityReference identity,
+            ActiveDirectoryRights adRights,
+            AuditFlags auditFlags,
             Guid objectType,
-            ActiveDirectorySecurityInheritance inheritanceType, 
+            ActiveDirectorySecurityInheritance inheritanceType,
             Guid inheritedObjectType)
             : this(
                 identity,
@@ -1400,25 +1402,25 @@ namespace System.DirectoryServices
                 inheritedObjectType)
         {
         }
-        
+
         internal ActiveDirectoryAuditRule(
-            IdentityReference identity, 
-            int accessMask, 
-            AuditFlags auditFlags, 
-            Guid objectGuid, 
-            bool isInherited, 
-            InheritanceFlags inheritanceFlags, 
-            PropagationFlags propagationFlags,  
+            IdentityReference identity,
+            int accessMask,
+            AuditFlags auditFlags,
+            Guid objectGuid,
+            bool isInherited,
+            InheritanceFlags inheritanceFlags,
+            PropagationFlags propagationFlags,
             Guid inheritedObjectType
             )
-            :base(identity,
-				accessMask,
-				isInherited,
-				inheritanceFlags,
-				propagationFlags,
-				objectGuid,
-				inheritedObjectType,
-				auditFlags)
+            : base(identity,
+                accessMask,
+                isInherited,
+                inheritanceFlags,
+                propagationFlags,
+                objectGuid,
+                inheritedObjectType,
+                auditFlags)
         {
         }
 
@@ -1428,21 +1430,20 @@ namespace System.DirectoryServices
 
         public ActiveDirectoryRights ActiveDirectoryRights
         {
-            get 
-            { 
-                return ActiveDirectoryRightsTranslator.RightsFromAccessMask(base.AccessMask); 
+            get
+            {
+                return ActiveDirectoryRightsTranslator.RightsFromAccessMask(base.AccessMask);
             }
         }
 
-        public ActiveDirectorySecurityInheritance InheritanceType 
+        public ActiveDirectorySecurityInheritance InheritanceType
         {
-            get 
-            { 
+            get
+            {
                 return ActiveDirectoryInheritanceTranslator.GetEffectiveInheritanceFlags(base.InheritanceFlags, base.PropagationFlags);
             }
         }
 
         #endregion
     }
-
 }

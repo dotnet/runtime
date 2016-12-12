@@ -1,5 +1,8 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
 //------------------------------------------------------------------------------
-// <copyright file="ReplicationOperation.cs" company="Microsoft">
 //     Copyright (c) Microsoft Corporation.  All rights reserved.
 // </copyright>                                                                
 //------------------------------------------------------------------------------
@@ -7,109 +10,125 @@
 /*
  */
 
- namespace System.DirectoryServices.ActiveDirectory {
+namespace System.DirectoryServices.ActiveDirectory
+{
     using System;
     using System.Runtime.InteropServices;
     using System.Collections;
     using System.Diagnostics;
 
-    public class ReplicationOperation{
-        DateTime timeEnqueued;
-        int serialNumber;           
-        int priority;                  
-        ReplicationOperationType operationType;          
-        string namingContext;  
-        string dsaDN;           
-        Guid uuidDsaObjGuid;
+    public class ReplicationOperation
+    {
+        private DateTime _timeEnqueued;
+        private int _serialNumber;
+        private int _priority;
+        private ReplicationOperationType _operationType;
+        private string _namingContext;
+        private string _dsaDN;
+        private Guid _uuidDsaObjGuid;
 
-        private DirectoryServer server = null;
-        private string sourceServer = null;
-        private Hashtable nameTable = null;
-        
+        private DirectoryServer _server = null;
+        private string _sourceServer = null;
+        private Hashtable _nameTable = null;
+
         internal ReplicationOperation(IntPtr addr, DirectoryServer server, Hashtable table)
         {
             DS_REPL_OP operation = new DS_REPL_OP();
             Marshal.PtrToStructure(addr, operation);
 
             // get the enqueued time
-            timeEnqueued = DateTime.FromFileTime(operation.ftimeEnqueued);
+            _timeEnqueued = DateTime.FromFileTime(operation.ftimeEnqueued);
 
             // get the operation identifier
-            serialNumber = operation.ulSerialNumber;
+            _serialNumber = operation.ulSerialNumber;
 
             // get the priority
-            priority = operation.ulPriority;
+            _priority = operation.ulPriority;
 
             // get the operation type
-            operationType = operation.OpType;
+            _operationType = operation.OpType;
 
             // get the partition name
-            namingContext = Marshal.PtrToStringUni(operation.pszNamingContext);
+            _namingContext = Marshal.PtrToStringUni(operation.pszNamingContext);
 
             // get the dsaDN
-            dsaDN = Marshal.PtrToStringUni(operation.pszDsaDN);            
+            _dsaDN = Marshal.PtrToStringUni(operation.pszDsaDN);
 
             // get the dsaobject guid
-            uuidDsaObjGuid = operation.uuidDsaObjGuid;
+            _uuidDsaObjGuid = operation.uuidDsaObjGuid;
 
-            this.server = server;
-            this.nameTable = table;
+            _server = server;
+            _nameTable = table;
         }
 
-        public DateTime TimeEnqueued {
-            get {
-                return timeEnqueued;
+        public DateTime TimeEnqueued
+        {
+            get
+            {
+                return _timeEnqueued;
             }
         }
 
-        public int OperationNumber {
-            get {
-                return serialNumber;
+        public int OperationNumber
+        {
+            get
+            {
+                return _serialNumber;
             }
         }
 
-        public int Priority {
-            get {
-                return priority;
+        public int Priority
+        {
+            get
+            {
+                return _priority;
             }
         }
 
-        public ReplicationOperationType OperationType {
-            get {
-                return operationType;
+        public ReplicationOperationType OperationType
+        {
+            get
+            {
+                return _operationType;
             }
         }
 
-        public string PartitionName {
-            get {
-                return namingContext;
+        public string PartitionName
+        {
+            get
+            {
+                return _namingContext;
             }
         }
 
-        public string SourceServer {
-            get {
-                if(sourceServer == null)
+        public string SourceServer
+        {
+            get
+            {
+                if (_sourceServer == null)
                 {
                     // check whether we have got it before
-                    if(nameTable.Contains(SourceServerGuid))
-                    {  
-                        sourceServer = (string) nameTable[SourceServerGuid];
-                    }
-                    else if(dsaDN != null)
+                    if (_nameTable.Contains(SourceServerGuid))
                     {
-                        sourceServer = Utils.GetServerNameFromInvocationID(dsaDN, SourceServerGuid, server);
+                        _sourceServer = (string)_nameTable[SourceServerGuid];
+                    }
+                    else if (_dsaDN != null)
+                    {
+                        _sourceServer = Utils.GetServerNameFromInvocationID(_dsaDN, SourceServerGuid, _server);
                         // add it to the hashtable
-                        nameTable.Add(SourceServerGuid, sourceServer);                        
+                        _nameTable.Add(SourceServerGuid, _sourceServer);
                     }
                 }
 
-                return sourceServer;
+                return _sourceServer;
             }
         }
-        
-        private Guid SourceServerGuid {
-            get {
-                return uuidDsaObjGuid;
+
+        private Guid SourceServerGuid
+        {
+            get
+            {
+                return _uuidDsaObjGuid;
             }
         }
     }

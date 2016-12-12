@@ -1,10 +1,13 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
 /*++
 
 Copyright (c) 2004  Microsoft Corporation
 
 Module Name:
 
-    ValueCollection.cs
 
 Abstract:
 
@@ -61,9 +64,9 @@ namespace System.DirectoryServices.AccountManagement
         int IList.Add(object value)
         {
             if (value == null)
-                throw new ArgumentNullException("value");   
-        
-            inner.Add((T) value);
+                throw new ArgumentNullException("value");
+
+            _inner.Add((T)value);
             return Count;
         }
 
@@ -79,9 +82,9 @@ namespace System.DirectoryServices.AccountManagement
         bool IList.Contains(object value)
         {
             if (value == null)
-                throw new ArgumentNullException("value");   
-        
-            return inner.Contains((T) value);
+                throw new ArgumentNullException("value");
+
+            return _inner.Contains((T)value);
         }
 
         // <SecurityKernel Critical="True" Ring="0">
@@ -91,9 +94,9 @@ namespace System.DirectoryServices.AccountManagement
         int IList.IndexOf(object value)
         {
             if (value == null)
-                throw new ArgumentNullException("value");   
-        
-            return IndexOf((T) value);
+                throw new ArgumentNullException("value");
+
+            return IndexOf((T)value);
         }
 
         // <SecurityKernel Critical="True" Ring="0">
@@ -103,17 +106,17 @@ namespace System.DirectoryServices.AccountManagement
         void IList.Insert(int index, object value)
         {
             if (value == null)
-                throw new ArgumentNullException("value");   
-        
-            Insert(index, (T) value);
+                throw new ArgumentNullException("value");
+
+            Insert(index, (T)value);
         }
 
         void IList.Remove(object value)
         {
             if (value == null)
                 throw new ArgumentNullException("value");
-        
-            inner.Remove((T) value);
+
+            _inner.Remove((T)value);
         }
 
         // <SecurityKernel Critical="True" Ring="0">
@@ -143,9 +146,9 @@ namespace System.DirectoryServices.AccountManagement
             set
             {
                 if (value == null)
-                    throw new ArgumentNullException("value");   
-            
-                this[index] = (T) value;
+                    throw new ArgumentNullException("value");
+
+                this[index] = (T)value;
             }
         }
 
@@ -154,16 +157,16 @@ namespace System.DirectoryServices.AccountManagement
         //
         void ICollection.CopyTo(Array array, int index)
         {
-            ((ICollection)inner).CopyTo(array, index);
+            ((ICollection)_inner).CopyTo(array, index);
         }
-        
+
         int ICollection.Count
         {
             get
             {
-                return inner.Count;
+                return _inner.Count;
             }
-        }   
+        }
 
         bool ICollection.IsSynchronized
         {
@@ -193,7 +196,7 @@ namespace System.DirectoryServices.AccountManagement
         {
             get
             {
-                return ((ICollection)inner).IsSynchronized;
+                return ((ICollection)_inner).IsSynchronized;
             }
         }
 
@@ -214,10 +217,10 @@ namespace System.DirectoryServices.AccountManagement
         [System.Security.SecurityCritical]
         IEnumerator IEnumerable.GetEnumerator()
         {
-            return (IEnumerator) GetEnumerator();
+            return (IEnumerator)GetEnumerator();
         }
 
-    
+
         //
         // IList<T>
         //
@@ -241,33 +244,33 @@ namespace System.DirectoryServices.AccountManagement
         public void Add(T value)
         {
             if (value == null)
-                throw new ArgumentNullException("value");   
-        
-            inner.Add(value);
+                throw new ArgumentNullException("value");
+
+            _inner.Add(value);
         }
 
         public void Clear()
         {
-            inner.Clear();
+            _inner.Clear();
         }
 
         public bool Contains(T value)
         {
             if (value == null)
-                throw new ArgumentNullException("value");   
-        
-            return inner.Contains(value);
+                throw new ArgumentNullException("value");
+
+            return _inner.Contains(value);
         }
 
         public int IndexOf(T value)
         {
             if (value == null)
-                throw new ArgumentNullException("value");   
+                throw new ArgumentNullException("value");
 
 
             int index = 0;
 
-            foreach (TrackedCollection<T>.ValueEl el in inner.combinedValues)
+            foreach (TrackedCollection<T>.ValueEl el in _inner.combinedValues)
             {
                 if (el.isInserted && el.insertedValue.Equals(value))
                 {
@@ -277,70 +280,70 @@ namespace System.DirectoryServices.AccountManagement
 
                 if (!el.isInserted && el.originalValue.Right.Equals(value))
                 {
-                    GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalValueCollection", "IndexOf: found {0} on original at {1}", value, index);                
+                    GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalValueCollection", "IndexOf: found {0} on original at {1}", value, index);
                     return index;
                 }
 
                 index++;
             }
 
-            return -1;            
+            return -1;
         }
 
         public void Insert(int index, T value)
         {
-            inner.MarkChange();
+            _inner.MarkChange();
 
             if (value == null)
-                throw new ArgumentNullException("value");   
+                throw new ArgumentNullException("value");
 
-            if ((index < 0) || (index > inner.combinedValues.Count))
+            if ((index < 0) || (index > _inner.combinedValues.Count))
             {
-                GlobalDebug.WriteLineIf(GlobalDebug.Warn, "PrincipalValueCollection", "Insert({0}): out of range (count={1})", index, inner.combinedValues.Count);            
+                GlobalDebug.WriteLineIf(GlobalDebug.Warn, "PrincipalValueCollection", "Insert({0}): out of range (count={1})", index, _inner.combinedValues.Count);
                 throw new ArgumentOutOfRangeException("index");
             }
 
             TrackedCollection<T>.ValueEl el = new TrackedCollection<T>.ValueEl();
             el.isInserted = true;
             el.insertedValue = value;
-            
-            inner.combinedValues.Insert(index, el);
+
+            _inner.combinedValues.Insert(index, el);
         }
 
         public bool Remove(T value)
         {
             if (value == null)
-                throw new ArgumentNullException("value");   
-        
-            return inner.Remove(value);
+                throw new ArgumentNullException("value");
+
+            return _inner.Remove(value);
         }
 
         public void RemoveAt(int index)
         {
-            inner.MarkChange();
-            
-            if ((index < 0) || (index >= inner.combinedValues.Count))
+            _inner.MarkChange();
+
+            if ((index < 0) || (index >= _inner.combinedValues.Count))
             {
-                GlobalDebug.WriteLineIf(GlobalDebug.Warn, "PrincipalValueCollection", "RemoveAt({0}): out of range (count={1})", index, inner.combinedValues.Count);            
+                GlobalDebug.WriteLineIf(GlobalDebug.Warn, "PrincipalValueCollection", "RemoveAt({0}): out of range (count={1})", index, _inner.combinedValues.Count);
                 throw new ArgumentOutOfRangeException("index");
             }
 
-            TrackedCollection<T>.ValueEl el = inner.combinedValues[index];
+            TrackedCollection<T>.ValueEl el = _inner.combinedValues[index];
 
             if (el.isInserted)
             {
                 // We're removing an inserted value.
-                GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalValueCollection", "RemoveAt({0}): removing inserted", index);            
-                inner.combinedValues.RemoveAt(index);
+                GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalValueCollection", "RemoveAt({0}): removing inserted", index);
+                _inner.combinedValues.RemoveAt(index);
             }
             else
             {
                 // We're removing an original value.
-                GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalValueCollection", "RemoveAt({0}): removing original", index);                
-                Pair<T,T> pair = inner.combinedValues[index].originalValue;
-                inner.combinedValues.RemoveAt(index);   
-                inner.removedValues.Add(pair.Left);                
-            }            
+                GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalValueCollection", "RemoveAt({0}): removing original", index);
+                Pair<T, T> pair = _inner.combinedValues[index].originalValue;
+                _inner.combinedValues.RemoveAt(index);
+                _inner.removedValues.Add(pair.Left);
+            }
         }
 
 
@@ -348,51 +351,51 @@ namespace System.DirectoryServices.AccountManagement
         {
             get
             {
-                if ((index < 0) || (index >= inner.combinedValues.Count))
+                if ((index < 0) || (index >= _inner.combinedValues.Count))
                 {
-                    GlobalDebug.WriteLineIf(GlobalDebug.Warn, "PrincipalValueCollection", "this[{0}].get: out of range (count={1})", index, inner.combinedValues.Count);                
+                    GlobalDebug.WriteLineIf(GlobalDebug.Warn, "PrincipalValueCollection", "this[{0}].get: out of range (count={1})", index, _inner.combinedValues.Count);
                     throw new ArgumentOutOfRangeException("index");
                 }
 
-                TrackedCollection<T>.ValueEl el = inner.combinedValues[index];
+                TrackedCollection<T>.ValueEl el = _inner.combinedValues[index];
 
                 if (el.isInserted)
                 {
-                    GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalValueCollection", "this[{0}].get: is inserted {1}", index, el.insertedValue);               
+                    GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalValueCollection", "this[{0}].get: is inserted {1}", index, el.insertedValue);
                     return el.insertedValue;
                 }
                 else
                 {
-                    GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalValueCollection", "this[{0}].get: is original {1}", index, el.originalValue.Right);                
+                    GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalValueCollection", "this[{0}].get: is original {1}", index, el.originalValue.Right);
                     return el.originalValue.Right;  // Right == current value
-                }            
+                }
             }
 
             set
             {
-                inner.MarkChange();
+                _inner.MarkChange();
 
-                if ((index < 0) || (index >= inner.combinedValues.Count))
+                if ((index < 0) || (index >= _inner.combinedValues.Count))
                 {
-                    GlobalDebug.WriteLineIf(GlobalDebug.Warn, "PrincipalValueCollection", "this[{0}].set: out of range (count={1})", index, inner.combinedValues.Count);                
+                    GlobalDebug.WriteLineIf(GlobalDebug.Warn, "PrincipalValueCollection", "this[{0}].set: out of range (count={1})", index, _inner.combinedValues.Count);
                     throw new ArgumentOutOfRangeException("index");
                 }
 
                 if (value == null)
-                    throw new ArgumentNullException("value");   
+                    throw new ArgumentNullException("value");
 
-                TrackedCollection<T>.ValueEl el = inner.combinedValues[index];
+                TrackedCollection<T>.ValueEl el = _inner.combinedValues[index];
 
                 if (el.isInserted)
                 {
-                    GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalValueCollection", "this[{0}].set: is inserted {1}", index, value);                
+                    GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalValueCollection", "this[{0}].set: is inserted {1}", index, value);
                     el.insertedValue = value;
                 }
                 else
                 {
-                    GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalValueCollection", "this[{0}].set: is original {1}", index, value);                
+                    GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalValueCollection", "this[{0}].set: is original {1}", index, value);
                     el.originalValue.Right = value;
-                }                
+                }
             }
         }
 
@@ -402,14 +405,14 @@ namespace System.DirectoryServices.AccountManagement
         //
         public void CopyTo(T[] array, int index)
         {
-            ((ICollection)this).CopyTo((Array) array, index);
+            ((ICollection)this).CopyTo((Array)array, index);
         }
-        
+
         public int Count
         {
             get
             {
-                return inner.Count;
+                return _inner.Count;
             }
         }
 
@@ -423,14 +426,14 @@ namespace System.DirectoryServices.AccountManagement
         [System.Security.SecurityCritical]
         public IEnumerator<T> GetEnumerator()
         {
-            return new ValueCollectionEnumerator<T>(inner, inner.combinedValues);
+            return new ValueCollectionEnumerator<T>(_inner, _inner.combinedValues);
         }
 
 
         //
         // Private implementation
         //
-        TrackedCollection<T> inner = new TrackedCollection<T>();
+        private TrackedCollection<T> _inner = new TrackedCollection<T>();
 
         //
         // Internal constructor
@@ -438,10 +441,10 @@ namespace System.DirectoryServices.AccountManagement
         internal PrincipalValueCollection()
         {
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalValueCollection", "Ctor");
-        
+
             // Nothing to do here
         }
-        
+
         //
         // Load/Store implementation
         //
@@ -451,10 +454,10 @@ namespace System.DirectoryServices.AccountManagement
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalValueCollection", "Load, count={0}", values.Count);
 
             // To support reload
-            inner.combinedValues.Clear();
-            inner.removedValues.Clear();
+            _inner.combinedValues.Clear();
+            _inner.removedValues.Clear();
 
-            
+
             foreach (T value in values)
             {
                 // If T was a mutable reference type, would need to make a copy of value
@@ -464,9 +467,9 @@ namespace System.DirectoryServices.AccountManagement
                 // to avoid this problem.
                 TrackedCollection<T>.ValueEl el = new TrackedCollection<T>.ValueEl();
                 el.isInserted = false;
-                el.originalValue = new Pair<T,T>(value, value);
+                el.originalValue = new Pair<T, T>(value, value);
 
-                inner.combinedValues.Add(el);
+                _inner.combinedValues.Add(el);
             }
         }
 
@@ -475,7 +478,7 @@ namespace System.DirectoryServices.AccountManagement
         {
             get
             {
-                return inner.Inserted;
+                return _inner.Inserted;
             }
         }
 
@@ -483,15 +486,15 @@ namespace System.DirectoryServices.AccountManagement
         {
             get
             {
-                return inner.Removed;
+                return _inner.Removed;
             }
         }
 
-        internal List<Pair<T,T>> ChangedValues
+        internal List<Pair<T, T>> ChangedValues
         {
             get
             {
-                return inner.ChangedValues;
+                return _inner.ChangedValues;
             }
         }
 
@@ -500,7 +503,7 @@ namespace System.DirectoryServices.AccountManagement
         {
             get
             {
-                return inner.Changed;
+                return _inner.Changed;
             }
         }
 
@@ -510,40 +513,40 @@ namespace System.DirectoryServices.AccountManagement
         internal void ResetTracking()
         {
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalValueCollection", "Entering ResetTracking");
-        
-            inner.removedValues.Clear();
 
-            foreach (TrackedCollection<T>.ValueEl el in inner.combinedValues)
+            _inner.removedValues.Clear();
+
+            foreach (TrackedCollection<T>.ValueEl el in _inner.combinedValues)
             {
                 if (el.isInserted)
                 {
                     GlobalDebug.WriteLineIf(
-                                    GlobalDebug.Info, 
+                                    GlobalDebug.Info,
                                     "PrincipalValueCollection",
                                     "ResetTracking: moving {0} (type {1}) from inserted to original",
                                     el.insertedValue,
-                                    el.insertedValue.GetType());                                    
-                
+                                    el.insertedValue.GetType());
+
                     el.isInserted = false;
-                    el.originalValue = new Pair<T,T>(el.insertedValue, el.insertedValue);
+                    el.originalValue = new Pair<T, T>(el.insertedValue, el.insertedValue);
                     //el.insertedValue = T.default;
                 }
                 else
                 {
-                    Pair<T,T> pair = el.originalValue;
+                    Pair<T, T> pair = el.originalValue;
 
                     if (!pair.Left.Equals(pair.Right))
                     {
                         GlobalDebug.WriteLineIf(
-                                        GlobalDebug.Info, 
+                                        GlobalDebug.Info,
                                         "PrincipalValueCollection",
                                         "ResetTracking: found changed original, left={0}, right={1}, type={2}",
                                         pair.Left,
                                         pair.Right,
                                         pair.Left.GetType());
-                    
-                        pair.Left = pair.Right;      
-                    }                        
+
+                        pair.Left = pair.Right;
+                    }
                 }
             }
         }

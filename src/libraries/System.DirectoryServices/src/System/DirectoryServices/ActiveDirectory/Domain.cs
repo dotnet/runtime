@@ -1,10 +1,14 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
 //------------------------------------------------------------------------------
-// <copyright file="Domain.cs" company="Microsoft">
 //     Copyright (c) Microsoft Corporation.  All rights reserved.
 // </copyright>                                                                
 //------------------------------------------------------------------------------
 
-namespace System.DirectoryServices.ActiveDirectory {
+namespace System.DirectoryServices.ActiveDirectory
+{
     using System;
     using System.Text;
     using System.Collections;
@@ -12,10 +16,11 @@ namespace System.DirectoryServices.ActiveDirectory {
     using System.ComponentModel;
     using System.DirectoryServices;
     using System.Runtime.InteropServices;
-       using System.Diagnostics;
-       using System.Security.Permissions;
+    using System.Diagnostics;
+    using System.Security.Permissions;
 
-    public enum DomainMode: int {
+    public enum DomainMode : int
+    {
         Unknown = -1,
         Windows2000MixedDomain = 0,   // win2000, win2003, NT  
         Windows2000NativeDomain = 1,  // win2000, win2003
@@ -25,42 +30,45 @@ namespace System.DirectoryServices.ActiveDirectory {
         Windows2008R2Domain = 5,         // win2008 R2
         Windows8Domain = 6,             //Windows Server 2012
         Windows2012R2Domain = 7,             //Windows Server 2012 R2
-
     }
 
-       [DirectoryServicesPermission(SecurityAction.LinkDemand, Unrestricted=true)]
-    public class Domain: ActiveDirectoryPartition  {
+    [DirectoryServicesPermission(SecurityAction.LinkDemand, Unrestricted = true)]
+    public class Domain : ActiveDirectoryPartition
+    {
         /// Private Variables
-        private string crossRefDN = null;
-        private string trustParent = null;
-        
+        private string _crossRefDN = null;
+        private string _trustParent = null;
+
         // internal variables corresponding to public properties
-        private DomainControllerCollection cachedDomainControllers = null;        
-        private DomainCollection cachedChildren = null;
-        private DomainMode currentDomainMode = (DomainMode)(-1);
-        private int domainModeLevel =  -1;
-        private DomainController cachedPdcRoleOwner = null;
-        private DomainController cachedRidRoleOwner = null;
-        private DomainController cachedInfrastructureRoleOwner = null;
-        private Domain cachedParent = null;
-        private Forest cachedForest = null;
+        private DomainControllerCollection _cachedDomainControllers = null;
+        private DomainCollection _cachedChildren = null;
+        private DomainMode _currentDomainMode = (DomainMode)(-1);
+        private int _domainModeLevel = -1;
+        private DomainController _cachedPdcRoleOwner = null;
+        private DomainController _cachedRidRoleOwner = null;
+        private DomainController _cachedInfrastructureRoleOwner = null;
+        private Domain _cachedParent = null;
+        private Forest _cachedForest = null;
         // this is needed because null value for parent is valid
-        private bool isParentInitialized = false;      
+        private bool _isParentInitialized = false;
 
         #region constructors
         // internal constructors
         internal Domain(DirectoryContext context, string domainName, DirectoryEntryManager directoryEntryMgr)
-            :base(context, domainName) {
+            : base(context, domainName)
+        {
             this.directoryEntryMgr = directoryEntryMgr;
         }
-        internal Domain(DirectoryContext context, string domainName) 
-            :this(context, domainName, new DirectoryEntryManager(context)) {
+        internal Domain(DirectoryContext context, string domainName)
+            : this(context, domainName, new DirectoryEntryManager(context))
+        {
         }
         #endregion constructors
 
         #region public methods
-        
-        public static Domain GetDomain(DirectoryContext context) {
+
+        public static Domain GetDomain(DirectoryContext context)
+        {
             // check that the argument is not null
             if (context == null)
                 throw new ArgumentNullException("context");
@@ -72,17 +80,22 @@ namespace System.DirectoryServices.ActiveDirectory {
                 throw new ArgumentException(Res.GetString(Res.TargetShouldBeServerORDomain), "context");
             }
 
-            if ((context.Name == null) && (!context.isDomain())) {
+            if ((context.Name == null) && (!context.isDomain()))
+            {
                 throw new ActiveDirectoryObjectNotFoundException(Res.GetString(Res.ContextNotAssociatedWithDomain), typeof(Domain), null);
             }
 
-            if (context.Name != null) {
+            if (context.Name != null)
+            {
                 // the target should be a valid domain name or a server
-                if (!((context.isDomain())||(context.isServer()))) {
-                    if (context.ContextType == DirectoryContextType.Domain) {
+                if (!((context.isDomain()) || (context.isServer())))
+                {
+                    if (context.ContextType == DirectoryContextType.Domain)
+                    {
                         throw new ActiveDirectoryObjectNotFoundException(Res.GetString(Res.DomainNotFound), typeof(Domain), context.Name);
                     }
-                    else {
+                    else
+                    {
                         throw new ActiveDirectoryObjectNotFoundException(Res.GetString(Res.DCNotFound, context.Name), typeof(Domain), null);
                     }
                 }
@@ -96,61 +109,68 @@ namespace System.DirectoryServices.ActiveDirectory {
             DirectoryEntryManager directoryEntryMgr = new DirectoryEntryManager(context);
             DirectoryEntry rootDSE = null;
             string defaultDomainNC = null;
-            try {
-
+            try
+            {
                 rootDSE = directoryEntryMgr.GetCachedDirectoryEntry(WellKnownDN.RootDSE);
-                if ((context.isServer()) && (!Utils.CheckCapability(rootDSE, Capability.ActiveDirectory))){
+                if ((context.isServer()) && (!Utils.CheckCapability(rootDSE, Capability.ActiveDirectory)))
+                {
                     throw new ActiveDirectoryObjectNotFoundException(Res.GetString(Res.DCNotFound, context.Name), typeof(Domain), null);
                 }
                 defaultDomainNC = (string)PropertyManager.GetPropertyValue(context, rootDSE, PropertyManager.DefaultNamingContext);
             }
-            catch (COMException e) {
+            catch (COMException e)
+            {
                 int errorCode = e.ErrorCode;
-                
-                if (errorCode == unchecked((int)0x8007203a)) {
-                    if (context.ContextType == DirectoryContextType.Domain) {
+
+                if (errorCode == unchecked((int)0x8007203a))
+                {
+                    if (context.ContextType == DirectoryContextType.Domain)
+                    {
                         throw new ActiveDirectoryObjectNotFoundException(Res.GetString(Res.DomainNotFound), typeof(Domain), context.Name);
                     }
-                    else {
+                    else
+                    {
                         throw new ActiveDirectoryObjectNotFoundException(Res.GetString(Res.DCNotFound, context.Name), typeof(Domain), null);
                     }
                 }
-                else {
+                else
+                {
                     throw ExceptionHelper.GetExceptionFromCOMException(context, e);
                 }
             }
-            
+
             // return domain object
             return new Domain(context, Utils.GetDnsNameFromDN(defaultDomainNC), directoryEntryMgr);
         }
 
-        public static Domain GetComputerDomain() {
-
+        public static Domain GetComputerDomain()
+        {
             string computerDomainName = DirectoryContext.GetDnsDomainName(null);
-            if (computerDomainName == null) {
+            if (computerDomainName == null)
+            {
                 throw new ActiveDirectoryObjectNotFoundException(Res.GetString(Res.ComputerNotJoinedToDomain), typeof(Domain), null);
             }
 
             return Domain.GetDomain(new DirectoryContext(DirectoryContextType.Domain, computerDomainName));
         }
 
-        public void RaiseDomainFunctionalityLevel( int domainMode )
+        public void RaiseDomainFunctionalityLevel(int domainMode)
         {
             int existingDomainModeLevel;
             CheckIfDisposed();
 
             // check if domainMode is within the valid range
-            if ( domainMode < 0 )
+            if (domainMode < 0)
             {
-                throw new ArgumentException( Res.GetString( Res.InvalidMode ), "domainMode" );
+                throw new ArgumentException(Res.GetString(Res.InvalidMode), "domainMode");
             }
 
             // get the current domain mode
             existingDomainModeLevel = DomainModeLevel;
 
-            if ( existingDomainModeLevel >= domainMode )
+            if (existingDomainModeLevel >= domainMode)
             {
-                throw new ArgumentException( Res.GetString( Res.InvalidMode ), "domainMode" );
+                throw new ArgumentException(Res.GetString(Res.InvalidMode), "domainMode");
             }
 
             DomainMode existingDomainMode = DomainMode;
@@ -169,36 +189,35 @@ namespace System.DirectoryServices.ActiveDirectory {
             // Rest                2 or above                 msDS-Behavior-Version = domainMode
             try
             {
+                domainEntry = DirectoryEntryManager.GetDirectoryEntry(context, directoryEntryMgr.ExpandWellKnownDN(WellKnownDN.DefaultNamingContext));
 
-                domainEntry = DirectoryEntryManager.GetDirectoryEntry( context, directoryEntryMgr.ExpandWellKnownDN( WellKnownDN.DefaultNamingContext ) );
-                
                 // set the new functional level
                 domainEntry.Properties[PropertyManager.MsDSBehaviorVersion].Value = domainMode;
 
-                switch ( existingDomainMode )
+                switch (existingDomainMode)
                 {
                     case DomainMode.Windows2000MixedDomain:
                         {
-                            if ( domainMode == 2 || domainMode == 0)
+                            if (domainMode == 2 || domainMode == 0)
                             {
                                 domainEntry.Properties[PropertyManager.NTMixedDomain].Value = 0;
                             }
-                            else if ( domainMode > 2 ) // new level should be less than or equal to Windows2003
+                            else if (domainMode > 2) // new level should be less than or equal to Windows2003
                             {
-                                throw new ArgumentException( Res.GetString( Res.InvalidMode ), "domainMode" );
+                                throw new ArgumentException(Res.GetString(Res.InvalidMode), "domainMode");
                             }
                             break;
                         }
 
                     case DomainMode.Windows2003InterimDomain:
                         {
-                            if ( domainMode == 2 ) // only Windows2003 allowed
+                            if (domainMode == 2) // only Windows2003 allowed
                             {
                                 domainEntry.Properties[PropertyManager.NTMixedDomain].Value = 0;
                             }
                             else
                             {
-                                throw new ArgumentException( Res.GetString( Res.InvalidMode ), "domainMode" );
+                                throw new ArgumentException(Res.GetString(Res.InvalidMode), "domainMode");
                             }
 
                             break;
@@ -218,22 +237,22 @@ namespace System.DirectoryServices.ActiveDirectory {
                 // So, we catch that exception and throw a more meaningful one.
                 domainEntry.CommitChanges();
             }
-            catch ( System.Runtime.InteropServices.COMException e )
+            catch (System.Runtime.InteropServices.COMException e)
             {
-                if ( e.ErrorCode == unchecked( ( int ) 0x8007200A ) )
+                if (e.ErrorCode == unchecked((int)0x8007200A))
                 {
                     // attribute does not exist which means this is not a W2K3 DC
                     // cannot raise domain functionality
-                    throw new ArgumentException( Res.GetString( Res.NoW2K3DCs ), "domainMode" );
+                    throw new ArgumentException(Res.GetString(Res.NoW2K3DCs), "domainMode");
                 }
                 else
                 {
-                    throw ExceptionHelper.GetExceptionFromCOMException( context, e );
+                    throw ExceptionHelper.GetExceptionFromCOMException(context, e);
                 }
             }
             finally
             {
-                if ( domainEntry != null )
+                if (domainEntry != null)
                 {
                     domainEntry.Dispose();
                 }
@@ -241,17 +260,18 @@ namespace System.DirectoryServices.ActiveDirectory {
 
             // at this point the raise domain function has succeeded
             // invalidate the domain mode so that we get it from the server the next time
-            currentDomainMode = ( DomainMode ) ( -1 );
-            domainModeLevel = -1;
+            _currentDomainMode = (DomainMode)(-1);
+            _domainModeLevel = -1;
         }
 
-        public void RaiseDomainFunctionality( DomainMode domainMode )
+        public void RaiseDomainFunctionality(DomainMode domainMode)
         {
             DomainMode existingDomainMode;
             CheckIfDisposed();
 
             // check if domain mode is within the valid range
-            if (domainMode < DomainMode.Windows2000MixedDomain || domainMode > DomainMode.Windows2012R2Domain) {
+            if (domainMode < DomainMode.Windows2000MixedDomain || domainMode > DomainMode.Windows2012R2Domain)
+            {
                 throw new InvalidEnumArgumentException("domainMode", (int)domainMode, typeof(DomainMode));
             }
 
@@ -276,35 +296,44 @@ namespace System.DirectoryServices.ActiveDirectory {
             // Windows2012             Windows2012R2 or above
             // Windows2012R2           ERROR
 
-            try {
-
+            try
+            {
                 domainEntry = DirectoryEntryManager.GetDirectoryEntry(context, directoryEntryMgr.ExpandWellKnownDN(WellKnownDN.DefaultNamingContext));
-            
-                switch (existingDomainMode) {
-                    case DomainMode.Windows2000MixedDomain : {
-                            if (domainMode == DomainMode.Windows2000NativeDomain) {
+
+                switch (existingDomainMode)
+                {
+                    case DomainMode.Windows2000MixedDomain:
+                        {
+                            if (domainMode == DomainMode.Windows2000NativeDomain)
+                            {
                                 domainEntry.Properties[PropertyManager.NTMixedDomain].Value = 0;
                             }
-                            else if (domainMode == DomainMode.Windows2003InterimDomain) {
+                            else if (domainMode == DomainMode.Windows2003InterimDomain)
+                            {
                                 domainEntry.Properties[PropertyManager.MsDSBehaviorVersion].Value = 1;
                             }
-                            else if (domainMode == DomainMode.Windows2003Domain) {
+                            else if (domainMode == DomainMode.Windows2003Domain)
+                            {
                                 domainEntry.Properties[PropertyManager.NTMixedDomain].Value = 0;
                                 domainEntry.Properties[PropertyManager.MsDSBehaviorVersion].Value = 2;
                             }
-                            else {
+                            else
+                            {
                                 throw new ArgumentException(Res.GetString(Res.InvalidMode), "domainMode");
                             }
 
                             break;
-                        }                     
+                        }
 
-                    case DomainMode.Windows2003InterimDomain : {
-                            if (domainMode == DomainMode.Windows2003Domain) {
+                    case DomainMode.Windows2003InterimDomain:
+                        {
+                            if (domainMode == DomainMode.Windows2003Domain)
+                            {
                                 domainEntry.Properties[PropertyManager.NTMixedDomain].Value = 0;
                                 domainEntry.Properties[PropertyManager.MsDSBehaviorVersion].Value = 2;
                             }
-                            else {
+                            else
+                            {
                                 throw new ArgumentException(Res.GetString(Res.InvalidMode), "domainMode");
                             }
 
@@ -318,30 +347,33 @@ namespace System.DirectoryServices.ActiveDirectory {
                     case DomainMode.Windows8Domain:
                     case DomainMode.Windows2012R2Domain:
                         {
-                            if ( existingDomainMode >= domainMode )
+                            if (existingDomainMode >= domainMode)
                             {
-                                throw new ArgumentException( Res.GetString( Res.InvalidMode ), "domainMode" );
+                                throw new ArgumentException(Res.GetString(Res.InvalidMode), "domainMode");
                             }
 
-                            if ( domainMode == DomainMode.Windows2003Domain )
+                            if (domainMode == DomainMode.Windows2003Domain)
                             {
                                 domainEntry.Properties[PropertyManager.MsDSBehaviorVersion].Value = 2;
                             }
-                            else if (domainMode == DomainMode.Windows2008Domain) {
+                            else if (domainMode == DomainMode.Windows2008Domain)
+                            {
                                 domainEntry.Properties[PropertyManager.MsDSBehaviorVersion].Value = 3;
                             }
-                            else if (domainMode == DomainMode.Windows2008R2Domain) {
+                            else if (domainMode == DomainMode.Windows2008R2Domain)
+                            {
                                 domainEntry.Properties[PropertyManager.MsDSBehaviorVersion].Value = 4;
                             }
                             else if (domainMode == DomainMode.Windows8Domain)
                             {
                                 domainEntry.Properties[PropertyManager.MsDSBehaviorVersion].Value = 5;
                             }
-                            else if ( domainMode == DomainMode.Windows2012R2Domain )
+                            else if (domainMode == DomainMode.Windows2012R2Domain)
                             {
                                 domainEntry.Properties[PropertyManager.MsDSBehaviorVersion].Value = 6;
                             }
-                            else {
+                            else
+                            {
                                 throw new ArgumentException(Res.GetString(Res.InvalidMode), "domainMode");
                             }
                         }
@@ -363,495 +395,517 @@ namespace System.DirectoryServices.ActiveDirectory {
                 // So, we catch that exception and throw a more meaningful one.
                 domainEntry.CommitChanges();
             }
-            catch (System.Runtime.InteropServices.COMException e) {
-                if (e.ErrorCode == unchecked((int)0x8007200A)) {
+            catch (System.Runtime.InteropServices.COMException e)
+            {
+                if (e.ErrorCode == unchecked((int)0x8007200A))
+                {
                     // attribute does not exist which means this is not a W2K3 DC
                     // cannot raise domain functionality
                     throw new ArgumentException(Res.GetString(Res.NoW2K3DCs), "domainMode");
                 }
-                else {
+                else
+                {
                     throw ExceptionHelper.GetExceptionFromCOMException(context, e);
                 }
             }
-            finally {
-                if (domainEntry != null) {
+            finally
+            {
+                if (domainEntry != null)
+                {
                     domainEntry.Dispose();
                 }
             }
 
             // at this point the raise domain function has succeeded
             // invalidate the domain mode so that we get it from the server the next time
-            currentDomainMode = (DomainMode)(-1);
-            domainModeLevel = -1;
+            _currentDomainMode = (DomainMode)(-1);
+            _domainModeLevel = -1;
         }
 
-        public DomainController FindDomainController() {
-                                 
+        public DomainController FindDomainController()
+        {
             CheckIfDisposed();
-            
+
             return DomainController.FindOneInternal(context, Name, null, 0);
         }
 
-        public DomainController FindDomainController(string siteName) {
+        public DomainController FindDomainController(string siteName)
+        {
             CheckIfDisposed();
 
-            if (siteName == null) {
+            if (siteName == null)
+            {
                 throw new ArgumentNullException("siteName");
             }
 
             return DomainController.FindOneInternal(context, Name, siteName, 0);
         }
 
-        public DomainController FindDomainController(LocatorOptions flag) {
-
+        public DomainController FindDomainController(LocatorOptions flag)
+        {
             CheckIfDisposed();
-            
+
             return DomainController.FindOneInternal(context, Name, null, flag);
         }
 
-        public DomainController FindDomainController(string siteName, LocatorOptions flag) {
-
+        public DomainController FindDomainController(string siteName, LocatorOptions flag)
+        {
             CheckIfDisposed();
 
-            if (siteName == null) {
+            if (siteName == null)
+            {
                 throw new ArgumentNullException("siteName");
             }
 
             return DomainController.FindOneInternal(context, Name, siteName, flag);
         }
 
-        public DomainControllerCollection FindAllDomainControllers() {
-
+        public DomainControllerCollection FindAllDomainControllers()
+        {
             CheckIfDisposed();
-            
+
             return DomainController.FindAllInternal(context, Name, true /*isDnsDomainName */, null);
         }
 
-        public DomainControllerCollection FindAllDomainControllers(string siteName) {
-
+        public DomainControllerCollection FindAllDomainControllers(string siteName)
+        {
             CheckIfDisposed();
 
-            if (siteName == null) {
+            if (siteName == null)
+            {
                 throw new ArgumentNullException("siteName");
             }
 
             return DomainController.FindAllInternal(context, Name, true /*isDnsDomainName */, siteName);
         }
 
-        public DomainControllerCollection FindAllDiscoverableDomainControllers() {
+        public DomainControllerCollection FindAllDiscoverableDomainControllers()
+        {
+            long flag = (long)PrivateLocatorFlags.DSWriteableRequired;
 
-            long flag = (long) PrivateLocatorFlags.DSWriteableRequired;
-            
-            CheckIfDisposed();        
+            CheckIfDisposed();
             return new DomainControllerCollection(Locator.EnumerateDomainControllers(context, Name, null, (long)flag));
         }
 
-        public DomainControllerCollection FindAllDiscoverableDomainControllers(string siteName) {
+        public DomainControllerCollection FindAllDiscoverableDomainControllers(string siteName)
+        {
+            long flag = (long)PrivateLocatorFlags.DSWriteableRequired;
 
-            long flag = (long) PrivateLocatorFlags.DSWriteableRequired;
-            
             CheckIfDisposed();
-        
-            if (siteName == null) {
+
+            if (siteName == null)
+            {
                 throw new ArgumentNullException("siteName");
             }
 
-            if (siteName.Length == 0) {
+            if (siteName.Length == 0)
+            {
                 throw new ArgumentException(Res.GetString(Res.EmptyStringParameter), "siteName");
             }
-        
+
             return new DomainControllerCollection(Locator.EnumerateDomainControllers(context, Name, siteName, (long)flag));
         }
 
-              [
-                  DirectoryServicesPermission(SecurityAction.LinkDemand, Unrestricted=true),
-                  DirectoryServicesPermission(SecurityAction.InheritanceDemand, Unrestricted=true)
-              ]
-        public override DirectoryEntry GetDirectoryEntry() {
+        [
+            DirectoryServicesPermission(SecurityAction.LinkDemand, Unrestricted = true),
+            DirectoryServicesPermission(SecurityAction.InheritanceDemand, Unrestricted = true)
+        ]
+        public override DirectoryEntry GetDirectoryEntry()
+        {
             CheckIfDisposed();
             return DirectoryEntryManager.GetDirectoryEntry(context, directoryEntryMgr.ExpandWellKnownDN(WellKnownDN.DefaultNamingContext));
         }
 
-              public TrustRelationshipInformationCollection GetAllTrustRelationships()
-              {
-                  CheckIfDisposed();
-                  
-                  ArrayList trusts = GetTrustsHelper(null);
-                  TrustRelationshipInformationCollection collection = new TrustRelationshipInformationCollection(context, Name, trusts);
-                  return collection;
-              }
+        public TrustRelationshipInformationCollection GetAllTrustRelationships()
+        {
+            CheckIfDisposed();
 
-              public TrustRelationshipInformation GetTrustRelationship(string targetDomainName)
-              {
-                  CheckIfDisposed();
-                  
-                  if(targetDomainName == null)
-                      throw new ArgumentNullException("targetDomainName");
+            ArrayList trusts = GetTrustsHelper(null);
+            TrustRelationshipInformationCollection collection = new TrustRelationshipInformationCollection(context, Name, trusts);
+            return collection;
+        }
 
-                  if(targetDomainName.Length == 0)
-                      throw new ArgumentException(Res.GetString(Res.EmptyStringParameter), "targetDomainName");
-                  
-                  ArrayList trusts = GetTrustsHelper(targetDomainName);
-                  TrustRelationshipInformationCollection collection = new TrustRelationshipInformationCollection(context, Name, trusts);
-                  if(collection.Count == 0)
-                  {
-                      // trust relationship does not exist
-                      throw new ActiveDirectoryObjectNotFoundException(Res.GetString(Res.DomainTrustDoesNotExist, Name, targetDomainName), typeof(TrustRelationshipInformation), null);
-                  }
-                  else
-                  {
-                      Debug.Assert(collection.Count == 1);
-                      return collection[0];
-                  }
-              }
+        public TrustRelationshipInformation GetTrustRelationship(string targetDomainName)
+        {
+            CheckIfDisposed();
 
-              public bool GetSelectiveAuthenticationStatus(string targetDomainName)
-              {
-                  CheckIfDisposed();
-                  
-                  if(targetDomainName == null)
-                      throw new ArgumentNullException("targetDomainName");
+            if (targetDomainName == null)
+                throw new ArgumentNullException("targetDomainName");
 
-                  if(targetDomainName.Length == 0)
-                      throw new ArgumentException(Res.GetString(Res.EmptyStringParameter), "targetDomainName");
+            if (targetDomainName.Length == 0)
+                throw new ArgumentException(Res.GetString(Res.EmptyStringParameter), "targetDomainName");
 
-                  return TrustHelper.GetTrustedDomainInfoStatus(context, Name, targetDomainName, TRUST_ATTRIBUTE.TRUST_ATTRIBUTE_CROSS_ORGANIZATION, false);
-              }
+            ArrayList trusts = GetTrustsHelper(targetDomainName);
+            TrustRelationshipInformationCollection collection = new TrustRelationshipInformationCollection(context, Name, trusts);
+            if (collection.Count == 0)
+            {
+                // trust relationship does not exist
+                throw new ActiveDirectoryObjectNotFoundException(Res.GetString(Res.DomainTrustDoesNotExist, Name, targetDomainName), typeof(TrustRelationshipInformation), null);
+            }
+            else
+            {
+                Debug.Assert(collection.Count == 1);
+                return collection[0];
+            }
+        }
 
-              public void SetSelectiveAuthenticationStatus(string targetDomainName, bool enable)
-              {
-                  CheckIfDisposed();
-                  
-                  if(targetDomainName == null)
-                      throw new ArgumentNullException("targetDomainName");
+        public bool GetSelectiveAuthenticationStatus(string targetDomainName)
+        {
+            CheckIfDisposed();
 
-                  if(targetDomainName.Length == 0)
-                      throw new ArgumentException(Res.GetString(Res.EmptyStringParameter), "targetDomainName");
+            if (targetDomainName == null)
+                throw new ArgumentNullException("targetDomainName");
 
-                  TrustHelper.SetTrustedDomainInfoStatus(context, Name, targetDomainName, TRUST_ATTRIBUTE.TRUST_ATTRIBUTE_CROSS_ORGANIZATION, enable, false);
-              }
+            if (targetDomainName.Length == 0)
+                throw new ArgumentException(Res.GetString(Res.EmptyStringParameter), "targetDomainName");
 
-              public bool GetSidFilteringStatus(string targetDomainName)
-              {
-                  CheckIfDisposed();
-                  
-                  if(targetDomainName == null)
-                      throw new ArgumentNullException("targetDomainName");
+            return TrustHelper.GetTrustedDomainInfoStatus(context, Name, targetDomainName, TRUST_ATTRIBUTE.TRUST_ATTRIBUTE_CROSS_ORGANIZATION, false);
+        }
 
-                  if(targetDomainName.Length == 0)
-                      throw new ArgumentException(Res.GetString(Res.EmptyStringParameter), "targetDomainName");
+        public void SetSelectiveAuthenticationStatus(string targetDomainName, bool enable)
+        {
+            CheckIfDisposed();
 
-                  return TrustHelper.GetTrustedDomainInfoStatus(context, Name, targetDomainName, TRUST_ATTRIBUTE.TRUST_ATTRIBUTE_QUARANTINED_DOMAIN, false);                  
-              }
+            if (targetDomainName == null)
+                throw new ArgumentNullException("targetDomainName");
 
-              public void SetSidFilteringStatus(string targetDomainName, bool enable)
-              {
-                  CheckIfDisposed();
-                  
-                  if(targetDomainName == null)
-                      throw new ArgumentNullException("targetDomainName");
+            if (targetDomainName.Length == 0)
+                throw new ArgumentException(Res.GetString(Res.EmptyStringParameter), "targetDomainName");
 
-                  if(targetDomainName.Length == 0)
-                      throw new ArgumentException(Res.GetString(Res.EmptyStringParameter), "targetDomainName");
+            TrustHelper.SetTrustedDomainInfoStatus(context, Name, targetDomainName, TRUST_ATTRIBUTE.TRUST_ATTRIBUTE_CROSS_ORGANIZATION, enable, false);
+        }
 
-                  TrustHelper.SetTrustedDomainInfoStatus(context, Name, targetDomainName, TRUST_ATTRIBUTE.TRUST_ATTRIBUTE_QUARANTINED_DOMAIN, enable, false);
-              }
+        public bool GetSidFilteringStatus(string targetDomainName)
+        {
+            CheckIfDisposed();
 
-              public void DeleteLocalSideOfTrustRelationship(string targetDomainName)
-              {
-                  CheckIfDisposed();
-                  
-                  if(targetDomainName == null)
-                      throw new ArgumentNullException("targetDomainName");               
+            if (targetDomainName == null)
+                throw new ArgumentNullException("targetDomainName");
 
-                  if(targetDomainName.Length == 0)
-                      throw new ArgumentException(Res.GetString(Res.EmptyStringParameter), "targetDomainName");
+            if (targetDomainName.Length == 0)
+                throw new ArgumentException(Res.GetString(Res.EmptyStringParameter), "targetDomainName");
 
-                  // delete local side of trust only
-                  TrustHelper.DeleteTrust(context, Name, targetDomainName, false);
-              }
+            return TrustHelper.GetTrustedDomainInfoStatus(context, Name, targetDomainName, TRUST_ATTRIBUTE.TRUST_ATTRIBUTE_QUARANTINED_DOMAIN, false);
+        }
 
-              public void DeleteTrustRelationship(Domain targetDomain)
-              {
-                  CheckIfDisposed();
-                  
-                  if(targetDomain == null)
-                      throw new ArgumentNullException("targetDomain");                  
+        public void SetSidFilteringStatus(string targetDomainName, bool enable)
+        {
+            CheckIfDisposed();
 
-                  // first delete the trust on the remote side
-                  TrustHelper.DeleteTrust(targetDomain.GetDirectoryContext(), targetDomain.Name, Name, false);
+            if (targetDomainName == null)
+                throw new ArgumentNullException("targetDomainName");
 
-                  // then delete the local side trust
-                  TrustHelper.DeleteTrust(context, Name, targetDomain.Name, false);
-              }
+            if (targetDomainName.Length == 0)
+                throw new ArgumentException(Res.GetString(Res.EmptyStringParameter), "targetDomainName");
 
-              public void VerifyOutboundTrustRelationship(string targetDomainName)
-              {
-                  CheckIfDisposed();
-                  
-                  if(targetDomainName == null)
-                      throw new ArgumentNullException("targetDomainName");
-                  
-                  if(targetDomainName.Length == 0)
-                      throw new ArgumentException(Res.GetString(Res.EmptyStringParameter), "targetDomainName");
+            TrustHelper.SetTrustedDomainInfoStatus(context, Name, targetDomainName, TRUST_ATTRIBUTE.TRUST_ATTRIBUTE_QUARANTINED_DOMAIN, enable, false);
+        }
 
-                  TrustHelper.VerifyTrust(context, Name, targetDomainName, false/*not forest*/, TrustDirection.Outbound, false/*just TC verification*/, null /* no need to go to specific server*/);
-              }
+        public void DeleteLocalSideOfTrustRelationship(string targetDomainName)
+        {
+            CheckIfDisposed();
 
-              public void VerifyTrustRelationship(Domain targetDomain, TrustDirection direction)
-              {
-                  CheckIfDisposed();
-                  
-                  if(targetDomain == null)
-                      throw new ArgumentNullException("targetDomain");
+            if (targetDomainName == null)
+                throw new ArgumentNullException("targetDomainName");
 
-                  if (direction < TrustDirection.Inbound || direction > TrustDirection.Bidirectional) 
-                      throw new InvalidEnumArgumentException("direction", (int)direction, typeof(TrustDirection));                  
+            if (targetDomainName.Length == 0)
+                throw new ArgumentException(Res.GetString(Res.EmptyStringParameter), "targetDomainName");
 
-                  // verify outbound trust first
-                  if((direction & TrustDirection.Outbound) != 0)
-                  {
-                      try
-                      {
-                          TrustHelper.VerifyTrust(context, Name, targetDomain.Name, false/*not forest*/, TrustDirection.Outbound, false/*just TC verification*/, null /* no need to go to specific server*/);
-                      }
-                      catch(ActiveDirectoryObjectNotFoundException)
-                      {
-                          throw new ActiveDirectoryObjectNotFoundException(Res.GetString(Res.WrongTrustDirection, Name, targetDomain.Name, direction), typeof(TrustRelationshipInformation), null);
-                      }
-                  }
+            // delete local side of trust only
+            TrustHelper.DeleteTrust(context, Name, targetDomainName, false);
+        }
 
-                  // verify inbound trust
-                  if((direction & TrustDirection.Inbound) != 0)
-                  {
-                      try
-                      {
-                          TrustHelper.VerifyTrust(targetDomain.GetDirectoryContext(), targetDomain.Name, Name, false/*not forest*/, TrustDirection.Outbound, false/*just TC verification*/, null /* no need to go to specific server*/);
-                      }
-                      catch(ActiveDirectoryObjectNotFoundException)
-                      {
-                          throw new ActiveDirectoryObjectNotFoundException(Res.GetString(Res.WrongTrustDirection, Name, targetDomain.Name, direction), typeof(TrustRelationshipInformation), null);
-                      }
-                  }
-                  
-              }
+        public void DeleteTrustRelationship(Domain targetDomain)
+        {
+            CheckIfDisposed();
 
-              public void CreateLocalSideOfTrustRelationship(string targetDomainName, TrustDirection direction, string trustPassword)
-              {
-                  CheckIfDisposed();
-                  
-                  if(targetDomainName == null)
-                      throw new ArgumentNullException("targetDomainName");
+            if (targetDomain == null)
+                throw new ArgumentNullException("targetDomain");
 
-                  if(targetDomainName.Length == 0)
-                      throw new ArgumentException(Res.GetString(Res.EmptyStringParameter), "targetDomainName");
+            // first delete the trust on the remote side
+            TrustHelper.DeleteTrust(targetDomain.GetDirectoryContext(), targetDomain.Name, Name, false);
 
-                  if (direction < TrustDirection.Inbound || direction > TrustDirection.Bidirectional) 
-                      throw new InvalidEnumArgumentException("direction", (int)direction, typeof(TrustDirection));
+            // then delete the local side trust
+            TrustHelper.DeleteTrust(context, Name, targetDomain.Name, false);
+        }
 
-                  if(trustPassword == null)
-                      throw new ArgumentNullException("trustPassword");         
+        public void VerifyOutboundTrustRelationship(string targetDomainName)
+        {
+            CheckIfDisposed();
 
-                  if(trustPassword.Length == 0)
-                      throw new ArgumentException(Res.GetString(Res.EmptyStringParameter), "trustPassword");  
+            if (targetDomainName == null)
+                throw new ArgumentNullException("targetDomainName");
 
-                  // verify first that the target domain name is valid
-                  Locator.GetDomainControllerInfo(null, targetDomainName, null, (long) PrivateLocatorFlags.DirectoryServicesRequired);
+            if (targetDomainName.Length == 0)
+                throw new ArgumentException(Res.GetString(Res.EmptyStringParameter), "targetDomainName");
 
-                  DirectoryContext targetContext = Utils.GetNewDirectoryContext(targetDomainName, DirectoryContextType.Domain, context);
+            TrustHelper.VerifyTrust(context, Name, targetDomainName, false/*not forest*/, TrustDirection.Outbound, false/*just TC verification*/, null /* no need to go to specific server*/);
+        }
 
-                  TrustHelper.CreateTrust(context, Name, targetContext, targetDomainName, false, direction, trustPassword);                                    
-              }
+        public void VerifyTrustRelationship(Domain targetDomain, TrustDirection direction)
+        {
+            CheckIfDisposed();
 
-              public void CreateTrustRelationship(Domain targetDomain, TrustDirection direction)
-              {
-                  CheckIfDisposed();
-                  
-                  if(targetDomain == null)
-                      throw new ArgumentNullException("targetDomain");
+            if (targetDomain == null)
+                throw new ArgumentNullException("targetDomain");
 
-                  if (direction < TrustDirection.Inbound || direction > TrustDirection.Bidirectional) 
-                      throw new InvalidEnumArgumentException("direction", (int)direction, typeof(TrustDirection));                  
+            if (direction < TrustDirection.Inbound || direction > TrustDirection.Bidirectional)
+                throw new InvalidEnumArgumentException("direction", (int)direction, typeof(TrustDirection));
 
-                  string password = TrustHelper.CreateTrustPassword();
+            // verify outbound trust first
+            if ((direction & TrustDirection.Outbound) != 0)
+            {
+                try
+                {
+                    TrustHelper.VerifyTrust(context, Name, targetDomain.Name, false/*not forest*/, TrustDirection.Outbound, false/*just TC verification*/, null /* no need to go to specific server*/);
+                }
+                catch (ActiveDirectoryObjectNotFoundException)
+                {
+                    throw new ActiveDirectoryObjectNotFoundException(Res.GetString(Res.WrongTrustDirection, Name, targetDomain.Name, direction), typeof(TrustRelationshipInformation), null);
+                }
+            }
 
-                  // first create trust on local side                  
-                  TrustHelper.CreateTrust(context, Name, targetDomain.GetDirectoryContext(), targetDomain.Name, false, direction, password);
+            // verify inbound trust
+            if ((direction & TrustDirection.Inbound) != 0)
+            {
+                try
+                {
+                    TrustHelper.VerifyTrust(targetDomain.GetDirectoryContext(), targetDomain.Name, Name, false/*not forest*/, TrustDirection.Outbound, false/*just TC verification*/, null /* no need to go to specific server*/);
+                }
+                catch (ActiveDirectoryObjectNotFoundException)
+                {
+                    throw new ActiveDirectoryObjectNotFoundException(Res.GetString(Res.WrongTrustDirection, Name, targetDomain.Name, direction), typeof(TrustRelationshipInformation), null);
+                }
+            }
+        }
 
-                  // then create trust on remote side
-                  int reverseDirection = 0;
-                  if((direction & TrustDirection.Inbound) != 0)
-                      reverseDirection |= (int) TrustDirection.Outbound;
-                  if((direction & TrustDirection.Outbound) != 0)
-                      reverseDirection |= (int) TrustDirection.Inbound;
-                  
-                  TrustHelper.CreateTrust(targetDomain.GetDirectoryContext(), targetDomain.Name, context, Name, false, (TrustDirection) reverseDirection, password);
-              }
+        public void CreateLocalSideOfTrustRelationship(string targetDomainName, TrustDirection direction, string trustPassword)
+        {
+            CheckIfDisposed();
 
-              public void UpdateLocalSideOfTrustRelationship(string targetDomainName, string newTrustPassword)
-              {
-                  CheckIfDisposed();
-                  
-                  if(targetDomainName == null)
-                      throw new ArgumentNullException("targetDomainName");
+            if (targetDomainName == null)
+                throw new ArgumentNullException("targetDomainName");
 
-                  if(targetDomainName.Length == 0)
-                      throw new ArgumentException(Res.GetString(Res.EmptyStringParameter), "targetDomainName");
+            if (targetDomainName.Length == 0)
+                throw new ArgumentException(Res.GetString(Res.EmptyStringParameter), "targetDomainName");
 
-                  if(newTrustPassword == null)
-                      throw new ArgumentNullException("newTrustPassword");
+            if (direction < TrustDirection.Inbound || direction > TrustDirection.Bidirectional)
+                throw new InvalidEnumArgumentException("direction", (int)direction, typeof(TrustDirection));
 
-                  if(newTrustPassword.Length == 0)
-                      throw new ArgumentException(Res.GetString(Res.EmptyStringParameter), "newTrustPassword");
-                  
-                  TrustHelper.UpdateTrust(context, Name, targetDomainName, newTrustPassword, false);
-              }
+            if (trustPassword == null)
+                throw new ArgumentNullException("trustPassword");
 
-              public void UpdateLocalSideOfTrustRelationship(string targetDomainName, TrustDirection newTrustDirection, string newTrustPassword)
-              {
-                  CheckIfDisposed();
-                  
-                  if(targetDomainName == null)
-                      throw new ArgumentNullException("targetDomainName");
+            if (trustPassword.Length == 0)
+                throw new ArgumentException(Res.GetString(Res.EmptyStringParameter), "trustPassword");
 
-                  if(targetDomainName.Length == 0)
-                      throw new ArgumentException(Res.GetString(Res.EmptyStringParameter), "targetDomainName");
+            // verify first that the target domain name is valid
+            Locator.GetDomainControllerInfo(null, targetDomainName, null, (long)PrivateLocatorFlags.DirectoryServicesRequired);
 
-                  if (newTrustDirection < TrustDirection.Inbound || newTrustDirection > TrustDirection.Bidirectional) 
-                      throw new InvalidEnumArgumentException("newTrustDirection", (int)newTrustDirection, typeof(TrustDirection));
+            DirectoryContext targetContext = Utils.GetNewDirectoryContext(targetDomainName, DirectoryContextType.Domain, context);
 
-                  if(newTrustPassword == null)
-                      throw new ArgumentNullException("newTrustPassword"); 
+            TrustHelper.CreateTrust(context, Name, targetContext, targetDomainName, false, direction, trustPassword);
+        }
 
-                  if(newTrustPassword.Length == 0)
-                      throw new ArgumentException(Res.GetString(Res.EmptyStringParameter), "newTrustPassword");
+        public void CreateTrustRelationship(Domain targetDomain, TrustDirection direction)
+        {
+            CheckIfDisposed();
 
-                  TrustHelper.UpdateTrustDirection(context, Name, targetDomainName, newTrustPassword, false /*not a forest*/, newTrustDirection);
-              }
+            if (targetDomain == null)
+                throw new ArgumentNullException("targetDomain");
 
-              public void UpdateTrustRelationship(Domain targetDomain, TrustDirection newTrustDirection)
-              {
-                  CheckIfDisposed();
-                  
-                  if(targetDomain == null)
-                      throw new ArgumentNullException("targetDomain");             
+            if (direction < TrustDirection.Inbound || direction > TrustDirection.Bidirectional)
+                throw new InvalidEnumArgumentException("direction", (int)direction, typeof(TrustDirection));
 
-                  if (newTrustDirection < TrustDirection.Inbound || newTrustDirection > TrustDirection.Bidirectional) 
-                      throw new InvalidEnumArgumentException("newTrustDirection", (int)newTrustDirection, typeof(TrustDirection));
+            string password = TrustHelper.CreateTrustPassword();
 
-                  // no we generate trust password
-                  string password = TrustHelper.CreateTrustPassword();
+            // first create trust on local side                  
+            TrustHelper.CreateTrust(context, Name, targetDomain.GetDirectoryContext(), targetDomain.Name, false, direction, password);
 
-                  TrustHelper.UpdateTrustDirection(context, Name, targetDomain.Name, password, false /* not a forest */, newTrustDirection);
+            // then create trust on remote side
+            int reverseDirection = 0;
+            if ((direction & TrustDirection.Inbound) != 0)
+                reverseDirection |= (int)TrustDirection.Outbound;
+            if ((direction & TrustDirection.Outbound) != 0)
+                reverseDirection |= (int)TrustDirection.Inbound;
 
-                  // then create trust on remote side
-                  TrustDirection reverseDirection = 0;
-                  if((newTrustDirection & TrustDirection.Inbound) != 0)
-                      reverseDirection |= TrustDirection.Outbound;
-                  if((newTrustDirection & TrustDirection.Outbound) != 0)
-                      reverseDirection |= TrustDirection.Inbound;
+            TrustHelper.CreateTrust(targetDomain.GetDirectoryContext(), targetDomain.Name, context, Name, false, (TrustDirection)reverseDirection, password);
+        }
 
-                  TrustHelper.UpdateTrustDirection(targetDomain.GetDirectoryContext(), targetDomain.Name, Name, password, false /* not a forest */, reverseDirection);
-                        
-              }
+        public void UpdateLocalSideOfTrustRelationship(string targetDomainName, string newTrustPassword)
+        {
+            CheckIfDisposed();
+
+            if (targetDomainName == null)
+                throw new ArgumentNullException("targetDomainName");
+
+            if (targetDomainName.Length == 0)
+                throw new ArgumentException(Res.GetString(Res.EmptyStringParameter), "targetDomainName");
+
+            if (newTrustPassword == null)
+                throw new ArgumentNullException("newTrustPassword");
+
+            if (newTrustPassword.Length == 0)
+                throw new ArgumentException(Res.GetString(Res.EmptyStringParameter), "newTrustPassword");
+
+            TrustHelper.UpdateTrust(context, Name, targetDomainName, newTrustPassword, false);
+        }
+
+        public void UpdateLocalSideOfTrustRelationship(string targetDomainName, TrustDirection newTrustDirection, string newTrustPassword)
+        {
+            CheckIfDisposed();
+
+            if (targetDomainName == null)
+                throw new ArgumentNullException("targetDomainName");
+
+            if (targetDomainName.Length == 0)
+                throw new ArgumentException(Res.GetString(Res.EmptyStringParameter), "targetDomainName");
+
+            if (newTrustDirection < TrustDirection.Inbound || newTrustDirection > TrustDirection.Bidirectional)
+                throw new InvalidEnumArgumentException("newTrustDirection", (int)newTrustDirection, typeof(TrustDirection));
+
+            if (newTrustPassword == null)
+                throw new ArgumentNullException("newTrustPassword");
+
+            if (newTrustPassword.Length == 0)
+                throw new ArgumentException(Res.GetString(Res.EmptyStringParameter), "newTrustPassword");
+
+            TrustHelper.UpdateTrustDirection(context, Name, targetDomainName, newTrustPassword, false /*not a forest*/, newTrustDirection);
+        }
+
+        public void UpdateTrustRelationship(Domain targetDomain, TrustDirection newTrustDirection)
+        {
+            CheckIfDisposed();
+
+            if (targetDomain == null)
+                throw new ArgumentNullException("targetDomain");
+
+            if (newTrustDirection < TrustDirection.Inbound || newTrustDirection > TrustDirection.Bidirectional)
+                throw new InvalidEnumArgumentException("newTrustDirection", (int)newTrustDirection, typeof(TrustDirection));
+
+            // no we generate trust password
+            string password = TrustHelper.CreateTrustPassword();
+
+            TrustHelper.UpdateTrustDirection(context, Name, targetDomain.Name, password, false /* not a forest */, newTrustDirection);
+
+            // then create trust on remote side
+            TrustDirection reverseDirection = 0;
+            if ((newTrustDirection & TrustDirection.Inbound) != 0)
+                reverseDirection |= TrustDirection.Outbound;
+            if ((newTrustDirection & TrustDirection.Outbound) != 0)
+                reverseDirection |= TrustDirection.Inbound;
+
+            TrustHelper.UpdateTrustDirection(targetDomain.GetDirectoryContext(), targetDomain.Name, Name, password, false /* not a forest */, reverseDirection);
+        }
 
 
-              public void RepairTrustRelationship(Domain targetDomain)
-              {
-                  TrustDirection direction = TrustDirection.Bidirectional;
-                  
-                  CheckIfDisposed();
-                  
-                  if(targetDomain == null)
-                      throw new ArgumentNullException("targetDomain");          
+        public void RepairTrustRelationship(Domain targetDomain)
+        {
+            TrustDirection direction = TrustDirection.Bidirectional;
 
-                  // first try to reset the secure channel
-                  try
-                  {
-                      direction = GetTrustRelationship(targetDomain.Name).TrustDirection;
+            CheckIfDisposed();
 
-                      // verify outbound trust first
-                      if((direction & TrustDirection.Outbound) != 0)
-                      {
-                          TrustHelper.VerifyTrust(context, Name, targetDomain.Name, false /*not forest*/, TrustDirection.Outbound, true /*reset secure channel*/, null /* no need to go to specific server*/);                          
-                      }
+            if (targetDomain == null)
+                throw new ArgumentNullException("targetDomain");
 
-                      // verify inbound trust
-                      if((direction & TrustDirection.Inbound) != 0)
-                      {
-                          TrustHelper.VerifyTrust(targetDomain.GetDirectoryContext(), targetDomain.Name, Name, false /*not forest*/, TrustDirection.Outbound, true/*reset secure channel*/, null /* no need to go to specific server*/);                          
-                      }
-                  }
-                  catch(ActiveDirectoryOperationException)
-                  {
-                      // secure channel setup fails
-                      RepairTrustHelper(targetDomain, direction);
-                  }
-                  catch(UnauthorizedAccessException)
-                  {
-                      // trust password does not match
-                      RepairTrustHelper(targetDomain, direction);
-                  }
-                  catch(ActiveDirectoryObjectNotFoundException)
-                  {
-                      throw new ActiveDirectoryObjectNotFoundException(Res.GetString(Res.WrongTrustDirection, Name, targetDomain.Name, direction), typeof(TrustRelationshipInformation), null);
-                  }                     
-                  
-              }     
+            // first try to reset the secure channel
+            try
+            {
+                direction = GetTrustRelationship(targetDomain.Name).TrustDirection;
 
-        public static Domain GetCurrentDomain() {
+                // verify outbound trust first
+                if ((direction & TrustDirection.Outbound) != 0)
+                {
+                    TrustHelper.VerifyTrust(context, Name, targetDomain.Name, false /*not forest*/, TrustDirection.Outbound, true /*reset secure channel*/, null /* no need to go to specific server*/);
+                }
+
+                // verify inbound trust
+                if ((direction & TrustDirection.Inbound) != 0)
+                {
+                    TrustHelper.VerifyTrust(targetDomain.GetDirectoryContext(), targetDomain.Name, Name, false /*not forest*/, TrustDirection.Outbound, true/*reset secure channel*/, null /* no need to go to specific server*/);
+                }
+            }
+            catch (ActiveDirectoryOperationException)
+            {
+                // secure channel setup fails
+                RepairTrustHelper(targetDomain, direction);
+            }
+            catch (UnauthorizedAccessException)
+            {
+                // trust password does not match
+                RepairTrustHelper(targetDomain, direction);
+            }
+            catch (ActiveDirectoryObjectNotFoundException)
+            {
+                throw new ActiveDirectoryObjectNotFoundException(Res.GetString(Res.WrongTrustDirection, Name, targetDomain.Name, direction), typeof(TrustRelationshipInformation), null);
+            }
+        }
+
+        public static Domain GetCurrentDomain()
+        {
             return Domain.GetDomain(new DirectoryContext(DirectoryContextType.Domain));
         }
 
         #endregion public methods
 
         #region public properties
-        
-        public Forest Forest {
-            get {
+
+        public Forest Forest
+        {
+            get
+            {
                 CheckIfDisposed();
-                if (cachedForest == null) {
+                if (_cachedForest == null)
+                {
                     // get the name of rootDomainNamingContext
                     DirectoryEntry rootDSE = directoryEntryMgr.GetCachedDirectoryEntry(WellKnownDN.RootDSE);
-                    string rootDomainNC = (string) PropertyManager.GetPropertyValue(context, rootDSE, PropertyManager.RootDomainNamingContext);
+                    string rootDomainNC = (string)PropertyManager.GetPropertyValue(context, rootDSE, PropertyManager.RootDomainNamingContext);
                     string forestName = Utils.GetDnsNameFromDN(rootDomainNC);
                     DirectoryContext forestContext = Utils.GetNewDirectoryContext(forestName, DirectoryContextType.Forest, context);
-                    cachedForest = new Forest(forestContext, forestName);
+                    _cachedForest = new Forest(forestContext, forestName);
                 }
-                return cachedForest;
+                return _cachedForest;
             }
         }
 
-        
-        public DomainControllerCollection DomainControllers {
-            get {
-                CheckIfDisposed();
-                if (cachedDomainControllers == null) {
-                    cachedDomainControllers = FindAllDomainControllers();
-                }
-                return cachedDomainControllers;
-            }
-        }        
 
-        
-        public DomainCollection Children {
-            get {
+        public DomainControllerCollection DomainControllers
+        {
+            get
+            {
                 CheckIfDisposed();
-                if (cachedChildren == null) {
-                    cachedChildren = new DomainCollection(GetChildDomains());
+                if (_cachedDomainControllers == null)
+                {
+                    _cachedDomainControllers = FindAllDomainControllers();
                 }
-                return cachedChildren;
+                return _cachedDomainControllers;
             }
         }
 
-    
-        public DomainMode DomainMode {
-            get {
+
+        public DomainCollection Children
+        {
+            get
+            {
                 CheckIfDisposed();
-                if ((int)currentDomainMode == -1) {
-                    currentDomainMode = GetDomainMode();
+                if (_cachedChildren == null)
+                {
+                    _cachedChildren = new DomainCollection(GetChildDomains());
                 }
-                return currentDomainMode;
+                return _cachedChildren;
+            }
+        }
+
+
+        public DomainMode DomainMode
+        {
+            get
+            {
+                CheckIfDisposed();
+                if ((int)_currentDomainMode == -1)
+                {
+                    _currentDomainMode = GetDomainMode();
+                }
+                return _currentDomainMode;
             }
         }
 
@@ -860,88 +914,100 @@ namespace System.DirectoryServices.ActiveDirectory {
             get
             {
                 CheckIfDisposed();
-                if ( domainModeLevel == -1 )
+                if (_domainModeLevel == -1)
                 {
-                    domainModeLevel = GetDomainModeLevel();
+                    _domainModeLevel = GetDomainModeLevel();
                 }
-                return domainModeLevel;
+                return _domainModeLevel;
             }
         }
 
-        public Domain Parent {
-            get {
+        public Domain Parent
+        {
+            get
+            {
                 CheckIfDisposed();
-                if (!isParentInitialized) {
-                    cachedParent = GetParent();
-                    isParentInitialized = true;
+                if (!_isParentInitialized)
+                {
+                    _cachedParent = GetParent();
+                    _isParentInitialized = true;
                 }
-                return cachedParent;
+                return _cachedParent;
             }
         }
 
-    
-        public DomainController PdcRoleOwner {
-            get {
+
+        public DomainController PdcRoleOwner
+        {
+            get
+            {
                 CheckIfDisposed();
-                if (cachedPdcRoleOwner == null) {
-                    cachedPdcRoleOwner = GetRoleOwner(ActiveDirectoryRole.PdcRole);
+                if (_cachedPdcRoleOwner == null)
+                {
+                    _cachedPdcRoleOwner = GetRoleOwner(ActiveDirectoryRole.PdcRole);
                 }
-                return cachedPdcRoleOwner;
+                return _cachedPdcRoleOwner;
             }
         }
 
-        
-        public DomainController RidRoleOwner {
-            get    {
+
+        public DomainController RidRoleOwner
+        {
+            get
+            {
                 CheckIfDisposed();
-                if (cachedRidRoleOwner == null)    {
-                    cachedRidRoleOwner = GetRoleOwner(ActiveDirectoryRole.RidRole);
+                if (_cachedRidRoleOwner == null)
+                {
+                    _cachedRidRoleOwner = GetRoleOwner(ActiveDirectoryRole.RidRole);
                 }
-                return cachedRidRoleOwner;
+                return _cachedRidRoleOwner;
             }
         }
 
-        
-        public DomainController InfrastructureRoleOwner {
-            get    {
+
+        public DomainController InfrastructureRoleOwner
+        {
+            get
+            {
                 CheckIfDisposed();
-                if (cachedInfrastructureRoleOwner == null)    {
-                    cachedInfrastructureRoleOwner = GetRoleOwner(ActiveDirectoryRole.InfrastructureRole);
+                if (_cachedInfrastructureRoleOwner == null)
+                {
+                    _cachedInfrastructureRoleOwner = GetRoleOwner(ActiveDirectoryRole.InfrastructureRole);
                 }
-                return cachedInfrastructureRoleOwner;
+                return _cachedInfrastructureRoleOwner;
             }
         }
 
         #endregion public properties
-        
+
         #region private methods
 
-            internal DirectoryContext GetDirectoryContext() {
+        internal DirectoryContext GetDirectoryContext()
+        {
             return context;
         }
 
         private int GetDomainModeLevel()
-        { 
+        {
             DirectoryEntry domainEntry = null;
-            DirectoryEntry rootDSE = DirectoryEntryManager.GetDirectoryEntry( context, WellKnownDN.RootDSE );
+            DirectoryEntry rootDSE = DirectoryEntryManager.GetDirectoryEntry(context, WellKnownDN.RootDSE);
             int domainFunctionality = 0;
 
             try
             {
-                if ( rootDSE.Properties.Contains( PropertyManager.DomainFunctionality ) )
+                if (rootDSE.Properties.Contains(PropertyManager.DomainFunctionality))
                 {
-                    domainFunctionality = Int32.Parse( ( string ) PropertyManager.GetPropertyValue( context, rootDSE, PropertyManager.DomainFunctionality ), NumberFormatInfo.InvariantInfo );
+                    domainFunctionality = Int32.Parse((string)PropertyManager.GetPropertyValue(context, rootDSE, PropertyManager.DomainFunctionality), NumberFormatInfo.InvariantInfo);
                 }
-
             }
-            catch ( COMException e )
+            catch (COMException e)
             {
-                throw ExceptionHelper.GetExceptionFromCOMException( context, e );
+                throw ExceptionHelper.GetExceptionFromCOMException(context, e);
             }
             finally
             {
                 rootDSE.Dispose();
-                if ( domainEntry != null )
+                if (domainEntry != null)
                 {
                     domainEntry.Dispose();
                 }
@@ -950,7 +1016,8 @@ namespace System.DirectoryServices.ActiveDirectory {
         }
 
 
-        private DomainMode GetDomainMode() {
+        private DomainMode GetDomainMode()
+        {
             // logic to check the domain mode
             // if domainFunctionality is 0,
             //            then check ntMixedDomain to differentiate between 
@@ -965,35 +1032,40 @@ namespace System.DirectoryServices.ActiveDirectory {
             DirectoryEntry domainEntry = null;
             int domainFunctionality = DomainModeLevel;
 
-            try {
+            try
+            {
                 // If the "domainFunctionality" attribute is not set on the rootdse, then 
                 // this is a W2K domain (with W2K schema) so just check for mixed or native
-                switch (domainFunctionality) {
-                    case 0 : {
+                switch (domainFunctionality)
+                {
+                    case 0:
+                        {
                             domainEntry = DirectoryEntryManager.GetDirectoryEntry(context, directoryEntryMgr.ExpandWellKnownDN(WellKnownDN.DefaultNamingContext));
                             int ntMixedDomain = (int)PropertyManager.GetPropertyValue(context, domainEntry, PropertyManager.NTMixedDomain);
 
-                            if (ntMixedDomain == 0) {
+                            if (ntMixedDomain == 0)
+                            {
                                 domainMode = DomainMode.Windows2000NativeDomain;
                             }
-                            else {
+                            else
+                            {
                                 domainMode = DomainMode.Windows2000MixedDomain;
                             }
                             break;
                         }
 
-                    case 1 :
+                    case 1:
                         domainMode = DomainMode.Windows2003InterimDomain;
                         break;
 
-                    case 2 :
+                    case 2:
                         domainMode = DomainMode.Windows2003Domain;
                         break;
 
-                    case 3 :
+                    case 3:
                         domainMode = DomainMode.Windows2008Domain;
                         break;
-                    case 4 :
+                    case 4:
                         domainMode = DomainMode.Windows2008R2Domain;
                         break;
                     case 5:
@@ -1002,17 +1074,20 @@ namespace System.DirectoryServices.ActiveDirectory {
                     case 6:
                         domainMode = DomainMode.Windows2012R2Domain;
                         break;
-                    default :
+                    default:
                         // unrecognized domain mode
                         domainMode = DomainMode.Unknown;
                         break;
                 }
             }
-            catch (COMException e) {
+            catch (COMException e)
+            {
                 throw ExceptionHelper.GetExceptionFromCOMException(context, e);
             }
-            finally {
-                if (domainEntry != null) {
+            finally
+            {
+                if (domainEntry != null)
+                {
                     domainEntry.Dispose();
                 }
             }
@@ -1020,24 +1095,30 @@ namespace System.DirectoryServices.ActiveDirectory {
         }
 
         /// <returns>Returns a DomainController object for the DC that holds the the specified FSMO role</returns>
-        private DomainController GetRoleOwner(ActiveDirectoryRole role) {
+        private DomainController GetRoleOwner(ActiveDirectoryRole role)
+        {
             DirectoryEntry entry = null;
 
             string dcName = null;
-            try {
-                switch (role) {
-                    case ActiveDirectoryRole.PdcRole : {
-                        entry = DirectoryEntryManager.GetDirectoryEntry(context, directoryEntryMgr.ExpandWellKnownDN(WellKnownDN.DefaultNamingContext));
-                        break;
+            try
+            {
+                switch (role)
+                {
+                    case ActiveDirectoryRole.PdcRole:
+                        {
+                            entry = DirectoryEntryManager.GetDirectoryEntry(context, directoryEntryMgr.ExpandWellKnownDN(WellKnownDN.DefaultNamingContext));
+                            break;
                         }
-                    case ActiveDirectoryRole.RidRole : {
-                        entry = DirectoryEntryManager.GetDirectoryEntry(context, directoryEntryMgr.ExpandWellKnownDN(WellKnownDN.RidManager));
-                        break;
-                    }
-                    case ActiveDirectoryRole.InfrastructureRole : {
-                        entry = DirectoryEntryManager.GetDirectoryEntry(context, directoryEntryMgr.ExpandWellKnownDN(WellKnownDN.Infrastructure));
-                        break;
-                    }
+                    case ActiveDirectoryRole.RidRole:
+                        {
+                            entry = DirectoryEntryManager.GetDirectoryEntry(context, directoryEntryMgr.ExpandWellKnownDN(WellKnownDN.RidManager));
+                            break;
+                        }
+                    case ActiveDirectoryRole.InfrastructureRole:
+                        {
+                            entry = DirectoryEntryManager.GetDirectoryEntry(context, directoryEntryMgr.ExpandWellKnownDN(WellKnownDN.Infrastructure));
+                            break;
+                        }
                     default:
                         // should not happen since we are calling this only internally
                         Debug.Assert(false, "Domain.GetRoleOwner: Invalid role type.");
@@ -1045,13 +1126,15 @@ namespace System.DirectoryServices.ActiveDirectory {
                 }
 
                 dcName = Utils.GetDnsHostNameFromNTDSA(context, (string)PropertyManager.GetPropertyValue(context, entry, PropertyManager.FsmoRoleOwner));
-                
             }
-            catch (COMException e) {
+            catch (COMException e)
+            {
                 throw ExceptionHelper.GetExceptionFromCOMException(context, e);
             }
-            finally {
-                if (entry != null) {
+            finally
+            {
+                if (entry != null)
+                {
                     entry.Dispose();
                 }
             }
@@ -1061,11 +1144,12 @@ namespace System.DirectoryServices.ActiveDirectory {
             DirectoryContext dcContext = Utils.GetNewDirectoryContext(dcName, DirectoryContextType.DirectoryServer, context);
             return new DomainController(dcContext, dcName);
         }
-        
-        private void LoadCrossRefAttributes() {
-            
+
+        private void LoadCrossRefAttributes()
+        {
             DirectoryEntry partitionsEntry = null;
-            try {
+            try
+            {
                 partitionsEntry = DirectoryEntryManager.GetDirectoryEntry(context, directoryEntryMgr.ExpandWellKnownDN(WellKnownDN.PartitionsContainer));
 
                 // now within the partitions container search for the 
@@ -1099,57 +1183,67 @@ namespace System.DirectoryServices.ActiveDirectory {
                 ADSearcher searcher = new ADSearcher(partitionsEntry, filter, propertiesToLoad, SearchScope.OneLevel, false /*not paged search*/, false /*no cached results*/);
                 SearchResult res = searcher.FindOne();
 
-                crossRefDN = (string)PropertyManager.GetSearchResultPropertyValue(res, PropertyManager.DistinguishedName);
+                _crossRefDN = (string)PropertyManager.GetSearchResultPropertyValue(res, PropertyManager.DistinguishedName);
 
                 // "trustParent" attribute may not be set
-                if (res.Properties[PropertyManager.TrustParent].Count > 0) {
-                    trustParent = (string)res.Properties[PropertyManager.TrustParent][0];
+                if (res.Properties[PropertyManager.TrustParent].Count > 0)
+                {
+                    _trustParent = (string)res.Properties[PropertyManager.TrustParent][0];
                 }
             }
-            catch (COMException e) {
+            catch (COMException e)
+            {
                 throw ExceptionHelper.GetExceptionFromCOMException(context, e);
             }
-            finally {
-                if (partitionsEntry != null) {
+            finally
+            {
+                if (partitionsEntry != null)
+                {
                     partitionsEntry.Dispose();
                 }
             }
         }
 
-        private Domain GetParent() {
-
-            if (crossRefDN == null) {
+        private Domain GetParent()
+        {
+            if (_crossRefDN == null)
+            {
                 LoadCrossRefAttributes();
             }
-            if (trustParent != null) {
-                DirectoryEntry parentCrossRef = DirectoryEntryManager.GetDirectoryEntry(context, trustParent);
+            if (_trustParent != null)
+            {
+                DirectoryEntry parentCrossRef = DirectoryEntryManager.GetDirectoryEntry(context, _trustParent);
                 string parentDomainName = null;
                 DirectoryContext domainContext = null;
-                try {
+                try
+                {
                     // create a new directory context for the parent domain
                     parentDomainName = (string)PropertyManager.GetPropertyValue(context, parentCrossRef, PropertyManager.DnsRoot);
                     domainContext = Utils.GetNewDirectoryContext(parentDomainName, DirectoryContextType.Domain, context);
                 }
-                finally {
+                finally
+                {
                     parentCrossRef.Dispose();
                 }
                 return new Domain(domainContext, parentDomainName);
-
             }
             // does not have a parent so just return null
             return null;
         }
-        
-        private ArrayList GetChildDomains() {
+
+        private ArrayList GetChildDomains()
+        {
             ArrayList childDomains = new ArrayList();
 
-            if (crossRefDN == null) {
+            if (_crossRefDN == null)
+            {
                 LoadCrossRefAttributes();
             }
 
             DirectoryEntry partitionsEntry = null;
             SearchResultCollection resCol = null;
-            try {
+            try
+            {
                 partitionsEntry = DirectoryEntryManager.GetDirectoryEntry(context, directoryEntryMgr.ExpandWellKnownDN(WellKnownDN.PartitionsContainer));
                 // search for all the "crossRef" objects that have the 
                 // ADS_SYSTEMFLAG_CR_NTDS_NC and SYSTEMFLAG_CR_NTDS_DOMAIN flags set
@@ -1172,7 +1266,7 @@ namespace System.DirectoryServices.ActiveDirectory {
                 str.Append(")(");
                 str.Append(PropertyManager.TrustParent);
                 str.Append("=");
-                str.Append(Utils.GetEscapedFilterValue(crossRefDN));
+                str.Append(Utils.GetEscapedFilterValue(_crossRefDN));
                 str.Append("))");
 
                 string filter = str.ToString();
@@ -1180,278 +1274,278 @@ namespace System.DirectoryServices.ActiveDirectory {
                 propertiesToLoad[0] = PropertyManager.DnsRoot;
 
                 ADSearcher searcher = new ADSearcher(partitionsEntry, filter, propertiesToLoad, SearchScope.OneLevel);
-                 resCol = searcher.FindAll();
- 
-                foreach (SearchResult res in resCol) {
+                resCol = searcher.FindAll();
+
+                foreach (SearchResult res in resCol)
+                {
                     string childDomainName = (string)PropertyManager.GetSearchResultPropertyValue(res, PropertyManager.DnsRoot);
                     DirectoryContext childContext = Utils.GetNewDirectoryContext(childDomainName, DirectoryContextType.Domain, context);
                     childDomains.Add(new Domain(childContext, childDomainName));
                 }
-                 
             }
-            catch (COMException e) {
+            catch (COMException e)
+            {
                 throw ExceptionHelper.GetExceptionFromCOMException(context, e);
             }
-            finally {
-                if (resCol != null) {
+            finally
+            {
+                if (resCol != null)
+                {
                     resCol.Dispose();
                 }
-                if (partitionsEntry != null) {
+                if (partitionsEntry != null)
+                {
                     partitionsEntry.Dispose();
                 }
             }
             return childDomains;
         }
 
-              private ArrayList GetTrustsHelper(string targetDomainName)
-              {
-                  string serverName = null;
-                  IntPtr domains = (IntPtr)0;
-                  int count = 0;
-                  ArrayList unmanagedTrustList = new ArrayList();
-                  ArrayList tmpTrustList = new ArrayList();
-                  TrustRelationshipInformationCollection collection = new TrustRelationshipInformationCollection();
-                  int localDomainIndex = 0;
-                  string localDomainParent = null;
-                  int error = 0;
-                  bool impersonated = false;
-                  
-                  // first decide which server to go to
-                  if(context.isServer())
-                  {
-                      serverName = context.Name;
-                  }
-                  else
-                  {
-                      serverName = DomainController.FindOne(context).Name;
-                  }
+        private ArrayList GetTrustsHelper(string targetDomainName)
+        {
+            string serverName = null;
+            IntPtr domains = (IntPtr)0;
+            int count = 0;
+            ArrayList unmanagedTrustList = new ArrayList();
+            ArrayList tmpTrustList = new ArrayList();
+            TrustRelationshipInformationCollection collection = new TrustRelationshipInformationCollection();
+            int localDomainIndex = 0;
+            string localDomainParent = null;
+            int error = 0;
+            bool impersonated = false;
 
-                  // impersonate appropriately
-                  impersonated = Utils.Impersonate(context);
-                  
-                  // call the DS API to get trust domain information
-                  try
-                  {
-                      try
-                      {
-                          error = UnsafeNativeMethods.DsEnumerateDomainTrustsW(serverName, (int) DS_DOMAINTRUST_FLAG.DS_DOMAIN_IN_FOREST | (int) DS_DOMAINTRUST_FLAG.DS_DOMAIN_DIRECT_OUTBOUND | (int) DS_DOMAINTRUST_FLAG.DS_DOMAIN_DIRECT_INBOUND , out domains, out count);                  
-                      }
-                      finally
-                      {
-                          if(impersonated)
-                              Utils.Revert();
-                      }
-                  }
-                  catch {throw;}
-                  
-                  // check the result
-                  if (error != 0)
-                      throw ExceptionHelper.GetExceptionFromErrorCode(error, serverName);
+            // first decide which server to go to
+            if (context.isServer())
+            {
+                serverName = context.Name;
+            }
+            else
+            {
+                serverName = DomainController.FindOne(context).Name;
+            }
 
-                  try
-                  {
-                      // now enumerate through the collection
-                      if(domains != (IntPtr)0 && count != 0)
-                      {
-                          IntPtr addr = (IntPtr)0;
-                          int j = 0;
-                          for(int i = 0; i < count; i++)
-                          {
-                              // get the unmanaged trust object
-                              addr = IntPtr.Add(domains, + i * Marshal.SizeOf(typeof(DS_DOMAIN_TRUSTS)));
-                              DS_DOMAIN_TRUSTS unmanagedTrust = new DS_DOMAIN_TRUSTS();
-                              Marshal.PtrToStructure(addr, unmanagedTrust);                              
-                              
-                              unmanagedTrustList.Add(unmanagedTrust);
-                          }
+            // impersonate appropriately
+            impersonated = Utils.Impersonate(context);
 
-                          for(int i = 0; i < unmanagedTrustList.Count; i++)
-                          {
-                              DS_DOMAIN_TRUSTS unmanagedTrust = (DS_DOMAIN_TRUSTS) unmanagedTrustList[i];
-                              
-                              // make sure this is the trust object that we want
-                              if ((unmanagedTrust.Flags & (int) (DS_DOMAINTRUST_FLAG.DS_DOMAIN_PRIMARY | DS_DOMAINTRUST_FLAG.DS_DOMAIN_DIRECT_OUTBOUND |DS_DOMAINTRUST_FLAG.DS_DOMAIN_DIRECT_INBOUND)) == 0)
-                              {
-                                  // Not interested in indirectly trusted domains.
-                                  continue;
-                              }                              
+            // call the DS API to get trust domain information
+            try
+            {
+                try
+                {
+                    error = UnsafeNativeMethods.DsEnumerateDomainTrustsW(serverName, (int)DS_DOMAINTRUST_FLAG.DS_DOMAIN_IN_FOREST | (int)DS_DOMAINTRUST_FLAG.DS_DOMAIN_DIRECT_OUTBOUND | (int)DS_DOMAINTRUST_FLAG.DS_DOMAIN_DIRECT_INBOUND, out domains, out count);
+                }
+                finally
+                {
+                    if (impersonated)
+                        Utils.Revert();
+                }
+            }
+            catch { throw; }
 
-                              // we don't want to have the NT4 trust to be returned
-                              if(unmanagedTrust.TrustType == TrustHelper.TRUST_TYPE_DOWNLEVEL)
-                                  continue;
+            // check the result
+            if (error != 0)
+                throw ExceptionHelper.GetExceptionFromErrorCode(error, serverName);
 
-                              TrustObject obj = new TrustObject();
-                              obj.TrustType = TrustType.Unknown;
-                              if(unmanagedTrust.DnsDomainName != (IntPtr)0)
-                                  obj.DnsDomainName = Marshal.PtrToStringUni(unmanagedTrust.DnsDomainName);
-                              if(unmanagedTrust.NetbiosDomainName != (IntPtr)0)
-                                  obj.NetbiosDomainName = Marshal.PtrToStringUni(unmanagedTrust.NetbiosDomainName);
-                              obj.Flags = unmanagedTrust.Flags;
-                              obj.TrustAttributes = unmanagedTrust.TrustAttributes;
-                              obj.OriginalIndex = i;
-                              obj.ParentIndex = unmanagedTrust.ParentIndex;
+            try
+            {
+                // now enumerate through the collection
+                if (domains != (IntPtr)0 && count != 0)
+                {
+                    IntPtr addr = (IntPtr)0;
+                    int j = 0;
+                    for (int i = 0; i < count; i++)
+                    {
+                        // get the unmanaged trust object
+                        addr = IntPtr.Add(domains, +i * Marshal.SizeOf(typeof(DS_DOMAIN_TRUSTS)));
+                        DS_DOMAIN_TRUSTS unmanagedTrust = new DS_DOMAIN_TRUSTS();
+                        Marshal.PtrToStructure(addr, unmanagedTrust);
 
-                              // check whether it is the case that we are only interested in the trust with target as specified
-                              if(targetDomainName != null)
-                              {
-                                  bool sameTarget = false;                                                                    
+                        unmanagedTrustList.Add(unmanagedTrust);
+                    }
 
-                                  // check whether it is the same target
-                                  if(obj.DnsDomainName != null && Utils.Compare(targetDomainName, obj.DnsDomainName) == 0)
-                                      sameTarget = true;
-                                  else if(obj.NetbiosDomainName != null && Utils.Compare(targetDomainName, obj.NetbiosDomainName) == 0)
-                                      sameTarget = true;
+                    for (int i = 0; i < unmanagedTrustList.Count; i++)
+                    {
+                        DS_DOMAIN_TRUSTS unmanagedTrust = (DS_DOMAIN_TRUSTS)unmanagedTrustList[i];
 
-                                  // we only want to need local domain and specified target domain trusts
-                                  if(!sameTarget && (obj.Flags & (int) DS_DOMAINTRUST_FLAG.DS_DOMAIN_PRIMARY) == 0)
-                                      continue;
-                              }
+                        // make sure this is the trust object that we want
+                        if ((unmanagedTrust.Flags & (int)(DS_DOMAINTRUST_FLAG.DS_DOMAIN_PRIMARY | DS_DOMAINTRUST_FLAG.DS_DOMAIN_DIRECT_OUTBOUND | DS_DOMAINTRUST_FLAG.DS_DOMAIN_DIRECT_INBOUND)) == 0)
+                        {
+                            // Not interested in indirectly trusted domains.
+                            continue;
+                        }
 
-                              // local domain case
-                              if((obj.Flags & (int) DS_DOMAINTRUST_FLAG.DS_DOMAIN_PRIMARY) != 0)
-                              {
-                                  localDomainIndex = j;                                  
+                        // we don't want to have the NT4 trust to be returned
+                        if (unmanagedTrust.TrustType == TrustHelper.TRUST_TYPE_DOWNLEVEL)
+                            continue;
 
-                                  // verify whether this is already the root
-                                  if((obj.Flags & (int) DS_DOMAINTRUST_FLAG.DS_DOMAIN_TREE_ROOT) == 0)
-                                  {
-                                      // get the parent domain name
-                                      DS_DOMAIN_TRUSTS parentTrust = (DS_DOMAIN_TRUSTS) unmanagedTrustList[obj.ParentIndex];
-                                      if(parentTrust.DnsDomainName != (IntPtr)0)
-                                          localDomainParent = Marshal.PtrToStringUni(parentTrust.DnsDomainName);                                      
-                                  }
+                        TrustObject obj = new TrustObject();
+                        obj.TrustType = TrustType.Unknown;
+                        if (unmanagedTrust.DnsDomainName != (IntPtr)0)
+                            obj.DnsDomainName = Marshal.PtrToStringUni(unmanagedTrust.DnsDomainName);
+                        if (unmanagedTrust.NetbiosDomainName != (IntPtr)0)
+                            obj.NetbiosDomainName = Marshal.PtrToStringUni(unmanagedTrust.NetbiosDomainName);
+                        obj.Flags = unmanagedTrust.Flags;
+                        obj.TrustAttributes = unmanagedTrust.TrustAttributes;
+                        obj.OriginalIndex = i;
+                        obj.ParentIndex = unmanagedTrust.ParentIndex;
 
-                                  // this is the trust type SELF
-                                  obj.TrustType = (TrustType) 7;                                  
-                              }
-                              // this is the case of MIT kerberos trust
-                              else if(unmanagedTrust.TrustType == 3)
-                              {
-                                  obj.TrustType = TrustType.Kerberos;
-                              }
+                        // check whether it is the case that we are only interested in the trust with target as specified
+                        if (targetDomainName != null)
+                        {
+                            bool sameTarget = false;
 
-                              j++;         
-                              tmpTrustList.Add(obj);
-                          }                          
+                            // check whether it is the same target
+                            if (obj.DnsDomainName != null && Utils.Compare(targetDomainName, obj.DnsDomainName) == 0)
+                                sameTarget = true;
+                            else if (obj.NetbiosDomainName != null && Utils.Compare(targetDomainName, obj.NetbiosDomainName) == 0)
+                                sameTarget = true;
 
-                          // now determine the trust type
-                          for(int i = 0; i < tmpTrustList.Count; i++)
-                          {
-                              TrustObject tmpObject = (TrustObject)tmpTrustList[i];
-                              // local domain case, trust type has been determined
-                              if(i == localDomainIndex)
-                                  continue;
+                            // we only want to need local domain and specified target domain trusts
+                            if (!sameTarget && (obj.Flags & (int)DS_DOMAINTRUST_FLAG.DS_DOMAIN_PRIMARY) == 0)
+                                continue;
+                        }
 
-                              if(tmpObject.TrustType == TrustType.Kerberos)
-                                  continue;
+                        // local domain case
+                        if ((obj.Flags & (int)DS_DOMAINTRUST_FLAG.DS_DOMAIN_PRIMARY) != 0)
+                        {
+                            localDomainIndex = j;
 
-                              // parent domain
-                              if(localDomainParent != null && Utils.Compare(localDomainParent, tmpObject.DnsDomainName) == 0)
-                              {
-                                  tmpObject.TrustType = TrustType.ParentChild;
-                                  continue;
-                              }
+                            // verify whether this is already the root
+                            if ((obj.Flags & (int)DS_DOMAINTRUST_FLAG.DS_DOMAIN_TREE_ROOT) == 0)
+                            {
+                                // get the parent domain name
+                                DS_DOMAIN_TRUSTS parentTrust = (DS_DOMAIN_TRUSTS)unmanagedTrustList[obj.ParentIndex];
+                                if (parentTrust.DnsDomainName != (IntPtr)0)
+                                    localDomainParent = Marshal.PtrToStringUni(parentTrust.DnsDomainName);
+                            }
 
-                              if((tmpObject.Flags & (int) DS_DOMAINTRUST_FLAG.DS_DOMAIN_IN_FOREST) != 0)
-                              {
-                                  // child domain                                  
-                                  if(tmpObject.ParentIndex == ((TrustObject) tmpTrustList[localDomainIndex]).OriginalIndex)
-                                  {
-                                      tmpObject.TrustType = TrustType.ParentChild;
-                                  }                                  
-                                  // tree root
-                                  else if((tmpObject.Flags & (int) DS_DOMAINTRUST_FLAG.DS_DOMAIN_TREE_ROOT) != 0 &&
-                                    (((TrustObject) tmpTrustList[localDomainIndex]).Flags & (int) DS_DOMAINTRUST_FLAG.DS_DOMAIN_TREE_ROOT) != 0)
-                                  {
-                                      string tmpForestName = null;
-                                      string rootDomainNC = directoryEntryMgr.ExpandWellKnownDN(WellKnownDN.RootDomainNamingContext);
-                                      tmpForestName = Utils.GetDnsNameFromDN(rootDomainNC);
+                            // this is the trust type SELF
+                            obj.TrustType = (TrustType)7;
+                        }
+                        // this is the case of MIT kerberos trust
+                        else if (unmanagedTrust.TrustType == 3)
+                        {
+                            obj.TrustType = TrustType.Kerberos;
+                        }
 
-                                      // only if either the local domain or tmpObject is the tree root, will this trust relationship be a Root, otherwise it is cross link
-                                      DirectoryContext tmpContext = Utils.GetNewDirectoryContext(context.Name, DirectoryContextType.Forest, context);
-                                      if(tmpContext.isRootDomain() || Utils.Compare(tmpObject.DnsDomainName, tmpForestName) == 0)
-                                      {
-                                          tmpObject.TrustType = TrustType.TreeRoot;
-                                      }
-                                      else
-                                      {
-                                          tmpObject.TrustType = TrustType.CrossLink;
-                                      }                
-                                  }
-                                  else
-                                  {
-                                      tmpObject.TrustType = TrustType.CrossLink;
-                                  }
+                        j++;
+                        tmpTrustList.Add(obj);
+                    }
 
-                                  continue;
-                              }
+                    // now determine the trust type
+                    for (int i = 0; i < tmpTrustList.Count; i++)
+                    {
+                        TrustObject tmpObject = (TrustObject)tmpTrustList[i];
+                        // local domain case, trust type has been determined
+                        if (i == localDomainIndex)
+                            continue;
 
-                              // external trust or forest trust
-                              if ((tmpObject.TrustAttributes & (int) TRUST_ATTRIBUTE.TRUST_ATTRIBUTE_FOREST_TRANSITIVE) != 0)
-                              {
-                                  // should not happen as we specify DS_DOMAIN_IN_FOREST when enumerating the trust, so forest trust will not be returned
-                                  tmpObject.TrustType = TrustType.Forest;
-                              }
-                              else
-                              {
-                                  tmpObject.TrustType = TrustType.External;
-                              }
-                              
-                          }
-                         
-                      }
+                        if (tmpObject.TrustType == TrustType.Kerberos)
+                            continue;
 
-                      return tmpTrustList;
-                  }
-                  finally
-                  {
-                      if(domains != (IntPtr)0)
-                          UnsafeNativeMethods.NetApiBufferFree(domains);
-                  }                        
-                  
-              }
+                        // parent domain
+                        if (localDomainParent != null && Utils.Compare(localDomainParent, tmpObject.DnsDomainName) == 0)
+                        {
+                            tmpObject.TrustType = TrustType.ParentChild;
+                            continue;
+                        }
 
-              private void RepairTrustHelper(Domain targetDomain, TrustDirection direction)
-              {                  
-                  // now we try changing trust password on both sides
-                  string password = TrustHelper.CreateTrustPassword();
+                        if ((tmpObject.Flags & (int)DS_DOMAINTRUST_FLAG.DS_DOMAIN_IN_FOREST) != 0)
+                        {
+                            // child domain                                  
+                            if (tmpObject.ParentIndex == ((TrustObject)tmpTrustList[localDomainIndex]).OriginalIndex)
+                            {
+                                tmpObject.TrustType = TrustType.ParentChild;
+                            }
+                            // tree root
+                            else if ((tmpObject.Flags & (int)DS_DOMAINTRUST_FLAG.DS_DOMAIN_TREE_ROOT) != 0 &&
+                              (((TrustObject)tmpTrustList[localDomainIndex]).Flags & (int)DS_DOMAINTRUST_FLAG.DS_DOMAIN_TREE_ROOT) != 0)
+                            {
+                                string tmpForestName = null;
+                                string rootDomainNC = directoryEntryMgr.ExpandWellKnownDN(WellKnownDN.RootDomainNamingContext);
+                                tmpForestName = Utils.GetDnsNameFromDN(rootDomainNC);
 
-                  // first reset trust password on remote side
-                  string targetServerName = TrustHelper.UpdateTrust(targetDomain.GetDirectoryContext(), targetDomain.Name, Name, password, false);
+                                // only if either the local domain or tmpObject is the tree root, will this trust relationship be a Root, otherwise it is cross link
+                                DirectoryContext tmpContext = Utils.GetNewDirectoryContext(context.Name, DirectoryContextType.Forest, context);
+                                if (tmpContext.isRootDomain() || Utils.Compare(tmpObject.DnsDomainName, tmpForestName) == 0)
+                                {
+                                    tmpObject.TrustType = TrustType.TreeRoot;
+                                }
+                                else
+                                {
+                                    tmpObject.TrustType = TrustType.CrossLink;
+                                }
+                            }
+                            else
+                            {
+                                tmpObject.TrustType = TrustType.CrossLink;
+                            }
 
-                  // then reset trust password on local side
-                  string sourceServerName = TrustHelper.UpdateTrust(context, Name, targetDomain.Name, password, false);     
+                            continue;
+                        }
 
-                  // last we reset the secure channel again to make sure info is replicated and trust is indeed ready now
+                        // external trust or forest trust
+                        if ((tmpObject.TrustAttributes & (int)TRUST_ATTRIBUTE.TRUST_ATTRIBUTE_FOREST_TRANSITIVE) != 0)
+                        {
+                            // should not happen as we specify DS_DOMAIN_IN_FOREST when enumerating the trust, so forest trust will not be returned
+                            tmpObject.TrustType = TrustType.Forest;
+                        }
+                        else
+                        {
+                            tmpObject.TrustType = TrustType.External;
+                        }
+                    }
+                }
 
-                  // verify outbound trust first
-                  if((direction & TrustDirection.Outbound) != 0)
-                  {
-                      try
-                      {
-                          TrustHelper.VerifyTrust(context, Name, targetDomain.Name, false /*not forest*/, TrustDirection.Outbound, true /*reset secure channel*/, targetServerName /* need to specify which target server */);
-                      }
-                      catch(ActiveDirectoryObjectNotFoundException)
-                      {
-                          throw new ActiveDirectoryObjectNotFoundException(Res.GetString(Res.WrongTrustDirection, Name, targetDomain.Name, direction), typeof(TrustRelationshipInformation), null);
-                      }
-                  }
+                return tmpTrustList;
+            }
+            finally
+            {
+                if (domains != (IntPtr)0)
+                    UnsafeNativeMethods.NetApiBufferFree(domains);
+            }
+        }
 
-                  // verify inbound trust
-                  if((direction & TrustDirection.Inbound) != 0)
-                  {
-                      try
-                      {
-                          TrustHelper.VerifyTrust(targetDomain.GetDirectoryContext(), targetDomain.Name, Name, false /*not forest*/, TrustDirection.Outbound, true/*reset secure channel*/, sourceServerName /* need to specify which target server */);
-                      }
-                      catch(ActiveDirectoryObjectNotFoundException)
-                      {
-                          throw new ActiveDirectoryObjectNotFoundException(Res.GetString(Res.WrongTrustDirection, Name, targetDomain.Name, direction), typeof(TrustRelationshipInformation), null);
-                      }
-                  }
-                      
-              }
-              
+        private void RepairTrustHelper(Domain targetDomain, TrustDirection direction)
+        {
+            // now we try changing trust password on both sides
+            string password = TrustHelper.CreateTrustPassword();
+
+            // first reset trust password on remote side
+            string targetServerName = TrustHelper.UpdateTrust(targetDomain.GetDirectoryContext(), targetDomain.Name, Name, password, false);
+
+            // then reset trust password on local side
+            string sourceServerName = TrustHelper.UpdateTrust(context, Name, targetDomain.Name, password, false);
+
+            // last we reset the secure channel again to make sure info is replicated and trust is indeed ready now
+
+            // verify outbound trust first
+            if ((direction & TrustDirection.Outbound) != 0)
+            {
+                try
+                {
+                    TrustHelper.VerifyTrust(context, Name, targetDomain.Name, false /*not forest*/, TrustDirection.Outbound, true /*reset secure channel*/, targetServerName /* need to specify which target server */);
+                }
+                catch (ActiveDirectoryObjectNotFoundException)
+                {
+                    throw new ActiveDirectoryObjectNotFoundException(Res.GetString(Res.WrongTrustDirection, Name, targetDomain.Name, direction), typeof(TrustRelationshipInformation), null);
+                }
+            }
+
+            // verify inbound trust
+            if ((direction & TrustDirection.Inbound) != 0)
+            {
+                try
+                {
+                    TrustHelper.VerifyTrust(targetDomain.GetDirectoryContext(), targetDomain.Name, Name, false /*not forest*/, TrustDirection.Outbound, true/*reset secure channel*/, sourceServerName /* need to specify which target server */);
+                }
+                catch (ActiveDirectoryObjectNotFoundException)
+                {
+                    throw new ActiveDirectoryObjectNotFoundException(Res.GetString(Res.WrongTrustDirection, Name, targetDomain.Name, direction), typeof(TrustRelationshipInformation), null);
+                }
+            }
+        }
+
         #endregion private methods
     }
 }

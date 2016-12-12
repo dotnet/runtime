@@ -1,12 +1,16 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
 //------------------------------------------------------------------------------
-// <copyright file="AdsSearchPreferences.cs" company="Microsoft">
 //     Copyright (c) Microsoft Corporation.  All rights reserved.
 // </copyright>                                                                
 //------------------------------------------------------------------------------
 
-namespace System.DirectoryServices.Interop {
-
-    internal enum AdsSearchPreferences {
+namespace System.DirectoryServices.Interop
+{
+    internal enum AdsSearchPreferences
+    {
         ASYNCHRONOUS = 0,
         DEREF_ALIASES = 1,
         SIZE_LIMIT = 2,
@@ -27,6 +31,5 @@ namespace System.DirectoryServices.Interop {
         DIRSYNC_FLAG = 17,
         EXTENDED_DN = 18
     }
-
 }
 

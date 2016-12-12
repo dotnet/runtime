@@ -1,3 +1,7 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -8,92 +12,86 @@ namespace System.DirectoryServices.AccountManagement
     [AttributeUsage(AttributeTargets.Property, AllowMultiple = true)]
     public sealed class DirectoryPropertyAttribute : Attribute
     {
-        private string schemaAttributeName;
-        private Nullable<ContextType> context;
+        private string _schemaAttributeName;
+        private Nullable<ContextType> _context;
         public DirectoryPropertyAttribute(string schemaAttributeName)
         {
-            this.schemaAttributeName = schemaAttributeName;
-            this.context = null;
+            _schemaAttributeName = schemaAttributeName;
+            _context = null;
         }
         public string SchemaAttributeName
         {
             get
             {
-                return schemaAttributeName;
+                return _schemaAttributeName;
             }
         }
         public Nullable<ContextType> Context
         {
             get
             {
-                return context;
+                return _context;
             }
             set
             {
-                context = value;
+                _context = value;
             }
         }
-
-
     }
 
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = true)]
     public sealed class DirectoryRdnPrefixAttribute : Attribute
     {
-        private string rdnPrefix;
-        private Nullable<ContextType> context;
+        private string _rdnPrefix;
+        private Nullable<ContextType> _context;
 
-        public DirectoryRdnPrefixAttribute (string rdnPrefix)
+        public DirectoryRdnPrefixAttribute(string rdnPrefix)
         {
-            this.rdnPrefix = rdnPrefix;
-            this.context = null;
+            _rdnPrefix = rdnPrefix;
+            _context = null;
         }
         public string RdnPrefix
         {
             get
             {
-                return rdnPrefix;
+                return _rdnPrefix;
             }
         }
         public Nullable<ContextType> Context
         {
             get
             {
-                return context;
+                return _context;
             }
         }
-
-
     }
 
 
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = true)]
     public sealed class DirectoryObjectClassAttribute : Attribute
     {
-        private string objectClass;
-        private Nullable<ContextType> context;
+        private string _objectClass;
+        private Nullable<ContextType> _context;
 
-        public DirectoryObjectClassAttribute (string objectClass)
+        public DirectoryObjectClassAttribute(string objectClass)
         {
-            this.objectClass = objectClass;
-            this.context = null;
+            _objectClass = objectClass;
+            _context = null;
         }
         public string ObjectClass
         {
             get
             {
-                return objectClass;
+                return _objectClass;
             }
         }
         public Nullable<ContextType> Context
         {
             get
             {
-                return context;
+                return _context;
             }
         }
-
-
     }
 }
 

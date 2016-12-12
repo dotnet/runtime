@@ -1,13 +1,17 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
 //------------------------------------------------------------------------------
-// <copyright file="DirectoryEntry.cs" company="Microsoft">
 //     Copyright (c) Microsoft Corporation.  All rights reserved.
 // </copyright>                                                                
 //------------------------------------------------------------------------------
 
 /*
  */
-namespace System.DirectoryServices {
 
+namespace System.DirectoryServices
+{
     using System;
     using System.Text;
     using System.Runtime.InteropServices;
@@ -21,44 +25,44 @@ namespace System.DirectoryServices {
     using System.DirectoryServices.Design;
     using System.Globalization;
     using System.Net;
-    
+
     /// <include file='doc\DirectoryEntry.uex' path='docs/doc[@for="DirectoryEntry"]/*' />
     /// <devdoc>
     ///    <para> Encapsulates a node or an object in the Active Directory hierarchy.</para>
     /// </devdoc>
-    [    
-    DirectoryServicesPermission(SecurityAction.LinkDemand, Unrestricted=true),
-    TypeConverterAttribute(typeof(DirectoryEntryConverter)),     
-    EnvironmentPermission(SecurityAction.Assert, Unrestricted=true),
-    SecurityPermission(SecurityAction.Assert, Flags=SecurityPermissionFlag.UnmanagedCode),
+    [
+    DirectoryServicesPermission(SecurityAction.LinkDemand, Unrestricted = true),
+    TypeConverterAttribute(typeof(DirectoryEntryConverter)),
+    EnvironmentPermission(SecurityAction.Assert, Unrestricted = true),
+    SecurityPermission(SecurityAction.Assert, Flags = SecurityPermissionFlag.UnmanagedCode),
     DSDescriptionAttribute(Res.DirectoryEntryDesc)
     ]
-    public class DirectoryEntry : Component {
-
-        private string path = "";
-        private UnsafeNativeMethods.IAds adsObject;
-        private bool useCache = true;
-        private bool cacheFilled;        
-// disable csharp compiler warning #0414: field assigned unused value
+    public class DirectoryEntry : Component
+    {
+        private string _path = "";
+        private UnsafeNativeMethods.IAds _adsObject;
+        private bool _useCache = true;
+        private bool _cacheFilled;
+        // disable csharp compiler warning #0414: field assigned unused value
 #pragma warning disable 0414
         internal bool propertiesAlreadyEnumerated = false;
 #pragma warning restore 0414
-        private bool justCreated = false;   // 'true' if newly created entry was not yet stored by CommitChanges().
-        private bool disposed = false;
-        private AuthenticationTypes authenticationType = AuthenticationTypes.Secure;
-        private NetworkCredential credentials;
-        private DirectoryEntryConfiguration options;
+        private bool _justCreated = false;   // 'true' if newly created entry was not yet stored by CommitChanges().
+        private bool _disposed = false;
+        private AuthenticationTypes _authenticationType = AuthenticationTypes.Secure;
+        private NetworkCredential _credentials;
+        private DirectoryEntryConfiguration _options;
 
-        private PropertyCollection propertyCollection = null;        
+        private PropertyCollection _propertyCollection = null;
         internal bool allowMultipleChange = false;
-        private bool userNameIsNull = false;
-        private bool passwordIsNull = false;
-        private bool objectSecurityInitialized = false;
-        private bool objectSecurityModified = false;
-        private ActiveDirectorySecurity objectSecurity = null;
-        private static string securityDescriptorProperty = "ntSecurityDescriptor";
+        private bool _userNameIsNull = false;
+        private bool _passwordIsNull = false;
+        private bool _objectSecurityInitialized = false;
+        private bool _objectSecurityModified = false;
+        private ActiveDirectorySecurity _objectSecurity = null;
+        private static string s_securityDescriptorProperty = "ntSecurityDescriptor";
 
-        
+
         /// <include file='doc\DirectoryEntry.uex' path='docs/doc[@for="DirectoryEntry.DirectoryEntry"]/*' />
         /// <devdoc>
         ///    <para>
@@ -66,12 +70,13 @@ namespace System.DirectoryServices {
         ///    </para>
         /// </devdoc>
         [
-            DirectoryServicesPermission(SecurityAction.Demand, Unrestricted=true)
+            DirectoryServicesPermission(SecurityAction.Demand, Unrestricted = true)
         ]
-        public DirectoryEntry() {  
-            options = new DirectoryEntryConfiguration(this);
+        public DirectoryEntry()
+        {
+            _options = new DirectoryEntryConfiguration(this);
         }
-        
+
         /// <include file='doc\DirectoryEntry.uex' path='docs/doc[@for="DirectoryEntry.DirectoryEntry1"]/*' />
         /// <devdoc>
         ///    <para>
@@ -80,10 +85,11 @@ namespace System.DirectoryServices {
         ///    </para>
         /// </devdoc>
         [
-            DirectoryServicesPermission(SecurityAction.Demand, Unrestricted=true)
+            DirectoryServicesPermission(SecurityAction.Demand, Unrestricted = true)
         ]
-        public DirectoryEntry(string path)  :this() {
-            Path = path;               
+        public DirectoryEntry(string path) : this()
+        {
+            Path = path;
         }
 
         /// <include file='doc\DirectoryEntry.uex' path='docs/doc[@for="DirectoryEntry.DirectoryEntry2"]/*' />
@@ -93,11 +99,12 @@ namespace System.DirectoryServices {
         ///    </para>
         /// </devdoc>        
         [
-            DirectoryServicesPermission(SecurityAction.Demand, Unrestricted=true)
+            DirectoryServicesPermission(SecurityAction.Demand, Unrestricted = true)
         ]
-        public DirectoryEntry(string path, string username, string password) : this(path, username, password, AuthenticationTypes.Secure) {
+        public DirectoryEntry(string path, string username, string password) : this(path, username, password, AuthenticationTypes.Secure)
+        {
         }
-        
+
         /// <include file='doc\DirectoryEntry.uex' path='docs/doc[@for="DirectoryEntry.DirectoryEntry3"]/*' />
         /// <devdoc>
         ///    <para>
@@ -105,32 +112,34 @@ namespace System.DirectoryServices {
         ///    </para>
         /// </devdoc>
         [
-            DirectoryServicesPermission(SecurityAction.Demand, Unrestricted=true)
+            DirectoryServicesPermission(SecurityAction.Demand, Unrestricted = true)
         ]
-        public DirectoryEntry(string path, string username, string password, AuthenticationTypes authenticationType) : this(path) {
-            this.credentials = new NetworkCredential(username, password); 
-            if(username == null)
-                userNameIsNull = true;
+        public DirectoryEntry(string path, string username, string password, AuthenticationTypes authenticationType) : this(path)
+        {
+            _credentials = new NetworkCredential(username, password);
+            if (username == null)
+                _userNameIsNull = true;
 
-            if(password == null)
-                passwordIsNull = true;
-                
-            this.authenticationType = authenticationType;
+            if (password == null)
+                _passwordIsNull = true;
+
+            _authenticationType = authenticationType;
         }
 
-        internal DirectoryEntry(string path, bool useCache, string username, string password, AuthenticationTypes authenticationType)  {
-            this.path = path;            
-            this.useCache = useCache;
-            this.credentials = new NetworkCredential(username, password);      
-            if(username == null)
-                userNameIsNull = true;
+        internal DirectoryEntry(string path, bool useCache, string username, string password, AuthenticationTypes authenticationType)
+        {
+            _path = path;
+            _useCache = useCache;
+            _credentials = new NetworkCredential(username, password);
+            if (username == null)
+                _userNameIsNull = true;
 
-            if(password == null)
-                passwordIsNull = true;
-                
-            this.authenticationType = authenticationType;
-            
-            options = new DirectoryEntryConfiguration(this);
+            if (password == null)
+                _passwordIsNull = true;
+
+            _authenticationType = authenticationType;
+
+            _options = new DirectoryEntryConfiguration(this);
         }
 
         /// <include file='doc\DirectoryEntry.uex' path='docs/doc[@for="DirectoryEntry.DirectoryEntry4"]/*' />
@@ -141,55 +150,60 @@ namespace System.DirectoryServices {
         ///    </para>
         /// </devdoc>
         [
-            DirectoryServicesPermission(SecurityAction.Demand, Unrestricted=true)
+            DirectoryServicesPermission(SecurityAction.Demand, Unrestricted = true)
         ]
         public DirectoryEntry(object adsObject)
-            : this(adsObject, true, null, null, AuthenticationTypes.Secure, true) {
+            : this(adsObject, true, null, null, AuthenticationTypes.Secure, true)
+        {
         }
 
         internal DirectoryEntry(object adsObject, bool useCache, string username, string password, AuthenticationTypes authenticationType)
-            : this(adsObject, useCache, username, password, authenticationType, false) {
-         }
+            : this(adsObject, useCache, username, password, authenticationType, false)
+        {
+        }
 
-        
-        internal DirectoryEntry(object adsObject, bool useCache, string username, string password, AuthenticationTypes authenticationType, bool AdsObjIsExternal) {
-            this.adsObject = adsObject as UnsafeNativeMethods.IAds;
-            if (this.adsObject == null)
+
+        internal DirectoryEntry(object adsObject, bool useCache, string username, string password, AuthenticationTypes authenticationType, bool AdsObjIsExternal)
+        {
+            _adsObject = adsObject as UnsafeNativeMethods.IAds;
+            if (_adsObject == null)
                 throw new ArgumentException(Res.GetString(Res.DSDoesNotImplementIADs));
-            
+
             // GetInfo is not needed here. ADSI executes an implicit GetInfo when GetEx 
             // is called on the PropertyValueCollection. 0x800704BC error might be returned 
             // on some WinNT entries, when iterating through 'Users' group members.
             // if (forceBind)
             //     this.adsObject.GetInfo();                
-            path = this.adsObject.ADsPath;
-            this.useCache = useCache;
-            
-            this.authenticationType = authenticationType;
-            this.credentials = new NetworkCredential(username, password);       
-            if(username == null)
-                userNameIsNull = true;
+            _path = _adsObject.ADsPath;
+            _useCache = useCache;
 
-            if(password == null)
-                passwordIsNull = true;
-                
+            _authenticationType = authenticationType;
+            _credentials = new NetworkCredential(username, password);
+            if (username == null)
+                _userNameIsNull = true;
+
+            if (password == null)
+                _passwordIsNull = true;
+
             if (!useCache)
                 CommitChanges();
-            
-            options = new DirectoryEntryConfiguration(this);
-            
+
+            _options = new DirectoryEntryConfiguration(this);
+
             // We are starting from an already bound connection so make sure the options are set properly.
             // If this is an externallly managed com object then we don't want to change it's current behavior
             if (!AdsObjIsExternal)
             {
-               InitADsObjectOptions();
+                InitADsObjectOptions();
             }
         }
-                                 
-        internal UnsafeNativeMethods.IAds AdsObject {
-            get {
+
+        internal UnsafeNativeMethods.IAds AdsObject
+        {
+            get
+            {
                 Bind();
-                 return adsObject;
+                return _adsObject;
             }
         }
 
@@ -198,22 +212,27 @@ namespace System.DirectoryServices {
             DefaultValue(AuthenticationTypes.Secure),
             DSDescriptionAttribute(Res.DSAuthenticationType)
         ]
-        public AuthenticationTypes AuthenticationType {
-            get {
-                return authenticationType;
+        public AuthenticationTypes AuthenticationType
+        {
+            get
+            {
+                return _authenticationType;
             }
-            set {
-                if (authenticationType == value)
+            set
+            {
+                if (_authenticationType == value)
                     return;
 
-                authenticationType = value;
+                _authenticationType = value;
                 Unbind();
             }
         }
-        
-        private bool Bound {
-            get {
-                return adsObject != null;
+
+        private bool Bound
+        {
+            get
+            {
+                return _adsObject != null;
             }
         }
 
@@ -228,16 +247,20 @@ namespace System.DirectoryServices {
             DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden),
             DSDescriptionAttribute(Res.DSChildren)
         ]
-        public DirectoryEntries Children {
-            get {
+        public DirectoryEntries Children
+        {
+            get
+            {
                 return new DirectoryEntries(this);
             }
         }
 
-        internal UnsafeNativeMethods.IAdsContainer ContainerObject {
-            get {
+        internal UnsafeNativeMethods.IAdsContainer ContainerObject
+        {
+            get
+            {
                 Bind();
-                return (UnsafeNativeMethods.IAdsContainer) adsObject;
+                return (UnsafeNativeMethods.IAdsContainer)_adsObject;
             }
         }
 
@@ -252,14 +275,18 @@ namespace System.DirectoryServices {
             DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden),
             DSDescriptionAttribute(Res.DSGuid)
         ]
-        public Guid Guid {
-            get {
+        public Guid Guid
+        {
+            get
+            {
                 string guid = NativeGuid;
-                if (guid.Length == 32) {
+                if (guid.Length == 32)
+                {
                     // oddly, the value comes back as a string with no dashes from LDAP
                     byte[] intGuid = new byte[16];
-                    for ( int j = 0; j < 16 ; j++) {
-                        intGuid[j] = Convert.ToByte( new String(new char[] { guid[j*2], guid[j*2+1] }) , 16);
+                    for (int j = 0; j < 16; j++)
+                    {
+                        intGuid[j] = Convert.ToByte(new String(new char[] { guid[j * 2], guid[j * 2 + 1] }), 16);
                     }
                     return new Guid(intGuid);
                     // return new Guid(guid.Substring(0, 8) + "-" + guid.Substring(8, 4) + "-" + guid.Substring(12, 4) + "-" + guid.Substring(16, 4) + "-" + guid.Substring(20));
@@ -274,17 +301,17 @@ namespace System.DirectoryServices {
             DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden),
             DSDescriptionAttribute(Res.DSObjectSecurity)
         ]
-        public ActiveDirectorySecurity ObjectSecurity 
+        public ActiveDirectorySecurity ObjectSecurity
         {
-            get 
+            get
             {
-                if (!objectSecurityInitialized)
+                if (!_objectSecurityInitialized)
                 {
-                    objectSecurity = GetObjectSecurityFromCache();
-                    objectSecurityInitialized = true;
+                    _objectSecurity = GetObjectSecurityFromCache();
+                    _objectSecurityInitialized = true;
                 }
 
-                return objectSecurity;
+                return _objectSecurity;
             }
             set
             {
@@ -292,28 +319,33 @@ namespace System.DirectoryServices {
                 {
                     throw new ArgumentNullException("value");
                 }
-                
-                objectSecurity = value;
-                objectSecurityInitialized = true;
-                objectSecurityModified = true;
+
+                _objectSecurity = value;
+                _objectSecurityInitialized = true;
+                _objectSecurityModified = true;
 
                 CommitIfNotCaching();
             }
         }
 
-        internal bool IsContainer {
-            get {
+        internal bool IsContainer
+        {
+            get
+            {
                 Bind();
-                return adsObject is UnsafeNativeMethods.IAdsContainer;
+                return _adsObject is UnsafeNativeMethods.IAdsContainer;
             }
         }
 
-        internal bool JustCreated {
-            get {
-                return justCreated;
+        internal bool JustCreated
+        {
+            get
+            {
+                return _justCreated;
             }
-            set {
-                justCreated = value;
+            set
+            {
+                _justCreated = value;
             }
         }
 
@@ -329,28 +361,32 @@ namespace System.DirectoryServices {
             DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden),
             DSDescriptionAttribute(Res.DSName)
         ]
-        public string Name {
-            get {
+        public string Name
+        {
+            get
+            {
                 Bind();
-                string tmpName = adsObject.Name;
+                string tmpName = _adsObject.Name;
                 GC.KeepAlive(this);
                 return tmpName;
             }
         }
-       
+
         /// <include file='doc\DirectoryEntry.uex' path='docs/doc[@for="DirectoryEntry.NativeGuid"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
         [
-            Browsable(false), 
+            Browsable(false),
             DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden),
-            DSDescriptionAttribute(Res.DSNativeGuid)            
+            DSDescriptionAttribute(Res.DSNativeGuid)
         ]
-        public string NativeGuid {
-            get {
+        public string NativeGuid
+        {
+            get
+            {
                 FillCache("GUID");
-                string tmpGuid = adsObject.GUID;
+                string tmpGuid = _adsObject.GUID;
                 GC.KeepAlive(this);
                 return tmpGuid;
             }
@@ -367,10 +403,12 @@ namespace System.DirectoryServices {
             DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden),
             DSDescriptionAttribute(Res.DSNativeObject)
         ]
-        public object NativeObject {
-            get {
+        public object NativeObject
+        {
+            get
+            {
                 Bind();
-                return adsObject;
+                return _adsObject;
             }
         }
 
@@ -386,10 +424,12 @@ namespace System.DirectoryServices {
             DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden),
             DSDescriptionAttribute(Res.DSParent)
         ]
-        public DirectoryEntry Parent {
-            get {
+        public DirectoryEntry Parent
+        {
+            get
+            {
                 Bind();
-                return new DirectoryEntry(adsObject.Parent, UsePropertyCache, GetUsername(), GetPassword(), AuthenticationType);
+                return new DirectoryEntry(_adsObject.Parent, UsePropertyCache, GetUsername(), GetPassword(), AuthenticationType);
             }
         }
 
@@ -398,29 +438,31 @@ namespace System.DirectoryServices {
         ///    <para>Gets or sets the password to use when authenticating the client.</para>
         /// </devdoc>
         [
-            DSDescriptionAttribute(Res.DSPassword),            
+            DSDescriptionAttribute(Res.DSPassword),
             DefaultValue(null),
             Browsable(false)
         ]
-        public string Password {            
-            set {                                    
+        public string Password
+        {
+            set
+            {
                 if (value == GetPassword())
-                    return;                
-                                   
-                if (this.credentials == null) 
+                    return;
+
+                if (_credentials == null)
                 {
-                    this.credentials = new NetworkCredential();
+                    _credentials = new NetworkCredential();
                     // have not set it yet
-                    userNameIsNull = true;
+                    _userNameIsNull = true;
                 }
 
-                if(value == null)
-                    passwordIsNull = true;
+                if (value == null)
+                    _passwordIsNull = true;
                 else
-                    passwordIsNull = false;
+                    _passwordIsNull = false;
 
-                this.credentials.Password = value;             
-                                    
+                _credentials.Password = value;
+
                 Unbind();
             }
         }
@@ -435,22 +477,25 @@ namespace System.DirectoryServices {
             TypeConverter("System.Diagnostics.Design.StringValueConverter, " + AssemblyRef.SystemDesign),
             SettingsBindable(true)
         ]
-        public string Path {
-            get {                                                 
-                return path;                
+        public string Path
+        {
+            get
+            {
+                return _path;
             }
-            set {
+            set
+            {
                 if (value == null)
                     value = "";
 
-                if (System.DirectoryServices.ActiveDirectory.Utils.Compare(path, value) == 0)
+                if (System.DirectoryServices.ActiveDirectory.Utils.Compare(_path, value) == 0)
                     return;
 
-                path = value;
+                _path = value;
                 Unbind();
             }
         }
-        
+
         /// <include file='doc\DirectoryEntry.uex' path='docs/doc[@for="DirectoryEntry.Properties"]/*' />
         /// <devdoc>
         ///    <para>
@@ -463,19 +508,19 @@ namespace System.DirectoryServices {
             DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden),
             DSDescriptionAttribute(Res.DSProperties)
         ]
-        public PropertyCollection Properties {
-           get {
-                if(this.propertyCollection == null)
-                {                    
-                    this.propertyCollection = new PropertyCollection(this);
+        public PropertyCollection Properties
+        {
+            get
+            {
+                if (_propertyCollection == null)
+                {
+                    _propertyCollection = new PropertyCollection(this);
                 }
 
-                return this.propertyCollection;
-
-
+                return _propertyCollection;
             }
         }
-        
+
         /// <include file='doc\DirectoryEntry.uex' path='docs/doc[@for="DirectoryEntry.SchemaClassName"]/*' />
         /// <devdoc>
         /// <para>Gets the name of the schema used for this <see cref='System.DirectoryServices.DirectoryEntry'/>.</para>
@@ -485,10 +530,12 @@ namespace System.DirectoryServices {
             DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden),
             DSDescriptionAttribute(Res.DSSchemaClassName)
         ]
-        public string SchemaClassName {
-            get {
+        public string SchemaClassName
+        {
+            get
+            {
                 Bind();
-                string tmpClass = adsObject.Class;
+                string tmpClass = _adsObject.Class;
                 GC.KeepAlive(this);
                 return tmpClass;
             }
@@ -505,10 +552,12 @@ namespace System.DirectoryServices {
             DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden),
             DSDescriptionAttribute(Res.DSSchemaEntry)
         ]
-        public DirectoryEntry SchemaEntry {
-            get {
+        public DirectoryEntry SchemaEntry
+        {
+            get
+            {
                 Bind();
-                return new DirectoryEntry(adsObject.Schema, UsePropertyCache, GetUsername(), GetPassword(), AuthenticationType);
+                return new DirectoryEntry(_adsObject.Schema, UsePropertyCache, GetUsername(), GetPassword(), AuthenticationType);
             }
         }
 
@@ -528,20 +577,23 @@ namespace System.DirectoryServices {
             DefaultValue(true),
             DSDescriptionAttribute(Res.DSUsePropertyCache)
         ]
-        public bool UsePropertyCache {
-            get {
-                return useCache;
+        public bool UsePropertyCache
+        {
+            get
+            {
+                return _useCache;
             }
-            set {
-                if (value == useCache)
+            set
+            {
+                if (value == _useCache)
                     return;
 
                 // auto-commit when they set this to false.
                 if (!value)
                     CommitChanges();
 
-                cacheFilled = false;    // cache mode has been changed
-                useCache = value;
+                _cacheFilled = false;    // cache mode has been changed
+                _useCache = value;
             }
         }
 
@@ -550,37 +602,40 @@ namespace System.DirectoryServices {
         ///    <para>Gets or sets the username to use when authenticating the client.</para>
         /// </devdoc>
         [
-            DSDescriptionAttribute(Res.DSUsername),            
+            DSDescriptionAttribute(Res.DSUsername),
             TypeConverter("System.Diagnostics.Design.StringValueConverter, " + AssemblyRef.SystemDesign),
             DefaultValue(null),
             Browsable(false)
         ]
-        public string Username {
-            get {
-                if (this.credentials == null || userNameIsNull) 
+        public string Username
+        {
+            get
+            {
+                if (_credentials == null || _userNameIsNull)
                     return null;
-                  
-                return this.credentials.UserName;
+
+                return _credentials.UserName;
             }
-            set {                                    
+            set
+            {
                 if (value == GetUsername())
                     return;
-                                    
-                if (this.credentials == null) 
+
+                if (_credentials == null)
                 {
-                    this.credentials = new NetworkCredential();
-                    passwordIsNull = true;
+                    _credentials = new NetworkCredential();
+                    _passwordIsNull = true;
                 }
 
-                if(value == null)
-                    userNameIsNull = true;
+                if (value == null)
+                    _userNameIsNull = true;
                 else
-                    userNameIsNull = false;
+                    _userNameIsNull = false;
 
-                this.credentials.UserName = value;        
-                                    
+                _credentials.UserName = value;
+
                 Unbind();
-            }            
+            }
         }
 
         [
@@ -589,20 +644,22 @@ namespace System.DirectoryServices {
             DSDescriptionAttribute(Res.DSOptions),
             ComVisible(false)
         ]
-        public DirectoryEntryConfiguration Options{
-            get {
+        public DirectoryEntryConfiguration Options
+        {
+            get
+            {
                 // only LDAP provider supports IADsObjectOptions, so make the check here
                 if (!(AdsObject is UnsafeNativeMethods.IAdsObjectOptions))
-                    return null;               
-                
-                return options;
+                    return null;
+
+                return _options;
             }
-        }       
+        }
 
-        internal void InitADsObjectOptions() {
-
-            if(adsObject is UnsafeNativeMethods.IAdsObjectOptions2) {
-
+        internal void InitADsObjectOptions()
+        {
+            if (_adsObject is UnsafeNativeMethods.IAdsObjectOptions2)
+            {
                 //--------------------------------------------
                 // Check if ACCUMULATE_MODIFICATION is available
                 //--------------------------------------------
@@ -611,85 +668,89 @@ namespace System.DirectoryServices {
                 // check whether the new option is available
 
                 // 8 is ADS_OPTION_ACCUMULATIVE_MODIFICATION
-                unmanagedResult = ((UnsafeNativeMethods.IAdsObjectOptions2)adsObject).GetOption(8, out o);
-                if(unmanagedResult != 0)
+                unmanagedResult = ((UnsafeNativeMethods.IAdsObjectOptions2)_adsObject).GetOption(8, out o);
+                if (unmanagedResult != 0)
                 {
                     // rootdse does not support this option and invalid parameter due to without accumulative change fix in ADSI
-                   if((unmanagedResult == unchecked((int)0x80004001)) || (unmanagedResult == unchecked((int)0x80005008)))
-                   {
-                       return;
-                   }
-                   else
-                   {
-                       throw COMExceptionHelper.CreateFormattedComException(unmanagedResult);
-                   }
-               }
-               
-               // the new option is available, set it so we get the new PutEx behavior that will allow multiple changes
-               Variant value = new Variant();
-               value.varType = 11; //VT_BOOL
-               value.boolvalue = -1;
-               ((UnsafeNativeMethods.IAdsObjectOptions2)adsObject).SetOption(8, value);                   
-               
-               allowMultipleChange = true;
-             }
+                    if ((unmanagedResult == unchecked((int)0x80004001)) || (unmanagedResult == unchecked((int)0x80005008)))
+                    {
+                        return;
+                    }
+                    else
+                    {
+                        throw COMExceptionHelper.CreateFormattedComException(unmanagedResult);
+                    }
+                }
+
+                // the new option is available, set it so we get the new PutEx behavior that will allow multiple changes
+                Variant value = new Variant();
+                value.varType = 11; //VT_BOOL
+                value.boolvalue = -1;
+                ((UnsafeNativeMethods.IAdsObjectOptions2)_adsObject).SetOption(8, value);
+
+                allowMultipleChange = true;
+            }
         }
 
         /// <include file='doc\DirectoryEntry.uex' path='docs/doc[@for="DirectoryEntry.Bind"]/*' />
         /// <devdoc>
         /// Binds to the ADs object (if not already bound).
         /// </devdoc>
-        private void Bind() {
+        private void Bind()
+        {
             Bind(true);
         }
-        
-        internal void Bind(bool throwIfFail) {
+
+        internal void Bind(bool throwIfFail)
+        {
             //Cannot rebind after the object has been disposed, since finalization has been suppressed.
 
-            if (this.disposed)
+            if (_disposed)
                 throw new ObjectDisposedException(GetType().Name);
-            
-            if (adsObject == null) {                                                                                                                                        
-                string pathToUse = Path; 
-                if (pathToUse == null || pathToUse.Length == 0) {
+
+            if (_adsObject == null)
+            {
+                string pathToUse = Path;
+                if (pathToUse == null || pathToUse.Length == 0)
+                {
                     // get the default naming context. This should be the default root for the search.
                     DirectoryEntry rootDSE = new DirectoryEntry("LDAP://RootDSE", true, null, null, AuthenticationTypes.Secure);
-                
+
                     //SECREVIEW: Looking at the root of the DS will demand browse permissions
                     //                     on "*" or "LDAP://RootDSE".
-                    string defaultNamingContext = (string) rootDSE.Properties["defaultNamingContext"][0];
+                    string defaultNamingContext = (string)rootDSE.Properties["defaultNamingContext"][0];
                     rootDSE.Dispose();
-                                    
-                    pathToUse = "LDAP://" + defaultNamingContext;                                                                                
-                }                                                
-            
+
+                    pathToUse = "LDAP://" + defaultNamingContext;
+                }
+
                 // Ensure we've got a thread model set, else CoInitialize() won't have been called.
                 if (Thread.CurrentThread.GetApartmentState() == ApartmentState.Unknown)
                     Thread.CurrentThread.SetApartmentState(ApartmentState.MTA);
 
                 Guid g = new Guid("00000000-0000-0000-c000-000000000046"); // IID_IUnknown
-                object value = null;                
-                int hr = UnsafeNativeMethods.ADsOpenObject(pathToUse, GetUsername(), GetPassword(), (int)authenticationType, ref g, out value);
+                object value = null;
+                int hr = UnsafeNativeMethods.ADsOpenObject(pathToUse, GetUsername(), GetPassword(), (int)_authenticationType, ref g, out value);
 
-                if (hr != 0) {
-                    if (throwIfFail) 
-                        throw COMExceptionHelper.CreateFormattedComException(hr);    
-                                            
+                if (hr != 0)
+                {
+                    if (throwIfFail)
+                        throw COMExceptionHelper.CreateFormattedComException(hr);
                 }
-                else {
-                    adsObject = (UnsafeNativeMethods.IAds) value;
+                else
+                {
+                    _adsObject = (UnsafeNativeMethods.IAds)value;
                 }
 
-               InitADsObjectOptions();
-                     
-           }
-
+                InitADsObjectOptions();
+            }
         }
 
 
         // Create new entry with the same data, but different IADs object, and grant it Browse Permission.
-        internal DirectoryEntry CloneBrowsable() {            
-            DirectoryEntry newEntry = new DirectoryEntry(this.Path, this.UsePropertyCache, this.GetUsername(), this.GetPassword(), this.AuthenticationType);            
+        internal DirectoryEntry CloneBrowsable()
+        {
+            DirectoryEntry newEntry = new DirectoryEntry(this.Path, this.UsePropertyCache, this.GetUsername(), this.GetPassword(), this.AuthenticationType);
             return newEntry;
         }
 
@@ -701,7 +762,8 @@ namespace System.DirectoryServices {
         ///       and releases any system resources associated with this component.
         ///    </para>
         /// </devdoc>
-        public void Close() {
+        public void Close()
+        {
             Unbind();
         }
 
@@ -712,8 +774,10 @@ namespace System.DirectoryServices {
         ///       changes to the entry in the directory store.
         ///    </para>
         /// </devdoc>
-        public void CommitChanges() {
-            if ( justCreated ) {     
+        public void CommitChanges()
+        {
+            if (_justCreated)
+            {
                 // Note: Permissions Demand is not necessary here, because entry has already been created with appr. permissions. 
                 // Write changes regardless of Caching mode to finish construction of a new entry.
                 try
@@ -723,25 +787,25 @@ namespace System.DirectoryServices {
                     //
                     SetObjectSecurityInCache();
 
-                    adsObject.SetInfo();    
+                    _adsObject.SetInfo();
                 }
-                catch(COMException e)
-                {  
+                catch (COMException e)
+                {
                     throw COMExceptionHelper.CreateFormattedComException(e);
                 }
-                justCreated = false;
-                objectSecurityInitialized = false;
-                objectSecurityModified = false;
+                _justCreated = false;
+                _objectSecurityInitialized = false;
+                _objectSecurityModified = false;
 
                 // we need to refresh that properties table.
-                this.propertyCollection = null;                
+                _propertyCollection = null;
                 return;
             }
-            if (!useCache) {
-
+            if (!_useCache)
+            {
                 // unless we have modified the existing security descriptor (in-place) through ObjectSecurity property
                 // there is nothing to do
-                if ((objectSecurity == null) || (!objectSecurity.IsModified()))
+                if ((_objectSecurity == null) || (!_objectSecurity.IsModified()))
                 {
                     return;
                 }
@@ -749,31 +813,31 @@ namespace System.DirectoryServices {
 
             if (!Bound)
                 return;
-            
+
             try
             {
                 //
                 // Write the security descriptor to the cache
                 //
                 SetObjectSecurityInCache();
-                adsObject.SetInfo();
-                objectSecurityInitialized = false;
-                objectSecurityModified = false;
+                _adsObject.SetInfo();
+                _objectSecurityInitialized = false;
+                _objectSecurityModified = false;
             }
-            catch(COMException e)
-            {  
+            catch (COMException e)
+            {
                 throw COMExceptionHelper.CreateFormattedComException(e);
             }
             // we need to refresh that properties table.
-            this.propertyCollection = null;
+            _propertyCollection = null;
         }
-        
-        internal void CommitIfNotCaching() {
 
-            if ( justCreated )  
+        internal void CommitIfNotCaching()
+        {
+            if (_justCreated)
                 return;   // Do not write changes, beacuse the entry is just under construction until CommitChanges() is called.
-                            
-            if (useCache)
+
+            if (_useCache)
                 return;
 
             if (!Bound)
@@ -789,24 +853,24 @@ namespace System.DirectoryServices {
                 //
                 SetObjectSecurityInCache();
 
-                adsObject.SetInfo();
-                objectSecurityInitialized = false;
-                objectSecurityModified = false;
+                _adsObject.SetInfo();
+                _objectSecurityInitialized = false;
+                _objectSecurityModified = false;
             }
-            catch(COMException e)
-            {  
+            catch (COMException e)
+            {
                 throw COMExceptionHelper.CreateFormattedComException(e);
             }
             // we need to refresh that properties table.
-            this.propertyCollection = null;
-
+            _propertyCollection = null;
         }
 
         /// <include file='doc\DirectoryEntry.uex' path='docs/doc[@for="DirectoryEntry.CopyTo"]/*' />
         /// <devdoc>
         ///    <para>Creates a copy of this entry as a child of the given parent.</para>
         /// </devdoc>
-        public DirectoryEntry CopyTo(DirectoryEntry newParent) {
+        public DirectoryEntry CopyTo(DirectoryEntry newParent)
+        {
             return CopyTo(newParent, null);
         }
 
@@ -817,57 +881,60 @@ namespace System.DirectoryServices {
         ///       gives it a new name.
         ///    </para>
         /// </devdoc>
-        public DirectoryEntry CopyTo(DirectoryEntry newParent, string newName) {                    
+        public DirectoryEntry CopyTo(DirectoryEntry newParent, string newName)
+        {
             if (!newParent.IsContainer)
-                throw new InvalidOperationException(Res.GetString(Res.DSNotAContainer, newParent.Path));               
-            
+                throw new InvalidOperationException(Res.GetString(Res.DSNotAContainer, newParent.Path));
+
             object copy = null;
             try
             {
                 copy = newParent.ContainerObject.CopyHere(Path, newName);
             }
-            catch(COMException e)
-            {  
+            catch (COMException e)
+            {
                 throw COMExceptionHelper.CreateFormattedComException(e);
             }
             return new DirectoryEntry(copy, newParent.UsePropertyCache, GetUsername(), GetPassword(), AuthenticationType);
-        }        
-                                                             
+        }
+
         /// <include file='doc\DirectoryEntry.uex' path='docs/doc[@for="DirectoryEntry.DeleteTree"]/*' />
         /// <devdoc>
         ///    <para>Deletes this entry and its entire subtree from the
         ///       Active Directory hierarchy.</para>
         /// </devdoc>
-        public void DeleteTree() {
+        public void DeleteTree()
+        {
             if (!(AdsObject is UnsafeNativeMethods.IAdsDeleteOps))
                 throw new InvalidOperationException(Res.GetString(Res.DSCannotDelete));
-                
-            UnsafeNativeMethods.IAdsDeleteOps entry = (UnsafeNativeMethods.IAdsDeleteOps) AdsObject;
+
+            UnsafeNativeMethods.IAdsDeleteOps entry = (UnsafeNativeMethods.IAdsDeleteOps)AdsObject;
             try
             {
                 entry.DeleteObject(0);
             }
-            catch(COMException e)
-            {  
+            catch (COMException e)
+            {
                 throw COMExceptionHelper.CreateFormattedComException(e);
             }
 
             GC.KeepAlive(this);
         }
-       
+
         /// <include file='doc\DirectoryEntry.uex' path='docs/doc[@for="DirectoryEntry.Dispose"]/*' />
         /// <devdoc>        
         /// </devdoc>
-        protected override void Dispose(bool disposing) {
+        protected override void Dispose(bool disposing)
+        {
             // no managed object to free
-            
+
             // free own state (unmanaged objects)
-            if(!this.disposed)
+            if (!_disposed)
             {
                 Unbind();
-                this.disposed = true;
+                _disposed = true;
             }
-            
+
             base.Dispose(disposing);
         }
 
@@ -878,21 +945,25 @@ namespace System.DirectoryServices {
         ///       path to see whether an entry exists.
         ///    </para>
         /// </devdoc>        
-        public static bool Exists(string path) {
+        public static bool Exists(string path)
+        {
             DirectoryEntry entry = new DirectoryEntry(path);
-            try {
+            try
+            {
                 entry.Bind(true);       // throws exceptions (possibly can break applications) 
-                return entry.Bound; 
-            }    
-            catch ( System.Runtime.InteropServices.COMException e ) {
-                if ( e.ErrorCode == unchecked((int)0x80072030) ||
+                return entry.Bound;
+            }
+            catch (System.Runtime.InteropServices.COMException e)
+            {
+                if (e.ErrorCode == unchecked((int)0x80072030) ||
                      e.ErrorCode == unchecked((int)0x80070003) ||   // ERROR_DS_NO_SUCH_OBJECT and path not found (not found in strict sense)
                      e.ErrorCode == unchecked((int)0x800708AC))     // Group name could not be found
-                    return false;    
+                    return false;
                 throw;
             }
-            finally {
-                entry.Dispose();    
+            finally
+            {
+                entry.Dispose();
             }
         }
 
@@ -901,25 +972,28 @@ namespace System.DirectoryServices {
         /// If UsePropertyCache is true, calls GetInfo the first time it's necessary.
         /// If it's false, calls GetInfoEx on the given property name.
         /// </devdoc>
-        internal void FillCache(string propertyName) {
-            if (UsePropertyCache) {
-                if (cacheFilled)
+        internal void FillCache(string propertyName)
+        {
+            if (UsePropertyCache)
+            {
+                if (_cacheFilled)
                     return;
 
                 RefreshCache();
-                cacheFilled = true;
+                _cacheFilled = true;
             }
-            else {
+            else
+            {
                 Bind();
                 try
                 {
-                    if ( propertyName.Length > 0 )
-                        adsObject.GetInfoEx(new object[] { propertyName }, 0);
+                    if (propertyName.Length > 0)
+                        _adsObject.GetInfoEx(new object[] { propertyName }, 0);
                     else
-                        adsObject.GetInfo();  // [alexvec]
+                        _adsObject.GetInfo();  // [alexvec]
                 }
-                catch(COMException e)
-                {  
+                catch (COMException e)
+                {
                     throw COMExceptionHelper.CreateFormattedComException(e);
                 }
             }
@@ -930,7 +1004,8 @@ namespace System.DirectoryServices {
         ///    <para>Calls
         ///       a method on the native Active Directory.</para>
         /// </devdoc>
-        public object Invoke(string methodName, params object[] args) {
+        public object Invoke(string methodName, params object[] args)
+        {
             object target = this.NativeObject;
             Type type = target.GetType();
             object result = null;
@@ -939,26 +1014,26 @@ namespace System.DirectoryServices {
                 result = type.InvokeMember(methodName, BindingFlags.InvokeMethod, null, target, args, CultureInfo.InvariantCulture);
                 GC.KeepAlive(this);
             }
-            catch(COMException e)
+            catch (COMException e)
             {
                 throw COMExceptionHelper.CreateFormattedComException(e);
             }
-            catch(TargetInvocationException e)
+            catch (TargetInvocationException e)
             {
-                if(e.InnerException != null)
+                if (e.InnerException != null)
                 {
-                    if(e.InnerException is COMException)
+                    if (e.InnerException is COMException)
                     {
-                        COMException inner = (COMException) e.InnerException;
+                        COMException inner = (COMException)e.InnerException;
                         throw new TargetInvocationException(e.Message, COMExceptionHelper.CreateFormattedComException(inner));
                     }
-                }                
+                }
 
                 throw e;
             }
-            
+
             if (result is UnsafeNativeMethods.IAds)
-            	
+
                 return new DirectoryEntry(result, UsePropertyCache, GetUsername(), GetPassword(), AuthenticationType);
             else
                 return result;
@@ -970,7 +1045,8 @@ namespace System.DirectoryServices {
         ///       a property on the native Active Directory object.</para>
         /// </devdoc>
         [ComVisible(false)]
-        public object InvokeGet(string propertyName) {            
+        public object InvokeGet(string propertyName)
+        {
             object target = this.NativeObject;
             Type type = target.GetType();
             object result = null;
@@ -979,20 +1055,20 @@ namespace System.DirectoryServices {
                 result = type.InvokeMember(propertyName, BindingFlags.GetProperty, null, target, null, CultureInfo.InvariantCulture);
                 GC.KeepAlive(this);
             }
-            catch(COMException e)
+            catch (COMException e)
             {
                 throw COMExceptionHelper.CreateFormattedComException(e);
             }
-            catch(TargetInvocationException e)
+            catch (TargetInvocationException e)
             {
-                if(e.InnerException != null)
+                if (e.InnerException != null)
                 {
-                    if(e.InnerException is COMException)
+                    if (e.InnerException is COMException)
                     {
-                        COMException inner = (COMException) e.InnerException;
+                        COMException inner = (COMException)e.InnerException;
                         throw new TargetInvocationException(e.Message, COMExceptionHelper.CreateFormattedComException(inner));
                     }
-                }    
+                }
 
                 throw e;
             }
@@ -1006,32 +1082,32 @@ namespace System.DirectoryServices {
         ///       a property on the native Active Directory object.</para>
         /// </devdoc>
         [ComVisible(false)]
-        public void InvokeSet(string propertyName, params object[] args) {            
+        public void InvokeSet(string propertyName, params object[] args)
+        {
             object target = this.NativeObject;
             Type type = target.GetType();
             try
-            {                
+            {
                 type.InvokeMember(propertyName, BindingFlags.SetProperty, null, target, args, CultureInfo.InvariantCulture);
                 GC.KeepAlive(this);
             }
-            catch(COMException e)
+            catch (COMException e)
             {
                 throw COMExceptionHelper.CreateFormattedComException(e);
             }
-            catch(TargetInvocationException e)
+            catch (TargetInvocationException e)
             {
-                if(e.InnerException != null)
+                if (e.InnerException != null)
                 {
-                    if(e.InnerException is COMException)
+                    if (e.InnerException is COMException)
                     {
-                        COMException inner = (COMException) e.InnerException;
+                        COMException inner = (COMException)e.InnerException;
                         throw new TargetInvocationException(e.Message, COMExceptionHelper.CreateFormattedComException(inner));
                     }
-                }                
+                }
 
                 throw e;
             }
-            
         }
 
 
@@ -1039,7 +1115,8 @@ namespace System.DirectoryServices {
         /// <devdoc>
         ///    <para>Moves this entry to the given parent.</para>
         /// </devdoc>
-        public void MoveTo(DirectoryEntry newParent) {
+        public void MoveTo(DirectoryEntry newParent)
+        {
             MoveTo(newParent, null);
         }
 
@@ -1047,33 +1124,34 @@ namespace System.DirectoryServices {
         /// <devdoc>
         ///    <para>Moves this entry to the given parent, and gives it a new name.</para>
         /// </devdoc>
-        public void MoveTo(DirectoryEntry newParent, string newName) {
+        public void MoveTo(DirectoryEntry newParent, string newName)
+        {
             object newEntry = null;
             if (!(newParent.AdsObject is UnsafeNativeMethods.IAdsContainer))
                 throw new InvalidOperationException(Res.GetString(Res.DSNotAContainer, newParent.Path));
             try
             {
-                if(AdsObject.ADsPath.StartsWith("WinNT:", StringComparison.Ordinal))
+                if (AdsObject.ADsPath.StartsWith("WinNT:", StringComparison.Ordinal))
                 {
                     // get the ADsPath instead of using Path as ADsPath for the case that "WinNT://computername" is passed in while we need "WinNT://domain/computer"
-                    string childPath = AdsObject.ADsPath;                                        
+                    string childPath = AdsObject.ADsPath;
                     string parentPath = newParent.AdsObject.ADsPath;
 
                     // we know ADsPath does not end with object type qualifier like ",computer" so it is fine to compare with whole newparent's adspath
                     // for the case that child has different components from newparent in the aspects other than case, we don't do any processing, just let ADSI decide in case future adsi change
-                    if(System.DirectoryServices.ActiveDirectory.Utils.Compare(childPath, 0, parentPath.Length, parentPath, 0, parentPath.Length) == 0)
+                    if (System.DirectoryServices.ActiveDirectory.Utils.Compare(childPath, 0, parentPath.Length, parentPath, 0, parentPath.Length) == 0)
                     {
-                        uint compareFlags = System.DirectoryServices.ActiveDirectory.Utils.NORM_IGNORENONSPACE | 
-									System.DirectoryServices.ActiveDirectory.Utils.NORM_IGNOREKANATYPE | 
-									System.DirectoryServices.ActiveDirectory.Utils.NORM_IGNOREWIDTH | 
-									System.DirectoryServices.ActiveDirectory.Utils.SORT_STRINGSORT;
+                        uint compareFlags = System.DirectoryServices.ActiveDirectory.Utils.NORM_IGNORENONSPACE |
+                                    System.DirectoryServices.ActiveDirectory.Utils.NORM_IGNOREKANATYPE |
+                                    System.DirectoryServices.ActiveDirectory.Utils.NORM_IGNOREWIDTH |
+                                    System.DirectoryServices.ActiveDirectory.Utils.SORT_STRINGSORT;
                         // work around the ADSI case sensitive bug: only case is different, replace with newparent's path
-                        if(System.DirectoryServices.ActiveDirectory.Utils.Compare(childPath, 0, parentPath.Length, parentPath, 0, parentPath.Length, compareFlags) != 0)
+                        if (System.DirectoryServices.ActiveDirectory.Utils.Compare(childPath, 0, parentPath.Length, parentPath, 0, parentPath.Length, compareFlags) != 0)
                         {
-                            childPath = parentPath + childPath.Substring(parentPath.Length);     
+                            childPath = parentPath + childPath.Substring(parentPath.Length);
                         }
                     }
-                    
+
                     newEntry = newParent.ContainerObject.MoveHere(childPath, newName);
                 }
                 else
@@ -1081,21 +1159,21 @@ namespace System.DirectoryServices {
                     newEntry = newParent.ContainerObject.MoveHere(Path, newName);
                 }
             }
-            catch(COMException e)
-            {  
+            catch (COMException e)
+            {
                 throw COMExceptionHelper.CreateFormattedComException(e);
             }
 
             if (Bound)
-                System.Runtime.InteropServices.Marshal.ReleaseComObject(adsObject);     // release old handle
-             
-            this.adsObject = (UnsafeNativeMethods.IAds) newEntry;
-            path = this.adsObject.ADsPath;
+                System.Runtime.InteropServices.Marshal.ReleaseComObject(_adsObject);     // release old handle
+
+            _adsObject = (UnsafeNativeMethods.IAds)newEntry;
+            _path = _adsObject.ADsPath;
 
             // Reset the options on the ADSI object since there were lost when the new object was created.
             InitADsObjectOptions();
 
-            if (!useCache)
+            if (!_useCache)
                 CommitChanges();
             else
                 RefreshCache();     // in ADSI cache is lost after moving
@@ -1108,24 +1186,25 @@ namespace System.DirectoryServices {
         ///       the property cache.
         ///    </para>
         /// </devdoc>
-        public void RefreshCache() {
+        public void RefreshCache()
+        {
             Bind();
             try
             {
-                adsObject.GetInfo();
+                _adsObject.GetInfo();
             }
-            catch(COMException e)
-            {  
+            catch (COMException e)
+            {
                 throw COMExceptionHelper.CreateFormattedComException(e);
             }
 
-            cacheFilled = true;
+            _cacheFilled = true;
             // we need to refresh that properties table.
-            this.propertyCollection = null;
+            _propertyCollection = null;
 
             // need to refresh the objectSecurity property
-            objectSecurityInitialized = false;
-            objectSecurityModified = false;
+            _objectSecurityInitialized = false;
+            _objectSecurityModified = false;
         }
 
         /// <include file='doc\DirectoryEntry.uex' path='docs/doc[@for="DirectoryEntry.RefreshCache1"]/*' />
@@ -1135,9 +1214,10 @@ namespace System.DirectoryServices {
         ///       property cache.
         ///    </para>
         /// </devdoc>
-        public void RefreshCache(string[] propertyNames) {
+        public void RefreshCache(string[] propertyNames)
+        {
             Bind();
-            
+
             //Consider, V2, jruiz: there shouldn't be any marshaling issues
             //by just doing: AdsObject.GetInfoEx(object[]propertyNames, 0);
             Object[] names = new Object[propertyNames.Length];
@@ -1147,31 +1227,31 @@ namespace System.DirectoryServices {
             {
                 AdsObject.GetInfoEx(names, 0);
             }
-            catch(COMException e)
-            {  
+            catch (COMException e)
+            {
                 throw COMExceptionHelper.CreateFormattedComException(e);
             }
 
             // this is a half-lie, but oh well. Without it, this method is pointless.
-            cacheFilled = true;
+            _cacheFilled = true;
             // we need to partially refresh that properties table.
-            if(this.propertyCollection != null && propertyNames != null)
+            if (_propertyCollection != null && propertyNames != null)
             {
-                for(int i = 0; i < propertyNames.Length; i++)
+                for (int i = 0; i < propertyNames.Length; i++)
                 {
-                    if(propertyNames[i] != null)
+                    if (propertyNames[i] != null)
                     {
                         string name = propertyNames[i].ToLower(CultureInfo.InvariantCulture);
-                        this.propertyCollection.valueTable.Remove(name);
+                        _propertyCollection.valueTable.Remove(name);
 
                         // also need to consider the range retrieval case
-                        string[] results = name.Split(new char[]{';'});
-                        if(results.Length != 1)
+                        string[] results = name.Split(new char[] { ';' });
+                        if (results.Length != 1)
                         {
                             string rangeName = "";
-                            for(int count = 0; count < results.Length; count++)
+                            for (int count = 0; count < results.Length; count++)
                             {
-                                if(!results[count].StartsWith("range=", StringComparison.Ordinal))
+                                if (!results[count].StartsWith("range=", StringComparison.Ordinal))
                                 {
                                     rangeName += results[count];
                                     rangeName += ";";
@@ -1181,20 +1261,18 @@ namespace System.DirectoryServices {
                             // remove the last ';' character
                             rangeName = rangeName.Remove(rangeName.Length - 1, 1);
 
-                            this.propertyCollection.valueTable.Remove(rangeName);
+                            _propertyCollection.valueTable.Remove(rangeName);
                         }
 
                         // if this is "ntSecurityDescriptor" we should refresh the objectSecurity property
-                        if (String.Compare(propertyNames[i], securityDescriptorProperty, StringComparison.OrdinalIgnoreCase) == 0)
+                        if (String.Compare(propertyNames[i], s_securityDescriptorProperty, StringComparison.OrdinalIgnoreCase) == 0)
                         {
-                            objectSecurityInitialized = false;
-                            objectSecurityModified = false;
+                            _objectSecurityInitialized = false;
+                            _objectSecurityModified = false;
                         }
-                           
                     }
                 }
             }
-            
         }
 
         /// <include file='doc\DirectoryEntry.uex' path='docs/doc[@for="DirectoryEntry.Rename"]/*' />
@@ -1203,39 +1281,41 @@ namespace System.DirectoryServices {
         ///       Changes the name of this entry.
         ///    </para>
         /// </devdoc>
-        public void Rename(string newName) {
+        public void Rename(string newName)
+        {
             MoveTo(Parent, newName);
         }
 
-        private void Unbind() {
-            if ( adsObject != null )
-                System.Runtime.InteropServices.Marshal.ReleaseComObject(adsObject);
-            adsObject = null;
+        private void Unbind()
+        {
+            if (_adsObject != null)
+                System.Runtime.InteropServices.Marshal.ReleaseComObject(_adsObject);
+            _adsObject = null;
             // we need to release that properties table.
-            this.propertyCollection = null;
+            _propertyCollection = null;
 
             // need to refresh the objectSecurity property
-            objectSecurityInitialized = false;
-            objectSecurityModified = false;
+            _objectSecurityInitialized = false;
+            _objectSecurityModified = false;
         }
 
         internal string GetUsername()
         {
-            if (this.credentials == null || userNameIsNull) 
+            if (_credentials == null || _userNameIsNull)
                 return null;
-                  
-            return this.credentials.UserName;
+
+            return _credentials.UserName;
         }
 
         internal string GetPassword()
         {
-            if (this.credentials == null || passwordIsNull) 
+            if (_credentials == null || _passwordIsNull)
                 return null;
-                  
-            return this.credentials.Password;
+
+            return _credentials.Password;
         }
 
-        private ActiveDirectorySecurity GetObjectSecurityFromCache() 
+        private ActiveDirectorySecurity GetObjectSecurityFromCache()
         {
             try
             {
@@ -1249,7 +1329,7 @@ namespace System.DirectoryServices {
                 // So to get the security descriptor in binary form, we use 
                 // IADsPropertyList::GetPropertyItem
                 //
-                
+
                 //
                 // GetPropertyItem does not implicitly fill the property cache
                 // so we need to fill it explicitly (for an existing entry)
@@ -1257,14 +1337,14 @@ namespace System.DirectoryServices {
                 if (!JustCreated)
                 {
                     SecurityMasks securityMasksUsedInRetrieval;
-                    
+
                     //
                     // To ensure that we honor the security masks while retrieving
                     // the security descriptor, we will retrieve the "ntSecurityDescriptor" each time
                     // while initializing the ObjectSecurity property
                     //
                     securityMasksUsedInRetrieval = this.Options.SecurityMasks;
-                    RefreshCache(new string[] {securityDescriptorProperty});
+                    RefreshCache(new string[] { s_securityDescriptorProperty });
 
                     //
                     // Get the IAdsPropertyList interface
@@ -1275,7 +1355,7 @@ namespace System.DirectoryServices {
 
                     UnsafeNativeMethods.IAdsPropertyList list = (UnsafeNativeMethods.IAdsPropertyList)NativeObject;
 
-                    UnsafeNativeMethods.IAdsPropertyEntry propertyEntry = (UnsafeNativeMethods.IAdsPropertyEntry)list.GetPropertyItem(securityDescriptorProperty, (int)AdsType.ADSTYPE_OCTET_STRING);
+                    UnsafeNativeMethods.IAdsPropertyEntry propertyEntry = (UnsafeNativeMethods.IAdsPropertyEntry)list.GetPropertyItem(s_securityDescriptorProperty, (int)AdsType.ADSTYPE_OCTET_STRING);
                     GC.KeepAlive(this);
 
                     //
@@ -1303,7 +1383,6 @@ namespace System.DirectoryServices {
 
                     UnsafeNativeMethods.IAdsPropertyValue propertyValue = (UnsafeNativeMethods.IAdsPropertyValue)values[0];
                     return new ActiveDirectorySecurity((byte[])propertyValue.OctetString, securityMasksUsedInRetrieval);
-
                 }
                 else
                 {
@@ -1323,25 +1402,24 @@ namespace System.DirectoryServices {
             }
         }
 
-        private void SetObjectSecurityInCache() 
+        private void SetObjectSecurityInCache()
         {
-            if ((objectSecurity != null) && (objectSecurityModified || objectSecurity.IsModified()))
-            {  	
+            if ((_objectSecurity != null) && (_objectSecurityModified || _objectSecurity.IsModified()))
+            {
                 UnsafeNativeMethods.IAdsPropertyValue sDValue = (UnsafeNativeMethods.IAdsPropertyValue)new UnsafeNativeMethods.PropertyValue();
 
                 sDValue.ADsType = (int)AdsType.ADSTYPE_OCTET_STRING;
-                sDValue.OctetString = objectSecurity.GetSecurityDescriptorBinaryForm();
+                sDValue.OctetString = _objectSecurity.GetSecurityDescriptorBinaryForm();
 
                 UnsafeNativeMethods.IAdsPropertyEntry newSDEntry = (UnsafeNativeMethods.IAdsPropertyEntry)new UnsafeNativeMethods.PropertyEntry();
 
-                newSDEntry.Name = securityDescriptorProperty;
+                newSDEntry.Name = s_securityDescriptorProperty;
                 newSDEntry.ADsType = (int)AdsType.ADSTYPE_OCTET_STRING;
                 newSDEntry.ControlCode = (int)AdsPropertyOperation.Update;
                 newSDEntry.Values = new object[] { sDValue };
 
-                ((UnsafeNativeMethods.IAdsPropertyList)NativeObject).PutPropertyItem( newSDEntry );  
+                ((UnsafeNativeMethods.IAdsPropertyList)NativeObject).PutPropertyItem(newSDEntry);
             }
         }
     }
-    
 }

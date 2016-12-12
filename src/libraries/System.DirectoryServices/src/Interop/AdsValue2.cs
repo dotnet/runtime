@@ -1,26 +1,33 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
 //------------------------------------------------------------------------------
-// <copyright file="AdsValue2.cs" company="Microsoft">
 //     Copyright (c) Microsoft Corporation.  All rights reserved.
 // </copyright>                                                                
 //------------------------------------------------------------------------------
 
-namespace System.DirectoryServices.Interop {
-    using System;    
+namespace System.DirectoryServices.Interop
+{
+    using System;
     using System.Runtime.InteropServices;
 
     [StructLayout(LayoutKind.Sequential)]
-    internal struct Ads_Pointer {
+    internal struct Ads_Pointer
+    {
         public IntPtr value;
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    internal struct Ads_OctetString {
+    internal struct Ads_OctetString
+    {
         public int length;
         public IntPtr value;
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    internal struct Ads_Generic {
+    internal struct Ads_Generic
+    {
         public int a;
         public int b;
         public int c;
@@ -28,13 +35,18 @@ namespace System.DirectoryServices.Interop {
     }
 
     [StructLayout(LayoutKind.Explicit)]
-    internal struct AdsValue {
-        [FieldOffset(0)] public int /*AdsType*/ dwType;
-        [FieldOffset(4)] internal int pad;
-        [FieldOffset(8)] public Ads_Pointer pointer;
-        [FieldOffset(8)] public Ads_OctetString octetString;
-        [FieldOffset(8)] public Ads_Generic generic;
+    internal struct AdsValue
+    {
+        [FieldOffset(0)]
+        public int /*AdsType*/ dwType;
+        [FieldOffset(4)]
+        internal int pad;
+        [FieldOffset(8)]
+        public Ads_Pointer pointer;
+        [FieldOffset(8)]
+        public Ads_OctetString octetString;
+        [FieldOffset(8)]
+        public Ads_Generic generic;
     }
-
 }
 

@@ -1,9 +1,12 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
 /*--
 Copyright (c) 2004  Microsoft Corporation
 
 Module Name:
 
-    ADDNLinkedAttrSet.cs
 
 Abstract:
 
@@ -31,10 +34,9 @@ namespace System.DirectoryServices.AccountManagement
 #pragma warning disable 618    // Have not migrated to v4 transparency yet
     [System.Security.SecurityCritical(System.Security.SecurityCriticalScope.Everything)]
 #pragma warning restore 618
-    [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.Assert, Unrestricted=true)]
-    class ADDNLinkedAttrSet : BookmarkableResultSet
+    [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.Assert, Unrestricted = true)]
+    internal class ADDNLinkedAttrSet : BookmarkableResultSet
     {
-
         // This class can be used to either enumerate the members of a group, or the groups
         // to which a principal belongs.  If being used to enumerate the members of a group:
         //      * groupDN --- the DN of the group we're enumerating
@@ -54,141 +56,138 @@ namespace System.DirectoryServices.AccountManagement
         // It is assumed that recursive enumeration will only be performed for the "enumerating the members of a group"
         // case, not the "groups to which a principal belongs" case, thus, this.recursive == true implies the former
         // (but this.recursive == false could imply either case).
-    
+
         internal ADDNLinkedAttrSet(
                             string groupDN,
                             IEnumerable[] members,
-                            string primaryGroupDN, 
-                            DirectorySearcher primaryGroupMembersSearcher ,
-                            bool recursive, 
+                            string primaryGroupDN,
+                            DirectorySearcher primaryGroupMembersSearcher,
+                            bool recursive,
                             ADStoreCtx storeCtx)
         {
-            GlobalDebug.WriteLineIf(GlobalDebug.Info, 
-                                    "ADDNLinkedAttrSet", 
+            GlobalDebug.WriteLineIf(GlobalDebug.Info,
+                                    "ADDNLinkedAttrSet",
                                     "ADDNLinkedAttrSet: groupDN={0}, primaryGroupDN={1}, recursive={2}, PG queryFilter={3}, PG queryBase={4}",
                                     groupDN,
                                     (primaryGroupDN != null ? primaryGroupDN : "NULL"),
                                     recursive,
-                                    (primaryGroupMembersSearcher  != null ? primaryGroupMembersSearcher .Filter : "NULL"),
-                                    (primaryGroupMembersSearcher  != null ? primaryGroupMembersSearcher.SearchRoot.Path : "NULL"));
+                                    (primaryGroupMembersSearcher != null ? primaryGroupMembersSearcher.Filter : "NULL"),
+                                    (primaryGroupMembersSearcher != null ? primaryGroupMembersSearcher.SearchRoot.Path : "NULL"));
 
-        
-            this.groupsVisited.Add(groupDN);    // so we don't revisit it
-            this.recursive = recursive;
-            this.storeCtx = storeCtx;
-            this.originalStoreCtx = storeCtx;
 
-	    if ( null != members )
-	    {
-               foreach (IEnumerable enumerator in members)
+            _groupsVisited.Add(groupDN);    // so we don't revisit it
+            _recursive = recursive;
+            _storeCtx = storeCtx;
+            _originalStoreCtx = storeCtx;
+
+            if (null != members)
+            {
+                foreach (IEnumerable enumerator in members)
                 {
-                    this.membersQueue.Enqueue(enumerator);
-                    this.originalMembers.Enqueue(enumerator);
+                    _membersQueue.Enqueue(enumerator);
+                    _originalMembers.Enqueue(enumerator);
                 }
             }
 
-            this.members = null;
+            _members = null;
 
 
-            this.currentMembersSearcher = null;
-            this.primaryGroupDN = primaryGroupDN;
+            _currentMembersSearcher = null;
+            _primaryGroupDN = primaryGroupDN;
             if (primaryGroupDN == null)
-                returnedPrimaryGroup = true;    // so we don't bother trying to return the primary group
+                _returnedPrimaryGroup = true;    // so we don't bother trying to return the primary group
 
-            this.primaryGroupMembersSearcher  = primaryGroupMembersSearcher;
+            _primaryGroupMembersSearcher = primaryGroupMembersSearcher;
 
-            expansionMode = ExpansionMode.Enum;
-            originalExpansionMode = expansionMode;
-            
+            _expansionMode = ExpansionMode.Enum;
+            _originalExpansionMode = _expansionMode;
         }
-                            
+
         internal ADDNLinkedAttrSet(
                             string groupDN,
                             DirectorySearcher[] membersSearcher,
-                            string primaryGroupDN, 
-                            DirectorySearcher primaryGroupMembersSearcher ,
-                            bool recursive, 
+                            string primaryGroupDN,
+                            DirectorySearcher primaryGroupMembersSearcher,
+                            bool recursive,
                             ADStoreCtx storeCtx)
-                            
-                            
+
+
         {
-            GlobalDebug.WriteLineIf(GlobalDebug.Info, 
-                                    "ADDNLinkedAttrSet", 
+            GlobalDebug.WriteLineIf(GlobalDebug.Info,
+                                    "ADDNLinkedAttrSet",
                                     "ADDNLinkedAttrSet: groupDN={0}, primaryGroupDN={1}, recursive={2}, M queryFilter={3}, M queryBase={4}, PG queryFilter={5}, PG queryBase={6}",
                                     groupDN,
                                     (primaryGroupDN != null ? primaryGroupDN : "NULL"),
                                     recursive,
-                                    (membersSearcher  != null ? membersSearcher[0].Filter : "NULL"),
-                                    (membersSearcher  != null ? membersSearcher[0].SearchRoot.Path : "NULL"),
-                                    (primaryGroupMembersSearcher  != null ? primaryGroupMembersSearcher .Filter : "NULL"),
-                                    (primaryGroupMembersSearcher  != null ? primaryGroupMembersSearcher.SearchRoot.Path : "NULL"));
+                                    (membersSearcher != null ? membersSearcher[0].Filter : "NULL"),
+                                    (membersSearcher != null ? membersSearcher[0].SearchRoot.Path : "NULL"),
+                                    (primaryGroupMembersSearcher != null ? primaryGroupMembersSearcher.Filter : "NULL"),
+                                    (primaryGroupMembersSearcher != null ? primaryGroupMembersSearcher.SearchRoot.Path : "NULL"));
 
-        
-            this.groupsVisited.Add(groupDN);    // so we don't revisit it
-            this.recursive = recursive;
-            this.storeCtx = storeCtx;
-            this.originalStoreCtx = storeCtx;
 
-            this.members = null;
-            this.originalMembers = null;
-            this.membersEnum = null;            
+            _groupsVisited.Add(groupDN);    // so we don't revisit it
+            _recursive = recursive;
+            _storeCtx = storeCtx;
+            _originalStoreCtx = storeCtx;
 
-            this.primaryGroupDN = primaryGroupDN;
+            _members = null;
+            _originalMembers = null;
+            _membersEnum = null;
+
+            _primaryGroupDN = primaryGroupDN;
             if (primaryGroupDN == null)
-                returnedPrimaryGroup = true;    // so we don't bother trying to return the primary group
+                _returnedPrimaryGroup = true;    // so we don't bother trying to return the primary group
 
-	    if ( null != membersSearcher)
+            if (null != membersSearcher)
             {
                 foreach (DirectorySearcher ds in membersSearcher)
                 {
-                    this.memberSearchersQueue.Enqueue(ds);
-                    this.memberSearchersQueueOriginal.Enqueue(ds);
+                    _memberSearchersQueue.Enqueue(ds);
+                    _memberSearchersQueueOriginal.Enqueue(ds);
                 }
             }
 
-            this.currentMembersSearcher = null;
+            _currentMembersSearcher = null;
 
-            this.primaryGroupMembersSearcher  = primaryGroupMembersSearcher;
-            
-            expansionMode = ExpansionMode.ASQ;
-            originalExpansionMode = expansionMode;
-            
+            _primaryGroupMembersSearcher = primaryGroupMembersSearcher;
+
+            _expansionMode = ExpansionMode.ASQ;
+            _originalExpansionMode = _expansionMode;
         }
-    
-    	// Return the principal we're positioned at as a Principal object.
-    	// Need to use our StoreCtx's GetAsPrincipal to convert the native object to a Principal
-    	override internal object CurrentAsPrincipal
-    	{
-    	    get
-    	    {
+
+        // Return the principal we're positioned at as a Principal object.
+        // Need to use our StoreCtx's GetAsPrincipal to convert the native object to a Principal
+        override internal object CurrentAsPrincipal
+        {
+            get
+            {
                 if (this.current != null)
                 {
-                    GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADDNLinkedAttrSet", "CurrentAsPrincipal: using current");   
-                    if ( this.current is DirectoryEntry )
-                        return ADUtils.DirectoryEntryAsPrincipal((DirectoryEntry)this.current, this.storeCtx);
+                    GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADDNLinkedAttrSet", "CurrentAsPrincipal: using current");
+                    if (this.current is DirectoryEntry)
+                        return ADUtils.DirectoryEntryAsPrincipal((DirectoryEntry)this.current, _storeCtx);
                     else
                     {
-                        return ADUtils.SearchResultAsPrincipal((SearchResult)this.current, this.storeCtx, null);
+                        return ADUtils.SearchResultAsPrincipal((SearchResult)this.current, _storeCtx, null);
                     }
-                        
                 }
                 else
                 {
-                    GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADDNLinkedAttrSet", "CurrentAsPrincipal: using currentForeignPrincipal");                
-                    Debug.Assert(this.currentForeignPrincipal != null);
-                    return this.currentForeignPrincipal;
+                    GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADDNLinkedAttrSet", "CurrentAsPrincipal: using currentForeignPrincipal");
+                    Debug.Assert(_currentForeignPrincipal != null);
+                    return _currentForeignPrincipal;
                 }
-    	    }
-	    }
+            }
+        }
 
-    	// Advance the enumerator to the next principal in the result set, pulling in additional pages
-    	// of results (or ranges of attribute values) as needed.
-    	// Returns true if successful, false if no more results to return.
-    	override internal bool MoveNext()
+        // Advance the enumerator to the next principal in the result set, pulling in additional pages
+        // of results (or ranges of attribute values) as needed.
+        // Returns true if successful, false if no more results to return.
+        override internal bool MoveNext()
         {
-            GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADDNLinkedAttrSet", "Entering MoveNext");    	        
-        
-            this.atBeginning = false;
+            GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADDNLinkedAttrSet", "Entering MoveNext");
+
+            _atBeginning = false;
 
             bool needToRetry;
             bool f = false;
@@ -199,35 +198,35 @@ namespace System.DirectoryServices.AccountManagement
                 // reset our found state.  If we are restarting the loop we don't have a current principal yet.
                 f = false;
 
-                if (!this.returnedPrimaryGroup)
+                if (!_returnedPrimaryGroup)
                 {
                     GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADDNLinkedAttrSet", "MoveNext: trying PrimaryGroup DN");
                     f = MoveNextPrimaryGroupDN();
                 }
 
-                if ( !f )
+                if (!f)
                 {
-                    if ( expansionMode == ExpansionMode.ASQ )
+                    if (_expansionMode == ExpansionMode.ASQ)
                     {
                         GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADDNLinkedAttrSet", "MoveNext: trying member searcher");
-                        f = MoveNextMemberSearcher();                
+                        f = MoveNextMemberSearcher();
                     }
                     else
                     {
-                        GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADDNLinkedAttrSet", "MoveNext: trying member enum");                
+                        GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADDNLinkedAttrSet", "MoveNext: trying member enum");
                         f = MoveNextMemberEnum();
                     }
                 }
 
                 if (!f)
                 {
-                    GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADDNLinkedAttrSet", "MoveNext: trying foreign");                
+                    GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADDNLinkedAttrSet", "MoveNext: trying foreign");
                     f = MoveNextForeign(ref needToRetry);
                 }
 
                 if (!f)
                 {
-                    GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADDNLinkedAttrSet", "MoveNext: trying primary group search");                
+                    GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADDNLinkedAttrSet", "MoveNext: trying primary group search");
                     f = MoveNextQueryPrimaryGroupMember();
                 }
             }
@@ -238,38 +237,38 @@ namespace System.DirectoryServices.AccountManagement
 
 
 
-        bool MoveNextPrimaryGroupDN()
+        private bool MoveNextPrimaryGroupDN()
         {
-                // Do the special primary group ID processing if we haven't yet returned the primary group.
-            Debug.Assert(this.primaryGroupDN != null);
+            // Do the special primary group ID processing if we haven't yet returned the primary group.
+            Debug.Assert(_primaryGroupDN != null);
 
             this.current = SDSUtils.BuildDirectoryEntry(
-                                        BuildPathFromDN(this.primaryGroupDN),
-                                        this.storeCtx.Credentials,
-                                        this.storeCtx.AuthTypes);
-            
-            this.storeCtx.InitializeNewDirectoryOptions( (DirectoryEntry)this.current );
-            
+                                        BuildPathFromDN(_primaryGroupDN),
+                                        _storeCtx.Credentials,
+                                        _storeCtx.AuthTypes);
+
+            _storeCtx.InitializeNewDirectoryOptions((DirectoryEntry)this.current);
+
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADDNLinkedAttrSet", "MoveNextMemberSearcher: returning primary group {0}", ((DirectoryEntry)this.current).Path);
 
-            this.currentForeignDE = null;
-            this.currentForeignPrincipal = null;
+            _currentForeignDE = null;
+            _currentForeignPrincipal = null;
 
-            this.returnedPrimaryGroup = true;
+            _returnedPrimaryGroup = true;
             return true;
         }
 
-        bool GetNextSearchResult()
+        private bool GetNextSearchResult()
         {
             bool memberFound = false;
 
             do
             {
-                if (this.currentMembersSearcher == null)
+                if (_currentMembersSearcher == null)
                 {
-                    Debug.Assert(this.memberSearchersQueue != null);
+                    Debug.Assert(_memberSearchersQueue != null);
 
-                    if (this.memberSearchersQueue.Count == 0)
+                    if (_memberSearchersQueue.Count == 0)
                     {
                         // We are out of searchers in the queue.
                         return false;
@@ -277,212 +276,207 @@ namespace System.DirectoryServices.AccountManagement
                     else
                     {
                         // Remove the next searcher from the queue and place it in the current search variable.
-                        this.currentMembersSearcher = this.memberSearchersQueue.Dequeue();
-                        this.memberSearchResults = this.currentMembersSearcher.FindAll();
-                        Debug.Assert(this.memberSearchResults != null);
-                        this.memberSearchResultsEnumerator = this.memberSearchResults.GetEnumerator();
+                        _currentMembersSearcher = _memberSearchersQueue.Dequeue();
+                        _memberSearchResults = _currentMembersSearcher.FindAll();
+                        Debug.Assert(_memberSearchResults != null);
+                        _memberSearchResultsEnumerator = _memberSearchResults.GetEnumerator();
                     }
                 }
 
                 GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADDNLinkedAttrSet", "MoveNextQueryMember: have a searcher");
 
-                memberFound = this.memberSearchResultsEnumerator.MoveNext();
+                memberFound = _memberSearchResultsEnumerator.MoveNext();
 
                 // The search is complete.
                 // Dipose the searcher and search results.
                 if (!memberFound)
                 {
-                    this.currentMembersSearcher.Dispose();
-                    this.currentMembersSearcher = null;
-                    this.memberSearchResults.Dispose();
-                    this.memberSearchResults = null;
+                    _currentMembersSearcher.Dispose();
+                    _currentMembersSearcher = null;
+                    _memberSearchResults.Dispose();
+                    _memberSearchResults = null;
                 }
-
             } while (!memberFound);
 
             return memberFound;
         }
 
-        bool MoveNextMemberSearcher()
-    	{
-            GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADDNLinkedAttrSet", "Entering MoveNextMemberSearcher");    	        
-    	
+        private bool MoveNextMemberSearcher()
+        {
+            GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADDNLinkedAttrSet", "Entering MoveNextMemberSearcher");
+
             bool needToRetry = false;
             bool f = false;
-           
-    	    do
+
+            do
             {
-                    f = GetNextSearchResult();
-                    needToRetry = false;
+                f = GetNextSearchResult();
+                needToRetry = false;
 
-                    if (f)
+                if (f)
+                {
+                    SearchResult currentSR = (SearchResult)_memberSearchResultsEnumerator.Current;
+
+                    // Got a member from this group (or, got a group of which we're a member).
+                    // Create a DirectoryEntry for it.
+                    string memberDN = (string)currentSR.Properties["distinguishedName"][0];
+
+                    GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADDNLinkedAttrSet", "MoveNextMemberSearcher: got a value from the enumerator: {0}", memberDN);
+
+                    // Make sure the member is a principal
+                    if ((!ADUtils.IsOfObjectClass(currentSR, "group")) &&
+                         (!ADUtils.IsOfObjectClass(currentSR, "user")) &&     // includes computer as well
+                         (!ADUtils.IsOfObjectClass(currentSR, "foreignSecurityPrincipal")))
                     {
+                        // We found a member, but it's not a principal type.  Skip it.
+                        GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADDNLinkedAttrSet", "MoveNextMemberSearcher: not a principal, skipping");
+                        needToRetry = true;
+                    }
+                    // If we're processing recursively, and the member is a group, we DON'T return it,
+                    // but rather treat it as something to recursively visit later
+                    // (unless we've already visited the group previously)
+                    else if (_recursive && ADUtils.IsOfObjectClass(currentSR, "group"))
+                    {
+                        GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADDNLinkedAttrSet", "MoveNextMemberSearcher: adding to groupsToVisit");
 
-                        SearchResult currentSR = (SearchResult)this.memberSearchResultsEnumerator.Current;
+                        if (!_groupsVisited.Contains(memberDN) && !_groupsToVisit.Contains(memberDN))
+                            _groupsToVisit.Add(memberDN);
 
-                        // Got a member from this group (or, got a group of which we're a member).
-                        // Create a DirectoryEntry for it.
-                        string memberDN = (string) currentSR.Properties["distinguishedName"][0];
-                        
-                        GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADDNLinkedAttrSet", "MoveNextMemberSearcher: got a value from the enumerator: {0}", memberDN);
-                        
-                        // Make sure the member is a principal
-                        if ( (!ADUtils.IsOfObjectClass(currentSR, "group")) &&
-                             (!ADUtils.IsOfObjectClass(currentSR, "user"))  &&     // includes computer as well
-                             (!ADUtils.IsOfObjectClass(currentSR, "foreignSecurityPrincipal")) )
+                        // and go on to the next member....
+                        needToRetry = true;
+                    }
+                    else if (_recursive && ADUtils.IsOfObjectClass(currentSR, "foreignSecurityPrincipal"))
+                    {
+                        GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADDNLinkedAttrSet", "MoveNextMemberSearcher: foreign principal, adding to foreignMembers");
+
+                        // If we haven't seen this FPO yet then add it to the seen user database.
+                        if (!_usersVisited.ContainsKey(currentSR.Properties["distinguishedName"][0].ToString()))
                         {
-                            // We found a member, but it's not a principal type.  Skip it.
-                            GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADDNLinkedAttrSet", "MoveNextMemberSearcher: not a principal, skipping");                        
-                            needToRetry = true;
+                            // The FPO might represent a group, in which case we should recursively enumerate its
+                            // membership.  So save it off for later processing.
+                            _foreignMembersCurrentGroup.Add(currentSR.GetDirectoryEntry());
+                            _usersVisited.Add(currentSR.Properties["distinguishedName"][0].ToString(), true);
                         }
-                        // If we're processing recursively, and the member is a group, we DON'T return it,
-                        // but rather treat it as something to recursively visit later
-                        // (unless we've already visited the group previously)
-                        else if (this.recursive && ADUtils.IsOfObjectClass(currentSR, "group"))
-                        {
-                            GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADDNLinkedAttrSet", "MoveNextMemberSearcher: adding to groupsToVisit");
-                        
-                            if (!this.groupsVisited.Contains(memberDN) && !this.groupsToVisit.Contains(memberDN))
-                                this.groupsToVisit.Add(memberDN);
 
-                            // and go on to the next member....
-                            needToRetry = true;
-                        }
-                        else if (this.recursive && ADUtils.IsOfObjectClass(currentSR, "foreignSecurityPrincipal"))
-                        {
-                            GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADDNLinkedAttrSet", "MoveNextMemberSearcher: foreign principal, adding to foreignMembers");
-
-                            // If we haven't seen this FPO yet then add it to the seen user database.
-                            if (!usersVisited.ContainsKey( currentSR.Properties["distinguishedName"][0].ToString() ))
-                            {                        
-                                // The FPO might represent a group, in which case we should recursively enumerate its
-                                // membership.  So save it off for later processing.
-                                this.foreignMembersCurrentGroup.Add(currentSR.GetDirectoryEntry());
-                                usersVisited.Add(currentSR.Properties["distinguishedName"][0].ToString(), true);
-                            }
-                            
-                            // and go on to the next member....
-                            needToRetry = true;                        
-                        }
-                        else
-                        {
-                            GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADDNLinkedAttrSet", "MoveNextMemberSearcher: using as current");
-
-                            // Check to see if we have already seen this user during the enumeration
-                            // If so then move on to the next user.  If not then return it as current.
-                            if (!usersVisited.ContainsKey(currentSR.Properties["distinguishedName"][0].ToString()))
-                            {                        
-                                this.current = currentSR;
-                                this.currentForeignDE = null;
-                                this.currentForeignPrincipal = null;
-                                usersVisited.Add(currentSR.Properties["distinguishedName"][0].ToString(), true);
-                            }
-                            else
-                            {
-                                needToRetry = true;                        
-                            }
-                        
-                        }
-                        
+                        // and go on to the next member....
+                        needToRetry = true;
                     }
                     else
                     {
-                        // We reached the end of this group's membership.  If we're not processing recursively,
-                        // we're done.  Otherwise, go on to the next group to visit.
-                        // First create a DE that points to the group we want to expand,  Using that as a search root run
-                        // an ASQ search against  member and and start enumerting those results.
-                        if (this.recursive)
+                        GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADDNLinkedAttrSet", "MoveNextMemberSearcher: using as current");
+
+                        // Check to see if we have already seen this user during the enumeration
+                        // If so then move on to the next user.  If not then return it as current.
+                        if (!_usersVisited.ContainsKey(currentSR.Properties["distinguishedName"][0].ToString()))
                         {
-                            GlobalDebug.WriteLineIf(GlobalDebug.Info, 
-                                                    "ADDNLinkedAttrSet",
-                                                    "MoveNextMemberSearcher: recursive processing, groupsToVisit={0}",
-                                                    groupsToVisit.Count);
-                        
-                            if (groupsToVisit.Count > 0)
-                            {
-                                // Pull off the next group to visit
-                                string groupDN = groupsToVisit[0];
-                                groupsToVisit.RemoveAt(0);
-                                groupsVisited.Add(groupDN);
+                            this.current = currentSR;
+                            _currentForeignDE = null;
+                            _currentForeignPrincipal = null;
+                            _usersVisited.Add(currentSR.Properties["distinguishedName"][0].ToString(), true);
+                        }
+                        else
+                        {
+                            needToRetry = true;
+                        }
+                    }
+                }
+                else
+                {
+                    // We reached the end of this group's membership.  If we're not processing recursively,
+                    // we're done.  Otherwise, go on to the next group to visit.
+                    // First create a DE that points to the group we want to expand,  Using that as a search root run
+                    // an ASQ search against  member and and start enumerting those results.
+                    if (_recursive)
+                    {
+                        GlobalDebug.WriteLineIf(GlobalDebug.Info,
+                                                "ADDNLinkedAttrSet",
+                                                "MoveNextMemberSearcher: recursive processing, groupsToVisit={0}",
+                                                _groupsToVisit.Count);
 
-                                GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADDNLinkedAttrSet", "MoveNextMemberSearcher: recursively processing {0}", groupDN);
+                        if (_groupsToVisit.Count > 0)
+                        {
+                            // Pull off the next group to visit
+                            string groupDN = _groupsToVisit[0];
+                            _groupsToVisit.RemoveAt(0);
+                            _groupsVisited.Add(groupDN);
 
-                                // get the membership of this new group
-                                DirectoryEntry groupDE = SDSUtils.BuildDirectoryEntry( BuildPathFromDN(groupDN), this.storeCtx.Credentials, this.storeCtx.AuthTypes);
+                            GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADDNLinkedAttrSet", "MoveNextMemberSearcher: recursively processing {0}", groupDN);
 
-                                this.storeCtx.InitializeNewDirectoryOptions( groupDE );
-            
-                                // Queue up a searcher for the new group expansion.
-                                DirectorySearcher ds = SDSUtils.ConstructSearcher(groupDE);
-                                ds.Filter = "(objectClass=*)";
-                                ds.SearchScope = SearchScope.Base;
-                                ds.AttributeScopeQuery = "member";
-                                ds.CacheResults = false;
+                            // get the membership of this new group
+                            DirectoryEntry groupDE = SDSUtils.BuildDirectoryEntry(BuildPathFromDN(groupDN), _storeCtx.Credentials, _storeCtx.AuthTypes);
 
-                                this.memberSearchersQueue.Enqueue(ds);
+                            _storeCtx.InitializeNewDirectoryOptions(groupDE);
 
-                                // and go on to the first member of this new group.
-                                needToRetry = true;
-                            }
-                        }                   
-                    }           
+                            // Queue up a searcher for the new group expansion.
+                            DirectorySearcher ds = SDSUtils.ConstructSearcher(groupDE);
+                            ds.Filter = "(objectClass=*)";
+                            ds.SearchScope = SearchScope.Base;
+                            ds.AttributeScopeQuery = "member";
+                            ds.CacheResults = false;
+
+                            _memberSearchersQueue.Enqueue(ds);
+
+                            // and go on to the first member of this new group.
+                            needToRetry = true;
+                        }
+                    }
+                }
             }
             while (needToRetry);
 
             return f;
-    	}
+        }
 
 
 
-        bool GetNextEnum()
+        private bool GetNextEnum()
         {
             bool memberFound = false;
 
             do
             {
-                if (null == members)
+                if (null == _members)
                 {
-                    if (membersQueue.Count == 0)
+                    if (_membersQueue.Count == 0)
                     {
                         return false;
                     }
 
-                    members = membersQueue.Dequeue();
-                    membersEnum = members.GetEnumerator();
+                    _members = _membersQueue.Dequeue();
+                    _membersEnum = _members.GetEnumerator();
                 }
 
-                memberFound = membersEnum.MoveNext();
+                memberFound = _membersEnum.MoveNext();
 
                 if (!memberFound)
                 {
-                    IDisposable disposableMembers = members as IDisposable;
+                    IDisposable disposableMembers = _members as IDisposable;
                     if (disposableMembers != null)
                     {
                         disposableMembers.Dispose();
                     }
-                    IDisposable disposableMembersEnum = membersEnum as IDisposable;
+                    IDisposable disposableMembersEnum = _membersEnum as IDisposable;
                     if (disposableMembersEnum != null)
                     {
                         disposableMembersEnum.Dispose();
                     }
-                    members = null;
-                    membersEnum = null;
+                    _members = null;
+                    _membersEnum = null;
                 }
-
             } while (!memberFound);
 
             return memberFound;
         }
 
-    	bool MoveNextMemberEnum()
-    	{
-            GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADDNLinkedAttrSet", "Entering MoveNextMemberEnum");    	        
-    	
+        private bool MoveNextMemberEnum()
+        {
+            GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADDNLinkedAttrSet", "Entering MoveNextMemberEnum");
+
             bool needToRetry = false;
             bool disposeMemberDE = false;
             bool f;
 
-    	    do
+            do
             {
                 f = GetNextEnum();
                 needToRetry = false;
@@ -495,18 +489,18 @@ namespace System.DirectoryServices.AccountManagement
                     {
                         // Got a member from this group (or, got a group of which we're a member).
                         // Create a DirectoryEntry for it.
-                        string memberDN = (string)membersEnum.Current;
+                        string memberDN = (string)_membersEnum.Current;
 
                         GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADDNLinkedAttrSet", "MoveNextMemberEnum: got a value from the enumerator: {0}", memberDN);
 
                         memberDE = SDSUtils.BuildDirectoryEntry(
                                                         BuildPathFromDN(memberDN),
-                                                        this.storeCtx.Credentials,
-                                                        this.storeCtx.AuthTypes);
+                                                        _storeCtx.Credentials,
+                                                        _storeCtx.AuthTypes);
 
-                        this.storeCtx.InitializeNewDirectoryOptions(memberDE);
+                        _storeCtx.InitializeNewDirectoryOptions(memberDE);
 
-                        storeCtx.LoadDirectoryEntryAttributes(memberDE);
+                        _storeCtx.LoadDirectoryEntryAttributes(memberDE);
 
                         // Make sure the member is a principal
                         if ((!ADUtils.IsOfObjectClass(memberDE, "group")) &&
@@ -521,28 +515,28 @@ namespace System.DirectoryServices.AccountManagement
                         // If we're processing recursively, and the member is a group, we DON'T return it,
                         // but rather treat it as something to recursively visit later
                         // (unless we've already visited the group previously)
-                        else if (this.recursive && ADUtils.IsOfObjectClass(memberDE, "group"))
+                        else if (_recursive && ADUtils.IsOfObjectClass(memberDE, "group"))
                         {
                             GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADDNLinkedAttrSet", "MoveNextMemberEnum: adding to groupsToVisit");
 
-                            if (!this.groupsVisited.Contains(memberDN) && !this.groupsToVisit.Contains(memberDN))
-                                this.groupsToVisit.Add(memberDN);
+                            if (!_groupsVisited.Contains(memberDN) && !_groupsToVisit.Contains(memberDN))
+                                _groupsToVisit.Add(memberDN);
 
                             // and go on to the next member....
                             needToRetry = true;
                             disposeMemberDE = true; //Since recursive is set to true, we do not return groups. So mark it for dispose.
                         }
-                        else if (this.recursive && ADUtils.IsOfObjectClass(memberDE, "foreignSecurityPrincipal"))
+                        else if (_recursive && ADUtils.IsOfObjectClass(memberDE, "foreignSecurityPrincipal"))
                         {
                             GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADDNLinkedAttrSet", "MoveNextMemberEnum: foreign principal, adding to foreignMembers");
 
                             // If we haven't seen this FPO yet then add it to the seen user database.
-                            if (!usersVisited.ContainsKey(memberDE.Properties["distinguishedName"][0].ToString()))
+                            if (!_usersVisited.ContainsKey(memberDE.Properties["distinguishedName"][0].ToString()))
                             {
                                 // The FPO might represent a group, in which case we should recursively enumerate its
                                 // membership.  So save it off for later processing.
-                                this.foreignMembersCurrentGroup.Add(memberDE);
-                                usersVisited.Add(memberDE.Properties["distinguishedName"][0].ToString(), true);
+                                _foreignMembersCurrentGroup.Add(memberDE);
+                                _usersVisited.Add(memberDE.Properties["distinguishedName"][0].ToString(), true);
                                 disposeMemberDE = false; //We store the FPO DirectoryEntry objects for further processing. So do NOT dispose it. 
                             }
 
@@ -555,19 +549,18 @@ namespace System.DirectoryServices.AccountManagement
 
                             // Check to see if we have already seen this user during the enumeration
                             // If so then move on to the next user.  If not then return it as current.
-                            if (!usersVisited.ContainsKey(memberDE.Properties["distinguishedName"][0].ToString()))
+                            if (!_usersVisited.ContainsKey(memberDE.Properties["distinguishedName"][0].ToString()))
                             {
                                 this.current = memberDE;
-                                this.currentForeignDE = null;
-                                this.currentForeignPrincipal = null;
-                                usersVisited.Add(memberDE.Properties["distinguishedName"][0].ToString(), true);
+                                _currentForeignDE = null;
+                                _currentForeignPrincipal = null;
+                                _usersVisited.Add(memberDE.Properties["distinguishedName"][0].ToString(), true);
                                 disposeMemberDE = false; //memberDE will be set in the Principal object we return. So do NOT dispose it.
                             }
                             else
                             {
                                 needToRetry = true;
                             }
-
                         }
                     }
                     finally
@@ -578,68 +571,65 @@ namespace System.DirectoryServices.AccountManagement
                             memberDE.Dispose();
                         }
                     }
-                    
                 }
                 else
                 {
                     // We reached the end of this group's membership.  If we're not processing recursively,
                     // we're done.  Otherwise, go on to the next group to visit.
-                    if (this.recursive)
+                    if (_recursive)
                     {
-                        GlobalDebug.WriteLineIf(GlobalDebug.Info, 
+                        GlobalDebug.WriteLineIf(GlobalDebug.Info,
                                                 "ADDNLinkedAttrSet",
                                                 "MoveNextLocal: recursive processing, groupsToVisit={0}",
-                                                groupsToVisit.Count);
-                    
-                        if (groupsToVisit.Count > 0)
+                                                _groupsToVisit.Count);
+
+                        if (_groupsToVisit.Count > 0)
                         {
                             // Pull off the next group to visit
-                            string groupDN = groupsToVisit[0];
-                            groupsToVisit.RemoveAt(0);
-                            groupsVisited.Add(groupDN);
+                            string groupDN = _groupsToVisit[0];
+                            _groupsToVisit.RemoveAt(0);
+                            _groupsVisited.Add(groupDN);
 
                             GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADDNLinkedAttrSet", "MoveNextMemberEnum: recursively processing {0}", groupDN);
 
                             // get the membership of this new group
                             DirectoryEntry groupDE = SDSUtils.BuildDirectoryEntry(
                                                                     BuildPathFromDN(groupDN),
-                                                    this.storeCtx.Credentials,
-                                                    this.storeCtx.AuthTypes);
+                                                    _storeCtx.Credentials,
+                                                    _storeCtx.AuthTypes);
 
-                            this.storeCtx.InitializeNewDirectoryOptions( groupDE );
+                            _storeCtx.InitializeNewDirectoryOptions(groupDE);
 
                             // set up for the next round of enumeration
                             //Here a new DirectoryEntry object is created and passed 
                             //to RangeRetriever object. Hence, configure 
                             //RangeRetriever to dispose the DirEntry on its dispose. 
-                            membersQueue.Enqueue( new RangeRetriever(groupDE, "member", true));
+                            _membersQueue.Enqueue(new RangeRetriever(groupDE, "member", true));
 
                             // and go on to the first member of this new group....
                             needToRetry = true;
                         }
                     }
                 }
-
             }
             while (needToRetry);
 
             return f;
-    	}
+        }
 
 
 
-        void TranslateForeignMembers()
+        private void TranslateForeignMembers()
         {
-
             GlobalDebug.WriteLineIf(GlobalDebug.Warn, "ADDNLinkedAttrSet", "TranslateForeignMembers: Translating foreign members");
 
-            List< Byte[] > sidList = new List<Byte[]>(this.foreignMembersCurrentGroup.Count);
+            List<Byte[]> sidList = new List<Byte[]>(_foreignMembersCurrentGroup.Count);
 
             // Foreach foreign principal retrive the sid. 
             // If the SID is for a fake object we have to track it seperately.  If we were attempt to translate it
             // it would fail and not be returned and we would lose it.
             // Once we have a list of sids then translate them against the target store in one call.
-            foreach( DirectoryEntry de in this.foreignMembersCurrentGroup)
+            foreach (DirectoryEntry de in _foreignMembersCurrentGroup)
             {
                 // Get the SID of the foreign principal
                 if (de.Properties["objectSid"].Count == 0)
@@ -647,7 +637,7 @@ namespace System.DirectoryServices.AccountManagement
                     throw new PrincipalOperationException(StringResources.ADStoreCtxCantRetrieveObjectSidForCrossStore);
                 }
 
-                Byte[] sid = (Byte[])de.Properties["objectSid"].Value ;
+                Byte[] sid = (Byte[])de.Properties["objectSid"].Value;
 
                 // What type of SID is it?
                 SidType sidType = Utils.ClassifySID(sid);
@@ -656,24 +646,23 @@ namespace System.DirectoryServices.AccountManagement
                 {
                     //Add the foreign member DirectoryEntry to fakePrincipalMembers list for further translation
                     //This de will be disposed after completing the translation by another code block. 
-                    this.fakePrincipalMembers.Add(de);
-                
+                    _fakePrincipalMembers.Add(de);
+
                     // It's a FPO for something like NT AUTHORITY\NETWORK SERVICE.
                     // There's no real store object corresponding to this FPO, so
                     // fake a Principal.
-                    GlobalDebug.WriteLineIf(GlobalDebug.Info, 
+                    GlobalDebug.WriteLineIf(GlobalDebug.Info,
                                             "ADDNLinkedAttrSet",
                                             "TranslateForeignMembers: fake principal, SID={0}",
-                                            Utils.ByteArrayToString(sid));                                                                
-                    
+                                            Utils.ByteArrayToString(sid));
                 }
                 else
                 {
-                    GlobalDebug.WriteLineIf(GlobalDebug.Info, 
+                    GlobalDebug.WriteLineIf(GlobalDebug.Info,
                                             "ADDNLinkedAttrSet",
                                             "TranslateForeignMembers: standard principal, SID={0}",
                                             Utils.ByteArrayToString(sid));
-                
+
                     sidList.Add(sid);
                     //We do NOT need the Foreign member DirectoryEntry object once it has been translated and added to sidList.
                     //So disposing it off now
@@ -682,15 +671,14 @@ namespace System.DirectoryServices.AccountManagement
             }
 
             // This call will perform a bulk sid translate to the name + issuer domain.
-            this.foreignMembersToReturn = new SidList( sidList, this.storeCtx.DnsHostName, this.storeCtx.Credentials);
+            _foreignMembersToReturn = new SidList(sidList, _storeCtx.DnsHostName, _storeCtx.Credentials);
 
             // We have translated the sids so clear the group now.
-            this.foreignMembersCurrentGroup.Clear();
-
+            _foreignMembersCurrentGroup.Clear();
         }
 
-        
-        bool MoveNextForeign(ref bool outerNeedToRetry)
+
+        private bool MoveNextForeign(ref bool outerNeedToRetry)
         {
             outerNeedToRetry = false;
             bool needToRetry;
@@ -702,47 +690,46 @@ namespace System.DirectoryServices.AccountManagement
                 needToRetry = false;
 
 
-                if (this.foreignMembersCurrentGroup.Count > 0)
+                if (_foreignMembersCurrentGroup.Count > 0)
                 {
                     TranslateForeignMembers();
                 }
 
 
-                if (fakePrincipalMembers.Count > 0)
+                if (_fakePrincipalMembers.Count > 0)
                 {
-                    foreignPrincipal = this.storeCtx.ConstructFakePrincipalFromSID((Byte[])fakePrincipalMembers[0].Properties["objectSid"].Value);
-                    fakePrincipalMembers[0].Dispose();
-                    fakePrincipalMembers.RemoveAt(0);
+                    foreignPrincipal = _storeCtx.ConstructFakePrincipalFromSID((Byte[])_fakePrincipalMembers[0].Properties["objectSid"].Value);
+                    _fakePrincipalMembers[0].Dispose();
+                    _fakePrincipalMembers.RemoveAt(0);
                 }
-                else if (( foreignMembersToReturn != null ) && (foreignMembersToReturn.Length > 0))
+                else if ((_foreignMembersToReturn != null) && (_foreignMembersToReturn.Length > 0))
                 {
-
                     StoreCtx foreignStoreCtx;
 
 
-                    SidListEntry foreignSid = foreignMembersToReturn[0];
+                    SidListEntry foreignSid = _foreignMembersToReturn[0];
 
 
                     // sidIssuerName is null only if SID was not resolved
                     // return a unknown principal back
-                    if ( null == foreignSid.sidIssuerName )
+                    if (null == foreignSid.sidIssuerName)
                     {
                         // create and return the unknown principal if it is not yet present in usersVisited
-                        if ( !usersVisited.ContainsKey( foreignSid.name ))
+                        if (!_usersVisited.ContainsKey(foreignSid.name))
                         {
-                            byte[] sid = Utils.ConvertNativeSidToByteArray( foreignSid.pSid );
-                            UnknownPrincipal unknownPrincipal = UnknownPrincipal.CreateUnknownPrincipal( this.storeCtx.OwningContext, sid, foreignSid.name );
-                            usersVisited.Add( foreignSid.name, true );
+                            byte[] sid = Utils.ConvertNativeSidToByteArray(foreignSid.pSid);
+                            UnknownPrincipal unknownPrincipal = UnknownPrincipal.CreateUnknownPrincipal(_storeCtx.OwningContext, sid, foreignSid.name);
+                            _usersVisited.Add(foreignSid.name, true);
                             this.current = null;
-                            this.currentForeignDE = null;
-                            this.currentForeignPrincipal = unknownPrincipal;
+                            _currentForeignDE = null;
+                            _currentForeignPrincipal = unknownPrincipal;
                             // remove the current member
-                            foreignMembersToReturn.RemoveAt( 0 );
+                            _foreignMembersToReturn.RemoveAt(0);
                             return true;
                         }
 
                         // remove the current member
-                        foreignMembersToReturn.RemoveAt( 0 );
+                        _foreignMembersToReturn.RemoveAt(0);
 
 
                         needToRetry = true;
@@ -754,19 +741,17 @@ namespace System.DirectoryServices.AccountManagement
 
                     if (sidType == SidType.RealObjectFakeDomain)
                     {
-
                         // This is a BUILTIN object.  It's a real object on the store we're connected to, but LookupSid
                         // will tell us it's a member of the BUILTIN domain.  Resolve it as a principal on our store.
                         GlobalDebug.WriteLineIf(GlobalDebug.Warn, "ADDNLinkedAttrSet", "MoveNextForeign: builtin principal");
-                        foreignStoreCtx = this.storeCtx;
+                        foreignStoreCtx = _storeCtx;
                     }
                     else
                     {
-
                         ContextOptions remoteOptions = DefaultContextOptions.ADDefaultContextOption;
 
 #if USE_CTX_CACHE
-                        PrincipalContext remoteCtx = SDSCache.Domain.GetContext(foreignSid.sidIssuerName, this.storeCtx.Credentials, remoteOptions);
+                        PrincipalContext remoteCtx = SDSCache.Domain.GetContext(foreignSid.sidIssuerName, _storeCtx.Credentials, remoteOptions);
 #else
                         PrincipalContext remoteCtx = new PrincipalContext(
                                         ContextType.Domain,
@@ -778,14 +763,13 @@ namespace System.DirectoryServices.AccountManagement
 
 #endif
                         foreignStoreCtx = remoteCtx.QueryCtx;
-
                     }
 
 
                     foreignPrincipal = foreignStoreCtx.FindPrincipalByIdentRef(
                                                      typeof(Principal),
                                                      UrnScheme.SidScheme,
-                                                     (new SecurityIdentifier(Utils.ConvertNativeSidToByteArray(foreignMembersToReturn[0].pSid), 0)).ToString(),
+                                                     (new SecurityIdentifier(Utils.ConvertNativeSidToByteArray(_foreignMembersToReturn[0].pSid), 0)).ToString(),
                                                      DateTime.UtcNow);
 
                     if (null == foreignPrincipal)
@@ -794,26 +778,25 @@ namespace System.DirectoryServices.AccountManagement
                         throw new PrincipalOperationException(StringResources.ADStoreCtxFailedFindCrossStoreTarget);
                     }
 
-                    foreignMembersToReturn.RemoveAt(0);
-                    
+                    _foreignMembersToReturn.RemoveAt(0);
                 }
                 else
                 {
                     // We don't have any more foreign principals to return so start with the foreign groups
-                    if (this.foreignGroups.Count > 0)
+                    if (_foreignGroups.Count > 0)
                     {
                         outerNeedToRetry = true;
 
                         // Determine the domainFunctionalityMode of the foreign domain.  If they are W2k or not a global group then we can't use ASQ.                    
-                        if (this.foreignGroups[0].Context.ServerInformation.OsVersion == DomainControllerMode.Win2k ||
-                            this.foreignGroups[0].GroupScope != GroupScope.Global)
+                        if (_foreignGroups[0].Context.ServerInformation.OsVersion == DomainControllerMode.Win2k ||
+                            _foreignGroups[0].GroupScope != GroupScope.Global)
                         {
-                            expansionMode = ExpansionMode.Enum;
+                            _expansionMode = ExpansionMode.Enum;
                             return ExpandForeignGroupEnumerator();
                         }
                         else
                         {
-                            expansionMode = ExpansionMode.ASQ;
+                            _expansionMode = ExpansionMode.ASQ;
                             return ExpandForeignGroupSearcher();
                         }
                     }
@@ -841,9 +824,9 @@ namespace System.DirectoryServices.AccountManagement
                                                 "MoveNextForeign: not a fake group, adding {0} to foreignGroups",
                                                 groupDN);
 
-                        if (!this.groupsVisited.Contains(groupDN) && !this.groupsToVisit.Contains(groupDN))
+                        if (!_groupsVisited.Contains(groupDN) && !_groupsToVisit.Contains(groupDN))
                         {
-                            this.foreignGroups.Add((GroupPrincipal)foreignPrincipal);
+                            _foreignGroups.Add((GroupPrincipal)foreignPrincipal);
                         }
                         else
                         {
@@ -861,14 +844,14 @@ namespace System.DirectoryServices.AccountManagement
 
                     DirectoryEntry foreignDE = (DirectoryEntry)foreignPrincipal.GetUnderlyingObject();
 
-                    storeCtx.LoadDirectoryEntryAttributes(foreignDE);
+                    _storeCtx.LoadDirectoryEntryAttributes(foreignDE);
 
-                    if (!usersVisited.ContainsKey(foreignDE.Properties["distinguishedName"][0].ToString()))
+                    if (!_usersVisited.ContainsKey(foreignDE.Properties["distinguishedName"][0].ToString()))
                     {
-                        usersVisited.Add(foreignDE.Properties["distinguishedName"][0].ToString(), true);
+                        _usersVisited.Add(foreignDE.Properties["distinguishedName"][0].ToString(), true);
                         this.current = null;
-                        this.currentForeignDE = null;
-                        this.currentForeignPrincipal = foreignPrincipal;
+                        _currentForeignDE = null;
+                        _currentForeignPrincipal = foreignPrincipal;
                         return true;
                     }
                     else
@@ -887,30 +870,30 @@ namespace System.DirectoryServices.AccountManagement
 
 
 
-        bool ExpandForeignGroupEnumerator()
+        private bool ExpandForeignGroupEnumerator()
         {
-            Debug.Assert(this.recursive == true);
+            Debug.Assert(_recursive == true);
             GlobalDebug.WriteLineIf(GlobalDebug.Info,
                                     "ADDNLinkedAttrSet",
                                     "ExpandForeignGroupEnumerator: there are {0} foreignGroups",
-                                    this.foreignGroups.Count);
-        
-            GroupPrincipal foreignGroup = this.foreignGroups[0];
-            this.foreignGroups.RemoveAt(0);
+                                    _foreignGroups.Count);
+
+            GroupPrincipal foreignGroup = _foreignGroups[0];
+            _foreignGroups.RemoveAt(0);
 
             // Since members of AD groups must be AD objects
             Debug.Assert(foreignGroup.Context.QueryCtx is ADStoreCtx);
             Debug.Assert(foreignGroup.UnderlyingObject is DirectoryEntry);
             Debug.Assert(((DirectoryEntry)foreignGroup.UnderlyingObject).Path.StartsWith("LDAP:", StringComparison.Ordinal));
 
-            this.storeCtx = (ADStoreCtx) foreignGroup.Context.QueryCtx;
+            _storeCtx = (ADStoreCtx)foreignGroup.Context.QueryCtx;
 
             //Here the foreignGroup object is removed from the foreignGroups collection.
             //and not used anymore. Hence, configure RangeRetriever to dispose the DirEntry on its dispose. 
-            this.membersQueue.Enqueue(new RangeRetriever((DirectoryEntry)foreignGroup.UnderlyingObject, "member", true)); 
+            _membersQueue.Enqueue(new RangeRetriever((DirectoryEntry)foreignGroup.UnderlyingObject, "member", true));
 
-            string groupDN = (string) ((DirectoryEntry)foreignGroup.UnderlyingObject).Properties["distinguishedName"].Value;
-            this.groupsVisited.Add(groupDN);
+            string groupDN = (string)((DirectoryEntry)foreignGroup.UnderlyingObject).Properties["distinguishedName"].Value;
+            _groupsVisited.Add(groupDN);
 
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADDNLinkedAttrSet", "ExpandForeignGroupEnumerator: recursively processing {0}", groupDN);
 
@@ -918,23 +901,23 @@ namespace System.DirectoryServices.AccountManagement
             return true;
         }
 
-        bool ExpandForeignGroupSearcher()
+        private bool ExpandForeignGroupSearcher()
         {
-            Debug.Assert(this.recursive == true);
+            Debug.Assert(_recursive == true);
             GlobalDebug.WriteLineIf(GlobalDebug.Info,
                                     "ADDNLinkedAttrSet",
                                     "ExpandForeignGroupSearcher: there are {0} foreignGroups",
-                                    this.foreignGroups.Count);
-        
-            GroupPrincipal foreignGroup = this.foreignGroups[0];
-            this.foreignGroups.RemoveAt(0);
+                                    _foreignGroups.Count);
+
+            GroupPrincipal foreignGroup = _foreignGroups[0];
+            _foreignGroups.RemoveAt(0);
 
             // Since members of AD groups must be AD objects
             Debug.Assert(foreignGroup.Context.QueryCtx is ADStoreCtx);
             Debug.Assert(foreignGroup.UnderlyingObject is DirectoryEntry);
             Debug.Assert(((DirectoryEntry)foreignGroup.UnderlyingObject).Path.StartsWith("LDAP:", StringComparison.Ordinal));
 
-            this.storeCtx = (ADStoreCtx) foreignGroup.Context.QueryCtx;
+            _storeCtx = (ADStoreCtx)foreignGroup.Context.QueryCtx;
 
             // Queue up a searcher for the new group expansion.
             DirectorySearcher ds = SDSUtils.ConstructSearcher((DirectoryEntry)foreignGroup.UnderlyingObject);
@@ -943,198 +926,197 @@ namespace System.DirectoryServices.AccountManagement
             ds.AttributeScopeQuery = "member";
             ds.CacheResults = false;
 
-            this.memberSearchersQueue.Enqueue(ds);
-                                    
-            string groupDN = (string) ((DirectoryEntry)foreignGroup.UnderlyingObject).Properties["distinguishedName"].Value;
-            this.groupsVisited.Add(groupDN);
+            _memberSearchersQueue.Enqueue(ds);
+
+            string groupDN = (string)((DirectoryEntry)foreignGroup.UnderlyingObject).Properties["distinguishedName"].Value;
+            _groupsVisited.Add(groupDN);
 
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADDNLinkedAttrSet", "ExpandForeignGroupSearcher: recursively processing {0}", groupDN);
 
             return true;
         }
 
-        bool MoveNextQueryPrimaryGroupMember()
+        private bool MoveNextQueryPrimaryGroupMember()
         {
             bool f = false;
-        
-            if (this.primaryGroupMembersSearcher != null)
+
+            if (_primaryGroupMembersSearcher != null)
             {
                 GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADDNLinkedAttrSet", "MoveNextQueryMember: have a searcher");
-            
-                if (this.queryMembersResults == null)
+
+                if (_queryMembersResults == null)
                 {
                     GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADDNLinkedAttrSet", "MoveNextQueryMember: issuing query");
-                
-                    this.queryMembersResults = this.primaryGroupMembersSearcher.FindAll();
 
-                    Debug.Assert(this.queryMembersResults != null);
+                    _queryMembersResults = _primaryGroupMembersSearcher.FindAll();
 
-                    this.queryMembersResultEnumerator = this.queryMembersResults.GetEnumerator();
+                    Debug.Assert(_queryMembersResults != null);
+
+                    _queryMembersResultEnumerator = _queryMembersResults.GetEnumerator();
                 }
 
-                f = this.queryMembersResultEnumerator.MoveNext();
+                f = _queryMembersResultEnumerator.MoveNext();
 
                 if (f)
                 {
-                    this.current = (SearchResult) this.queryMembersResultEnumerator.Current;
+                    this.current = (SearchResult)_queryMembersResultEnumerator.Current;
                     Debug.Assert(this.current != null);
-                    
-                    this.currentForeignDE = null;
-                    this.currentForeignPrincipal = null;           
+
+                    _currentForeignDE = null;
+                    _currentForeignPrincipal = null;
 
                     GlobalDebug.WriteLineIf(GlobalDebug.Info,
                                             "ADDNLinkedAttrSet",
                                             "MoveNextQueryMember: got a result, using as current {0}",
-                                            ((SearchResult)this.current).Path);                                                               
+                                            ((SearchResult)this.current).Path);
                 }
-                
             }
 
             return f;
         }
 
-    	// Resets the enumerator to before the first result in the set.  This potentially can be an expensive
-    	// operation, e.g., if doing a paged search, may need to re-retrieve the first page of results.
-    	// As a special case, if the ResultSet is already at the very beginning, this is guaranteed to be
-    	// a no-op.
-    	override internal void Reset()
-    	{
-            GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADDNLinkedAttrSet", "Reset");    	        
-    	
-    	    if (!atBeginning)
-    	    {
-    	        this.usersVisited.Clear();
-                this.groupsToVisit.Clear();
-                string originalGroupDN = this.groupsVisited[0];
-                this.groupsVisited.Clear();
-                this.groupsVisited.Add(originalGroupDN);
+        // Resets the enumerator to before the first result in the set.  This potentially can be an expensive
+        // operation, e.g., if doing a paged search, may need to re-retrieve the first page of results.
+        // As a special case, if the ResultSet is already at the very beginning, this is guaranteed to be
+        // a no-op.
+        override internal void Reset()
+        {
+            GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADDNLinkedAttrSet", "Reset");
+
+            if (!_atBeginning)
+            {
+                _usersVisited.Clear();
+                _groupsToVisit.Clear();
+                string originalGroupDN = _groupsVisited[0];
+                _groupsVisited.Clear();
+                _groupsVisited.Add(originalGroupDN);
 
                 // clear the current enumerator
-                this.members = null;
-                this.membersEnum = null;
+                _members = null;
+                _membersEnum = null;
 
                 // replace all items in the queue with the originals and reset them.
-                if (null != this.originalMembers)
+                if (null != _originalMembers)
                 {
-                    this.membersQueue.Clear();
-                    foreach (IEnumerable ie in this.originalMembers)
+                    _membersQueue.Clear();
+                    foreach (IEnumerable ie in _originalMembers)
                     {
-                        this.membersQueue.Enqueue(ie);
+                        _membersQueue.Enqueue(ie);
                         IEnumerator enumerator = ie.GetEnumerator();
                         enumerator.Reset();
                     }
                 }
 
-                expansionMode = originalExpansionMode;
-                
-                this.storeCtx = this.originalStoreCtx;
+                _expansionMode = _originalExpansionMode;
+
+                _storeCtx = _originalStoreCtx;
 
                 this.current = null;
-                if (this.primaryGroupDN != null)
-                    returnedPrimaryGroup = false;
+                if (_primaryGroupDN != null)
+                    _returnedPrimaryGroup = false;
 
-                this.foreignMembersCurrentGroup.Clear();
-                this.fakePrincipalMembers.Clear();
-                
-                if ( null != foreignMembersToReturn )
-                    this.foreignMembersToReturn.Clear();
-                
-                this.currentForeignPrincipal = null;
-                this.currentForeignDE = null;
+                _foreignMembersCurrentGroup.Clear();
+                _fakePrincipalMembers.Clear();
 
-                this.foreignGroups.Clear();
+                if (null != _foreignMembersToReturn)
+                    _foreignMembersToReturn.Clear();
 
-                this.queryMembersResultEnumerator = null;
-                if (this.queryMembersResults != null)
+                _currentForeignPrincipal = null;
+                _currentForeignDE = null;
+
+                _foreignGroups.Clear();
+
+                _queryMembersResultEnumerator = null;
+                if (_queryMembersResults != null)
                 {
-                    this.queryMembersResults.Dispose();
-                    this.queryMembersResults = null;
+                    _queryMembersResults.Dispose();
+                    _queryMembersResults = null;
                 }
 
 
-                if (null != currentMembersSearcher)
+                if (null != _currentMembersSearcher)
                 {
-                    this.currentMembersSearcher.Dispose();
-                    this.currentMembersSearcher = null;
-                }
-                
-                this.memberSearchResultsEnumerator = null;
-                if (this.memberSearchResults != null)
-                {
-                    this.memberSearchResults.Dispose();
-                    this.memberSearchResults = null;
+                    _currentMembersSearcher.Dispose();
+                    _currentMembersSearcher = null;
                 }
 
-                if (null != this.memberSearchersQueue)
+                _memberSearchResultsEnumerator = null;
+                if (_memberSearchResults != null)
                 {
-                    foreach (DirectorySearcher ds in this.memberSearchersQueue)
+                    _memberSearchResults.Dispose();
+                    _memberSearchResults = null;
+                }
+
+                if (null != _memberSearchersQueue)
+                {
+                    foreach (DirectorySearcher ds in _memberSearchersQueue)
                     {
                         ds.Dispose();
                     }
 
-                    this.memberSearchersQueue.Clear();
+                    _memberSearchersQueue.Clear();
 
-                    if (null != this.memberSearchersQueueOriginal)
+                    if (null != _memberSearchersQueueOriginal)
                     {
-                        foreach (DirectorySearcher ds in this.memberSearchersQueueOriginal)
+                        foreach (DirectorySearcher ds in _memberSearchersQueueOriginal)
                         {
-                            this.memberSearchersQueue.Enqueue(ds);
+                            _memberSearchersQueue.Enqueue(ds);
                         }
                     }
                 }
 
-                this.atBeginning = true;
+                _atBeginning = true;
             }
-    	}
+        }
 
 
         override internal ResultSetBookmark BookmarkAndReset()
         {
-            GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADDNLinkedAttrSet", "Bookmarking");    	        
-        
+            GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADDNLinkedAttrSet", "Bookmarking");
+
             ADDNLinkedAttrSetBookmark bookmark = new ADDNLinkedAttrSetBookmark();
 
-            bookmark.usersVisited = this.usersVisited;
-            this.usersVisited = new Dictionary<string, bool>();
-            
-            bookmark.groupsToVisit = this.groupsToVisit;
-            this.groupsToVisit = new List<string>();
+            bookmark.usersVisited = _usersVisited;
+            _usersVisited = new Dictionary<string, bool>();
 
-            string originalGroupDN = this.groupsVisited[0];
-            bookmark.groupsVisited = this.groupsVisited;
-            this.groupsVisited = new List<string>();
-            this.groupsVisited.Add(originalGroupDN);
+            bookmark.groupsToVisit = _groupsToVisit;
+            _groupsToVisit = new List<string>();
 
-            bookmark.expansionMode = this.expansionMode;
+            string originalGroupDN = _groupsVisited[0];
+            bookmark.groupsVisited = _groupsVisited;
+            _groupsVisited = new List<string>();
+            _groupsVisited.Add(originalGroupDN);
+
+            bookmark.expansionMode = _expansionMode;
 
             // bookmark the current enumerators
-            bookmark.members = this.members;
-            bookmark.membersEnum = this.membersEnum;
+            bookmark.members = _members;
+            bookmark.membersEnum = _membersEnum;
 
             // Clear the current enumerators for reset
-            this.members = null;
-            this.membersEnum = null;
+            _members = null;
+            _membersEnum = null;
 
             // Copy all enumerators in the queue over to the bookmark queue.
-            if (null != this.membersQueue)
+            if (null != _membersQueue)
             {
-                bookmark.membersQueue = new Queue<IEnumerable>(this.membersQueue.Count);
-                foreach (IEnumerable ie in this.membersQueue)
+                bookmark.membersQueue = new Queue<IEnumerable>(_membersQueue.Count);
+                foreach (IEnumerable ie in _membersQueue)
                 {
                     bookmark.membersQueue.Enqueue(ie);
                 }
             }
 
             // Refill the original queue with the original enumerators and reset them
-            if (null != this.membersQueue)
+            if (null != _membersQueue)
             {
-                this.membersQueue.Clear();
+                _membersQueue.Clear();
 
-                if (this.originalMembers != null)
+                if (_originalMembers != null)
                 {
-                    foreach (IEnumerable ie in this.originalMembers)
+                    foreach (IEnumerable ie in _originalMembers)
                     {
-                        this.membersQueue.Enqueue(ie);
+                        _membersQueue.Enqueue(ie);
                         IEnumerator enumerator = ie.GetEnumerator();
                         enumerator.Reset();
                     }
@@ -1142,198 +1124,196 @@ namespace System.DirectoryServices.AccountManagement
             }
 
 
-            bookmark.storeCtx = this.storeCtx;
+            bookmark.storeCtx = _storeCtx;
 
-            expansionMode = originalExpansionMode;
+            _expansionMode = _originalExpansionMode;
 
-            if (null != currentMembersSearcher)
+            if (null != _currentMembersSearcher)
             {
-                this.currentMembersSearcher.Dispose();
-                this.currentMembersSearcher = null;
-            }            
-            
-            this.storeCtx = this.originalStoreCtx;
+                _currentMembersSearcher.Dispose();
+                _currentMembersSearcher = null;
+            }
+
+            _storeCtx = _originalStoreCtx;
 
             bookmark.current = this.current;
-            bookmark.returnedPrimaryGroup = this.returnedPrimaryGroup;
+            bookmark.returnedPrimaryGroup = _returnedPrimaryGroup;
             this.current = null;
-            if (this.primaryGroupDN != null)
-                returnedPrimaryGroup = false;
+            if (_primaryGroupDN != null)
+                _returnedPrimaryGroup = false;
 
-            bookmark.foreignMembersCurrentGroup = this.foreignMembersCurrentGroup;   
-            bookmark.fakePrincipalMembers = this.fakePrincipalMembers;   
-            bookmark.foreignMembersToReturn = this.foreignMembersToReturn;   
-            bookmark.currentForeignPrincipal = this.currentForeignPrincipal;
-            bookmark.currentForeignDE = this.currentForeignDE;            
-            this.foreignMembersCurrentGroup = new List<DirectoryEntry>();
-            this.fakePrincipalMembers = new List<DirectoryEntry>();
-            this.currentForeignDE = null;
+            bookmark.foreignMembersCurrentGroup = _foreignMembersCurrentGroup;
+            bookmark.fakePrincipalMembers = _fakePrincipalMembers;
+            bookmark.foreignMembersToReturn = _foreignMembersToReturn;
+            bookmark.currentForeignPrincipal = _currentForeignPrincipal;
+            bookmark.currentForeignDE = _currentForeignDE;
+            _foreignMembersCurrentGroup = new List<DirectoryEntry>();
+            _fakePrincipalMembers = new List<DirectoryEntry>();
+            _currentForeignDE = null;
 
-            bookmark.foreignGroups = this.foreignGroups;
-            this.foreignGroups = new List<GroupPrincipal>();
+            bookmark.foreignGroups = _foreignGroups;
+            _foreignGroups = new List<GroupPrincipal>();
 
-            bookmark.queryMembersResults = this.queryMembersResults;
-            bookmark.queryMembersResultEnumerator = this.queryMembersResultEnumerator;
-            this.queryMembersResults = null;
-            this.queryMembersResultEnumerator = null;
+            bookmark.queryMembersResults = _queryMembersResults;
+            bookmark.queryMembersResultEnumerator = _queryMembersResultEnumerator;
+            _queryMembersResults = null;
+            _queryMembersResultEnumerator = null;
 
-            bookmark.memberSearchResults = this.memberSearchResults;
-            bookmark.memberSearchResultsEnumerator = this.memberSearchResultsEnumerator;
-            this.memberSearchResults = null;
-            this.memberSearchResultsEnumerator = null;
+            bookmark.memberSearchResults = _memberSearchResults;
+            bookmark.memberSearchResultsEnumerator = _memberSearchResultsEnumerator;
+            _memberSearchResults = null;
+            _memberSearchResultsEnumerator = null;
 
-            if (null != this.memberSearchersQueue)
+            if (null != _memberSearchersQueue)
             {
-                bookmark.memberSearcherQueue = new Queue<DirectorySearcher>(this.memberSearchersQueue.Count);
+                bookmark.memberSearcherQueue = new Queue<DirectorySearcher>(_memberSearchersQueue.Count);
 
-                foreach (DirectorySearcher ds in this.memberSearchersQueue)
+                foreach (DirectorySearcher ds in _memberSearchersQueue)
                 {
                     bookmark.memberSearcherQueue.Enqueue(ds);
                 }
             }
 
-            if (null != this.memberSearchersQueueOriginal)
+            if (null != _memberSearchersQueueOriginal)
             {
-                this.memberSearchersQueue.Clear();
+                _memberSearchersQueue.Clear();
 
-                foreach (DirectorySearcher ds in this.memberSearchersQueueOriginal)
+                foreach (DirectorySearcher ds in _memberSearchersQueueOriginal)
                 {
-                    this.memberSearchersQueue.Enqueue(ds);
+                    _memberSearchersQueue.Enqueue(ds);
                 }
             }
 
-            bookmark.atBeginning = this.atBeginning;
-            this.atBeginning = true;
+            bookmark.atBeginning = _atBeginning;
+            _atBeginning = true;
 
             return bookmark;
         }
 
         override internal void RestoreBookmark(ResultSetBookmark bookmark)
         {
-            GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADDNLinkedAttrSet", "Restoring from bookmark");    	        
-        
-            Debug.Assert(bookmark is ADDNLinkedAttrSetBookmark);
-            ADDNLinkedAttrSetBookmark adBookmark = (ADDNLinkedAttrSetBookmark) bookmark;
+            GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADDNLinkedAttrSet", "Restoring from bookmark");
 
-            this.usersVisited = adBookmark.usersVisited;
-            this.groupsToVisit = adBookmark.groupsToVisit;
-            this.groupsVisited = adBookmark.groupsVisited;
-            this.storeCtx = adBookmark.storeCtx;
+            Debug.Assert(bookmark is ADDNLinkedAttrSetBookmark);
+            ADDNLinkedAttrSetBookmark adBookmark = (ADDNLinkedAttrSetBookmark)bookmark;
+
+            _usersVisited = adBookmark.usersVisited;
+            _groupsToVisit = adBookmark.groupsToVisit;
+            _groupsVisited = adBookmark.groupsVisited;
+            _storeCtx = adBookmark.storeCtx;
             this.current = adBookmark.current;
-            this.returnedPrimaryGroup = adBookmark.returnedPrimaryGroup;
-            this.foreignMembersCurrentGroup = adBookmark.foreignMembersCurrentGroup;
-            this.fakePrincipalMembers = adBookmark.fakePrincipalMembers;
-            this.foreignMembersToReturn = adBookmark.foreignMembersToReturn;
-            this.currentForeignPrincipal = adBookmark.currentForeignPrincipal;
-            this.currentForeignDE = adBookmark.currentForeignDE;
-            this.foreignGroups = adBookmark.foreignGroups;
-            if (this.queryMembersResults != null)
-                this.queryMembersResults.Dispose();
-            this.queryMembersResults = adBookmark.queryMembersResults;
-            this.queryMembersResultEnumerator = adBookmark.queryMembersResultEnumerator;
-            this.memberSearchResults = adBookmark.memberSearchResults;
-            this.memberSearchResultsEnumerator = adBookmark.memberSearchResultsEnumerator;
-            this.atBeginning = adBookmark.atBeginning; 
-            this.expansionMode = adBookmark.expansionMode;
+            _returnedPrimaryGroup = adBookmark.returnedPrimaryGroup;
+            _foreignMembersCurrentGroup = adBookmark.foreignMembersCurrentGroup;
+            _fakePrincipalMembers = adBookmark.fakePrincipalMembers;
+            _foreignMembersToReturn = adBookmark.foreignMembersToReturn;
+            _currentForeignPrincipal = adBookmark.currentForeignPrincipal;
+            _currentForeignDE = adBookmark.currentForeignDE;
+            _foreignGroups = adBookmark.foreignGroups;
+            if (_queryMembersResults != null)
+                _queryMembersResults.Dispose();
+            _queryMembersResults = adBookmark.queryMembersResults;
+            _queryMembersResultEnumerator = adBookmark.queryMembersResultEnumerator;
+            _memberSearchResults = adBookmark.memberSearchResults;
+            _memberSearchResultsEnumerator = adBookmark.memberSearchResultsEnumerator;
+            _atBeginning = adBookmark.atBeginning;
+            _expansionMode = adBookmark.expansionMode;
 
             // Replace enumerators
-            this.members = adBookmark.members;
-            this.membersEnum = adBookmark.membersEnum;
+            _members = adBookmark.members;
+            _membersEnum = adBookmark.membersEnum;
 
             // Replace the enumerator queue elements
-            if (null != this.membersQueue)
+            if (null != _membersQueue)
             {
-                this.membersQueue.Clear();
+                _membersQueue.Clear();
 
                 if (null != adBookmark.membersQueue)
                 {
                     foreach (IEnumerable ie in adBookmark.membersQueue)
                     {
-                        this.membersQueue.Enqueue(ie);
+                        _membersQueue.Enqueue(ie);
                     }
                 }
             }
 
-            if (null != this.memberSearchersQueue)
+            if (null != _memberSearchersQueue)
             {
-                foreach (DirectorySearcher ds in this.memberSearchersQueue)
+                foreach (DirectorySearcher ds in _memberSearchersQueue)
                 {
                     ds.Dispose();
                 }
 
-                this.memberSearchersQueue.Clear();
+                _memberSearchersQueue.Clear();
 
                 if (null != adBookmark.memberSearcherQueue)
                 {
                     foreach (DirectorySearcher ds in adBookmark.memberSearcherQueue)
                     {
-                        this.memberSearchersQueue.Enqueue(ds);
+                        _memberSearchersQueue.Enqueue(ds);
                     }
                 }
-
             }
-
         }
 
-    	// IDisposable implementation
+        // IDisposable implementation
         public override void Dispose()
         {
             try
             {
-                if (!this.disposed)
+                if (!_disposed)
                 {
-                    GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADDNLinkedAttrSet", "Dispose: disposing");    	        
+                    GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADDNLinkedAttrSet", "Dispose: disposing");
 
-                    if (this.primaryGroupMembersSearcher != null)
+                    if (_primaryGroupMembersSearcher != null)
                     {
-                        GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADDNLinkedAttrSet", "Dispose: disposing primaryGroupMembersSearcher");                
-                        this.primaryGroupMembersSearcher.Dispose();
+                        GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADDNLinkedAttrSet", "Dispose: disposing primaryGroupMembersSearcher");
+                        _primaryGroupMembersSearcher.Dispose();
                     }
 
-                    if (this.queryMembersResults != null)
+                    if (_queryMembersResults != null)
                     {
-                        GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADDNLinkedAttrSet", "Dispose: disposing queryMembersResults");                
-                        this.queryMembersResults.Dispose();
+                        GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADDNLinkedAttrSet", "Dispose: disposing queryMembersResults");
+                        _queryMembersResults.Dispose();
                     }
 
-                    if (this.currentMembersSearcher != null)
+                    if (_currentMembersSearcher != null)
                     {
-                        GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADDNLinkedAttrSet", "Dispose: disposing membersSearcher");                
-                        this.currentMembersSearcher.Dispose();
+                        GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADDNLinkedAttrSet", "Dispose: disposing membersSearcher");
+                        _currentMembersSearcher.Dispose();
                     }
 
-                    if (this.memberSearchResults != null)
+                    if (_memberSearchResults != null)
                     {
-                        GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADDNLinkedAttrSet", "Dispose: disposing memberSearchResults");                
-                        this.memberSearchResults.Dispose();
+                        GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADDNLinkedAttrSet", "Dispose: disposing memberSearchResults");
+                        _memberSearchResults.Dispose();
                     }
 
-                    if (this.memberSearchersQueue != null)
+                    if (_memberSearchersQueue != null)
                     {
-                        GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADDNLinkedAttrSet", "Dispose: disposing memberSearchersQueue");                
-                        foreach (DirectorySearcher ds in memberSearchersQueue)
+                        GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADDNLinkedAttrSet", "Dispose: disposing memberSearchersQueue");
+                        foreach (DirectorySearcher ds in _memberSearchersQueue)
                         {
                             ds.Dispose();
                         }
 
-                        this.memberSearchersQueue.Clear();
+                        _memberSearchersQueue.Clear();
                     }
-                    IDisposable disposableMembers = this.members as IDisposable;
+                    IDisposable disposableMembers = _members as IDisposable;
                     if (disposableMembers != null)
                     {
                         GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADDNLinkedAttrSet", "Dispose: disposing members Enumerable");
                         disposableMembers.Dispose();
                     }
-                    IDisposable disposableMembersEnum = this.membersEnum as IDisposable;
+                    IDisposable disposableMembersEnum = _membersEnum as IDisposable;
                     if (disposableMembersEnum != null)
                     {
                         GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADDNLinkedAttrSet", "Dispose: disposing membersEnum Enumerator");
                         disposableMembersEnum.Dispose();
                     }
-                    if (this.membersQueue != null)
+                    if (_membersQueue != null)
                     {
                         GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADDNLinkedAttrSet", "Dispose: disposing membersQueue");
-                        foreach (IEnumerable enumerable in membersQueue)
+                        foreach (IEnumerable enumerable in _membersQueue)
                         {
                             IDisposable disposableEnum = enumerable as IDisposable;
                             if (disposableEnum != null)
@@ -1342,21 +1322,21 @@ namespace System.DirectoryServices.AccountManagement
                             }
                         }
                     }
-                    if (this.foreignGroups != null)
+                    if (_foreignGroups != null)
                     {
-                        foreach (GroupPrincipal gp in this.foreignGroups)
+                        foreach (GroupPrincipal gp in _foreignGroups)
                         {
                             gp.Dispose();
                         }
                     }
-                     
-                    this.disposed = true;
+
+                    _disposed = true;
                 }
             }
             finally
-            {            
-                 base.Dispose();
-            }               
+            {
+                base.Dispose();
+            }
         }
 
 
@@ -1364,88 +1344,88 @@ namespace System.DirectoryServices.AccountManagement
         //
         //
 
-        private UnsafeNativeMethods.IADsPathname pathCracker = null;
-        private object pathLock = new object();
-        Dictionary<string, bool> usersVisited = new Dictionary<string, bool>();
-        
+        private UnsafeNativeMethods.IADsPathname _pathCracker = null;
+        private object _pathLock = new object();
+        private Dictionary<string, bool> _usersVisited = new Dictionary<string, bool>();
+
         // The 0th entry in this list is always the DN of the original group/user whose membership we're querying
-        List<string> groupsVisited = new List<string>();
-        
-        List<string> groupsToVisit = new List<string>();
+        private List<string> _groupsVisited = new List<string>();
+
+        private List<string> _groupsToVisit = new List<string>();
 
         protected Object current = null; // current member of the group (or current group of the user)
-        
-        bool returnedPrimaryGroup = false;
-        string primaryGroupDN;                      // the DN of the user's PrimaryGroup (not included in this.members/originalMembers)
 
-        bool recursive;
+        private bool _returnedPrimaryGroup = false;
+        private string _primaryGroupDN;                      // the DN of the user's PrimaryGroup (not included in this.members/originalMembers)
 
-        Queue<IEnumerable> membersQueue = new Queue<IEnumerable>();
-        IEnumerable members;            // the membership we're currently enumerating over
-        Queue<IEnumerable> originalMembers = new Queue<IEnumerable>();    // the membership we started off with (before recursing)
+        private bool _recursive;
 
-        IEnumerator membersEnum = null;
-        
-        ADStoreCtx storeCtx;
-        ADStoreCtx originalStoreCtx;
+        private Queue<IEnumerable> _membersQueue = new Queue<IEnumerable>();
+        private IEnumerable _members;            // the membership we're currently enumerating over
+        private Queue<IEnumerable> _originalMembers = new Queue<IEnumerable>();    // the membership we started off with (before recursing)
 
-        bool atBeginning = true;
+        private IEnumerator _membersEnum = null;
 
-        bool disposed = false;
+        private ADStoreCtx _storeCtx;
+        private ADStoreCtx _originalStoreCtx;
+
+        private bool _atBeginning = true;
+
+        private bool _disposed = false;
 
         // foreign
         // This contains a list of employees built while enumerating the current group.  These are FSP objects in the current domain and need to 
         // be translated to find out the domain that holds the actual object.
-        List<DirectoryEntry> foreignMembersCurrentGroup = new List<DirectoryEntry>();
+        private List<DirectoryEntry> _foreignMembersCurrentGroup = new List<DirectoryEntry>();
         // List of objects from the group tha are actual fake group objects.
-        List<DirectoryEntry> fakePrincipalMembers = new List<DirectoryEntry>();
+        private List<DirectoryEntry> _fakePrincipalMembers = new List<DirectoryEntry>();
         // list of SIDs + store that have been translated.  These could be any principal object
-        SidList foreignMembersToReturn = null;
-        
-        Principal currentForeignPrincipal = null;
-        DirectoryEntry currentForeignDE = null;
-        
-        List<GroupPrincipal> foreignGroups = new List<GroupPrincipal>();
+        private SidList _foreignMembersToReturn = null;
+
+        private Principal _currentForeignPrincipal = null;
+        private DirectoryEntry _currentForeignDE = null;
+
+        private List<GroupPrincipal> _foreignGroups = new List<GroupPrincipal>();
 
         // members based on a query (used for users who are group members by virtue of their primaryGroupId pointing to the group)
-        DirectorySearcher primaryGroupMembersSearcher;
-        SearchResultCollection queryMembersResults = null;
-        IEnumerator queryMembersResultEnumerator = null;
+        private DirectorySearcher _primaryGroupMembersSearcher;
+        private SearchResultCollection _queryMembersResults = null;
+        private IEnumerator _queryMembersResultEnumerator = null;
 
-        DirectorySearcher currentMembersSearcher = null;
+        private DirectorySearcher _currentMembersSearcher = null;
 
-        Queue<DirectorySearcher> memberSearchersQueue = new Queue<DirectorySearcher>();
-        Queue<DirectorySearcher> memberSearchersQueueOriginal = new Queue<DirectorySearcher>();
+        private Queue<DirectorySearcher> _memberSearchersQueue = new Queue<DirectorySearcher>();
+        private Queue<DirectorySearcher> _memberSearchersQueueOriginal = new Queue<DirectorySearcher>();
 
-        SearchResultCollection memberSearchResults = null;
-        IEnumerator memberSearchResultsEnumerator = null;
+        private SearchResultCollection _memberSearchResults = null;
+        private IEnumerator _memberSearchResultsEnumerator = null;
 
-        ExpansionMode expansionMode;
-        ExpansionMode originalExpansionMode;
-        
-        string BuildPathFromDN(string dn)
+        private ExpansionMode _expansionMode;
+        private ExpansionMode _originalExpansionMode;
+
+        private string BuildPathFromDN(string dn)
         {
-            string userSuppliedServername = this.storeCtx.UserSuppliedServerName;
+            string userSuppliedServername = _storeCtx.UserSuppliedServerName;
 
-            if ( null == pathCracker )
+            if (null == _pathCracker)
             {
-                lock( pathLock  )
+                lock (_pathLock)
                 {
-                    if ( null == pathCracker )
+                    if (null == _pathCracker)
                     {
-                       UnsafeNativeMethods.Pathname pathNameObj = new UnsafeNativeMethods.Pathname();
-                       pathCracker = (UnsafeNativeMethods.IADsPathname) pathNameObj;
-                       pathCracker.EscapedMode = 2 /* ADS_ESCAPEDMODE_ON */;
+                        UnsafeNativeMethods.Pathname pathNameObj = new UnsafeNativeMethods.Pathname();
+                        _pathCracker = (UnsafeNativeMethods.IADsPathname)pathNameObj;
+                        _pathCracker.EscapedMode = 2 /* ADS_ESCAPEDMODE_ON */;
                     }
                 }
             }
 
-            pathCracker.Set(dn, 4 /* ADS_SETTYPE_DN */);
-            
-            string escapedDn = pathCracker.Retrieve(7 /* ADS_FORMAT_X500_DN */);
-            
-            if (userSuppliedServername.Length > 0)            
-                return "LDAP://" + this.storeCtx.UserSuppliedServerName + "/" + escapedDn;
+            _pathCracker.Set(dn, 4 /* ADS_SETTYPE_DN */);
+
+            string escapedDn = _pathCracker.Retrieve(7 /* ADS_FORMAT_X500_DN */);
+
+            if (userSuppliedServername.Length > 0)
+                return "LDAP://" + _storeCtx.UserSuppliedServerName + "/" + escapedDn;
             else
                 return "LDAP://" + escapedDn;
         }
@@ -1455,10 +1435,10 @@ namespace System.DirectoryServices.AccountManagement
     internal enum ExpansionMode
     {
         Enum = 0,
-         ASQ = 1,
+        ASQ = 1,
     }
-    
-    class ADDNLinkedAttrSetBookmark : ResultSetBookmark
+
+    internal class ADDNLinkedAttrSetBookmark : ResultSetBookmark
     {
         public Dictionary<string, bool> usersVisited;
         public List<string> groupsToVisit;
@@ -1473,13 +1453,13 @@ namespace System.DirectoryServices.AccountManagement
         public List<DirectoryEntry> fakePrincipalMembers;
         public SidList foreignMembersToReturn;
         public Principal currentForeignPrincipal;
-        public DirectoryEntry currentForeignDE;        
+        public DirectoryEntry currentForeignDE;
         public List<GroupPrincipal> foreignGroups;
         public SearchResultCollection queryMembersResults;
         public IEnumerator queryMembersResultEnumerator;
         public SearchResultCollection memberSearchResults;
         public IEnumerator memberSearchResultsEnumerator;
-        public bool atBeginning;        
+        public bool atBeginning;
         public ExpansionMode expansionMode;
         public Queue<DirectorySearcher> memberSearcherQueue;
     }

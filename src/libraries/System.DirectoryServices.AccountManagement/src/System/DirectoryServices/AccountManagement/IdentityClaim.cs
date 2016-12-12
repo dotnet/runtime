@@ -1,10 +1,13 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
 /*++
 
 Copyright (c) 2004  Microsoft Corporation
 
 Module Name:
 
-    IdentityClaim.cs
 
 Abstract:
 
@@ -23,22 +26,21 @@ namespace System.DirectoryServices.AccountManagement
 {
     internal class IdentityClaim
     {
-
         public string UrnValue
         {
-            get {return this.urnValue;}
-            set {this.urnValue = value;}
+            get { return _urnValue; }
+            set { _urnValue = value; }
         }
-        
+
         public string UrnScheme
         {
-            set {this.urnScheme = value;}
-            get {return this.urnScheme; }
+            set { _urnScheme = value; }
+            get { return _urnScheme; }
         }
-        
-        
-        string urnValue;
-        string urnScheme;
+
+
+        private string _urnValue;
+        private string _urnScheme;
 
         public IdentityClaim()
         {

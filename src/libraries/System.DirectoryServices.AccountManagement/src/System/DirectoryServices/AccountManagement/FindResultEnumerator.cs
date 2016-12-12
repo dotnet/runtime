@@ -1,10 +1,13 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
 /*++
 
 Copyright (c) 2004  Microsoft Corporation
 
 Module Name:
 
-    FindResultEnumerator.cs
 
 Abstract:
 
@@ -26,7 +29,6 @@ namespace System.DirectoryServices.AccountManagement
     [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.LinkDemand, Unrestricted = true)]
     internal class FindResultEnumerator<T> : IEnumerator<T>, IEnumerator
     {
-
         //
         // Public properties
         //
@@ -43,30 +45,30 @@ namespace System.DirectoryServices.AccountManagement
             [System.Security.SecurityCritical]
             get
             {
-                GlobalDebug.WriteLineIf(GlobalDebug.Info, "FindResultEnumerator", "Entering Current, T={0}", typeof(T));            
-            
+                GlobalDebug.WriteLineIf(GlobalDebug.Info, "FindResultEnumerator", "Entering Current, T={0}", typeof(T));
+
                 CheckDisposed();
-            
-                if (this.beforeStart == true || this.endReached == true || this.resultSet == null)
+
+                if (_beforeStart == true || _endReached == true || _resultSet == null)
                 {
                     // Either we're before the beginning or after the end of the collection.
                     GlobalDebug.WriteLineIf(
-                                        GlobalDebug.Warn, 
+                                        GlobalDebug.Warn,
                                         "FindResultEnumerator",
                                         "Current: bad position, beforeStart={0}, endReached={1}, resultSet={2}",
-                                        this.beforeStart,
-                                        this.endReached,
-                                        this.resultSet);                                        
-                                        
+                                        _beforeStart,
+                                        _endReached,
+                                        _resultSet);
+
                     throw new InvalidOperationException(StringResources.FindResultEnumInvalidPos);
                 }
 
                 Debug.Assert(typeof(T) == typeof(System.DirectoryServices.AccountManagement.Principal) || typeof(T).IsSubclassOf(typeof(System.DirectoryServices.AccountManagement.Principal)));
-                return (T) this.resultSet.CurrentAsPrincipal;
+                return (T)_resultSet.CurrentAsPrincipal;
             }
         }
 
-        
+
 
         object IEnumerator.Current
         {
@@ -95,51 +97,51 @@ namespace System.DirectoryServices.AccountManagement
         public bool MoveNext()
         {
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "FindResultEnumerator", "Entering MoveNext, T={0}", typeof(T));
-        
+
             CheckDisposed();
 
             // If we previously reached the end, nothing more to move on to
-            if (this.endReached)
+            if (_endReached)
             {
-                GlobalDebug.WriteLineIf(GlobalDebug.Info, "FindResultEnumerator", "MoveNext: end previously reached");            
+                GlobalDebug.WriteLineIf(GlobalDebug.Info, "FindResultEnumerator", "MoveNext: end previously reached");
                 return false;
             }
 
             // No ResultSet, so we've already reached the end
-            if (this.resultSet == null)
+            if (_resultSet == null)
             {
-                GlobalDebug.WriteLineIf(GlobalDebug.Info, "FindResultEnumerator", "MoveNext: no resultSet");            
+                GlobalDebug.WriteLineIf(GlobalDebug.Info, "FindResultEnumerator", "MoveNext: no resultSet");
                 return false;
             }
 
             bool f;
 
-            lock (this.resultSet)
+            lock (_resultSet)
             {
                 // If before the first ResultSet, move to the first ResultSet
-                if (this.beforeStart == true)
-                {            
-                    GlobalDebug.WriteLineIf(GlobalDebug.Info, "FindResultEnumerator", "MoveNext: Moving to first resultSet");            
-                
-                    this.beforeStart = false;
+                if (_beforeStart == true)
+                {
+                    GlobalDebug.WriteLineIf(GlobalDebug.Info, "FindResultEnumerator", "MoveNext: Moving to first resultSet");
+
+                    _beforeStart = false;
 
                     // In case we  previously iterated over this ResultSet,
                     // and are now back to the start because our Reset() method was called.
                     // Or in case another instance of FindResultEnumerator previously iterated over this ResultSet.
-                    this.resultSet.Reset();
+                    _resultSet.Reset();
                 }
 
-                f = this.resultSet.MoveNext();
+                f = _resultSet.MoveNext();
             }
 
             // If f is false, we must have reached the end of resultSet.
             if (!f)
             {
                 // we've reached the end
-                this.endReached = true;
+                _endReached = true;
             }
 
-            GlobalDebug.WriteLineIf(GlobalDebug.Info, "FindResultEnumerator", "MoveNext: returning {0}", f);            
+            GlobalDebug.WriteLineIf(GlobalDebug.Info, "FindResultEnumerator", "MoveNext: returning {0}", f);
             return f;
         }
 
@@ -164,11 +166,11 @@ namespace System.DirectoryServices.AccountManagement
         public void Reset()
         {
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "FindResultEnumerator", "Entering Reset");
-        
+
             CheckDisposed();
-            
-            this.endReached = false;
-            this.beforeStart = true;
+
+            _endReached = false;
+            _beforeStart = true;
         }
 
         // <SecurityKernel Critical="True" Ring="0">
@@ -188,8 +190,8 @@ namespace System.DirectoryServices.AccountManagement
             // IDisposable.
 
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "FindResultEnumerator", "Dispose: disposing");
-            
-            this.disposed = true;
+
+            _disposed = true;
         }
 
         //
@@ -200,9 +202,9 @@ namespace System.DirectoryServices.AccountManagement
         // Note that resultSet can be null
         internal FindResultEnumerator(ResultSet resultSet)
         {
-            GlobalDebug.WriteLineIf(GlobalDebug.Info, "FindResultEnumerator", "Ctor");    
-        
-            this.resultSet = resultSet;
+            GlobalDebug.WriteLineIf(GlobalDebug.Info, "FindResultEnumerator", "Ctor");
+
+            _resultSet = resultSet;
         }
 
         //
@@ -215,7 +217,7 @@ namespace System.DirectoryServices.AccountManagement
         //      resultSet
         //   must be synchronized, since multiple enumerators could be iterating over us at once.
         //   Synchronize by locking on resultSet (if resultSet is non-null).
-        
+
         // The ResultSet over which we're enumerating, passed to us from the FindResult<T>.
         // Note that there's conceptually one FindResultEnumerator per FindResult, but can be multiple
         // actual FindResultEnumerator objects per FindResult, so there's no risk
@@ -224,26 +226,25 @@ namespace System.DirectoryServices.AccountManagement
         //
         // Note that S.DS (based on code review and testing) and Sys.Storage (based on code review)
         // both seem fine with the "one enumerator per result set" model.
-        ResultSet resultSet;
+        private ResultSet _resultSet;
 
         // if true, we're before the start of the ResultSet
-        bool beforeStart = true;
+        private bool _beforeStart = true;
 
         // if true, we've reached the end of the ResultSet
-        bool endReached = false;
+        private bool _endReached = false;
 
         // true if Dispose() has been called
-        bool disposed = false;
+        private bool _disposed = false;
 
         //
-        void CheckDisposed()
+        private void CheckDisposed()
         {
-            if (this.disposed)
+            if (_disposed)
             {
-                GlobalDebug.WriteLineIf(GlobalDebug.Warn, "FindResultEnumerator", "CheckDisposed: accessing disposed object");            
+                GlobalDebug.WriteLineIf(GlobalDebug.Warn, "FindResultEnumerator", "CheckDisposed: accessing disposed object");
                 throw new ObjectDisposedException("FindResultEnumerator");
             }
         }
     }
-
 }

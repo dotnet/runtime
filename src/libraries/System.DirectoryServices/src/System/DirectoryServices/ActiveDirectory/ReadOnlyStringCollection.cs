@@ -1,73 +1,89 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
 //------------------------------------------------------------------------------
-// <copyright file="ReadOnlyStringCollection.cs" company="Microsoft">
 //     Copyright (c) Microsoft Corporation.  All rights reserved.
 // </copyright>                                                                
 //------------------------------------------------------------------------------
 
-namespace System.DirectoryServices.ActiveDirectory {
-	using System;
-	using System.Collections;
-	using System.Globalization;
-	using System.DirectoryServices;
+namespace System.DirectoryServices.ActiveDirectory
+{
+    using System;
+    using System.Collections;
+    using System.Globalization;
+    using System.DirectoryServices;
 
-	public class ReadOnlyStringCollection: ReadOnlyCollectionBase {
-              internal ReadOnlyStringCollection() {}
-              
-		internal ReadOnlyStringCollection(ArrayList values) {
-			if (values == null) {
-				values = new ArrayList();
-			}
+    public class ReadOnlyStringCollection : ReadOnlyCollectionBase
+    {
+        internal ReadOnlyStringCollection() { }
 
-			this.InnerList.AddRange(values);
-		}
-		public string this[int index] {
-			get {
-				object returnValue = InnerList[index];
+        internal ReadOnlyStringCollection(ArrayList values)
+        {
+            if (values == null)
+            {
+                values = new ArrayList();
+            }
 
-				if (returnValue is Exception)
-					throw (Exception)returnValue;
-				else
-					return (string)returnValue;
-			}
-		}
+            this.InnerList.AddRange(values);
+        }
+        public string this[int index]
+        {
+            get
+            {
+                object returnValue = InnerList[index];
 
-		public bool Contains(string value) {
+                if (returnValue is Exception)
+                    throw (Exception)returnValue;
+                else
+                    return (string)returnValue;
+            }
+        }
 
-			if (value == null) {
-				throw new ArgumentNullException("value");
-			}
-			
-			for (int i = 0; i < InnerList.Count; i++) {
-				string tmp = (string)InnerList[i];
-				if (Utils.Compare(tmp, value) == 0) {
-					return true;
-				}
-			}
-			return false;
-		}  
+        public bool Contains(string value)
+        {
+            if (value == null)
+            {
+                throw new ArgumentNullException("value");
+            }
 
-		public int IndexOf(string value) {
-			
-			if (value == null) {
-				throw new ArgumentNullException("value");
-			}
-			
-			for (int i = 0; i < InnerList.Count; i++) {
-				string tmp = (string)InnerList[i];
-				if (Utils.Compare(tmp, value) == 0) {
-					return i;
-				}
-			}
-			return -1;
-		}
+            for (int i = 0; i < InnerList.Count; i++)
+            {
+                string tmp = (string)InnerList[i];
+                if (Utils.Compare(tmp, value) == 0)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
 
-		public void CopyTo(string[] values, int index) {
-			InnerList.CopyTo(values, index);
-		}
+        public int IndexOf(string value)
+        {
+            if (value == null)
+            {
+                throw new ArgumentNullException("value");
+            }
 
-              internal void Add(String value)
-              {
-                     InnerList.Add(value);
-              }
-	}
+            for (int i = 0; i < InnerList.Count; i++)
+            {
+                string tmp = (string)InnerList[i];
+                if (Utils.Compare(tmp, value) == 0)
+                {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
+        public void CopyTo(string[] values, int index)
+        {
+            InnerList.CopyTo(values, index);
+        }
+
+        internal void Add(String value)
+        {
+            InnerList.Add(value);
+        }
+    }
 }

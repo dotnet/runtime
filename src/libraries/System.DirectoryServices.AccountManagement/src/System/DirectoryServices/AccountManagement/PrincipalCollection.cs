@@ -1,3 +1,7 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
 /*++
 
 Copyright (c) 2004  Microsoft Corporation
@@ -26,7 +30,6 @@ namespace System.DirectoryServices.AccountManagement
     [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.LinkDemand, Unrestricted = true)]
     public class PrincipalCollection : ICollection<Principal>, ICollection, IEnumerable<Principal>, IEnumerable
     {
-
         //
         // ICollection
         //
@@ -49,7 +52,7 @@ namespace System.DirectoryServices.AccountManagement
 
             if (array == null)
                 throw new ArgumentNullException("array");
-        
+
             if (array.Rank != 1)
                 throw new ArgumentException(StringResources.PrincipalCollectionNotOneDimensional);
 
@@ -60,24 +63,24 @@ namespace System.DirectoryServices.AccountManagement
             ArrayList tempArray = new ArrayList();
 
 
-            lock (this.resultSet)
+            lock (_resultSet)
             {
                 ResultSetBookmark bookmark = null;
 
                 try
                 {
-                    GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalCollection", "CopyTo: bookmarking");    
+                    GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalCollection", "CopyTo: bookmarking");
 
-                    bookmark = this.resultSet.BookmarkAndReset();
+                    bookmark = _resultSet.BookmarkAndReset();
 
                     PrincipalCollectionEnumerator containmentEnumerator =
                                 new PrincipalCollectionEnumerator(
-                                                            this.resultSet,
+                                                            _resultSet,
                                                             this,
-                                                            this.removedValuesCompleted,
-                                                            this.removedValuesPending,
-                                                            this.insertedValuesCompleted,
-                                                            this.insertedValuesPending);
+                                                            _removedValuesCompleted,
+                                                            _removedValuesPending,
+                                                            _insertedValuesCompleted,
+                                                            _insertedValuesPending);
 
                     int arraySize = array.GetLength(0) - index;
                     int tempArraySize = 0;
@@ -85,31 +88,30 @@ namespace System.DirectoryServices.AccountManagement
                     while (containmentEnumerator.MoveNext())
                     {
                         tempArray.Add(containmentEnumerator.Current);
-                        checked {tempArraySize++;}
+                        checked { tempArraySize++; }
 
                         // Make sure the array has enough space, allowing for the "index" offset.        
                         // We check inline, rather than doing a PrincipalCollection.Count upfront,
                         // because counting is just as expensive as enumerating over all the results, so we
                         // only want to do it once.
-                        if ( arraySize < tempArraySize )
+                        if (arraySize < tempArraySize)
                         {
                             GlobalDebug.WriteLineIf(GlobalDebug.Warn,
                                                     "PrincipalCollection",
                                                     "CopyTo: array too small (has {0}, need >= {1}",
                                                     arraySize,
                                                     tempArraySize);
-                                                    
-                            throw new ArgumentException(StringResources.PrincipalCollectionArrayTooSmall);     
+
+                            throw new ArgumentException(StringResources.PrincipalCollectionArrayTooSmall);
                         }
                     }
-                    
                 }
                 finally
                 {
                     if (bookmark != null)
                     {
-                        GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalCollection", "CopyTo: restoring from bookmark");                        
-                        this.resultSet.RestoreBookmark(bookmark);
+                        GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalCollection", "CopyTo: restoring from bookmark");
+                        _resultSet.RestoreBookmark(bookmark);
                     }
                 }
             }
@@ -117,10 +119,10 @@ namespace System.DirectoryServices.AccountManagement
             foreach (object o in tempArray)
             {
                 array.SetValue(o, index);
-                checked {index++;}               
-            }            
+                checked { index++; }
+            }
         }
-        
+
         int ICollection.Count
         {
             // <SecurityKernel Critical="True" Ring="0">
@@ -131,7 +133,7 @@ namespace System.DirectoryServices.AccountManagement
             {
                 return Count;
             }
-        }   
+        }
 
         bool ICollection.IsSynchronized
         {
@@ -184,7 +186,7 @@ namespace System.DirectoryServices.AccountManagement
         [System.Security.SecurityCritical]
         IEnumerator IEnumerable.GetEnumerator()
         {
-            return (IEnumerator) GetEnumerator();
+            return (IEnumerator)GetEnumerator();
         }
 
         //
@@ -192,7 +194,7 @@ namespace System.DirectoryServices.AccountManagement
         //
         public void CopyTo(Principal[] array, int index)
         {
-            ((ICollection)this).CopyTo((Array) array, index);
+            ((ICollection)this).CopyTo((Array)array, index);
         }
 
         public bool IsReadOnly
@@ -201,8 +203,8 @@ namespace System.DirectoryServices.AccountManagement
             {
                 return false;
             }
-        }        
-        
+        }
+
         public int Count
         {
             // <SecurityKernel Critical="True" Ring="0">
@@ -218,24 +220,24 @@ namespace System.DirectoryServices.AccountManagement
 
                 // Yes, this is potentially quite expensive.  Count is unfortunately
                 // an expensive operation to perform.
-                lock (this.resultSet)
+                lock (_resultSet)
                 {
                     ResultSetBookmark bookmark = null;
 
                     try
                     {
-                        GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalCollection", "Count: bookmarking");    
+                        GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalCollection", "Count: bookmarking");
 
-                        bookmark = this.resultSet.BookmarkAndReset();
+                        bookmark = _resultSet.BookmarkAndReset();
 
                         PrincipalCollectionEnumerator containmentEnumerator =
                                     new PrincipalCollectionEnumerator(
-                                                                this.resultSet,
+                                                                _resultSet,
                                                                 this,
-                                                                this.removedValuesCompleted,
-                                                                this.removedValuesPending,
-                                                                this.insertedValuesCompleted,
-                                                                this.insertedValuesPending);
+                                                                _removedValuesCompleted,
+                                                                _removedValuesPending,
+                                                                _insertedValuesCompleted,
+                                                                _insertedValuesPending);
 
 
                         int count = 0;
@@ -252,16 +254,14 @@ namespace System.DirectoryServices.AccountManagement
                     {
                         if (bookmark != null)
                         {
-                            GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalCollection", "Count: restoring from bookmark");                            
-                            this.resultSet.Reset();
-                            this.resultSet.RestoreBookmark(bookmark);
-
+                            GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalCollection", "Count: restoring from bookmark");
+                            _resultSet.Reset();
+                            _resultSet.RestoreBookmark(bookmark);
                         }
                     }
                 }
-
             }
-        }   
+        }
 
 
         //
@@ -275,14 +275,14 @@ namespace System.DirectoryServices.AccountManagement
         public IEnumerator<Principal> GetEnumerator()
         {
             CheckDisposed();
-            
+
             return new PrincipalCollectionEnumerator(
-                                            this.resultSet,
+                                            _resultSet,
                                             this,
-                                            this.removedValuesCompleted,
-                                            this.removedValuesPending,
-                                            this.insertedValuesCompleted,
-                                            this.insertedValuesPending);
+                                            _removedValuesCompleted,
+                                            _removedValuesPending,
+                                            _insertedValuesCompleted,
+                                            _insertedValuesPending);
         }
 
         //
@@ -295,7 +295,7 @@ namespace System.DirectoryServices.AccountManagement
         [System.Security.SecurityCritical]
         public void Add(UserPrincipal user)
         {
-            Add((Principal) user);
+            Add((Principal)user);
         }
 
         // <SecurityKernel Critical="True" Ring="0">
@@ -304,7 +304,7 @@ namespace System.DirectoryServices.AccountManagement
         [System.Security.SecurityCritical]
         public void Add(GroupPrincipal group)
         {
-            Add((Principal) group);
+            Add((Principal)group);
         }
 
         // <SecurityKernel Critical="True" Ring="0">
@@ -313,7 +313,7 @@ namespace System.DirectoryServices.AccountManagement
         [System.Security.SecurityCritical]
         public void Add(ComputerPrincipal computer)
         {
-            Add((Principal) computer);
+            Add((Principal)computer);
         }
 
         // <SecurityKernel Critical="True" Ring="0">
@@ -327,7 +327,7 @@ namespace System.DirectoryServices.AccountManagement
             CheckDisposed();
 
             if (principal == null)
-                throw new ArgumentNullException("principal");                
+                throw new ArgumentNullException("principal");
 
             if (Contains(principal))
                 throw new PrincipalExistsException(StringResources.PrincipalExistsExceptionText);
@@ -335,11 +335,11 @@ namespace System.DirectoryServices.AccountManagement
             MarkChange();
 
             // If the value to be added is an uncommitted remove, just remove the uncommitted remove from the list.
-            if (this.removedValuesPending.Contains(principal))
+            if (_removedValuesPending.Contains(principal))
             {
-                GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalCollection", "Add: removing from removedValuesPending");    
-            
-                this.removedValuesPending.Remove(principal);
+                GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalCollection", "Add: removing from removedValuesPending");
+
+                _removedValuesPending.Remove(principal);
 
                 // If they did a Add(x) --> Save() --> Remove(x) --> Add(x), we'll end up with x in neither
                 // the ResultSet or the insertedValuesCompleted list.  This is bad.  Avoid that by adding x
@@ -348,23 +348,22 @@ namespace System.DirectoryServices.AccountManagement
                 // Note, this will add x to insertedValuesCompleted even if it's already in the resultSet.
                 // This is not a problem --- PrincipalCollectionEnumerator will detect such a situation and
                 // only return x once.
-                if (!this.insertedValuesCompleted.Contains(principal))
+                if (!_insertedValuesCompleted.Contains(principal))
                 {
-                    GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalCollection", "Add: adding to insertedValuesCompleted");                    
-                    this.insertedValuesCompleted.Add(principal);
+                    GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalCollection", "Add: adding to insertedValuesCompleted");
+                    _insertedValuesCompleted.Add(principal);
                 }
             }
             else
             {
-                GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalCollection", "Add: making it a pending insert");    
-            
+                GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalCollection", "Add: making it a pending insert");
+
                 // make it a pending insert
-                this.insertedValuesPending.Add(principal);
+                _insertedValuesPending.Add(principal);
 
                 // in case the value to be added is also a previous-but-already-committed remove
-                this.removedValuesCompleted.Remove(principal);
+                _removedValuesCompleted.Remove(principal);
             }
-
         }
 
         // <SecurityKernel Critical="True" Ring="0">
@@ -378,12 +377,12 @@ namespace System.DirectoryServices.AccountManagement
             CheckDisposed();
 
             if (context == null)
-                throw new ArgumentNullException("context");   
-                                
-            if (identityValue == null)
-                throw new ArgumentNullException("identityValue");                
+                throw new ArgumentNullException("context");
 
-            
+            if (identityValue == null)
+                throw new ArgumentNullException("identityValue");
+
+
             Principal principal = Principal.FindByIdentity(context, identityType, identityValue);
 
             if (principal != null)
@@ -393,7 +392,7 @@ namespace System.DirectoryServices.AccountManagement
             else
             {
                 // No Principal matching the IdentityReference could be found in the PrincipalContext      
-                GlobalDebug.WriteLineIf(GlobalDebug.Warn, "PrincipalCollection", "Add(urn/urn): no match");                                    
+                GlobalDebug.WriteLineIf(GlobalDebug.Warn, "PrincipalCollection", "Add(urn/urn): no match");
                 throw new NoMatchingPrincipalException(StringResources.NoMatchingPrincipalExceptionText);
             }
         }
@@ -412,8 +411,8 @@ namespace System.DirectoryServices.AccountManagement
         [System.Security.SecurityCritical]
         public void Clear()
         {
-            GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalCollection", "Clear");                                    
-        
+            GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalCollection", "Clear");
+
             CheckDisposed();
 
             // Ask the StoreCtx to verify that this group can be cleared.  Right now, the only
@@ -422,26 +421,26 @@ namespace System.DirectoryServices.AccountManagement
             //
             // If storeCtxToUse == null, then we must be unpersisted, in which case there clearly
             // can't be any such primary group members pointing to this group on the store.
-            StoreCtx storeCtxToUse = this.owningGroup.GetStoreCtxToUse();
+            StoreCtx storeCtxToUse = _owningGroup.GetStoreCtxToUse();
             string explanation;
 
-            Debug.Assert(storeCtxToUse != null || this.owningGroup.unpersisted == true);
-            
-            if ((storeCtxToUse != null) && (!storeCtxToUse.CanGroupBeCleared(this.owningGroup, out explanation)))  
+            Debug.Assert(storeCtxToUse != null || _owningGroup.unpersisted == true);
+
+            if ((storeCtxToUse != null) && (!storeCtxToUse.CanGroupBeCleared(_owningGroup, out explanation)))
                 throw new InvalidOperationException(explanation);
 
 
             MarkChange();
 
             // We wipe out everything that's been inserted/removed
-            this.insertedValuesPending.Clear();
-            this.removedValuesPending.Clear();
-            this.insertedValuesCompleted.Clear();
-            this.removedValuesCompleted.Clear();
+            _insertedValuesPending.Clear();
+            _removedValuesPending.Clear();
+            _insertedValuesCompleted.Clear();
+            _removedValuesCompleted.Clear();
 
             // flag that the collection has been cleared, so the StoreCtx and PrincipalCollectionEnumerator
             // can take appropriate action
-            this.clearPending = true;                        
+            _clearPending = true;
         }
 
         //
@@ -454,7 +453,7 @@ namespace System.DirectoryServices.AccountManagement
         [System.Security.SecurityCritical]
         public bool Remove(UserPrincipal user)
         {
-            return Remove((Principal) user);
+            return Remove((Principal)user);
         }
 
         // <SecurityKernel Critical="True" Ring="0">
@@ -463,7 +462,7 @@ namespace System.DirectoryServices.AccountManagement
         [System.Security.SecurityCritical]
         public bool Remove(GroupPrincipal group)
         {
-            return Remove((Principal) group);
+            return Remove((Principal)group);
         }
 
         // <SecurityKernel Critical="True" Ring="0">
@@ -472,7 +471,7 @@ namespace System.DirectoryServices.AccountManagement
         [System.Security.SecurityCritical]
         public bool Remove(ComputerPrincipal computer)
         {
-            return Remove((Principal) computer);
+            return Remove((Principal)computer);
         }
 
         // <SecurityKernel Critical="True" Ring="0">
@@ -489,7 +488,7 @@ namespace System.DirectoryServices.AccountManagement
             CheckDisposed();
 
             if (principal == null)
-                throw new ArgumentNullException("principal");   
+                throw new ArgumentNullException("principal");
 
 
             // Ask the StoreCtx to verify that this member can be removed.  Right now, the only
@@ -498,24 +497,24 @@ namespace System.DirectoryServices.AccountManagement
             //
             // If storeCtxToUse == null, then we must be unpersisted, in which case there clearly
             // can't be any such primary group members pointing to this group on the store.
-            StoreCtx storeCtxToUse = this.owningGroup.GetStoreCtxToUse();
+            StoreCtx storeCtxToUse = _owningGroup.GetStoreCtxToUse();
             string explanation;
 
-            Debug.Assert(storeCtxToUse != null || this.owningGroup.unpersisted == true);
-            
-            if ((storeCtxToUse != null) && (!storeCtxToUse.CanGroupMemberBeRemoved(this.owningGroup, principal, out explanation)))    
+            Debug.Assert(storeCtxToUse != null || _owningGroup.unpersisted == true);
+
+            if ((storeCtxToUse != null) && (!storeCtxToUse.CanGroupMemberBeRemoved(_owningGroup, principal, out explanation)))
                 throw new InvalidOperationException(explanation);
-            
+
 
             bool removed = false;
 
             // If the value was previously inserted, we just remove it from insertedValuesPending.
-            if (this.insertedValuesPending.Contains(principal))
+            if (_insertedValuesPending.Contains(principal))
             {
-                GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalCollection", "Remove: removing from insertedValuesPending");    
-            
+                GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalCollection", "Remove: removing from insertedValuesPending");
+
                 MarkChange();
-                this.insertedValuesPending.Remove(principal);
+                _insertedValuesPending.Remove(principal);
                 removed = true;
 
                 // If they did a Remove(x) --> Save() --> Add(x) --> Remove(x), we'll end up with x in neither
@@ -525,10 +524,10 @@ namespace System.DirectoryServices.AccountManagement
                 // At worst, we end up with x on the removedValuesCompleted list even though it's not even in
                 // resultSet.  That's not a problem.  The only thing we use the removedValuesCompleted list for
                 // is deciding which values in resultSet to skip, anyway.
-                if (!this.removedValuesCompleted.Contains(principal))
+                if (!_removedValuesCompleted.Contains(principal))
                 {
-                    GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalCollection", "Remove: adding to removedValuesCompleted");                                    
-                    this.removedValuesCompleted.Add(principal);
+                    GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalCollection", "Remove: adding to removedValuesCompleted");
+                    _removedValuesCompleted.Add(principal);
                 }
             }
             else
@@ -538,16 +537,16 @@ namespace System.DirectoryServices.AccountManagement
                 // we remove it from insertedValuesCompleted.
 
                 removed = Contains(principal);
-                GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalCollection", "Remove: making it a pending remove, removed={0}", removed);    
-                
+                GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalCollection", "Remove: making it a pending remove, removed={0}", removed);
+
                 if (removed)
-                {            
+                {
                     MarkChange();
-                            
-                    this.removedValuesPending.Add(principal);
+
+                    _removedValuesPending.Add(principal);
 
                     // in case it's the result of a previous-but-already-committed insert
-                    this.insertedValuesCompleted.Remove(principal);
+                    _insertedValuesCompleted.Remove(principal);
                 }
             }
 
@@ -565,16 +564,16 @@ namespace System.DirectoryServices.AccountManagement
             CheckDisposed();
 
             if (context == null)
-                throw new ArgumentNullException("context");   
+                throw new ArgumentNullException("context");
 
             if (identityValue == null)
-                throw new ArgumentNullException("identityValue");   
-                        
+                throw new ArgumentNullException("identityValue");
+
             Principal principal = Principal.FindByIdentity(context, identityType, identityValue);
 
             if (principal == null)
             {
-                GlobalDebug.WriteLineIf(GlobalDebug.Warn, "PrincipalCollection", "Remove(urn/urn): no match");            
+                GlobalDebug.WriteLineIf(GlobalDebug.Warn, "PrincipalCollection", "Remove(urn/urn): no match");
                 throw new NoMatchingPrincipalException(StringResources.NoMatchingPrincipalExceptionText);
             }
 
@@ -586,34 +585,34 @@ namespace System.DirectoryServices.AccountManagement
         //
 
 
-        [System.Security.SecuritySafeCritical]        
-        bool ContainsEnumTest(Principal principal)
+        [System.Security.SecuritySafeCritical]
+        private bool ContainsEnumTest(Principal principal)
         {
             CheckDisposed();
 
             if (principal == null)
-                throw new ArgumentNullException("principal");   
+                throw new ArgumentNullException("principal");
 
             // Yes, this is potentially quite expensive.  Contains is unfortunately
             // an expensive operation to perform.
-            lock (this.resultSet)
+            lock (_resultSet)
             {
                 ResultSetBookmark bookmark = null;
 
                 try
                 {
-                    GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalCollection", "ContainsEnumTest: bookmarking");    
-                
-                    bookmark = this.resultSet.BookmarkAndReset();
+                    GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalCollection", "ContainsEnumTest: bookmarking");
+
+                    bookmark = _resultSet.BookmarkAndReset();
 
                     PrincipalCollectionEnumerator containmentEnumerator =
                                 new PrincipalCollectionEnumerator(
-                                                            this.resultSet,
+                                                            _resultSet,
                                                             this,
-                                                            this.removedValuesCompleted,
-                                                            this.removedValuesPending,
-                                                            this.insertedValuesCompleted,
-                                                            this.insertedValuesPending);
+                                                            _removedValuesCompleted,
+                                                            _removedValuesPending,
+                                                            _insertedValuesCompleted,
+                                                            _insertedValuesPending);
 
 
                     while (containmentEnumerator.MoveNext())
@@ -621,16 +620,15 @@ namespace System.DirectoryServices.AccountManagement
                         Principal p = containmentEnumerator.Current;
 
                         if (p.Equals(principal))
-                            return true;                        
+                            return true;
                     }
-                    
                 }
                 finally
                 {
                     if (bookmark != null)
                     {
-                        GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalCollection", "ContainsEnumTest: restoring from bookmark");                    
-                        this.resultSet.RestoreBookmark(bookmark);
+                        GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalCollection", "ContainsEnumTest: restoring from bookmark");
+                        _resultSet.RestoreBookmark(bookmark);
                     }
                 }
             }
@@ -639,42 +637,42 @@ namespace System.DirectoryServices.AccountManagement
         }
 
 
-        [System.Security.SecuritySafeCritical]                    
-        bool ContainsNativeTest(Principal principal)
+        [System.Security.SecuritySafeCritical]
+        private bool ContainsNativeTest(Principal principal)
         {
             CheckDisposed();
 
             if (principal == null)
-                throw new ArgumentNullException("principal");   
+                throw new ArgumentNullException("principal");
 
             // If they explicitly inserted it, then we certainly contain it
-            if (this.insertedValuesCompleted.Contains(principal) || this.insertedValuesPending.Contains(principal))
+            if (_insertedValuesCompleted.Contains(principal) || _insertedValuesPending.Contains(principal))
             {
                 GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalCollection", "ContainsNativeTest: found insert");
                 return true;
             }
 
             // If they removed it, we don't contain it, regardless of the group membership on the store
-            if (this.removedValuesCompleted.Contains(principal) || this.removedValuesPending.Contains(principal))
+            if (_removedValuesCompleted.Contains(principal) || _removedValuesPending.Contains(principal))
             {
-                GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalCollection", "ContainsNativeTest: found remove");            
+                GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalCollection", "ContainsNativeTest: found remove");
                 return false;
             }
 
             // The list was cleared at some point and the principal has not been reinsterted yet
-            if (this.clearPending || this.clearCompleted )
+            if (_clearPending || _clearCompleted)
             {
                 GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalCollection", "ContainsNativeTest: Clear pending");
                 return false;
             }
-            
+
             // Otherwise, check the store
-            if (this.owningGroup.unpersisted == false && principal.unpersisted == false)
-                return this.owningGroup.GetStoreCtxToUse().IsMemberOfInStore(this.owningGroup, principal);
+            if (_owningGroup.unpersisted == false && principal.unpersisted == false)
+                return _owningGroup.GetStoreCtxToUse().IsMemberOfInStore(_owningGroup, principal);
 
             // We (or the principal) must not be persisted, so there's no store membership to check.
             // Out of things to check.  We must not contain it.
-            GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalCollection", "ContainsNativeTest: no store to check");        
+            GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalCollection", "ContainsNativeTest: no store to check");
             return false;
         }
 
@@ -685,7 +683,7 @@ namespace System.DirectoryServices.AccountManagement
         [System.Security.SecurityCritical]
         public bool Contains(UserPrincipal user)
         {
-            return Contains((Principal) user);
+            return Contains((Principal)user);
         }
 
         // <SecurityKernel Critical="True" Ring="0">
@@ -694,7 +692,7 @@ namespace System.DirectoryServices.AccountManagement
         [System.Security.SecurityCritical]
         public bool Contains(GroupPrincipal group)
         {
-            return Contains((Principal) group);
+            return Contains((Principal)group);
         }
 
         // <SecurityKernel Critical="True" Ring="0">
@@ -703,7 +701,7 @@ namespace System.DirectoryServices.AccountManagement
         [System.Security.SecurityCritical]
         public bool Contains(ComputerPrincipal computer)
         {
-            return Contains((Principal) computer);
+            return Contains((Principal)computer);
         }
 
         // <SecurityKernel Critical="True" Ring="0">
@@ -718,8 +716,8 @@ namespace System.DirectoryServices.AccountManagement
         [System.Security.SecurityCritical]
         public bool Contains(Principal principal)
         {
-            StoreCtx storeCtxToUse = this.owningGroup.GetStoreCtxToUse();
-        
+            StoreCtx storeCtxToUse = _owningGroup.GetStoreCtxToUse();
+
             // If the store has a shortcut for testing membership, use it.
             // Otherwise we enumerate all members and look for a match.
             if ((storeCtxToUse != null) && (storeCtxToUse.SupportsNativeMembershipTest))
@@ -728,12 +726,12 @@ namespace System.DirectoryServices.AccountManagement
                                         "PrincipalCollection",
                                         "Contains: using native test (store ctx is null = {0})",
                                         (storeCtxToUse == null));
-                                        
+
                 return ContainsNativeTest(principal);
             }
             else
             {
-                GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalCollection", "Contains: using enum test");            
+                GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalCollection", "Contains: using enum test");
                 return ContainsEnumTest(principal);
             }
         }
@@ -752,13 +750,13 @@ namespace System.DirectoryServices.AccountManagement
                 throw new ArgumentNullException("context");
 
             if (identityValue == null)
-                throw new ArgumentNullException("identityValue");   
+                throw new ArgumentNullException("identityValue");
 
 
             bool found = false;
-            
+
             Principal principal = Principal.FindByIdentity(context, identityType, identityValue);
- 
+
             if (principal != null)
                 found = Contains(principal);
 
@@ -778,12 +776,12 @@ namespace System.DirectoryServices.AccountManagement
         [System.Security.SecurityCritical]
         internal PrincipalCollection(BookmarkableResultSet results, GroupPrincipal owningGroup)
         {
-            GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalCollection", "Ctor");    
-        
+            GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalCollection", "Ctor");
+
             Debug.Assert(results != null);
-        
-            this.resultSet = results;
-            this.owningGroup = owningGroup;            
+
+            _resultSet = results;
+            _owningGroup = owningGroup;
         }
 
         //
@@ -795,30 +793,30 @@ namespace System.DirectoryServices.AccountManagement
         // on us, only the Principal that owns us.  So we implement an "internal" form of Dispose().
         internal void Dispose()
         {
-            if (!this.disposed)
+            if (!_disposed)
             {
-                GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalCollection", "Dispose: disposing");    
-            
-                lock (this.resultSet)
+                GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalCollection", "Dispose: disposing");
+
+                lock (_resultSet)
                 {
-                    if (this.resultSet != null)
+                    if (_resultSet != null)
                     {
-                        GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalCollection", "Dispose: disposing resultSet");                        
-                        this.resultSet.Dispose();
+                        GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalCollection", "Dispose: disposing resultSet");
+                        _resultSet.Dispose();
                     }
                 }
 
-                this.disposed = true;
+                _disposed = true;
             }
         }
-        
+
         //
         // Private implementation
         //
 
         // The group we're a PrincipalCollection of        
-        [System.Security.SecuritySafeCritical]        
-        GroupPrincipal owningGroup;
+        [System.Security.SecuritySafeCritical]
+        private GroupPrincipal _owningGroup;
 
         //
         // SYNCHRONIZATION
@@ -826,50 +824,50 @@ namespace System.DirectoryServices.AccountManagement
         //      resultSet
         //   must be synchronized, since multiple enumerators could be iterating over us at once.
         //   Synchronize by locking on resultSet.        
-        
+
         // Represents the Principals retrieved from the store for this collection
-        BookmarkableResultSet resultSet;
+        private BookmarkableResultSet _resultSet;
 
         // Contains Principals inserted into this collection for which the insertion has not been persisted to the store
-        List<Principal> insertedValuesCompleted = new List<Principal>();
-        List<Principal> insertedValuesPending = new List<Principal>();
+        private List<Principal> _insertedValuesCompleted = new List<Principal>();
+        private List<Principal> _insertedValuesPending = new List<Principal>();
 
         // Contains Principals removed from this collection for which the removal has not been persisted
         // to the store
-        List<Principal> removedValuesCompleted = new List<Principal>();
-        List<Principal> removedValuesPending = new List<Principal>();
+        private List<Principal> _removedValuesCompleted = new List<Principal>();
+        private List<Principal> _removedValuesPending = new List<Principal>();
 
         // Has this collection been cleared?
-        bool clearPending = false;
-        bool clearCompleted = false;
+        private bool _clearPending = false;
+        private bool _clearCompleted = false;
 
         internal bool ClearCompleted
         {
-            get {return this.clearCompleted;}
+            get { return _clearCompleted; }
         }
 
-    
+
         // Used so our enumerator can detect changes to the collection and throw an exception
-        DateTime lastChange = DateTime.UtcNow;
+        private DateTime _lastChange = DateTime.UtcNow;
 
         internal DateTime LastChange
         {
-            get {return this.lastChange;}
+            get { return _lastChange; }
         }
 
         internal void MarkChange()
         {
-            this.lastChange = DateTime.UtcNow;
+            _lastChange = DateTime.UtcNow;
         }
 
         // To support disposal
-        bool disposed = false;
+        private bool _disposed = false;
 
-        void CheckDisposed()
+        private void CheckDisposed()
         {
-            if (this.disposed)
+            if (_disposed)
                 throw new ObjectDisposedException("PrincipalCollection");
-        }   
+        }
 
 
         //
@@ -878,25 +876,25 @@ namespace System.DirectoryServices.AccountManagement
 
         internal List<Principal> Inserted
         {
-            get 
+            get
             {
-                return this.insertedValuesPending;
+                return _insertedValuesPending;
             }
         }
-        
-        internal List<Principal> Removed 
+
+        internal List<Principal> Removed
         {
-            get 
+            get
             {
-                return this.removedValuesPending;
+                return _removedValuesPending;
             }
-        }	
+        }
 
         internal bool Cleared
         {
             get
             {
-                return this.clearPending;
+                return _clearPending;
             }
         }
 
@@ -906,39 +904,38 @@ namespace System.DirectoryServices.AccountManagement
         {
             get
             {
-                return ((this.insertedValuesPending.Count > 0) || (this.removedValuesPending.Count > 0) || (this.clearPending));
+                return ((_insertedValuesPending.Count > 0) || (_removedValuesPending.Count > 0) || (_clearPending));
             }
         }
 
         // Resets the change-tracking of the membership to 'unchanged', by moving all pending operations to completed status.
         internal void ResetTracking()
         {
-            GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalCollection", "ResetTracking");    
-        
-            foreach(Principal p in this.removedValuesPending)
+            GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalCollection", "ResetTracking");
+
+            foreach (Principal p in _removedValuesPending)
             {
-                Debug.Assert(!this.removedValuesCompleted.Contains(p));
-                this.removedValuesCompleted.Add(p);
+                Debug.Assert(!_removedValuesCompleted.Contains(p));
+                _removedValuesCompleted.Add(p);
             }
 
-            this.removedValuesPending.Clear();
-                
-            foreach (Principal p in this.insertedValuesPending)
+            _removedValuesPending.Clear();
+
+            foreach (Principal p in _insertedValuesPending)
             {
-                Debug.Assert(!this.insertedValuesCompleted.Contains(p));
-                this.insertedValuesCompleted.Add(p);
+                Debug.Assert(!_insertedValuesCompleted.Contains(p));
+                _insertedValuesCompleted.Add(p);
             }
 
-            this.insertedValuesPending.Clear();
+            _insertedValuesPending.Clear();
 
-            if (this.clearPending)
+            if (_clearPending)
             {
-                GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalCollection", "ResetTracking: clearing");    
-            
-                this.clearCompleted = true;
-                this.clearPending = false;
+                GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalCollection", "ResetTracking: clearing");
+
+                _clearCompleted = true;
+                _clearPending = false;
             }
         }
-           
     }
 }

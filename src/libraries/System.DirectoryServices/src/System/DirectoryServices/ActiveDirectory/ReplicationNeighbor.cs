@@ -1,5 +1,8 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
 //------------------------------------------------------------------------------
-// <copyright file="ReplicationNeighbor.cs" company="Microsoft">
 //     Copyright (c) Microsoft Corporation.  All rights reserved.
 // </copyright>                                                                
 //------------------------------------------------------------------------------
@@ -7,21 +10,24 @@
 /*
  */
 
-  namespace System.DirectoryServices.ActiveDirectory {
+namespace System.DirectoryServices.ActiveDirectory
+{
     using System;
     using System.Runtime.InteropServices;
     using System.Collections;
     using System.Globalization;
 
-    public enum ActiveDirectoryTransportType {
+    public enum ActiveDirectoryTransportType
+    {
         Rpc = 0,
         Smtp = 1
     }
 
-    public class ReplicationNeighbor{
-
+    public class ReplicationNeighbor
+    {
         [Flags]
-        public enum ReplicationNeighborOptions : long{
+        public enum ReplicationNeighborOptions : long
+        {
             Writeable = 0x10,
             SyncOnStartup = 0x20,
             ScheduledSync = 0x40,
@@ -39,142 +45,164 @@
             PartialAttributeSet = 0x40000000
         }
 
-        string namingContext;  
-        string sourceServerDN;          
-        ActiveDirectoryTransportType transportType; 
-        ReplicationNeighborOptions replicaFlags;                         
-        Guid uuidSourceDsaInvocationID;          
-        long usnLastObjChangeSynced; 
-        long usnAttributeFilter;  
-        DateTime timeLastSyncSuccess;  
-        DateTime timeLastSyncAttempt;  
-        int lastSyncResult;  
-        int consecutiveSyncFailures;
+        private string _namingContext;
+        private string _sourceServerDN;
+        private ActiveDirectoryTransportType _transportType;
+        private ReplicationNeighborOptions _replicaFlags;
+        private Guid _uuidSourceDsaInvocationID;
+        private long _usnLastObjChangeSynced;
+        private long _usnAttributeFilter;
+        private DateTime _timeLastSyncSuccess;
+        private DateTime _timeLastSyncAttempt;
+        private int _lastSyncResult;
+        private int _consecutiveSyncFailures;
 
-        private DirectoryServer server = null;
-        private string sourceServer = null;
-        private Hashtable nameTable = null;        
-        
+        private DirectoryServer _server = null;
+        private string _sourceServer = null;
+        private Hashtable _nameTable = null;
+
         internal ReplicationNeighbor(IntPtr addr, DirectoryServer server, Hashtable table)
         {
             DS_REPL_NEIGHBOR neighbor = new DS_REPL_NEIGHBOR();
             Marshal.PtrToStructure(addr, neighbor);
 
-            namingContext = Marshal.PtrToStringUni(neighbor.pszNamingContext);
-            sourceServerDN = Marshal.PtrToStringUni(neighbor.pszSourceDsaDN);            
+            _namingContext = Marshal.PtrToStringUni(neighbor.pszNamingContext);
+            _sourceServerDN = Marshal.PtrToStringUni(neighbor.pszSourceDsaDN);
 
             string transportDN = Marshal.PtrToStringUni(neighbor.pszAsyncIntersiteTransportDN);
-            if(transportDN != null)
+            if (transportDN != null)
             {
                 string rdn = Utils.GetRdnFromDN(transportDN);
                 string transport = (Utils.GetDNComponents(rdn))[0].Value;
 
-                if(String.Compare(transport, "SMTP", StringComparison.OrdinalIgnoreCase) == 0)
-                    transportType = ActiveDirectoryTransportType.Smtp;
+                if (String.Compare(transport, "SMTP", StringComparison.OrdinalIgnoreCase) == 0)
+                    _transportType = ActiveDirectoryTransportType.Smtp;
                 else
-                    transportType = ActiveDirectoryTransportType.Rpc;
+                    _transportType = ActiveDirectoryTransportType.Rpc;
             }
 
-            replicaFlags = (ReplicationNeighborOptions) neighbor.dwReplicaFlags;                        
-            uuidSourceDsaInvocationID = neighbor.uuidSourceDsaInvocationID;            
-            usnLastObjChangeSynced = neighbor.usnLastObjChangeSynced;
-            usnAttributeFilter = neighbor.usnAttributeFilter;
-            timeLastSyncSuccess = DateTime.FromFileTime(neighbor.ftimeLastSyncSuccess);
-            timeLastSyncAttempt = DateTime.FromFileTime(neighbor.ftimeLastSyncAttempt);
-            lastSyncResult = neighbor.dwLastSyncResult;
-            consecutiveSyncFailures = neighbor.cNumConsecutiveSyncFailures;            
+            _replicaFlags = (ReplicationNeighborOptions)neighbor.dwReplicaFlags;
+            _uuidSourceDsaInvocationID = neighbor.uuidSourceDsaInvocationID;
+            _usnLastObjChangeSynced = neighbor.usnLastObjChangeSynced;
+            _usnAttributeFilter = neighbor.usnAttributeFilter;
+            _timeLastSyncSuccess = DateTime.FromFileTime(neighbor.ftimeLastSyncSuccess);
+            _timeLastSyncAttempt = DateTime.FromFileTime(neighbor.ftimeLastSyncAttempt);
+            _lastSyncResult = neighbor.dwLastSyncResult;
+            _consecutiveSyncFailures = neighbor.cNumConsecutiveSyncFailures;
 
-            this.server = server;
-            this.nameTable = table;
-            
+            _server = server;
+            _nameTable = table;
         }
 
-        public string PartitionName {
-            get {
-                return namingContext;
+        public string PartitionName
+        {
+            get
+            {
+                return _namingContext;
             }
         }
 
-        public string SourceServer {
-            get {
-                if(sourceServer == null)
+        public string SourceServer
+        {
+            get
+            {
+                if (_sourceServer == null)
                 {
                     // check whether we have got it before
-                    if(nameTable.Contains(SourceInvocationId))
-                    {  
-                        sourceServer = (string) nameTable[SourceInvocationId];
-                    }
-                    else if(sourceServerDN != null)
+                    if (_nameTable.Contains(SourceInvocationId))
                     {
-                        sourceServer = Utils.GetServerNameFromInvocationID(sourceServerDN, SourceInvocationId, server);
+                        _sourceServer = (string)_nameTable[SourceInvocationId];
+                    }
+                    else if (_sourceServerDN != null)
+                    {
+                        _sourceServer = Utils.GetServerNameFromInvocationID(_sourceServerDN, SourceInvocationId, _server);
                         // add it to the hashtable
-                        nameTable.Add(SourceInvocationId, sourceServer);
+                        _nameTable.Add(SourceInvocationId, _sourceServer);
                     }
                 }
 
-                return sourceServer;
-            }
-        }        
-
-        public ActiveDirectoryTransportType TransportType {
-            get {
-                return transportType;
+                return _sourceServer;
             }
         }
 
-        public ReplicationNeighborOptions ReplicationNeighborOption {
-            get {
-                return replicaFlags;
-            }
-        }              
-
-        public Guid SourceInvocationId {
-            get {
-                return uuidSourceDsaInvocationID;
-            }
-        }        
-
-        public long UsnLastObjectChangeSynced {
-            get {
-                return usnLastObjChangeSynced;
+        public ActiveDirectoryTransportType TransportType
+        {
+            get
+            {
+                return _transportType;
             }
         }
 
-        public long UsnAttributeFilter {
-            get {
-                return usnAttributeFilter;
+        public ReplicationNeighborOptions ReplicationNeighborOption
+        {
+            get
+            {
+                return _replicaFlags;
             }
         }
 
-        public DateTime LastSuccessfulSync {
-            get {
-                return timeLastSyncSuccess;
+        public Guid SourceInvocationId
+        {
+            get
+            {
+                return _uuidSourceDsaInvocationID;
             }
         }
 
-        public DateTime LastAttemptedSync {
-            get {
-                return timeLastSyncAttempt;
+        public long UsnLastObjectChangeSynced
+        {
+            get
+            {
+                return _usnLastObjChangeSynced;
             }
         }
 
-        public int LastSyncResult {
-            get {
-                return lastSyncResult;
+        public long UsnAttributeFilter
+        {
+            get
+            {
+                return _usnAttributeFilter;
             }
         }
 
-        public string LastSyncMessage {
-            get {
-                return ExceptionHelper.GetErrorMessage(lastSyncResult, false);
+        public DateTime LastSuccessfulSync
+        {
+            get
+            {
+                return _timeLastSyncSuccess;
             }
         }
 
-        public int ConsecutiveFailureCount {
-            get {
-                return consecutiveSyncFailures;
+        public DateTime LastAttemptedSync
+        {
+            get
+            {
+                return _timeLastSyncAttempt;
             }
         }
-        
+
+        public int LastSyncResult
+        {
+            get
+            {
+                return _lastSyncResult;
+            }
+        }
+
+        public string LastSyncMessage
+        {
+            get
+            {
+                return ExceptionHelper.GetErrorMessage(_lastSyncResult, false);
+            }
+        }
+
+        public int ConsecutiveFailureCount
+        {
+            get
+            {
+                return _consecutiveSyncFailures;
+            }
+        }
     }
 }

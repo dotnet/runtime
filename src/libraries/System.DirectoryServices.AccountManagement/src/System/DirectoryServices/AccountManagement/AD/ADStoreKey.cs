@@ -1,10 +1,13 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
 /*++
 
 Copyright (c) 2004  Microsoft Corporation
 
 Module Name:
 
-    ADStoreKey.cs
 
 Abstract:
 
@@ -31,29 +34,28 @@ using System.Globalization;
 
 namespace System.DirectoryServices.AccountManagement
 {
-    class ADStoreKey : StoreKey
+    internal class ADStoreKey : StoreKey
     {
         // For regular ADStoreKeys
-        System.Guid objectGuid;
+        private System.Guid _objectGuid;
 
         // For ADStoreKeys corresponding to well-known SIDs
-        bool wellKnownSid;
-        string domainName;
-        byte[] sid;
+        private bool _wellKnownSid;
+        private string _domainName;
+        private byte[] _sid;
 
         public ADStoreKey(Guid guid)
         {
             Debug.Assert(guid != Guid.Empty);
-            
-            this.objectGuid = guid;
-            this.wellKnownSid = false;
+
+            _objectGuid = guid;
+            _wellKnownSid = false;
 
             GlobalDebug.WriteLineIf(
                             GlobalDebug.Info,
                             "ADStoreKey",
                             "creating GUID key for GUID={0}",
                             guid);
-            
         }
 
         public ADStoreKey(string domainName, byte[] sid)
@@ -62,11 +64,11 @@ namespace System.DirectoryServices.AccountManagement
             Debug.Assert(sid != null && sid.Length != 0);
 
             // Make a copy of the SID, since a byte[] is mutable
-            this.sid = new byte[sid.Length];
-            Array.Copy(sid, this.sid, sid.Length);
+            _sid = new byte[sid.Length];
+            Array.Copy(sid, _sid, sid.Length);
 
-            this.domainName = domainName;            
-            this.wellKnownSid = true;
+            _domainName = domainName;
+            _wellKnownSid = true;
 
             GlobalDebug.WriteLineIf(
                             GlobalDebug.Info,
@@ -74,7 +76,6 @@ namespace System.DirectoryServices.AccountManagement
                             "creating SID key for domainName={0}, sid={1}",
                             domainName,
                             Utils.ByteArrayToString(sid));
-                                    
         }
 
         override public bool Equals(object o)
@@ -82,31 +83,31 @@ namespace System.DirectoryServices.AccountManagement
             if (!(o is ADStoreKey))
                 return false;
 
-            ADStoreKey that = (ADStoreKey) o;
-    
-            if (this.wellKnownSid != that.wellKnownSid)
-                return false;           
+            ADStoreKey that = (ADStoreKey)o;
 
-            if (!this.wellKnownSid)
+            if (_wellKnownSid != that._wellKnownSid)
+                return false;
+
+            if (!_wellKnownSid)
             {
-                if (this.objectGuid == that.objectGuid)
+                if (_objectGuid == that._objectGuid)
                     return true;
             }
             else
             {
-                if ( (String.Compare(this.domainName, that.domainName, StringComparison.OrdinalIgnoreCase) == 0) &&
-                     (Utils.AreBytesEqual(this.sid, that.sid)) )
+                if ((String.Compare(_domainName, that._domainName, StringComparison.OrdinalIgnoreCase) == 0) &&
+                     (Utils.AreBytesEqual(_sid, that._sid)))
                     return true;
             }
-            
+
             return false;
         }
 
         override public int GetHashCode()
         {
-            return (this.wellKnownSid == false) ? 
-                        this.objectGuid.GetHashCode() :
-                        (this.domainName.GetHashCode() ^ this.sid.GetHashCode());
+            return (_wellKnownSid == false) ?
+                        _objectGuid.GetHashCode() :
+                        (_domainName.GetHashCode() ^ _sid.GetHashCode());
         }
     }
 }

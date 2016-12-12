@@ -1,11 +1,14 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
 //------------------------------------------------------------------------------
-// <copyright file="SecurityMasks.cs" company="Microsoft">
 //     Copyright (c) Microsoft Corporation.  All rights reserved.
 // </copyright>                                                                
 //------------------------------------------------------------------------------
 
-namespace System.DirectoryServices{
-
+namespace System.DirectoryServices
+{
     /// <include file='doc\SecurityMasks.uex' path='docs/doc[@for="SecurityMasks"]/*' />
     /// <devdoc>
     ///    <para>
@@ -13,13 +16,13 @@ namespace System.DirectoryServices{
     ///    </para>
     /// </devdoc>
     [Flags]
-    public enum SecurityMasks {
-    
+    public enum SecurityMasks
+    {
         /// <include file='doc\SecurityMasks.uex' path='docs/doc[@for="SecurityMasks.None"]/*' />
-    	None = 0,
-    	
-    	/// <include file='doc\SecurityMasks.uex' path='docs/doc[@for="SecurityMasks.Owner"]/*' />
-    	Owner = 1,
+        None = 0,
+
+        /// <include file='doc\SecurityMasks.uex' path='docs/doc[@for="SecurityMasks.Owner"]/*' />
+        Owner = 1,
 
         /// <include file='doc\SecurityMasks.uex' path='docs/doc[@for="SecurityMasks.Group"]/*' />        
         Group = 2,
@@ -29,5 +32,5 @@ namespace System.DirectoryServices{
 
         /// <include file='doc\SecurityMasks.uex' path='docs/doc[@for="SecurityMasks.SACL"]/*' />
         Sacl = 8
-   	}
- }
+    }
+}

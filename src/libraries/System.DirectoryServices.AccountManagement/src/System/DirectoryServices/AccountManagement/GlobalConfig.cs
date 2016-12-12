@@ -1,10 +1,13 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
 /*++
 
 Copyright (c) 2004  Microsoft Corporation
 
 Module Name:
 
-    GlobalConfig.cs
 
 Abstract:
 
@@ -22,12 +25,12 @@ using System.Configuration;
 
 
 namespace System.DirectoryServices.AccountManagement
-{    
+{
     internal static class GlobalConfig
     {
         static GlobalConfig()
         {
-            GlobalConfig.configSettings = (ConfigSettings) ConfigurationManager.GetSection("System.DirectoryServices.AccountManagement");
+            GlobalConfig.s_configSettings = (ConfigSettings)ConfigurationManager.GetSection("System.DirectoryServices.AccountManagement");
         }
 
 #if DEBUG
@@ -41,10 +44,10 @@ namespace System.DirectoryServices.AccountManagement
         {
             get
             {
-                if (GlobalConfig.configSettings == null)
+                if (GlobalConfig.s_configSettings == null)
                     return GlobalConfig.DefaultDebugLevel;
-            
-                return GlobalConfig.configSettings.DebugLevel;
+
+                return GlobalConfig.s_configSettings.DebugLevel;
             }
         }
 
@@ -52,15 +55,13 @@ namespace System.DirectoryServices.AccountManagement
         {
             get
             {
-                if (GlobalConfig.configSettings == null)
+                if (GlobalConfig.s_configSettings == null)
                     return null;
 
-                return GlobalConfig.configSettings.DebugLogFile;
+                return GlobalConfig.s_configSettings.DebugLogFile;
             }
         }
 
-        static ConfigSettings configSettings;
+        private static ConfigSettings s_configSettings;
     }
-
-
 }

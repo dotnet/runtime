@@ -1,18 +1,23 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
 //------------------------------------------------------------------------------
-// <copyright file="SearchScope.cs" company="Microsoft">
 //     Copyright (c) Microsoft Corporation.  All rights reserved.
 // </copyright>                                                                
 //------------------------------------------------------------------------------
 
 /*
  */
-namespace System.DirectoryServices {
 
+namespace System.DirectoryServices
+{
     /// <include file='doc\SearchScope.uex' path='docs/doc[@for="SearchScope"]/*' />
     /// <devdoc>
     ///    <para>Specifies the scope of a directory search.</para>
     /// </devdoc>
-    public enum SearchScope {
+    public enum SearchScope
+    {
         /// <include file='doc\SearchScope.uex' path='docs/doc[@for="SearchScope.Base"]/*' />
         /// <devdoc>
         ///    <para>Limits the search to the base object. The result contains at most one object. </para>
@@ -30,5 +35,4 @@ namespace System.DirectoryServices {
         /// </devdoc>
         Subtree = 2
     }
-
 }

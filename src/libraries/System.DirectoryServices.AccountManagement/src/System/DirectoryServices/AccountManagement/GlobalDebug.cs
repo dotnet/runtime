@@ -1,10 +1,13 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
 /*++
 
 Copyright (c) 2004  Microsoft Corporation
 
 Module Name:
 
-    GlobalDebug.cs
 
 Abstract:
 
@@ -23,7 +26,6 @@ using System.Globalization;
 
 namespace System.DirectoryServices.AccountManagement
 {
-
     internal enum DebugLevel
     {
         None = 0,
@@ -41,7 +43,7 @@ namespace System.DirectoryServices.AccountManagement
         [System.Security.SecurityCritical]
         static GlobalDebug()
         {
-            GlobalDebug.debugLevel = GlobalConfig.DebugLevel;
+            GlobalDebug.s_debugLevel = GlobalConfig.DebugLevel;
 #if DEBUG        
             string debugLogFile = GlobalConfig.DebugLogFile;
 
@@ -67,17 +69,17 @@ namespace System.DirectoryServices.AccountManagement
 
         static public bool Error
         {
-            get {return DebugLevel.Error >= GlobalDebug.debugLevel ;}
+            get { return DebugLevel.Error >= GlobalDebug.s_debugLevel; }
         }
 
         static public bool Warn
         {
-            get {return DebugLevel.Warn >= GlobalDebug.debugLevel ;}
+            get { return DebugLevel.Warn >= GlobalDebug.s_debugLevel; }
         }
 
         static public bool Info
         {
-            get {return DebugLevel.Info >= GlobalDebug.debugLevel ;}
+            get { return DebugLevel.Info >= GlobalDebug.s_debugLevel; }
         }
 
         // <SecurityKernel TreatAsSafe="Directly applied from MetaData" Critical="True" Ring="0">
@@ -88,7 +90,7 @@ namespace System.DirectoryServices.AccountManagement
         static public void WriteLineIf(bool f, string category, string message, params object[] args)
         {
             message = "[" + SafeNativeMethods.GetCurrentThreadId().ToString("x", CultureInfo.InvariantCulture) + "] " + message;
-        
+
             Debug.WriteLineIf(
                             f,
                             String.Format(
@@ -106,7 +108,7 @@ namespace System.DirectoryServices.AccountManagement
         static public void WriteLineIf(bool f, string category, string message)
         {
             message = "[" + SafeNativeMethods.GetCurrentThreadId().ToString("x", CultureInfo.InvariantCulture) + "] " + message;
-        
+
             Debug.WriteLineIf(
                             f,
                             message,
@@ -114,8 +116,6 @@ namespace System.DirectoryServices.AccountManagement
         }
 
 
-        static DebugLevel debugLevel;
+        private static DebugLevel s_debugLevel;
     }
-
-
 }

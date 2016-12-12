@@ -1,10 +1,13 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
 /*++
 
 Copyright (c) 2004  Microsoft Corporation
 
 Module Name:
 
-    PrincipalSearcher.cs
 
 Abstract:
 
@@ -24,9 +27,9 @@ using System.Globalization;
 
 namespace System.DirectoryServices.AccountManagement
 {
-     [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.LinkDemand, Unrestricted = true)]
-     [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.InheritanceDemand, Unrestricted = true)]        
-     public class PrincipalSearcher : IDisposable
+    [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.LinkDemand, Unrestricted = true)]
+    [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.InheritanceDemand, Unrestricted = true)]
+    public class PrincipalSearcher : IDisposable
     {
         //
         // Public constructors
@@ -41,7 +44,7 @@ namespace System.DirectoryServices.AccountManagement
         {
             SetDefaultPageSizeForContext();
         }
-                
+
         // <SecurityKernel Critical="True" Ring="0">
         // <SatisfiesLinkDemand Name="Principal.get_Context():System.DirectoryServices.AccountManagement.PrincipalContext" />
         // <SatisfiesLinkDemand Name="set_QueryFilter(Principal):Void" />
@@ -51,12 +54,11 @@ namespace System.DirectoryServices.AccountManagement
         // </SecurityKernel>
         [System.Security.SecurityCritical]
         public PrincipalSearcher(Principal queryFilter)
-        {                
+        {
+            if (null == queryFilter)
+                throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, StringResources.InvalidNullArgument, "queryFilter"));
 
-            if ( null == queryFilter )
-                throw new ArgumentException(String.Format( CultureInfo.CurrentCulture, StringResources.InvalidNullArgument, "queryFilter"));
-
-            this.ctx = queryFilter.Context;
+            _ctx = queryFilter.Context;
             this.QueryFilter = queryFilter; // use property to enforce "no persisted principals" check
 
             SetDefaultPageSizeForContext();
@@ -75,10 +77,9 @@ namespace System.DirectoryServices.AccountManagement
             get
             {
                 CheckDisposed();
-                
-                return this.ctx;
-            }
 
+                return _ctx;
+            }
         }
 
         public Principal QueryFilter
@@ -91,7 +92,7 @@ namespace System.DirectoryServices.AccountManagement
             {
                 CheckDisposed();
 
-                return this.qbeFilter;
+                return _qbeFilter;
             }
 
             // <SecurityKernel Critical="True" Ring="0">
@@ -102,10 +103,9 @@ namespace System.DirectoryServices.AccountManagement
             [System.Security.SecurityCritical]
             set
             {
+                if (null == value)
+                    throw new ArgumentNullException(String.Format(CultureInfo.CurrentCulture, StringResources.InvalidNullArgument, "queryFilter"));
 
-                if ( null == value )
-                    throw new ArgumentNullException(String.Format( CultureInfo.CurrentCulture, StringResources.InvalidNullArgument, "queryFilter"));
-            
                 CheckDisposed();
                 Debug.Assert(value.Context != null);
 
@@ -113,15 +113,15 @@ namespace System.DirectoryServices.AccountManagement
                 if ((value != null) && (!value.unpersisted))
                     throw new ArgumentException(StringResources.PrincipalSearcherPersistedPrincipal);
 
-                this.qbeFilter = value;
-                this.ctx = this.qbeFilter.Context;
+                _qbeFilter = value;
+                _ctx = _qbeFilter.Context;
             }
         }
 
         //
         // Public methods
         //
-        
+
         // Calls FindAll(false) to retrieve all matching results
         // <SecurityKernel Critical="True" Ring="0">
         // <SatisfiesLinkDemand Name="CheckDisposed():Void" />
@@ -131,8 +131,8 @@ namespace System.DirectoryServices.AccountManagement
         [System.Security.SecurityCritical]
         public PrincipalSearchResult<Principal> FindAll()
         {
-            GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalSearcher", "Entering FindAll()");            
-        
+            GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalSearcher", "Entering FindAll()");
+
             CheckDisposed();
 
             return FindAll(false);
@@ -153,8 +153,8 @@ namespace System.DirectoryServices.AccountManagement
         [System.Security.SecurityCritical]
         public Principal FindOne()
         {
-            GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalSearcher", "Entering FindOne()");            
-        
+            GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalSearcher", "Entering FindOne()");
+
             CheckDisposed();
 
             using (PrincipalSearchResult<Principal> fr = FindAll(true))
@@ -197,26 +197,26 @@ namespace System.DirectoryServices.AccountManagement
         [System.Security.SecurityCritical]
         public object GetUnderlyingSearcher()
         {
-            GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalSearcher", "Entering GetUnderlyingSearcher");            
-        
+            GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalSearcher", "Entering GetUnderlyingSearcher");
+
             CheckDisposed();
-            
+
             // We have to have a filter
-            if (this.qbeFilter == null)
+            if (_qbeFilter == null)
                 throw new InvalidOperationException(StringResources.PrincipalSearcherMustSetFilter);
 
             // Double-check that the Principal isn't persisted.  We don't allow them to assign a persisted
             // Principal as the filter, but they could have persisted it after assigning it to the QueryFilter
             // property.
-            if (!this.qbeFilter.unpersisted)
+            if (!_qbeFilter.unpersisted)
                 throw new InvalidOperationException(StringResources.PrincipalSearcherPersistedPrincipal);
-            
-            
+
+
             // Validate the QBE filter: make sure it doesn't have any non-scalar properties set.
             if (HasReferentialPropertiesSet())
                 throw new InvalidOperationException(StringResources.PrincipalSearcherNonReferentialProps);
 
-            StoreCtx storeCtx = this.ctx.QueryCtx;
+            StoreCtx storeCtx = _ctx.QueryCtx;
             Debug.Assert(storeCtx != null);
 
             // The underlying context must actually support search (i.e., no MSAM/reg-SAM)
@@ -225,9 +225,9 @@ namespace System.DirectoryServices.AccountManagement
 
             // We need to generate the searcher every time because the object could change
             // outside of our control.
-            this.underlyingSearcher = storeCtx.PushFilterToNativeSearcher(this);
+            _underlyingSearcher = storeCtx.PushFilterToNativeSearcher(this);
 
-            return this.underlyingSearcher;
+            return _underlyingSearcher;
         }
 
 
@@ -240,15 +240,15 @@ namespace System.DirectoryServices.AccountManagement
         [System.Security.SecurityCritical]
         public Type GetUnderlyingSearcherType()
         {
-            GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalSearcher", "Entering GetUnderlyingSearcherType");            
-        
+            GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalSearcher", "Entering GetUnderlyingSearcherType");
+
             CheckDisposed();
-            
+
             // We have to have a filter
-            if (this.qbeFilter == null)
+            if (_qbeFilter == null)
                 throw new InvalidOperationException(StringResources.PrincipalSearcherMustSetFilter);
 
-            StoreCtx storeCtx = this.ctx.QueryCtx;
+            StoreCtx storeCtx = _ctx.QueryCtx;
             Debug.Assert(storeCtx != null);
 
             // The underlying context must actually support search (i.e., no MSAM/reg-SAM)
@@ -265,21 +265,21 @@ namespace System.DirectoryServices.AccountManagement
         [System.Security.SecurityCritical]
         public virtual void Dispose()
         {
-            if (!this.disposed)
+            if (!_disposed)
             {
-                GlobalDebug.WriteLineIf(GlobalDebug.Info,"PrincipalSearcher",  "Dispose: disposing");            
-            
+                GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalSearcher", "Dispose: disposing");
+
                 if ((this.UnderlyingSearcher != null) && (this.UnderlyingSearcher is IDisposable))
                 {
                     GlobalDebug.WriteLineIf(
                             GlobalDebug.Info,
-                            "PrincipalSearcher", 
-                            "Dispose: disposing underlying searcher of type " + this.UnderlyingSearcher.GetType().ToString());                
-                            
+                            "PrincipalSearcher",
+                            "Dispose: disposing underlying searcher of type " + this.UnderlyingSearcher.GetType().ToString());
+
                     ((IDisposable)this.UnderlyingSearcher).Dispose();
                 }
 
-                this.disposed = true;
+                _disposed = true;
                 GC.SuppressFinalize(this);
             }
         }
@@ -288,41 +288,41 @@ namespace System.DirectoryServices.AccountManagement
         //
         // Private implementation
         //
-        [System.Security.SecuritySafeCritical]        
-        PrincipalContext ctx;
+        [System.Security.SecuritySafeCritical]
+        private PrincipalContext _ctx;
 
         // Are we disposed?
-        bool disposed = false;
+        private bool _disposed = false;
 
         // Directly corresponds to the PrincipalSearcher.QueryFilter property.
         // Null means "return all principals".
-        Principal qbeFilter;
+        private Principal _qbeFilter;
 
         // The default page size to use.  This value is automatically set
         // whenever a PrincipalContext is assigned to this object.
-        int pageSize = 0;
+        private int _pageSize = 0;
 
         internal int PageSize
         {
-            get { return this.pageSize; }
+            get { return _pageSize; }
         }
 
-        
+
         // The underlying searcher (e.g., DirectorySearcher) corresponding to this PrincipalSearcher.
         // Set by StoreCtx. PushFilterToNativeSearcher(), based on the qbeFilter.
         // If not set, either there is no underlying searcher (SAM), or PushFilterToNativeSearcher has not
         // yet been called.
-        object underlyingSearcher = null;
-        internal object UnderlyingSearcher 
+        private object _underlyingSearcher = null;
+        internal object UnderlyingSearcher
         {
             get
             {
-                return this.underlyingSearcher;
+                return _underlyingSearcher;
             }
-            
+
             set
             {
-                this.underlyingSearcher = value;
+                _underlyingSearcher = value;
             }
         }
 
@@ -337,26 +337,26 @@ namespace System.DirectoryServices.AccountManagement
         //
         // Returns at most one result in the FindResult<Principal> if returnOne == true, no limit on results
         // returned otherwise.
-        [System.Security.SecuritySafeCritical]                
-        PrincipalSearchResult<Principal> FindAll(bool returnOne)
+        [System.Security.SecuritySafeCritical]
+        private PrincipalSearchResult<Principal> FindAll(bool returnOne)
         {
-            GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalSearcher",  "Entering FindAll, returnOne=" + returnOne.ToString());            
+            GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalSearcher", "Entering FindAll, returnOne=" + returnOne.ToString());
 
-            if( this.qbeFilter == null )
+            if (_qbeFilter == null)
                 throw new InvalidOperationException(StringResources.PrincipalSearcherMustSetFilter);
             // Double-check that the Principal isn't persisted.  We don't allow them to assign a persisted
             // Principal as the filter, but they could have persisted it after assigning it to the QueryFilter
             // property.
-            if (!this.qbeFilter.unpersisted)
+            if (!_qbeFilter.unpersisted)
                 throw new InvalidOperationException(StringResources.PrincipalSearcherPersistedPrincipal);
-        
+
             // Validate the QBE filter: make sure it doesn't have any non-scalar properties set.
             if (HasReferentialPropertiesSet())
                 throw new InvalidOperationException(StringResources.PrincipalSearcherNonReferentialProps);
 
-            GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalSearcher", "FindAll: qbeFilter is non-null and passes");                                
+            GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalSearcher", "FindAll: qbeFilter is non-null and passes");
 
-            ResultSet resultSet = this.ctx.QueryCtx.Query(this, returnOne ? 1 : -1);
+            ResultSet resultSet = _ctx.QueryCtx.Query(this, returnOne ? 1 : -1);
 
             PrincipalSearchResult<Principal> fr = new PrincipalSearchResult<Principal>(resultSet);
             return fr;
@@ -368,59 +368,59 @@ namespace System.DirectoryServices.AccountManagement
         // <ReferencesCritical Name="Method: PrincipalContext.get_QueryCtx():System.DirectoryServices.AccountManagement.StoreCtx" Ring="1" />
         // </SecurityKernel>
         [System.Security.SecurityCritical]
-        void SetDefaultPageSizeForContext()
+        private void SetDefaultPageSizeForContext()
         {
-            this.pageSize = 0;
+            _pageSize = 0;
 
-            if (this.qbeFilter != null)
+            if (_qbeFilter != null)
             {
                 // If our context is AD-backed (has an ADStoreCtx), use pagesize of 256.
                 // Otherwise, turn off paging.
                 GlobalDebug.WriteLineIf(
                         GlobalDebug.Info,
-                        "PrincipalSearcher", 
-                        "SetDefaultPageSizeForContext: type is " + this.ctx.QueryCtx.GetType().ToString());
-                
-                if (this.ctx.QueryCtx is ADStoreCtx)
+                        "PrincipalSearcher",
+                        "SetDefaultPageSizeForContext: type is " + _ctx.QueryCtx.GetType().ToString());
+
+                if (_ctx.QueryCtx is ADStoreCtx)
                 {
                     // Found an AD context
-                    this.pageSize = 256;
+                    _pageSize = 256;
                 }
             }
-            
+
             return;
         }
 
         // Checks this.qbeFilter to determine if any referential properties are set
-        [System.Security.SecuritySafeCritical]        
-        bool HasReferentialPropertiesSet()
+        [System.Security.SecuritySafeCritical]
+        private bool HasReferentialPropertiesSet()
         {
             // If using a null query filter, nothing to validate, as it can't have any referential
             // properties set.
-            if (this.qbeFilter == null)
+            if (_qbeFilter == null)
                 return false;
 
             // Since the QBE filter must be in the "unpersisted" state, any set properties have their changed
             // flag still set (qbeFilter.GetChangeStatusForProperty() == true).  Therefore, checking which properties
             // have been set == checking which properties have their change flag set to true.
-            Debug.Assert(this.qbeFilter.unpersisted == true);
+            Debug.Assert(_qbeFilter.unpersisted == true);
 
             // Retrieve the list of referential properties for this type of Principal.
             // If this type of Principal doesn't have any, the Properties hashtable will return null.
-            Type t = this.qbeFilter.GetType();
+            Type t = _qbeFilter.GetType();
 
-            GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalSearcher", "HasReferentialPropertiesSet: using type " + t.ToString());            
+            GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalSearcher", "HasReferentialPropertiesSet: using type " + t.ToString());
 
-            ArrayList referentialProperties = (ArrayList) ReferentialProperties.Properties[t];
+            ArrayList referentialProperties = (ArrayList)ReferentialProperties.Properties[t];
 
             if (referentialProperties != null)
-            {    
+            {
                 foreach (string propertyName in referentialProperties)
                 {
-                    if (this.qbeFilter.GetChangeStatusForProperty(propertyName) == true)
+                    if (_qbeFilter.GetChangeStatusForProperty(propertyName) == true)
                     {
                         // Property was set.
-                        GlobalDebug.WriteLineIf(GlobalDebug.Warn, "PrincipalSearcher", "HasReferentialPropertiesSet: found ref property " + propertyName);                        
+                        GlobalDebug.WriteLineIf(GlobalDebug.Warn, "PrincipalSearcher", "HasReferentialPropertiesSet: found ref property " + propertyName);
                         return true;
                     }
                 }
@@ -430,12 +430,12 @@ namespace System.DirectoryServices.AccountManagement
         }
 
         // Checks if the principal searcher has been disposed, and throws an appropriate exception if it has.
-        void CheckDisposed()
+        private void CheckDisposed()
         {
-            if (this.disposed)
+            if (_disposed)
             {
-                GlobalDebug.WriteLineIf(GlobalDebug.Warn, "PrincipalSearcher", "CheckDisposed: accessing disposed object");            
-                throw new ObjectDisposedException(this.GetType().ToString());  
+                GlobalDebug.WriteLineIf(GlobalDebug.Warn, "PrincipalSearcher", "CheckDisposed: accessing disposed object");
+                throw new ObjectDisposedException(this.GetType().ToString());
             }
         }
     }

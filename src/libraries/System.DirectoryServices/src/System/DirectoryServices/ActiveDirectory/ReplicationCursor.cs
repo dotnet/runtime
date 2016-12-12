@@ -1,5 +1,8 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
 //------------------------------------------------------------------------------
-// <copyright file="ReplicationCursor.cs" company="Microsoft">
 //     Copyright (c) Microsoft Corporation.  All rights reserved.
 // </copyright>                                                                
 //------------------------------------------------------------------------------
@@ -7,93 +10,104 @@
 /*
  */
 
- namespace System.DirectoryServices.ActiveDirectory {
+namespace System.DirectoryServices.ActiveDirectory
+{
     using System;
     using System.Runtime.InteropServices;
 
-    public class ReplicationCursor{
-        string partition;
-        Guid invocationID;
-        long USN;
-        string serverDN = null;
-        DateTime syncTime;
-        bool advanced = false;
-        string sourceServer = null;
+    public class ReplicationCursor
+    {
+        private string _partition;
+        private Guid _invocationID;
+        private long _USN;
+        private string _serverDN = null;
+        private DateTime _syncTime;
+        private bool _advanced = false;
+        private string _sourceServer = null;
 
-        private DirectoryServer server = null;
-        
-        private ReplicationCursor() {}        
+        private DirectoryServer _server = null;
+
+        private ReplicationCursor() { }
 
         internal ReplicationCursor(DirectoryServer server, string partition, Guid guid, long filter, long time, IntPtr dn)
         {
-            this.partition = partition;
-            invocationID = guid;
-            USN = filter;
+            _partition = partition;
+            _invocationID = guid;
+            _USN = filter;
 
             // convert filetime to DateTime
-            syncTime = DateTime.FromFileTime(time);
+            _syncTime = DateTime.FromFileTime(time);
 
             // get the dn
-            serverDN = Marshal.PtrToStringUni(dn);
+            _serverDN = Marshal.PtrToStringUni(dn);
 
-            advanced = true;
+            _advanced = true;
 
-            this.server = server;
+            _server = server;
         }
 
         internal ReplicationCursor(DirectoryServer server, string partition, Guid guid, long filter)
         {
-            this.partition = partition;
-            invocationID = guid;
-            USN = filter;
+            _partition = partition;
+            _invocationID = guid;
+            _USN = filter;
 
-            this.server = server;
+            _server = server;
         }
 
-        public string PartitionName {
-            get {
-                return partition;
+        public string PartitionName
+        {
+            get
+            {
+                return _partition;
             }
         }
 
-        public Guid SourceInvocationId {
-            get {
-                return invocationID;
+        public Guid SourceInvocationId
+        {
+            get
+            {
+                return _invocationID;
             }
         }
 
-        public long UpToDatenessUsn {
-            get {
-                return USN;
+        public long UpToDatenessUsn
+        {
+            get
+            {
+                return _USN;
             }
         }
 
-        public string SourceServer{
-            get {
-               // get the source server name if we are on win2k, or above win2k and serverDN is not NULL (means KCC translation is successful)
-               if(!advanced || (advanced && serverDN != null))
-               {
-                   sourceServer = Utils.GetServerNameFromInvocationID(serverDN, SourceInvocationId, server);
-               }
+        public string SourceServer
+        {
+            get
+            {
+                // get the source server name if we are on win2k, or above win2k and serverDN is not NULL (means KCC translation is successful)
+                if (!_advanced || (_advanced && _serverDN != null))
+                {
+                    _sourceServer = Utils.GetServerNameFromInvocationID(_serverDN, SourceInvocationId, _server);
+                }
 
-               return sourceServer;
+                return _sourceServer;
             }
         }
 
-        public DateTime LastSuccessfulSyncTime {
-            get {
-                if(advanced)
-                    return syncTime;
+        public DateTime LastSuccessfulSyncTime
+        {
+            get
+            {
+                if (_advanced)
+                    return _syncTime;
                 else
                 {
                     // win2k client machine does not support this
-                    if((Environment.OSVersion.Version.Major == 5) && (Environment.OSVersion.Version.Minor == 0))
+                    if ((Environment.OSVersion.Version.Major == 5) && (Environment.OSVersion.Version.Minor == 0))
                         throw new PlatformNotSupportedException(Res.GetString(Res.DSNotSupportOnClient));
                     else
                         throw new PlatformNotSupportedException(Res.GetString(Res.DSNotSupportOnDC));
                 }
             }
         }
-        
     }
 }

@@ -1,5 +1,8 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
 //------------------------------------------------------------------------------
-// <copyright file="SearchResultCollection.cs" company="Microsoft">
 //     Copyright (c) Microsoft Corporation.  All rights reserved.
 // </copyright>                                                                
 //------------------------------------------------------------------------------
@@ -7,8 +10,8 @@
 using INTPTR_INTCAST = System.Int32;
 using INTPTR_INTPTRCAST = System.IntPtr;
 
-namespace System.DirectoryServices {
-
+namespace System.DirectoryServices
+{
     using System;
     using System.Net;
     using System.Runtime.InteropServices;
@@ -18,90 +21,103 @@ namespace System.DirectoryServices {
     using System.Text;
     using System.Configuration;
     using System.Security.Permissions;
-         
+
     /// <include file='doc\SearchResultCollection.uex' path='docs/doc[@for="SearchResultCollection"]/*' />
     /// <devdoc>
     /// <para>Contains the instances of <see cref='System.DirectoryServices.SearchResult'/> returned during a 
     ///    query to the Active Directory hierarchy through <see cref='System.DirectoryServices.DirectorySearcher'/>.</para>
     /// </devdoc>    
-    [DirectoryServicesPermission(SecurityAction.LinkDemand, Unrestricted=true)]
-    public class SearchResultCollection : MarshalByRefObject, ICollection, IEnumerable, IDisposable {
-
-        private IntPtr handle;        
-        private string[] properties;
-        private UnsafeNativeMethods.IDirectorySearch searchObject;
-        private string filter;
-        private ArrayList innerList;
-        private bool disposed;
-        private DirectoryEntry rootEntry;       // clone of parent entry object
+    [DirectoryServicesPermission(SecurityAction.LinkDemand, Unrestricted = true)]
+    public class SearchResultCollection : MarshalByRefObject, ICollection, IEnumerable, IDisposable
+    {
+        private IntPtr _handle;
+        private string[] _properties;
+        private UnsafeNativeMethods.IDirectorySearch _searchObject;
+        private string _filter;
+        private ArrayList _innerList;
+        private bool _disposed;
+        private DirectoryEntry _rootEntry;       // clone of parent entry object
         private const string ADS_DIRSYNC_COOKIE = "fc8cb04d-311d-406c-8cb9-1ae8b843b418";
-        private IntPtr AdsDirsynCookieName = Marshal.StringToCoTaskMemUni(ADS_DIRSYNC_COOKIE); 
+        private IntPtr _adsDirsynCookieName = Marshal.StringToCoTaskMemUni(ADS_DIRSYNC_COOKIE);
         private const string ADS_VLV_RESPONSE = "fc8cb04d-311d-406c-8cb9-1ae8b843b419";
-        private IntPtr AdsVLVResponseName = Marshal.StringToCoTaskMemUni(ADS_VLV_RESPONSE);        
+        private IntPtr _adsVLVResponseName = Marshal.StringToCoTaskMemUni(ADS_VLV_RESPONSE);
         internal DirectorySearcher srch = null;
 
-        
+
         ///<internalonly/>                                                                   
-        internal SearchResultCollection(DirectoryEntry root, IntPtr searchHandle, string[] propertiesLoaded, DirectorySearcher srch) {
-            this.handle = searchHandle;
-            this.properties = propertiesLoaded;
-            this.filter = srch.Filter;                        
-            this.rootEntry = root;
-            this.srch = srch;            
-        }                
-                                            
+        internal SearchResultCollection(DirectoryEntry root, IntPtr searchHandle, string[] propertiesLoaded, DirectorySearcher srch)
+        {
+            _handle = searchHandle;
+            _properties = propertiesLoaded;
+            _filter = srch.Filter;
+            _rootEntry = root;
+            this.srch = srch;
+        }
+
         /// <include file='doc\SearchResultCollection.uex' path='docs/doc[@for="SearchResultCollection.this"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public SearchResult this[int index] {            
-            get {
+        public SearchResult this[int index]
+        {
+            get
+            {
                 return (SearchResult)InnerList[index];
             }
         }
-         
+
         /// <include file='doc\SearchResultCollection.uex' path='docs/doc[@for="SearchResultCollection.Count"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>        
-        public int Count {                        
-            get {
+        public int Count
+        {
+            get
+            {
                 return InnerList.Count;
             }
-        }                
-        
-                                      
+        }
+
+
         ///<internalonly/>                                                                       
-        internal string Filter {
-            get {
-                return filter;
+        internal string Filter
+        {
+            get
+            {
+                return _filter;
             }
         }
 
         ///<internalonly/>
-        private ArrayList InnerList {
-            get {
-                if (this.innerList == null) {
-                    this.innerList = new ArrayList();
-                    IEnumerator enumerator = new ResultsEnumerator(this, 
-                                                                                           this.rootEntry.GetUsername(), 
-                                                                                           this.rootEntry.GetPassword(),
-                                                                                           this.rootEntry.AuthenticationType);
-                    while(enumerator.MoveNext())
-                        this.innerList.Add(enumerator.Current);                    
+        private ArrayList InnerList
+        {
+            get
+            {
+                if (_innerList == null)
+                {
+                    _innerList = new ArrayList();
+                    IEnumerator enumerator = new ResultsEnumerator(this,
+                                                                                           _rootEntry.GetUsername(),
+                                                                                           _rootEntry.GetPassword(),
+                                                                                           _rootEntry.AuthenticationType);
+                    while (enumerator.MoveNext())
+                        _innerList.Add(enumerator.Current);
                 }
-                
-                return this.innerList;
+
+                return _innerList;
             }
         }
 
         ///<internalonly/>                                                                              
-        internal UnsafeNativeMethods.IDirectorySearch SearchObject {
-            get {
-                if (searchObject == null) {
-                    searchObject = (UnsafeNativeMethods.IDirectorySearch) rootEntry.AdsObject;   // get it only once                                        
+        internal UnsafeNativeMethods.IDirectorySearch SearchObject
+        {
+            get
+            {
+                if (_searchObject == null)
+                {
+                    _searchObject = (UnsafeNativeMethods.IDirectorySearch)_rootEntry.AdsObject;   // get it only once                                        
                 }
-                return searchObject;
+                return _searchObject;
             }
         }
 
@@ -110,13 +126,15 @@ namespace System.DirectoryServices {
         ///    <para>Gets the handle returned by IDirectorySearch::ExecuteSearch, which was called
         ///    by the DirectorySearcher that created this object.</para>
         /// </devdoc>
-        public IntPtr Handle {            
-            get {
+        public IntPtr Handle
+        {
+            get
+            {
                 //The handle is no longer valid since the object has been disposed.
-                if (this.disposed)
+                if (_disposed)
                     throw new ObjectDisposedException(GetType().Name);
-                    
-                return handle;
+
+                return _handle;
             }
         }
 
@@ -126,73 +144,81 @@ namespace System.DirectoryServices {
         ///       specified on <see cref='System.DirectoryServices.DirectorySearcher'/> before the
         ///       search was executed.</para>
         /// </devdoc>
-        public string[] PropertiesLoaded {            
-            get {
-                return properties;
+        public string[] PropertiesLoaded
+        {
+            get
+            {
+                return _properties;
             }
         }
 
-        internal byte[] DirsyncCookie {
-            get {
-                return RetrieveDirectorySynchronizationCookie();                               
+        internal byte[] DirsyncCookie
+        {
+            get
+            {
+                return RetrieveDirectorySynchronizationCookie();
             }
         }
 
-        internal DirectoryVirtualListView VLVResponse {
-            get {
-                return RetrieveVLVResponse();                
-                
+        internal DirectoryVirtualListView VLVResponse
+        {
+            get
+            {
+                return RetrieveVLVResponse();
             }
         }
 
         internal unsafe byte[] RetrieveDirectorySynchronizationCookie()
-        {            
-            if (this.disposed)
+        {
+            if (_disposed)
                 throw new ObjectDisposedException(GetType().Name);
 
             // get the dirsync cookie back
             AdsSearchColumn column = new AdsSearchColumn();
-            AdsSearchColumn *pColumn = &column;
-            SearchObject.GetColumn(Handle, AdsDirsynCookieName, (INTPTR_INTPTRCAST)pColumn);
+            AdsSearchColumn* pColumn = &column;
+            SearchObject.GetColumn(Handle, _adsDirsynCookieName, (INTPTR_INTPTRCAST)pColumn);
             try
             {
-            	AdsValue *pValue = column.pADsValues;
-            	byte[] value = (byte[]) new AdsValueHelper(*pValue).GetValue();                    	
-            	
-            	return value;
+                AdsValue* pValue = column.pADsValues;
+                byte[] value = (byte[])new AdsValueHelper(*pValue).GetValue();
+
+                return value;
             }
             finally
             {
-                try {
+                try
+                {
                     SearchObject.FreeColumn((INTPTR_INTPTRCAST)pColumn);
-                } 
-                catch ( COMException ) {
+                }
+                catch (COMException)
+                {
                 }
             }
-        	
-        }    
+        }
 
         internal unsafe DirectoryVirtualListView RetrieveVLVResponse()
         {
-            if (this.disposed)
+            if (_disposed)
                 throw new ObjectDisposedException(GetType().Name);
 
             // get the vlv response back
             AdsSearchColumn column = new AdsSearchColumn();
-            AdsSearchColumn *pColumn = &column;
-            SearchObject.GetColumn(Handle, AdsVLVResponseName, (INTPTR_INTPTRCAST)pColumn);
+            AdsSearchColumn* pColumn = &column;
+            SearchObject.GetColumn(Handle, _adsVLVResponseName, (INTPTR_INTPTRCAST)pColumn);
             try
             {
-            	AdsValue *pValue = column.pADsValues;
-            	DirectoryVirtualListView value = (DirectoryVirtualListView) new AdsValueHelper(*pValue).GetVlvValue();             	
-            	return value;
+                AdsValue* pValue = column.pADsValues;
+                DirectoryVirtualListView value = (DirectoryVirtualListView)new AdsValueHelper(*pValue).GetVlvValue();
+                return value;
             }
             finally
             {
-                try {
+                try
+                {
                     SearchObject.FreeColumn((INTPTR_INTPTRCAST)pColumn);
-                } 
-                catch ( COMException ) {
+                }
+                catch (COMException)
+                {
                 }
             }
         }
@@ -200,18 +226,21 @@ namespace System.DirectoryServices {
         /// <include file='doc\SearchResultCollection.uex' path='docs/doc[@for="SearchResultCollection.Dispose"]/*' />
         /// <devdoc>        
         /// </devdoc>
-        public void Dispose() {            
+        public void Dispose()
+        {
             Dispose(true);
-            GC.SuppressFinalize(this);            
-        }                
-        
+            GC.SuppressFinalize(this);
+        }
+
         /// <include file='doc\SearchResultCollection.uex' path='docs/doc[@for="SearchResultCollection.Dispose1"]/*' />
         /// <devdoc>        
         /// </devdoc>
-        protected virtual void Dispose(bool disposing) {            
-            if (!this.disposed) {
-                if (handle != (IntPtr)0 && this.searchObject != null && disposing) {                   
-                    
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!_disposed)
+            {
+                if (_handle != (IntPtr)0 && _searchObject != null && disposing)
+                {
                     // NOTE: We can't call methods on SearchObject in the finalizer because it
                     // runs on a different thread. The IDirectorySearch object is STA, so COM must create
                     // a proxy stub to marshal the call back to the original thread. Unfortunately, the
@@ -219,216 +248,241 @@ namespace System.DirectoryServices {
                     // compatible. Therefore the QI for IDirectorySearch on this thread fails, and we get
                     // an InvalidCastException. The conclusion is that the user simply must call Dispose
                     // on this object.         
-                
-                    this.searchObject.CloseSearchHandle(handle);                                             
-                                            
-                    handle = (IntPtr)0;
+
+                    _searchObject.CloseSearchHandle(_handle);
+
+                    _handle = (IntPtr)0;
                 }
-                
-                if(disposing)
-                    rootEntry.Dispose();                
 
-                if(AdsDirsynCookieName != (IntPtr)0)
-                    Marshal.FreeCoTaskMem(AdsDirsynCookieName);
+                if (disposing)
+                    _rootEntry.Dispose();
 
-                if(AdsVLVResponseName != (IntPtr)0)
-                    Marshal.FreeCoTaskMem(AdsVLVResponseName);
-                                   
-                this.disposed = true;                             
+                if (_adsDirsynCookieName != (IntPtr)0)
+                    Marshal.FreeCoTaskMem(_adsDirsynCookieName);
+
+                if (_adsVLVResponseName != (IntPtr)0)
+                    Marshal.FreeCoTaskMem(_adsVLVResponseName);
+
+                _disposed = true;
             }
         }
-        
+
         /// <include file='doc\SearchResultCollection.uex' path='docs/doc[@for=".Finalize"]/*' />
-        ~SearchResultCollection() {
+        ~SearchResultCollection()
+        {
             Dispose(false);      // finalizer is called => Dispose has not been called yet.
-        }        
-        
+        }
+
         /// <include file='doc\SearchResultCollection.uex' path='docs/doc[@for="SearchResultCollection.GetEnumerator"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public IEnumerator GetEnumerator() {
+        public IEnumerator GetEnumerator()
+        {
             // Two ResultsEnumerators can't exist at the same time over the
             // same object. Need to get a new handle, which means re-querying.            
-            return new ResultsEnumerator(this, 
-                                                       this.rootEntry.GetUsername(), 
-                                                       this.rootEntry.GetPassword(),
-                                                       this.rootEntry.AuthenticationType);
+            return new ResultsEnumerator(this,
+                                                       _rootEntry.GetUsername(),
+                                                       _rootEntry.GetPassword(),
+                                                       _rootEntry.AuthenticationType);
         }
 
         /// <include file='doc\SearchResultCollection.uex' path='docs/doc[@for="SearchResultCollection.Contains"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>        
-        public bool Contains(SearchResult result) {
+        public bool Contains(SearchResult result)
+        {
             return InnerList.Contains(result);
-        }                                             
-                                             
+        }
+
         /// <include file='doc\SearchResultCollection.uex' path='docs/doc[@for="SearchResultCollection.CopyTo"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>        
-        public void CopyTo(SearchResult[] results, int index) {
+        public void CopyTo(SearchResult[] results, int index)
+        {
             InnerList.CopyTo(results, index);
-        }                                        
-                                        
+        }
+
         /// <include file='doc\SearchResultCollection.uex' path='docs/doc[@for="SearchResultCollection.IndexOf"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>        
-        public int IndexOf(SearchResult result) {
+        public int IndexOf(SearchResult result)
+        {
             return InnerList.IndexOf(result);
-        }                                              
-                                              
+        }
+
         /// <include file='doc\SearchResultCollection.uex' path='docs/doc[@for="SearchResultCollection.ICollection.IsSynchronized"]/*' />
         ///<internalonly/>
-        bool ICollection.IsSynchronized {  
-            get {
+        bool ICollection.IsSynchronized
+        {
+            get
+            {
                 return false;
-            }            
-        }                          
+            }
+        }
 
         /// <include file='doc\SearchResultCollection.uex' path='docs/doc[@for="SearchResultCollection.ICollection.SyncRoot"]/*' />
         ///<internalonly/>             
-        object ICollection.SyncRoot {
-            get {
+        object ICollection.SyncRoot
+        {
+            get
+            {
                 return this;
             }
-        }                    
-        
+        }
+
         /// <include file='doc\SearchResultCollection.uex' path='docs/doc[@for="SearchResultCollection.ICollection.CopyTo"]/*' />
         /// <internalonly/>
-        void ICollection.CopyTo(Array array, int index) {
+        void ICollection.CopyTo(Array array, int index)
+        {
             InnerList.CopyTo(array, index);
-        }             
-                          
+        }
+
         /// <devdoc>
         ///    <para> Supports a simple
         ///       ForEach-style iteration over a collection.</para>
         /// </devdoc>
-        private class ResultsEnumerator : IEnumerator {
-            private NetworkCredential parentCredentials;            
-            private AuthenticationTypes parentAuthenticationType;
-            private SearchResultCollection results;
-            private bool initialized;
-            private SearchResult currentResult;
-            private bool eof;
-            private bool waitForResult = false;
-            
-            internal ResultsEnumerator(SearchResultCollection results, string parentUserName, string parentPassword, AuthenticationTypes parentAuthenticationType) {
-                if (parentUserName != null && parentPassword != null) 
-                    this.parentCredentials = new NetworkCredential(parentUserName, parentPassword);
-                
-                this.parentAuthenticationType = parentAuthenticationType;
-                this.results = results;
-                initialized = false;
+        private class ResultsEnumerator : IEnumerator
+        {
+            private NetworkCredential _parentCredentials;
+            private AuthenticationTypes _parentAuthenticationType;
+            private SearchResultCollection _results;
+            private bool _initialized;
+            private SearchResult _currentResult;
+            private bool _eof;
+            private bool _waitForResult = false;
+
+            internal ResultsEnumerator(SearchResultCollection results, string parentUserName, string parentPassword, AuthenticationTypes parentAuthenticationType)
+            {
+                if (parentUserName != null && parentPassword != null)
+                    _parentCredentials = new NetworkCredential(parentUserName, parentPassword);
+
+                _parentAuthenticationType = parentAuthenticationType;
+                _results = results;
+                _initialized = false;
 
                 // get the app configuration information
                 object o = PrivilegedConfigurationManager.GetSection("system.directoryservices");
-                if(o != null && o is bool)
+                if (o != null && o is bool)
                 {
-                    waitForResult = (bool) o;                    
-                }                
-
+                    _waitForResult = (bool)o;
+                }
             }
-            
+
             /// <devdoc>
             ///    <para>Gets the current element in the collection.</para>
             /// </devdoc>            
-            public SearchResult Current {                
-                get {                    
-                    if (!initialized || eof)
+            public SearchResult Current
+            {
+                get
+                {
+                    if (!_initialized || _eof)
                         throw new InvalidOperationException(Res.GetString(Res.DSNoCurrentEntry));
 
-                     if (currentResult == null)
-                        this.currentResult = GetCurrentResult();
-                                            
-                    return this.currentResult;
-                }                                     
+                    if (_currentResult == null)
+                        _currentResult = GetCurrentResult();
+
+                    return _currentResult;
+                }
             }
 
-            private unsafe SearchResult GetCurrentResult() {
-                SearchResult entry = new SearchResult(this.parentCredentials, this.parentAuthenticationType);
+            private unsafe SearchResult GetCurrentResult()
+            {
+                SearchResult entry = new SearchResult(_parentCredentials, _parentAuthenticationType);
                 int hr = 0;
                 IntPtr pszColumnName = (IntPtr)0;
-                hr = results.SearchObject.GetNextColumnName(results.Handle, (INTPTR_INTPTRCAST)(&pszColumnName));
-                while (hr == 0) {                    
-                    try {
+                hr = _results.SearchObject.GetNextColumnName(_results.Handle, (INTPTR_INTPTRCAST)(&pszColumnName));
+                while (hr == 0)
+                {
+                    try
+                    {
                         AdsSearchColumn column = new AdsSearchColumn();
-                        AdsSearchColumn *pColumn = &column;
-                        results.SearchObject.GetColumn(results.Handle, pszColumnName, (INTPTR_INTPTRCAST) pColumn);
-                        try {
+                        AdsSearchColumn* pColumn = &column;
+                        _results.SearchObject.GetColumn(_results.Handle, pszColumnName, (INTPTR_INTPTRCAST)pColumn);
+                        try
+                        {
                             int numValues = column.dwNumValues;
-                            AdsValue *pValue = column.pADsValues;
+                            AdsValue* pValue = column.pADsValues;
                             object[] values = new object[numValues];
-                            for (int i = 0; i < numValues; i++) {                                   
-                                values[i] = new AdsValueHelper(*pValue).GetValue();                                
-                                pValue++;                                
-                            }                            
-                            entry.Properties.Add(Marshal.PtrToStringUni(pszColumnName), new ResultPropertyValueCollection(values));                                                                                                                                                                                
+                            for (int i = 0; i < numValues; i++)
+                            {
+                                values[i] = new AdsValueHelper(*pValue).GetValue();
+                                pValue++;
+                            }
+                            entry.Properties.Add(Marshal.PtrToStringUni(pszColumnName), new ResultPropertyValueCollection(values));
                         }
-                        finally {
-                            try {
-                                results.SearchObject.FreeColumn((INTPTR_INTPTRCAST) pColumn);
-                            } 
-                            catch ( COMException ) {
+                        finally
+                        {
+                            try
+                            {
+                                _results.SearchObject.FreeColumn((INTPTR_INTPTRCAST)pColumn);
+                            }
+                            catch (COMException)
+                            {
                             }
                         }
                     }
-                    finally {
+                    finally
+                    {
                         SafeNativeMethods.FreeADsMem(pszColumnName);
                     }
-                    hr = results.SearchObject.GetNextColumnName(results.Handle, (INTPTR_INTPTRCAST)(&pszColumnName));
+                    hr = _results.SearchObject.GetNextColumnName(_results.Handle, (INTPTR_INTPTRCAST)(&pszColumnName));
                 }
 
-                return entry;                
-            }                    
-                    
+                return entry;
+            }
+
             /// <include file='doc\SearchResultCollection.uex' path='docs/doc[@for="SearchResultCollection.ResultsEnumerator.MoveNext"]/*' />
             /// <devdoc>
             ///    <para>Advances
             ///       the enumerator to the next element of the collection
             ///       and returns a Boolean value indicating whether a valid element is available.</para>
             /// </devdoc>                        
-	        public bool MoveNext() {   
-	         DirectorySynchronization tempsync = null;
-	         DirectoryVirtualListView tempvlv = null;
-                int errorCode = 0;  
+            public bool MoveNext()
+            {
+                DirectorySynchronization tempsync = null;
+                DirectoryVirtualListView tempvlv = null;
+                int errorCode = 0;
 
-                if (eof)
+                if (_eof)
                     return false;
-                    
-                this.currentResult = null;                                                
-                if (!initialized) {
-                    int hr = results.SearchObject.GetFirstRow(results.Handle);     
-                    
-                    if (hr != UnsafeNativeMethods.S_ADS_NOMORE_ROWS) 
-                    {                                            
+
+                _currentResult = null;
+                if (!_initialized)
+                {
+                    int hr = _results.SearchObject.GetFirstRow(_results.Handle);
+
+                    if (hr != UnsafeNativeMethods.S_ADS_NOMORE_ROWS)
+                    {
                         //throw a clearer exception if the filter was invalid
                         if (hr == UnsafeNativeMethods.INVALID_FILTER)
-                            throw new ArgumentException(Res.GetString(Res.DSInvalidSearchFilter, results.Filter));
+                            throw new ArgumentException(Res.GetString(Res.DSInvalidSearchFilter, _results.Filter));
                         if (hr != 0)
                             throw COMExceptionHelper.CreateFormattedComException(hr);
-                    
-                        eof = false;     
-                        initialized = true;
+
+                        _eof = false;
+                        _initialized = true;
                         return true;
                     }
 
-                    initialized = true;
+                    _initialized = true;
                 }
-                
-                while(true) {
+
+                while (true)
+                {
                     // clear the last error first
                     CleanLastError();
                     errorCode = 0;
 
-                    int hr = results.SearchObject.GetNextRow(results.Handle);
+                    int hr = _results.SearchObject.GetNextRow(_results.Handle);
                     //  SIZE_LIMIT_EXCEEDED occurs when we supply too generic filter or small SizeLimit value.
-                    if (hr == UnsafeNativeMethods.S_ADS_NOMORE_ROWS || hr == UnsafeNativeMethods.SIZE_LIMIT_EXCEEDED ) {
-
+                    if (hr == UnsafeNativeMethods.S_ADS_NOMORE_ROWS || hr == UnsafeNativeMethods.SIZE_LIMIT_EXCEEDED)
+                    {
                         // need to make sure this is not the case that server actually still has record not returned yet
-                        if(hr == UnsafeNativeMethods.S_ADS_NOMORE_ROWS)
+                        if (hr == UnsafeNativeMethods.S_ADS_NOMORE_ROWS)
                         {
                             hr = GetLastError(ref errorCode);
                             // get last error call failed, we need to bail out
@@ -437,45 +491,44 @@ namespace System.DirectoryServices {
                         }
 
                         // not the case that server still has result, we are done here
-                        if(errorCode != SafeNativeMethods.ERROR_MORE_DATA)
-                        {     
+                        if (errorCode != SafeNativeMethods.ERROR_MORE_DATA)
+                        {
                             // get the dirsync cookie as we finished all the rows
-                            if(results.srch.directorySynchronizationSpecified)
-                                tempsync = results.srch.DirectorySynchronization;
+                            if (_results.srch.directorySynchronizationSpecified)
+                                tempsync = _results.srch.DirectorySynchronization;
 
                             // get the vlv response as we finished all the rows
-                            if(results.srch.directoryVirtualListViewSpecified)
-                                tempvlv = results.srch.VirtualListView;
+                            if (_results.srch.directoryVirtualListViewSpecified)
+                                tempvlv = _results.srch.VirtualListView;
 
-                            results.srch.searchResult = null;
+                            _results.srch.searchResult = null;
 
-                            eof = true;
-                            initialized = false;
+                            _eof = true;
+                            _initialized = false;
                             return false;
                         }
                         else
                         {
                             // if user chooses to wait to continue the search
-                            if(waitForResult)
+                            if (_waitForResult)
                             {
-                                continue;                            
+                                continue;
                             }
                             else
                             {
-                                uint temp = (uint) errorCode;
-                                temp = ( (((temp) & 0x0000FFFF) | (7 << 16) | 0x80000000));            
+                                uint temp = (uint)errorCode;
+                                temp = ((((temp) & 0x0000FFFF) | (7 << 16) | 0x80000000));
                                 throw COMExceptionHelper.CreateFormattedComException((int)temp);
                             }
                         }
-
                     }
                     //throw a clearer exception if the filter was invalid
                     if (hr == UnsafeNativeMethods.INVALID_FILTER)
-                        throw new ArgumentException(Res.GetString(Res.DSInvalidSearchFilter, results.Filter));
+                        throw new ArgumentException(Res.GetString(Res.DSInvalidSearchFilter, _results.Filter));
                     if (hr != 0)
                         throw COMExceptionHelper.CreateFormattedComException(hr);
-                                
-                    eof = false;                                            
+
+                    _eof = false;
                     return true;
                 }
             }
@@ -483,30 +536,34 @@ namespace System.DirectoryServices {
             /// <devdoc>
             ///    <para>Resets the enumerator back to its initial position before the first element in the collection.</para>
             /// </devdoc>
-            public void Reset() {
-                eof = false;
-                initialized = false;
+            public void Reset()
+            {
+                _eof = false;
+                _initialized = false;
             }
-            
-            object IEnumerator.Current {                
-                get {
+
+            object IEnumerator.Current
+            {
+                get
+                {
                     return Current;
                 }
-            }            
+            }
 
-            private void CleanLastError() {
+            private void CleanLastError()
+            {
                 SafeNativeMethods.ADsSetLastError(SafeNativeMethods.ERROR_SUCCESS, null, null);
-            }                    
+            }
 
-            private int GetLastError(ref int errorCode) {
+            private int GetLastError(ref int errorCode)
+            {
                 StringBuilder errorBuffer = new StringBuilder();
-                StringBuilder nameBuffer = new StringBuilder();                
+                StringBuilder nameBuffer = new StringBuilder();
                 errorCode = SafeNativeMethods.ERROR_SUCCESS;
-                int hr = SafeNativeMethods.ADsGetLastError(out errorCode, errorBuffer, 0, nameBuffer, 0);   
+                int hr = SafeNativeMethods.ADsGetLastError(out errorCode, errorBuffer, 0, nameBuffer, 0);
 
                 return hr;
-            }     
+            }
         }
-
     }
 }
