@@ -1,0 +1,62 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <PropertyGroup>
+    <Configuration Condition="'$(Configuration)'=='' AND '$(TargetGroup)' == ''">Windows_Debug</Configuration>
+  </PropertyGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <ProjectGuid>{879C23DC-D828-4DFB-8E92-ABBC11B71035}</ProjectGuid>
+    <AssemblyName>System.DirectoryServices.Protocols</AssemblyName>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <NoWarn>$(NoWarn);0649</NoWarn>
+    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
+    <GeneratePlatformNotSupportedAssembly Condition="'$(TargetsUnix)' == 'true'">true</GeneratePlatformNotSupportedAssembly>
+  </PropertyGroup>
+  <!-- Help VS understand available configurations -->
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'" />
+  <ItemGroup>
+    <Compile Include="System\DirectoryServices\Protocols\externdll.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\common\AuthTypes.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\common\BerConverter.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\common\DereferenceAlias.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\common\DirectoryAttribute.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\common\DirectoryAttributeOperation.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\common\DirectoryConnection.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\common\DirectoryControl.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\common\DirectoryException.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\common\DirectoryIdentifier.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\common\DirectoryOperation.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\common\DirectoryRequest.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\common\DirectoryResponse.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\common\PartialResultsCollection.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\common\ReferralChasingOption.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\common\ResultCode.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\common\SearchResults.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\common\SearchScope.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\dsml\adreqresp2.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\dsml\DsmlAsyncResult.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\dsml\DsmlConstants.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\dsml\DsmlDirectoryIdentifier.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\dsml\DsmlDocument.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\dsml\DsmlDocumentProcessing.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\dsml\DsmlException.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\dsml\dsmlfilterwriter.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\dsml\DsmlSoapConnection.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\dsml\DsmlSoapHttpConnection.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\dsml\filterparser.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\dsml\utils.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\ldap\LdapAsyncResult.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\ldap\LdapConnection.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\ldap\LdapDirectoryIdentifier.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\ldap\LdapException.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\ldap\LdapPartialResultsProcessor.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\ldap\LdapSessionOptions.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\ldap\SafeHandles.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\ldap\Wldap32UnsafeMethods.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="project.json" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>
