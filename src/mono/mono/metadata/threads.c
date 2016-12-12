@@ -1113,6 +1113,11 @@ mono_thread_detach_internal (MonoInternalThread *thread)
 	ref_stack_destroy (thread->appdomain_refs);
 	thread->appdomain_refs = NULL;
 
+	g_assert (thread->suspended);
+	mono_os_event_destroy (thread->suspended);
+	g_free (thread->suspended);
+	thread->suspended = NULL;
+
 	if (mono_thread_cleanup_fn)
 		mono_thread_cleanup_fn (thread_get_tid (thread));
 
@@ -1120,11 +1125,6 @@ mono_thread_detach_internal (MonoInternalThread *thread)
 		MONO_GC_UNREGISTER_ROOT (thread->thread_pinning_ref);
 		thread->thread_pinning_ref = NULL;
 	}
-
-	g_assert (thread->suspended);
-	mono_os_event_destroy (thread->suspended);
-	g_free (thread->suspended);
-	thread->suspended = NULL;
 
 done:
 	SET_CURRENT_OBJECT (NULL);
