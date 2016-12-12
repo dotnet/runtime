@@ -7,6 +7,7 @@
 using System;
 using System.Globalization;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 
 namespace System.Reflection
@@ -160,7 +161,7 @@ namespace System.Reflection
         #endregion
 
         #region Public Members
-        public virtual Type LocalType { get { Contract.Assert(m_type != null, "type must be set!"); return m_type; } }
+        public virtual Type LocalType { get { Debug.Assert(m_type != null, "type must be set!"); return m_type; } }
         public virtual bool IsPinned { get { return m_isPinned != 0; } }
         public virtual int LocalIndex { get { return m_localIndex; } }
         #endregion

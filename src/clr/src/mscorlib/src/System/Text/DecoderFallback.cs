@@ -7,6 +7,7 @@ using System;
 using System.Security;
 using System.Threading;
 using System.Globalization;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 
 namespace System.Text
@@ -148,7 +149,7 @@ namespace System.Text
 //            for (int i = 0; i < count; i++)
 //                bytesUnknown[i] = *(bytes++);
 
-            Contract.Assert(byteStart != null, "[DecoderFallback.InternalFallback]Used InternalFallback without calling InternalInitialize");
+            Debug.Assert(byteStart != null, "[DecoderFallback.InternalFallback]Used InternalFallback without calling InternalInitialize");
 
             // See if there's a fallback character and we have an output buffer then copy our string.
             if (this.Fallback(bytes, (int)(pBytes - byteStart - bytes.Length)))
@@ -208,7 +209,7 @@ namespace System.Text
 //            for (int i = 0; i < count; i++)
   //              bytesUnknown[i] = *(bytes++);
 
-            Contract.Assert(byteStart != null, "[DecoderFallback.InternalFallback]Used InternalFallback without calling InternalInitialize");
+            Debug.Assert(byteStart != null, "[DecoderFallback.InternalFallback]Used InternalFallback without calling InternalInitialize");
 
             // See if there's a fallback character and we have an output buffer then copy our string.
             if (this.Fallback(bytes, (int)(pBytes - byteStart - bytes.Length)))

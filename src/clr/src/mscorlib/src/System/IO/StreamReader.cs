@@ -18,6 +18,7 @@ using System;
 using System.Text;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
 using System.Security.Permissions;
@@ -432,7 +433,7 @@ namespace System.IO
         // Trims n bytes from the front of the buffer.
         private void CompressBuffer(int n)
         {
-            Contract.Assert(byteLen >= n, "CompressBuffer was called with a number of bytes greater than the current buffer length.  Are two threads using this StreamReader at the same time?");
+            Debug.Assert(byteLen >= n, "CompressBuffer was called with a number of bytes greater than the current buffer length.  Are two threads using this StreamReader at the same time?");
             Buffer.InternalBlockCopy(byteBuffer, n, byteBuffer, 0, byteLen - n);
             byteLen -= n;
         }
@@ -500,7 +501,7 @@ namespace System.IO
             if (!_checkPreamble) 
                 return _checkPreamble;
 
-            Contract.Assert(bytePos <= _preamble.Length, "_compressPreamble was called with the current bytePos greater than the preamble buffer length.  Are two threads using this StreamReader at the same time?");
+            Debug.Assert(bytePos <= _preamble.Length, "_compressPreamble was called with the current bytePos greater than the preamble buffer length.  Are two threads using this StreamReader at the same time?");
             int len = (byteLen >= (_preamble.Length))? (_preamble.Length - bytePos) : (byteLen  - bytePos);
 
             for(int i=0; i<len; i++, bytePos++) {
@@ -511,7 +512,7 @@ namespace System.IO
                 }
             }
 
-            Contract.Assert(bytePos <= _preamble.Length, "possible bug in _compressPreamble.  Are two threads using this StreamReader at the same time?");
+            Debug.Assert(bytePos <= _preamble.Length, "possible bug in _compressPreamble.  Are two threads using this StreamReader at the same time?");
 
             if (_checkPreamble) {
                 if (bytePos == _preamble.Length) {
@@ -566,9 +567,9 @@ namespace System.IO
                 byteLen = 0;
             do {
                 if (_checkPreamble) {
-                    Contract.Assert(bytePos <= _preamble.Length, "possible bug in _compressPreamble.  Are two threads using this StreamReader at the same time?");
+                    Debug.Assert(bytePos <= _preamble.Length, "possible bug in _compressPreamble.  Are two threads using this StreamReader at the same time?");
                     int len = stream.Read(byteBuffer, bytePos, byteBuffer.Length - bytePos);
-                    Contract.Assert(len >= 0, "Stream.Read returned a negative number!  This is a bug in your stream class.");
+                    Debug.Assert(len >= 0, "Stream.Read returned a negative number!  This is a bug in your stream class.");
 
                     if (len == 0) {
                         // EOF but we might have buffered bytes from previous 
@@ -586,9 +587,9 @@ namespace System.IO
                     byteLen += len;
                 }
                 else {
-                    Contract.Assert(bytePos == 0, "bytePos can be non zero only when we are trying to _checkPreamble.  Are two threads using this StreamReader at the same time?");
+                    Debug.Assert(bytePos == 0, "bytePos can be non zero only when we are trying to _checkPreamble.  Are two threads using this StreamReader at the same time?");
                     byteLen = stream.Read(byteBuffer, 0, byteBuffer.Length);
-                    Contract.Assert(byteLen >= 0, "Stream.Read returned a negative number!  This is a bug in your stream class.");
+                    Debug.Assert(byteLen >= 0, "Stream.Read returned a negative number!  This is a bug in your stream class.");
 
                     if (byteLen == 0)  // We're at EOF
                         return charLen;
@@ -648,12 +649,12 @@ namespace System.IO
             readToUserBuffer = desiredChars >= _maxCharsPerBuffer;
 
             do {
-                Contract.Assert(charsRead == 0);
+                Debug.Assert(charsRead == 0);
 
                 if (_checkPreamble) {
-                    Contract.Assert(bytePos <= _preamble.Length, "possible bug in _compressPreamble.  Are two threads using this StreamReader at the same time?");
+                    Debug.Assert(bytePos <= _preamble.Length, "possible bug in _compressPreamble.  Are two threads using this StreamReader at the same time?");
                     int len = stream.Read(byteBuffer, bytePos, byteBuffer.Length - bytePos);
-                    Contract.Assert(len >= 0, "Stream.Read returned a negative number!  This is a bug in your stream class.");
+                    Debug.Assert(len >= 0, "Stream.Read returned a negative number!  This is a bug in your stream class.");
                     
                     if (len == 0) {
                         // EOF but we might have buffered bytes from previous 
@@ -675,11 +676,11 @@ namespace System.IO
                     byteLen += len;
                 }
                 else {
-                    Contract.Assert(bytePos == 0, "bytePos can be non zero only when we are trying to _checkPreamble.  Are two threads using this StreamReader at the same time?");
+                    Debug.Assert(bytePos == 0, "bytePos can be non zero only when we are trying to _checkPreamble.  Are two threads using this StreamReader at the same time?");
 
                     byteLen = stream.Read(byteBuffer, 0, byteBuffer.Length);
 
-                    Contract.Assert(byteLen >= 0, "Stream.Read returned a negative number!  This is a bug in your stream class.");
+                    Debug.Assert(byteLen >= 0, "Stream.Read returned a negative number!  This is a bug in your stream class.");
                     
                     if (byteLen == 0)  // EOF
                         break;
@@ -955,14 +956,14 @@ namespace System.IO
                     // We break out of the loop if the stream is blocked (EOF is reached).
                     do
                     {
-                        Contract.Assert(n == 0);
+                        Debug.Assert(n == 0);
 
                         if (CheckPreamble_Prop)
                         {
-                            Contract.Assert(BytePos_Prop <= Preamble_Prop.Length, "possible bug in _compressPreamble.  Are two threads using this StreamReader at the same time?");
+                            Debug.Assert(BytePos_Prop <= Preamble_Prop.Length, "possible bug in _compressPreamble.  Are two threads using this StreamReader at the same time?");
                             int tmpBytePos = BytePos_Prop;
                             int len = await tmpStream.ReadAsync(tmpByteBuffer, tmpBytePos, tmpByteBuffer.Length - tmpBytePos).ConfigureAwait(false);
-                            Contract.Assert(len >= 0, "Stream.Read returned a negative number!  This is a bug in your stream class.");
+                            Debug.Assert(len >= 0, "Stream.Read returned a negative number!  This is a bug in your stream class.");
 
                             if (len == 0)
                             {
@@ -983,7 +984,7 @@ namespace System.IO
                                 }
                                         
                                 // How can part of the preamble yield any chars?
-                                Contract.Assert(n == 0);
+                                Debug.Assert(n == 0);
 
                                 IsBlocked_Prop = true;
                                 break;
@@ -995,11 +996,11 @@ namespace System.IO
                         }
                         else
                         {
-                            Contract.Assert(BytePos_Prop == 0, "_bytePos can be non zero only when we are trying to _checkPreamble.  Are two threads using this StreamReader at the same time?");
+                            Debug.Assert(BytePos_Prop == 0, "_bytePos can be non zero only when we are trying to _checkPreamble.  Are two threads using this StreamReader at the same time?");
 
                             ByteLen_Prop = await tmpStream.ReadAsync(tmpByteBuffer, 0, tmpByteBuffer.Length).ConfigureAwait(false);
 
-                            Contract.Assert(ByteLen_Prop >= 0, "Stream.Read returned a negative number!  This is a bug in your stream class.");
+                            Debug.Assert(ByteLen_Prop >= 0, "Stream.Read returned a negative number!  This is a bug in your stream class.");
 
                             if (ByteLen_Prop == 0)  // EOF
                             {
@@ -1029,7 +1030,7 @@ namespace System.IO
                             readToUserBuffer = count >= MaxCharsPerBuffer_Prop;
                         }
 
-                        Contract.Assert(n == 0);
+                        Debug.Assert(n == 0);
 
                         CharPos_Prop = 0;
                         if (readToUserBuffer)
@@ -1037,7 +1038,7 @@ namespace System.IO
                             n += Decoder_Prop.GetChars(tmpByteBuffer, 0, ByteLen_Prop, buffer, index + charsRead);
                                         
                             // Why did the bytes yield no chars?
-                            Contract.Assert(n > 0);
+                            Debug.Assert(n > 0);
 
                             CharLen_Prop = 0;  // StreamReader's buffer is empty.
                         }
@@ -1046,7 +1047,7 @@ namespace System.IO
                             n = Decoder_Prop.GetChars(tmpByteBuffer, 0, ByteLen_Prop, CharBuffer_Prop, 0);
                                         
                             // Why did the bytes yield no chars?
-                            Contract.Assert(n > 0);
+                            Debug.Assert(n > 0);
 
                             CharLen_Prop += n;  // Number of chars in StreamReader's buffer.
                         }
@@ -1183,10 +1184,10 @@ namespace System.IO
                 ByteLen_Prop = 0;
             do {
                 if (CheckPreamble_Prop) {
-                    Contract.Assert(BytePos_Prop <= Preamble_Prop.Length, "possible bug in _compressPreamble. Are two threads using this StreamReader at the same time?");
+                    Debug.Assert(BytePos_Prop <= Preamble_Prop.Length, "possible bug in _compressPreamble. Are two threads using this StreamReader at the same time?");
                     int tmpBytePos = BytePos_Prop;
                     int len = await tmpStream.ReadAsync(tmpByteBuffer, tmpBytePos, tmpByteBuffer.Length - tmpBytePos).ConfigureAwait(false);
-                    Contract.Assert(len >= 0, "Stream.Read returned a negative number!  This is a bug in your stream class.");
+                    Debug.Assert(len >= 0, "Stream.Read returned a negative number!  This is a bug in your stream class.");
                     
                     if (len == 0) {
                         // EOF but we might have buffered bytes from previous 
@@ -1204,9 +1205,9 @@ namespace System.IO
                     ByteLen_Prop += len;
                 }
                 else {
-                    Contract.Assert(BytePos_Prop == 0, "_bytePos can be non zero only when we are trying to _checkPreamble. Are two threads using this StreamReader at the same time?");
+                    Debug.Assert(BytePos_Prop == 0, "_bytePos can be non zero only when we are trying to _checkPreamble. Are two threads using this StreamReader at the same time?");
                     ByteLen_Prop = await tmpStream.ReadAsync(tmpByteBuffer, 0, tmpByteBuffer.Length).ConfigureAwait(false);
-                    Contract.Assert(ByteLen_Prop >= 0, "Stream.Read returned a negative number!  Bug in stream class.");
+                    Debug.Assert(ByteLen_Prop >= 0, "Stream.Read returned a negative number!  Bug in stream class.");
                     
                     if (ByteLen_Prop == 0)  // We're at EOF
                         return CharLen_Prop;

@@ -19,6 +19,7 @@ namespace System {
     using System.Runtime.ConstrainedExecution;
     using System.Runtime.Versioning;
     using System.Security;
+    using System.Diagnostics;
     using System.Security.Permissions;
     using System.Diagnostics.Contracts;
 
@@ -567,7 +568,7 @@ namespace System {
         private static int GetMedian(int low, int hi) {
             // Note both may be negative, if we are dealing with arrays w/ negative lower bounds.
             Contract.Requires(low <= hi);
-            Contract.Assert( hi - low >= 0, "Length overflow!");
+            Debug.Assert( hi - low >= 0, "Length overflow!");
             return low + ((hi - low) >> 1);
         }
 
@@ -2320,7 +2321,7 @@ namespace System {
             private int _endIndex; // cache array length, since it's a little slow.
 
             internal SZArrayEnumerator(Array array) {
-                Contract.Assert(array.Rank == 1 && array.GetLowerBound(0) == 0, "SZArrayEnumerator only works on single dimension arrays w/ a lower bound of zero.");
+                Debug.Assert(array.Rank == 1 && array.GetLowerBound(0) == 0, "SZArrayEnumerator only works on single dimension arrays w/ a lower bound of zero.");
                 _array = array;
                 _index = -1;
                 _endIndex = array.Length;
@@ -2478,7 +2479,7 @@ namespace System {
     sealed class SZArrayHelper {
         // It is never legal to instantiate this class.
         private SZArrayHelper() {
-            Contract.Assert(false, "Hey! How'd I get here?");
+            Debug.Assert(false, "Hey! How'd I get here?");
         }
 
         // -----------------------------------------------------------
@@ -2594,7 +2595,7 @@ namespace System {
 
             internal SZGenericArrayEnumerator(T[] array, int endIndex) {
                 // We allow passing null array in case of empty enumerator. 
-                Contract.Assert(array != null || endIndex == -1, "endIndex should be -1 in the case of a null array (for the empty enumerator).");
+                Debug.Assert(array != null || endIndex == -1, "endIndex should be -1 in the case of a null array (for the empty enumerator).");
                 _array = array;
                 _index = -1;
                 _endIndex = endIndex;

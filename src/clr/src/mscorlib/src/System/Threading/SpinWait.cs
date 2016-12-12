@@ -14,6 +14,7 @@ using System;
 using System.Runtime.ConstrainedExecution;
 using System.Security.Permissions;
 using System.Threading;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Diagnostics.CodeAnalysis;
 
@@ -193,7 +194,7 @@ namespace System.Threading
 #endif
             SpinUntil(condition, Timeout.Infinite);
 #if DEBUG
-            Contract.Assert(result);
+            Debug.Assert(result);
 #endif
         }
 
@@ -300,7 +301,7 @@ namespace System.Threading
                     s_lastProcessorCountRefreshTicks = now;
                 }
 
-                Contract.Assert(procCount > 0 && procCount <= 64,
+                Debug.Assert(procCount > 0 && procCount <= 64,
                     "Processor count not within the expected range (1 - 64).");
 
                 return procCount;
@@ -341,7 +342,7 @@ namespace System.Threading
         public static int UpdateTimeOut(uint startTime, int originalWaitMillisecondsTimeout)
         {
             // The function must be called in case the time out is not infinite
-            Contract.Assert(originalWaitMillisecondsTimeout != Timeout.Infinite);
+            Debug.Assert(originalWaitMillisecondsTimeout != Timeout.Infinite);
 
             uint elapsedMilliseconds = (GetTime() - startTime);
 

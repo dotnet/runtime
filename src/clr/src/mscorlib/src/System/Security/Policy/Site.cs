@@ -10,6 +10,7 @@
 //
 
 using System;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Globalization;
 using System.Security.Permissions;
@@ -34,7 +35,7 @@ namespace System.Security.Policy
 
         private Site(SiteString name)
         {
-            Contract.Assert(name != null);
+            Debug.Assert(name != null);
             m_name = name;
         }
 

@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Runtime.CompilerServices;
 using System.Runtime.ConstrainedExecution;
@@ -22,7 +23,7 @@ namespace Internal.Runtime.Augments
 
         private Thread AsThread()
         {
-            Contract.Assert(this is Thread);
+            Debug.Assert(this is Thread);
             return (Thread)this;
         }
 
@@ -103,7 +104,7 @@ namespace Internal.Runtime.Augments
 #if FEATURE_COMINTEROP_APARTMENT_SUPPORT
             return (ApartmentState)GetApartmentStateNative();
 #else // !FEATURE_COMINTEROP_APARTMENT_SUPPORT
-            Contract.Assert(false); // the Thread class in CoreFX should have handled this case
+            Debug.Assert(false); // the Thread class in CoreFX should have handled this case
             return ApartmentState.MTA;
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
         }
@@ -118,7 +119,7 @@ namespace Internal.Runtime.Augments
 #if FEATURE_COMINTEROP_APARTMENT_SUPPORT
             return SetApartmentStateHelper(state, false);
 #else // !FEATURE_COMINTEROP_APARTMENT_SUPPORT
-            Contract.Assert(false); // the Thread class in CoreFX should have handled this case
+            Debug.Assert(false); // the Thread class in CoreFX should have handled this case
             return false;
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
         }
@@ -156,7 +157,7 @@ namespace Internal.Runtime.Augments
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         public void DisableComObjectEagerCleanup()
         {
-            Contract.Assert(false); // the Thread class in CoreFX should have handled this case
+            Debug.Assert(false); // the Thread class in CoreFX should have handled this case
         }
 #endif // FEATURE_COMINTEROP
 

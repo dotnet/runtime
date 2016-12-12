@@ -75,6 +75,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.ConstrainedExecution;
 using System.Runtime.Versioning;
 using Microsoft.Win32.SafeHandles;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 
 
@@ -384,7 +385,7 @@ using System.Diagnostics.Contracts;
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         private static InvalidOperationException NotInitialized()
         {
-            Contract.Assert(false, "Uninitialized SafeBuffer!  Someone needs to call Initialize before using this instance!");
+            Debug.Assert(false, "Uninitialized SafeBuffer!  Someone needs to call Initialize before using this instance!");
             return new InvalidOperationException(Environment.GetResourceString("InvalidOperation_MustCallInitialize"));
         }
 

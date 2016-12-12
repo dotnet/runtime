@@ -457,7 +457,7 @@ namespace System.Diagnostics.Tracing
                 }
                 if (providerInstance->NextOffset == 0)
                     break;
-                Contract.Assert(0 <= providerInstance->NextOffset && providerInstance->NextOffset < buffSize);
+                Debug.Assert(0 <= providerInstance->NextOffset && providerInstance->NextOffset < buffSize);
                 var structBase = (byte*)providerInstance;
                 providerInstance = (UnsafeNativeMethods.ManifestEtw.TRACE_PROVIDER_INSTANCE_INFO*)&structBase[providerInstance->NextOffset];
             }
@@ -1120,7 +1120,7 @@ namespace System.Diagnostics.Tracing
             if (childActivityID != null)
             {
                 // activity transfers are supported only for events that specify the Send or Receive opcode
-                Contract.Assert((EventOpcode)eventDescriptor.Opcode == EventOpcode.Send ||
+                Debug.Assert((EventOpcode)eventDescriptor.Opcode == EventOpcode.Send ||
                                 (EventOpcode)eventDescriptor.Opcode == EventOpcode.Receive ||
                                 (EventOpcode)eventDescriptor.Opcode == EventOpcode.Start ||
                                 (EventOpcode)eventDescriptor.Opcode == EventOpcode.Stop);
@@ -1187,7 +1187,7 @@ namespace System.Diagnostics.Tracing
         }
         private static int bitindex(uint n)
         {
-            Contract.Assert(bitcount(n) == 1);
+            Debug.Assert(bitcount(n) == 1);
             int idx = 0;
             while ((n & (1 << idx)) == 0)
                 idx++;

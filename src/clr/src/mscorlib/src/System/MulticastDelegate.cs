@@ -9,6 +9,7 @@ namespace System
     using System.Runtime;
     using System.Runtime.CompilerServices;
     using System.Runtime.Serialization;
+    using System.Diagnostics;
     using System.Diagnostics.Contracts;
     using System.Reflection.Emit;
 
@@ -108,7 +109,7 @@ namespace System
             // Since this is a MulticastDelegate and we know
             // the types are the same, obj should also be a
             // MulticastDelegate
-            Contract.Assert(obj is MulticastDelegate, "Shouldn't have failed here since we already checked the types are the same!");
+            Debug.Assert(obj is MulticastDelegate, "Shouldn't have failed here since we already checked the types are the same!");
             var d = JitHelpers.UnsafeCast<MulticastDelegate>(obj);
 
             if (_invocationCount != (IntPtr)0) 
@@ -145,7 +146,7 @@ namespace System
                     }
                     else 
                     {
-                        Contract.Assert((_invocationList as Object[]) != null, "empty invocation list on multicast delegate");
+                        Debug.Assert((_invocationList as Object[]) != null, "empty invocation list on multicast delegate");
                         return InvocationListEquals(d);
                     }
                 }
@@ -176,7 +177,7 @@ namespace System
         // Recursive function which will check for equality of the invocation list.
         private bool InvocationListEquals(MulticastDelegate d)
         {
-            Contract.Assert(d != null && (_invocationList as Object[]) != null, "bogus delegate in multicast list comparison");
+            Debug.Assert(d != null && (_invocationList as Object[]) != null, "bogus delegate in multicast list comparison");
             Object[] invocationList = _invocationList as Object[];
             if (d._invocationCount != _invocationCount)
                 return false;
@@ -247,7 +248,7 @@ namespace System
         {
             if (_invocationCount != (IntPtr)0) 
             {
-                Contract.Assert(!IsUnmanagedFunctionPtr(), "dynamic method and unmanaged fntptr delegate combined");
+                Debug.Assert(!IsUnmanagedFunctionPtr(), "dynamic method and unmanaged fntptr delegate combined");
                 // must be a secure/wrapper one, unwrap and save
                 MulticastDelegate d = (MulticastDelegate)_invocationList;
                 d._methodBase = dynamicMethod;

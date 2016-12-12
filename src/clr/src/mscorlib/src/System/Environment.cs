@@ -91,7 +91,7 @@ namespace System {
             [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
             internal String GetResourceString(String key)  {
                 if (key == null || key.Length == 0) {
-                    Contract.Assert(false, "Environment::GetResourceString with null or empty key.  Bug in caller, or weird recursive loading problem?");
+                    Debug.Assert(false, "Environment::GetResourceString with null or empty key.  Bug in caller, or weird recursive loading problem?");
                     return "[Resource lookup failed - null or empty resource name]";
                 }
 
@@ -182,7 +182,7 @@ namespace System {
                 String s = rh.SystemResMgr.GetString(key, null);
                 rh.currentlyLoading.RemoveAt(rh.currentlyLoading.Count - 1); // Pop
 
-                Contract.Assert(s!=null, "Managed resource string lookup failed.  Was your resource name misspelled?  Did you rebuild mscorlib after adding a resource to resources.txt?  Debug this w/ cordbg and bug whoever owns the code that called Environment.GetResourceString.  Resource name was: \""+key+"\"");
+                Debug.Assert(s!=null, "Managed resource string lookup failed.  Was your resource name misspelled?  Did you rebuild mscorlib after adding a resource to resources.txt?  Debug this w/ cordbg and bug whoever owns the code that called Environment.GetResourceString.  Resource name was: \""+key+"\"");
 
                 userData.m_retVal = s;
             }
@@ -308,7 +308,7 @@ namespace System {
             get {
                 StringBuilder sb = new StringBuilder(Path.MaxPath);
                 int r = Win32Native.GetSystemDirectory(sb, Path.MaxPath);
-                Contract.Assert(r < Path.MaxPath, "r < Path.MaxPath");
+                Debug.Assert(r < Path.MaxPath, "r < Path.MaxPath");
                 if (r==0) __Error.WinIOError();
                 String path = sb.ToString();
 
@@ -322,7 +322,7 @@ namespace System {
             get {
                 StringBuilder sb = new StringBuilder(Path.MaxPath);
                 int r = Win32Native.GetWindowsDirectory(sb, Path.MaxPath);
-                Contract.Assert(r < Path.MaxPath, "r < Path.MaxPath");
+                Debug.Assert(r < Path.MaxPath, "r < Path.MaxPath");
                 if (r==0) __Error.WinIOError();
                 String path = sb.ToString();
                 
@@ -631,7 +631,7 @@ namespace System {
                     Version v =  new Version(osvi.MajorVersion, osvi.MinorVersion, osvi.BuildNumber, (osviEx.ServicePackMajor << 16) |osviEx.ServicePackMinor);
                     m_os = new OperatingSystem(id, v, osvi.CSDVersion);
                 }
-                Contract.Assert(m_os != null, "m_os != null");
+                Debug.Assert(m_os != null, "m_os != null");
                 return m_os;
             }
         }

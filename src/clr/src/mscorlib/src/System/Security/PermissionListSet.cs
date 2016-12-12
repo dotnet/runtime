@@ -23,6 +23,7 @@ namespace System.Security
     using System.Threading;
     using System.Collections;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Diagnostics.Contracts;
 
     [Serializable]
@@ -59,7 +60,7 @@ namespace System.Security
         }
 
         internal void UpdateDomainPLS (PermissionSet grantSet, PermissionSet deniedSet) {
-            Contract.Assert(m_permSetTriples == null, "m_permSetTriples != null");
+            Debug.Assert(m_permSetTriples == null, "m_permSetTriples != null");
             if (m_firstPermSetTriple == null)
                 m_firstPermSetTriple = new PermissionSetTriple();
 
@@ -410,7 +411,7 @@ namespace System.Security
         internal bool CheckDemandNoThrow(CodeAccessPermission demand)
         {
             // AppDomain permissions - no asserts. So there should only be one triple to work with
-            Contract.Assert(m_permSetTriples == null && m_firstPermSetTriple != null, "More than one PermissionSetTriple encountered in AD PermissionListSet");
+            Debug.Assert(m_permSetTriples == null && m_firstPermSetTriple != null, "More than one PermissionSetTriple encountered in AD PermissionListSet");
             
 
             
@@ -425,7 +426,7 @@ namespace System.Security
         internal bool CheckSetDemandNoThrow(PermissionSet pSet)
         {
             // AppDomain permissions - no asserts. So there should only be one triple to work with
-            Contract.Assert(m_permSetTriples == null && m_firstPermSetTriple != null, "More than one PermissionSetTriple encountered in AD PermissionListSet");
+            Debug.Assert(m_permSetTriples == null && m_firstPermSetTriple != null, "More than one PermissionSetTriple encountered in AD PermissionListSet");
 
             
             return m_firstPermSetTriple.CheckSetDemandNoThrow(pSet);
@@ -487,7 +488,7 @@ namespace System.Security
         /// <param name="flags">set of flags to check (See PermissionType)</param>
         private bool CheckFlags(int flags)
         {
-            Contract.Assert(flags != 0, "Invalid permission flag demand");
+            Debug.Assert(flags != 0, "Invalid permission flag demand");
 
             bool check = true;
 

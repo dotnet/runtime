@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Collections;
+using System.Diagnostics;
 
 #if !ES_BUILD_AGAINST_DOTNET_V35
 using Contract = System.Diagnostics.Contracts.Contract;
@@ -26,7 +27,7 @@ namespace System.Diagnostics.Tracing
     {
         internal EventPayload(List<string> payloadNames, List<object> payloadValues) 
         {
-            Contract.Assert(payloadNames.Count == payloadValues.Count);
+            Debug.Assert(payloadNames.Count == payloadValues.Count);
 
             m_names = payloadNames;
             m_values = payloadValues;

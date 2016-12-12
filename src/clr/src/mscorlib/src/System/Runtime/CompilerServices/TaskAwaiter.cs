@@ -141,7 +141,7 @@ namespace System.Runtime.CompilerServices
             if (!task.IsCompleted)
             {
                 bool taskCompleted = task.InternalWait(Timeout.Infinite, default(CancellationToken));
-                Contract.Assert(taskCompleted, "With an infinite timeout, the task should have always completed.");
+                Debug.Assert(taskCompleted, "With an infinite timeout, the task should have always completed.");
             }
 
             // Now that we're done, alert the debugger if so requested
@@ -169,7 +169,7 @@ namespace System.Runtime.CompilerServices
                     if (oceEdi != null)
                     {
                         oceEdi.Throw();
-                        Contract.Assert(false, "Throw() should have thrown");
+                        Debug.Assert(false, "Throw() should have thrown");
                     }
                     throw new TaskCanceledException(task);
 
@@ -180,12 +180,12 @@ namespace System.Runtime.CompilerServices
                     if (edis.Count > 0)
                     {
                         edis[0].Throw();
-                        Contract.Assert(false, "Throw() should have thrown");
+                        Debug.Assert(false, "Throw() should have thrown");
                         break; // Necessary to compile: non-reachable, but compiler can't determine that
                     }
                     else
                     {
-                        Contract.Assert(false, "There should be exceptions if we're Faulted.");
+                        Debug.Assert(false, "There should be exceptions if we're Faulted.");
                         throw task.Exception;
                     }
             }

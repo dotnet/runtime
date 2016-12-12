@@ -15,6 +15,7 @@ namespace System.Security {
     using System.Globalization;
     using System.Security.Policy;
     using System.Runtime.Versioning;
+    using System.Diagnostics;
     using System.Diagnostics.Contracts;
 
     // Used in DemandInternal, to remember the result of previous demands
@@ -98,7 +99,7 @@ namespace System.Security {
         private static void ThrowSecurityException(Object assemblyOrString, PermissionSet granted, PermissionSet refused, RuntimeMethodHandleInternal rmh, SecurityAction action, Object demand, IPermission permThatFailed)
 #pragma warning restore 618
         {
-            Contract.Assert((assemblyOrString == null || assemblyOrString is RuntimeAssembly || assemblyOrString is String), "Must pass in an Assembly object or String object here");
+            Debug.Assert((assemblyOrString == null || assemblyOrString is RuntimeAssembly || assemblyOrString is String), "Must pass in an Assembly object or String object here");
             
             if (assemblyOrString == null || assemblyOrString is RuntimeAssembly)
                 ThrowSecurityException((RuntimeAssembly)assemblyOrString, granted, refused, rmh, action, demand, permThatFailed);
@@ -137,7 +138,7 @@ namespace System.Security {
             // To reduce the amount of ifdef-code-churn, a dummy arg is used for the first parameter - instead of a CompressedStack object,
             // we use a System.Object that should always be null. If we tried to change the signature of the function, there will need to be
             // corresponding changes in VM (metasig.h, mscorlib.h, securitystackwalk.cpp, number of elements in the arg array, etc.)
-            Contract.Assert(notUsed == null, "Should not reach here with a non-null first arg which is the CompressedStack");
+            Debug.Assert(notUsed == null, "Should not reach here with a non-null first arg which is the CompressedStack");
 
             CheckSetHelper(grants, refused, demands, rmh, (Object)asm, action, true);
         }
@@ -154,7 +155,7 @@ namespace System.Security {
                                            bool throwException)
 #pragma warning restore 618
         {
-            Contract.Assert(demands != null, "Should not reach here with a null demand set");
+            Debug.Assert(demands != null, "Should not reach here with a null demand set");
 
             IPermission permThatFailed = null;
             if (grants != null)
@@ -236,7 +237,7 @@ namespace System.Security {
             // To reduce the amount of ifdef-code-churn, a dummy arg is used for the first parameter - instead of a CompressedStack object,
             // we use a System.Object that should always be null. If we tried to change the signature of the function, there will need to be
             // corresponding changes in VM (metasig.h, mscorlib.h, securitystackwalk.cpp, number of elements in the arg array, etc.)
-            Contract.Assert(notUsed == null, "Should not reach here with a non-null first arg which is the CompressedStack");
+            Debug.Assert(notUsed == null, "Should not reach here with a non-null first arg which is the CompressedStack");
             CheckHelper(grantedSet, refusedSet, demand, permToken, rmh, (Object)asm, action, true);
         }
 #endif // FEATURE_COMPRESSEDSTACK
@@ -252,7 +253,7 @@ namespace System.Security {
 #pragma warning restore 618
         {
             // We should never get here with a null demand
-            Contract.Assert(demand != null, "Should not reach here with a null demand");
+            Debug.Assert(demand != null, "Should not reach here with a null demand");
 
             if (permToken == null)
                 permToken = PermissionToken.GetToken(demand);
@@ -281,7 +282,7 @@ namespace System.Security {
                     // If we aren't unrestricted, there is a refused set, or our permission is not of the unrestricted
                     // variety, we need to do the proper callback.
 
-                    Contract.Assert(demand != null,"demand != null");
+                    Debug.Assert(demand != null,"demand != null");
 
                     // Find the permission of matching type in the permission set.
 

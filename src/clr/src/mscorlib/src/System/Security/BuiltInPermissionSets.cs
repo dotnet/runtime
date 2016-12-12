@@ -6,6 +6,7 @@
 // 
 
 using System;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Security.Permissions;
 using Microsoft.Win32;
@@ -247,7 +248,7 @@ namespace System.Security
         private static NamedPermissionSet GetOrDeserializePermissionSet(ref NamedPermissionSet permissionSet,
                                                                         string permissionSetXml)
         {
-            Contract.Assert(!String.IsNullOrEmpty(permissionSetXml));
+            Debug.Assert(!String.IsNullOrEmpty(permissionSetXml));
             return permissionSet.Copy() as NamedPermissionSet;
         }
     }

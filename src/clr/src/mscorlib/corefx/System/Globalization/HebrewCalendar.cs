@@ -4,6 +4,7 @@
 
 using System;
 using System.Text;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 
 namespace System.Globalization
@@ -603,7 +604,7 @@ namespace System.Globalization
             //  is true.
             //
             NumDays -= (long)(s_lunarMonthLen[hebrewYearType * MaxMonthPlusOne + lunarDate.month] - lunarDate.day);
-            Contract.Assert(NumDays >= 1, "NumDays >= 1");
+            Debug.Assert(NumDays >= 1, "NumDays >= 1");
 
             // If NumDays is 1, then we are done.  Otherwise, find the correct Hebrew month
             // and day.
@@ -827,7 +828,7 @@ namespace System.Globalization
             int hebrewYearType = GetHebrewYearType(year, era);
             CheckHebrewMonthValue(year, month, era);
 
-            Contract.Assert(hebrewYearType >= 1 && hebrewYearType <= 6,
+            Debug.Assert(hebrewYearType >= 1 && hebrewYearType <= 6,
                 "hebrewYearType should be from  1 to 6, but now hebrewYearType = " + hebrewYearType + " for hebrew year " + year);
             int monthDays = s_lunarMonthLen[hebrewYearType * MaxMonthPlusOne + month];
             if (monthDays == 0)

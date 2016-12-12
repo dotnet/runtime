@@ -457,7 +457,7 @@ namespace System.Threading.Tasks
         internal bool TrySetResult(TResult result)
         {
             if (IsCompleted) return false;
-            Contract.Assert(m_action == null, "Task<T>.TrySetResult(): non-null m_action");
+            Debug.Assert(m_action == null, "Task<T>.TrySetResult(): non-null m_action");
 
             // "Reserve" the completion for this task, while making sure that: (1) No prior reservation
             // has been made, (2) The result has not already been set, (3) An exception has not previously 
@@ -497,7 +497,7 @@ namespace System.Threading.Tasks
         // the task, avoiding expensive completion paths, before the task is actually given to anyone.
         internal void DangerousSetResult(TResult result)
         {
-            Contract.Assert(!IsCompleted, "The promise must not yet be completed.");
+            Debug.Assert(!IsCompleted, "The promise must not yet be completed.");
 
             // If we have a parent, we need to notify it of the completion.  Take the slow path to handle that.
             if (m_contingentProperties?.m_parent != null)
@@ -505,7 +505,7 @@ namespace System.Threading.Tasks
                 bool success = TrySetResult(result);
 
                 // Nobody else has had a chance to complete this Task yet, so we should succeed.
-                Contract.Assert(success); 
+                Debug.Assert(success); 
             }
             else
             {
@@ -539,7 +539,7 @@ namespace System.Threading.Tasks
         {
             get
             {
-                Contract.Assert(!IsWaitNotificationEnabledOrNotRanToCompletion,
+                Debug.Assert(!IsWaitNotificationEnabledOrNotRanToCompletion,
                     "Should only be used when the task completed successfully and there's no wait notification enabled");
                 return m_result; 
             }
@@ -558,7 +558,7 @@ namespace System.Threading.Tasks
             if (!IsRanToCompletion) ThrowIfExceptional(includeTaskCanceledExceptions: true);
 
             // We shouldn't be here if the result has not been set.
-            Contract.Assert(IsRanToCompletion, "Task<T>.Result getter: Expected result to have been set.");
+            Debug.Assert(IsRanToCompletion, "Task<T>.Result getter: Expected result to have been set.");
 
             return m_result;
         }
@@ -572,13 +572,13 @@ namespace System.Threading.Tasks
         // Called from TaskCompletionSource<T>.SetException(IEnumerable<Exception>).
         internal bool TrySetException(object exceptionObject)
         {
-            Contract.Assert(m_action == null, "Task<T>.TrySetException(): non-null m_action");
+            Debug.Assert(m_action == null, "Task<T>.TrySetException(): non-null m_action");
 
             // TCS.{Try}SetException() should have checked for this
-            Contract.Assert(exceptionObject != null, "Expected non-null exceptionObject argument");
+            Debug.Assert(exceptionObject != null, "Expected non-null exceptionObject argument");
 
             // Only accept these types.
-            Contract.Assert(
+            Debug.Assert(
                 (exceptionObject is Exception) || (exceptionObject is IEnumerable<Exception>) ||
                 (exceptionObject is ExceptionDispatchInfo) || (exceptionObject is IEnumerable<ExceptionDispatchInfo>),
                 "Expected exceptionObject to be either Exception, ExceptionDispatchInfo, or IEnumerable<> of one of those");
@@ -620,10 +620,10 @@ namespace System.Threading.Tasks
         // This method is only valid for promise tasks.
         internal bool TrySetCanceled(CancellationToken tokenToRecord, object cancellationException)
         {
-            Contract.Assert(m_action == null, "Task<T>.TrySetCanceled(): non-null m_action");
+            Debug.Assert(m_action == null, "Task<T>.TrySetCanceled(): non-null m_action");
 #if DEBUG
             var ceAsEdi = cancellationException as ExceptionDispatchInfo;
-            Contract.Assert(
+            Debug.Assert(
                 cancellationException == null ||
                 cancellationException is OperationCanceledException ||
                 (ceAsEdi != null && ceAsEdi.SourceException is OperationCanceledException),
@@ -669,7 +669,7 @@ namespace System.Threading.Tasks
         internal override void InnerInvoke()
         {
             // Invoke the delegate
-            Contract.Assert(m_action != null);
+            Debug.Assert(m_action != null);
             var func = m_action as Func<TResult>;
             if (func != null)
             {
@@ -682,7 +682,7 @@ namespace System.Threading.Tasks
                 m_result = funcWithState(m_stateObject);
                 return;
             }
-            Contract.Assert(false, "Invalid m_action in Task<TResult>");
+            Debug.Assert(false, "Invalid m_action in Task<TResult>");
         }
 
         #region Await Support

@@ -5,6 +5,7 @@
 namespace System.Globalization
 {
     using System;
+    using System.Diagnostics;
     using System.Diagnostics.Contracts;
 
     internal class CalendricalCalculationsHelper
@@ -153,7 +154,7 @@ namespace System.Globalization
         // the following formulas defines a polynomial function which gives us the amount that the earth is slowing down for specific year ranges
         static double DefaultEphemerisCorrection(int gregorianYear)
         {
-            Contract.Assert(gregorianYear < 1620 || 2020 <= gregorianYear);
+            Debug.Assert(gregorianYear < 1620 || 2020 <= gregorianYear);
             long january1stOfYear = GetNumberOfDays(new DateTime(gregorianYear, 1, 1));
             double daysSinceStartOf1810 = january1stOfYear - StartOf1810;
             double x = TwelveHours + daysSinceStartOf1810;
@@ -162,34 +163,34 @@ namespace System.Globalization
 
         static double EphemerisCorrection1988to2019(int gregorianYear)
         {
-            Contract.Assert(1988 <= gregorianYear && gregorianYear <= 2019);
+            Debug.Assert(1988 <= gregorianYear && gregorianYear <= 2019);
             return (double)(gregorianYear - 1933) / SecondsPerDay;
         }
 
         static double EphemerisCorrection1900to1987(int gregorianYear)
         {
-            Contract.Assert(1900 <= gregorianYear && gregorianYear <= 1987);
+            Debug.Assert(1900 <= gregorianYear && gregorianYear <= 1987);
             double centuriesFrom1900 = CenturiesFrom1900(gregorianYear);
             return PolynomialSum(Coefficients1900to1987, centuriesFrom1900);
         }
 
         static double EphemerisCorrection1800to1899(int gregorianYear)
         {
-            Contract.Assert(1800 <= gregorianYear && gregorianYear <= 1899);
+            Debug.Assert(1800 <= gregorianYear && gregorianYear <= 1899);
             double centuriesFrom1900 = CenturiesFrom1900(gregorianYear);
             return PolynomialSum(Coefficients1800to1899, centuriesFrom1900);
         }
 
         static double EphemerisCorrection1700to1799(int gregorianYear)
         {
-            Contract.Assert(1700 <= gregorianYear && gregorianYear <= 1799);
+            Debug.Assert(1700 <= gregorianYear && gregorianYear <= 1799);
             double yearsSince1700 = gregorianYear - 1700;
             return PolynomialSum(Coefficients1700to1799, yearsSince1700) / SecondsPerDay;
         }
 
         static double EphemerisCorrection1620to1699(int gregorianYear)
         {
-            Contract.Assert(1620 <= gregorianYear && gregorianYear <= 1699);
+            Debug.Assert(1620 <= gregorianYear && gregorianYear <= 1699);
             double yearsSince1600 = gregorianYear - 1600;
             return PolynomialSum(Coefficients1620to1699, yearsSince1600) / SecondsPerDay;
         }
@@ -216,7 +217,7 @@ namespace System.Globalization
                 }
             }
 
-            Contract.Assert(false, "Not expected to come here");
+            Debug.Assert(false, "Not expected to come here");
             return DefaultEphemerisCorrection(year);
         }
 
@@ -405,7 +406,7 @@ namespace System.Globalization
                     break;
                 }
             }
-            Contract.Assert(day != upperBoundNewYearDay);
+            Debug.Assert(day != upperBoundNewYearDay);
 
             return day - 1;
         }

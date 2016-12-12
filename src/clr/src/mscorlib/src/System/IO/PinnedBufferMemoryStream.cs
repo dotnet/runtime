@@ -15,6 +15,7 @@
 ===========================================================*/
 using System;
 using System.Runtime.InteropServices;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 
 namespace System.IO {
@@ -28,7 +29,7 @@ namespace System.IO {
 
         internal PinnedBufferMemoryStream(byte[] array)
         {
-            Contract.Assert(array != null, "Array can't be null");
+            Debug.Assert(array != null, "Array can't be null");
 
             int len = array.Length;
             // Handle 0 length byte arrays specially.

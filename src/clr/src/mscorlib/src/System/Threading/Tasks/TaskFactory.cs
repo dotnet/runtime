@@ -18,6 +18,7 @@ using System.Security;
 using System.Security.Permissions;
 using System.Runtime.CompilerServices;
 using System.Threading;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 
 namespace System.Threading.Tasks
@@ -1666,7 +1667,7 @@ namespace System.Threading.Tasks
 
                     TrySetResult(_tasks);
                 }
-                Contract.Assert(_count >= 0, "Count should never go below 0");
+                Debug.Assert(_count >= 0, "Count should never go below 0");
             }
 
             public bool InvokeMayRunArbitraryCode { get { return true; } }
@@ -1746,7 +1747,7 @@ namespace System.Threading.Tasks
 
                     TrySetResult(_tasks);
                 }
-                Contract.Assert(_count >= 0, "Count should never go below 0");
+                Debug.Assert(_count >= 0, "Count should never go below 0");
             }
 
             public bool InvokeMayRunArbitraryCode { get { return true; } }
@@ -2448,7 +2449,7 @@ namespace System.Threading.Tasks
                     }
 
                     bool success = TrySetResult(completingTask);
-                    Contract.Assert(success, "Only one task should have gotten to this point, and thus this must be successful.");
+                    Debug.Assert(success, "Only one task should have gotten to this point, and thus this must be successful.");
 
                     // We need to remove continuations that may be left straggling on other tasks.
                     // Otherwise, repeated calls to WhenAny using the same task could leak actions.

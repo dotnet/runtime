@@ -24,6 +24,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Security;
 using System.Security.Permissions;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Reflection;
 
@@ -341,7 +342,7 @@ namespace System.IO {
                 // As we're currently inside of it, we can get the current task
                 // and grab the parameters from it.
                 var thisTask = Task.InternalCurrent as ReadWriteTask;
-                Contract.Assert(thisTask != null, "Inside ReadWriteTask, InternalCurrent should be the ReadWriteTask");
+                Debug.Assert(thisTask != null, "Inside ReadWriteTask, InternalCurrent should be the ReadWriteTask");
 
                 try
                 {
@@ -489,7 +490,7 @@ namespace System.IO {
                 // As we're currently inside of it, we can get the current task
                 // and grab the parameters from it.
                 var thisTask = Task.InternalCurrent as ReadWriteTask;
-                Contract.Assert(thisTask != null, "Inside ReadWriteTask, InternalCurrent should be the ReadWriteTask");
+                Debug.Assert(thisTask != null, "Inside ReadWriteTask, InternalCurrent should be the ReadWriteTask");
 
                 try
                 {
@@ -522,20 +523,20 @@ namespace System.IO {
 
         private void RunReadWriteTaskWhenReady(Task asyncWaiter, ReadWriteTask readWriteTask)
         {
-            Contract.Assert(readWriteTask != null);  // Should be Contract.Requires, but CCRewrite is doing a poor job with
+            Debug.Assert(readWriteTask != null);  // Should be Contract.Requires, but CCRewrite is doing a poor job with
                                                      // preconditions in async methods that await.  
-            Contract.Assert(asyncWaiter != null);    // Ditto
+            Debug.Assert(asyncWaiter != null);    // Ditto
 
             // If the wait has already completed, run the task.
             if (asyncWaiter.IsCompleted)
             {
-                Contract.Assert(asyncWaiter.IsRanToCompletion, "The semaphore wait should always complete successfully.");
+                Debug.Assert(asyncWaiter.IsRanToCompletion, "The semaphore wait should always complete successfully.");
                 RunReadWriteTask(readWriteTask);
             }                
             else  // Otherwise, wait for our turn, and then run the task.
             {
                 asyncWaiter.ContinueWith((t, state) => {
-                    Contract.Assert(t.IsRanToCompletion, "The semaphore wait should always complete successfully.");
+                    Debug.Assert(t.IsRanToCompletion, "The semaphore wait should always complete successfully.");
                     var rwt = (ReadWriteTask)state;
                     rwt._stream.RunReadWriteTask(rwt); // RunReadWriteTask(readWriteTask);
                 }, readWriteTask, default(CancellationToken), TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
@@ -545,7 +546,7 @@ namespace System.IO {
         private void RunReadWriteTask(ReadWriteTask readWriteTask)
         {
             Contract.Requires(readWriteTask != null);
-            Contract.Assert(_activeReadWriteTask == null, "Expected no other readers or writers");
+            Debug.Assert(_activeReadWriteTask == null, "Expected no other readers or writers");
 
             // Schedule the task.  ScheduleAndStart must happen after the write to _activeReadWriteTask to avoid a race.
             // Internally, we're able to directly call ScheduleAndStart rather than Start, avoiding
@@ -559,7 +560,7 @@ namespace System.IO {
         private void FinishTrackingAsyncOperation()
         {
              _activeReadWriteTask = null;
-            Contract.Assert(_asyncActiveSemaphore != null, "Must have been initialized in order to get here.");
+            Debug.Assert(_asyncActiveSemaphore != null, "Must have been initialized in order to get here.");
             _asyncActiveSemaphore.Release();
         }
 
@@ -586,7 +587,7 @@ namespace System.IO {
             try 
             {
                 writeTask.GetAwaiter().GetResult(); // block until completion, then propagate any exceptions
-                Contract.Assert(writeTask.Status == TaskStatus.RanToCompletion);
+                Debug.Assert(writeTask.Status == TaskStatus.RanToCompletion);
             }
             finally
             {

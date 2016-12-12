@@ -27,6 +27,7 @@ namespace System.Security
 #endif // FEATURE_CORRUPTING_EXCEPTIONS
     using System.Runtime.ConstrainedExecution;
     using System.Runtime.Versioning;
+    using System.Diagnostics;
     using System.Diagnostics.Contracts;
 
     // This enum must be kept in sync with the SecurityContextSource enum in the VM
@@ -86,8 +87,8 @@ namespace System.Security
 
             if (currEC != null)
             {
-                Contract.Assert(currEC == Thread.CurrentThread.GetMutableExecutionContext(), "SecurityContextSwitcher used from another thread");
-                Contract.Assert(currSC == currEC.SecurityContext, "SecurityContextSwitcher context mismatch");
+                Debug.Assert(currEC == Thread.CurrentThread.GetMutableExecutionContext(), "SecurityContextSwitcher used from another thread");
+                Debug.Assert(currSC == currEC.SecurityContext, "SecurityContextSwitcher context mismatch");
             
                 // restore the saved security context 
                 currEC.SecurityContext = prevSC.DangerousGetRawSecurityContext();
@@ -95,7 +96,7 @@ namespace System.Security
             else
             {
                 // caller must have already restored the ExecutionContext
-                Contract.Assert(Thread.CurrentThread.GetExecutionContextReader().SecurityContext.IsSame(prevSC));
+                Debug.Assert(Thread.CurrentThread.GetExecutionContextReader().SecurityContext.IsSame(prevSC));
             }
 
             currSC = null; // this will prevent the switcher object being used again        
@@ -284,7 +285,7 @@ namespace System.Security
                     // and automatically goes away when the callback returns.
                     WindowsIdentity.SafeRevertToSelf(ref stackMark);
                     // Ensure we have reverted to the state we entered in.
-                    Contract.Assert(GetCurrentWI(Thread.CurrentThread.GetExecutionContextReader()) == null);
+                    Debug.Assert(GetCurrentWI(Thread.CurrentThread.GetExecutionContextReader()) == null);
                 }
             }
             else
@@ -409,7 +410,7 @@ namespace System.Security
         /// <internalonly/>
         internal SecurityContext CreateMutableCopy()
         {
-            Contract.Assert(!this.isNewCapture);
+            Debug.Assert(!this.isNewCapture);
 
             SecurityContext sc = new SecurityContext();
             sc._disableFlow = this._disableFlow;

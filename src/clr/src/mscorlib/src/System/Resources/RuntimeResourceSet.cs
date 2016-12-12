@@ -20,6 +20,7 @@ namespace System.Resources {
     using System.Globalization;
     using System.Reflection;
     using System.Runtime.Versioning;
+    using System.Diagnostics;
     using System.Diagnostics.Contracts;
 
     // A RuntimeResourceSet stores all the resources defined in one 
@@ -310,7 +311,7 @@ namespace System.Resources {
                     }
 
                     if (dataPos != -1 && value == null) {
-                        Contract.Assert(dataPos >= 0, "data section offset cannot be negative!");
+                        Debug.Assert(dataPos >= 0, "data section offset cannot be negative!");
                         // Normally calling LoadString or LoadObject requires
                         // taking a lock.  Note that in this case, we took a
                         // lock on the entire RuntimeResourceSet, which is 
@@ -371,7 +372,7 @@ namespace System.Resources {
                             Reader.Close();
                     }
                     else {
-                        Contract.Assert(ignoreCase, "This should only happen for case-insensitive lookups");
+                        Debug.Assert(ignoreCase, "This should only happen for case-insensitive lookups");
                         ResourceReader.ResourceEnumerator en = _defaultReader.GetEnumeratorInternal();
                         while (en.MoveNext()) {
                             // Note: Always ask for the resource key before the data position.

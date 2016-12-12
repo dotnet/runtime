@@ -32,6 +32,7 @@ namespace System.Globalization {
     using System.Security.Permissions;
     using Microsoft.Win32;
     using System.Security;
+    using System.Diagnostics;
     using System.Diagnostics.Contracts;
 
     //
@@ -290,7 +291,7 @@ namespace System.Globalization {
 #if FEATURE_USE_LCID
             // This is merely for serialization compatibility with Whidbey/Orcas, it can go away when we don't want that compat any more.
             culture = CultureInfo.GetCultureInfo(this.Name).LCID; // This is the lcid of the constructing culture (still have to dereference to get target sort)
-            Contract.Assert(m_name != null, "CompareInfo.OnSerializing - expected m_name to be set already");
+            Debug.Assert(m_name != null, "CompareInfo.OnSerializing - expected m_name to be set already");
 #endif
         }
 
@@ -320,7 +321,7 @@ namespace System.Globalization {
         {
             get
             {
-                Contract.Assert(m_name != null, "CompareInfo.Name Expected m_name to be set");
+                Debug.Assert(m_name != null, "CompareInfo.Name Expected m_name to be set");
                 return (m_sortName);
             }
         }
@@ -346,7 +347,7 @@ namespace System.Globalization {
             // some NLS VM functions can handle COMPARE_OPTIONS_ORDINAL
             // in which case options should be simply cast to int instead of using this function
             // Does not look like the best approach to me but for now I am going to leave it as it is
-            Contract.Assert(options != CompareOptions.OrdinalIgnoreCase, "[CompareInfo.GetNativeCompareFlags]CompareOptions.OrdinalIgnoreCase should be handled separately");
+            Debug.Assert(options != CompareOptions.OrdinalIgnoreCase, "[CompareInfo.GetNativeCompareFlags]CompareOptions.OrdinalIgnoreCase should be handled separately");
 
             // Use "linguistic casing" by default (load the culture's casing exception tables)
             int nativeCompareFlags = NORM_LINGUISTIC_CASING;
@@ -361,7 +362,7 @@ namespace System.Globalization {
             // Suffix & Prefix shouldn't use this, make sure to turn off the NORM_LINGUISTIC_CASING flag
             if (options == CompareOptions.Ordinal)                { nativeCompareFlags = COMPARE_OPTIONS_ORDINAL; }
 
-            Contract.Assert(((options & ~(CompareOptions.IgnoreCase |
+            Debug.Assert(((options & ~(CompareOptions.IgnoreCase |
                                           CompareOptions.IgnoreKanaType |
                                           CompareOptions.IgnoreNonSpace |
                                           CompareOptions.IgnoreSymbols |
@@ -369,7 +370,7 @@ namespace System.Globalization {
                                           CompareOptions.StringSort)) == 0) ||
                              (options == CompareOptions.Ordinal), "[CompareInfo.GetNativeCompareFlags]Expected all flags to be handled");
 
-            Contract.Assert((nativeCompareFlags & RESERVED_FIND_ASCII_STRING) == 0, "[CompareInfo.GetNativeCompareFlags] RESERVED_FIND_ASCII_STRING shouldn't be set here");
+            Debug.Assert((nativeCompareFlags & RESERVED_FIND_ASCII_STRING) == 0, "[CompareInfo.GetNativeCompareFlags] RESERVED_FIND_ASCII_STRING shouldn't be set here");
 
             return nativeCompareFlags;
         }

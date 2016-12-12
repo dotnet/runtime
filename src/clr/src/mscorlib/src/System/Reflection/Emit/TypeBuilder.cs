@@ -10,13 +10,13 @@ namespace System.Reflection.Emit {
     using System.Reflection;
     using System.Security;
     using System.Security.Permissions;
-    using System.Diagnostics;
     using System.Runtime.InteropServices;
     using System.Runtime.CompilerServices;
     using System.Collections.Generic;
     using CultureInfo = System.Globalization.CultureInfo;
     using System.Threading;
     using System.Runtime.Versioning;
+    using System.Diagnostics;
     using System.Diagnostics.Contracts;
 
 
@@ -404,7 +404,7 @@ namespace System.Reflection.Emit {
                     }
                     else // must be a runtime Enum Type
                     {
-                        Contract.Assert(destType is RuntimeType, "destType is not a runtime type, an EnumBuilder, or a TypeBuilder.");
+                        Debug.Assert(destType is RuntimeType, "destType is not a runtime type, an EnumBuilder, or a TypeBuilder.");
 
                         underlyingType = Enum.GetUnderlyingType(destType);
 

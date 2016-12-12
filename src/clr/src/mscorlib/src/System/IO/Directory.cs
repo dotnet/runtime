@@ -21,6 +21,7 @@ using System.Security.Permissions;
 using Microsoft.Win32;
 using Microsoft.Win32.SafeHandles;
 using System.Runtime.InteropServices;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 
 namespace System.IO
@@ -294,7 +295,7 @@ namespace System.IO
             catch (IOException) { }
             catch (UnauthorizedAccessException)
             {
-                Contract.Assert(false, "Ignore this assert and send a repro to Microsoft. This assert was tracking purposes only.");
+                Debug.Assert(false, "Ignore this assert and send a repro to Microsoft. This assert was tracking purposes only.");
             }
             return false;
         }

@@ -19,6 +19,7 @@ using System.Runtime.InteropServices;
 using System.Security;
 using System.Security.Permissions;
 using System.Threading;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Threading.Tasks; 
 
@@ -387,7 +388,7 @@ namespace System.IO {
             int nInt = (int) n; // Safe because n <= count, which is an Int32
             if (nInt < 0)
                 return 0;  // _position could be beyond EOF
-            Contract.Assert(pos + nInt >= 0, "_position + n >= 0");  // len is less than 2^63 -1.
+            Debug.Assert(pos + nInt >= 0, "_position + n >= 0");  // len is less than 2^63 -1.
 
             unsafe
             {
@@ -445,7 +446,7 @@ namespace System.IO {
                 
             } catch (Exception ex) { 
             
-                Contract.Assert(! (ex is OperationCanceledException));
+                Debug.Assert(! (ex is OperationCanceledException));
                 return Task.FromException<Int32>(ex); 
             } 
         } 
@@ -513,7 +514,7 @@ namespace System.IO {
             }
 
             long finalPos = Interlocked.Read(ref _position);
-            Contract.Assert(finalPos >= 0, "_position >= 0");
+            Debug.Assert(finalPos >= 0, "_position >= 0");
             return finalPos;
         }
 
@@ -643,7 +644,7 @@ namespace System.IO {
                 
             } catch (Exception ex) { 
             
-                Contract.Assert(! (ex is OperationCanceledException));
+                Debug.Assert(! (ex is OperationCanceledException));
                 return Task.FromException<Int32>(ex); 
             } 
         } 

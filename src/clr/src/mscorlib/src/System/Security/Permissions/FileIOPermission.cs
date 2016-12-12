@@ -14,6 +14,7 @@ namespace System.Security.Permissions
     using System.Globalization;
     using System.Runtime.Serialization;
     using System.Runtime.Versioning;
+    using System.Diagnostics;
     using System.Diagnostics.Contracts;
 
     [Serializable]
@@ -1006,7 +1007,7 @@ namespace System.Security.Permissions
                 return this.IsEmpty() ? null : this.Copy();
             }
             
-            Contract.Assert( this.m_pathDiscovery == operand.m_pathDiscovery, "Path discovery settings must match" );
+            Debug.Assert( this.m_pathDiscovery == operand.m_pathDiscovery, "Path discovery settings must match" );
 
             if (this.m_allFiles || operand.m_allFiles)
             {
@@ -1023,7 +1024,7 @@ namespace System.Security.Permissions
                 return null;
             }
             
-            Contract.Assert( this.m_pathDiscovery == operand.m_pathDiscovery, "Path discovery settings must match" );
+            Debug.Assert( this.m_pathDiscovery == operand.m_pathDiscovery, "Path discovery settings must match" );
 
             if (this.m_allFiles)
             {
@@ -1097,7 +1098,7 @@ namespace System.Security.Permissions
                 return true;
             }
             
-            Contract.Assert( this.m_pathDiscovery == operand.m_pathDiscovery, "Path discovery settings must match" );
+            Debug.Assert( this.m_pathDiscovery == operand.m_pathDiscovery, "Path discovery settings must match" );
 
             if (!((m_pathDiscovery && this.m_set.IsSubsetOfPathDiscovery( operand.m_set )) || this.m_set.IsSubsetOf( operand.m_set )))
             {
@@ -1185,7 +1186,7 @@ namespace System.Security.Permissions
             FileIOAccess operand = obj as FileIOAccess;
             if(operand == null)
                 return (IsEmpty() && obj == null);
-            Contract.Assert( this.m_pathDiscovery == operand.m_pathDiscovery, "Path discovery settings must match" );
+            Debug.Assert( this.m_pathDiscovery == operand.m_pathDiscovery, "Path discovery settings must match" );
             if(m_pathDiscovery)
             {
                 if(this.m_allFiles && operand.m_allFiles)

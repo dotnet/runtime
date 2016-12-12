@@ -26,6 +26,7 @@ using System.Runtime.InteropServices;
 using System.Globalization;
 using System.Runtime.Serialization;
 using System.Runtime.Versioning;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 
 namespace System.IO
@@ -94,7 +95,7 @@ namespace System.IO
 #endif //FEATURE_CORESYSTEM
         internal DirectoryInfo(String fullPath, bool junk)
         {
-            Contract.Assert(PathInternal.GetRootLength(fullPath) > 0, "fullPath must be fully qualified!");
+            Debug.Assert(PathInternal.GetRootLength(fullPath) > 0, "fullPath must be fully qualified!");
             // Fast path when we know a DirectoryInfo exists.
             OriginalPath = Path.GetFileName(fullPath);
 
@@ -542,8 +543,8 @@ namespace System.IO
 
         private static String GetDisplayName(String originalPath, String fullPath)
         {
-            Contract.Assert(originalPath != null);
-            Contract.Assert(fullPath != null);
+            Debug.Assert(originalPath != null);
+            Debug.Assert(fullPath != null);
 
             String displayName = "";
 
@@ -561,7 +562,7 @@ namespace System.IO
 
         private static String GetDirName(String fullPath)
         {
-            Contract.Assert(fullPath != null);
+            Debug.Assert(fullPath != null);
 
             String dirName = null;
             if (fullPath.Length > 3)

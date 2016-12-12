@@ -11,6 +11,7 @@ namespace System.Security.Permissions {
 #endif
     using System.Security.Util;
     using System.Globalization;
+    using System.Diagnostics;
     using System.Diagnostics.Contracts;
 
 [Serializable]
@@ -542,7 +543,7 @@ namespace System.Security.Permissions {
                     if (current != null) {
                         if (String.Equals(current.Tag, "AccessEntry")) {
                             int iMax = current.m_lAttributes.Count;
-                            Contract.Assert(iMax % 2 == 0, "Odd number of strings means the attr/value pairs were not added correctly");
+                            Debug.Assert(iMax % 2 == 0, "Odd number of strings means the attr/value pairs were not added correctly");
                             string keyStore = null;
                             string providerName = null;
                             int providerType = -1;

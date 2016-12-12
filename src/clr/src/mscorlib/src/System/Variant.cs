@@ -19,6 +19,7 @@ namespace System {
     using System.Globalization;
     using System.Runtime.CompilerServices;
     using System.Runtime.Versioning;
+    using System.Diagnostics;
     using System.Diagnostics.Contracts;
 
     [Serializable]
@@ -309,13 +310,13 @@ namespace System {
             {
                 vt = VarEnum.VT_ERROR;
                 obj = (Object)(((ErrorWrapper)obj).ErrorCode);
-                Contract.Assert(obj != null, "obj != null");
+                Debug.Assert(obj != null, "obj != null");
             }
             else if (obj is CurrencyWrapper)
             {
                 vt = VarEnum.VT_CY;
                 obj = (Object)(((CurrencyWrapper)obj).WrappedObject);
-                Contract.Assert(obj != null, "obj != null");
+                Debug.Assert(obj != null, "obj != null");
             }
             else if (obj is BStrWrapper)
             {

@@ -8,9 +8,9 @@
 #pragma warning disable 0420 // turn off 'a reference to a volatile field will not be treated as volatile' during CAS.
 
 using System;
-using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Security.Permissions;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Runtime;
 using System.Runtime.CompilerServices;
@@ -167,7 +167,7 @@ namespace System.Threading
         private static void ActionToActionObjShunt(object obj)
         {
             Action action = obj as Action;
-            Contract.Assert(action != null, "Expected an Action here");
+            Debug.Assert(action != null, "Expected an Action here");
             action();
         }
 

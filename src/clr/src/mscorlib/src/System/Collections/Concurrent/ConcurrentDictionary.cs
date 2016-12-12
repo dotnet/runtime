@@ -1905,7 +1905,7 @@ namespace System.Collections.Concurrent
         [Conditional("DEBUG")]
         private void Assert(bool condition)
         {
-            Contract.Assert(condition);
+            Debug.Assert(condition);
         }
 
         /// <summary>

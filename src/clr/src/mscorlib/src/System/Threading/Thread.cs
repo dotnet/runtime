@@ -19,7 +19,6 @@ namespace System.Threading {
     using System.Runtime;
     using System.Runtime.InteropServices;
     using System;
-    using System.Diagnostics;
     using System.Security.Permissions;
     using System.Security.Principal;
     using System.Globalization;
@@ -29,6 +28,7 @@ namespace System.Threading {
     using System.Runtime.ConstrainedExecution;
     using System.Security;
     using System.Runtime.Versioning;
+    using System.Diagnostics;
     using System.Diagnostics.Contracts;
 
     internal delegate Object InternalCrossContextDelegate(Object[] args);
@@ -475,7 +475,7 @@ namespace System.Threading {
         private void SetStartHelper(Delegate start, int maxStackSize)
         {
             // We only support default stacks in CoreCLR
-            Contract.Assert(maxStackSize == 0);
+            Debug.Assert(maxStackSize == 0);
 
             ThreadHelper threadStartCallBack = new ThreadHelper(start);
             if(start is ThreadStart)

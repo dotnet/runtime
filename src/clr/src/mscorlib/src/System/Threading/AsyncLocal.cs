@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Security;
 
@@ -73,7 +74,7 @@ namespace System.Threading
 
         void IAsyncLocal.OnValueChanged(object previousValueObj, object currentValueObj, bool contextChanged)
         {
-            Contract.Assert(m_valueChangedHandler != null);
+            Debug.Assert(m_valueChangedHandler != null);
             T previousValue = previousValueObj == null ? default(T) : (T)previousValueObj;
             T currentValue = currentValueObj == null ? default(T) : (T)currentValueObj;
             m_valueChangedHandler(new AsyncLocalValueChangedArgs<T>(previousValue, currentValue, contextChanged));
@@ -461,7 +462,7 @@ namespace System.Threading
                                 multi.UnsafeStore(index++, pair.Key, pair.Value);
                             }
                         }
-                        Contract.Assert(index == MultiElementAsyncLocalValueMap.MaxMultiElements);
+                        Debug.Assert(index == MultiElementAsyncLocalValueMap.MaxMultiElements);
                         return multi;
                     }
                     else
@@ -474,7 +475,7 @@ namespace System.Threading
                                 map[pair.Key] = pair.Value;
                             }
                         }
-                        Contract.Assert(map.Count == count - 1);
+                        Debug.Assert(map.Count == count - 1);
                         return map;
                     }
                 }

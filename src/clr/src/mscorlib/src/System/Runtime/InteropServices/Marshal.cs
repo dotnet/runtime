@@ -29,6 +29,7 @@ namespace System.Runtime.InteropServices
     using System.Runtime.Versioning;
     using Win32Native = Microsoft.Win32.Win32Native;
     using Microsoft.Win32.SafeHandles;
+    using System.Diagnostics;
     using System.Diagnostics.Contracts;
     using System.Runtime.InteropServices.ComTypes;
 
@@ -2032,10 +2033,10 @@ namespace System.Runtime.InteropServices
                 {
                     // Retrieve the PROGID string from the ProgIdAttribute.
                     IList<CustomAttributeTypedArgument> caConstructorArgs = cas[i].ConstructorArguments;
-                    Contract.Assert(caConstructorArgs.Count == 1, "caConstructorArgs.Count == 1");
+                    Debug.Assert(caConstructorArgs.Count == 1, "caConstructorArgs.Count == 1");
                     
                     CustomAttributeTypedArgument progIdConstructorArg = caConstructorArgs[0];                    
-                    Contract.Assert(progIdConstructorArg.ArgumentType == typeof(String), "progIdConstructorArg.ArgumentType == typeof(String)");
+                    Debug.Assert(progIdConstructorArg.ArgumentType == typeof(String), "progIdConstructorArg.ArgumentType == typeof(String)");
                     
                     String strProgId = (String)progIdConstructorArg.Value;
                     

@@ -8,6 +8,7 @@ namespace System.Runtime.InteropServices{
 
     using System;
     using System.Reflection;
+    using System.Diagnostics;
     using System.Diagnostics.Contracts;
 
     [AttributeUsage(AttributeTargets.Delegate, AllowMultiple = false, Inherited = false)]
@@ -573,7 +574,7 @@ namespace System.Runtime.InteropServices{
             {
                 // The user may have supplied a bad type name string causing this TypeLoadException
                 // Regardless, we return the bad type name
-                Contract.Assert(marshalTypeName != null);
+                Debug.Assert(marshalTypeName != null);
             }
 
             return new MarshalAsAttribute(

@@ -35,6 +35,7 @@ namespace System
     using System.Text;
     using System.Runtime.ConstrainedExecution;
     using System.Runtime.Versioning;
+    using System.Diagnostics;
     using System.Diagnostics.Contracts;
 #if FEATURE_EXCEPTION_NOTIFICATIONS
     using System.Runtime.ExceptionServices;
@@ -319,7 +320,7 @@ namespace System
                 if (s_flags == 0)
                     s_flags = nGetAppXFlags();
 
-                Contract.Assert(s_flags != 0);
+                Debug.Assert(s_flags != 0);
                 return s_flags;
             }
         }
@@ -394,7 +395,7 @@ namespace System
         /// </summary>
         private void CreateAppDomainManager()
         {
-            Contract.Assert(_domainManager == null, "_domainManager == null");
+            Debug.Assert(_domainManager == null, "_domainManager == null");
 
             AppDomainSetup adSetup = FusionStore;
 #if FEATURE_VERSIONING
@@ -498,7 +499,7 @@ namespace System
             // for perf, we don't intialize the _compatFlags dictionary when we don't need to.  However, we do need to make a 
             // note that we've run this method, because IsCompatibilityFlagsSet needs to return different values for the
             // case where the compat flags have been setup.
-            Contract.Assert(!_compatFlagsInitialized);
+            Debug.Assert(!_compatFlagsInitialized);
             _compatFlagsInitialized = true;
 
             CompatibilitySwitches.InitializeSwitches();
@@ -522,7 +523,7 @@ namespace System
                     TargetFrameworkAttribute[] attrs = (TargetFrameworkAttribute[])assembly.GetCustomAttributes(typeof(TargetFrameworkAttribute));
                     if (attrs != null && attrs.Length > 0)
                     {
-                        Contract.Assert(attrs.Length == 1);
+                        Debug.Assert(attrs.Length == 1);
                         targetFrameworkName = attrs[0].FrameworkName;
                         _FusionStore.TargetFrameworkName = targetFrameworkName;
                     }
@@ -690,8 +691,8 @@ namespace System
         /// </summary>
         private void SetAppDomainManagerType(string assembly, string type)
         {
-            Contract.Assert(assembly != null, "assembly != null");
-            Contract.Assert(type != null, "type != null");
+            Debug.Assert(assembly != null, "assembly != null");
+            Debug.Assert(type != null, "type != null");
             SetAppDomainManagerType(GetNativeHandle(), assembly, type);
         }
 
@@ -1714,7 +1715,7 @@ namespace System
                 case (int) AppDomainSetup.LoaderInformation.ApplicationNameValue:
                     return FusionStore.ApplicationName;
                 default:
-                    Contract.Assert(false, "Need to handle new LoaderInformation value in AppDomain.GetData()");
+                    Debug.Assert(false, "Need to handle new LoaderInformation value in AppDomain.GetData()");
                     return null;
                 }
             }
@@ -1967,7 +1968,7 @@ namespace System
         internal AppDomainSetup FusionStore
         {
             get {
-                Contract.Assert(_FusionStore != null, 
+                Debug.Assert(_FusionStore != null, 
                                 "Fusion store has not been correctly setup in this domain");
                 return _FusionStore;
             }
@@ -2315,7 +2316,7 @@ namespace System
        private void SetupLoaderOptimization(LoaderOptimization policy)
         {
             if(policy != LoaderOptimization.NotSpecified) {
-                Contract.Assert(FusionStore.LoaderOptimization == LoaderOptimization.NotSpecified,
+                Debug.Assert(FusionStore.LoaderOptimization == LoaderOptimization.NotSpecified,
                                 "It is illegal to change the Loader optimization on a domain");
 
                 FusionStore.LoaderOptimization = policy;

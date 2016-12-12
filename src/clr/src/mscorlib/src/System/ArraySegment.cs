@@ -16,6 +16,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 
 namespace System
@@ -64,7 +65,7 @@ namespace System
         {
             get
             {
-                Contract.Assert(    (null == _array && 0 == _offset && 0 == _count)
+                Debug.Assert(    (null == _array && 0 == _offset && 0 == _count)
                                  || (null != _array && _offset >= 0 && _count >= 0 && _offset + _count <= _array.Length),
                                 "ArraySegment is invalid");
 
@@ -83,7 +84,7 @@ namespace System
                 // after reading each field out of an ArraySegment into their stack.
                 Contract.Ensures(Contract.Result<int>() >= 0);
 
-                Contract.Assert(    (null == _array && 0 == _offset && 0 == _count)
+                Debug.Assert(    (null == _array && 0 == _offset && 0 == _count)
                                  || (null != _array && _offset >= 0 && _count >= 0 && _offset + _count <= _array.Length),
                                 "ArraySegment is invalid");
 
@@ -102,7 +103,7 @@ namespace System
                 // after reading each field out of an ArraySegment into their stack.
                 Contract.Ensures(Contract.Result<int>() >= 0);
 
-                Contract.Assert(     (null == _array && 0 == _offset && 0 == _count)
+                Debug.Assert(     (null == _array && 0 == _offset && 0 == _count)
                                   || (null != _array && _offset >= 0 && _count >= 0 && _offset + _count <= _array.Length),
                                 "ArraySegment is invalid");
 
@@ -193,7 +194,7 @@ namespace System
 
             int index = System.Array.IndexOf<T>(_array, item, _offset, _count);
 
-            Contract.Assert(index == -1 ||
+            Debug.Assert(index == -1 ||
                             (index >= _offset && index < _offset + _count));
 
             return index >= 0 ? index - _offset : -1;
@@ -255,7 +256,7 @@ namespace System
 
             int index = System.Array.IndexOf<T>(_array, item, _offset, _count);
 
-            Contract.Assert(index == -1 ||
+            Debug.Assert(index == -1 ||
                             (index >= _offset && index < _offset + _count));
 
             return index >= 0;

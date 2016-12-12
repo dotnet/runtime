@@ -13,6 +13,7 @@
 
 using System;
 using System.Security;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Collections.Generic;
 using System.Text;
@@ -39,7 +40,7 @@ namespace System.Threading.Tasks
         {
             Contract.Requires(obj != null, "TaskScheduler.LongRunningThreadWork: obj is null");
             Task t = obj as Task;
-            Contract.Assert(t != null, "TaskScheduler.LongRunningThreadWork: t is null");
+            Debug.Assert(t != null, "TaskScheduler.LongRunningThreadWork: t is null");
             t.ExecuteEntry(false);
         }
 
