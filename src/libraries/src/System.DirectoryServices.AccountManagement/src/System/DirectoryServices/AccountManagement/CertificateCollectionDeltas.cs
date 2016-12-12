@@ -1,21 +1,3 @@
-/*++
-
-Copyright (c) 2004  Microsoft Corporation
-
-Module Name:
-
-    CertificateCollectionDeltas.cs
-
-Abstract:
-
-    Implements the CertificateCollectionDeltas class.
-
-History:
-
-    18-May-2004    MattRim     Created
-
---*/
-
 using System;
 using System.Diagnostics;
 using System.Security.Cryptography.X509Certificates;
@@ -55,7 +37,6 @@ namespace System.DirectoryServices.AccountManagement
         {
             get { return this.removedCerts; }
         }
-
 
         //
         //

@@ -2,23 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*--
-Copyright (c) 2004  Microsoft Corporation
-
-Module Name:
-
-
-Abstract:
-
-    Implements the SAMGroupsSet ResultSet class, used for
-    enumerating the groups to which a user belongs
-    
-History:
-
-    18-June-2004    MattRim     Created
-
---*/
-
 using System;
 using System.Diagnostics;
 using System.Collections;
@@ -27,7 +10,6 @@ using System.Globalization;
 using System.DirectoryServices;
 
 using System.Runtime.InteropServices;
-
 
 namespace System.DirectoryServices.AccountManagement
 {
@@ -112,7 +94,6 @@ namespace System.DirectoryServices.AccountManagement
                 _atBeginning = true;
             }
         }
-
 
         //
         // Private fields

@@ -2,23 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*++
-
-Copyright (c) 2004  Microsoft Corporation
-
-Module Name:
-
-
-Abstract:
-
-    Implements the query portion of the SAMStoreCtx class.
-
-History:
-
-    10-June-2004    MattRim     Created
-
---*/
-
 using System;
 using System.Diagnostics;
 using System.Collections;
@@ -54,7 +37,6 @@ namespace System.DirectoryServices.AccountManagement
             throw new InvalidOperationException(StringResources.PrincipalSearcherNoUnderlying);
         }
 
-
         // Pushes the query represented by the QBE filter into the PrincipalSearcher's underlying native
         // searcher object (creating a fresh native searcher and assigning it to the PrincipalSearcher if one
         // doesn't already exist) and returns the native searcher.
@@ -85,7 +67,6 @@ namespace System.DirectoryServices.AccountManagement
 
             return filters;
         }
-
 
         // The core query operation.
         // Given a PrincipalSearcher containg a query filter, transforms it into the store schema 

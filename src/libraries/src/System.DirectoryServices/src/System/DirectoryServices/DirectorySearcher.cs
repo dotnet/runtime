@@ -2,16 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-//------------------------------------------------------------------------------
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>                                                                
-//------------------------------------------------------------------------------
-
 using INTPTR_INTPTRCAST = System.IntPtr;
 using INTPTR_INTCAST = System.Int32;
-
-/*
- */
 
 namespace System.DirectoryServices
 {
@@ -71,7 +63,6 @@ namespace System.DirectoryServices
         private DirectoryVirtualListView _vlv = null;
         internal bool directoryVirtualListViewSpecified = false;
         internal SearchResultCollection searchResult = null;
-
 
         private const string defaultFilter = "(objectClass=*)";
 
@@ -816,8 +807,6 @@ namespace System.DirectoryServices
             }
         }
 
-
-
         /// <include file='doc\DirectorySearcher.uex' path='docs/doc[@for="DirectorySearcher.FindOne"]/*' />
         /// <devdoc>
         ///    <para>Executes the search and returns only the first entry that is found.</para>
@@ -1063,9 +1052,6 @@ namespace System.DirectoryServices
                 }
             }
 
-
-
-
             IntPtr ptrToFree = (IntPtr)0;
             IntPtr ptrVLVToFree = (IntPtr)0;
             IntPtr ptrVLVContexToFree = (IntPtr)0;
@@ -1129,8 +1115,6 @@ namespace System.DirectoryServices
                     info.vValue = new AdsValueHelper(vlvBytes, AdsType.ADSTYPE_PROV_SPECIFIC).GetStruct();
                     prefList.Add(info);
                 }
-
-
 
                 // cacheResults
                 if (_cacheResultsSpecified)

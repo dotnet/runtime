@@ -2,12 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-//------------------------------------------------------------------------------
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>                                                                
-//------------------------------------------------------------------------------
-
-
 namespace System.DirectoryServices.ActiveDirectory
 {
     using System;
@@ -16,7 +10,6 @@ namespace System.DirectoryServices.ActiveDirectory
     using System.DirectoryServices;
     using System.DirectoryServices.Interop;
     using System.Runtime.InteropServices;
-
 
     /*typedef struct _DOMAIN_CONTROLLER_INFO {
 		LPTSTR DomainControllerName;
@@ -289,7 +282,6 @@ namespace System.DirectoryServices.ActiveDirectory
         public LUID logonId;
     }
 
-
     /*typedef struct _NEGOTIATE_CALLER_NAME_RESPONSE {
     		ULONG       MessageType ;
     		PWSTR       CallerName ;
@@ -300,7 +292,6 @@ namespace System.DirectoryServices.ActiveDirectory
         public int messageType;
         public string callerName;
     }
-
 
     [System.Runtime.InteropServices.ComVisible(false)]
     [SuppressUnmanagedCodeSecurityAttribute()]
@@ -362,7 +353,6 @@ namespace System.DirectoryServices.ActiveDirectory
             [In] string dnsForestName,
             [In] int dcFlags,
             [Out] out IntPtr retGetDcContext);
-
 
         /*DWORD WINAPI DsGetDcNext(
 						HANDLE GetDcContextHandle,
@@ -480,7 +470,6 @@ namespace System.DirectoryServices.ActiveDirectory
         internal delegate int DsListRoles(
             [In] IntPtr dsHandle,
             [Out] out IntPtr roles);
-
 
         /*DWORD GetLastError(VOID)*/
         [DllImport("Kernel32.dll")]
@@ -650,7 +639,6 @@ namespace System.DirectoryServices.ActiveDirectory
         internal class Pathname
         {
         }
-
 
         [ComImport, Guid("D592AED4-F420-11D0-A36E-00C04FB950DC"), InterfaceTypeAttribute(ComInterfaceType.InterfaceIsDual)]
         internal interface IAdsPathname

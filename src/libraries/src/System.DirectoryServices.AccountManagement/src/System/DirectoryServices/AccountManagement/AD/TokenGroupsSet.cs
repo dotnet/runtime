@@ -49,7 +49,6 @@ namespace System.DirectoryServices.AccountManagement
 
         private string _attributeToQuery;
 
-
         // Return the principal we're positioned at as a Principal object.
         // Need to use our StoreCtx's GetAsPrincipal to convert the native object to a Principal
         override internal object CurrentAsPrincipal
@@ -103,7 +102,6 @@ namespace System.DirectoryServices.AccountManagement
             }
 
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "TokenGroupSet", "MoveNextLocal: returning primary group {0}", _current.Path);
-
 
             if (_tokenGroupsEnum.MoveNext())
             {

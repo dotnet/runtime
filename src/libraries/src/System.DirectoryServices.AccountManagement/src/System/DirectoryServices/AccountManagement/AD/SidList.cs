@@ -2,24 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*++
-
-Copyright (c) 2004  Microsoft Corporation
-
-Module Name:
-
-
-Abstract:
-
-    This class implements bulk sid translation and enumeration.  It can be 
-    used for sids from either trusted or untrusted domains by changing the lookup target.
-
-History:
-
-    5-23-2007    TQuerec     Created
-
---*/
-
 using System;
 using System.Diagnostics;
 using System.Collections.Generic;
@@ -84,7 +66,6 @@ namespace System.DirectoryServices.AccountManagement
             // Build the list of SIDs to resolve
             int sidCount = sidAndAttr.Length;
             IntPtr[] pSids = new IntPtr[sidCount];
-
 
             for (int i = 0; i < sidCount; i++)
             {
@@ -188,8 +169,6 @@ namespace System.DirectoryServices.AccountManagement
                 // Translate the SIDs
                 //
 
-
-
                 err = UnsafeNativeMethods.LsaLookupSids(
                                     pPolicyHandle,
                                     sidCount,
@@ -248,7 +227,6 @@ namespace System.DirectoryServices.AccountManagement
                 }
 
                 GlobalDebug.WriteLineIf(GlobalDebug.Info, "AuthZSet", "SidList: got {0} groups in {1} domains", sidCount, domainCount);
-
 
                 //
                 // Build the list of entries

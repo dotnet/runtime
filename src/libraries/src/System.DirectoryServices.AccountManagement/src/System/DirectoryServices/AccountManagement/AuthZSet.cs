@@ -2,23 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*--
-Copyright (c) 2004  Microsoft Corporation
-
-Module Name:
-
-
-Abstract:
-
-    Implements the AuthZSet ResultSet class.
-    
-History:
-
-    07-June-2004    MattRim     Created
-
---*/
-
-
 using System;
 using System.Collections.Generic;
 using System.Collections;
@@ -82,7 +65,6 @@ namespace System.DirectoryServices.AccountManagement
             // flatUserAuthority is flat domain name if userType == Domain,
             // flat host name if userType == LocalMachine
             _flatUserAuthority = flatUserAuthority;
-
 
             // Preload the PrincipalContext cache with the user's PrincipalContext
             _contexts[flatUserAuthority] = userStoreCtx.OwningContext;
@@ -156,7 +138,6 @@ namespace System.DirectoryServices.AccountManagement
 
                             Debug.Assert(bufferSize > 0);
 
-
                             // Set up the needed buffer
                             pBuffer = Marshal.AllocHGlobal(bufferSize);
 
@@ -182,9 +163,7 @@ namespace System.DirectoryServices.AccountManagement
 
                                 // Extract TOKEN_GROUPS.GroupCount                
 
-
                                 UnsafeNativeMethods.TOKEN_GROUPS tokenGroups = (UnsafeNativeMethods.TOKEN_GROUPS)Marshal.PtrToStructure(pBuffer, typeof(UnsafeNativeMethods.TOKEN_GROUPS));
-
 
                                 int groupCount = tokenGroups.groupCount;
 
@@ -196,12 +175,9 @@ namespace System.DirectoryServices.AccountManagement
 
                                 IntPtr currentItem = new IntPtr(pBuffer.ToInt64() + Marshal.SizeOf(typeof(UnsafeNativeMethods.TOKEN_GROUPS)) - Marshal.SizeOf(typeof(IntPtr)));
 
-
-
                                 for (int i = 0; i < groupCount; i++)
                                 {
                                     groups[i] = (UnsafeNativeMethods.SID_AND_ATTR)Marshal.PtrToStructure(currentItem, typeof(UnsafeNativeMethods.SID_AND_ATTR));
-
 
                                     currentItem = new IntPtr(currentItem.ToInt64() + Marshal.SizeOf(typeof(UnsafeNativeMethods.SID_AND_ATTR)));
                                 }
@@ -312,7 +288,6 @@ namespace System.DirectoryServices.AccountManagement
                                 _currentGroup,
                                 _groupSidList.Length);
 
-
                 // Convert native SID to byte[] SID
                 IntPtr pSid = _groupSidList[_currentGroup].pSid;
                 byte[] sid = Utils.ConvertNativeSidToByteArray(pSid);
@@ -382,7 +357,6 @@ namespace System.DirectoryServices.AccountManagement
                     }
                 }
 
-
                 // The SID comes from another domain.  Use the domain name that the OS resolved the SID to.
                 if (sidIssuerName == null)
                 {
@@ -424,8 +398,6 @@ namespace System.DirectoryServices.AccountManagement
 
                             isLocalGroup = !_localMachineIsDC.Value;
                         }
-
-
 
                     GlobalDebug.WriteLineIf(GlobalDebug.Info, "AuthZSet", "CurrentAsPrincipal: user is non-SAM, isLocalGroup={0}", isLocalGroup);
                 }
@@ -585,7 +557,6 @@ namespace System.DirectoryServices.AccountManagement
             _currentGroup = -1;
         }
 
-
         // IDisposable implementation        
         // <SecurityKernel Critical="True" Ring="0">
         // <SatisfiesLinkDemand Name="SafeHandle.Close():System.Void" />
@@ -614,7 +585,6 @@ namespace System.DirectoryServices.AccountManagement
                 base.Dispose();
             }
         }
-
 
         //
         // Private fields
@@ -662,7 +632,6 @@ namespace System.DirectoryServices.AccountManagement
         // Contains cached results if the local machine is  a DC.
         private bool? _localMachineIsDC = null;
 
-
         //
         // Guarantees finalization of the native resources
         //
@@ -706,7 +675,6 @@ namespace System.DirectoryServices.AccountManagement
                     public SidList(UnsafeNativeMethods.SID_AND_ATTR[] groupSidAndAttrs)
                     {
                         GlobalDebug.WriteLineIf(GlobalDebug.Info, "AuthZSet", "SidList: processing {0} SIDs", groupSidAndAttrs.Length);                                                                
-
 
                         // Build the list of SIDs to resolve
                         int groupCount = groupSidAndAttrs.Length;
@@ -757,7 +725,6 @@ namespace System.DirectoryServices.AccountManagement
                             //
                             // Translate the SIDs
                             //
-
 
                             err = UnsafeNativeMethods.LsaLookupSids(
                                                 pPolicyHandle,
@@ -810,7 +777,6 @@ namespace System.DirectoryServices.AccountManagement
 
                             GlobalDebug.WriteLineIf(GlobalDebug.Info, "AuthZSet", "SidList: got {0} groups in {1} domains", groupCount, domainCount);                                                                
 
-
                             //
                             // Build the list of entries
                             //
@@ -857,7 +823,6 @@ namespace System.DirectoryServices.AccountManagement
                         }
                     }
 
-
                     List<SidListEntry> entries = new List<SidListEntry>();
 
                     public SidListEntry this[int index]
@@ -870,7 +835,6 @@ namespace System.DirectoryServices.AccountManagement
                         get { return this.entries.Count; }
                     }   
                 }
-
 
                 class SidListEntry
                 {

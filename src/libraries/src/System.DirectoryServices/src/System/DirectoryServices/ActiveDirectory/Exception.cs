@@ -2,13 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-//------------------------------------------------------------------------------
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
 // </copyright>
-//------------------------------------------------------------------------------
-
-/*
- */
 
 namespace System.DirectoryServices.ActiveDirectory
 {
@@ -122,7 +116,6 @@ namespace System.DirectoryServices.ActiveDirectory
         }
     }
 
-
     [Serializable]
     public class ActiveDirectoryOperationException : Exception, ISerializable
     {
@@ -235,7 +228,6 @@ namespace System.DirectoryServices.ActiveDirectory
         protected ActiveDirectoryObjectExistsException(SerializationInfo info, StreamingContext context) : base(info, context) { }
     }
 
-
     [Serializable]
     public class SyncFromAllServersOperationException : ActiveDirectoryOperationException, ISerializable
     {
@@ -268,7 +260,6 @@ namespace System.DirectoryServices.ActiveDirectory
                 return tempError;
             }
         }
-
 
         [SecurityPermissionAttribute(SecurityAction.LinkDemand, SerializationFormatter = true)]
         public override void GetObjectData(SerializationInfo serializationInfo, StreamingContext streamingContext)
@@ -419,13 +410,10 @@ namespace System.DirectoryServices.ActiveDirectory
             return GetExceptionFromErrorCode(errorCode, null);
         }
 
-
         internal static Exception GetExceptionFromErrorCode(int errorCode, string targetName)
 
         {
             string errorMsg = GetErrorMessage(errorCode, false);
-
-
 
             if ((errorCode == s_ERROR_ACCESS_DENIED) || (errorCode == s_ERROR_DS_DRA_ACCESS_DENIED))
 
@@ -443,9 +431,6 @@ namespace System.DirectoryServices.ActiveDirectory
 
                 return new ActiveDirectoryOperationException(errorMsg, errorCode);
         }
-
-
-
 
         internal static string GetErrorMessage(int errorCode, bool hresult)
         {

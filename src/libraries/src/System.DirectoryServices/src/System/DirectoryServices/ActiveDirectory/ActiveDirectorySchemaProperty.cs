@@ -2,11 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-//------------------------------------------------------------------------------
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>                                                                
-//------------------------------------------------------------------------------
-
 namespace System.DirectoryServices.ActiveDirectory
 {
     using System;
@@ -109,7 +104,6 @@ namespace System.DirectoryServices.ActiveDirectory
 											   /* ORName */ new Syntax("2.5.5.7", 127, s_oRNameOMObjectClass),
 											   /* PresentationAddress */ new Syntax("2.5.5.13", 127, s_presentationAddressOMObjectClass),
 											   /* ReplicaLink */ new Syntax("2.5.5.10", 127, s_replicaLinkOMObjectClass)};
-
 
         #region constructors
         public ActiveDirectorySchemaProperty(DirectoryContext context, string ldapDisplayName)
@@ -331,7 +325,6 @@ namespace System.DirectoryServices.ActiveDirectory
 
             return schemaProperty;
         }
-
 
         public void Save()
         {
@@ -1206,7 +1199,6 @@ namespace System.DirectoryServices.ActiveDirectory
         internal static SearchResult GetPropertiesFromSchemaContainer(DirectoryContext context, DirectoryEntry schemaEntry, string name, bool isDefunctOnServer)
         {
             SearchResult propertyValuesFromServer = null;
-
 
             //
             // The properties that are loaded from the schemaContainer for non-defunct classes:

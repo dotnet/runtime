@@ -2,11 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-//------------------------------------------------------------------------------
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>                                                                
-//------------------------------------------------------------------------------
-
 namespace System.DirectoryServices.Interop
 {
     using System;
@@ -210,7 +205,6 @@ namespace System.DirectoryServices.Interop
                 case AdsType.ADSTYPE_LARGE_INTEGER:
                     return LowInt64;
 
-
                 // not used in LDAP
                 case AdsType.ADSTYPE_CASEIGNORE_LIST:
                 case AdsType.ADSTYPE_OCTET_LIST:
@@ -251,7 +245,6 @@ namespace System.DirectoryServices.Interop
 
             return vlvResponse;
         }
-
 
         private unsafe void SetValue(object managedValue, AdsType adsType)
         {

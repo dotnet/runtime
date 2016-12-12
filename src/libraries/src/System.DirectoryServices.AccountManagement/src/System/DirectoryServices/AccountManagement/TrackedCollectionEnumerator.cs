@@ -2,23 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*++
-
-Copyright (c) 2004  Microsoft Corporation
-
-Module Name:
-
-
-Abstract:
-
-    Implements the TrackedCollectionEnumerator<T> class.
-
-History:
-
-    10-May-2004    MattRim     Created
-
---*/
-
 using System;
 using System.Diagnostics;
 using System.Collections;
@@ -51,8 +34,6 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-
-
         object IEnumerator.Current
         {
             get
@@ -60,7 +41,6 @@ namespace System.DirectoryServices.AccountManagement
                 return Current;
             }
         }
-
 
         //
         // Public methods
@@ -146,7 +126,6 @@ namespace System.DirectoryServices.AccountManagement
             _disposed = true;
         }
 
-
         //
         // Internal constructors
         //
@@ -158,7 +137,6 @@ namespace System.DirectoryServices.AccountManagement
             _trackedCollection = trackedCollection;
             _combinedValues = combinedValues;
         }
-
 
         //
         // Private implementation

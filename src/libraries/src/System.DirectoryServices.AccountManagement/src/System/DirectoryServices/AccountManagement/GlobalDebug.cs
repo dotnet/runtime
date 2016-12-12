@@ -2,27 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*++
-
-Copyright (c) 2004  Microsoft Corporation
-
-Module Name:
-
-
-Abstract:
-
-    Implements app-wide debug settings
-
-History:
-
-    23-Aug-2004    MattRim     Created
-
---*/
-
 using System;
 using System.Diagnostics;
 using System.Globalization;
-
 
 namespace System.DirectoryServices.AccountManagement
 {
@@ -33,7 +15,6 @@ namespace System.DirectoryServices.AccountManagement
         Warn,
         Error
     }
-
 
     internal static class GlobalDebug
     {
@@ -114,7 +95,6 @@ namespace System.DirectoryServices.AccountManagement
                             message,
                             category);
         }
-
 
         private static DebugLevel s_debugLevel;
     }

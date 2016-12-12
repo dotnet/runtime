@@ -2,24 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*++
-
-Copyright (c) 2004  Microsoft Corporation
-
-Module Name:
-
-
-Abstract:
-
-    Implements the query portion of the ADStoreCtx class.
-
-History:
-
-    25-May-2004    MattRim     Created
-
---*/
-
-
 using System;
 using System.Diagnostics;
 using System.Collections.Generic;
@@ -66,7 +48,6 @@ namespace System.DirectoryServices.AccountManagement
                 }
             }
         }
-
 
         protected void BuildPropertySet(Type p, StringCollection propertySet)
         {
@@ -245,7 +226,6 @@ namespace System.DirectoryServices.AccountManagement
             return ldapFilter;
         }
 
-
         // The core query operation.
         // Given a PrincipalSearcher containg a query filter, transforms it into the store schema 
         // and performs the query to get a collection of matching native objects (up to a maximum of sizeLimit,
@@ -286,7 +266,6 @@ namespace System.DirectoryServices.AccountManagement
                 throw ExceptionHelper.GetExceptionFromCOMException(e);
             }
         }
-
 
         //
         // Query tables
@@ -376,7 +355,6 @@ namespace System.DirectoryServices.AccountManagement
             return sb.ToString();
         }
 
-
         protected static string AcctDisabledConverter(FilterBase filter, string suggestedAdProperty)
         {
             // Principal property is AccountEnabled  where TRUE = enabled FALSE = disabled.  In ADAM
@@ -400,7 +378,6 @@ namespace System.DirectoryServices.AccountManagement
 
             return sb.ToString();
         }
-
 
         // Use this function when searching for an attribute where the absence of the attribute = a default setting. 
         // i.e.  ms-DS-UserPasswordNotRequired in ADAM where non existence equals false.
@@ -488,7 +465,6 @@ namespace System.DirectoryServices.AccountManagement
 
             return sb.ToString();
         }
-
 
         protected static bool IdentityClaimToFilter(string identity, string identityFormat, ref String filter, bool throwOnFail)
         {
@@ -596,7 +572,6 @@ namespace System.DirectoryServices.AccountManagement
                     else
                         return false;
             }
-
 
             filter = sb.ToString();
             return true;
@@ -770,7 +745,6 @@ namespace System.DirectoryServices.AccountManagement
                                                     StringResources.StoreCtxUnsupportedPropertyForQuery,
                                                     PropertyNamesExternal.GetExternalForm(filter.PropertyName)));
 
-
                 case AllowReversiblePasswordEncryptionFilter.PropertyNameStatic:
                     // UF_ENCRYPTED_TEXT_PASSWORD_ALLOWED
                     if (value)
@@ -833,7 +807,6 @@ namespace System.DirectoryServices.AccountManagement
 
             return sb.ToString();
         }
-
 
         protected static string GuidConverter(FilterBase filter, string suggestedAdProperty)
         {
@@ -960,8 +933,6 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-
-
         public static string DateTimeFilterBuilder(string attributeName, DateTime searchValue, DateTime defaultValue, bool requirePresence, MatchType mt)
         {
             string ldapSearchValue = null;
@@ -985,7 +956,6 @@ namespace System.DirectoryServices.AccountManagement
             {
                 ldapFilter.Append("&(");
             }
-
 
             switch (mt)
             {
@@ -1068,7 +1038,6 @@ namespace System.DirectoryServices.AccountManagement
 
             return (ldapFilter.ToString());
         }
-
 
         public static string ExtensionTypeConverter(string attributeName, Type type, Object value, MatchType mt)
         {
@@ -1160,7 +1129,6 @@ namespace System.DirectoryServices.AccountManagement
 
             return ldapFilter.ToString();
         }
-
 
         protected static string ExtensionCacheConverter(FilterBase filter, string suggestedAdProperty)
         {

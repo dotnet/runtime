@@ -2,14 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-//------------------------------------------------------------------------------
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>                                                                
-//------------------------------------------------------------------------------
-
-/*
- */
-
 namespace System.DirectoryServices.ActiveDirectory
 {
     using System;
@@ -24,7 +16,6 @@ namespace System.DirectoryServices.ActiveDirectory
         private Hashtable _nameTable = null;
         private AttributeMetadataCollection _dataValueCollection = new AttributeMetadataCollection();
         private ReadOnlyStringCollection _dataNameCollection = new ReadOnlyStringCollection();
-
 
         internal ActiveDirectoryReplicationMetadata(DirectoryServer server)
         {

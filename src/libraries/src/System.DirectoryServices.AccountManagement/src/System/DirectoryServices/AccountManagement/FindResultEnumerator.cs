@@ -2,23 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*++
-
-Copyright (c) 2004  Microsoft Corporation
-
-Module Name:
-
-
-Abstract:
-
-    Implements the FindResultEnumerator<T> class.
-
-History:
-
-    07-May-2004    MattRim     Created
-
---*/
-
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -68,8 +51,6 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-
-
         object IEnumerator.Current
         {
             // <SecurityKernel Critical="True" Ring="0">
@@ -82,7 +63,6 @@ namespace System.DirectoryServices.AccountManagement
                 return Current;
             }
         }
-
 
         //
         // Public methods
@@ -154,8 +134,6 @@ namespace System.DirectoryServices.AccountManagement
         {
             return MoveNext();
         }
-
-
 
         // Repositions us to the beginning by setting beforeStart to true.  Also clears endReached
         // by setting it back to false;

@@ -2,11 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-//------------------------------------------------------------------------------
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>                                                                
-//------------------------------------------------------------------------------
-
 namespace System.DirectoryServices
 {
     using System;
@@ -14,7 +9,6 @@ namespace System.DirectoryServices
     using System.Collections;
     using System.Diagnostics;
     using System.DirectoryServices.Interop;
-
 
     /// <include file='doc\SchemaNameCollection.uex' path='docs/doc[@for="SchemaNameCollection"]/*' />
     /// <devdoc>

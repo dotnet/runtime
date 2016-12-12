@@ -2,12 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-//------------------------------------------------------------------------------
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>                                                                
-//------------------------------------------------------------------------------
-
-
 namespace System.DirectoryServices.ActiveDirectory
 {
     using System;
@@ -20,7 +14,6 @@ namespace System.DirectoryServices.ActiveDirectory
     using System.Text;
     using System.Security.Permissions;
     using System.IO;
-
 
     public enum DirectoryContextType
     {
@@ -49,7 +42,6 @@ namespace System.DirectoryServices.ActiveDirectory
 
         internal static LoadLibrarySafeHandle ADHandle;
         internal static LoadLibrarySafeHandle ADAMHandle;
-
 
         #region constructors
 
@@ -196,7 +188,6 @@ namespace System.DirectoryServices.ActiveDirectory
         #endregion constructors
 
         #region public constructors
-
 
         [
             DirectoryServicesPermission(SecurityAction.Demand, Unrestricted = true)
@@ -847,7 +838,6 @@ namespace System.DirectoryServices.ActiveDirectory
 
             return domainControllerInfo.DomainName;
         }
-
 
         [FileIOPermission(SecurityAction.Assert, AllFiles = FileIOPermissionAccess.PathDiscovery)]
         [EnvironmentPermission(SecurityAction.Assert, Unrestricted = true)]

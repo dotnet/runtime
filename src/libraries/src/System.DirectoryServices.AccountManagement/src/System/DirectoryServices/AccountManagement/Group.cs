@@ -2,23 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*++
-
-Copyright (c) 2004  Microsoft Corporation
-
-Module Name:
-
-
-Abstract:
-
-    Implements the Group class.
-
-History:
-
-    04-May-2004    MattRim     Created
-
---*/
-
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -63,7 +46,6 @@ namespace System.DirectoryServices.AccountManagement
 
             this.Name = samAccountName;
         }
-
 
         //
         // Public properties
@@ -114,7 +96,6 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-
         // GroupScope property
         private GroupScope _groupScope = System.DirectoryServices.AccountManagement.GroupScope.Local;      // the actual property value
         private LoadState _groupScopeChanged = LoadState.NotSet;              // change-tracking
@@ -161,7 +142,6 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-
         // Members property
         private PrincipalCollection _members = null;
 
@@ -204,7 +184,6 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-
         //
         // Public methods
         //
@@ -217,7 +196,6 @@ namespace System.DirectoryServices.AccountManagement
         {
             return (GroupPrincipal)FindByIdentityWithType(context, typeof(GroupPrincipal), identityType, identityValue);
         }
-
 
         public PrincipalSearchResult<Principal> GetMembers()
         {
@@ -281,7 +259,6 @@ namespace System.DirectoryServices.AccountManagement
             return g;
         }
 
-
         //
         // Load/Store implementation
         //
@@ -315,7 +292,6 @@ namespace System.DirectoryServices.AccountManagement
                     break;
             }
         }
-
 
         //
         // Getting changes to persist (or to build a query from a QBE filter)

@@ -2,24 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*++
-
-Copyright (c) 2004  Microsoft Corporation
-
-Module Name:
-
-    MemberCollectionEnumerator.cs
-
-Abstract:
-
-    Implements the PrincipalCollectionEnumerator class.
-
-History:
-
-    13-May-2004    MattRim     Created
-
---*/
-
 using System;
 using System.Diagnostics;
 using System.Collections;
@@ -67,7 +49,6 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-
         object IEnumerator.Current
         {
             // <SecurityKernel Critical="True" Ring="0">
@@ -80,7 +61,6 @@ namespace System.DirectoryServices.AccountManagement
                 return Current;
             }
         }
-
 
         //
         // Public methods
@@ -271,7 +251,6 @@ namespace System.DirectoryServices.AccountManagement
             _currentMode = CurrentEnumeratorMode.None;
         }
 
-
         // <SecurityKernel Critical="True" Ring="0">
         // <SatisfiesLinkDemand Name="Reset():Void" />
         // <ReferencesCritical Name="Method: Reset():Void" Ring="1" />
@@ -286,7 +265,6 @@ namespace System.DirectoryServices.AccountManagement
         {
             _disposed = true;
         }
-
 
         //
         // Internal constructors
@@ -311,7 +289,6 @@ namespace System.DirectoryServices.AccountManagement
             _insertedValuesCompleted = insertedValuesCompleted;
             _insertedValuesPending = insertedValuesPending;
         }
-
 
         //
         // Private implementation
@@ -348,7 +325,6 @@ namespace System.DirectoryServices.AccountManagement
 
         private CurrentEnumeratorMode _currentMode = CurrentEnumeratorMode.None;
 
-
         // To support IDisposable
         private bool _disposed = false;
 
@@ -363,7 +339,6 @@ namespace System.DirectoryServices.AccountManagement
 
         // When this enumerator was constructed, to detect changes made to the PrincipalCollection after it was constructed
         private DateTime _creationTime = DateTime.UtcNow;
-
 
         private PrincipalCollection _memberCollection = null;
 

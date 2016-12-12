@@ -2,14 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-//------------------------------------------------------------------------------
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>                                                                
-//------------------------------------------------------------------------------
-
-/*
- */
-
 namespace System.DirectoryServices.Protocols
 {
     using System;
@@ -53,7 +45,6 @@ namespace System.DirectoryServices.Protocols
             this.directoryMessage = message;
             this.directoryReferral = referral;
         }
-
 
         public string RequestId
         {
@@ -144,7 +135,6 @@ namespace System.DirectoryServices.Protocols
             }
         }
 
-
         public virtual Uri[] Referral
         {
             get
@@ -167,7 +157,6 @@ namespace System.DirectoryServices.Protocols
                 }
             }
         }
-
 
         //
         // Private/protected
@@ -208,7 +197,6 @@ namespace System.DirectoryServices.Protocols
                 // the server returned no controls
                 return new DirectoryControl[0];
             }
-
 
             // Build the DirectoryControl array
             DirectoryControl[] controls = new DirectoryControl[nodeList.Count];
@@ -296,7 +284,6 @@ namespace System.DirectoryServices.Protocols
                 return new Uri[0];
             }
 
-
             // Build the Uri array
             Uri[] uris = new Uri[nodeList.Count];
             int index = 0;
@@ -317,7 +304,6 @@ namespace System.DirectoryServices.Protocols
         internal DeleteResponse(string dn, DirectoryControl[] controls, ResultCode result, string message, Uri[] referral) : base(dn, controls, result, message, referral) { }
     }
 
-
     /// <summary>
     /// The AddResponse class for representing <addResponse>
     /// </summary>
@@ -326,7 +312,6 @@ namespace System.DirectoryServices.Protocols
         internal AddResponse(XmlNode node) : base(node) { }
         internal AddResponse(string dn, DirectoryControl[] controls, ResultCode result, string message, Uri[] referral) : base(dn, controls, result, message, referral) { }
     }
-
 
     /// <summary>
     /// The ModifyResponse class for representing <modifyResponse>
@@ -337,7 +322,6 @@ namespace System.DirectoryServices.Protocols
         internal ModifyResponse(string dn, DirectoryControl[] controls, ResultCode result, string message, Uri[] referral) : base(dn, controls, result, message, referral) { }
     }
 
-
     /// <summary>
     /// The ModifyDnResponse class for representing <modDNResponse>
     /// </summary>
@@ -347,7 +331,6 @@ namespace System.DirectoryServices.Protocols
         internal ModifyDNResponse(string dn, DirectoryControl[] controls, ResultCode result, string message, Uri[] referral) : base(dn, controls, result, message, referral) { }
     }
 
-
     /// <summary>
     /// The CompareResponse class for representing <compareResponse>
     /// </summary>
@@ -356,7 +339,6 @@ namespace System.DirectoryServices.Protocols
         internal CompareResponse(XmlNode node) : base(node) { }
         internal CompareResponse(string dn, DirectoryControl[] controls, ResultCode result, string message, Uri[] referral) : base(dn, controls, result, message, referral) { }
     }
-
 
     /// <summary>
     /// The ExtendedResponse class for representing <extendedResponse>
@@ -508,7 +490,6 @@ namespace System.DirectoryServices.Protocols
                 return directoryMessage;
             }
         }
-
 
         public override Uri[] Referral
         {
@@ -686,7 +667,6 @@ namespace System.DirectoryServices.Protocols
                         attrType = (XmlAttribute)dsmlNode.SelectSingleNode("@type", dsmlNS);
                     }
 
-
                     // verify we got a "type" attribute
                     if (attrType == null)
                     {
@@ -738,7 +718,6 @@ namespace System.DirectoryServices.Protocols
             }
         }
 
-
         public override string MatchedDN
         {
             get
@@ -770,7 +749,6 @@ namespace System.DirectoryServices.Protocols
                 throw new NotSupportedException(Res.GetString(Res.NotSupportOnDsmlErrRes));
             }
         }
-
 
         public override Uri[] Referral
         {

@@ -2,13 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-//------------------------------------------------------------------------------
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>                                                                
-//------------------------------------------------------------------------------
-
-/*
- */
 #pragma warning disable 618
 [assembly: System.Net.WebPermission(System.Security.Permissions.SecurityAction.RequestMinimum, Unrestricted = true)]
 [assembly: System.Security.Permissions.SecurityPermission(System.Security.Permissions.SecurityAction.RequestMinimum, UnmanagedCode = true)]
@@ -275,7 +268,6 @@ namespace System.DirectoryServices.Protocols
                 ldapHandle = new ConnectionHandle(Wldap32.ldap_init(hostname, ((LdapDirectoryIdentifier)directoryIdentifier).PortNumber), needDispose);
             }
 
-
             // create a WeakReference object with the target of ldapHandle and put it into our handle table.
             lock (objectLock)
             {
@@ -375,7 +367,6 @@ namespace System.DirectoryServices.Protocols
 
             if (partialMode == PartialResultProcessing.ReturnPartialResultsAndNotifyCallback && (callback == null))
                 throw new ArgumentException(Res.GetString(Res.CallBackIsNull), "callback");
-
 
             error = SendRequestHelper(request, ref messageID);
 
@@ -704,8 +695,6 @@ namespace System.DirectoryServices.Protocols
                     }
                     tempPtr = (IntPtr)((long)modArray + Marshal.SizeOf(typeof(IntPtr)) * i);
                     Marshal.WriteIntPtr(tempPtr, (IntPtr)0);
-
-
 
                     if (request is AddRequest)
                     {
@@ -1475,7 +1464,6 @@ namespace System.DirectoryServices.Protocols
                                 ((SearchResponse)response).searchDone = true;
                             }
 
-
                             SearchResultEntryCollection searchResultEntries = new SearchResultEntryCollection();
                             SearchResultReferenceCollection searchResultReferences = new SearchResultReferenceCollection();
 
@@ -1677,7 +1665,6 @@ namespace System.DirectoryServices.Protocols
             IntPtr attribute = (IntPtr)0;
             IntPtr address = (IntPtr)0;
             SearchResultAttributeCollection attributes = null;
-
 
             try
             {

@@ -2,15 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-//------------------------------------------------------------------------------
-// <copyright file="DirectoryControl" company="Microsoft">
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>                                                                
-//------------------------------------------------------------------------------
-
-/*
- */
-
 namespace System.DirectoryServices.Protocols
 {
     using System;
@@ -196,7 +187,6 @@ namespace System.DirectoryServices.Protocols
                 }
             }
 
-
             //
             // Populate the control's name (Type)
             //
@@ -218,7 +208,6 @@ namespace System.DirectoryServices.Protocols
             {
                 _directoryControlType = attrType.Value;
             }
-
 
             //
             // Populate the control's value
@@ -377,7 +366,6 @@ namespace System.DirectoryServices.Protocols
                     string attribute = null;
                     bool decodeSucceeded;
                     //sort control
-
 
                     if (Utility.IsWin2kOS)
                         // win2k berencoding does not understand enumeration
@@ -660,7 +648,6 @@ namespace System.DirectoryServices.Protocols
             return base.GetValue();
         }
     }
-
 
     public class ShowDeletedControl : DirectoryControl
     {
@@ -956,7 +943,6 @@ namespace System.DirectoryServices.Protocols
         }
     }
 
-
     public class SortRequestControl : DirectoryControl
     {
         private SortKey[] _keys = new SortKey[0];
@@ -1169,7 +1155,6 @@ namespace System.DirectoryServices.Protocols
             AfterCount = afterCount;
             Target = target;
         }
-
 
         public int BeforeCount
         {

@@ -2,23 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*++
-
-Copyright (c) 2004  Microsoft Corporation
-
-Module Name:
-
-
-Abstract:
-
-    Implements common utility routines.
-
-History:
-
-    04-May-2004    MattRim     Created
-
---*/
-
 using System;
 using System.Diagnostics;
 using System.Globalization;
@@ -82,8 +65,6 @@ namespace System.DirectoryServices.AccountManagement
             return stringizedArray.ToString();
         }
 
-
-
         // Use this for ldap search filter string...
         internal static string SecurityIdentifierToLdapHexFilterString(SecurityIdentifier sid)
         {
@@ -102,7 +83,6 @@ namespace System.DirectoryServices.AccountManagement
             }
             return stringizedBinarySid.ToString();
         }
-
 
         internal static byte[] StringToByteArray(string s)
         {
@@ -134,7 +114,6 @@ namespace System.DirectoryServices.AccountManagement
 
             return bytes;
         }
-
 
         //
         // SID Utilities
@@ -339,7 +318,6 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-
         //
         //
         //
@@ -367,7 +345,6 @@ namespace System.DirectoryServices.AccountManagement
             //         If YES --> is _not_ local user            
             //      If NO --> is _not_ local user
             //            
-
 
             IntPtr pCopyOfUserSid = IntPtr.Zero;
             IntPtr pMachineDomainSid = IntPtr.Zero;
@@ -559,7 +536,6 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-
         //<SecurityKernel Critical="True" Ring="0">
         //<CallsSuppressUnmanagedCode Name="UnsafeNativeMethods.LsaOpenPolicy(System.IntPtr,System.IntPtr,System.Int32,System.IntPtr&amp;):System.Int32" />
         //<CallsSuppressUnmanagedCode Name="SafeNativeMethods.LsaNtStatusToWinError(System.Int32):System.Int32" />
@@ -690,8 +666,6 @@ namespace System.DirectoryServices.AccountManagement
 
             return s;
         }
-
-
 
         //
         // Interop support
@@ -836,7 +810,6 @@ namespace System.DirectoryServices.AccountManagement
                         (serverName != null ? serverName : "NULL"),
                         (authorityName != null ? authorityName : "NULL"));
 
-
             Debug.Assert(ClassifySID(sid) == SidType.FakeObject);
 
             // Get the name for it
@@ -915,7 +888,6 @@ namespace System.DirectoryServices.AccountManagement
                 return false;
             }
 
-
             // Retrive the parsed username which has had the domain removed because LogonUser
             // expects creds this way.
             string userName = credential.ParsedUserName;
@@ -982,7 +954,6 @@ namespace System.DirectoryServices.AccountManagement
             UnsafeNativeMethods.CloseHandle(hUserToken);
         }
 
-
         // <SecurityKernel TreatAsSafe="Directly applied from MetaData" Critical="True" Ring="0">
         // <CallsSuppressUnmanagedCode Name="UnsafeNativeMethods.DsRoleGetPrimaryDomainInformation(System.IntPtr,System.DirectoryServices.AccountManagement.UnsafeNativeMethods+DSROLE_PRIMARY_DOMAIN_INFO_LEVEL,System.IntPtr&):System.Int32" />
         // <CallsSuppressUnmanagedCode Name="UnsafeNativeMethods.DsRoleGetPrimaryDomainInformation(System.String,System.DirectoryServices.AccountManagement.UnsafeNativeMethods+DSROLE_PRIMARY_DOMAIN_INFO_LEVEL,System.IntPtr&):System.Int32" />
@@ -1026,6 +997,4 @@ namespace System.DirectoryServices.AccountManagement
         }
     }
 }
-
-
 

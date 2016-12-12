@@ -2,11 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-//------------------------------------------------------------------------------
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>                                                                
-//------------------------------------------------------------------------------
-
 namespace System.DirectoryServices.ActiveDirectory
 {
     using System;
@@ -30,7 +25,6 @@ namespace System.DirectoryServices.ActiveDirectory
         Indexed = 2,
         InGlobalCatalog = 4
     }
-
 
     [DirectoryServicesPermission(SecurityAction.LinkDemand, Unrestricted = true)]
     public class ActiveDirectorySchema : ActiveDirectoryPartition
@@ -188,7 +182,6 @@ namespace System.DirectoryServices.ActiveDirectory
             return new ActiveDirectorySchema(context, schemaNC, directoryEntryMgr);
         }
 
-
         public void RefreshSchema()
         {
             CheckIfDisposed();
@@ -221,7 +214,6 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
             }
         }
-
 
         //
         // This method finds only among non-defunct classes
@@ -325,7 +317,6 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new ArgumentException(Res.GetString(Res.EmptyStringParameter), "commonName");
             }
 
-
             // this will bind to the schema container and load the properties of this property
             // (will also check whether or not the property exists)
             SearchResult propertiesFromServer = ActiveDirectorySchemaProperty.GetPropertiesFromSchemaContainer(context, _schemaEntry, commonName, true /* isDefunctOnServer */);
@@ -388,7 +379,6 @@ namespace System.DirectoryServices.ActiveDirectory
             return GetAllProperties(context, _schemaEntry, str.ToString());
         }
 
-
         //
         // This method returns only defunct properties
         //  
@@ -419,7 +409,6 @@ namespace System.DirectoryServices.ActiveDirectory
         #endregion public methods
 
         #region public properties
-
 
         public DirectoryServer SchemaRoleOwner
         {

@@ -2,14 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-//------------------------------------------------------------------------------
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>                                                                
-//------------------------------------------------------------------------------
-
-/*
- */
-
 namespace System.DirectoryServices.Protocols
 {
     using System;
@@ -277,7 +269,6 @@ namespace System.DirectoryServices.Protocols
 
         [DllImport("wldap32.dll", CallingConvention = CallingConvention.Cdecl, EntryPoint = "ldap_set_optionW", CharSet = CharSet.Unicode)]
         public static extern int ldap_set_option_servercert([In] ConnectionHandle ldapHandle, [In] LdapOption option, VERIFYSERVERCERT outValue);
-
 
         [DllImport("wldap32.dll", CallingConvention = CallingConvention.Cdecl, EntryPoint = "LdapGetLastError")]
         public static extern int LdapGetLastError();

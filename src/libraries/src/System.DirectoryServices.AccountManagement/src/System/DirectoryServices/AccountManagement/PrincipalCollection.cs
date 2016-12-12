@@ -2,24 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*++
-
-Copyright (c) 2004  Microsoft Corporation
-
-Module Name:
-
-    MemberCollection.cs
-
-Abstract:
-
-    Implements the PrincipalCollection class.
-
-History:
-
-    06-May-2004    MattRim     Created
-
---*/
-
 using System;
 using System.Diagnostics;
 using System.Collections;
@@ -59,9 +41,7 @@ namespace System.DirectoryServices.AccountManagement
             if (index >= array.GetLength(0))
                 throw new ArgumentException(StringResources.PrincipalCollectionIndexNotInArray);
 
-
             ArrayList tempArray = new ArrayList();
-
 
             lock (_resultSet)
             {
@@ -159,7 +139,6 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-
         public bool IsSynchronized
         {
             get
@@ -175,7 +154,6 @@ namespace System.DirectoryServices.AccountManagement
                 return this;
             }
         }
-
 
         //
         // IEnumerable
@@ -239,7 +217,6 @@ namespace System.DirectoryServices.AccountManagement
                                                                 _insertedValuesCompleted,
                                                                 _insertedValuesPending);
 
-
                         int count = 0;
 
                         // Count all the members (including inserted members, but not including removed members)
@@ -262,7 +239,6 @@ namespace System.DirectoryServices.AccountManagement
                 }
             }
         }
-
 
         //
         // IEnumerable<Principal>
@@ -382,7 +358,6 @@ namespace System.DirectoryServices.AccountManagement
             if (identityValue == null)
                 throw new ArgumentNullException("identityValue");
 
-
             Principal principal = Principal.FindByIdentity(context, identityType, identityValue);
 
             if (principal != null)
@@ -396,7 +371,6 @@ namespace System.DirectoryServices.AccountManagement
                 throw new NoMatchingPrincipalException(StringResources.NoMatchingPrincipalExceptionText);
             }
         }
-
 
         //
         // Clear
@@ -428,7 +402,6 @@ namespace System.DirectoryServices.AccountManagement
 
             if ((storeCtxToUse != null) && (!storeCtxToUse.CanGroupBeCleared(_owningGroup, out explanation)))
                 throw new InvalidOperationException(explanation);
-
 
             MarkChange();
 
@@ -490,7 +463,6 @@ namespace System.DirectoryServices.AccountManagement
             if (principal == null)
                 throw new ArgumentNullException("principal");
 
-
             // Ask the StoreCtx to verify that this member can be removed.  Right now, the only
             // reason it couldn't is if it's actually a member by virtue of its primaryGroupId
             // pointing to this group.
@@ -504,7 +476,6 @@ namespace System.DirectoryServices.AccountManagement
 
             if ((storeCtxToUse != null) && (!storeCtxToUse.CanGroupMemberBeRemoved(_owningGroup, principal, out explanation)))
                 throw new InvalidOperationException(explanation);
-
 
             bool removed = false;
 
@@ -584,7 +555,6 @@ namespace System.DirectoryServices.AccountManagement
         // Contains
         //
 
-
         [System.Security.SecuritySafeCritical]
         private bool ContainsEnumTest(Principal principal)
         {
@@ -614,7 +584,6 @@ namespace System.DirectoryServices.AccountManagement
                                                             _insertedValuesCompleted,
                                                             _insertedValuesPending);
 
-
                     while (containmentEnumerator.MoveNext())
                     {
                         Principal p = containmentEnumerator.Current;
@@ -635,7 +604,6 @@ namespace System.DirectoryServices.AccountManagement
 
             return false;
         }
-
 
         [System.Security.SecuritySafeCritical]
         private bool ContainsNativeTest(Principal principal)
@@ -675,7 +643,6 @@ namespace System.DirectoryServices.AccountManagement
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalCollection", "ContainsNativeTest: no store to check");
             return false;
         }
-
 
         // <SecurityKernel Critical="True" Ring="0">
         // <SatisfiesLinkDemand Name="Contains(Principal):Boolean" />
@@ -752,7 +719,6 @@ namespace System.DirectoryServices.AccountManagement
             if (identityValue == null)
                 throw new ArgumentNullException("identityValue");
 
-
             bool found = false;
 
             Principal principal = Principal.FindByIdentity(context, identityType, identityValue);
@@ -762,7 +728,6 @@ namespace System.DirectoryServices.AccountManagement
 
             return found;
         }
-
 
         //
         // Internal constructor
@@ -846,7 +811,6 @@ namespace System.DirectoryServices.AccountManagement
             get { return _clearCompleted; }
         }
 
-
         // Used so our enumerator can detect changes to the collection and throw an exception
         private DateTime _lastChange = DateTime.UtcNow;
 
@@ -868,7 +832,6 @@ namespace System.DirectoryServices.AccountManagement
             if (_disposed)
                 throw new ObjectDisposedException("PrincipalCollection");
         }
-
 
         //
         // Load/Store Implementation

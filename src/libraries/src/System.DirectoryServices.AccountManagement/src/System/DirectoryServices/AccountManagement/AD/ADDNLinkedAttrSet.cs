@@ -2,23 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*--
-Copyright (c) 2004  Microsoft Corporation
-
-Module Name:
-
-
-Abstract:
-
-    Implements the ADDNLinkedAttrSet ResultSet class.
-    
-History:
-
-    04-June-2004    MattRim     Created
-
---*/
-
-
 using System;
 using System.DirectoryServices;
 using System.Collections.Generic;
@@ -74,7 +57,6 @@ namespace System.DirectoryServices.AccountManagement
                                     (primaryGroupMembersSearcher != null ? primaryGroupMembersSearcher.Filter : "NULL"),
                                     (primaryGroupMembersSearcher != null ? primaryGroupMembersSearcher.SearchRoot.Path : "NULL"));
 
-
             _groupsVisited.Add(groupDN);    // so we don't revisit it
             _recursive = recursive;
             _storeCtx = storeCtx;
@@ -90,7 +72,6 @@ namespace System.DirectoryServices.AccountManagement
             }
 
             _members = null;
-
 
             _currentMembersSearcher = null;
             _primaryGroupDN = primaryGroupDN;
@@ -111,7 +92,6 @@ namespace System.DirectoryServices.AccountManagement
                             bool recursive,
                             ADStoreCtx storeCtx)
 
-
         {
             GlobalDebug.WriteLineIf(GlobalDebug.Info,
                                     "ADDNLinkedAttrSet",
@@ -123,7 +103,6 @@ namespace System.DirectoryServices.AccountManagement
                                     (membersSearcher != null ? membersSearcher[0].SearchRoot.Path : "NULL"),
                                     (primaryGroupMembersSearcher != null ? primaryGroupMembersSearcher.Filter : "NULL"),
                                     (primaryGroupMembersSearcher != null ? primaryGroupMembersSearcher.SearchRoot.Path : "NULL"));
-
 
             _groupsVisited.Add(groupDN);    // so we don't revisit it
             _recursive = recursive;
@@ -234,8 +213,6 @@ namespace System.DirectoryServices.AccountManagement
 
             return f;
         }
-
-
 
         private bool MoveNextPrimaryGroupDN()
         {
@@ -427,8 +404,6 @@ namespace System.DirectoryServices.AccountManagement
             return f;
         }
 
-
-
         private bool GetNextEnum()
         {
             bool memberFound = false;
@@ -617,8 +592,6 @@ namespace System.DirectoryServices.AccountManagement
             return f;
         }
 
-
-
         private void TranslateForeignMembers()
         {
             GlobalDebug.WriteLineIf(GlobalDebug.Warn, "ADDNLinkedAttrSet", "TranslateForeignMembers: Translating foreign members");
@@ -677,7 +650,6 @@ namespace System.DirectoryServices.AccountManagement
             _foreignMembersCurrentGroup.Clear();
         }
 
-
         private bool MoveNextForeign(ref bool outerNeedToRetry)
         {
             outerNeedToRetry = false;
@@ -689,12 +661,10 @@ namespace System.DirectoryServices.AccountManagement
             {
                 needToRetry = false;
 
-
                 if (_foreignMembersCurrentGroup.Count > 0)
                 {
                     TranslateForeignMembers();
                 }
-
 
                 if (_fakePrincipalMembers.Count > 0)
                 {
@@ -706,9 +676,7 @@ namespace System.DirectoryServices.AccountManagement
                 {
                     StoreCtx foreignStoreCtx;
 
-
                     SidListEntry foreignSid = _foreignMembersToReturn[0];
-
 
                     // sidIssuerName is null only if SID was not resolved
                     // return a unknown principal back
@@ -731,11 +699,9 @@ namespace System.DirectoryServices.AccountManagement
                         // remove the current member
                         _foreignMembersToReturn.RemoveAt(0);
 
-
                         needToRetry = true;
                         continue;
                     }
-
 
                     SidType sidType = Utils.ClassifySID(foreignSid.pSid);
 
@@ -764,7 +730,6 @@ namespace System.DirectoryServices.AccountManagement
 #endif
                         foreignStoreCtx = remoteCtx.QueryCtx;
                     }
-
 
                     foreignPrincipal = foreignStoreCtx.FindPrincipalByIdentRef(
                                                      typeof(Principal),
@@ -868,8 +833,6 @@ namespace System.DirectoryServices.AccountManagement
             return false;
         }
 
-
-
         private bool ExpandForeignGroupEnumerator()
         {
             Debug.Assert(_recursive == true);
@@ -896,7 +859,6 @@ namespace System.DirectoryServices.AccountManagement
             _groupsVisited.Add(groupDN);
 
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADDNLinkedAttrSet", "ExpandForeignGroupEnumerator: recursively processing {0}", groupDN);
-
 
             return true;
         }
@@ -1033,7 +995,6 @@ namespace System.DirectoryServices.AccountManagement
                     _queryMembersResults = null;
                 }
 
-
                 if (null != _currentMembersSearcher)
                 {
                     _currentMembersSearcher.Dispose();
@@ -1068,7 +1029,6 @@ namespace System.DirectoryServices.AccountManagement
                 _atBeginning = true;
             }
         }
-
 
         override internal ResultSetBookmark BookmarkAndReset()
         {
@@ -1122,7 +1082,6 @@ namespace System.DirectoryServices.AccountManagement
                     }
                 }
             }
-
 
             bookmark.storeCtx = _storeCtx;
 
@@ -1339,7 +1298,6 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-
         //
         //
         //
@@ -1431,7 +1389,6 @@ namespace System.DirectoryServices.AccountManagement
         }
     }
 
-
     internal enum ExpansionMode
     {
         Enum = 0,
@@ -1464,6 +1421,5 @@ namespace System.DirectoryServices.AccountManagement
         public Queue<DirectorySearcher> memberSearcherQueue;
     }
 }
-
 
 // #endif

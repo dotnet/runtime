@@ -2,24 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*++
-
-Copyright (c) 2004  Microsoft Corporation
-
-Module Name:
-
-
-Abstract:
-
-    Implements the PasswordInfo class.
-
-History:
-
-    17-May-2004    MattRim     Created
-
---*/
-
-
 using System;
 using System.Diagnostics;
 using System.Globalization;
@@ -207,7 +189,6 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-
         //
         // Methods exposed to the public through AuthenticablePrincipal
         //
@@ -251,7 +232,6 @@ namespace System.DirectoryServices.AccountManagement
 
             if (newPassword == null)
                 throw new ArgumentNullException("newPassword");
-
 
             // While you can reset the password on an unpersisted principal (and it will be used as the initial password
             // for the pricipal), changing the password on a principal that doesn't exist yet doesn't make sense
@@ -305,7 +285,6 @@ namespace System.DirectoryServices.AccountManagement
                 _owningPrincipal.GetStoreCtxToUse().UnexpirePassword(_owningPrincipal);
             }
         }
-
 
         //
         // Internal constructor
@@ -395,7 +374,6 @@ namespace System.DirectoryServices.AccountManagement
                     break;
             }
         }
-
 
         //
         // Getting changes to persist (or to build a query from a QBE filter)

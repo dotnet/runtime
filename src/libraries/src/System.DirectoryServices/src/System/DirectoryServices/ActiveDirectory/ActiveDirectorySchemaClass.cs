@@ -2,11 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-//------------------------------------------------------------------------------
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>                                                                
-//------------------------------------------------------------------------------
-
 namespace System.DirectoryServices.ActiveDirectory
 {
     using System;
@@ -274,7 +269,6 @@ namespace System.DirectoryServices.ActiveDirectory
             return schemaClass;
         }
 
-
         public ReadOnlyActiveDirectorySchemaPropertyCollection GetAllProperties()
         {
             CheckIfDisposed();
@@ -371,7 +365,6 @@ namespace System.DirectoryServices.ActiveDirectory
                     SetProperty(PropertyManager.DefaultSecurityDescriptor, _defaultSDSddlForm);
                 }
             }
-
 
             try
             {
@@ -937,7 +930,6 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-
         public ActiveDirectorySchemaClass SubClassOf
         {
             get
@@ -1075,7 +1067,6 @@ namespace System.DirectoryServices.ActiveDirectory
                 _defaultSDSddlForm = (value == null) ? null : value.GetSecurityDescriptorSddlForm(AccessControlSections.All);
             }
         }
-
 
         #endregion public properties
 

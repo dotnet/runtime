@@ -2,12 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-//------------------------------------------------------------------------------
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>                                                                
-//------------------------------------------------------------------------------
-
-
 namespace System.DirectoryServices.ActiveDirectory
 {
     using System;
@@ -166,7 +160,6 @@ namespace System.DirectoryServices.ActiveDirectory
             return new ApplicationPartition(context, distinguishedName, context.Name, ApplicationPartitionType.ADApplicationPartition, directoryEntryMgr);
         }
 
-
         public static ApplicationPartition FindByName(DirectoryContext context, string distinguishedName)
         {
             ApplicationPartition partition = null;
@@ -222,7 +215,6 @@ namespace System.DirectoryServices.ActiveDirectory
                 // this is the case where the context is a config set and we could not find an ADAM instance in that config set
                 throw new ActiveDirectoryOperationException(Res.GetString(Res.ADAMInstanceNotFoundInConfigSet, context.Name));
             }
-
 
             // build the filter
             StringBuilder str = new StringBuilder(15);
@@ -383,7 +375,6 @@ namespace System.DirectoryServices.ActiveDirectory
             return directoryServer;
         }
 
-
         public DirectoryServer FindDirectoryServer(string siteName)
         {
             DirectoryServer directoryServer = null;
@@ -412,7 +403,6 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             return directoryServer;
         }
-
 
         public DirectoryServer FindDirectoryServer(bool forceRediscovery)
         {
@@ -492,7 +482,6 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-
         public ReadOnlyDirectoryServerCollection FindAllDirectoryServers(string siteName)
         {
             CheckIfDisposed();
@@ -521,7 +510,6 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-
         public ReadOnlyDirectoryServerCollection FindAllDiscoverableDirectoryServers()
         {
             CheckIfDisposed();
@@ -539,7 +527,6 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new NotSupportedException(Res.GetString(Res.OperationInvalidForADAM));
             }
         }
-
 
         public ReadOnlyDirectoryServerCollection FindAllDiscoverableDirectoryServers(string siteName)
         {
@@ -563,7 +550,6 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new NotSupportedException(Res.GetString(Res.OperationInvalidForADAM));
             }
         }
-
 
         public void Delete()
         {
@@ -592,7 +578,6 @@ namespace System.DirectoryServices.ActiveDirectory
                 partitionsEntry.Dispose();
             }
         }
-
 
         public void Save()
         {
@@ -626,7 +611,6 @@ namespace System.DirectoryServices.ActiveDirectory
                     // for ADAM we always create the crossRef manually before creating the domainDNS object
                     createManually = true;
                 }
-
 
                 if (createManually)
                 {
@@ -782,7 +766,6 @@ namespace System.DirectoryServices.ActiveDirectory
 
         #region public properties
 
-
         public DirectoryServerCollection DirectoryServers
         {
             get
@@ -809,7 +792,6 @@ namespace System.DirectoryServices.ActiveDirectory
                 return _cachedDirectoryServers;
             }
         }
-
 
         public string SecurityReferenceDomain
         {
@@ -912,7 +894,6 @@ namespace System.DirectoryServices.ActiveDirectory
             {
                 throw new ArgumentException(Res.GetString(Res.EmptyStringParameter), "distinguishedName");
             }
-
 
             // initialize private variables
             this.context = new DirectoryContext(context);
@@ -1254,7 +1235,6 @@ namespace System.DirectoryServices.ActiveDirectory
             return directoryServer;
         }
 
-
         private ReadOnlyDirectoryServerCollection FindAllDirectoryServersInternal(string siteName)
         {
             if (siteName != null && siteName.Length == 0)
@@ -1277,7 +1257,6 @@ namespace System.DirectoryServices.ActiveDirectory
 
             return new ReadOnlyDirectoryServerCollection(dcList);
         }
-
 
         private ReadOnlyDirectoryServerCollection FindAllDiscoverableDirectoryServersInternal(string siteName)
         {

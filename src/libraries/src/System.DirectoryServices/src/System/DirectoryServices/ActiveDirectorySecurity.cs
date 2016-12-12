@@ -2,11 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-//------------------------------------------------------------------------------
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>                                                                
-//------------------------------------------------------------------------------
-
 namespace System.DirectoryServices
 {
     using System;
@@ -78,7 +73,6 @@ namespace System.DirectoryServices
         #endregion
 
         #region Public methods
-
 
         //
         // DiscretionaryAcl related methods
@@ -382,7 +376,6 @@ namespace System.DirectoryServices
         }
         #endregion
 
-
     }
 
     internal sealed class ActiveDirectoryRightsTranslator
@@ -442,7 +435,6 @@ namespace System.DirectoryServices
 
         #endregion
     }
-
 
     internal sealed class ActiveDirectoryInheritanceTranslator
     {

@@ -2,25 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*++
-
-Copyright (c) 2004  Microsoft Corporation
-
-Module Name:
-
-
-Abstract:
-
-    Implements the NetCred class.
-    This class is similar to NetworkCredential (i.e., it's a holder
-    for username/domainname/password), but doesn't need the EnvironmentPermission.
-
-History:
-
-    24-Sept-2004    MattRim     Created
-
---*/
-
 using System;
 using System.Diagnostics;
 using System.Globalization;
@@ -121,7 +102,6 @@ namespace System.DirectoryServices.AccountManagement
                 parsedUserName = splitUsername.ToString();
             }
         }
-
 
         //
         private string _username = null;

@@ -2,23 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*++
-
-Copyright (c) 2004  Microsoft Corporation
-
-Module Name:
-
-
-Abstract:
-
-    Implements the PrincipalSearcher class.
-
-History:
-
-    05-May-2004    MattRim     Created
-
---*/
-
 using System;
 using System.Diagnostics;
 using System.Collections;
@@ -175,7 +158,6 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-
         // The wormhole to the native searcher underlying this PrincipalSearcher.
         // This method validates that a PrincipalContext has been set on the searcher and that the QBE
         // filter, if supplied, has no referential properties set.
@@ -211,7 +193,6 @@ namespace System.DirectoryServices.AccountManagement
             if (!_qbeFilter.unpersisted)
                 throw new InvalidOperationException(StringResources.PrincipalSearcherPersistedPrincipal);
 
-
             // Validate the QBE filter: make sure it doesn't have any non-scalar properties set.
             if (HasReferentialPropertiesSet())
                 throw new InvalidOperationException(StringResources.PrincipalSearcherNonReferentialProps);
@@ -229,7 +210,6 @@ namespace System.DirectoryServices.AccountManagement
 
             return _underlyingSearcher;
         }
-
 
         // <SecurityKernel Critical="True" Ring="0">
         // <SatisfiesLinkDemand Name="CheckDisposed():Void" />
@@ -258,7 +238,6 @@ namespace System.DirectoryServices.AccountManagement
             return storeCtx.SearcherNativeType();
         }
 
-
         // <SecurityKernel Critical="True" Ring="0">
         // <SatisfiesLinkDemand Name="get_UnderlyingSearcher():Object" />
         // </SecurityKernel>
@@ -284,7 +263,6 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-
         //
         // Private implementation
         //
@@ -307,7 +285,6 @@ namespace System.DirectoryServices.AccountManagement
             get { return _pageSize; }
         }
 
-
         // The underlying searcher (e.g., DirectorySearcher) corresponding to this PrincipalSearcher.
         // Set by StoreCtx. PushFilterToNativeSearcher(), based on the qbeFilter.
         // If not set, either there is no underlying searcher (SAM), or PushFilterToNativeSearcher has not
@@ -325,7 +302,6 @@ namespace System.DirectoryServices.AccountManagement
                 _underlyingSearcher = value;
             }
         }
-
 
         // The core search method.
         // This method validates that a PrincipalContext has been set on the searcher and that the QBE

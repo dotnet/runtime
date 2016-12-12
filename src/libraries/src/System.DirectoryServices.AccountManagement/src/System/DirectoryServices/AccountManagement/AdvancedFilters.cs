@@ -2,23 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*++
-
-Copyright (c) 2004  Microsoft Corporation
-
-Module Name:
-
-
-Abstract:
-
-    Read Only Filter holder
-
-History:
-
-    TQuerec Created
-
---*/
-
 using System;
 using System.Diagnostics;
 using System.Globalization;
@@ -171,7 +154,6 @@ namespace System.DirectoryServices.AccountManagement
                 _passwordSetTimeChanged = true;
             }
         }
-
 
         // <SecurityKernel Critical="True" Ring="0">
         // <SatisfiesLinkDemand Name="Principal.AdvancedFilterSet(System.String,System.Object,System.Type,System.DirectoryServices.AccountManagement.MatchType):System.Void" />

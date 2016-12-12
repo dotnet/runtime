@@ -2,23 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*++
-
-Copyright (c) 2004  Microsoft Corporation
-
-Module Name:
-
-
-Abstract:
-
-    Implements the StoreCtx class.
-
-History:
-
-    04-May-2004    MattRim     Created
-
---*/
-
 using System;
 using System.Collections.Generic;
 using System.Security.Cryptography.X509Certificates;
@@ -127,7 +110,6 @@ namespace System.DirectoryServices.AccountManagement
         // for ADStoreCtx).  For others, it may vary depending on the Principal passed in.
         internal abstract Type NativeType(Principal p);
 
-
         //
         // Special operations: the Principal classes delegate their implementation of many of the
         // special methods to their underlying StoreCtx
@@ -161,11 +143,9 @@ namespace System.DirectoryServices.AccountManagement
         // Get groups of which p is a direct member
         internal abstract ResultSet GetGroupsMemberOf(Principal p);
 
-
         // Get groups from this ctx which contain a principal corresponding to foreignPrincipal
         // (which is a principal from foreignContext)
         internal abstract ResultSet GetGroupsMemberOf(Principal foreignPrincipal, StoreCtx foreignContext);
-
 
         // Get groups of which p is a member, using AuthZ S4U APIs for recursive membership
         internal abstract ResultSet GetGroupsMemberOfAZ(Principal p);
@@ -184,7 +164,6 @@ namespace System.DirectoryServices.AccountManagement
         // Can the given member be removed from the specified group?  If not, also returns
         // a string containing a human-readable explanation of why not, suitable for use in an exception.
         internal abstract bool CanGroupMemberBeRemoved(GroupPrincipal g, Principal member, out string explanationForFailure);
-
 
         //
         // Query operations
@@ -273,7 +252,6 @@ namespace System.DirectoryServices.AccountManagement
             // Nothing to do in the base class
         }
 
-
         //
         // QBE Filter parsing
         //
@@ -342,7 +320,6 @@ namespace System.DirectoryServices.AccountManagement
         {
             PropertyNames.ComputerServicePrincipalNames
         };
-
 
         // <SecurityKernel Critical="True" Ring="0">
         // <SatisfiesLinkDemand Name="Principal.GetChangeStatusForProperty(System.String):System.Boolean" />
@@ -416,7 +393,6 @@ namespace System.DirectoryServices.AccountManagement
                             propertyName,
                             value.ToString(),
                             value.GetType().ToString());
-
 
                     // Build the right filter based on type of the property value
                     if (value is PrincipalValueCollection<string>)
@@ -497,13 +473,4 @@ namespace System.DirectoryServices.AccountManagement
         }
     }
 }
-
-
-
-
-
-
-
-
-
 

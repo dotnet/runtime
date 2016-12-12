@@ -2,24 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*++
-
-Copyright (c) 2004  Microsoft Corporation
-
-Module Name:
-
-    User.cs
-
-Abstract:
-
-    Implements the User class.
-
-History:
-
-    04-May-2004    MattRim     Created
-
---*/
-
 using System;
 using System.Collections;
 

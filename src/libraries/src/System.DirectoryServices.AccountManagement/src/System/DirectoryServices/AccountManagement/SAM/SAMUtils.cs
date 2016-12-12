@@ -2,23 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*++
-
-Copyright (c) 2004  Microsoft Corporation
-
-Module Name:
-
-
-Abstract:
-
-    Implements SAM-specific utility routines.
-
-History:
-
-    9-June-2004    MattRim     Created
-
---*/
-
 using System;
 using System.Diagnostics;
 using System.Globalization;
@@ -40,7 +23,6 @@ namespace System.DirectoryServices.AccountManagement
     {
         // To stop the compiler from autogenerating a constructor for this class
         private SAMUtils() { }
-
 
         static internal bool IsOfObjectClass(DirectoryEntry de, string classToCompare)
         {
@@ -157,7 +139,6 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-
         //  These are verbatim C# string ( @ ) where \ is actually \\
         // Input            Matches                 RegEx
         // -----            -------                -----
@@ -181,7 +162,6 @@ namespace System.DirectoryServices.AccountManagement
         //  @"c:\Home" -> "c:\\\\Home" OR @"c:\\Home"
         //
         //
-
 
         static internal string PAPIQueryToRegexString(string papiString)
         {

@@ -2,23 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*++
-
-Copyright (c) 2004  Microsoft Corporation
-
-Module Name:
-
-
-Abstract:
-
-    Implements the Computer class.
-
-History:
-
-    04-May-2004    MattRim     Created
-
---*/
-
 using System;
 using System.Diagnostics;
 using System.Collections.Generic;
@@ -71,7 +54,6 @@ namespace System.DirectoryServices.AccountManagement
             this.SetPassword(password);
             this.Enabled = enabled;
         }
-
 
         //
         // Public properties
@@ -127,7 +109,6 @@ namespace System.DirectoryServices.AccountManagement
             return (ComputerPrincipal)FindByIdentityWithType(context, typeof(ComputerPrincipal), identityType, identityValue);
         }
 
-
         //
         // Internal "constructor": Used for constructing Computer returned by a query
         //
@@ -138,7 +119,6 @@ namespace System.DirectoryServices.AccountManagement
 
             return computer;
         }
-
 
         //
         // Load/Store implementation
@@ -163,7 +143,6 @@ namespace System.DirectoryServices.AccountManagement
                     break;
             }
         }
-
 
         //
         // Getting changes to persist (or to build a query from a QBE filter)

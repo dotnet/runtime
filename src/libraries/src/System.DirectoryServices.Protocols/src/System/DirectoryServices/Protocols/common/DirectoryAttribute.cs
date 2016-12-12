@@ -2,15 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-//------------------------------------------------------------------------------
-// <copyright file="ResultCode" company="Microsoft">
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>                                                                
-//------------------------------------------------------------------------------
-
-/*
- */
-
 namespace System.DirectoryServices.Protocols
 {
     using System;
@@ -29,7 +20,6 @@ namespace System.DirectoryServices.Protocols
         private static UTF8Encoding s_utf8EncoderWithErrorDetection = new UTF8Encoding(false, true);
         // with no error detection on
         private static UTF8Encoding s_encoder = new UTF8Encoding();
-
 
         public DirectoryAttribute()
         {
@@ -444,7 +434,6 @@ namespace System.DirectoryServices.Protocols
 
             // attach the "name" attribute and the <value> child elements
             ToXmlNodeCommon(elemAttrMod);
-
 
             // attach the "operation" attribute
             XmlAttribute attrName = doc.CreateAttribute("operation", null);

@@ -2,12 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-//------------------------------------------------------------------------------
-// <copyright file="ConfigurationSet.cs" company="Microsoft">
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>                                                                
-//------------------------------------------------------------------------------
-
 namespace System.DirectoryServices.ActiveDirectory
 {
     using System;
@@ -171,7 +165,6 @@ namespace System.DirectoryServices.ActiveDirectory
             return FindOneAdamInstance(Name, _context, null, null);
         }
 
-
         public AdamInstance FindAdamInstance(string partitionName)
         {
             CheckIfDisposed();
@@ -200,14 +193,12 @@ namespace System.DirectoryServices.ActiveDirectory
             return FindOneAdamInstance(Name, _context, partitionName, siteName);
         }
 
-
         public AdamInstanceCollection FindAllAdamInstances()
         {
             CheckIfDisposed();
 
             return FindAdamInstances(_context, null, null);
         }
-
 
         public AdamInstanceCollection FindAllAdamInstances(string partitionName)
         {
@@ -237,13 +228,11 @@ namespace System.DirectoryServices.ActiveDirectory
             return FindAdamInstances(_context, partitionName, siteName);
         }
 
-
         public DirectoryEntry GetDirectoryEntry()
         {
             CheckIfDisposed();
             return DirectoryEntryManager.GetDirectoryEntry(_context, WellKnownDN.ConfigurationNamingContext);
         }
-
 
         public ReplicationSecurityLevel GetSecurityLevel()
         {
@@ -255,7 +244,6 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             return _cachedSecurityLevel;
         }
-
 
         public void SetSecurityLevel(ReplicationSecurityLevel securityLevel)
         {
@@ -297,7 +285,6 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-
         public ReadOnlySiteCollection Sites
         {
             get
@@ -310,7 +297,6 @@ namespace System.DirectoryServices.ActiveDirectory
                 return _cachedSites;
             }
         }
-
 
         public AdamInstanceCollection AdamInstances
         {
@@ -325,7 +311,6 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-
         public ApplicationPartitionCollection ApplicationPartitions
         {
             get
@@ -338,7 +323,6 @@ namespace System.DirectoryServices.ActiveDirectory
                 return _cachedApplicationPartitions;
             }
         }
-
 
         public ActiveDirectorySchema Schema
         {
@@ -360,7 +344,6 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-
         public AdamInstance SchemaRoleOwner
         {
             get
@@ -373,7 +356,6 @@ namespace System.DirectoryServices.ActiveDirectory
                 return _cachedSchemaRoleOwner;
             }
         }
-
 
         public AdamInstance NamingRoleOwner
         {
@@ -637,7 +619,6 @@ namespace System.DirectoryServices.ActiveDirectory
             // if we reach here, we haven't found an adam instance
             throw new ActiveDirectoryObjectNotFoundException(Res.GetString(Res.ADAMInstanceNotFoundInConfigSet, (configSetName != null) ? configSetName : context.Name), typeof(AdamInstance), null);
         }
-
 
         /// <returns>Returns a DomainController object for the DC that holds the the specified FSMO role</returns>
         private AdamInstance GetRoleOwner(AdamRole role)

@@ -2,25 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*++
-
-Copyright (c) 2004  Microsoft Corporation
-
-Module Name:
-
-    Context.cs
-
-Abstract:
-
-    Implements the PrincipalContext class.
-
-History:
-
-    03-July-2007    TQuerec     Created
-
---*/
-
-
 using System.Diagnostics.CodeAnalysis;
 
 [module: SuppressMessage("Microsoft.Naming", "CA1702:CompoundWordsShouldBeCasedCorrectly", Scope = "member", Target = "System.DirectoryServices.AccountManagement.AdvancedFilters.LastLogonTime(System.DateTime,System.DirectoryServices.AccountManagement.MatchType):System.Void", MessageId = "Logon", Justification = "Logon is valid casing for this word")]
@@ -133,7 +114,4 @@ using System.Diagnostics.CodeAnalysis;
 [module: SuppressMessage("Microsoft.Usage", "CA1806:DoNotIgnoreMethodResults", MessageId = "System.DirectoryServices.AccountManagement.UnsafeNativeMethods.DsRoleFreeMemory(System.IntPtr)", Scope = "member", Target = "System.DirectoryServices.AccountManagement.Utils.#IsMachineDC(System.String)", Justification = "The call is for an API cleanup method, we will not do anything with its return code anyway")]
 [module: SuppressMessage("Microsoft.Usage", "CA1806:DoNotIgnoreMethodResults", MessageId = "System.DirectoryServices.AccountManagement.UnsafeNativeMethods.LsaFreeMemory(System.IntPtr)", Scope = "member", Target = "System.DirectoryServices.AccountManagement.Utils.#GetMachineDomainSid()", Justification = "The call is for an API cleanup method, we will not do anything with its return code anyway")]
 [module: SuppressMessage("Microsoft.Usage", "CA1806:DoNotIgnoreMethodResults", MessageId = "System.DirectoryServices.AccountManagement.UnsafeNativeMethods.LsaClose(System.IntPtr)", Scope = "member", Target = "System.DirectoryServices.AccountManagement.Utils.#GetMachineDomainSid()", Justification = "The call is for an API cleanup method, we will not do anything with its return code anyway")]
-
-
-
 

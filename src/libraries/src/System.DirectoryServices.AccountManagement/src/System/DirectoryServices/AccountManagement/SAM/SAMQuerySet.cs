@@ -2,22 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*--
-Copyright (c) 2004  Microsoft Corporation
-
-Module Name:
-
-
-Abstract:
-
-    Implements the SAMQuerySet ResultSet class.
-    
-History:
-
-    10-June-2004    MattRim     Created
-
---*/
-
 using System;
 using System.Diagnostics;
 using System.Collections;
@@ -195,7 +179,6 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-
         //
         // Private fields
         //
@@ -218,13 +201,10 @@ namespace System.DirectoryServices.AccountManagement
         private bool _endReached = false;
     }
 
-
-
     internal abstract class SAMMatcher
     {
         abstract internal bool Matches(DirectoryEntry de);
     }
-
 
     //
     // The matcher routines for query-by-example support
@@ -316,7 +296,6 @@ namespace System.DirectoryServices.AccountManagement
             return true;
         }
 
-
         // We only list properties we support filtering on in this table.  At run-time, if we detect they set a
         // property that's not listed here, we throw an exception.
         private static object[,] s_filterPropertiesTableRaw =
@@ -358,7 +337,6 @@ namespace System.DirectoryServices.AccountManagement
         //
         // Conversion routines
         //
-
 
         private static bool WildcardStringMatch(FilterBase filter, string wildcardFilter, string property)
         {
@@ -425,8 +403,6 @@ namespace System.DirectoryServices.AccountManagement
                         value = (DateTime)de.Properties[winNTPropertyName].Value;
                     }
 
-
-
                     int comparisonResult = DateTime.Compare(value, (DateTime)valueToMatch.Value);
                     bool result = true;
 
@@ -458,7 +434,6 @@ namespace System.DirectoryServices.AccountManagement
                     return result;
                 }
             }
-
 
             return false;
         }
@@ -731,7 +706,6 @@ namespace System.DirectoryServices.AccountManagement
         }
     }
 
-
     //
     // The matcher routines for FindBy* support
     //
@@ -842,7 +816,6 @@ namespace System.DirectoryServices.AccountManagement
             return TestForMatch(storeValue);
         }
 
-
         private bool TestForMatch(Nullable<DateTime> nullableStoreValue)
         {
             // If the store object doesn't have the property set, then the only
@@ -854,7 +827,6 @@ namespace System.DirectoryServices.AccountManagement
 
             Debug.Assert(nullableStoreValue.HasValue);
             DateTime storeValue = nullableStoreValue.Value;
-
 
             switch (_matchType)
             {
@@ -882,8 +854,6 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
     }
-
-
 
     // <SecurityKernel Critical="True" Ring="0">
     // <Asserts Name="Declarative: [DirectoryServicesPermission(SecurityAction.Assert, Unrestricted = true)]" />

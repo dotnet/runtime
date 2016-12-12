@@ -1,23 +1,3 @@
-/*++
-
-Copyright (c) 2004  Microsoft Corporation
-
-Module Name:
-
-    testobj.cs
-
-Abstract:
-
-    Exposes test hooks.
-
-    Only present in TESTHOOK builds.
-    
-History:
-
-    06-May-2004    MattRim     Created
-
---*/
-
 #if TESTHOOK
 
 using System;
@@ -160,7 +140,6 @@ namespace System.DirectoryServices.AccountManagement
             trackList.ResetTracking();
         }
 
-
         //
         // IdentityClaimCollection
         //
@@ -232,7 +211,6 @@ namespace System.DirectoryServices.AccountManagement
         {
             trackList.ResetTracking();
         }
-
 
         //
         // PrincipalCollection
@@ -307,7 +285,6 @@ namespace System.DirectoryServices.AccountManagement
         {
             ap.ResetAllChangeStatus();
         }
-
 
         //
         // PasswordInfo

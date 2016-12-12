@@ -2,23 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*++
-
-Copyright (c) 2004  Microsoft Corporation
-
-Module Name:
-
-
-Abstract:
-
-    Implements the QbeFilterDescription class.
-
-History:
-
-    05-May-2004    MattRim     Created
-
---*/
-
 using System;
 using System.Collections;
 using System.Diagnostics;
@@ -99,7 +82,6 @@ namespace System.DirectoryServices.AccountManagement
             s_subclasses[BadLogonCountFilter.PropertyNameStatic] = typeof(BadLogonCountFilter);
         }
 
-
         // Given a property name, constructs and returns the appropriate individual property
         // filter
         static public object CreateFilter(string propertyName)
@@ -112,7 +94,6 @@ namespace System.DirectoryServices.AccountManagement
             return System.Activator.CreateInstance(type);
         }
     }
-
 
     //
     // The individual property filters
@@ -128,7 +109,6 @@ namespace System.DirectoryServices.AccountManagement
         }
 
         private object _value;
-
 
         // Some providers need place to store extra state, e.g., a processed form of Value
         public object Extra
@@ -336,7 +316,6 @@ namespace System.DirectoryServices.AccountManagement
         public const string PropertyNameStatic = PropertyNames.ComputerServicePrincipalNames;
         public override string PropertyName { get { return PropertyNameStatic; } }
     }
-
 
     internal class ExtensionCacheFilter : FilterBase
     {

@@ -2,31 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*++
-
-Copyright (c) 2004  Microsoft Corporation
-
-Module Name:
-
-
-Abstract:
-
-    Implements config file parsing.
-
-History:
-
-    18-Aug-2004    MattRim     Derived from SearchWaitHandler from S.DS,
-                               written by WeiqingT
-
---*/
-
 using System;
 using System.Collections;
 using System.Diagnostics;
 using System.Xml;
 using System.Configuration;
 using System.Globalization;
-
 
 namespace System.DirectoryServices.AccountManagement
 {
@@ -38,7 +19,6 @@ namespace System.DirectoryServices.AccountManagement
             bool foundDebugging = false;
             System.Enum debugLevelEnum = (System.Enum)GlobalConfig.DefaultDebugLevel;
             string debugLogFile = null;
-
 
             foreach (XmlNode child in section.ChildNodes)
             {
@@ -101,7 +81,6 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-
         private void RemoveStringAttribute(XmlNode node, string sectionName, string attributeName, out string value)
         {
             value = null;
@@ -125,7 +104,6 @@ namespace System.DirectoryServices.AccountManagement
         }
 #endif
     }
-
 
     internal class ConfigSettings
     {

@@ -2,24 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*++
-
-Copyright (c) 2004  Microsoft Corporation
-
-Module Name:
-
-
-Abstract:
-
-    Implements utility routines for using S.DS.
-    These routines are used for both AD and SAM.
-
-History:
-
-    10-June-2004    MattRim     Created
-
---*/
-
 using System;
 using System.Diagnostics;
 using System.Collections.Generic;
@@ -36,8 +18,6 @@ namespace System.DirectoryServices.AccountManagement
     {
         // To stop the compiler from autogenerating a constructor for this class
         private SDSUtils() { }
-
-
 
         // <SecurityKernel Critical="True" Ring="0">
         // <ReferencesCritical Name="Method: UserPrincipal.MakeUser(System.DirectoryServices.AccountManagement.PrincipalContext):System.DirectoryServices.AccountManagement.UserPrincipal" Ring="1" />
@@ -72,8 +52,6 @@ namespace System.DirectoryServices.AccountManagement
 
             // If we know the type we should just construct it ourselves so that we don't need to incur the costs of reflection.
             // If this is an extension type then we must reflect teh constructor to create the object.
-
-
 
             if (typeof(UserPrincipal) == principalType)
             {
@@ -244,7 +222,6 @@ namespace System.DirectoryServices.AccountManagement
             return authTypes;
         }
 
-
         // <SecurityKernel Critical="True" Ring="0">
         // <SatisfiesLinkDemand Name="DirectoryEntry.MoveTo(System.DirectoryServices.DirectoryEntry,System.String):System.Void" />
         // <SatisfiesLinkDemand Name="DirectoryEntry.MoveTo(System.DirectoryServices.DirectoryEntry):System.Void" />
@@ -277,7 +254,6 @@ namespace System.DirectoryServices.AccountManagement
                 deParent.Dispose();
             }
         }
-
 
         // <SecurityKernel Critical="True" Ring="0">
         // <SatisfiesLinkDemand Name="Principal.GetChangeStatusForProperty(System.String):System.Boolean" />
@@ -402,8 +378,6 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-
-
         // <SecurityKernel Critical="True" Ring="0">
         // <SatisfiesLinkDemand Name="DirectoryEntry.Invoke(System.String,System.Object[]):System.Object" />
         // </SecurityKernel>
@@ -490,7 +464,6 @@ namespace System.DirectoryServices.AccountManagement
                                                                                credentials != null ? credentials.Password : null,
                                                                                authTypes);
 
-
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "SDSUtils", "BuildDirectoryEntry (1): built DE for  " + de.Path);
 
             return de;
@@ -515,7 +488,6 @@ namespace System.DirectoryServices.AccountManagement
 
             return de;
         }
-
 
         // <SecurityKernel Critical="True" Ring="0">
         // <SatisfiesLinkDemand Name="DirectoryEntry.RefreshCache(System.String[]):System.Void" />
@@ -560,8 +532,6 @@ namespace System.DirectoryServices.AccountManagement
                     copyOfDe.Dispose();
             }
         }
-
-
 
         // <SecurityKernel Critical="True" Ring="0">
         // <SatisfiesLinkDemand Name="DirectoryEntry.RefreshCache(System.String[]):System.Void" />
@@ -614,7 +584,6 @@ namespace System.DirectoryServices.AccountManagement
                             attribute,
                             dePath);
 
-
                 // ADSI threw an exception trying to write the change
                 throw ExceptionHelper.GetExceptionFromCOMException(e);
             }
@@ -666,7 +635,6 @@ namespace System.DirectoryServices.AccountManagement
 
             p.LoadValueIntoProperty(propertyName, list);
         }
-
 
         static internal bool StatusFromAccountControl(int uacValue, string propertyName)
         {
@@ -934,7 +902,6 @@ namespace System.DirectoryServices.AccountManagement
                         goto default;
                     }
 
-
                 default:
                     Debug.Fail("SDSUtils.AccountControlToDirectoryEntry: Fell off end looking for " + propertyName);
                     bitmask = 0;
@@ -946,7 +913,6 @@ namespace System.DirectoryServices.AccountManagement
                 Utils.SetBit(ref uacValue, bitmask);
             else
                 Utils.ClearBit(ref uacValue, bitmask);
-
 
             de.Properties[suggestedProperty].Value = uacValue;
         }

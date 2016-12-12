@@ -2,24 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*++
-
-Copyright (c) 2004  Microsoft Corporation
-
-Module Name:
-
-
-Abstract:
-
-    Implements the AccountInfo class.
-
-History:
-
-    17-May-2004    MattRim     Created
-
---*/
-
-
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -73,7 +55,6 @@ namespace System.DirectoryServices.AccountManagement
                 return _owningPrincipal.HandleGet<Nullable<DateTime>>(ref _lastLogon, PropertyNames.AcctInfoLastLogon, ref _lastLogonLoaded);
             }
         }
-
 
         // PermittedWorkstations
         private PrincipalValueCollection<string> _permittedWorkstations = new PrincipalValueCollection<string>();
@@ -149,7 +130,6 @@ namespace System.DirectoryServices.AccountManagement
                 _permittedLogonTimes = value;
             }
         }
-
 
         // AccountExpirationDate
         private Nullable<DateTime> _expirationDate = null;
@@ -273,7 +253,6 @@ namespace System.DirectoryServices.AccountManagement
                 return _owningPrincipal.HandleGet<int>(ref _badLogonCount, PropertyNames.AcctInfoBadLogonCount, ref _badLogonCountChanged);
             }
         }
-
 
         // HomeDirectory
         private string _homeDirectory = null;
@@ -527,7 +506,6 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-
         //
         // Getting changes to persist (or to build a query from a QBE filter)
         //
@@ -616,7 +594,6 @@ namespace System.DirectoryServices.AccountManagement
                     return null;
             }
         }
-
 
         // Reset all change-tracking status for all properties on the object to "unchanged".
         // <SecurityKernel Critical="True" Ring="0">

@@ -1,21 +1,3 @@
-/*++
-
-Copyright (c) 2004  Microsoft Corporation
-
-Module Name:
-
-    ValueCollection.cs
-
-Abstract:
-
-    Implements the ValueCollection<T> class.
-
-History:
-
-    10-May-2004    MattRim     Created
-
---*/
-
 using System;
 using System.Diagnostics;
 using System.Collections;
@@ -198,7 +180,6 @@ namespace System.Identity.Principals
             if (value == null)
                 throw new ArgumentNullException("value");   
 
-
             int index = 0;
 
             foreach (TrackedCollection<T>.ValueEl el in inner.combinedValues)
@@ -263,7 +244,6 @@ namespace System.Identity.Principals
             }            
         }
 
-
         public T this[int index]
         {
             get
@@ -306,7 +286,6 @@ namespace System.Identity.Principals
             }
         }
 
-
         //
         // ICollection<T>
         //
@@ -323,7 +302,6 @@ namespace System.Identity.Principals
             }
         }
 
-
         //
         // IEnumerable<T>
         //
@@ -331,7 +309,6 @@ namespace System.Identity.Principals
         {
             return new ValueCollectionEnumerator<T>(inner, inner.combinedValues);
         }
-
 
         //
         // Private implementation
@@ -372,7 +349,6 @@ namespace System.Identity.Principals
             }
         }
 
-
         internal List<T> Inserted
         {
             get
@@ -396,7 +372,6 @@ namespace System.Identity.Principals
                 return inner.ChangedValues;
             }
         }
-
 
         internal bool Changed
         {

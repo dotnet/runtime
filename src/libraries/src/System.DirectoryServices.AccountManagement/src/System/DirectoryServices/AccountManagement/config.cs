@@ -1,23 +1,4 @@
 
-/*++
-
-Copyright (c) 2004  Microsoft Corporation
-
-Module Name:
-
-    config.cs
-
-Abstract:
-
-    Build configuration control.
-
-History:
-
-    04-May-2004    MattRim     Created
-
---*/
-
-
 
 // 
 // This file controls whether we're building for Longhorn or Whidbey.
@@ -48,7 +29,6 @@ History:
     #error "Must define either FLAVOR_LONGHORN or FLAVOR_WHIDBEY"
 
 #endif
-
 
 // MSAM is built on top of Reg-SAM.  If we're building PAPI_MSAM, need to enable PAPI_REGSAM as well.
 #if PAPI_MSAM

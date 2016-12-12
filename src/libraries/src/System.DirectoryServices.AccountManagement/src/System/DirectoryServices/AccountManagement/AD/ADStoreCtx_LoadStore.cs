@@ -2,25 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*++
-
-Copyright (c) 2004  Microsoft Corporation
-
-Module Name:
-
-
-Abstract:
-
-    Implements the load/store (marshalling between Principal and DirectoryEntry)
-    portion of the ADStoreCtx class.
-
-History:
-
-    26-May-2004    MattRim     Created
-
---*/
-
-
 using System;
 using System.Diagnostics;
 using System.Collections.Generic;
@@ -91,7 +72,6 @@ namespace System.DirectoryServices.AccountManagement
                         // derived object.  This is only done for classes that derive from User, Computer or Group.  If a user derives his own class from AuthPrincipal
                         // they are responsible for setting all required base class properties.
 
-
                         if (principalType.IsSubclassOf(typeof(GroupPrincipal)) ||
                              principalType.IsSubclassOf(typeof(UserPrincipal)) ||
                              principalType.IsSubclassOf(typeof(ComputerPrincipal)))
@@ -161,7 +141,6 @@ namespace System.DirectoryServices.AccountManagement
                         }
                     }
 
-
                     if (rdnPrefix == null)
                     {
                         // There was no rdn prefix attribute set on the principal class
@@ -224,7 +203,6 @@ namespace System.DirectoryServices.AccountManagement
                         }
                     }
                 }
-
 
                 return de;
             }
@@ -502,7 +480,6 @@ namespace System.DirectoryServices.AccountManagement
             {
                 ds.SizeLimit = 2;   // so we can efficiently check for duplicates
 
-
                 // If we are searching for AuthPrincpal or Principal in the end we will construct the acutal type
                 // i.e. if the objects objectClass is User we will construct a UserPrincipal even though they searched for Principal.FindByIdentity
                 // At this time we don't know the actual object type so we have to ask AD for all the attributes of the derived types so they are there
@@ -520,7 +497,6 @@ namespace System.DirectoryServices.AccountManagement
                 }
 
                 BuildPropertySet(principalType, ds.PropertiesToLoad);
-
 
                 //
                 // Build an appropriate filter
@@ -639,7 +615,6 @@ namespace System.DirectoryServices.AccountManagement
                         UrnScheme.NameScheme
                     };
 
-
                     StringBuilder innerLdapFilter = new StringBuilder();
 
                     innerLdapFilter.Append("(|");
@@ -702,7 +677,6 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-
         // Returns a type indicating the type of object that would be returned as the wormhole for the specified
         // Principal.  For some StoreCtxs, this method may always return a constant (e.g., typeof(DirectoryEntry)
         // for ADStoreCtx).  For others, it may vary depending on the Principal passed in.
@@ -712,7 +686,6 @@ namespace System.DirectoryServices.AccountManagement
 
             return typeof(DirectoryEntry);
         }
-
 
         //
         // Property mapping tables
@@ -853,7 +826,6 @@ namespace System.DirectoryServices.AccountManagement
         // (to maintain idempotency when PushChangesToNative is called multiple times).
         protected delegate void ToLdapConverterDelegate(Principal p, string propertyName, DirectoryEntry de, string suggestedAdProperty);
 
-
         //
         // Conversion: LDAP --> PAPI
         //
@@ -949,7 +921,6 @@ namespace System.DirectoryServices.AccountManagement
                 p.LoadValueIntoProperty(propertyName, list);
             }
         }
-
 
         protected static void IntFromLdapConverter(dSPropertyCollection properties, string suggestedAdProperty, Principal p, string propertyName)
         {
@@ -1198,7 +1169,6 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-
         //
         // Conversion: PAPI --> LDAP
         //
@@ -1331,7 +1301,6 @@ namespace System.DirectoryServices.AccountManagement
             UnsafeNativeMethods.ADsLargeInteger largeIntObj = new UnsafeNativeMethods.ADsLargeInteger();
             UnsafeNativeMethods.IADsLargeInteger largeInt = (UnsafeNativeMethods.IADsLargeInteger)largeIntObj;
 
-
             if (!dt.HasValue)
             {
                 // no expiration date
@@ -1423,7 +1392,6 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-
         protected static void GroupTypeToLdapConverter(Principal p, string propertyName, DirectoryEntry de, string suggestedAdProperty)
         {
             Debug.Assert(propertyName == PropertyNames.GroupIsSecurityGroup || propertyName == PropertyNames.GroupGroupScope);
@@ -1500,7 +1468,6 @@ namespace System.DirectoryServices.AccountManagement
             de.Properties[suggestedAdProperty].Value = groupTypeCombined;
         }
 
-
         // {PropertyNames.GroupMembers,  "members",   null,                                                      new ToLdapConverterDelegate(GroupMembersToLdapConverter)},
 
         protected static void UpdateGroupMembership(Principal group, DirectoryEntry de, NetCred credentials, AuthenticationTypes authTypes)
@@ -1554,7 +1521,6 @@ namespace System.DirectoryServices.AccountManagement
                                             credentials,
                                             authTypes);
                 }
-
 
                 // First, validate the members to be added
                 foreach (Principal member in insertedMembers)
@@ -1668,7 +1634,6 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-
         // Builds a SID dn for the principal <SID=...>
         protected static string GetSidPathFromPrincipal(Principal p)
         {
@@ -1707,7 +1672,6 @@ namespace System.DirectoryServices.AccountManagement
                 return @"<SID=" + Utils.ByteArrayToString(sid) + ">";
             }
         }
-
 
         protected static void CannotChangePwdToLdapConverter(Principal p, string propertyName, DirectoryEntry de, string suggestedAdProperty)
         {

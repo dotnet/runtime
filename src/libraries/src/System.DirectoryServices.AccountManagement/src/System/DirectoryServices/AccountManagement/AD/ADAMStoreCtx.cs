@@ -41,7 +41,6 @@ namespace System.DirectoryServices.AccountManagement
             LoadFilterMappingTable(mappingIndex, s_filterPropertiesTableRaw);
             LoadPropertyMappingTable(mappingIndex, s_propertyMappingTableRaw);
 
-
             if (NonPresentAttrDefaultStateMapping == null)
                 NonPresentAttrDefaultStateMapping = new Dictionary<string, bool>();
 
@@ -52,8 +51,6 @@ namespace System.DirectoryServices.AccountManagement
                 NonPresentAttrDefaultStateMapping.Add(attributeName, (defaultState == "FALSE") ? false : true);
             }
         }
-
-
 
         protected override int MappingTableIndex
         {
@@ -132,7 +129,6 @@ namespace System.DirectoryServices.AccountManagement
                     }
                 }
             }
-
 
             //
             // User supplied name
@@ -258,20 +254,7 @@ namespace System.DirectoryServices.AccountManagement
             SDSUtils.ChangePassword(de, oldPassword, newPassword);
         }
 
-        //------------------------------------------------------------------------------------
-        // Taking a server target and Auxillary class name return 
-        // a list of all possible objectClasses that include that auxClass.  A search for object that have a specific
-        // aux class cannot be done directly on the objects because static auxClasses to not appear in the 
-        // actual object.  This is done by
-        // 1.  Searching the schema container for schema classes that include the aux class as a
-        //      SystemAuxiliaryClass.  This covers StaticAuxClasses.
-        // 2.  Add the aux class name as an additional returned objectClass to cover Dynamic AuxClasses.
-        //------------------------------------------------------------------------------------
-        private List<string> PopulatAuxObjectList(string auxClassName)
-        {
-            string SchemaNamingContext;
-
-            GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADAMStoreCtx", "PopulatAuxObjectList Building object list");
+                    GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADAMStoreCtx", "PopulatAuxObjectList Building object list");
 
             try
             {
@@ -366,8 +349,6 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-
-
         /// <summary>
         /// This method sets the default user account control bits for the new principal
         /// being created in this account store.
@@ -382,7 +363,6 @@ namespace System.DirectoryServices.AccountManagement
         //
         // Property mapping tables
         //
-
 
         //
         // This table maps properties where the non-presence of the property
@@ -501,5 +481,4 @@ namespace System.DirectoryServices.AccountManagement
         };
     }
 }
-
 

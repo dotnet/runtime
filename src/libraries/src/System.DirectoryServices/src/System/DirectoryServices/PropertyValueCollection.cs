@@ -2,14 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-//------------------------------------------------------------------------------
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>                                                                
-//------------------------------------------------------------------------------
-
-/*
- */
-
 namespace System.DirectoryServices
 {
     using System;
@@ -40,7 +32,6 @@ namespace System.DirectoryServices
         private ArrayList _changeList = null;
         private bool _allowMultipleChange = false;
         private bool _needNewBehavior = false;
-
 
         internal PropertyValueCollection(DirectoryEntry entry, string propertyName)
         {
