@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 using System;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.IO;
 using System.Reflection;
@@ -123,7 +124,7 @@ namespace System
             string asmName = GetAssemblyName();
 
             // GetAssemblyName never returns null
-            Contract.Assert(asmName != null);
+            Debug.Assert(asmName != null);
 
             if (asmName.Length > 0)
             {
@@ -151,7 +152,7 @@ namespace System
             if (baseType == null)
             {
                 // Cannot resolve the type. If throwOnError is true we should have already thrown.
-                Contract.Assert(throwOnError == false);
+                Debug.Assert(throwOnError == false);
                 return null;
             }
 
@@ -163,7 +164,7 @@ namespace System
                 types = new Type[typeArguments.Length];
                 for (int i = 0; i < typeArguments.Length; i++)
                 {
-                    Contract.Assert(typeArguments[i] != null);
+                    Debug.Assert(typeArguments[i] != null);
 
                     using (TypeNameParser argParser = new TypeNameParser(typeArguments[i]))
                     {
@@ -173,7 +174,7 @@ namespace System
                     if (types[i] == null)
                     {
                         // If throwOnError is true argParser.ConstructType should have already thrown.
-                        Contract.Assert(throwOnError == false);
+                        Debug.Assert(throwOnError == false);
                         return null;
                     }
                 }

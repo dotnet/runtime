@@ -10,6 +10,7 @@ using System.Reflection;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
@@ -28,7 +29,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
     {
         private ListToVectorAdapter()
         {
-            Contract.Assert(false, "This class is never instantiated");
+            Debug.Assert(false, "This class is never instantiated");
         }
 
         // T GetAt(uint index)
@@ -58,7 +59,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         internal IReadOnlyList<T> GetView<T>()
         {
             IList<T> _this = JitHelpers.UnsafeCast<IList<T>>(this);
-            Contract.Assert(_this != null);
+            Debug.Assert(_this != null);
 
             // Note: This list is not really read-only - you could QI for a modifiable
             // list.  We gain some perf by doing this.  We believe this is acceptable.

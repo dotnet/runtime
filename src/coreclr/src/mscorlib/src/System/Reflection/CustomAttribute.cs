@@ -65,7 +65,7 @@ namespace System.Reflection
         #region Internal Static Members
         internal static IList<CustomAttributeData> GetCustomAttributesInternal(RuntimeType target)
         {
-            Contract.Assert(target != null);
+            Debug.Assert(target != null);
 
             IList<CustomAttributeData> cad = GetCustomAttributes(target.GetRuntimeModule(), target.MetadataToken);
 
@@ -87,7 +87,7 @@ namespace System.Reflection
 
         internal static IList<CustomAttributeData> GetCustomAttributesInternal(RuntimeFieldInfo target)
         {
-            Contract.Assert(target != null);
+            Debug.Assert(target != null);
 
             IList<CustomAttributeData> cad = GetCustomAttributes(target.GetRuntimeModule(), target.MetadataToken);
 
@@ -109,7 +109,7 @@ namespace System.Reflection
 
         internal static IList<CustomAttributeData> GetCustomAttributesInternal(RuntimeMethodInfo target)
         {
-            Contract.Assert(target != null);
+            Debug.Assert(target != null);
 
             IList<CustomAttributeData> cad = GetCustomAttributes(target.GetRuntimeModule(), target.MetadataToken);
 
@@ -131,28 +131,28 @@ namespace System.Reflection
 
         internal static IList<CustomAttributeData> GetCustomAttributesInternal(RuntimeConstructorInfo target)
         {
-            Contract.Assert(target != null);
+            Debug.Assert(target != null);
 
             return GetCustomAttributes(target.GetRuntimeModule(), target.MetadataToken);
         }
 
         internal static IList<CustomAttributeData> GetCustomAttributesInternal(RuntimeEventInfo target)
         {
-            Contract.Assert(target != null);
+            Debug.Assert(target != null);
 
             return GetCustomAttributes(target.GetRuntimeModule(), target.MetadataToken);
         }
 
         internal static IList<CustomAttributeData> GetCustomAttributesInternal(RuntimePropertyInfo target)
         {
-            Contract.Assert(target != null);
+            Debug.Assert(target != null);
 
             return GetCustomAttributes(target.GetRuntimeModule(), target.MetadataToken);
         }
 
         internal static IList<CustomAttributeData> GetCustomAttributesInternal(RuntimeModule target)
         {
-            Contract.Assert(target != null);
+            Debug.Assert(target != null);
 
             if (target.IsResource())
                 return new List<CustomAttributeData>();
@@ -162,7 +162,7 @@ namespace System.Reflection
 
         internal static IList<CustomAttributeData> GetCustomAttributesInternal(RuntimeAssembly target)
         {
-            Contract.Assert(target != null);
+            Debug.Assert(target != null);
 
             IList<CustomAttributeData> cad = GetCustomAttributes((RuntimeModule)target.ManifestModule, RuntimeAssembly.GetToken(target.GetNativeHandle()));
 
@@ -184,7 +184,7 @@ namespace System.Reflection
 
         internal static IList<CustomAttributeData> GetCustomAttributesInternal(RuntimeParameterInfo target)
         {
-            Contract.Assert(target != null);
+            Debug.Assert(target != null);
 
             IList<CustomAttributeData> cad = GetCustomAttributes(target.GetRuntimeModule(), target.MetadataToken);
 
@@ -825,7 +825,7 @@ namespace System.Reflection
 
         private static object CanonicalizeValue(object value)
         {
-            Contract.Assert(value != null);
+            Debug.Assert(value != null);
 
             if (value.GetType().IsEnum)
             {
@@ -1019,8 +1019,8 @@ namespace System.Reflection
                 throw new ArgumentNullException(nameof(customAttributeModule));
             Contract.EndContractBlock();
 
-            Contract.Assert(customAttributeCtorParameters != null);
-            Contract.Assert(customAttributeNamedParameters != null);
+            Debug.Assert(customAttributeCtorParameters != null);
+            Debug.Assert(customAttributeNamedParameters != null);
 
             if (customAttributeCtorParameters.Length != 0 || customAttributeNamedParameters.Length != 0)
             {
@@ -1361,7 +1361,7 @@ namespace System.Reflection
                 else
                 {
                     type = type.DeclaringType as RuntimeType;
-                    Contract.Assert(type != null);
+                    Debug.Assert(type != null);
                 }
             }
 
@@ -1557,7 +1557,7 @@ namespace System.Reflection
 
             if (attributeFilterType != null)
             {
-                Contract.Assert(attributeCtorToken == 0);
+                Debug.Assert(attributeCtorToken == 0);
 
                 MetadataImport scope = decoratedModule.MetadataImport;
                 RuntimeType attributeType;
@@ -1580,8 +1580,8 @@ namespace System.Reflection
             }
             else
             {
-                Contract.Assert(attributeFilterType == null);
-                Contract.Assert(!MetadataToken.IsNullToken(attributeCtorToken));
+                Debug.Assert(attributeFilterType == null);
+                Debug.Assert(!MetadataToken.IsNullToken(attributeCtorToken));
 
                 for (int i = 0; i < car.Length; i++)
                 {
@@ -1881,7 +1881,7 @@ namespace System.Reflection
             else
             {
                 // We need to relax this when we add support for other types of decorated tokens.
-                Contract.Assert(decoratedToken.IsModule || decoratedToken.IsAssembly, 
+                Debug.Assert(decoratedToken.IsModule || decoratedToken.IsAssembly, 
                                 "The decoratedToken must be either an assembly, a module, a type, or a member.");
             }
 
@@ -2058,11 +2058,11 @@ namespace System.Reflection
         {
             // If any of these are invariants are no longer true will have to 
             // re-architect the PCA product logic and test cases -- you've been warned!
-            Contract.Assert(pca.BaseType == (RuntimeType)typeof(Attribute), "Pseudo CA Error");
+            Debug.Assert(pca.BaseType == (RuntimeType)typeof(Attribute), "Pseudo CA Error");
             AttributeUsageAttribute usage = CustomAttribute.GetAttributeUsage(pca);
-            Contract.Assert(usage.Inherited == false, "Pseudo CA Error");
+            Debug.Assert(usage.Inherited == false, "Pseudo CA Error");
             //AllowMultiple is true for TypeForwardedToAttribute
-            //Contract.Assert(usage.AllowMultiple == false, "Pseudo CA Error");
+            //Debug.Assert(usage.AllowMultiple == false, "Pseudo CA Error");
         }
 #endregion
 

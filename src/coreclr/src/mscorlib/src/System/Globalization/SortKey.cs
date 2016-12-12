@@ -16,6 +16,7 @@ namespace System.Globalization {
     using System;
     using System.Runtime.CompilerServices;
     using System.Runtime.Serialization;
+    using System.Diagnostics;
     using System.Diagnostics.Contracts;
 
     [System.Runtime.InteropServices.ComVisible(true)]
@@ -126,8 +127,8 @@ namespace System.Globalization {
             byte[] key1Data = sortkey1.m_KeyData;
             byte[] key2Data = sortkey2.m_KeyData;
     
-            Contract.Assert(key1Data!=null, "key1Data!=null");
-            Contract.Assert(key2Data!=null, "key2Data!=null");
+            Debug.Assert(key1Data!=null, "key1Data!=null");
+            Debug.Assert(key2Data!=null, "key2Data!=null");
 
             if (key1Data.Length == 0) {
                 if (key2Data.Length == 0) {

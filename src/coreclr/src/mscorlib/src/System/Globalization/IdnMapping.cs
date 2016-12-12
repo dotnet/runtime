@@ -65,6 +65,7 @@ namespace System.Globalization
     using System.Text;
     using System.Runtime.Versioning;
     using System.Runtime.InteropServices;
+    using System.Diagnostics;
     using System.Diagnostics.Contracts;
 
     // IdnMapping class used to map names to Punycode
@@ -160,7 +161,7 @@ namespace System.Globalization
 
             // Cannot be null terminated (normalization won't help us with this one, and
             // may have returned false before checking the whole string above)
-            Contract.Assert(unicode.Length >= 1, "[IdnMapping.GetAscii]Expected 0 length strings to fail before now.");
+            Debug.Assert(unicode.Length >= 1, "[IdnMapping.GetAscii]Expected 0 length strings to fail before now.");
             if (unicode[unicode.Length - 1] <= 0x1f)
             {
                 throw new ArgumentException(
@@ -507,7 +508,7 @@ namespace System.Globalization
 
         static char encode_digit(int d)
         {
-            Contract.Assert(d >= 0 && d < punycodeBase, "[IdnMapping.encode_digit]Expected 0 <= d < punycodeBase");
+            Debug.Assert(d >= 0 && d < punycodeBase, "[IdnMapping.encode_digit]Expected 0 <= d < punycodeBase");
             // 26-35 map to ASCII 0-9
             if (d > 25) return (char)(d - 26 + '0');
 
@@ -544,7 +545,7 @@ namespace System.Globalization
             uint k;
 
             delta = firsttime ? delta / damp : delta / 2;
-            Contract.Assert(numpoints != 0, "[IdnMapping.adapt]Expected non-zero numpoints.");
+            Debug.Assert(numpoints != 0, "[IdnMapping.adapt]Expected non-zero numpoints.");
             delta += delta / numpoints;
 
             for (k = 0;  delta > ((punycodeBase - tmin) * tmax) / 2;  k += punycodeBase)
@@ -552,7 +553,7 @@ namespace System.Globalization
               delta /= punycodeBase - tmin;
             }
 
-            Contract.Assert(delta + skew != 0, "[IdnMapping.adapt]Expected non-zero delta+skew.");
+            Debug.Assert(delta + skew != 0, "[IdnMapping.adapt]Expected non-zero delta+skew.");
             return (int)(k + (punycodeBase - tmin + 1) * delta / (delta + skew));
         }
 
@@ -602,7 +603,7 @@ namespace System.Globalization
             {
                 // Find end of this segment
                 iNextDot = unicode.IndexOfAny(M_Dots, iAfterLastDot);
-                Contract.Assert(iNextDot <= unicode.Length, "[IdnMapping.punycode_encode]IndexOfAny is broken");
+                Debug.Assert(iNextDot <= unicode.Length, "[IdnMapping.punycode_encode]IndexOfAny is broken");
                 if (iNextDot < 0)
                     iNextDot = unicode.Length;
 
@@ -652,7 +653,7 @@ namespace System.Globalization
                 for (basicCount = iAfterLastDot; basicCount < iNextDot; basicCount++)
                 {
                     // Can't be lonely surrogate because it would've thrown in normalization
-                    Contract.Assert(Char.IsLowSurrogate(unicode, basicCount) == false,
+                    Debug.Assert(Char.IsLowSurrogate(unicode, basicCount) == false,
                         "[IdnMapping.punycode_encode]Unexpected low surrogate");
 
                     // Double check our bidi rules
@@ -736,7 +737,7 @@ namespace System.Globalization
                         /* Increase delta enough to advance the decoder's    */
                         /* <n,i> state to <m,0>, but guard against overflow: */
                         delta += (int)((m - n) * ((numProcessed - numSurrogatePairs) + 1));
-                        Contract.Assert(delta > 0, "[IdnMapping.cs]1 punycode_encode - delta overflowed int");
+                        Debug.Assert(delta > 0, "[IdnMapping.cs]1 punycode_encode - delta overflowed int");
                         n = m;
 
                         for (j = iAfterLastDot;  j < iNextDot;  j+= IsSupplementary(test) ? 2 : 1)
@@ -750,7 +751,7 @@ namespace System.Globalization
                             if (test < n)
                             {
                                 delta++;
-                                Contract.Assert(delta > 0, "[IdnMapping.cs]2 punycode_encode - delta overflowed int");
+                                Debug.Assert(delta > 0, "[IdnMapping.cs]2 punycode_encode - delta overflowed int");
                             }
 
                             if (test == n)
@@ -762,7 +763,7 @@ namespace System.Globalization
                                     int t = k <= bias ? tmin :
                                             k >= bias + tmax ? tmax : k - bias;
                                     if (q < t) break;
-                                    Contract.Assert(punycodeBase != t, "[IdnMapping.punycode_encode]Expected punycodeBase (36) to be != t");
+                                    Debug.Assert(punycodeBase != t, "[IdnMapping.punycode_encode]Expected punycodeBase (36) to be != t");
 
                                     int mod;
                                     q = Math.DivRem(q - t, punycodeBase - t, out mod);
@@ -783,7 +784,7 @@ namespace System.Globalization
                         }
                         ++delta;
                         ++n;
-                        Contract.Assert(delta > 0, "[IdnMapping.cs]3 punycode_encode - delta overflowed int");
+                        Debug.Assert(delta > 0, "[IdnMapping.cs]3 punycode_encode - delta overflowed int");
                     }
                 }
 
@@ -974,7 +975,7 @@ namespace System.Globalization
                             // decode the digit from the next char
                             int digit = decode_digit(ascii[asciiIndex++]);
 
-                            Contract.Assert(w > 0, "[IdnMapping.punycode_decode]Expected w > 0");
+                            Debug.Assert(w > 0, "[IdnMapping.punycode_decode]Expected w > 0");
                             if (digit > (maxint - i) / w)
                                 throw new ArgumentException(Environment.GetResourceString(
                                     "Argument_IdnBadPunycode"), nameof(ascii));
@@ -983,7 +984,7 @@ namespace System.Globalization
                             int t = k <= bias ? tmin :
                                     k >= bias + tmax ? tmax : k - bias;
                             if (digit < t) break;
-                            Contract.Assert(punycodeBase != t, "[IdnMapping.punycode_decode]Expected t != punycodeBase (36)");
+                            Debug.Assert(punycodeBase != t, "[IdnMapping.punycode_decode]Expected t != punycodeBase (36)");
                             if (w > maxint / (punycodeBase - t))
                                 throw new ArgumentException(Environment.GetResourceString(
                                     "Argument_IdnBadPunycode"), nameof(ascii));
@@ -995,7 +996,7 @@ namespace System.Globalization
 
                         /* i was supposed to wrap around from output.Length to 0,   */
                         /* incrementing n each time, so we'll fix that now: */
-                        Contract.Assert((output.Length - iOutputAfterLastDot - numSurrogatePairs) + 1 > 0,
+                        Debug.Assert((output.Length - iOutputAfterLastDot - numSurrogatePairs) + 1 > 0,
                             "[IdnMapping.punycode_decode]Expected to have added > 0 characters this segment");
                         if (i / ((output.Length - iOutputAfterLastDot - numSurrogatePairs) + 1) > maxint - n)
                             throw new ArgumentException(Environment.GetResourceString(

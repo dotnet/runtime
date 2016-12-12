@@ -29,6 +29,7 @@ namespace System.Runtime.Serialization {
     using System.IO;
     using System.Text;
     using System.Globalization;
+    using System.Diagnostics;
     using System.Diagnostics.Contracts;
 
     [System.Runtime.InteropServices.ComVisible(true)]
@@ -97,7 +98,7 @@ namespace System.Runtime.Serialization {
             FieldInfo [] typeFields;
             RuntimeType parentType;
 
-            Contract.Assert((object)type != null, "[GetAllSerializableMembers]type!=null");
+            Debug.Assert((object)type != null, "[GetAllSerializableMembers]type!=null");
 
             if (type.IsInterface) {
                 return new MemberInfo[0];
@@ -400,7 +401,7 @@ namespace System.Runtime.Serialization {
                 }
     
                 if (mi.MemberType==MemberTypes.Field) {
-                    Contract.Assert(mi is RuntimeFieldInfo || mi is SerializationFieldInfo,
+                    Debug.Assert(mi is RuntimeFieldInfo || mi is SerializationFieldInfo,
                                     "[FormatterServices.GetObjectData]mi is RuntimeFieldInfo || mi is SerializationFieldInfo.");
 
                     RtFieldInfo rfi = mi as RtFieldInfo;

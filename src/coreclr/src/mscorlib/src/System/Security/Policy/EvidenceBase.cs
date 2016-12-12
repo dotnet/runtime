@@ -7,6 +7,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -78,9 +79,9 @@ namespace System.Security.Policy
 
         internal LegacyEvidenceWrapper(object legacyEvidence)
         {
-            Contract.Assert(legacyEvidence != null);
-            Contract.Assert(legacyEvidence.GetType() != typeof(EvidenceBase), "Attempt to wrap an EvidenceBase in a LegacyEvidenceWrapper");
-            Contract.Assert(legacyEvidence.GetType().IsSerializable, "legacyEvidence.GetType().IsSerializable");
+            Debug.Assert(legacyEvidence != null);
+            Debug.Assert(legacyEvidence.GetType() != typeof(EvidenceBase), "Attempt to wrap an EvidenceBase in a LegacyEvidenceWrapper");
+            Debug.Assert(legacyEvidence.GetType().IsSerializable, "legacyEvidence.GetType().IsSerializable");
 
             m_legacyEvidence = legacyEvidence;
         }
@@ -141,7 +142,7 @@ namespace System.Security.Policy
         {
             get
             {
-                Contract.Assert(m_legacyEvidenceList.Count > 0, "No items in LegacyEvidenceList, cannot tell what type they are");
+                Debug.Assert(m_legacyEvidenceList.Count > 0, "No items in LegacyEvidenceList, cannot tell what type they are");
 
                 ILegacyEvidenceAdapter adapter = m_legacyEvidenceList[0] as ILegacyEvidenceAdapter;
                 return adapter == null ? m_legacyEvidenceList[0].GetType() : adapter.EvidenceType;
@@ -150,10 +151,10 @@ namespace System.Security.Policy
 
         public void Add(EvidenceBase evidence)
         {
-            Contract.Assert(evidence != null);
-            Contract.Assert(m_legacyEvidenceList.Count == 0 || EvidenceType == evidence.GetType() || (evidence is LegacyEvidenceWrapper && (evidence as LegacyEvidenceWrapper).EvidenceType == EvidenceType),
+            Debug.Assert(evidence != null);
+            Debug.Assert(m_legacyEvidenceList.Count == 0 || EvidenceType == evidence.GetType() || (evidence is LegacyEvidenceWrapper && (evidence as LegacyEvidenceWrapper).EvidenceType == EvidenceType),
                             "LegacyEvidenceList must be homogeonous");
-            Contract.Assert(evidence.GetType() != typeof(LegacyEvidenceList),
+            Debug.Assert(evidence.GetType() != typeof(LegacyEvidenceList),
                             "Attempt to add a legacy evidence list to another legacy evidence list");
 
             m_legacyEvidenceList.Add(evidence);

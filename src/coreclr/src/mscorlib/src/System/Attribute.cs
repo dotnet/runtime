@@ -10,6 +10,7 @@ namespace System {
     using System.Collections.Generic;
     using System.Runtime.InteropServices;
     using System.Globalization;
+    using System.Diagnostics;
     using System.Diagnostics.Contracts;
     using System.Security;
     using System.Security.Permissions;
@@ -636,7 +637,7 @@ namespace System {
                     return element.IsDefined(attributeType, false);
 
                 default: 
-                    Contract.Assert(false, "Invalid type for ParameterInfo member in Attribute class");
+                    Debug.Assert(false, "Invalid type for ParameterInfo member in Attribute class");
                     throw new ArgumentException(Environment.GetResourceString("Argument_InvalidParamInfo"));
             }
         }
@@ -889,7 +890,7 @@ namespace System {
 
                 // Attributes can only contain single-dimension arrays, so we don't need to worry about 
                 // multidimensional arrays.
-                Contract.Assert(thisValueArray.Rank == 1 && thatValueArray.Rank == 1);
+                Debug.Assert(thisValueArray.Rank == 1 && thatValueArray.Rank == 1);
                 for (int j = 0; j < thisValueArray.Length; j++)
                 {
                     if (!AreFieldValuesEqual(thisValueArray.GetValue(j), thatValueArray.GetValue(j)))
@@ -903,7 +904,7 @@ namespace System {
                 // An object of type Attribute will cause a stack overflow. 
                 // However, this should never happen because custom attributes cannot contain values other than
                 // constants, single-dimensional arrays and typeof expressions.
-                Contract.Assert(!(thisValue is Attribute));
+                Debug.Assert(!(thisValue is Attribute));
                 if (!thisValue.Equals(thatValue))
                     return false;
             }

@@ -19,6 +19,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Security;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 
 
@@ -146,13 +147,13 @@ namespace System {
 #if _DEBUG
         private static bool TriggerAsserts = DoAsserts();
         private static bool DoAsserts() {
-            Contract.Assert(ConvertTypes!=null, "[Convert.cctor]ConvertTypes!=null");
-            Contract.Assert(ConvertTypes.Length == ((int)TypeCode.String + 1), "[Convert.cctor]ConvertTypes.Length == ((int)TypeCode.String + 1)");
-            Contract.Assert(ConvertTypes[(int)TypeCode.Empty]==typeof(System.Empty),
+            Debug.Assert(ConvertTypes!=null, "[Convert.cctor]ConvertTypes!=null");
+            Debug.Assert(ConvertTypes.Length == ((int)TypeCode.String + 1), "[Convert.cctor]ConvertTypes.Length == ((int)TypeCode.String + 1)");
+            Debug.Assert(ConvertTypes[(int)TypeCode.Empty]==typeof(System.Empty),
                             "[Convert.cctor]ConvertTypes[(int)TypeCode.Empty]==typeof(System.Empty)");
-            Contract.Assert(ConvertTypes[(int)TypeCode.String]==typeof(String),
+            Debug.Assert(ConvertTypes[(int)TypeCode.String]==typeof(String),
                             "[Convert.cctor]ConvertTypes[(int)TypeCode.String]==typeof(System.String)");
-            Contract.Assert(ConvertTypes[(int)TypeCode.Int32]==typeof(int),
+            Debug.Assert(ConvertTypes[(int)TypeCode.Int32]==typeof(int),
                             "[Convert.cctor]ConvertTypes[(int)TypeCode.Int32]==typeof(int)");
             return true;
         }
@@ -2422,7 +2423,7 @@ namespace System {
 
             // The validity of parameters much be checked by callers, thus we are Critical here.
 
-            Contract.Assert(0 <= inputLength);
+            Debug.Assert(0 <= inputLength);
 
             // We need to get rid of any trailing white spaces.
             // Otherwise we would be rejecting input such as "abc= ":
@@ -2437,7 +2438,7 @@ namespace System {
             // Compute the output length:
             Int32 resultLength = FromBase64_ComputeResultLength(inputPtr, inputLength);
 
-            Contract.Assert(0 <= resultLength);
+            Debug.Assert(0 <= resultLength);
 
             // resultLength can be zero. We will still enter FromBase64_Decode and process the input.
             // It may either simply write no bytes (e.g. input = " ") or throw (e.g. input = "ab").
@@ -2571,12 +2572,12 @@ namespace System {
             }}  // unchecked while
 
             // 'd be nice to have an assert that we never get here, but CS0162: Unreachable code detected.
-            // Contract.Assert(false, "We only leave the above loop by jumping; should never get here.");
+            // Debug.Assert(false, "We only leave the above loop by jumping; should never get here.");
 
             // We jump here out of the loop if we hit an '=':
             _EqualityCharEncountered:
 
-            Contract.Assert(currCode == intEq);
+            Debug.Assert(currCode == intEq);
 
             // Recall that inputPtr is now one position past where '=' was read.
             // '=' can only be at the last input pos:
@@ -2655,7 +2656,7 @@ namespace System {
             const UInt32 intEq =    (UInt32) '=';            
             const UInt32 intSpace = (UInt32) ' ';
 
-            Contract.Assert(0 <= inputLength);
+            Debug.Assert(0 <= inputLength);
 
             Char* inputEndPtr = inputPtr + inputLength;
             Int32 usefulInputLength = inputLength;
@@ -2678,11 +2679,11 @@ namespace System {
                 }
             }
 
-            Contract.Assert(0 <= usefulInputLength);
+            Debug.Assert(0 <= usefulInputLength);
             
             // For legal input, we can assume that 0 <= padding < 3. But it may be more for illegal input.
             // We will notice it at decode when we see a '=' at the wrong place.
-            Contract.Assert(0 <= padding);
+            Debug.Assert(0 <= padding);
 
             // Perf: reuse the variable that stored the number of '=' to store the number of bytes encoded by the
             // last group that contains the '=':

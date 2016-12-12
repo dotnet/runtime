@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 
 // This file contains the handling of Windows OS specific culture features.  
@@ -4424,7 +4425,7 @@ namespace System.Globalization
             int right = s_lcids.Length - 1;
             int index;
 
-            Contract.Assert(s_lcids.Length == s_lcidToCultureNameIndices.Length);
+            Debug.Assert(s_lcids.Length == s_lcidToCultureNameIndices.Length);
 
             while (left <= right)
             {
@@ -4433,7 +4434,7 @@ namespace System.Globalization
                 if (culture == s_lcids[index])
                 {
                     int indexToLocaleNamesIndices = s_lcidToCultureNameIndices[index];
-                    Contract.Assert(indexToLocaleNamesIndices < s_localeNamesIndices.Length - 1);
+                    Debug.Assert(indexToLocaleNamesIndices < s_localeNamesIndices.Length - 1);
                     
                     return c_localeNames.Substring(s_localeNamesIndices[indexToLocaleNamesIndices], 
                                                                          s_localeNamesIndices[indexToLocaleNamesIndices + 1] - 
@@ -4460,7 +4461,7 @@ namespace System.Globalization
                 return -1; 
             }
             
-            Contract.Assert((s_localeNamesIndices.Length-1 == (s_nameIndexToNumericData.Length/NUMERIC_LOCALE_DATA_COUNT_PER_ROW)) && 
+            Debug.Assert((s_localeNamesIndices.Length-1 == (s_nameIndexToNumericData.Length/NUMERIC_LOCALE_DATA_COUNT_PER_ROW)) && 
                             index < s_localeNamesIndices.Length);
             
             return s_nameIndexToNumericData[index * NUMERIC_LOCALE_DATA_COUNT_PER_ROW + (int) part];
@@ -4474,7 +4475,7 @@ namespace System.Globalization
                 return null;
             }
             
-            Contract.Assert(s_localeNamesIndices.Length-1 == (c_threeLetterWindowsLanguageName.Length / 3));
+            Debug.Assert(s_localeNamesIndices.Length-1 == (c_threeLetterWindowsLanguageName.Length / 3));
             return c_threeLetterWindowsLanguageName.Substring(index * 3, 3); 
         }
         
@@ -4486,7 +4487,7 @@ namespace System.Globalization
                 return ""; // fallback to invariant
             }
             
-            Contract.Assert(indexToIndicesTable < s_localeNamesIndices.Length-1);
+            Debug.Assert(indexToIndicesTable < s_localeNamesIndices.Length-1);
             
             return c_localeNames.Substring(s_localeNamesIndices[indexToIndicesTable], 
                                            s_localeNamesIndices[indexToIndicesTable+1] - s_localeNamesIndices[indexToIndicesTable]);
@@ -4511,7 +4512,7 @@ namespace System.Globalization
             int index;
             int result;
 
-            Contract.Assert(s_localeNamesIndices[s_localeNamesIndices.Length - 1] == c_localeNames.Length);
+            Debug.Assert(s_localeNamesIndices[s_localeNamesIndices.Length - 1] == c_localeNames.Length);
 
             name = CultureData.AnsiToLower(name);
 
@@ -4521,7 +4522,7 @@ namespace System.Globalization
             {
                 index = ((right - left) / 2) + left;
 
-                Contract.Assert(index < s_localeNamesIndices.Length - 1);
+                Debug.Assert(index < s_localeNamesIndices.Length - 1);
                 result = CompareOrdinal(name, c_localeNames, s_localeNamesIndices[index], s_localeNamesIndices[index + 1] - s_localeNamesIndices[index]);
                 if (result == 0)
                 {
@@ -4540,7 +4541,7 @@ namespace System.Globalization
             // Walk the remaining elements (it'll be 3 or fewer).
             for (; left <= right; left++)
             {
-                Contract.Assert(left < s_localeNamesIndices.Length - 1);
+                Debug.Assert(left < s_localeNamesIndices.Length - 1);
                 if (CompareOrdinal(name, c_localeNames, s_localeNamesIndices[left], s_localeNamesIndices[left + 1] - s_localeNamesIndices[left]) == 0)
                 {
                     return (left);

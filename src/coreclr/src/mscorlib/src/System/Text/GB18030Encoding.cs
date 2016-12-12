@@ -85,6 +85,7 @@
 namespace System.Text
 {
     using System;
+    using System.Diagnostics;
     using System.Diagnostics.Contracts;
     using System.Text;
     using System.Runtime.InteropServices;
@@ -128,7 +129,7 @@ namespace System.Text
         {
             // Set up our base, also throws if info was empty
             DeserializeEncoding(info, context);
-            Contract.Assert(info!=null, "[GB18030Encoding(Serialization...)] Expected null info to throw");
+            Debug.Assert(info!=null, "[GB18030Encoding(Serialization...)] Expected null info to throw");
 
             // Already build our code page, fallbacks & read only, so we're good to go!
         }
@@ -138,7 +139,7 @@ namespace System.Text
         {
             // Make sure to get the base stuff too This throws if info is null
             SerializeEncoding(info, context);
-            Contract.Assert(info!=null, "[GB18030.GetObjectData] Expected null info to throw");
+            Debug.Assert(info!=null, "[GB18030.GetObjectData] Expected null info to throw");
 
             // Everett doesn't need more than the basics
         }
@@ -193,7 +194,7 @@ namespace System.Text
                     // It was GB 18030 4 byte data, next <data> characters are 4 byte sequences.
                     while (data > 0)
                     {
-                        Contract.Assert(count4Byte <= GBLast4ByteCode,
+                        Debug.Assert(count4Byte <= GBLast4ByteCode,
                             "[GB18030Encoding.LoadManagedCodePage] Found too many 4 byte codes in data table.");
 
                         // Set the 4 byte -> Unicode value
@@ -211,11 +212,11 @@ namespace System.Text
             }
 
             // unicodeCount should've wrapped back to 0
-            Contract.Assert(unicodeCount == 0,
+            Debug.Assert(unicodeCount == 0,
                 "[GB18030Encoding.LoadManagedCodePage] Expected unicodeCount to wrap around to 0 as all chars were processed");
 
             // We should've read in GBLast4ByteCode 4 byte sequences
-            Contract.Assert(count4Byte == GBLast4ByteCode + 1,
+            Debug.Assert(count4Byte == GBLast4ByteCode + 1,
                 "[GB18030Encoding.LoadManagedCodePage] Expected 0x99FB to be last 4 byte offset, found 0x" + count4Byte.ToString("X4", CultureInfo.InvariantCulture));
 
             // Need to flag ourselves saying we've built this CP.
@@ -251,13 +252,13 @@ namespace System.Text
         {
             // Just need to ASSERT, this is called by something else internal that checked parameters already
             // We'll allow null bytes as a count
-//            Contract.Assert(bytes != null, "[GB18030Encoding.GetBytes]bytes is null");
-            Contract.Assert(byteCount >= 0, "[GB18030Encoding.GetBytes]byteCount is negative");
-            Contract.Assert(chars != null, "[GB18030Encoding.GetBytes]chars is null");
-            Contract.Assert(charCount >= 0, "[GB18030Encoding.GetBytes]charCount is negative");
+//            Debug.Assert(bytes != null, "[GB18030Encoding.GetBytes]bytes is null");
+            Debug.Assert(byteCount >= 0, "[GB18030Encoding.GetBytes]byteCount is negative");
+            Debug.Assert(chars != null, "[GB18030Encoding.GetBytes]chars is null");
+            Debug.Assert(charCount >= 0, "[GB18030Encoding.GetBytes]charCount is negative");
 
             // Assert because we shouldn't be able to have a null encoder.
-            Contract.Assert(encoderFallback != null, "[GB18030Encoding.GetBytes]Attempting to use null encoder fallback");
+            Debug.Assert(encoderFallback != null, "[GB18030Encoding.GetBytes]Attempting to use null encoder fallback");
 
             // Get any left over characters
             char charLeftOver = (char)0;
@@ -280,7 +281,7 @@ namespace System.Text
                 // Have to check for charLeftOver
                 if (charLeftOver != 0)
                 {
-                    Contract.Assert(Char.IsHighSurrogate(charLeftOver),
+                    Debug.Assert(Char.IsHighSurrogate(charLeftOver),
                         "[GB18030Encoding.GetBytes] leftover character should be high surrogate, not 0x" + ((int)charLeftOver).ToString("X4", CultureInfo.InvariantCulture));
 
                     // If our next char isn't a low surrogate, then we need to do fallback.
@@ -310,7 +311,7 @@ namespace System.Text
                         offset /= 0x7e;
                         byte byte2 = (byte)((offset % 0x0a) + 0x30);
                         offset /= 0x0a;
-                        Contract.Assert(offset < 0x6f,
+                        Debug.Assert(offset < 0x6f,
                             "[GB18030Encoding.GetBytes](1) Expected offset < 0x6f, not 0x" + offset.ToString("X2", CultureInfo.InvariantCulture));
 
                         charLeftOver = (char)0;
@@ -360,7 +361,7 @@ namespace System.Text
                         iBytes /= 0x7e;
                         byte byte2 = (byte)((iBytes % 0x0a) + 0x30);
                         iBytes /= 0x0a;
-                        Contract.Assert(iBytes < 0x7e,
+                        Debug.Assert(iBytes < 0x7e,
                             "[GB18030Encoding.GetBytes]Expected iBytes < 0x7e, not 0x" + iBytes.ToString("X2", CultureInfo.InvariantCulture));
                         if (!buffer.AddByte((byte)(iBytes + 0x81), byte2, byte3, byte4))
                             break;
@@ -438,10 +439,10 @@ namespace System.Text
         {
             // Just need to ASSERT, this is called by something else internal that checked parameters already
             // We'll allow null chars as a count
-            Contract.Assert(bytes != null, "[GB18030Encoding.GetChars]bytes is null");
-            Contract.Assert(byteCount >= 0, "[GB18030Encoding.GetChars]byteCount is negative");
-//            Contract.Assert(chars != null, "[GB18030Encoding.GetChars]chars is null");
-            Contract.Assert(charCount >= 0, "[GB18030Encoding.GetChars]charCount is negative");
+            Debug.Assert(bytes != null, "[GB18030Encoding.GetChars]bytes is null");
+            Debug.Assert(byteCount >= 0, "[GB18030Encoding.GetChars]byteCount is negative");
+//            Debug.Assert(chars != null, "[GB18030Encoding.GetChars]chars is null");
+            Debug.Assert(charCount >= 0, "[GB18030Encoding.GetChars]charCount is negative");
 
             // Fix our decoder
             GB18030Decoder decoder = (GB18030Decoder)baseDecoder;

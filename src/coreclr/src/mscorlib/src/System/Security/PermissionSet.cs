@@ -21,6 +21,7 @@ namespace System.Security {
     using System.Text;
     using System.Globalization;
     using System.Runtime.Versioning;
+    using System.Diagnostics;
     using System.Diagnostics.Contracts;
 
     [Serializable] 
@@ -115,7 +116,7 @@ namespace System.Security {
         [OnSerialized]
         private void OnSerialized(StreamingContext context)
         {
-            Contract.Assert(false, "PermissionSet does not support serialization on CoreCLR");
+            Debug.Assert(false, "PermissionSet does not support serialization on CoreCLR");
         }
 #endif // _DEBUG
 
@@ -461,7 +462,7 @@ namespace System.Security {
                     IPermission targetPerm = target.GetPermission(i);
 #if _DEBUG                    
                     PermissionToken token = (PermissionToken)PermissionToken.s_tokenSet.GetItem( i );
-                    Contract.Assert(targetPerm == null || (token.m_type & PermissionTokenType.DontKnow) == 0, "Token not properly initialized");
+                    Debug.Assert(targetPerm == null || (token.m_type & PermissionTokenType.DontKnow) == 0, "Token not properly initialized");
 #endif
 
                     if (target.m_Unrestricted)
@@ -573,7 +574,7 @@ namespace System.Security {
 
         internal void CheckDecoded( CodeAccessPermission demandedPerm, PermissionToken tokenDemandedPerm )
         {
-            Contract.Assert( demandedPerm != null, "Expected non-null value" );
+            Debug.Assert( demandedPerm != null, "Expected non-null value" );
 
             if (this.m_allPermissionsDecoded || this.m_permSet == null)
                 return;
@@ -581,7 +582,7 @@ namespace System.Security {
             if (tokenDemandedPerm == null)
                 tokenDemandedPerm = PermissionToken.GetToken( demandedPerm );
 
-            Contract.Assert( tokenDemandedPerm != null, "Unable to find token for demanded permission" );
+            Debug.Assert( tokenDemandedPerm != null, "Unable to find token for demanded permission" );
         
             CheckDecoded( tokenDemandedPerm.m_index );
         }
@@ -596,7 +597,7 @@ namespace System.Security {
 
         internal void CheckDecoded(PermissionSet demandedSet)
         {
-            Contract.Assert(demandedSet != null, "Expected non-null value");
+            Debug.Assert(demandedSet != null, "Expected non-null value");
 
             if (this.m_allPermissionsDecoded || this.m_permSet == null)
                 return;
@@ -663,7 +664,7 @@ namespace System.Security {
                             if ((token.m_type & PermissionTokenType.IUnrestricted) != 0)
                             {
                                 this.m_permSet.SetItem( i, otherPerm.Copy() );
-                                Contract.Assert( PermissionToken.s_tokenSet.GetItem( i ) != null, "PermissionToken should already be assigned" );
+                                Debug.Assert( PermissionToken.s_tokenSet.GetItem( i ) != null, "PermissionToken should already be assigned" );
                             }
                         }
                     }
@@ -760,7 +761,7 @@ namespace System.Security {
                             if ((token.m_type & PermissionTokenType.IUnrestricted) != 0)
                             {
                                 pset.m_permSet.SetItem( i, otherPerm.Copy() );
-                                Contract.Assert( PermissionToken.s_tokenSet.GetItem( i ) != null, "PermissionToken should already be assigned" );
+                                Debug.Assert( PermissionToken.s_tokenSet.GetItem( i ) != null, "PermissionToken should already be assigned" );
                             }
                         }
                     }
@@ -775,7 +776,7 @@ namespace System.Security {
                             if ((token.m_type & PermissionTokenType.IUnrestricted) != 0)
                             {
                                 pset.m_permSet.SetItem( i, thisPerm.Copy() );
-                                Contract.Assert( PermissionToken.s_tokenSet.GetItem( i ) != null, "PermissionToken should already be assigned" );
+                                Debug.Assert( PermissionToken.s_tokenSet.GetItem( i ) != null, "PermissionToken should already be assigned" );
                             }
                         }
                     }
@@ -790,7 +791,7 @@ namespace System.Security {
                     else
                         intersectPerm = thisPerm.Intersect( otherPerm );
                     pset.m_permSet.SetItem( i, intersectPerm );
-                    Contract.Assert( intersectPerm == null || PermissionToken.s_tokenSet.GetItem( i ) != null, "PermissionToken should already be assigned" );
+                    Debug.Assert( intersectPerm == null || PermissionToken.s_tokenSet.GetItem( i ) != null, "PermissionToken should already be assigned" );
                 }
             }
 
@@ -937,7 +938,7 @@ namespace System.Security {
                         if (((token.m_type & PermissionTokenType.IUnrestricted) == 0) || !pset.m_Unrestricted)
                         {
                             pset.m_permSet.SetItem( i, otherPerm.Copy() );
-                            Contract.Assert( PermissionToken.s_tokenSet.GetItem( i ) != null, "PermissionToken should already be assigned" );
+                            Debug.Assert( PermissionToken.s_tokenSet.GetItem( i ) != null, "PermissionToken should already be assigned" );
                         }
                     }
                 }
@@ -949,7 +950,7 @@ namespace System.Security {
                         if (((token.m_type & PermissionTokenType.IUnrestricted) == 0) || !pset.m_Unrestricted)
                         {
                             pset.m_permSet.SetItem( i, thisPerm.Copy() );
-                            Contract.Assert( PermissionToken.s_tokenSet.GetItem( i ) != null, "PermissionToken should already be assigned" );
+                            Debug.Assert( PermissionToken.s_tokenSet.GetItem( i ) != null, "PermissionToken should already be assigned" );
                         }
                     }
                 }
@@ -963,7 +964,7 @@ namespace System.Security {
                     else
                         unionPerm = thisPerm.Union( otherPerm );
                     pset.m_permSet.SetItem( i, unionPerm );
-                    Contract.Assert( unionPerm == null || PermissionToken.s_tokenSet.GetItem( i ) != null, "PermissionToken should already be assigned" );
+                    Debug.Assert( unionPerm == null || PermissionToken.s_tokenSet.GetItem( i ) != null, "PermissionToken should already be assigned" );
                 }
             }
 
@@ -1356,8 +1357,8 @@ namespace System.Security {
         // Internal routine used by CreateSerialized to add a permission to the set
         private static void MergePermission(IPermission perm, bool separateCasFromNonCas, ref PermissionSet casPset, ref PermissionSet nonCasPset)
         {
-            Contract.Assert(casPset == null || !casPset.IsReadOnly);
-            Contract.Assert(nonCasPset == null || !nonCasPset.IsReadOnly);
+            Debug.Assert(casPset == null || !casPset.IsReadOnly);
+            Debug.Assert(nonCasPset == null || !nonCasPset.IsReadOnly);
 
             if (perm == null)
                 return;
@@ -1400,7 +1401,7 @@ namespace System.Security {
             for (int i = 0; i < attrs.Length; i++)
             {
 #pragma warning disable 618
-                Contract.Assert(i == 0 || ((SecurityAttribute)attrs[i]).m_action == ((SecurityAttribute)attrs[i - 1]).m_action, "Mixed SecurityActions");
+                Debug.Assert(i == 0 || ((SecurityAttribute)attrs[i]).m_action == ((SecurityAttribute)attrs[i - 1]).m_action, "Mixed SecurityActions");
 #pragma warning restore 618
                 if (attrs[i] is PermissionSetAttribute)
                 {
@@ -1429,7 +1430,7 @@ namespace System.Security {
                     MergePermission(perm, serialize, ref casPset, ref nonCasPset);
                 }
             }
-            Contract.Assert(serialize || nonCasPset == null, "We shouldn't separate nonCAS permissions unless fSerialize is true");
+            Debug.Assert(serialize || nonCasPset == null, "We shouldn't separate nonCAS permissions unless fSerialize is true");
 
             //
             // Filter HostProtection permission.  In the VM, some optimizations are done based upon these
@@ -1453,7 +1454,7 @@ namespace System.Security {
                     nonCasPset = null;
             }
 
-            Contract.Assert(!serialize, "Cannot serialize permission sets on CoreCLR");
+            Debug.Assert(!serialize, "Cannot serialize permission sets on CoreCLR");
             return null;
         }
 
@@ -1475,7 +1476,7 @@ namespace System.Security {
 
         internal static PermissionSet RemoveRefusedPermissionSet(PermissionSet assertSet, PermissionSet refusedSet, out bool bFailedToCompress)
         {
-            Contract.Assert((assertSet == null || !assertSet.IsUnrestricted()), "Cannot be unrestricted here");
+            Debug.Assert((assertSet == null || !assertSet.IsUnrestricted()), "Cannot be unrestricted here");
             PermissionSet retPs = null;
             bFailedToCompress = false;
             if (assertSet == null)
@@ -1531,7 +1532,7 @@ namespace System.Security {
 
         internal static void RemoveAssertedPermissionSet(PermissionSet demandSet, PermissionSet assertSet, out PermissionSet alteredDemandSet)
         {
-            Contract.Assert(!assertSet.IsUnrestricted(), "Cannot call this function if assertSet is unrestricted");
+            Debug.Assert(!assertSet.IsUnrestricted(), "Cannot call this function if assertSet is unrestricted");
             alteredDemandSet = null;
             
             PermissionSetEnumeratorInternal enumerator = new PermissionSetEnumeratorInternal(demandSet);

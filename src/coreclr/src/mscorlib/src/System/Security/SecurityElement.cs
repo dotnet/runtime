@@ -14,6 +14,7 @@ namespace System.Security
     using System.Globalization;
     using System.IO;
     using System.Security.Permissions;
+    using System.Diagnostics;
     using System.Diagnostics.Contracts;
 
     internal enum SecurityElementType
@@ -158,7 +159,7 @@ namespace System.Security
                     Hashtable hashtable = new Hashtable( m_lAttributes.Count/2 );
                                         
                     int iMax = m_lAttributes.Count;
-                    Contract.Assert( iMax % 2 == 0, "Odd number of strings means the attr/value pairs were not added correctly" );
+                    Debug.Assert( iMax % 2 == 0, "Odd number of strings means the attr/value pairs were not added correctly" );
                           
                     for (int i = 0; i < iMax; i += 2)
                     {
@@ -283,7 +284,7 @@ namespace System.Security
             else
             {
                 int iMax = m_lAttributes.Count;
-                Contract.Assert( iMax % 2 == 0, "Odd number of strings means the attr/value pairs were not added correctly" );
+                Debug.Assert( iMax % 2 == 0, "Odd number of strings means the attr/value pairs were not added correctly" );
                           
                 for (int i = 0; i < iMax; i += 2)
                 {
@@ -387,7 +388,7 @@ namespace System.Security
             else 
             {                
                 int iMax = m_lAttributes.Count;
-                Contract.Assert( iMax % 2 == 0, "Odd number of strings means the attr/value pairs were not added correctly" );
+                Debug.Assert( iMax % 2 == 0, "Odd number of strings means the attr/value pairs were not added correctly" );
 
                 if (iMax != other.m_lAttributes.Count)
                     return false;
@@ -482,7 +483,7 @@ namespace System.Security
         private static String GetEscapeSequence( char c )
         {
             int iMax = s_escapeStringPairs.Length;
-            Contract.Assert( iMax % 2 == 0, "Odd number of strings means the attr/value pairs were not added correctly" );
+            Debug.Assert( iMax % 2 == 0, "Odd number of strings means the attr/value pairs were not added correctly" );
                           
             for (int i = 0; i < iMax; i += 2)
             {
@@ -493,7 +494,7 @@ namespace System.Security
                     return strEscValue;
             }
 
-            Contract.Assert( false, "Unable to find escape sequence for this character" );
+            Debug.Assert( false, "Unable to find escape sequence for this character" );
             return c.ToString();
         }
 
@@ -544,7 +545,7 @@ namespace System.Security
             int maxCompareLength = str.Length - index;
 
             int iMax = s_escapeStringPairs.Length;
-            Contract.Assert( iMax % 2 == 0, "Odd number of strings means the attr/value pairs were not added correctly" );
+            Debug.Assert( iMax % 2 == 0, "Odd number of strings means the attr/value pairs were not added correctly" );
                           
             for (int i = 0; i < iMax; i += 2)
             {
@@ -603,7 +604,7 @@ namespace System.Security
             while (true);
 
             // C# reports a warning if I leave this in, but I still kinda want to just in case.
-            // Contract.Assert( false, "If you got here, the execution engine or compiler is really confused" );
+            // Debug.Assert( false, "If you got here, the execution engine or compiler is really confused" );
             // return str;
         }
 
@@ -656,7 +657,7 @@ namespace System.Security
                 func( obj, " " );
 
                 int iMax = m_lAttributes.Count;
-                Contract.Assert( iMax % 2 == 0, "Odd number of strings means the attr/value pairs were not added correctly" );
+                Debug.Assert( iMax % 2 == 0, "Odd number of strings means the attr/value pairs were not added correctly" );
                           
                 for (int i = 0; i < iMax; i += 2)
                 {
@@ -760,7 +761,7 @@ namespace System.Security
             // the one we are asked for
 
             int iMax = m_lAttributes.Count;
-            Contract.Assert( iMax % 2 == 0, "Odd number of strings means the attr/value pairs were not added correctly" );
+            Debug.Assert( iMax % 2 == 0, "Odd number of strings means the attr/value pairs were not added correctly" );
                           
             for (int i = 0; i < iMax; i += 2)
             {

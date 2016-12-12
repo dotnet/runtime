@@ -11,6 +11,7 @@ namespace System {
     using System.Runtime.ConstrainedExecution;
     using System.Runtime.InteropServices;
     using System.Runtime.Versioning;
+    using System.Diagnostics;
     using System.Diagnostics.Contracts;
     using System.Security;
     using System.Runtime;
@@ -47,7 +48,7 @@ namespace System {
         //
         internal unsafe static int IndexOfByte(byte* src, byte value, int index, int count)
         {
-            Contract.Assert(src != null, "src should not be null");
+            Debug.Assert(src != null, "src should not be null");
 
             byte* pByte = src + index;
 
@@ -206,8 +207,8 @@ namespace System {
 
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         internal unsafe static void Memcpy(byte[] dest, int destIndex, byte* src, int srcIndex, int len) {
-            Contract.Assert( (srcIndex >= 0) && (destIndex >= 0) && (len >= 0), "Index and length must be non-negative!");
-            Contract.Assert(dest.Length - destIndex >= len, "not enough bytes in dest");
+            Debug.Assert( (srcIndex >= 0) && (destIndex >= 0) && (len >= 0), "Index and length must be non-negative!");
+            Debug.Assert(dest.Length - destIndex >= len, "not enough bytes in dest");
             // If dest has 0 elements, the fixed statement will throw an 
             // IndexOutOfRangeException.  Special-case 0-byte copies.
             if (len==0)
@@ -220,8 +221,8 @@ namespace System {
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         internal unsafe static void Memcpy(byte* pDest, int destIndex, byte[] src, int srcIndex, int len)
         {
-            Contract.Assert( (srcIndex >= 0) && (destIndex >= 0) && (len >= 0), "Index and length must be non-negative!");        
-            Contract.Assert(src.Length - srcIndex >= len, "not enough bytes in src");
+            Debug.Assert( (srcIndex >= 0) && (destIndex >= 0) && (len >= 0), "Index and length must be non-negative!");        
+            Debug.Assert(src.Length - srcIndex >= len, "not enough bytes in src");
             // If dest has 0 elements, the fixed statement will throw an 
             // IndexOutOfRangeException.  Special-case 0-byte copies.
             if (len==0)
@@ -248,7 +249,7 @@ namespace System {
 #else // ARM
         [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
         internal unsafe static void Memcpy(byte* dest, byte* src, int len) {
-            Contract.Assert(len >= 0, "Negative length in memcopy!");
+            Debug.Assert(len >= 0, "Negative length in memcopy!");
             Memmove(dest, src, (uint)len);
         }
 #endif // ARM
@@ -509,7 +510,7 @@ namespace System {
             // We know due to the above switch-case that this loop will always run 1 iteration; max
             // bytes we copy before checking is 23 (7 to align the pointers, 16 for 1 iteration) so
             // the switch handles lengths 0-22.
-            Contract.Assert(end >= 7 && i <= end);
+            Debug.Assert(end >= 7 && i <= end);
 
             // This is separated out into a different variable, so the i + 16 addition can be
             // performed at the start of the pipeline and the loop condition does not have

@@ -23,6 +23,7 @@ using System.Text;
 using System.Runtime.InteropServices;
 using System.Globalization;
 using System.Runtime.Versioning;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Threading;
 
@@ -251,7 +252,7 @@ namespace System.IO
 
         private void CommonInit()
         {
-            Contract.Assert(searchCriteria != null && searchData != null, "searchCriteria and searchData should be initialized");
+            Debug.Assert(searchCriteria != null && searchData != null, "searchCriteria and searchData should be initialized");
 
             // Execute searchCriteria against the current directory
             String searchPath = Path.Combine(searchData.fullPath, searchCriteria);
@@ -393,12 +394,12 @@ namespace System.IO
                     }
                 case STATE_SEARCH_NEXT_DIR:
                     {
-                        Contract.Assert(searchData.searchOption != SearchOption.TopDirectoryOnly, "should not reach this code path if searchOption == TopDirectoryOnly");
+                        Debug.Assert(searchData.searchOption != SearchOption.TopDirectoryOnly, "should not reach this code path if searchOption == TopDirectoryOnly");
                         // Traverse directory structure. We need to get '*'
                         while (searchStack.Count > 0)
                         {
                             searchData = searchStack[0];
-                            Contract.Assert((searchData.fullPath != null), "fullpath can't be null!");
+                            Debug.Assert((searchData.fullPath != null), "fullpath can't be null!");
                             searchStack.RemoveAt(0);
 
                             // Traverse the subdirs
@@ -605,7 +606,7 @@ namespace System.IO
             }
             else
             {
-                Contract.Assert(fullSearchString.Length > fullPathMod.Length);
+                Debug.Assert(fullSearchString.Length > fullPathMod.Length);
                 searchCriteria = fullSearchString.Substring(fullPathMod.Length + 1);
             }
             return searchCriteria;
@@ -653,7 +654,7 @@ namespace System.IO
         {
             bool includeFile = _includeFiles && FileSystemEnumerableHelpers.IsFile(result.FindData);
             bool includeDir = _includeDirs && FileSystemEnumerableHelpers.IsDir(result.FindData);
-            Contract.Assert(!(includeFile && includeDir), result.FindData.cFileName + ": current item can't be both file and dir!");
+            Debug.Assert(!(includeFile && includeDir), result.FindData.cFileName + ": current item can't be both file and dir!");
             return (includeFile || includeDir);
         }
 
@@ -711,7 +712,7 @@ namespace System.IO
         {
             bool includeFile = FileSystemEnumerableHelpers.IsFile(result.FindData);
             bool includeDir = FileSystemEnumerableHelpers.IsDir(result.FindData);
-            Contract.Assert(!(includeFile && includeDir), result.FindData.cFileName + ": current item can't be both file and dir!");
+            Debug.Assert(!(includeFile && includeDir), result.FindData.cFileName + ": current item can't be both file and dir!");
 
             return (includeDir || includeFile);
         }
@@ -735,7 +736,7 @@ namespace System.IO
             }
             else
             {
-                Contract.Assert(isFile);
+                Debug.Assert(isFile);
                 String name = result.FullPath;
 
                 FileSecurityState state = new FileSecurityState(FileSecurityStateAccess.Read, String.Empty, name);

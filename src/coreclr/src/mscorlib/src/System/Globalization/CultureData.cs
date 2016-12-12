@@ -13,6 +13,7 @@ namespace System.Globalization
     using System.Runtime.CompilerServices;
     using System.Runtime.InteropServices;
     using System.Runtime.Versioning;
+    using System.Diagnostics;
     using System.Diagnostics.Contracts;
     using System.Security;
 
@@ -791,7 +792,7 @@ namespace System.Globalization
 
         private static bool IsReplacementCultureName(String name)
         {
-            Contract.Assert(name != null, "IsReplacementCultureName(): name should not be null");
+            Debug.Assert(name != null, "IsReplacementCultureName(): name should not be null");
             String[] replacementCultureNames = s_replacementCultureNames;
             if (replacementCultureNames == null)
             {
@@ -801,7 +802,7 @@ namespace System.Globalization
                 }
 
                 // Even if we don't have any replacement cultures, the returned replacementCultureNames will still an empty string array, not null.
-                Contract.Assert(name != null, "IsReplacementCultureName(): replacementCultureNames should not be null");
+                Debug.Assert(name != null, "IsReplacementCultureName(): replacementCultureNames should not be null");
                 Array.Sort(replacementCultureNames);
                 s_replacementCultureNames = replacementCultureNames;
             }
@@ -825,7 +826,7 @@ namespace System.Globalization
         {
             get
             {
-                Contract.Assert(this.sRealName != null, "[CultureData.CultureName] Expected this.sRealName to be populated by COMNlsInfo::nativeInitCultureData already");
+                Debug.Assert(this.sRealName != null, "[CultureData.CultureName] Expected this.sRealName to be populated by COMNlsInfo::nativeInitCultureData already");
                 // since windows doesn't know about zh-CHS and zh-CHT,
                 // we leave sRealName == zh-Hanx but we still need to
                 // pretend that it was zh-CHX.
@@ -853,7 +854,7 @@ namespace System.Globalization
         {
             get
             {
-                //                Contract.Assert(this.sName != null,
+                //                Debug.Assert(this.sName != null,
                 //                    "[CultureData.SNAME] Expected this.sName to be populated by COMNlsInfo::nativeInitCultureData already");
                 if (this.sName == null)
                 {
@@ -985,7 +986,7 @@ namespace System.Globalization
             get
             {
                 // This got populated when ComNlsInfo::nativeInitCultureData told us we had a culture
-                Contract.Assert(this.sSpecificCulture != null, "[CultureData.SSPECIFICCULTURE] Expected this.sSpecificCulture to be populated by COMNlsInfo::nativeInitCultureData already");
+                Debug.Assert(this.sSpecificCulture != null, "[CultureData.SSPECIFICCULTURE] Expected this.sSpecificCulture to be populated by COMNlsInfo::nativeInitCultureData already");
                 return this.sSpecificCulture;
             }
         }
@@ -1844,7 +1845,7 @@ namespace System.Globalization
                     // We then have to copy that list to a new array of the right size.
                     // Default calendar should be first
                     int[] calendarInts = new int[23];
-                    Contract.Assert(this.sWindowsName != null, "[CultureData.CalendarIds] Expected this.sWindowsName to be populated by COMNlsInfo::nativeInitCultureData already");
+                    Debug.Assert(this.sWindowsName != null, "[CultureData.CalendarIds] Expected this.sWindowsName to be populated by COMNlsInfo::nativeInitCultureData already");
                     int count = CalendarData.nativeGetCalendars(this.sWindowsName, this.bUseOverrides, calendarInts);
 
                     // See if we had a calendar to add.
@@ -1916,7 +1917,7 @@ namespace System.Globalization
 
         internal CalendarData GetCalendar(int calendarId)
         {
-            Contract.Assert(calendarId > 0 && calendarId <= CalendarData.MAX_CALENDARS,
+            Debug.Assert(calendarId > 0 && calendarId <= CalendarData.MAX_CALENDARS,
                 "[CultureData.GetCalendar] Expect calendarId to be in a valid range");
 
             // arrays are 0 based, calendarIds are 1 based
@@ -1935,7 +1936,7 @@ namespace System.Globalization
             // Make sure that calendar has data
             if (calendarData == null || UseUserOverride)
             {
-                Contract.Assert(this.sWindowsName != null, "[CultureData.GetCalendar] Expected this.sWindowsName to be populated by COMNlsInfo::nativeInitCultureData already");
+                Debug.Assert(this.sWindowsName != null, "[CultureData.GetCalendar] Expected this.sWindowsName to be populated by COMNlsInfo::nativeInitCultureData already");
                 calendarData = new CalendarData(this.sWindowsName, calendarId, this.UseUserOverride);
                 calendars[calendarIndex] = calendarData;
             }
@@ -1980,7 +1981,7 @@ namespace System.Globalization
             {
                 if (this.iReadingLayout == undef)
                 {
-                    Contract.Assert(this.sRealName != null, "[CultureData.IsRightToLeft] Expected this.sRealName to be populated by COMNlsInfo::nativeInitCultureData already");
+                    Debug.Assert(this.sRealName != null, "[CultureData.IsRightToLeft] Expected this.sRealName to be populated by COMNlsInfo::nativeInitCultureData already");
                     this.iReadingLayout = DoGetLocaleInfoInt(LOCALE_IREADINGLAYOUT);
                 }
 
@@ -2157,7 +2158,7 @@ namespace System.Globalization
             {
                 if (this.iLanguage == 0)
                 {
-                    Contract.Assert(this.sRealName != null, "[CultureData.ILANGUAGE] Expected this.sRealName to be populated by COMNlsInfo::nativeInitCultureData already");
+                    Debug.Assert(this.sRealName != null, "[CultureData.ILANGUAGE] Expected this.sRealName to be populated by COMNlsInfo::nativeInitCultureData already");
                     this.iLanguage = LocaleNameToLCID(this.sRealName);
                 }
                 return this.iLanguage;
@@ -2213,21 +2214,21 @@ namespace System.Globalization
         // All of our era names
         internal String[] EraNames(int calendarId)
         {
-            Contract.Assert(calendarId > 0, "[CultureData.saEraNames] Expected Calendar.ID > 0");
+            Debug.Assert(calendarId > 0, "[CultureData.saEraNames] Expected Calendar.ID > 0");
 
             return this.GetCalendar(calendarId).saEraNames;
         }
 
         internal String[] AbbrevEraNames(int calendarId)
         {
-            Contract.Assert(calendarId > 0, "[CultureData.saAbbrevEraNames] Expected Calendar.ID > 0");
+            Debug.Assert(calendarId > 0, "[CultureData.saAbbrevEraNames] Expected Calendar.ID > 0");
 
             return this.GetCalendar(calendarId).saAbbrevEraNames;
         }
 
         internal String[] AbbreviatedEnglishEraNames(int calendarId)
         {
-            Contract.Assert(calendarId > 0, "[CultureData.saAbbrevEraNames] Expected Calendar.ID > 0");
+            Debug.Assert(calendarId > 0, "[CultureData.saAbbrevEraNames] Expected Calendar.ID > 0");
 
             return this.GetCalendar(calendarId).saAbbrevEnglishEraNames;
         }
@@ -2484,8 +2485,8 @@ namespace System.Globalization
 
         private static int IndexOfTimePart(string format, int startIndex, string timeParts)
         {
-            Contract.Assert(startIndex >= 0, "startIndex cannot be negative");
-            Contract.Assert(timeParts.IndexOfAny(new char[] { '\'', '\\' }) == -1, "timeParts cannot include quote characters");
+            Debug.Assert(startIndex >= 0, "startIndex cannot be negative");
+            Debug.Assert(timeParts.IndexOfAny(new char[] { '\'', '\\' }) == -1, "timeParts cannot include quote characters");
             bool inQuote = false;
             for (int i = startIndex; i < format.Length; ++i)
             {
@@ -2522,7 +2523,7 @@ namespace System.Globalization
 
         string DoGetLocaleInfo(uint lctype)
         {
-            Contract.Assert(this.sWindowsName != null, "[CultureData.DoGetLocaleInfo] Expected this.sWindowsName to be populated by COMNlsInfo::nativeInitCultureData already");
+            Debug.Assert(this.sWindowsName != null, "[CultureData.DoGetLocaleInfo] Expected this.sWindowsName to be populated by COMNlsInfo::nativeInitCultureData already");
             return DoGetLocaleInfo(this.sWindowsName, lctype);
         }
 
@@ -2537,7 +2538,7 @@ namespace System.Globalization
             }
 
             // Ask OS for data
-            Contract.Assert(localeName != null, "[CultureData.DoGetLocaleInfo] Expected localeName to be not be null");
+            Debug.Assert(localeName != null, "[CultureData.DoGetLocaleInfo] Expected localeName to be not be null");
             string result = CultureInfo.nativeGetLocaleInfoEx(localeName, lctype);
             if (result == null)
             {
@@ -2558,7 +2559,7 @@ namespace System.Globalization
 
             // Ask OS for data, note that we presume it returns success, so we have to know that
             // sWindowsName is valid before calling.
-            Contract.Assert(this.sWindowsName != null, "[CultureData.DoGetLocaleInfoInt] Expected this.sWindowsName to be populated by COMNlsInfo::nativeInitCultureData already");
+            Debug.Assert(this.sWindowsName != null, "[CultureData.DoGetLocaleInfoInt] Expected this.sWindowsName to be populated by COMNlsInfo::nativeInitCultureData already");
             int result = CultureInfo.nativeGetLocaleInfoExInt(this.sWindowsName, lctype);
 
             return result;
@@ -2567,7 +2568,7 @@ namespace System.Globalization
         String[] DoEnumTimeFormats()
         {
             // Note that this gets overrides for us all the time
-            Contract.Assert(this.sWindowsName != null, "[CultureData.DoEnumTimeFormats] Expected this.sWindowsName to be populated by COMNlsInfo::nativeInitCultureData already");
+            Debug.Assert(this.sWindowsName != null, "[CultureData.DoEnumTimeFormats] Expected this.sWindowsName to be populated by COMNlsInfo::nativeInitCultureData already");
             String[] result = ReescapeWin32Strings(nativeEnumTimeFormats(this.sWindowsName, 0, UseUserOverride));
 
             return result;
@@ -2576,7 +2577,7 @@ namespace System.Globalization
         String[] DoEnumShortTimeFormats()
         {
             // Note that this gets overrides for us all the time
-            Contract.Assert(this.sWindowsName != null, "[CultureData.DoEnumShortTimeFormats] Expected this.sWindowsName to be populated by COMNlsInfo::nativeInitCultureData already");
+            Debug.Assert(this.sWindowsName != null, "[CultureData.DoEnumShortTimeFormats] Expected this.sWindowsName to be populated by COMNlsInfo::nativeInitCultureData already");
             String[] result = ReescapeWin32Strings(nativeEnumTimeFormats(this.sWindowsName, TIME_NOSECONDS, UseUserOverride));
 
             return result;
@@ -2638,7 +2639,7 @@ namespace System.Globalization
                 //
                 // Ask native side for our data.
                 //
-                Contract.Assert(this.sWindowsName != null, "[CultureData.GetNFIValues] Expected this.sWindowsName to be populated by COMNlsInfo::nativeInitCultureData already");
+                Debug.Assert(this.sWindowsName != null, "[CultureData.GetNFIValues] Expected this.sWindowsName to be populated by COMNlsInfo::nativeInitCultureData already");
                 CultureData.nativeGetNumberFormatInfoValues(this.sWindowsName, nfi, UseUserOverride);
             }
 

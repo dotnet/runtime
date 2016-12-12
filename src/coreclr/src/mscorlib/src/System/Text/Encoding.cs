@@ -15,6 +15,7 @@ namespace System.Text
     using System.Security.Permissions;
     using System.Threading;
     using System.Text;
+    using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Diagnostics.Contracts;
     using Win32Native = Microsoft.Win32.Win32Native;
@@ -472,7 +473,7 @@ namespace System.Text
                         result = GetEncodingCodePage(codepage) ?? GetEncodingRare(codepage);
                     }
 
-                    Contract.Assert(result != null, "result != null");
+                    Debug.Assert(result != null, "result != null");
 
                     encodings.Add(key, result);
                 }
@@ -512,7 +513,7 @@ namespace System.Text
 #if FEATURE_CODEPAGES_FILE
         private static Encoding GetEncodingRare(int codepage)
         {
-            Contract.Assert(codepage != 0 && codepage != 1200 && codepage != 1201 && codepage != 65001,
+            Debug.Assert(codepage != 0 && codepage != 1200 && codepage != 1201 && codepage != 65001,
                 "[Encoding.GetEncodingRare]This code page (" + codepage + ") isn't supported by GetEncodingRare!");
             Encoding result;
             switch (codepage)
@@ -973,7 +974,7 @@ namespace System.Text
             int byteCount = GetByteCount(s);
             byte[] bytes = new byte[byteCount];
             int bytesReceived = GetBytes(s, 0, s.Length, bytes, 0);
-            Contract.Assert(byteCount == bytesReceived);
+            Debug.Assert(byteCount == bytesReceived);
             return bytes;
         }
 
@@ -1039,7 +1040,7 @@ namespace System.Text
             // Do the work
             int result = GetBytes(arrChar, 0, charCount, arrByte, 0);
 
-            Contract.Assert(result <= byteCount, "[Encoding.GetBytes]Returned more bytes than we have space for");
+            Debug.Assert(result <= byteCount, "[Encoding.GetBytes]Returned more bytes than we have space for");
 
             // Copy the byte array
             // WARNING: We MUST make sure that we don't copy too many bytes.  We can't
@@ -1195,7 +1196,7 @@ namespace System.Text
             // Do the work
             int result = GetChars(arrByte, 0, byteCount, arrChar, 0);
 
-            Contract.Assert(result <= charCount, "[Encoding.GetChars]Returned more chars than we have space for");
+            Debug.Assert(result <= charCount, "[Encoding.GetChars]Returned more chars than we have space for");
 
             // Copy the char array
             // WARNING: We MUST make sure that we don't copy too many chars.  We can't
@@ -1786,7 +1787,7 @@ namespace System.Text
 
                 // If we're getting chars or getting char count we don't expect to have
                 // to remember fallbacks between calls (so it should be empty)
-                Contract.Assert(fallbackBuffer.Remaining == 0,
+                Debug.Assert(fallbackBuffer.Remaining == 0,
                     "[Encoding.EncodingCharBuffer.EncodingCharBuffer]Expected empty fallback buffer for getchars/charcount");
                 fallbackBuffer.InternalInitialize(bytes, charEnd);
             }
@@ -1851,7 +1852,7 @@ namespace System.Text
             // but we'll double check just to make sure.
             internal unsafe byte GetNextByte()
             {
-                Contract.Assert(bytes < byteEnd, "[EncodingCharBuffer.GetNextByte]Expected more date");
+                Debug.Assert(bytes < byteEnd, "[EncodingCharBuffer.GetNextByte]Expected more date");
                 if (bytes >= byteEnd)
                     return 0;
                 return *(bytes++);
@@ -1968,7 +1969,7 @@ namespace System.Text
 
             internal unsafe bool AddByte(byte b, int moreBytesExpected)
             {
-                Contract.Assert(moreBytesExpected >= 0, "[EncodingByteBuffer.AddByte]expected non-negative moreBytesExpected");
+                Debug.Assert(moreBytesExpected >= 0, "[EncodingByteBuffer.AddByte]expected non-negative moreBytesExpected");
                 if (bytes != null)
                 {
                     if (bytes >= byteEnd - moreBytesExpected)
@@ -2025,7 +2026,7 @@ namespace System.Text
                     fallbackBuffer.MovePrevious();                      // don't use last fallback
                 else
                 {
-                    Contract.Assert(chars > charStart || 
+                    Debug.Assert(chars > charStart || 
                         ((bThrow == true) && (bytes == byteStart)), 
                         "[EncodingByteBuffer.MovePrevious]expected previous data or throw");
                     if (chars > charStart)

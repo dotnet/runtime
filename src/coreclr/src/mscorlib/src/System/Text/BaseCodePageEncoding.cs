@@ -6,6 +6,7 @@
 namespace System.Text
 {
     using System;
+    using System.Diagnostics;
     using System.Diagnostics.Contracts;
     using System.Globalization;
     using System.Runtime.InteropServices;
@@ -175,7 +176,7 @@ namespace System.Text
         {
             // Make sure to get the base stuff too This throws if info is null
             SerializeEncoding(info, context);
-            Contract.Assert(info!=null, "[BaseCodePageEncoding.GetObjectData] Expected null info to throw");
+            Debug.Assert(info!=null, "[BaseCodePageEncoding.GetObjectData] Expected null info to throw");
 
             // Just need Everett maxCharSize (BaseCodePageEncoding) or m_maxByteSize (MLangBaseCodePageEncoding)
             info.AddValue(m_bUseMlangTypeForSerialization ? "m_maxByteSize" : "maxCharSize",
@@ -238,7 +239,7 @@ namespace System.Text
             if (pCodePage == null)
                 return 0;
 
-            Contract.Assert(pCodePage->ByteCount == 1 || pCodePage->ByteCount == 2,
+            Debug.Assert(pCodePage->ByteCount == 1 || pCodePage->ByteCount == 2,
                 "[BaseCodePageEncoding] Code page (" + codePage + ") has invalid byte size (" + pCodePage->ByteCount + ") in table");
             // Return what it says for byte count
             return pCodePage->ByteCount;
@@ -257,7 +258,7 @@ namespace System.Text
 
             // This gets shared memory for our map.  If its can't, it gives us clean memory.
             Byte *pMemorySection = EncodingTable.nativeCreateOpenFileMapping(strName, iSize, out mappedFileHandle);
-            Contract.Assert(pMemorySection != null,
+            Debug.Assert(pMemorySection != null,
                 "[BaseCodePageEncoding.GetSharedMemory] Expected non-null memory section to be opened");
 
             // If that failed, we have to die.
@@ -295,7 +296,7 @@ namespace System.Text
             // Read in our best fit table if necessary
             if (arrayUnicodeBestFit == null) ReadBestFitTable();
 
-            Contract.Assert(arrayUnicodeBestFit != null,
+            Debug.Assert(arrayUnicodeBestFit != null,
                 "[BaseCodePageEncoding.GetBestFitUnicodeToBytesData]Expected non-null arrayUnicodeBestFit");
 
             // Normally we don't have any best fit data.
@@ -307,7 +308,7 @@ namespace System.Text
             // Read in our best fit table if necessary
             if (arrayBytesBestFit == null) ReadBestFitTable();
 
-            Contract.Assert(arrayBytesBestFit != null,
+            Debug.Assert(arrayBytesBestFit != null,
                 "[BaseCodePageEncoding.GetBestFitBytesToUnicodeData]Expected non-null arrayBytesBestFit");
 
             // Normally we don't have any best fit data.

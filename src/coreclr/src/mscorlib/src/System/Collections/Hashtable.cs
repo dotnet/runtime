@@ -287,7 +287,7 @@ namespace System.Collections {
             loadsize = (int)(this.loadFactor * hashsize);
             isWriterInProgress = false;
             // Based on the current algorithm, loadsize must be less than hashsize.
-            Contract.Assert( loadsize < hashsize, "Invalid hashtable loadsize!");
+            Debug.Assert( loadsize < hashsize, "Invalid hashtable loadsize!");
         }
     
         // Constructs a new hashtable with the given initial capacity and load
@@ -441,7 +441,7 @@ namespace System.Collections {
         // Removes all entries from this hashtable.
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         public virtual void Clear() {
-            Contract.Assert(!isWriterInProgress, "Race condition detected in usages of Hashtable - multiple threads appear to be writing to a Hashtable instance simultaneously!  Don't do that - use Hashtable.Synchronized.");
+            Debug.Assert(!isWriterInProgress, "Race condition detected in usages of Hashtable - multiple threads appear to be writing to a Hashtable instance simultaneously!  Don't do that - use Hashtable.Synchronized.");
 
             if (count == 0 && occupancy == 0)
                 return;
@@ -752,7 +752,7 @@ namespace System.Collections {
             isWriterInProgress = false;
 
             // minimun size of hashtable is 3 now and maximum loadFactor is 0.72 now.
-            Contract.Assert(loadsize < newsize, "Our current implementaion means this is not possible.");
+            Debug.Assert(loadsize < newsize, "Our current implementaion means this is not possible.");
             return;
         }
 
@@ -804,7 +804,7 @@ namespace System.Collections {
         // 
         protected virtual bool KeyEquals(Object item, Object key)
         {
-            Contract.Assert(key != null, "key can't be null here!");
+            Debug.Assert(key != null, "key can't be null here!");
             if( Object.ReferenceEquals(buckets, item)) {
                 return false;
             }
@@ -955,13 +955,13 @@ namespace System.Collections {
             // If you see this assert, make sure load factor & count are reasonable.
             // Then verify that our double hash function (h2, described at top of file)
             // meets the requirements described above. You should never see this assert.
-            Contract.Assert(false, "hash table insert failed!  Load factor too high, or our double hashing function is incorrect.");
+            Debug.Assert(false, "hash table insert failed!  Load factor too high, or our double hashing function is incorrect.");
             throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_HashInsertFailed"));
         }
     
         private void putEntry (bucket[] newBuckets, Object key, Object nvalue, int hashcode)
         {
-            Contract.Assert(hashcode >= 0, "hashcode >= 0");  // make sure collision bit (sign bit) wasn't set.
+            Debug.Assert(hashcode >= 0, "hashcode >= 0");  // make sure collision bit (sign bit) wasn't set.
 
             uint seed = (uint) hashcode;
             uint incr = (uint)(1 + ((seed * HashPrime) % ((uint)newBuckets.Length - 1)));
@@ -993,7 +993,7 @@ namespace System.Collections {
                 throw new ArgumentNullException(nameof(key), Environment.GetResourceString("ArgumentNull_Key"));
             }
             Contract.EndContractBlock();
-            Contract.Assert(!isWriterInProgress, "Race condition detected in usages of Hashtable - multiple threads appear to be writing to a Hashtable instance simultaneously!  Don't do that - use Hashtable.Synchronized.");
+            Debug.Assert(!isWriterInProgress, "Race condition detected in usages of Hashtable - multiple threads appear to be writing to a Hashtable instance simultaneously!  Don't do that - use Hashtable.Synchronized.");
 
             uint seed;
             uint incr;
@@ -1659,7 +1659,7 @@ namespace System.Collections {
             // Note that this check works even when _items.Length overflowed thanks to the (uint) cast
             if ((uint)newSize > MaxPrimeArrayLength && MaxPrimeArrayLength > oldSize)
             {
-                Contract.Assert( MaxPrimeArrayLength == GetPrime(MaxPrimeArrayLength), "Invalid MaxPrimeArrayLength");
+                Debug.Assert( MaxPrimeArrayLength == GetPrime(MaxPrimeArrayLength), "Invalid MaxPrimeArrayLength");
                 return MaxPrimeArrayLength;
             }
 
@@ -1678,7 +1678,7 @@ namespace System.Collections {
 
         public static IEqualityComparer GetRandomizedEqualityComparer(object comparer)
         {
-            Contract.Assert(comparer == null || comparer == System.Collections.Generic.EqualityComparer<string>.Default || comparer is IWellKnownStringEqualityComparer); 
+            Debug.Assert(comparer == null || comparer == System.Collections.Generic.EqualityComparer<string>.Default || comparer is IWellKnownStringEqualityComparer); 
 
             if(comparer == null) {
                 return new System.Collections.Generic.RandomizedObjectEqualityComparer();
@@ -1694,7 +1694,7 @@ namespace System.Collections {
                 return cmp.GetRandomizedEqualityComparer();
             }
 
-            Contract.Assert(false, "Missing case in GetRandomizedEqualityComparer!");
+            Debug.Assert(false, "Missing case in GetRandomizedEqualityComparer!");
 
             return null;
         }
@@ -1731,7 +1731,7 @@ namespace System.Collections {
                     if(data == null)
                     {
                         data = new byte[bufferSize];
-                        Contract.Assert(bufferSize % 8 == 0, "We increment our current index by 8, so our buffer size must be a multiple of 8");
+                        Debug.Assert(bufferSize % 8 == 0, "We increment our current index by 8, so our buffer size must be a multiple of 8");
                     }
 
                     Microsoft.Win32.Win32Native.Random(true, data, data.Length);

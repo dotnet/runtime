@@ -120,7 +120,7 @@ namespace System.Reflection
                 throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_NotSupportedOnWinRTEvent"));
 
             // Must be a normal non-WinRT event
-            Contract.Assert(addMethod.ReturnType == typeof(void));
+            Debug.Assert(addMethod.ReturnType == typeof(void));
 #endif // FEATURE_COMINTEROP
 
             addMethod.Invoke(target, new object[] { handler });
@@ -137,13 +137,13 @@ namespace System.Reflection
 
 #if FEATURE_COMINTEROP
             ParameterInfo[] parameters = removeMethod.GetParametersNoCopy();
-            Contract.Assert(parameters != null && parameters.Length == 1);
+            Debug.Assert(parameters != null && parameters.Length == 1);
 
             if (parameters[0].ParameterType == typeof(System.Runtime.InteropServices.WindowsRuntime.EventRegistrationToken))
                 throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_NotSupportedOnWinRTEvent"));
 
             // Must be a normal non-WinRT event
-            Contract.Assert(parameters[0].ParameterType.BaseType == typeof(MulticastDelegate));
+            Debug.Assert(parameters[0].ParameterType.BaseType == typeof(MulticastDelegate));
 #endif // FEATURE_COMINTEROP
 
             removeMethod.Invoke(target, new object[] { handler });
@@ -215,7 +215,7 @@ namespace System.Reflection
         {
             Contract.Requires(declaredType != null);
             Contract.Requires(reflectedTypeCache != null);
-            Contract.Assert(!reflectedTypeCache.IsGlobal);
+            Debug.Assert(!reflectedTypeCache.IsGlobal);
 
             MetadataImport scope = declaredType.GetRuntimeModule().MetadataImport;
 

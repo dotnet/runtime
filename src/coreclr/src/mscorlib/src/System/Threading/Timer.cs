@@ -14,6 +14,7 @@ namespace System.Threading
     using System.Runtime.InteropServices;
     using System.Runtime.ConstrainedExecution;
     using System.Runtime.Versioning;
+    using System.Diagnostics;
     using System.Diagnostics.Contracts;
     using System.Diagnostics.Tracing;
     using Microsoft.Win32.SafeHandles;
@@ -149,14 +150,14 @@ namespace System.Threading
             // A later update during resume will re-schedule
             if(m_pauseTicks != 0)
             {
-                Contract.Assert(!m_isAppDomainTimerScheduled);
-                Contract.Assert(m_appDomainTimer == null);
+                Debug.Assert(!m_isAppDomainTimerScheduled);
+                Debug.Assert(m_appDomainTimer == null);
                 return true;
             }
  
             if (m_appDomainTimer == null || m_appDomainTimer.IsInvalid)
             {
-                Contract.Assert(!m_isAppDomainTimerScheduled);
+                Debug.Assert(!m_isAppDomainTimerScheduled);
 
                 m_appDomainTimer = CreateAppDomainTimer(actualDuration);
                 if (!m_appDomainTimer.IsInvalid)
@@ -258,8 +259,8 @@ namespace System.Threading
                     TimerQueueTimer timer = m_timers;
                     while (timer != null)
                     {
-                        Contract.Assert(timer.m_dueTime != Timeout.UnsignedInfinite);
-                        Contract.Assert(resumedTicks >= timer.m_startTicks);
+                        Debug.Assert(timer.m_dueTime != Timeout.UnsignedInfinite);
+                        Debug.Assert(resumedTicks >= timer.m_startTicks);
 
                         uint elapsed; // How much of the timer dueTime has already elapsed
 
@@ -332,7 +333,7 @@ namespace System.Threading
                     TimerQueueTimer timer = m_timers;
                     while (timer != null)
                     {
-                        Contract.Assert(timer.m_dueTime != Timeout.UnsignedInfinite);
+                        Debug.Assert(timer.m_dueTime != Timeout.UnsignedInfinite);
 
                         uint elapsed = (uint)(nowTicks - timer.m_startTicks);
                         if (elapsed >= timer.m_dueTime)

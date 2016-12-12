@@ -11,6 +11,7 @@ namespace System.Text
     using System.Runtime.CompilerServices;
     using System.Runtime.InteropServices;
     using System.Runtime.Versioning;
+    using System.Diagnostics;
     using System.Diagnostics.Contracts;
 
     // This internal class wraps up our normalization behavior
@@ -242,7 +243,7 @@ namespace System.Text
                 {
                     // Do appropriate stuff for the individual errors:
                     case ERROR_INSUFFICIENT_BUFFER:
-                        Contract.Assert(iLength > cBuffer.Length, "Buffer overflow should have iLength > cBuffer.Length");
+                        Debug.Assert(iLength > cBuffer.Length, "Buffer overflow should have iLength > cBuffer.Length");
                         continue;
 
                     case ERROR_INVALID_PARAMETER:

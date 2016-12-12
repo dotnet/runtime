@@ -39,6 +39,7 @@ namespace System.Globalization {
     using System.Security.Permissions;
     using System.Reflection;
     using Microsoft.Win32;
+    using System.Diagnostics;
     using System.Diagnostics.Contracts;
     using System.Resources;
 
@@ -403,13 +404,13 @@ namespace System.Globalization {
             // e.g. for es-ES_tradnl: v2 puts es-ES in m_name; v4 puts es-ES_tradnl
             if (m_name == null || IsAlternateSortLcid(cultureID))
             {
-                Contract.Assert(cultureID >=0, "[CultureInfo.OnDeserialized] cultureID >= 0");
+                Debug.Assert(cultureID >=0, "[CultureInfo.OnDeserialized] cultureID >= 0");
                 InitializeFromCultureId(cultureID, m_useUserOverride);
             }
             else
             {
 #endif
-                Contract.Assert(m_name != null, "[CultureInfo.OnDeserialized] m_name != null");
+                Debug.Assert(m_name != null, "[CultureInfo.OnDeserialized] m_name != null");
 
                 this.m_cultureData = CultureData.GetCultureData(m_name, m_useUserOverride);
                 if (this.m_cultureData == null)
@@ -476,14 +477,14 @@ namespace System.Globalization {
         // For Silverlight, the answer is always no.
         internal bool IsSafeCrossDomain {
             get {
-                Contract.Assert(m_createdDomainID != 0, "[CultureInfo.IsSafeCrossDomain] m_createdDomainID != 0");
+                Debug.Assert(m_createdDomainID != 0, "[CultureInfo.IsSafeCrossDomain] m_createdDomainID != 0");
                 return m_isSafeCrossDomain;
             }
         }
 
         internal int CreatedDomainID {
             get {
-                Contract.Assert(m_createdDomainID != 0,  "[CultureInfo.CreatedDomain] m_createdDomainID != 0");
+                Debug.Assert(m_createdDomainID != 0,  "[CultureInfo.CreatedDomain] m_createdDomainID != 0");
                 return m_createdDomainID;
             }
         }
@@ -634,7 +635,7 @@ namespace System.Globalization {
         }
 
         internal static bool VerifyCultureName(CultureInfo culture, bool throwException) {
-            Contract.Assert(culture!=null, "[CultureInfo.VerifyCultureName]culture!=null");
+            Debug.Assert(culture!=null, "[CultureInfo.VerifyCultureName]culture!=null");
 
             //If we have an instance of one of our CultureInfos, the user can't have changed the
             //name and we know that all names are valid in files.
@@ -1041,7 +1042,7 @@ namespace System.Globalization {
             get
             {
                 Contract.Ensures(Contract.Result<String>() != null);
-                Contract.Assert(m_name != null, "[CultureInfo.DisplayName]Always expect m_name to be set");
+                Debug.Assert(m_name != null, "[CultureInfo.DisplayName]Always expect m_name to be set");
 
                 return m_cultureData.SLOCALIZEDDISPLAYNAME;
             }
@@ -1234,7 +1235,7 @@ namespace System.Globalization {
         {
             Contract.Ensures(Contract.Result<String>() != null);
 
-            Contract.Assert(m_name != null, "[CultureInfo.ToString]Always expect m_name to be set");
+            Debug.Assert(m_name != null, "[CultureInfo.ToString]Always expect m_name to be set");
             return m_name;
         }
 
@@ -1374,7 +1375,7 @@ namespace System.Globalization {
         //This function exists as a shortcut to prevent us from loading all of the non-gregorian
         //calendars unless they're required.
         internal static Calendar GetCalendarInstanceRare(int calType) {
-            Contract.Assert(calType!=Calendar.CAL_GREGORIAN, "calType!=Calendar.CAL_GREGORIAN");
+            Debug.Assert(calType!=Calendar.CAL_GREGORIAN, "calType!=Calendar.CAL_GREGORIAN");
 
             switch (calType) {
                 case Calendar.CAL_GREGORIAN_US:               // Gregorian (U.S.) calendar
@@ -1426,7 +1427,7 @@ namespace System.Globalization {
             get {
                 Contract.Ensures(Contract.Result<Calendar>() != null);
                 if (calendar == null) {
-                    Contract.Assert(this.m_cultureData.CalendarIds.Length > 0, "this.m_cultureData.CalendarIds.Length > 0");
+                    Debug.Assert(this.m_cultureData.CalendarIds.Length > 0, "this.m_cultureData.CalendarIds.Length > 0");
                     // Get the default calendar for this culture.  Note that the value can be
                     // from registry if this is a user default culture.
                     Calendar newObj = this.m_cultureData.DefaultCalendar;
@@ -1887,7 +1888,7 @@ namespace System.Globalization {
 
         private static String GetDefaultLocaleName(int localeType)
         {
-            Contract.Assert(localeType == LOCALE_USER_DEFAULT || localeType == LOCALE_SYSTEM_DEFAULT, "[CultureInfo.GetDefaultLocaleName] localeType must be LOCALE_USER_DEFAULT or LOCALE_SYSTEM_DEFAULT");
+            Debug.Assert(localeType == LOCALE_USER_DEFAULT || localeType == LOCALE_SYSTEM_DEFAULT, "[CultureInfo.GetDefaultLocaleName] localeType must be LOCALE_USER_DEFAULT or LOCALE_SYSTEM_DEFAULT");
 
             string localeName = null;
             if(InternalGetDefaultLocaleName(localeType, JitHelpers.GetStringHandleOnStack(ref localeName)))

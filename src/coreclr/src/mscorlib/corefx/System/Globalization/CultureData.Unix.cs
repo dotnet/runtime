@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Runtime.InteropServices;
 using System.Security;
@@ -26,7 +27,7 @@ namespace System.Globalization
         [SecuritySafeCritical]
         private unsafe bool InitCultureData()
         {
-            Contract.Assert(_sRealName != null);
+            Debug.Assert(_sRealName != null);
             
             string alternateSortName = string.Empty;
             string realNameBuffer = _sRealName;
@@ -122,7 +123,7 @@ namespace System.Globalization
         
         private string GetLocaleInfo(LocaleStringData type)
         {
-            Contract.Assert(_sWindowsName != null, "[CultureData.GetLocaleInfo] Expected _sWindowsName to be populated already");
+            Debug.Assert(_sWindowsName != null, "[CultureData.GetLocaleInfo] Expected _sWindowsName to be populated already");
             return GetLocaleInfo(_sWindowsName, type);
         }
 
@@ -131,7 +132,7 @@ namespace System.Globalization
         [SecuritySafeCritical]
         private string GetLocaleInfo(string localeName, LocaleStringData type)
         {
-            Contract.Assert(localeName != null, "[CultureData.GetLocaleInfo] Expected localeName to be not be null");
+            Debug.Assert(localeName != null, "[CultureData.GetLocaleInfo] Expected localeName to be not be null");
 
             switch (type)
             {
@@ -148,7 +149,7 @@ namespace System.Globalization
             {
                 // Failed, just use empty string
                 StringBuilderCache.Release(sb);
-                Contract.Assert(false, "[CultureData.GetLocaleInfo(LocaleStringData)] Failed");
+                Debug.Assert(false, "[CultureData.GetLocaleInfo(LocaleStringData)] Failed");
                 return String.Empty;
             }
             return StringBuilderCache.GetStringAndRelease(sb);
@@ -157,7 +158,7 @@ namespace System.Globalization
         [SecuritySafeCritical]
         private int GetLocaleInfo(LocaleNumberData type)
         {
-            Contract.Assert(_sWindowsName != null, "[CultureData.GetLocaleInfo(LocaleNumberData)] Expected _sWindowsName to be populated already");
+            Debug.Assert(_sWindowsName != null, "[CultureData.GetLocaleInfo(LocaleNumberData)] Expected _sWindowsName to be populated already");
 
             switch (type)
             {
@@ -172,7 +173,7 @@ namespace System.Globalization
             if (!result)
             {
                 // Failed, just use 0
-                Contract.Assert(false, "[CultureData.GetLocaleInfo(LocaleNumberData)] failed");
+                Debug.Assert(false, "[CultureData.GetLocaleInfo(LocaleNumberData)] failed");
             }
 
             return value;
@@ -181,14 +182,14 @@ namespace System.Globalization
         [SecuritySafeCritical]
         private int[] GetLocaleInfo(LocaleGroupingData type)
         {
-            Contract.Assert(_sWindowsName != null, "[CultureData.GetLocaleInfo(LocaleGroupingData)] Expected _sWindowsName to be populated already");
+            Debug.Assert(_sWindowsName != null, "[CultureData.GetLocaleInfo(LocaleGroupingData)] Expected _sWindowsName to be populated already");
 
             int primaryGroupingSize = 0;
             int secondaryGroupingSize = 0;
             bool result = Interop.GlobalizationInterop.GetLocaleInfoGroupingSizes(_sWindowsName, (uint)type, ref primaryGroupingSize, ref secondaryGroupingSize);
             if (!result)
             {
-                Contract.Assert(false, "[CultureData.GetLocaleInfo(LocaleGroupingData type)] failed");
+                Debug.Assert(false, "[CultureData.GetLocaleInfo(LocaleGroupingData type)] failed");
             }
 
             if (secondaryGroupingSize == 0)
@@ -207,7 +208,7 @@ namespace System.Globalization
         [SecuritySafeCritical]
         private string GetTimeFormatString(bool shortFormat)
         {
-            Contract.Assert(_sWindowsName != null, "[CultureData.GetTimeFormatString(bool shortFormat)] Expected _sWindowsName to be populated already");
+            Debug.Assert(_sWindowsName != null, "[CultureData.GetTimeFormatString(bool shortFormat)] Expected _sWindowsName to be populated already");
 
             StringBuilder sb = StringBuilderCache.Acquire(ICU_ULOC_KEYWORD_AND_VALUES_CAPACITY);
 
@@ -216,7 +217,7 @@ namespace System.Globalization
             {
                 // Failed, just use empty string
                 StringBuilderCache.Release(sb);
-                Contract.Assert(false, "[CultureData.GetTimeFormatString(bool shortFormat)] Failed");
+                Debug.Assert(false, "[CultureData.GetTimeFormatString(bool shortFormat)] Failed");
                 return String.Empty;
             }
 

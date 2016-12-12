@@ -12,6 +12,7 @@ namespace System.Security.Util {
     using System.Globalization;
     using System.Runtime.Versioning;
     using System.IO;
+    using System.Diagnostics;
     using System.Diagnostics.Contracts;
 
     [Serializable]
@@ -182,7 +183,7 @@ namespace System.Security.Util {
 
         public void AddExpressions( ArrayList exprArrayList, bool checkForDuplicates)
         {
-            Contract.Assert( m_throwOnRelative, "This should only be called when throw on relative is set" );
+            Debug.Assert( m_throwOnRelative, "This should only be called when throw on relative is set" );
 
             m_expressionsArray = null;
             m_expressions = null;

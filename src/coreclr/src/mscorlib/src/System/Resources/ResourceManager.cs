@@ -30,6 +30,7 @@ namespace System.Resources {
     using Microsoft.Win32;
     using System.Collections.Generic;
     using System.Runtime.Versioning;
+    using System.Diagnostics;
     using System.Diagnostics.Contracts;
 
 #if FEATURE_APPX
@@ -630,7 +631,7 @@ namespace System.Resources {
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
         protected virtual ResourceSet InternalGetResourceSet(CultureInfo culture, bool createIfNotExists, bool tryParents) 
         {
-            Contract.Assert(culture != null, "culture != null");
+            Debug.Assert(culture != null, "culture != null");
 
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
             return InternalGetResourceSet(culture,createIfNotExists,tryParents, ref stackMark);
@@ -754,7 +755,7 @@ namespace System.Resources {
                 Object[] attrs = a.GetCustomAttributes(typeof(SatelliteContractVersionAttribute), false);
                 if (attrs.Length == 0)
                     return null;
-                Contract.Assert(attrs.Length == 1, "Cannot have multiple instances of SatelliteContractVersionAttribute on an assembly!");
+                Debug.Assert(attrs.Length == 1, "Cannot have multiple instances of SatelliteContractVersionAttribute on an assembly!");
                 v = ((SatelliteContractVersionAttribute)attrs[0]).Version;
             }
             Version ver;
@@ -767,7 +768,7 @@ namespace System.Resources {
                 // If this assert fires, please fix the build process for the
                 // BCL directory.
                 if (a == typeof(Object).Assembly) {
-                    Contract.Assert(false, System.CoreLib.Name+"'s SatelliteContractVersionAttribute is a malformed version string!");
+                    Debug.Assert(false, System.CoreLib.Name+"'s SatelliteContractVersionAttribute is a malformed version string!");
                     return null;
                 }
 
@@ -795,7 +796,7 @@ namespace System.Resources {
                                           String typeName2, 
                                           AssemblyName asmName2)
         {
-            Contract.Assert(asmTypeName1 != null, "asmTypeName1 was unexpectedly null");
+            Debug.Assert(asmTypeName1 != null, "asmTypeName1 was unexpectedly null");
 
             // First, compare type names
             int comma = asmTypeName1.IndexOf(',');
@@ -848,10 +849,10 @@ namespace System.Resources {
 
 #if FEATURE_APPX
         private string GetStringFromPRI(String stringName, String startingCulture, String neutralResourcesCulture) {
-            Contract.Assert(_bUsingModernResourceManagement);
-            Contract.Assert(_WinRTResourceManager != null);
-            Contract.Assert(_PRIonAppXInitialized);
-            Contract.Assert(AppDomain.IsAppXModel());
+            Debug.Assert(_bUsingModernResourceManagement);
+            Debug.Assert(_WinRTResourceManager != null);
+            Debug.Assert(_PRIonAppXInitialized);
+            Debug.Assert(AppDomain.IsAppXModel());
         
             if (stringName.Length == 0)
                 return null;
@@ -945,11 +946,11 @@ namespace System.Resources {
 
         private void SetAppXConfiguration()
         {
-            Contract.Assert(_bUsingModernResourceManagement == false); // Only this function writes to this member
+            Debug.Assert(_bUsingModernResourceManagement == false); // Only this function writes to this member
 #if FEATURE_APPX
-            Contract.Assert(_WinRTResourceManager == null); // Only this function writes to this member
-            Contract.Assert(_PRIonAppXInitialized == false); // Only this function writes to this member
-            Contract.Assert(_PRIExceptionInfo == null); // Only this function writes to this member
+            Debug.Assert(_WinRTResourceManager == null); // Only this function writes to this member
+            Debug.Assert(_PRIonAppXInitialized == false); // Only this function writes to this member
+            Debug.Assert(_PRIExceptionInfo == null); // Only this function writes to this member
 
             bool bUsingSatelliteAssembliesUnderAppX = false;
 

@@ -8,6 +8,7 @@ namespace System.Reflection.Emit
 {
     using System.Text;
     using System;
+    using System.Diagnostics;
     using System.Diagnostics.Contracts;
     using System.Reflection;
     using System.Runtime.CompilerServices;
@@ -313,7 +314,7 @@ namespace System.Reflection.Emit
                     AddElementType(CorElementType.CModOpt);
 
                     int token = m_module.GetTypeToken(t).Token;
-                    Contract.Assert(!MetadataToken.IsNullToken(token));
+                    Debug.Assert(!MetadataToken.IsNullToken(token));
                     AddToken(token);
                 }
             }
@@ -336,7 +337,7 @@ namespace System.Reflection.Emit
                     AddElementType(CorElementType.CModReqd);
 
                     int token = m_module.GetTypeToken(t).Token;
-                    Contract.Assert(!MetadataToken.IsNullToken(token));
+                    Debug.Assert(!MetadataToken.IsNullToken(token));
                     AddToken(token);
                 }
             }

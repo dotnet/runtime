@@ -16,6 +16,7 @@ namespace System.Reflection.Emit
     using System.Collections.Generic;
     using System.Security.Permissions;
     using System.Runtime.InteropServices;
+    using System.Diagnostics;
     using System.Diagnostics.Contracts;
 
     [HostProtection(MayLeakOnAbort = true)]
@@ -366,7 +367,7 @@ namespace System.Reflection.Emit
             }
             else
             {
-                Contract.Assert(false, "We should never get here!");
+                Debug.Assert(false, "We should never get here!");
                 return null;
             }
         }
@@ -762,15 +763,15 @@ namespace System.Reflection.Emit
                 m_containingType.m_lastTokenizedMethod = i;
             }
 
-            Contract.Assert(currentMethod == this, "We should have found this method in m_containingType.m_listMethods");
-            Contract.Assert(currentToken.Token != 0, "The token should not be 0");
+            Debug.Assert(currentMethod == this, "We should have found this method in m_containingType.m_listMethods");
+            Debug.Assert(currentToken.Token != 0, "The token should not be 0");
 
             return currentToken;
         }
 
         private MethodToken GetTokenNoLock()
         {
-            Contract.Assert(m_tkMethod.Token == 0, "m_tkMethod should not have been initialized");
+            Debug.Assert(m_tkMethod.Token == 0, "m_tkMethod should not have been initialized");
 
             int sigLength;
             byte[] sigBytes = GetMethodSignature().InternalGetSignature(out sigLength);
@@ -1442,13 +1443,13 @@ namespace System.Reflection.Emit
         internal ExceptionHandler(int tryStartOffset, int tryEndOffset, int filterOffset, int handlerStartOffset, int handlerEndOffset,
             int kind, int exceptionTypeToken)
         {
-            Contract.Assert(tryStartOffset >= 0);
-            Contract.Assert(tryEndOffset >= 0);
-            Contract.Assert(filterOffset >= 0);
-            Contract.Assert(handlerStartOffset >= 0);
-            Contract.Assert(handlerEndOffset >= 0);
-            Contract.Assert(IsValidKind((ExceptionHandlingClauseOptions)kind));
-            Contract.Assert(kind != (int)ExceptionHandlingClauseOptions.Clause || (exceptionTypeToken & 0x00FFFFFF) != 0);
+            Debug.Assert(tryStartOffset >= 0);
+            Debug.Assert(tryEndOffset >= 0);
+            Debug.Assert(filterOffset >= 0);
+            Debug.Assert(handlerStartOffset >= 0);
+            Debug.Assert(handlerEndOffset >= 0);
+            Debug.Assert(IsValidKind((ExceptionHandlingClauseOptions)kind));
+            Debug.Assert(kind != (int)ExceptionHandlingClauseOptions.Clause || (exceptionTypeToken & 0x00FFFFFF) != 0);
 
             m_tryStartOffset = tryStartOffset;
             m_tryEndOffset = tryEndOffset;

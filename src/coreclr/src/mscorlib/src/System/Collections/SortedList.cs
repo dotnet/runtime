@@ -211,7 +211,7 @@ namespace System.Collections {
                     }
                     else {
                         // size can only be zero here.
-                        Contract.Assert( _size == 0, "Size is not zero");
+                        Debug.Assert( _size == 0, "Size is not zero");
                         keys = emptyArray;
                         values = emptyArray;                      
                     }

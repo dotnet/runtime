@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 
 namespace System.Globalization
@@ -53,24 +54,24 @@ namespace System.Globalization
 
         internal static int IndexOfOrdinal(string source, string value, int startIndex, int count, bool ignoreCase)
         {
-            Contract.Assert(source != null);
-            Contract.Assert(value != null);
+            Debug.Assert(source != null);
+            Debug.Assert(value != null);
 
             return FindStringOrdinal(FIND_FROMSTART, source, startIndex, count, value, value.Length, ignoreCase);
         }
 
         internal static int LastIndexOfOrdinal(string source, string value, int startIndex, int count, bool ignoreCase)
         {
-            Contract.Assert(source != null);
-            Contract.Assert(value != null);
+            Debug.Assert(source != null);
+            Debug.Assert(value != null);
 
             return FindStringOrdinal(FIND_FROMEND, source, startIndex - count + 1, count, value, value.Length, ignoreCase);
         }
 
         private unsafe int GetHashCodeOfStringCore(string source, CompareOptions options)
         {
-            Contract.Assert(source != null);
-            Contract.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
+            Debug.Assert(source != null);
+            Debug.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
 
             if (source.Length == 0)
             {
@@ -102,9 +103,9 @@ namespace System.Globalization
 
         private unsafe int CompareString(string string1, int offset1, int length1, string string2, int offset2, int length2, CompareOptions options)
         {
-            Contract.Assert(string1 != null);
-            Contract.Assert(string2 != null);
-            Contract.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
+            Debug.Assert(string1 != null);
+            Debug.Assert(string2 != null);
+            Debug.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
 
             string localeName = _sortHandle != IntPtr.Zero ? null : _sortName;
 
@@ -167,9 +168,9 @@ namespace System.Globalization
 
         private int IndexOfCore(string source, string target, int startIndex, int count, CompareOptions options)
         {
-            Contract.Assert(!string.IsNullOrEmpty(source));
-            Contract.Assert(target != null);
-            Contract.Assert((options & CompareOptions.OrdinalIgnoreCase) == 0);
+            Debug.Assert(!string.IsNullOrEmpty(source));
+            Debug.Assert(target != null);
+            Debug.Assert((options & CompareOptions.OrdinalIgnoreCase) == 0);
 
             // TODO: Consider moving this up to the relevent APIs we need to ensure this behavior for
             // and add a precondition that target is not empty. 
@@ -200,9 +201,9 @@ namespace System.Globalization
 
         private int LastIndexOfCore(string source, string target, int startIndex, int count, CompareOptions options)
         {
-            Contract.Assert(!string.IsNullOrEmpty(source));
-            Contract.Assert(target != null);
-            Contract.Assert((options & CompareOptions.OrdinalIgnoreCase) == 0);
+            Debug.Assert(!string.IsNullOrEmpty(source));
+            Debug.Assert(target != null);
+            Debug.Assert((options & CompareOptions.OrdinalIgnoreCase) == 0);
 
             // TODO: Consider moving this up to the relevent APIs we need to ensure this behavior for
             // and add a precondition that target is not empty. 
@@ -234,9 +235,9 @@ namespace System.Globalization
 
         private bool StartsWith(string source, string prefix, CompareOptions options)
         {
-            Contract.Assert(!string.IsNullOrEmpty(source));
-            Contract.Assert(!string.IsNullOrEmpty(prefix));
-            Contract.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
+            Debug.Assert(!string.IsNullOrEmpty(source));
+            Debug.Assert(!string.IsNullOrEmpty(prefix));
+            Debug.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
 
             return FindString(FIND_STARTSWITH | (uint)GetNativeCompareFlags(options),
                                                    source,
@@ -249,9 +250,9 @@ namespace System.Globalization
 
         private bool EndsWith(string source, string suffix, CompareOptions options)
         {
-            Contract.Assert(!string.IsNullOrEmpty(source));
-            Contract.Assert(!string.IsNullOrEmpty(suffix));
-            Contract.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
+            Debug.Assert(!string.IsNullOrEmpty(source));
+            Debug.Assert(!string.IsNullOrEmpty(suffix));
+            Debug.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
 
             return FindString(FIND_ENDSWITH | (uint)GetNativeCompareFlags(options),
                                                    source,
@@ -401,7 +402,7 @@ namespace System.Globalization
             // Suffix & Prefix shouldn't use this, make sure to turn off the NORM_LINGUISTIC_CASING flag
             if (options == CompareOptions.Ordinal) { nativeCompareFlags = COMPARE_OPTIONS_ORDINAL; }
 
-            Contract.Assert(((options & ~(CompareOptions.IgnoreCase |
+            Debug.Assert(((options & ~(CompareOptions.IgnoreCase |
                                           CompareOptions.IgnoreKanaType |
                                           CompareOptions.IgnoreNonSpace |
                                           CompareOptions.IgnoreSymbols |

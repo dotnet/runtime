@@ -110,7 +110,7 @@ namespace System.Globalization
                 Number -= 5000;
             }
 
-            Contract.Assert(Number > 0 && Number <= 999, "Number is out of range."); ;
+            Debug.Assert(Number > 0 && Number <= 999, "Number is out of range."); ;
 
             //
             //  Get the Hundreds.

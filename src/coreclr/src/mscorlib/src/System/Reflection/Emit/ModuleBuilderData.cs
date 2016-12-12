@@ -9,6 +9,7 @@
 namespace System.Reflection.Emit
 {
     using System;
+    using System.Diagnostics;
     using System.Diagnostics.Contracts;
     using System.Globalization;
     using System.IO;
@@ -55,7 +56,7 @@ namespace System.Reflection.Emit
         // each assembly).
         internal virtual void ModifyModuleName(String strModuleName)
         {
-            Contract.Assert(m_strModuleName == AssemblyBuilder.MANIFEST_MODULE_NAME, "Changing names for non-manifest module");
+            Debug.Assert(m_strModuleName == AssemblyBuilder.MANIFEST_MODULE_NAME, "Changing names for non-manifest module");
             InitNames(strModuleName, null /*strFileName*/);
         }
 

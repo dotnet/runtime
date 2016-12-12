@@ -10,6 +10,7 @@ namespace System.Text
     using System;
     using System.Text;
     using System.Threading;
+    using System.Diagnostics;
     using System.Diagnostics.Contracts;
 
     [Serializable]
@@ -101,7 +102,7 @@ namespace System.Text
         public override bool Fallback(byte[] bytesUnknown, int index)
         {
             // We expect no previous fallback in our buffer
-            Contract.Assert(iCount < 1, "[DecoderReplacementFallbackBuffer.Fallback] Calling fallback without a previously empty buffer");
+            Debug.Assert(iCount < 1, "[DecoderReplacementFallbackBuffer.Fallback] Calling fallback without a previously empty buffer");
 
             cBestFit = TryBestFit(bytesUnknown);
             if (cBestFit == '\0')
@@ -210,7 +211,7 @@ namespace System.Text
                 if (cTest == cCheck)
                 {
                     // We found it
-                    Contract.Assert(index + 1 < oFallback.arrayBestFit.Length,
+                    Debug.Assert(index + 1 < oFallback.arrayBestFit.Length,
                         "[InternalDecoderBestFitFallbackBuffer.TryBestFit]Expected replacement character at end of array");
                     return oFallback.arrayBestFit[index + 1];
                 }
@@ -231,7 +232,7 @@ namespace System.Text
                 if (oFallback.arrayBestFit[index] == cCheck)
                 {
                     // We found it
-                    Contract.Assert(index + 1 < oFallback.arrayBestFit.Length,
+                    Debug.Assert(index + 1 < oFallback.arrayBestFit.Length,
                         "[InternalDecoderBestFitFallbackBuffer.TryBestFit]Expected replacement character at end of array");
                     return oFallback.arrayBestFit[index + 1];
                 }

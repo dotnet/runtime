@@ -12,6 +12,7 @@
 ===========================================================*/
 namespace System {
 
+    using System.Diagnostics;
     using System.Diagnostics.Contracts;
     using System.Text;
     using CultureInfo = System.Globalization.CultureInfo;
@@ -100,7 +101,7 @@ namespace System {
 
         private Version(Version version)
         {
-            Contract.Assert(version != null);
+            Debug.Assert(version != null);
 
             _Major = version._Major;
             _Minor = version._Minor;
@@ -257,7 +258,7 @@ namespace System {
         private const int ZERO_CHAR_VALUE = (int) '0';
         private static void AppendPositiveNumber(int num, StringBuilder sb)
         {
-            Contract.Assert(num >= 0, "AppendPositiveNumber expect positive numbers");
+            Debug.Assert(num >= 0, "AppendPositiveNumber expect positive numbers");
 
             int index = sb.Length;
             int reminder;
@@ -436,10 +437,10 @@ namespace System {
                         } catch (OverflowException e) {
                             return e;
                         }
-                        Contract.Assert(false, "Int32.Parse() did not throw exception but TryParse failed: " + m_exceptionArgument);
+                        Debug.Assert(false, "Int32.Parse() did not throw exception but TryParse failed: " + m_exceptionArgument);
                         return new FormatException(Environment.GetResourceString("Format_InvalidString"));
                     default:
-                        Contract.Assert(false, "Unmatched case in Version.GetVersionParseException() for value: " + m_failure);
+                        Debug.Assert(false, "Unmatched case in Version.GetVersionParseException() for value: " + m_failure);
                         return new ArgumentException(Environment.GetResourceString("Arg_VersionString"));
                 }
             }

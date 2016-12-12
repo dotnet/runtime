@@ -12,6 +12,7 @@
 
 
 using System.Security.Permissions;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 namespace System.Threading
 {
@@ -149,7 +150,7 @@ namespace System.Threading
             }
 
             Interlocked.CompareExchange(ref target, value, null);
-            Contract.Assert(target != null);
+            Debug.Assert(target != null);
             return target;
         }
 

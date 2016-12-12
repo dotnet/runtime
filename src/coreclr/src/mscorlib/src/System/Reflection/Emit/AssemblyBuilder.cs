@@ -189,7 +189,7 @@ namespace System.Reflection.Emit
         internal ModuleBuilder GetModuleBuilder(InternalModuleBuilder module)
         {
             Contract.Requires(module != null);
-            Contract.Assert(this.InternalAssembly == module.Assembly);
+            Debug.Assert(this.InternalAssembly == module.Assembly);
 
             lock(SyncRoot)
             {
@@ -516,7 +516,7 @@ namespace System.Reflection.Emit
 
             BCLDebug.Log("DYNIL", "## DYNIL LOGGING: AssemblyBuilder.DefineDynamicModule( " + name + " )");
 
-            Contract.Assert(m_assemblyData != null, "m_assemblyData is null in DefineDynamicModuleInternal");
+            Debug.Assert(m_assemblyData != null, "m_assemblyData is null in DefineDynamicModuleInternal");
 
             ModuleBuilder dynModule;
             ISymbolWriter writer = null;

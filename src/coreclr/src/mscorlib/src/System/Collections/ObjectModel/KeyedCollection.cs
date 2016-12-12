@@ -53,7 +53,7 @@ namespace System.Collections.ObjectModel
         /// </summary>
         new private List<TItem> Items {
             get {
-                Contract.Assert(base.Items is List<TItem>);
+                Debug.Assert(base.Items is List<TItem>);
 
                 return (List<TItem>)base.Items;
             }
@@ -233,7 +233,7 @@ namespace System.Collections.ObjectModel
         }
 
         private void RemoveKey(TKey key) {
-            Contract.Assert(key != null, "key shouldn't be null!");
+            Debug.Assert(key != null, "key shouldn't be null!");
             if (dict != null) {
                 dict.Remove(key);
             }

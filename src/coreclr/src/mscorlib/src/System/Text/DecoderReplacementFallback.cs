@@ -5,6 +5,7 @@
 namespace System.Text
 {
     using System;
+    using System.Diagnostics;
     using System.Diagnostics.Contracts;
 
     [Serializable]
@@ -156,7 +157,7 @@ namespace System.Text
             }
 
             // Now make sure its in the expected range
-            Contract.Assert(fallbackIndex < strDefault.Length && fallbackIndex >= 0,
+            Debug.Assert(fallbackIndex < strDefault.Length && fallbackIndex >= 0,
                             "Index exceeds buffer range");
 
             return strDefault[fallbackIndex];            

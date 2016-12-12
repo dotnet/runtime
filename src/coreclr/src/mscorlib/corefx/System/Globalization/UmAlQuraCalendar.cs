@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 
 namespace System.Globalization
@@ -317,9 +318,9 @@ namespace System.Globalization
         =========================ConvertHijriToGregorian============================*/
         private static void ConvertHijriToGregorian(int HijriYear, int HijriMonth, int HijriDay, ref int yg, ref int mg, ref int dg)
         {
-            Contract.Assert((HijriYear >= MinCalendarYear) && (HijriYear <= MaxCalendarYear), "Hijri year is out of range.");
-            Contract.Assert(HijriMonth >= 1, "Hijri month is out of range.");
-            Contract.Assert(HijriDay >= 1, "Hijri day is out of range.");
+            Debug.Assert((HijriYear >= MinCalendarYear) && (HijriYear <= MaxCalendarYear), "Hijri year is out of range.");
+            Debug.Assert(HijriMonth >= 1, "Hijri month is out of range.");
+            Debug.Assert(HijriDay >= 1, "Hijri day is out of range.");
             int index, b, nDays = HijriDay - 1;
             DateTime dt;
 
@@ -417,7 +418,7 @@ namespace System.Globalization
             TimeSpan ts;
             int yh1 = 0, mh1 = 0, dh1 = 0;
 
-            Contract.Assert((time.Ticks >= minDate.Ticks) && (time.Ticks <= maxDate.Ticks), "Gregorian date is out of range.");
+            Debug.Assert((time.Ticks >= minDate.Ticks) && (time.Ticks <= maxDate.Ticks), "Gregorian date is out of range.");
 
             // Find the index where we should start our search by quessing the Hijri year that we will be in HijriYearInfo.
             // A Hijri year is 354 or 355 days.  Use 355 days so that we will search from a lower index.
@@ -630,7 +631,7 @@ namespace System.Globalization
         {
             int days = 0, b;
 
-            Contract.Assert((year >= MinCalendarYear) && (year <= MaxCalendarYear), "Hijri year is out of range.");
+            Debug.Assert((year >= MinCalendarYear) && (year <= MaxCalendarYear), "Hijri year is out of range.");
 
             b = s_hijriYearInfo[year - MinCalendarYear].HijriMonthsLengthFlags;
 
@@ -639,7 +640,7 @@ namespace System.Globalization
                 days = days + 29 + (b & 1);   /* Add the months lengths before mh */
                 b = b >> 1;
             }
-            Contract.Assert((days == 354) || (days == 355), "Hijri year has to be 354 or 355 days.");
+            Debug.Assert((days == 354) || (days == 355), "Hijri year has to be 354 or 355 days.");
             return days;
         }
 

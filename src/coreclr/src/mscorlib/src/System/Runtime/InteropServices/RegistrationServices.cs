@@ -29,6 +29,7 @@ namespace System.Runtime.InteropServices {
     using System.Runtime.CompilerServices;
     using System.Globalization;
     using System.Runtime.Versioning;
+    using System.Diagnostics;
     using System.Diagnostics.Contracts;
 
     [Flags]
@@ -289,7 +290,7 @@ namespace System.Runtime.InteropServices {
             // If the type is derived from a tdImport class and has the same GUID as the
             // imported class, then it represents a COM type.
             Type baseComImportType = GetBaseComImportType(type);
-            Contract.Assert(baseComImportType != null, "baseComImportType != null");
+            Debug.Assert(baseComImportType != null, "baseComImportType != null");
             if (Marshal.GenerateGuidForType(type) == Marshal.GenerateGuidForType(baseComImportType))
                 return true;
 

@@ -23,6 +23,7 @@ namespace System.Threading
     using System.Runtime.InteropServices;
     using System.Runtime.CompilerServices;
     using System.Runtime.ConstrainedExecution;
+    using System.Diagnostics;
     using System.Diagnostics.Contracts;
     using System.Diagnostics.CodeAnalysis;
 
@@ -36,7 +37,7 @@ namespace System.Threading
 
         internal void Undo(Thread currentThread)
         {
-            Contract.Assert(currentThread == Thread.CurrentThread);
+            Debug.Assert(currentThread == Thread.CurrentThread);
 
             // The common case is that these have not changed, so avoid the cost of a write if not needed.
             if (currentThread.SynchronizationContext != m_sc)
@@ -106,7 +107,7 @@ namespace System.Threading
 
         private ExecutionContext ShallowClone(bool isFlowSuppressed)
         {
-            Contract.Assert(isFlowSuppressed != m_isFlowSuppressed);
+            Debug.Assert(isFlowSuppressed != m_isFlowSuppressed);
 
             if (!isFlowSuppressed &&
                 m_localValues == Default.m_localValues &&
@@ -181,7 +182,7 @@ namespace System.Threading
 
         internal static void Restore(Thread currentThread, ExecutionContext executionContext)
         {
-            Contract.Assert(currentThread == Thread.CurrentThread);
+            Debug.Assert(currentThread == Thread.CurrentThread);
 
             ExecutionContext previous = currentThread.ExecutionContext ?? Default;
             currentThread.ExecutionContext = executionContext;
@@ -198,7 +199,7 @@ namespace System.Threading
 
         static internal void EstablishCopyOnWriteScope(Thread currentThread, ref ExecutionContextSwitcher ecsw)
         {
-            Contract.Assert(currentThread == Thread.CurrentThread);
+            Debug.Assert(currentThread == Thread.CurrentThread);
             
             ecsw.m_ec = currentThread.ExecutionContext; 
             ecsw.m_sc = currentThread.SynchronizationContext;
@@ -207,9 +208,9 @@ namespace System.Threading
         [HandleProcessCorruptedStateExceptions]
         private static void OnContextChanged(ExecutionContext previous, ExecutionContext current)
         {
-            Contract.Assert(previous != null);
-            Contract.Assert(current != null);
-            Contract.Assert(previous != current);
+            Debug.Assert(previous != null);
+            Debug.Assert(current != null);
+            Debug.Assert(previous != current);
             
             foreach (IAsyncLocal local in previous.m_localChangeNotifications)
             {
@@ -281,7 +282,7 @@ namespace System.Threading
             {
                 if (hadPreviousValue)
                 {
-                    Contract.Assert(Array.IndexOf(newChangeNotifications, local) >= 0);
+                    Debug.Assert(Array.IndexOf(newChangeNotifications, local) >= 0);
                 }
                 else
                 {
@@ -361,7 +362,7 @@ namespace System.Threading
 
         internal void Initialize(Thread currentThread)
         {
-            Contract.Assert(currentThread == Thread.CurrentThread);
+            Debug.Assert(currentThread == Thread.CurrentThread);
             _thread = currentThread;
         }
 

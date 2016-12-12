@@ -17,6 +17,7 @@ namespace System.Resources {
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Diagnostics.Contracts;
 
     internal sealed class FastResourceComparer : IComparer, IEqualityComparer, IComparer<String>, IEqualityComparer<String>
@@ -80,8 +81,8 @@ namespace System.Resources {
         // little endian unicode.  Pass in the number of valid chars.
         public unsafe static int CompareOrdinal(String a, byte[] bytes, int bCharLength)
         {
-            Contract.Assert(a != null && bytes != null, "FastResourceComparer::CompareOrdinal must have non-null params");
-            Contract.Assert(bCharLength * 2 <= bytes.Length, "FastResourceComparer::CompareOrdinal - numChars is too big!");
+            Debug.Assert(a != null && bytes != null, "FastResourceComparer::CompareOrdinal must have non-null params");
+            Debug.Assert(bCharLength * 2 <= bytes.Length, "FastResourceComparer::CompareOrdinal - numChars is too big!");
             // This is a managed version of strcmp, but I can't take advantage
             // of a terminating 0, unlike strcmp in C.
             int i = 0;
@@ -115,9 +116,9 @@ namespace System.Resources {
         // The byte* must point to little endian Unicode characters.
         internal unsafe static int CompareOrdinal(byte* a, int byteLen, String b)
         {
-            Contract.Assert((byteLen & 1) == 0, "CompareOrdinal is expecting a UTF-16 string length, which must be even!");
-            Contract.Assert(a != null && b != null, "Null args not allowed.");
-            Contract.Assert(byteLen >= 0, "byteLen must be non-negative.");
+            Debug.Assert((byteLen & 1) == 0, "CompareOrdinal is expecting a UTF-16 string length, which must be even!");
+            Debug.Assert(a != null && b != null, "Null args not allowed.");
+            Debug.Assert(byteLen >= 0, "byteLen must be non-negative.");
 
             int r = 0;
             int i = 0;

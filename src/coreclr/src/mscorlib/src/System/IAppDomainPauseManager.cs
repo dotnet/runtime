@@ -46,7 +46,7 @@ namespace System
 
         public void Paused()
         {
-            Contract.Assert(!isPaused);
+            Debug.Assert(!isPaused);
 
             if(ResumeEvent == null)
                 ResumeEvent = new ManualResetEvent(false);
@@ -63,7 +63,7 @@ namespace System
 
         public void Resuming()
         {
-            Contract.Assert(isPaused);
+            Debug.Assert(isPaused);
             isPaused = false;
             ResumeEvent.Set();
         }

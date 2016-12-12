@@ -19,6 +19,7 @@ using System;
 using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Threading;
 using System.Threading.Tasks;
@@ -259,7 +260,7 @@ namespace System.IO {
             if (n > count) n = count;
             if (n < 0) n = 0;
 
-            Contract.Assert(_position + n >= 0, "_position + n >= 0");  // len is less than 2^31 -1.
+            Debug.Assert(_position + n >= 0, "_position + n >= 0");  // len is less than 2^31 -1.
             _position += n;
             return n;
         }
@@ -342,7 +343,7 @@ namespace System.IO {
             if (n <= 0)
                 return 0;
 
-            Contract.Assert(_position + n >= 0, "_position + n >= 0");  // len is less than 2^31 -1.
+            Debug.Assert(_position + n >= 0, "_position + n >= 0");  // len is less than 2^31 -1.
 
             if (n <= 8)
             {
@@ -379,7 +380,7 @@ namespace System.IO {
             {
                 int n = Read(buffer, offset, count);
                 var t = _lastReadTask;
-                Contract.Assert(t == null || t.Status == TaskStatus.RanToCompletion, 
+                Debug.Assert(t == null || t.Status == TaskStatus.RanToCompletion, 
                     "Expected that a stored last task completed successfully");
                 return (t != null && t.Result == n) ? t : (_lastReadTask = Task.FromResult<int>(n));
             }
@@ -504,7 +505,7 @@ namespace System.IO {
                 throw new ArgumentException(Environment.GetResourceString("Argument_InvalidSeekOrigin"));
             }
 
-            Contract.Assert(_position >= 0, "_position >= 0");
+            Debug.Assert(_position >= 0, "_position >= 0");
             return _position;
         }
         
@@ -527,7 +528,7 @@ namespace System.IO {
             EnsureWriteable();
 
             // Origin wasn't publicly exposed above.
-            Contract.Assert(MemStreamMaxLength == Int32.MaxValue);  // Check parameter validation logic in this method if this fails.
+            Debug.Assert(MemStreamMaxLength == Int32.MaxValue);  // Check parameter validation logic in this method if this fails.
             if (value > (Int32.MaxValue - _origin)) {
                 throw new ArgumentOutOfRangeException(nameof(value), Environment.GetResourceString("ArgumentOutOfRange_StreamLength"));
             }

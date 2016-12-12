@@ -16,6 +16,7 @@ namespace  System.StubHelpers {
 #endif // FEATURE_COMINTEROP
     using System.Runtime.CompilerServices;
     using System.Runtime.ConstrainedExecution;
+    using System.Diagnostics;
     using System.Diagnostics.Contracts;
 
     [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
@@ -479,19 +480,19 @@ namespace  System.StubHelpers {
     {
         static internal IntPtr ConvertToNative(string strManaged)
         {
-            Contract.Assert(false, "NYI");
+            Debug.Assert(false, "NYI");
             return IntPtr.Zero;
         }
 
         static internal unsafe string ConvertToManaged(IntPtr bstr)
         {
-            Contract.Assert(false, "NYI");
+            Debug.Assert(false, "NYI");
             return null;
         }
 
         static internal void ClearNative(IntPtr pNative)
         {
-            Contract.Assert(false, "NYI");
+            Debug.Assert(false, "NYI");
         }
     }  // class WSTRBufferMarshaler
 
@@ -587,7 +588,7 @@ namespace  System.StubHelpers {
 
         internal static void ClearNative(IntPtr hstring)
         {
-            Contract.Assert(Environment.IsWinRTSupported);
+            Debug.Assert(Environment.IsWinRTSupported);
 
             if (hstring != IntPtr.Zero)
             {
@@ -906,7 +907,7 @@ namespace  System.StubHelpers {
 
         internal static unsafe void ClearNativeContents_Type(IntPtr pNativeHome, int cElements)
         {
-            Contract.Assert(Environment.IsWinRTSupported);
+            Debug.Assert(Environment.IsWinRTSupported);
 
             TypeNameNative *pNativeTypeArray = *(TypeNameNative **)pNativeHome;
             if (pNativeTypeArray != null)
@@ -1123,7 +1124,7 @@ namespace  System.StubHelpers {
                         ptr, allocSize,
                         IsBestFit(dwFlags),
                         IsThrowOn(dwFlags));
-                    Contract.Assert(length < allocSize, "Expected a length less than the allocated size");
+                    Debug.Assert(length < allocSize, "Expected a length less than the allocated size");
                 }
                 if (IsOut(dwFlags))
                 {
@@ -1420,7 +1421,7 @@ namespace  System.StubHelpers {
         
         internal static unsafe void ClearNative(TypeNameNative *pNativeType)
         {
-            Contract.Assert(Environment.IsWinRTSupported);
+            Debug.Assert(Environment.IsWinRTSupported);
 
             if (pNativeType->typeName != IntPtr.Zero)
             {
@@ -1463,7 +1464,7 @@ namespace  System.StubHelpers {
 
             // S_OK should be marshaled as null.  WinRT API's should not return S_FALSE by convention.
             // We've chosen to treat S_FALSE as success and return null.
-            Contract.Assert(e != null || hr == 0 || hr == 1, "Unexpected HRESULT - it is a success HRESULT (without the high bit set) other than S_OK & S_FALSE.");
+            Debug.Assert(e != null || hr == 0 || hr == 1, "Unexpected HRESULT - it is a success HRESULT (without the high bit set) other than S_OK & S_FALSE.");
             return e;
         }
     }  // class HResultExceptionMarshaler

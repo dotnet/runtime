@@ -24,6 +24,7 @@ namespace System.Threading
     using System.Runtime.ConstrainedExecution;
     using System.Runtime.Versioning;
     using System.Security;
+    using System.Diagnostics;
     using System.Diagnostics.Contracts;
 
     [HostProtection(Synchronization=true, ExternalThreading=true)]
@@ -107,7 +108,7 @@ namespace System.Threading
             [PrePrepareMethod]
             internal MutexTryCodeHelper(bool initiallyOwned,MutexCleanupInfo cleanupInfo, String name, Win32Native.SECURITY_ATTRIBUTES secAttrs, Mutex mutex)
             {
-                Contract.Assert(name == null || name.Length != 0);
+                Debug.Assert(name == null || name.Length != 0);
 
                 m_initiallyOwned = initiallyOwned;
                 m_cleanupInfo = cleanupInfo;
