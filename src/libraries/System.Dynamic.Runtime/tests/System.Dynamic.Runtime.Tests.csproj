@@ -2,21 +2,13 @@
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{0BFD6D9F-DF9E-4B17-8ED4-29437AE5B04A}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <AssemblyName>System.Dynamic.Runtime.Tests</AssemblyName>
-    <RootNamespace>System.Dynamic.Runtime.Tests</RootNamespace>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>67,168,219,414,162,184,458,464,78,169,114,693,108,1981,649,109,1066,3021,3026,3002,3014,3022,660,661,429</NoWarn>
-    <NugetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NugetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' " />
   <ItemGroup>
     <Compile Include="CallInfoTests.cs" />
     <Compile Include="Dynamic.Context\Common.cs" />
@@ -164,14 +156,6 @@
     <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
       <Link>Common\System\PlatformDetection.cs</Link>
     </Compile>
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\pkg\System.Dynamic.Runtime.pkgproj">
-      <Project>{C4E89B8C-07DB-40CA-8C99-82A23E8F5F39}</Project>
-      <Name>System.Dynamic.Runtime</Name>
-    </ProjectReference>
-    <!-- Do not remove this P2P reference. System.Dynamic.Runtime is now a facade that type-forwards to System.Linq.Expressions. -->
-    <ProjectReference Include="..\..\System.Linq.Expressions\pkg\System.Linq.Expressions.pkgproj" Condition="'$(TargetGroup)'==''" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

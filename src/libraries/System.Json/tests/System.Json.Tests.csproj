@@ -5,12 +5,7 @@
   </PropertyGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{62E2AD5F-C8D0-45FB-B6A5-AED2C77F198C}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <RootNamespace>System.Json.Tests</RootNamespace>
-    <AssemblyName>System.Json.Tests</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
@@ -21,12 +16,6 @@
     <Compile Include="JsonObjectTests.cs" />
     <Compile Include="JsonPrimitiveTests.cs" />
     <Compile Include="JsonValueTests.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\pkg\System.Json.pkgproj">
-      <Project>{A958BBDD-3238-4E58-AB7F-390AB6D88233}</Project>
-      <Name>System.Json</Name>
-    </ProjectReference>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

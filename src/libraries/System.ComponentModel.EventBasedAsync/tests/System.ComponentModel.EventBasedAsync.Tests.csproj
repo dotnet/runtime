@@ -2,22 +2,14 @@
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <!-- this tests run in multiple AppDomains in full framework, so if an Assert fails we would get a Serialization exception instead of the real failure.
     adding this xunit so it runs in one AppDomain -->
     <XunitOptions Condition="'$(TestTFM)'=='net46'">$(XunitOptions) -noappdomain </XunitOptions>
     <ProjectGuid>{59E9B218-81D0-4A80-A4B7-66C716136D82}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <AssemblyName>System.ComponentModel.EventBasedAsync.Tests</AssemblyName>
-    <RootNamespace>System.ComponentModel.EventBasedAsync.Tests</RootNamespace>
-    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' " />
   <ItemGroup>
     <Compile Include="AsyncOperationManagerTests.cs" />
     <Compile Include="RunWorkerCompletedEventArgsTests.cs" />
@@ -27,12 +19,6 @@
     <Compile Include="AsyncOperationTests.cs" />
     <Compile Include="BackgroundWorkerTests.cs" />
     <Compile Include="TestException.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\pkg\System.ComponentModel.EventBasedAsync.pkgproj">
-      <Project>{551A6340-8EEF-445E-A2A2-639CC23DBD36}</Project>
-      <Name>System.ComponentModel.EventBasedAsync</Name>
-    </ProjectReference>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

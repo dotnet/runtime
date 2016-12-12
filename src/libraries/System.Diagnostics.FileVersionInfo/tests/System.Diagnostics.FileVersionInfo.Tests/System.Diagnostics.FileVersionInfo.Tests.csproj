@@ -5,12 +5,8 @@
   </PropertyGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <MinimumVisualStudioVersion>11.0</MinimumVisualStudioVersion>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
     <AssemblyName>System.Diagnostics.FileVersionInfo.Tests</AssemblyName>
     <ProjectGuid>{6DFDB760-CC88-48AE-BD81-C64844EA3CBC}</ProjectGuid>
-    <NuGetPackageImportStamp>2fda0f27</NuGetPackageImportStamp>
-    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -43,19 +39,10 @@
   </ItemGroup>
   <!-- References used -->
   <ItemGroup>
-    <ProjectReference Include="..\..\pkg\System.Diagnostics.FileVersionInfo.pkgproj">
-      <Project>{00eda5fd-e802-40d3-92d5-56c27612d36d}</Project>
-      <Name>System.Diagnostics.FileVersionInfo</Name>
-    </ProjectReference>
     <ProjectReference Include="..\System.Diagnostics.FileVersionInfo.TestAssembly\System.Diagnostics.FileVersionInfo.TestAssembly.csproj">
       <Project>{28eb14be-3bc9-4543-aba6-a932424dfbd0}</Project>
       <Name>System.Diagnostics.FileVersionInfo.TestAssembly</Name>
     </ProjectReference>
-  </ItemGroup>
-  <!-- Automatically added by VS -->
-  <ItemGroup>
-    <Service Include="{508349B6-6B84-4DF5-91F0-309BEEBAD82D}" />
-    <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

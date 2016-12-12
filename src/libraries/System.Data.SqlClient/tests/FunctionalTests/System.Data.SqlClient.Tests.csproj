@@ -3,10 +3,6 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <ProjectGuid>{F3E72F35-0351-4D67-9388-725BCAD807BA}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <RootNamespace>System.Data.SqlClient.Tests</RootNamespace>
-    <AssemblyName>System.Data.SqlClient.Tests</AssemblyName>
-    <NugetTargetMoniker>.NETStandard,Version=v1.7</NugetTargetMoniker>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Release|AnyCPU'" />
@@ -25,7 +21,6 @@
     <Compile Include="SqlConnectionTest.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\pkg\System.Data.SqlClient.pkgproj" />
     <ProjectReference Include="..\Tools\TDS\TDS.Servers\TDS.Servers.csproj">
       <Name>TDS.Servers</Name>
     </ProjectReference>

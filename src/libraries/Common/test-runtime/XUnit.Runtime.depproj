@@ -23,7 +23,8 @@
                                                                               '%(ReferenceCopyLocalPaths.NuGetPackageId)'!='xunit.extensibility.execution' And 
                                                                               '%(ReferenceCopyLocalPaths.NuGetPackageId)'!='xunit.console.netcore' And 
                                                                               '%(ReferenceCopyLocalPaths.NuGetPackageId)'!='xunit.runner.utility' And 
-                                                                              '%(ReferenceCopyLocalPaths.NuGetPackageId)'!='Microsoft.xunit.netcore.extensions'" />
+                                                                              '%(ReferenceCopyLocalPaths.NuGetPackageId)'!='Microsoft.xunit.netcore.extensions' And
+                                                                              '%(ReferenceCopyLocalPaths.NuGetPackageId)'!='Microsoft.DotNet.xunit.performance.run.core'" />
     </ItemGroup>
   </Target>
 </Project>

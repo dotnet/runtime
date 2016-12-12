@@ -5,8 +5,6 @@
     <ProjectGuid>{B94B8E6D-3E41-4046-B758-4A2E281F74EE}</ProjectGuid>
     <RootNamespace>Stress.Data.SqlClient</RootNamespace>
     <AssemblyName>System.Data.SqlClient.Stress.Tests</AssemblyName>
-    <OutputType>Library</OutputType>
-    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Release|AnyCPU'" />
@@ -23,10 +21,6 @@
     <Compile Include="FilteredDefaultTraceListener.cs" />
     <Compile Include="HostsFileManager.cs" />
     <Compile Include="NetUtils.cs" />
-  </ItemGroup>
-  <!--Import the targets-->
-  <ItemGroup>
-    <ProjectReference Include="..\..\..\pkg\System.Data.SqlClient.pkgproj" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
