@@ -164,7 +164,7 @@ EXTERN_C void STDCALL UM2MDoADCallBack(UMEntryThunk *pEntryThunk,
     UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
 }
 
-#ifdef _TARGET_X86_
+#if defined(_TARGET_X86_) && !defined(FEATURE_STUBS_AS_IL)
 
 EXTERN_C VOID __cdecl UMThunkStubRareDisable();
 EXTERN_C Thread* __stdcall CreateThreadBlockThrow();
@@ -1010,7 +1010,7 @@ Stub *UMThunkMarshInfo::CompileNExportThunk(LoaderHeap *pLoaderHeap, PInvokeStat
     return pcpusl->Link(pLoaderHeap);
 }
 
-#else // _TARGET_X86_
+#else // _TARGET_X86_ && !FEATURE_STUBS_AS_IL
 
 PCODE UMThunkMarshInfo::GetExecStubEntryPoint()
 {
@@ -1019,7 +1019,7 @@ PCODE UMThunkMarshInfo::GetExecStubEntryPoint()
     return GetEEFuncEntryPoint(UMThunkStub);
 }
 
-#endif // _TARGET_X86_
+#endif // _TARGET_X86_ && !FEATURE_STUBS_AS_IL
 
 UMEntryThunkCache::UMEntryThunkCache(AppDomain *pDomain) :
     m_crst(CrstUMEntryThunkCache),
@@ -1302,7 +1302,7 @@ UMThunkMarshInfo::~UMThunkMarshInfo()
     }
     CONTRACTL_END;
 
-#ifdef _TARGET_X86_
+#if defined(_TARGET_X86_) && !defined(FEATURE_STUBS_AS_IL)
     if (m_pExecStub)
         m_pExecStub->DecRef();
 #endif
@@ -1364,7 +1364,7 @@ VOID UMThunkMarshInfo::LoadTimeInit(Signature sig, Module * pModule, MethodDesc 
     m_pModule = pModule;
     m_sig = sig;
 
-#ifdef _TARGET_X86_
+#if defined(_TARGET_X86_) && !defined(FEATURE_STUBS_AS_IL)
     INDEBUG(m_cbRetPop = 0xcccc;)
 #endif
 }
@@ -1407,7 +1407,7 @@ VOID UMThunkMarshInfo::RunTimeInit()
         pFinalILStub = GetStubForInteropMethod(pMD, dwStubFlags, &pStubMD);
     }
 
-#ifdef _TARGET_X86_
+#if defined(_TARGET_X86_) && !defined(FEATURE_STUBS_AS_IL)
     PInvokeStaticSigInfo sigInfo;
 
     if (pMD != NULL)
@@ -1458,7 +1458,7 @@ VOID UMThunkMarshInfo::RunTimeInit()
             pFinalExecStub->DecRef();
     }
 
-#else // _TARGET_X86_
+#else // _TARGET_X86_ && !FEATURE_STUBS_AS_IL
 
     if (pFinalILStub == NULL)
     {
@@ -1499,7 +1499,7 @@ VOID UMThunkMarshInfo::RunTimeInit()
     //
     m_cbActualArgSize = (pStubMD != NULL) ? pStubMD->AsDynamicMethodDesc()->GetNativeStackArgSize() : pMD->SizeOfArgStack();
 
-#endif // _TARGET_X86_
+#endif // _TARGET_X86_ && !FEATURE_STUBS_AS_IL
 
     // Must be the last thing we set!
     InterlockedCompareExchangeT<PCODE>(&m_pILStub, pFinalILStub, (PCODE)1);
