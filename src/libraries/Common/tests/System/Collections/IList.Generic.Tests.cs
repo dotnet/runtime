@@ -608,5 +608,53 @@ namespace System.Collections.Tests
         }
 
         #endregion
+
+        #region Enumerator.Current
+
+        // Test Enumerator.Current at end after new elements was added
+        [Theory]
+        [MemberData(nameof(ValidCollectionSizes))]
+        public void IList_Generic_CurrentAtEnd_AfterAdd(int count)
+        {
+            if (!IsReadOnly)
+            {
+                IList<T> collection = GenericIListFactory(count);
+
+                using (IEnumerator<T> enumerator = collection.GetEnumerator())
+                {
+                    while (enumerator.MoveNext()) ; // Go to end of enumerator
+
+                    T current = default(T);
+                    if (Enumerator_Current_UndefinedOperation_Throws)
+                    {
+                        Assert.Throws<InvalidOperationException>(() => enumerator.Current); // enumerator.Current should fail
+                    }
+                    else
+                    {
+                        current = enumerator.Current;
+                        Assert.Equal(default(T), current);
+                    }
+
+                    // Test after add
+                    int seed = 3538963;
+                    for (int i = 0; i < 3; i++)
+                    {
+                        collection.Add(CreateT(seed++));
+
+                        if (Enumerator_Current_UndefinedOperation_Throws)
+                        {
+                            Assert.Throws<InvalidOperationException>(() => enumerator.Current); // enumerator.Current should fail
+                        }
+                        else
+                        {
+                            current = enumerator.Current;
+                            Assert.Equal(default(T), current);
+                        }
+                    }
+                }
+            }
+        }
+
+        #endregion
     }
 }

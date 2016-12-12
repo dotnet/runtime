@@ -18,7 +18,6 @@ namespace System.Collections.Concurrent.Tests
         protected override bool TryPeek<T>(IProducerConsumerCollection<T> pcc, out T result) => ((ConcurrentStack<T>)pcc).TryPeek(out result);
         protected override IProducerConsumerCollection<int> CreateOracle(IEnumerable<int> collection) => new StackOracle(collection);
         protected override bool ResetImplemented => false;
-        protected override bool IEnumerable_Generic_Enumerator_Current_EnumerationNotStarted_ThrowsInvalidOperationException => false;
 
         [Fact]
         public void IsEmpty_TrueWhenEmpty_FalseWhenNot()
