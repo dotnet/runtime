@@ -59,6 +59,18 @@ namespace System {
         internal static void ThrowArgumentOutOfRangeException() {
             throw new ArgumentOutOfRangeException();
         }
+
+        internal static void ThrowArgumentException_DestinationTooShort() {
+            throw new ArgumentException(Environment.GetResourceString("Argument_DestinationTooShort"));
+        }
+
+        internal static void ThrowNotSupportedException_CannotCallEqualsOnSpan() {
+            throw new NotSupportedException(Environment.GetResourceString("NotSupported_CannotCallEqualsOnSpan"));
+        }
+
+        internal static void ThrowNotSupportedException_CannotCallGetHashCodeOnSpan() {
+            throw new NotSupportedException(Environment.GetResourceString("NotSupported_CannotCallGetHashCodeOnSpan"));
+        }
 #endif
 
         internal static void ThrowArgumentOutOfRange_IndexException() {

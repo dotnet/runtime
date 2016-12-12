@@ -6,6 +6,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
+#pragma warning disable 0809  //warning CS0809: Obsolete member 'Span<T>.Equals(object)' overrides non-obsolete member 'object.Equals(object)'
+
 namespace System
 {
     /// <summary>
@@ -26,7 +28,7 @@ namespace System
         /// <param name="array">The target array.</param>
         /// <exception cref="System.ArgumentNullException">Thrown when <paramref name="array"/> is a null
         /// reference (Nothing in Visual Basic).</exception>
-        /// <exception cref="System.ArrayTypeMismatchException">Thrown when <paramref name="array"/> is covariant.</exception>
+        /// <exception cref="System.ArrayTypeMismatchException">Thrown when <paramref name="array"/> is covariant and array's type is not exactly T[].</exception>
         public Span(T[] array)
         {
             if (array == null)
@@ -48,7 +50,7 @@ namespace System
         /// <param name="start">The index at which to begin the span.</param>
         /// <exception cref="System.ArgumentNullException">Thrown when <paramref name="array"/> is a null
         /// reference (Nothing in Visual Basic).</exception>
-        /// <exception cref="System.ArrayTypeMismatchException">Thrown when <paramref name="array"/> is covariant.</exception>
+        /// <exception cref="System.ArrayTypeMismatchException">Thrown when <paramref name="array"/> is covariant and array's type is not exactly T[].</exception>
         /// <exception cref="System.ArgumentOutOfRangeException">
         /// Thrown when the specified <paramref name="start"/> is not in the range (&lt;0 or &gt;=Length).
         /// </exception>
@@ -76,7 +78,7 @@ namespace System
         /// <param name="length">The number of items in the span.</param>
         /// <exception cref="System.ArgumentNullException">Thrown when <paramref name="array"/> is a null
         /// reference (Nothing in Visual Basic).</exception>
-        /// <exception cref="System.ArrayTypeMismatchException">Thrown when <paramref name="array"/> is covariant.</exception>
+        /// <exception cref="System.ArrayTypeMismatchException">Thrown when <paramref name="array"/> is covariant and array's type is not exactly T[].</exception>
         /// <exception cref="System.ArgumentOutOfRangeException">
         /// Thrown when the specified <paramref name="start"/> or end index is not in the range (&lt;0 or &gt;=Length).
         /// </exception>
@@ -101,7 +103,7 @@ namespace System
         /// out of a void*-typed block of memory.  And the length is not checked.
         /// But if this creation is correct, then all subsequent uses are correct.
         /// </summary>
-        /// <param name="ptr">An unmanaged pointer to memory.</param>
+        /// <param name="pointer">An unmanaged pointer to memory.</param>
         /// <param name="length">The number of <typeparamref name="T"/> elements the memory contains.</param>
         /// <exception cref="System.ArgumentException">
         /// Thrown when <typeparamref name="T"/> is reference type or contains pointers and hence cannot be stored in unmanaged memory.
@@ -140,44 +142,14 @@ namespace System
         }
 
         /// <summary>
-        /// Defines an implicit conversion of an array to a <see cref="Span{T}"/>
-        /// </summary>
-        public static implicit operator Span<T>(T[] array)
-        {
-            return new Span<T>(array);
-        }
-
-        /// <summary>
-        /// Defines an implicit conversion of a <see cref="ArraySegment{T}"/> to a <see cref="Span{T}"/>
-        /// </summary>
-        public static implicit operator Span<T>(ArraySegment<T> arraySegment)
-        {
-            return new Span<T>(arraySegment.Array, arraySegment.Offset, arraySegment.Count);
-        }
-
-        /// <summary>
         /// Gets the number of elements contained in the <see cref="Span{T}"/>
         /// </summary>
-        public int Length
-        {
-            get { return _length; }
-        }
-
-        /// <summary>
-        /// Returns an empty <see cref="Span{T}"/>
-        /// </summary>
-        public static Span<T> Empty
-        {
-            get { return default(Span<T>); }
-        }
+        public int Length => _length;
 
         /// <summary>
         /// Returns whether the <see cref="Span{T}"/> is empty.
         /// </summary>
-        public bool IsEmpty
-        {
-            get { return _length == 0; }
-        }
+        public bool IsEmpty => _length == 0;
 
         /// <summary>
         /// Fetches the element at the specified index.
@@ -204,19 +176,96 @@ namespace System
         }
 
         /// <summary>
-        /// Copies the contents of this span into a new array.  This heap
-        /// allocates, so should generally be avoided, however is sometimes
-        /// necessary to bridge the gap with APIs written in terms of arrays.
+        /// Copies the contents of this span into destination span. If the source
+        /// and destinations overlap, this method behaves as if the original values in
+        /// a temporary location before the destination is overwritten.
         /// </summary>
-        public T[] ToArray()
+        /// <param name="destination">The span to copy items into.</param>
+        /// <exception cref="System.ArgumentException">
+        /// Thrown when the destination Span is shorter than the source Span.
+        /// </exception>
+        public void CopyTo(Span<T> destination)
         {
-            if (_length == 0)
-                return Array.Empty<T>();
-
-            var destination = new T[_length];
-            SpanHelper.CopyTo<T>(ref JitHelpers.GetArrayData(destination), ref DangerousGetPinnableReference(), _length);
-            return destination;
+            if (!TryCopyTo(destination))
+                ThrowHelper.ThrowArgumentException_DestinationTooShort();
         }
+
+        /// <summary>
+        /// Copies the contents of this span into destination span. If the source
+        /// and destinations overlap, this method behaves as if the original values in
+        /// a temporary location before the destination is overwritten.
+        /// </summary>
+        /// <param name="destination">The span to copy items into.</param>
+        /// <returns>If the destination span is shorter than the source span, this method
+        /// return false and no data is written to the destination.</returns>        
+        public bool TryCopyTo(Span<T> destination)
+        {
+            if ((uint)_length > (uint)destination.Length)
+                return false;
+
+            SpanHelper.CopyTo<T>(ref destination.DangerousGetPinnableReference(), ref DangerousGetPinnableReference(), _length);
+            return true;
+        }
+
+        /// <summary>
+        /// Returns true if left and right point at the same memory and have the same length.  Note that
+        /// this does *not* check to see if the *contents* are equal.
+        /// </summary>
+        public static bool operator ==(Span<T> left, Span<T> right) => left.Equals(right);
+
+        /// <summary>
+        /// Returns false if left and right point at the same memory and have the same length.  Note that
+        /// this does *not* check to see if the *contents* are equal.
+        /// </summary>
+        public static bool operator !=(Span<T> left, Span<T> right) => !left.Equals(right);
+
+        /// <summary>
+        /// Checks to see if two spans point at the same memory.  Note that
+        /// this does *not* check to see if the *contents* are equal.
+        /// </summary>
+        public bool Equals(Span<T> other)
+        {
+            return (_length == other.Length) &&
+                (_length == 0 || Unsafe.AreSame(ref DangerousGetPinnableReference(), ref other.DangerousGetPinnableReference()));
+        }
+
+        /// <summary>
+        /// This method is not supported as spans cannot be boxed. To compare two spans, use operator==.
+        /// <exception cref="System.NotSupportedException">
+        /// Always thrown by this method.
+        /// </exception>
+        /// </summary>
+        [Obsolete("Equals() on Span will always throw an exception. Use == instead.")]
+        public override bool Equals(object obj)
+        {
+            ThrowHelper.ThrowNotSupportedException_CannotCallEqualsOnSpan();
+            // Prevent compiler error CS0161: 'Span<T>.Equals(object)': not all code paths return a value
+            return default(bool); 
+        }
+
+        /// <summary>
+        /// This method is not supported as spans cannot be boxed.
+        /// <exception cref="System.NotSupportedException">
+        /// Always thrown by this method.
+        /// </exception>
+        /// </summary>
+        [Obsolete("GetHashCode() on Span will always throw an exception.")]
+        public override int GetHashCode()
+        {
+            ThrowHelper.ThrowNotSupportedException_CannotCallGetHashCodeOnSpan();
+            // Prevent compiler error CS0161: 'Span<T>.GetHashCode()': not all code paths return a value
+            return default(int); 
+        }
+
+        /// <summary>
+        /// Defines an implicit conversion of an array to a <see cref="Span{T}"/>
+        /// </summary>
+        public static implicit operator Span<T>(T[] array) => new Span<T>(array);
+
+        /// <summary>
+        /// Defines an implicit conversion of a <see cref="ArraySegment{T}"/> to a <see cref="Span{T}"/>
+        /// </summary>
+        public static implicit operator Span<T>(ArraySegment<T> arraySegment) =>  new Span<T>(arraySegment.Array, arraySegment.Offset, arraySegment.Count);
 
         /// <summary>
         /// Forms a slice out of the given span, beginning at 'start'.
@@ -238,7 +287,7 @@ namespace System
         /// Forms a slice out of the given span, beginning at 'start', of given length
         /// </summary>
         /// <param name="start">The index at which to begin this slice.</param>
-        /// <param name="end">The index at which to end this slice (exclusive).</param>
+        /// <param name="length">The desired length for the slice (exclusive).</param>
         /// <exception cref="System.ArgumentOutOfRangeException">
         /// Thrown when the specified <paramref name="start"/> or end index is not in range (&lt;0 or &gt;&eq;Length).
         /// </exception>
@@ -252,39 +301,24 @@ namespace System
         }
 
         /// <summary>
-        /// Checks to see if two spans point at the same memory.  Note that
-        /// this does *not* check to see if the *contents* are equal.
+        /// Copies the contents of this span into a new array.  This heap
+        /// allocates, so should generally be avoided, however it is sometimes
+        /// necessary to bridge the gap with APIs written in terms of arrays.
         /// </summary>
-        public bool Equals(Span<T> other)
+        public T[] ToArray()
         {
-            return (_length == other.Length) &&
-                (_length == 0 || Unsafe.AreSame(ref DangerousGetPinnableReference(), ref other.DangerousGetPinnableReference()));
+            if (_length == 0)
+                return Array.Empty<T>();
+
+            var destination = new T[_length];
+            SpanHelper.CopyTo<T>(ref JitHelpers.GetArrayData(destination), ref DangerousGetPinnableReference(), _length);
+            return destination;
         }
 
-        /// <summary>
-        /// Copies the contents of this span into destination span. The destination
-        /// must be at least as big as the source, and may be bigger.
+        // <summary>
+        /// Returns an empty <see cref="Span{T}"/>
         /// </summary>
-        /// <param name="destination">The span to copy items into.</param>
-        public bool TryCopyTo(Span<T> destination)
-        {
-            if ((uint)_length > (uint)destination.Length)
-                return false;
-
-            SpanHelper.CopyTo<T>(ref destination.DangerousGetPinnableReference(), ref DangerousGetPinnableReference(), _length);
-            return true;
-        }
-
-        /// <exception cref="System.ArgumentOutOfRangeException">
-        /// Thrown when the specified <paramref name="values"/>'s Length is longer than source span's Length.
-        /// </exception>
-        public void Set(ReadOnlySpan<T> values)
-        {
-            if ((uint)values.Length > (uint)_length)
-                ThrowHelper.ThrowArgumentOutOfRangeException();
-
-            SpanHelper.CopyTo<T>(ref DangerousGetPinnableReference(), ref values.DangerousGetPinnableReference(), values.Length);
-        }
+        public static Span<T> Empty => default(Span<T>);
     }
 
     public static class SpanExtensions
