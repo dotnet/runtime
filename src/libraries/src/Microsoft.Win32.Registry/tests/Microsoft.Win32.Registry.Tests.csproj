@@ -5,13 +5,7 @@
   </PropertyGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{20A2BA2C-5517-483F-8FFE-643441A59852}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <RootNamespace>Microsoft.Win32.Registry.Tests</RootNamespace>
-    <AssemblyName>Microsoft.Win32.Registry.Tests</AssemblyName>
-    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
@@ -61,12 +55,6 @@
     <Compile Include="RegistryTestsBase.cs" />
     <Compile Include="TestData.cs" />
     <Compile Include="XunitAssemblyAttributes.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\pkg\Microsoft.Win32.Registry.pkgproj">
-      <Project>{d3f18acc-d327-4abb-ba6c-e9c34a041b2f}</Project>
-      <Name>Microsoft.Win32.Registry</Name>
-    </ProjectReference>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

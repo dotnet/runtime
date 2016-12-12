@@ -2,22 +2,10 @@
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{3B17C130-FF2C-4B41-82C6-FADF4ED7FDA0}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Microsoft.Win32.Primitives.Tests</RootNamespace>
-    <AssemblyName>Microsoft.Win32.Primitives.Tests</AssemblyName>
-    <DefaultLanguage>en-US</DefaultLanguage>
-    <FileAlignment>512</FileAlignment>
-    <NugetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NugetTargetMoniker>
   </PropertyGroup>
-  <!-- Default configurations to help VS understand the configurations -->
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' " />
   <ItemGroup>
     <Compile Include="Win32Exception.cs" />
   </ItemGroup>
@@ -26,15 +14,6 @@
     <Compile Include="$(CommonTestPath)\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs">
       <Link>Common\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs</Link>
     </Compile>
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\pkg\Microsoft.Win32.Primitives.pkgproj">
-      <Project>{8ffe99c0-22f8-4462-b839-970eac1b3472}</Project>
-      <Name>Microsoft.Win32.Primitives</Name>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

@@ -84,6 +84,7 @@
 
   <ItemGroup>
     <TestProjectJsons Include="$(MSBuildThisFileDirectory)src/Common/test-runtime/project.json" />
+    <TestProjectJsons Include="$(MSBuildThisFileDirectory)external/supplemental-test-data/project.json" />
   </ItemGroup>
 
   <UsingTask TaskName="GatherDirectoriesToRestore" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll" />

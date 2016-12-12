@@ -3,17 +3,9 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <ProjectGuid>{82B54697-0251-47A1-8546-FC507D0F3B08}</ProjectGuid>
-    <AssemblyName>System.Data.Common.Tests</AssemblyName>
-    <RootNamespace>System.Data.Common.Tests</RootNamespace>
     <DefineConstants Condition="'$(TargetGroup)'==''">$(DefineConstants);netstandard17</DefineConstants>
-    <NugetTargetMoniker Condition="'$(TargetGroup)'==''">.NETStandard,Version=v1.7</NugetTargetMoniker>
     <NoWarn>0168,0169,0414,0219,0649</NoWarn>
   </PropertyGroup>
-  <ItemGroup>
-    <TestNugetTargetMoniker Include="$(NugetTargetMoniker)">
-      <Folder>netcoreapp1.1</Folder>
-    </TestNugetTargetMoniker>
-  </ItemGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
   <ItemGroup>
@@ -115,11 +107,6 @@
     <Compile Include="$(CommonTestPath)\System\Diagnostics\Tracing\TestEventListener.cs">
       <Link>Common\System\Diagnostics\Tracing\TestEventListener.cs</Link>
     </Compile>
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\pkg\System.Data.Common.pkgproj">
-      <Name>System.Data.Common</Name>
-    </ProjectReference>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

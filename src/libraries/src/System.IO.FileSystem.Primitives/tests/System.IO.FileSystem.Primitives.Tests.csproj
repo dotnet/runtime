@@ -2,31 +2,10 @@
 <Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <Configuration Condition="'$(Configuration)' == ''">Debug</Configuration>
-    <Platform Condition="'$(Platform)' == ''">AnyCPU</Platform>
     <ProjectGuid>{2EF7EFA5-F171-4CAB-8A29-32833949FD87}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <AssemblyName>System.IO.FileSystem.Primitives.Tests</AssemblyName>
-    <NugetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NugetTargetMoniker>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
-    <DebugSymbols>true</DebugSymbols>
-    <PlatformTarget>AnyCPU</PlatformTarget>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
-    <PlatformTarget>AnyCPU</PlatformTarget>
-  </PropertyGroup>
-  <ItemGroup>
-    <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
-  </ItemGroup>
-  <ItemGroup>
-    <!-- ToDo: Remove this P2P reference once new packages are produced and updated -->
-    <ProjectReference Include="..\..\System.Runtime\pkg\System.Runtime.pkgproj" />
-    <ProjectReference Include="..\pkg\System.IO.FileSystem.Primitives.pkgproj">
-      <Project>{6c05678e-394c-4cff-b453-a18e28c8f2c3}</Project>
-      <Name>System.IO.FileSystem.Primitives</Name>
-    </ProjectReference>
-  </ItemGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="FileAccessTests.cs" />
     <Compile Include="FileAttributesTests.cs" />

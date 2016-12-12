@@ -2,14 +2,9 @@
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <OutputType>Library</OutputType>
     <RootNamespace>System.IO</RootNamespace>
     <AssemblyName>System.IO.Tests</AssemblyName>
     <ProjectGuid>{492EC54D-D2C4-4B3F-AC1F-646B3F7EBB02}</ProjectGuid>
-    <DefineConstants Condition="'$(TargetGroup)'==''">$(DefineConstants);netstandard17</DefineConstants>
-    <NugetTargetMoniker Condition="'$(TargetGroup)'==''">.NETStandard,Version=v1.7</NugetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
@@ -61,16 +56,6 @@
     <Compile Include="$(CommonTestPath)\System\IO\WrappedMemoryStream.cs">
       <Link>Common\System\IO\WrappedMemoryStream.cs</Link>
     </Compile>
-  </ItemGroup>
-  <ItemGroup>
-    <!-- ToDo: Remove this P2P reference once new packages are produced and updated -->
-    <ProjectReference Include="..\..\System.Runtime\pkg\System.Runtime.pkgproj" />
-    <!-- ToDo: Remove this P2P reference once new packages are produced and updated -->
-    <ProjectReference Include="..\..\System.Runtime.Extensions\pkg\System.Runtime.Extensions.pkgproj" />
-    <!-- ToDo: Remove this P2P reference once new packages are produced and updated -->
-    <ProjectReference Include="..\..\System.Security.Permissions\pkg\System.Security.Permissions.pkgproj" />
-    <ProjectReference Include="..\pkg\System.IO.pkgproj" />
-    <ProjectReference Include="..\..\System.Diagnostics.Debug\pkg\System.Diagnostics.Debug.pkgproj" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

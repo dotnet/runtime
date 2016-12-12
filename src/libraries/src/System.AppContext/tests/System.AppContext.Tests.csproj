@@ -2,22 +2,13 @@
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{82B54697-0251-47A1-8546-FC507D0F3B08}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <AssemblyName>System.AppContext.Tests</AssemblyName>
-    <RootNamespace>System.AppContext.Tests</RootNamespace>
-    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="AppContext.Switch.cs" />
     <Compile Include="AppContext.Switch.Validation.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\pkg\System.AppContext.pkgproj" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

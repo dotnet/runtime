@@ -6,9 +6,6 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <ProjectGuid>{57E8F8D4-0766-4CC7-B3F9-B243B81DB6A5}</ProjectGuid>
-    <AssemblyName>System.IO.Pipes.AccessControl.Tests</AssemblyName>
-    <RootNamespace>System.IO.Pipes.AccessControl.Tests</RootNamespace>
-    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
@@ -23,12 +20,6 @@
     <Compile Include="$(CommonTestPath)\System\IO\FileCleanupTestBase.cs">
       <Link>Common\System\IO\FileCleanupTestBase.cs</Link>
     </Compile>
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\pkg\System.IO.Pipes.AccessControl.pkgproj">
-      <Project>{96AA2060-C846-4E56-9509-E8CB9C114C8F}</Project>
-      <Name>System.IO.Pipes.AccessControl</Name>
-    </ProjectReference>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

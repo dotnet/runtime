@@ -5,18 +5,14 @@
   </PropertyGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{56F67E92-E606-435E-A00F-003CBFB26945}</ProjectGuid>
-    <OutputType>Library</OutputType>
     <AssemblyName>System.Diagnostics.Debug.Tests</AssemblyName>
     <RootNamespace>System.Diagnostics.Tests</RootNamespace>
     <IgnoreArchitectureMismatches>true</IgnoreArchitectureMismatches>
-    <PostFilterNugetReferences>true</PostFilterNugetReferences>
+    <ResolveAssemblyWarnOrErrorOnTargetArchitectureMismatch>None</ResolveAssemblyWarnOrErrorOnTargetArchitectureMismatch>
     <NoWarn>1685</NoWarn>
-    <!-- Don't allow project reference to package dependency conversion -->
-    <KeepAllProjectReferences>true</KeepAllProjectReferences>
-    <NugetTargetMoniker>.NETStandard,Version=v1.7</NugetTargetMoniker>
+    <NoTargetingPackReferences>true</NoTargetingPackReferences>
+    <WindowsAppContainer>false</WindowsAppContainer>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Debug|AnyCPU'" />
@@ -24,16 +20,12 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'" />
   <ItemGroup>
-    <ProjectReference Include="..\src\System.Diagnostics.Debug.csproj">
-      <Project>{E7E8DE8A-9EC1-46A8-A6EE-727DB32DBEB8}</Project>
-      <Name>System.Diagnostics.Debug</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj" />
-    <ProjectReference Include="..\..\System.Runtime.Extensions\src\System.Runtime.Extensions.csproj" />
-    <TargetingPackReference Include="System.Private.CoreLib" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="project.json" />
+    <Reference Include="System.Diagnostics.Debug" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.Extensions" />
+    <Reference Include="System.Private.CoreLib" />
+    <Reference Include="System.Threading.Tasks" />
+    <Reference Include="System.Runtime.InteropServices.RuntimeInformation" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AttributeTests.cs" />

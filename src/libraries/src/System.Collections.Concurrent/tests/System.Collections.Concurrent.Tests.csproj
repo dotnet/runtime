@@ -2,20 +2,12 @@
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{9574CEEC-5554-411B-B44C-6CA9EC1CEB08}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <AssemblyName>System.Collections.Concurrent.Tests</AssemblyName>
-    <RootNamespace>System.Collections.Concurrent.Tests</RootNamespace>
     <DefineConstants Condition="'$(TargetGroup)'==''">$(DefineConstants);netstandard17</DefineConstants>
-    <NugetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NugetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' " />
   <ItemGroup>
     <!-- Common Collections tests -->
     <Compile Include="$(CommonTestPath)\System\Collections\CollectionAsserts.cs">
@@ -97,12 +89,6 @@
     <Compile Include="$(CommonTestPath)\System\Collections\IEnumerable.Generic.Serialization.Tests.cs">
       <Link>Common\System\Collections\IEnumerable.Generic.Serialization.Tests.cs</Link>
     </Compile>
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\pkg\System.Collections.Concurrent.pkgproj">
-      <Project>{96AA2060-C846-4E56-9509-E8CB9C114C8F}</Project>
-      <Name>System.Collections.Concurrent</Name>
-    </ProjectReference>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

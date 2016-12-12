@@ -1,0 +1,10 @@
+{
+   "dependencies": {
+      "System.IO.Compression.TestData": "1.0.4-prerelease",
+      "System.IO.Packaging.TestData": "1.0.0-prerelease",
+      "System.Security.Cryptography.X509Certificates.TestData": "1.0.2-prerelease"
+   },
+   "frameworks": {
+      "netstandard1.7": {}
+   }
+}

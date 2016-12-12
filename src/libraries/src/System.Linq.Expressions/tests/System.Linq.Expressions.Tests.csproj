@@ -6,23 +6,14 @@
     <FeatureInterpret>true</FeatureInterpret>
   </PropertyGroup>
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{4B4AA59B-89F9-4A34-B3C3-C97EF531EE00}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <AssemblyName>System.Linq.Expressions.Tests</AssemblyName>
-    <RootNamespace>System.Linq.Expressions.Tests</RootNamespace>
     <IsInterpreting Condition="'$(PackageTargetFramework)' == 'netcore50'">true</IsInterpreting>
     <DefineConstants Condition=" '$(IsInterpreting)' != 'true' ">$(DefineConstants);FEATURE_COMPILE</DefineConstants>
     <DefineConstants Condition=" '$(FeatureInterpret)' == 'true' ">$(DefineConstants);FEATURE_INTERPRET</DefineConstants>
-    <KeepAllProjectReferences>true</KeepAllProjectReferences>
-    <NugetTargetMoniker Condition="'$(TargetGroup)'==''">.NETStandard,Version=v1.7</NugetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' " />
   <ItemGroup>
     <Compile Include="CompilerTests.cs" />
     <Compile Include="DebugViewTests.cs" />
@@ -244,12 +235,6 @@
     <Compile Include="ILReader\PrivateReflectionHelpers.cs" />
     <Compile Include="ILReader\LocalsSignatureParser.cs" />
     <Compile Include="ILReader\SigParser.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\src\System.Linq.Expressions.csproj">
-      <Project>{aef718e9-d4fc-418f-a7ae-ed6b2c7b3787}</Project>
-      <Name>System.Linq.Expressions</Name>
-    </ProjectReference>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

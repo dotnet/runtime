@@ -2,10 +2,7 @@
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <RootNamespace>System.Collections.NonGeneric.Performance.Tests</RootNamespace>
-    <AssemblyName>System.Collections.NonGeneric.Performance.Tests</AssemblyName>
     <IncludePerformanceTests>true</IncludePerformanceTests>
-    <NugetTargetMoniker>.NETStandard,Version=v1.7</NugetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' " />
@@ -15,15 +12,6 @@
     <Compile Include="$(CommonTestPath)\System\PerfUtils.cs">
       <Link>Common\System\PerfUtils.cs</Link>
     </Compile>
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\pkg\System.Collections.NonGeneric.pkgproj">
-      <Name>System.Collections.NonGeneric</Name>
-    </ProjectReference>
-    <!-- Do not remove this P2P reference since part of the implementation of NonGeneric has moved to Runtime.Extensions -->
-    <ProjectReference Include="..\..\..\System.Runtime.Extensions\pkg\System.Runtime.Extensions.pkgproj" />
-    <!-- ToDo: Remove this P2P reference once packages are updated -->
-    <ProjectReference Include="..\..\..\System.Security.Permissions\pkg\System.Security.Permissions.pkgproj" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

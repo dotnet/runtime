@@ -2,19 +2,11 @@
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{7B88D79B-B799-4116-A7D0-AED572540CD4}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <AssemblyName>System.Linq.Queryable.Tests</AssemblyName>
-    <RootNamespace>System.Linq.Queryable.Tests</RootNamespace>
-    <NugetTargetMoniker>.NETStandard,Version=v1.7</NugetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' " />
   <ItemGroup>
     <Compile Include="AggregateTests.cs" />
     <Compile Include="AllTests.cs" />
@@ -63,13 +55,6 @@
     <Compile Include="UnionTests.cs" />
     <Compile Include="WhereTests.cs" />
     <Compile Include="ZipTests.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\pkg\System.Linq.Queryable.pkgproj">
-      <Project>{be12b753-c130-4b68-86e3-877f1aee52c0}</Project>
-      <Name>System.Linq.Queryable</Name>
-      <Private>true</Private>
-    </ProjectReference>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

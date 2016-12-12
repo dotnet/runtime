@@ -2,11 +2,8 @@
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <AssemblyName>System.Console.Performance.Tests</AssemblyName>
-    <RootNamespace>System.Console.Performance.Tests</RootNamespace>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IncludePerformanceTests>true</IncludePerformanceTests>
-    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
@@ -18,24 +15,7 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <!-- ToDo: Remove this P2P reference once new packages are produced and updated -->
-    <ProjectReference Include="..\..\..\System.Runtime\pkg\System.Runtime.pkgproj" />
-    <!-- ToDo: Remove this P2P reference once new packages are produced and updated -->
-    <ProjectReference Include="..\..\..\System.Runtime.Extensions\pkg\System.Runtime.Extensions.pkgproj" />
-    <!-- ToDo: Remove this P2P reference once new packages are produced and updated -->
-    <ProjectReference Include="..\..\..\System.IO\pkg\System.IO.pkgproj" />
-    <!-- ToDo: Remove this P2P reference once new packages are produced and updated -->
-    <ProjectReference Include="..\..\..\System.IO.FileSystem.Primitives\pkg\System.IO.FileSystem.Primitives.pkgproj" />
-    <ProjectReference Include="..\..\pkg\System.Console.pkgproj">
-      <Project>{F9DF2357-81B4-4317-908E-512DA9395583}</Project>
-      <Name>System.Console</Name>
-      <OSGroup>$(InputOSGroup)</OSGroup>
-    </ProjectReference>
-    <ProjectReference Include="$(CommonTestPath)\System\Diagnostics\RemoteExecutorConsoleApp\RemoteExecutorConsoleApp.csproj">
-      <Project>{69e46a6f-9966-45a5-8945-2559fe337827}</Project>
-      <Name>RemoteExecutorConsoleApp</Name>
-      <OSGroup>$(InputOSGroup)</OSGroup>
-    </ProjectReference>
+    <ProjectReference Include="$(CommonTestPath)\System\Diagnostics\RemoteExecutorConsoleApp\RemoteExecutorConsoleApp.csproj" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

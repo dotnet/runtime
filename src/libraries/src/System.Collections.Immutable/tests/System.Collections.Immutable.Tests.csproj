@@ -2,16 +2,7 @@
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{95DFC527-4DC1-495E-97D7-E94EE1F7140D}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>System.Collections.Immutable.Test</RootNamespace>
-    <AssemblyName>System.Collections.Immutable.Tests</AssemblyName>
-    <FileAlignment>512</FileAlignment>
-    <NuGetPackageImportStamp>7a9bfb7d</NuGetPackageImportStamp>
-    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
@@ -106,16 +97,6 @@
   <ItemGroup>
     <None Include="ClassDiagram1.cd" />
     <Compile Include="ImmutableArray\ImmutableArray.Generic.Tests.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\pkg\System.Collections.Immutable.pkgproj">
-      <Project>{1dd0ff15-6234-4bd6-850a-317f05479554}</Project>
-      <Name>System.Collections.Immutable</Name>
-      <Private>true</Private>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
   <ItemGroup />
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

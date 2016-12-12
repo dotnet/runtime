@@ -25,33 +25,5 @@
     <Compile Include="PartBuilderOfTTests.cs" />
     <Compile Include="PartBuilderTests.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <WCFMetadata Include="Service References\" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\System.Composition.AttributedModel\src\System.Composition.AttributedModel.csproj">
-      <Project>{c6257381-c624-494a-a9d9-5586e60856ea}</Project>
-      <Name>System.Composition.AttributedModel</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\src\System.Composition.Convention.csproj">
-      <Project>{e6592fad-10b5-4b56-9287-d72dd136992f}</Project>
-      <Name>System.Composition.Convention</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\System.Composition.Hosting\src\System.Composition.Hosting.csproj">
-      <Project>{2b8fecc6-34a1-48fe-ba75-99572d2d6db2}</Project>
-      <Name>System.Composition.Hosting</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\System.Composition.Runtime\src\System.Composition.Runtime.csproj">
-      <Project>{2711dfd2-8541-4628-bc53-eb784a14cdcf}</Project>
-      <Name>System.Composition.Runtime</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\System.Composition.TypedParts\src\System.Composition.TypedParts.csproj">
-      <Project>{b4b5e15c-e6b9-48ea-94c2-f067484d4d3e}</Project>
-      <Name>System.Composition.TypedParts</Name>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
-  </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

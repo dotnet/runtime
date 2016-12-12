@@ -2,31 +2,12 @@
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{C92FF1A4-DEA1-4F0F-9AEB-94C9B2561B57}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <RootNamespace>System.IO.Packaging.Tests</RootNamespace>
-    <AssemblyName>System.IO.Packaging.Tests</AssemblyName>
-    <FileAlignment>512</FileAlignment>
-    <NuGetPackageImportStamp>824750ed</NuGetPackageImportStamp>
-    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' " />
   <ItemGroup>
     <Compile Include="Tests.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\pkg\System.IO.Packaging.pkgproj">
-      <Project>{1f827c19-6023-48d3-909f-9f43ab42faf0}</Project>
-      <Name>System.IO.Packaging</Name>
-    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <SupplementalTestData Include="$(PackagesDir)System.IO.Packaging.TestData\1.0.0-prerelease\content\**\*.*" />

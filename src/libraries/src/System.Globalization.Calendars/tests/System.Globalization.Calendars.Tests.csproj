@@ -2,13 +2,7 @@
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{9574CEEC-5554-411B-B44C-6CA9EC1CEB08}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <AssemblyName>System.Globalization.Calendars.Tests</AssemblyName>
-    <RootNamespace>System.Globalization.Calendars.Tests</RootNamespace>
-    <NugetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NugetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
@@ -132,9 +126,6 @@
     <TargetingPackReference Include="System.Threading.Tasks" />
     <TargetingPackReference Include="System.Core" />
     <TargetingPackReference Include="System.Runtime" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\pkg\System.Globalization.Calendars.pkgproj" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

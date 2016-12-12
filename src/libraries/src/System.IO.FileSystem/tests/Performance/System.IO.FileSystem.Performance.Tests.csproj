@@ -5,32 +5,11 @@
   </PropertyGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <AssemblyName>System.IO.FileSystem.Performance.Tests</AssemblyName>
     <TestCategories>InnerLoop;OuterLoop</TestCategories>
     <IncludePerformanceTests>true</IncludePerformanceTests>
-    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
-    <DebugSymbols>true</DebugSymbols>
-    <PlatformTarget>AnyCPU</PlatformTarget>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
-    <PlatformTarget>AnyCPU</PlatformTarget>
-  </PropertyGroup>
-  <ItemGroup>
-    <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\pkg\System.IO.FileSystem.pkgproj">
-      <Project>{879c23dc-d828-4dfb-8e92-abbc11b71035}</Project>
-      <Name>System.IO.FileSystem</Name>
-      <Private>True</Private>
-    </ProjectReference>
-    <!-- ToDo: Remove this P2P reference once new packages are produced and updated -->
-    <ProjectReference Include="..\..\..\System.Runtime\pkg\System.Runtime.pkgproj" />
-    <!-- ToDo: Remove this P2P reference once new packages are produced and updated -->
-    <ProjectReference Include="..\..\..\System.IO.FileSystem.Primitives\pkg\System.IO.FileSystem.Primitives.pkgproj" />
-  </ItemGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
   <ItemGroup>
     <ProjectReference Include="$(CommonTestPath)\System\Diagnostics\RemoteExecutorConsoleApp\RemoteExecutorConsoleApp.csproj">
       <Project>{69e46a6f-9966-45a5-8945-2559fe337827}</Project>

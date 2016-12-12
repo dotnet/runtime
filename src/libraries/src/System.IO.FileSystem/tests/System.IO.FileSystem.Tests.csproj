@@ -5,32 +5,11 @@
   </PropertyGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <Configuration Condition="'$(Configuration)' == ''">Debug</Configuration>
-    <Platform Condition="'$(Platform)' == ''">AnyCPU</Platform>
     <ProjectGuid>{57E8F8D4-0766-4CC7-B3F9-B243B81DB6A5}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <AssemblyName>System.IO.FileSystem.Tests</AssemblyName>
     <TestCategories>InnerLoop;OuterLoop</TestCategories>
-    <NugetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NugetTargetMoniker>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
-    <DebugSymbols>true</DebugSymbols>
-    <PlatformTarget>AnyCPU</PlatformTarget>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
-    <PlatformTarget>AnyCPU</PlatformTarget>
-  </PropertyGroup>
-  <ItemGroup>
-    <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\pkg\System.IO.FileSystem.pkgproj">
-      <Project>{879c23dc-d828-4dfb-8e92-abbc11b71035}</Project>
-      <UndefineProperties>%(ProjectReference.UndefineProperties);TargetGroup</UndefineProperties>
-      <Name>System.IO.FileSystem</Name>
-      <Private>True</Private>
-    </ProjectReference>
-  </ItemGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
   <ItemGroup Condition="'$(TargetGroup)'==''">
     <Compile Include="FileInfo\Serialization.cs" />
     <Compile Include="FileInfo\Replace.cs" />
@@ -178,16 +157,6 @@
       <Name>RemoteExecutorConsoleApp</Name>
       <UndefineProperties>%(ProjectReference.UndefineProperties);TargetGroup</UndefineProperties>
     </ProjectReference>
-    <!-- ToDo: Remove this P2P reference once new packages are produced and updated -->
-    <ProjectReference Include="..\..\System.IO\pkg\System.IO.pkgproj" />
-    <!-- ToDo: Remove this P2P reference once new packages are produced and updated -->
-    <ProjectReference Include="..\..\System.Runtime\pkg\System.Runtime.pkgproj" />
-    <!-- ToDo: Remove this P2P reference once new packages are produced and updated -->
-    <ProjectReference Include="..\..\System.Runtime.Extensions\pkg\System.Runtime.Extensions.pkgproj" />
-    <!-- ToDo: Remove this P2P reference once new packages are produced and updated -->
-    <ProjectReference Include="..\..\System.Security.Permissions\pkg\System.Security.Permissions.pkgproj" />
-    <!-- ToDo: Remove this P2P reference once new packages are produced and updated -->
-    <ProjectReference Include="..\..\System.IO.FileSystem.Primitives\pkg\System.IO.FileSystem.Primitives.pkgproj" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

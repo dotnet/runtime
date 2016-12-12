@@ -2,17 +2,11 @@
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <AssemblyName>System.Collections.Performance.Tests</AssemblyName>
-    <RootNamespace>System.Collections.Performance.Tests</RootNamespace>
     <IncludePerformanceTests>true</IncludePerformanceTests>
-    <NugetTargetMoniker>.NETStandard,Version=v1.7</NugetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' "/>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' "/>
-  <ItemGroup>
-    <ProjectReference Include="..\..\pkg\System.Collections.pkgproj" />
-  </ItemGroup>
   <ItemGroup>
     <Compile Include="Perf.Dictionary.cs" />
     <Compile Include="Perf.HashSet.cs" />

@@ -2,19 +2,11 @@
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{6E48765E-D6AC-4A79-9C2E-B5EE67EEDECF}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <RootNamespace>System.ComponentModel.Annotations.Tests</RootNamespace>
-    <AssemblyName>System.ComponentModel.Annotations.Tests</AssemblyName>
-    <NugetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NugetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' " />
   <ItemGroup>
     <Compile Include="UIHintAttributeTests.cs" />
     <Compile Include="FilterUIHintAttributeTests.cs" />
@@ -48,11 +40,6 @@
     <Compile Include="ValidationExceptionTests.cs" />
     <Compile Include="ValidationResultTests.cs" />
     <Compile Include="ValidatorTests.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\pkg\System.ComponentModel.Annotations.pkgproj">
-      <Name>System.ComponentModel.Annotations</Name>
-    </ProjectReference>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

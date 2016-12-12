@@ -5,15 +5,8 @@
   </PropertyGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <OutputType>Library</OutputType>
-    <DefaultLanguage>en-US</DefaultLanguage>
-    <FileAlignment>512</FileAlignment>
-    <MinimumVisualStudioVersion>11.0</MinimumVisualStudioVersion>
     <ProjectGuid>{9D6F6254-B5A3-40FF-8925-68AA8D1CE933}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
@@ -44,10 +37,6 @@
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\pkg\System.IO.MemoryMappedFiles.pkgproj">
-      <Project>{16EE5522-F387-4C9E-9EF2-B5134B043F37}</Project>
-      <Name>System.IO.MemoryMappedFiles</Name>
-    </ProjectReference>
     <ProjectReference Include="$(CommonTestPath)\System\Diagnostics\RemoteExecutorConsoleApp\RemoteExecutorConsoleApp.csproj">
       <Project>{69e46a6f-9966-45a5-8945-2559fe337827}</Project>
       <Name>RemoteExecutorConsoleApp</Name>

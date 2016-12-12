@@ -3,19 +3,11 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <ProjectGuid>{82B54697-0251-47A1-8546-FC507D0F3B08}</ProjectGuid>
-    <AssemblyName>Microsoft.Win32.Registry.AccessControl.Tests</AssemblyName>
-    <RootNamespace>Microsoft.Win32.Registry.AccessControl.Tests</RootNamespace>
-    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
   <ItemGroup Condition="'$(TargetGroup)' == ''">
     <Compile Include="RegistryAclExtensionsTests.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\pkg\Microsoft.Win32.Registry.AccessControl.pkgproj">
-      <Name>Microsoft.Win32.Registry.AccessControl</Name>
-    </ProjectReference>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
