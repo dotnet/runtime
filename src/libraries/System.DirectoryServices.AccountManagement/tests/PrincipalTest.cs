@@ -87,8 +87,7 @@ namespace AccountManagementUnitTests
 
         /// <summary>
         ///  testing user creation
-        ///  right now we just test that bug #666779 is fixed (if trying to add an existing user it causes it to be deleted)
-        /// </summary>
+        ///  right now we just test that if trying to add an existing user it causes it to be deleted
         [TestMethod()]
         public void AddExistingPrincipal()
         {

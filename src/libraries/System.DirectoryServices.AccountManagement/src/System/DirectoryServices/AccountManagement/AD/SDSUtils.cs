@@ -816,7 +816,6 @@ namespace System.DirectoryServices.AccountManagement
 
                 // When we write to userAccountControl, we must OR the new value with the value of msDS-User-Account-Control-Computed.
                 // Otherwise we might mistakenly clear computed bits like UF_LOCKOUT.
-                // See Dev10 bug 666762 for details.
                 if (!isSAM && de.Properties["msDS-User-Account-Control-Computed"].Count > 0)
                 {
                     Debug.Assert(de.Properties["msDS-User-Account-Control-Computed"].Count == 1);

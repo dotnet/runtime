@@ -24,9 +24,6 @@
 //    public int cNumCursors;
 //    public int dwEnumerationContext;
 //}
-//
-//See DevDiv bug 147530 for more details.
-//
 
 namespace System.DirectoryServices.ActiveDirectory
 {
