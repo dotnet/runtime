@@ -16,6 +16,7 @@ namespace System {
     using System.Security.Permissions;
     using System.Runtime.CompilerServices;
     using System.Runtime.Versioning;
+    using System.Diagnostics;
     using System.Diagnostics.Contracts;
 
     [System.Runtime.InteropServices.ComVisible(true)]
@@ -29,7 +30,7 @@ namespace System {
 
         // Migrating InheritanceDemands requires this default ctor, so we can mark it SafeCritical
         protected WeakReference() {
-            Contract.Assert(false, "WeakReference's protected default ctor should never be used!");
+            Debug.Assert(false, "WeakReference's protected default ctor should never be used!");
             throw new NotImplementedException();
         }
 

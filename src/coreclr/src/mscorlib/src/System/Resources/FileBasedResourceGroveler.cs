@@ -23,6 +23,7 @@ namespace System.Resources {
     using System.Runtime.Versioning;
     using System.Text;
     using System.Threading;
+    using System.Diagnostics;
     using System.Diagnostics.Contracts;
 
     internal class FileBasedResourceGroveler : IResourceGroveler
@@ -31,7 +32,7 @@ namespace System.Resources {
 
         public FileBasedResourceGroveler(ResourceManager.ResourceManagerMediator mediator)
         {
-            Contract.Assert(mediator != null, "mediator shouldn't be null; check caller");
+            Debug.Assert(mediator != null, "mediator shouldn't be null; check caller");
             _mediator = mediator;
         }
 
@@ -40,7 +41,7 @@ namespace System.Resources {
         // manifest-based classes. Want to continue tightening the design to get rid of unused params.
         public ResourceSet GrovelForResourceSet(CultureInfo culture, Dictionary<String, ResourceSet> localResourceSets, bool tryParents, bool createIfNotExists, ref StackCrawlMark stackMark) 
         {
-            Contract.Assert(culture != null, "culture shouldn't be null; check caller");
+            Debug.Assert(culture != null, "culture shouldn't be null; check caller");
 
             String fileName = null;
             ResourceSet rs = null;
@@ -88,8 +89,8 @@ namespace System.Resources {
 
         private String FindResourceFile(CultureInfo culture, String fileName)
         {
-            Contract.Assert(culture != null, "culture shouldn't be null; check caller");
-            Contract.Assert(fileName != null, "fileName shouldn't be null; check caller");
+            Debug.Assert(culture != null, "culture shouldn't be null; check caller");
+            Debug.Assert(fileName != null, "fileName shouldn't be null; check caller");
 
             // If we have a moduleDir, check there first.  Get module fully 
             // qualified name, append path to that.
@@ -128,7 +129,7 @@ namespace System.Resources {
         // for perf and working set reasons.
         private ResourceSet CreateResourceSet(String file)
         {
-            Contract.Assert(file != null, "file shouldn't be null; check caller");
+            Debug.Assert(file != null, "file shouldn't be null; check caller");
 
             if (_mediator.UserResourceSet == null)
             {

@@ -12,6 +12,7 @@ namespace System.Reflection.Emit
     using System.Reflection;
     using System.Security.Permissions;
     using System.Globalization;
+    using System.Diagnostics;
     using System.Diagnostics.Contracts;
     
     [ClassInterface(ClassInterfaceType.None)]
@@ -410,7 +411,7 @@ namespace System.Reflection.Emit
         {
             if (m_RelocFixupCount == 0)
             {
-                Contract.Assert(m_RelocFixupList == null);
+                Debug.Assert(m_RelocFixupList == null);
                 return null;
             }
 
@@ -646,7 +647,7 @@ namespace System.Reflection.Emit
             // SignatureHelper.
             if (opcode.StackBehaviourPop == StackBehaviour.Varpop)
             {
-                Contract.Assert(opcode.Equals(OpCodes.Calli),
+                Debug.Assert(opcode.Equals(OpCodes.Calli),
                                 "Unexpected opcode encountered for StackBehaviour VarPop.");
                 // Pop the arguments..
                 stackchange -= signature.ArgumentCount;
@@ -679,7 +680,7 @@ namespace System.Reflection.Emit
             if (opcode.StackBehaviourPush == StackBehaviour.Varpush)
             {
                 // Instruction must be one of call or callvirt.
-                Contract.Assert(opcode.Equals(OpCodes.Call) ||
+                Debug.Assert(opcode.Equals(OpCodes.Call) ||
                                 opcode.Equals(OpCodes.Callvirt),
                                 "Unexpected opcode encountered for StackBehaviour of VarPush.");
                 stackchange++;
@@ -687,7 +688,7 @@ namespace System.Reflection.Emit
             if (opcode.StackBehaviourPop == StackBehaviour.Varpop)
             {
                 // Instruction must be one of call, callvirt or newobj.
-                Contract.Assert(opcode.Equals(OpCodes.Call) ||
+                Debug.Assert(opcode.Equals(OpCodes.Call) ||
                                 opcode.Equals(OpCodes.Callvirt) ||
                                 opcode.Equals(OpCodes.Newobj),
                                 "Unexpected opcode encountered for StackBehaviour of VarPop.");
@@ -1439,7 +1440,7 @@ namespace System.Reflection.Emit
                 m_catchAddr[m_currentCatch] = -1;
                 if (m_currentCatch > 0)
                 {
-                    Contract.Assert(m_catchEndAddr[m_currentCatch-1] == -1,"m_catchEndAddr[m_currentCatch-1] == -1");
+                    Debug.Assert(m_catchEndAddr[m_currentCatch-1] == -1,"m_catchEndAddr[m_currentCatch-1] == -1");
                     m_catchEndAddr[m_currentCatch-1] = catchorfilterAddr;
                 }
             }
@@ -1456,7 +1457,7 @@ namespace System.Reflection.Emit
                 {
                         if (m_type[m_currentCatch] != Filter)
                         {
-                            Contract.Assert(m_catchEndAddr[m_currentCatch-1] == -1,"m_catchEndAddr[m_currentCatch-1] == -1");
+                            Debug.Assert(m_catchEndAddr[m_currentCatch-1] == -1,"m_catchEndAddr[m_currentCatch-1] == -1");
                             m_catchEndAddr[m_currentCatch-1] = catchEndAddr;
                         }
                 }
@@ -1498,9 +1499,9 @@ namespace System.Reflection.Emit
         }
 
         internal void Done(int endAddr) {
-            Contract.Assert(m_currentCatch > 0,"m_currentCatch > 0");
-            Contract.Assert(m_catchAddr[m_currentCatch-1] > 0,"m_catchAddr[m_currentCatch-1] > 0");
-            Contract.Assert(m_catchEndAddr[m_currentCatch-1] == -1,"m_catchEndAddr[m_currentCatch-1] == -1");
+            Debug.Assert(m_currentCatch > 0,"m_currentCatch > 0");
+            Debug.Assert(m_catchAddr[m_currentCatch-1] > 0,"m_catchAddr[m_currentCatch-1] > 0");
+            Debug.Assert(m_catchEndAddr[m_currentCatch-1] == -1,"m_catchEndAddr[m_currentCatch-1] == -1");
             m_catchEndAddr[m_currentCatch-1] = endAddr;
             m_currentState = State_Done;
         }
@@ -1563,8 +1564,8 @@ namespace System.Reflection.Emit
         // not having a nesting relation. 
         internal bool IsInner(__ExceptionInfo exc) {
             Contract.Requires(exc != null);
-            Contract.Assert(m_currentCatch > 0,"m_currentCatch > 0");
-            Contract.Assert(exc.m_currentCatch > 0,"exc.m_currentCatch > 0");
+            Debug.Assert(m_currentCatch > 0,"m_currentCatch > 0");
+            Debug.Assert(exc.m_currentCatch > 0,"exc.m_currentCatch > 0");
 
             int exclast = exc.m_currentCatch - 1;
             int last = m_currentCatch - 1;
@@ -1573,7 +1574,7 @@ namespace System.Reflection.Emit
                 return true;
             else if (exc.m_catchEndAddr[exclast] == m_catchEndAddr[last])
             {
-                Contract.Assert(exc.GetEndAddress() != GetEndAddress(),
+                Debug.Assert(exc.GetEndAddress() != GetEndAddress(),
                                 "exc.GetEndAddress() != GetEndAddress()");
                 if (exc.GetEndAddress() > GetEndAddress())
                     return true;
@@ -1785,7 +1786,7 @@ namespace System.Reflection.Emit
             // make sure that arrays are large enough to hold addition info
             i = FindDocument(document);
             
-            Contract.Assert(i < m_DocumentCount, "Bad document look up!");
+            Debug.Assert(i < m_DocumentCount, "Bad document look up!");
             m_Documents[i].AddLineNumberInfo(document, iOffset, iStartLine, iStartColumn, iEndLine, iEndColumn);
         }
         
@@ -1873,7 +1874,7 @@ namespace System.Reflection.Emit
             int             iEndLine,
             int             iEndColumn)
         {
-            Contract.Assert(document == m_document, "Bad document look up!");
+            Debug.Assert(document == m_document, "Bad document look up!");
             
             // make sure that arrays are large enough to hold addition info
             EnsureCapacity();

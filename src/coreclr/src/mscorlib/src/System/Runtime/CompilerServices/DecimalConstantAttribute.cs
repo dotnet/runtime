@@ -6,6 +6,7 @@
 // Note: If you add a new ctor overloads you need to update ParameterInfo.RawDefaultValue
 
 using System.Reflection;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Collections.Generic;
 
@@ -57,16 +58,16 @@ namespace System.Runtime.CompilerServices
                 if (namedArgument.MemberInfo.Name.Equals("Value"))
                 {
                     // This is not possible because Decimal cannot be represented directly in the metadata.
-                    Contract.Assert(false, "Decimal cannot be represented directly in the metadata.");
+                    Debug.Assert(false, "Decimal cannot be represented directly in the metadata.");
                     return (Decimal)namedArgument.TypedValue.Value;
                 }
             }
 
             ParameterInfo[] parameters = attr.Constructor.GetParameters();
-            Contract.Assert(parameters.Length == 5);
+            Debug.Assert(parameters.Length == 5);
 
             System.Collections.Generic.IList<CustomAttributeTypedArgument> args = attr.ConstructorArguments;
-            Contract.Assert(args.Count == 5);
+            Debug.Assert(args.Count == 5);
 
             if (parameters[2].ParameterType == typeof(uint))
             {

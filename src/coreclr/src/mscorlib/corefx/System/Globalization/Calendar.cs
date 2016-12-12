@@ -5,6 +5,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Globalization;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Runtime.Serialization;
 
@@ -212,7 +213,7 @@ namespace System.Globalization
                 // The following code assumes that the current era value can not be -1.
                 if (_currentEraValue == -1)
                 {
-                    Contract.Assert(BaseCalendarID != CalendarId.UNINITIALIZED_VALUE, "[Calendar.CurrentEraValue] Expected a real calendar ID");
+                    Debug.Assert(BaseCalendarID != CalendarId.UNINITIALIZED_VALUE, "[Calendar.CurrentEraValue] Expected a real calendar ID");
                     _currentEraValue = CalendarData.GetCalendarData(BaseCalendarID).iCurrentEra;
                 }
                 return (_currentEraValue);
@@ -527,7 +528,7 @@ namespace System.Globalization
             // this value can be less than 0.  It's fine since we are making it positive again in calculating offset.
             int dayForJan1 = (int)GetDayOfWeek(time) - (dayOfYear % 7);
             int offset = (dayForJan1 - firstDayOfWeek + 14) % 7;
-            Contract.Assert(offset >= 0, "Calendar.GetFirstDayWeekOfYear(): offset >= 0");
+            Debug.Assert(offset >= 0, "Calendar.GetFirstDayWeekOfYear(): offset >= 0");
             return ((dayOfYear + offset) / 7 + 1);
         }
 

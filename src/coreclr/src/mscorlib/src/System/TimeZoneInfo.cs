@@ -297,7 +297,7 @@ namespace System {
 
         private AdjustmentRule[] GetFilledRules()
         {
-            Contract.Assert(m_adjustmentRules != null, "m_adjustmentRules expected to be not null");
+            Debug.Assert(m_adjustmentRules != null, "m_adjustmentRules expected to be not null");
             AdjustmentRule[] rules = new AdjustmentRule[m_adjustmentRules.Length];
 
             for (int i = 0; i < m_adjustmentRules.Length; i++)
@@ -2593,7 +2593,7 @@ namespace System {
 #if FEATURE_WIN32_REGISTRY
                 throw new InvalidTimeZoneException(Environment.GetResourceString("InvalidTimeZone_InvalidRegistryData", id), e);
 #elif PLATFORM_UNIX
-                Contract.Assert(e is InvalidTimeZoneException,
+                Debug.Assert(e is InvalidTimeZoneException,
                     "TryGetTimeZone must create an InvalidTimeZoneException when it returns TimeZoneInfoResult.InvalidTimeZoneException");
                 throw e;
 #endif

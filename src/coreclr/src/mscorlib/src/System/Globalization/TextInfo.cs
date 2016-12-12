@@ -24,6 +24,7 @@ namespace System.Globalization {
     using System.Runtime.Serialization;
     using System.Runtime.Versioning;
     using System.Security.Permissions;
+    using System.Diagnostics;
     using System.Diagnostics.Contracts;
 
 
@@ -229,16 +230,16 @@ namespace System.Globalization {
         // The underlying unmanaged code will assert the sanity of arguments.
         internal static unsafe int CompareOrdinalIgnoreCaseEx(String strA, int indexA, String strB, int indexB, int lengthA, int lengthB )
         {
-            Contract.Assert(strA.Length >= indexA + lengthA,  "[TextInfo.CompareOrdinalIgnoreCaseEx] Caller should've validated strA.Length >= indexA + lengthA");
-            Contract.Assert(strB.Length >= indexB + lengthB, "[TextInfo.CompareOrdinalIgnoreCaseEx]  Caller should've validated strB.Length >= indexB + lengthB");
+            Debug.Assert(strA.Length >= indexA + lengthA,  "[TextInfo.CompareOrdinalIgnoreCaseEx] Caller should've validated strA.Length >= indexA + lengthA");
+            Debug.Assert(strB.Length >= indexB + lengthB, "[TextInfo.CompareOrdinalIgnoreCaseEx]  Caller should've validated strB.Length >= indexB + lengthB");
             return InternalCompareStringOrdinalIgnoreCase(strA, indexA, strB, indexB, lengthA, lengthB);
         }
 
         internal static int IndexOfStringOrdinalIgnoreCase(String source, String value, int startIndex, int count)
         {
-            Contract.Assert(source != null, "[TextInfo.IndexOfStringOrdinalIgnoreCase] Caller should've validated source != null");
-            Contract.Assert(value != null, "[TextInfo.IndexOfStringOrdinalIgnoreCase] Caller should've validated value != null");
-            Contract.Assert(startIndex + count <= source.Length, "[TextInfo.IndexOfStringOrdinalIgnoreCase] Caller should've validated startIndex + count <= source.Length");
+            Debug.Assert(source != null, "[TextInfo.IndexOfStringOrdinalIgnoreCase] Caller should've validated source != null");
+            Debug.Assert(value != null, "[TextInfo.IndexOfStringOrdinalIgnoreCase] Caller should've validated value != null");
+            Debug.Assert(startIndex + count <= source.Length, "[TextInfo.IndexOfStringOrdinalIgnoreCase] Caller should've validated startIndex + count <= source.Length");
 
             // We return 0 if both inputs are empty strings
             if (source.Length == 0 && value.Length == 0)
@@ -265,7 +266,7 @@ namespace System.Globalization {
             for (; startIndex <= maxStartIndex; startIndex++)
             {
                 // We should always have the same or more characters left to search than our actual pattern
-                Contract.Assert(end - startIndex >= value.Length);
+                Debug.Assert(end - startIndex >= value.Length);
                 // since this is an ordinal comparison, we can assume that the lengths must match
                 if (CompareOrdinalIgnoreCaseEx(source, startIndex, value, 0, value.Length, value.Length) == 0)
                 {
@@ -279,10 +280,10 @@ namespace System.Globalization {
 
         internal static int LastIndexOfStringOrdinalIgnoreCase(String source, String value, int startIndex, int count)
         {
-            Contract.Assert(source != null, "[TextInfo.LastIndexOfStringOrdinalIgnoreCase] Caller should've validated source != null");
-            Contract.Assert(value != null, "[TextInfo.LastIndexOfStringOrdinalIgnoreCase] Caller should've validated value != null");
-            Contract.Assert(startIndex - count+1 >= 0, "[TextInfo.LastIndexOfStringOrdinalIgnoreCase] Caller should've validated startIndex - count+1 >= 0");
-            Contract.Assert(startIndex <= source.Length, "[TextInfo.LastIndexOfStringOrdinalIgnoreCase] Caller should've validated startIndex <= source.Length");
+            Debug.Assert(source != null, "[TextInfo.LastIndexOfStringOrdinalIgnoreCase] Caller should've validated source != null");
+            Debug.Assert(value != null, "[TextInfo.LastIndexOfStringOrdinalIgnoreCase] Caller should've validated value != null");
+            Debug.Assert(startIndex - count+1 >= 0, "[TextInfo.LastIndexOfStringOrdinalIgnoreCase] Caller should've validated startIndex - count+1 >= 0");
+            Debug.Assert(startIndex <= source.Length, "[TextInfo.LastIndexOfStringOrdinalIgnoreCase] Caller should've validated startIndex <= source.Length");
 
             // If value is Empty, the return value is startIndex
             if (value.Length == 0)
@@ -784,7 +785,7 @@ namespace System.Globalization {
 
         private static int AddNonLetter(ref StringBuilder result, ref String input, int inputIndex, int charLen) 
         {
-            Contract.Assert(charLen == 1 || charLen == 2, "[TextInfo.AddNonLetter] CharUnicodeInfo.InternalGetUnicodeCategory returned an unexpected charLen!");
+            Debug.Assert(charLen == 1 || charLen == 2, "[TextInfo.AddNonLetter] CharUnicodeInfo.InternalGetUnicodeCategory returned an unexpected charLen!");
             if (charLen == 2) 
             {
                 // Surrogate pair
@@ -801,7 +802,7 @@ namespace System.Globalization {
 
         private int AddTitlecaseLetter(ref StringBuilder result, ref String input, int inputIndex, int charLen) 
         {
-            Contract.Assert(charLen == 1 || charLen == 2, "[TextInfo.AddTitlecaseLetter] CharUnicodeInfo.InternalGetUnicodeCategory returned an unexpected charLen!");
+            Debug.Assert(charLen == 1 || charLen == 2, "[TextInfo.AddTitlecaseLetter] CharUnicodeInfo.InternalGetUnicodeCategory returned an unexpected charLen!");
 
             // for surrogate pairs do a simple ToUpper operation on the substring
             if (charLen == 2) 

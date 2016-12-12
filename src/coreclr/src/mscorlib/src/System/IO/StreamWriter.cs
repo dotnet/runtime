@@ -21,6 +21,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
 using System.Security.Permissions;
 using System.Runtime.Serialization;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
@@ -335,7 +336,7 @@ namespace System.IO
                 if (charPos == charLen) Flush(false, false);
                 int n = charLen - charPos;
                 if (n > count) n = count;
-                Contract.Assert(n > 0, "StreamWriter::Write(char[]) isn't making progress!  This is most likely a race condition in user code.");
+                Debug.Assert(n > 0, "StreamWriter::Write(char[]) isn't making progress!  This is most likely a race condition in user code.");
                 Buffer.InternalBlockCopy(buffer, index * sizeof(char), charBuffer, charPos * sizeof(char), n * sizeof(char));
                 charPos += n;
                 index += n;
@@ -361,7 +362,7 @@ namespace System.IO
                 if (charPos == charLen) Flush(false, false);
                 int n = charLen - charPos;
                 if (n > count) n = count;
-                Contract.Assert(n > 0, "StreamWriter::Write(char[], int, int) isn't making progress!  This is most likely a race condition in user code.");
+                Debug.Assert(n > 0, "StreamWriter::Write(char[], int, int) isn't making progress!  This is most likely a race condition in user code.");
                 Buffer.InternalBlockCopy(buffer, index * sizeof(char), charBuffer, charPos * sizeof(char), n * sizeof(char));
                 charPos += n;
                 index += n;
@@ -383,7 +384,7 @@ namespace System.IO
                     if (charPos == charLen) Flush(false, false);
                     int n = charLen - charPos;
                     if (n > count) n = count;
-                    Contract.Assert(n > 0, "StreamWriter::Write(String) isn't making progress!  This is most likely a race condition in user code.");
+                    Debug.Assert(n > 0, "StreamWriter::Write(String) isn't making progress!  This is most likely a race condition in user code.");
                     value.CopyTo(index, charBuffer, charPos, n);
                     charPos += n;
                     index += n;
@@ -425,7 +426,7 @@ namespace System.IO
         {            
             if (charPos == charLen) {
                 await _this.FlushAsyncInternal(false, false, charBuffer, charPos).ConfigureAwait(false);
-                Contract.Assert(_this.charPos == 0);
+                Debug.Assert(_this.charPos == 0);
                 charPos = 0;
             }
 
@@ -438,7 +439,7 @@ namespace System.IO
                 {
                     if (charPos == charLen) {                        
                         await _this.FlushAsyncInternal(false, false, charBuffer, charPos).ConfigureAwait(false);
-                        Contract.Assert(_this.charPos == 0);
+                        Debug.Assert(_this.charPos == 0);
                         charPos = 0;
                     }
 
@@ -449,7 +450,7 @@ namespace System.IO
 
             if (autoFlush) {
                 await _this.FlushAsyncInternal(true, false, charBuffer, charPos).ConfigureAwait(false);
-                Contract.Assert(_this.charPos == 0);
+                Debug.Assert(_this.charPos == 0);
                 charPos = 0;
             }
 
@@ -501,7 +502,7 @@ namespace System.IO
             {
                 if (charPos == charLen) {
                     await _this.FlushAsyncInternal(false, false, charBuffer, charPos).ConfigureAwait(false);
-                    Contract.Assert(_this.charPos == 0);
+                    Debug.Assert(_this.charPos == 0);
                     charPos = 0;
                 }
 
@@ -509,7 +510,7 @@ namespace System.IO
                 if (n > count)
                     n = count;
 
-                Contract.Assert(n > 0, "StreamWriter::Write(String) isn't making progress!  This is most likely a race condition in user code.");
+                Debug.Assert(n > 0, "StreamWriter::Write(String) isn't making progress!  This is most likely a race condition in user code.");
 
                 value.CopyTo(index, charBuffer, charPos, n);
 
@@ -524,7 +525,7 @@ namespace System.IO
                 {
                     if (charPos == charLen) {
                         await _this.FlushAsyncInternal(false, false, charBuffer, charPos).ConfigureAwait(false);
-                        Contract.Assert(_this.charPos == 0);
+                        Debug.Assert(_this.charPos == 0);
                         charPos = 0;
                     }
 
@@ -535,7 +536,7 @@ namespace System.IO
 
             if (autoFlush) {
                 await _this.FlushAsyncInternal(true, false, charBuffer, charPos).ConfigureAwait(false);
-                Contract.Assert(_this.charPos == 0);
+                Debug.Assert(_this.charPos == 0);
                 charPos = 0;
             }
 
@@ -590,14 +591,14 @@ namespace System.IO
             {
                 if (charPos == charLen) {
                     await _this.FlushAsyncInternal(false, false, charBuffer, charPos).ConfigureAwait(false);
-                    Contract.Assert(_this.charPos == 0);
+                    Debug.Assert(_this.charPos == 0);
                     charPos = 0;
                 }
 
                 int n = charLen - charPos;
                 if (n > count) n = count;
 
-                Contract.Assert(n > 0, "StreamWriter::Write(char[], int, int) isn't making progress!  This is most likely a race condition in user code.");
+                Debug.Assert(n > 0, "StreamWriter::Write(char[], int, int) isn't making progress!  This is most likely a race condition in user code.");
 
                 Buffer.InternalBlockCopy(buffer, index * sizeof(char), charBuffer, charPos * sizeof(char), n * sizeof(char));
 
@@ -612,7 +613,7 @@ namespace System.IO
                 {
                     if (charPos == charLen) {
                         await _this.FlushAsyncInternal(false, false, charBuffer, charPos).ConfigureAwait(false);
-                        Contract.Assert(_this.charPos == 0);
+                        Debug.Assert(_this.charPos == 0);
                         charPos = 0;
                     }
 
@@ -623,7 +624,7 @@ namespace System.IO
 
             if (autoFlush) {
                 await _this.FlushAsyncInternal(true, false, charBuffer, charPos).ConfigureAwait(false);
-                Contract.Assert(_this.charPos == 0);
+                Debug.Assert(_this.charPos == 0);
                 charPos = 0;
             }
 

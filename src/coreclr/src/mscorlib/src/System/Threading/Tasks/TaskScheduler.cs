@@ -573,7 +573,7 @@ namespace System.Threading.Tasks
             schedulers.CopyTo(arr, 0);
             foreach (var scheduler in arr)
             {
-                Contract.Assert(scheduler != null, "Table returned an incorrect Count or CopyTo failed");
+                Debug.Assert(scheduler != null, "Table returned an incorrect Count or CopyTo failed");
                 int tmp = scheduler.Id; // force Ids for debugger
             }
             return arr;

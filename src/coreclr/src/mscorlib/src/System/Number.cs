@@ -11,6 +11,7 @@ namespace System {
     using System.Runtime.Versioning;
     using System.Security;
     using System.Text;
+    using System.Diagnostics;
     using System.Diagnostics.Contracts;
 
     // The Number class implements methods for formatting and parsing
@@ -384,7 +385,7 @@ namespace System {
                 return false;
             }
             Char* p = number.digits;
-            Contract.Assert(p != null, "");
+            Debug.Assert(p != null, "");
 
             UInt32 n = 0;
             while (--i >= 0) {
@@ -403,7 +404,7 @@ namespace System {
                                 newN += (UInt32)((*p - 'A') + 10);
                             }
                             else {
-                                Contract.Assert(*p >= 'a' && *p <= 'f', "");
+                                Debug.Assert(*p >= 'a' && *p <= 'f', "");
                                 newN += (UInt32)((*p - 'a') + 10);
                             }
                         }
@@ -428,7 +429,7 @@ namespace System {
                 return false;
             }
             Char* p = number.digits;
-            Contract.Assert(p != null, "");
+            Debug.Assert(p != null, "");
             
             UInt64 n = 0;
             while (--i >= 0) {
@@ -447,7 +448,7 @@ namespace System {
                                 newN += (UInt64)((*p - 'A') + 10);
                             }
                             else {
-                                Contract.Assert(*p >= 'a' && *p <= 'f', "");
+                                Debug.Assert(*p >= 'a' && *p <= 'f', "");
                                 newN += (UInt64)((*p - 'a') + 10);
                             }
                         }
@@ -476,7 +477,7 @@ namespace System {
                 return false;
             }
             char * p = number.digits;
-            Contract.Assert(p != null, "");
+            Debug.Assert(p != null, "");
             Int32 n = 0;
             while (--i >= 0) {
                 if ((UInt32)n > (0x7FFFFFFF / 10)) {
@@ -509,7 +510,7 @@ namespace System {
                 return false;
             }
             char* p = number.digits;
-            Contract.Assert(p != null, "");
+            Debug.Assert(p != null, "");
             Int64 n = 0;
             while (--i >= 0) {
                 if ((UInt64)n > (0x7FFFFFFFFFFFFFFF / 10)) {
@@ -542,7 +543,7 @@ namespace System {
                 return false;
             }
             char* p = number.digits;
-            Contract.Assert(p != null, "");
+            Debug.Assert(p != null, "");
             UInt32 n = 0;
             while (--i >= 0) {
                 if (n > (0xFFFFFFFF / 10)) {
@@ -569,7 +570,7 @@ namespace System {
                 return false;
             }
             char * p = number.digits;
-            Contract.Assert(p != null, "");
+            Debug.Assert(p != null, "");
             UInt64 n = 0;
             while (--i >= 0) {
                 if (n > (0xFFFFFFFFFFFFFFFF / 10)) {
@@ -595,7 +596,7 @@ namespace System {
             }
         }
         private unsafe static char * MatchChars(char* p, char* str) {
-            Contract.Assert(p != null && str != null, "");
+            Debug.Assert(p != null && str != null, "");
 
             if (*str == '\0') {
                 return null;
@@ -959,7 +960,7 @@ namespace System {
                 throw new ArgumentNullException(nameof(String));
             }
             Contract.EndContractBlock();
-            Contract.Assert(info != null, "");
+            Debug.Assert(info != null, "");
             fixed (char* stringPointer = str) {
                 char * p = stringPointer;
                 if (!ParseNumber(ref p, options, ref number, null, info , parseDecimal) 
@@ -1133,7 +1134,7 @@ namespace System {
             if (str == null) {
                 return false;
             }
-            Contract.Assert(numfmt != null, "");
+            Debug.Assert(numfmt != null, "");
 
             fixed (char* stringPointer = str) {
                 char * p = stringPointer;

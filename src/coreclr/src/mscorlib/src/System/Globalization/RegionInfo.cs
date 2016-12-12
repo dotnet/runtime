@@ -19,6 +19,7 @@ namespace System.Globalization {
 
     using System;
     using System.Runtime.Serialization;
+    using System.Diagnostics;
     using System.Diagnostics.Contracts;
 
     [Serializable] 
@@ -212,7 +213,7 @@ namespace System.Globalization {
         ////////////////////////////////////////////////////////////////////////
         public virtual String Name {
             get {
-                Contract.Assert(m_name != null, "Expected RegionInfo.m_name to be populated already");
+                Debug.Assert(m_name != null, "Expected RegionInfo.m_name to be populated already");
                 return (m_name);
             }
         }

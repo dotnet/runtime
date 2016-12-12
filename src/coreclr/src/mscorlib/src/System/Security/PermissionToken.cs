@@ -12,6 +12,7 @@ namespace System.Security
     using System.Threading;
     using System.Globalization;
     using System.Runtime.CompilerServices;
+    using System.Diagnostics;
     using System.Diagnostics.Contracts;
 
     [Flags]
@@ -96,7 +97,7 @@ namespace System.Security
         static internal TokenBasedSet s_tokenSet = new TokenBasedSet();
 
         internal static bool IsMscorlibClassName (string className) {
-            Contract.Assert( c_mscorlibName == ((RuntimeAssembly)Assembly.GetExecutingAssembly()).GetSimpleName(),
+            Debug.Assert( c_mscorlibName == ((RuntimeAssembly)Assembly.GetExecutingAssembly()).GetSimpleName(),
                 System.CoreLib.Name+" name mismatch" );
 
             // If the class name does not look like a fully qualified name, we cannot simply determine if it's 
@@ -228,7 +229,7 @@ namespace System.Security
 
         internal PermissionToken GetToken(Type cls, IPermission perm)
         {
-            Contract.Assert( cls != null, "Must pass in valid type" );
+            Debug.Assert( cls != null, "Must pass in valid type" );
 
             IntPtr typePtr = cls.TypeHandle.Value;
             object tok = m_handleTable[typePtr];
@@ -284,12 +285,12 @@ namespace System.Security
             {
                 if (perm != null)
                 {
-                    Contract.Assert( !(perm is IBuiltInPermission), "This should not be called for built-ins" );
+                    Debug.Assert( !(perm is IBuiltInPermission), "This should not be called for built-ins" );
                     ((PermissionToken)tok).m_type = PermissionTokenType.IUnrestricted;
                 }
                 else
                 {
-                    Contract.Assert( cls.GetInterface( "System.Security.Permissions.IBuiltInPermission" ) == null, "This shoudl not be called for built-ins" );
+                    Debug.Assert( cls.GetInterface( "System.Security.Permissions.IBuiltInPermission" ) == null, "This shoudl not be called for built-ins" );
                     if (cls.GetInterface(s_unrestrictedPermissionInferfaceName) != null)
                         ((PermissionToken)tok).m_type = PermissionTokenType.IUnrestricted;
                     else

@@ -15,6 +15,7 @@ namespace System.Reflection.Emit
     using System.Threading;
     using System.Runtime.CompilerServices;
     using System.Runtime.Versioning;
+    using System.Diagnostics;
     using System.Diagnostics.Contracts;
     using System.Runtime.InteropServices;
 
@@ -322,7 +323,7 @@ namespace System.Reflection.Emit
 
             if (transparentMethod)
             {
-                Contract.Assert(owner == null && m == null, "owner and m cannot be set for transparent methods");
+                Debug.Assert(owner == null && m == null, "owner and m cannot be set for transparent methods");
                 m_module = GetDynamicMethodsModule();
                 if (skipVisibility)
                 {
@@ -335,9 +336,9 @@ namespace System.Reflection.Emit
             }
             else
             {
-                Contract.Assert(m != null || owner != null, "PerformSecurityCheck should ensure that either m or owner is set");
-                Contract.Assert(m == null || !m.Equals(s_anonymouslyHostedDynamicMethodsModule), "The user cannot explicitly use this assembly");
-                Contract.Assert(m == null || owner == null, "m and owner cannot both be set");
+                Debug.Assert(m != null || owner != null, "PerformSecurityCheck should ensure that either m or owner is set");
+                Debug.Assert(m == null || !m.Equals(s_anonymouslyHostedDynamicMethodsModule), "The user cannot explicitly use this assembly");
+                Debug.Assert(m == null || owner == null, "m and owner cannot both be set");
 
                 if (m != null)
                     m_module = m.ModuleHandle.GetRuntimeModule(); // this returns the underlying module for all RuntimeModule and ModuleBuilder objects.

@@ -17,6 +17,7 @@ using System;
 using System.Runtime;
 using System.Runtime.Serialization;
 using System.Text;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 
 namespace System.IO {
@@ -182,7 +183,7 @@ namespace System.IO {
                 throw new ArgumentException(Environment.GetResourceString("Arg_SurrogatesNotAllowedAsSingleChar"));
             Contract.EndContractBlock();
 
-            Contract.Assert(_encoding.GetMaxByteCount(1) <= 16, "_encoding.GetMaxByteCount(1) <= 16)");
+            Debug.Assert(_encoding.GetMaxByteCount(1) <= 16, "_encoding.GetMaxByteCount(1) <= 16)");
             int numBytes = 0;
             fixed(byte * pBytes = _buffer) {
                 numBytes = _encoder.GetBytes(&ch, 1, pBytes, _buffer.Length, flush: true);
@@ -354,7 +355,7 @@ namespace System.IO {
 
             if (len <= _largeByteBuffer.Length)
             {
-                //Contract.Assert(len == _encoding.GetBytes(chars, 0, chars.Length, _largeByteBuffer, 0), "encoding's GetByteCount & GetBytes gave different answers!  encoding type: "+_encoding.GetType().Name);
+                //Debug.Assert(len == _encoding.GetBytes(chars, 0, chars.Length, _largeByteBuffer, 0), "encoding's GetByteCount & GetBytes gave different answers!  encoding type: "+_encoding.GetType().Name);
                 _encoding.GetBytes(value, 0, value.Length, _largeByteBuffer, 0);
                 OutStream.Write(_largeByteBuffer, 0, len);
             }
@@ -389,14 +390,14 @@ namespace System.IO {
                     }
 #if _DEBUG
                     totalBytes += byteLen;
-                    Contract.Assert (totalBytes <= len && byteLen <= _largeByteBuffer.Length, "BinaryWriter::Write(String) - More bytes encoded than expected!");
+                    Debug.Assert (totalBytes <= len && byteLen <= _largeByteBuffer.Length, "BinaryWriter::Write(String) - More bytes encoded than expected!");
 #endif
                     OutStream.Write(_largeByteBuffer, 0, byteLen);
                     charStart += charCount;
                     numLeft -= charCount;
                 }
 #if _DEBUG
-                Contract.Assert(totalBytes == len, "BinaryWriter::Write(String) - Didn't write out all the bytes!");
+                Debug.Assert(totalBytes == len, "BinaryWriter::Write(String) - Didn't write out all the bytes!");
 #endif
             }
         }

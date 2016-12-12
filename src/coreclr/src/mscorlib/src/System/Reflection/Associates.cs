@@ -8,6 +8,7 @@ namespace System.Reflection
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Diagnostics.Contracts;
 
     internal static class Associates
@@ -43,8 +44,8 @@ namespace System.Reflection
             if (MetadataToken.IsNullToken(tkMethod))
                 return null;
 
-            Contract.Assert(declaredType != null);
-            Contract.Assert(reflectedType != null);
+            Debug.Assert(declaredType != null);
+            Debug.Assert(reflectedType != null);
 
             bool isInherited = declaredType != reflectedType;
 
@@ -62,7 +63,7 @@ namespace System.Reflection
             }
 
             RuntimeMethodHandleInternal associateMethodHandle = ModuleHandle.ResolveMethodHandleInternalCore(RuntimeTypeHandle.GetModule(declaredType), tkMethod, genericArgumentHandles, genericArgumentCount, null, 0);
-            Contract.Assert(!associateMethodHandle.IsNullHandle(), "Failed to resolve associateRecord methodDef token");
+            Debug.Assert(!associateMethodHandle.IsNullHandle(), "Failed to resolve associateRecord methodDef token");
 
             if (isInherited)
             {

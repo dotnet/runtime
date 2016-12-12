@@ -1029,8 +1029,8 @@ namespace System.Collections.Generic {
 
         private void AddEnumerable(IEnumerable<T> enumerable)
         {
-            Contract.Assert(enumerable != null);
-            Contract.Assert(!(enumerable is ICollection<T>), "We should have optimized for this beforehand.");
+            Debug.Assert(enumerable != null);
+            Debug.Assert(!(enumerable is ICollection<T>), "We should have optimized for this beforehand.");
 
             using (IEnumerator<T> en = enumerable.GetEnumerator())
             {

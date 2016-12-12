@@ -28,7 +28,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
     {
         private IMapViewToIReadOnlyDictionaryAdapter()
         {
-            Contract.Assert(false, "This class is never instantiated");
+            Debug.Assert(false, "This class is never instantiated");
         }
 
         // V this[K key] { get }

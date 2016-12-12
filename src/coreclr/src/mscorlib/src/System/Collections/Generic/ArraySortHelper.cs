@@ -17,6 +17,7 @@ namespace System.Collections.Generic
     using System;
     using System.Globalization;
     using System.Runtime.CompilerServices;
+    using System.Diagnostics;
     using System.Diagnostics.Contracts;
     using System.Runtime.Versioning;
     
@@ -89,8 +90,8 @@ namespace System.Collections.Generic
 
         public void Sort(T[] keys, int index, int length, IComparer<T> comparer)
         {
-            Contract.Assert(keys != null, "Check the arguments in the caller!");
-            Contract.Assert( index >= 0 && length >= 0 && (keys.Length - index >= length), "Check the arguments in the caller!");
+            Debug.Assert(keys != null, "Check the arguments in the caller!");
+            Debug.Assert( index >= 0 && length >= 0 && (keys.Length - index >= length), "Check the arguments in the caller!");
 
             // Add a try block here to detect IComparers (or their
             // underlying IComparables, etc) that are bogus.
@@ -134,9 +135,9 @@ namespace System.Collections.Generic
 
         internal static void Sort(T[] keys, int index, int length, Comparison<T> comparer)
         {
-            Contract.Assert(keys != null, "Check the arguments in the caller!");
-            Contract.Assert(index >= 0 && length >= 0 && (keys.Length - index >= length), "Check the arguments in the caller!");
-            Contract.Assert(comparer != null, "Check the arguments in the caller!");
+            Debug.Assert(keys != null, "Check the arguments in the caller!");
+            Debug.Assert(index >= 0 && length >= 0 && (keys.Length - index >= length), "Check the arguments in the caller!");
+            Debug.Assert(comparer != null, "Check the arguments in the caller!");
 
             // Add a try block here to detect bogus comparisons
             try
@@ -379,8 +380,8 @@ namespace System.Collections.Generic
 
         public void Sort(T[] keys, int index, int length, IComparer<T> comparer)
         {
-            Contract.Assert(keys != null, "Check the arguments in the caller!");
-            Contract.Assert(index >= 0 && length >= 0 && (keys.Length - index >= length), "Check the arguments in the caller!");
+            Debug.Assert(keys != null, "Check the arguments in the caller!");
+            Debug.Assert(index >= 0 && length >= 0 && (keys.Length - index >= length), "Check the arguments in the caller!");
 
             try
             {
@@ -405,8 +406,8 @@ namespace System.Collections.Generic
 
         public int BinarySearch(T[] array, int index, int length, T value, IComparer<T> comparer)
         {
-            Contract.Assert(array != null, "Check the arguments in the caller!");
-            Contract.Assert(index >= 0 && length >= 0 && (array.Length - index >= length), "Check the arguments in the caller!");
+            Debug.Assert(array != null, "Check the arguments in the caller!");
+            Debug.Assert(index >= 0 && length >= 0 && (array.Length - index >= length), "Check the arguments in the caller!");
 
             try
             {
@@ -703,8 +704,8 @@ namespace System.Collections.Generic
 
         public void Sort(TKey[] keys, TValue[] values, int index, int length, IComparer<TKey> comparer)
         {
-            Contract.Assert(keys != null, "Check the arguments in the caller!");  // Precondition on interface method
-            Contract.Assert(index >= 0 && length >= 0 && (keys.Length - index >= length), "Check the arguments in the caller!");
+            Debug.Assert(keys != null, "Check the arguments in the caller!");  // Precondition on interface method
+            Debug.Assert(index >= 0 && length >= 0 && (keys.Length - index >= length), "Check the arguments in the caller!");
 
             // Add a try block here to detect IComparers (or their
             // underlying IComparables, etc) that are bogus.
@@ -958,8 +959,8 @@ namespace System.Collections.Generic
     {
         public void Sort(TKey[] keys, TValue[] values, int index, int length, IComparer<TKey> comparer)
         {
-            Contract.Assert(keys != null, "Check the arguments in the caller!");
-            Contract.Assert( index >= 0 && length >= 0 && (keys.Length - index >= length), "Check the arguments in the caller!");
+            Debug.Assert(keys != null, "Check the arguments in the caller!");
+            Debug.Assert( index >= 0 && length >= 0 && (keys.Length - index >= length), "Check the arguments in the caller!");
             
             // Add a try block here to detect IComparers (or their
             // underlying IComparables, etc) that are bogus.

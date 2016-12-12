@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Globalization;
 using System.Runtime.CompilerServices;
@@ -34,7 +35,7 @@ namespace System
                     int charA = *a;
                     int charB = *b;
 
-                    Contract.Assert((charA | charB) <= 0x7F, "strings have to be ASCII");
+                    Debug.Assert((charA | charB) <= 0x7F, "strings have to be ASCII");
 
                     // uppercase both chars - notice that we need just one compare per char
                     if ((uint)(charA - 'a') <= (uint)('z' - 'a')) charA -= 0x20;
@@ -150,7 +151,7 @@ namespace System
 #if BIT64
                 // Single int read aligns pointers for the following long reads
                 // No length check needed as this method is called when length >= 2
-                Contract.Assert(length >= 2);
+                Debug.Assert(length >= 2);
                 if (*(int*)a != *(int*)b) goto ReturnFalse;
                 length -= 2; a += 2; b += 2;
 
@@ -196,7 +197,7 @@ namespace System
 
             // NOTE: This may be subject to change if eliminating the check
             // in the callers makes them small enough to be inlined by the JIT
-            Contract.Assert(strA.m_firstChar == strB.m_firstChar,
+            Debug.Assert(strA.m_firstChar == strB.m_firstChar,
                 "For performance reasons, callers of this method should " +
                 "check/short-circuit beforehand if the first char is the same.");
 
@@ -304,7 +305,7 @@ namespace System
                 if (*a != *b) return *a - *b;
 
                 DiffOffset1:
-                Contract.Assert(*(a + 1) != *(b + 1), "This char must be different if we reach here!");
+                Debug.Assert(*(a + 1) != *(b + 1), "This char must be different if we reach here!");
                 return *(a + 1) - *(b + 1);
             }
         }
@@ -1002,8 +1003,8 @@ namespace System
         internal int GetLegacyNonRandomizedHashCode() {
             unsafe {
                 fixed (char* src = &m_firstChar) {
-                    Contract.Assert(src[this.Length] == '\0', "src[this.Length] == '\\0'");
-                    Contract.Assert( ((int)src)%4 == 0, "Managed string should start at 4 bytes boundary");
+                    Debug.Assert(src[this.Length] == '\0', "src[this.Length] == '\\0'");
+                    Debug.Assert( ((int)src)%4 == 0, "Managed string should start at 4 bytes boundary");
 #if BIT64
                     int hash1 = 5381;
 #else // !BIT64 (32)

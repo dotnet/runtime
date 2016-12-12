@@ -7,6 +7,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 //using System.Globalization;
 using System.Runtime.CompilerServices;
@@ -195,7 +196,7 @@ namespace System.Collections.Generic
     {
         public Int32EnumComparer()
         {
-            Contract.Assert(typeof(T).IsEnum, "This type is only intended to be used to compare enums!");
+            Debug.Assert(typeof(T).IsEnum, "This type is only intended to be used to compare enums!");
         }
         
         // Used by the serialization engine.
@@ -230,7 +231,7 @@ namespace System.Collections.Generic
     {
         public UInt32EnumComparer()
         {
-            Contract.Assert(typeof(T).IsEnum, "This type is only intended to be used to compare enums!");
+            Debug.Assert(typeof(T).IsEnum, "This type is only intended to be used to compare enums!");
         }
         
         // Used by the serialization engine.
@@ -261,7 +262,7 @@ namespace System.Collections.Generic
     {
         public Int64EnumComparer()
         {
-            Contract.Assert(typeof(T).IsEnum, "This type is only intended to be used to compare enums!");
+            Debug.Assert(typeof(T).IsEnum, "This type is only intended to be used to compare enums!");
         }
         
         // Used by the serialization engine.
@@ -292,7 +293,7 @@ namespace System.Collections.Generic
     {
         public UInt64EnumComparer()
         {
-            Contract.Assert(typeof(T).IsEnum, "This type is only intended to be used to compare enums!");
+            Debug.Assert(typeof(T).IsEnum, "This type is only intended to be used to compare enums!");
         }
         
         // Used by the serialization engine.

@@ -176,7 +176,7 @@ namespace System.Reflection
         {
             Contract.Requires(declaredType != null);
             Contract.Requires(reflectedTypeCache != null);
-            Contract.Assert(!reflectedTypeCache.IsGlobal);
+            Debug.Assert(!reflectedTypeCache.IsGlobal);
 
             MetadataImport scope = declaredType.GetRuntimeModule().MetadataImport;
 

@@ -9,6 +9,7 @@ using System.Runtime;
 using System.Security;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
@@ -27,7 +28,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
     {
         private BindableVectorToCollectionAdapter()
         {
-            Contract.Assert(false, "This class is never instantiated");
+            Debug.Assert(false, "This class is never instantiated");
         }
 
         // int Count { get }

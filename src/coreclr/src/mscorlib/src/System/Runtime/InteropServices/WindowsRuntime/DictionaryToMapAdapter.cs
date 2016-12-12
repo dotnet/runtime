@@ -10,6 +10,7 @@ using System.Reflection;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
@@ -28,7 +29,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
     {
         private DictionaryToMapAdapter()
         {
-            Contract.Assert(false, "This class is never instantiated");
+            Debug.Assert(false, "This class is never instantiated");
         }
 
         // V Lookup(K key)
@@ -66,7 +67,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         internal IReadOnlyDictionary<K, V> GetView<K, V>()
         {
             IDictionary<K, V> _this = JitHelpers.UnsafeCast<IDictionary<K, V>>(this);
-            Contract.Assert(_this != null);
+            Debug.Assert(_this != null);
 
             // Note: This dictionary is not really read-only - you could QI for a modifiable
             // dictionary.  We gain some perf by doing this.  We believe this is acceptable.

@@ -24,6 +24,7 @@ namespace System {
     using System.Runtime.InteropServices;    
     using System.Runtime.Versioning;
     using Microsoft.Win32;
+    using System.Diagnostics;
     using System.Diagnostics.Contracts;
     using System.Security;
 
@@ -82,7 +83,7 @@ namespace System {
 
                 for(int i = 0; i < length; i++) {
                     int c = inBuff[i];
-                    Contract.Assert(c <= 0x7F, "string has to be ASCII");
+                    Debug.Assert(c <= 0x7F, "string has to be ASCII");
 
                     // uppercase - notice that we need just one compare
                     if ((uint)(c - 'a') <= (uint)('z' - 'a')) c -= 0x20;
@@ -90,7 +91,7 @@ namespace System {
                     outBuff[i] = (char)c;
                 }
 
-                Contract.Assert(outBuff[length]=='\0', "outBuff[length]=='\0'");
+                Debug.Assert(outBuff[length]=='\0', "outBuff[length]=='\0'");
             }
             return strOut;
         }
@@ -255,7 +256,7 @@ namespace System {
 
             // Get our string length
             int stringLength = encoding.GetCharCount(bytes, byteLength, null);
-            Contract.Assert(stringLength >= 0, "stringLength >= 0");
+            Debug.Assert(stringLength >= 0, "stringLength >= 0");
             
             // They gave us an empty string if they needed one
             // 0 bytelength might be possible if there's something in an encoder
@@ -266,7 +267,7 @@ namespace System {
             fixed(char* pTempChars = &s.m_firstChar)
             {
                 int doubleCheck = encoding.GetChars(bytes, byteLength, pTempChars, stringLength, null);
-                Contract.Assert(stringLength == doubleCheck, 
+                Debug.Assert(stringLength == doubleCheck, 
                     "Expected encoding.GetChars to return same length as encoding.GetCharCount");
             }
 
@@ -294,7 +295,7 @@ namespace System {
 
         unsafe internal int ConvertToAnsi(byte *pbNativeBuffer, int cbNativeBuffer, bool fBestFit, bool fThrowOnUnmappableChar)
         {
-            Contract.Assert(cbNativeBuffer >= (Length + 1) * Marshal.SystemMaxDBCSCharSize, "Insufficient buffer length passed to ConvertToAnsi");
+            Debug.Assert(cbNativeBuffer >= (Length + 1) * Marshal.SystemMaxDBCSCharSize, "Insufficient buffer length passed to ConvertToAnsi");
 
             const uint CP_ACP = 0;
             int nb;
@@ -519,7 +520,7 @@ namespace System {
                 end += 2;
             }
 
-            Contract.Assert(end[0] == 0 || end[1] == 0);
+            Debug.Assert(end[0] == 0 || end[1] == 0);
             if (end[0] != 0) end++;
 #else // !BIT64
             // Based on https://graphics.stanford.edu/~seander/bithacks.html#ZeroInWord
@@ -576,7 +577,7 @@ namespace System {
 #endif // !BIT64
 
             FoundZero:
-            Contract.Assert(*end == 0);
+            Debug.Assert(*end == 0);
 
             int count = (int)(end - ptr);
 
@@ -593,7 +594,7 @@ namespace System {
                 throw new ArgumentException(Environment.GetResourceString("Arg_MustBeStringPtrNotAtom"));
 #endif // FEATURE_PAL
 
-            Contract.Assert(this == null, "this == null");        // this is the string constructor, we allocate it
+            Debug.Assert(this == null, "this == null");        // this is the string constructor, we allocate it
 
             try {
                 int count = wcslen(ptr);
@@ -620,7 +621,7 @@ namespace System {
                 throw new ArgumentOutOfRangeException(nameof(startIndex), Environment.GetResourceString("ArgumentOutOfRange_StartIndex"));
             }
             Contract.EndContractBlock();
-            Contract.Assert(this == null, "this == null");        // this is the string constructor, we allocate it
+            Debug.Assert(this == null, "this == null");        // this is the string constructor, we allocate it
 
             char *pFrom = ptr + startIndex;
             if (pFrom < ptr) {

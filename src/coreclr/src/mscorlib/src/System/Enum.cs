@@ -9,6 +9,7 @@ using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 
 namespace System 
@@ -69,7 +70,7 @@ namespace System
                     case CorElementType.U8:
                         return (*(ulong*)pValue).ToString("X16", null);
                     default:
-                        Contract.Assert(false, "Invalid Object type in Format");
+                        Debug.Assert(false, "Invalid Object type in Format");
                         throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_UnknownEnumType"));
                 }
             }
@@ -104,7 +105,7 @@ namespace System
                     return ((UInt64)(Int64)value).ToString("X16", null);
                 // All unsigned types will be directly cast
                 default:
-                    Contract.Assert(false, "Invalid Object type in Format");
+                    Debug.Assert(false, "Invalid Object type in Format");
                     throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_UnknownEnumType"));
             }
         }
@@ -155,7 +156,7 @@ namespace System
 
             String[] names = entry.Names;
             ulong[] values = entry.Values;
-            Contract.Assert(names.Length == values.Length);
+            Debug.Assert(names.Length == values.Length);
 
             int index = values.Length - 1;
             StringBuilder retval = new StringBuilder();
@@ -243,7 +244,7 @@ namespace System
                     break;
                 // All unsigned types will be directly cast
                 default:
-                    Contract.Assert(false, "Invalid Object type in ToUInt64");
+                    Debug.Assert(false, "Invalid Object type in ToUInt64");
                     throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_UnknownEnumType"));
             }
 
@@ -322,7 +323,7 @@ namespace System
                         return m_innerException;
 
                     default:
-                        Contract.Assert(false, "Unknown EnumParseFailure: " + m_failure);
+                        Debug.Assert(false, "Unknown EnumParseFailure: " + m_failure);
                         return new ArgumentException(Environment.GetResourceString("Arg_EnumValueNotFound"));
                 }
             }
@@ -757,7 +758,7 @@ namespace System
                     case CorElementType.U:
                         return *(UIntPtr*)pValue;
                     default:
-                        Contract.Assert(false, "Invalid primitive type");
+                        Debug.Assert(false, "Invalid primitive type");
                         return null;
                 }
             }
@@ -809,7 +810,7 @@ namespace System
                             return *(uint*)pValue;
                         }
                     default:
-                        Contract.Assert(false, "Invalid primitive type");
+                        Debug.Assert(false, "Invalid primitive type");
                         return 0;
                 }
             }
@@ -866,7 +867,7 @@ namespace System
                     case CorElementType.U:
                         return (*(UIntPtr*)pValue).GetHashCode();
                     default:
-                        Contract.Assert(false, "Invalid primitive type");
+                        Debug.Assert(false, "Invalid primitive type");
                         return 0;
                 }
             }
@@ -922,7 +923,7 @@ namespace System
             else
             {
                 // assert valid return code (3)
-                Contract.Assert(ret == retInvalidEnumType, "Enum.InternalCompareTo return code was invalid");
+                Debug.Assert(ret == retInvalidEnumType, "Enum.InternalCompareTo return code was invalid");
                 
                 throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_UnknownEnumType"));
             }
@@ -1030,7 +1031,7 @@ namespace System
                 return TypeCode.Char;
             }
 
-            Contract.Assert(false, "Unknown underlying type.");
+            Debug.Assert(false, "Unknown underlying type.");
             throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_UnknownEnumType"));
         }
 

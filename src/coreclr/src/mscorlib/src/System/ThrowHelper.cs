@@ -39,6 +39,7 @@ namespace System {
     using Collections.Generic;
     using System.Runtime.CompilerServices;
     using System.Runtime.Serialization;
+    using System.Diagnostics;
     using System.Diagnostics.Contracts;
 
     [Pure]
@@ -261,7 +262,7 @@ namespace System {
         // Second function in chain so as to not propergate the non-inlining to outside caller
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static string GetArgumentNameInner(ExceptionArgument argument) {
-            Contract.Assert(Enum.IsDefined(typeof(ExceptionArgument), argument),
+            Debug.Assert(Enum.IsDefined(typeof(ExceptionArgument), argument),
                 "The enum value is not defined, please check the ExceptionArgument Enum.");
 
             return argument.ToString();
@@ -280,7 +281,7 @@ namespace System {
         // Second function in chain so as to not propergate the non-inlining to outside caller
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static string GetResourceStringInner(ExceptionResource resource) {
-            Contract.Assert(Enum.IsDefined(typeof(ExceptionResource), resource),
+            Debug.Assert(Enum.IsDefined(typeof(ExceptionResource), resource),
                 "The enum value is not defined, please check the ExceptionResource Enum.");
 
             return Environment.GetResourceString(resource.ToString());

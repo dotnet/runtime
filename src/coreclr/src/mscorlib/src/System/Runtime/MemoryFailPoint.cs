@@ -22,6 +22,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.ConstrainedExecution;
 using System.Security.Permissions;
 using System.Runtime.Versioning;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 
 /* 
@@ -282,7 +283,7 @@ namespace System.Runtime
                     break;
 
                 default:
-                    Contract.Assert(false, "Fell through switch statement!");
+                    Debug.Assert(false, "Fell through switch statement!");
                     break;
                 }
             }

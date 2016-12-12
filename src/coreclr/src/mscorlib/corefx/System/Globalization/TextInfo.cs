@@ -13,6 +13,7 @@
 ////////////////////////////////////////////////////////////////////////////
 
 using System;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Runtime;
 using System.Runtime.CompilerServices;
@@ -582,7 +583,7 @@ namespace System.Globalization
 
         private static int AddNonLetter(ref StringBuilder result, ref String input, int inputIndex, int charLen)
         {
-            Contract.Assert(charLen == 1 || charLen == 2, "[TextInfo.AddNonLetter] CharUnicodeInfo.InternalGetUnicodeCategory returned an unexpected charLen!");
+            Debug.Assert(charLen == 1 || charLen == 2, "[TextInfo.AddNonLetter] CharUnicodeInfo.InternalGetUnicodeCategory returned an unexpected charLen!");
             if (charLen == 2)
             {
                 // Surrogate pair
@@ -598,7 +599,7 @@ namespace System.Globalization
 
         private int AddTitlecaseLetter(ref StringBuilder result, ref String input, int inputIndex, int charLen)
         {
-            Contract.Assert(charLen == 1 || charLen == 2, "[TextInfo.AddTitlecaseLetter] CharUnicodeInfo.InternalGetUnicodeCategory returned an unexpected charLen!");
+            Debug.Assert(charLen == 1 || charLen == 2, "[TextInfo.AddTitlecaseLetter] CharUnicodeInfo.InternalGetUnicodeCategory returned an unexpected charLen!");
 
             // for surrogate pairs do a simple ToUpper operation on the substring
             if (charLen == 2) 
@@ -735,7 +736,7 @@ namespace System.Globalization
 
         private unsafe int GetCaseInsensitiveHashCodeSlow(String str)
         {
-            Contract.Assert(str != null);
+            Debug.Assert(str != null);
 
             string upper = ToUpper(str);
 

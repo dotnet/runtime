@@ -104,7 +104,7 @@ namespace System {
                 return false;
             }
 
-            Contract.Assert(dtfi != null, "dtfi == null");
+            Debug.Assert(dtfi != null, "dtfi == null");
 
             return DoStrictParse(s, format, style, dtfi, ref result);
         }
@@ -186,7 +186,7 @@ namespace System {
                 return false;
             }
 
-            Contract.Assert(dtfi != null, "dtfi == null");
+            Debug.Assert(dtfi != null, "dtfi == null");
 
             //
             // Do a loop through the provided formats and see if we can parse succesfully in
@@ -536,8 +536,8 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                 // Wrong number of digits
                 return false;
             }
-            Contract.Assert(hourOffset >= 0 && hourOffset <= 99, "hourOffset >= 0 && hourOffset <= 99");
-            Contract.Assert(minuteOffset >= 0 && minuteOffset <= 99, "minuteOffset >= 0 && minuteOffset <= 99");
+            Debug.Assert(hourOffset >= 0 && hourOffset <= 99, "hourOffset >= 0 && hourOffset <= 99");
+            Debug.Assert(minuteOffset >= 0 && minuteOffset <= 99, "minuteOffset >= 0 && minuteOffset <= 99");
             if (minuteOffset < 0 || minuteOffset >= 60) {
                 return false;
             }
@@ -1911,7 +1911,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
 
         private static Boolean GetTimeOfNN(DateTimeFormatInfo dtfi, ref DateTimeResult result, ref DateTimeRawInfo raw)
         {
-            Contract.Assert(raw.numCount >= 2, "raw.numCount >= 2");
+            Debug.Assert(raw.numCount >= 2, "raw.numCount >= 2");
             if ((result.flags & ParseFlags.HaveTime) != 0) {
                 // Multiple times in the input string
                 result.SetFailure(ParseFailureKind.Format, "Format_BadDateTime", null);
@@ -1931,7 +1931,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                 result.SetFailure(ParseFailureKind.Format, "Format_BadDateTime", null);
                 return false;
             }
-            Contract.Assert(raw.numCount >= 3, "raw.numCount >= 3");
+            Debug.Assert(raw.numCount >= 3, "raw.numCount >= 3");
             result.Hour = raw.GetNumber(0);
             result.Minute   = raw.GetNumber(1);
             result.Second   = raw.GetNumber(2);
@@ -2301,7 +2301,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                 return false;
             }
 
-            Contract.Assert(dtfi != null, "dtfi == null");
+            Debug.Assert(dtfi != null, "dtfi == null");
 
 #if _LOGGING
             DTFITrace(dtfi);
@@ -2564,7 +2564,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                 }
                 else {
                     // No time zone and no Assume flags, so DateTimeKind.Unspecified is fine
-                    Contract.Assert(result.parsedDate.Kind == DateTimeKind.Unspecified, "result.parsedDate.Kind == DateTimeKind.Unspecified");
+                    Debug.Assert(result.parsedDate.Kind == DateTimeKind.Unspecified, "result.parsedDate.Kind == DateTimeKind.Unspecified");
                     return true;
                 }
             }
@@ -2854,9 +2854,9 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
         }
 
         internal static bool ParseDigits(ref __DTString str, int minDigitLen, int maxDigitLen, out int result) {
-            Contract.Assert(minDigitLen > 0, "minDigitLen > 0");
-            Contract.Assert(maxDigitLen < 9, "maxDigitLen < 9");
-            Contract.Assert(minDigitLen <= maxDigitLen, "minDigitLen <= maxDigitLen");
+            Debug.Assert(minDigitLen > 0, "minDigitLen > 0");
+            Debug.Assert(maxDigitLen < 9, "maxDigitLen < 9");
+            Debug.Assert(minDigitLen <= maxDigitLen, "minDigitLen <= maxDigitLen");
             result = 0;
             int startingIndex = str.Index;
             int tokenLength = 0;
@@ -4123,7 +4123,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                 case ParseFailureKind.FormatBadDateTimeCalendar:
                     return new FormatException(Environment.GetResourceString(result.failureMessageID, result.calendar));
                 default:
-                    Contract.Assert(false, "Unkown DateTimeParseFailure: " + result);
+                    Debug.Assert(false, "Unkown DateTimeParseFailure: " + result);
                     return null;
 
             }
@@ -4345,7 +4345,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
         }
 
         internal bool Advance(int count) {
-            Contract.Assert(Index + count <= len, "__DTString::Advance: Index + count <= len");
+            Debug.Assert(Index + count <= len, "__DTString::Advance: Index + count <= len");
             Index += count;
             if (Index < len) {
                 m_current = Value[Index];
@@ -4638,7 +4638,7 @@ Start:
         // Get the current character.
         //
         internal char GetChar() {
-            Contract.Assert(Index >= 0 && Index < len, "Index >= 0 && Index < len");
+            Debug.Assert(Index >= 0 && Index < len, "Index >= 0 && Index < len");
             return (Value[Index]);
         }
 
@@ -4646,8 +4646,8 @@ Start:
         // Convert the current character to a digit, and return it.
         //
         internal int GetDigit() {
-            Contract.Assert(Index >= 0 && Index < len, "Index >= 0 && Index < len");
-            Contract.Assert(DateTimeParse.IsDigit(Value[Index]), "IsDigit(Value[Index])");
+            Debug.Assert(Index >= 0 && Index < len, "Index >= 0 && Index < len");
+            Debug.Assert(DateTimeParse.IsDigit(Value[Index]), "IsDigit(Value[Index])");
             return (Value[Index] - '0');
         }
 
@@ -4780,7 +4780,7 @@ Start:
                         return sub;
                     }
                     int number = ch - '0';
-                    Contract.Assert(number >= 0 && number <= 9, "number >= 0 && number <= 9");
+                    Debug.Assert(number >= 0 && number <= 9, "number >= 0 && number <= 9");
                     sub.value = sub.value * 10 + number;
                 }
                 else {
@@ -4799,8 +4799,8 @@ Start:
         }
 
         internal void ConsumeSubString(DTSubString sub) {
-            Contract.Assert(sub.index == Index, "sub.index == Index");
-            Contract.Assert(sub.index + sub.length <= len, "sub.index + sub.length <= len");
+            Debug.Assert(sub.index == Index, "sub.index == Index");
+            Debug.Assert(sub.index + sub.length <= len, "sub.index + sub.length <= len");
             Index = sub.index + sub.length;
             if (Index < len) {
                 m_current = Value[Index];

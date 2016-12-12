@@ -15,6 +15,7 @@
 ////////////////////////////////////////////////////////////////////////////
 
 using System;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Runtime.Serialization;
 
@@ -185,7 +186,7 @@ namespace System.Globalization
         {
             get
             {
-                Contract.Assert(_name != null, "Expected RegionInfo._name to be populated already");
+                Debug.Assert(_name != null, "Expected RegionInfo._name to be populated already");
                 return (_name);
             }
         }

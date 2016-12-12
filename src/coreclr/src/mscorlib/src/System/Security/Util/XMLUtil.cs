@@ -25,6 +25,7 @@ namespace System.Security.Util  {
     using System.Threading;
     using System.Globalization;
     using System.Reflection;
+    using System.Diagnostics;
     using System.Diagnostics.Contracts;
 
     internal static class XMLUtil
@@ -61,7 +62,7 @@ namespace System.Security.Util  {
         
             if ( typename == null )
                 typename = type.FullName;
-            Contract.Assert( type.FullName.Equals( typename ), "Incorrect class name passed! Was : " + typename + " Shoule be: " + type.FullName);
+            Debug.Assert( type.FullName.Equals( typename ), "Incorrect class name passed! Was : " + typename + " Shoule be: " + type.FullName);
             element.AddAttribute( "class", typename + ", " + type.Module.Assembly.FullName.Replace( '\"', '\'' ) );
         }
         

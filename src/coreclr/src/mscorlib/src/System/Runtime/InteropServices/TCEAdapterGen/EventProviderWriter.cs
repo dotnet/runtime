@@ -10,6 +10,7 @@ namespace System.Runtime.InteropServices.TCEAdapterGen {
     using System.Reflection.Emit;
     using System.Collections;
     using System.Threading;
+    using System.Diagnostics;
     using System.Diagnostics.Contracts;
     
     internal class EventProviderWriter
@@ -96,34 +97,34 @@ namespace System.Runtime.InteropServices.TCEAdapterGen {
             
             // Find the delegate on the event sink helper.
             FieldInfo DelegateField = SinkHelperClass.GetField( "m_" + SrcItfMethod.Name + "Delegate" );
-            Contract.Assert(DelegateField != null, "Unable to find the field m_" + SrcItfMethod.Name + "Delegate on the sink helper");
+            Debug.Assert(DelegateField != null, "Unable to find the field m_" + SrcItfMethod.Name + "Delegate on the sink helper");
             
             // Find the cookie on the event sink helper.
             FieldInfo CookieField = SinkHelperClass.GetField( "m_dwCookie" );
-            Contract.Assert(CookieField != null, "Unable to find the field m_dwCookie on the sink helper");
+            Debug.Assert(CookieField != null, "Unable to find the field m_dwCookie on the sink helper");
             
             // Retrieve the sink helper's constructor.
             ConstructorInfo SinkHelperCons = SinkHelperClass.GetConstructor(EventProviderWriter.DefaultLookup | BindingFlags.NonPublic, null, Array.Empty<Type>(), null );    
-            Contract.Assert(SinkHelperCons != null, "Unable to find the constructor for the sink helper");
+            Debug.Assert(SinkHelperCons != null, "Unable to find the constructor for the sink helper");
             
             // Retrieve the IConnectionPoint.Advise method.
             MethodInfo CPAdviseMethod = typeof(IConnectionPoint).GetMethod( "Advise" );
-            Contract.Assert(CPAdviseMethod != null, "Unable to find the method ConnectionPoint.Advise");
+            Debug.Assert(CPAdviseMethod != null, "Unable to find the method ConnectionPoint.Advise");
            
             // Retrieve the ArrayList.Add method.
             aParamTypes = new Type[1];
             aParamTypes[0] = typeof(Object);
             MethodInfo ArrayListAddMethod = typeof(ArrayList).GetMethod( "Add", aParamTypes, null );
-            Contract.Assert(ArrayListAddMethod != null, "Unable to find the method ArrayList.Add");
+            Debug.Assert(ArrayListAddMethod != null, "Unable to find the method ArrayList.Add");
 
             // Retrieve the Monitor.Enter() method.
             MethodInfo MonitorEnterMethod = typeof(Monitor).GetMethod( "Enter", MonitorEnterParamTypes, null );
-            Contract.Assert(MonitorEnterMethod != null, "Unable to find the method Monitor.Enter()");
+            Debug.Assert(MonitorEnterMethod != null, "Unable to find the method Monitor.Enter()");
             
             // Retrieve the Monitor.Exit() method.
             aParamTypes[0] = typeof(Object);
             MethodInfo MonitorExitMethod = typeof(Monitor).GetMethod( "Exit", aParamTypes, null );
-            Contract.Assert(MonitorExitMethod != null, "Unable to find the method Monitor.Exit()");
+            Debug.Assert(MonitorExitMethod != null, "Unable to find the method Monitor.Exit()");
             
             // Define the add_XXX method.
             Type[] parameterTypes;
@@ -239,51 +240,51 @@ namespace System.Runtime.InteropServices.TCEAdapterGen {
             
             // Find the delegate on the event sink helper.
             FieldInfo DelegateField = SinkHelperClass.GetField( "m_" + SrcItfMethod.Name + "Delegate" );
-            Contract.Assert(DelegateField != null, "Unable to find the field m_" + SrcItfMethod.Name + "Delegate on the sink helper");
+            Debug.Assert(DelegateField != null, "Unable to find the field m_" + SrcItfMethod.Name + "Delegate on the sink helper");
             
             // Find the cookie on the event sink helper.
             FieldInfo CookieField = SinkHelperClass.GetField( "m_dwCookie" );
-            Contract.Assert(CookieField != null, "Unable to find the field m_dwCookie on the sink helper");
+            Debug.Assert(CookieField != null, "Unable to find the field m_dwCookie on the sink helper");
             
             // Retrieve the ArrayList.RemoveAt method.
             aParamTypes = new Type[1];
             aParamTypes[0] = typeof(Int32);
             MethodInfo ArrayListRemoveMethod = typeof(ArrayList).GetMethod( "RemoveAt", aParamTypes, null );
-            Contract.Assert(ArrayListRemoveMethod != null, "Unable to find the method ArrayList.RemoveAt()");
+            Debug.Assert(ArrayListRemoveMethod != null, "Unable to find the method ArrayList.RemoveAt()");
             
             // Retrieve the ArrayList.Item property get method.
             PropertyInfo ArrayListItemProperty = typeof(ArrayList).GetProperty( "Item" );
-            Contract.Assert(ArrayListItemProperty != null, "Unable to find the property ArrayList.Item");
+            Debug.Assert(ArrayListItemProperty != null, "Unable to find the property ArrayList.Item");
             MethodInfo ArrayListItemGetMethod = ArrayListItemProperty.GetGetMethod();
-            Contract.Assert(ArrayListItemGetMethod != null, "Unable to find the get method for property ArrayList.Item");
+            Debug.Assert(ArrayListItemGetMethod != null, "Unable to find the get method for property ArrayList.Item");
             
             // Retrieve the ArrayList.Count property get method.
             PropertyInfo ArrayListSizeProperty = typeof(ArrayList).GetProperty( "Count" );
-            Contract.Assert(ArrayListSizeProperty != null, "Unable to find the property ArrayList.Count");
+            Debug.Assert(ArrayListSizeProperty != null, "Unable to find the property ArrayList.Count");
             MethodInfo ArrayListSizeGetMethod = ArrayListSizeProperty.GetGetMethod();
-            Contract.Assert(ArrayListSizeGetMethod != null, "Unable to find the get method for property ArrayList.Count");
+            Debug.Assert(ArrayListSizeGetMethod != null, "Unable to find the get method for property ArrayList.Count");
             
             // Retrieve the Delegate.Equals() method.
             aParamTypes[0] = typeof(Delegate);
             MethodInfo DelegateEqualsMethod = typeof(Delegate).GetMethod( "Equals", aParamTypes, null );
-            Contract.Assert(DelegateEqualsMethod != null, "Unable to find the method Delegate.Equlals()");
+            Debug.Assert(DelegateEqualsMethod != null, "Unable to find the method Delegate.Equlals()");
 
             // Retrieve the Monitor.Enter() method.
             MethodInfo MonitorEnterMethod = typeof(Monitor).GetMethod("Enter", MonitorEnterParamTypes, null);
-            Contract.Assert(MonitorEnterMethod != null, "Unable to find the method Monitor.Enter()");
+            Debug.Assert(MonitorEnterMethod != null, "Unable to find the method Monitor.Enter()");
             
             // Retrieve the Monitor.Exit() method.
             aParamTypes[0] = typeof(Object);
             MethodInfo MonitorExitMethod = typeof(Monitor).GetMethod( "Exit", aParamTypes, null );
-            Contract.Assert(MonitorExitMethod != null, "Unable to find the method Monitor.Exit()");
+            Debug.Assert(MonitorExitMethod != null, "Unable to find the method Monitor.Exit()");
             
             // Retrieve the ConnectionPoint.Unadvise() method.
             MethodInfo CPUnadviseMethod = typeof(IConnectionPoint).GetMethod( "Unadvise" );
-            Contract.Assert(CPUnadviseMethod != null, "Unable to find the method ConnectionPoint.Unadvise()");
+            Debug.Assert(CPUnadviseMethod != null, "Unable to find the method ConnectionPoint.Unadvise()");
             
             // Retrieve the Marshal.ReleaseComObject() method.
             MethodInfo ReleaseComObjectMethod = typeof(Marshal).GetMethod( "ReleaseComObject" );
-            Contract.Assert(ReleaseComObjectMethod != null, "Unable to find the method Marshal.ReleaseComObject()");
+            Debug.Assert(ReleaseComObjectMethod != null, "Unable to find the method Marshal.ReleaseComObject()");
             
             // Define the remove_XXX method.
             Type[] parameterTypes;
@@ -463,7 +464,7 @@ namespace System.Runtime.InteropServices.TCEAdapterGen {
         {
             // Retrieve the constructor info for the array list's default constructor.
             ConstructorInfo DefaultArrayListCons = typeof(ArrayList).GetConstructor(EventProviderWriter.DefaultLookup, null, Array.Empty<Type>(), null );
-            Contract.Assert(DefaultArrayListCons != null, "Unable to find the constructor for class ArrayList");    
+            Debug.Assert(DefaultArrayListCons != null, "Unable to find the constructor for class ArrayList");    
             
             // Temp byte array for Guid
             ubyte[] rgByteGuid = new ubyte[16];
@@ -472,11 +473,11 @@ namespace System.Runtime.InteropServices.TCEAdapterGen {
             Type[] aParamTypes = new Type[1];
             aParamTypes[0] = typeof(Byte[]);
             ConstructorInfo ByteArrayGUIDCons = typeof(Guid).GetConstructor(EventProviderWriter.DefaultLookup, null, aParamTypes, null );
-            Contract.Assert(ByteArrayGUIDCons != null, "Unable to find the constructor for GUID that accepts a string as argument");    
+            Debug.Assert(ByteArrayGUIDCons != null, "Unable to find the constructor for GUID that accepts a string as argument");    
             
             // Retrieve the IConnectionPointContainer.FindConnectionPoint() method.
             MethodInfo CPCFindCPMethod = typeof(IConnectionPointContainer).GetMethod( "FindConnectionPoint" );
-            Contract.Assert(CPCFindCPMethod != null, "Unable to find the method ConnectionPointContainer.FindConnectionPoint()");    
+            Debug.Assert(CPCFindCPMethod != null, "Unable to find the method ConnectionPointContainer.FindConnectionPoint()");    
             
             // Define the Init method itself.
             MethodBuilder Meth = OutputTypeBuilder.DefineMethod(
@@ -553,7 +554,7 @@ namespace System.Runtime.InteropServices.TCEAdapterGen {
         {
             // Retrieve the constructor info for the base class's constructor.
             ConstructorInfo DefaultBaseClsCons = typeof(Object).GetConstructor(BindingFlags.Instance | BindingFlags.Public, null, Array.Empty<Type>(), null );
-            Contract.Assert(DefaultBaseClsCons != null, "Unable to find the object's public default constructor");
+            Debug.Assert(DefaultBaseClsCons != null, "Unable to find the object's public default constructor");
             
             // Define the default constructor.
             MethodAttributes ctorAttributes = MethodAttributes.SpecialName | (DefaultBaseClsCons.Attributes & MethodAttributes.MemberAccessMask);
@@ -584,37 +585,37 @@ namespace System.Runtime.InteropServices.TCEAdapterGen {
         {
             // Find the cookie on the event sink helper.
             FieldInfo CookieField = SinkHelperClass.GetField( "m_dwCookie" );
-            Contract.Assert(CookieField != null, "Unable to find the field m_dwCookie on the sink helper");    
+            Debug.Assert(CookieField != null, "Unable to find the field m_dwCookie on the sink helper");    
 
             // Retrieve the ArrayList.Item property get method.
             PropertyInfo ArrayListItemProperty = typeof(ArrayList).GetProperty( "Item" );
-            Contract.Assert(ArrayListItemProperty != null, "Unable to find the property ArrayList.Item");    
+            Debug.Assert(ArrayListItemProperty != null, "Unable to find the property ArrayList.Item");    
             MethodInfo ArrayListItemGetMethod = ArrayListItemProperty.GetGetMethod();
-            Contract.Assert(ArrayListItemGetMethod != null, "Unable to find the get method for property ArrayList.Item");    
+            Debug.Assert(ArrayListItemGetMethod != null, "Unable to find the get method for property ArrayList.Item");    
             
             // Retrieve the ArrayList.Count property get method.
             PropertyInfo ArrayListSizeProperty = typeof(ArrayList).GetProperty( "Count" );
-            Contract.Assert(ArrayListSizeProperty != null, "Unable to find the property ArrayList.Count");    
+            Debug.Assert(ArrayListSizeProperty != null, "Unable to find the property ArrayList.Count");    
             MethodInfo ArrayListSizeGetMethod = ArrayListSizeProperty.GetGetMethod();
-            Contract.Assert(ArrayListSizeGetMethod != null, "Unable to find the get method for property ArrayList.Count");    
+            Debug.Assert(ArrayListSizeGetMethod != null, "Unable to find the get method for property ArrayList.Count");    
             
             // Retrieve the ConnectionPoint.Unadvise() method.
             MethodInfo CPUnadviseMethod = typeof(IConnectionPoint).GetMethod( "Unadvise" );
-            Contract.Assert(CPUnadviseMethod != null, "Unable to find the method ConnectionPoint.Unadvise()");    
+            Debug.Assert(CPUnadviseMethod != null, "Unable to find the method ConnectionPoint.Unadvise()");    
 
             // Retrieve the Marshal.ReleaseComObject() method.
             MethodInfo ReleaseComObjectMethod = typeof(Marshal).GetMethod( "ReleaseComObject" );
-            Contract.Assert(ReleaseComObjectMethod != null, "Unable to find the method Marshal.ReleaseComObject()");
+            Debug.Assert(ReleaseComObjectMethod != null, "Unable to find the method Marshal.ReleaseComObject()");
 
             // Retrieve the Monitor.Enter() method.
             MethodInfo MonitorEnterMethod = typeof(Monitor).GetMethod("Enter", MonitorEnterParamTypes, null);
-            Contract.Assert(MonitorEnterMethod != null, "Unable to find the method Monitor.Enter()");
+            Debug.Assert(MonitorEnterMethod != null, "Unable to find the method Monitor.Enter()");
             
             // Retrieve the Monitor.Exit() method.
             Type[] aParamTypes = new Type[1];
             aParamTypes[0] = typeof(Object);
             MethodInfo MonitorExitMethod = typeof(Monitor).GetMethod( "Exit", aParamTypes, null );
-            Contract.Assert(MonitorExitMethod != null, "Unable to find the method Monitor.Exit()");
+            Debug.Assert(MonitorExitMethod != null, "Unable to find the method Monitor.Exit()");
                         
             // Define the Finalize method itself.
             MethodBuilder Meth = OutputTypeBuilder.DefineMethod( "Finalize", MethodAttributes.Public | MethodAttributes.Virtual, null, null );
@@ -743,7 +744,7 @@ namespace System.Runtime.InteropServices.TCEAdapterGen {
         {
             // Retrieve the method info for GC.SuppressFinalize().
             MethodInfo SuppressFinalizeMethod = typeof(GC).GetMethod("SuppressFinalize");
-            Contract.Assert(SuppressFinalizeMethod != null, "Unable to find the GC.SuppressFinalize");    
+            Debug.Assert(SuppressFinalizeMethod != null, "Unable to find the GC.SuppressFinalize");    
             
             // Define the Finalize method itself.
             MethodBuilder Meth = OutputTypeBuilder.DefineMethod( "Dispose", MethodAttributes.Public | MethodAttributes.Virtual, null, null );

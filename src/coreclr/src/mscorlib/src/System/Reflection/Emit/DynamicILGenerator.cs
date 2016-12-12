@@ -16,6 +16,7 @@ namespace System.Reflection.Emit
     using System.Collections.Generic;
     using System.Security.Permissions;
     using System.Threading;
+    using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Diagnostics.Contracts;
     using System.Security;
@@ -360,7 +361,7 @@ namespace System.Reflection.Emit
             // SignatureHelper.
             if (opcode.StackBehaviourPop == StackBehaviour.Varpop)
             {
-                Contract.Assert(opcode.Equals(OpCodes.Calli),
+                Debug.Assert(opcode.Equals(OpCodes.Calli),
                                 "Unexpected opcode encountered for StackBehaviour VarPop.");
                 // Pop the arguments..
                 stackchange -= signature.ArgumentCount;

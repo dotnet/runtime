@@ -11,6 +11,7 @@ namespace System {
     using System.Runtime.InteropServices;
     using System.Runtime.Versioning;
     using System.Security;
+    using System.Diagnostics;
     using System.Diagnostics.Contracts;
 
     /*  
@@ -171,12 +172,12 @@ namespace System {
         //
         ////////////////////////////////////////////////////////////////////////////
         internal static void FormatDigits(StringBuilder outputBuffer, int value, int len) {
-            Contract.Assert(value >= 0, "DateTimeFormat.FormatDigits(): value >= 0");
+            Debug.Assert(value >= 0, "DateTimeFormat.FormatDigits(): value >= 0");
             FormatDigits(outputBuffer, value, len, false);
         }
 
         internal unsafe static void FormatDigits(StringBuilder outputBuffer, int value, int len, bool overrideLengthLimit) {
-            Contract.Assert(value >= 0, "DateTimeFormat.FormatDigits(): value >= 0");
+            Debug.Assert(value >= 0, "DateTimeFormat.FormatDigits(): value >= 0");
 
             // Limit the use of this function to be two-digits, so that we have the same behavior
             // as RTM bits.
@@ -222,7 +223,7 @@ namespace System {
         
         private static String FormatDayOfWeek(int dayOfWeek, int repeat, DateTimeFormatInfo dtfi)
         {
-            Contract.Assert(dayOfWeek >= 0 && dayOfWeek <= 6, "dayOfWeek >= 0 && dayOfWeek <= 6");
+            Debug.Assert(dayOfWeek >= 0 && dayOfWeek <= 6, "dayOfWeek >= 0 && dayOfWeek <= 6");
             if (repeat == 3)
             {            
                 return (dtfi.GetAbbreviatedDayName((DayOfWeek)dayOfWeek));
@@ -234,7 +235,7 @@ namespace System {
     
         private static String FormatMonth(int month, int repeatCount, DateTimeFormatInfo dtfi)
         {
-            Contract.Assert(month >=1 && month <= 12, "month >=1 && month <= 12");
+            Debug.Assert(month >=1 && month <= 12, "month >=1 && month <= 12");
             if (repeatCount == 3)
             {
                 return (dtfi.GetAbbreviatedMonthName(month));
@@ -275,7 +276,7 @@ namespace System {
         */
         private static String FormatHebrewMonthName(DateTime time, int month, int repeatCount, DateTimeFormatInfo dtfi)
         {
-            Contract.Assert(repeatCount != 3 || repeatCount != 4, "repeateCount should be 3 or 4");
+            Debug.Assert(repeatCount != 3 || repeatCount != 4, "repeateCount should be 3 or 4");
             if (dtfi.Calendar.IsLeapYear(dtfi.Calendar.GetYear(time))) {
                 // This month is in a leap year
                 return (dtfi.internalGetMonthName(month, MonthNameStyles.LeapYear, (repeatCount == 3)));
@@ -1044,7 +1045,7 @@ namespace System {
                 index++;
             }
 
-            Contract.Assert(val == 0, "DateTimeFormat.AppendNumber(): digits less than size of val");
+            Debug.Assert(val == 0, "DateTimeFormat.AppendNumber(): digits less than size of val");
         }
 
         internal static String[] GetAllDateTimes(DateTime dateTime, char format, DateTimeFormatInfo dtfi)

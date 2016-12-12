@@ -14,6 +14,7 @@ namespace System.Security {
     using System.Runtime.ConstrainedExecution;
     using System.Runtime.Versioning;
     using Microsoft.Win32.SafeHandles;
+    using System.Diagnostics;
     using System.Diagnostics.Contracts;
 
     public sealed class SecureString: IDisposable {
@@ -293,7 +294,7 @@ namespace System.Security {
                 throw new ArgumentOutOfRangeException(nameof(index), Environment.GetResourceString("ArgumentOutOfRange_IndexString"));
             }
             Contract.EndContractBlock();
-            Contract.Assert(index <= Int32.MaxValue / sizeof(char));
+            Debug.Assert(index <= Int32.MaxValue / sizeof(char));
 
             EnsureNotDisposed();
             EnsureNotReadOnly();
@@ -315,7 +316,7 @@ namespace System.Security {
         private int BufferLength {
             [System.Security.SecurityCritical]  // auto-generated
             get {
-                Contract.Assert(m_buffer != null, "Buffer is not initialized!");   
+                Debug.Assert(m_buffer != null, "Buffer is not initialized!");   
                 return m_buffer.Length;
             }
         }
@@ -377,7 +378,7 @@ namespace System.Security {
 
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         private static uint GetAlignedSize( int size) {
-            Contract.Assert(size >= 0, "size must be non-negative");
+            Debug.Assert(size >= 0, "size must be non-negative");
 
             uint alignedSize = ((uint)size / BlockSize) * BlockSize;
             if( (size % BlockSize != 0) || size == 0) {  // if size is 0, set allocated size to blocksize
@@ -449,8 +450,8 @@ namespace System.Security {
         [System.Security.SecurityCritical]  // auto-generated
         [ReliabilityContract(Consistency.MayCorruptInstance, Cer.MayFail)]
         private void ProtectMemory() {            
-            Contract.Assert(!m_buffer.IsInvalid && m_buffer.Length != 0, "Invalid buffer!");
-            Contract.Assert(m_buffer.Length % BlockSize == 0, "buffer length must be multiple of blocksize!");
+            Debug.Assert(!m_buffer.IsInvalid && m_buffer.Length != 0, "Invalid buffer!");
+            Debug.Assert(m_buffer.Length % BlockSize == 0, "buffer length must be multiple of blocksize!");
 
             if( m_length == 0 || m_encrypted) {
                 return;
@@ -650,8 +651,8 @@ namespace System.Security {
         [System.Security.SecurityCritical]  // auto-generated
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         private void UnProtectMemory() {
-            Contract.Assert(!m_buffer.IsInvalid && m_buffer.Length != 0, "Invalid buffer!");
-            Contract.Assert(m_buffer.Length % BlockSize == 0, "buffer length must be multiple of blocksize!");
+            Debug.Assert(!m_buffer.IsInvalid && m_buffer.Length != 0, "Invalid buffer!");
+            Debug.Assert(m_buffer.Length % BlockSize == 0, "buffer length must be multiple of blocksize!");
 
             if( m_length == 0) {
                 return;
@@ -733,7 +734,7 @@ namespace System.Security {
                 source.AcquirePointer(ref sourcePtr);
                 target.AcquirePointer(ref targetPtr);
 
-                Contract.Assert(Win32Native.SysStringLen((IntPtr)targetPtr) >= Win32Native.SysStringLen((IntPtr)sourcePtr), "Target buffer is not large enough!");
+                Debug.Assert(Win32Native.SysStringLen((IntPtr)targetPtr) >= Win32Native.SysStringLen((IntPtr)sourcePtr), "Target buffer is not large enough!");
 
                 Buffer.Memcpy(targetPtr, sourcePtr, (int) Win32Native.SysStringLen((IntPtr)sourcePtr) * 2);
             }

@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.IO;
 using System.Runtime.CompilerServices;
@@ -62,9 +63,9 @@ internal sealed class BeginEndAwaitableAdapter : ICriticalNotifyCompletion {
     /// It expects that an BeginEndAwaitableAdapter instance was supplied to the APM Begin method as the object state.</summary>
     public readonly static AsyncCallback Callback = (asyncResult) => {
 
-        Contract.Assert(asyncResult != null);
-        Contract.Assert(asyncResult.IsCompleted);
-        Contract.Assert(asyncResult.AsyncState is BeginEndAwaitableAdapter);
+        Debug.Assert(asyncResult != null);
+        Debug.Assert(asyncResult.IsCompleted);
+        Debug.Assert(asyncResult.AsyncState is BeginEndAwaitableAdapter);
 
         // Get the adapter object supplied as the "object state" to the Begin method
         BeginEndAwaitableAdapter adapter = (BeginEndAwaitableAdapter) asyncResult.AsyncState;
@@ -81,7 +82,7 @@ internal sealed class BeginEndAwaitableAdapter : ICriticalNotifyCompletion {
         Action continuation = Interlocked.Exchange(ref adapter._continuation, CALLBACK_RAN);
         if (continuation != null) {
         
-            Contract.Assert(continuation != CALLBACK_RAN);
+            Debug.Assert(continuation != CALLBACK_RAN);
             continuation();
         }        
     };
@@ -110,7 +111,7 @@ internal sealed class BeginEndAwaitableAdapter : ICriticalNotifyCompletion {
     /// <param name="continuation">The continuation.</param>
     public void UnsafeOnCompleted(Action continuation) {
 
-        Contract.Assert(continuation != null);
+        Debug.Assert(continuation != null);
         OnCompleted(continuation); 
     }
 
@@ -119,7 +120,7 @@ internal sealed class BeginEndAwaitableAdapter : ICriticalNotifyCompletion {
     /// <param name="continuation">The continuation.</param>
     public void OnCompleted(Action continuation) {
 
-        Contract.Assert(continuation != null);
+        Debug.Assert(continuation != null);
 
         // If the continuation field is null, then set it to be the target continuation
         // so that when the operation completes, it'll invoke the continuation.  If it's non-null,
@@ -138,7 +139,7 @@ internal sealed class BeginEndAwaitableAdapter : ICriticalNotifyCompletion {
     /// <returns>The IAsyncResult for the operation.</returns>
     public IAsyncResult GetResult() {
 
-        Contract.Assert(_asyncResult != null && _asyncResult.IsCompleted);
+        Debug.Assert(_asyncResult != null && _asyncResult.IsCompleted);
 
         // Get the IAsyncResult
         IAsyncResult result = _asyncResult;

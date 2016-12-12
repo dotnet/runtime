@@ -213,8 +213,8 @@ namespace System.Reflection
         {
             Contract.Ensures(!m_handle.IsNull());
 
-            Contract.Assert(!handle.IsNullHandle());
-            Contract.Assert(methodAttributes == RuntimeMethodHandle.GetAttributes(handle));            
+            Debug.Assert(!handle.IsNullHandle());
+            Debug.Assert(methodAttributes == RuntimeMethodHandle.GetAttributes(handle));            
 
             m_bindingFlags = bindingFlags;
             m_declaringType = declaringType;

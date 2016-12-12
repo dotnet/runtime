@@ -19,6 +19,7 @@ namespace System.Security
     using System.Security;
     using System.Security.Permissions;
     using System.Runtime.InteropServices;
+    using System.Diagnostics;
     using System.Diagnostics.Contracts;
 
 
@@ -88,7 +89,7 @@ namespace System.Security
             PermissionSetTriple retTriple = null;
             if (in_a != null)
             {
-                Contract.Assert((!in_a.IsUnrestricted() || RefusedSet == null), "Cannot be unrestricted or refused must be null");
+                Debug.Assert((!in_a.IsUnrestricted() || RefusedSet == null), "Cannot be unrestricted or refused must be null");
                 // if we're already asserting in_a, nothing to do
                 if (in_a.IsSubsetOf(AssertSet))
                     return null;
@@ -231,14 +232,14 @@ namespace System.Security
         
         internal bool CheckDemandNoThrow(CodeAccessPermission demand, PermissionToken permToken)
         {
-            Contract.Assert(AssertSet == null, "AssertSet not null");
+            Debug.Assert(AssertSet == null, "AssertSet not null");
 #pragma warning disable 618
             return CodeAccessSecurityEngine.CheckHelper(GrantSet, RefusedSet, demand, permToken, RuntimeMethodHandleInternal.EmptyHandle, null, SecurityAction.Demand, false);
 #pragma warning restore 618
         }
         internal bool CheckSetDemandNoThrow(PermissionSet demandSet)
         {
-            Contract.Assert(AssertSet == null, "AssertSet not null");
+            Debug.Assert(AssertSet == null, "AssertSet not null");
 
 #pragma warning disable 618
             return CodeAccessSecurityEngine.CheckSetHelper(GrantSet, RefusedSet, demandSet, RuntimeMethodHandleInternal.EmptyHandle, null, SecurityAction.Demand, false);

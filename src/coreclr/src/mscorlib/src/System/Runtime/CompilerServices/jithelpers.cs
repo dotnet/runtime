@@ -11,6 +11,7 @@ using System;
 using System.Threading;
 using System.Runtime;
 using System.Runtime.Versioning;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Runtime.InteropServices;
 using System.Security;
@@ -98,7 +99,7 @@ namespace System.Runtime.CompilerServices {
         static internal T UnsafeCast<T>(Object o) where T : class
         {
             T ret = UnsafeCastInternal<T>(o);
-            Contract.Assert(ret == (o as T), "Invalid use of JitHelpers.UnsafeCast!");
+            Debug.Assert(ret == (o as T), "Invalid use of JitHelpers.UnsafeCast!");
             return ret;
         }
 
@@ -113,7 +114,7 @@ namespace System.Runtime.CompilerServices {
 
         static internal int UnsafeEnumCast<T>(T val) where T : struct		// Actually T must be 4 byte (or less) enum
         {
-            Contract.Assert(typeof(T).IsEnum 
+            Debug.Assert(typeof(T).IsEnum 
                               && (Enum.GetUnderlyingType(typeof(T)) == typeof(int) 
                                   || Enum.GetUnderlyingType(typeof(T)) == typeof(uint) 
                                   || Enum.GetUnderlyingType(typeof(T)) == typeof(short)
@@ -133,7 +134,7 @@ namespace System.Runtime.CompilerServices {
 
         static internal long UnsafeEnumCastLong<T>(T val) where T : struct		// Actually T must be 8 byte enum
         {
-            Contract.Assert(typeof(T).IsEnum 
+            Debug.Assert(typeof(T).IsEnum 
                               && (Enum.GetUnderlyingType(typeof(T)) == typeof(long) 
                                   || Enum.GetUnderlyingType(typeof(T)) == typeof(ulong)), 
                 "Error, T must be an 8 byte enum JitHelpers.UnsafeEnumCastLong!");
@@ -152,7 +153,7 @@ namespace System.Runtime.CompilerServices {
         static internal IntPtr UnsafeCastToStackPointer<T>(ref T val)
         {
             IntPtr p = UnsafeCastToStackPointerInternal<T>(ref val);
-            Contract.Assert(IsAddressInStack(p), "Pointer not in the stack!");
+            Debug.Assert(IsAddressInStack(p), "Pointer not in the stack!");
             return p;
         }
 

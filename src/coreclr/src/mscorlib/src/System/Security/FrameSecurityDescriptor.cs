@@ -12,6 +12,7 @@ namespace System.Security {
     using System.Globalization;
     using System.Runtime.ConstrainedExecution;
     using System.Runtime.Versioning;
+    using System.Diagnostics;
     using System.Diagnostics.Contracts;
 #if !FEATURE_PAL
     using Microsoft.Win32.SafeHandles;
@@ -263,7 +264,7 @@ namespace System.Security {
             PermissionSet permSet;
             
             // If the demand is null, there is no need to continue
-            Contract.Assert(demand != null && !demand.CheckDemand(null), "Empty demands should have been filtered out by this point");
+            Debug.Assert(demand != null && !demand.CheckDemand(null), "Empty demands should have been filtered out by this point");
 
             // decode imperative
             if (GetPermitOnly(fDeclarative) != null)

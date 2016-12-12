@@ -1127,7 +1127,7 @@ namespace System.Diagnostics.Tracing
             {
                 try
                 {
-                    Contract.Assert(m_eventData != null);  // You must have initialized this if you enabled the source.
+                    Debug.Assert(m_eventData != null);  // You must have initialized this if you enabled the source.
                     if (relatedActivityId != null)
                         ValidateEventOpcodeForTransfer(ref m_eventData[eventId], m_eventData[eventId].Name);
 
@@ -1357,7 +1357,7 @@ namespace System.Diagnostics.Tracing
 #if FEATURE_ACTIVITYSAMPLING
         internal void WriteStringToListener(EventListener listener, string msg, SessionMask m)
         {
-            Contract.Assert(listener == null || (uint)m == (uint)SessionMask.FromId(0));
+            Debug.Assert(listener == null || (uint)m == (uint)SessionMask.FromId(0));
 
             if (m_eventSourceEnabled)
             {
@@ -1489,7 +1489,7 @@ namespace System.Diagnostics.Tracing
                 }
 #endif // FEATURE_MANAGED_ETW
 
-                Contract.Assert(!m_eventSourceEnabled);     // We can't be enabled until we are completely initted.  
+                Debug.Assert(!m_eventSourceEnabled);     // We can't be enabled until we are completely initted.  
                 // We are logically completely initialized at this point.  
                 m_completelyInited = true;
             }
@@ -1870,7 +1870,7 @@ namespace System.Diagnostics.Tracing
             {
                 try
                 {
-                    Contract.Assert(m_eventData != null);  // You must have initialized this if you enabled the source.  
+                    Debug.Assert(m_eventData != null);  // You must have initialized this if you enabled the source.  
                     if (childActivityID != null)
                     {
                         ValidateEventOpcodeForTransfer(ref m_eventData[eventId], m_eventData[eventId].Name);
@@ -2150,7 +2150,7 @@ namespace System.Diagnostics.Tracing
             Exception lastThrownException = null;
             for (EventDispatcher dispatcher = m_Dispatchers; dispatcher != null; dispatcher = dispatcher.m_Next)
             {
-                Contract.Assert(dispatcher.m_EventEnabled != null);
+                Debug.Assert(dispatcher.m_EventEnabled != null);
                 if (eventId == -1 || dispatcher.m_EventEnabled[eventId])
                 {
 #if FEATURE_ACTIVITYSAMPLING
@@ -2580,7 +2580,7 @@ namespace System.Diagnostics.Tracing
         {
             // PRECONDITION: We should be holding the EventListener.EventListenersLock
             // We defer commands until we are completely inited.  This allows error messages to be sent.  
-            Contract.Assert(m_completelyInited);
+            Debug.Assert(m_completelyInited);
 
 #if FEATURE_MANAGED_ETW
             if (m_provider == null)     // If we failed to construct
@@ -2592,7 +2592,7 @@ namespace System.Diagnostics.Tracing
             try
             {
                 EnsureDescriptorsInitialized();
-                Contract.Assert(m_eventData != null);
+                Debug.Assert(m_eventData != null);
 
                 // Find the per-EventSource dispatcher corresponding to registered dispatcher
                 commandArgs.dispatcher = GetDispatcher(commandArgs.listener);
@@ -2651,7 +2651,7 @@ namespace System.Diagnostics.Tracing
                     // hasn't changed.
                     // sesisonId = SessionMask.MAX when one of the legacy ETW sessions changed
                     // 0 <= perEventSourceSessionId < SessionMask.MAX for activity-tracing aware sessions
-                    Contract.Assert(commandArgs.perEventSourceSessionId >= -1 && commandArgs.perEventSourceSessionId <= SessionMask.MAX);
+                    Debug.Assert(commandArgs.perEventSourceSessionId >= -1 && commandArgs.perEventSourceSessionId <= SessionMask.MAX);
 
                     // Send the manifest if we are enabling an ETW session
                     if (bSessionEnable && commandArgs.dispatcher == null)
@@ -2706,7 +2706,7 @@ namespace System.Diagnostics.Tracing
                     // things like log messages, or test if keywords are enabled in the callback.  
                     if (commandArgs.enable)
                     {
-                        Contract.Assert(m_eventData != null);
+                        Debug.Assert(m_eventData != null);
                         m_eventSourceEnabled = true;
                     }
 
@@ -2794,9 +2794,9 @@ namespace System.Diagnostics.Tracing
                     }
 
                     // These are not used for non-update commands and thus should always be 'default' values
-                    // Contract.Assert(enable == true);
-                    // Contract.Assert(level == EventLevel.LogAlways);
-                    // Contract.Assert(matchAnyKeyword == EventKeywords.None);
+                    // Debug.Assert(enable == true);
+                    // Debug.Assert(level == EventLevel.LogAlways);
+                    // Debug.Assert(matchAnyKeyword == EventKeywords.None);
 
                     this.OnEventCommand(commandArgs);
                     var eventCommandCallback = m_eventCommandExecuted;
@@ -2994,7 +2994,7 @@ namespace System.Diagnostics.Tracing
         private void EnsureDescriptorsInitialized()
         {
 #if !ES_BUILD_STANDALONE
-            Contract.Assert(Monitor.IsEntered(EventListener.EventListenersLock));
+            Debug.Assert(Monitor.IsEntered(EventListener.EventListenersLock));
 #endif
             if (m_eventData == null)
             {
@@ -3010,9 +3010,9 @@ namespace System.Diagnostics.Tracing
                 if (eventSourceGuid.Equals(Guid.Empty) || eventSourceName == null || eventData == null || manifest == null)
                 {
                     // GetMetadata failed, so we have to set it via reflection.
-                    Contract.Assert(m_rawManifest == null);
+                    Debug.Assert(m_rawManifest == null);
                     m_rawManifest = CreateManifestAndDescriptors(this.GetType(), Name, this);
-                    Contract.Assert(m_eventData != null);
+                    Debug.Assert(m_eventData != null);
 
                 }
                 else
@@ -3064,7 +3064,7 @@ namespace System.Diagnostics.Tracing
             if (rawManifest == null)
                 return false;
 
-            Contract.Assert(!SelfDescribingEvents);
+            Debug.Assert(!SelfDescribingEvents);
 
 #if FEATURE_MANAGED_ETW
             fixed (byte* dataPtr = rawManifest)
@@ -3168,7 +3168,7 @@ namespace System.Diagnostics.Tracing
                 {
                     Attribute attr = null;
 
-                    Contract.Assert(data.ConstructorArguments.Count <= 1);
+                    Debug.Assert(data.ConstructorArguments.Count <= 1);
 
                     if (data.ConstructorArguments.Count == 1)
                     {
@@ -3455,7 +3455,7 @@ namespace System.Diagnostics.Tracing
                                     int startEventId = eventAttribute.EventId - 1;
                                     if (eventData != null && startEventId < eventData.Length)
                                     {
-                                        Contract.Assert(0 <= startEventId);                // Since we reserve id 0, we know that id-1 is <= 0
+                                        Debug.Assert(0 <= startEventId);                // Since we reserve id 0, we know that id-1 is <= 0
                                         EventMetadata startEventMetadata = eventData[startEventId];
 
                                         // If you remove the Stop and add a Start does that name match the Start Event's Name?
@@ -3718,7 +3718,7 @@ namespace System.Diagnostics.Tracing
 
             // We give a task to things if they don't have one.  
             // TODO this is moderately expensive (N*N).   We probably should not even bother....   
-            Contract.Assert(eventAttribute.Task != EventTask.None || eventAttribute.Opcode != EventOpcode.Info);
+            Debug.Assert(eventAttribute.Task != EventTask.None || eventAttribute.Opcode != EventOpcode.Info);
             for (int idx = 0; idx < eventData.Length; ++idx)
             {
                 // skip unused Event IDs. 
@@ -3900,7 +3900,7 @@ namespace System.Diagnostics.Tracing
                             goto default;
                         break;
                     default:
-                        /* Contract.Assert(false, "Warning: User validation code sub-optimial: Unsuported opcode " + instrs[idx] +
+                        /* Debug.Assert(false, "Warning: User validation code sub-optimial: Unsuported opcode " + instrs[idx] +
                             " at " + idx + " in method " + method.Name); */
                         return -1;
                 }
@@ -3983,7 +3983,7 @@ namespace System.Diagnostics.Tracing
         {
             get
             {
-                Contract.Assert(((m_config & EventSourceSettings.EtwManifestEventFormat) != 0) !=
+                Debug.Assert(((m_config & EventSourceSettings.EtwManifestEventFormat) != 0) !=
                                 ((m_config & EventSourceSettings.EtwSelfDescribingEventFormat) != 0));
                 return (m_config & EventSourceSettings.EtwSelfDescribingEventFormat) != 0;
             }
@@ -4005,7 +4005,7 @@ namespace System.Diagnostics.Tracing
 #if FEATURE_ACTIVITYSAMPLING
         private void ReportActivitySamplingInfo(EventListener listener, SessionMask sessions)
         {
-            Contract.Assert(listener == null || (uint)sessions == (uint)SessionMask.FromId(0));
+            Debug.Assert(listener == null || (uint)sessions == (uint)SessionMask.FromId(0));
 
             for (int perEventSourceSessionId = 0; perEventSourceSessionId < SessionMask.MAX; ++perEventSourceSessionId)
             {
@@ -4016,7 +4016,7 @@ namespace System.Diagnostics.Tracing
                 if (listener == null)
                 {
                     EtwSession etwSession = m_etwSessionIdMap[perEventSourceSessionId];
-                    Contract.Assert(etwSession != null);
+                    Debug.Assert(etwSession != null);
                     af = etwSession.m_activityFilter;
                 }
                 else
@@ -4474,7 +4474,7 @@ namespace System.Diagnostics.Tracing
         private static void RemoveReferencesToListenerInEventSources(EventListener listenerToRemove)
         {
 #if !ES_BUILD_STANDALONE
-            Contract.Assert(Monitor.IsEntered(EventListener.EventListenersLock));
+            Debug.Assert(Monitor.IsEntered(EventListener.EventListenersLock));
 #endif
             // Foreach existing EventSource in the appdomain
             foreach (WeakReference eventSourceRef in s_EventSources)
@@ -4494,7 +4494,7 @@ namespace System.Diagnostics.Tracing
                             EventDispatcher cur = prev.m_Next;
                             if (cur == null)
                             {
-                                Contract.Assert(false, "EventSource did not have a registered EventListener!");
+                                Debug.Assert(false, "EventSource did not have a registered EventListener!");
                                 break;
                             }
                             if (cur.m_Listener == listenerToRemove)
@@ -4534,13 +4534,13 @@ namespace System.Diagnostics.Tracing
                     EventSource eventSource = eventSourceRef.Target as EventSource;
                     if (eventSource == null)
                         continue;
-                    Contract.Assert(eventSource.m_id == id, "Unexpected event source ID.");
+                    Debug.Assert(eventSource.m_id == id, "Unexpected event source ID.");
 
                     // None listeners on eventSources exist in the dispatcher list.   
                     EventDispatcher dispatcher = eventSource.m_Dispatchers;
                     while (dispatcher != null)
                     {
-                        Contract.Assert(allListeners.ContainsKey(dispatcher.m_Listener), "EventSource has a listener not on the global list.");
+                        Debug.Assert(allListeners.ContainsKey(dispatcher.m_Listener), "EventSource has a listener not on the global list.");
                         dispatcher = dispatcher.m_Next;
                     }
 
@@ -4550,7 +4550,7 @@ namespace System.Diagnostics.Tracing
                         dispatcher = eventSource.m_Dispatchers;
                         for (;;)
                         {
-                            Contract.Assert(dispatcher != null, "Listener is not on all eventSources.");
+                            Debug.Assert(dispatcher != null, "Listener is not on all eventSources.");
                             if (dispatcher.m_Listener == listener)
                                 break;
                             dispatcher = dispatcher.m_Next;
@@ -4808,7 +4808,7 @@ namespace System.Diagnostics.Tracing
                 if (m_payloadNames == null)
                 {
                     // Self described events are identified by id -1.
-                    Contract.Assert(EventId != -1);
+                    Debug.Assert(EventId != -1);
 
                     var names = new List<string>();
                     foreach (var parameter in m_eventSource.m_eventData[EventId].Parameters)
@@ -5237,7 +5237,7 @@ namespace System.Diagnostics.Tracing
         public static void DisableFilter(ref ActivityFilter filterList, EventSource source)
         {
 #if !ES_BUILD_STANDALONE
-            Contract.Assert(Monitor.IsEntered(EventListener.EventListenersLock));
+            Debug.Assert(Monitor.IsEntered(EventListener.EventListenersLock));
 #endif
 
             if (filterList == null)
@@ -5305,7 +5305,7 @@ namespace System.Diagnostics.Tracing
                                     string startEvents)
         {
 #if !ES_BUILD_STANDALONE
-            Contract.Assert(Monitor.IsEntered(EventListener.EventListenersLock));
+            Debug.Assert(Monitor.IsEntered(EventListener.EventListenersLock));
 #endif
 
             // first remove all filters associated with 'source'
@@ -5399,7 +5399,7 @@ namespace System.Diagnostics.Tracing
                                     EventSource source,
                                     int eventId)
         {
-            Contract.Assert(filterList != null && filterList.m_activeActivities != null);
+            Debug.Assert(filterList != null && filterList.m_activeActivities != null);
             bool shouldBeLogged = false;
             if (triggeringEvent)
             {
@@ -5490,10 +5490,10 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         unsafe public static void FlowActivityIfNeeded(ActivityFilter filterList, Guid* currentActivityId, Guid* childActivityID)
         {
-            Contract.Assert(childActivityID != null);
+            Debug.Assert(childActivityID != null);
 
             var activeActivities = GetActiveActivities(filterList);
-            Contract.Assert(activeActivities != null);
+            Debug.Assert(activeActivities != null);
 
             // take currentActivityId == null to mean we *know* the current activity is "active"
             if (currentActivityId != null && !activeActivities.ContainsKey(*currentActivityId))
@@ -5550,7 +5550,7 @@ namespace System.Diagnostics.Tracing
         public void Dispose()
         {
 #if !ES_BUILD_STANDALONE
-            Contract.Assert(Monitor.IsEntered(EventListener.EventListenersLock));
+            Debug.Assert(Monitor.IsEntered(EventListener.EventListenersLock));
 #endif
             // m_myActivityDelegate is still alive (held by the static EventSource.s_activityDying). 
             // Therefore we are ok to take a dependency on m_myActivityDelegate being valid even 
@@ -5577,7 +5577,7 @@ namespace System.Diagnostics.Tracing
             m_samplingFreq = samplingFreq;
             m_next = existingFilter;
 
-            Contract.Assert(existingFilter == null ||
+            Debug.Assert(existingFilter == null ||
                             (existingFilter.m_activeActivities == null) == (existingFilter.m_rootActiveActivities == null));
 
             // if this is the first filter we add for this session, we need to create a new 
@@ -5651,10 +5651,10 @@ namespace System.Diagnostics.Tracing
         private static bool EnableFilter(ref ActivityFilter filterList, EventSource source, int perEventSourceSessionId, int eventId, int samplingFreq)
         {
 #if !ES_BUILD_STANDALONE
-            Contract.Assert(Monitor.IsEntered(EventListener.EventListenersLock));
+            Debug.Assert(Monitor.IsEntered(EventListener.EventListenersLock));
 #endif
-            Contract.Assert(samplingFreq > 0);
-            Contract.Assert(eventId >= 0);
+            Debug.Assert(samplingFreq > 0);
+            Debug.Assert(eventId >= 0);
 
             filterList = new ActivityFilter(source, perEventSourceSessionId, eventId, samplingFreq, filterList);
 
@@ -5785,7 +5785,7 @@ namespace System.Diagnostics.Tracing
 
         public static void RemoveEtwSession(EtwSession etwSession)
         {
-            Contract.Assert(etwSession != null);
+            Debug.Assert(etwSession != null);
             if (s_etwSessions == null || etwSession == null)
                 return;
 
@@ -5866,7 +5866,7 @@ namespace System.Diagnostics.Tracing
 
         public static SessionMask FromId(int perEventSourceSessionId)
         {
-            Contract.Assert(perEventSourceSessionId < MAX);
+            Debug.Assert(perEventSourceSessionId < MAX);
             return new SessionMask((uint)1 << perEventSourceSessionId);
         }
 
@@ -5884,12 +5884,12 @@ namespace System.Diagnostics.Tracing
         {
             get
             {
-                Contract.Assert(perEventSourceSessionId < MAX);
+                Debug.Assert(perEventSourceSessionId < MAX);
                 return (m_mask & (1 << perEventSourceSessionId)) != 0;
             }
             set
             {
-                Contract.Assert(perEventSourceSessionId < MAX);
+                Debug.Assert(perEventSourceSessionId < MAX);
                 if (value) m_mask |= ((uint)1 << perEventSourceSessionId);
                 else m_mask &= ~((uint)1 << perEventSourceSessionId);
             }
@@ -6120,7 +6120,7 @@ namespace System.Diagnostics.Tracing
         private EventChannelType EventChannelToChannelType(EventChannel channel)
         {
 #if !ES_BUILD_STANDALONE
-            Contract.Assert(channel >= EventChannel.Admin && channel <= EventChannel.Debug);
+            Debug.Assert(channel >= EventChannel.Admin && channel <= EventChannel.Debug);
 #endif
             return (EventChannelType)((int)channel - (int)EventChannel.Admin + (int)EventChannelType.Admin);
         }
@@ -6163,8 +6163,8 @@ namespace System.Diagnostics.Tracing
 #endif
         public void StartEvent(string eventName, EventAttribute eventAttribute)
         {
-            Contract.Assert(numParams == 0);
-            Contract.Assert(this.eventName == null);
+            Debug.Assert(numParams == 0);
+            Debug.Assert(this.eventName == null);
             this.eventName = eventName;
             numParams = 0;
             byteArrArgIndices = null;

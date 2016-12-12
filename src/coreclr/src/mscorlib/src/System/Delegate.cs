@@ -12,6 +12,7 @@ namespace System {
     using System.Runtime.InteropServices;
     using System.Runtime.CompilerServices;
     using System.Runtime.Versioning;
+    using System.Diagnostics;
     using System.Diagnostics.Contracts;
 
     [Serializable]
@@ -627,7 +628,7 @@ namespace System {
 
         internal static Delegate CreateDelegateInternal(RuntimeType rtType, RuntimeMethodInfo rtMethod, Object firstArgument, DelegateBindingFlags flags, ref StackCrawlMark stackMark)
         {
-            Contract.Assert((flags & DelegateBindingFlags.SkipSecurityChecks) == 0);
+            Debug.Assert((flags & DelegateBindingFlags.SkipSecurityChecks) == 0);
 
 #if FEATURE_APPX
             bool nonW8PMethod = (rtMethod.InvocationFlags & INVOCATION_FLAGS.INVOCATION_FLAGS_NON_W8P_FX_API) != 0;

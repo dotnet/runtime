@@ -4,6 +4,7 @@
 
 namespace System.Globalization {
     using System;
+    using System.Diagnostics;
     using System.Diagnostics.Contracts;
 
     ////////////////////////////////////////////////////////////////////////////
@@ -185,7 +186,7 @@ namespace System.Globalization {
 
         static int MonthFromOrdinalDay(int ordinalDay)
         {
-            Contract.Assert(ordinalDay <= 366);
+            Debug.Assert(ordinalDay <= 366);
             int index = 0;
             while (ordinalDay > DaysToMonth[index])
                 index++;
@@ -195,7 +196,7 @@ namespace System.Globalization {
 
         static int DaysInPreviousMonths(int month)
         {
-            Contract.Assert(1 <= month && month <= 12);
+            Debug.Assert(1 <= month && month <= 12);
             --month; // months are one based but for calculations use 0 based
             return DaysToMonth[month];
         }
@@ -225,7 +226,7 @@ namespace System.Globalization {
 
             long yearStart = CalendricalCalculationsHelper.PersianNewYearOnOrBefore(NumDays);
             int y = (int)(Math.Floor(((yearStart - PersianEpoch) / CalendricalCalculationsHelper.MeanTropicalYearInDays) + 0.5)) + 1;
-            Contract.Assert(y >= 1);
+            Debug.Assert(y >= 1);
 
             if (part == DatePartYear)
             {
@@ -244,16 +245,16 @@ namespace System.Globalization {
             }
 
             int m = MonthFromOrdinalDay(ordinalDay);
-            Contract.Assert(ordinalDay >= 1);
-            Contract.Assert(m >= 1 && m <= 12);
+            Debug.Assert(ordinalDay >= 1);
+            Debug.Assert(m >= 1 && m <= 12);
             if (part == DatePartMonth)
             {
                 return m;
             }
 
             int d = ordinalDay - DaysInPreviousMonths(m);
-            Contract.Assert(1 <= d);
-            Contract.Assert(d <= 31);
+            Debug.Assert(1 <= d);
+            Debug.Assert(d <= 31);
 
             //
             //  Calculate the Persian Day.
@@ -377,7 +378,7 @@ namespace System.Globalization {
             int daysInMonth = DaysToMonth[month] - DaysToMonth[month - 1];
             if ((month == MonthsPerYear) && !IsLeapYear(year))
             {
-                Contract.Assert(daysInMonth == 30);
+                Debug.Assert(daysInMonth == 30);
                 --daysInMonth;
             }
             return daysInMonth;

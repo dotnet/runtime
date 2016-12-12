@@ -19,6 +19,7 @@ using System.Runtime.ConstrainedExecution;
 using System.Runtime.Versioning;
 using System.Security.Permissions;
 using Microsoft.Win32.SafeHandles;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 
 namespace System.IO {
@@ -1131,9 +1132,9 @@ namespace System.IO {
         }
 
         private byte InternalReadByte(Int64 position) {
-            Contract.Assert(CanRead, "UMA not readable");
-            Contract.Assert(position >= 0, "position less than 0");
-            Contract.Assert(position <= _capacity - sizeof(byte), "position is greater than capacity - sizeof(byte)");
+            Debug.Assert(CanRead, "UMA not readable");
+            Debug.Assert(position >= 0, "position less than 0");
+            Debug.Assert(position <= _capacity - sizeof(byte), "position is greater than capacity - sizeof(byte)");
 
             byte result;
             unsafe {
@@ -1153,9 +1154,9 @@ namespace System.IO {
         }
 
         private void InternalWrite(Int64 position, byte value) {
-            Contract.Assert(CanWrite, "UMA not writable");
-            Contract.Assert(position >= 0, "position less than 0");
-            Contract.Assert(position <= _capacity - sizeof(byte), "position is greater than capacity - sizeof(byte)");
+            Debug.Assert(CanWrite, "UMA not writable");
+            Debug.Assert(position >= 0, "position less than 0");
+            Debug.Assert(position <= _capacity - sizeof(byte), "position is greater than capacity - sizeof(byte)");
 
             unsafe {
                 byte* pointer = null;
