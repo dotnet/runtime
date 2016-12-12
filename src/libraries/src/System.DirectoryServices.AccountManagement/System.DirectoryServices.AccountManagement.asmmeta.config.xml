@@ -1,4 +1,0 @@
-<?xml version="1.0"?>
-<root>
-    <assembly publish="$(NDP_FX_REF_PATH)\System.DirectoryServices.AccountManagement.dll"/>
-</root>
