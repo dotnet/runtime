@@ -4,7 +4,7 @@
   <PropertyGroup>
     <ProjectGuid>{56B9D0A9-44D3-488E-8B42-C14A6E30CAB2}</ProjectGuid>
     <AssemblyName>System.Runtime</AssemblyName>
-    <AssemblyVersion Condition="'$(TargetGroup)'=='net462' OR '$(TargetGroup)'=='netstandard1.5'">4.1.1.0</AssemblyVersion>
+    <AssemblyVersion Condition="'$(TargetGroup)'=='netstandard1.5'">4.1.1.0</AssemblyVersion>
     <ContractProject Condition="'$(AssemblyVersion)'=='4.1.1.0'">../ref/4.1.0/System.Runtime.depproj</ContractProject>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <PackageTargetFramework Condition="'$(TargetGroup)'==''">netstandard1.7;uap10.1;netcoreapp1.2</PackageTargetFramework>
@@ -18,11 +18,9 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.5_Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap101aot_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap101aot_Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net462_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net462_Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Release|AnyCPU'" />
-  <ItemGroup Condition="'$(TargetGroup)' == 'net463' OR '$(TargetGroup)' == 'uap101aot' OR '$(TargetGroup)' == 'netcoreapp1.2corert'">
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net461_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net461_Release|AnyCPU'" />
+  <ItemGroup Condition="'$(TargetGroup)' == 'net461' OR '$(TargetGroup)' == 'uap101aot' OR '$(TargetGroup)' == 'netcoreapp1.2corert'">
     <ContractProject Include="..\ref\System.Runtime.csproj">
       <TargetGroup>netstandard1.7</TargetGroup>
     </ContractProject>
@@ -30,7 +28,7 @@
   <ItemGroup>
     <Compile Include="System.Runtime.Forwards.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' != 'net462' AND '$(TargetGroup)' != 'net463'">
+  <ItemGroup Condition="'$(TargetGroup)' != 'net461'">
     <Compile Include="System\Action.cs" />
     <Compile Include="System\Function.cs" />
     <Compile Include="System\LazyOfTTMetadata.cs" />
@@ -48,14 +46,14 @@
     <Compile Include="System\Runtime\CompilerServices\SpecialNameAttribute.cs" />
     <Compile Include="System\Threading\WaitHandleExtensions.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'!='uap101aot' and '$(TargetGroup)'!='net462' and '$(TargetGroup)'!='net463' and '$(TargetGroup)' != 'netcoreapp1.2corert'">
+  <ItemGroup Condition="'$(TargetGroup)'!='uap101aot' and '$(TargetGroup)'!='net461' and '$(TargetGroup)' != 'netcoreapp1.2corert'">
     <Compile Include="System\ComponentModel\DefaultValueAttribute.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'=='uap101aot' or '$(TargetGroup)'=='uap101' or '$(TargetGroup)' == 'netcoreapp1.2corert'">
     <Compile Include="$(CommonPath)\System\SystemException.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\System.Private.Uri\src\System.Private.Uri.csproj" Condition="'$(TargetGroup)' != 'net462' And '$(TargetGroup)' != 'net463' And '$(TargetGroup)' != 'uap101aot' And '$(TargetGroup)' != 'netcoreapp1.2corert'">
+    <ProjectReference Include="..\..\System.Private.Uri\src\System.Private.Uri.csproj" Condition="'$(TargetGroup)' != 'net461' And '$(TargetGroup)' != 'uap101aot' And '$(TargetGroup)' != 'netcoreapp1.2corert'">
       <OSGroup>Windows_NT</OSGroup>
       <UndefineProperties>%(ProjectReference.UndefineProperties);TargetGroup</UndefineProperties>
     </ProjectReference>
@@ -63,10 +61,10 @@
       <OSGroup>Windows_NT</OSGroup>
     </ProjectReference>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' != 'net462' AND '$(TargetGroup)' != 'net463'">
+  <ItemGroup Condition="'$(TargetGroup)' != 'net461'">
     <TargetingPackReference Include="System.Private.CoreLib" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'net462' OR '$(TargetGroup)' == 'net463'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'net461'">
     <TargetingPackReference Include="System" />
     <TargetingPackReference Include="System.Core" />
     <TargetingPackReference Include="System.ComponentModel.Composition" />

@@ -3,10 +3,10 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
     <ProjectReference Include="..\ref\System.Configuration.csproj">
-      <SupportedFramework>netcoreapp1.1;net463;$(AllXamarinFrameworks)</SupportedFramework>
+      <SupportedFramework>netcoreapp1.1;net461;$(AllXamarinFrameworks)</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.Configuration.builds" />
-    <InboxOnTargetFramework Include="net463" />
+    <InboxOnTargetFramework Include="net461" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

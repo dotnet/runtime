@@ -17,7 +17,7 @@
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <PackageTargetFramework Include="netstandard1.7" />
     <!-- need to support rid-less restore for packages.config -->
-    <PackageTargetFramework Include="net463">
+    <PackageTargetFramework Include="net461">
       <TargetRuntime></TargetRuntime>
     </PackageTargetFramework>
   </ItemGroup>
