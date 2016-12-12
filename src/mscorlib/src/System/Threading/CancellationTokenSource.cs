@@ -11,6 +11,7 @@ using System.Security;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Security.Permissions;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Runtime;
 
@@ -629,7 +630,7 @@ namespace System.Threading
             }
 
             // the CancellationToken has already checked that the token is cancelable before calling this method.
-            Contract.Assert(CanBeCanceled, "Cannot register for uncancelable token src");
+            Debug.Assert(CanBeCanceled, "Cannot register for uncancelable token src");
 
             // if not canceled, register the event handlers
             // if canceled already, run the callback synchronously
@@ -730,7 +731,7 @@ namespace System.Threading
                 // - After transition, no more delegates will be added to the 
                 // - list of handlers, and hence it can be consumed and cleared at leisure by ExecuteCallbackHandlers.
                 ExecuteCallbackHandlers(throwOnFirstException);
-                Contract.Assert(IsCancellationCompleted, "Expected cancellation to have finished");
+                Debug.Assert(IsCancellationCompleted, "Expected cancellation to have finished");
             }
         }
 
@@ -742,8 +743,8 @@ namespace System.Threading
         /// </remarks>
         private void ExecuteCallbackHandlers(bool throwOnFirstException)
         {
-            Contract.Assert(IsCancellationRequested, "ExecuteCallbackHandlers should only be called after setting IsCancellationRequested->true");
-            Contract.Assert(ThreadIDExecutingCallbacks != -1, "ThreadIDExecutingCallbacks should have been set.");
+            Debug.Assert(IsCancellationRequested, "ExecuteCallbackHandlers should only be called after setting IsCancellationRequested->true");
+            Debug.Assert(ThreadIDExecutingCallbacks != -1, "ThreadIDExecutingCallbacks should have been set.");
 
             // Design decision: call the delegates in LIFO order so that callbacks fire 'deepest first'.
             // This is intended to help with nesting scenarios so that child enlisters cancel before their parents.
@@ -791,7 +792,7 @@ namespace System.Threading
                                         var wsc = m_executingCallback as CancellationCallbackInfo.WithSyncContext;
                                         if (wsc != null)
                                         {
-                                            Contract.Assert(wsc.TargetSyncContext != null, "Should only have derived CCI if non-null SyncCtx");
+                                            Debug.Assert(wsc.TargetSyncContext != null, "Should only have derived CCI if non-null SyncCtx");
                                             wsc.TargetSyncContext.Send(CancellationCallbackCoreWork_OnSyncContext, args);
                                             // CancellationCallbackCoreWork_OnSyncContext may have altered ThreadIDExecutingCallbacks, so reset it. 
                                             ThreadIDExecutingCallbacks = Thread.CurrentThread.ManagedThreadId;
@@ -828,7 +829,7 @@ namespace System.Threading
 
             if (exceptionList != null)
             {
-                Contract.Assert(exceptionList.Count > 0, "Expected exception count > 0");
+                Debug.Assert(exceptionList.Count > 0, "Expected exception count > 0");
                 throw new AggregateException(exceptionList);
             }
         }
@@ -1060,7 +1061,7 @@ namespace System.Threading
         private static void ExecutionContextCallback(object obj)
         {
             CancellationCallbackInfo callbackInfo = obj as CancellationCallbackInfo;
-            Contract.Assert(callbackInfo != null);
+            Debug.Assert(callbackInfo != null);
             callbackInfo.Callback(callbackInfo.StateForCallback);
         }
     }
@@ -1144,14 +1145,14 @@ namespace System.Threading
                             start = 0;
                             curr.m_freeCount--; // Too many free elements; fix up.
                         }
-                        Contract.Assert(start >= 0 && start < c, "start is outside of bounds");
+                        Debug.Assert(start >= 0 && start < c, "start is outside of bounds");
 
                         // Now walk the array until we find a free slot (or reach the end).
                         for (int i = 0; i < c; i++)
                         {
                             // If the slot is null, try to CAS our element into it.
                             int tryIndex = (start + i) % c;
-                            Contract.Assert(tryIndex >= 0 && tryIndex < curr.m_elements.Length, "tryIndex is outside of bounds");
+                            Debug.Assert(tryIndex >= 0 && tryIndex < curr.m_elements.Length, "tryIndex is outside of bounds");
                             
                             if (curr.m_elements[tryIndex] == null && Interlocked.CompareExchange(ref curr.m_elements[tryIndex], element, null) == null)
                             {
@@ -1190,8 +1191,8 @@ namespace System.Threading
 
         internal SparselyPopulatedArrayAddInfo(SparselyPopulatedArrayFragment<T> source, int index)
         {
-            Contract.Assert(source != null);
-            Contract.Assert(index >= 0 && index < source.Length);
+            Debug.Assert(source != null);
+            Debug.Assert(index >= 0 && index < source.Length);
             m_source = source;
             m_index = index;
         }

@@ -22,6 +22,7 @@ namespace System.Reflection.Emit {
     using System.Security.Permissions;
     using System.Runtime.InteropServices;
     using System.Globalization;
+    using System.Diagnostics;
     using System.Diagnostics.Contracts;
     
     [HostProtection(MayLeakOnAbort = true)]
@@ -353,7 +354,7 @@ namespace System.Reflection.Emit {
                         writer.Write((byte)CustomAttributeEncoding.Double);
                         break;
                     default:
-                        Contract.Assert(false, "Invalid primitive type");
+                        Debug.Assert(false, "Invalid primitive type");
                         break;
                 }
             }
@@ -437,7 +438,7 @@ namespace System.Reflection.Emit {
                         writer.Write((ulong)value);
                         break;
                     default:
-                        Contract.Assert(false, "Invalid enum base type");
+                        Debug.Assert(false, "Invalid enum base type");
                         break;
                 }
             }
@@ -515,7 +516,7 @@ namespace System.Reflection.Emit {
                         writer.Write((double)value);
                         break;
                     default:
-                        Contract.Assert(false, "Invalid primitive type");
+                        Debug.Assert(false, "Invalid primitive type");
                         break;
                 }
             }

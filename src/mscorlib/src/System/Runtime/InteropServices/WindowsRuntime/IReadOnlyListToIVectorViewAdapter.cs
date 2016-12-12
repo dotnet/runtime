@@ -28,7 +28,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
     {
         private IReadOnlyListToIVectorViewAdapter()
         {
-            Contract.Assert(false, "This class is never instantiated");
+            Debug.Assert(false, "This class is never instantiated");
         }
 
         // T GetAt(uint index)

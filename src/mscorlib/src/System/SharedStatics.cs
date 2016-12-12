@@ -19,6 +19,7 @@ namespace System
     using System.Security.Util;
     using System.Runtime.CompilerServices;
     using System.Runtime.ConstrainedExecution;
+    using System.Diagnostics;
     using System.Diagnostics.Contracts;
 
     internal sealed class SharedStatics
@@ -57,7 +58,7 @@ namespace System
                     }
                 }
 
-                Contract.Assert(_sharedStatics._Remoting_Identity_IDGuid != null,
+                Debug.Assert(_sharedStatics._Remoting_Identity_IDGuid != null,
                                 "_sharedStatics._Remoting_Identity_IDGuid != null");
                 return _sharedStatics._Remoting_Identity_IDGuid;
             } 
@@ -85,7 +86,7 @@ namespace System
 
         internal static ulong MemoryFailPointReservedMemory {
             get { 
-                Contract.Assert(Volatile.Read(ref _sharedStatics._memFailPointReservedMemory) >= 0, "Process-wide MemoryFailPoint reserved memory was negative!");
+                Debug.Assert(Volatile.Read(ref _sharedStatics._memFailPointReservedMemory) >= 0, "Process-wide MemoryFailPoint reserved memory was negative!");
                 return (ulong) Volatile.Read(ref _sharedStatics._memFailPointReservedMemory);
             }
         }

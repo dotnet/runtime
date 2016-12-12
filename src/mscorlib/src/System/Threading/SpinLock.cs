@@ -12,11 +12,11 @@
 //
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 using System;
-using System.Diagnostics;
 using System.Security.Permissions;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using System.Runtime.ConstrainedExecution;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 
 namespace System.Threading
@@ -122,7 +122,7 @@ namespace System.Threading
             if (!enableThreadOwnerTracking)
             {
                 m_owner |= LOCK_ID_DISABLE_MASK;
-                Contract.Assert(!IsThreadOwnerTrackingEnabled, "property should be false by now");
+                Debug.Assert(!IsThreadOwnerTrackingEnabled, "property should be false by now");
             }
         }
 
@@ -352,7 +352,7 @@ namespace System.Threading
                         int newOwner = (observedOwner & WAITERS_MASK) == 0 ? // Gets the number of waiters, if zero
                             observedOwner | 1 // don't decrement it. just set the lock bit, it is zzero because a previous call of Exit(false) ehich corrupted the waiters
                             : (observedOwner - 2) | 1; // otherwise decrement the waiters and set the lock bit
-                        Contract.Assert((newOwner & WAITERS_MASK) >= 0);
+                        Debug.Assert((newOwner & WAITERS_MASK) >= 0);
 
                         if (Interlocked.CompareExchange(ref m_owner, newOwner, observedOwner, ref lockTaken) == observedOwner)
                         {
@@ -380,7 +380,7 @@ namespace System.Threading
                     int newOwner = (observedOwner & WAITERS_MASK) == 0 ? // Gets the number of waiters, if zero
                            observedOwner | 1 // don't decrement it. just set the lock bit, it is zzero because a previous call of Exit(false) ehich corrupted the waiters
                            : (observedOwner - 2) | 1; // otherwise decrement the waiters and set the lock bit
-                    Contract.Assert((newOwner & WAITERS_MASK) >= 0);
+                    Debug.Assert((newOwner & WAITERS_MASK) >= 0);
 
                     if (Interlocked.CompareExchange(ref m_owner, newOwner, observedOwner, ref lockTaken) == observedOwner)
                     {
@@ -427,7 +427,7 @@ namespace System.Threading
                 if ((observedOwner & WAITERS_MASK) == 0) return; // don't decrement the waiters if it's corrupted by previous call of Exit(false)
                 if (Interlocked.CompareExchange(ref m_owner, observedOwner - 2, observedOwner) == observedOwner)
                 {
-                    Contract.Assert(!IsThreadOwnerTrackingEnabled); // Make sure the waiters never be negative which will cause the thread tracking bit to be flipped
+                    Debug.Assert(!IsThreadOwnerTrackingEnabled); // Make sure the waiters never be negative which will cause the thread tracking bit to be flipped
                     break;
                 }
                 spinner.SpinOnce();
@@ -440,7 +440,7 @@ namespace System.Threading
         /// </summary>
         private void ContinueTryEnterWithThreadTracking(int millisecondsTimeout, uint startTime, ref bool lockTaken)
         {
-            Contract.Assert(IsThreadOwnerTrackingEnabled);
+            Debug.Assert(IsThreadOwnerTrackingEnabled);
 
             int lockUnowned = 0;
             // We are using thread IDs to mark ownership. Snap the thread ID and check for recursion.

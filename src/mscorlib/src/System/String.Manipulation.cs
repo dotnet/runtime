@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Globalization;
 using System.Runtime.CompilerServices;
@@ -165,8 +166,8 @@ namespace System
             {
                 string s = strings[i];
 
-                Contract.Assert(s != null);
-                Contract.Assert(position <= totalLength - s.Length, "We didn't allocate enough space for the result string!");
+                Debug.Assert(s != null);
+                Debug.Assert(position <= totalLength - s.Length, "We didn't allocate enough space for the result string!");
 
                 FillStringChecked(result, position, s);
                 position += s.Length;
@@ -737,8 +738,8 @@ namespace System
         {
             // If the separator is null, it is converted to an empty string before entering this function.
             // Even for empty strings, fixed should never return null (it should return a pointer to a null char).
-            Contract.Assert(separator != null);
-            Contract.Assert(separatorLength >= 0);
+            Debug.Assert(separator != null);
+            Debug.Assert(separatorLength >= 0);
 
             if (value == null)
             {
@@ -1304,7 +1305,7 @@ namespace System
             }
 
             // we must have at least one slot left to fill in the last string.
-            Contract.Assert(arrIndex < maxItems);
+            Debug.Assert(arrIndex < maxItems);
 
             //Handle the last string at the end of the array if there is one.
             if (currIndex< Length) {                
@@ -1328,7 +1329,7 @@ namespace System
         //       sepList    -- an array of ints for split char indicies.
         //--------------------------------------------------------------------    
         private unsafe int MakeSeparatorList(char* separators, int separatorsLength, int[] sepList) {
-            Contract.Assert(separatorsLength >= 0, "separatorsLength >= 0");
+            Debug.Assert(separatorsLength >= 0, "separatorsLength >= 0");
             int foundCount=0;
 
             if (separators == null || separatorsLength == 0) {
@@ -1366,7 +1367,7 @@ namespace System
         //       sepList    -- an array of ints for split string indicies.
         //--------------------------------------------------------------------
         private unsafe int MakeSeparatorList(string separator, int[] sepList) {
-            Contract.Assert(!string.IsNullOrEmpty(separator), "!string.IsNullOrEmpty(separator)");
+            Debug.Assert(!string.IsNullOrEmpty(separator), "!string.IsNullOrEmpty(separator)");
 
             int foundCount = 0;
             int sepListCount = sepList.Length;
@@ -1395,7 +1396,7 @@ namespace System
         //       lengthList -- an array of ints for split string lengths.
         //--------------------------------------------------------------------    
         private unsafe int MakeSeparatorList(String[] separators, int[] sepList, int[] lengthList) {
-            Contract.Assert(separators != null && separators.Length > 0, "separators != null && separators.Length > 0");
+            Debug.Assert(separators != null && separators.Length > 0, "separators != null && separators.Length > 0");
             
             int foundCount = 0;
             int sepListCount = sepList.Length;
@@ -1465,8 +1466,8 @@ namespace System
         }
 
         unsafe string InternalSubString(int startIndex, int length) {
-            Contract.Assert( startIndex >= 0 && startIndex <= this.Length, "StartIndex is out of range!");
-            Contract.Assert( length >= 0 && startIndex <= this.Length - length, "length is out of range!");            
+            Debug.Assert( startIndex >= 0 && startIndex <= this.Length, "StartIndex is out of range!");
+            Debug.Assert( length >= 0 && startIndex <= this.Length - length, "length is out of range!");            
             
             String result = FastAllocateString(length);
 

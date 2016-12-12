@@ -21,6 +21,7 @@ namespace System.Runtime.Serialization {
     using System;
     using System.Reflection;
     using System.Globalization;
+    using System.Diagnostics;
     using System.Diagnostics.Contracts;
     using System.Threading;
 
@@ -35,8 +36,8 @@ namespace System.Runtime.Serialization {
         public override int MetadataToken { get { return m_field.MetadataToken; } } 
 
         internal SerializationFieldInfo(RuntimeFieldInfo field, String namePrefix) {
-            Contract.Assert(field!=null,      "[SerializationFieldInfo.ctor]field!=null");
-            Contract.Assert(namePrefix!=null, "[SerializationFieldInfo.ctor]namePrefix!=null");
+            Debug.Assert(field!=null,      "[SerializationFieldInfo.ctor]field!=null");
+            Debug.Assert(namePrefix!=null, "[SerializationFieldInfo.ctor]namePrefix!=null");
             
             m_field = field;
             m_serializationName = String.Concat(namePrefix, FakeNameSeparatorString, m_field.Name);

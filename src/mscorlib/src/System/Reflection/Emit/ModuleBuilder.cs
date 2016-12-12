@@ -12,7 +12,6 @@ namespace System.Reflection.Emit
     using System.Diagnostics.SymbolStore;
     using System.Globalization;
     using System.Reflection;
-    using System.Diagnostics;
     using System.IO;
     using System.Resources;
     using System.Security;
@@ -22,6 +21,7 @@ namespace System.Reflection.Emit
     using System.Threading;
     using System.Runtime.Versioning;
     using System.Runtime.CompilerServices;
+    using System.Diagnostics;
     using System.Diagnostics.Contracts;
 
     internal sealed class InternalModuleBuilder : RuntimeModule
@@ -182,7 +182,7 @@ namespace System.Reflection.Emit
 
         private int GetMemberRefOfMethodInfo(int tr, RuntimeMethodInfo method)
         {
-            Contract.Assert(method != null);
+            Debug.Assert(method != null);
 
 #if FEATURE_APPX
             if (ContainingAssemblyBuilder.ProfileAPICheck)
@@ -197,7 +197,7 @@ namespace System.Reflection.Emit
 
         private int GetMemberRefOfMethodInfo(int tr, RuntimeConstructorInfo method)
         {
-            Contract.Assert(method != null);
+            Debug.Assert(method != null);
 
 #if FEATURE_APPX
             if (ContainingAssemblyBuilder.ProfileAPICheck)
@@ -216,7 +216,7 @@ namespace System.Reflection.Emit
 
         private int GetMemberRefOfFieldInfo(int tkType, RuntimeTypeHandle declaringType, RuntimeFieldInfo runtimeField)
         {
-            Contract.Assert(runtimeField != null);
+            Debug.Assert(runtimeField != null);
 
 #if FEATURE_APPX
             if (ContainingAssemblyBuilder.ProfileAPICheck)
@@ -341,8 +341,8 @@ namespace System.Reflection.Emit
                 typeName = UnmangleTypeName(typeName);
             }
 
-            Contract.Assert(!type.IsByRef, "Must not be ByRef.");
-            Contract.Assert(!type.IsGenericType || type.IsGenericTypeDefinition, "Must not have generic arguments.");
+            Debug.Assert(!type.IsByRef, "Must not be ByRef.");
+            Debug.Assert(!type.IsGenericType || type.IsGenericTypeDefinition, "Must not have generic arguments.");
 
 #if FEATURE_APPX
             if (ContainingAssemblyBuilder.ProfileAPICheck)
@@ -544,11 +544,11 @@ namespace System.Reflection.Emit
                 }
                 else
                 {
-                    Contract.Assert(method is RuntimeMethodInfo || method is RuntimeConstructorInfo);
+                    Debug.Assert(method is RuntimeMethodInfo || method is RuntimeConstructorInfo);
 
                     if (method.IsGenericMethod)
                     {
-                        Contract.Assert(masmi != null);
+                        Debug.Assert(masmi != null);
 
                         methDef = masmi.GetGenericMethodDefinition();
                         methDef = methDef.Module.ResolveMethod(
@@ -1061,10 +1061,10 @@ namespace System.Reflection.Emit
                 EnumBuilder enumBuilder = DefineEnumNoLock(name, visibility, underlyingType);
 
                 // This enum is not generic, nested, and cannot have any element type.
-                Contract.Assert(name == enumBuilder.FullName);
+                Debug.Assert(name == enumBuilder.FullName);
 
                 // Replace the TypeBuilder object in m_TypeBuilderDict with this EnumBuilder object.
-                Contract.Assert(enumBuilder.m_typeBuilder == m_TypeBuilderDict[name]);
+                Debug.Assert(enumBuilder.m_typeBuilder == m_TypeBuilderDict[name]);
                 m_TypeBuilderDict[name] = enumBuilder;
 
                 return enumBuilder;
@@ -1554,7 +1554,7 @@ namespace System.Reflection.Emit
             if (method.IsGenericMethod)
             {
                 // Constructors cannot be generic.
-                Contract.Assert(methodInfo != null);
+                Debug.Assert(methodInfo != null);
 
                 // Given M<Bar> unbind to M<S>
                 MethodInfo methodInfoUnbound = methodInfo;

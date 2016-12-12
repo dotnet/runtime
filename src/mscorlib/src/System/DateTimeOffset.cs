@@ -11,6 +11,7 @@ namespace System {
     using System.Runtime.CompilerServices;
     using System.Runtime.Serialization;
     using System.Security.Permissions;
+    using System.Diagnostics;
     using System.Diagnostics.Contracts;
 
     // DateTimeOffset is a value type that consists of a DateTime and a time zone offset, 
@@ -750,7 +751,7 @@ namespace System {
         private static DateTime ValidateDate(DateTime dateTime, TimeSpan offset) {
             // The key validation is that both the UTC and clock times fit. The clock time is validated
             // by the DateTime constructor.
-            Contract.Assert(offset.Ticks >= MinOffset && offset.Ticks <= MaxOffset, "Offset not validated.");
+            Debug.Assert(offset.Ticks >= MinOffset && offset.Ticks <= MaxOffset, "Offset not validated.");
             // This operation cannot overflow because offset should have already been validated to be within
             // 14 hours and the DateTime instance is more than that distance from the boundaries of Int64.
             Int64 utcTicks = dateTime.Ticks - offset.Ticks;

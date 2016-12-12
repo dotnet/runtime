@@ -23,6 +23,7 @@ using System.Text;
 using System.Runtime.Serialization;
 using System.Globalization;
 using System.Runtime.Versioning;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 
 namespace System.IO
@@ -93,7 +94,7 @@ namespace System.IO
 #endif //FEATURE_CORESYSTEM
         internal FileInfo(String fullPath, bool ignoreThis)
         {
-            Contract.Assert(PathInternal.GetRootLength(fullPath) > 0, "fullPath must be fully qualified!");
+            Debug.Assert(PathInternal.GetRootLength(fullPath) > 0, "fullPath must be fully qualified!");
             _name = Path.GetFileName(fullPath);
             OriginalPath = _name;
             FullPath = fullPath;

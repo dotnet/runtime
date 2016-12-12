@@ -220,7 +220,7 @@ namespace System
 
                     // Currently the callers of UsesStringComparison assume that if it returns false
                     // then the match always succeeds and can be skipped.  Assert that this is maintained.
-                    Contract.Assert(retVal || RequiresStringComparison());
+                    Debug.Assert(retVal || RequiresStringComparison());
 
                     return retVal;
                 }
@@ -241,7 +241,7 @@ namespace System
 
                 public uint GetHashToMatch()
                 {
-                    Contract.Assert(RequiresStringComparison());
+                    Debug.Assert(RequiresStringComparison());
 
                     return m_nameHash;
                 }
@@ -532,7 +532,7 @@ namespace System
                                     // Grow the list by exactly one element in this case to avoid null entries at the end.
                                     //
 
-                                    Contract.Assert(false);
+                                    Debug.Assert(false);
 
                                     newSize = cachedMembers.Length + 1;
                                 }
@@ -547,7 +547,7 @@ namespace System
                                 cachedMembers = cachedMembers2;
                             }
 
-                            Contract.Assert(cachedMembers[freeSlotIndex] == null);
+                            Debug.Assert(cachedMembers[freeSlotIndex] == null);
                             cachedMembers[freeSlotIndex] = newMemberInfo;
                             freeSlotIndex++;
                         }
@@ -564,7 +564,7 @@ namespace System
                     ListBuilder<RuntimeMethodInfo> list = new ListBuilder<RuntimeMethodInfo>();
 
                     RuntimeType declaringType = ReflectedType;
-                    Contract.Assert(declaringType != null);
+                    Debug.Assert(declaringType != null);
 
                     if (RuntimeTypeHandle.IsInterface(declaringType))
                     {
@@ -576,7 +576,7 @@ namespace System
                             {
                                 if (!RuntimeMethodHandle.MatchesNameHash(methodHandle, filter.GetHashToMatch()))
                                 {
-                                    Contract.Assert(!filter.Match(RuntimeMethodHandle.GetUtf8Name(methodHandle)));
+                                    Debug.Assert(!filter.Match(RuntimeMethodHandle.GetUtf8Name(methodHandle)));
                                     continue;
                                 }
 
@@ -585,10 +585,10 @@ namespace System
                             }
 
                             #region Loop through all methods on the interface
-                            Contract.Assert(!methodHandle.IsNullHandle());
+                            Debug.Assert(!methodHandle.IsNullHandle());
                             // Except for .ctor, .cctor, IL_STUB*, and static methods, all interface methods should be abstract, virtual, and non-RTSpecialName.
                             // Note that this assumption will become invalid when we add support for non-abstract or static methods on interfaces.
-                            Contract.Assert(
+                            Debug.Assert(
                                 (RuntimeMethodHandle.GetAttributes(methodHandle) & (MethodAttributes.RTSpecialName | MethodAttributes.Abstract | MethodAttributes.Virtual)) == (MethodAttributes.Abstract | MethodAttributes.Virtual) ||
                                 (RuntimeMethodHandle.GetAttributes(methodHandle) & MethodAttributes.Static) == MethodAttributes.Static ||
                                 RuntimeMethodHandle.GetName(methodHandle).Equals(".ctor") ||
@@ -636,7 +636,7 @@ namespace System
                                 {
                                     if (!RuntimeMethodHandle.MatchesNameHash(methodHandle, filter.GetHashToMatch()))
                                     {
-                                        Contract.Assert(!filter.Match(RuntimeMethodHandle.GetUtf8Name(methodHandle)));
+                                        Debug.Assert(!filter.Match(RuntimeMethodHandle.GetUtf8Name(methodHandle)));
                                         continue;
                                     }
 
@@ -645,13 +645,13 @@ namespace System
                                 }
 
                                 #region Loop through all methods on the current type
-                                Contract.Assert(!methodHandle.IsNullHandle());
+                                Debug.Assert(!methodHandle.IsNullHandle());
 
                                 MethodAttributes methodAttributes = RuntimeMethodHandle.GetAttributes(methodHandle);
                                 MethodAttributes methodAccess = methodAttributes & MethodAttributes.MemberAccessMask;
 
                                 #region Continue if this is a constructor
-                                Contract.Assert(
+                                Debug.Assert(
                                     (RuntimeMethodHandle.GetAttributes(methodHandle) & MethodAttributes.RTSpecialName) == 0 ||
                                     RuntimeMethodHandle.GetName(methodHandle).Equals(".ctor") ||
                                     RuntimeMethodHandle.GetName(methodHandle).Equals(".cctor"));
@@ -683,7 +683,7 @@ namespace System
                                 #region Continue if this is a virtual and is already overridden
                                 if (isVirtual)
                                 {
-                                    Contract.Assert(
+                                    Debug.Assert(
                                         (methodAttributes & MethodAttributes.Abstract) != 0 ||
                                         (methodAttributes & MethodAttributes.Virtual) != 0 ||
                                         RuntimeMethodHandle.GetDeclaringType(methodHandle) != declaringType);
@@ -700,7 +700,7 @@ namespace System
                                 }
                                 else
                                 {
-                                    Contract.Assert((methodAttributes & (MethodAttributes.Virtual | MethodAttributes.Abstract)) == 0);
+                                    Debug.Assert((methodAttributes & (MethodAttributes.Virtual | MethodAttributes.Abstract)) == 0);
                                 }
                                 #endregion
 
@@ -745,7 +745,7 @@ namespace System
                         {
                             if (!RuntimeMethodHandle.MatchesNameHash(methodHandle, filter.GetHashToMatch()))
                             {
-                                Contract.Assert(!filter.Match(RuntimeMethodHandle.GetUtf8Name(methodHandle)));
+                                Debug.Assert(!filter.Match(RuntimeMethodHandle.GetUtf8Name(methodHandle)));
                                 continue;
                             }
 
@@ -755,13 +755,13 @@ namespace System
 
                         MethodAttributes methodAttributes = RuntimeMethodHandle.GetAttributes(methodHandle);
 
-                        Contract.Assert(!methodHandle.IsNullHandle());
+                        Debug.Assert(!methodHandle.IsNullHandle());
 
                         if ((methodAttributes & MethodAttributes.RTSpecialName) == 0)
                             continue;
 
                         // Constructors should not be virtual or abstract
-                        Contract.Assert(
+                        Debug.Assert(
                             (methodAttributes & MethodAttributes.Abstract) == 0 &&
                             (methodAttributes & MethodAttributes.Virtual) == 0);
 
@@ -871,7 +871,7 @@ namespace System
                         {
                             if (!RuntimeFieldHandle.MatchesNameHash(runtimeFieldHandle, filter.GetHashToMatch()))
                             {
-                                Contract.Assert(!filter.Match(RuntimeFieldHandle.GetUtf8Name(runtimeFieldHandle)));
+                                Debug.Assert(!filter.Match(RuntimeFieldHandle.GetUtf8Name(runtimeFieldHandle)));
                                 continue;
                             }
 
@@ -879,7 +879,7 @@ namespace System
                                 continue;
                         }
 
-                        Contract.Assert(!runtimeFieldHandle.IsNullHandle());
+                        Debug.Assert(!runtimeFieldHandle.IsNullHandle());
 
                         FieldAttributes fieldAttributes = RuntimeFieldHandle.GetAttributes(runtimeFieldHandle);
                         FieldAttributes fieldAccess = fieldAttributes & FieldAttributes.FieldAccessMask;
@@ -926,8 +926,8 @@ namespace System
                     for (int i = 0; i < tkFields.Length; i++)
                     {
                         int tkField = tkFields[i];
-                        Contract.Assert(MdToken.IsTokenOfType(tkField, MetadataTokenType.FieldDef));
-                        Contract.Assert(!MdToken.IsNullToken(tkField));
+                        Debug.Assert(MdToken.IsTokenOfType(tkField, MetadataTokenType.FieldDef));
+                        Debug.Assert(!MdToken.IsNullToken(tkField));
 
                         FieldAttributes fieldAttributes;
                         scope.GetFieldDefProps(tkField, out fieldAttributes);
@@ -1033,7 +1033,7 @@ namespace System
                                         continue;
                                 }
                             
-                                Contract.Assert(interfaceType.IsInterface);
+                                Debug.Assert(interfaceType.IsInterface);
                                 list.Add(interfaceType);
                             }
                         }
@@ -1201,8 +1201,8 @@ namespace System
                         int tkEvent = tkEvents[i];
                         bool isPrivate;
 
-                        Contract.Assert(!MdToken.IsNullToken(tkEvent));
-                        Contract.Assert(MdToken.IsTokenOfType(tkEvent, MetadataTokenType.Event));
+                        Debug.Assert(!MdToken.IsNullToken(tkEvent));
+                        Debug.Assert(MdToken.IsTokenOfType(tkEvent, MetadataTokenType.Event));
 
                         if (filter.RequiresStringComparison())
                         {
@@ -1250,7 +1250,7 @@ namespace System
                     // is called in Populate after this returns.
 
                     RuntimeType declaringType = ReflectedType;
-                    Contract.Assert(declaringType != null);
+                    Debug.Assert(declaringType != null);
 
                     ListBuilder<RuntimePropertyInfo> list = new ListBuilder<RuntimePropertyInfo>();
 
@@ -1304,7 +1304,7 @@ namespace System
 
                     int numVirtuals = RuntimeTypeHandle.GetNumVirtuals(declaringType);
 
-                    Contract.Assert((declaringType.IsInterface && usedSlots == null && csPropertyInfos == null) ||
+                    Debug.Assert((declaringType.IsInterface && usedSlots == null && csPropertyInfos == null) ||
                                     (!declaringType.IsInterface && usedSlots != null && usedSlots.Length >= numVirtuals));
 
                     for (int i = 0; i < tkProperties.Length; i++)
@@ -1312,14 +1312,14 @@ namespace System
                         int tkProperty = tkProperties[i];
                         bool isPrivate;
 
-                        Contract.Assert(!MdToken.IsNullToken(tkProperty));
-                        Contract.Assert(MdToken.IsTokenOfType(tkProperty, MetadataTokenType.Property));
+                        Debug.Assert(!MdToken.IsNullToken(tkProperty));
+                        Debug.Assert(MdToken.IsTokenOfType(tkProperty, MetadataTokenType.Property));
 
                         if (filter.RequiresStringComparison())
                         {
                             if (!ModuleHandle.ContainsPropertyMatchingHash(declaringModuleHandle, tkProperty, filter.GetHashToMatch()))
                             {
-                                Contract.Assert(!filter.Match(declaringType.GetRuntimeModule().MetadataImport.GetName(tkProperty)));
+                                Debug.Assert(!filter.Match(declaringType.GetRuntimeModule().MetadataImport.GetName(tkProperty)));
                                 continue;
                             }
 
@@ -1364,7 +1364,7 @@ namespace System
 
                                 if (slot < numVirtuals)
                                 {
-                                    Contract.Assert(associateMethod.IsVirtual);
+                                    Debug.Assert(associateMethod.IsVirtual);
                                     if (usedSlots[slot] == true)
                                         continue;
                                     else
@@ -1450,7 +1450,7 @@ namespace System
                             return Populate(name, listType, cacheType);
 
                         default:
-                            Contract.Assert(listType == MemberListType.All);
+                            Debug.Assert(listType == MemberListType.All);
                             if (Volatile.Read(ref m_cacheComplete))
                                 return m_allMembers;
 
@@ -1615,7 +1615,7 @@ namespace System
                 {
                     // Use void as a marker of null enclosing type
                     RuntimeType enclosingType = RuntimeTypeHandle.GetDeclaringType(GetRuntimeType());
-                    Contract.Assert(enclosingType != typeof(void));
+                    Debug.Assert(enclosingType != typeof(void));
                     m_enclosingType = enclosingType ?? (RuntimeType)typeof(void);
                 }
 
@@ -1814,7 +1814,7 @@ namespace System
 
         internal unsafe static MethodBase GetMethodBase(RuntimeType reflectedType, RuntimeMethodHandleInternal methodHandle)
         {
-            Contract.Assert(!methodHandle.IsNullHandle());
+            Debug.Assert(!methodHandle.IsNullHandle());
 
             if (RuntimeMethodHandle.IsDynamicMethod(methodHandle))
             {
@@ -2092,7 +2092,7 @@ namespace System
                     name = fullname.Substring(nsDelimiter + 1, nameLength);
                 else
                     name = "";
-                Contract.Assert(fullname.Equals(ns + "." + name));
+                Debug.Assert(fullname.Equals(ns + "." + name));
             }
             else
             {
@@ -2184,7 +2184,7 @@ namespace System
         // Most of the plural GetXXX methods allow prefix lookups while the singular GetXXX methods mostly do not.
         private static bool FilterApplyPrefixLookup(MemberInfo memberInfo, string name, bool ignoreCase)
         {
-            Contract.Assert(name != null);
+            Debug.Assert(name != null);
 
             if (ignoreCase)
             {
@@ -2290,7 +2290,7 @@ namespace System
             Type type, BindingFlags bindingFlags, string name, bool prefixLookup, string ns)
         {
             Contract.Requires((object)type != null);
-            Contract.Assert(type is RuntimeType);
+            Debug.Assert(type is RuntimeType);
 
             bool isPublic = type.IsNestedPublic || type.IsPublic;
             bool isStatic = false;
@@ -2375,7 +2375,7 @@ namespace System
                         {
                             // If Binding flags did not include varargs we would have filtered this vararg method.
                             // This Invariant established during callConv check.
-                            Contract.Assert((callConv & CallingConventions.VarArgs) != 0);
+                            Debug.Assert((callConv & CallingConventions.VarArgs) != 0);
                         }
                         #endregion
                     }
@@ -2567,7 +2567,7 @@ namespace System
                         cache = existingCache;
                 }
 
-                Contract.Assert(cache != null);
+                Debug.Assert(cache != null);
                 return cache;
             }
         }
@@ -2814,7 +2814,7 @@ namespace System
             events.CopyTo(members, i); i += events.Count;
             fields.CopyTo(members, i); i += fields.Count;
             nestedTypes.CopyTo(members, i); i += nestedTypes.Count;
-            Contract.Assert(i == members.Length);
+            Debug.Assert(i == members.Length);
 
             return members;
         }
@@ -2836,8 +2836,8 @@ namespace System
             RuntimeTypeHandle ifaceRtTypeHandle = ifaceRtType.GetTypeHandleInternal();
 
             GetTypeHandleInternal().VerifyInterfaceIsImplemented(ifaceRtTypeHandle);
-            Contract.Assert(ifaceType.IsInterface);  // VerifyInterfaceIsImplemented enforces this invariant
-            Contract.Assert(!IsInterface); // VerifyInterfaceIsImplemented enforces this invariant
+            Debug.Assert(ifaceType.IsInterface);  // VerifyInterfaceIsImplemented enforces this invariant
+            Debug.Assert(!IsInterface); // VerifyInterfaceIsImplemented enforces this invariant
 
             // SZArrays implement the methods on IList`1, IEnumerable`1, and ICollection`1 with
             // SZArrayHelper and some runtime magic. We don't have accurate interface maps for them.
@@ -2858,7 +2858,7 @@ namespace System
 
                 // GetMethodBase will convert this to the instantiating/unboxing stub if necessary
                 MethodBase ifaceMethodBase = RuntimeType.GetMethodBase(ifaceRtType, ifaceRtMethodHandle);
-                Contract.Assert(ifaceMethodBase is RuntimeMethodInfo);
+                Debug.Assert(ifaceMethodBase is RuntimeMethodInfo);
                 im.InterfaceMethods[i] = (MethodInfo)ifaceMethodBase;
 
                 // If the slot is -1, then virtual stub dispatch is active.
@@ -2871,7 +2871,7 @@ namespace System
                 // GetMethodBase will convert this to the instantiating/unboxing stub if necessary
                 MethodBase rtTypeMethodBase = RuntimeType.GetMethodBase(this, classRtMethodHandle);
                 // a class may not implement all the methods of an interface (abstract class) so null is a valid value 
-                Contract.Assert(rtTypeMethodBase == null || rtTypeMethodBase is RuntimeMethodInfo);
+                Debug.Assert(rtTypeMethodBase == null || rtTypeMethodBase is RuntimeMethodInfo);
                 im.TargetMethods[i] = (MethodInfo)rtTypeMethodBase;
             }
 
@@ -3205,7 +3205,7 @@ namespace System
             events.CopyTo(compressMembers, i); i += events.Count;
             fields.CopyTo(compressMembers, i); i += fields.Count;
             nestedTypes.CopyTo(compressMembers, i); i += nestedTypes.Count;
-            Contract.Assert(i == compressMembers.Length);
+            Debug.Assert(i == compressMembers.Length);
 
             return compressMembers;
         }
@@ -3955,7 +3955,7 @@ namespace System
             {
                 // Since this cannot be a generic parameter, we use RuntimeTypeHandle.IsValueType here
                 // because it is faster than RuntimeType.IsValueType
-                Contract.Assert(!IsGenericParameter);
+                Debug.Assert(!IsGenericParameter);
 
                 Type type = value.GetType();
 
@@ -4224,7 +4224,7 @@ namespace System
                 }
                 else
                 {
-                    Contract.Assert(IsSetField);
+                    Debug.Assert(IsSetField);
 
                     if (providedArgs == null) 
                         throw new ArgumentNullException(nameof(providedArgs));
@@ -4243,7 +4243,7 @@ namespace System
                 FieldInfo selFld = null;                
                 FieldInfo[] flds = GetMember(name, MemberTypes.Field, bindingFlags) as FieldInfo[];
 
-                Contract.Assert(flds != null);
+                Debug.Assert(flds != null);
 
                 if (flds.Length == 1)
                 {
@@ -4366,16 +4366,16 @@ namespace System
                 #region Preconditions
                 if (isGetProperty)
                 {
-                    Contract.Assert(!IsSetField);
+                    Debug.Assert(!IsSetField);
 
                     if (isSetProperty)
                         throw new ArgumentException(Environment.GetResourceString("Arg_PropSetGet"), nameof(bindingFlags));
                 }
                 else
                 {
-                    Contract.Assert(isSetProperty);
+                    Debug.Assert(isSetProperty);
 
-                    Contract.Assert(!IsGetField);
+                    Debug.Assert(!IsGetField);
                     
                     if ((bindingFlags & BindingFlags.InvokeMethod) != 0)
                         throw new ArgumentException(Environment.GetResourceString("Arg_PropSetInvoke"), nameof(bindingFlags));
@@ -4397,7 +4397,7 @@ namespace System
                 for(int i = 0; i < semiFinalists.Length; i ++)
                 {
                     MethodInfo semiFinalist = semiFinalists[i];
-                    Contract.Assert(semiFinalist != null);
+                    Debug.Assert(semiFinalist != null);
 
                     if (!FilterApplyMethodInfo((RuntimeMethodInfo)semiFinalist, bindingFlags, CallingConventions.Any, new Type[argCnt]))
                         continue;
@@ -4420,7 +4420,7 @@ namespace System
                 
                 if (results != null)
                 {
-                    Contract.Assert(results.Count > 1);
+                    Debug.Assert(results.Count > 1);
                     finalists = new MethodInfo[results.Count];
                     results.CopyTo(finalists);
                 }
@@ -4428,7 +4428,7 @@ namespace System
             }
             #endregion
             
-            Contract.Assert(finalists == null || finalist != null);
+            Debug.Assert(finalists == null || finalist != null);
 
             #region BindingFlags.GetProperty or BindingFlags.SetProperty
             if (finalist == null && isGetProperty || isSetProperty) 
@@ -4474,7 +4474,7 @@ namespace System
 
                 if (results != null)
                 {
-                    Contract.Assert(results.Count > 1);
+                    Debug.Assert(results.Count > 1);
                     finalists = new MethodInfo[results.Count];
                     results.CopyTo(finalists);
                 }
@@ -4816,7 +4816,7 @@ namespace System
                     if (args.Length != 0)
                     {
 
-                        Contract.Assert((invokeMethod.CallingConvention & CallingConventions.VarArgs) == 
+                        Debug.Assert((invokeMethod.CallingConvention & CallingConventions.VarArgs) == 
                                             CallingConventions.VarArgs); 
                         throw new NotSupportedException(String.Format(CultureInfo.CurrentCulture, 
                             Environment.GetResourceString("NotSupported_CallToVarArg")));
@@ -4887,7 +4887,7 @@ namespace System
             {
                 if (!ace.m_type.IsValueType)
                 {
-                    Contract.Assert(!ace.m_hCtorMethodHandle.IsNullHandle(), "Expected the default ctor method handle for a reference type.");
+                    Debug.Assert(!ace.m_hCtorMethodHandle.IsNullHandle(), "Expected the default ctor method handle for a reference type.");
                     
                     if (delegateCtorInfo == null)
                         InitializeDelegateCreator();
@@ -5006,7 +5006,7 @@ namespace System
                     Object instance = RuntimeTypeHandle.Allocate(this);
                     
                     // if m_ctor is null, this type doesn't have a default ctor
-                    Contract.Assert(ace.m_ctor != null || this.IsValueType);
+                    Debug.Assert(ace.m_ctor != null || this.IsValueType);
 
                     if (ace.m_ctor != null)
                     {
@@ -5261,7 +5261,7 @@ namespace System.Reflection
                     }
                     else
                     {
-                        Contract.Assert(!hit.Equals(key), "Key was already in CerHashtable!  Potential race condition (or bug) in the Reflection cache?");
+                        Debug.Assert(!hit.Equals(key), "Key was already in CerHashtable!  Potential race condition (or bug) in the Reflection cache?");
 
                         index++;
                         if (index >= keys.Length)

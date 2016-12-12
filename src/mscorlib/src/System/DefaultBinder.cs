@@ -14,6 +14,7 @@ namespace System {
     using System.Reflection;
     using System.Runtime.CompilerServices;
     using System.Runtime.Versioning;
+    using System.Diagnostics;
     using System.Diagnostics.Contracts;
     using CultureInfo = System.Globalization.CultureInfo;
     //Marked serializable even though it has no state.
@@ -982,7 +983,7 @@ namespace System {
                 int hierarchyDepth2 = GetHierarchyDepth(cur2.DeclaringType);
 
                 if (hierarchyDepth1 == hierarchyDepth2) {
-                    Contract.Assert(cur1.IsStatic != cur2.IsStatic, "hierarchyDepth1 == hierarchyDepth2");
+                    Debug.Assert(cur1.IsStatic != cur2.IsStatic, "hierarchyDepth1 == hierarchyDepth2");
                     return 0; 
                 }
                 else if (hierarchyDepth1 < hierarchyDepth2) 

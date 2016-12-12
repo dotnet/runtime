@@ -24,6 +24,7 @@ namespace System.Threading
     using System.Runtime.ConstrainedExecution;
     using System.Reflection;
     using System.Security;
+    using System.Diagnostics;
     using System.Diagnostics.Contracts;
     using System.Diagnostics.CodeAnalysis;
 
@@ -207,8 +208,8 @@ namespace System.Threading
 #if FEATURE_APPX
         private static SynchronizationContext GetWinRTContext()
         {
-            Contract.Assert(Environment.IsWinRTSupported);
-            Contract.Assert(AppDomain.IsAppXModel());
+            Debug.Assert(Environment.IsWinRTSupported);
+            Debug.Assert(AppDomain.IsAppXModel());
     
             //
             // We call into the VM to get the dispatcher.  This is because:

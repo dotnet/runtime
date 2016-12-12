@@ -111,7 +111,7 @@ namespace System.Runtime.CompilerServices
             {
                 AsyncMethodBuilderCore.MoveNextRunner runnerToInitialize = null;
                 var continuation = m_coreState.GetCompletionAction(AsyncCausalityTracer.LoggingOn ? this.Task : null, ref runnerToInitialize);
-                Contract.Assert(continuation != null, "GetCompletionAction should always return a valid action.");
+                Debug.Assert(continuation != null, "GetCompletionAction should always return a valid action.");
 
                 // If this is our first await, such that we've not yet boxed the state machine, do so now.
                 if (m_coreState.m_stateMachine == null)
@@ -157,7 +157,7 @@ namespace System.Runtime.CompilerServices
             {
                 AsyncMethodBuilderCore.MoveNextRunner runnerToInitialize = null;
                 var continuation = m_coreState.GetCompletionAction(AsyncCausalityTracer.LoggingOn ? this.Task : null, ref runnerToInitialize);
-                Contract.Assert(continuation != null, "GetCompletionAction should always return a valid action.");
+                Debug.Assert(continuation != null, "GetCompletionAction should always return a valid action.");
 
                 // If this is our first await, such that we've not yet boxed the state machine, do so now.
                 if (m_coreState.m_stateMachine == null)
@@ -229,7 +229,7 @@ namespace System.Runtime.CompilerServices
         /// <summary>Notifies the current synchronization context that the operation completed.</summary>
         private void NotifySynchronizationContextOfCompletion()
         {
-            Contract.Assert(m_synchronizationContext != null, "Must only be used with a non-null context.");
+            Debug.Assert(m_synchronizationContext != null, "Must only be used with a non-null context.");
             try
             {
                 m_synchronizationContext.OperationCompleted();
@@ -499,7 +499,7 @@ namespace System.Runtime.CompilerServices
             {
                 AsyncMethodBuilderCore.MoveNextRunner runnerToInitialize = null;
                 var continuation = m_coreState.GetCompletionAction(AsyncCausalityTracer.LoggingOn ? this.Task : null, ref runnerToInitialize);
-                Contract.Assert(continuation != null, "GetCompletionAction should always return a valid action.");
+                Debug.Assert(continuation != null, "GetCompletionAction should always return a valid action.");
 
                 // If this is our first await, such that we've not yet boxed the state machine, do so now.
                 if (m_coreState.m_stateMachine == null)
@@ -539,7 +539,7 @@ namespace System.Runtime.CompilerServices
             {
                 AsyncMethodBuilderCore.MoveNextRunner runnerToInitialize = null;
                 var continuation = m_coreState.GetCompletionAction(AsyncCausalityTracer.LoggingOn ? this.Task : null, ref runnerToInitialize);
-                Contract.Assert(continuation != null, "GetCompletionAction should always return a valid action.");
+                Debug.Assert(continuation != null, "GetCompletionAction should always return a valid action.");
 
                 // If this is our first await, such that we've not yet boxed the state machine, do so now.
                 if (m_coreState.m_stateMachine == null)
@@ -590,7 +590,7 @@ namespace System.Runtime.CompilerServices
             if (task == null)
             {
                 m_task = GetTaskForResult(result);
-                Contract.Assert(m_task != null, "GetTaskForResult should never return null");
+                Debug.Assert(m_task != null, "GetTaskForResult should never return null");
             }
             // Slow path: complete the existing task.
             else
@@ -813,7 +813,7 @@ namespace System.Runtime.CompilerServices
         /// <summary>Creates an array of cached tasks for the values in the range [INCLUSIVE_MIN,EXCLUSIVE_MAX).</summary>
         private static Task<Int32>[] CreateInt32Tasks()
         {
-            Contract.Assert(EXCLUSIVE_INT32_MAX >= INCLUSIVE_INT32_MIN, "Expected max to be at least min");
+            Debug.Assert(EXCLUSIVE_INT32_MAX >= INCLUSIVE_INT32_MIN, "Expected max to be at least min");
             var tasks = new Task<Int32>[EXCLUSIVE_INT32_MAX - INCLUSIVE_INT32_MIN];
             for (int i = 0; i < tasks.Length; i++)
             {
@@ -897,7 +897,7 @@ namespace System.Runtime.CompilerServices
         /// <returns>An Action to provide to the awaiter.</returns>
         internal Action GetCompletionAction(Task taskForTracing, ref MoveNextRunner runnerToInitialize)
         {
-            Contract.Assert(m_defaultContextAction == null || m_stateMachine != null,
+            Debug.Assert(m_defaultContextAction == null || m_stateMachine != null,
                 "Expected non-null m_stateMachine on non-null m_defaultContextAction");
 
             // Alert a listening debugger that we can't make forward progress unless it slips threads.
@@ -920,7 +920,7 @@ namespace System.Runtime.CompilerServices
                 action = m_defaultContextAction;
                 if (action != null)
                 {
-                    Contract.Assert(m_stateMachine != null, "If the delegate was set, the state machine should have been as well.");
+                    Debug.Assert(m_stateMachine != null, "If the delegate was set, the state machine should have been as well.");
                     return action;
                 }
 
@@ -986,8 +986,8 @@ namespace System.Runtime.CompilerServices
             m_stateMachine = stateMachine;
             m_stateMachine.SetStateMachine(m_stateMachine);
 
-            Contract.Assert(runner.m_stateMachine == null, "The runner's state machine should not yet have been populated.");
-            Contract.Assert(m_stateMachine != null, "The builder's state machine field should have been initialized.");
+            Debug.Assert(runner.m_stateMachine == null, "The runner's state machine should not yet have been populated.");
+            Debug.Assert(m_stateMachine != null, "The builder's state machine field should have been initialized.");
 
             // Now that we have the state machine, store it into the runner that the action delegate points to.
             // And return the action.
@@ -1045,7 +1045,7 @@ namespace System.Runtime.CompilerServices
             /// <summary>Invokes MoveNext under the provided context.</summary>
             internal void RunWithCapturedContext()
             {
-                Contract.Assert(m_stateMachine != null, "The state machine must have been set before calling Run.");
+                Debug.Assert(m_stateMachine != null, "The state machine must have been set before calling Run.");
 
                 if (m_context != null)
                 {
@@ -1078,7 +1078,7 @@ namespace System.Runtime.CompilerServices
             /// <summary>Invokes MoveNext under the default context.</summary>
             internal void RunWithDefaultContext()
             {
-                Contract.Assert(m_stateMachine != null, "The state machine must have been set before calling Run.");
+                Debug.Assert(m_stateMachine != null, "The state machine must have been set before calling Run.");
                 ExecutionContext.Run(ExecutionContext.PreAllocatedDefault, InvokeMoveNextCallback, m_stateMachine, preserveSyncCtx: true);
             }
 

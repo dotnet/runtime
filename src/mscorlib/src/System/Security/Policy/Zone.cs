@@ -17,6 +17,7 @@ namespace System.Security.Policy
     using System.Runtime.InteropServices;
     using System.Runtime.Versioning;
     using System.Runtime.Serialization;
+    using System.Diagnostics;
     using System.Diagnostics.Contracts;
 
     [Serializable]
@@ -39,7 +40,7 @@ namespace System.Security.Policy
 
         private Zone(Zone zone)
         {
-            Contract.Assert(zone != null);
+            Debug.Assert(zone != null);
             m_zone = zone.m_zone;
         }
 

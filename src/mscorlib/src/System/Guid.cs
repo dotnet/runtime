@@ -10,6 +10,7 @@ namespace System {
     using Microsoft.Win32;
     using System.Runtime.InteropServices;
     using System.Runtime.CompilerServices;
+    using System.Diagnostics;
     using System.Diagnostics.Contracts;
 
     // Represents a Globally Unique Identifier.
@@ -185,7 +186,7 @@ namespace System {
             }
             internal void SetFailure(ParseFailureKind failure, string failureMessageID, object failureMessageFormatArgument,
                                      string failureArgumentName, Exception innerException) {
-                Contract.Assert(failure != ParseFailureKind.NativeException, "ParseFailureKind.NativeException should not be used with this overload");
+                Debug.Assert(failure != ParseFailureKind.NativeException, "ParseFailureKind.NativeException should not be used with this overload");
                 m_failure = failure;
                 m_failureMessageID = failureMessageID;
                 m_failureMessageFormatArgument = failureMessageFormatArgument;
@@ -214,7 +215,7 @@ namespace System {
                     return m_innerException;
 
                 default:
-                    Contract.Assert(false, "Unknown GuidParseFailure: " + m_failure);
+                    Debug.Assert(false, "Unknown GuidParseFailure: " + m_failure);
                     return new FormatException(Environment.GetResourceString("Format_GuidUnrecognized"));
                 }
             }

@@ -4,6 +4,7 @@
 
 using Microsoft.Win32;
 using Microsoft.Win32.SafeHandles;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -95,9 +96,9 @@ namespace System.Threading
 #endif
             }
 
-            Contract.Assert(initialCount >= 0);
-            Contract.Assert(maximumCount >= 1);
-            Contract.Assert(initialCount <= maximumCount);
+            Debug.Assert(initialCount >= 0);
+            Debug.Assert(maximumCount >= 1);
+            Debug.Assert(initialCount <= maximumCount);
 
             return Win32Native.CreateSemaphore(null, initialCount, maximumCount, name);
         }

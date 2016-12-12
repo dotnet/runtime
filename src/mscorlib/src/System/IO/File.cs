@@ -21,6 +21,7 @@ using System.Security;
 using System.Text;
 using Microsoft.Win32.SafeHandles;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 
 namespace System.IO
@@ -314,7 +315,7 @@ namespace System.IO
                 // After normalizing, check whether path ends in directory separator.
                 // Otherwise, FillAttributeInfo removes it and we may return a false positive.
                 // GetFullPath should never return null
-                Contract.Assert(path != null, "File.Exists: GetFullPath returned null");
+                Debug.Assert(path != null, "File.Exists: GetFullPath returned null");
                 if (path.Length > 0 && PathInternal.IsDirectorySeparator(path[path.Length - 1]))
                 {
                     return false;
@@ -986,7 +987,7 @@ namespace System.IO
                         catch {
                             // if we're already returning an error, don't throw another one. 
                             if (!error) {
-                                Contract.Assert(false, "File::FillAttributeInfo - FindClose failed!");
+                                Debug.Assert(false, "File::FillAttributeInfo - FindClose failed!");
                                 __Error.WinIOError();
                             }
                         }

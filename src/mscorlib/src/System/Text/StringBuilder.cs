@@ -20,6 +20,7 @@ namespace System.Text {
     using System.Security;
     using System.Threading;
     using System.Globalization;
+    using System.Diagnostics;
     using System.Diagnostics.Contracts;
     using System.Collections.Generic;
 
@@ -262,21 +263,21 @@ namespace System.Text {
             for (; ; )
             {
                 // All blocks have copy of the maxCapacity.
-                Contract.Assert(currentBlock.m_MaxCapacity == maxCapacity, "Bad maxCapacity");
-                Contract.Assert(currentBlock.m_ChunkChars != null, "Empty Buffer");
+                Debug.Assert(currentBlock.m_MaxCapacity == maxCapacity, "Bad maxCapacity");
+                Debug.Assert(currentBlock.m_ChunkChars != null, "Empty Buffer");
 
-                Contract.Assert(currentBlock.m_ChunkLength <= currentBlock.m_ChunkChars.Length, "Out of range length");
-                Contract.Assert(currentBlock.m_ChunkLength >= 0, "Negative length");
-                Contract.Assert(currentBlock.m_ChunkOffset >= 0, "Negative offset");
+                Debug.Assert(currentBlock.m_ChunkLength <= currentBlock.m_ChunkChars.Length, "Out of range length");
+                Debug.Assert(currentBlock.m_ChunkLength >= 0, "Negative length");
+                Debug.Assert(currentBlock.m_ChunkOffset >= 0, "Negative offset");
 
                 StringBuilder prevBlock = currentBlock.m_ChunkPrevious;
                 if (prevBlock == null)
                 {
-                    Contract.Assert(currentBlock.m_ChunkOffset == 0, "First chunk's offset is not 0");
+                    Debug.Assert(currentBlock.m_ChunkOffset == 0, "First chunk's offset is not 0");
                     break;
                 }
                 // There are no gaps in the blocks. 
-                Contract.Assert(currentBlock.m_ChunkOffset == prevBlock.m_ChunkOffset + prevBlock.m_ChunkLength, "There is a gap between chunks!");
+                Debug.Assert(currentBlock.m_ChunkOffset == prevBlock.m_ChunkOffset + prevBlock.m_ChunkLength, "There is a gap between chunks!");
                 currentBlock = prevBlock;
             }
         }
@@ -473,7 +474,7 @@ namespace System.Text {
                 {
                     m_ChunkLength = 0;
                     m_ChunkOffset = 0;
-                    Contract.Assert(Capacity >= originalCapacity, "setting the Length should never decrease the Capacity");
+                    Debug.Assert(Capacity >= originalCapacity, "setting the Length should never decrease the Capacity");
                     return;
                 }
 
@@ -495,7 +496,7 @@ namespace System.Text {
                         int newLen = originalCapacity - chunk.m_ChunkOffset;
                         char[] newArray = new char[newLen];
 
-                        Contract.Assert(newLen > chunk.m_ChunkChars.Length, "the new chunk should be larger than the one it is replacing");
+                        Debug.Assert(newLen > chunk.m_ChunkChars.Length, "the new chunk should be larger than the one it is replacing");
                         Array.Copy(chunk.m_ChunkChars, newArray, chunk.m_ChunkLength);
                         
                         m_ChunkChars = newArray;
@@ -505,7 +506,7 @@ namespace System.Text {
                     m_ChunkLength = value - chunk.m_ChunkOffset;
                     VerifyClassInvariant();
                 }
-                Contract.Assert(Capacity >= originalCapacity, "setting the Length should never decrease the Capacity");
+                Debug.Assert(Capacity >= originalCapacity, "setting the Length should never decrease the Capacity");
             }
         }
 
@@ -577,7 +578,7 @@ namespace System.Text {
                 {
                     m_ChunkLength = idx;
                     ExpandByABlock(repeatCount);
-                    Contract.Assert(m_ChunkLength == 0, "Expand should create a new block");
+                    Debug.Assert(m_ChunkLength == 0, "Expand should create a new block");
                     idx = 0;
                 }
             }
@@ -815,7 +816,7 @@ namespace System.Text {
             if (insertingChars > MaxCapacity - this.Length) {
                 throw new OutOfMemoryException();
             }
-            Contract.Assert(insertingChars + this.Length < Int32.MaxValue);
+            Debug.Assert(insertingChars + this.Length < Int32.MaxValue);
 
             StringBuilder chunk;
             int indexInChunk;
@@ -1722,7 +1723,7 @@ namespace System.Text {
 
                     chunk = FindChunkForIndex(index);
                     indexInChunk = index - chunk.m_ChunkOffset;
-                    Contract.Assert(chunk != null || count == 0, "Chunks ended prematurely");
+                    Debug.Assert(chunk != null || count == 0, "Chunks ended prematurely");
                 }
             }
             VerifyClassInvariant();
@@ -1812,7 +1813,7 @@ namespace System.Text {
                 // Expand the builder to add another chunk. 
                 int restLength = valueCount - firstLength;
                 ExpandByABlock(restLength);
-                Contract.Assert(m_ChunkLength == 0, "Expand did not make a new block");
+                Debug.Assert(m_ChunkLength == 0, "Expand did not make a new block");
 
                 // Copy the second chunk
                 ThreadSafeCopy(value + firstLength, m_ChunkChars, 0, restLength);
@@ -1876,9 +1877,9 @@ namespace System.Text {
                             break;
     
                         int gapEnd = replacements[i];
-                        Contract.Assert(gapStart < sourceChunk.m_ChunkChars.Length, "gap starts at end of buffer.  Should not happen");
-                        Contract.Assert(gapStart <= gapEnd, "negative gap size");
-                        Contract.Assert(gapEnd <= sourceChunk.m_ChunkLength, "gap too big");
+                        Debug.Assert(gapStart < sourceChunk.m_ChunkChars.Length, "gap starts at end of buffer.  Should not happen");
+                        Debug.Assert(gapStart <= gapEnd, "negative gap size");
+                        Debug.Assert(gapEnd <= sourceChunk.m_ChunkLength, "gap too big");
                         if (delta != 0)     // can skip the sliding of gaps if source an target string are the same size.  
                         {
                             // Copy the gap data between the current replacement and the the next replacement
@@ -1888,7 +1889,7 @@ namespace System.Text {
                         else
                         {
                             targetIndexInChunk += gapEnd - gapStart;
-                            Contract.Assert(targetIndexInChunk <= targetChunk.m_ChunkLength, "gap not in chunk");
+                            Debug.Assert(targetIndexInChunk <= targetChunk.m_ChunkLength, "gap not in chunk");
                         }
                     }
     
@@ -1940,7 +1941,7 @@ namespace System.Text {
                 for (; ; )
                 {
                     int lengthInChunk = chunk.m_ChunkLength - indexInChunk;
-                    Contract.Assert(lengthInChunk >= 0, "index not in chunk");
+                    Debug.Assert(lengthInChunk >= 0, "index not in chunk");
 
                     int lengthToCopy = Math.Min(lengthInChunk, count);
                     ThreadSafeCopy(value, chunk.m_ChunkChars, indexInChunk, lengthToCopy);
@@ -2031,13 +2032,13 @@ namespace System.Text {
         /// <returns></returns>
         private StringBuilder FindChunkForIndex(int index)
         {
-            Contract.Assert(0 <= index && index <= Length, "index not in string");
+            Debug.Assert(0 <= index && index <= Length, "index not in string");
 
             StringBuilder ret = this;
             while (ret.m_ChunkOffset > index)
                 ret = ret.m_ChunkPrevious;
 
-            Contract.Assert(ret != null, "index not in string");
+            Debug.Assert(ret != null, "index not in string");
             return ret;
         }
 
@@ -2048,13 +2049,13 @@ namespace System.Text {
         /// <returns></returns>
         private StringBuilder FindChunkForByte(int byteIndex)
         {
-            Contract.Assert(0 <= byteIndex && byteIndex <= Length*sizeof(char), "Byte Index not in string");
+            Debug.Assert(0 <= byteIndex && byteIndex <= Length*sizeof(char), "Byte Index not in string");
 
             StringBuilder ret = this;
             while (ret.m_ChunkOffset*sizeof(char) > byteIndex)
                 ret = ret.m_ChunkPrevious;
 
-            Contract.Assert(ret != null, "Byte Index not in string");
+            Debug.Assert(ret != null, "Byte Index not in string");
             return ret;
         }
 
@@ -2140,8 +2141,8 @@ namespace System.Text {
         private void MakeRoom(int index, int count, out StringBuilder chunk, out int indexInChunk, bool doneMoveFollowingChars)
         {
             VerifyClassInvariant();
-            Contract.Assert(count > 0, "Count must be strictly positive");
-            Contract.Assert(index >= 0, "Index can't be negative");
+            Debug.Assert(count > 0, "Count must be strictly positive");
+            Debug.Assert(index >= 0, "Index can't be negative");
             if (count + Length > m_MaxCapacity || count + Length < count)
                 throw new ArgumentOutOfRangeException("requiredLength", Environment.GetResourceString("ArgumentOutOfRange_SmallCapacity"));
 
@@ -2206,8 +2207,8 @@ namespace System.Text {
         /// </summary>
         private StringBuilder(int size, int maxCapacity, StringBuilder previousBlock)
         {
-            Contract.Assert(size > 0, "size not positive");
-            Contract.Assert(maxCapacity > 0, "maxCapacity not positive");
+            Debug.Assert(size > 0, "size not positive");
+            Debug.Assert(maxCapacity > 0, "maxCapacity not positive");
             m_ChunkChars = new char[size];
             m_MaxCapacity = maxCapacity;
             m_ChunkPrevious = previousBlock;
@@ -2223,7 +2224,7 @@ namespace System.Text {
         private void Remove(int startIndex, int count, out StringBuilder chunk, out int indexInChunk)
         {
             VerifyClassInvariant();
-            Contract.Assert(startIndex >= 0 && startIndex < Length, "startIndex not in string");
+            Debug.Assert(startIndex >= 0 && startIndex < Length, "startIndex not in string");
 
             int endIndex = startIndex + count;
 
@@ -2252,7 +2253,7 @@ namespace System.Text {
                 }
                 chunk = chunk.m_ChunkPrevious;
             }
-            Contract.Assert(chunk != null, "fell off beginning of string!");
+            Debug.Assert(chunk != null, "fell off beginning of string!");
 
             int copyTargetIndexInChunk = indexInChunk;
             int copyCount = endChunk.m_ChunkLength - endIndexInChunk;
@@ -2282,7 +2283,7 @@ namespace System.Text {
             if (copyTargetIndexInChunk != endIndexInChunk)  // Sometimes no move is necessary
                 ThreadSafeCopy(endChunk.m_ChunkChars, endIndexInChunk, endChunk.m_ChunkChars, copyTargetIndexInChunk, copyCount);
 
-            Contract.Assert(chunk != null, "fell off beginning of string!");
+            Debug.Assert(chunk != null, "fell off beginning of string!");
             VerifyClassInvariant();
         }
     }

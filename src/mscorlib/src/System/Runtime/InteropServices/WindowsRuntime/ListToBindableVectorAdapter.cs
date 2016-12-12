@@ -10,6 +10,7 @@ using System.Reflection;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
@@ -28,7 +29,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
     {
         private ListToBindableVectorAdapter()
         {
-            Contract.Assert(false, "This class is never instantiated");
+            Debug.Assert(false, "This class is never instantiated");
         }
 
         // object GetAt(uint index)

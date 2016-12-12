@@ -8,6 +8,7 @@ using System;
 using System.Security;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
@@ -26,7 +27,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
     {
         private MapToDictionaryAdapter()
         {
-            Contract.Assert(false, "This class is never instantiated");
+            Debug.Assert(false, "This class is never instantiated");
         }
 
         // V this[K key] { get }

@@ -451,7 +451,7 @@ namespace System {
                 result.Append(separator);
                 result.Append(rci.ToString());
             } else {
-                Contract.Assert(methBase is MethodInfo, "[Exception.GetExceptionMethodString]methBase is MethodInfo");
+                Debug.Assert(methBase is MethodInfo, "[Exception.GetExceptionMethodString]methBase is MethodInfo");
                 RuntimeMethodInfo rmi = (RuntimeMethodInfo)methBase;
                 Type t = rmi.DeclaringType;
                 result.Append((int)MemberTypes.Method);
@@ -472,7 +472,7 @@ namespace System {
         }
 
         private MethodBase GetExceptionMethodFromString() {
-            Contract.Assert(_exceptionMethodString != null, "Method string cannot be NULL!");
+            Debug.Assert(_exceptionMethodString != null, "Method string cannot be NULL!");
             String[] args = _exceptionMethodString.Split(new char[]{'\0', '\n'});
             if (args.Length!=5) {
                 throw new SerializationException();
@@ -559,7 +559,7 @@ namespace System {
                 // often created in the VM with AllocateObject instead if the managed construtor)
                 // If you are adding code to use a SafeSerializationManager from an mscorlib exception, update
                 // this assert to ensure that it fails when that exception's _safeSerializationManager is NULL 
-                Contract.Assert(((_safeSerializationManager != null) || (this.GetType().Assembly == typeof(object).Assembly)), 
+                Debug.Assert(((_safeSerializationManager != null) || (this.GetType().Assembly == typeof(object).Assembly)), 
                                 "User defined exceptions must have a valid _safeSerializationManager");
             
                 // Handle serializing any transparent or partial trust subclass data

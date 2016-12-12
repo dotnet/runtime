@@ -7,6 +7,7 @@ namespace System.Globalization {
     using System.Runtime.CompilerServices;
     using System.Globalization;
     using System.Runtime.Versioning;
+    using System.Diagnostics;
     using System.Diagnostics.Contracts;
 
     // This abstract class represents a calendar. A calendar reckons time in
@@ -229,7 +230,7 @@ namespace System.Globalization {
             get {
                 // The following code assumes that the current era value can not be -1.
                 if (m_currentEraValue == -1) {
-                    Contract.Assert(BaseCalendarID > 0, "[Calendar.CurrentEraValue] Expected ID > 0");
+                    Debug.Assert(BaseCalendarID > 0, "[Calendar.CurrentEraValue] Expected ID > 0");
                     m_currentEraValue = CalendarData.GetCalendarData(BaseCalendarID).iCurrentEra;
                 }
                 return (m_currentEraValue);
@@ -529,7 +530,7 @@ namespace System.Globalization {
             // this value can be less than 0.  It's fine since we are making it positive again in calculating offset.
             int dayForJan1 = (int)GetDayOfWeek(time) - (dayOfYear % 7);
             int offset = (dayForJan1 - firstDayOfWeek + 14) % 7;
-            Contract.Assert(offset >= 0, "Calendar.GetFirstDayWeekOfYear(): offset >= 0");
+            Debug.Assert(offset >= 0, "Calendar.GetFirstDayWeekOfYear(): offset >= 0");
             return ((dayOfYear + offset) / 7 + 1);
         }
 

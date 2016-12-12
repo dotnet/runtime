@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Security;
 using System.Text;
@@ -35,7 +36,7 @@ namespace System.Globalization
         [SecuritySafeCritical]
         private unsafe string ChangeCase(string s, bool toUpper)
         {
-            Contract.Assert(s != null);
+            Debug.Assert(s != null);
 
             if (s.Length == 0)
             {
@@ -93,7 +94,7 @@ namespace System.Globalization
 
         private bool NeedsTurkishCasing(string localeName)
         {
-            Contract.Assert(localeName != null);
+            Debug.Assert(localeName != null);
 
             return CultureInfo.GetCultureInfo(localeName).CompareInfo.Compare("\u0131", "I", CompareOptions.IgnoreCase) == 0;
         }

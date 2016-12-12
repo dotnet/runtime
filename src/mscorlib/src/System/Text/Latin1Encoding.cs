@@ -5,6 +5,7 @@
 namespace System.Text
 {
     using System;
+    using System.Diagnostics;
     using System.Diagnostics.Contracts;
     using System.Globalization;
     using System.Runtime.InteropServices;
@@ -47,7 +48,7 @@ namespace System.Text
         {
             // Make sure to get the base stuff too This throws if info is null
             SerializeEncoding(info, context);
-            Contract.Assert(info!=null, "[Latin1Encoding.GetObjectData] Expected null info to throw");
+            Debug.Assert(info!=null, "[Latin1Encoding.GetObjectData] Expected null info to throw");
 
             // In Everett this is a CodePageEncoding, so it needs maxCharSize
             info.AddValue("CodePageEncoding+maxCharSize", 1);
@@ -63,11 +64,11 @@ namespace System.Text
         internal override unsafe int GetByteCount(char* chars, int charCount, EncoderNLS encoder)
         {
             // Just need to ASSERT, this is called by something else internal that checked parameters already
-            Contract.Assert(charCount >= 0, "[Latin1Encoding.GetByteCount]count is negative");
-            Contract.Assert(chars != null, "[Latin1Encoding.GetByteCount]chars is null");
+            Debug.Assert(charCount >= 0, "[Latin1Encoding.GetByteCount]count is negative");
+            Debug.Assert(chars != null, "[Latin1Encoding.GetByteCount]chars is null");
 
             // Assert because we shouldn't be able to have a null encoder.
-            Contract.Assert(encoderFallback != null, "[Latin1Encoding.GetByteCount]Attempting to use null fallback encoder");
+            Debug.Assert(encoderFallback != null, "[Latin1Encoding.GetByteCount]Attempting to use null fallback encoder");
 
             char charLeftOver = (char)0;
 
@@ -77,13 +78,13 @@ namespace System.Text
             if (encoder != null)
             {
                 charLeftOver = encoder.charLeftOver;
-                Contract.Assert(charLeftOver == 0 || Char.IsHighSurrogate(charLeftOver),
+                Debug.Assert(charLeftOver == 0 || Char.IsHighSurrogate(charLeftOver),
                     "[Latin1Encoding.GetByteCount]leftover character should be high surrogate");
 
                 fallback = encoder.Fallback as EncoderReplacementFallback;
 
                 // Verify that we have no fallbackbuffer, for Latin1 its always empty, so just assert
-                Contract.Assert(!encoder.m_throwOnOverflow || !encoder.InternalHasFallbackBuffer ||
+                Debug.Assert(!encoder.m_throwOnOverflow || !encoder.InternalHasFallbackBuffer ||
                     encoder.FallbackBuffer.Remaining == 0,
                     "[Latin1CodePageEncoding.GetByteCount]Expected empty fallback buffer");
             }
@@ -120,7 +121,7 @@ namespace System.Text
             if (charLeftOver > 0)
             {
                 // Initialize the buffer
-                Contract.Assert(encoder != null,
+                Debug.Assert(encoder != null,
                     "[Latin1Encoding.GetByteCount]Expected encoder if we have charLeftOver");
                 fallbackBuffer = encoder.FallbackBuffer;
                 fallbackBuffer.InternalInitialize(chars, charEnd, encoder, false);
@@ -169,7 +170,7 @@ namespace System.Text
                 byteCount++;
             }
 
-            Contract.Assert(fallbackBuffer == null || fallbackBuffer.Remaining == 0,
+            Debug.Assert(fallbackBuffer == null || fallbackBuffer.Remaining == 0,
                 "[Latin1Encoding.GetByteCount]Expected Empty fallback buffer");
 
             return byteCount;
@@ -179,13 +180,13 @@ namespace System.Text
                                                 byte* bytes, int byteCount, EncoderNLS encoder)
         {
             // Just need to ASSERT, this is called by something else internal that checked parameters already
-            Contract.Assert(bytes != null, "[Latin1Encoding.GetBytes]bytes is null");
-            Contract.Assert(byteCount >= 0, "[Latin1Encoding.GetBytes]byteCount is negative");
-            Contract.Assert(chars != null, "[Latin1Encoding.GetBytes]chars is null");
-            Contract.Assert(charCount >= 0, "[Latin1Encoding.GetBytes]charCount is negative");
+            Debug.Assert(bytes != null, "[Latin1Encoding.GetBytes]bytes is null");
+            Debug.Assert(byteCount >= 0, "[Latin1Encoding.GetBytes]byteCount is negative");
+            Debug.Assert(chars != null, "[Latin1Encoding.GetBytes]chars is null");
+            Debug.Assert(charCount >= 0, "[Latin1Encoding.GetBytes]charCount is negative");
 
             // Assert because we shouldn't be able to have a null encoder.
-            Contract.Assert(encoderFallback != null, "[Latin1Encoding.GetBytes]Attempting to use null encoder fallback");
+            Debug.Assert(encoderFallback != null, "[Latin1Encoding.GetBytes]Attempting to use null encoder fallback");
 
             // Get any left over characters & check fast or slower fallback type
             char charLeftOver = (char)0;
@@ -194,11 +195,11 @@ namespace System.Text
             {
                 charLeftOver = encoder.charLeftOver;
                 fallback = encoder.Fallback as EncoderReplacementFallback;
-                Contract.Assert(charLeftOver == 0 || Char.IsHighSurrogate(charLeftOver),
+                Debug.Assert(charLeftOver == 0 || Char.IsHighSurrogate(charLeftOver),
                     "[Latin1Encoding.GetBytes]leftover character should be high surrogate");
 
                 // Verify that we have no fallbackbuffer, for ASCII its always empty, so just assert
-                Contract.Assert(!encoder.m_throwOnOverflow || !encoder.InternalHasFallbackBuffer ||
+                Debug.Assert(!encoder.m_throwOnOverflow || !encoder.InternalHasFallbackBuffer ||
                     encoder.FallbackBuffer.Remaining == 0,
                     "[Latin1CodePageEncoding.GetBytes]Expected empty fallback buffer");
             }
@@ -281,7 +282,7 @@ namespace System.Text
             {
                 // Since left over char was a surrogate, it'll have to be fallen back.
                 // Get Fallback
-                Contract.Assert(encoder != null,
+                Debug.Assert(encoder != null,
                     "[Latin1Encoding.GetBytes]Expected encoder if we have charLeftOver");
                 fallbackBuffer = encoder.FallbackBuffer;
                 fallbackBuffer.InternalInitialize(chars, charEnd, encoder, true);
@@ -335,7 +336,7 @@ namespace System.Text
                     {
                         // Didn't use this char, throw it.  Chars should've advanced by now
                         // If we had encoder fallback data it would've thrown before the loop
-                        Contract.Assert(chars > charStart, 
+                        Debug.Assert(chars > charStart, 
                             "[Latin1Encoding.GetBytes]Expected chars to have advanced (fallback case)");
                         chars--;
                         fallbackBuffer.InternalReset();
@@ -353,11 +354,11 @@ namespace System.Text
                 if (bytes >= byteEnd)
                 {
                     // didn't use this char, we'll throw or use buffer
-                    Contract.Assert(fallbackBuffer == null || fallbackBuffer.bFallingBack == false,
+                    Debug.Assert(fallbackBuffer == null || fallbackBuffer.bFallingBack == false,
                         "[Latin1Encoding.GetBytes]Expected fallback to have throw initially if insufficient space");
                     if (fallbackBuffer == null || fallbackBuffer.bFallingBack == false)
                     {
-                        Contract.Assert(chars > charStart, 
+                        Debug.Assert(chars > charStart, 
                             "[Latin1Encoding.GetBytes]Expected chars to have advanced (fallback case)");
                         chars--;                                        // don't use last char
                     }
@@ -382,7 +383,7 @@ namespace System.Text
                 encoder.m_charsUsed = (int)(chars - charStart);
             }
 
-            Contract.Assert(fallbackBuffer == null || fallbackBuffer.Remaining == 0,
+            Debug.Assert(fallbackBuffer == null || fallbackBuffer.Remaining == 0,
                 "[Latin1Encoding.GetBytes]Expected Empty fallback buffer");
 
             return (int)(bytes - byteStart);
@@ -392,8 +393,8 @@ namespace System.Text
         internal override unsafe int GetCharCount(byte* bytes, int count, DecoderNLS decoder)
         {
             // Just assert, we're called internally so these should be safe, checked already
-            Contract.Assert(bytes != null, "[Latin1Encoding.GetCharCount]bytes is null");
-            Contract.Assert(count >= 0, "[Latin1Encoding.GetCharCount]byteCount is negative");
+            Debug.Assert(bytes != null, "[Latin1Encoding.GetCharCount]bytes is null");
+            Debug.Assert(count >= 0, "[Latin1Encoding.GetCharCount]byteCount is negative");
 
             // Just return length, SBCS stay the same length because they don't map to surrogate
             // pairs and we don't have to fallback because all latin1Encoding code points are unicode
@@ -404,10 +405,10 @@ namespace System.Text
                                                 char* chars, int charCount, DecoderNLS decoder)
         {
             // Just need to ASSERT, this is called by something else internal that checked parameters already
-            Contract.Assert(bytes != null, "[Latin1Encoding.GetChars]bytes is null");
-            Contract.Assert(byteCount >= 0, "[Latin1Encoding.GetChars]byteCount is negative");
-            Contract.Assert(chars != null, "[Latin1Encoding.GetChars]chars is null");
-            Contract.Assert(charCount >= 0, "[Latin1Encoding.GetChars]charCount is negative");
+            Debug.Assert(bytes != null, "[Latin1Encoding.GetChars]bytes is null");
+            Debug.Assert(byteCount >= 0, "[Latin1Encoding.GetChars]byteCount is negative");
+            Debug.Assert(chars != null, "[Latin1Encoding.GetChars]chars is null");
+            Debug.Assert(charCount >= 0, "[Latin1Encoding.GetChars]charCount is negative");
 
             // Need byteCount chars, otherwise too small buffer
             if (charCount < byteCount)

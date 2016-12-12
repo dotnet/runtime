@@ -19,6 +19,7 @@ namespace System.Runtime.Serialization
     using System.Reflection;
     using System.Runtime.Remoting;
     using System.Globalization;
+    using System.Diagnostics;
     using System.Diagnostics.Contracts;
     using System.Security;
     using System.Runtime.CompilerServices;
@@ -228,7 +229,7 @@ namespace System.Runtime.Serialization
         private void ExpandArrays()
         {
             int newSize;
-            Contract.Assert(m_members.Length == m_currMember, "[SerializationInfo.ExpandArrays]m_members.Length == m_currMember");
+            Debug.Assert(m_members.Length == m_currMember, "[SerializationInfo.ExpandArrays]m_members.Length == m_currMember");
 
             newSize = (m_currMember * 2);
 
@@ -407,9 +408,9 @@ namespace System.Runtime.Serialization
         // its ObjectManager implementation, but it should not be exposed out of a contract.
         public void UpdateValue(String name, Object value, Type type)
         {
-            Contract.Assert(null != name, "[SerializationInfo.UpdateValue]name!=null");
-            Contract.Assert(null != value, "[SerializationInfo.UpdateValue]value!=null");
-            Contract.Assert(null != (object)type, "[SerializationInfo.UpdateValue]type!=null");
+            Debug.Assert(null != name, "[SerializationInfo.UpdateValue]name!=null");
+            Debug.Assert(null != value, "[SerializationInfo.UpdateValue]value!=null");
+            Debug.Assert(null != (object)type, "[SerializationInfo.UpdateValue]type!=null");
 
             int index = FindElement(name);
             if (index < 0)
@@ -458,11 +459,11 @@ namespace System.Runtime.Serialization
                 throw new SerializationException(Environment.GetResourceString("Serialization_NotFound", name));
             }
 
-            Contract.Assert(index < m_data.Length, "[SerializationInfo.GetElement]index<m_data.Length");
-            Contract.Assert(index < m_types.Length, "[SerializationInfo.GetElement]index<m_types.Length");
+            Debug.Assert(index < m_data.Length, "[SerializationInfo.GetElement]index<m_data.Length");
+            Debug.Assert(index < m_types.Length, "[SerializationInfo.GetElement]index<m_types.Length");
 
             foundType = m_types[index];
-            Contract.Assert((object)foundType != null, "[SerializationInfo.GetElement]foundType!=null");
+            Debug.Assert((object)foundType != null, "[SerializationInfo.GetElement]foundType!=null");
             return m_data[index];
         }
 
@@ -476,11 +477,11 @@ namespace System.Runtime.Serialization
                 return null;
             }
 
-            Contract.Assert(index < m_data.Length, "[SerializationInfo.GetElement]index<m_data.Length");
-            Contract.Assert(index < m_types.Length, "[SerializationInfo.GetElement]index<m_types.Length");
+            Debug.Assert(index < m_data.Length, "[SerializationInfo.GetElement]index<m_data.Length");
+            Debug.Assert(index < m_types.Length, "[SerializationInfo.GetElement]index<m_types.Length");
 
             foundType = m_types[index];
-            Contract.Assert((object)foundType != null, "[SerializationInfo.GetElement]foundType!=null");
+            Debug.Assert((object)foundType != null, "[SerializationInfo.GetElement]foundType!=null");
             return m_data[index];
         }
 
@@ -512,7 +513,7 @@ namespace System.Runtime.Serialization
                 return value;
             }
 
-            Contract.Assert(m_converter != null, "[SerializationInfo.GetValue]m_converter!=null");
+            Debug.Assert(m_converter != null, "[SerializationInfo.GetValue]m_converter!=null");
 
             return m_converter.Convert(value, type);
         }
@@ -523,8 +524,8 @@ namespace System.Runtime.Serialization
             Type foundType;
             Object value;
 
-            Contract.Assert((object)type != null, "[SerializationInfo.GetValue]type ==null");
-            Contract.Assert(type is RuntimeType, "[SerializationInfo.GetValue]type is not a runtime type");
+            Debug.Assert((object)type != null, "[SerializationInfo.GetValue]type ==null");
+            Debug.Assert(type is RuntimeType, "[SerializationInfo.GetValue]type is not a runtime type");
 
             value = GetElementNoThrow(name, out foundType);
             if (value == null)
@@ -535,7 +536,7 @@ namespace System.Runtime.Serialization
                 return value;
             }
 
-            Contract.Assert(m_converter != null, "[SerializationInfo.GetValue]m_converter!=null");
+            Debug.Assert(m_converter != null, "[SerializationInfo.GetValue]m_converter!=null");
 
             return m_converter.Convert(value, type);
         }

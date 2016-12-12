@@ -24,6 +24,7 @@ namespace System.Threading {
     using System.Runtime.CompilerServices;
     using System.Runtime.ConstrainedExecution;
     using System.Runtime.Versioning;
+    using System.Diagnostics;
     using System.Diagnostics.Contracts;
 
     [HostProtection(Synchronization=true, ExternalThreading=true)]
@@ -53,7 +54,7 @@ namespace System.Threading {
                 ThrowLockTakenException();
 
             ReliableEnter(obj, ref lockTaken);
-            Contract.Assert(lockTaken);
+            Debug.Assert(lockTaken);
         }
 
         private static void ThrowLockTakenException()

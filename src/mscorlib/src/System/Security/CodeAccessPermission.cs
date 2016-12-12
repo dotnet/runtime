@@ -13,7 +13,7 @@ namespace System.Security
     using System.Collections;
     using System.Text;
     using System;
-    using  System.Diagnostics;
+    using System.Diagnostics;
     using System.Diagnostics.Contracts;
     using IUnrestrictedPermission = System.Security.Permissions.IUnrestrictedPermission;
 
@@ -78,7 +78,7 @@ namespace System.Security
             //    without having to create objects.
             //    The security annotation fxcop rule that flags all methods with a Demand() has logic
             //    which checks for methods named Demand in types that implement IPermission or IStackWalk. 
-            Contract.Assert(new StackFrame().GetMethod().Name.Equals("Demand"), "This method needs to be named Demand");
+            Debug.Assert(new StackFrame().GetMethod().Name.Equals("Demand"), "This method needs to be named Demand");
             
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCallersCaller;
             CodeAccessSecurityEngine.SpecialDemand(permissionType, ref stackMark);
@@ -104,7 +104,7 @@ namespace System.Security
             //    without having to new a PermissionSet.
             //    The security annotation fxcop rule that flags all methods with an Assert() has logic
             //    which checks for methods named Assert in types that implement IPermission or IStackWalk. 
-            Contract.Assert(new StackFrame().GetMethod().Name.Equals("Assert"), "This method needs to be named Assert");
+            Debug.Assert(new StackFrame().GetMethod().Name.Equals("Assert"), "This method needs to be named Assert");
             
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
             SecurityRuntime.AssertAllPossible(ref stackMark);
@@ -203,26 +203,26 @@ namespace System.Security
 
         internal bool CheckDemand(CodeAccessPermission grant)
         {
-            Contract.Assert( grant == null || grant.GetType().Equals( this.GetType() ), "CheckDemand not defined for permissions of different type" );
+            Debug.Assert( grant == null || grant.GetType().Equals( this.GetType() ), "CheckDemand not defined for permissions of different type" );
             return IsSubsetOf( grant );
         }
 
         internal bool CheckPermitOnly(CodeAccessPermission permitted)
         {
-            Contract.Assert( permitted == null || permitted.GetType().Equals( this.GetType() ), "CheckPermitOnly not defined for permissions of different type" );
+            Debug.Assert( permitted == null || permitted.GetType().Equals( this.GetType() ), "CheckPermitOnly not defined for permissions of different type" );
             return IsSubsetOf( permitted );
         }
 
         internal bool CheckDeny(CodeAccessPermission denied)
         {
-            Contract.Assert( denied == null || denied.GetType().Equals( this.GetType() ), "CheckDeny not defined for permissions of different type" );
+            Debug.Assert( denied == null || denied.GetType().Equals( this.GetType() ), "CheckDeny not defined for permissions of different type" );
             IPermission intersectPerm = Intersect(denied);
             return (intersectPerm == null || intersectPerm.IsSubsetOf(null));
         }
 
         internal bool CheckAssert(CodeAccessPermission asserted)
         {
-            Contract.Assert( asserted == null || asserted.GetType().Equals( this.GetType() ), "CheckPermitOnly not defined for permissions of different type" );
+            Debug.Assert( asserted == null || asserted.GetType().Equals( this.GetType() ), "CheckPermitOnly not defined for permissions of different type" );
             return IsSubsetOf( asserted );
         }
     }

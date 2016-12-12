@@ -33,6 +33,7 @@ namespace System.Threading
     using System.Security;
     using System.Security.Permissions;
     using System.Runtime.ConstrainedExecution;
+    using System.Diagnostics;
     using System.Diagnostics.Contracts;
     using System.Collections.Concurrent;
 
@@ -83,7 +84,7 @@ namespace System.Threading
         static internal void IOCompletionCallback_Context(Object state)
         {
             _IOCompletionCallback helper  = (_IOCompletionCallback)state;
-            Contract.Assert(helper != null,"_IOCompletionCallback cannot be null");
+            Debug.Assert(helper != null,"_IOCompletionCallback cannot be null");
             helper._ioCompletionCallback(helper._errorCode, helper._numBytes, helper._pOVERLAP);
         }
 
@@ -162,10 +163,10 @@ namespace System.Threading
             m_iocbHelper = null;
             m_overlapped = null;
             m_userObject = null;
-            Contract.Assert(m_pinSelf.IsNull(), "OverlappedData has not been freed: m_pinSelf");
+            Debug.Assert(m_pinSelf.IsNull(), "OverlappedData has not been freed: m_pinSelf");
             m_pinSelf = (IntPtr)0;
             m_userObjectInternal = (IntPtr)0;
-            Contract.Assert(m_AppDomainId == 0 || m_AppDomainId == AppDomain.CurrentDomain.Id, "OverlappedData is not in the current domain");
+            Debug.Assert(m_AppDomainId == 0 || m_AppDomainId == AppDomain.CurrentDomain.Id, "OverlappedData is not in the current domain");
             m_AppDomainId = 0;
             m_nativeOverlapped.EventHandle = (IntPtr)0;
             m_isArray = 0;

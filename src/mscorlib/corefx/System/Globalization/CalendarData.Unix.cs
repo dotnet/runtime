@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Runtime.InteropServices;
 using System.Security;
@@ -200,7 +201,7 @@ namespace System.Globalization
                         break;
                     default:
                         const string unsupportedDateFieldSymbols = "YuUrQqwWDFg";
-                        Contract.Assert(unsupportedDateFieldSymbols.IndexOf(input[index]) == -1,
+                        Debug.Assert(unsupportedDateFieldSymbols.IndexOf(input[index]) == -1,
                             string.Format(CultureInfo.InvariantCulture,
                                 "Encountered an unexpected date field symbol '{0}' from ICU which has no known corresponding .NET equivalent.", 
                                 input[index]));

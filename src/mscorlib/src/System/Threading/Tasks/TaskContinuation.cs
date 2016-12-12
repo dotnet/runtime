@@ -11,6 +11,7 @@
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 using System.Security;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Runtime.ExceptionServices;
 using System.Runtime.CompilerServices;
@@ -45,7 +46,7 @@ namespace System.Threading.Tasks
             // Get and null out the antecedent.  This is crucial to avoid a memory
             // leak with long chains of continuations.
             var antecedent = m_antecedent;
-            Contract.Assert(antecedent != null, 
+            Debug.Assert(antecedent != null, 
                 "No antecedent was set for the ContinuationTaskFromTask.");
             m_antecedent = null;
 
@@ -53,7 +54,7 @@ namespace System.Threading.Tasks
             antecedent.NotifyDebuggerOfWaitCompletionIfNecessary();
 
             // Invoke the delegate
-            Contract.Assert(m_action != null);
+            Debug.Assert(m_action != null);
             var action = m_action as Action<Task>;
             if (action != null)
             {
@@ -66,7 +67,7 @@ namespace System.Threading.Tasks
                 actionWithState(antecedent, m_stateObject);
                 return;
             }
-            Contract.Assert(false, "Invalid m_action in ContinuationTaskFromTask");
+            Debug.Assert(false, "Invalid m_action in ContinuationTaskFromTask");
         }
     }
 
@@ -93,7 +94,7 @@ namespace System.Threading.Tasks
             // Get and null out the antecedent.  This is crucial to avoid a memory
             // leak with long chains of continuations.
             var antecedent = m_antecedent;
-            Contract.Assert(antecedent != null, 
+            Debug.Assert(antecedent != null, 
                 "No antecedent was set for the ContinuationResultTaskFromTask.");
             m_antecedent = null;
 
@@ -101,7 +102,7 @@ namespace System.Threading.Tasks
             antecedent.NotifyDebuggerOfWaitCompletionIfNecessary();
 
             // Invoke the delegate
-            Contract.Assert(m_action != null);
+            Debug.Assert(m_action != null);
             var func = m_action as Func<Task, TResult>;
             if (func != null)
             {
@@ -114,7 +115,7 @@ namespace System.Threading.Tasks
                 m_result = funcWithState(antecedent, m_stateObject);
                 return;
             }
-            Contract.Assert(false, "Invalid m_action in ContinuationResultTaskFromTask");
+            Debug.Assert(false, "Invalid m_action in ContinuationResultTaskFromTask");
         }
     }
 
@@ -141,7 +142,7 @@ namespace System.Threading.Tasks
             // Get and null out the antecedent.  This is crucial to avoid a memory
             // leak with long chains of continuations.
             var antecedent = m_antecedent;
-            Contract.Assert(antecedent != null, 
+            Debug.Assert(antecedent != null, 
                 "No antecedent was set for the ContinuationTaskFromResultTask.");
             m_antecedent = null;
 
@@ -149,7 +150,7 @@ namespace System.Threading.Tasks
             antecedent.NotifyDebuggerOfWaitCompletionIfNecessary();
 
             // Invoke the delegate
-            Contract.Assert(m_action != null);
+            Debug.Assert(m_action != null);
             var action = m_action as Action<Task<TAntecedentResult>>;
             if (action != null)
             {
@@ -162,7 +163,7 @@ namespace System.Threading.Tasks
                 actionWithState(antecedent, m_stateObject);
                 return;
             }
-            Contract.Assert(false, "Invalid m_action in ContinuationTaskFromResultTask");
+            Debug.Assert(false, "Invalid m_action in ContinuationTaskFromResultTask");
         }
     }
 
@@ -189,7 +190,7 @@ namespace System.Threading.Tasks
             // Get and null out the antecedent.  This is crucial to avoid a memory
             // leak with long chains of continuations.
             var antecedent = m_antecedent;
-            Contract.Assert(antecedent != null, 
+            Debug.Assert(antecedent != null, 
                 "No antecedent was set for the ContinuationResultTaskFromResultTask.");
             m_antecedent = null;
 
@@ -197,7 +198,7 @@ namespace System.Threading.Tasks
             antecedent.NotifyDebuggerOfWaitCompletionIfNecessary();
 
             // Invoke the delegate
-            Contract.Assert(m_action != null);
+            Debug.Assert(m_action != null);
             var func = m_action as Func<Task<TAntecedentResult>, TResult>;
             if (func != null)
             {
@@ -210,7 +211,7 @@ namespace System.Threading.Tasks
                 m_result = funcWithState(antecedent, m_stateObject);
                 return;
             }
-            Contract.Assert(false, "Invalid m_action in ContinuationResultTaskFromResultTask");
+            Debug.Assert(false, "Invalid m_action in ContinuationResultTaskFromResultTask");
         }
     }
 
@@ -238,7 +239,7 @@ namespace System.Threading.Tasks
         protected static void InlineIfPossibleOrElseQueue(Task task, bool needsProtection)
         {
             Contract.Requires(task != null);
-            Contract.Assert(task.m_taskScheduler != null);
+            Debug.Assert(task.m_taskScheduler != null);
 
             // Set the TASK_STATE_STARTED flag.  This only needs to be done
             // if the task may be canceled or if someone else has a reference to it
@@ -317,8 +318,8 @@ namespace System.Threading.Tasks
         /// <param name="bCanInlineContinuationTask">Whether the continuation can be inlined.</param>
         internal override void Run(Task completedTask, bool bCanInlineContinuationTask)
         {
-            Contract.Assert(completedTask != null);
-            Contract.Assert(completedTask.IsCompleted, "ContinuationTask.Run(): completedTask not completed");
+            Debug.Assert(completedTask != null);
+            Debug.Assert(completedTask.IsCompleted, "ContinuationTask.Run(): completedTask not completed");
 
             // Check if the completion status of the task works with the desired 
             // activation criteria of the TaskContinuationOptions.
@@ -396,7 +397,7 @@ namespace System.Threading.Tasks
             SynchronizationContext context, Action action, bool flowExecutionContext, ref StackCrawlMark stackMark) :
             base(action, flowExecutionContext, ref stackMark)
         {
-            Contract.Assert(context != null);
+            Debug.Assert(context != null);
             m_syncContext = context;
         }
 
@@ -483,7 +484,7 @@ namespace System.Threading.Tasks
             TaskScheduler scheduler, Action action, bool flowExecutionContext, ref StackCrawlMark stackMark) :
             base(action, flowExecutionContext, ref stackMark)
         {
-            Contract.Assert(scheduler != null);
+            Debug.Assert(scheduler != null);
             m_scheduler = scheduler;
         }
 
@@ -726,7 +727,7 @@ namespace System.Threading.Tasks
         protected void RunCallback(ContextCallback callback, object state, ref Task currentTask)
         {
             Contract.Requires(callback != null);
-            Contract.Assert(currentTask == Task.t_currentTask);
+            Debug.Assert(currentTask == Task.t_currentTask);
 
             // Pretend there's no current task, so that no task is seen as a parent
             // and TaskScheduler.Current does not reflect false information
@@ -772,7 +773,7 @@ namespace System.Threading.Tasks
         /// </remarks>
         internal static void RunOrScheduleAction(Action action, bool allowInlining, ref Task currentTask)
         {
-            Contract.Assert(currentTask == Task.t_currentTask);
+            Debug.Assert(currentTask == Task.t_currentTask);
 
             // If we're not allowed to run here, schedule the action
             if (!allowInlining || !IsValidLocationForInlining)
@@ -840,7 +841,7 @@ namespace System.Threading.Tasks
 
         internal override Delegate[] GetDelegateContinuationsForDebugger()
         {
-            Contract.Assert(m_action != null);
+            Debug.Assert(m_action != null);
             return new Delegate[] { AsyncMethodBuilderCore.TryGetStateMachineForDebugger(m_action) };
         }
     }

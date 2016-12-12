@@ -21,6 +21,7 @@ namespace System
     using System.Security;
     using System.Security.Policy;
     using Path = System.IO.Path;
+    using System.Diagnostics;
     using System.Diagnostics.Contracts;
     using System.Collections.Generic;
 
@@ -970,7 +971,7 @@ namespace System
             if(String.IsNullOrEmpty(s))
                 return -1;
 
-            Contract.Assert('A' == ACTAG_APP_BASE_URL[0]        , "Assumption violated");
+            Debug.Assert('A' == ACTAG_APP_BASE_URL[0]        , "Assumption violated");
             if (s[0]=='A' && s == ACTAG_APP_BASE_URL)        
                 return (int)LoaderInformation.ApplicationBaseValue;
 

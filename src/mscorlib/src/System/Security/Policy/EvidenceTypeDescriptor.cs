@@ -41,7 +41,7 @@ namespace System.Security.Policy
         /// </summary>
         private EvidenceTypeDescriptor(EvidenceTypeDescriptor descriptor)
         {
-            Contract.Assert(descriptor != null);
+            Debug.Assert(descriptor != null);
 
             m_hostCanGenerate = descriptor.m_hostCanGenerate;
 
@@ -68,9 +68,9 @@ namespace System.Security.Policy
 
             set
             {
-                Contract.Assert(value != null);
+                Debug.Assert(value != null);
 #if _DEBUG
-                Contract.Assert(CheckEvidenceType(value), "Incorrect type of AssemblyEvidence set");
+                Debug.Assert(CheckEvidenceType(value), "Incorrect type of AssemblyEvidence set");
 #endif
                 m_assemblyEvidence = value;
             }
@@ -85,7 +85,7 @@ namespace System.Security.Policy
 
             set
             {
-                Contract.Assert(value, "Attempt to clear the Generated flag");
+                Debug.Assert(value, "Attempt to clear the Generated flag");
                 m_generated = value;
             }
         }
@@ -99,7 +99,7 @@ namespace System.Security.Policy
 
             set
             {
-                Contract.Assert(value, "Attempt to clear HostCanGenerate flag");
+                Debug.Assert(value, "Attempt to clear HostCanGenerate flag");
                 m_hostCanGenerate = value;
             }
         }
@@ -113,9 +113,9 @@ namespace System.Security.Policy
 
             set
             {
-                Contract.Assert(value != null);
+                Debug.Assert(value != null);
 #if _DEBUG
-                Contract.Assert(CheckEvidenceType(value), "Incorrect type of HostEvidence set");
+                Debug.Assert(CheckEvidenceType(value), "Incorrect type of HostEvidence set");
 #endif
                 m_hostEvidence = value;
             }
@@ -127,7 +127,7 @@ namespace System.Security.Policy
         /// </summary>
         private bool CheckEvidenceType(EvidenceBase evidence)
         {
-            Contract.Assert(evidence != null);
+            Debug.Assert(evidence != null);
 
             ILegacyEvidenceAdapter legacyAdapter = evidence as ILegacyEvidenceAdapter;
             Type storedType = legacyAdapter == null ? evidence.GetType() : legacyAdapter.EvidenceType;
@@ -150,8 +150,8 @@ namespace System.Security.Policy
         /// </summary>
         internal void SetEvidenceType(Type evidenceType)
         {
-            Contract.Assert(evidenceType != null);
-            Contract.Assert(m_evidenceType == null, "Attempt to reset evidence type");
+            Debug.Assert(evidenceType != null);
+            Debug.Assert(m_evidenceType == null, "Attempt to reset evidence type");
 
             m_evidenceType = evidenceType;
         }

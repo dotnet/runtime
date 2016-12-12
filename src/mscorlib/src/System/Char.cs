@@ -18,6 +18,7 @@ namespace System {
     using System.Runtime;
     using System.Runtime.InteropServices;
     using System.Runtime.CompilerServices;
+    using System.Diagnostics;
     using System.Diagnostics.Contracts;
 
 [System.Runtime.InteropServices.ComVisible(true)]
@@ -86,7 +87,7 @@ namespace System {
 
         // Return the Unicode category for Unicode character <= 0x00ff.      
         private static UnicodeCategory GetLatin1UnicodeCategory(char ch) {
-            Contract.Assert(IsLatin1(ch), "Char.GetLatin1UnicodeCategory(): ch should be <= 007f");
+            Debug.Assert(IsLatin1(ch), "Char.GetLatin1UnicodeCategory(): ch should be <= 007f");
             return (UnicodeCategory)(categoryForLatin1[(int)ch]);
         }
      

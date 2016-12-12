@@ -5,6 +5,7 @@
 using System;
 using System.Security;
 using System.Threading;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 
 namespace System.Text
@@ -162,7 +163,7 @@ namespace System.Text
         internal unsafe virtual bool InternalFallback(char ch, ref char* chars)
         {
             // Shouldn't have null charStart
-            Contract.Assert(charStart != null,
+            Debug.Assert(charStart != null,
                 "[EncoderFallback.InternalFallbackBuffer]Fallback buffer is not initialized");
 
             // Get our index, remember chars was preincremented to point at next char, so have to -1

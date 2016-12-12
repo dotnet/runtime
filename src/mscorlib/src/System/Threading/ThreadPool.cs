@@ -36,6 +36,7 @@ namespace System.Threading
     using System.Runtime.ConstrainedExecution;
     using System.Runtime.InteropServices;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Diagnostics.Contracts;
     using System.Diagnostics.CodeAnalysis;
     using System.Diagnostics.Tracing;
@@ -169,7 +170,7 @@ namespace System.Threading
                             //
                             m_headIndex = m_headIndex & m_mask;
                             m_tailIndex = tail = m_tailIndex & m_mask;
-                            Contract.Assert(m_headIndex <= m_tailIndex);
+                            Debug.Assert(m_headIndex <= m_tailIndex);
                         }
                     }
                     finally
@@ -231,7 +232,7 @@ namespace System.Threading
                     IThreadPoolWorkItem unused;
                     if (LocalPop(out unused))
                     {
-                        Contract.Assert(unused == obj);
+                        Debug.Assert(unused == obj);
                         return true;
                     }
                     return false;
@@ -430,23 +431,23 @@ namespace System.Threading
                 upper = (i >> 16) & SixteenBits;
                 lower = i & SixteenBits;
 
-                Contract.Assert(upper >= lower);
-                Contract.Assert(upper <= nodes.Length);
-                Contract.Assert(lower <= nodes.Length);
-                Contract.Assert(upper >= 0);
-                Contract.Assert(lower >= 0);
+                Debug.Assert(upper >= lower);
+                Debug.Assert(upper <= nodes.Length);
+                Debug.Assert(lower <= nodes.Length);
+                Debug.Assert(upper >= 0);
+                Debug.Assert(lower >= 0);
             }
 
             bool CompareExchangeIndexes(ref int prevUpper, int newUpper, ref int prevLower, int newLower)
             {
-                Contract.Assert(newUpper >= newLower);
-                Contract.Assert(newUpper <= nodes.Length);
-                Contract.Assert(newLower <= nodes.Length);
-                Contract.Assert(newUpper >= 0);
-                Contract.Assert(newLower >= 0);
-                Contract.Assert(newUpper >= prevUpper);
-                Contract.Assert(newLower >= prevLower);
-                Contract.Assert(newUpper == prevUpper ^ newLower == prevLower);
+                Debug.Assert(newUpper >= newLower);
+                Debug.Assert(newUpper <= nodes.Length);
+                Debug.Assert(newLower <= nodes.Length);
+                Debug.Assert(newUpper >= 0);
+                Debug.Assert(newLower >= 0);
+                Debug.Assert(newUpper >= prevUpper);
+                Debug.Assert(newLower >= prevLower);
+                Debug.Assert(newUpper == prevUpper ^ newLower == prevLower);
 
                 int oldIndexes = (prevUpper << 16) | (prevLower & SixteenBits);
                 int newIndexes = (newUpper << 16) | (newLower & SixteenBits);
@@ -459,7 +460,7 @@ namespace System.Threading
             [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
             public QueueSegment()
             {
-                Contract.Assert(QueueSegmentLength <= SixteenBits);
+                Debug.Assert(QueueSegmentLength <= SixteenBits);
                 nodes = new IThreadPoolWorkItem[QueueSegmentLength];
             }
 
@@ -482,7 +483,7 @@ namespace System.Threading
                 // with a busy-wait loop, waiting for the element to become non-null.  This implies
                 // that we can never store null nodes in this data structure.
                 //
-                Contract.Assert(null != node);
+                Debug.Assert(null != node);
 
                 int upper, lower;
                 GetIndexes(out upper, out lower);
@@ -494,7 +495,7 @@ namespace System.Threading
 
                     if (CompareExchangeIndexes(ref upper, upper + 1, ref lower, lower))
                     {
-                        Contract.Assert(Volatile.Read(ref nodes[upper]) == null);
+                        Debug.Assert(Volatile.Read(ref nodes[upper]) == null);
                         Volatile.Write(ref nodes[upper], node);
                         return true;
                     }
@@ -647,7 +648,7 @@ namespace System.Threading
             WorkStealingQueue wsq = tl.workStealingQueue;
 
             if (wsq.LocalPop(out callback))
-                Contract.Assert(null != callback);
+                Debug.Assert(null != callback);
 
             if (null == callback)
             {
@@ -656,7 +657,7 @@ namespace System.Threading
                 {
                     if (tail.TryDequeue(out callback))
                     {
-                        Contract.Assert(null != callback);
+                        Debug.Assert(null != callback);
                         break;
                     }
 
@@ -686,7 +687,7 @@ namespace System.Threading
                         otherQueue != wsq &&
                         otherQueue.TrySteal(out callback, ref missedSteal))
                     {
-                        Contract.Assert(null != callback);
+                        Debug.Assert(null != callback);
                         break;
                     }
                     c--;
@@ -844,7 +845,7 @@ namespace System.Threading
             }
 
             // we can never reach this point, but the C# compiler doesn't know that, because it doesn't know the ThreadAbortException will be reraised above.
-            Contract.Assert(false);
+            Debug.Assert(false);
             return true;
         }
     }
@@ -882,7 +883,7 @@ namespace System.Threading
                             IThreadPoolWorkItem cb = null;
                             if (workStealingQueue.LocalPop(out cb))
                             {
-                                Contract.Assert(null != cb);
+                                Debug.Assert(null != cb);
                                 workQueue.Enqueue(cb, true);
                             }
                             else
@@ -1148,7 +1149,7 @@ namespace System.Threading
 
         ~QueueUserWorkItemCallback()
         {
-            Contract.Assert(
+            Debug.Assert(
                 executed != 0 || Environment.HasShutdownStarted || AppDomain.CurrentDomain.IsFinalizingForUnload(), 
                 "A QueueUserWorkItemCallback was never called!");
         }
@@ -1156,7 +1157,7 @@ namespace System.Threading
         void MarkExecuted(bool aborted)
         {
             GC.SuppressFinalize(this);
-            Contract.Assert(
+            Debug.Assert(
                 0 == Interlocked.Exchange(ref executed, 1) || aborted,
                 "A QueueUserWorkItemCallback was called twice!");
         }
@@ -1202,7 +1203,7 @@ namespace System.Threading
         {
             QueueUserWorkItemCallback obj = (QueueUserWorkItemCallback)state;
             WaitCallback wc = obj.callback as WaitCallback;
-            Contract.Assert(null != wc);
+            Debug.Assert(null != wc);
             wc(obj.state);
         }
     }
@@ -1219,7 +1220,7 @@ namespace System.Threading
 
         ~QueueUserWorkItemCallbackDefaultContext()
         {
-            Contract.Assert(
+            Debug.Assert(
                 executed != 0 || Environment.HasShutdownStarted || AppDomain.CurrentDomain.IsFinalizingForUnload(),
                 "A QueueUserWorkItemCallbackDefaultContext was never called!");
         }
@@ -1227,7 +1228,7 @@ namespace System.Threading
         void MarkExecuted(bool aborted)
         {
             GC.SuppressFinalize(this);
-            Contract.Assert(
+            Debug.Assert(
                 0 == Interlocked.Exchange(ref executed, 1) || aborted,
                 "A QueueUserWorkItemCallbackDefaultContext was called twice!");
         }
@@ -1262,7 +1263,7 @@ namespace System.Threading
         {
             QueueUserWorkItemCallbackDefaultContext obj = (QueueUserWorkItemCallbackDefaultContext)state;
             WaitCallback wc = obj.callback as WaitCallback;
-            Contract.Assert(null != wc);
+            Debug.Assert(null != wc);
             obj.callback = null;
             wc(obj.state);
         }
@@ -1312,7 +1313,7 @@ namespace System.Threading
         static internal void PerformWaitOrTimerCallback(Object state, bool timedOut)
         {
             _ThreadPoolWaitOrTimerCallback helper = (_ThreadPoolWaitOrTimerCallback)state; 
-            Contract.Assert(helper != null, "Null state passed to PerformWaitOrTimerCallback!");
+            Debug.Assert(helper != null, "Null state passed to PerformWaitOrTimerCallback!");
             // call directly if it is an unsafe call OR EC flow is suppressed
             if (helper._executionContext == null)
             {
@@ -1607,7 +1608,7 @@ namespace System.Threading
 
         internal static void UnsafeQueueCustomWorkItem(IThreadPoolWorkItem workItem, bool forceGlobal)
         {
-            Contract.Assert(null != workItem);
+            Debug.Assert(null != workItem);
             EnsureVMInitialized();
 
             //
@@ -1623,7 +1624,7 @@ namespace System.Threading
         // This method tries to take the target callback out of the current thread's queue.
         internal static bool TryPopCustomWorkItem(IThreadPoolWorkItem workItem)
         {
-            Contract.Assert(null != workItem);
+            Debug.Assert(null != workItem);
             if (!ThreadPoolGlobals.vmTpInitialized)
                 return false; //Not initialized, so there's no way this workitem was ever queued.
             return ThreadPoolGlobals.workQueue.LocalFindAndPop(workItem);

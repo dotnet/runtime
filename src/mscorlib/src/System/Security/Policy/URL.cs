@@ -14,6 +14,7 @@ namespace System.Security.Policy {
     using System.Security.Util;
     using UrlIdentityPermission = System.Security.Permissions.UrlIdentityPermission;
     using System.Runtime.Serialization;
+    using System.Diagnostics;
     using System.Diagnostics.Contracts;
 
     [Serializable]
@@ -42,7 +43,7 @@ namespace System.Security.Policy {
 
         private Url(Url url)
         {
-            Contract.Assert(url != null);
+            Debug.Assert(url != null);
             m_url = url.m_url;
         }
 

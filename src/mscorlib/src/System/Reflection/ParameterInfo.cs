@@ -8,6 +8,7 @@ namespace System.Reflection
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Diagnostics.Contracts;
     using System.Runtime.InteropServices;
     using System.Runtime.Serialization;
@@ -237,7 +238,7 @@ namespace System.Reflection
         #region Static Members
         internal unsafe static ParameterInfo[] GetParameters(IRuntimeMethodInfo method, MemberInfo member, Signature sig)
         {
-            Contract.Assert(method is RuntimeMethodInfo || method is RuntimeConstructorInfo);
+            Debug.Assert(method is RuntimeMethodInfo || method is RuntimeConstructorInfo);
 
             ParameterInfo dummy;
             return GetParameters(method, member, sig, out dummy, false);
@@ -245,7 +246,7 @@ namespace System.Reflection
 
         internal unsafe static ParameterInfo GetReturnParameter(IRuntimeMethodInfo method, MemberInfo member, Signature sig)
         {
-            Contract.Assert(method is RuntimeMethodInfo || method is RuntimeConstructorInfo);
+            Debug.Assert(method is RuntimeMethodInfo || method is RuntimeConstructorInfo);
 
             ParameterInfo returnParameter;
             GetParameters(method, member, sig, out returnParameter, true);
@@ -363,7 +364,7 @@ namespace System.Reflection
             get
             {
                 MethodBase result = m_originalMember != null ? m_originalMember : MemberImpl as MethodBase;
-                Contract.Assert(result != null);
+                Debug.Assert(result != null);
                 return result;
             }
         }
@@ -420,7 +421,7 @@ namespace System.Reflection
             // The original owner should always be a method, because this method is only used to 
             // change the owner from a method to a property.
             m_originalMember = accessor.MemberImpl as MethodBase;
-            Contract.Assert(m_originalMember != null);
+            Debug.Assert(m_originalMember != null);
 
             // Populate all the caches -- we inherit this behavior from RTM
             NameImpl = accessor.Name;
@@ -440,8 +441,8 @@ namespace System.Reflection
             int position, ParameterAttributes attributes, MemberInfo member)
         {
             Contract.Requires(member != null);
-            Contract.Assert(MdToken.IsNullToken(tkParamDef) == scope.Equals(MetadataImport.EmptyImport));
-            Contract.Assert(MdToken.IsNullToken(tkParamDef) || MdToken.IsTokenOfType(tkParamDef, MetadataTokenType.ParamDef));
+            Debug.Assert(MdToken.IsNullToken(tkParamDef) == scope.Equals(MetadataImport.EmptyImport));
+            Debug.Assert(MdToken.IsNullToken(tkParamDef) || MdToken.IsTokenOfType(tkParamDef, MetadataTokenType.ParamDef));
 
             PositionImpl = position;
             MemberImpl = member;
@@ -483,7 +484,7 @@ namespace System.Reflection
                     else
                         parameterType = m_signature.Arguments[PositionImpl];
 
-                    Contract.Assert(parameterType != null);
+                    Debug.Assert(parameterType != null);
                     // different thread could only write ClassImpl to the same value, so a race condition is not a problem here
                     ClassImpl = parameterType;
                 }
@@ -559,7 +560,7 @@ namespace System.Reflection
         // returns DBNull.Value if the parameter doesn't have a default value
         private Object GetDefaultValueInternal(bool raw)
         {
-            Contract.Assert(!m_noMetadata);
+            Debug.Assert(!m_noMetadata);
 
             if (m_noDefaultValue)
                 return DBNull.Value;

@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -158,7 +159,7 @@ namespace System.Globalization
 
         private string GetLocaleInfo(LocaleStringData type)
         {
-            Contract.Assert(_sWindowsName != null, "[CultureData.DoGetLocaleInfo] Expected _sWindowsName to be populated by already");
+            Debug.Assert(_sWindowsName != null, "[CultureData.DoGetLocaleInfo] Expected _sWindowsName to be populated by already");
             return GetLocaleInfo(_sWindowsName, type);
         }
 
@@ -183,7 +184,7 @@ namespace System.Globalization
 
             // Ask OS for data, note that we presume it returns success, so we have to know that
             // sWindowsName is valid before calling.
-            Contract.Assert(_sWindowsName != null, "[CultureData.DoGetLocaleInfoInt] Expected _sWindowsName to be populated by already");
+            Debug.Assert(_sWindowsName != null, "[CultureData.DoGetLocaleInfoInt] Expected _sWindowsName to be populated by already");
             int result = Interop.mincore.GetLocaleInfoExInt(_sWindowsName, lctype);
 
             return result;
@@ -203,7 +204,7 @@ namespace System.Globalization
 
         private int GetFirstDayOfWeek()
         {
-            Contract.Assert(_sWindowsName != null, "[CultureData.DoGetLocaleInfoInt] Expected _sWindowsName to be populated by already");
+            Debug.Assert(_sWindowsName != null, "[CultureData.DoGetLocaleInfoInt] Expected _sWindowsName to be populated by already");
 
             const uint LOCALE_IFIRSTDAYOFWEEK = 0x0000100C;
 
@@ -216,7 +217,7 @@ namespace System.Globalization
         private String[] GetTimeFormats()
         {
             // Note that this gets overrides for us all the time
-            Contract.Assert(_sWindowsName != null, "[CultureData.DoEnumTimeFormats] Expected _sWindowsName to be populated by already");
+            Debug.Assert(_sWindowsName != null, "[CultureData.DoEnumTimeFormats] Expected _sWindowsName to be populated by already");
             String[] result = ReescapeWin32Strings(nativeEnumTimeFormats(_sWindowsName, 0, UseUserOverride));
 
             return result;
@@ -225,7 +226,7 @@ namespace System.Globalization
         private String[] GetShortTimeFormats()
         {
             // Note that this gets overrides for us all the time
-            Contract.Assert(_sWindowsName != null, "[CultureData.DoEnumShortTimeFormats] Expected _sWindowsName to be populated by already");
+            Debug.Assert(_sWindowsName != null, "[CultureData.DoEnumShortTimeFormats] Expected _sWindowsName to be populated by already");
             String[] result = ReescapeWin32Strings(nativeEnumTimeFormats(_sWindowsName, TIME_NOSECONDS, UseUserOverride));
 
             return result;
@@ -235,7 +236,7 @@ namespace System.Globalization
         // region name match the requested region name
         private static CultureData GetCultureDataFromRegionName(String regionName)
         {
-            Contract.Assert(regionName != null);
+            Debug.Assert(regionName != null);
 
             const uint LOCALE_SUPPLEMENTAL = 0x00000002;
             const uint LOCALE_SPECIFICDATA = 0x00000020;
@@ -283,7 +284,7 @@ namespace System.Globalization
 
         private static string GetLocaleInfoFromLCType(string localeName, uint lctype, bool useUserOveride)
         {
-            Contract.Assert(localeName != null, "[CultureData.GetLocaleInfoFromLCType] Expected localeName to be not be null");
+            Debug.Assert(localeName != null, "[CultureData.GetLocaleInfoFromLCType] Expected localeName to be not be null");
 
             // Fix lctype if we don't want overrides
             if (!useUserOveride)

@@ -7,6 +7,7 @@ namespace System.Text
     using System;
     using System.Runtime.Serialization;
     using System.Security.Permissions;
+    using System.Diagnostics;
     using System.Diagnostics.Contracts;
 
     // ASCIIEncoding
@@ -149,11 +150,11 @@ namespace System.Text
         internal override unsafe int GetByteCount(char* chars, int charCount, EncoderNLS encoder)
         {
             // Just need to ASSERT, this is called by something else internal that checked parameters already
-            Contract.Assert(charCount >= 0, "[ASCIIEncoding.GetByteCount]count is negative");
-            Contract.Assert(chars != null, "[ASCIIEncoding.GetByteCount]chars is null");
+            Debug.Assert(charCount >= 0, "[ASCIIEncoding.GetByteCount]count is negative");
+            Debug.Assert(chars != null, "[ASCIIEncoding.GetByteCount]chars is null");
 
             // Assert because we shouldn't be able to have a null encoder.
-            Contract.Assert(encoderFallback != null, "[ASCIIEncoding.GetByteCount]Attempting to use null fallback encoder");
+            Debug.Assert(encoderFallback != null, "[ASCIIEncoding.GetByteCount]Attempting to use null fallback encoder");
 
             char charLeftOver = (char)0;
             EncoderReplacementFallback fallback = null;
@@ -167,7 +168,7 @@ namespace System.Text
             if (encoder != null)
             {
                 charLeftOver = encoder.charLeftOver;
-                Contract.Assert(charLeftOver == 0 || Char.IsHighSurrogate(charLeftOver),
+                Debug.Assert(charLeftOver == 0 || Char.IsHighSurrogate(charLeftOver),
                     "[ASCIIEncoding.GetByteCount]leftover character should be high surrogate");
 
                 fallback = encoder.Fallback as EncoderReplacementFallback;
@@ -186,7 +187,7 @@ namespace System.Text
                 }
 
                 // Verify that we have no fallbackbuffer, for ASCII its always empty, so just assert
-                Contract.Assert(!encoder.m_throwOnOverflow || !encoder.InternalHasFallbackBuffer ||
+                Debug.Assert(!encoder.m_throwOnOverflow || !encoder.InternalHasFallbackBuffer ||
                     encoder.FallbackBuffer.Remaining == 0,
                     "[ASCIICodePageEncoding.GetByteCount]Expected empty fallback buffer");
 //                if (encoder.InternalHasFallbackBuffer && encoder.FallbackBuffer.Remaining > 0)
@@ -223,8 +224,8 @@ namespace System.Text
             // We may have a left over character from last time, try and process it.
             if (charLeftOver > 0)
             {
-                Contract.Assert(Char.IsHighSurrogate(charLeftOver), "[ASCIIEncoding.GetByteCount]leftover character should be high surrogate");
-                Contract.Assert(encoder != null, "[ASCIIEncoding.GetByteCount]Expected encoder");
+                Debug.Assert(Char.IsHighSurrogate(charLeftOver), "[ASCIIEncoding.GetByteCount]leftover character should be high surrogate");
+                Debug.Assert(encoder != null, "[ASCIIEncoding.GetByteCount]Expected encoder");
 
                 // Since left over char was a surrogate, it'll have to be fallen back.
                 // Get Fallback
@@ -274,7 +275,7 @@ namespace System.Text
                 byteCount++;
             }
 
-            Contract.Assert(fallbackBuffer == null || fallbackBuffer.Remaining == 0,
+            Debug.Assert(fallbackBuffer == null || fallbackBuffer.Remaining == 0,
                 "[ASCIIEncoding.GetByteCount]Expected Empty fallback buffer");
 
             return byteCount;
@@ -284,13 +285,13 @@ namespace System.Text
                                                 byte* bytes, int byteCount, EncoderNLS encoder)
         {
             // Just need to ASSERT, this is called by something else internal that checked parameters already
-            Contract.Assert(bytes != null, "[ASCIIEncoding.GetBytes]bytes is null");
-            Contract.Assert(byteCount >= 0, "[ASCIIEncoding.GetBytes]byteCount is negative");
-            Contract.Assert(chars != null, "[ASCIIEncoding.GetBytes]chars is null");
-            Contract.Assert(charCount >= 0, "[ASCIIEncoding.GetBytes]charCount is negative");
+            Debug.Assert(bytes != null, "[ASCIIEncoding.GetBytes]bytes is null");
+            Debug.Assert(byteCount >= 0, "[ASCIIEncoding.GetBytes]byteCount is negative");
+            Debug.Assert(chars != null, "[ASCIIEncoding.GetBytes]chars is null");
+            Debug.Assert(charCount >= 0, "[ASCIIEncoding.GetBytes]charCount is negative");
 
             // Assert because we shouldn't be able to have a null encoder.
-            Contract.Assert(encoderFallback != null, "[ASCIIEncoding.GetBytes]Attempting to use null encoder fallback");
+            Debug.Assert(encoderFallback != null, "[ASCIIEncoding.GetBytes]Attempting to use null encoder fallback");
 
             // Get any left over characters
             char charLeftOver = (char)0;
@@ -322,11 +323,11 @@ namespace System.Text
                     fallbackBuffer.InternalInitialize(charStart, charEnd, encoder, true);
                 }
 
-                Contract.Assert(charLeftOver == 0 || Char.IsHighSurrogate(charLeftOver),
+                Debug.Assert(charLeftOver == 0 || Char.IsHighSurrogate(charLeftOver),
                     "[ASCIIEncoding.GetBytes]leftover character should be high surrogate");
 
                 // Verify that we have no fallbackbuffer, for ASCII its always empty, so just assert
-                Contract.Assert(!encoder.m_throwOnOverflow || !encoder.InternalHasFallbackBuffer ||
+                Debug.Assert(!encoder.m_throwOnOverflow || !encoder.InternalHasFallbackBuffer ||
                     encoder.FallbackBuffer.Remaining == 0,
                     "[ASCIICodePageEncoding.GetBytes]Expected empty fallback buffer");
 //                if (encoder.m_throwOnOverflow && encoder.InternalHasFallbackBuffer &&
@@ -405,7 +406,7 @@ namespace System.Text
             if (charLeftOver > 0)
             {
                 // Initialize the buffer
-                Contract.Assert(encoder != null,
+                Debug.Assert(encoder != null,
                     "[ASCIIEncoding.GetBytes]Expected non null encoder if we have surrogate left over");
                 fallbackBuffer = encoder.FallbackBuffer;
                 fallbackBuffer.InternalInitialize(chars, charEnd, encoder, true);
@@ -459,7 +460,7 @@ namespace System.Text
                     // didn't use this char, we'll throw or use buffer
                     if (fallbackBuffer == null || fallbackBuffer.bFallingBack == false)
                     {
-                        Contract.Assert(chars > charStart || bytes == byteStart,
+                        Debug.Assert(chars > charStart || bytes == byteStart,
                             "[ASCIIEncoding.GetBytes]Expected chars to have advanced already.");
                         chars--;                                        // don't use last char
                     }
@@ -488,7 +489,7 @@ namespace System.Text
                 encoder.m_charsUsed = (int)(chars - charStart);
             }
 
-            Contract.Assert(fallbackBuffer == null || fallbackBuffer.Remaining == 0 ||
+            Debug.Assert(fallbackBuffer == null || fallbackBuffer.Remaining == 0 ||
                 (encoder != null && !encoder.m_throwOnOverflow ),
                 "[ASCIIEncoding.GetBytes]Expected Empty fallback buffer at end");
 
@@ -499,8 +500,8 @@ namespace System.Text
         internal override unsafe int GetCharCount(byte* bytes, int count, DecoderNLS decoder)
         {
             // Just assert, we're called internally so these should be safe, checked already
-            Contract.Assert(bytes != null, "[ASCIIEncoding.GetCharCount]bytes is null");
-            Contract.Assert(count >= 0, "[ASCIIEncoding.GetCharCount]byteCount is negative");
+            Debug.Assert(bytes != null, "[ASCIIEncoding.GetCharCount]bytes is null");
+            Debug.Assert(count >= 0, "[ASCIIEncoding.GetCharCount]byteCount is negative");
 
             // ASCII doesn't do best fit, so don't have to check for it, find out which decoder fallback we're using
             DecoderReplacementFallback fallback = null;
@@ -510,7 +511,7 @@ namespace System.Text
             else
             {
                 fallback = decoder.Fallback as DecoderReplacementFallback;
-                Contract.Assert(!decoder.m_throwOnOverflow || !decoder.InternalHasFallbackBuffer ||
+                Debug.Assert(!decoder.m_throwOnOverflow || !decoder.InternalHasFallbackBuffer ||
                     decoder.FallbackBuffer.Remaining == 0,
                     "[ASCIICodePageEncoding.GetCharCount]Expected empty fallback buffer");
             }
@@ -561,7 +562,7 @@ namespace System.Text
             }
 
             // Fallback buffer must be empty
-            Contract.Assert(fallbackBuffer == null || fallbackBuffer.Remaining == 0,
+            Debug.Assert(fallbackBuffer == null || fallbackBuffer.Remaining == 0,
                 "[ASCIIEncoding.GetCharCount]Expected Empty fallback buffer");
 
             // Converted sequence is same length as input
@@ -572,10 +573,10 @@ namespace System.Text
                                                 char* chars, int charCount, DecoderNLS decoder)
         {
             // Just need to ASSERT, this is called by something else internal that checked parameters already
-            Contract.Assert(bytes != null, "[ASCIIEncoding.GetChars]bytes is null");
-            Contract.Assert(byteCount >= 0, "[ASCIIEncoding.GetChars]byteCount is negative");
-            Contract.Assert(chars != null, "[ASCIIEncoding.GetChars]chars is null");
-            Contract.Assert(charCount >= 0, "[ASCIIEncoding.GetChars]charCount is negative");
+            Debug.Assert(bytes != null, "[ASCIIEncoding.GetChars]bytes is null");
+            Debug.Assert(byteCount >= 0, "[ASCIIEncoding.GetChars]byteCount is negative");
+            Debug.Assert(chars != null, "[ASCIIEncoding.GetChars]chars is null");
+            Debug.Assert(charCount >= 0, "[ASCIIEncoding.GetChars]charCount is negative");
 
             // Do it fast way if using ? replacement fallback
             byte* byteEnd = bytes + byteCount;
@@ -592,7 +593,7 @@ namespace System.Text
             else
             {
                 fallback = decoder.Fallback as DecoderReplacementFallback;
-                Contract.Assert(!decoder.m_throwOnOverflow || !decoder.InternalHasFallbackBuffer ||
+                Debug.Assert(!decoder.m_throwOnOverflow || !decoder.InternalHasFallbackBuffer ||
                     decoder.FallbackBuffer.Remaining == 0,
                     "[ASCIICodePageEncoding.GetChars]Expected empty fallback buffer");
             }
@@ -660,7 +661,7 @@ namespace System.Text
                     if (!fallbackBuffer.InternalFallback(byteBuffer, bytes, ref chars))
                     {
                         // May or may not throw, but we didn't get this byte
-                        Contract.Assert(bytes > byteStart || chars == charStart,
+                        Debug.Assert(bytes > byteStart || chars == charStart,
                             "[ASCIIEncoding.GetChars]Expected bytes to have advanced already (fallback case)");
                         bytes--;                                            // unused byte
                         fallbackBuffer.InternalReset();                     // Didn't fall this back
@@ -673,7 +674,7 @@ namespace System.Text
                     // Make sure we have buffer space
                     if (chars >= charEnd)
                     {
-                        Contract.Assert(bytes > byteStart || chars == charStart,
+                        Debug.Assert(bytes > byteStart || chars == charStart,
                             "[ASCIIEncoding.GetChars]Expected bytes to have advanced already (normal case)");
                         bytes--;                                            // unused byte
                         ThrowCharsOverflow(decoder, chars == charStart);    // throw?
@@ -690,7 +691,7 @@ namespace System.Text
                 decoder.m_bytesUsed = (int)(bytes - byteStart);
 
             // Expect Empty fallback buffer for GetChars
-            Contract.Assert(fallbackBuffer == null || fallbackBuffer.Remaining == 0,
+            Debug.Assert(fallbackBuffer == null || fallbackBuffer.Remaining == 0,
                 "[ASCIIEncoding.GetChars]Expected Empty fallback buffer");
 
             return (int)(chars - charStart);
