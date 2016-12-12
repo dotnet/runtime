@@ -21,7 +21,7 @@ namespace System.Net.Security
         SECBUFFER_TARGET_HOST = 16,
         SECBUFFER_ALERT = 17,
         SECBUFFER_APPLICATION_PROTOCOLS = 18,
-        
+
         SECBUFFER_READONLY = unchecked((int)0x80000000),
         SECBUFFER_READONLY_WITH_CHECKSUM = 0x10000000
     }

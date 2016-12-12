@@ -88,8 +88,9 @@ namespace System.Net
             // Creating a Uri from the cooked Uri should really always work: If not, we log at least.
             if (!isValid)
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Error(this,
-                    SR.Format(SR.net_log_listener_cant_create_uri, _cookedUriScheme, _cookedUriHost, _cookedUriPath, _cookedUriQuery));
+                if (NetEventSource.IsEnabled)
+                    NetEventSource.Error(this,
+SR.Format(SR.net_log_listener_cant_create_uri, _cookedUriScheme, _cookedUriHost, _cookedUriPath, _cookedUriQuery));
             }
         }
 
@@ -113,8 +114,9 @@ namespace System.Net
             // Log that we weren't able to create a Uri from the raw string.
             if (!isValid)
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Error(this,
-                    SR.Format(SR.net_log_listener_cant_create_uri, _cookedUriScheme, _cookedUriHost, _rawPath, _cookedUriQuery));
+                if (NetEventSource.IsEnabled)
+                    NetEventSource.Error(this,
+SR.Format(SR.net_log_listener_cant_create_uri, _cookedUriScheme, _cookedUriHost, _rawPath, _cookedUriQuery));
             }
         }
 
@@ -162,8 +164,9 @@ namespace System.Net
 
             if (result != ParsingResult.Success)
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Error(this,
-                    SR.Format(SR.net_log_listener_cant_convert_raw_path, _rawPath, encoding.EncodingName));
+                if (NetEventSource.IsEnabled)
+                    NetEventSource.Error(this,
+SR.Format(SR.net_log_listener_cant_convert_raw_path, _rawPath, encoding.EncodingName));
             }
 
             return result;
@@ -243,8 +246,9 @@ namespace System.Net
             int codePointValue;
             if (!int.TryParse(codePoint, NumberStyles.HexNumber, null, out codePointValue))
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Error(this,
-                    SR.Format(SR.net_log_listener_cant_convert_percent_value, codePoint));
+                if (NetEventSource.IsEnabled)
+                    NetEventSource.Error(this,
+SR.Format(SR.net_log_listener_cant_convert_percent_value, codePoint));
                 return false;
             }
 
@@ -258,8 +262,9 @@ namespace System.Net
             }
             catch (ArgumentOutOfRangeException)
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Error(this,
-                    SR.Format(SR.net_log_listener_cant_convert_percent_value, codePoint));
+                if (NetEventSource.IsEnabled)
+                    NetEventSource.Error(this,
+SR.Format(SR.net_log_listener_cant_convert_percent_value, codePoint));
             }
             catch (EncoderFallbackException e)
             {

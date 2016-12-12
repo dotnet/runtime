@@ -391,7 +391,7 @@ namespace System.Net
             if (NetEventSource.IsEnabled) NetEventSource.Info(this, "dataWritten:" + dataWritten + " _leftToWrite:" + _leftToWrite + " _closed:" + _closed);
         }
 
-        private static readonly byte[] ChunkTerminator = new byte[] { (byte)'0', (byte)'\r', (byte)'\n', (byte)'\r', (byte)'\n' };
+        private static readonly byte[] s_chunkTerminator = new byte[] { (byte)'0', (byte)'\r', (byte)'\n', (byte)'\r', (byte)'\n' };
 
         protected override void Dispose(bool disposing)
         {
@@ -427,7 +427,7 @@ namespace System.Net
                         {
                             flags |= Interop.HttpApi.HTTP_FLAGS.HTTP_SEND_RESPONSE_FLAG_DISCONNECT;
                         }
-                        fixed (void* pBuffer = ChunkTerminator)
+                        fixed (void* pBuffer = s_chunkTerminator)
                         {
                             Interop.HttpApi.HTTP_DATA_CHUNK* pDataChunk = null;
                             if (_httpContext.Response.BoundaryType == BoundaryType.Chunked)
@@ -435,7 +435,7 @@ namespace System.Net
                                 Interop.HttpApi.HTTP_DATA_CHUNK dataChunk = new Interop.HttpApi.HTTP_DATA_CHUNK();
                                 dataChunk.DataChunkType = Interop.HttpApi.HTTP_DATA_CHUNK_TYPE.HttpDataChunkFromMemory;
                                 dataChunk.pBuffer = (byte*)pBuffer;
-                                dataChunk.BufferLength = (uint)ChunkTerminator.Length;
+                                dataChunk.BufferLength = (uint)s_chunkTerminator.Length;
                                 pDataChunk = &dataChunk;
                             }
                             if (!sentHeaders)

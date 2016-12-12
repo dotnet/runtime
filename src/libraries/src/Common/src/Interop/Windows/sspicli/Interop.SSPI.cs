@@ -20,23 +20,23 @@ internal static partial class Interop
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
         internal struct CredHandle
         {
-            private IntPtr dwLower;
-            private IntPtr dwUpper;
+            private IntPtr _dwLower;
+            private IntPtr _dwUpper;
 
             public bool IsZero
             {
-                get { return dwLower == IntPtr.Zero && dwUpper == IntPtr.Zero; }
+                get { return _dwLower == IntPtr.Zero && _dwUpper == IntPtr.Zero; }
             }
 
             internal void SetToInvalid()
             {
-                dwLower = IntPtr.Zero;
-                dwUpper = IntPtr.Zero;
+                _dwLower = IntPtr.Zero;
+                _dwUpper = IntPtr.Zero;
             }
 
             public override string ToString()
             {
-                { return dwLower.ToString("x") + ":" + dwUpper.ToString("x"); }
+                { return _dwLower.ToString("x") + ":" + _dwUpper.ToString("x"); }
             }
         }
 
