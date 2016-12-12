@@ -84,13 +84,13 @@
     <CrossArchitectureSpecificNativeSymbol Condition="'$(HasCrossTargetComponents)' == 'true'" 
                                            Include="@(LongNameFiles -> '$(BinDir)$(CrossTargetComponentFolder)\%(FileName)$(CrossTargetLongNameSuffix)%(Extension)')" />
     <AdditionalLibPackageExcludes Condition="'$(HasCrossTargetComponents)' == 'true'" 
-                                  Include="@(LongNameFiles -> 'runtimes\$(PackageTargetRuntime)\native\%(FileName)$(CrossTargetLongNameSuffix)%(Extension)')" />
+                                  Include="@(LongNameFiles -> 'tools\$(CrossTargetComponentFolder)_$(PackagePlatform)\%(FileName)$(CrossTargetLongNameSuffix)%(Extension)')" />
     <File Include="@(ArchitectureSpecificNativeSymbol)">
       <TargetPath>runtimes\$(PackageTargetRuntime)\native</TargetPath> 
       <IsSymbolFile>true</IsSymbolFile>
     </File>
     <File Condition="'$(HasCrossTargetComponents)' == 'true'" Include="@(CrossArchitectureSpecificNativeSymbol)">
-      <TargetPath>tools/$(CrossTargetComponentFolder)_$(PackagePlatform)</TargetPath>
+      <TargetPath>tools\$(CrossTargetComponentFolder)_$(PackagePlatform)</TargetPath>
       <IsSymbolFile>true</IsSymbolFile>
     </File>
   </ItemGroup>
