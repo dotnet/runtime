@@ -1,10 +1,13 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
 /*++
 
 Copyright (c) 2004  Microsoft Corporation
 
 Module Name:
 
-    SDSUtils.cs
 
 Abstract:
 
@@ -28,37 +31,36 @@ using System.Net;
 
 namespace System.DirectoryServices.AccountManagement
 {
-//    [System.DirectoryServices.DirectoryServicesPermission(System.Security.Permissions.SecurityAction.Assert, Unrestricted=true)]
-    class SDSUtils
+    //    [System.DirectoryServices.DirectoryServicesPermission(System.Security.Permissions.SecurityAction.Assert, Unrestricted=true)]
+    internal class SDSUtils
     {
-
         // To stop the compiler from autogenerating a constructor for this class
-        private SDSUtils() {}
+        private SDSUtils() { }
 
 
 
-         // <SecurityKernel Critical="True" Ring="0">
-         // <ReferencesCritical Name="Method: UserPrincipal.MakeUser(System.DirectoryServices.AccountManagement.PrincipalContext):System.DirectoryServices.AccountManagement.UserPrincipal" Ring="1" />
-         // <ReferencesCritical Name="Method: ComputerPrincipal.MakeComputer(System.DirectoryServices.AccountManagement.PrincipalContext):System.DirectoryServices.AccountManagement.ComputerPrincipal" Ring="1" />
-         // <ReferencesCritical Name="Method: GroupPrincipal.MakeGroup(System.DirectoryServices.AccountManagement.PrincipalContext):System.DirectoryServices.AccountManagement.GroupPrincipal" Ring="1" />
-         // <ReferencesCritical Name="Method: AuthenticablePrincipal.MakeAuthenticablePrincipal(System.DirectoryServices.AccountManagement.PrincipalContext):System.DirectoryServices.AccountManagement.AuthenticablePrincipal" Ring="1" />
-         // <ReferencesCritical Name="Method: PrincipalContext.get_QueryCtx():System.DirectoryServices.AccountManagement.StoreCtx" Ring="1" />
-         // <SatisfiesLinkDemand Name="UserPrincipal.MakeUser(System.DirectoryServices.AccountManagement.PrincipalContext):System.DirectoryServices.AccountManagement.UserPrincipal" />
-         // <SatisfiesLinkDemand Name="ComputerPrincipal.MakeComputer(System.DirectoryServices.AccountManagement.PrincipalContext):System.DirectoryServices.AccountManagement.ComputerPrincipal" />
-         // <SatisfiesLinkDemand Name="GroupPrincipal.MakeGroup(System.DirectoryServices.AccountManagement.PrincipalContext):System.DirectoryServices.AccountManagement.GroupPrincipal" />
-         // <SatisfiesLinkDemand Name="AuthenticablePrincipal.MakeAuthenticablePrincipal(System.DirectoryServices.AccountManagement.PrincipalContext):System.DirectoryServices.AccountManagement.AuthenticablePrincipal" />
-         // <SatisfiesLinkDemand Name="Principal.MakePrincipal(System.DirectoryServices.AccountManagement.PrincipalContext,System.Type):System.DirectoryServices.AccountManagement.Principal" />
-         // <SatisfiesLinkDemand Name="SearchResult.GetDirectoryEntry():System.DirectoryServices.DirectoryEntry" />
-         // <SatisfiesLinkDemand Name="Principal.set_UnderlyingObject(System.Object):System.Void" />
-         // <SatisfiesLinkDemand Name="Principal.set_UnderlyingSearchObject(System.Object):System.Void" />
-         // <SatisfiesLinkDemand Name="PrincipalContext.get_QueryCtx():System.DirectoryServices.AccountManagement.StoreCtx" />
-         // <SatisfiesLinkDemand Name="Principal.get_UnderlyingObject():System.Object" />
-         // <ReferencesCritical Name="Method: IsOfObjectClass(SearchResult, String):Boolean" Ring="1" />
-         // <ReferencesCritical Name="Method: ADStoreCtx.InitializeNewDirectoryOptions(System.DirectoryServices.DirectoryEntry):System.Void" Ring="1" />
-         // </SecurityKernel>
-         [System.Security.SecurityCritical]
-         static internal Principal SearchResultToPrincipal(SearchResult sr, PrincipalContext owningContext, Type principalType)
-         {
+        // <SecurityKernel Critical="True" Ring="0">
+        // <ReferencesCritical Name="Method: UserPrincipal.MakeUser(System.DirectoryServices.AccountManagement.PrincipalContext):System.DirectoryServices.AccountManagement.UserPrincipal" Ring="1" />
+        // <ReferencesCritical Name="Method: ComputerPrincipal.MakeComputer(System.DirectoryServices.AccountManagement.PrincipalContext):System.DirectoryServices.AccountManagement.ComputerPrincipal" Ring="1" />
+        // <ReferencesCritical Name="Method: GroupPrincipal.MakeGroup(System.DirectoryServices.AccountManagement.PrincipalContext):System.DirectoryServices.AccountManagement.GroupPrincipal" Ring="1" />
+        // <ReferencesCritical Name="Method: AuthenticablePrincipal.MakeAuthenticablePrincipal(System.DirectoryServices.AccountManagement.PrincipalContext):System.DirectoryServices.AccountManagement.AuthenticablePrincipal" Ring="1" />
+        // <ReferencesCritical Name="Method: PrincipalContext.get_QueryCtx():System.DirectoryServices.AccountManagement.StoreCtx" Ring="1" />
+        // <SatisfiesLinkDemand Name="UserPrincipal.MakeUser(System.DirectoryServices.AccountManagement.PrincipalContext):System.DirectoryServices.AccountManagement.UserPrincipal" />
+        // <SatisfiesLinkDemand Name="ComputerPrincipal.MakeComputer(System.DirectoryServices.AccountManagement.PrincipalContext):System.DirectoryServices.AccountManagement.ComputerPrincipal" />
+        // <SatisfiesLinkDemand Name="GroupPrincipal.MakeGroup(System.DirectoryServices.AccountManagement.PrincipalContext):System.DirectoryServices.AccountManagement.GroupPrincipal" />
+        // <SatisfiesLinkDemand Name="AuthenticablePrincipal.MakeAuthenticablePrincipal(System.DirectoryServices.AccountManagement.PrincipalContext):System.DirectoryServices.AccountManagement.AuthenticablePrincipal" />
+        // <SatisfiesLinkDemand Name="Principal.MakePrincipal(System.DirectoryServices.AccountManagement.PrincipalContext,System.Type):System.DirectoryServices.AccountManagement.Principal" />
+        // <SatisfiesLinkDemand Name="SearchResult.GetDirectoryEntry():System.DirectoryServices.DirectoryEntry" />
+        // <SatisfiesLinkDemand Name="Principal.set_UnderlyingObject(System.Object):System.Void" />
+        // <SatisfiesLinkDemand Name="Principal.set_UnderlyingSearchObject(System.Object):System.Void" />
+        // <SatisfiesLinkDemand Name="PrincipalContext.get_QueryCtx():System.DirectoryServices.AccountManagement.StoreCtx" />
+        // <SatisfiesLinkDemand Name="Principal.get_UnderlyingObject():System.Object" />
+        // <ReferencesCritical Name="Method: IsOfObjectClass(SearchResult, String):Boolean" Ring="1" />
+        // <ReferencesCritical Name="Method: ADStoreCtx.InitializeNewDirectoryOptions(System.DirectoryServices.DirectoryEntry):System.Void" Ring="1" />
+        // </SecurityKernel>
+        [System.Security.SecurityCritical]
+        static internal Principal SearchResultToPrincipal(SearchResult sr, PrincipalContext owningContext, Type principalType)
+        {
             Principal p;
 
             // Construct a appropriate Principal object.
@@ -72,22 +74,22 @@ namespace System.DirectoryServices.AccountManagement
             // If this is an extension type then we must reflect teh constructor to create the object.
 
 
-    
-            if ( typeof(UserPrincipal) == principalType )
+
+            if (typeof(UserPrincipal) == principalType)
             {
-                    p = UserPrincipal.MakeUser(owningContext);
+                p = UserPrincipal.MakeUser(owningContext);
             }
-            else if ( typeof(ComputerPrincipal) == principalType )
+            else if (typeof(ComputerPrincipal) == principalType)
             {
-                    p = ComputerPrincipal.MakeComputer(owningContext);            
+                p = ComputerPrincipal.MakeComputer(owningContext);
             }
-            else if ( typeof(GroupPrincipal) == principalType )
+            else if (typeof(GroupPrincipal) == principalType)
             {
-                    p = GroupPrincipal.MakeGroup(owningContext);            
+                p = GroupPrincipal.MakeGroup(owningContext);
             }
-            else if ( null == principalType ||  
+            else if (null == principalType ||
                          typeof(AuthenticablePrincipal) == principalType ||
-                         typeof(Principal) == principalType  )
+                         typeof(Principal) == principalType)
             {
                 if (SDSUtils.IsOfObjectClass(sr, "computer"))
                 {
@@ -97,7 +99,7 @@ namespace System.DirectoryServices.AccountManagement
                 {
                     p = UserPrincipal.MakeUser(owningContext);
                 }
-                else if(SDSUtils.IsOfObjectClass(sr, "group"))
+                else if (SDSUtils.IsOfObjectClass(sr, "group"))
                 {
                     p = GroupPrincipal.MakeGroup(owningContext);
                 }
@@ -105,11 +107,10 @@ namespace System.DirectoryServices.AccountManagement
                 {
                     p = AuthenticablePrincipal.MakeAuthenticablePrincipal(owningContext);
                 }
-
             }
-            else            
+            else
             {
-                p = Principal.MakePrincipal(owningContext, principalType);            
+                p = Principal.MakePrincipal(owningContext, principalType);
             }
 
             // The DirectoryEntry we're constructing the Principal from
@@ -119,24 +120,23 @@ namespace System.DirectoryServices.AccountManagement
             // It's up to our caller to assign an appropriate StoreKey.
             // Caller must also populate the underlyingObject field if the P is to be used R/W
             return p;
-
-         }
+        }
         // Used to implement StoreCtx.GetAsPrincipal for AD and SAM
-         // <SecurityKernel Critical="True" Ring="0">
-         // <ReferencesCritical Name="Method: UserPrincipal.MakeUser(System.DirectoryServices.AccountManagement.PrincipalContext):System.DirectoryServices.AccountManagement.UserPrincipal" Ring="1" />
-         // <ReferencesCritical Name="Method: ComputerPrincipal.MakeComputer(System.DirectoryServices.AccountManagement.PrincipalContext):System.DirectoryServices.AccountManagement.ComputerPrincipal" Ring="1" />
-         // <ReferencesCritical Name="Method: GroupPrincipal.MakeGroup(System.DirectoryServices.AccountManagement.PrincipalContext):System.DirectoryServices.AccountManagement.GroupPrincipal" Ring="1" />
-         // <ReferencesCritical Name="Method: AuthenticablePrincipal.MakeAuthenticablePrincipal(System.DirectoryServices.AccountManagement.PrincipalContext):System.DirectoryServices.AccountManagement.AuthenticablePrincipal" Ring="1" />
-         // <SatisfiesLinkDemand Name="UserPrincipal.MakeUser(System.DirectoryServices.AccountManagement.PrincipalContext):System.DirectoryServices.AccountManagement.UserPrincipal" />
-         // <SatisfiesLinkDemand Name="ComputerPrincipal.MakeComputer(System.DirectoryServices.AccountManagement.PrincipalContext):System.DirectoryServices.AccountManagement.ComputerPrincipal" />
-         // <SatisfiesLinkDemand Name="GroupPrincipal.MakeGroup(System.DirectoryServices.AccountManagement.PrincipalContext):System.DirectoryServices.AccountManagement.GroupPrincipal" />
-         // <SatisfiesLinkDemand Name="AuthenticablePrincipal.MakeAuthenticablePrincipal(System.DirectoryServices.AccountManagement.PrincipalContext):System.DirectoryServices.AccountManagement.AuthenticablePrincipal" />
-         // <SatisfiesLinkDemand Name="Principal.MakePrincipal(System.DirectoryServices.AccountManagement.PrincipalContext,System.Type):System.DirectoryServices.AccountManagement.Principal" />
-         // <SatisfiesLinkDemand Name="Principal.set_UnderlyingObject(System.Object):System.Void" />
-         // <ReferencesCritical Name="Method: IsOfObjectClass(DirectoryEntry, String):Boolean" Ring="1" />
-         // </SecurityKernel>
-         [System.Security.SecurityCritical]
-         static internal Principal DirectoryEntryToPrincipal(DirectoryEntry de, PrincipalContext owningContext, Type principalType)
+        // <SecurityKernel Critical="True" Ring="0">
+        // <ReferencesCritical Name="Method: UserPrincipal.MakeUser(System.DirectoryServices.AccountManagement.PrincipalContext):System.DirectoryServices.AccountManagement.UserPrincipal" Ring="1" />
+        // <ReferencesCritical Name="Method: ComputerPrincipal.MakeComputer(System.DirectoryServices.AccountManagement.PrincipalContext):System.DirectoryServices.AccountManagement.ComputerPrincipal" Ring="1" />
+        // <ReferencesCritical Name="Method: GroupPrincipal.MakeGroup(System.DirectoryServices.AccountManagement.PrincipalContext):System.DirectoryServices.AccountManagement.GroupPrincipal" Ring="1" />
+        // <ReferencesCritical Name="Method: AuthenticablePrincipal.MakeAuthenticablePrincipal(System.DirectoryServices.AccountManagement.PrincipalContext):System.DirectoryServices.AccountManagement.AuthenticablePrincipal" Ring="1" />
+        // <SatisfiesLinkDemand Name="UserPrincipal.MakeUser(System.DirectoryServices.AccountManagement.PrincipalContext):System.DirectoryServices.AccountManagement.UserPrincipal" />
+        // <SatisfiesLinkDemand Name="ComputerPrincipal.MakeComputer(System.DirectoryServices.AccountManagement.PrincipalContext):System.DirectoryServices.AccountManagement.ComputerPrincipal" />
+        // <SatisfiesLinkDemand Name="GroupPrincipal.MakeGroup(System.DirectoryServices.AccountManagement.PrincipalContext):System.DirectoryServices.AccountManagement.GroupPrincipal" />
+        // <SatisfiesLinkDemand Name="AuthenticablePrincipal.MakeAuthenticablePrincipal(System.DirectoryServices.AccountManagement.PrincipalContext):System.DirectoryServices.AccountManagement.AuthenticablePrincipal" />
+        // <SatisfiesLinkDemand Name="Principal.MakePrincipal(System.DirectoryServices.AccountManagement.PrincipalContext,System.Type):System.DirectoryServices.AccountManagement.Principal" />
+        // <SatisfiesLinkDemand Name="Principal.set_UnderlyingObject(System.Object):System.Void" />
+        // <ReferencesCritical Name="Method: IsOfObjectClass(DirectoryEntry, String):Boolean" Ring="1" />
+        // </SecurityKernel>
+        [System.Security.SecurityCritical]
+        static internal Principal DirectoryEntryToPrincipal(DirectoryEntry de, PrincipalContext owningContext, Type principalType)
         {
             Principal p;
 
@@ -147,21 +147,21 @@ namespace System.DirectoryServices.AccountManagement
             // Since there should be no more multistore contexts, the owning context IS
             // the specific context     
 
-            if ( typeof(UserPrincipal) == principalType )
+            if (typeof(UserPrincipal) == principalType)
             {
-                    p = UserPrincipal.MakeUser(owningContext);
+                p = UserPrincipal.MakeUser(owningContext);
             }
-            else if ( typeof(ComputerPrincipal) == principalType )
+            else if (typeof(ComputerPrincipal) == principalType)
             {
-                    p = ComputerPrincipal.MakeComputer(owningContext);            
+                p = ComputerPrincipal.MakeComputer(owningContext);
             }
-            else if ( typeof(GroupPrincipal) == principalType )
+            else if (typeof(GroupPrincipal) == principalType)
             {
-                    p = GroupPrincipal.MakeGroup(owningContext);            
+                p = GroupPrincipal.MakeGroup(owningContext);
             }
-            else if ( null == principalType ||  
+            else if (null == principalType ||
                          typeof(AuthenticablePrincipal) == principalType ||
-                         typeof(Principal) == principalType  )
+                         typeof(Principal) == principalType)
             {
                 if (SDSUtils.IsOfObjectClass(de, "computer"))
                 {
@@ -171,7 +171,7 @@ namespace System.DirectoryServices.AccountManagement
                 {
                     p = UserPrincipal.MakeUser(owningContext);
                 }
-                else if(SDSUtils.IsOfObjectClass(de, "group"))
+                else if (SDSUtils.IsOfObjectClass(de, "group"))
                 {
                     p = GroupPrincipal.MakeGroup(owningContext);
                 }
@@ -179,11 +179,10 @@ namespace System.DirectoryServices.AccountManagement
                 {
                     p = AuthenticablePrincipal.MakeAuthenticablePrincipal(owningContext);
                 }
-
             }
-            else            
+            else
             {
-                p = Principal.MakePrincipal(owningContext, principalType);            
+                p = Principal.MakePrincipal(owningContext, principalType);
             }
             // The DirectoryEntry we're constructing the Principal from
             // will serve as the underlying object for that Principal.
@@ -199,21 +198,19 @@ namespace System.DirectoryServices.AccountManagement
         // <SatisfiesLinkDemand Name="SearchResult.get_Path():System.String" />
         // </SecurityKernel>
         [System.Security.SecurityCritical]
-        static bool IsOfObjectClass(SearchResult sr, string className)
+        private static bool IsOfObjectClass(SearchResult sr, string className)
         {
-
             Debug.Assert(sr.Path.StartsWith("LDAP:", StringComparison.Ordinal) || sr.Path.StartsWith("GC:", StringComparison.Ordinal));
             return ADUtils.IsOfObjectClass(sr, className);
-
         }
-        
+
         // <SecurityKernel Critical="True" Ring="0">
         // <ReferencesCritical Name="Method: ADUtils.IsOfObjectClass(System.DirectoryServices.DirectoryEntry,System.String):System.Boolean" Ring="1" />
         // <SatisfiesLinkDemand Name="DirectoryEntry.get_Path():System.String" />
         // <ReferencesCritical Name="Method: SAMUtils.IsOfObjectClass(System.DirectoryServices.DirectoryEntry,System.String):System.Boolean" Ring="1" />
         // </SecurityKernel>
         [System.Security.SecurityCritical]
-        static bool IsOfObjectClass(DirectoryEntry de, string className)
+        private static bool IsOfObjectClass(DirectoryEntry de, string className)
         {
             if (de.Path.StartsWith("WinNT:", StringComparison.Ordinal))
             {
@@ -243,7 +240,7 @@ namespace System.DirectoryServices.AccountManagement
 
             if ((options & ContextOptions.Sealing) != 0)
                 authTypes |= AuthenticationTypes.Sealing;
-            
+
             return authTypes;
         }
 
@@ -255,12 +252,12 @@ namespace System.DirectoryServices.AccountManagement
         [System.Security.SecurityCritical]
         static internal void MoveDirectoryEntry(DirectoryEntry deToMove, DirectoryEntry newParent, string newName)
         {
-            if ( newName != null )
-                deToMove.MoveTo( newParent, newName );
+            if (newName != null)
+                deToMove.MoveTo(newParent, newName);
             else
-                deToMove.MoveTo( newParent );
+                deToMove.MoveTo(newParent);
         }
-        
+
         // <SecurityKernel Critical="True" Ring="0">
         // <SatisfiesLinkDemand Name="DirectoryEntry.get_Parent():System.DirectoryServices.DirectoryEntry" />
         // <SatisfiesLinkDemand Name="DirectoryEntry.get_Children():System.DirectoryServices.DirectoryEntries" />
@@ -290,10 +287,10 @@ namespace System.DirectoryServices.AccountManagement
         [System.Security.SecurityCritical]
         static internal void InsertPrincipal(
                                     Principal p,
-                                    StoreCtx storeCtx, 
+                                    StoreCtx storeCtx,
                                     GroupMembershipUpdater updateGroupMembership,
                                     NetCred credentials,
-                                    AuthenticationTypes authTypes, 
+                                    AuthenticationTypes authTypes,
                                     bool needToSetPassword)
         {
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "SDSUtils", "Entering InsertPrincipal");
@@ -302,16 +299,16 @@ namespace System.DirectoryServices.AccountManagement
             Debug.Assert(storeCtx is ADStoreCtx || storeCtx is SAMStoreCtx);
             Debug.Assert(p != null);
 
-            if ( (!(p is UserPrincipal)) &&
+            if ((!(p is UserPrincipal)) &&
                  (!(p is GroupPrincipal)) &&
                  (!(p is AuthenticablePrincipal)) &&
                  (!(p is ComputerPrincipal)))
             {
                 // It's not a type of Principal that we support
                 GlobalDebug.WriteLineIf(GlobalDebug.Warn, "SDSUtils", "InsertPrincipal: Bad principal type:" + p.GetType().ToString());
-                
+
                 throw new InvalidOperationException(
-                                String.Format(CultureInfo.CurrentCulture, StringResources.StoreCtxUnsupportedPrincipalTypeForSave, p.GetType().ToString()));                
+                                String.Format(CultureInfo.CurrentCulture, StringResources.StoreCtxUnsupportedPrincipalTypeForSave, p.GetType().ToString()));
             }
 
             // Commit the properties
@@ -330,27 +327,27 @@ namespace System.DirectoryServices.AccountManagement
             if (needToSetPassword && p.GetChangeStatusForProperty(PropertyNames.PwdInfoPassword))
             {
                 GlobalDebug.WriteLineIf(GlobalDebug.Info, "SDSUtils", "InsertPrincipal: Setting password");
-            
+
                 // Only AuthenticablePrincipals can have PasswordInfo
                 Debug.Assert(p is AuthenticablePrincipal);
-            
-                string password = (string) p.GetValueForProperty(PropertyNames.PwdInfoPassword);
+
+                string password = (string)p.GetValueForProperty(PropertyNames.PwdInfoPassword);
                 Debug.Assert(password != null); // if null, PasswordInfo should not have indicated it was changed
-                
-                storeCtx.SetPassword( (AuthenticablePrincipal) p, password);
+
+                storeCtx.SetPassword((AuthenticablePrincipal)p, password);
             }
 
             if (p.GetChangeStatusForProperty(PropertyNames.PwdInfoExpireImmediately))
-            {            
+            {
                 // Only AuthenticablePrincipals can have PasswordInfo
                 Debug.Assert(p is AuthenticablePrincipal);
 
-                bool expireImmediately = (bool) p.GetValueForProperty(PropertyNames.PwdInfoExpireImmediately);
+                bool expireImmediately = (bool)p.GetValueForProperty(PropertyNames.PwdInfoExpireImmediately);
 
                 if (expireImmediately)
                 {
                     GlobalDebug.WriteLineIf(GlobalDebug.Info, "SDSUtils", "InsertPrincipal: Setting pwd expired");
-                
+
                     storeCtx.ExpirePassword((AuthenticablePrincipal)p);
                 }
             }
@@ -368,7 +365,7 @@ namespace System.DirectoryServices.AccountManagement
                                                 Principal p,
                                                 StoreCtx storeCtx,
                                                 GroupMembershipUpdater updateGroupMembership,
-                                                NetCred credentials, 
+                                                NetCred credentials,
                                                 AuthenticationTypes authTypes)
         {
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "SDSUtils", "Entering ApplyChangesToDirectory");
@@ -376,10 +373,10 @@ namespace System.DirectoryServices.AccountManagement
             Debug.Assert(storeCtx is ADStoreCtx || storeCtx is SAMStoreCtx || storeCtx is ADAMStoreCtx);
             Debug.Assert(p != null);
             Debug.Assert(updateGroupMembership != null);
-        
+
             // Update the properties in the DirectoryEntry.  Note that this does NOT
             // update group membership.
-            DirectoryEntry de = (DirectoryEntry) storeCtx.PushChangesToNative(p);
+            DirectoryEntry de = (DirectoryEntry)storeCtx.PushChangesToNative(p);
             Debug.Assert(de == p.UnderlyingObject);
 
             // Commit the property update
@@ -390,20 +387,19 @@ namespace System.DirectoryServices.AccountManagement
             catch (System.Runtime.InteropServices.COMException e)
             {
                 GlobalDebug.WriteLineIf(GlobalDebug.Error, "SDSUtils", "ApplyChangesToDirectory: caught COMException with message " + e.Message);
-                
-                throw ( ExceptionHelper.GetExceptionFromCOMException(e) );
+
+                throw (ExceptionHelper.GetExceptionFromCOMException(e));
             }
 
             if ((p is GroupPrincipal) && (p.GetChangeStatusForProperty(PropertyNames.GroupMembers)))
             {
                 GlobalDebug.WriteLineIf(GlobalDebug.Info, "SDSUtils", "ApplyChangesToDirectory: Updating group membership");
-            
+
                 // It's a group, and it's membership has changed.  Commit those membership changes.
                 // Note that this is an immediate operation, because it goes through IADsGroup,
                 // and does not require a call to de.CommitChanges().
                 updateGroupMembership(p, de, credentials, authTypes);
             }
-
         }
 
 
@@ -419,23 +415,23 @@ namespace System.DirectoryServices.AccountManagement
 
             try
             {
-                de.Invoke("SetPassword", new object[]{newPassword});
+                de.Invoke("SetPassword", new object[] { newPassword });
             }
             catch (System.Reflection.TargetInvocationException e)
             {
                 GlobalDebug.WriteLineIf(GlobalDebug.Error, "SDSUtils", "SetPassword: caught TargetInvocationException with message " + e.Message);
-            
+
                 if (e.InnerException is System.Runtime.InteropServices.COMException)
                 {
-                    if (((System.Runtime.InteropServices.COMException)e.InnerException).ErrorCode == unchecked((int)ExceptionHelper.ERROR_HRESULT_CONSTRAINT_VIOLATION)) 
+                    if (((System.Runtime.InteropServices.COMException)e.InnerException).ErrorCode == unchecked((int)ExceptionHelper.ERROR_HRESULT_CONSTRAINT_VIOLATION))
                     {
                         // We have a special case of constraint violation here.  We know this is a password failure to convert to this
                         // specialized type instead of the generic InvalidOperationException
-                        throw ( new PasswordException(((System.Runtime.InteropServices.COMException)e.InnerException).Message, (System.Runtime.InteropServices.COMException)e.InnerException) );
+                        throw (new PasswordException(((System.Runtime.InteropServices.COMException)e.InnerException).Message, (System.Runtime.InteropServices.COMException)e.InnerException));
                     }
                     else
                     {
-                        throw ( ExceptionHelper.GetExceptionFromCOMException((System.Runtime.InteropServices.COMException)e.InnerException));
+                        throw (ExceptionHelper.GetExceptionFromCOMException((System.Runtime.InteropServices.COMException)e.InnerException));
                     }
                 }
 
@@ -457,30 +453,30 @@ namespace System.DirectoryServices.AccountManagement
 
             try
             {
-                de.Invoke("ChangePassword", new object[]{oldPassword, newPassword});
+                de.Invoke("ChangePassword", new object[] { oldPassword, newPassword });
             }
             catch (System.Reflection.TargetInvocationException e)
             {
                 GlobalDebug.WriteLineIf(GlobalDebug.Error, "SDSUtils", "ChangePassword: caught TargetInvocationException with message " + e.Message);
-            
-                if (e.InnerException is System.Runtime.InteropServices.COMException) 
+
+                if (e.InnerException is System.Runtime.InteropServices.COMException)
                 {
-                    if (((System.Runtime.InteropServices.COMException)e.InnerException).ErrorCode == unchecked((int)ExceptionHelper.ERROR_HRESULT_CONSTRAINT_VIOLATION)) 
+                    if (((System.Runtime.InteropServices.COMException)e.InnerException).ErrorCode == unchecked((int)ExceptionHelper.ERROR_HRESULT_CONSTRAINT_VIOLATION))
                     {
                         // We have a special case of constraint violation here.  We know this is a password failure to convert to this
                         // specialized type instead of the generic InvalidOperationException
-                        throw ( new PasswordException(((System.Runtime.InteropServices.COMException)e.InnerException).Message, (System.Runtime.InteropServices.COMException)e.InnerException ));
+                        throw (new PasswordException(((System.Runtime.InteropServices.COMException)e.InnerException).Message, (System.Runtime.InteropServices.COMException)e.InnerException));
                     }
                     else
-                    {                
-                        throw ( ExceptionHelper.GetExceptionFromCOMException((System.Runtime.InteropServices.COMException)e.InnerException));
+                    {
+                        throw (ExceptionHelper.GetExceptionFromCOMException((System.Runtime.InteropServices.COMException)e.InnerException));
                     }
                 }
 
                 // Unknown exception.  We don't want to suppress it.
                 throw;
             }
-        }         
+        }
 
         // <SecurityKernel Critical="True" Ring="0">
         // <SatisfiesLinkDemand Name="DirectoryEntry..ctor(System.String,System.String,System.String,System.DirectoryServices.AuthenticationTypes)" />
@@ -489,11 +485,10 @@ namespace System.DirectoryServices.AccountManagement
         [System.Security.SecurityCritical]
         static internal DirectoryEntry BuildDirectoryEntry(string path, NetCred credentials, AuthenticationTypes authTypes)
         {
-
-            DirectoryEntry de = new DirectoryEntry( path,
+            DirectoryEntry de = new DirectoryEntry(path,
                                                                                credentials != null ? credentials.UserName : null,
                                                                                credentials != null ? credentials.Password : null,
-                                                                               authTypes );
+                                                                               authTypes);
 
 
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "SDSUtils", "BuildDirectoryEntry (1): built DE for  " + de.Path);
@@ -533,9 +528,8 @@ namespace System.DirectoryServices.AccountManagement
         [System.Security.SecurityCritical]
         static internal void WriteAttribute<T>(string dePath, string attribute, T value, NetCred credentials, AuthenticationTypes authTypes)
         {
-
             Debug.Assert(attribute != null && attribute.Length > 0);
-            
+
             // Ideally, we'd just like to set the property in the principal's DirectoryEntry and write
             // the changes to the store.  However, there might be other changes in the DirectoryEntry,
             // and we don't want to write all of them to the store.  So we must make
@@ -550,8 +544,8 @@ namespace System.DirectoryServices.AccountManagement
                 Debug.Assert(copyOfDe != null);
 
                 // So we don't do a implicit GetInfo() and retrieve every attribute
-                copyOfDe.RefreshCache(new string[]{attribute});
-                
+                copyOfDe.RefreshCache(new string[] { attribute });
+
                 copyOfDe.Properties[attribute].Value = value;
                 copyOfDe.CommitChanges();
             }
@@ -559,13 +553,12 @@ namespace System.DirectoryServices.AccountManagement
             {
                 // ADSI threw an exception trying to write the change
                 throw ExceptionHelper.GetExceptionFromCOMException(e);
-            }                        
+            }
             finally
             {
                 if (copyOfDe != null)
                     copyOfDe.Dispose();
             }
-
         }
 
 
@@ -583,14 +576,14 @@ namespace System.DirectoryServices.AccountManagement
         {
             GlobalDebug.WriteLineIf(
                         GlobalDebug.Info,
-                        "SDSUtils", 
-                        "WriteAttribute: writing {0} to {1} on {2}",                            
+                        "SDSUtils",
+                        "WriteAttribute: writing {0} to {1} on {2}",
                         value.ToString(CultureInfo.InvariantCulture),
                         attribute,
                         dePath);
-        
+
             Debug.Assert(attribute != null && attribute.Length > 0);
-            
+
             // Ideally, we'd just like to set the property in the principal's DirectoryEntry and write
             // the changes to the store.  However, there might be other changes in the DirectoryEntry,
             // and we don't want to write all of them to the store.  So we must make
@@ -605,8 +598,8 @@ namespace System.DirectoryServices.AccountManagement
                 Debug.Assert(copyOfDe != null);
 
                 // So we don't do a implicit GetInfo() and retrieve every attribute
-                copyOfDe.RefreshCache(new string[]{attribute});
-                
+                copyOfDe.RefreshCache(new string[] { attribute });
+
                 copyOfDe.Properties[attribute].Value = value;
                 copyOfDe.CommitChanges();
             }
@@ -621,16 +614,15 @@ namespace System.DirectoryServices.AccountManagement
                             attribute,
                             dePath);
 
-            
+
                 // ADSI threw an exception trying to write the change
-                throw ExceptionHelper.GetExceptionFromCOMException(e);                
-            }                        
+                throw ExceptionHelper.GetExceptionFromCOMException(e);
+            }
             finally
             {
                 if (copyOfDe != null)
                     copyOfDe.Dispose();
             }
-
         }
 
         //
@@ -644,16 +636,14 @@ namespace System.DirectoryServices.AccountManagement
         [System.Security.SecurityCritical]
         static internal void SingleScalarFromDirectoryEntry<T>(dSPropertyCollection properties, string suggestedProperty, Principal p, string propertyName)
         {
-        
-            if ( properties[suggestedProperty].Count != 0 && properties[suggestedProperty][0] != null)
+            if (properties[suggestedProperty].Count != 0 && properties[suggestedProperty][0] != null)
             {
                 // We're intended to handle single-valued scalar properties
                 Debug.Assert(properties[suggestedProperty].Count == 1);
                 Debug.Assert(properties[suggestedProperty][0] is T);
 
-                p.LoadValueIntoProperty(propertyName, (T) properties[suggestedProperty][0]);
+                p.LoadValueIntoProperty(propertyName, (T)properties[suggestedProperty][0]);
             }
-
         }
 
         // <SecurityKernel Critical="True" Ring="0">
@@ -671,97 +661,96 @@ namespace System.DirectoryServices.AccountManagement
             {
                 Debug.Assert(value is T);
 
-                list.Add( (T) value);
+                list.Add((T)value);
             }
 
             p.LoadValueIntoProperty(propertyName, list);
         }
 
 
-        static internal bool StatusFromAccountControl( int uacValue, string propertyName)
+        static internal bool StatusFromAccountControl(int uacValue, string propertyName)
         {
+            bool flag = false;
 
-                bool flag = false;
-                
-                switch (propertyName)
-                {
-                    case PropertyNames.AuthenticablePrincipalEnabled:
-                        // UF_ACCOUNTDISABLE
-                        // Note that the logic is inverted on this one.  We expose "Enabled",
-                        // but AD/SAM store it as "Disabled".
-                        flag = ((uacValue & 0x2) == 0);
-                        break;
+            switch (propertyName)
+            {
+                case PropertyNames.AuthenticablePrincipalEnabled:
+                    // UF_ACCOUNTDISABLE
+                    // Note that the logic is inverted on this one.  We expose "Enabled",
+                    // but AD/SAM store it as "Disabled".
+                    flag = ((uacValue & 0x2) == 0);
+                    break;
 
-                    case PropertyNames.AcctInfoSmartcardRequired:
-                        // UF_SMARTCARD_REQUIRED
-                        flag = ((uacValue & 0x40000) != 0);
-                        break;
+                case PropertyNames.AcctInfoSmartcardRequired:
+                    // UF_SMARTCARD_REQUIRED
+                    flag = ((uacValue & 0x40000) != 0);
+                    break;
 
-                    case PropertyNames.AcctInfoDelegationPermitted:
-                        // UF_NOT_DELEGATED
-                        // Note that the logic is inverted on this one.  That's because we expose
-                        // "delegation allowed", but AD represents it as the inverse, "delegation NOT allowed"                        
-                        flag = ((uacValue & 0x100000) == 0);
-                        break;
+                case PropertyNames.AcctInfoDelegationPermitted:
+                    // UF_NOT_DELEGATED
+                    // Note that the logic is inverted on this one.  That's because we expose
+                    // "delegation allowed", but AD represents it as the inverse, "delegation NOT allowed"                        
+                    flag = ((uacValue & 0x100000) == 0);
+                    break;
 
-                    case PropertyNames.PwdInfoPasswordNotRequired:
-                        // UF_PASSWD_NOTREQD
-                        flag = ((uacValue & 0x0020) != 0);
-                        break;
+                case PropertyNames.PwdInfoPasswordNotRequired:
+                    // UF_PASSWD_NOTREQD
+                    flag = ((uacValue & 0x0020) != 0);
+                    break;
 
-                    case PropertyNames.PwdInfoPasswordNeverExpires:
-                        // UF_DONT_EXPIRE_PASSWD
-                        flag = ((uacValue & 0x10000) != 0);
-                        break;
+                case PropertyNames.PwdInfoPasswordNeverExpires:
+                    // UF_DONT_EXPIRE_PASSWD
+                    flag = ((uacValue & 0x10000) != 0);
+                    break;
 
-                    // This bit doesn't work in userAccountControl
-                    case PropertyNames.PwdInfoCannotChangePassword:
-                            // UF_PASSWD_CANT_CHANGE
-                            flag = ((uacValue & 0x0040) != 0);
-                            break;
-                        
-                    case PropertyNames.PwdInfoAllowReversiblePasswordEncryption:
-                        // UF_ENCRYPTED_TEXT_PASSWORD_ALLOWED
-                        flag = ((uacValue & 0x0080) != 0);
-                        break;
+                // This bit doesn't work in userAccountControl
+                case PropertyNames.PwdInfoCannotChangePassword:
+                    // UF_PASSWD_CANT_CHANGE
+                    flag = ((uacValue & 0x0040) != 0);
+                    break;
 
-                    default:
-                        Debug.Fail("SDSUtils.AccountControlFromDirectoryEntry: Fell off end looking for " + propertyName);
-                        flag = false;
-                        break;
-                }
+                case PropertyNames.PwdInfoAllowReversiblePasswordEncryption:
+                    // UF_ENCRYPTED_TEXT_PASSWORD_ALLOWED
+                    flag = ((uacValue & 0x0080) != 0);
+                    break;
 
-                return flag;
+                default:
+                    Debug.Fail("SDSUtils.AccountControlFromDirectoryEntry: Fell off end looking for " + propertyName);
+                    flag = false;
+                    break;
+            }
+
+            return flag;
         }
-         // <SecurityKernel Critical="True" Ring="0">
-         // <SatisfiesLinkDemand Name="Principal.LoadValueIntoProperty(System.String,System.Object):System.Void" />
-         // <ReferencesCritical Name="Method: dSPropertyCollection.get_Item(System.String):System.DirectoryServices.AccountManagement.dSPropertyValueCollection" Ring="1" />
-         // <ReferencesCritical Name="Method: dSPropertyValueCollection.get_Item(System.Int32):System.Object" Ring="1" />
-         // </SecurityKernel>
-         [System.Security.SecurityCritical]
-         static internal void AccountControlFromDirectoryEntry(dSPropertyCollection properties, string suggestedProperty, Principal p, string propertyName, bool testCantChangePassword)
+        // <SecurityKernel Critical="True" Ring="0">
+        // <SatisfiesLinkDemand Name="Principal.LoadValueIntoProperty(System.String,System.Object):System.Void" />
+        // <ReferencesCritical Name="Method: dSPropertyCollection.get_Item(System.String):System.DirectoryServices.AccountManagement.dSPropertyValueCollection" Ring="1" />
+        // <ReferencesCritical Name="Method: dSPropertyValueCollection.get_Item(System.Int32):System.Object" Ring="1" />
+        // </SecurityKernel>
+        [System.Security.SecurityCritical]
+        static internal void AccountControlFromDirectoryEntry(dSPropertyCollection properties, string suggestedProperty, Principal p, string propertyName, bool testCantChangePassword)
         {
             Debug.Assert(
                 (!testCantChangePassword && (String.Compare(suggestedProperty, "userAccountControl", StringComparison.OrdinalIgnoreCase) == 0)) ||
-                (testCantChangePassword  && (String.Compare(suggestedProperty, "UserFlags", StringComparison.OrdinalIgnoreCase) == 0))
+                (testCantChangePassword && (String.Compare(suggestedProperty, "UserFlags", StringComparison.OrdinalIgnoreCase) == 0))
                 );
 
-            Debug.Assert((String.Compare(propertyName, PropertyNames.PwdInfoCannotChangePassword, StringComparison.OrdinalIgnoreCase) != 0) || testCantChangePassword);           
+            Debug.Assert((String.Compare(propertyName, PropertyNames.PwdInfoCannotChangePassword, StringComparison.OrdinalIgnoreCase) != 0) || testCantChangePassword);
 
             dSPropertyValueCollection values = properties[suggestedProperty];
-            
+
             if (values.Count != 0)
             {
                 Debug.Assert(values.Count == 1);
                 Debug.Assert(values[0] is int);
 
-                int uacValue = (int) values[0];
+                int uacValue = (int)values[0];
                 bool flag;
 
-                flag = StatusFromAccountControl( uacValue, propertyName);
-           
+                flag = StatusFromAccountControl(uacValue, propertyName);
+
                 p.LoadValueIntoProperty(propertyName, flag);
-            }            
+            }
         }
 
         //
@@ -782,14 +771,14 @@ namespace System.DirectoryServices.AccountManagement
         [System.Security.SecurityCritical]
         static internal void MultiStringToDirectoryEntryConverter(Principal p, string propertyName, DirectoryEntry de, string suggestedProperty)
         {
-            PrincipalValueCollection<string> trackingList = (PrincipalValueCollection<string>) p.GetValueForProperty(propertyName);
+            PrincipalValueCollection<string> trackingList = (PrincipalValueCollection<string>)p.GetValueForProperty(propertyName);
 
-            if ( p.unpersisted && trackingList == null )
-                    return;            
-            
+            if (p.unpersisted && trackingList == null)
+                return;
+
             List<string> insertedValues = trackingList.Inserted;
             List<string> removedValues = trackingList.Removed;
-            List<Pair<string,string>> changedValues = trackingList.ChangedValues;
+            List<Pair<string, string>> changedValues = trackingList.ChangedValues;
 
             PropertyValueCollection properties = de.Properties[suggestedProperty];
 
@@ -802,7 +791,7 @@ namespace System.DirectoryServices.AccountManagement
                     properties.Remove(value);
             }
 
-            foreach(Pair<string,string> changedValue in changedValues)
+            foreach (Pair<string, string> changedValue in changedValues)
             {
                 // Remove the original value and add in the new value
                 Debug.Assert(changedValue.Left != null);    // since it came from the system
@@ -818,11 +807,11 @@ namespace System.DirectoryServices.AccountManagement
                     properties.Add(value);
             }
         }
-        
-        internal const int AD_DefaultUAC = (int) (0x200 | 0X20 | 0x2);  // UF_NORMAL_ACCOUNT  | UF_PASSWD_NOTREQD | UF_ACCOUNTDISABLE
-        internal const int AD_DefaultUAC_Machine = (int) (0x1000 | 0X20 | 0x2);  // UF_WORKSTATION_TRUST_ACCOUNT | UF_PASSWD_NOTREQD | UF_ACCOUNTDISABLE
-        internal const int SAM_DefaultUAC = (int) (0x200 | 0x1);        // UF_NORMAL_ACCOUNT | UF_SCRIPT
-        
+
+        internal const int AD_DefaultUAC = (int)(0x200 | 0X20 | 0x2);  // UF_NORMAL_ACCOUNT  | UF_PASSWD_NOTREQD | UF_ACCOUNTDISABLE
+        internal const int AD_DefaultUAC_Machine = (int)(0x1000 | 0X20 | 0x2);  // UF_WORKSTATION_TRUST_ACCOUNT | UF_PASSWD_NOTREQD | UF_ACCOUNTDISABLE
+        internal const int SAM_DefaultUAC = (int)(0x200 | 0x1);        // UF_NORMAL_ACCOUNT | UF_SCRIPT
+
         // <SecurityKernel Critical="True" Ring="0">
         // <SatisfiesLinkDemand Name="Principal.GetValueForProperty(System.String):System.Object" />
         // <SatisfiesLinkDemand Name="DirectoryEntry.get_Properties():System.DirectoryServices.PropertyCollection" />
@@ -842,10 +831,10 @@ namespace System.DirectoryServices.AccountManagement
         {
             Debug.Assert(
                 (!isSAM && (String.Compare(suggestedProperty, "userAccountControl", StringComparison.OrdinalIgnoreCase) == 0)) ||
-                (isSAM  && (String.Compare(suggestedProperty, "UserFlags", StringComparison.OrdinalIgnoreCase) == 0))
+                (isSAM && (String.Compare(suggestedProperty, "UserFlags", StringComparison.OrdinalIgnoreCase) == 0))
                 );
 
-            bool flag = (bool) p.GetValueForProperty(propertyName);
+            bool flag = (bool)p.GetValueForProperty(propertyName);
 
             int uacValue = 0;
 
@@ -854,8 +843,8 @@ namespace System.DirectoryServices.AccountManagement
             if (de.Properties[suggestedProperty].Count > 0)
             {
                 Debug.Assert(de.Properties[suggestedProperty].Count == 1);
-                
-                uacValue = (int) de.Properties[suggestedProperty][0];
+
+                uacValue = (int)de.Properties[suggestedProperty][0];
 
                 // When we write to userAccountControl, we must OR the new value with the value of msDS-User-Account-Control-Computed.
                 // Otherwise we might mistakenly clear computed bits like UF_LOCKOUT.
@@ -868,7 +857,6 @@ namespace System.DirectoryServices.AccountManagement
             }
             else
             {
-
                 // We don't have the userAccountControl property, this must be a persisted principal.  Perhaps we don't have access
                 // to it.  In that case, we don't want to blindly overwrite whatever other bits might be there.            
                 Debug.Assert(p.unpersisted == false);
@@ -893,7 +881,7 @@ namespace System.DirectoryServices.AccountManagement
                     else
                     {
                         // We're writing to an unpersisted AD principal
-                        Debug.Assert (!isSAM && isUnpersisted);
+                        Debug.Assert(!isSAM && isUnpersisted);
 
                         // Nothing to do here.  The ADStoreCtx will take care of enabling the
                         // principal after it's persisted.
@@ -942,7 +930,7 @@ namespace System.DirectoryServices.AccountManagement
                         Debug.Fail(
                             "SDSUtils.AccountControlToDirectoryEntry: At PwdInfoCannotChangePassword but isSAM==false, path=" + de.Path
                             );
-                            
+
                         goto default;
                     }
 
@@ -999,7 +987,6 @@ namespace System.DirectoryServices.AccountManagement
                 sb.Remove(sb.Length - 1, 1);
 
             return sb.ToString();
-
-        }        
+        }
     }
 }

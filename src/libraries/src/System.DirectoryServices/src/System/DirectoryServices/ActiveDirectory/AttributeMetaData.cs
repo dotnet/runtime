@@ -1,5 +1,8 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
 //------------------------------------------------------------------------------
-// <copyright file="AttributeMetaData.cs" company="Microsoft">
 //     Copyright (c) Microsoft Corporation.  All rights reserved.
 // </copyright>                                                                
 //------------------------------------------------------------------------------
@@ -7,123 +10,135 @@
 /*
  */
 
- namespace System.DirectoryServices.ActiveDirectory {
-     using System;
-     using System.Collections;
-     using System.Runtime.InteropServices;
-     using System.Diagnostics;
+namespace System.DirectoryServices.ActiveDirectory
+{
+    using System;
+    using System.Collections;
+    using System.Runtime.InteropServices;
+    using System.Diagnostics;
 
-     public class AttributeMetadata {
+    public class AttributeMetadata
+    {
+        private string _pszAttributeName = null;
+        private int _dwVersion;
+        private DateTime _ftimeLastOriginatingChange;
+        private Guid _uuidLastOriginatingDsaInvocationID;
+        private long _usnOriginatingChange;
+        private long _usnLocalChange;
+        private string _pszLastOriginatingDsaDN = null;
 
-         private string pszAttributeName = null;  
-         private int dwVersion;  
-         private DateTime ftimeLastOriginatingChange;  
-         private Guid uuidLastOriginatingDsaInvocationID;  
-         private long usnOriginatingChange;  
-         private long usnLocalChange;  
-         private string pszLastOriginatingDsaDN = null;
+        private string _originatingServerName = null;
+        private DirectoryServer _server = null;
+        private Hashtable _nameTable = null;
+        private bool _advanced = false;
 
-         private string originatingServerName = null;
-         private DirectoryServer server = null;         
-         private Hashtable nameTable = null;
-         bool advanced = false;
+        internal AttributeMetadata(IntPtr info, bool advanced, DirectoryServer server, Hashtable table)
+        {
+            if (advanced)
+            {
+                DS_REPL_ATTR_META_DATA_2 attrMetaData = new DS_REPL_ATTR_META_DATA_2();
+                Marshal.PtrToStructure(info, attrMetaData);
+                Debug.Assert(attrMetaData != null);
 
-         internal AttributeMetadata(IntPtr info, bool advanced, DirectoryServer server, Hashtable table) 
-         { 
-             if(advanced)
-             {
-                 DS_REPL_ATTR_META_DATA_2 attrMetaData = new DS_REPL_ATTR_META_DATA_2();
-                 Marshal.PtrToStructure(info, attrMetaData);
-                 Debug.Assert(attrMetaData != null);
+                _pszAttributeName = Marshal.PtrToStringUni(attrMetaData.pszAttributeName);
+                _dwVersion = attrMetaData.dwVersion;
+                long ftimeChangeValue = (long)((uint)attrMetaData.ftimeLastOriginatingChange1 + (((long)attrMetaData.ftimeLastOriginatingChange2) << 32));
+                _ftimeLastOriginatingChange = DateTime.FromFileTime(ftimeChangeValue);
+                _uuidLastOriginatingDsaInvocationID = attrMetaData.uuidLastOriginatingDsaInvocationID;
+                _usnOriginatingChange = attrMetaData.usnOriginatingChange;
+                _usnLocalChange = attrMetaData.usnLocalChange;
+                _pszLastOriginatingDsaDN = Marshal.PtrToStringUni(attrMetaData.pszLastOriginatingDsaDN);
+            }
+            else
+            {
+                DS_REPL_ATTR_META_DATA attrMetaData = new DS_REPL_ATTR_META_DATA();
+                Marshal.PtrToStructure(info, attrMetaData);
+                Debug.Assert(attrMetaData != null);
 
-                 pszAttributeName = Marshal.PtrToStringUni(attrMetaData.pszAttributeName);
-                 dwVersion = attrMetaData.dwVersion; 
-                 long ftimeChangeValue = (long)((uint)attrMetaData.ftimeLastOriginatingChange1 + (((long)attrMetaData.ftimeLastOriginatingChange2) << 32 ));
-                 ftimeLastOriginatingChange = DateTime.FromFileTime(ftimeChangeValue);
-                 uuidLastOriginatingDsaInvocationID = attrMetaData.uuidLastOriginatingDsaInvocationID;
-                 usnOriginatingChange = attrMetaData.usnOriginatingChange;
-                 usnLocalChange = attrMetaData.usnLocalChange;
-                 pszLastOriginatingDsaDN = Marshal.PtrToStringUni(attrMetaData.pszLastOriginatingDsaDN);
-             }
-             else
-             {
-                 DS_REPL_ATTR_META_DATA attrMetaData = new DS_REPL_ATTR_META_DATA();
-                 Marshal.PtrToStructure(info, attrMetaData);
-                 Debug.Assert(attrMetaData != null);
+                _pszAttributeName = Marshal.PtrToStringUni(attrMetaData.pszAttributeName);
+                _dwVersion = attrMetaData.dwVersion;
+                long ftimeChangeValue = (long)((uint)attrMetaData.ftimeLastOriginatingChange1 + (((long)attrMetaData.ftimeLastOriginatingChange2) << 32));
+                _ftimeLastOriginatingChange = DateTime.FromFileTime(ftimeChangeValue);
+                _uuidLastOriginatingDsaInvocationID = attrMetaData.uuidLastOriginatingDsaInvocationID;
+                _usnOriginatingChange = attrMetaData.usnOriginatingChange;
+                _usnLocalChange = attrMetaData.usnLocalChange;
+            }
+            _server = server;
+            _nameTable = table;
+            _advanced = advanced;
+        }
 
-                 pszAttributeName = Marshal.PtrToStringUni(attrMetaData.pszAttributeName);
-                 dwVersion = attrMetaData.dwVersion;                                  
-                 long ftimeChangeValue = (long)((uint)attrMetaData.ftimeLastOriginatingChange1 + (((long)attrMetaData.ftimeLastOriginatingChange2) << 32 ));
-                 ftimeLastOriginatingChange = DateTime.FromFileTime(ftimeChangeValue);                 
-                 uuidLastOriginatingDsaInvocationID = attrMetaData.uuidLastOriginatingDsaInvocationID;
-                 usnOriginatingChange = attrMetaData.usnOriginatingChange;
-                 usnLocalChange = attrMetaData.usnLocalChange;
-             }
-             this.server = server;
-             this.nameTable = table;
-             this.advanced = advanced;
-         }      
+        public string Name
+        {
+            get
+            {
+                return _pszAttributeName;
+            }
+        }
 
-         public string Name {
-             get {
-                 return pszAttributeName;
-             }
-         }
+        public int Version
+        {
+            get
+            {
+                return _dwVersion;
+            }
+        }
 
-         public int Version {
-             get {
-                 return dwVersion;
-             }
-         }
+        public DateTime LastOriginatingChangeTime
+        {
+            get
+            {
+                return _ftimeLastOriginatingChange;
+            }
+        }
 
-         public DateTime LastOriginatingChangeTime {
-             get {
-                 return ftimeLastOriginatingChange;
-             }
-         }
+        public Guid LastOriginatingInvocationId
+        {
+            get
+            {
+                return _uuidLastOriginatingDsaInvocationID;
+            }
+        }
 
-         public Guid LastOriginatingInvocationId {
-             get {
-                 return uuidLastOriginatingDsaInvocationID;
-             }
-         }
+        public long OriginatingChangeUsn
+        {
+            get
+            {
+                return _usnOriginatingChange;
+            }
+        }
 
-         public long OriginatingChangeUsn {
-             get {
-                 return usnOriginatingChange;
-             }
-         }
+        public long LocalChangeUsn
+        {
+            get
+            {
+                return _usnLocalChange;
+            }
+        }
 
-         public long LocalChangeUsn {
-             get {
-                 return usnLocalChange;
-             }
-         }
+        public string OriginatingServer
+        {
+            get
+            {
+                if (_originatingServerName == null)
+                {
+                    // check whether we have got it before
+                    if (_nameTable.Contains(LastOriginatingInvocationId))
+                    {
+                        _originatingServerName = (string)_nameTable[LastOriginatingInvocationId];
+                    }
+                    // do the translation for downlevel platform or kcc is able to do the name translation
+                    else if (!_advanced || (_advanced && _pszLastOriginatingDsaDN != null))
+                    {
+                        _originatingServerName = Utils.GetServerNameFromInvocationID(_pszLastOriginatingDsaDN, LastOriginatingInvocationId, _server);
 
-         public string OriginatingServer {
-             get {
-                 if(originatingServerName == null)
-                 {
-                     // check whether we have got it before
-                     if(nameTable.Contains(LastOriginatingInvocationId))
-                     {                         
-                         originatingServerName = (string) nameTable[LastOriginatingInvocationId];
-                     }
-                     // do the translation for downlevel platform or kcc is able to do the name translation
-                     else if(!advanced || (advanced && pszLastOriginatingDsaDN != null))
-                     {
-                     
-                         originatingServerName = Utils.GetServerNameFromInvocationID(pszLastOriginatingDsaDN, LastOriginatingInvocationId, server);
-                         
-                         // add it to the hashtable
-                         nameTable.Add(LastOriginatingInvocationId, originatingServerName);
-                     }
-                     
-                 }
+                        // add it to the hashtable
+                        _nameTable.Add(LastOriginatingInvocationId, _originatingServerName);
+                    }
+                }
 
-                 return originatingServerName;
-             }
-         }
-        
-     }
+                return _originatingServerName;
+            }
+        }
+    }
 }

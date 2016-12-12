@@ -1,10 +1,13 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
 /*++
 
 Copyright (c) 2014  Microsoft Corporation
 
 Module Name:
 
-    UnknownPrincipal.cs
 
 Abstract:
 
@@ -32,7 +35,7 @@ namespace System.DirectoryServices.AccountManagement
 #pragma warning restore 618
     [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.LinkDemand, Unrestricted = true)]
     [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.InheritanceDemand, Unrestricted = true)]
-    [DirectoryRdnPrefix("CN")]    
+    [DirectoryRdnPrefix("CN")]
     internal class UnknownPrincipal : Principal
     {
         //
@@ -44,7 +47,7 @@ namespace System.DirectoryServices.AccountManagement
         {
             if (context == null)
                 throw new ArgumentException(StringResources.NullArguments);
-            
+
             this.ContextRaw = context;
             this.unpersisted = true;
         }
@@ -53,25 +56,24 @@ namespace System.DirectoryServices.AccountManagement
         //
         // Internal "constructor": Used for constructing UnknownPrincipal
         //
-        static internal UnknownPrincipal CreateUnknownPrincipal( PrincipalContext ctx, byte[] sid, string name )
+        static internal UnknownPrincipal CreateUnknownPrincipal(PrincipalContext ctx, byte[] sid, string name)
         {
-            UnknownPrincipal up = new UnknownPrincipal( ctx );
+            UnknownPrincipal up = new UnknownPrincipal(ctx);
             up.unpersisted = false;
             up.fakePrincipal = true;
 
             // Set the display name on the object
-            up.LoadValueIntoProperty( PropertyNames.PrincipalDisplayName, name );
+            up.LoadValueIntoProperty(PropertyNames.PrincipalDisplayName, name);
 
             // Set the display name on the object
-            up.LoadValueIntoProperty( PropertyNames.PrincipalName, name );
+            up.LoadValueIntoProperty(PropertyNames.PrincipalName, name);
 
             // SID IdentityClaim
-            SecurityIdentifier sidObj = new SecurityIdentifier( Utils.ConvertSidToSDDL( sid ) );
+            SecurityIdentifier sidObj = new SecurityIdentifier(Utils.ConvertSidToSDDL(sid));
 
             // Set the display name on the object
-            up.LoadValueIntoProperty( PropertyNames.PrincipalSid, sidObj );
+            up.LoadValueIntoProperty(PropertyNames.PrincipalSid, sidObj);
             return up;
         }
     }
-
 }

@@ -1,10 +1,13 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
 /*++
 
 Copyright (c) 2004  Microsoft Corporation
 
 Module Name:
 
-    User.cs
 
 Abstract:
 
@@ -44,7 +47,7 @@ namespace System.DirectoryServices.AccountManagement
         {
             if (context == null)
                 throw new ArgumentException(StringResources.NullArguments);
-            
+
             this.ContextRaw = context;
             this.unpersisted = true;
         }
@@ -56,166 +59,164 @@ namespace System.DirectoryServices.AccountManagement
             if (samAccountName == null || password == null)
                 throw new ArgumentException(StringResources.NullArguments);
 
-            if ( Context.ContextType != ContextType.ApplicationDirectory)
+            if (Context.ContextType != ContextType.ApplicationDirectory)
                 this.SamAccountName = samAccountName;
-            
+
             this.Name = samAccountName;
-            this.SetPassword(password);     
+            this.SetPassword(password);
             this.Enabled = enabled;
-            
         }
-        
+
 
         //
         // Public properties
         //
 
         // GivenName
-        string givenName = null;        // the actual property value
-        LoadState givenNameChanged = LoadState.NotSet;   // change-tracking
+        private string _givenName = null;        // the actual property value
+        private LoadState _givenNameChanged = LoadState.NotSet;   // change-tracking
 
         public string GivenName
         {
             get
             {
-                return HandleGet<string>(ref this.givenName, PropertyNames.UserGivenName, ref givenNameChanged);
+                return HandleGet<string>(ref _givenName, PropertyNames.UserGivenName, ref _givenNameChanged);
             }
 
             set
             {
-                if ( !GetStoreCtxToUse().IsValidProperty(this, PropertyNames.UserGivenName))
+                if (!GetStoreCtxToUse().IsValidProperty(this, PropertyNames.UserGivenName))
                     throw new InvalidOperationException(StringResources.InvalidPropertyForStore);
-                
-                HandleSet<string>(ref this.givenName, value, ref this.givenNameChanged, 
+
+                HandleSet<string>(ref _givenName, value, ref _givenNameChanged,
                                   PropertyNames.UserGivenName);
             }
         }
 
 
         // MiddleName
-        string middleName = null;        // the actual property value
-        LoadState middleNameChanged = LoadState.NotSet;   // change-tracking
-                
+        private string _middleName = null;        // the actual property value
+        private LoadState _middleNameChanged = LoadState.NotSet;   // change-tracking
+
         public string MiddleName
         {
             get
             {
-                return HandleGet<string>(ref this.middleName, PropertyNames.UserMiddleName, ref middleNameChanged);
+                return HandleGet<string>(ref _middleName, PropertyNames.UserMiddleName, ref _middleNameChanged);
             }
 
             set
             {
-                if ( !GetStoreCtxToUse().IsValidProperty( this, PropertyNames.UserMiddleName))
+                if (!GetStoreCtxToUse().IsValidProperty(this, PropertyNames.UserMiddleName))
                     throw new InvalidOperationException(StringResources.InvalidPropertyForStore);
-            
-                HandleSet<string>(ref this.middleName, value, ref this.middleNameChanged, 
+
+                HandleSet<string>(ref _middleName, value, ref _middleNameChanged,
                                   PropertyNames.UserMiddleName);
             }
         }
 
         // Surname
-        string surname = null;        // the actual property value
-        LoadState surnameChanged = LoadState.NotSet;   // change-tracking
-        
+        private string _surname = null;        // the actual property value
+        private LoadState _surnameChanged = LoadState.NotSet;   // change-tracking
+
         public string Surname
         {
             get
             {
-                return HandleGet<string>(ref this.surname, PropertyNames.UserSurname, ref surnameChanged);
+                return HandleGet<string>(ref _surname, PropertyNames.UserSurname, ref _surnameChanged);
             }
 
             set
             {
-                if ( !GetStoreCtxToUse().IsValidProperty( this, PropertyNames.UserSurname))
+                if (!GetStoreCtxToUse().IsValidProperty(this, PropertyNames.UserSurname))
                     throw new InvalidOperationException(StringResources.InvalidPropertyForStore);
-            
-                HandleSet<string>(ref this.surname, value, ref this.surnameChanged, 
+
+                HandleSet<string>(ref _surname, value, ref _surnameChanged,
                                   PropertyNames.UserSurname);
             }
         }
 
         // EmailAddress
-        string emailAddress = null;        // the actual property value
-        LoadState emailAddressChanged = LoadState.NotSet;   // change-tracking
-        
+        private string _emailAddress = null;        // the actual property value
+        private LoadState _emailAddressChanged = LoadState.NotSet;   // change-tracking
+
         public string EmailAddress
         {
             get
             {
-                return HandleGet<string>(ref this.emailAddress, PropertyNames.UserEmailAddress, ref emailAddressChanged);
+                return HandleGet<string>(ref _emailAddress, PropertyNames.UserEmailAddress, ref _emailAddressChanged);
             }
 
             set
             {
-                if ( !GetStoreCtxToUse().IsValidProperty( this, PropertyNames.UserEmailAddress))
+                if (!GetStoreCtxToUse().IsValidProperty(this, PropertyNames.UserEmailAddress))
                     throw new InvalidOperationException(StringResources.InvalidPropertyForStore);
-            
-                HandleSet<string>(ref this.emailAddress, value, ref this.emailAddressChanged, 
+
+                HandleSet<string>(ref _emailAddress, value, ref _emailAddressChanged,
                                   PropertyNames.UserEmailAddress);
             }
         }
-        
+
         // VoiceTelephoneNumber
-        string voiceTelephoneNumber = null;        // the actual property value
-        LoadState voiceTelephoneNumberChanged = LoadState.NotSet;   // change-tracking
+        private string _voiceTelephoneNumber = null;        // the actual property value
+        private LoadState _voiceTelephoneNumberChanged = LoadState.NotSet;   // change-tracking
 
         public string VoiceTelephoneNumber
         {
             get
             {
-                return HandleGet<string>(ref this.voiceTelephoneNumber, PropertyNames.UserVoiceTelephoneNumber, ref voiceTelephoneNumberChanged);
+                return HandleGet<string>(ref _voiceTelephoneNumber, PropertyNames.UserVoiceTelephoneNumber, ref _voiceTelephoneNumberChanged);
             }
 
             set
             {
-                if ( !GetStoreCtxToUse().IsValidProperty( this, PropertyNames.UserVoiceTelephoneNumber))
+                if (!GetStoreCtxToUse().IsValidProperty(this, PropertyNames.UserVoiceTelephoneNumber))
                     throw new InvalidOperationException(StringResources.InvalidPropertyForStore);
-            
-                HandleSet<string>(ref this.voiceTelephoneNumber, value, ref this.voiceTelephoneNumberChanged, 
+
+                HandleSet<string>(ref _voiceTelephoneNumber, value, ref _voiceTelephoneNumberChanged,
                                   PropertyNames.UserVoiceTelephoneNumber);
             }
         }
 
         // EmployeeId
-        string employeeID = null;        // the actual property value
-        LoadState employeeIDChanged = LoadState.NotSet;   // change-tracking
+        private string _employeeID = null;        // the actual property value
+        private LoadState _employeeIDChanged = LoadState.NotSet;   // change-tracking
 
         public string EmployeeId
         {
             get
             {
-                return HandleGet<string>(ref this.employeeID, PropertyNames.UserEmployeeID, ref employeeIDChanged);
+                return HandleGet<string>(ref _employeeID, PropertyNames.UserEmployeeID, ref _employeeIDChanged);
             }
 
             set
             {
-                if ( !GetStoreCtxToUse().IsValidProperty(this,  PropertyNames.UserEmployeeID))
+                if (!GetStoreCtxToUse().IsValidProperty(this, PropertyNames.UserEmployeeID))
                     throw new InvalidOperationException(StringResources.InvalidPropertyForStore);
-            
-                HandleSet<string>(ref this.employeeID, value, ref this.employeeIDChanged, 
+
+                HandleSet<string>(ref _employeeID, value, ref _employeeIDChanged,
                                   PropertyNames.UserEmployeeID);
             }
         }
 
-        public override AdvancedFilters  AdvancedSearchFilter { get { return rosf; } }
-        
+        public override AdvancedFilters AdvancedSearchFilter { get { return rosf; } }
+
         public static UserPrincipal Current
         {
-			[SecurityPermission(SecurityAction.Assert, Flags=SecurityPermissionFlag.UnmanagedCode)]        
+            [SecurityPermission(SecurityAction.Assert, Flags = SecurityPermissionFlag.UnmanagedCode)]
             get
             {
-
                 // We have to do this inline because declarative CAS is not allowed on properties.
                 DirectoryServicesPermission dSPerm = new DirectoryServicesPermission();
                 dSPerm.Demand();
-                
+
                 PrincipalContext context;
- 
+
                 // Get the correct PrincipalContext to query against, depending on whether we're running
                 // as a local or domain user
                 if (Utils.IsSamUser())
                 {
-                    GlobalDebug.WriteLineIf(GlobalDebug.Info, "User", "Current: is local user");            
+                    GlobalDebug.WriteLineIf(GlobalDebug.Info, "User", "Current: is local user");
 
 #if PAPI_REGSAM
                     context = new PrincipalContext(ContextType.Machine);
@@ -226,8 +227,8 @@ namespace System.DirectoryServices.AccountManagement
                 }
                 else
                 {
-                    GlobalDebug.WriteLineIf(GlobalDebug.Info, "User", "Current: is not local user");            
-                
+                    GlobalDebug.WriteLineIf(GlobalDebug.Info, "User", "Current: is not local user");
+
 #if PAPI_AD
                     context = new PrincipalContext(ContextType.Domain);
 #else
@@ -245,11 +246,11 @@ namespace System.DirectoryServices.AccountManagement
                 {
                     pSid = Utils.GetCurrentUserSid();
                     byte[] sid = Utils.ConvertNativeSidToByteArray(pSid);
-                    SecurityIdentifier sidObj = new SecurityIdentifier(sid,0);
+                    SecurityIdentifier sidObj = new SecurityIdentifier(sid, 0);
 
-                    GlobalDebug.WriteLineIf(GlobalDebug.Info, "User", "Current: using SID " + sidObj.ToString());            
+                    GlobalDebug.WriteLineIf(GlobalDebug.Info, "User", "Current: using SID " + sidObj.ToString());
 
-                    user = UserPrincipal.FindByIdentity(context, IdentityType.Sid,  sidObj.ToString());
+                    user = UserPrincipal.FindByIdentity(context, IdentityType.Sid, sidObj.ToString());
                 }
                 finally
                 {
@@ -262,10 +263,10 @@ namespace System.DirectoryServices.AccountManagement
                 // to their user object
                 if (user == null)
                 {
-                    GlobalDebug.WriteLineIf(GlobalDebug.Warn, "User", "Current: found no user");                
+                    GlobalDebug.WriteLineIf(GlobalDebug.Warn, "User", "Current: found no user");
                     throw new NoMatchingPrincipalException(StringResources.UserCouldNotFindCurrent);
                 }
-                
+
                 return user;
             }
         }
@@ -279,12 +280,12 @@ namespace System.DirectoryServices.AccountManagement
         {
             return FindByLockoutTime<UserPrincipal>(context, time, type);
         }
-                
+
         public static new PrincipalSearchResult<UserPrincipal> FindByLogonTime(PrincipalContext context, DateTime time, MatchType type)
         {
             return FindByLogonTime<UserPrincipal>(context, time, type);
         }
-        
+
         public static new PrincipalSearchResult<UserPrincipal> FindByExpirationTime(PrincipalContext context, DateTime time, MatchType type)
         {
             return FindByExpirationTime<UserPrincipal>(context, time, type);
@@ -302,12 +303,12 @@ namespace System.DirectoryServices.AccountManagement
 
         public static new UserPrincipal FindByIdentity(PrincipalContext context, string identityValue)
         {
-            return (UserPrincipal) FindByIdentityWithType(context, typeof(UserPrincipal), identityValue);
+            return (UserPrincipal)FindByIdentityWithType(context, typeof(UserPrincipal), identityValue);
         }
-        
+
         public static new UserPrincipal FindByIdentity(PrincipalContext context, IdentityType identityType, string identityValue)
         {
-            return (UserPrincipal) FindByIdentityWithType(context, typeof(UserPrincipal), identityType, identityValue);
+            return (UserPrincipal)FindByIdentityWithType(context, typeof(UserPrincipal), identityType, identityValue);
         }
 
 
@@ -326,13 +327,13 @@ namespace System.DirectoryServices.AccountManagement
 
             return u;
         }
-        
+
 
         //
         // Private implementation
         //
 
-        ResultSet GetAuthorizationGroupsHelper()
+        private ResultSet GetAuthorizationGroupsHelper()
         {
             // Make sure we're not disposed or deleted.
             CheckDisposedOrDeleted();
@@ -340,7 +341,7 @@ namespace System.DirectoryServices.AccountManagement
             // Unpersisted principals are not members of any group
             if (this.unpersisted)
             {
-                GlobalDebug.WriteLineIf(GlobalDebug.Info, "User", "GetAuthorizationGroupsHelper: unpersisted, using EmptySet");            
+                GlobalDebug.WriteLineIf(GlobalDebug.Info, "User", "GetAuthorizationGroupsHelper: unpersisted, using EmptySet");
                 return new EmptySet();
             }
 
@@ -349,10 +350,10 @@ namespace System.DirectoryServices.AccountManagement
 
             GlobalDebug.WriteLineIf(
                     GlobalDebug.Info,
-                    "User", 
+                    "User",
                     "GetAuthorizationGroupsHelper: retrieving AZ groups from StoreCtx of type=" + storeCtx.GetType().ToString() +
                         ", base path=" + storeCtx.BasePath);
-                        
+
             ResultSet resultSet = storeCtx.GetGroupsMemberOfAZ(this);
 
             return resultSet;
@@ -368,45 +369,45 @@ namespace System.DirectoryServices.AccountManagement
         //
         internal override void LoadValueIntoProperty(string propertyName, object value)
         {
-            if ( value == null )
-               {
-                  GlobalDebug.WriteLineIf(GlobalDebug.Info, "User", "LoadValueIntoProperty: name=" + propertyName + " value= null");        
-               }
-            else
-               {
-               GlobalDebug.WriteLineIf(GlobalDebug.Info, "User", "LoadValueIntoProperty: name=" + propertyName + " value=" + value.ToString());
-               }
-            
-            switch(propertyName)
+            if (value == null)
             {
-                case(PropertyNames.UserGivenName):
-                    this.givenName = (string) value;
-                    this.givenNameChanged = LoadState.Loaded;
+                GlobalDebug.WriteLineIf(GlobalDebug.Info, "User", "LoadValueIntoProperty: name=" + propertyName + " value= null");
+            }
+            else
+            {
+                GlobalDebug.WriteLineIf(GlobalDebug.Info, "User", "LoadValueIntoProperty: name=" + propertyName + " value=" + value.ToString());
+            }
+
+            switch (propertyName)
+            {
+                case (PropertyNames.UserGivenName):
+                    _givenName = (string)value;
+                    _givenNameChanged = LoadState.Loaded;
                     break;
 
-                case(PropertyNames.UserMiddleName):
-                    this.middleName = (string) value;
-                    this.middleNameChanged = LoadState.Loaded;
+                case (PropertyNames.UserMiddleName):
+                    _middleName = (string)value;
+                    _middleNameChanged = LoadState.Loaded;
                     break;
 
-                case(PropertyNames.UserSurname):
-                    this.surname = (string) value;
-                    this.surnameChanged = LoadState.Loaded;
+                case (PropertyNames.UserSurname):
+                    _surname = (string)value;
+                    _surnameChanged = LoadState.Loaded;
                     break;
 
-                case(PropertyNames.UserEmailAddress):
-                    this.emailAddress = (string) value;
-                    this.emailAddressChanged = LoadState.Loaded;
-                    break;
-                    
-                case(PropertyNames.UserVoiceTelephoneNumber):
-                    this.voiceTelephoneNumber = (string) value;
-                    this.voiceTelephoneNumberChanged = LoadState.Loaded;
+                case (PropertyNames.UserEmailAddress):
+                    _emailAddress = (string)value;
+                    _emailAddressChanged = LoadState.Loaded;
                     break;
 
-                case(PropertyNames.UserEmployeeID):
-                    this.employeeID = (string) value;
-                    this.employeeIDChanged = LoadState.Loaded;
+                case (PropertyNames.UserVoiceTelephoneNumber):
+                    _voiceTelephoneNumber = (string)value;
+                    _voiceTelephoneNumberChanged = LoadState.Loaded;
+                    break;
+
+                case (PropertyNames.UserEmployeeID):
+                    _employeeID = (string)value;
+                    _employeeIDChanged = LoadState.Loaded;
                     break;
 
                 default:
@@ -422,60 +423,59 @@ namespace System.DirectoryServices.AccountManagement
 
         // Given a property name, returns true if that property has changed since it was loaded, false otherwise.
         internal override bool GetChangeStatusForProperty(string propertyName)
-        {     
+        {
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "User", "GetChangeStatusForProperty: name=" + propertyName);
-        
-            switch(propertyName)
+
+            switch (propertyName)
             {
-                case(PropertyNames.UserGivenName):
-                    return this.givenNameChanged == LoadState.Changed;
+                case (PropertyNames.UserGivenName):
+                    return _givenNameChanged == LoadState.Changed;
 
-                case(PropertyNames.UserMiddleName):
-                    return this.middleNameChanged == LoadState.Changed;
+                case (PropertyNames.UserMiddleName):
+                    return _middleNameChanged == LoadState.Changed;
 
-                case(PropertyNames.UserSurname):
-                    return this.surnameChanged == LoadState.Changed;
+                case (PropertyNames.UserSurname):
+                    return _surnameChanged == LoadState.Changed;
 
-                case(PropertyNames.UserEmailAddress):
-                    return this.emailAddressChanged == LoadState.Changed;
-                    
-                case(PropertyNames.UserVoiceTelephoneNumber):
-                    return this.voiceTelephoneNumberChanged == LoadState.Changed;
+                case (PropertyNames.UserEmailAddress):
+                    return _emailAddressChanged == LoadState.Changed;
 
-                case(PropertyNames.UserEmployeeID):
-                    return this.employeeIDChanged == LoadState.Changed;
+                case (PropertyNames.UserVoiceTelephoneNumber):
+                    return _voiceTelephoneNumberChanged == LoadState.Changed;
+
+                case (PropertyNames.UserEmployeeID):
+                    return _employeeIDChanged == LoadState.Changed;
 
                 default:
                     return base.GetChangeStatusForProperty(propertyName);
             }
-
         }
 
         // Given a property name, returns the current value for the property.
         internal override object GetValueForProperty(string propertyName)
         {
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "User", "GetValueForProperty: name=" + propertyName);
-        
-            switch(propertyName)
+
+            switch (propertyName)
             {
-                case(PropertyNames.UserGivenName):
-                    return this.givenName;
+                case (PropertyNames.UserGivenName):
+                    return _givenName;
 
-                case(PropertyNames.UserMiddleName):
-                    return this.middleName;
+                case (PropertyNames.UserMiddleName):
+                    return _middleName;
 
-                case(PropertyNames.UserSurname):
-                    return this.surname;
+                case (PropertyNames.UserSurname):
+                    return _surname;
 
-                case(PropertyNames.UserEmailAddress):
-                    return this.emailAddress;
-                    
-                case(PropertyNames.UserVoiceTelephoneNumber):
-                    return this.voiceTelephoneNumber;
+                case (PropertyNames.UserEmailAddress):
+                    return _emailAddress;
 
-                case(PropertyNames.UserEmployeeID):
-                    return this.employeeID;
-                    
+                case (PropertyNames.UserVoiceTelephoneNumber):
+                    return _voiceTelephoneNumber;
+
+                case (PropertyNames.UserEmployeeID):
+                    return _employeeID;
+
                 default:
                     return base.GetValueForProperty(propertyName);
             }
@@ -485,16 +485,15 @@ namespace System.DirectoryServices.AccountManagement
         internal override void ResetAllChangeStatus()
         {
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "User", "ResetAllChangeStatus");
-        
-            this.givenNameChanged = ( this.givenNameChanged ==  LoadState.Changed ) ?  LoadState.Loaded : LoadState.NotSet;;
-            this.middleNameChanged = ( this.middleNameChanged ==  LoadState.Changed ) ?  LoadState.Loaded : LoadState.NotSet;;
-            this.surnameChanged = ( this.surnameChanged ==  LoadState.Changed ) ?  LoadState.Loaded : LoadState.NotSet;;
-            this.emailAddressChanged = ( this.emailAddressChanged ==  LoadState.Changed ) ?  LoadState.Loaded : LoadState.NotSet;;
-            this.voiceTelephoneNumberChanged = ( this.voiceTelephoneNumberChanged ==  LoadState.Changed ) ?  LoadState.Loaded : LoadState.NotSet;;
-            this.employeeIDChanged = ( this.employeeIDChanged ==  LoadState.Changed ) ?  LoadState.Loaded : LoadState.NotSet;;
-            
+
+            _givenNameChanged = (_givenNameChanged == LoadState.Changed) ? LoadState.Loaded : LoadState.NotSet; ;
+            _middleNameChanged = (_middleNameChanged == LoadState.Changed) ? LoadState.Loaded : LoadState.NotSet; ;
+            _surnameChanged = (_surnameChanged == LoadState.Changed) ? LoadState.Loaded : LoadState.NotSet; ;
+            _emailAddressChanged = (_emailAddressChanged == LoadState.Changed) ? LoadState.Loaded : LoadState.NotSet; ;
+            _voiceTelephoneNumberChanged = (_voiceTelephoneNumberChanged == LoadState.Changed) ? LoadState.Loaded : LoadState.NotSet; ;
+            _employeeIDChanged = (_employeeIDChanged == LoadState.Changed) ? LoadState.Loaded : LoadState.NotSet; ;
+
             base.ResetAllChangeStatus();
         }
     }
-
 }

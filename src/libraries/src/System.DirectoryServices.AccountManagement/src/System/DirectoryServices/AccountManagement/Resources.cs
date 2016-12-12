@@ -1,10 +1,13 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
 /*++
 
 Copyright (c) 2004  Microsoft Corporation
 
 Module Name:
 
-    Resources.cs
 
 Abstract:
 
@@ -26,33 +29,31 @@ using System.Globalization;
 
 namespace System.DirectoryServices.AccountManagement
 {
-
     ///<summary>
     /// This class loads all the localizable string resources.
     ///</summary>
-    internal class StringResources 
+    internal class StringResources
     {
-
         static StringResources()
         {
             Type t = typeof(StringResources);
 
             ResourceManager rm = new ResourceManager(t);
             MemberInfo[] infos = t.GetMembers(BindingFlags.Public | BindingFlags.Static);
-            foreach (MemberInfo m in infos) 
+            foreach (MemberInfo m in infos)
             {
-                t.InvokeMember(m.Name, BindingFlags.SetField, null, null, 
-                               new Object[] {rm.GetString(m.Name, CultureInfo.CurrentUICulture)},
+                t.InvokeMember(m.Name, BindingFlags.SetField, null, null,
+                               new Object[] { rm.GetString(m.Name, CultureInfo.CurrentUICulture) },
                                CultureInfo.CurrentCulture);
             }
-        } 
-            
+        }
+
         public static string ContextNoWellKnownObjects = null;
-        public static string ContextNoContainerForMachineCtx=null;
-        public static string ContextBadUserPwdCombo=null;
-        
+        public static string ContextNoContainerForMachineCtx = null;
+        public static string ContextBadUserPwdCombo = null;
+
         public static string StoreNotSupportMethod = null;
-        
+
         public static string PrincipalCantSetContext = null;
         public static string PrincipalUnsupportedProperty = null;
         public static string PrincipalUnsupportPropertyForPlatform = null;
@@ -67,17 +68,17 @@ namespace System.DirectoryServices.AccountManagement
         public static string PrincipalIdentityTypeNotAllowed = null;
         public static string PrincipalIdentityTypeNotRemovable = null;
         public static string PrincipalCantChangeSamNameOnPersistedSAM = null;
-        
+
         public static string EmptyIdentityType = null;
-        
+
         public static string PrincipalSearcherPersistedPrincipal = null;
         public static string PrincipalSearcherMustSetContext = null;
         public static string PrincipalSearcherMustSetContextForUnderlying = null;
         public static string PrincipalSearcherNoUnderlying = null;
         public static string PrincipalSearcherNonReferentialProps = null;
-        
+
         public static string FindResultEnumInvalidPos = null;
-        
+
         public static string TrackedCollectionNotOneDimensional = null;
         public static string TrackedCollectionIndexNotInArray = null;
         public static string TrackedCollectionArrayTooSmall = null;
@@ -98,7 +99,7 @@ namespace System.DirectoryServices.AccountManagement
         public static string PrincipalCollectionArrayTooSmall = null;
 
         public static string PrincipalCollectionEnumHasChanged = null;
-        public static string PrincipalCollectionEnumInvalidPos = null; 
+        public static string PrincipalCollectionEnumInvalidPos = null;
         public static string PrincipalCollectionAlreadyMember = null;
 
         public static string AuthenticablePrincipalMustBeSubtypeOfAuthPrinc = null;
@@ -136,7 +137,7 @@ namespace System.DirectoryServices.AccountManagement
         public static string ADStoreCtxMustBeContainer = null;
         public static string ADStoreCtxCantRetrieveObjectSidForCrossStore = null;
         public static string ADStoreCtxCantResolveSidForCrossStore = null;
-        public static string ADStoreCtxFailedFindCrossStoreTarget = null;   
+        public static string ADStoreCtxFailedFindCrossStoreTarget = null;
         public static string ADStoreCtxCantClearGroup = null;
         public static string ADStoreCtxCantRemoveMemberFromGroup = null;
 
@@ -154,9 +155,9 @@ namespace System.DirectoryServices.AccountManagement
         public static string SAMStoreCtxIdentityClaimsImmutable = null;
         public static string SAMStoreCtxCouldntGetSIDForGroupMember = null;
         public static string SAMStoreCtxFailedToClearGroup = null;
-        public static string SAMStoreCtxCantRetrieveObjectSidForCrossStore = null;        
+        public static string SAMStoreCtxCantRetrieveObjectSidForCrossStore = null;
         public static string SAMStoreCtxCantResolveSidForCrossStore = null;
-        public static string SAMStoreCtxFailedFindCrossStoreTarget = null;  
+        public static string SAMStoreCtxFailedFindCrossStoreTarget = null;
         public static string SAMStoreCtxErrorEnumeratingGroup = null;
         public static string SAMStoreCtxLocalGroupsOnly = null;
 
@@ -201,13 +202,12 @@ namespace System.DirectoryServices.AccountManagement
         public static string InvalidExtensionCollectionType = null;
         public static string ADAMStoreUnableToPopulateSchemaList = null;
         public static string StoreCtxMultipleFiltersForPropertyUnsupported = null;
-        
+
         //public static string PrincipalPermEmptyName = null;
         //      PrincipalPermEmptyName=Name cannot be an empty string.
         //public static string PrincipalPermInvalidContextType = null;
         //      PrincipalPermInvalidContextType=The value '{0}' is not a valid value for the ContextType.        
     }
-
 }
 
 #pragma warning restore 0414

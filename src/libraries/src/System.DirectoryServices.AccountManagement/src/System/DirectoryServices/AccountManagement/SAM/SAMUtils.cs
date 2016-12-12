@@ -1,10 +1,13 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
 /*++
 
 Copyright (c) 2004  Microsoft Corporation
 
 Module Name:
 
-    SAMUtils.cs
 
 Abstract:
 
@@ -32,19 +35,18 @@ namespace System.DirectoryServices.AccountManagement
 #pragma warning disable 618    // Have not migrated to v4 transparency yet
     [System.Security.SecurityCritical(System.Security.SecurityCriticalScope.Everything)]
 #pragma warning restore 618
-    [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.Assert, Unrestricted=true)]
-    class SAMUtils
+    [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.Assert, Unrestricted = true)]
+    internal class SAMUtils
     {
-
         // To stop the compiler from autogenerating a constructor for this class
-        private SAMUtils() {}
+        private SAMUtils() { }
 
 
         static internal bool IsOfObjectClass(DirectoryEntry de, string classToCompare)
         {
-            return (String.Compare(de.SchemaClassName, classToCompare, StringComparison.OrdinalIgnoreCase) == 0);           
+            return (String.Compare(de.SchemaClassName, classToCompare, StringComparison.OrdinalIgnoreCase) == 0);
         }
-    
+
         internal static bool GetOSVersion(DirectoryEntry computerDE, out int versionMajor, out int versionMinor)
         {
             Debug.Assert(SAMUtils.IsOfObjectClass(computerDE, "Computer"));
@@ -60,7 +62,7 @@ namespace System.DirectoryServices.AccountManagement
                 {
                     Debug.Assert(computerDE.Properties["OperatingSystemVersion"].Count == 1);
 
-                    version = (string) computerDE.Properties["OperatingSystemVersion"].Value;
+                    version = (string)computerDE.Properties["OperatingSystemVersion"].Value;
                 }
             }
             catch (COMException e)
@@ -83,7 +85,7 @@ namespace System.DirectoryServices.AccountManagement
             //
             // We'll split the string into its period-separated components, and parse
             // each component into an int.
-            string[] versionComponents = version.Split(new char[]{'.'});
+            string[] versionComponents = version.Split(new char[] { '.' });
 
             Debug.Assert(versionComponents.Length >= 1);    // since version was a non-empty string
 
@@ -102,10 +104,10 @@ namespace System.DirectoryServices.AccountManagement
                                     "SAMUtils.GetOSVersion: {0} claims to have negetive OS version, {1}",
                                     computerDE.Path,
                                     version));
-                    
+
                     return false;
                 }
-            } 
+            }
             catch (FormatException)
             {
                 Debug.Fail(String.Format(
@@ -113,7 +115,7 @@ namespace System.DirectoryServices.AccountManagement
                                 "SAMUtils.GetOSVersion: FormatException on {0} for {1}",
                                 version,
                                 computerDE.Path));
-                
+
                 return false;
             }
             catch (OverflowException)
@@ -138,9 +140,9 @@ namespace System.DirectoryServices.AccountManagement
             // provider, we'll get back the DirectoryEntry of the remote object itself --- ADSI does
             // the domain vs. local resolution for us.
 
-            if ( SAMUtils.IsOfObjectClass(de, "Computer") ||
+            if (SAMUtils.IsOfObjectClass(de, "Computer") ||
                  SAMUtils.IsOfObjectClass(de, "User") ||
-                 SAMUtils.IsOfObjectClass(de, "Group") )
+                 SAMUtils.IsOfObjectClass(de, "Group"))
             {
                 return storeCtx.GetAsPrincipal(de, null);
             }
@@ -180,7 +182,7 @@ namespace System.DirectoryServices.AccountManagement
         //
         //
 
-        
+
         static internal string PAPIQueryToRegexString(string papiString)
         {
             StringBuilder sb = new StringBuilder(papiString.Length);
@@ -210,7 +212,7 @@ namespace System.DirectoryServices.AccountManagement
                         case '*':
                             sb.Append(@".*");          //   * --> .*
                             break;
-                            
+
                         default:
                             sb.Append(c.ToString());   //   x  --> x
                             break;
@@ -219,7 +221,7 @@ namespace System.DirectoryServices.AccountManagement
                 else
                 {
                     escapeMode = false;
-                
+
                     switch (c)
                     {
                         case '(':
@@ -239,7 +241,7 @@ namespace System.DirectoryServices.AccountManagement
                             break;
 
                         default:
-                            sb.Append( @"\\" );
+                            sb.Append(@"\\");
                             sb.Append(c.ToString());    //      \x --> \x
                             break;
                     }
@@ -262,9 +264,8 @@ namespace System.DirectoryServices.AccountManagement
                             sb.ToString());
 
             sb.Append(@"\z");
-            
+
             return sb.ToString();
         }
-        
     }
 }

@@ -1,10 +1,13 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
 /*++
 
 Copyright (c) 2004  Microsoft Corporation
 
 Module Name:
 
-    ValueCollectionEnumerator.cs
 
 Abstract:
 
@@ -27,7 +30,6 @@ namespace System.DirectoryServices.AccountManagement
     internal class ValueCollectionEnumerator<T> : IEnumerator<T>, IEnumerator
     // T must be a ValueType
     {
-
         //
         // Public properties
         //
@@ -36,12 +38,12 @@ namespace System.DirectoryServices.AccountManagement
         {
             get
             {
-                GlobalDebug.WriteLineIf(GlobalDebug.Info, "ValueCollectionEnumerator", "Entering Current");            
-                return inner.Current;
+                GlobalDebug.WriteLineIf(GlobalDebug.Info, "ValueCollectionEnumerator", "Entering Current");
+                return _inner.Current;
             }
         }
 
-        
+
 
         object IEnumerator.Current
         {
@@ -62,8 +64,8 @@ namespace System.DirectoryServices.AccountManagement
 
         public bool MoveNext()
         {
-            GlobalDebug.WriteLineIf(GlobalDebug.Info, "ValueCollectionEnumerator", "Entering MoveNext");        
-            return inner.MoveNext();
+            GlobalDebug.WriteLineIf(GlobalDebug.Info, "ValueCollectionEnumerator", "Entering MoveNext");
+            return _inner.MoveNext();
         }
 
         // <SecurityKernel Critical="True" Ring="0">
@@ -77,8 +79,8 @@ namespace System.DirectoryServices.AccountManagement
 
         public void Reset()
         {
-            GlobalDebug.WriteLineIf(GlobalDebug.Info, "ValueCollectionEnumerator", "Entering Reset");        
-            inner.Reset();
+            GlobalDebug.WriteLineIf(GlobalDebug.Info, "ValueCollectionEnumerator", "Entering Reset");
+            _inner.Reset();
         }
 
         // <SecurityKernel Critical="True" Ring="0">
@@ -93,7 +95,7 @@ namespace System.DirectoryServices.AccountManagement
         public void Dispose()
         {
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "ValueCollectionEnumerator", "Entering Dispose");
-            inner.Dispose();
+            _inner.Dispose();
         }
 
 
@@ -102,8 +104,8 @@ namespace System.DirectoryServices.AccountManagement
         //
         internal ValueCollectionEnumerator(TrackedCollection<T> trackingList, List<TrackedCollection<T>.ValueEl> combinedValues)
         {
-            GlobalDebug.WriteLineIf(GlobalDebug.Info, "ValueCollectionEnumerator", "Ctor");            
-            inner = new TrackedCollectionEnumerator<T>("ValueCollectionEnumerator", trackingList, combinedValues);
+            GlobalDebug.WriteLineIf(GlobalDebug.Info, "ValueCollectionEnumerator", "Ctor");
+            _inner = new TrackedCollectionEnumerator<T>("ValueCollectionEnumerator", trackingList, combinedValues);
         }
 
 
@@ -111,8 +113,7 @@ namespace System.DirectoryServices.AccountManagement
         // Private implementation
         //
 
-        TrackedCollectionEnumerator<T> inner;
-    
+        private TrackedCollectionEnumerator<T> _inner;
     }
 }
 

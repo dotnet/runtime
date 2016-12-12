@@ -1,5 +1,8 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
 //------------------------------------------------------------------------------
-// <copyright file=Adreqresp2.cs" company="Microsoft">
 //     Copyright (c) Microsoft Corporation.  All rights reserved.
 // </copyright>                                                                
 //------------------------------------------------------------------------------
@@ -7,34 +10,38 @@
 /*
  */
 
-namespace System.DirectoryServices.Protocols {
-
+namespace System.DirectoryServices.Protocols
+{
     using System;
     using System.Collections;
     using System.Threading;
     using System.Runtime.InteropServices;
 
     //ADSearch Operation related classes 
-    class ADFilter {
-        public ADFilter() {
+    internal class ADFilter
+    {
+        public ADFilter()
+        {
             Filter = new FilterContent();
         }
 
         public FilterType Type;
         public FilterContent Filter;
 
-        public enum FilterType {
+        public enum FilterType
+        {
             And, Or, Not,
             EqualityMatch, Substrings, GreaterOrEqual,
             LessOrEqual, Present, ApproxMatch, ExtensibleMatch
         }
 
-        public struct FilterContent {
+        public struct FilterContent
+        {
             public ArrayList And;       //type ADFilter
 
             public ArrayList Or;        //type ADFilter
 
-            public ADFilter Not;        
+            public ADFilter Not;
 
             public ADAttribute EqualityMatch;
 
@@ -52,8 +59,10 @@ namespace System.DirectoryServices.Protocols {
         }
     }
 
-    class ADExtenMatchFilter {
-        public ADExtenMatchFilter() {
+    internal class ADExtenMatchFilter
+    {
+        public ADExtenMatchFilter()
+        {
             Value = null;
             DNAttributes = false;
         }
@@ -64,8 +73,10 @@ namespace System.DirectoryServices.Protocols {
         public string MatchingRule;
     }
 
-    class ADSubstringFilter {
-        public ADSubstringFilter() {
+    internal class ADSubstringFilter
+    {
+        public ADSubstringFilter()
+        {
             Initial = null;
             Final = null;
             Any = new ArrayList();
@@ -79,12 +90,15 @@ namespace System.DirectoryServices.Protocols {
     //end ADSearchOperation classes
 
 
-    class ADAttribute {
-        public ADAttribute() {
+    internal class ADAttribute
+    {
+        public ADAttribute()
+        {
             Values = new ArrayList();
         }
 
-        public override int GetHashCode() {
+        public override int GetHashCode()
+        {
             return Name.GetHashCode();
         }
 
@@ -92,8 +106,10 @@ namespace System.DirectoryServices.Protocols {
         public ArrayList Values;            //type ADValue
     }
 
-    class ADValue {
-        public ADValue() {
+    internal class ADValue
+    {
+        public ADValue()
+        {
             IsBinary = false;
             BinaryVal = null;
         }
@@ -102,6 +118,4 @@ namespace System.DirectoryServices.Protocols {
         public string StringVal;
         public byte[] BinaryVal;    //to store base64 encoded data
     }
-
-
 }

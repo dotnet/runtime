@@ -1,5 +1,8 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
 //------------------------------------------------------------------------------
-// <copyright file="SafeHandles.cs" company="Microsoft">
 //     Copyright (c) Microsoft Corporation.  All rights reserved.
 // </copyright>                                                                
 //------------------------------------------------------------------------------
@@ -7,8 +10,8 @@
 /*
  */
 
-namespace System.DirectoryServices.Protocols {
-
+namespace System.DirectoryServices.Protocols
+{
     using System;
     using Microsoft.Win32.SafeHandles;
     using System.Runtime.InteropServices;
@@ -16,18 +19,21 @@ namespace System.DirectoryServices.Protocols {
     using System.Runtime.ConstrainedExecution;
     using System.Diagnostics;
     using System.Security;
-    
-    [SuppressUnmanagedCodeSecurityAttribute()]
-    internal sealed class BerSafeHandle: SafeHandleZeroOrMinusOneIsInvalid{
-        internal BerSafeHandle() : base(true) {            
-            SetHandle(Wldap32.ber_alloc(1));
-            if(handle == (IntPtr)0)
-                throw new OutOfMemoryException();
-        }        
 
-        internal BerSafeHandle(berval value) :base(true) {
+    [SuppressUnmanagedCodeSecurityAttribute()]
+    internal sealed class BerSafeHandle : SafeHandleZeroOrMinusOneIsInvalid
+    {
+        internal BerSafeHandle() : base(true)
+        {
+            SetHandle(Wldap32.ber_alloc(1));
+            if (handle == (IntPtr)0)
+                throw new OutOfMemoryException();
+        }
+
+        internal BerSafeHandle(berval value) : base(true)
+        {
             SetHandle(Wldap32.ber_init(value));
-            if(handle == (IntPtr)0)
+            if (handle == (IntPtr)0)
                 throw new BerConversionException();
         }
 
@@ -36,42 +42,42 @@ namespace System.DirectoryServices.Protocols {
             Wldap32.ber_free(handle, 1);
             return true;
         }
-        
     }
 
     [SuppressUnmanagedCodeSecurityAttribute()]
-    sealed internal class HGlobalMemHandle : SafeHandleZeroOrMinusOneIsInvalid {
-        internal HGlobalMemHandle(IntPtr value) : base(true) {            
+    sealed internal class HGlobalMemHandle : SafeHandleZeroOrMinusOneIsInvalid
+    {
+        internal HGlobalMemHandle(IntPtr value) : base(true)
+        {
             SetHandle(value);
         }
-       
+
         override protected bool ReleaseHandle()
         {
-            Marshal.FreeHGlobal(handle);            
+            Marshal.FreeHGlobal(handle);
             return true;
         }
-    }       
+    }
 
     [SuppressUnmanagedCodeSecurityAttribute()]
-    sealed internal class ConnectionHandle : SafeHandleZeroOrMinusOneIsInvalid {
-
+    sealed internal class ConnectionHandle : SafeHandleZeroOrMinusOneIsInvalid
+    {
         internal bool needDispose = false;
-        internal ConnectionHandle() : base(true) {            
+        internal ConnectionHandle() : base(true)
+        {
             SetHandle(Wldap32.ldap_init(null, 389));
 
-            if(handle == (IntPtr) 0)
+            if (handle == (IntPtr)0)
             {
                 int error = Wldap32.LdapGetLastError();
-                if(Utility.IsLdapError((LdapError) error))
+                if (Utility.IsLdapError((LdapError)error))
                 {
                     string errorMessage = LdapErrorMappings.MapResultCode(error);
                     throw new LdapException(error, errorMessage);
                 }
-                else                 
-                    throw new LdapException(error);               
-                    
+                else
+                    throw new LdapException(error);
             }
-
         }
 
         internal ConnectionHandle(IntPtr value, bool disposeHandle)
@@ -98,15 +104,13 @@ namespace System.DirectoryServices.Protocols {
         {
             if (handle != (IntPtr)0)
             {
-                if ( needDispose )
+                if (needDispose)
                 {
-                    Wldap32.ldap_unbind( handle );
+                    Wldap32.ldap_unbind(handle);
                 }
                 handle = (IntPtr)0;
             }
             return true;
         }
     }
-
-    
 }

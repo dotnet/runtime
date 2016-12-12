@@ -1,3 +1,7 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
 //------------------------------------------------------------------------------
 // <copyright file="DirectoryRequest" company="Microsoft">
 //     Copyright (c) Microsoft Corporation.  All rights reserved.
@@ -6,44 +10,48 @@
 
 /*
  */
-    
-namespace System.DirectoryServices.Protocols {
 
+namespace System.DirectoryServices.Protocols
+{
     using System;
     using System.Xml;
-    using System.Collections;    
+    using System.Collections;
     using System.IO;
     using System.Diagnostics;
     using System.Globalization;
-    using System.ComponentModel;    
-    using System.Collections.Specialized;    
+    using System.ComponentModel;
+    using System.Collections.Specialized;
     using System.Security.Permissions;
-    
-    public abstract class DirectoryRequest  :DirectoryOperation {        
+
+    public abstract class DirectoryRequest : DirectoryOperation
+    {
         internal DirectoryControlCollection directoryControlCollection = null;
-        
-        internal DirectoryRequest()  
+
+        internal DirectoryRequest()
         {
             Utility.CheckOSVersion();
-            
-            directoryControlCollection = new DirectoryControlCollection();
-        }        
 
-        public string RequestId {
-            get {
+            directoryControlCollection = new DirectoryControlCollection();
+        }
+
+        public string RequestId
+        {
+            get
+            {
                 return directoryRequestID;
             }
-            set {
+            set
+            {
                 directoryRequestID = value;
             }
-        }        
-        
+        }
+
         public DirectoryControlCollection Controls
         {
-            get {               
+            get
+            {
                 return directoryControlCollection;
-                
-            }            
+            }
         }
 
         //
@@ -56,7 +64,7 @@ namespace System.DirectoryServices.Protocols {
         {
             return ToXmlNode(doc);
         }
-        
+
 
         // Overloaded to implement the operation-specific portion of transforming
         // an object into its DSML v2 XML representation.
@@ -69,52 +77,50 @@ namespace System.DirectoryServices.Protocols {
                                                   bool includeDistinguishedName,
                                                   string distinguishedName)
         {
-             // Create the element to represent the request
-             XmlElement elem = doc.CreateElement(requestName, DsmlConstants.DsmlUri);
+            // Create the element to represent the request
+            XmlElement elem = doc.CreateElement(requestName, DsmlConstants.DsmlUri);
 
-             if (includeDistinguishedName)
-             {
-                 XmlAttribute attrDn = doc.CreateAttribute("dn", null);
-                 attrDn.InnerText = distinguishedName;
-                 elem.Attributes.Append(attrDn);
-             }
+            if (includeDistinguishedName)
+            {
+                XmlAttribute attrDn = doc.CreateAttribute("dn", null);
+                attrDn.InnerText = distinguishedName;
+                elem.Attributes.Append(attrDn);
+            }
 
-             // Attach the requestID to the request
-             if (directoryRequestID != null)
-             {
-                 XmlAttribute attrReqID = doc.CreateAttribute("requestID", null);
-                 attrReqID.InnerText = directoryRequestID;
-                 elem.Attributes.Append(attrReqID);
-             }
+            // Attach the requestID to the request
+            if (directoryRequestID != null)
+            {
+                XmlAttribute attrReqID = doc.CreateAttribute("requestID", null);
+                attrReqID.InnerText = directoryRequestID;
+                elem.Attributes.Append(attrReqID);
+            }
 
-             // Attach the controls to the request
-             // (controls are always the first child elements)
-             if (directoryControlCollection != null)
-             {
-                 foreach (DirectoryControl control in directoryControlCollection)
-                 {
-                     XmlElement elControl = control.ToXmlNode(doc);
-                     elem.AppendChild(elControl);
-                 }
-             }
+            // Attach the controls to the request
+            // (controls are always the first child elements)
+            if (directoryControlCollection != null)
+            {
+                foreach (DirectoryControl control in directoryControlCollection)
+                {
+                    XmlElement elControl = control.ToXmlNode(doc);
+                    elem.AppendChild(elControl);
+                }
+            }
 
-             return elem;
-         }
-        
+            return elem;
+        }
     }
 
     public class DeleteRequest : DirectoryRequest
     {
-
         //
         // Public
         //
 
-        public DeleteRequest() {}
+        public DeleteRequest() { }
 
         public DeleteRequest(string distinguishedName)
-        {        
-            dn= distinguishedName;
+        {
+            _dn = distinguishedName;
         }
 
         // Member properties
@@ -122,12 +128,12 @@ namespace System.DirectoryServices.Protocols {
         {
             get
             {
-                return dn;
+                return _dn;
             }
 
             set
             {
-                dn = value;
+                _dn = value;
             }
         }
 
@@ -136,12 +142,11 @@ namespace System.DirectoryServices.Protocols {
         // Private/protected
         //
 
-        private string dn;
+        private string _dn;
 
         protected override XmlElement ToXmlNode(XmlDocument doc)
         {
-
-            XmlElement elem = CreateRequestElement(doc, "delRequest", true, dn);
+            XmlElement elem = CreateRequestElement(doc, "delRequest", true, _dn);
 
             return elem;
         }
@@ -149,26 +154,25 @@ namespace System.DirectoryServices.Protocols {
 
     public class AddRequest : DirectoryRequest
     {
-    
         //
         // Public
         //
-        
+
         public AddRequest()
         {
-            attributeList = new DirectoryAttributeCollection();
+            _attributeList = new DirectoryAttributeCollection();
         }
 
         public AddRequest(string distinguishedName, params DirectoryAttribute[] attributes) : this()
         {
             // Store off the distinguished name
-            dn = distinguishedName;
+            _dn = distinguishedName;
 
-            if(attributes != null)
+            if (attributes != null)
             {
-                for(int i = 0; i < attributes.Length; i++)
+                for (int i = 0; i < attributes.Length; i++)
                 {
-                    attributeList.Add(attributes[i]);
+                    _attributeList.Add(attributes[i]);
                 }
             }
         }
@@ -178,16 +182,16 @@ namespace System.DirectoryServices.Protocols {
             // parameter validation
             if (objectClass == null)
                 throw new ArgumentNullException("objectClass");
-        
+
             // Store off the distinguished name
-            dn = distinguishedName;
+            _dn = distinguishedName;
 
             // Store off the objectClass in an object class attribute
             DirectoryAttribute objClassAttr = new DirectoryAttribute();
-            
+
             objClassAttr.Name = "objectClass";
             objClassAttr.Add(objectClass);
-            attributeList.Add(objClassAttr);
+            _attributeList.Add(objClassAttr);
         }
 
         // Properties
@@ -195,12 +199,12 @@ namespace System.DirectoryServices.Protocols {
         {
             get
             {
-                return dn;
+                return _dn;
             }
 
             set
             {
-                dn = value;
+                _dn = value;
             }
         }
 
@@ -208,8 +212,8 @@ namespace System.DirectoryServices.Protocols {
         {
             get
             {
-                return attributeList;
-            }            
+                return _attributeList;
+            }
         }
 
 
@@ -217,18 +221,17 @@ namespace System.DirectoryServices.Protocols {
         // Private/protected
         //
 
-        private string dn;
-        private DirectoryAttributeCollection attributeList;
+        private string _dn;
+        private DirectoryAttributeCollection _attributeList;
 
         protected override XmlElement ToXmlNode(XmlDocument doc)
         {
-
-            XmlElement elem = CreateRequestElement(doc, "addRequest", true, dn);
+            XmlElement elem = CreateRequestElement(doc, "addRequest", true, _dn);
 
             // Add in the attributes
-            if(attributeList != null)
+            if (_attributeList != null)
             {
-                foreach (DirectoryAttribute attr in attributeList)
+                foreach (DirectoryAttribute attr in _attributeList)
                 {
                     XmlElement elAttr = ((DirectoryAttribute)attr).ToXmlNode(doc, "attr");
                     elem.AppendChild(elAttr);
@@ -246,38 +249,37 @@ namespace System.DirectoryServices.Protocols {
         //
         public ModifyRequest()
         {
-            attributeModificationList = new DirectoryAttributeModificationCollection();
+            _attributeModificationList = new DirectoryAttributeModificationCollection();
         }
 
         public ModifyRequest(string distinguishedName, params DirectoryAttributeModification[] modifications) : this()
         {
             // Store off the distinguished name
-            dn = distinguishedName;
+            _dn = distinguishedName;
 
             // Store off the initial list of modifications
-            attributeModificationList.AddRange(modifications);
+            _attributeModificationList.AddRange(modifications);
         }
 
-        public ModifyRequest(string distinguishedName, DirectoryAttributeOperation operation, string attributeName, params object[] values) :this()
+        public ModifyRequest(string distinguishedName, DirectoryAttributeOperation operation, string attributeName, params object[] values) : this()
         {
             // Store off the distinguished name
-            dn = distinguishedName;
+            _dn = distinguishedName;
 
             // validate the attributeName
-            if(attributeName == null)
-                throw new ArgumentNullException("attributeName");            
+            if (attributeName == null)
+                throw new ArgumentNullException("attributeName");
 
             DirectoryAttributeModification mod = new DirectoryAttributeModification();
             mod.Operation = operation;
             mod.Name = attributeName;
-            if(values != null)
+            if (values != null)
             {
-                for(int i = 0; i < values.Length; i++)
+                for (int i = 0; i < values.Length; i++)
                     mod.Add(values[i]);
             }
 
-            attributeModificationList.Add(mod);
-            
+            _attributeModificationList.Add(mod);
         }
 
 
@@ -286,12 +288,12 @@ namespace System.DirectoryServices.Protocols {
         {
             get
             {
-                return dn;
+                return _dn;
             }
 
             set
             {
-                dn = value;
+                _dn = value;
             }
         }
 
@@ -299,27 +301,27 @@ namespace System.DirectoryServices.Protocols {
         {
             get
             {
-                return attributeModificationList;
-            }           
+                return _attributeModificationList;
+            }
         }
 
-        
+
         //
         // Private/protected
         //
-        
-        private string dn;
-        private DirectoryAttributeModificationCollection attributeModificationList;
+
+        private string _dn;
+        private DirectoryAttributeModificationCollection _attributeModificationList;
 
         protected override XmlElement ToXmlNode(XmlDocument doc)
         {
-            XmlElement elem = CreateRequestElement(doc, "modifyRequest", true, dn);
+            XmlElement elem = CreateRequestElement(doc, "modifyRequest", true, _dn);
 
             // Add in the attributes
 
-            if(attributeModificationList != null)
+            if (_attributeModificationList != null)
             {
-                foreach (DirectoryAttributeModification attr in attributeModificationList)
+                foreach (DirectoryAttributeModification attr in _attributeModificationList)
                 {
                     XmlElement elAttr = attr.ToXmlNode(doc);
                     elem.AppendChild(elAttr);
@@ -335,29 +337,29 @@ namespace System.DirectoryServices.Protocols {
         //
         // Public
         //
-        public CompareRequest() {}
+        public CompareRequest() { }
 
         public CompareRequest(string distinguishedName, string attributeName, string value)
-        {            
-            CompareRequestHelper(distinguishedName, attributeName, value);
-        }
-
-        public CompareRequest(string distinguishedName, string attributeName, byte[] value) 
         {
             CompareRequestHelper(distinguishedName, attributeName, value);
         }
 
-        public CompareRequest(string distinguishedName, string attributeName, Uri value) 
+        public CompareRequest(string distinguishedName, string attributeName, byte[] value)
+        {
+            CompareRequestHelper(distinguishedName, attributeName, value);
+        }
+
+        public CompareRequest(string distinguishedName, string attributeName, Uri value)
         {
             CompareRequestHelper(distinguishedName, attributeName, value);
         }
 
         public CompareRequest(string distinguishedName, DirectoryAttribute assertion)
         {
-            if(assertion == null)
+            if (assertion == null)
                 throw new ArgumentNullException("assertion");
 
-            if(assertion.Count != 1)
+            if (assertion.Count != 1)
                 throw new ArgumentException(Res.GetString(Res.WrongNumValuesCompare));
 
             CompareRequestHelper(distinguishedName, assertion.Name, assertion[0]);
@@ -368,17 +370,17 @@ namespace System.DirectoryServices.Protocols {
             // parameter validation
             if (attributeName == null)
                 throw new ArgumentNullException("attributeName");
-            
+
             if (value == null)
                 throw new ArgumentNullException("value");
 
             // store off the DN
-            dn = distinguishedName;
+            _dn = distinguishedName;
 
-            
+
             // store off the attribute name and value            
-            attribute.Name = attributeName;
-            attribute.Add(value);
+            _attribute.Name = attributeName;
+            _attribute.Add(value);
         }
 
 
@@ -389,12 +391,12 @@ namespace System.DirectoryServices.Protocols {
         {
             get
             {
-                return dn;
+                return _dn;
             }
 
             set
             {
-                dn = value;
+                _dn = value;
             }
         }
 
@@ -402,50 +404,49 @@ namespace System.DirectoryServices.Protocols {
         {
             get
             {
-                return attribute;
-            }            
+                return _attribute;
+            }
         }
 
-        
+
         //
         // Private/protected
         //
-        
-        private string dn;
-        private DirectoryAttribute attribute= new DirectoryAttribute();
+
+        private string _dn;
+        private DirectoryAttribute _attribute = new DirectoryAttribute();
 
         protected override XmlElement ToXmlNode(XmlDocument doc)
         {
-            XmlElement elem = CreateRequestElement(doc, "compareRequest", true, dn);
+            XmlElement elem = CreateRequestElement(doc, "compareRequest", true, _dn);
 
             // add in the attribute
-            if (attribute.Count != 1)
+            if (_attribute.Count != 1)
                 throw new ArgumentException(Res.GetString(Res.WrongNumValuesCompare));
-            
-            XmlElement elAttr = attribute.ToXmlNode(doc, "assertion");
+
+            XmlElement elAttr = _attribute.ToXmlNode(doc, "assertion");
             elem.AppendChild(elAttr);
-                
+
             return elem;
         }
     }
 
-    public class ModifyDNRequest  : DirectoryRequest
+    public class ModifyDNRequest : DirectoryRequest
     {
         //
         // Public
         //
-        public ModifyDNRequest () {}
+        public ModifyDNRequest() { }
 
-        public ModifyDNRequest (string distinguishedName,
+        public ModifyDNRequest(string distinguishedName,
                                 string newParentDistinguishedName,
                                 string newName)
         {
-
             // store off the DN
-            dn = distinguishedName;
+            _dn = distinguishedName;
 
-            newSuperior = newParentDistinguishedName;
-            newRDN = newName;
+            _newSuperior = newParentDistinguishedName;
+            _newRDN = newName;
         }
 
 
@@ -454,12 +455,12 @@ namespace System.DirectoryServices.Protocols {
         {
             get
             {
-                return dn;
+                return _dn;
             }
 
             set
             {
-                dn = value;
+                _dn = value;
             }
         }
 
@@ -467,12 +468,12 @@ namespace System.DirectoryServices.Protocols {
         {
             get
             {
-                return newSuperior;
+                return _newSuperior;
             }
 
             set
             {
-                newSuperior = value;
+                _newSuperior = value;
             }
         }
 
@@ -480,12 +481,12 @@ namespace System.DirectoryServices.Protocols {
         {
             get
             {
-                return newRDN;
+                return _newRDN;
             }
 
             set
             {
-                newRDN = value;
+                _newRDN = value;
             }
         }
 
@@ -493,48 +494,48 @@ namespace System.DirectoryServices.Protocols {
         {
             get
             {
-                return deleteOldRDN;
+                return _deleteOldRDN;
             }
 
             set
             {
-                deleteOldRDN = value;
+                _deleteOldRDN = value;
             }
-        }        
+        }
 
-        
+
         //
         // Private/protected
         //
-        
-        private string dn;
-        private string newSuperior;
-        private string newRDN;
-        private bool deleteOldRDN = true;
+
+        private string _dn;
+        private string _newSuperior;
+        private string _newRDN;
+        private bool _deleteOldRDN = true;
 
         protected override XmlElement ToXmlNode(XmlDocument doc)
         {
-            XmlElement elem = CreateRequestElement(doc, "modDNRequest", true, dn);
+            XmlElement elem = CreateRequestElement(doc, "modDNRequest", true, _dn);
 
             // "newrdn" attribute (required)
             XmlAttribute attrNewRDN = doc.CreateAttribute("newrdn", null);
-            attrNewRDN.InnerText = newRDN;
+            attrNewRDN.InnerText = _newRDN;
             elem.Attributes.Append(attrNewRDN);
 
             // "deleteoldrdn" attribute (optional, but we'll always include it)
             XmlAttribute attrDeleteOldRDN = doc.CreateAttribute("deleteoldrdn", null);
-            attrDeleteOldRDN.InnerText = deleteOldRDN ? "true" : "false";
+            attrDeleteOldRDN.InnerText = _deleteOldRDN ? "true" : "false";
             elem.Attributes.Append(attrDeleteOldRDN);
 
-			
+
             // "newSuperior" attribute (optional)
-            if (newSuperior != null)
+            if (_newSuperior != null)
             {
                 XmlAttribute attrNewSuperior = doc.CreateAttribute("newSuperior", null);
-                attrNewSuperior.InnerText = newSuperior;
+                attrNewSuperior.InnerText = _newSuperior;
                 elem.Attributes.Append(attrNewSuperior);
             }
-                
+
             return elem;
         }
     }
@@ -548,16 +549,16 @@ namespace System.DirectoryServices.Protocols {
         //
         // Public
         //
-        public ExtendedRequest() {}
+        public ExtendedRequest() { }
 
         public ExtendedRequest(string requestName)
         {
-            this.requestName = requestName;
+            _requestName = requestName;
         }
 
         public ExtendedRequest(string requestName, byte[] requestValue) : this(requestName)
         {
-            this.requestValue = requestValue;
+            _requestValue = requestValue;
         }
 
 
@@ -566,12 +567,12 @@ namespace System.DirectoryServices.Protocols {
         {
             get
             {
-                return this.requestName;
+                return _requestName;
             }
 
             set
             {
-                this.requestName = value;
+                _requestName = value;
             }
         }
 
@@ -579,13 +580,13 @@ namespace System.DirectoryServices.Protocols {
         {
             get
             {
-                if(this.requestValue == null)
+                if (_requestValue == null)
                     return new byte[0];
                 else
                 {
-                    byte[] tempValue = new byte[this.requestValue.Length];
-                    for(int i = 0; i < this.requestValue.Length; i++)
-                        tempValue[i] = this.requestValue[i];
+                    byte[] tempValue = new byte[_requestValue.Length];
+                    for (int i = 0; i < _requestValue.Length; i++)
+                        tempValue[i] = _requestValue[i];
 
                     return tempValue;
                 }
@@ -593,17 +594,17 @@ namespace System.DirectoryServices.Protocols {
 
             set
             {
-                this.requestValue = value;
+                _requestValue = value;
             }
         }
 
-        
+
         //
         // Private/protected
         //
-        
-        private string requestName;
-        private byte[] requestValue = null;
+
+        private string _requestName;
+        private byte[] _requestValue = null;
 
         protected override XmlElement ToXmlNode(XmlDocument doc)
         {
@@ -611,50 +612,50 @@ namespace System.DirectoryServices.Protocols {
 
             // <requestName>
             XmlElement elemName = doc.CreateElement("requestName", DsmlConstants.DsmlUri);
-            elemName.InnerText = requestName;
+            elemName.InnerText = _requestName;
             elem.AppendChild(elemName);
-            
+
 
             // <requestValue> (optional)
-            if (requestValue != null)
+            if (_requestValue != null)
             {
                 XmlElement elemValue = doc.CreateElement("requestValue", DsmlConstants.DsmlUri);
-                elemValue.InnerText = System.Convert.ToBase64String(requestValue);
+                elemValue.InnerText = System.Convert.ToBase64String(_requestValue);
 
                 // attach the "xsi:type = xsd:base64Binary" attribute
                 XmlAttribute attrXsiType = doc.CreateAttribute("xsi:type", DsmlConstants.XsiUri);
                 attrXsiType.InnerText = "xsd:base64Binary";
                 elemValue.Attributes.Append(attrXsiType);
-                
+
                 elem.AppendChild(elemValue);
             }
-            
+
 
             return elem;
         }
     }
 
     public class SearchRequest : DirectoryRequest
-    {    
+    {
         //
         // Public
         //
-        public SearchRequest() 
+        public SearchRequest()
         {
-            directoryAttributes = new StringCollection();
+            _directoryAttributes = new StringCollection();
         }
 
         public SearchRequest(string distinguishedName,
                              XmlDocument filter,
                              SearchScope searchScope,
-                             params string[] attributeList) :this()
+                             params string[] attributeList) : this()
         {
-            dn = distinguishedName;
-            
-            if(attributeList != null)
-            {                
-                for(int i = 0; i < attributeList.Length; i++)
-                    directoryAttributes.Add(attributeList[i]);
+            _dn = distinguishedName;
+
+            if (attributeList != null)
+            {
+                for (int i = 0; i < attributeList.Length; i++)
+                    _directoryAttributes.Add(attributeList[i]);
             }
 
             // validate the scope parameter
@@ -664,22 +665,21 @@ namespace System.DirectoryServices.Protocols {
         }
 
         public SearchRequest(string distinguishedName,
-                             string ldapFilter,                             
+                             string ldapFilter,
                              SearchScope searchScope,
-                             params string[] attributeList) :this()
+                             params string[] attributeList) : this()
         {
-            dn = distinguishedName;
+            _dn = distinguishedName;
 
-            if(attributeList != null)
-            {                
-                for(int i = 0; i < attributeList.Length; i++)
-                    directoryAttributes.Add(attributeList[i]);
+            if (attributeList != null)
+            {
+                for (int i = 0; i < attributeList.Length; i++)
+                    _directoryAttributes.Add(attributeList[i]);
             }
 
             Scope = searchScope;
 
             Filter = ldapFilter;
-            
         }
 
 
@@ -688,12 +688,12 @@ namespace System.DirectoryServices.Protocols {
         {
             get
             {
-                return dn;
+                return _dn;
             }
 
             set
             {
-                dn = value;
+                _dn = value;
             }
         }
 
@@ -701,22 +701,22 @@ namespace System.DirectoryServices.Protocols {
         {
             get
             {
-                return directoryAttributes;
-            }            
+                return _directoryAttributes;
+            }
         }
 
         public object Filter
         {
             get
             {
-                return directoryFilter;
+                return _directoryFilter;
             }
 
             set
             {
                 // do we need to validate the filter here?
-                if((value is string) || (value is XmlDocument) || (value == null))
-                    directoryFilter = value;
+                if ((value is string) || (value is XmlDocument) || (value == null))
+                    _directoryFilter = value;
                 else
                     throw new ArgumentException(Res.GetString(Res.ValidFilterType), "value");
             }
@@ -726,57 +726,57 @@ namespace System.DirectoryServices.Protocols {
         {
             get
             {
-                return directoryScope;
+                return _directoryScope;
             }
 
             set
             {
-                if (value < SearchScope.Base || value > SearchScope.Subtree) 
+                if (value < SearchScope.Base || value > SearchScope.Subtree)
                     throw new InvalidEnumArgumentException("value", (int)value, typeof(SearchScope));
-            
-                directoryScope = value;
+
+                _directoryScope = value;
             }
-        }    
+        }
 
         public DereferenceAlias Aliases
         {
             get
             {
-                return directoryRefAlias;
+                return _directoryRefAlias;
             }
 
             set
             {
-                if (value < DereferenceAlias.Never || value > DereferenceAlias.Always) 
+                if (value < DereferenceAlias.Never || value > DereferenceAlias.Always)
                     throw new InvalidEnumArgumentException("value", (int)value, typeof(DereferenceAlias));
-            
-                directoryRefAlias = value;
+
+                _directoryRefAlias = value;
             }
-        }     
+        }
 
         public int SizeLimit
         {
             get
             {
-                return directorySizeLimit;
+                return _directorySizeLimit;
             }
 
             set
-            {         
+            {
                 if (value < 0)
                 {
                     throw new ArgumentException(Res.GetString(Res.NoNegativeSizeLimit), "value");
                 }
-            
-                directorySizeLimit = value;
+
+                _directorySizeLimit = value;
             }
-        }     
+        }
 
         public TimeSpan TimeLimit
         {
             get
             {
-                return directoryTimeLimit;
+                return _directoryTimeLimit;
             }
 
             set
@@ -787,49 +787,49 @@ namespace System.DirectoryServices.Protocols {
                 }
 
                 // prevent integer overflow
-                if(value.TotalSeconds > Int32.MaxValue)
+                if (value.TotalSeconds > Int32.MaxValue)
                     throw new ArgumentException(Res.GetString(Res.TimespanExceedMax), "value");
-            
-                directoryTimeLimit = value;
+
+                _directoryTimeLimit = value;
             }
-        }      
+        }
 
         public bool TypesOnly
         {
             get
             {
-                return directoryTypesOnly;
+                return _directoryTypesOnly;
             }
 
             set
             {
-                directoryTypesOnly = value;
+                _directoryTypesOnly = value;
             }
-        }          
+        }
 
-        
+
         //
         // Private/protected
         //
 
-        private string dn = null;
-        private StringCollection directoryAttributes = new StringCollection();
-        private object directoryFilter = null;
-        private SearchScope directoryScope = SearchScope.Subtree;
-        private DereferenceAlias directoryRefAlias = DereferenceAlias.Never;
-        private int directorySizeLimit = 0;
-        private TimeSpan directoryTimeLimit = new TimeSpan(0);
-        private bool directoryTypesOnly = false;
+        private string _dn = null;
+        private StringCollection _directoryAttributes = new StringCollection();
+        private object _directoryFilter = null;
+        private SearchScope _directoryScope = SearchScope.Subtree;
+        private DereferenceAlias _directoryRefAlias = DereferenceAlias.Never;
+        private int _directorySizeLimit = 0;
+        private TimeSpan _directoryTimeLimit = new TimeSpan(0);
+        private bool _directoryTypesOnly = false;
 
         protected override XmlElement ToXmlNode(XmlDocument doc)
         {
-            XmlElement elem = CreateRequestElement(doc, "searchRequest", true, dn);            
+            XmlElement elem = CreateRequestElement(doc, "searchRequest", true, _dn);
 
 
             // attach the "scope" attribute (required)
             XmlAttribute attrScope = doc.CreateAttribute("scope", null);
 
-            switch (directoryScope)
+            switch (_directoryScope)
             {
                 case SearchScope.Subtree:
                     attrScope.InnerText = "wholeSubtree";
@@ -842,19 +842,19 @@ namespace System.DirectoryServices.Protocols {
                 case SearchScope.Base:
                     attrScope.InnerText = "baseObject";
                     break;
-                
+
                 default:
                     Debug.Assert(false, "Unknown DsmlSearchScope type");
                     break;
             }
-            
+
             elem.Attributes.Append(attrScope);
 
 
             // attach the "derefAliases" attribute (required)
             XmlAttribute attrDerefAliases = doc.CreateAttribute("derefAliases", null);
 
-            switch (directoryRefAlias)
+            switch (_directoryRefAlias)
             {
                 case DereferenceAlias.Never:
                     attrDerefAliases.InnerText = "neverDerefAliases";
@@ -871,29 +871,29 @@ namespace System.DirectoryServices.Protocols {
                 case DereferenceAlias.Always:
                     attrDerefAliases.InnerText = "derefAlways";
                     break;
-                
+
                 default:
                     Debug.Assert(false, "Unknown DsmlDereferenceAlias type");
                     break;
             }
-            
+
             elem.Attributes.Append(attrDerefAliases);
-            
+
 
             // attach the "sizeLimit" attribute (optional)
             XmlAttribute attrSizeLimit = doc.CreateAttribute("sizeLimit", null);
-            attrSizeLimit.InnerText = directorySizeLimit.ToString(CultureInfo.InvariantCulture);
-            elem.Attributes.Append(attrSizeLimit);            
+            attrSizeLimit.InnerText = _directorySizeLimit.ToString(CultureInfo.InvariantCulture);
+            elem.Attributes.Append(attrSizeLimit);
 
             // attach the "timeLimit" attribute (optional)
             XmlAttribute attrTimeLimit = doc.CreateAttribute("timeLimit", null);
-            attrTimeLimit.InnerText = (directoryTimeLimit.Ticks / TimeSpan.TicksPerSecond).ToString(CultureInfo.InvariantCulture);
-            elem.Attributes.Append(attrTimeLimit);            
-            
+            attrTimeLimit.InnerText = (_directoryTimeLimit.Ticks / TimeSpan.TicksPerSecond).ToString(CultureInfo.InvariantCulture);
+            elem.Attributes.Append(attrTimeLimit);
+
             // attach the "typesOnly" attribute (optional, defaults to false)
             XmlAttribute attrTypesOnly = doc.CreateAttribute("typesOnly", null);
-            attrTypesOnly.InnerText = directoryTypesOnly ? "true" : "false";
-            elem.Attributes.Append(attrTypesOnly);            
+            attrTypesOnly.InnerText = _directoryTypesOnly ? "true" : "false";
+            elem.Attributes.Append(attrTypesOnly);
 
             // add in the <filter> element (required)
             XmlElement elemFilter = doc.CreateElement("filter", DsmlConstants.DsmlUri);
@@ -905,10 +905,9 @@ namespace System.DirectoryServices.Protocols {
 
                 try
                 {
-                    
-                    if(Filter is XmlDocument)
+                    if (Filter is XmlDocument)
                     {
-                        if(((XmlDocument)Filter).NamespaceURI.Length == 0)
+                        if (((XmlDocument)Filter).NamespaceURI.Length == 0)
                         {
                             // namespaceURI is not explicitly specified
                             CopyFilter((XmlDocument)Filter, xmlWriter);
@@ -919,7 +918,7 @@ namespace System.DirectoryServices.Protocols {
                             elemFilter.InnerXml = ((XmlDocument)Filter).OuterXml;
                         }
                     }
-                    else if(Filter is string)
+                    else if (Filter is string)
                     {
                         //
                         // Search Filter
@@ -930,8 +929,8 @@ namespace System.DirectoryServices.Protocols {
                         //
 
                         // AD filter currently does not support filter without paranthesis, so adding it explicitly
-                        string tempFilter = (string) Filter;
-                        if(!tempFilter.StartsWith("(", StringComparison.Ordinal) && !tempFilter.EndsWith(")", StringComparison.Ordinal))
+                        string tempFilter = (string)Filter;
+                        if (!tempFilter.StartsWith("(", StringComparison.Ordinal) && !tempFilter.EndsWith(")", StringComparison.Ordinal))
                         {
                             tempFilter = tempFilter.Insert(0, "(");
                             tempFilter = String.Concat(tempFilter, ")");
@@ -956,37 +955,34 @@ namespace System.DirectoryServices.Protocols {
                         filterwriter.WriteFilter(adfilter, false, xmlWriter, DsmlConstants.DsmlUri);
 
                         elemFilter.InnerXml = stringWriter.ToString();
-
                     }
                     else
                         Debug.Assert(false, "Unknown filter type");
-
                 }
-                finally 
+                finally
                 {
                     // close this stream and the underlying stream.
                     xmlWriter.Close();
                 }
-                
             }
-            else 
+            else
             {
                 // default filter: (objectclass=*)
                 elemFilter.InnerXml = DsmlConstants.DefaultSearchFilter;
             }
-            
+
             elem.AppendChild(elemFilter);
 
 
             // add in the <attributes> element (optional)
-            if (directoryAttributes != null && directoryAttributes.Count != 0)
+            if (_directoryAttributes != null && _directoryAttributes.Count != 0)
             {
                 // create and attach the <attributes> element
                 XmlElement elemAttributes = doc.CreateElement("attributes", DsmlConstants.DsmlUri);
                 elem.AppendChild(elemAttributes);
 
                 // create and attach the <attribute> elements under the <attributes> element
-                foreach (string attrName in directoryAttributes)
+                foreach (string attrName in _directoryAttributes)
                 {
                     // DsmlAttribute objects know how to persist themself in the right
                     // XML format, so we'll make use of that here rather than
@@ -1002,66 +998,69 @@ namespace System.DirectoryServices.Protocols {
         }
 
         private void CopyFilter(XmlNode node, XmlTextWriter writer)
-        {            
-            for ( XmlNode n = node.FirstChild; n != null; n = n.NextSibling ) 
-                if(n != null)
+        {
+            for (XmlNode n = node.FirstChild; n != null; n = n.NextSibling)
+                if (n != null)
                     CopyXmlTree(n, writer);
         }
 
         private void CopyXmlTree(XmlNode node, XmlTextWriter writer)
         {
-            switch(node.NodeType)
+            switch (node.NodeType)
             {
-                case XmlNodeType.Element:                    
-                    writer.WriteStartElement(node.LocalName, DsmlConstants.DsmlUri);                    
-                    foreach(XmlAttribute att in node.Attributes)
-                    {                        
+                case XmlNodeType.Element:
+                    writer.WriteStartElement(node.LocalName, DsmlConstants.DsmlUri);
+                    foreach (XmlAttribute att in node.Attributes)
+                    {
                         writer.WriteAttributeString(att.LocalName, att.Value);
                     }
 
-                    for ( XmlNode n = node.FirstChild; n != null; n = n.NextSibling ) 
+                    for (XmlNode n = node.FirstChild; n != null; n = n.NextSibling)
                     {
                         CopyXmlTree(n, writer);
                     }
                     writer.WriteEndElement();
-                    
-                    break;                
+
+                    break;
                 default:
-                    writer.WriteRaw(node.OuterXml);                    
+                    writer.WriteRaw(node.OuterXml);
                     break;
             }
         }
     }
-    
 }
 
-namespace System.DirectoryServices.Protocols {
-    
+namespace System.DirectoryServices.Protocols
+{
     using System;
     using System.Xml;
-    
-    public class DsmlAuthRequest :DirectoryRequest {
-        private string directoryPrincipal = "";
 
-        public DsmlAuthRequest() {}
+    public class DsmlAuthRequest : DirectoryRequest
+    {
+        private string _directoryPrincipal = "";
+
+        public DsmlAuthRequest() { }
 
         public DsmlAuthRequest(string principal)
         {
-            this.directoryPrincipal = principal;
+            _directoryPrincipal = principal;
         }
 
-        public string Principal {
-            get {
-                return directoryPrincipal;
+        public string Principal
+        {
+            get
+            {
+                return _directoryPrincipal;
             }
-            set {
-                directoryPrincipal = value;
+            set
+            {
+                _directoryPrincipal = value;
             }
         }
 
         protected override XmlElement ToXmlNode(XmlDocument doc)
         {
-            XmlElement elem = CreateRequestElement(doc, "authRequest", false, null);     
+            XmlElement elem = CreateRequestElement(doc, "authRequest", false, null);
 
             XmlAttribute attrPrincipal = doc.CreateAttribute("principal", null);
             attrPrincipal.InnerText = Principal;

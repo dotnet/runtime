@@ -1,3 +1,7 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
 //------------------------------------------------------------------------------
 // <copyright file="DsmlSoapConnection" company="Microsoft">
 //     Copyright (c) Microsoft Corporation.  All rights reserved.
@@ -7,40 +11,44 @@
 /*
  */
 
-namespace System.DirectoryServices.Protocols {
-     using System;
-     using System.Net;
-     using System.Security.Cryptography.X509Certificates;  
-     using System.Xml;
-     using System.Security.Permissions;
+namespace System.DirectoryServices.Protocols
+{
+    using System;
+    using System.Net;
+    using System.Security.Cryptography.X509Certificates;
+    using System.Xml;
+    using System.Security.Permissions;
 
-     public abstract class DsmlSoapConnection :DirectoryConnection
-     {
-         internal XmlNode soapHeaders = null;
-     
-         protected DsmlSoapConnection() {}
+    public abstract class DsmlSoapConnection : DirectoryConnection
+    {
+        internal XmlNode soapHeaders = null;
 
-         public abstract string SessionId
-         {
+        protected DsmlSoapConnection() { }
+
+        public abstract string SessionId
+        {
             get;
-         }
+        }
 
-         public XmlNode SoapRequestHeader {
-            get {
+        public XmlNode SoapRequestHeader
+        {
+            get
+            {
                 return soapHeaders;
             }
-            set {
+            set
+            {
                 soapHeaders = value;
-            }         
-         }
+            }
+        }
 
-         [
-            DirectoryServicesPermission(SecurityAction.LinkDemand, Unrestricted=true)
-         ]
-         public abstract void BeginSession();
-         [
-            DirectoryServicesPermission(SecurityAction.LinkDemand, Unrestricted=true)
-         ]
-         public abstract void EndSession();         
-     }
+        [
+           DirectoryServicesPermission(SecurityAction.LinkDemand, Unrestricted = true)
+        ]
+        public abstract void BeginSession();
+        [
+           DirectoryServicesPermission(SecurityAction.LinkDemand, Unrestricted = true)
+        ]
+        public abstract void EndSession();
+    }
 }

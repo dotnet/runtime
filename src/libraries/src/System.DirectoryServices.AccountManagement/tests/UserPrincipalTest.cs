@@ -1,9 +1,12 @@
-﻿using System.DirectoryServices.AccountManagement;
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+using System.DirectoryServices.AccountManagement;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+
 namespace AccountManagementUnitTests
 {
-    
-    
     /// <summary>
     ///This is a test class for UserPrincipalTest and is intended
     ///to contain all UserPrincipalTest Unit Tests
@@ -11,7 +14,6 @@ namespace AccountManagementUnitTests
     [TestClass()]
     public class UserPrincipalTest : PrincipalTest
     {
-
         #region Additional test attributes
         // 
         //You can use the following additional attributes as you write your tests:
@@ -58,7 +60,7 @@ namespace AccountManagementUnitTests
 
         internal override Principal FindExtendedPrincipal(PrincipalContext context, string name)
         {
-            return ExtendedUserPrincipal.FindByIdentity(context, name);    
+            return ExtendedUserPrincipal.FindByIdentity(context, name);
         }
 
         /// <summary>
@@ -91,14 +93,14 @@ namespace AccountManagementUnitTests
             context.ValidateCredentials("good", "wrong password");
 
             //verify that the account is locked out
-            Assert.IsTrue(user.IsAccountLockedOut(),"trying wrong credentials did not lock the account");
+            Assert.IsTrue(user.IsAccountLockedOut(), "trying wrong credentials did not lock the account");
 
             // if uac is not set correctly, this call might clear the lockout
             user.SmartcardLogonRequired = false;
             user.Save();
 
             //verify that the account is still locked out
-            Assert.IsTrue(user.IsAccountLockedOut(),"the account is no longer locked out after writing setting SmartCardLogonRequired");
+            Assert.IsTrue(user.IsAccountLockedOut(), "the account is no longer locked out after writing setting SmartCardLogonRequired");
         }
     }
 }

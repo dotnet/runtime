@@ -1,10 +1,13 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
 /*++
 
 Copyright (c) 2004  Microsoft Corporation
 
 Module Name:
 
-    StoreCtx.cs
 
 Abstract:
 
@@ -24,45 +27,44 @@ using System.Globalization;
 
 namespace System.DirectoryServices.AccountManagement
 {
-
-    enum PrincipalAccessMask
+    internal enum PrincipalAccessMask
     {
         ChangePassword
     }
-    abstract class StoreCtx : IDisposable
+    internal abstract class StoreCtx : IDisposable
     {
         //
         // StoreCtx information
         //
 
         // Retrieves the Path (ADsPath) of the object used as the base of the StoreCtx
-        internal abstract string BasePath {get;}
+        internal abstract string BasePath { get; }
 
         // The PrincipalContext object to which this StoreCtx belongs.  Initialized by PrincipalContext after it creates
         // this StoreCtx instance.
-        PrincipalContext owningContext = null;
-        internal PrincipalContext OwningContext 
+        private PrincipalContext _owningContext = null;
+        internal PrincipalContext OwningContext
         {
             // <SecurityKernel Critical="True" Ring="1">
             // <ReferencesCritical Name="Field: owningContext" Ring="1" />
             // </SecurityKernel>
             [System.Security.SecurityCritical]
-            get 
+            get
             {
-                return this.owningContext;
+                return _owningContext;
             }
-            
+
             // <SecurityKernel Critical="True" Ring="1">
             // <ReferencesCritical Name="Field: owningContext" Ring="1" />
             // </SecurityKernel>
             [System.Security.SecurityCritical]
-            set 
+            set
             {
                 Debug.Assert(value != null);
-                this.owningContext = value;
+                _owningContext = value;
             }
         }
-    
+
         //
         // CRUD
         //
@@ -74,7 +76,7 @@ namespace System.DirectoryServices.AccountManagement
         // Insert() and Update() must check to make sure no properties not supported by this StoreCtx
         // have been set, prior to persisting the Principal.
         internal abstract void Insert(Principal p);
-        internal abstract void  Update(Principal p);
+        internal abstract void Update(Principal p);
         internal abstract void Delete(Principal p);
         internal abstract void Move(StoreCtx originalStore, Principal p);
 
@@ -142,19 +144,19 @@ namespace System.DirectoryServices.AccountManagement
         internal abstract void ExpirePassword(AuthenticablePrincipal p);
         internal abstract void UnexpirePassword(AuthenticablePrincipal p);
 
-        internal abstract bool AccessCheck( Principal p, PrincipalAccessMask  targetPermission );
+        internal abstract bool AccessCheck(Principal p, PrincipalAccessMask targetPermission);
 
         // the various FindBy* methods
         internal abstract ResultSet FindByLockoutTime(
-        	DateTime dt, MatchType matchType, Type principalType);
+            DateTime dt, MatchType matchType, Type principalType);
         internal abstract ResultSet FindByLogonTime(
-        	DateTime dt, MatchType matchType, Type principalType);
+            DateTime dt, MatchType matchType, Type principalType);
         internal abstract ResultSet FindByPasswordSetTime(
-        	DateTime dt, MatchType matchType, Type principalType);
+            DateTime dt, MatchType matchType, Type principalType);
         internal abstract ResultSet FindByBadPasswordAttempt(
-        	DateTime dt, MatchType matchType, Type principalType);
+            DateTime dt, MatchType matchType, Type principalType);
         internal abstract ResultSet FindByExpirationTime(
-        	DateTime dt, MatchType matchType, Type principalType);
+            DateTime dt, MatchType matchType, Type principalType);
 
         // Get groups of which p is a direct member
         internal abstract ResultSet GetGroupsMemberOf(Principal p);
@@ -190,7 +192,7 @@ namespace System.DirectoryServices.AccountManagement
 
         // Returns true if this store has native support for search (and thus a wormhole).
         // Returns true for everything but SAM (both reg-SAM and MSAM).
-        internal abstract bool SupportsSearchNatively{ get;}
+        internal abstract bool SupportsSearchNatively { get; }
 
         // Returns a type indicating the type of object that would be returned as the wormhole for the specified
         // PrincipalSearcher.
@@ -232,7 +234,7 @@ namespace System.DirectoryServices.AccountManagement
         //
         // This method is typically used by ResultSet implementations, when they're iterating over a collection
         // (e.g., of group membership) and encounter a entry that represents a foreign principal.
-        internal abstract Principal ResolveCrossStoreRefToPrincipal(object o);	
+        internal abstract Principal ResolveCrossStoreRefToPrincipal(object o);
 
         //
         // Data Validation
@@ -241,7 +243,7 @@ namespace System.DirectoryServices.AccountManagement
         // Validiate the passed property name to determine if it is valid for the store and Principal type.
         // used by the principal objects to determine if a property is valid in the property before
         // save is called.
-        internal abstract bool IsValidProperty(Principal p,  string propertyName);       
+        internal abstract bool IsValidProperty(Principal p, string propertyName);
 
         // Returns true if AccountInfo is supported for the specified principal, false otherwise.
         // Used when a application tries to access the AccountInfo property of a newly-inserted
@@ -278,7 +280,7 @@ namespace System.DirectoryServices.AccountManagement
 
         // These property sets include only the properties used to build QBE filters,
         // e.g., the Group.Members property is not included
-        
+
         internal static string[] principalProperties = new string[]
         {
             PropertyNames.PrincipalDisplayName,
@@ -298,11 +300,11 @@ namespace System.DirectoryServices.AccountManagement
             PropertyNames.AuthenticablePrincipalEnabled,
             PropertyNames.AuthenticablePrincipalCertificates,
             PropertyNames.PwdInfoLastBadPasswordAttempt,
-            PropertyNames.AcctInfoExpirationDate,            
+            PropertyNames.AcctInfoExpirationDate,
             PropertyNames.AcctInfoExpiredAccount,
             PropertyNames.AcctInfoLastLogon,
             PropertyNames.AcctInfoAcctLockoutTime,
-            PropertyNames.AcctInfoBadLogonCount,            
+            PropertyNames.AcctInfoBadLogonCount,
             PropertyNames.PwdInfoLastPasswordSet
         };
 
@@ -329,19 +331,19 @@ namespace System.DirectoryServices.AccountManagement
             PropertyNames.PwdInfoCannotChangePassword,
             PropertyNames.PwdInfoAllowReversiblePasswordEncryption
         };
-        
+
         internal static string[] groupProperties = new string[]
         {
             PropertyNames.GroupIsSecurityGroup,
             PropertyNames.GroupGroupScope
         };
-        
+
         internal static string[] computerProperties = new string[]
         {
             PropertyNames.ComputerServicePrincipalNames
         };
-        
-        
+
+
         // <SecurityKernel Critical="True" Ring="0">
         // <SatisfiesLinkDemand Name="Principal.GetChangeStatusForProperty(System.String):System.Boolean" />
         // <ReferencesCritical Name="Method: BuildFilterSet(Principal, String[], QbeFilterDescription):Void" Ring="1" />
@@ -356,7 +358,7 @@ namespace System.DirectoryServices.AccountManagement
             // because that check was enforced by the PrincipalSearcher in its
             // FindAll() and GetUnderlyingSearcher() methods, by calling
             // PrincipalSearcher.HasReferentialPropertiesSet().
-            
+
             if (p is Principal)
                 BuildFilterSet(p, principalProperties, qbeFilterDescription);
 
@@ -365,19 +367,18 @@ namespace System.DirectoryServices.AccountManagement
 
             if (p is UserPrincipal)  // includes AccountInfo and PasswordInfo 
             {
-
                 // AcctInfoExpirationDate and AcctInfoExpiredAccount represent filters on the same property
                 // check that only one is specified
-                if (p.GetChangeStatusForProperty(PropertyNames.AcctInfoExpirationDate) && 
-                        p.GetChangeStatusForProperty(PropertyNames.AcctInfoExpiredAccount)) {
-                        
-                     throw new InvalidOperationException(
-                                        String.Format(
-                                            CultureInfo.CurrentCulture,
-                                            StringResources.StoreCtxMultipleFiltersForPropertyUnsupported,
-                                            PropertyNamesExternal.GetExternalForm(ExpirationDateFilter.PropertyNameStatic)));
+                if (p.GetChangeStatusForProperty(PropertyNames.AcctInfoExpirationDate) &&
+                        p.GetChangeStatusForProperty(PropertyNames.AcctInfoExpiredAccount))
+                {
+                    throw new InvalidOperationException(
+                                       String.Format(
+                                           CultureInfo.CurrentCulture,
+                                           StringResources.StoreCtxMultipleFiltersForPropertyUnsupported,
+                                           PropertyNamesExternal.GetExternalForm(ExpirationDateFilter.PropertyNameStatic)));
                 }
-            
+
                 BuildFilterSet(p, userProperties, qbeFilterDescription);
             }
 
@@ -398,9 +399,8 @@ namespace System.DirectoryServices.AccountManagement
         // <SatisfiesLinkDemand Name="PrincipalValueCollection`1<System.String>.get_Inserted():System.Collections.Generic.List`1<System.String>" />
         // </SecurityKernel>
         [System.Security.SecurityCritical]
-        void BuildFilterSet(Principal p, string[] propertySet, QbeFilterDescription qbeFilterDescription)
+        private void BuildFilterSet(Principal p, string[] propertySet, QbeFilterDescription qbeFilterDescription)
         {
-            
             foreach (string propertyName in propertySet)
             {
                 if (p.GetChangeStatusForProperty(propertyName))
@@ -416,16 +416,16 @@ namespace System.DirectoryServices.AccountManagement
                             propertyName,
                             value.ToString(),
                             value.GetType().ToString());
- 
+
 
                     // Build the right filter based on type of the property value
                     if (value is PrincipalValueCollection<string>)
                     {
-                        PrincipalValueCollection<string> trackingList = (PrincipalValueCollection<string>) value;
+                        PrincipalValueCollection<string> trackingList = (PrincipalValueCollection<string>)value;
                         foreach (string s in trackingList.Inserted)
                         {
                             object filter = FilterFactory.CreateFilter(propertyName);
-                            ((FilterBase)filter).Value = (string) s;
+                            ((FilterBase)filter).Value = (string)s;
                             qbeFilterDescription.FiltersToApply.Add(filter);
                         }
                     }
@@ -433,43 +433,43 @@ namespace System.DirectoryServices.AccountManagement
                     {
                         // Since QBE filter objects are always unpersisted, any certs in the collection
                         // must have been inserted by the application.
-                        X509Certificate2Collection certCollection = (X509Certificate2Collection) value;
+                        X509Certificate2Collection certCollection = (X509Certificate2Collection)value;
                         foreach (X509Certificate2 cert in certCollection)
                         {
                             object filter = FilterFactory.CreateFilter(propertyName);
-                            ((FilterBase)filter).Value = (X509Certificate2) cert;
+                            ((FilterBase)filter).Value = (X509Certificate2)cert;
                             qbeFilterDescription.FiltersToApply.Add(filter);
                         }
-                    }            
+                    }
                     else
                     {
                         // It's not one of the multivalued cases.  Try the scalar cases.
-                        
+
                         object filter = FilterFactory.CreateFilter(propertyName);
- 
+
                         if (value == null)
                         {
                             ((FilterBase)filter).Value = null;
                         }
                         else if (value is bool)
                         {
-                            ((FilterBase)filter).Value = (bool) value;
+                            ((FilterBase)filter).Value = (bool)value;
                         }
                         else if (value is string)
                         {
-                            ((FilterBase)filter).Value = (string) value;
+                            ((FilterBase)filter).Value = (string)value;
                         }
                         else if (value is GroupScope)
                         {
-                            ((FilterBase)filter).Value = (GroupScope) value;
+                            ((FilterBase)filter).Value = (GroupScope)value;
                         }
                         else if (value is byte[])
                         {
-                            ((FilterBase)filter).Value = (byte[]) value;
+                            ((FilterBase)filter).Value = (byte[])value;
                         }
                         else if (value is Nullable<DateTime>)
                         {
-                            ((FilterBase)filter).Value = (Nullable<DateTime>) value;
+                            ((FilterBase)filter).Value = (Nullable<DateTime>)value;
                         }
                         else if (value is ExtensionCache)
                         {
@@ -490,7 +490,7 @@ namespace System.DirectoryServices.AccountManagement
                                                 ));
                         }
 
-                        qbeFilterDescription.FiltersToApply.Add(filter);                        
+                        qbeFilterDescription.FiltersToApply.Add(filter);
                     }
                 }
             }

@@ -1,3 +1,7 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
 //------------------------------------------------------------------------------
 // <copyright file="ForestTrustRelationshipCollision.cs" company="Microsoft">
 //     Copyright (c) Microsoft Corporation.  All rights reserved.
@@ -7,82 +11,98 @@
 /*
  */
 
-namespace System.DirectoryServices.ActiveDirectory {
+namespace System.DirectoryServices.ActiveDirectory
+{
     using System;
     using System.Runtime.InteropServices;
     using System.Collections;
     using System.Collections.Specialized;
     using System.Diagnostics;
 
-    public class ForestTrustRelationshipCollision {
-        ForestTrustCollisionType type;
-        TopLevelNameCollisionOptions tlnFlag;
-        DomainCollisionOptions domainFlag;
-        string record  = null;
-        
+    public class ForestTrustRelationshipCollision
+    {
+        private ForestTrustCollisionType _type;
+        private TopLevelNameCollisionOptions _tlnFlag;
+        private DomainCollisionOptions _domainFlag;
+        private string _record = null;
+
         internal ForestTrustRelationshipCollision(ForestTrustCollisionType collisionType, TopLevelNameCollisionOptions TLNFlag, DomainCollisionOptions domainFlag, string record)
         {
-            this.type = collisionType;
-            this.tlnFlag = TLNFlag;
-            this.domainFlag = domainFlag;
-            this.record = record;
+            _type = collisionType;
+            _tlnFlag = TLNFlag;
+            _domainFlag = domainFlag;
+            _record = record;
         }
 
-        public ForestTrustCollisionType CollisionType {
-            get {
-                return this.type;                
+        public ForestTrustCollisionType CollisionType
+        {
+            get
+            {
+                return _type;
             }
         }
 
-        public TopLevelNameCollisionOptions TopLevelNameCollisionOption {
-            get {
-                return this.tlnFlag;
+        public TopLevelNameCollisionOptions TopLevelNameCollisionOption
+        {
+            get
+            {
+                return _tlnFlag;
             }
         }
 
-        public DomainCollisionOptions DomainCollisionOption {
-            get {
-                return this.domainFlag;
+        public DomainCollisionOptions DomainCollisionOption
+        {
+            get
+            {
+                return _domainFlag;
             }
         }
 
-        public string CollisionRecord {
-            get {
-                return this.record;
+        public string CollisionRecord
+        {
+            get
+            {
+                return _record;
             }
         }
     }
 
-    public class ForestTrustRelationshipCollisionCollection :ReadOnlyCollectionBase {
-        internal ForestTrustRelationshipCollisionCollection() {}
+    public class ForestTrustRelationshipCollisionCollection : ReadOnlyCollectionBase
+    {
+        internal ForestTrustRelationshipCollisionCollection() { }
 
-        public ForestTrustRelationshipCollision this[int index] {
-            get {
-                return (ForestTrustRelationshipCollision) InnerList[index];                                                 
+        public ForestTrustRelationshipCollision this[int index]
+        {
+            get
+            {
+                return (ForestTrustRelationshipCollision)InnerList[index];
             }
-         }
+        }
 
-         public bool Contains(ForestTrustRelationshipCollision collision) {
-             if(collision == null)
-                 throw new ArgumentNullException("collision");
-             
-             return InnerList.Contains(collision);
-         }  
+        public bool Contains(ForestTrustRelationshipCollision collision)
+        {
+            if (collision == null)
+                throw new ArgumentNullException("collision");
 
-         public int IndexOf(ForestTrustRelationshipCollision collision) {
-             if(collision == null)
-                 throw new ArgumentNullException("collision");
-             
-             return InnerList.IndexOf(collision);
-         }
+            return InnerList.Contains(collision);
+        }
 
-         public void CopyTo(ForestTrustRelationshipCollision[] array, int index) {
-             InnerList.CopyTo(array, index);
-         }
+        public int IndexOf(ForestTrustRelationshipCollision collision)
+        {
+            if (collision == null)
+                throw new ArgumentNullException("collision");
 
-         internal int Add(ForestTrustRelationshipCollision collision)
-         {
-             return InnerList.Add(collision);
-         }
+            return InnerList.IndexOf(collision);
+        }
+
+        public void CopyTo(ForestTrustRelationshipCollision[] array, int index)
+        {
+            InnerList.CopyTo(array, index);
+        }
+
+        internal int Add(ForestTrustRelationshipCollision collision)
+        {
+            return InnerList.Add(collision);
+        }
     }
 }

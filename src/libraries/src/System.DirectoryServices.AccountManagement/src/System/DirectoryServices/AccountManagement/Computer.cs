@@ -1,10 +1,13 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
 /*++
 
 Copyright (c) 2004  Microsoft Corporation
 
 Module Name:
 
-    Computer.cs
 
 Abstract:
 
@@ -31,10 +34,9 @@ namespace System.DirectoryServices.AccountManagement
 #pragma warning restore 618
     [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.LinkDemand, Unrestricted = true)]
     [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.InheritanceDemand, Unrestricted = true)]
-    [DirectoryRdnPrefix("CN")]    
+    [DirectoryRdnPrefix("CN")]
     public class ComputerPrincipal : AuthenticablePrincipal
     {
-
         //
         // Public constructors
         //
@@ -44,9 +46,9 @@ namespace System.DirectoryServices.AccountManagement
         {
             if (context == null)
                 throw new ArgumentException(StringResources.NullArguments);
-            
-            if ( Context.ContextType == ContextType.ApplicationDirectory && this.GetType() == typeof(ComputerPrincipal))
-                throw new InvalidOperationException(StringResources.ComputerInvalidForAppDirectoryStore);                    
+
+            if (Context.ContextType == ContextType.ApplicationDirectory && this.GetType() == typeof(ComputerPrincipal))
+                throw new InvalidOperationException(StringResources.ComputerInvalidForAppDirectoryStore);
 
             this.ContextRaw = context;
             this.unpersisted = true;
@@ -56,15 +58,15 @@ namespace System.DirectoryServices.AccountManagement
         [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.InheritanceDemand, Unrestricted = true)]
         public ComputerPrincipal(PrincipalContext context, string samAccountName, string password, bool enabled) : this(context)
         {
-            if (samAccountName == null || password == null )
+            if (samAccountName == null || password == null)
                 throw new ArgumentException(StringResources.NullArguments);
-            
-            if ( Context.ContextType == ContextType.ApplicationDirectory && this.GetType() == typeof(ComputerPrincipal))
-                throw new InvalidOperationException(StringResources.ComputerInvalidForAppDirectoryStore);                    
-            
-            if ( Context.ContextType != ContextType.ApplicationDirectory)
+
+            if (Context.ContextType == ContextType.ApplicationDirectory && this.GetType() == typeof(ComputerPrincipal))
+                throw new InvalidOperationException(StringResources.ComputerInvalidForAppDirectoryStore);
+
+            if (Context.ContextType != ContextType.ApplicationDirectory)
                 this.SamAccountName = samAccountName;
-            
+
             this.Name = samAccountName;
             this.SetPassword(password);
             this.Enabled = enabled;
@@ -76,14 +78,14 @@ namespace System.DirectoryServices.AccountManagement
         //
 
         // ServicePrincipalNames
-        PrincipalValueCollection<string> servicePrincipalNames = new PrincipalValueCollection<string>();
-        LoadState servicePrincipalNamesLoaded = LoadState.NotSet;
-        
+        private PrincipalValueCollection<string> _servicePrincipalNames = new PrincipalValueCollection<string>();
+        private LoadState _servicePrincipalNamesLoaded = LoadState.NotSet;
+
         public PrincipalValueCollection<string> ServicePrincipalNames
         {
             get
             {
-                return HandleGet<PrincipalValueCollection<string>>(ref this.servicePrincipalNames, PropertyNames.ComputerServicePrincipalNames, ref servicePrincipalNamesLoaded);
+                return HandleGet<PrincipalValueCollection<string>>(ref _servicePrincipalNames, PropertyNames.ComputerServicePrincipalNames, ref _servicePrincipalNamesLoaded);
             }
         }
 
@@ -94,12 +96,12 @@ namespace System.DirectoryServices.AccountManagement
         {
             return FindByLockoutTime<ComputerPrincipal>(context, time, type);
         }
-                
+
         public static new PrincipalSearchResult<ComputerPrincipal> FindByLogonTime(PrincipalContext context, DateTime time, MatchType type)
         {
             return FindByLogonTime<ComputerPrincipal>(context, time, type);
         }
-        
+
         public static new PrincipalSearchResult<ComputerPrincipal> FindByExpirationTime(PrincipalContext context, DateTime time, MatchType type)
         {
             return FindByExpirationTime<ComputerPrincipal>(context, time, type);
@@ -114,17 +116,17 @@ namespace System.DirectoryServices.AccountManagement
         {
             return FindByPasswordSetTime<ComputerPrincipal>(context, time, type);
         }
-        
+
         public static new ComputerPrincipal FindByIdentity(PrincipalContext context, string identityValue)
         {
-            return (ComputerPrincipal) FindByIdentityWithType(context, typeof(ComputerPrincipal), identityValue);
+            return (ComputerPrincipal)FindByIdentityWithType(context, typeof(ComputerPrincipal), identityValue);
         }
-        
+
         public static new ComputerPrincipal FindByIdentity(PrincipalContext context, IdentityType identityType, string identityValue)
         {
-            return (ComputerPrincipal) FindByIdentityWithType(context, typeof(ComputerPrincipal), identityType, identityValue);
+            return (ComputerPrincipal)FindByIdentityWithType(context, typeof(ComputerPrincipal), identityType, identityValue);
         }
-        
+
 
         //
         // Internal "constructor": Used for constructing Computer returned by a query
@@ -137,7 +139,7 @@ namespace System.DirectoryServices.AccountManagement
             return computer;
         }
 
-        
+
         //
         // Load/Store implementation
         //
@@ -148,12 +150,12 @@ namespace System.DirectoryServices.AccountManagement
         internal override void LoadValueIntoProperty(string propertyName, object value)
         {
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "Computer", "LoadValueIntoProperty: name=" + propertyName + " value=" + (value == null ? "null" : value.ToString()));
-            
-            switch(propertyName)
+
+            switch (propertyName)
             {
-                case(PropertyNames.ComputerServicePrincipalNames):
-                    this.servicePrincipalNames.Load((List<string>)value);
-                    this.servicePrincipalNamesLoaded = LoadState.Loaded;
+                case (PropertyNames.ComputerServicePrincipalNames):
+                    _servicePrincipalNames.Load((List<string>)value);
+                    _servicePrincipalNamesLoaded = LoadState.Loaded;
                     break;
 
                 default:
@@ -169,30 +171,29 @@ namespace System.DirectoryServices.AccountManagement
 
         // Given a property name, returns true if that property has changed since it was loaded, false otherwise.
         internal override bool GetChangeStatusForProperty(string propertyName)
-        {        
+        {
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "Computer", "GetChangeStatusForProperty: name=" + propertyName);
-        
-            switch(propertyName)
+
+            switch (propertyName)
             {
-                case(PropertyNames.ComputerServicePrincipalNames):
-                    return this.servicePrincipalNames.Changed;
+                case (PropertyNames.ComputerServicePrincipalNames):
+                    return _servicePrincipalNames.Changed;
 
                 default:
                     return base.GetChangeStatusForProperty(propertyName);
             }
-
         }
 
         // Given a property name, returns the current value for the property.
         internal override object GetValueForProperty(string propertyName)
         {
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "Computer", "GetValueForProperty: name=" + propertyName);
-        
-            switch(propertyName)
+
+            switch (propertyName)
             {
-                case(PropertyNames.ComputerServicePrincipalNames):
-                    return this.servicePrincipalNames;
-                    
+                case (PropertyNames.ComputerServicePrincipalNames):
+                    return _servicePrincipalNames;
+
                 default:
                     return base.GetValueForProperty(propertyName);
             }
@@ -202,11 +203,10 @@ namespace System.DirectoryServices.AccountManagement
         internal override void ResetAllChangeStatus()
         {
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "Computer", "ResetAllChangeStatus");
-        
-            this.servicePrincipalNames.ResetTracking();
-            
+
+            _servicePrincipalNames.ResetTracking();
+
             base.ResetAllChangeStatus();
         }
     }
-
 }

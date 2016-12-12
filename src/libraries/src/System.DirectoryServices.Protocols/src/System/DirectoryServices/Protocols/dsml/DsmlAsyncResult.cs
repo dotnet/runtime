@@ -1,11 +1,15 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
 //------------------------------------------------------------------------------
 // <copyright file="DsmlAsyncResult" company="Microsoft">
 //     Copyright (c) Microsoft Corporation.  All rights reserved.
 // </copyright>                                                                
 //------------------------------------------------------------------------------
 
-namespace System.DirectoryServices.Protocols {
-
+namespace System.DirectoryServices.Protocols
+{
     using System;
     using System.Threading;
     using System.Net;
@@ -13,42 +17,49 @@ namespace System.DirectoryServices.Protocols {
     using System.IO;
     using Microsoft.Win32.SafeHandles;
 
-    internal class DsmlAsyncResult :IAsyncResult {
-        private DsmlAsyncWaitHandle asyncWaitHandle = null;
+    internal class DsmlAsyncResult : IAsyncResult
+    {
+        private DsmlAsyncWaitHandle _asyncWaitHandle = null;
         internal AsyncCallback callback = null;
         internal bool completed = false;
-        private bool completedSynchronously = false;
+        private bool _completedSynchronously = false;
         internal ManualResetEvent manualResetEvent = null;
-        private object stateObject = null;        
+        private object _stateObject = null;
         internal RequestState resultObject = null;
         internal bool hasValidRequest = false;
 
         public DsmlAsyncResult(AsyncCallback callbackRoutine, object state)
         {
-            stateObject = state;
+            _stateObject = state;
             callback = callbackRoutine;
             manualResetEvent = new ManualResetEvent(false);
         }
 
-        object IAsyncResult.AsyncState {
-            get { return stateObject; }
+        object IAsyncResult.AsyncState
+        {
+            get { return _stateObject; }
         }
 
-        WaitHandle IAsyncResult.AsyncWaitHandle {
-            get {
-                if (null == asyncWaitHandle) {
-                    asyncWaitHandle = new DsmlAsyncWaitHandle(manualResetEvent.SafeWaitHandle);
+        WaitHandle IAsyncResult.AsyncWaitHandle
+        {
+            get
+            {
+                if (null == _asyncWaitHandle)
+                {
+                    _asyncWaitHandle = new DsmlAsyncWaitHandle(manualResetEvent.SafeWaitHandle);
                 }
-                
-                return (WaitHandle) asyncWaitHandle;
-            }
-        }        
 
-        bool IAsyncResult.CompletedSynchronously {
-            get { return completedSynchronously; }
+                return (WaitHandle)_asyncWaitHandle;
+            }
         }
 
-        bool IAsyncResult.IsCompleted {
+        bool IAsyncResult.CompletedSynchronously
+        {
+            get { return _completedSynchronously; }
+        }
+
+        bool IAsyncResult.IsCompleted
+        {
             get { return completed; }
         }
 
@@ -59,7 +70,7 @@ namespace System.DirectoryServices.Protocols {
 
         public override bool Equals(object o)
         {
-            if ( (!(o is DsmlAsyncResult)) || (o == null) )
+            if ((!(o is DsmlAsyncResult)) || (o == null))
             {
                 return false;
             }
@@ -67,8 +78,9 @@ namespace System.DirectoryServices.Protocols {
             return (this == (DsmlAsyncResult)o);
         }
 
-        sealed internal class DsmlAsyncWaitHandle :WaitHandle {
-            public DsmlAsyncWaitHandle(SafeWaitHandle handle) :base() 
+        sealed internal class DsmlAsyncWaitHandle : WaitHandle
+        {
+            public DsmlAsyncWaitHandle(SafeWaitHandle handle) : base()
             {
                 this.SafeWaitHandle = handle;
             }
@@ -78,10 +90,10 @@ namespace System.DirectoryServices.Protocols {
                 this.SafeWaitHandle = null;
             }
         }
-        
     }
 
-    internal class RequestState {
+    internal class RequestState
+    {
         public const int bufferSize = 1024;
         public StringBuilder responseString = new StringBuilder(1024);
         public string requestString = null;
@@ -94,12 +106,9 @@ namespace System.DirectoryServices.Protocols {
         internal bool abortCalled = false;
         internal Exception exception = null;
 
-        public RequestState() 
+        public RequestState()
         {
             bufferRead = new byte[bufferSize];
         }
-        
     }
-    
-
 }

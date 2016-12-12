@@ -1,3 +1,6 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 /*++
 
@@ -5,7 +8,6 @@ Copyright (c) 2004  Microsoft Corporation
 
 Module Name:
 
-    EmptySet.cs
 
 Abstract:
 
@@ -22,31 +24,31 @@ using System.Diagnostics;
 
 namespace System.DirectoryServices.AccountManagement
 {
-    class EmptySet : BookmarkableResultSet
+    internal class EmptySet : BookmarkableResultSet
     {
         internal EmptySet()
         {
             // Nothing to do
         }
-    
-    	override internal object CurrentAsPrincipal
-    	{
-    	    get
-    	    {
+
+        override internal object CurrentAsPrincipal
+        {
+            get
+            {
                 Debug.Fail("EmptySet.CurrentAsPrincipal: Shouldn't be here");
                 return null;
-    	    }
-	    }
-    	override internal bool MoveNext()
-    	{
-    	    // Mimic an empty set
+            }
+        }
+        override internal bool MoveNext()
+        {
+            // Mimic an empty set
             return false;
-    	}
+        }
 
-    	override internal void Reset()
-    	{
+        override internal void Reset()
+        {
             // Nothing to do
-    	}
+        }
 
         override internal ResultSetBookmark BookmarkAndReset()
         {
@@ -59,9 +61,8 @@ namespace System.DirectoryServices.AccountManagement
         }
     }
 
-    class EmptySetBookmark : ResultSetBookmark
+    internal class EmptySetBookmark : ResultSetBookmark
     {
-
     }
 }
 

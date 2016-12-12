@@ -1,10 +1,13 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
 /*++
 
 Copyright (c) 2004  Microsoft Corporation
 
 Module Name:
 
-    SAMStoreKey.cs
 
 Abstract:
 
@@ -22,21 +25,21 @@ using System.Globalization;
 
 namespace System.DirectoryServices.AccountManagement
 {
-    class SAMStoreKey : StoreKey
+    internal class SAMStoreKey : StoreKey
     {
-        byte[] sid;
-        string machineName;
+        private byte[] _sid;
+        private string _machineName;
 
         public SAMStoreKey(string machineName, byte[] sid)
         {
             Debug.Assert(machineName != null && machineName.Length > 0);
             Debug.Assert(sid != null && sid.Length > 0);
 
-            this.machineName = machineName;
+            _machineName = machineName;
 
             // Make a copy of the SID, since a byte[] is mutable
-            this.sid = new byte[sid.Length];
-            Array.Copy(sid, this.sid, sid.Length);
+            _sid = new byte[sid.Length];
+            Array.Copy(sid, _sid, sid.Length);
 
             GlobalDebug.WriteLineIf(
                             GlobalDebug.Info,
@@ -44,7 +47,6 @@ namespace System.DirectoryServices.AccountManagement
                             "creating key for machineName={0}, sid={1}",
                             machineName,
                             Utils.ByteArrayToString(sid));
-            
         }
 
         public override bool Equals(object o)
@@ -52,18 +54,18 @@ namespace System.DirectoryServices.AccountManagement
             if (!(o is SAMStoreKey))
                 return false;
 
-            SAMStoreKey that = (SAMStoreKey) o;
+            SAMStoreKey that = (SAMStoreKey)o;
 
-            if (String.Compare(this.machineName, that.machineName, StringComparison.OrdinalIgnoreCase) != 0)
+            if (String.Compare(_machineName, that._machineName, StringComparison.OrdinalIgnoreCase) != 0)
                 return false;
-            
-            return Utils.AreBytesEqual(this.sid, that.sid);
+
+            return Utils.AreBytesEqual(_sid, that._sid);
         }
 
         override public int GetHashCode()
         {
-            return this.machineName.GetHashCode() ^ this.sid.GetHashCode(); 
-        }        
+            return _machineName.GetHashCode() ^ _sid.GetHashCode();
+        }
     }
 }
 

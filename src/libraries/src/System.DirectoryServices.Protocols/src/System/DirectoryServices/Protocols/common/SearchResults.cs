@@ -1,5 +1,8 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
 //------------------------------------------------------------------------------
-// <copyright file="SearchResults.cs" company="Microsoft">
 //     Copyright (c) Microsoft Corporation.  All rights reserved.
 // </copyright>                                                                
 //------------------------------------------------------------------------------
@@ -7,7 +10,8 @@
 /*
  */
 
-namespace System.DirectoryServices.Protocols {
+namespace System.DirectoryServices.Protocols
+{
     using System;
     using System.Net;
     using System.Xml;
@@ -15,81 +19,83 @@ namespace System.DirectoryServices.Protocols {
     using System.Collections;
     using System.Diagnostics;
     using System.Globalization;
-    
-    public class SearchResultReference 
-    {
-        private XmlNode dsmlNode = null;
-        private XmlNamespaceManager dsmlNS = null;
-        private bool dsmlRequest = false;
 
-        private Uri[] resultReferences = null;
-        private DirectoryControl[] resultControls = null;
-        
+    public class SearchResultReference
+    {
+        private XmlNode _dsmlNode = null;
+        private XmlNamespaceManager _dsmlNS = null;
+        private bool _dsmlRequest = false;
+
+        private Uri[] _resultReferences = null;
+        private DirectoryControl[] _resultControls = null;
+
         internal SearchResultReference(XmlNode node)
         {
             Debug.Assert(node != null);
-        
-            dsmlNode = node;
 
-            dsmlNS = NamespaceUtils.GetDsmlNamespaceManager();            
+            _dsmlNode = node;
 
-            dsmlRequest = true;
+            _dsmlNS = NamespaceUtils.GetDsmlNamespaceManager();
+
+            _dsmlRequest = true;
         }
 
         internal SearchResultReference(Uri[] uris)
         {
-            resultReferences = uris;
+            _resultReferences = uris;
         }
 
-        public Uri[] Reference {
-            get {
-                if(dsmlRequest && (resultReferences == null))
-                    resultReferences = UriHelper();
-                
-                if(resultReferences == null)
+        public Uri[] Reference
+        {
+            get
+            {
+                if (_dsmlRequest && (_resultReferences == null))
+                    _resultReferences = UriHelper();
+
+                if (_resultReferences == null)
                     return new Uri[0];
                 else
                 {
-                    Uri[] tempUri = new Uri[resultReferences.Length];
-                    for(int i = 0; i < resultReferences.Length; i++)
+                    Uri[] tempUri = new Uri[_resultReferences.Length];
+                    for (int i = 0; i < _resultReferences.Length; i++)
                     {
-                        tempUri[i] = new Uri(resultReferences[i].AbsoluteUri);                            
+                        tempUri[i] = new Uri(_resultReferences[i].AbsoluteUri);
                     }
                     return tempUri;
-                }                
+                }
             }
         }
 
         public DirectoryControl[] Controls
         {
-            get {
+            get
+            {
                 DirectoryControl[] controls = null;
-                if(dsmlRequest && resultControls == null)
+                if (_dsmlRequest && _resultControls == null)
                 {
-                    resultControls = ControlsHelper();                    
+                    _resultControls = ControlsHelper();
                 }
-                
-                if(resultControls == null)
+
+                if (_resultControls == null)
                     return new DirectoryControl[0];
                 else
                 {
-                    controls = new DirectoryControl[resultControls.Length];
-                    for(int i = 0; i < resultControls.Length; i++)
-                    {                        
-                        controls[i] = new DirectoryControl(resultControls[i].Type, resultControls[i].GetValue(), resultControls[i].IsCritical, resultControls[i].ServerSide);
-                    }                        
-                }    
+                    controls = new DirectoryControl[_resultControls.Length];
+                    for (int i = 0; i < _resultControls.Length; i++)
+                    {
+                        controls[i] = new DirectoryControl(_resultControls[i].Type, _resultControls[i].GetValue(), _resultControls[i].IsCritical, _resultControls[i].ServerSide);
+                    }
+                }
 
-                DirectoryControl.TransformControls(controls);                
+                DirectoryControl.TransformControls(controls);
 
                 return controls;
-                
             }
         }
 
         private Uri[] UriHelper()
         {
-            XmlNodeList nodeList = dsmlNode.SelectNodes("dsml:ref", dsmlNS);
+            XmlNodeList nodeList = _dsmlNode.SelectNodes("dsml:ref", _dsmlNS);
 
             if (nodeList.Count == 0)
             {
@@ -103,7 +109,7 @@ namespace System.DirectoryServices.Protocols {
             foreach (XmlNode node in nodeList)
             {
                 Debug.Assert(node is XmlElement);
-            
+
                 references[index] = new Uri((string)node.InnerText);
                 index++;
             }
@@ -113,7 +119,7 @@ namespace System.DirectoryServices.Protocols {
 
         private DirectoryControl[] ControlsHelper()
         {
-            XmlNodeList nodeList = dsmlNode.SelectNodes("dsml:control", dsmlNS);
+            XmlNodeList nodeList = _dsmlNode.SelectNodes("dsml:control", _dsmlNS);
 
             if (nodeList.Count == 0)
             {
@@ -128,26 +134,26 @@ namespace System.DirectoryServices.Protocols {
             foreach (XmlNode node in nodeList)
             {
                 Debug.Assert(node is XmlElement);
-            
+
                 controls[index] = new DirectoryControl((XmlElement)node);
                 index++;
             }
 
             return controls;
-
-            
         }
     }
 
-    public class SearchResultReferenceCollection :ReadOnlyCollectionBase
+    public class SearchResultReferenceCollection : ReadOnlyCollectionBase
     {
-        internal SearchResultReferenceCollection ()
-        {            
+        internal SearchResultReferenceCollection()
+        {
         }
 
-        public SearchResultReference this[int index] {
-            get {
-                return (SearchResultReference) InnerList[index];                                                 
+        public SearchResultReference this[int index]
+        {
+            get
+            {
+                return (SearchResultReference)InnerList[index];
             }
         }
 
@@ -156,15 +162,18 @@ namespace System.DirectoryServices.Protocols {
             return InnerList.Add(reference);
         }
 
-        public bool Contains(SearchResultReference value) {
+        public bool Contains(SearchResultReference value)
+        {
             return InnerList.Contains(value);
-        }  
+        }
 
-        public int IndexOf(SearchResultReference value) {
+        public int IndexOf(SearchResultReference value)
+        {
             return InnerList.IndexOf(value);
-        } 
+        }
 
-        public void CopyTo(SearchResultReference[] values, int index) {
+        public void CopyTo(SearchResultReference[] values, int index)
+        {
             InnerList.CopyTo(values, index);
         }
 
@@ -172,97 +181,98 @@ namespace System.DirectoryServices.Protocols {
         {
             InnerList.Clear();
         }
-        
-        
     }
 
-    public class SearchResultEntry {
-        
-        private XmlNode dsmlNode = null;
-        private XmlNamespaceManager dsmlNS = null;
-        private bool dsmlRequest = false;
-        
-        string distinguishedName = null;
-        SearchResultAttributeCollection attributes = new SearchResultAttributeCollection();
-        private DirectoryControl[] resultControls = null;
-        
+    public class SearchResultEntry
+    {
+        private XmlNode _dsmlNode = null;
+        private XmlNamespaceManager _dsmlNS = null;
+        private bool _dsmlRequest = false;
+
+        private string _distinguishedName = null;
+        private SearchResultAttributeCollection _attributes = new SearchResultAttributeCollection();
+        private DirectoryControl[] _resultControls = null;
+
         internal SearchResultEntry(XmlNode node)
         {
             Debug.Assert(node != null);
-        
-            dsmlNode = node;
 
-            dsmlNS = NamespaceUtils.GetDsmlNamespaceManager();              
+            _dsmlNode = node;
 
-            dsmlRequest = true;
-        }        
+            _dsmlNS = NamespaceUtils.GetDsmlNamespaceManager();
+
+            _dsmlRequest = true;
+        }
 
         internal SearchResultEntry(string dn, SearchResultAttributeCollection attrs)
         {
-            distinguishedName = dn;
-            attributes = attrs;
+            _distinguishedName = dn;
+            _attributes = attrs;
         }
 
         internal SearchResultEntry(string dn)
         {
-            distinguishedName = dn;
+            _distinguishedName = dn;
         }
 
-        public string DistinguishedName {
-            get {
-                if(dsmlRequest && distinguishedName == null)
-                    distinguishedName = DNHelper("@dsml:dn", "@dn");
+        public string DistinguishedName
+        {
+            get
+            {
+                if (_dsmlRequest && _distinguishedName == null)
+                    _distinguishedName = DNHelper("@dsml:dn", "@dn");
 
-                return distinguishedName;
+                return _distinguishedName;
             }
         }
 
-        public SearchResultAttributeCollection Attributes {
-            get {
-                if(dsmlRequest && (attributes.Count == 0))
-                    attributes = AttributesHelper();
+        public SearchResultAttributeCollection Attributes
+        {
+            get
+            {
+                if (_dsmlRequest && (_attributes.Count == 0))
+                    _attributes = AttributesHelper();
 
-                return attributes;
+                return _attributes;
             }
         }
 
         public DirectoryControl[] Controls
         {
-            get {
+            get
+            {
                 DirectoryControl[] controls = null;
-                if(dsmlRequest && (resultControls == null))
+                if (_dsmlRequest && (_resultControls == null))
                 {
-                    resultControls = ControlsHelper();                    
+                    _resultControls = ControlsHelper();
                 }
 
-                if(resultControls == null)
+                if (_resultControls == null)
                     return new DirectoryControl[0];
                 else
                 {
-                    controls = new DirectoryControl[resultControls.Length];
-                    for(int i = 0; i < resultControls.Length; i++)
-                    {                        
-                        controls[i] = new DirectoryControl(resultControls[i].Type, resultControls[i].GetValue(), resultControls[i].IsCritical, resultControls[i].ServerSide);
-                    }                        
-                } 
+                    controls = new DirectoryControl[_resultControls.Length];
+                    for (int i = 0; i < _resultControls.Length; i++)
+                    {
+                        controls[i] = new DirectoryControl(_resultControls[i].Type, _resultControls[i].GetValue(), _resultControls[i].IsCritical, _resultControls[i].ServerSide);
+                    }
+                }
 
-                DirectoryControl.TransformControls(controls);                
+                DirectoryControl.TransformControls(controls);
 
                 return controls;
-
-                
             }
         }
 
 
         private string DNHelper(string primaryXPath, string secondaryXPath)
         {
-            XmlAttribute attrDN = (XmlAttribute) dsmlNode.SelectSingleNode(primaryXPath, dsmlNS);
+            XmlAttribute attrDN = (XmlAttribute)_dsmlNode.SelectSingleNode(primaryXPath, _dsmlNS);
 
             if (attrDN == null)
             {
                 // try it without the namespace qualifier, in case the sender omitted it
-                attrDN = (XmlAttribute) dsmlNode.SelectSingleNode(secondaryXPath, dsmlNS);
+                attrDN = (XmlAttribute)_dsmlNode.SelectSingleNode(secondaryXPath, _dsmlNS);
 
                 if (attrDN == null)
                 {
@@ -282,7 +292,7 @@ namespace System.DirectoryServices.Protocols {
         {
             SearchResultAttributeCollection attributes = new SearchResultAttributeCollection();
 
-            XmlNodeList nodeList = dsmlNode.SelectNodes("dsml:attr", dsmlNS);
+            XmlNodeList nodeList = _dsmlNode.SelectNodes("dsml:attr", _dsmlNS);
 
             if (nodeList.Count != 0)
             {
@@ -290,8 +300,8 @@ namespace System.DirectoryServices.Protocols {
                 {
                     Debug.Assert(node is XmlElement);
 
-                    DirectoryAttribute attribute = new DirectoryAttribute((XmlElement) node);
-                    attributes.Add(attribute.Name, attribute);            
+                    DirectoryAttribute attribute = new DirectoryAttribute((XmlElement)node);
+                    attributes.Add(attribute.Name, attribute);
                 }
             }
 
@@ -300,7 +310,7 @@ namespace System.DirectoryServices.Protocols {
 
         private DirectoryControl[] ControlsHelper()
         {
-            XmlNodeList nodeList = dsmlNode.SelectNodes("dsml:control", dsmlNS);
+            XmlNodeList nodeList = _dsmlNode.SelectNodes("dsml:control", _dsmlNS);
 
             if (nodeList.Count == 0)
             {
@@ -315,28 +325,26 @@ namespace System.DirectoryServices.Protocols {
             foreach (XmlNode node in nodeList)
             {
                 Debug.Assert(node is XmlElement);
-            
+
                 controls[index] = new DirectoryControl((XmlElement)node);
                 index++;
             }
 
             return controls;
-
-            
         }
-        
-        
     }
 
-    public class SearchResultEntryCollection :ReadOnlyCollectionBase {
-        
-        internal SearchResultEntryCollection ()
-        {            
+    public class SearchResultEntryCollection : ReadOnlyCollectionBase
+    {
+        internal SearchResultEntryCollection()
+        {
         }
 
-        public SearchResultEntry this[int index] {
-            get {
-                return (SearchResultEntry) InnerList[index];                                                 
+        public SearchResultEntry this[int index]
+        {
+            get
+            {
+                return (SearchResultEntry)InnerList[index];
             }
         }
 
@@ -345,15 +353,18 @@ namespace System.DirectoryServices.Protocols {
             return InnerList.Add(entry);
         }
 
-        public bool Contains(SearchResultEntry value) {
+        public bool Contains(SearchResultEntry value)
+        {
             return InnerList.Contains(value);
-        }  
+        }
 
-        public int IndexOf(SearchResultEntry value) {
+        public int IndexOf(SearchResultEntry value)
+        {
             return InnerList.IndexOf(value);
-        } 
+        }
 
-        public void CopyTo(SearchResultEntry[] values, int index) {
+        public void CopyTo(SearchResultEntry[] values, int index)
+        {
             InnerList.CopyTo(values, index);
         }
 
@@ -361,7 +372,6 @@ namespace System.DirectoryServices.Protocols {
         {
             InnerList.Clear();
         }
-
     }
 }
 

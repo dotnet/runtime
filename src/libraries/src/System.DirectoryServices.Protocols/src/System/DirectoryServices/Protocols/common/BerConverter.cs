@@ -1,5 +1,8 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
 //------------------------------------------------------------------------------
-// <copyright file="BerConverter.cs" company="Microsoft">
 //     Copyright (c) Microsoft Corporation.  All rights reserved.
 // </copyright>                                                                
 //------------------------------------------------------------------------------
@@ -7,80 +10,82 @@
 /*
  */
 
-namespace System.DirectoryServices.Protocols {
-    using System;    
+namespace System.DirectoryServices.Protocols
+{
+    using System;
     using System.Diagnostics;
     using System.Runtime.InteropServices;
-    using System.Collections;    
+    using System.Collections;
     using System.Text;
 
-    public sealed class BerConverter {
-        private BerConverter() {}
+    public sealed class BerConverter
+    {
+        private BerConverter() { }
 
         public static byte[] Encode(string format, params object[] value)
         {
             Utility.CheckOSVersion();
-            
-            if(format == null)
+
+            if (format == null)
                 throw new ArgumentNullException("format");
 
             // no need to turn on invalid encoding detection as we just do string->byte[] conversion.
             UTF8Encoding utf8Encoder = new UTF8Encoding();
             byte[] encodingResult = null;
             // value is allowed to be null in certain scenario, so if it is null, just set it to empty array.
-            if(value == null)
+            if (value == null)
                 value = new object[0];
 
             Debug.WriteLine("Begin encoding\n");
 
             // allocate the berelement
             BerSafeHandle berElement = new BerSafeHandle();
-            
+
             int valueCount = 0;
             int error = 0;
-            for(int formatCount = 0; formatCount < format.Length; formatCount++)
+            for (int formatCount = 0; formatCount < format.Length; formatCount++)
             {
                 char fmt = format[formatCount];
-                if(fmt == '{' || fmt == '}' || fmt == '[' || fmt == ']' || fmt == 'n')
+                if (fmt == '{' || fmt == '}' || fmt == '[' || fmt == ']' || fmt == 'n')
                 {
                     // no argument needed
                     error = Wldap32.ber_printf_emptyarg(berElement, new string(fmt, 1));
                 }
-                else if(fmt == 't' || fmt == 'i' || fmt == 'e')
+                else if (fmt == 't' || fmt == 'i' || fmt == 'e')
                 {
-                    if(valueCount >= value.Length)
-                    {
-                        // we don't have enough argument for the format string
-                        Debug.WriteLine("value argument is not valid, valueCount >= value.Length\n");
-                        throw new ArgumentException(Res.GetString(Res.BerConverterNotMatch));
-                    }                    
-                    
-                    if(!(value[valueCount] is int))
-                    {
-                        // argument is wrong                                                                        
-                        Debug.WriteLine("type should be int\n");                        
-                        throw new ArgumentException(Res.GetString(Res.BerConverterNotMatch));
-                    }                    
-
-                    // one int argument
-                    error = Wldap32.ber_printf_int(berElement, new string(fmt, 1), (int) value[valueCount]);
-
-                    // increase the value count
-                    valueCount++;
-                }
-                else if(fmt == 'b')
-                {
-                    if(valueCount >= value.Length)
+                    if (valueCount >= value.Length)
                     {
                         // we don't have enough argument for the format string
                         Debug.WriteLine("value argument is not valid, valueCount >= value.Length\n");
                         throw new ArgumentException(Res.GetString(Res.BerConverterNotMatch));
                     }
 
-                    if(!(value[valueCount] is bool))
+                    if (!(value[valueCount] is int))
+                    {
+                        // argument is wrong                                                                        
+                        Debug.WriteLine("type should be int\n");
+                        throw new ArgumentException(Res.GetString(Res.BerConverterNotMatch));
+                    }
+
+                    // one int argument
+                    error = Wldap32.ber_printf_int(berElement, new string(fmt, 1), (int)value[valueCount]);
+
+                    // increase the value count
+                    valueCount++;
+                }
+                else if (fmt == 'b')
+                {
+                    if (valueCount >= value.Length)
+                    {
+                        // we don't have enough argument for the format string
+                        Debug.WriteLine("value argument is not valid, valueCount >= value.Length\n");
+                        throw new ArgumentException(Res.GetString(Res.BerConverterNotMatch));
+                    }
+
+                    if (!(value[valueCount] is bool))
                     {
                         // argument is wrong
-                        Debug.WriteLine("type should be boolean\n");                        
+                        Debug.WriteLine("type should be boolean\n");
                         throw new ArgumentException(Res.GetString(Res.BerConverterNotMatch));
                     }
 
@@ -89,18 +94,17 @@ namespace System.DirectoryServices.Protocols {
 
                     // increase the value count
                     valueCount++;
-                    
                 }
-                else if(fmt == 's')
+                else if (fmt == 's')
                 {
-                    if(valueCount >= value.Length)
+                    if (valueCount >= value.Length)
                     {
                         // we don't have enough argument for the format string
                         Debug.WriteLine("value argument is not valid, valueCount >= value.Length\n");
                         throw new ArgumentException(Res.GetString(Res.BerConverterNotMatch));
                     }
 
-                    if(value[valueCount] != null && !(value[valueCount] is string))
+                    if (value[valueCount] != null && !(value[valueCount] is string))
                     {
                         // argument is wrong
                         Debug.WriteLine("type should be string, but receiving value has type of ");
@@ -110,101 +114,100 @@ namespace System.DirectoryServices.Protocols {
 
                     // one string argument       
                     byte[] tempValue = null;
-                    if(value[valueCount] != null)
-                    {  
-                        tempValue = utf8Encoder.GetBytes((string) value[valueCount]);                                                                       
-                    }                    
-                    error = EncodingByteArrayHelper(berElement, tempValue, 'o'); 
+                    if (value[valueCount] != null)
+                    {
+                        tempValue = utf8Encoder.GetBytes((string)value[valueCount]);
+                    }
+                    error = EncodingByteArrayHelper(berElement, tempValue, 'o');
 
                     // increase the value count
                     valueCount++;
                 }
-                else if(fmt == 'o' || fmt == 'X')
+                else if (fmt == 'o' || fmt == 'X')
                 {
                     // we need to have one arguments
-                    if(valueCount >= value.Length)
+                    if (valueCount >= value.Length)
                     {
                         // we don't have enough argument for the format string
                         Debug.WriteLine("value argument is not valid, valueCount >= value.Length\n");
                         throw new ArgumentException(Res.GetString(Res.BerConverterNotMatch));
                     }
 
-                    if(value[valueCount] != null && !(value[valueCount] is byte[]))
+                    if (value[valueCount] != null && !(value[valueCount] is byte[]))
                     {
                         // argument is wrong
                         Debug.WriteLine("type should be byte[], but receiving value has type of ");
                         Debug.WriteLine(value[valueCount].GetType());
                         throw new ArgumentException(Res.GetString(Res.BerConverterNotMatch));
-                    }                    
+                    }
 
-                    byte[] tempValue = (byte[]) value[valueCount];     
-                    error = EncodingByteArrayHelper(berElement, tempValue, fmt);                   
+                    byte[] tempValue = (byte[])value[valueCount];
+                    error = EncodingByteArrayHelper(berElement, tempValue, fmt);
 
-                    valueCount ++;
-                    
+                    valueCount++;
                 }
-                else if(fmt == 'v')
+                else if (fmt == 'v')
                 {
                     // we need to have one arguments
-                    if(valueCount >= value.Length)
+                    if (valueCount >= value.Length)
                     {
                         // we don't have enough argument for the format string
                         Debug.WriteLine("value argument is not valid, valueCount >= value.Length\n");
                         throw new ArgumentException(Res.GetString(Res.BerConverterNotMatch));
                     }
 
-                    if(value[valueCount] != null && !(value[valueCount] is string[]))
+                    if (value[valueCount] != null && !(value[valueCount] is string[]))
                     {
                         // argument is wrong
                         Debug.WriteLine("type should be string[], but receiving value has type of ");
                         Debug.WriteLine(value[valueCount].GetType());
                         throw new ArgumentException(Res.GetString(Res.BerConverterNotMatch));
-                    }               
+                    }
 
-                    string[] stringValues = (string[]) value[valueCount];
+                    string[] stringValues = (string[])value[valueCount];
                     byte[][] tempValues = null;
-                    if(stringValues != null)                    
+                    if (stringValues != null)
                     {
                         tempValues = new byte[stringValues.Length][];
-                        for(int i = 0; i < stringValues.Length; i++)
+                        for (int i = 0; i < stringValues.Length; i++)
                         {
                             string s = stringValues[i];
-                            if(s == null)
+                            if (s == null)
                                 tempValues[i] = null;
                             else
                             {
-                                tempValues[i] = utf8Encoder.GetBytes(s);                                
+                                tempValues[i] = utf8Encoder.GetBytes(s);
                             }
                         }
                     }
 
                     error = EncodingMultiByteArrayHelper(berElement, tempValues, 'V');
 
-                    valueCount ++;
+                    valueCount++;
                 }
-                else if(fmt == 'V')
+                else if (fmt == 'V')
                 {
                     // we need to have one arguments
-                    if(valueCount >= value.Length)
+                    if (valueCount >= value.Length)
                     {
                         // we don't have enough argument for the format string
                         Debug.WriteLine("value argument is not valid, valueCount >= value.Length\n");
                         throw new ArgumentException(Res.GetString(Res.BerConverterNotMatch));
                     }
 
-                    if(value[valueCount] != null && !(value[valueCount] is byte[][]))
+                    if (value[valueCount] != null && !(value[valueCount] is byte[][]))
                     {
                         // argument is wrong
                         Debug.WriteLine("type should be byte[][], but receiving value has type of ");
                         Debug.WriteLine(value[valueCount].GetType());
                         throw new ArgumentException(Res.GetString(Res.BerConverterNotMatch));
-                    }     
+                    }
 
-                    byte[][] tempValue = (byte[][]) value[valueCount];
+                    byte[][] tempValue = (byte[][])value[valueCount];
 
                     error = EncodingMultiByteArrayHelper(berElement, tempValue, fmt);
 
-                    valueCount ++;                    
+                    valueCount++;
                 }
                 else
                 {
@@ -214,12 +217,11 @@ namespace System.DirectoryServices.Protocols {
                 }
 
                 // process the return value
-                if(error == -1)
+                if (error == -1)
                 {
                     Debug.WriteLine("ber_printf failed\n");
                     throw new BerConversionException();
                 }
-                
             }
 
             // get the binary value back
@@ -232,19 +234,19 @@ namespace System.DirectoryServices.Protocols {
                 // deallocation, wldap has special check. So have to use IntPtr directly here.
                 error = Wldap32.ber_flatten(berElement, ref flattenptr);
 
-                if(error == -1)
+                if (error == -1)
                 {
                     Debug.WriteLine("ber_flatten failed\n");
                     throw new BerConversionException();
                 }
 
-                if(flattenptr != (IntPtr)0)
+                if (flattenptr != (IntPtr)0)
                 {
                     Marshal.PtrToStructure(flattenptr, binaryValue);
                 }
 
-                if(binaryValue == null || binaryValue.bv_len == 0)
-                {                
+                if (binaryValue == null || binaryValue.bv_len == 0)
+                {
                     encodingResult = new byte[0];
                 }
                 else
@@ -252,12 +254,12 @@ namespace System.DirectoryServices.Protocols {
                     encodingResult = new byte[binaryValue.bv_len];
 
                     Marshal.Copy(binaryValue.bv_val, encodingResult, 0, binaryValue.bv_len);
-                }                
+                }
             }
             finally
             {
-                if(flattenptr != (IntPtr)0)
-                    Wldap32.ber_bvfree(flattenptr);
+                if (flattenptr != (IntPtr)0)
+                    Wldap32.ber_bvfree(flattenptr);
             }
 
             return encodingResult;
@@ -267,17 +269,17 @@ namespace System.DirectoryServices.Protocols {
         {
             bool decodeSucceeded;
             object[] decodeResult = TryDecode(format, value, out decodeSucceeded);
-            if(decodeSucceeded)
+            if (decodeSucceeded)
                 return decodeResult;
             else
                 throw new BerConversionException();
         }
 
         internal static object[] TryDecode(string format, byte[] value, out bool decodeSucceeded)
-        {    
+        {
             Utility.CheckOSVersion();
-            
-            if(format == null)
+
+            if (format == null)
                 throw new ArgumentNullException("format");
 
             Debug.WriteLine("Begin decoding\n");
@@ -289,8 +291,8 @@ namespace System.DirectoryServices.Protocols {
 
             object[] decodeResult = null;
             decodeSucceeded = false;
-            
-            if(value == null)
+
+            if (value == null)
             {
                 berValue.bv_len = 0;
                 berValue.bv_val = (IntPtr)0;
@@ -304,42 +306,42 @@ namespace System.DirectoryServices.Protocols {
 
             try
             {
-                berElement = new BerSafeHandle(berValue);                        
+                berElement = new BerSafeHandle(berValue);
             }
             finally
             {
-                if(berValue.bv_val != (IntPtr)0)
+                if (berValue.bv_val != (IntPtr)0)
                     Marshal.FreeHGlobal(berValue.bv_val);
             }
-            
+
             int error = 0;
 
-            for(int formatCount = 0; formatCount < format.Length; formatCount++)
+            for (int formatCount = 0; formatCount < format.Length; formatCount++)
             {
                 char fmt = format[formatCount];
-                if(fmt == '{' || fmt == '}' || fmt == '[' || fmt == ']' || fmt == 'n' || fmt == 'x')
+                if (fmt == '{' || fmt == '}' || fmt == '[' || fmt == ']' || fmt == 'n' || fmt == 'x')
                 {
                     error = Wldap32.ber_scanf(berElement, new string(fmt, 1));
 
-                    if(error != 0)
+                    if (error != 0)
                         Debug.WriteLine("ber_scanf for {, }, [, ], n or x failed");
                 }
-                else if(fmt == 'i' || fmt == 'e' || fmt == 'b')
+                else if (fmt == 'i' || fmt == 'e' || fmt == 'b')
                 {
                     int result = 0;
                     error = Wldap32.ber_scanf_int(berElement, new string(fmt, 1), ref result);
 
-                    if(error == 0)
+                    if (error == 0)
                     {
-                        if(fmt == 'b')
+                        if (fmt == 'b')
                         {
                             // should return a bool
                             bool boolResult = false;
-                            if(result == 0)
+                            if (result == 0)
                                 boolResult = false;
                             else
                                 boolResult = true;
-                            resultList.Add(boolResult);                            
+                            resultList.Add(boolResult);
                         }
                         else
                         {
@@ -348,76 +350,74 @@ namespace System.DirectoryServices.Protocols {
                     }
                     else
                         Debug.WriteLine("ber_scanf for format character 'i', 'e' or 'b' failed");
-                        
                 }
-                else if(fmt == 'a')
+                else if (fmt == 'a')
                 {
-                   // return a string
-                   byte[] byteArray = DecodingByteArrayHelper(berElement, 'O', ref error);                   
-                   if(error == 0)
-                   {
-                       string s = null;
-                       if(byteArray != null)
-                           s = utf8Encoder.GetString(byteArray);                     
-                       
-                       resultList.Add(s);
-                   }
+                    // return a string
+                    byte[] byteArray = DecodingByteArrayHelper(berElement, 'O', ref error);
+                    if (error == 0)
+                    {
+                        string s = null;
+                        if (byteArray != null)
+                            s = utf8Encoder.GetString(byteArray);
+
+                        resultList.Add(s);
+                    }
                 }
-                else if(fmt == 'O')
+                else if (fmt == 'O')
                 {
                     // return berval                   
                     byte[] byteArray = DecodingByteArrayHelper(berElement, fmt, ref error);
-                    if(error == 0)
+                    if (error == 0)
                     {
                         // add result to the list
                         resultList.Add(byteArray);
-                    }                    
+                    }
                 }
-                else if(fmt == 'B')
+                else if (fmt == 'B')
                 {
                     // return a bitstring and its length
                     IntPtr ptrResult = (IntPtr)0;
                     int length = 0;
                     error = Wldap32.ber_scanf_bitstring(berElement, "B", ref ptrResult, ref length);
 
-                    if(error == 0)
+                    if (error == 0)
                     {
                         byte[] byteArray = null;
-                        if(ptrResult != (IntPtr)0)
+                        if (ptrResult != (IntPtr)0)
                         {
                             byteArray = new byte[length];
                             Marshal.Copy(ptrResult, byteArray, 0, length);
-                        }               
+                        }
                         resultList.Add(byteArray);
-                    }      
+                    }
                     else
                         Debug.WriteLine("ber_scanf for format character 'B' failed");
 
                     // no need to free memory as wldap32 returns the original pointer instead of a duplicating memory pointer that
                     // needs to be freed
-                    
                 }
-                else if(fmt == 'v')
+                else if (fmt == 'v')
                 {
                     //null terminate strings
                     byte[][] byteArrayresult = null;
                     string[] stringArray = null;
 
                     byteArrayresult = DecodingMultiByteArrayHelper(berElement, 'V', ref error);
-                    if(error == 0)
+                    if (error == 0)
                     {
-                        if(byteArrayresult != null)
+                        if (byteArrayresult != null)
                         {
                             stringArray = new string[byteArrayresult.Length];
-                            for(int i = 0; i < byteArrayresult.Length; i++)
+                            for (int i = 0; i < byteArrayresult.Length; i++)
                             {
-                                if(byteArrayresult[i] == null)
+                                if (byteArrayresult[i] == null)
                                 {
                                     stringArray[i] = null;
                                 }
                                 else
                                 {
-                                   stringArray[i] = utf8Encoder.GetString(byteArrayresult[i]);                                   
+                                    stringArray[i] = utf8Encoder.GetString(byteArrayresult[i]);
                                 }
                             }
                         }
@@ -425,16 +425,15 @@ namespace System.DirectoryServices.Protocols {
                         resultList.Add(stringArray);
                     }
                 }
-                else if(fmt == 'V')
+                else if (fmt == 'V')
                 {
                     byte[][] result = null;
 
                     result = DecodingMultiByteArrayHelper(berElement, fmt, ref error);
-                    if(error == 0)
+                    if (error == 0)
                     {
                         resultList.Add(result);
                     }
-                    
                 }
                 else
                 {
@@ -442,19 +441,18 @@ namespace System.DirectoryServices.Protocols {
                     throw new ArgumentException(Res.GetString(Res.BerConverterUndefineChar));
                 }
 
-                if(error != 0)
-                {                    
+                if (error != 0)
+                {
                     // decode failed, just return
                     return decodeResult;
                 }
-                
             }
 
             decodeResult = new object[resultList.Count];
-            for(int count = 0; count < resultList.Count; count++)
+            for (int count = 0; count < resultList.Count; count++)
             {
                 decodeResult[count] = resultList[count];
-            }            
+            }
 
             decodeSucceeded = true;
             return decodeResult;
@@ -463,15 +461,15 @@ namespace System.DirectoryServices.Protocols {
         private static int EncodingByteArrayHelper(BerSafeHandle berElement, byte[] tempValue, char fmt)
         {
             int error = 0;
-            
+
             // one byte array, one int arguments
-            if(tempValue != null)
+            if (tempValue != null)
             {
                 IntPtr tmp = Marshal.AllocHGlobal(tempValue.Length);
                 Marshal.Copy(tempValue, 0, tmp, tempValue.Length);
-                HGlobalMemHandle memHandle = new HGlobalMemHandle(tmp);                
+                HGlobalMemHandle memHandle = new HGlobalMemHandle(tmp);
 
-                error = Wldap32.ber_printf_bytearray(berElement, new string(fmt, 1), memHandle, tempValue.Length);                    
+                error = Wldap32.ber_printf_bytearray(berElement, new string(fmt, 1), memHandle, tempValue.Length);
             }
             else
             {
@@ -485,34 +483,34 @@ namespace System.DirectoryServices.Protocols {
         {
             error = 0;
             IntPtr result = (IntPtr)0;
-            berval binaryValue = new berval();       
+            berval binaryValue = new berval();
             byte[] byteArray = null;
-            
+
             // can't use SafeBerval here as CLR creates a SafeBerval which points to a different memory location, but when doing memory
             // deallocation, wldap has special check. So have to use IntPtr directly here.
-            error = Wldap32.ber_scanf_ptr(berElement, new string(fmt, 1), ref result);                    
+            error = Wldap32.ber_scanf_ptr(berElement, new string(fmt, 1), ref result);
 
             try
             {
-                if(error == 0)
-                {                    
-                    if(result != (IntPtr)0)
-                    {                               
+                if (error == 0)
+                {
+                    if (result != (IntPtr)0)
+                    {
                         Marshal.PtrToStructure(result, binaryValue);
-                        
+
                         byteArray = new byte[binaryValue.bv_len];
                         Marshal.Copy(binaryValue.bv_val, byteArray, 0, binaryValue.bv_len);
                     }
-                }    
+                }
                 else
                     Debug.WriteLine("ber_scanf for format character 'O' failed");
             }
             finally
             {
-                if(result != (IntPtr)0)
+                if (result != (IntPtr)0)
                     Wldap32.ber_bvfree(result);
             }
-            
+
             return byteArray;
         }
 
@@ -524,22 +522,22 @@ namespace System.DirectoryServices.Protocols {
             int error = 0;
 
             try
-            {                        
-                if(tempValue != null)
+            {
+                if (tempValue != null)
                 {
                     int i = 0;
                     berValArray = Utility.AllocHGlobalIntPtrArray(tempValue.Length + 1);
-                    int structSize = Marshal.SizeOf(typeof(SafeBerval));     
+                    int structSize = Marshal.SizeOf(typeof(SafeBerval));
                     managedBerVal = new SafeBerval[tempValue.Length];
-                    
-                    for(i = 0; i < tempValue.Length; i++)
+
+                    for (i = 0; i < tempValue.Length; i++)
                     {
-                        byte[] byteArray = tempValue[i];       
+                        byte[] byteArray = tempValue[i];
 
                         // construct the managed berval
                         managedBerVal[i] = new SafeBerval();
-                        
-                        if(byteArray == null)
+
+                        if (byteArray == null)
                         {
                             managedBerVal[i].bv_len = 0;
                             managedBerVal[i].bv_val = (IntPtr)0;
@@ -548,42 +546,37 @@ namespace System.DirectoryServices.Protocols {
                         {
                             managedBerVal[i].bv_len = byteArray.Length;
                             managedBerVal[i].bv_val = Marshal.AllocHGlobal(byteArray.Length);
-                            Marshal.Copy(byteArray, 0, managedBerVal[i].bv_val, byteArray.Length);                                                                            
-                            
+                            Marshal.Copy(byteArray, 0, managedBerVal[i].bv_val, byteArray.Length);
                         }
 
                         // allocate memory for the unmanaged structure
-                        IntPtr valPtr = Marshal.AllocHGlobal(structSize);                                
+                        IntPtr valPtr = Marshal.AllocHGlobal(structSize);
                         Marshal.StructureToPtr(managedBerVal[i], valPtr, false);
 
                         tempPtr = (IntPtr)((long)berValArray + Marshal.SizeOf(typeof(IntPtr)) * i);
                         Marshal.WriteIntPtr(tempPtr, valPtr);
-                        
                     }
 
                     tempPtr = (IntPtr)((long)berValArray + Marshal.SizeOf(typeof(IntPtr)) * i);
-                    Marshal.WriteIntPtr(tempPtr, (IntPtr)0);   
-                
+                    Marshal.WriteIntPtr(tempPtr, (IntPtr)0);
                 }
 
                 error = Wldap32.ber_printf_berarray(berElement, new string(fmt, 1), berValArray);
 
                 GC.KeepAlive(managedBerVal);
-
             }
             finally
             {
-                if(berValArray != (IntPtr)0)
+                if (berValArray != (IntPtr)0)
                 {
-                    for(int i = 0; i < tempValue.Length; i++)
+                    for (int i = 0; i < tempValue.Length; i++)
                     {
-                        IntPtr ptr = Marshal.ReadIntPtr(berValArray, Marshal.SizeOf(typeof(IntPtr)) * i); 
-                        if(ptr != (IntPtr)0)
+                        IntPtr ptr = Marshal.ReadIntPtr(berValArray, Marshal.SizeOf(typeof(IntPtr)) * i);
+                        if (ptr != (IntPtr)0)
                             Marshal.FreeHGlobal(ptr);
                     }
                     Marshal.FreeHGlobal(berValArray);
                 }
-                
             }
 
             return error;
@@ -595,49 +588,47 @@ namespace System.DirectoryServices.Protocols {
             // several berval
             IntPtr ptrResult = (IntPtr)0;
             int i = 0;
-            ArrayList binaryList= new ArrayList();
+            ArrayList binaryList = new ArrayList();
             IntPtr tempPtr = (IntPtr)0;
-            byte[][] result = null;            
+            byte[][] result = null;
 
             try
             {
                 error = Wldap32.ber_scanf_ptr(berElement, new string(fmt, 1), ref ptrResult);
 
-                if(error == 0)
+                if (error == 0)
                 {
-                    if(ptrResult != (IntPtr)0)
+                    if (ptrResult != (IntPtr)0)
                     {
-                        tempPtr = Marshal.ReadIntPtr(ptrResult);                                
-                        while(tempPtr != (IntPtr)0)
+                        tempPtr = Marshal.ReadIntPtr(ptrResult);
+                        while (tempPtr != (IntPtr)0)
                         {
-                            berval ber = new berval();                                    
-                            Marshal.PtrToStructure(tempPtr, ber);                               
+                            berval ber = new berval();
+                            Marshal.PtrToStructure(tempPtr, ber);
 
-                            byte[] berArray = new byte[ber.bv_len];                                    
+                            byte[] berArray = new byte[ber.bv_len];
                             Marshal.Copy(ber.bv_val, berArray, 0, ber.bv_len);
 
                             binaryList.Add(berArray);
 
-                            i++;                                    
-                            tempPtr = Marshal.ReadIntPtr(ptrResult, i*Marshal.SizeOf(typeof(IntPtr)));                                     
-                        }                                
+                            i++;
+                            tempPtr = Marshal.ReadIntPtr(ptrResult, i * Marshal.SizeOf(typeof(IntPtr)));
+                        }
 
                         result = new byte[binaryList.Count][];
-                        for(int j = 0; j < binaryList.Count; j++)
+                        for (int j = 0; j < binaryList.Count; j++)
                         {
                             result[j] = (byte[])binaryList[j];
-                        }                                
+                        }
                     }
-                    
                 }
                 else
                     Debug.WriteLine("ber_scanf for format character 'V' failed");
-                
             }
             finally
             {
-                if(ptrResult != (IntPtr)0)
-                {                            
+                if (ptrResult != (IntPtr)0)
+                {
                     Wldap32.ber_bvecfree(ptrResult);
                 }
             }

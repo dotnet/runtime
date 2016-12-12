@@ -1,5 +1,8 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
 //------------------------------------------------------------------------------
-// <copyright file=DsmlDocument.cs" company="Microsoft">
 //     Copyright (c) Microsoft Corporation.  All rights reserved.
 // </copyright>                                                                
 //------------------------------------------------------------------------------
@@ -7,7 +10,8 @@
 /*
  */
 
-namespace System.DirectoryServices.Protocols {
+namespace System.DirectoryServices.Protocols
+{
     using System;
     using System.Collections;
     using System.Xml;
@@ -20,69 +24,81 @@ namespace System.DirectoryServices.Protocols {
     public abstract class DsmlDocument
     {
         internal string dsmlRequestID = null;
-        public abstract XmlDocument ToXml();        
+        public abstract XmlDocument ToXml();
     }
 
-    public class DsmlRequestDocument: DsmlDocument, IList, IEnumerable
-    {        
-        private DsmlDocumentProcessing docProcessing = DsmlDocumentProcessing.Sequential;
-        private DsmlResponseOrder resOrder= DsmlResponseOrder.Sequential;
-        private DsmlErrorProcessing errProcessing = DsmlErrorProcessing.Exit;
-        private ArrayList dsmlRequests;
+    public class DsmlRequestDocument : DsmlDocument, IList, IEnumerable
+    {
+        private DsmlDocumentProcessing _docProcessing = DsmlDocumentProcessing.Sequential;
+        private DsmlResponseOrder _resOrder = DsmlResponseOrder.Sequential;
+        private DsmlErrorProcessing _errProcessing = DsmlErrorProcessing.Exit;
+        private ArrayList _dsmlRequests;
 
-        public DsmlRequestDocument() 
+        public DsmlRequestDocument()
         {
             Utility.CheckOSVersion();
-            
-            dsmlRequests = new ArrayList();
+
+            _dsmlRequests = new ArrayList();
         }
 
-        public DsmlDocumentProcessing DocumentProcessing {
-            get {
-                return docProcessing;
+        public DsmlDocumentProcessing DocumentProcessing
+        {
+            get
+            {
+                return _docProcessing;
             }
-            set {
-                if (value < DsmlDocumentProcessing.Sequential || value > DsmlDocumentProcessing.Parallel) 
+            set
+            {
+                if (value < DsmlDocumentProcessing.Sequential || value > DsmlDocumentProcessing.Parallel)
                     throw new InvalidEnumArgumentException("value", (int)value, typeof(DsmlDocumentProcessing));
-            
-                docProcessing = value;
+
+                _docProcessing = value;
             }
         }
 
-        public DsmlResponseOrder ResponseOrder {
-            get {
-                return resOrder;
+        public DsmlResponseOrder ResponseOrder
+        {
+            get
+            {
+                return _resOrder;
             }
-            set {
-                if (value < DsmlResponseOrder.Sequential || value > DsmlResponseOrder.Unordered) 
+            set
+            {
+                if (value < DsmlResponseOrder.Sequential || value > DsmlResponseOrder.Unordered)
                     throw new InvalidEnumArgumentException("value", (int)value, typeof(DsmlResponseOrder));
-            
-                resOrder = value;
+
+                _resOrder = value;
             }
         }
 
-        public DsmlErrorProcessing ErrorProcessing {
-            get {
-                return errProcessing;
+        public DsmlErrorProcessing ErrorProcessing
+        {
+            get
+            {
+                return _errProcessing;
             }
-            set {
-                if (value < DsmlErrorProcessing.Resume || value > DsmlErrorProcessing.Exit) 
+            set
+            {
+                if (value < DsmlErrorProcessing.Resume || value > DsmlErrorProcessing.Exit)
                     throw new InvalidEnumArgumentException("value", (int)value, typeof(DsmlErrorProcessing));
-            
-                errProcessing = value;
+
+                _errProcessing = value;
             }
         }
 
-        public string RequestId {
-            get {
+        public string RequestId
+        {
+            get
+            {
                 return dsmlRequestID;
             }
-            set {
+            set
+            {
                 dsmlRequestID = value;
             }
         }
 
-        bool IList.IsFixedSize	
+        bool IList.IsFixedSize
         {
             get
             {
@@ -92,34 +108,34 @@ namespace System.DirectoryServices.Protocols {
 
         bool IList.IsReadOnly
         {
-            get		    
+            get
             {
                 return false;
-            } 
-        }		
+            }
+        }
 
         object ICollection.SyncRoot
         {
-            get		   
+            get
             {
-                return dsmlRequests.SyncRoot;
+                return _dsmlRequests.SyncRoot;
             }
         }
 
         bool ICollection.IsSynchronized
         {
-            get		
+            get
             {
-                return dsmlRequests.IsSynchronized;
+                return _dsmlRequests.IsSynchronized;
             }
-        }        
-		
-        public IEnumerator GetEnumerator()
-        {
-            return dsmlRequests.GetEnumerator();
         }
 
-        protected bool IsFixedSize	
+        public IEnumerator GetEnumerator()
+        {
+            return _dsmlRequests.GetEnumerator();
+        }
+
+        protected bool IsFixedSize
         {
             get
             {
@@ -129,74 +145,74 @@ namespace System.DirectoryServices.Protocols {
 
         protected bool IsReadOnly
         {
-            get		    
+            get
             {
                 return false;
-            } 
-        }		
+            }
+        }
 
         protected object SyncRoot
         {
-            get		   
+            get
             {
-                return dsmlRequests.SyncRoot;
+                return _dsmlRequests.SyncRoot;
             }
         }
 
         protected bool IsSynchronized
         {
-            get		
+            get
             {
-                return dsmlRequests.IsSynchronized;
+                return _dsmlRequests.IsSynchronized;
             }
         }
 
         public int Count
         {
-            get			
+            get
             {
-                return dsmlRequests.Count;
+                return _dsmlRequests.Count;
             }
         }
 
         int ICollection.Count
         {
-            get			
+            get
             {
-                return dsmlRequests.Count;
+                return _dsmlRequests.Count;
             }
-        }        
+        }
 
-        public DirectoryRequest this[int index] 
+        public DirectoryRequest this[int index]
         {
             get
-            { 
-                return (DirectoryRequest) dsmlRequests[index];
-            } 
-            set
             {
-                if (value == null)
-                    throw new ArgumentNullException("value");
-			
-                dsmlRequests[index] = value;
+                return (DirectoryRequest)_dsmlRequests[index];
             }
-        }	
-
-        object IList.this[int index] 
-        {
-            get			
-            { 
-                return this[index];
-            } 
             set
             {
                 if (value == null)
                     throw new ArgumentNullException("value");
 
-                if(!(value is DirectoryRequest))
+                _dsmlRequests[index] = value;
+            }
+        }
+
+        object IList.this[int index]
+        {
+            get
+            {
+                return this[index];
+            }
+            set
+            {
+                if (value == null)
+                    throw new ArgumentNullException("value");
+
+                if (!(value is DirectoryRequest))
                     throw new ArgumentException(Res.GetString(Res.InvalidValueType, "DirectoryRequest"), "value");
-			
-                dsmlRequests[index] = (DirectoryRequest) value;
+
+                _dsmlRequests[index] = (DirectoryRequest)value;
             }
         }
 
@@ -205,7 +221,7 @@ namespace System.DirectoryServices.Protocols {
             if (request == null)
                 throw new ArgumentNullException("request");
 
-            return dsmlRequests.Add(request);
+            return _dsmlRequests.Add(request);
         }
 
         int IList.Add(object request)
@@ -213,7 +229,7 @@ namespace System.DirectoryServices.Protocols {
             if (request == null)
                 throw new ArgumentNullException("request");
 
-            if(!(request is DirectoryRequest))
+            if (!(request is DirectoryRequest))
                 throw new ArgumentException(Res.GetString(Res.InvalidValueType, "DirectoryRequest"), "request");
 
             return Add((DirectoryRequest)request);
@@ -221,8 +237,8 @@ namespace System.DirectoryServices.Protocols {
 
         public void Clear()
         {
-            dsmlRequests.Clear();
-        }        
+            _dsmlRequests.Clear();
+        }
 
         void IList.Clear()
         {
@@ -231,68 +247,68 @@ namespace System.DirectoryServices.Protocols {
 
         public bool Contains(DirectoryRequest value)
         {
-            return dsmlRequests.Contains(value);
-        }		
+            return _dsmlRequests.Contains(value);
+        }
 
         bool IList.Contains(Object value)
         {
-            return Contains((DirectoryRequest) value);
+            return Contains((DirectoryRequest)value);
         }
 
         public int IndexOf(DirectoryRequest value)
         {
             if (value == null)
                 throw new ArgumentNullException("value");
-	
-            return dsmlRequests.IndexOf(value);
+
+            return _dsmlRequests.IndexOf(value);
         }
 
         int IList.IndexOf(object value)
         {
             if (value == null)
                 throw new ArgumentNullException("value");
-	
+
             return IndexOf((DirectoryRequest)value);
         }
 
-        public void Insert(int index,DirectoryRequest value)
+        public void Insert(int index, DirectoryRequest value)
         {
             if (value == null)
                 throw new ArgumentNullException("value");
-	
-            dsmlRequests.Insert(index, value);
+
+            _dsmlRequests.Insert(index, value);
         }
 
-        void IList.Insert(int index,object value)
+        void IList.Insert(int index, object value)
         {
             if (value == null)
                 throw new ArgumentNullException("value");
 
-            if(!(value is DirectoryRequest))
+            if (!(value is DirectoryRequest))
                 throw new ArgumentException(Res.GetString(Res.InvalidValueType, "DirectoryRequest"), "value");
-	
-            Insert(index, (DirectoryRequest) value);
+
+            Insert(index, (DirectoryRequest)value);
         }
 
         public void Remove(DirectoryRequest value)
         {
             if (value == null)
                 throw new ArgumentNullException("value");
-	
-            dsmlRequests.Remove(value);
-        }		
+
+            _dsmlRequests.Remove(value);
+        }
 
         void IList.Remove(object value)
         {
             if (value == null)
                 throw new ArgumentNullException("value");
-	
+
             Remove((DirectoryRequest)value);
         }
 
         public void RemoveAt(int index)
         {
-            dsmlRequests.RemoveAt(index);
+            _dsmlRequests.RemoveAt(index);
         }
 
         void IList.RemoveAt(int index)
@@ -301,13 +317,13 @@ namespace System.DirectoryServices.Protocols {
         }
 
         public void CopyTo(DirectoryRequest[] value, int i)
-        {  
-            dsmlRequests.CopyTo(value, i);		
+        {
+            _dsmlRequests.CopyTo(value, i);
         }
 
         void ICollection.CopyTo(Array value, int i)
         {
-            dsmlRequests.CopyTo(value, i);	
+            _dsmlRequests.CopyTo(value, i);
         }
 
         public override XmlDocument ToXml()
@@ -318,7 +334,7 @@ namespace System.DirectoryServices.Protocols {
             StartBatchRequest(xmldoc);
 
             // persist each operation under the batchRequest
-            foreach (DirectoryRequest el in dsmlRequests)
+            foreach (DirectoryRequest el in _dsmlRequests)
             {
                 xmldoc.DocumentElement.AppendChild(el.ToXmlNodeHelper(xmldoc));
             }
@@ -332,11 +348,11 @@ namespace System.DirectoryServices.Protocols {
             // Start with the common information
             // We'll make DSMLv2 the default namespace
             //
-            string emptyLoad = "<batchRequest " + 
-			                   "xmlns=\"" + DsmlConstants.DsmlUri +"\" " +
-			                   "xmlns:xsd=\"" + DsmlConstants.XsdUri + "\" " +
-			                   "xmlns:xsi=\"" + DsmlConstants.XsiUri + "\" />";
-            xmldoc.LoadXml(emptyLoad); 
+            string emptyLoad = "<batchRequest " +
+                               "xmlns=\"" + DsmlConstants.DsmlUri + "\" " +
+                               "xmlns:xsd=\"" + DsmlConstants.XsdUri + "\" " +
+                               "xmlns:xsi=\"" + DsmlConstants.XsiUri + "\" />";
+            xmldoc.LoadXml(emptyLoad);
 
 
             //
@@ -346,7 +362,7 @@ namespace System.DirectoryServices.Protocols {
 
             // DocumentProcessing
             attr = xmldoc.CreateAttribute("processing", null);
-            switch (docProcessing)
+            switch (_docProcessing)
             {
                 case DsmlDocumentProcessing.Sequential:
                     attr.InnerText = "sequential";
@@ -365,7 +381,7 @@ namespace System.DirectoryServices.Protocols {
 
             // ResponseOrder
             attr = xmldoc.CreateAttribute("responseOrder", null);
-            switch (resOrder)
+            switch (_resOrder)
             {
                 case DsmlResponseOrder.Sequential:
                     attr.InnerText = "sequential";
@@ -384,7 +400,7 @@ namespace System.DirectoryServices.Protocols {
 
             // ErrorProcessing
             attr = xmldoc.CreateAttribute("onError", null);
-            switch (errProcessing)
+            switch (_errProcessing)
             {
                 case DsmlErrorProcessing.Exit:
                     attr.InnerText = "exit";
@@ -411,27 +427,27 @@ namespace System.DirectoryServices.Protocols {
                 xmldoc.DocumentElement.Attributes.Append(attr);
             }
         }
-		
     }
 
-    public class DsmlResponseDocument : DsmlDocument, ICollection, IEnumerable {
-        private ArrayList dsmlResponse;
-        XmlDocument dsmlDocument = null;
-        XmlElement dsmlBatchResponse = null;
+    public class DsmlResponseDocument : DsmlDocument, ICollection, IEnumerable
+    {
+        private ArrayList _dsmlResponse;
+        private XmlDocument _dsmlDocument = null;
+        private XmlElement _dsmlBatchResponse = null;
 
-        XmlNamespaceManager dsmlNS = null;
+        private XmlNamespaceManager _dsmlNS = null;
 
-        private DsmlResponseDocument() 
+        private DsmlResponseDocument()
         {
-            dsmlResponse = new ArrayList();
+            _dsmlResponse = new ArrayList();
         }
 
-        internal DsmlResponseDocument(HttpWebResponse resp, string xpathToResponse) :this()
+        internal DsmlResponseDocument(HttpWebResponse resp, string xpathToResponse) : this()
         {
             // Our caller (the DsmlConnection-derived class) passes us the XPath telling us
             // how to locate the batchResponse element.  This permits us to work with
             // different transport protocols.
-        
+
             // Get the response stream
             Stream respStream = resp.GetResponseStream();
             StreamReader respStreamReader = new StreamReader(respStream);
@@ -439,28 +455,29 @@ namespace System.DirectoryServices.Protocols {
             try
             {
                 // Load the response from the stream into the XmlDocument
-                dsmlDocument = new XmlDocument();
+                _dsmlDocument = new XmlDocument();
 
-                try {
-                    dsmlDocument.Load(respStreamReader);
+                try
+                {
+                    _dsmlDocument.Load(respStreamReader);
                 }
                 catch (XmlException)
                 {
                     // The server didn't return well-formed XML to us		
                     throw new DsmlInvalidDocumentException(Res.GetString(Res.NotWellFormedResponse));
                 }
-                
-                // Locate the batchResponse element within the response document
-                dsmlNS = NamespaceUtils.GetDsmlNamespaceManager();
-                dsmlBatchResponse = (XmlElement) dsmlDocument.SelectSingleNode(xpathToResponse, dsmlNS);
 
-                if (dsmlBatchResponse == null)
+                // Locate the batchResponse element within the response document
+                _dsmlNS = NamespaceUtils.GetDsmlNamespaceManager();
+                _dsmlBatchResponse = (XmlElement)_dsmlDocument.SelectSingleNode(xpathToResponse, _dsmlNS);
+
+                if (_dsmlBatchResponse == null)
                 {
                     throw new DsmlInvalidDocumentException(Res.GetString(Res.NotWellFormedResponse));
-                }  
+                }
 
                 // parse the response and put it in our internal store
-                XmlNodeList nodeList = dsmlBatchResponse.ChildNodes;                
+                XmlNodeList nodeList = _dsmlBatchResponse.ChildNodes;
 
                 // Unfortunately, we can't just index into the XmlNodeList,
                 // because it's a list of all the nodes, not just the elements.
@@ -470,10 +487,10 @@ namespace System.DirectoryServices.Protocols {
                 {
                     if (node.NodeType == XmlNodeType.Element)
                     {
-                        Debug.Assert(node is XmlElement);                    
-                        
-                        DirectoryResponse el = ConstructElement((XmlElement) node);
-                        dsmlResponse.Add(el);                            
+                        Debug.Assert(node is XmlElement);
+
+                        DirectoryResponse el = ConstructElement((XmlElement)node);
+                        _dsmlResponse.Add(el);
                     }
                 }
             }
@@ -483,12 +500,13 @@ namespace System.DirectoryServices.Protocols {
             }
         }
 
-        internal DsmlResponseDocument(StringBuilder responseString, string xpathToResponse) :this()
+        internal DsmlResponseDocument(StringBuilder responseString, string xpathToResponse) : this()
         {
-            dsmlDocument = new XmlDocument();
+            _dsmlDocument = new XmlDocument();
 
-            try {
-                dsmlDocument.LoadXml(responseString.ToString());
+            try
+            {
+                _dsmlDocument.LoadXml(responseString.ToString());
             }
             catch (XmlException)
             {
@@ -497,16 +515,16 @@ namespace System.DirectoryServices.Protocols {
             }
 
             // Locate the batchResponse element within the response document
-            dsmlNS = NamespaceUtils.GetDsmlNamespaceManager();
-            dsmlBatchResponse = (XmlElement) dsmlDocument.SelectSingleNode(xpathToResponse, dsmlNS);
+            _dsmlNS = NamespaceUtils.GetDsmlNamespaceManager();
+            _dsmlBatchResponse = (XmlElement)_dsmlDocument.SelectSingleNode(xpathToResponse, _dsmlNS);
 
-    	    if (dsmlBatchResponse == null)
-    	    {
-    	        throw new DsmlInvalidDocumentException(Res.GetString(Res.NotWellFormedResponse));
-    	    }  
+            if (_dsmlBatchResponse == null)
+            {
+                throw new DsmlInvalidDocumentException(Res.GetString(Res.NotWellFormedResponse));
+            }
 
-    		// parse the response and put it in our internal store
-    		XmlNodeList nodeList = dsmlBatchResponse.ChildNodes;                
+            // parse the response and put it in our internal store
+            XmlNodeList nodeList = _dsmlBatchResponse.ChildNodes;
 
             // Unfortunately, we can't just index into the XmlNodeList,
             // because it's a list of all the nodes, not just the elements.
@@ -517,25 +535,26 @@ namespace System.DirectoryServices.Protocols {
                 if (node.NodeType == XmlNodeType.Element)
                 {
                     Debug.Assert(node is XmlElement);
-                    
-                        
-                    DirectoryResponse el = ConstructElement((XmlElement) node);
-                    dsmlResponse.Add(el);                            
+
+
+                    DirectoryResponse el = ConstructElement((XmlElement)node);
+                    _dsmlResponse.Add(el);
                 }
             }
-            
         }
 
-        private DsmlResponseDocument(string responseString) :this(new StringBuilder(responseString), "se:Envelope/se:Body/dsml:batchResponse")
+        private DsmlResponseDocument(string responseString) : this(new StringBuilder(responseString), "se:Envelope/se:Body/dsml:batchResponse")
         {
         }
 
-        public bool IsErrorResponse {
-            get {
+        public bool IsErrorResponse
+        {
+            get
+            {
                 // check whether there is a DsmlErrorResponse object
-                foreach(DirectoryResponse res in dsmlResponse)
+                foreach (DirectoryResponse res in _dsmlResponse)
                 {
-                    if(res is DsmlErrorResponse)
+                    if (res is DsmlErrorResponse)
                         return true;
                 }
 
@@ -543,14 +562,16 @@ namespace System.DirectoryServices.Protocols {
             }
         }
 
-        public bool IsOperationError {
-            get {
-                foreach(DirectoryResponse res in dsmlResponse)
+        public bool IsOperationError
+        {
+            get
+            {
+                foreach (DirectoryResponse res in _dsmlResponse)
                 {
-                    if(!(res is DsmlErrorResponse))
+                    if (!(res is DsmlErrorResponse))
                     {
                         ResultCode result = res.ResultCode;
-                        if (ResultCode.Success != result && 
+                        if (ResultCode.Success != result &&
                             ResultCode.CompareTrue != result &&
                             ResultCode.CompareFalse != result &&
                             ResultCode.Referral != result &&
@@ -558,7 +579,6 @@ namespace System.DirectoryServices.Protocols {
                         {
                             return true;
                         }
-                            
                     }
                 }
 
@@ -571,12 +591,12 @@ namespace System.DirectoryServices.Protocols {
             get
             {
                 // Locate the requestID attribute on the batchResponse element
-                XmlAttribute attrReqID = (XmlAttribute) dsmlBatchResponse.SelectSingleNode("@dsml:requestID", dsmlNS);
+                XmlAttribute attrReqID = (XmlAttribute)_dsmlBatchResponse.SelectSingleNode("@dsml:requestID", _dsmlNS);
 
                 if (attrReqID == null)
                 {
                     // try it without the namespace qualifier, in case the sender omitted it
-                    attrReqID = (XmlAttribute) dsmlBatchResponse.SelectSingleNode("@requestID", dsmlNS);
+                    attrReqID = (XmlAttribute)_dsmlBatchResponse.SelectSingleNode("@requestID", _dsmlNS);
 
                     if (attrReqID == null)
                     {
@@ -590,13 +610,15 @@ namespace System.DirectoryServices.Protocols {
                 {
                     return attrReqID.Value;
                 }
-            }            
+            }
         }
 
-        internal string ResponseString {
-            get {
-                if(dsmlDocument != null)
-                    return dsmlDocument.InnerXml;
+        internal string ResponseString
+        {
+            get
+            {
+                if (_dsmlDocument != null)
+                    return _dsmlDocument.InnerXml;
                 else
                     return null;
             }
@@ -608,24 +630,24 @@ namespace System.DirectoryServices.Protocols {
             // returns a copy of the current document
 
             XmlDocument doc = new XmlDocument();
-            doc.LoadXml(dsmlBatchResponse.OuterXml);
+            doc.LoadXml(_dsmlBatchResponse.OuterXml);
 
             return doc;
-        }       
+        }
 
         object ICollection.SyncRoot
         {
             get
             {
-                return dsmlResponse.SyncRoot;
+                return _dsmlResponse.SyncRoot;
             }
         }
 
         bool ICollection.IsSynchronized
         {
-            get		    
+            get
             {
-                return dsmlResponse.IsSynchronized;
+                return _dsmlResponse.IsSynchronized;
             }
         }
 
@@ -633,33 +655,33 @@ namespace System.DirectoryServices.Protocols {
         {
             get
             {
-                return dsmlResponse.Count;
+                return _dsmlResponse.Count;
             }
         }
 
         void ICollection.CopyTo(Array value, int i)
-        {            
-            dsmlResponse.CopyTo(value, i);		
+        {
+            _dsmlResponse.CopyTo(value, i);
         }
-		
+
         public IEnumerator GetEnumerator()
         {
-            return dsmlResponse.GetEnumerator();
+            return _dsmlResponse.GetEnumerator();
         }
 
         protected object SyncRoot
         {
             get
             {
-                return dsmlResponse.SyncRoot;
+                return _dsmlResponse.SyncRoot;
             }
         }
 
         protected bool IsSynchronized
         {
-            get		    
+            get
             {
-                return dsmlResponse.IsSynchronized;
+                return _dsmlResponse.IsSynchronized;
             }
         }
 
@@ -667,39 +689,39 @@ namespace System.DirectoryServices.Protocols {
         {
             get
             {
-                return dsmlResponse.Count;
+                return _dsmlResponse.Count;
             }
-        }		
+        }
 
-        public DirectoryResponse this[int index] 
+        public DirectoryResponse this[int index]
         {
             get
-            { 
-                return (DirectoryResponse) dsmlResponse[index];
-            } 			
-        }				
+            {
+                return (DirectoryResponse)_dsmlResponse[index];
+            }
+        }
 
         public void CopyTo(DirectoryResponse[] value, int i)
-        {            	
-            dsmlResponse.CopyTo(value, i);		
-        }		
+        {
+            _dsmlResponse.CopyTo(value, i);
+        }
 
-        DirectoryResponse ConstructElement(XmlElement node)
+        private DirectoryResponse ConstructElement(XmlElement node)
         {
             DirectoryResponse el = null;
 
             Debug.Assert(node != null);
-        
+
             switch (node.LocalName)
             {
                 case DsmlConstants.DsmlErrorResponse:
                     el = new DsmlErrorResponse(node);
                     break;
-                    
+
                 case DsmlConstants.DsmlSearchResponse:
                     el = new SearchResponse(node);
                     break;
-                
+
                 case DsmlConstants.DsmlModifyResponse:
                     el = new ModifyResponse(node);
                     break;
@@ -711,19 +733,19 @@ namespace System.DirectoryServices.Protocols {
                 case DsmlConstants.DsmlDelResponse:
                     el = new DeleteResponse(node);
                     break;
-                
+
                 case DsmlConstants.DsmlModDNResponse:
                     el = new ModifyDNResponse(node);
                     break;
-                
+
                 case DsmlConstants.DsmlCompareResponse:
                     el = new CompareResponse(node);
                     break;
-                
+
                 case DsmlConstants.DsmlExtendedResponse:
                     el = new ExtendedResponse(node);
                     break;
-                
+
                 case DsmlConstants.DsmlAuthResponse:
                     el = new DsmlAuthResponse(node);
                     break;
@@ -735,8 +757,5 @@ namespace System.DirectoryServices.Protocols {
 
             return el;
         }
-
-    }   
-
-    
+    }
 }

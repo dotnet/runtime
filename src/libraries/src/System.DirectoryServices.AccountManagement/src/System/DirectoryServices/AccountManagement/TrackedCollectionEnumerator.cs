@@ -1,10 +1,13 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
 /*++
 
 Copyright (c) 2004  Microsoft Corporation
 
 Module Name:
 
-    TrackedCollectionEnumerator.cs
 
 Abstract:
 
@@ -23,7 +26,7 @@ using System.Collections.Generic;
 
 namespace System.DirectoryServices.AccountManagement
 {
-    class TrackedCollectionEnumerator<T> : IEnumerator, IEnumerator<T>
+    internal class TrackedCollectionEnumerator<T> : IEnumerator, IEnumerator<T>
     {
         //
         // Public properties
@@ -37,18 +40,18 @@ namespace System.DirectoryServices.AccountManagement
 
                 // Since MoveNext() saved off the current value for us, this is largely trivial.
 
-                if (this.endReached == true || this.enumerator == null)
+                if (_endReached == true || _enumerator == null)
                 {
                     // Either we're at the end or before the beginning
-                    GlobalDebug.WriteLineIf(GlobalDebug.Warn, "TrackedCollectionEnumerator", "Current: bad position, endReached={0}", this.endReached);                                 
+                    GlobalDebug.WriteLineIf(GlobalDebug.Warn, "TrackedCollectionEnumerator", "Current: bad position, endReached={0}", _endReached);
                     throw new InvalidOperationException(StringResources.TrackedCollectionEnumInvalidPos);
                 }
-                
-                return this.current;
+
+                return _current;
             }
         }
 
-        
+
 
         object IEnumerator.Current
         {
@@ -65,27 +68,27 @@ namespace System.DirectoryServices.AccountManagement
 
         public bool MoveNext()
         {
-            GlobalDebug.WriteLineIf(GlobalDebug.Info, "TrackedCollectionEnumerator", "Entering MoveNext");             
-        
+            GlobalDebug.WriteLineIf(GlobalDebug.Info, "TrackedCollectionEnumerator", "Entering MoveNext");
+
             CheckDisposed();
             CheckChanged();
 
-            if (this.endReached)
+            if (_endReached)
             {
-                GlobalDebug.WriteLineIf(GlobalDebug.Info, "TrackedCollectionEnumerator", "MoveNext: endReached");                             
+                GlobalDebug.WriteLineIf(GlobalDebug.Info, "TrackedCollectionEnumerator", "MoveNext: endReached");
                 return false;
             }
 
-            if (this.enumerator == null)
+            if (_enumerator == null)
             {
                 // Must be at the very beginning
-                GlobalDebug.WriteLineIf(GlobalDebug.Info, "TrackedCollectionEnumerator", "MoveNext: at beginning");                             
+                GlobalDebug.WriteLineIf(GlobalDebug.Info, "TrackedCollectionEnumerator", "MoveNext: at beginning");
 
-                this.enumerator = ((IEnumerable)this.combinedValues).GetEnumerator();
-                Debug.Assert(this.enumerator != null);
+                _enumerator = ((IEnumerable)_combinedValues).GetEnumerator();
+                Debug.Assert(_enumerator != null);
             }
 
-            bool gotNextValue = this.enumerator.MoveNext();
+            bool gotNextValue = _enumerator.MoveNext();
 
             // If we got the next value,
             // save it off so that Current can later return it.
@@ -93,27 +96,27 @@ namespace System.DirectoryServices.AccountManagement
             {
                 // Have to handle differently, since inserted values are just a T, while
                 // original value are a Pair<T,T>, where Pair.Right is the current value
-                TrackedCollection<T>.ValueEl el = (TrackedCollection<T>.ValueEl) this.enumerator.Current;
-                
+                TrackedCollection<T>.ValueEl el = (TrackedCollection<T>.ValueEl)_enumerator.Current;
+
                 if (el.isInserted)
                 {
-                    GlobalDebug.WriteLineIf(GlobalDebug.Info, "TrackedCollectionEnumerator", "MoveNext: current ({0}) is inserted", this.current);                                             
-                    this.current = el.insertedValue;
+                    GlobalDebug.WriteLineIf(GlobalDebug.Info, "TrackedCollectionEnumerator", "MoveNext: current ({0}) is inserted", _current);
+                    _current = el.insertedValue;
                 }
                 else
                 {
-                    this.current = el.originalValue.Right;
-                    GlobalDebug.WriteLineIf(GlobalDebug.Info, "TrackedCollectionEnumerator", "MoveNext: current ({0}) is original", this.current);                    
+                    _current = el.originalValue.Right;
+                    GlobalDebug.WriteLineIf(GlobalDebug.Info, "TrackedCollectionEnumerator", "MoveNext: current ({0}) is original", _current);
                 }
             }
             else
             {
                 // Nothing more to enumerate
-                GlobalDebug.WriteLineIf(GlobalDebug.Info, "TrackedCollectionEnumerator", "MoveNext: nothing more to enumerate");                             
-                
-                this.endReached = true;
+                GlobalDebug.WriteLineIf(GlobalDebug.Info, "TrackedCollectionEnumerator", "MoveNext: nothing more to enumerate");
+
+                _endReached = true;
             }
-            
+
             return gotNextValue;
         }
 
@@ -124,13 +127,13 @@ namespace System.DirectoryServices.AccountManagement
 
         public void Reset()
         {
-            GlobalDebug.WriteLineIf(GlobalDebug.Info, "TrackedCollectionEnumerator", "Reset");             
-        
+            GlobalDebug.WriteLineIf(GlobalDebug.Info, "TrackedCollectionEnumerator", "Reset");
+
             CheckDisposed();
             CheckChanged();
-            
-            this.endReached = false;
-            this.enumerator = null;
+
+            _endReached = false;
+            _enumerator = null;
         }
 
         void IEnumerator.Reset()
@@ -140,7 +143,7 @@ namespace System.DirectoryServices.AccountManagement
 
         public void Dispose()
         {
-            this.disposed = true;
+            _disposed = true;
         }
 
 
@@ -149,11 +152,11 @@ namespace System.DirectoryServices.AccountManagement
         //
         internal TrackedCollectionEnumerator(string outerClassName, TrackedCollection<T> trackedCollection, List<TrackedCollection<T>.ValueEl> combinedValues)
         {
-            GlobalDebug.WriteLineIf(GlobalDebug.Info, "TrackedCollectionEnumerator", "Ctor");            
-        
-            this.outerClassName = outerClassName;
-            this.trackedCollection = trackedCollection;
-            this.combinedValues = combinedValues;
+            GlobalDebug.WriteLineIf(GlobalDebug.Info, "TrackedCollectionEnumerator", "Ctor");
+
+            _outerClassName = outerClassName;
+            _trackedCollection = trackedCollection;
+            _combinedValues = combinedValues;
         }
 
 
@@ -162,51 +165,50 @@ namespace System.DirectoryServices.AccountManagement
         //
 
         // Have we been disposed?
-        bool disposed = false;
+        private bool _disposed = false;
 
         //  The name of our outer class. Used when throwing an ObjectDisposedException.
-        string outerClassName;
+        private string _outerClassName;
 
-        List<TrackedCollection<T>.ValueEl> combinedValues = null;
+        private List<TrackedCollection<T>.ValueEl> _combinedValues = null;
 
         // The value we're currently positioned at
-        T current;
+        private T _current;
 
         // The enumerator for our inner list, combinedValues.
-        IEnumerator enumerator = null;
+        private IEnumerator _enumerator = null;
 
         // True when we reach the end of combinedValues (no more values to enumerate in the TrackedCollection)
-        bool endReached = false;
+        private bool _endReached = false;
 
         // When this enumerator was constructed, to detect changes made to the TrackedCollection after it was constructed
-        DateTime creationTime = DateTime.UtcNow;
-        TrackedCollection<T> trackedCollection = null;
+        private DateTime _creationTime = DateTime.UtcNow;
+        private TrackedCollection<T> _trackedCollection = null;
 
-        void CheckDisposed()
+        private void CheckDisposed()
         {
-            if (this.disposed)
+            if (_disposed)
             {
-                GlobalDebug.WriteLineIf(GlobalDebug.Warn, "TrackedCollectionEnumerator", "CheckDisposed: accessing disposed object");             
-                throw new ObjectDisposedException(this.outerClassName);
+                GlobalDebug.WriteLineIf(GlobalDebug.Warn, "TrackedCollectionEnumerator", "CheckDisposed: accessing disposed object");
+                throw new ObjectDisposedException(_outerClassName);
             }
         }
 
-        void CheckChanged()
+        private void CheckChanged()
         {
             // Make sure the app hasn't changed our underlying list
-            if (this.trackedCollection.LastChange > this.creationTime)
+            if (_trackedCollection.LastChange > _creationTime)
             {
                 GlobalDebug.WriteLineIf(
                             GlobalDebug.Warn,
-                            "TrackedCollectionEnumerator", 
+                            "TrackedCollectionEnumerator",
                             "CheckChanged: has changed (last change={0}, creation={1})",
-                            this.trackedCollection.LastChange,
-                            this.creationTime);
-                            
+                            _trackedCollection.LastChange,
+                            _creationTime);
+
                 throw new InvalidOperationException(StringResources.TrackedCollectionEnumHasChanged);
             }
         }
-
     }
 }
 

@@ -1,5 +1,8 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
 //------------------------------------------------------------------------------
-// <copyright file="DirectoryResponse.cs" company="Microsoft">
 //     Copyright (c) Microsoft Corporation.  All rights reserved.
 // </copyright>                                                                
 //------------------------------------------------------------------------------
@@ -7,7 +10,8 @@
 /*
  */
 
-namespace System.DirectoryServices.Protocols {
+namespace System.DirectoryServices.Protocols
+{
     using System;
     using System.Net;
     using System.Xml;
@@ -16,38 +20,38 @@ namespace System.DirectoryServices.Protocols {
     using System.Diagnostics;
     using System.Globalization;
 
-    public abstract class DirectoryResponse :DirectoryOperation {
+    public abstract class DirectoryResponse : DirectoryOperation
+    {
         internal XmlNode dsmlNode = null;
-        internal XmlNamespaceManager dsmlNS = null;       
+        internal XmlNamespaceManager dsmlNS = null;
         internal bool dsmlRequest = false;
 
         internal string dn = null;
         internal DirectoryControl[] directoryControls = null;
-        internal ResultCode result = (ResultCode) (-1);
+        internal ResultCode result = (ResultCode)(-1);
         internal string directoryMessage = null;
         internal Uri[] directoryReferral = null;
 
-        private string requestID = null;
+        private string _requestID = null;
 
         internal DirectoryResponse(XmlNode node)
         {
             Debug.Assert(node != null);
-        
+
             dsmlNode = node;
 
-            dsmlNS = NamespaceUtils.GetDsmlNamespaceManager();             
+            dsmlNS = NamespaceUtils.GetDsmlNamespaceManager();
 
             dsmlRequest = true;
-        }       
+        }
 
-        internal DirectoryResponse(string dn, DirectoryControl[] controls, ResultCode result, string message,  Uri[] referral)
+        internal DirectoryResponse(string dn, DirectoryControl[] controls, ResultCode result, string message, Uri[] referral)
         {
             this.dn = dn;
             this.directoryControls = controls;
             this.result = result;
             this.directoryMessage = message;
             this.directoryReferral = referral;
-            
         }
 
 
@@ -56,37 +60,37 @@ namespace System.DirectoryServices.Protocols {
             get
             {
                 // this is a dsml request
-                if(dsmlRequest && (requestID == null))
-                {                  
+                if (dsmlRequest && (_requestID == null))
+                {
                     // Locate the requestID attribute
-                    XmlAttribute attrReqID = (XmlAttribute) dsmlNode.SelectSingleNode("@dsml:requestID", dsmlNS);
+                    XmlAttribute attrReqID = (XmlAttribute)dsmlNode.SelectSingleNode("@dsml:requestID", dsmlNS);
 
                     if (attrReqID == null)
                     {
                         // try it without the namespace qualifier, in case the sender omitted it
-                        attrReqID = (XmlAttribute) dsmlNode.SelectSingleNode("@requestID", dsmlNS);                                                        
+                        attrReqID = (XmlAttribute)dsmlNode.SelectSingleNode("@requestID", dsmlNS);
                     }
 
                     if (attrReqID != null)
                     {
-                        requestID = attrReqID.Value;
-                    }             
+                        _requestID = attrReqID.Value;
+                    }
                 }
 
-                return requestID;
-            }            
+                return _requestID;
+            }
         }
 
         public virtual string MatchedDN
         {
             get
             {
-                if(dsmlRequest && (dn == null))
+                if (dsmlRequest && (dn == null))
                 {
-                    dn = MatchedDNHelper("@dsml:matchedDN", "@matchedDN");                                        
+                    dn = MatchedDNHelper("@dsml:matchedDN", "@matchedDN");
                 }
 
-                return dn;                
+                return dn;
             }
         }
 
@@ -94,37 +98,36 @@ namespace System.DirectoryServices.Protocols {
         {
             get
             {
-                if(dsmlRequest && (directoryControls == null))
+                if (dsmlRequest && (directoryControls == null))
                 {
-                    directoryControls = ControlsHelper("dsml:control");                    
+                    directoryControls = ControlsHelper("dsml:control");
                 }
-                
-                if(directoryControls == null)
+
+                if (directoryControls == null)
                     return new DirectoryControl[0];
                 else
                 {
                     DirectoryControl[] tempControls = new DirectoryControl[directoryControls.Length];
-                    for(int i = 0; i < directoryControls.Length; i++)
+                    for (int i = 0; i < directoryControls.Length; i++)
                         tempControls[i] = new DirectoryControl(directoryControls[i].Type, directoryControls[i].GetValue(), directoryControls[i].IsCritical, directoryControls[i].ServerSide);
 
                     DirectoryControl.TransformControls(tempControls);
 
                     return tempControls;
                 }
-                
             }
         }
-        
+
         public virtual ResultCode ResultCode
         {
             get
             {
-                if(dsmlRequest && ((int) result == -1))
+                if (dsmlRequest && ((int)result == -1))
                 {
-                    result = ResultCodeHelper("dsml:resultCode/@dsml:code", "dsml:resultCode/@code");                    
+                    result = ResultCodeHelper("dsml:resultCode/@dsml:code", "dsml:resultCode/@code");
                 }
 
-                return result;                
+                return result;
             }
         }
 
@@ -132,7 +135,7 @@ namespace System.DirectoryServices.Protocols {
         {
             get
             {
-                if(dsmlRequest && (directoryMessage == null))
+                if (dsmlRequest && (directoryMessage == null))
                 {
                     directoryMessage = ErrorMessageHelper("dsml:errorMessage");
                 }
@@ -140,31 +143,31 @@ namespace System.DirectoryServices.Protocols {
                 return directoryMessage;
             }
         }
- 
+
 
         public virtual Uri[] Referral
         {
             get
             {
-                if(dsmlRequest && (directoryReferral == null))
+                if (dsmlRequest && (directoryReferral == null))
                 {
                     directoryReferral = ReferralHelper("dsml:referral");
                 }
-                
-                if(directoryReferral == null)
+
+                if (directoryReferral == null)
                     return new Uri[0];
                 else
                 {
                     Uri[] tempReferral = new Uri[directoryReferral.Length];
-                    for(int i = 0; i < directoryReferral.Length; i++)
-                    {                            
+                    for (int i = 0; i < directoryReferral.Length; i++)
+                    {
                         tempReferral[i] = new Uri(directoryReferral[i].AbsoluteUri);
                     }
                     return tempReferral;
-                }                
+                }
             }
         }
-        
+
 
         //
         // Private/protected
@@ -174,12 +177,12 @@ namespace System.DirectoryServices.Protocols {
         internal string MatchedDNHelper(string primaryXPath, string secondaryXPath)
         {
             // Locate the matchedDN attribute
-            XmlAttribute attrMatchedDN = (XmlAttribute) dsmlNode.SelectSingleNode(primaryXPath, dsmlNS);
+            XmlAttribute attrMatchedDN = (XmlAttribute)dsmlNode.SelectSingleNode(primaryXPath, dsmlNS);
 
             if (attrMatchedDN == null)
             {
                 // try it without the namespace qualifier, in case the sender omitted it
-                attrMatchedDN = (XmlAttribute) dsmlNode.SelectSingleNode(secondaryXPath, dsmlNS);
+                attrMatchedDN = (XmlAttribute)dsmlNode.SelectSingleNode(secondaryXPath, dsmlNS);
 
                 if (attrMatchedDN == null)
                 {
@@ -214,7 +217,7 @@ namespace System.DirectoryServices.Protocols {
             foreach (XmlNode node in nodeList)
             {
                 Debug.Assert(node is XmlElement);
-            
+
                 controls[index] = new DirectoryControl((XmlElement)node);
                 index++;
             }
@@ -223,14 +226,14 @@ namespace System.DirectoryServices.Protocols {
         }
 
         internal ResultCode ResultCodeHelper(string primaryXPath, string secondaryXPath)
-        {        
+        {
             // Retrieve the result code attribute
-            XmlAttribute attrResultCode = (XmlAttribute) dsmlNode.SelectSingleNode(primaryXPath, dsmlNS);
+            XmlAttribute attrResultCode = (XmlAttribute)dsmlNode.SelectSingleNode(primaryXPath, dsmlNS);
 
             if (attrResultCode == null)
             {
                 // try it without the namespace qualifier, in case the sender omitted it
-                attrResultCode = (XmlAttribute) dsmlNode.SelectSingleNode(secondaryXPath, dsmlNS);
+                attrResultCode = (XmlAttribute)dsmlNode.SelectSingleNode(secondaryXPath, dsmlNS);
 
                 if (attrResultCode == null)
                 {
@@ -243,7 +246,8 @@ namespace System.DirectoryServices.Protocols {
             string resCodeString = attrResultCode.Value;
             int resCodeInt;
 
-            try {
+            try
+            {
                 resCodeInt = int.Parse(resCodeString, NumberStyles.Integer, CultureInfo.InvariantCulture);
             }
             catch (FormatException)
@@ -254,21 +258,21 @@ namespace System.DirectoryServices.Protocols {
             {
                 throw new DsmlInvalidDocumentException(Res.GetString(Res.BadOperationResponseResultCode, resCodeString));
             }
-            
-            if (!Utility.IsResultCode((ResultCode) resCodeInt))
+
+            if (!Utility.IsResultCode((ResultCode)resCodeInt))
             {
                 throw new DsmlInvalidDocumentException(Res.GetString(Res.BadOperationResponseResultCode, resCodeString));
             }
 
             // Transform the result code into an LDAPResultCode
-            ResultCode resCode = (ResultCode) resCodeInt;
+            ResultCode resCode = (ResultCode)resCodeInt;
 
             return resCode;
         }
 
         internal string ErrorMessageHelper(string primaryXPath)
         {
-            XmlElement elMessage = (XmlElement) dsmlNode.SelectSingleNode(primaryXPath, dsmlNS);
+            XmlElement elMessage = (XmlElement)dsmlNode.SelectSingleNode(primaryXPath, dsmlNS);
 
             if (elMessage != null)
             {
@@ -282,7 +286,7 @@ namespace System.DirectoryServices.Protocols {
         }
 
         internal Uri[] ReferralHelper(string primaryXPath)
-        {        
+        {
             // Get the set of referral nodes
             XmlNodeList nodeList = dsmlNode.SelectNodes(primaryXPath, dsmlNS);
 
@@ -304,24 +308,23 @@ namespace System.DirectoryServices.Protocols {
             }
 
             return uris;
-        }        
-        
-    }   
+        }
+    }
 
     public class DeleteResponse : DirectoryResponse
     {
-        internal DeleteResponse(XmlNode node) : base(node) {}
-        internal DeleteResponse(string dn, DirectoryControl[] controls, ResultCode result, string message,  Uri[] referral) :base(dn, controls, result, message, referral) {}
+        internal DeleteResponse(XmlNode node) : base(node) { }
+        internal DeleteResponse(string dn, DirectoryControl[] controls, ResultCode result, string message, Uri[] referral) : base(dn, controls, result, message, referral) { }
     }
 
 
     /// <summary>
     /// The AddResponse class for representing <addResponse>
     /// </summary>
-    public class AddResponse  : DirectoryResponse
+    public class AddResponse : DirectoryResponse
     {
-        internal AddResponse (XmlNode node) : base(node) {}
-        internal AddResponse(string dn, DirectoryControl[] controls, ResultCode result, string message,  Uri[] referral) :base(dn, controls, result, message, referral) {}
+        internal AddResponse(XmlNode node) : base(node) { }
+        internal AddResponse(string dn, DirectoryControl[] controls, ResultCode result, string message, Uri[] referral) : base(dn, controls, result, message, referral) { }
     }
 
 
@@ -330,8 +333,8 @@ namespace System.DirectoryServices.Protocols {
     /// </summary>
     public class ModifyResponse : DirectoryResponse
     {
-        internal ModifyResponse(XmlNode node) : base(node) {}
-        internal ModifyResponse(string dn, DirectoryControl[] controls, ResultCode result, string message,  Uri[] referral) :base(dn, controls, result, message, referral) {}
+        internal ModifyResponse(XmlNode node) : base(node) { }
+        internal ModifyResponse(string dn, DirectoryControl[] controls, ResultCode result, string message, Uri[] referral) : base(dn, controls, result, message, referral) { }
     }
 
 
@@ -340,8 +343,8 @@ namespace System.DirectoryServices.Protocols {
     /// </summary>
     public class ModifyDNResponse : DirectoryResponse
     {
-        internal ModifyDNResponse(XmlNode node) : base(node) {}
-        internal ModifyDNResponse(string dn, DirectoryControl[] controls, ResultCode result, string message,  Uri[] referral) :base(dn, controls, result, message, referral) {}
+        internal ModifyDNResponse(XmlNode node) : base(node) { }
+        internal ModifyDNResponse(string dn, DirectoryControl[] controls, ResultCode result, string message, Uri[] referral) : base(dn, controls, result, message, referral) { }
     }
 
 
@@ -350,10 +353,10 @@ namespace System.DirectoryServices.Protocols {
     /// </summary>
     public class CompareResponse : DirectoryResponse
     {
-        internal CompareResponse(XmlNode node) : base(node) {}
-        internal CompareResponse(string dn, DirectoryControl[] controls, ResultCode result, string message,  Uri[] referral) :base(dn, controls, result, message, referral) {}
+        internal CompareResponse(XmlNode node) : base(node) { }
+        internal CompareResponse(string dn, DirectoryControl[] controls, ResultCode result, string message, Uri[] referral) : base(dn, controls, result, message, referral) { }
     }
-    
+
 
     /// <summary>
     /// The ExtendedResponse class for representing <extendedResponse>
@@ -362,9 +365,9 @@ namespace System.DirectoryServices.Protocols {
     {
         internal string name = null;
         internal byte[] value = null;
-            
-        internal ExtendedResponse(XmlNode node) : base(node) {}
-        internal ExtendedResponse(string dn, DirectoryControl[] controls, ResultCode result, string message,  Uri[] referral) :base(dn, controls, result, message, referral) {}
+
+        internal ExtendedResponse(XmlNode node) : base(node) { }
+        internal ExtendedResponse(string dn, DirectoryControl[] controls, ResultCode result, string message, Uri[] referral) : base(dn, controls, result, message, referral) { }
 
         //
         // Public
@@ -375,36 +378,35 @@ namespace System.DirectoryServices.Protocols {
         {
             get
             {
-                if(dsmlRequest && (name == null))
-                {                    
-                    XmlElement elRespName = (XmlElement) dsmlNode.SelectSingleNode("dsml:responseName", dsmlNS);
+                if (dsmlRequest && (name == null))
+                {
+                    XmlElement elRespName = (XmlElement)dsmlNode.SelectSingleNode("dsml:responseName", dsmlNS);
 
                     if (elRespName != null)
                     {
                         name = elRespName.InnerText;
-                    }                        
-                    
+                    }
                 }
 
-                return name;                
+                return name;
             }
         }
 
         public byte[] ResponseValue
         {
             get
-            {      
-                if(dsmlRequest && (value == null))
+            {
+                if (dsmlRequest && (value == null))
                 {
-                    
-                    XmlElement elRespValue = (XmlElement) dsmlNode.SelectSingleNode("dsml:response", dsmlNS);
+                    XmlElement elRespValue = (XmlElement)dsmlNode.SelectSingleNode("dsml:response", dsmlNS);
 
                     if (elRespValue != null)
                     {
                         // server returns a response value
-                        string base64EncodedValue = elRespValue.InnerText;                        
+                        string base64EncodedValue = elRespValue.InnerText;
 
-                        try {
+                        try
+                        {
                             value = System.Convert.FromBase64String(base64EncodedValue);
                         }
                         catch (FormatException)
@@ -413,38 +415,37 @@ namespace System.DirectoryServices.Protocols {
                             throw new DsmlInvalidDocumentException(Res.GetString(Res.BadBase64Value));
                         }
                     }
-                    
                 }
-                
-                if(value == null)
+
+                if (value == null)
                     return new byte[0];
                 else
                 {
                     byte[] tmpValue = new byte[value.Length];
-                    for(int i = 0; i < value.Length; i++)
+                    for (int i = 0; i < value.Length; i++)
                     {
                         tmpValue[i] = value[i];
                     }
                     return tmpValue;
-                }                
+                }
             }
         }
-        
     }
 
-    public class SearchResponse :DirectoryResponse {
-        private SearchResultReferenceCollection referenceCollection = new SearchResultReferenceCollection();
-        private SearchResultEntryCollection entryCollection = new SearchResultEntryCollection();
+    public class SearchResponse : DirectoryResponse
+    {
+        private SearchResultReferenceCollection _referenceCollection = new SearchResultReferenceCollection();
+        private SearchResultEntryCollection _entryCollection = new SearchResultEntryCollection();
         internal bool searchDone = false;
-        
-        internal SearchResponse(XmlNode node) : base(node) {}
-        internal SearchResponse(string dn, DirectoryControl[] controls, ResultCode result, string message,  Uri[] referral) :base(dn, controls, result, message, referral) {}
+
+        internal SearchResponse(XmlNode node) : base(node) { }
+        internal SearchResponse(string dn, DirectoryControl[] controls, ResultCode result, string message, Uri[] referral) : base(dn, controls, result, message, referral) { }
 
         public override string MatchedDN
         {
             get
             {
-                if(dsmlRequest && (dn == null))
+                if (dsmlRequest && (dn == null))
                 {
                     dn = MatchedDNHelper("dsml:searchResultDone/@dsml:matchedDN",
                                            "dsml:searchResultDone/@matchedDN");
@@ -459,40 +460,39 @@ namespace System.DirectoryServices.Protocols {
             get
             {
                 DirectoryControl[] controls = null;
-                if(dsmlRequest && (directoryControls == null))
+                if (dsmlRequest && (directoryControls == null))
                 {
-                    directoryControls = ControlsHelper("dsml:searchResultDone/dsml:control");                               
+                    directoryControls = ControlsHelper("dsml:searchResultDone/dsml:control");
                 }
-                
-                if(directoryControls == null)
+
+                if (directoryControls == null)
                     return new DirectoryControl[0];
                 else
                 {
                     controls = new DirectoryControl[directoryControls.Length];
-                    for(int i = 0; i < directoryControls.Length; i++)
+                    for (int i = 0; i < directoryControls.Length; i++)
                     {
                         controls[i] = new DirectoryControl(directoryControls[i].Type, directoryControls[i].GetValue(), directoryControls[i].IsCritical, directoryControls[i].ServerSide);
-                    }                        
-                }                
-                
+                    }
+                }
+
                 DirectoryControl.TransformControls(controls);
 
                 return controls;
-
             }
         }
-        
+
         public override ResultCode ResultCode
         {
             get
             {
-                if(dsmlRequest && ((int)result == -1))
+                if (dsmlRequest && ((int)result == -1))
                 {
                     result = ResultCodeHelper("dsml:searchResultDone/dsml:resultCode/@dsml:code",
                                             "dsml:searchResultDone/dsml:resultCode/@code");
                 }
 
-                return result;                
+                return result;
             }
         }
 
@@ -500,75 +500,79 @@ namespace System.DirectoryServices.Protocols {
         {
             get
             {
-                if(dsmlRequest && (directoryMessage == null))
+                if (dsmlRequest && (directoryMessage == null))
                 {
                     directoryMessage = ErrorMessageHelper("dsml:searchResultDone/dsml:errorMessage");
                 }
 
-                return directoryMessage;                
+                return directoryMessage;
             }
         }
- 
+
 
         public override Uri[] Referral
         {
             get
             {
-                if(dsmlRequest && (directoryReferral == null))
+                if (dsmlRequest && (directoryReferral == null))
                 {
                     directoryReferral = ReferralHelper("dsml:searchResultDone/dsml:referral");
                 }
-                
-                if(directoryReferral == null)
+
+                if (directoryReferral == null)
                     return new Uri[0];
                 else
                 {
                     Uri[] tempReferral = new Uri[directoryReferral.Length];
-                    for(int i = 0; i < directoryReferral.Length; i++)
+                    for (int i = 0; i < directoryReferral.Length; i++)
                     {
                         tempReferral[i] = new Uri(directoryReferral[i].AbsoluteUri);
                     }
                     return tempReferral;
-                }                
+                }
             }
         }
 
-        public SearchResultReferenceCollection References {
-            get {
-                if(dsmlRequest && (referenceCollection.Count == 0))
+        public SearchResultReferenceCollection References
+        {
+            get
+            {
+                if (dsmlRequest && (_referenceCollection.Count == 0))
                 {
-                    referenceCollection = ReferenceHelper();                
+                    _referenceCollection = ReferenceHelper();
                 }
-                
-                return referenceCollection;                
-            }            
+
+                return _referenceCollection;
+            }
         }
 
-        public SearchResultEntryCollection Entries {
-            get {
-                if(dsmlRequest && (entryCollection.Count == 0))
+        public SearchResultEntryCollection Entries
+        {
+            get
+            {
+                if (dsmlRequest && (_entryCollection.Count == 0))
                 {
-                    entryCollection = EntryHelper();
+                    _entryCollection = EntryHelper();
                 }
 
-                return entryCollection;                
-            }            
+                return _entryCollection;
+            }
         }
 
         internal void SetReferences(SearchResultReferenceCollection col)
         {
-            referenceCollection = col;
+            _referenceCollection = col;
         }
 
         internal void SetEntries(SearchResultEntryCollection col)
         {
-            entryCollection = col;
+            _entryCollection = col;
         }
 
         private SearchResultReferenceCollection ReferenceHelper()
         {
             SearchResultReferenceCollection refCollection = new SearchResultReferenceCollection();
-            
+
             // Get the set of control nodes
             XmlNodeList nodeList = dsmlNode.SelectNodes("dsml:searchResultReference", dsmlNS);
 
@@ -577,20 +581,19 @@ namespace System.DirectoryServices.Protocols {
                 foreach (XmlNode node in nodeList)
                 {
                     Debug.Assert(node is XmlElement);
-            
-                    SearchResultReference attribute = new SearchResultReference((XmlElement) node);
+
+                    SearchResultReference attribute = new SearchResultReference((XmlElement)node);
                     refCollection.Add(attribute);
                 }
             }
 
-            return refCollection;           
-
+            return refCollection;
         }
 
         private SearchResultEntryCollection EntryHelper()
         {
             SearchResultEntryCollection resultCollection = new SearchResultEntryCollection();
-            
+
             // Get the set of control nodes
             XmlNodeList nodeList = dsmlNode.SelectNodes("dsml:searchResultEntry", dsmlNS);
 
@@ -599,18 +602,19 @@ namespace System.DirectoryServices.Protocols {
                 foreach (XmlNode node in nodeList)
                 {
                     Debug.Assert(node is XmlElement);
-            
-                    SearchResultEntry attribute = new SearchResultEntry((XmlElement) node);
+
+                    SearchResultEntry attribute = new SearchResultEntry((XmlElement)node);
                     resultCollection.Add(attribute);
                 }
             }
-            
-            return resultCollection;           
+
+            return resultCollection;
         }
-    }    
+    }
 }
 
-namespace System.DirectoryServices.Protocols {
+namespace System.DirectoryServices.Protocols
+{
     using System;
     using System.Net;
     using System.Xml;
@@ -618,14 +622,14 @@ namespace System.DirectoryServices.Protocols {
     using System.Collections;
     using System.Diagnostics;
     using System.Globalization;
-    
+
     public class DsmlErrorResponse : DirectoryResponse
     {
-        private string message = null;
-        private string detail = null;
-        private ErrorResponseCategory category = (ErrorResponseCategory) (-1);
-    
-        internal DsmlErrorResponse(XmlNode node) : base(node) {}
+        private string _message = null;
+        private string _detail = null;
+        private ErrorResponseCategory _category = (ErrorResponseCategory)(-1);
+
+        internal DsmlErrorResponse(XmlNode node) : base(node) { }
 
         //
         // Public
@@ -636,35 +640,35 @@ namespace System.DirectoryServices.Protocols {
         {
             get
             {
-                if(message == null)
+                if (_message == null)
                 {
-                    XmlElement elMessage = (XmlElement) dsmlNode.SelectSingleNode("dsml:message", dsmlNS);
+                    XmlElement elMessage = (XmlElement)dsmlNode.SelectSingleNode("dsml:message", dsmlNS);
 
                     if (elMessage != null)
                     {
-                       message = elMessage.InnerText;
-                    }                               
+                        _message = elMessage.InnerText;
+                    }
                 }
 
-                return message;
+                return _message;
             }
         }
 
         public string Detail
         {
             get
-            {      
-                if(detail == null)
+            {
+                if (_detail == null)
                 {
-                    XmlElement elDetail = (XmlElement) dsmlNode.SelectSingleNode("dsml:detail", dsmlNS);
+                    XmlElement elDetail = (XmlElement)dsmlNode.SelectSingleNode("dsml:detail", dsmlNS);
 
                     if (elDetail != null)
                     {
-                        detail = elDetail.InnerXml;
-                    }                    
+                        _detail = elDetail.InnerXml;
+                    }
                 }
 
-                return detail;                
+                return _detail;
             }
         }
 
@@ -672,14 +676,14 @@ namespace System.DirectoryServices.Protocols {
         {
             get
             {
-                if((int) category == -1)
+                if ((int)_category == -1)
                 {
-                    XmlAttribute attrType = (XmlAttribute) dsmlNode.SelectSingleNode("@dsml:type", dsmlNS);
+                    XmlAttribute attrType = (XmlAttribute)dsmlNode.SelectSingleNode("@dsml:type", dsmlNS);
 
                     if (attrType == null)
                     {
                         // try it without the namespace qualifier, in case the sender omitted it
-                        attrType = (XmlAttribute) dsmlNode.SelectSingleNode("@type", dsmlNS);
+                        attrType = (XmlAttribute)dsmlNode.SelectSingleNode("@type", dsmlNS);
                     }
 
 
@@ -694,46 +698,46 @@ namespace System.DirectoryServices.Protocols {
                     switch (attrType.Value)
                     {
                         case "notAttempted":
-                            category = ErrorResponseCategory.NotAttempted;
+                            _category = ErrorResponseCategory.NotAttempted;
                             break;
 
                         case "couldNotConnect":
-                            category = ErrorResponseCategory.CouldNotConnect;
+                            _category = ErrorResponseCategory.CouldNotConnect;
                             break;
 
                         case "connectionClosed":
-                            category = ErrorResponseCategory.ConnectionClosed;
+                            _category = ErrorResponseCategory.ConnectionClosed;
                             break;
-                            
+
                         case "malformedRequest":
-                            category = ErrorResponseCategory.MalformedRequest;
+                            _category = ErrorResponseCategory.MalformedRequest;
                             break;
-                            
+
                         case "gatewayInternalError":
-                            category = ErrorResponseCategory.GatewayInternalError;
+                            _category = ErrorResponseCategory.GatewayInternalError;
                             break;
-                            
+
                         case "authenticationFailed":
-                            category = ErrorResponseCategory.AuthenticationFailed;
+                            _category = ErrorResponseCategory.AuthenticationFailed;
                             break;
-                            
+
                         case "unresolvableURI":
-                            category = ErrorResponseCategory.UnresolvableUri;
+                            _category = ErrorResponseCategory.UnresolvableUri;
                             break;
-                            
+
                         case "other":
-                             category = ErrorResponseCategory.Other;
-                             break;
+                            _category = ErrorResponseCategory.Other;
+                            break;
 
                         default:
-                             throw new DsmlInvalidDocumentException(Res.GetString(Res.ErrorResponseInvalidValue, attrType.Value));
+                            throw new DsmlInvalidDocumentException(Res.GetString(Res.ErrorResponseInvalidValue, attrType.Value));
                     }
                 }
 
-                return category;
+                return _category;
             }
-        }        
-    
+        }
+
 
         public override string MatchedDN
         {
@@ -750,7 +754,7 @@ namespace System.DirectoryServices.Protocols {
                 throw new NotSupportedException(Res.GetString(Res.NotSupportOnDsmlErrRes));
             }
         }
-        
+
         public override ResultCode ResultCode
         {
             get
@@ -766,7 +770,7 @@ namespace System.DirectoryServices.Protocols {
                 throw new NotSupportedException(Res.GetString(Res.NotSupportOnDsmlErrRes));
             }
         }
- 
+
 
         public override Uri[] Referral
         {
@@ -774,11 +778,12 @@ namespace System.DirectoryServices.Protocols {
             {
                 throw new NotSupportedException(Res.GetString(Res.NotSupportOnDsmlErrRes));
             }
-        }    
+        }
     }
 
-    public class DsmlAuthResponse :DirectoryResponse{
-        internal DsmlAuthResponse(XmlNode node) : base(node) {}
+    public class DsmlAuthResponse : DirectoryResponse
+    {
+        internal DsmlAuthResponse(XmlNode node) : base(node) { }
     }
 }
 

@@ -1,3 +1,6 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 /*++
 
@@ -5,7 +8,6 @@ Copyright (c) 2004  Microsoft Corporation
 
 Module Name:
 
-    RangeRetriever.cs
 
 Abstract:
 
@@ -38,8 +40,8 @@ namespace System.DirectoryServices.AccountManagement
 #pragma warning disable 618    // Have not migrated to v4 transparency yet
     [System.Security.SecurityCritical(System.Security.SecurityCriticalScope.Everything)]
 #pragma warning restore 618
-    [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.Assert, Unrestricted=true)]
-    class RangeRetriever : CollectionBase, IEnumerable, IEnumerator, IDisposable
+    [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.Assert, Unrestricted = true)]
+    internal class RangeRetriever : CollectionBase, IEnumerable, IEnumerator, IDisposable
     {
         /// 
         /// <summary>
@@ -54,66 +56,66 @@ namespace System.DirectoryServices.AccountManagement
         /// 
         public RangeRetriever(DirectoryEntry de, string propertyName, bool disposeDirEntry)
         {
-            GlobalDebug.WriteLineIf(GlobalDebug.Info, "RangeRetriever", "RangeRetriever: de.Path={0}, propertyName={1}", de.Path, propertyName);                        
-        
-            this.de = de;
-            this.propertyName = propertyName;
-            this.disposeDirEntry = disposeDirEntry;
+            GlobalDebug.WriteLineIf(GlobalDebug.Info, "RangeRetriever", "RangeRetriever: de.Path={0}, propertyName={1}", de.Path, propertyName);
+
+            _de = de;
+            _propertyName = propertyName;
+            _disposeDirEntry = disposeDirEntry;
         }
 
         new public IEnumerator GetEnumerator()
         {
-                return this;
+            return this;
         }
 
         public void Reset()
         {
-            GlobalDebug.WriteLineIf(GlobalDebug.Info, "RangeRetriever", "Reset");                        
-        
-            this.endReached = false;
-            this.lowRange = 0;
-            this.currentResult = null;
+            GlobalDebug.WriteLineIf(GlobalDebug.Info, "RangeRetriever", "Reset");
+
+            _endReached = false;
+            _lowRange = 0;
+            _currentResult = null;
             //this.currentEnumerator = null;
-            this.currentIndex = 0;
+            _currentIndex = 0;
         }
 
         public bool MoveNext()
         {
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "RangeRetriever", "Entering MoveNext");
 
-            if (endReached)
+            if (_endReached)
                 return false;
 
             // Determine if we have already visited the current object.
-            if (currentIndex < InnerList.Count)
+            if (_currentIndex < InnerList.Count)
             {
-                this.currentResult = InnerList[currentIndex];
-                currentIndex++;
+                _currentResult = InnerList[_currentIndex];
+                _currentIndex++;
                 return true;
             }
-            else if (cacheFilled)
+            else if (_cacheFilled)
             {
                 // We have just walked the entire cache.  No need to visit the directory
                 // since we cached everything that is out there.
                 return false;
             }
 
-            if (!endReached && this.currentEnumerator == null)
+            if (!_endReached && _currentEnumerator == null)
             {
                 // First time we're being called
                 GlobalDebug.WriteLineIf(GlobalDebug.Info, "RangeRetriever", "MoveNext: first time");
-                
-                this.currentEnumerator = GetNextChunk();
 
-                if (this.currentEnumerator == null)
+                _currentEnumerator = GetNextChunk();
+
+                if (_currentEnumerator == null)
                 {
-                    GlobalDebug.WriteLineIf(GlobalDebug.Info, "RangeRetriever", "MoveNext: got null enumerator for first time");                
-                    endReached = true;
+                    GlobalDebug.WriteLineIf(GlobalDebug.Info, "RangeRetriever", "MoveNext: got null enumerator for first time");
+                    _endReached = true;
                 }
             }
 
 
-            if (endReached)
+            if (_endReached)
                 return false;
 
             bool needToRetry;
@@ -123,26 +125,26 @@ namespace System.DirectoryServices.AccountManagement
             {
                 needToRetry = false;
 
-                f = this.currentEnumerator.MoveNext();
+                f = _currentEnumerator.MoveNext();
 
                 if (f)
                 {
                     // Got a result, prepare to return it
-                    this.currentResult = this.currentEnumerator.Current;
-                    GlobalDebug.WriteLineIf(GlobalDebug.Info, "RangeRetriever", "MoveNext: got a result '{0}'", this.currentResult.ToString());
+                    _currentResult = _currentEnumerator.Current;
+                    GlobalDebug.WriteLineIf(GlobalDebug.Info, "RangeRetriever", "MoveNext: got a result '{0}'", _currentResult.ToString());
                 }
                 else
                 {
                     // Ran out of results in this range, try the next chunk
-                    GlobalDebug.WriteLineIf(GlobalDebug.Info, "RangeRetriever", "MoveNext: retrieving next range");                    
-                    this.currentEnumerator = GetNextChunk();
+                    GlobalDebug.WriteLineIf(GlobalDebug.Info, "RangeRetriever", "MoveNext: retrieving next range");
+                    _currentEnumerator = GetNextChunk();
 
-                    if (this.currentEnumerator == null)
+                    if (_currentEnumerator == null)
                     {
                         // No more chunks remain
-                        GlobalDebug.WriteLineIf(GlobalDebug.Info, "RangeRetriever", "MoveNext: end reached");                    
-                        endReached = true;
-                        cacheFilled = cacheValues; //Set cachedFilled boolean to cacheValues flags.
+                        GlobalDebug.WriteLineIf(GlobalDebug.Info, "RangeRetriever", "MoveNext: end reached");
+                        _endReached = true;
+                        _cacheFilled = _cacheValues; //Set cachedFilled boolean to cacheValues flags.
                     }
                     else
                     {
@@ -153,13 +155,13 @@ namespace System.DirectoryServices.AccountManagement
             }
             while (needToRetry);
 
-            if ( f )
+            if (f)
             {
-                if (cacheValues)
+                if (_cacheValues)
                 {
-                    InnerList.Add(this.currentResult);
+                    InnerList.Add(_currentResult);
                 }
-                currentIndex++;
+                _currentIndex++;
             }
 
             return f;
@@ -167,65 +169,65 @@ namespace System.DirectoryServices.AccountManagement
 
         void IDisposable.Dispose()
         {
-            if (!this.disposed)
+            if (!_disposed)
             {
-                if (this.disposeDirEntry)
+                if (_disposeDirEntry)
                 {
-                    this.de.Dispose();
+                    _de.Dispose();
                 }
             }
-            this.disposed = true;
+            _disposed = true;
         }
 
         // returns null if no more results
-        IEnumerator GetNextChunk()
+        private IEnumerator GetNextChunk()
         {
             string rangedAttribute = String.Format(
                                         CultureInfo.InvariantCulture,
                                         "{0};range={1}-*",
-                                        this.propertyName, 
-                                        this.lowRange);
+                                        _propertyName,
+                                        _lowRange);
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "RangeRetriever", "GetNextChunk: rangedAttribute={0}", rangedAttribute);
 
             try
             {
                 // Pull in the next chunk of results
-                this.de.RefreshCache(new string[]{rangedAttribute, this.propertyName});
+                _de.RefreshCache(new string[] { rangedAttribute, _propertyName });
             }
             catch (System.Runtime.InteropServices.COMException e)
             {
                 if (e.ErrorCode == unchecked((int)0x80072020))
                 {
                     // ran out of results to retrieve
-                    GlobalDebug.WriteLineIf(GlobalDebug.Info, "RangeRetriever", "GetNextChunk: no more results");                 
+                    GlobalDebug.WriteLineIf(GlobalDebug.Info, "RangeRetriever", "GetNextChunk: no more results");
                     return null;
                 }
 
                 // unknown failure, don't want to suppress it
                 GlobalDebug.WriteLineIf(GlobalDebug.Error, "RangeRetriever", "GetNextChunk: caught COMException, ErrorCode={0}", e.ErrorCode);
-                
+
                 throw;
             }
-            
-            PropertyValueCollection pvc = this.de.Properties[this.propertyName];
+
+            PropertyValueCollection pvc = _de.Properties[_propertyName];
 
             if (pvc == null || pvc.Count == 0)
             {
                 // No results (the property may have been empty)
-                GlobalDebug.WriteLineIf(GlobalDebug.Info, "RangeRetriever", "GetNextChunk: empty property?");                
+                GlobalDebug.WriteLineIf(GlobalDebug.Info, "RangeRetriever", "GetNextChunk: empty property?");
                 return null;
             }
             else
             {
-                this.lowRange = this.lowRange + pvc.Count;
+                _lowRange = _lowRange + pvc.Count;
 
                 GlobalDebug.WriteLineIf(GlobalDebug.Info,
                                         "RangeRetriever",
                                         "GetNextChunk: new lowRange={0}",
-                                        this.lowRange);
-            
+                                        _lowRange);
+
                 return pvc.GetEnumerator();
-            }                                                
+            }
         }
 
         /// 
@@ -237,38 +239,38 @@ namespace System.DirectoryServices.AccountManagement
         /// </remarks>
         public bool CacheValues
         {
-            set { cacheValues = value; }
+            set { _cacheValues = value; }
         }
 
         public object Current
         {
             get
-            {            
+            {
                 // Technically, should throw an InvalidOperationException if the enumerator is positioned before 
                 // the beginning or after the end, but this will only be used internally.
-                Debug.Assert(this.currentResult != null && this.endReached == false);
-                GlobalDebug.WriteLineIf(GlobalDebug.Info, "RangeRetriever", "Current: currentResult={0}", this.currentResult.ToString());                        
-                return this.currentResult;
+                Debug.Assert(_currentResult != null && _endReached == false);
+                GlobalDebug.WriteLineIf(GlobalDebug.Info, "RangeRetriever", "Current: currentResult={0}", _currentResult.ToString());
+                return _currentResult;
             }
         }
 
-        bool disposed = false;                  // keeps track of whether this object was disposed or not.
-        bool disposeDirEntry = false;           // If set to true then the RangeRetriever object will own the directory entry
-                                                // supplied to it in the constructor and will be responsible for disposing this entry
-                                                // when Dispose() is called on this object.
-        bool cacheValues = false;               // If set to true then the attribute values will be cached in the InnerList
-                                                // By default caching is turned off.
-        DirectoryEntry de;                      // the DirectoryEntry whose property we're retrieving the values of
-        string propertyName;                    // the property we're retrieving the values of
+        private bool _disposed = false;                  // keeps track of whether this object was disposed or not.
+        private bool _disposeDirEntry = false;           // If set to true then the RangeRetriever object will own the directory entry
+                                                        // supplied to it in the constructor and will be responsible for disposing this entry
+                                                        // when Dispose() is called on this object.
+        private bool _cacheValues = false;               // If set to true then the attribute values will be cached in the InnerList
+                                                        // By default caching is turned off.
+        private DirectoryEntry _de;                      // the DirectoryEntry whose property we're retrieving the values of
+        private string _propertyName;                    // the property we're retrieving the values of
 
-        bool endReached = false;                // if true, all property values (from all chunks) have been retrieved
+        private bool _endReached = false;                // if true, all property values (from all chunks) have been retrieved
 
-        int lowRange = 0;                       // the lower-bound of the current chunk
-        int currentIndex = 0;                   // Index of the next object we will return.
-        bool cacheFilled = false;               // Set to true after we have visited all attributes in the directory
+        private int _lowRange = 0;                       // the lower-bound of the current chunk
+        private int _currentIndex = 0;                   // Index of the next object we will return.
+        private bool _cacheFilled = false;               // Set to true after we have visited all attributes in the directory
 
-        object currentResult = null;            // the property value the enumerator is positioned at
-        IEnumerator currentEnumerator = null;   // the PropertyValueCollection enumerator for the current chunk
+        private object _currentResult = null;            // the property value the enumerator is positioned at
+        private IEnumerator _currentEnumerator = null;   // the PropertyValueCollection enumerator for the current chunk
     }
 }
 

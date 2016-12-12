@@ -1,10 +1,13 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
 /*++
 
 Copyright (c) 2004  Microsoft Corporation
 
 Module Name:
 
-    ADUtils.cs
 
 Abstract:
 
@@ -27,40 +30,39 @@ using System.Security.Principal;
 
 namespace System.DirectoryServices.AccountManagement
 {
-    class ADUtils
+    internal class ADUtils
     {
-
         // To stop the compiler from autogenerating a constructor for this class
-        private ADUtils() {}
+        private ADUtils() { }
 
         // We use this, rather than simply testing DirectoryEntry.SchemaClassName, because we don't
         // want to miss objects that are of a derived type.
         // Note that, since computer is a derived class of user in AD, if you don't want to confuse
         // computers with users, you must test an object for computer status before testing it for
         // user status.
-        [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.Assert, Unrestricted=true)]    
+        [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.Assert, Unrestricted = true)]
         [System.Security.SecurityCritical]
         static internal bool IsOfObjectClass(DirectoryEntry de, string classToCompare)
-        {   
+        {
             return de.Properties["objectClass"].Contains(classToCompare);
-        }        
+        }
 
-        [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.Assert, Unrestricted=true)]    
+        [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.Assert, Unrestricted = true)]
         [System.Security.SecurityCritical]
         static internal bool IsOfObjectClass(SearchResult sr, string classToCompare)
-        {   
+        {
             return sr.Properties["objectClass"].Contains(classToCompare);
-        }        
+        }
 
         // Retrieves the name of the actual server that the DirectoryEntry is connected to
-        [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.Assert, Unrestricted=true)]    
+        [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.Assert, Unrestricted = true)]
         [System.Security.SecurityCritical]
         static internal string GetServerName(DirectoryEntry de)
         {
-            UnsafeNativeMethods.IAdsObjectOptions objOptions = (UnsafeNativeMethods.IAdsObjectOptions) de.NativeObject;
-            return (string) objOptions.GetOption(0 /* == ADS_OPTION_SERVERNAME */);
+            UnsafeNativeMethods.IAdsObjectOptions objOptions = (UnsafeNativeMethods.IAdsObjectOptions)de.NativeObject;
+            return (string)objOptions.GetOption(0 /* == ADS_OPTION_SERVERNAME */);
         }
-        
+
 
         // This routine escapes values used in DNs, per RFC 2253 and ADSI escaping rules.
         // It treats its input as a unescaped literal and produces a LDAP string that represents that literal
@@ -111,7 +113,7 @@ namespace System.DirectoryServices.AccountManagement
             for (int i = startingIndex; i < dnComponent.Length; i++)
             {
                 char c = dnComponent[i];
-            
+
                 switch (c)
                 {
                     case ',':
@@ -149,13 +151,13 @@ namespace System.DirectoryServices.AccountManagement
                     default:
                         sb.Append(c.ToString());
                         break;
-                }   
+                }
             }
 
             // If it ends in a space, escape that space (clause two)
-            if (sb[sb.Length-1] == ' ')
+            if (sb[sb.Length - 1] == ' ')
             {
-                sb.Remove(sb.Length-1, 1);
+                sb.Remove(sb.Length - 1, 1);
                 sb.Append(@"\ ");
             }
 
@@ -203,12 +205,12 @@ namespace System.DirectoryServices.AccountManagement
                     default:
                         sb.Append(c.ToString());
                         break;
-                }   
+                }
             }
 
             GlobalDebug.WriteLineIf(
                             GlobalDebug.Info,
-                            "ADUtils",                            
+                            "ADUtils",
                             "EscapeRFC2254SpecialChars: mapped '{0}' to '{1}'",
                             s,
                             sb.ToString());
@@ -239,7 +241,7 @@ namespace System.DirectoryServices.AccountManagement
             //   \) --> \29
             //   x  --> x       (where x is anything else)
             //   \x --> x       (where x is anything else)        
-        
+
             StringBuilder sb = new StringBuilder(papiString.Length);
 
             bool escapeMode = false;
@@ -271,7 +273,7 @@ namespace System.DirectoryServices.AccountManagement
                 else
                 {
                     escapeMode = false;
-                
+
                     switch (c)
                     {
                         case '(':
@@ -344,13 +346,13 @@ namespace System.DirectoryServices.AccountManagement
 
         static internal Int64 LargeIntToInt64(UnsafeNativeMethods.IADsLargeInteger largeInt)
         {
-            uint lowPart = (uint) largeInt.LowPart;
-            uint highPart = (uint) largeInt.HighPart;
-            Int64 i = (long) (((ulong) lowPart) | (((ulong)highPart) << 32));
+            uint lowPart = (uint)largeInt.LowPart;
+            uint highPart = (uint)largeInt.HighPart;
+            Int64 i = (long)(((ulong)lowPart) | (((ulong)highPart) << 32));
 
             return i;
         }
-        
+
 
         // Transform from hex string ("1AFF") to LDAP hex string ("\1A\FF").
         // Returns null if input string is not a valid hex string.
@@ -360,19 +362,19 @@ namespace System.DirectoryServices.AccountManagement
 
             if (s.Length % 2 != 0)
             {
-                GlobalDebug.WriteLineIf(GlobalDebug.Warn, "ADUtils", "HexStringToLdapHexString: string has bad length " + s.Length);                        
+                GlobalDebug.WriteLineIf(GlobalDebug.Warn, "ADUtils", "HexStringToLdapHexString: string has bad length " + s.Length);
                 return null;
             }
-            
-            StringBuilder sb = new StringBuilder();
-        
-            for (int i=0; i < (s.Length)/2; i++)
-            {
-                char firstChar = s[i*2];
-                char secondChar = s[(i*2)+1];
 
-                if ( ((firstChar >= '0' && firstChar <= '9') || (firstChar >= 'A' && firstChar <= 'F') || (firstChar >= 'a' && firstChar <= 'f')) &&
-                     ((secondChar >= '0' && secondChar <= '9') || (secondChar >= 'A' && secondChar <= 'F') || (secondChar >= 'a' && secondChar <= 'f')) )
+            StringBuilder sb = new StringBuilder();
+
+            for (int i = 0; i < (s.Length) / 2; i++)
+            {
+                char firstChar = s[i * 2];
+                char secondChar = s[(i * 2) + 1];
+
+                if (((firstChar >= '0' && firstChar <= '9') || (firstChar >= 'A' && firstChar <= 'F') || (firstChar >= 'a' && firstChar <= 'f')) &&
+                     ((secondChar >= '0' && secondChar <= '9') || (secondChar >= 'A' && secondChar <= 'F') || (secondChar >= 'a' && secondChar <= 'f')))
                 {
                     sb.Append(@"\");
                     sb.Append(firstChar);
@@ -381,7 +383,7 @@ namespace System.DirectoryServices.AccountManagement
                 else
                 {
                     // not a hex character
-                    GlobalDebug.WriteLineIf(GlobalDebug.Warn, "ADUtils", "HexStringToLdapHexString: invalid string " + s);                                        
+                    GlobalDebug.WriteLineIf(GlobalDebug.Warn, "ADUtils", "HexStringToLdapHexString: invalid string " + s);
                     return null;
                 }
             }
@@ -400,7 +402,7 @@ namespace System.DirectoryServices.AccountManagement
             string p1DnsForestName = ((ADStoreCtx)p1.GetStoreCtxToUse()).DnsForestName;
             string p2DnsForestName = ((ADStoreCtx)p2.GetStoreCtxToUse()).DnsForestName;
 
-            return (String.Compare(p1DnsForestName, p2DnsForestName, StringComparison.OrdinalIgnoreCase ) == 0);
+            return (String.Compare(p1DnsForestName, p2DnsForestName, StringComparison.OrdinalIgnoreCase) == 0);
         }
 
         /// 
@@ -426,14 +428,13 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-        [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.Assert, Unrestricted=true)]
+        [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.Assert, Unrestricted = true)]
         [System.Security.SecurityCritical]
         static internal Principal DirectoryEntryAsPrincipal(DirectoryEntry de, ADStoreCtx storeCtx)
-        {            
-
-             if (ADUtils.IsOfObjectClass(de, "computer") ||
-                ADUtils.IsOfObjectClass(de, "user") ||
-                ADUtils.IsOfObjectClass(de, "group"))
+        {
+            if (ADUtils.IsOfObjectClass(de, "computer") ||
+               ADUtils.IsOfObjectClass(de, "user") ||
+               ADUtils.IsOfObjectClass(de, "group"))
             {
                 return storeCtx.GetAsPrincipal(de, null);
             }
@@ -445,33 +446,29 @@ namespace System.DirectoryServices.AccountManagement
             {
                 return storeCtx.GetAsPrincipal(de, null);
             }
- 
         }
 
 
-        [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.Assert, Unrestricted=true)]
+        [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.Assert, Unrestricted = true)]
         [System.Security.SecurityCritical]
         static internal Principal SearchResultAsPrincipal(SearchResult sr, ADStoreCtx storeCtx, object discriminant)
         {
-
-             
-             if (ADUtils.IsOfObjectClass(sr, "computer") ||
-                ADUtils.IsOfObjectClass(sr, "user") ||
-                ADUtils.IsOfObjectClass(sr, "group"))
+            if (ADUtils.IsOfObjectClass(sr, "computer") ||
+               ADUtils.IsOfObjectClass(sr, "user") ||
+               ADUtils.IsOfObjectClass(sr, "group"))
             {
                 return storeCtx.GetAsPrincipal(sr, discriminant);
             }
             else if (ADUtils.IsOfObjectClass(sr, "foreignSecurityPrincipal"))
-            {                
+            {
                 return storeCtx.ResolveCrossStoreRefToPrincipal(sr.GetDirectoryEntry());
             }
             else
             {
                 return storeCtx.GetAsPrincipal(sr, discriminant);
             }
- 
         }
-        
+
         // This function is used to check if we will be able to lookup a SID from the 
         // target domain by targeting the local computer.  This is done by checking for either
         // a outbound or bidirectional trust between the computers domain and the target
@@ -490,31 +487,29 @@ namespace System.DirectoryServices.AccountManagement
         [System.Security.SecurityCritical]
         static internal bool VerifyOutboundTrust(string targetDomain, string username, string password)
         {
-
             Domain currentDom = null;
-            
+
             try
             {
                 currentDom = Domain.GetComputerDomain();
-            }            
+            }
             catch (ActiveDirectoryObjectNotFoundException)
             {
                 // The computer is not domain joined so there cannot be a trust...
-                return false;            
+                return false;
             }
             catch (System.Security.Authentication.AuthenticationException)
             {
                 // The computer is domain joined but we are running with creds that can't access it.  We can't determine trust.
-                return false;            
+                return false;
             }
 
 
             // If this is the same domain then we have a trust.
             // Domain.Name always returns full dns name.
             // function is always supplied with a full DNS domain name.
-            if (String.Compare(currentDom.Name , targetDomain, StringComparison.OrdinalIgnoreCase) == 0)
+            if (String.Compare(currentDom.Name, targetDomain, StringComparison.OrdinalIgnoreCase) == 0)
             {
-
                 return true;
             }
 
@@ -534,7 +529,7 @@ namespace System.DirectoryServices.AccountManagement
             // Since we were able to retrive the computer domain above we should be able to access the current forest here.
             Forest currentForest = Forest.GetCurrentForest();
 
-            Domain targetdom = Domain.GetDomain(new DirectoryContext(DirectoryContextType.Domain, targetDomain, username, password ));
+            Domain targetdom = Domain.GetDomain(new DirectoryContext(DirectoryContextType.Domain, targetDomain, username, password));
 
             try
             {
@@ -550,7 +545,6 @@ namespace System.DirectoryServices.AccountManagement
             }
 
             return false;
-
         }
 
         // <SecurityKernel Critical="True" Ring="0">
@@ -559,28 +553,25 @@ namespace System.DirectoryServices.AccountManagement
         // </SecurityKernel>
         [System.Security.SecurityCritical]
         static internal string RetriveWkDn(DirectoryEntry deBase, string defaultNamingContext, string serverName, Byte[] wellKnownContainerGuid)
-        {            
-/*
-                bool w2k3Supported  = false;
-                if ( w2k3Supported )
+        {
+            /*
+                            bool w2k3Supported  = false;
+                            if ( w2k3Supported )
+                            {
+                                return @"LDAP://" + this.UserSuppliedServerName + @"/<WKGUID= " + Constants.GUID_FOREIGNSECURITYPRINCIPALS_CONTAINER_W + @"," + this.DefaultNamingContext + @">";
+                            }
+                */
+            PropertyValueCollection wellKnownObjectValues = deBase.Properties["wellKnownObjects"];
+
+            foreach (UnsafeNativeMethods.IADsDNWithBinary value in wellKnownObjectValues)
+            {
+                if (Utils.AreBytesEqual(wellKnownContainerGuid, (byte[])value.BinaryValue))
                 {
-                    return @"LDAP://" + this.UserSuppliedServerName + @"/<WKGUID= " + Constants.GUID_FOREIGNSECURITYPRINCIPALS_CONTAINER_W + @"," + this.DefaultNamingContext + @">";
+                    return ("LDAP://" + serverName + @"/" + value.DNString);
                 }
-    */            
-                PropertyValueCollection wellKnownObjectValues = deBase.Properties["wellKnownObjects"];
+            }
 
-                foreach (UnsafeNativeMethods.IADsDNWithBinary value in wellKnownObjectValues)
-                {                
-                    if (Utils.AreBytesEqual(wellKnownContainerGuid, (byte[]) value.BinaryValue))
-                    {                    
-                        return (  "LDAP://" + serverName + @"/" + value.DNString );
-                    }
-                }
-
-                return null;
-        }        
-
-
-        
+            return null;
+        }
     }
 }

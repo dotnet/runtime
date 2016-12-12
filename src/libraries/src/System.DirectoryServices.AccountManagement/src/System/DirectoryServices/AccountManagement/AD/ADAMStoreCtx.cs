@@ -1,3 +1,7 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
 using System;
 using System.Diagnostics;
 using System.Collections;
@@ -16,16 +20,15 @@ namespace System.DirectoryServices.AccountManagement
 #pragma warning disable 618    // Have not migrated to v4 transparency yet
     [System.Security.SecurityCritical(System.Security.SecurityCriticalScope.Everything)]
 #pragma warning restore 618
-    [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.Assert, Unrestricted=true)]
-    partial class ADAMStoreCtx : ADStoreCtx
-        {
+    [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.Assert, Unrestricted = true)]
+    internal partial class ADAMStoreCtx : ADStoreCtx
+    {
+        private const int mappingIndex = 1;
+        private List<string> _cachedBindableObjectList = null;
+        private string _cachedBindableObjectFilter = null;
+        private object _objectListLock = new object();
 
-        const int mappingIndex = 1;
-        private List<string>cachedBindableObjectList = null;
-        private string cachedBindableObjectFilter = null;
-        object objectListLock = new object();
-        
-        public ADAMStoreCtx(DirectoryEntry ctxBase, bool ownCtxBase, string username, string password, string serverName, ContextOptions options) : base(ctxBase , ownCtxBase, username, password, options)
+        public ADAMStoreCtx(DirectoryEntry ctxBase, bool ownCtxBase, string username, string password, string serverName, ContextOptions options) : base(ctxBase, ownCtxBase, username, password, options)
         {
             this.userSuppliedServerName = serverName;
         }
@@ -35,65 +38,63 @@ namespace System.DirectoryServices.AccountManagement
         //
         static ADAMStoreCtx()
         {
-                LoadFilterMappingTable(mappingIndex,filterPropertiesTableRaw);
-                LoadPropertyMappingTable(mappingIndex,propertyMappingTableRaw);      
+            LoadFilterMappingTable(mappingIndex, s_filterPropertiesTableRaw);
+            LoadPropertyMappingTable(mappingIndex, s_propertyMappingTableRaw);
 
 
-                if ( NonPresentAttrDefaultStateMapping == null )
-                    NonPresentAttrDefaultStateMapping = new Dictionary<string,bool>();
+            if (NonPresentAttrDefaultStateMapping == null)
+                NonPresentAttrDefaultStateMapping = new Dictionary<string, bool>();
 
-                for (int i=0; i<PresenceStateTable.GetLength(0);i++)
-                {
-                    string attributeName = PresenceStateTable[i, 0] as string;
-                    string defaultState = PresenceStateTable[i, 1] as string;
-                    NonPresentAttrDefaultStateMapping.Add(attributeName,(defaultState == "FALSE") ? false: true);
-                }
-                
+            for (int i = 0; i < s_presenceStateTable.GetLength(0); i++)
+            {
+                string attributeName = s_presenceStateTable[i, 0] as string;
+                string defaultState = s_presenceStateTable[i, 1] as string;
+                NonPresentAttrDefaultStateMapping.Add(attributeName, (defaultState == "FALSE") ? false : true);
+            }
         }
 
 
-        
+
         protected override int MappingTableIndex
         {
-            get 
+            get
             {
                 return mappingIndex;
-            }    
+            }
         }
 
-        protected internal override void InitializeNewDirectoryOptions( DirectoryEntry newDeChild )
+        protected internal override void InitializeNewDirectoryOptions(DirectoryEntry newDeChild)
         {
             newDeChild.Options.PasswordPort = ctxBase.Options.PasswordPort;
         }
-        
+
         protected override void SetAuthPrincipalEnableStatus(AuthenticablePrincipal ap, bool enable)
         {
             Debug.Assert(ap.fakePrincipal == false);
 
             bool acctDisabled;
-            DirectoryEntry de = (DirectoryEntry) ap.UnderlyingObject;
+            DirectoryEntry de = (DirectoryEntry)ap.UnderlyingObject;
 
             if (de.Properties["msDS-UserAccountDisabled"].Count > 0)
             {
                 Debug.Assert(de.Properties["msDS-UserAccountDisabled"].Count == 1);
-                
-                acctDisabled = (bool) de.Properties["msDS-UserAccountDisabled"][0];
-                                
+
+                acctDisabled = (bool)de.Properties["msDS-UserAccountDisabled"][0];
             }
             else
             {
                 // Since we loaded the properties, we should have it.  Perhaps we don't have access
                 // to it.  In that case, we don't want to blindly overwrite whatever other bits might be there.
                 GlobalDebug.WriteLineIf(GlobalDebug.Warn, "ADAMStoreCtx", "SetAuthPrincipalEnableStatus: can't read userAccountControl");
-                
+
                 throw new PrincipalOperationException(
                             StringResources.ADStoreCtxUnableToReadExistingAccountControlFlagsToEnable);
             }
 
-            if ( (enable && acctDisabled) || (!enable && !acctDisabled))
+            if ((enable && acctDisabled) || (!enable && !acctDisabled))
             {
                 GlobalDebug.WriteLineIf(GlobalDebug.Warn, "ADAMStoreCtx", "SetAuthPrincipalEnableStatus: Enabling (old enabled ={0} new enabled= {1})", !acctDisabled, enable);
-                
+
                 WriteAttribute<bool>(ap, "msDS-UserAccountDisabled", !enable);
             }
         }
@@ -101,7 +102,7 @@ namespace System.DirectoryServices.AccountManagement
         // Must be called inside of lock(domainInfoLock)
         override protected void LoadDomainInfo()
         {
-            GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADStoreCtx", "LoadComputerInfo");           
+            GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADStoreCtx", "LoadComputerInfo");
 
             Debug.Assert(this.ctxBase != null);
 
@@ -111,7 +112,7 @@ namespace System.DirectoryServices.AccountManagement
             this.dnsHostName = ADUtils.GetServerName(this.ctxBase);
             // Treat the user supplied server name as the domain and forest name...
             this.domainFlatName = userSuppliedServerName;
-            this.forestDnsName = userSuppliedServerName; 
+            this.forestDnsName = userSuppliedServerName;
             this.domainDnsName = userSuppliedServerName;
 
             //
@@ -131,37 +132,37 @@ namespace System.DirectoryServices.AccountManagement
                     }
                 }
             }
-    
+
 
             //
             // User supplied name
             //
             UnsafeNativeMethods.Pathname pathCracker = new UnsafeNativeMethods.Pathname();
-            UnsafeNativeMethods.IADsPathname pathName = (UnsafeNativeMethods.IADsPathname) pathCracker;
+            UnsafeNativeMethods.IADsPathname pathName = (UnsafeNativeMethods.IADsPathname)pathCracker;
 
             pathName.Set(this.ctxBase.Path, 1 /* ADS_SETTYPE_FULL */);
 
             try
             {
                 this.userSuppliedServerName = pathName.Retrieve(9 /*ADS_FORMAT_SERVER */);
-                GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADStoreCtx", "LoadComputerInfo: using user-supplied name {0}", this.userSuppliedServerName);                
+                GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADStoreCtx", "LoadComputerInfo: using user-supplied name {0}", this.userSuppliedServerName);
             }
             catch (COMException e)
             {
-                if (((uint)e.ErrorCode) == ((uint) 0x80005000))  // E_ADS_BAD_PATHNAME
+                if (((uint)e.ErrorCode) == ((uint)0x80005000))  // E_ADS_BAD_PATHNAME
                 {
                     // Serverless path
-                    GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADStoreCtx", "LoadComputerInfo: using empty string as user-supplied name");                    
+                    GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADStoreCtx", "LoadComputerInfo: using empty string as user-supplied name");
                     this.userSuppliedServerName = "";
                 }
                 else
                 {
-                    GlobalDebug.WriteLineIf(GlobalDebug.Error, 
-                                            "ADStoreCtx", 
+                    GlobalDebug.WriteLineIf(GlobalDebug.Error,
+                                            "ADStoreCtx",
                                             "LoadComputerInfo: caught COMException {0} {1} looking for user-supplied name",
                                             e.ErrorCode,
                                             e.Message);
-                                            
+
                     throw;
                 }
             }
@@ -175,10 +176,10 @@ namespace System.DirectoryServices.AccountManagement
 
             Debug.Assert(p.UnderlyingObject != null);
 
-            DirectoryEntry principalDE = (DirectoryEntry) p.UnderlyingObject;
+            DirectoryEntry principalDE = (DirectoryEntry)p.UnderlyingObject;
 
-            string principalDN = (string) principalDE.Properties["distinguishedName"].Value;                  
-            return ( new TokenGroupSet(principalDN, this, true ) );
+            string principalDN = (string)principalDE.Properties["distinguishedName"].Value;
+            return (new TokenGroupSet(principalDN, this, true));
         }
 
         // modifies the connections settings for the upcoming password operation..
@@ -188,37 +189,35 @@ namespace System.DirectoryServices.AccountManagement
         // We need to tell ADSI to send a clear text password which is not actually clear text because
         // the initial connection is encrypted with sign + seal.  Once this call is made the user needs to call CleanupAfterPasswordModification
         // To reset the options that were modified.
-        void SetupPasswordModification(AuthenticablePrincipal p)
+        private void SetupPasswordModification(AuthenticablePrincipal p)
         {
-            DirectoryEntry de = (DirectoryEntry) p.UnderlyingObject;
+            DirectoryEntry de = (DirectoryEntry)p.UnderlyingObject;
 
-            if (((this.contextOptions & ContextOptions.Signing) != 0 ) &&
-                 ((this.contextOptions & ContextOptions.Sealing) != 0 ))
+            if (((this.contextOptions & ContextOptions.Signing) != 0) &&
+                 ((this.contextOptions & ContextOptions.Sealing) != 0))
             {
                 try
                 {
                     de.Invoke("SetOption", new object[]{UnsafeNativeMethods.ADS_OPTION_ENUM.ADS_OPTION_PASSWORD_METHOD,
                                                                           UnsafeNativeMethods.ADS_PASSWORD_ENCODING_ENUM.ADS_PASSWORD_ENCODE_CLEAR});
-                    
-                    de.Options.PasswordPort = p.Context.ServerInformation.portLDAP; 
-                    
+
+                    de.Options.PasswordPort = p.Context.ServerInformation.portLDAP;
                 }
                 catch (System.Reflection.TargetInvocationException e)
                 {
                     GlobalDebug.WriteLineIf(GlobalDebug.Error, "ADAMStoreCtx", "SetupPasswordModification: caught TargetInvocationException with message " + e.Message);
-                
-                    if (e.InnerException is System.Runtime.InteropServices.COMException) 
+
+                    if (e.InnerException is System.Runtime.InteropServices.COMException)
                     {
-                        throw ( ExceptionHelper.GetExceptionFromCOMException((System.Runtime.InteropServices.COMException)e.InnerException));
+                        throw (ExceptionHelper.GetExceptionFromCOMException((System.Runtime.InteropServices.COMException)e.InnerException));
                     }
 
                     // Unknown exception.  We don't want to suppress it.
                     throw;
                 }
             }
-
         }
-        
+
         internal override void SetPassword(AuthenticablePrincipal p, string newPassword)
         {
             Debug.Assert(p.fakePrincipal == false);
@@ -226,21 +225,20 @@ namespace System.DirectoryServices.AccountManagement
             Debug.Assert(p != null);
             Debug.Assert(newPassword != null);  // but it could be an empty string
 
-            DirectoryEntry de = (DirectoryEntry) p.UnderlyingObject;
-            Debug.Assert(de != null);           
+            DirectoryEntry de = (DirectoryEntry)p.UnderlyingObject;
+            Debug.Assert(de != null);
 
             SetupPasswordModification(p);
-            
+
             SDSUtils.SetPassword(de, newPassword);
-            
         }
-        
-		/// <summary>
-		/// Change the password on the principal
-		/// </summary>
-		/// <param name="p">Principal to modify</param>
-		/// <param name="oldPassword">Current password</param>
-		/// <param name="newPassword">New password</param>
+
+        /// <summary>
+        /// Change the password on the principal
+        /// </summary>
+        /// <param name="p">Principal to modify</param>
+        /// <param name="oldPassword">Current password</param>
+        /// <param name="newPassword">New password</param>
         internal override void ChangePassword(AuthenticablePrincipal p, string oldPassword, string newPassword)
         {
             Debug.Assert(p.fakePrincipal == false);
@@ -252,13 +250,12 @@ namespace System.DirectoryServices.AccountManagement
             Debug.Assert(newPassword != null);  // but it could be an empty string
             Debug.Assert(oldPassword != null);  // but it could be an empty string
 
-            DirectoryEntry de = (DirectoryEntry) p.UnderlyingObject;
+            DirectoryEntry de = (DirectoryEntry)p.UnderlyingObject;
             Debug.Assert(de != null);
 
             SetupPasswordModification(p);
 
-            SDSUtils.ChangePassword(de, oldPassword, newPassword);   
-                       
+            SDSUtils.ChangePassword(de, oldPassword, newPassword);
         }
 
         //------------------------------------------------------------------------------------
@@ -274,21 +271,19 @@ namespace System.DirectoryServices.AccountManagement
         {
             string SchemaNamingContext;
 
-            GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADAMStoreCtx", "PopulatAuxObjectList Building object list" );
+            GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADAMStoreCtx", "PopulatAuxObjectList Building object list");
 
             try
             {
                 using (DirectoryEntry deRoot = new DirectoryEntry("LDAP://" + userSuppliedServerName + "/rootDSE", credentials == null ? null : credentials.UserName, credentials == null ? null : credentials.Password, authTypes))
                 {
-                    
                     if (deRoot.Properties["schemaNamingContext"].Count == 0)
                     {
-                        GlobalDebug.WriteLineIf(GlobalDebug.Error, "ADAMStoreCtx", "PopulatAuxObjectList Unable to read schemaNamingContrext from " + userSuppliedServerName );                    
-                        throw new PrincipalOperationException(StringResources.ADAMStoreUnableToPopulateSchemaList);                    
+                        GlobalDebug.WriteLineIf(GlobalDebug.Error, "ADAMStoreCtx", "PopulatAuxObjectList Unable to read schemaNamingContrext from " + userSuppliedServerName);
+                        throw new PrincipalOperationException(StringResources.ADAMStoreUnableToPopulateSchemaList);
                     }
-                    
-                    SchemaNamingContext = (string)deRoot.Properties["schemaNamingContext"].Value;
 
+                    SchemaNamingContext = (string)deRoot.Properties["schemaNamingContext"].Value;
                 }
 
                 using (DirectoryEntry deSCN = new DirectoryEntry("LDAP://" + userSuppliedServerName + "/" + SchemaNamingContext, credentials == null ? null : credentials.UserName, credentials == null ? null : credentials.Password, authTypes))
@@ -323,54 +318,52 @@ namespace System.DirectoryServices.AccountManagement
             }
             catch (System.Runtime.InteropServices.COMException e)
             {
-                GlobalDebug.WriteLineIf(GlobalDebug.Error, "ADAMStoreCtx", "PopulatAuxObjectList COM Exception");            
+                GlobalDebug.WriteLineIf(GlobalDebug.Error, "ADAMStoreCtx", "PopulatAuxObjectList COM Exception");
                 throw ExceptionHelper.GetExceptionFromCOMException(e);
-            }            
-
+            }
         }
-        
+
         protected override string GetObjectClassPortion(Type principalType)
         {
-            if ( principalType == typeof(AuthenticablePrincipal) || principalType == typeof(Principal))
+            if (principalType == typeof(AuthenticablePrincipal) || principalType == typeof(Principal))
             {
-                lock(objectListLock)
+                lock (_objectListLock)
                 {
-                    if ( null == cachedBindableObjectList )
+                    if (null == _cachedBindableObjectList)
                     {
-                        cachedBindableObjectList = PopulatAuxObjectList("msDS-BindableObject");
+                        _cachedBindableObjectList = PopulatAuxObjectList("msDS-BindableObject");
                     }
 
-                    if ( null == cachedBindableObjectFilter )
+                    if (null == _cachedBindableObjectFilter)
                     {
                         StringBuilder filter = new StringBuilder();
 
                         filter.Append("(&(|");
-                        foreach (string objectClass in cachedBindableObjectList)
+                        foreach (string objectClass in _cachedBindableObjectList)
                         {
                             filter.Append("(objectClass=");
                             filter.Append(objectClass);
                             filter.Append(")");
                         }
 
-                        cachedBindableObjectFilter = filter.ToString();
-                     }
+                        _cachedBindableObjectFilter = filter.ToString();
+                    }
 
-                    if ( principalType == typeof(Principal))
+                    if (principalType == typeof(Principal))
                     {
                         // IF we are searching for a principal then we also have to add Group type into the filter...                    
-                        return cachedBindableObjectFilter + "(objectClass=group))";
+                        return _cachedBindableObjectFilter + "(objectClass=group))";
                     }
                     else
                     {
-                        return cachedBindableObjectFilter + ")";
+                        return _cachedBindableObjectFilter + ")";
                     }
-                   
                 }
             }
             else
             {
                 return base.GetObjectClassPortion(principalType);
-            }            
+            }
         }
 
 
@@ -384,7 +377,7 @@ namespace System.DirectoryServices.AccountManagement
         {
             // In ADAM, there is no user account control property that needs to be initialized
             // so do nothing
-        }        
+        }
 
         //
         // Property mapping tables
@@ -396,22 +389,22 @@ namespace System.DirectoryServices.AccountManagement
         // indicates the state shown in the table.  When searching for these properties
         // If the state desired matches that default state then we also must search for 
         // non-existence of the attribute.
-        static object[,] PresenceStateTable = 
+        private static object[,] s_presenceStateTable =
         {
                 {"ms-DS-UserPasswordNotRequired", "FALSE" },
                 {"msDS-UserDontExpirePassword", "FALSE" },
                 {"ms-DS-UserEncryptedTextPasswordAllowed", "FALSE" }
         };
-        
+
         // We only list properties we map in this table.  At run-time, if we detect they set a
         // property that's not listed here when writing to AD, we throw an exception.
         //
         // When updating this table, be sure to also update LoadDirectoryEntryAttributes() to load
         // in any newly-added attributes.
-        static object[,] propertyMappingTableRaw = 
+        private static object[,] s_propertyMappingTableRaw =
         {
             // PropertyName                          AD property             Converter(LDAP->PAPI)                                    Converter(PAPI->LDAP)
-            {PropertyNames.PrincipalDescription,     "description",          new FromLdapConverterDelegate(StringFromLdapConverter),  new ToLdapConverterDelegate(StringToLdapConverter)},  
+            {PropertyNames.PrincipalDescription,     "description",          new FromLdapConverterDelegate(StringFromLdapConverter),  new ToLdapConverterDelegate(StringToLdapConverter)},
             {PropertyNames.PrincipalDisplayName,     "displayName",          new FromLdapConverterDelegate(StringFromLdapConverter),  new ToLdapConverterDelegate(StringToLdapConverter)},
             {PropertyNames.PrincipalDistinguishedName,  "distinguishedName",    new FromLdapConverterDelegate(StringFromLdapConverter), new ToLdapConverterDelegate(StringToLdapConverter)},
             {PropertyNames.PrincipalSid,  "objectSid",            new FromLdapConverterDelegate(SidFromLdapConverter),  null},
@@ -427,7 +420,7 @@ namespace System.DirectoryServices.AccountManagement
 
             {PropertyNames.GroupIsSecurityGroup,   "groupType", new FromLdapConverterDelegate(GroupTypeFromLdapConverter), new ToLdapConverterDelegate(GroupTypeToLdapConverter)},
             {PropertyNames.GroupGroupScope, "groupType", new FromLdapConverterDelegate(GroupTypeFromLdapConverter), new ToLdapConverterDelegate(GroupTypeToLdapConverter)},
-            
+
             {PropertyNames.UserGivenName,             "givenName",        new FromLdapConverterDelegate(StringFromLdapConverter),  new ToLdapConverterDelegate(StringToLdapConverter)},
             {PropertyNames.UserMiddleName,            "middleName",       new FromLdapConverterDelegate(StringFromLdapConverter),  new ToLdapConverterDelegate(StringToLdapConverter)},
             {PropertyNames.UserSurname,               "sn",               new FromLdapConverterDelegate(StringFromLdapConverter),  new ToLdapConverterDelegate(StringToLdapConverter)},
@@ -449,7 +442,7 @@ namespace System.DirectoryServices.AccountManagement
             {PropertyNames.AcctInfoHomeDirectory,         "homeDirectory",   null,     null},
             {PropertyNames.AcctInfoHomeDrive,             "homeDrive",   null,     null},
             {PropertyNames.AcctInfoScriptPath,            "scriptPath",   null,     null},
-            
+
             {PropertyNames.PwdInfoLastPasswordSet,        "pwdLastSet",           new FromLdapConverterDelegate(GenericDateTimeFromLdapConverter),     null},
             {PropertyNames.PwdInfoLastBadPasswordAttempt, "badPasswordTime",      new FromLdapConverterDelegate(GenericDateTimeFromLdapConverter),     null},
             {PropertyNames.PwdInfoPasswordNotRequired,    "ms-DS-UserPasswordNotRequired",   new FromLdapConverterDelegate(BoolFromLdapConverter),                 new ToLdapConverterDelegate(BoolToLdapConverter)},
@@ -464,7 +457,7 @@ namespace System.DirectoryServices.AccountManagement
 
         // We only list properties we support filtering on in this table.  At run-time, if we detect they set a
         // property that's not listed here, we throw an exception.
-        static object[,] filterPropertiesTableRaw = 
+        private static object[,] s_filterPropertiesTableRaw =
         {
             // QbeType                                          AD property             Converter
             {typeof(DescriptionFilter),                         "description",          new FilterConverterDelegate(StringConverter)},
@@ -472,10 +465,10 @@ namespace System.DirectoryServices.AccountManagement
             {typeof(IdentityClaimFilter),                       "",                     new FilterConverterDelegate(IdentityClaimConverter)},
             {typeof(DistinguishedNameFilter),                         "distinguishedName",          new FilterConverterDelegate(StringConverter)},
             {typeof(GuidFilter),                         "objectGuid",          new FilterConverterDelegate(GuidConverter)},
-            {typeof(UserPrincipalNameFilter),                         "userPrincipalName",          new FilterConverterDelegate(StringConverter)},  
-            {typeof(StructuralObjectClassFilter),                         "objectClass",          new FilterConverterDelegate(StringConverter)},  
-            {typeof(NameFilter),                         "name",          new FilterConverterDelegate(StringConverter)},  
-            
+            {typeof(UserPrincipalNameFilter),                         "userPrincipalName",          new FilterConverterDelegate(StringConverter)},
+            {typeof(StructuralObjectClassFilter),                         "objectClass",          new FilterConverterDelegate(StringConverter)},
+            {typeof(NameFilter),                         "name",          new FilterConverterDelegate(StringConverter)},
+
             {typeof(CertificateFilter),                         "",                     new FilterConverterDelegate(CertificateConverter)},
             {typeof(AuthPrincEnabledFilter),                    "msDS-UserAccountDisabled",   new FilterConverterDelegate(AcctDisabledConverter)}, /*##*/
             {typeof(PermittedWorkstationFilter),                "userWorkstations",     new FilterConverterDelegate(StringConverter)},
@@ -499,17 +492,14 @@ namespace System.DirectoryServices.AccountManagement
             {typeof(GroupIsSecurityGroupFilter),                        "groupType",            new FilterConverterDelegate(GroupTypeConverter)},
             {typeof(GroupScopeFilter),                          "groupType",            new FilterConverterDelegate(GroupTypeConverter)},
             {typeof(ServicePrincipalNameFilter),                "servicePrincipalName",new FilterConverterDelegate(StringConverter)},
-            {typeof(ExtensionCacheFilter),                null ,new FilterConverterDelegate(ExtensionCacheConverter)},            
+            {typeof(ExtensionCacheFilter),                null ,new FilterConverterDelegate(ExtensionCacheConverter)},
             {typeof(BadPasswordAttemptFilter),                "badPasswordTime",new FilterConverterDelegate(DefaultValutMatchingDateTimeConverter)},
             {typeof(ExpiredAccountFilter),                "accountExpires",new FilterConverterDelegate(MatchingDateTimeConverter)},
             {typeof(LastLogonTimeFilter),                "lastLogonTimestamp",new FilterConverterDelegate(DefaultValutMatchingDateTimeConverter)},
             {typeof(LockoutTimeFilter),                "lockoutTime",new FilterConverterDelegate(DefaultValutMatchingDateTimeConverter)},
             {typeof(PasswordSetTimeFilter),                "pwdLastSet",new FilterConverterDelegate(DefaultValutMatchingDateTimeConverter)}
         };
-
-
-
-        }
+    }
 }
 
 

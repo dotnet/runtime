@@ -1,10 +1,13 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
 /*++
 
 Copyright (c) 2004  Microsoft Corporation
 
 Module Name:
 
-    Interopt.cs
 
 Abstract:
 
@@ -27,43 +30,46 @@ namespace System.DirectoryServices.AccountManagement
 
     internal class Constants
     {
-        Constants() { }
-        internal static Byte[]  GUID_USERS_CONTAINER_BYTE = new Byte[] { 0xa9,0xd1,0xca,0x15,0x76,0x88,0x11,0xd1,0xad,0xed,0x00,0xc0,0x4f,0xd8,0xd5,0xcd };
-        internal static Byte[]  GUID_COMPUTRS_CONTAINER_BYTE = new Byte[]  {0xaa,0x31,0x28,0x25,0x76,0x88,0x11,0xd1,0xad,0xed,0x00,0xc0,0x4f,0xd8,0xd5,0xcd };
-        internal static Byte[]  GUID_FOREIGNSECURITYPRINCIPALS_CONTAINER_BYTE  = new Byte[] { 0x22,0xb7,0x0c,0x67,0xd5,0x6e,0x4e,0xfb,0x91,0xe9,0x30,0x0f,0xca,0x3d,0xc1,0xaa };
+        private Constants() { }
+        internal static Byte[] GUID_USERS_CONTAINER_BYTE = new Byte[] { 0xa9, 0xd1, 0xca, 0x15, 0x76, 0x88, 0x11, 0xd1, 0xad, 0xed, 0x00, 0xc0, 0x4f, 0xd8, 0xd5, 0xcd };
+        internal static Byte[] GUID_COMPUTRS_CONTAINER_BYTE = new Byte[] { 0xaa, 0x31, 0x28, 0x25, 0x76, 0x88, 0x11, 0xd1, 0xad, 0xed, 0x00, 0xc0, 0x4f, 0xd8, 0xd5, 0xcd };
+        internal static Byte[] GUID_FOREIGNSECURITYPRINCIPALS_CONTAINER_BYTE = new Byte[] { 0x22, 0xb7, 0x0c, 0x67, 0xd5, 0x6e, 0x4e, 0xfb, 0x91, 0xe9, 0x30, 0x0f, 0xca, 0x3d, 0xc1, 0xaa };
     }
-    
+
     [SuppressUnmanagedCodeSecurityAttribute]
     internal class SafeNativeMethods
     {
         // To stop the compiler from autogenerating a constructor for this class
-        private SafeNativeMethods() {}
+        private SafeNativeMethods() { }
 
-        [DllImport("kernel32.dll", CallingConvention=CallingConvention.StdCall, EntryPoint="GetCurrentThreadId", CharSet=CharSet.Unicode)]				
+        [DllImport("kernel32.dll", CallingConvention = CallingConvention.StdCall, EntryPoint = "GetCurrentThreadId", CharSet = CharSet.Unicode)]
         static extern public int GetCurrentThreadId();
 
-        [DllImport("advapi32.dll", CallingConvention=CallingConvention.StdCall, EntryPoint="LsaNtStatusToWinError", CharSet=CharSet.Unicode)]				
-        static extern public int LsaNtStatusToWinError(int ntStatus);        
+        [DllImport("advapi32.dll", CallingConvention = CallingConvention.StdCall, EntryPoint = "LsaNtStatusToWinError", CharSet = CharSet.Unicode)]
+        static extern public int LsaNtStatusToWinError(int ntStatus);
     }
 
     [SuppressUnmanagedCodeSecurityAttribute]
     internal class UnsafeNativeMethods
     {
         // To stop the compiler from autogenerating a constructor for this class
-        private UnsafeNativeMethods() {}
+        private UnsafeNativeMethods() { }
 
 
-        [DllImport(ExternDll.Activeds, ExactSpelling=true, EntryPoint="ADsOpenObject", CharSet=System.Runtime.InteropServices.CharSet.Unicode)]
-        private static extern int IntADsOpenObject(string path, string userName, string password, int flags, [In, Out] ref Guid iid, [Out, MarshalAs(UnmanagedType.Interface)] out object ppObject);            
+        [DllImport(ExternDll.Activeds, ExactSpelling = true, EntryPoint = "ADsOpenObject", CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
+        private static extern int IntADsOpenObject(string path, string userName, string password, int flags, [In, Out] ref Guid iid, [Out, MarshalAs(UnmanagedType.Interface)] out object ppObject);
         // <SecurityKernel Critical="True" Ring="0">
         // <CallsSuppressUnmanagedCode Name="IntADsOpenObject(String, String, String, Int32, Guid&, Object&):Int32" />
         // </SecurityKernel>
         [System.Security.SecurityCritical]
-        public static int ADsOpenObject(string path, string userName, string password, int flags, [In, Out] ref Guid iid, [Out, MarshalAs(UnmanagedType.Interface)] out object ppObject) {
-            try {
+        public static int ADsOpenObject(string path, string userName, string password, int flags, [In, Out] ref Guid iid, [Out, MarshalAs(UnmanagedType.Interface)] out object ppObject)
+        {
+            try
+            {
                 return IntADsOpenObject(path, userName, password, flags, ref iid, out ppObject);
             }
-            catch(EntryPointNotFoundException) {
+            catch (EntryPointNotFoundException)
+            {
                 throw new InvalidOperationException(StringResources.AdsiNotInstalled);
             }
         }
@@ -91,7 +97,7 @@ namespace System.DirectoryServices.AccountManagement
             ADS_OPTION_ACCUMULATIVE_MODIFICATION = 8,
             ADS_OPTION_SKIP_SID_LOOKUP = 9
         }
-        
+
         [ComImport, Guid("7E99C0A2-F935-11D2-BA96-00C04FB6D0D1"), InterfaceTypeAttribute(ComInterfaceType.InterfaceIsDual)]
         public interface IADsDNWithBinary
         {
@@ -111,196 +117,212 @@ namespace System.DirectoryServices.AccountManagement
         [ComImport, Guid("927971f5-0939-11d1-8be1-00c04fd8d503")]
         public class ADsLargeInteger
         {
-
         }
 
         [ComImport, Guid("46f14fda-232b-11d1-a808-00c04fd8d5a8"), InterfaceTypeAttribute(ComInterfaceType.InterfaceIsDual)]
-        public interface IAdsObjectOptions {
-
+        public interface IAdsObjectOptions
+        {
             [return: MarshalAs(UnmanagedType.Struct)]
             Object GetOption(
-                [In] 
+                [In]
                 int option);
 
 
             void PutOption(
-                [In] 
+                [In]
                 int option,
                 [In, MarshalAs(UnmanagedType.Struct)]
                 Object vProp);
-		}    
+        }
 
         [ComImport, Guid("FD8256D0-FD15-11CE-ABC4-02608C9E7553"), InterfaceTypeAttribute(ComInterfaceType.InterfaceIsDual)]
-        public interface IADs {
-            string Name {
+        public interface IADs
+        {
+            string Name
+            {
                 [return: MarshalAs(UnmanagedType.BStr)]
                 get;
             }
-    
-            string Class {
+
+            string Class
+            {
                 [return: MarshalAs(UnmanagedType.BStr)]
                 get;
             }
-    
-            string GUID {
+
+            string GUID
+            {
                 [return: MarshalAs(UnmanagedType.BStr)]
                 get;
             }
-    
-            string ADsPath {
+
+            string ADsPath
+            {
                 [return: MarshalAs(UnmanagedType.BStr)]
                 get;
             }
-    
-            string Parent {
+
+            string Parent
+            {
                 [return: MarshalAs(UnmanagedType.BStr)]
                 get;
             }
-    
-            string Schema {
+
+            string Schema
+            {
                 [return: MarshalAs(UnmanagedType.BStr)]
                 get;
             }
-    
-            
+
+
             void GetInfo();
-    
-            
+
+
             void SetInfo();
-    
+
             [return: MarshalAs(UnmanagedType.Struct)]
             Object Get(
-                [In, MarshalAs(UnmanagedType.BStr)] 
+                [In, MarshalAs(UnmanagedType.BStr)]
                 string bstrName);
-    
-            
+
+
             void Put(
-                [In, MarshalAs(UnmanagedType.BStr)] 
-                string bstrName, 
+                [In, MarshalAs(UnmanagedType.BStr)]
+                string bstrName,
                 [In, MarshalAs(UnmanagedType.Struct)]
                 Object vProp);
-    
+
             [return: MarshalAs(UnmanagedType.Struct)]
             Object GetEx(
-                [In, MarshalAs(UnmanagedType.BStr)] 
+                [In, MarshalAs(UnmanagedType.BStr)]
                 String bstrName);
-               
-            
+
+
             void PutEx(
-                [In, MarshalAs(UnmanagedType.U4)] 
-                int lnControlCode, 
-                [In, MarshalAs(UnmanagedType.BStr)] 
-                string bstrName, 
+                [In, MarshalAs(UnmanagedType.U4)]
+                int lnControlCode,
+                [In, MarshalAs(UnmanagedType.BStr)]
+                string bstrName,
                 [In, MarshalAs(UnmanagedType.Struct)]
                 Object vProp);
-    
-            
+
+
             void GetInfoEx(
                 [In, MarshalAs(UnmanagedType.Struct)]
-                Object vProperties, 
-                [In, MarshalAs(UnmanagedType.U4)] 
+                Object vProperties,
+                [In, MarshalAs(UnmanagedType.U4)]
                 int lnReserved);
         }
 
         [ComImport, Guid("27636b00-410f-11cf-b1ff-02608c9e7553"), InterfaceTypeAttribute(ComInterfaceType.InterfaceIsDual)]
-        public interface IADsGroup {
-
-            string Name {
-                [return: MarshalAs(UnmanagedType.BStr)]
-                get;
-            }
-
-    
-            string Class {
-                [return: MarshalAs(UnmanagedType.BStr)]
-                get;
-            }
-    
-            string GUID {
-                [return: MarshalAs(UnmanagedType.BStr)]
-                get;
-            }
-    
-            string ADsPath {
+        public interface IADsGroup
+        {
+            string Name
+            {
                 [return: MarshalAs(UnmanagedType.BStr)]
                 get;
             }
 
 
-            string Parent {
+            string Class
+            {
                 [return: MarshalAs(UnmanagedType.BStr)]
                 get;
             }
-    
-            string Schema {
+
+            string GUID
+            {
                 [return: MarshalAs(UnmanagedType.BStr)]
                 get;
             }
-            
+
+            string ADsPath
+            {
+                [return: MarshalAs(UnmanagedType.BStr)]
+                get;
+            }
+
+
+            string Parent
+            {
+                [return: MarshalAs(UnmanagedType.BStr)]
+                get;
+            }
+
+            string Schema
+            {
+                [return: MarshalAs(UnmanagedType.BStr)]
+                get;
+            }
+
             void GetInfo();
-    
+
             void SetInfo();
-    
+
             [return: MarshalAs(UnmanagedType.Struct)]
             Object Get(
-                [In, MarshalAs(UnmanagedType.BStr)] 
+                [In, MarshalAs(UnmanagedType.BStr)]
                 string bstrName);
-            
+
             void Put(
-                [In, MarshalAs(UnmanagedType.BStr)] 
-                string bstrName, 
+                [In, MarshalAs(UnmanagedType.BStr)]
+                string bstrName,
                 [In, MarshalAs(UnmanagedType.Struct)]
                 Object vProp);
-    
+
             [return: MarshalAs(UnmanagedType.Struct)]
             Object GetEx(
-                [In, MarshalAs(UnmanagedType.BStr)] 
-                String bstrName);         
-            
+                [In, MarshalAs(UnmanagedType.BStr)]
+                String bstrName);
+
             void PutEx(
-                [In, MarshalAs(UnmanagedType.U4)] 
-                int lnControlCode, 
-                [In, MarshalAs(UnmanagedType.BStr)] 
-                string bstrName, 
+                [In, MarshalAs(UnmanagedType.U4)]
+                int lnControlCode,
+                [In, MarshalAs(UnmanagedType.BStr)]
+                string bstrName,
                 [In, MarshalAs(UnmanagedType.Struct)]
                 Object vProp);
-    
+
             void GetInfoEx(
                 [In, MarshalAs(UnmanagedType.Struct)]
-                Object vProperties, 
-                [In, MarshalAs(UnmanagedType.U4)] 
+                Object vProperties,
+                [In, MarshalAs(UnmanagedType.U4)]
                 int lnReserved);
 
-            string Description {
+            string Description
+            {
                 [return: MarshalAs(UnmanagedType.BStr)]
                 get;
                 [param: MarshalAs(UnmanagedType.BStr)]
                 set;
             }
 
-            IADsMembers Members();            
+            IADsMembers Members();
 
             bool IsMember([In, MarshalAs(UnmanagedType.BStr)] string bstrMember);
 
             void Add([In, MarshalAs(UnmanagedType.BStr)] string bstrNewItem);
-            
-            void Remove([In, MarshalAs(UnmanagedType.BStr)] string bstrItemToBeRemoved);                
+
+            void Remove([In, MarshalAs(UnmanagedType.BStr)] string bstrItemToBeRemoved);
         }
 
         [ComImport, Guid("451a0030-72ec-11cf-b03b-00aa006e0975"), InterfaceTypeAttribute(ComInterfaceType.InterfaceIsDual)]
-        public interface IADsMembers {
-
-            int Count {
+        public interface IADsMembers
+        {
+            int Count
+            {
                 [return: MarshalAs(UnmanagedType.U4)]
                 get;
-            }   
+            }
 
-            object _NewEnum {
+            object _NewEnum
+            {
                 [return: MarshalAs(UnmanagedType.Interface)]
                 get;
-            }         
+            }
 
-            object Filter {
+            object Filter
+            {
                 [return: MarshalAs(UnmanagedType.Struct)]
                 get;
                 [param: MarshalAs(UnmanagedType.Struct)]
@@ -312,7 +334,6 @@ namespace System.DirectoryServices.AccountManagement
         [ComImport, Guid("080d0d78-f421-11d0-a36e-00c04fb950dc")]
         public class Pathname
         {
-
         }
 
         [ComImport, Guid("d592aed4-f420-11d0-a36e-00c04fb950dc"), InterfaceTypeAttribute(ComInterfaceType.InterfaceIsDual)]
@@ -363,7 +384,6 @@ namespace System.DirectoryServices.AccountManagement
                 [param: MarshalAs(UnmanagedType.U4)]
                 set;
             }
-    
         }
 
 
@@ -371,7 +391,7 @@ namespace System.DirectoryServices.AccountManagement
         // DSInteropt
         //
 
-        
+
         /*
         typedef enum 
         {
@@ -390,18 +410,18 @@ namespace System.DirectoryServices.AccountManagement
 
         public enum DSROLE_MACHINE_ROLE
         {
-          DsRole_RoleStandaloneWorkstation,
-          DsRole_RoleMemberWorkstation,
-          DsRole_RoleStandaloneServer,
-          DsRole_RoleMemberServer,
-          DsRole_RoleBackupDomainController,
-          DsRole_RolePrimaryDomainController,
-          DsRole_WorkstationWithSharedAccountDomain,
-          DsRole_ServerWithSharedAccountDomain,
-          DsRole_MemberWorkstationWithSharedAccountDomain,
-          DsRole_MemberServerWithSharedAccountDomain
+            DsRole_RoleStandaloneWorkstation,
+            DsRole_RoleMemberWorkstation,
+            DsRole_RoleStandaloneServer,
+            DsRole_RoleMemberServer,
+            DsRole_RoleBackupDomainController,
+            DsRole_RolePrimaryDomainController,
+            DsRole_WorkstationWithSharedAccountDomain,
+            DsRole_ServerWithSharedAccountDomain,
+            DsRole_MemberWorkstationWithSharedAccountDomain,
+            DsRole_MemberServerWithSharedAccountDomain
         }
-        
+
 
         /*
         typedef enum 
@@ -415,11 +435,11 @@ namespace System.DirectoryServices.AccountManagement
 
         public enum DSROLE_PRIMARY_DOMAIN_INFO_LEVEL
         {
-          DsRolePrimaryDomainInfoBasic = 1,
-          DsRoleUpgradeStatus = 2,
-          DsRoleOperationState = 3,
-          DsRolePrimaryDomainInfoBasicEx = 4
-        }   
+            DsRolePrimaryDomainInfoBasic = 1,
+            DsRoleUpgradeStatus = 2,
+            DsRoleOperationState = 3,
+            DsRolePrimaryDomainInfoBasicEx = 4
+        }
 
 
         /*
@@ -433,8 +453,9 @@ namespace System.DirectoryServices.AccountManagement
          } DSROLE_PRIMARY_DOMAIN_INFO_BASIC,  *PDSROLE_PRIMARY_DOMAIN_INFO_BASIC;
          */
 
-        [StructLayout(LayoutKind.Sequential, CharSet=CharSet.Unicode)]
-        public sealed class  DSROLE_PRIMARY_DOMAIN_INFO_BASIC {
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+        public sealed class DSROLE_PRIMARY_DOMAIN_INFO_BASIC
+        {
             public DSROLE_MACHINE_ROLE MachineRole;
             public uint Flags;
             [MarshalAs(UnmanagedType.LPWStr)]
@@ -444,27 +465,27 @@ namespace System.DirectoryServices.AccountManagement
             [MarshalAs(UnmanagedType.LPWStr)]
             public string DomainForestName;
             public Guid DomainGuid = new Guid();
-    	    }
+        }
 
-            /*
-            DWORD DsRoleGetPrimaryDomainInformation(
-              LPCWSTR lpServer,
-              DSROLE_PRIMARY_DOMAIN_INFO_LEVEL InfoLevel,
-              PBYTE* Buffer
-            ); */
+        /*
+        DWORD DsRoleGetPrimaryDomainInformation(
+          LPCWSTR lpServer,
+          DSROLE_PRIMARY_DOMAIN_INFO_LEVEL InfoLevel,
+          PBYTE* Buffer
+        ); */
 
-        [DllImport("Netapi32.dll", CallingConvention=CallingConvention.StdCall, EntryPoint="DsRoleGetPrimaryDomainInformation", CharSet=CharSet.Unicode)]				
+        [DllImport("Netapi32.dll", CallingConvention = CallingConvention.StdCall, EntryPoint = "DsRoleGetPrimaryDomainInformation", CharSet = CharSet.Unicode)]
         public static extern int DsRoleGetPrimaryDomainInformation(
             [MarshalAs(UnmanagedType.LPTStr)] string lpServer,
             [In] DSROLE_PRIMARY_DOMAIN_INFO_LEVEL InfoLevel,
-            out IntPtr Buffer);            
+            out IntPtr Buffer);
 
-        [DllImport("Netapi32.dll", CallingConvention=CallingConvention.StdCall, EntryPoint="DsRoleGetPrimaryDomainInformation", CharSet=CharSet.Unicode)]				
+        [DllImport("Netapi32.dll", CallingConvention = CallingConvention.StdCall, EntryPoint = "DsRoleGetPrimaryDomainInformation", CharSet = CharSet.Unicode)]
         public static extern int DsRoleGetPrimaryDomainInformation(
             [In] IntPtr lpServer,
             [In] DSROLE_PRIMARY_DOMAIN_INFO_LEVEL InfoLevel,
-            out IntPtr Buffer);            
-            
+            out IntPtr Buffer);
+
 
         /*typedef struct _DOMAIN_CONTROLLER_INFO {
             LPTSTR DomainControllerName;
@@ -477,8 +498,9 @@ namespace System.DirectoryServices.AccountManagement
             LPTSTR DcSiteName;
             LPTSTR ClientSiteName;
         } DOMAIN_CONTROLLER_INFO, *PDOMAIN_CONTROLLER_INFO; */
-        [StructLayout(LayoutKind.Sequential, CharSet=CharSet.Unicode)]
-        public sealed class DomainControllerInfo {
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+        public sealed class DomainControllerInfo
+        {
             public string DomainControllerName = null;
             public string DomainControllerAddress = null;
             public int DomainControllerAddressType = 0;
@@ -488,7 +510,7 @@ namespace System.DirectoryServices.AccountManagement
             public int Flags = 0;
             public string DcSiteName = null;
             public string ClientSiteName = null;
-    	    }
+        }
 
         /*
         void DsRoleFreeMemory(
@@ -497,8 +519,8 @@ namespace System.DirectoryServices.AccountManagement
         */
         [DllImport("Netapi32.dll")]
         public static extern int DsRoleFreeMemory(
-            [In] IntPtr buffer); 
-        
+            [In] IntPtr buffer);
+
 
         /*DWORD DsGetDcName(
             LPCTSTR ComputerName, 
@@ -508,14 +530,14 @@ namespace System.DirectoryServices.AccountManagement
             ULONG Flags, 
             PDOMAIN_CONTROLLER_INFO* DomainControllerInfo
         );*/
-        [DllImport("Netapi32.dll", CallingConvention=CallingConvention.StdCall, EntryPoint="DsGetDcNameW", CharSet=CharSet.Unicode)]				
+        [DllImport("Netapi32.dll", CallingConvention = CallingConvention.StdCall, EntryPoint = "DsGetDcNameW", CharSet = CharSet.Unicode)]
         public static extern int DsGetDcName(
             [In] string computerName,
             [In] string domainName,
             [In] IntPtr domainGuid,
             [In] string siteName,
             [In] int flags,
-            [Out] out IntPtr domainControllerInfo);    	    
+            [Out] out IntPtr domainControllerInfo);
 
 
         /* typedef struct _WKSTA_INFO_100 {
@@ -525,7 +547,7 @@ namespace System.DirectoryServices.AccountManagement
                 DWORD wki100_ver_major;
                 DWORD wki100_ver_minor;
         } WKSTA_INFO_100, *PWKSTA_INFO_100; */
-        [StructLayout(LayoutKind.Sequential, CharSet=CharSet.Unicode)]
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
         public sealed class WKSTA_INFO_100
         {
             public int wki100_platform_id = 0;
@@ -535,50 +557,50 @@ namespace System.DirectoryServices.AccountManagement
             public int wki100_ver_minor = 0;
         };
 
-        [DllImport ("netapi32.dll", CallingConvention=CallingConvention.StdCall, EntryPoint="NetWkstaGetInfo", CharSet=CharSet.Unicode)] 
+        [DllImport("netapi32.dll", CallingConvention = CallingConvention.StdCall, EntryPoint = "NetWkstaGetInfo", CharSet = CharSet.Unicode)]
         public static extern int NetWkstaGetInfo(string server, int level, ref IntPtr buffer);
 
         [DllImport("Netapi32.dll")]
         public static extern int NetApiBufferFree(
-            [In] IntPtr buffer); 
+            [In] IntPtr buffer);
 
 
         //
         // SID
         //
 
-        [DllImport ("advapi32.dll", SetLastError=true, CallingConvention=CallingConvention.StdCall, EntryPoint="ConvertSidToStringSidW", CharSet=CharSet.Unicode)]	
+        [DllImport("advapi32.dll", SetLastError = true, CallingConvention = CallingConvention.StdCall, EntryPoint = "ConvertSidToStringSidW", CharSet = CharSet.Unicode)]
         public static extern bool ConvertSidToStringSid(IntPtr sid, ref string stringSid);
 
-        [DllImport ("advapi32.dll", CallingConvention=CallingConvention.StdCall, EntryPoint="ConvertStringSidToSidW", CharSet=CharSet.Unicode)]		
+        [DllImport("advapi32.dll", CallingConvention = CallingConvention.StdCall, EntryPoint = "ConvertStringSidToSidW", CharSet = CharSet.Unicode)]
         public static extern bool ConvertStringSidToSid(string stringSid, ref IntPtr sid);
 
-        [DllImport ("advapi32.dll")]
+        [DllImport("advapi32.dll")]
         public static extern int GetLengthSid(IntPtr sid);
 
-        [DllImport ("advapi32.dll", SetLastError=true)]
+        [DllImport("advapi32.dll", SetLastError = true)]
         public static extern bool IsValidSid(IntPtr sid);
 
-        [DllImport ("advapi32.dll")]
+        [DllImport("advapi32.dll")]
         public static extern IntPtr GetSidIdentifierAuthority(IntPtr sid);
 
-        [DllImport ("advapi32.dll")]
+        [DllImport("advapi32.dll")]
         public static extern IntPtr GetSidSubAuthority(IntPtr sid, int index);
 
-        [DllImport ("advapi32.dll")]
+        [DllImport("advapi32.dll")]
         public static extern IntPtr GetSidSubAuthorityCount(IntPtr sid);
 
-        [DllImport ("advapi32.dll")]
+        [DllImport("advapi32.dll")]
         public static extern bool EqualDomainSid(IntPtr pSid1, IntPtr pSid2, ref bool equal);
 
-        [DllImport("advapi32.dll", SetLastError = true)]		
+        [DllImport("advapi32.dll", SetLastError = true)]
         public static extern bool CopySid(int destinationLength, IntPtr pSidDestination, IntPtr pSidSource);
 
-        [DllImport ("kernel32.dll") ]
+        [DllImport("kernel32.dll")]
         public static extern IntPtr LocalFree(IntPtr ptr);
 
 
-        [DllImport("Credui.dll", SetLastError=true, CallingConvention=CallingConvention.StdCall, EntryPoint="CredUIParseUserNameW", CharSet=CharSet.Unicode)]				        
+        [DllImport("Credui.dll", SetLastError = true, CallingConvention = CallingConvention.StdCall, EntryPoint = "CredUIParseUserNameW", CharSet = CharSet.Unicode)]
         public static extern int CredUIParseUserName(
                                                                                         string pszUserName,
                                                                                         StringBuilder pszUser,
@@ -588,8 +610,8 @@ namespace System.DirectoryServices.AccountManagement
                                                                                         );
 
         // These contants were taken from the wincred.h file
-        public const int CRED_MAX_USERNAME_LENGTH  = 514;
-        public const int CRED_MAX_DOMAIN_TARGET_LENGTH   = 338;
+        public const int CRED_MAX_USERNAME_LENGTH = 514;
+        public const int CRED_MAX_DOMAIN_TARGET_LENGTH = 338;
 
         /*
         BOOL LookupAccountSid(
@@ -604,7 +626,7 @@ namespace System.DirectoryServices.AccountManagement
 
         */
 
-        [DllImport("advapi32.dll", SetLastError=true, CallingConvention=CallingConvention.StdCall, EntryPoint="LookupAccountSidW", CharSet=CharSet.Unicode)]				        
+        [DllImport("advapi32.dll", SetLastError = true, CallingConvention = CallingConvention.StdCall, EntryPoint = "LookupAccountSidW", CharSet = CharSet.Unicode)]
         public static extern bool LookupAccountSid(
                                         string computerName,
                                         IntPtr sid,
@@ -621,14 +643,13 @@ namespace System.DirectoryServices.AccountManagement
 
         internal sealed class AUTHZ_RM_FLAG
         {
-            AUTHZ_RM_FLAG() { }
-            public static int AUTHZ_RM_FLAG_NO_AUDIT  = 0x1;
-            public static int AUTHZ_RM_FLAG_INITIALIZE_UNDER_IMPERSONATION  = 0x2;
+            private AUTHZ_RM_FLAG() { }
+            public static int AUTHZ_RM_FLAG_NO_AUDIT = 0x1;
+            public static int AUTHZ_RM_FLAG_INITIALIZE_UNDER_IMPERSONATION = 0x2;
             public static int AUTHZ_VALID_RM_INIT_FLAGS = (AUTHZ_RM_FLAG_NO_AUDIT | AUTHZ_RM_FLAG_INITIALIZE_UNDER_IMPERSONATION);
-
         }
 
-        [DllImport("authz.dll", SetLastError=true, CallingConvention=CallingConvention.StdCall, EntryPoint="AuthzInitializeResourceManager", CharSet=CharSet.Unicode)]				
+        [DllImport("authz.dll", SetLastError = true, CallingConvention = CallingConvention.StdCall, EntryPoint = "AuthzInitializeResourceManager", CharSet = CharSet.Unicode)]
         static extern public bool AuthzInitializeResourceManager(
                                         int flags,
                                         IntPtr pfnAccessCheck,
@@ -649,7 +670,7 @@ namespace System.DirectoryServices.AccountManagement
             PAUTHZ_CLIENT_CONTEXT_HANDLE pAuthzClientContext
         );
         */
-        [DllImport("authz.dll", SetLastError=true, CallingConvention=CallingConvention.StdCall, EntryPoint="AuthzInitializeContextFromSid", CharSet=CharSet.Unicode)]				
+        [DllImport("authz.dll", SetLastError = true, CallingConvention = CallingConvention.StdCall, EntryPoint = "AuthzInitializeContextFromSid", CharSet = CharSet.Unicode)]
         static extern public bool AuthzInitializeContextFromSid(
                                         int Flags,
                                         IntPtr UserSid,
@@ -660,20 +681,20 @@ namespace System.DirectoryServices.AccountManagement
                                         out IntPtr pAuthzClientContext
                                         );
 
-/*
-        [DllImport("authz.dll", SetLastError=true, CallingConvention=CallingConvention.StdCall, EntryPoint="AuthzInitializeContextFromToken", CharSet=CharSet.Unicode)]				
-        static extern public bool AuthzInitializeContextFromToken(
-                                        int Flags,
-                                        IntPtr TokenHandle,
-                                        IntPtr AuthzResourceManager,
-                                        IntPtr pExpirationTime,
-                                        LUID Identitifier,
-                                        IntPtr DynamicGroupArgs,
-                                        out IntPtr pAuthzClientContext
-                                        );
-*/
-        [DllImport("authz.dll", SetLastError=true, CallingConvention=CallingConvention.StdCall, EntryPoint="AuthzGetInformationFromContext", CharSet=CharSet.Unicode)]				
-        static extern public  bool  AuthzGetInformationFromContext(
+        /*
+                [DllImport("authz.dll", SetLastError=true, CallingConvention=CallingConvention.StdCall, EntryPoint="AuthzInitializeContextFromToken", CharSet=CharSet.Unicode)]				
+                static extern public bool AuthzInitializeContextFromToken(
+                                                int Flags,
+                                                IntPtr TokenHandle,
+                                                IntPtr AuthzResourceManager,
+                                                IntPtr pExpirationTime,
+                                                LUID Identitifier,
+                                                IntPtr DynamicGroupArgs,
+                                                out IntPtr pAuthzClientContext
+                                                );
+        */
+        [DllImport("authz.dll", SetLastError = true, CallingConvention = CallingConvention.StdCall, EntryPoint = "AuthzGetInformationFromContext", CharSet = CharSet.Unicode)]
+        static extern public bool AuthzGetInformationFromContext(
                                         IntPtr hAuthzClientContext,
                                         int InfoClass,
                                         int BufferSize,
@@ -681,18 +702,18 @@ namespace System.DirectoryServices.AccountManagement
                                         IntPtr Buffer
                                         );
 
-        [DllImport("authz.dll", CallingConvention=CallingConvention.StdCall, EntryPoint="AuthzFreeContext", CharSet=CharSet.Unicode)]				
-        static extern public  bool AuthzFreeContext(
+        [DllImport("authz.dll", CallingConvention = CallingConvention.StdCall, EntryPoint = "AuthzFreeContext", CharSet = CharSet.Unicode)]
+        static extern public bool AuthzFreeContext(
                                         IntPtr AuthzClientContext
                                         );
 
-        [DllImport("authz.dll", CallingConvention=CallingConvention.StdCall, EntryPoint="AuthzFreeResourceManager", CharSet=CharSet.Unicode)]				
-        static extern public  bool AuthzFreeResourceManager(
+        [DllImport("authz.dll", CallingConvention = CallingConvention.StdCall, EntryPoint = "AuthzFreeResourceManager", CharSet = CharSet.Unicode)]
+        static extern public bool AuthzFreeResourceManager(
                                         IntPtr rm
                                         );
 
 
-        [StructLayout(LayoutKind.Sequential, CharSet=CharSet.Unicode)]
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
         public struct LUID
         {
             public int low;
@@ -700,14 +721,14 @@ namespace System.DirectoryServices.AccountManagement
         }
 
 
-        [StructLayout(LayoutKind.Sequential, CharSet=CharSet.Unicode)]
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
         public sealed class TOKEN_GROUPS
         {
-            public int  groupCount = 0;
+            public int groupCount = 0;
             public IntPtr groups = IntPtr.Zero;
         }
 
-        [StructLayout(LayoutKind.Sequential, CharSet=CharSet.Unicode)]
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
         public sealed class SID_AND_ATTR
         {
             public IntPtr pSid = IntPtr.Zero;
@@ -719,13 +740,13 @@ namespace System.DirectoryServices.AccountManagement
         // Token
         //
 
-        [StructLayout(LayoutKind.Sequential, CharSet=CharSet.Unicode)]
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
         public sealed class TOKEN_USER
         {
             public SID_AND_ATTR sidAndAttributes = new SID_AND_ATTR();
         }
-        
-        [StructLayout(LayoutKind.Sequential, CharSet=CharSet.Unicode)]
+
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
         public sealed class SID_IDENTIFIER_AUTHORITY
         {
             public byte b1 = 0;
@@ -737,7 +758,7 @@ namespace System.DirectoryServices.AccountManagement
         }
 
 
-        [StructLayout(LayoutKind.Sequential, CharSet=CharSet.Unicode)]
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
         public sealed class LSA_OBJECT_ATTRIBUTES
         {
             public int length = 0;
@@ -748,14 +769,14 @@ namespace System.DirectoryServices.AccountManagement
             public IntPtr securityQualityOfService = IntPtr.Zero;
         }
 
-        [StructLayout(LayoutKind.Sequential, CharSet=CharSet.Unicode)]
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
         public sealed class POLICY_ACCOUNT_DOMAIN_INFO
         {
             public LSA_UNICODE_STRING domainName = new LSA_UNICODE_STRING();
             public IntPtr domainSid = IntPtr.Zero;
         }
 
-        [StructLayout(LayoutKind.Sequential, CharSet=CharSet.Unicode)]
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
         public sealed class LSA_UNICODE_STRING
         {
             public ushort length = 0;
@@ -763,15 +784,15 @@ namespace System.DirectoryServices.AccountManagement
             public IntPtr buffer = IntPtr.Zero;
         }
 
-        [StructLayout(LayoutKind.Sequential, CharSet=CharSet.Unicode)]
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
         public sealed class LSA_UNICODE_STRING_Managed
         {
             public ushort length = 0;
             public ushort maximumLength = 0;
             public string buffer;
         }
-        
-        [StructLayout(LayoutKind.Sequential, CharSet=CharSet.Unicode)]
+
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
         public sealed class LSA_TRANSLATED_NAME
         {
             public int use = 0;
@@ -779,26 +800,26 @@ namespace System.DirectoryServices.AccountManagement
             public int domainIndex = 0;
         }
 
-        [StructLayout(LayoutKind.Sequential, CharSet=CharSet.Unicode)]
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
         public sealed class LSA_REFERENCED_DOMAIN_LIST
         {
-                // To stop the compiler from autogenerating a constructor for this class
-            private LSA_REFERENCED_DOMAIN_LIST() {}
+            // To stop the compiler from autogenerating a constructor for this class
+            private LSA_REFERENCED_DOMAIN_LIST() { }
 
             public int entries = 0;
-            public IntPtr domains = IntPtr.Zero; 
+            public IntPtr domains = IntPtr.Zero;
         }
 
-        [StructLayout(LayoutKind.Sequential, CharSet=CharSet.Unicode)]
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
         public sealed class LSA_TRUST_INFORMATION
         {
             public LSA_UNICODE_STRING name = new LSA_UNICODE_STRING();
-            IntPtr pSid = IntPtr.Zero;
+            private IntPtr _pSid = IntPtr.Zero;
         }
 
-        
 
-        [DllImport("advapi32.dll", SetLastError=true, CallingConvention=CallingConvention.StdCall, EntryPoint="OpenThreadToken", CharSet=CharSet.Unicode)]				
+
+        [DllImport("advapi32.dll", SetLastError = true, CallingConvention = CallingConvention.StdCall, EntryPoint = "OpenThreadToken", CharSet = CharSet.Unicode)]
         static extern public bool OpenThreadToken(
                                         IntPtr threadHandle,
                                         int desiredAccess,
@@ -806,23 +827,23 @@ namespace System.DirectoryServices.AccountManagement
                                         ref IntPtr tokenHandle
                                         );
 
-        [DllImport("advapi32.dll", SetLastError=true, CallingConvention=CallingConvention.StdCall, EntryPoint="OpenProcessToken", CharSet=CharSet.Unicode)]				
+        [DllImport("advapi32.dll", SetLastError = true, CallingConvention = CallingConvention.StdCall, EntryPoint = "OpenProcessToken", CharSet = CharSet.Unicode)]
         static extern public bool OpenProcessToken(
                                         IntPtr processHandle,
                                         int desiredAccess,
                                         ref IntPtr tokenHandle
                                         );
-                                        
-        [DllImport("kernel32.dll", CallingConvention=CallingConvention.StdCall, EntryPoint="CloseHandle", CharSet=CharSet.Unicode)]				
+
+        [DllImport("kernel32.dll", CallingConvention = CallingConvention.StdCall, EntryPoint = "CloseHandle", CharSet = CharSet.Unicode)]
         static extern public bool CloseHandle(IntPtr handle);
-        
-        [DllImport("kernel32.dll", CallingConvention=CallingConvention.StdCall, EntryPoint="GetCurrentThread", CharSet=CharSet.Unicode)]				
+
+        [DllImport("kernel32.dll", CallingConvention = CallingConvention.StdCall, EntryPoint = "GetCurrentThread", CharSet = CharSet.Unicode)]
         static extern public IntPtr GetCurrentThread();
 
-        [DllImport("kernel32.dll", CallingConvention=CallingConvention.StdCall, EntryPoint="GetCurrentProcess", CharSet=CharSet.Unicode)]				
+        [DllImport("kernel32.dll", CallingConvention = CallingConvention.StdCall, EntryPoint = "GetCurrentProcess", CharSet = CharSet.Unicode)]
         static extern public IntPtr GetCurrentProcess();
 
-        [DllImport("advapi32.dll", SetLastError=true, CallingConvention=CallingConvention.StdCall, EntryPoint="GetTokenInformation", CharSet=CharSet.Unicode)]				
+        [DllImport("advapi32.dll", SetLastError = true, CallingConvention = CallingConvention.StdCall, EntryPoint = "GetTokenInformation", CharSet = CharSet.Unicode)]
         static extern public bool GetTokenInformation(
                                         IntPtr tokenHandle,
                                         int tokenInformationClass,
@@ -832,33 +853,33 @@ namespace System.DirectoryServices.AccountManagement
                                         );
 
 
-        [DllImport("advapi32.dll", CallingConvention=CallingConvention.StdCall, EntryPoint="LsaOpenPolicy", CharSet=CharSet.Unicode)]				
+        [DllImport("advapi32.dll", CallingConvention = CallingConvention.StdCall, EntryPoint = "LsaOpenPolicy", CharSet = CharSet.Unicode)]
         static extern public int LsaOpenPolicy(
                                         IntPtr lsaUnicodeString,
                                         IntPtr lsaObjectAttributes,
                                         int desiredAccess,
-                                        ref IntPtr policyHandle);                                                
-        
-        [DllImport("advapi32.dll", CallingConvention=CallingConvention.StdCall, EntryPoint="LsaQueryInformationPolicy", CharSet=CharSet.Unicode)]				
+                                        ref IntPtr policyHandle);
+
+        [DllImport("advapi32.dll", CallingConvention = CallingConvention.StdCall, EntryPoint = "LsaQueryInformationPolicy", CharSet = CharSet.Unicode)]
         static extern public int LsaQueryInformationPolicy(
                                         IntPtr policyHandle,
                                         int policyInformationClass,
                                         ref IntPtr buffer
                                         );
 
-        [DllImport("advapi32.dll", CallingConvention=CallingConvention.StdCall, EntryPoint="LsaLookupSids", CharSet=CharSet.Unicode)]				
+        [DllImport("advapi32.dll", CallingConvention = CallingConvention.StdCall, EntryPoint = "LsaLookupSids", CharSet = CharSet.Unicode)]
         public static extern int LsaLookupSids(
                                         IntPtr policyHandle,
                                         int count,
                                         IntPtr[] sids,
                                         out IntPtr referencedDomains,
                                         out IntPtr names
-                                        );        
+                                        );
 
-        [DllImport("advapi32.dll", CallingConvention=CallingConvention.StdCall, EntryPoint="LsaFreeMemory", CharSet=CharSet.Unicode)]				
+        [DllImport("advapi32.dll", CallingConvention = CallingConvention.StdCall, EntryPoint = "LsaFreeMemory", CharSet = CharSet.Unicode)]
         static extern public int LsaFreeMemory(IntPtr buffer);
-                                        
-        [DllImport("advapi32.dll", CallingConvention=CallingConvention.StdCall, EntryPoint="LsaClose", CharSet=CharSet.Unicode)]				
+
+        [DllImport("advapi32.dll", CallingConvention = CallingConvention.StdCall, EntryPoint = "LsaClose", CharSet = CharSet.Unicode)]
         static extern public int LsaClose(IntPtr policyHandle);
 
 
@@ -866,7 +887,7 @@ namespace System.DirectoryServices.AccountManagement
         // Impersonation
         //
 
-        [DllImport("advapi32.dll", SetLastError=true, CallingConvention=CallingConvention.StdCall, EntryPoint="LogonUserW", CharSet=CharSet.Unicode)]
+        [DllImport("advapi32.dll", SetLastError = true, CallingConvention = CallingConvention.StdCall, EntryPoint = "LogonUserW", CharSet = CharSet.Unicode)]
         static extern public int LogonUser(
                                     string lpszUsername,
                                     string lpszDomain,
@@ -875,25 +896,23 @@ namespace System.DirectoryServices.AccountManagement
                                     int dwLogonProvider,
                                     ref IntPtr phToken);
 
-        [DllImport("advapi32.dll", SetLastError=true, CallingConvention=CallingConvention.StdCall, EntryPoint="ImpersonateLoggedOnUser", CharSet=CharSet.Unicode)]
+        [DllImport("advapi32.dll", SetLastError = true, CallingConvention = CallingConvention.StdCall, EntryPoint = "ImpersonateLoggedOnUser", CharSet = CharSet.Unicode)]
         static extern public int ImpersonateLoggedOnUser(IntPtr hToken);
 
-        [DllImport("Advapi32.dll", CallingConvention=CallingConvention.StdCall, EntryPoint="RevertToSelf", CharSet=CharSet.Unicode)]
-        static extern public int RevertToSelf();        
-        
+        [DllImport("Advapi32.dll", CallingConvention = CallingConvention.StdCall, EntryPoint = "RevertToSelf", CharSet = CharSet.Unicode)]
+        static extern public int RevertToSelf();
+
         public const int FORMAT_MESSAGE_ALLOCATE_BUFFER = 0x00000100,
             FORMAT_MESSAGE_IGNORE_INSERTS = 0x00000200,
             FORMAT_MESSAGE_FROM_STRING = 0x00000400,
             FORMAT_MESSAGE_FROM_HMODULE = 0x00000800,
             FORMAT_MESSAGE_FROM_SYSTEM = 0x00001000,
             FORMAT_MESSAGE_ARGUMENT_ARRAY = 0x00002000,
-            FORMAT_MESSAGE_MAX_WIDTH_MASK = 0x000000FF;                            
+            FORMAT_MESSAGE_MAX_WIDTH_MASK = 0x000000FF;
 
-        [DllImport("kernel32.dll", CharSet=System.Runtime.InteropServices.CharSet.Unicode)]
+        [DllImport("kernel32.dll", CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
         public static extern int FormatMessageW(int dwFlags, IntPtr lpSource, int dwMessageId,
                                                 int dwLanguageId, StringBuilder lpBuffer, int nSize, IntPtr arguments);
-
-
     }
 }
- 
+

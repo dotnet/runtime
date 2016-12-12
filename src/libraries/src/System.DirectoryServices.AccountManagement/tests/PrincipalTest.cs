@@ -1,4 +1,8 @@
-﻿using System;
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+using System;
 using System.DirectoryServices.AccountManagement;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -11,7 +15,7 @@ namespace AccountManagementUnitTests
     [TestClass()]
     abstract public class PrincipalTest
     {
-        private TestContext testContextInstance;
+        private TestContext _testContextInstance;
         protected PrincipalContext domainContext;
 
         /// <summary>
@@ -22,11 +26,11 @@ namespace AccountManagementUnitTests
         {
             get
             {
-                return testContextInstance;
+                return _testContextInstance;
             }
             set
             {
-                testContextInstance = value;
+                _testContextInstance = value;
             }
         }
 
@@ -107,7 +111,7 @@ namespace AccountManagementUnitTests
                 }
             }
             catch (PrincipalExistsException)
-            {                
+            {
                 exceptionThrown = true;
             }
 
@@ -186,10 +190,9 @@ namespace AccountManagementUnitTests
         /// <param name="name"></param>
         /// <returns></returns>
         internal abstract Principal FindExtendedPrincipal(PrincipalContext context, string name);
-
     }
 
-    interface IExtendedPrincipalTest
+    internal interface IExtendedPrincipalTest
     {
         object ObjectExtension { get; set; }
         byte[] ByteArrayExtension { get; set; }
