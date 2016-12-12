@@ -63,7 +63,7 @@ namespace System.Collections.Generic {
             return StringBuilderCache.GetStringAndRelease(s);
         }
 
-        //[EditorBrowsable(EditorBrowsableState.Never)]
+        // BLOCKED (do not add now): [EditorBrowsable(EditorBrowsableState.Never)]
         public void Deconstruct(out TKey key, out TValue value)
         {
             key = Key;
