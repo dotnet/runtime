@@ -2862,19 +2862,20 @@ MONO_SIG_HANDLER_FUNC (, mono_sigfpe_signal_handler)
 
 MONO_SIG_HANDLER_FUNC (, mono_sigill_signal_handler)
 {
-	MonoException *exc;
+	MONO_SIG_HANDLER_INFO_TYPE *info = MONO_SIG_HANDLER_GET_INFO ();
 	MONO_SIG_HANDLER_GET_CONTEXT;
 
 	if (mono_runtime_get_no_exec ())
 		exit (1);
 
-	MONO_ENTER_GC_UNSAFE_UNBALANCED;
 
-	exc = mono_get_exception_execution_engine ("SIGILL");
+	mono_handle_native_crash ("SIGILL", ctx, info);
+	if (mono_do_crash_chaining) {
+		mono_chain_signal (MONO_SIG_HANDLER_PARAMS);
+		return;
+	}
 
-	mono_arch_handle_exception (ctx, exc);
-
-	MONO_EXIT_GC_UNSAFE_UNBALANCED;
+	g_assert_not_reached ();
 }
 
 #if defined(MONO_ARCH_USE_SIGACTION) || defined(HOST_WIN32)
