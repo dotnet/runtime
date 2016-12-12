@@ -11,7 +11,9 @@
  * to the standard code-manager spec.
  */
 
+#ifndef FEATURE_PAL
 #include "utilcode.h"           // For _ASSERTE()
+#endif //!FEATURE_PAL
 #include "gcdump.h"
 
 /*****************************************************************************/
