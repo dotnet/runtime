@@ -9,9 +9,9 @@ using Xunit;
 
 namespace System.Net.Tests
 {
-    // TODO: #13187
+    // TODO: #13187 Implement HttpListener on non-windows platforms.
     [PlatformSpecific(TestPlatforms.Windows)]
-    public class HttpAuthenticationTest
+    public class AuthenticationTests
     {
         private const string Basic = "Basic";
         private const string TestUser = "testuser";

@@ -1245,17 +1245,17 @@ namespace System.Net
                     if (index < authorizationHeader.Length)
                     {
                         if ((authenticationScheme & AuthenticationSchemes.Negotiate) != AuthenticationSchemes.None &&
-                            string.Compare(authorizationHeader, 0, NegotiationInfoClass.Negotiate, 0, index, StringComparison.OrdinalIgnoreCase) == 0)
+                            string.Compare(authorizationHeader, 0, AuthenticationTypes.Negotiate, 0, index, StringComparison.OrdinalIgnoreCase) == 0)
                         {
                             headerScheme = AuthenticationSchemes.Negotiate;
                         }
                         else if ((authenticationScheme & AuthenticationSchemes.Ntlm) != AuthenticationSchemes.None &&
-                            string.Compare(authorizationHeader, 0, NegotiationInfoClass.NTLM, 0, index, StringComparison.OrdinalIgnoreCase) == 0)
+                            string.Compare(authorizationHeader, 0, AuthenticationTypes.NTLM, 0, index, StringComparison.OrdinalIgnoreCase) == 0)
                         {
                             headerScheme = AuthenticationSchemes.Ntlm;
                         }
                         else if ((authenticationScheme & AuthenticationSchemes.Basic) != AuthenticationSchemes.None &&
-                            string.Compare(authorizationHeader, 0, NegotiationInfoClass.Basic, 0, index, StringComparison.OrdinalIgnoreCase) == 0)
+                            string.Compare(authorizationHeader, 0, AuthenticationTypes.Basic, 0, index, StringComparison.OrdinalIgnoreCase) == 0)
                         {
                             headerScheme = AuthenticationSchemes.Basic;
                         }
@@ -1974,12 +1974,12 @@ namespace System.Net
 
             if ((authenticationScheme & AuthenticationSchemes.Negotiate) != 0)
             {
-                AddChallenge(ref challenges, NegotiationInfoClass.Negotiate);
+                AddChallenge(ref challenges, AuthenticationTypes.Negotiate);
             }
 
             if ((authenticationScheme & AuthenticationSchemes.Ntlm) != 0)
             {
-                AddChallenge(ref challenges, NegotiationInfoClass.NTLM);
+                AddChallenge(ref challenges, AuthenticationTypes.NTLM);
             }
 
             if ((authenticationScheme & AuthenticationSchemes.Basic) != 0)
@@ -2349,7 +2349,7 @@ namespace System.Net
 
                 IDisposable identity = _authenticatedConnection == null ? null : _authenticatedConnection.Identity as IDisposable;
                 if ((identity != null) &&
-                    (_authenticatedConnection.Identity.AuthenticationType == NegotiationInfoClass.NTLM) &&
+                    (_authenticatedConnection.Identity.AuthenticationType == AuthenticationTypes.NTLM) &&
                     (_httpListener.UnsafeConnectionNtlmAuthentication))
                 {
                     identity.Dispose();
