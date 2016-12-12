@@ -2,25 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*++
-
-Copyright (c) 2004  Microsoft Corporation
-
-Module Name:
-
-
-Abstract:
-
-    Implements the PrincipalContext class.
-
-History:
-
-    04-May-2004    MattRim     Created
-    17-Aug-2004    MattRim     Redesign from Context to PrincipalContext
-
---*/
-
-
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -66,8 +47,6 @@ namespace System.DirectoryServices.AccountManagement
         public const string LDAP_CAP_ACTIVE_DIRECTORY_PARTIAL_SECRETS_OID = "1.2.840.113556.1.4.1920";
         public const string LDAP_CAP_ACTIVE_DIRECTORY_V61_OID = "1.2.840.113556.1.4.1935";
     }
-
-
 
     internal sealed class CredentialValidator
     {
@@ -268,7 +247,6 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-
         // <SecurityKernel Critical="True" Ring="0">
         // <Asserts Name="Declarative: [DirectoryServicesPermission(SecurityAction.Assert, Unrestricted = true)]" />
         // <ReferencesCritical Name="Method: BindSam(String, String, String):Boolean" Ring="1" />
@@ -285,7 +263,6 @@ namespace System.DirectoryServices.AccountManagement
             // here.
             if (userName != null && userName.Length == 0)
                 return false;
-
 
             if (_contextType == ContextType.Domain || _contextType == ContextType.ApplicationDirectory)
             {
@@ -446,7 +423,6 @@ namespace System.DirectoryServices.AccountManagement
             if ((options & ~(ContextOptions.Signing | ContextOptions.Negotiate | ContextOptions.Sealing | ContextOptions.SecureSocketLayer | ContextOptions.SimpleBind | ContextOptions.ServerBind)) != 0)
                 throw new InvalidEnumArgumentException("options", (int)options, typeof(ContextOptions));
 
-
             if (contextType == ContextType.Machine && ((options & ~ContextOptions.Negotiate) != 0))
             {
                 throw new ArgumentException(StringResources.InvalidContextOptionsForMachine);
@@ -488,7 +464,6 @@ namespace System.DirectoryServices.AccountManagement
 
             _credValidate = new CredentialValidator(contextType, name, _serverProperties);
         }
-
 
         //
         // Public Properties
@@ -562,7 +537,6 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-
         /// <summary>
         /// Validate the passed credentials against the directory supplied.
         //   This function will use the best determined method to do the evaluation
@@ -609,10 +583,8 @@ namespace System.DirectoryServices.AccountManagement
                 }
 #endif
 
-
             return (_credValidate.Validate(userName, password, options));
         }
-
 
         //
         // Private methods for initialization
@@ -657,7 +629,6 @@ namespace System.DirectoryServices.AccountManagement
                 }
             }
         }
-
 
         private void DoApplicationDirectoryInit()
         {
@@ -751,7 +722,6 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-
         private void DoServerVerifyAndPropRetrieval()
         {
             _serverProperties = new ServerProperties();
@@ -765,7 +735,6 @@ namespace System.DirectoryServices.AccountManagement
                 }
             }
         }
-
 
         private void DoLDAPDirectoryInit()
         {
@@ -828,7 +797,6 @@ namespace System.DirectoryServices.AccountManagement
                                                    + e.GetType().ToString() +
                                                    " and message " + e.Message);
 
-
                 throw;
             }
             finally
@@ -869,7 +837,6 @@ namespace System.DirectoryServices.AccountManagement
             {
                 serverName = _name + "/";
             }
-
 
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalContext", "DoLDAPDirectoryInitNoContainer: serverName is " + serverName);
 
@@ -1011,8 +978,6 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-
-
 #if TESTHOOK
 
         static public PrincipalContext Test
@@ -1071,7 +1036,6 @@ namespace System.DirectoryServices.AccountManagement
             {
                 GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalContext", "Dispose: disposing");
 
-
                 // Note that we may end up calling Dispose multiple times on the same
                 // StoreCtx (since, for example, it might be that userCtx == groupCtx).
                 // This is okay, since StoreCtxs allow multiple Dispose() calls, and ignore
@@ -1094,11 +1058,9 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-
         //
         // Private Implementation
         //
-
 
         // Are we initialized?
         private bool _initialized = false;
@@ -1114,7 +1076,6 @@ namespace System.DirectoryServices.AccountManagement
         private string _username;
         private string _password;
 
-
         // Cached connections to the server for fast credential validation
         private CredentialValidator _credValidate;
         private ServerProperties _serverProperties;
@@ -1126,7 +1087,6 @@ namespace System.DirectoryServices.AccountManagement
                 return _serverProperties;
             }
         }
-
 
         private string _name;
         private string _container;
@@ -1148,7 +1108,6 @@ namespace System.DirectoryServices.AccountManagement
         private StoreCtx _computerCtx = null;
         private StoreCtx _groupCtx = null;
 
-
         // The StoreCtx to be used when querying against this PrincipalContext for Principals
         private StoreCtx _queryCtx = null;
 
@@ -1166,7 +1125,6 @@ namespace System.DirectoryServices.AccountManagement
                 _queryCtx = value;
             }
         }
-
 
         [DirectoryServicesPermission(SecurityAction.Assert, Unrestricted = true)]
         internal void ReadServerConfig(string serverName, ref ServerProperties properties)
@@ -1349,19 +1307,4 @@ namespace System.DirectoryServices.AccountManagement
         }
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 

@@ -2,14 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-//------------------------------------------------------------------------------
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>                                                                
-//------------------------------------------------------------------------------
-
-/*
- */
-
 namespace System.DirectoryServices
 {
     using System;
@@ -29,7 +21,6 @@ namespace System.DirectoryServices
         public DirectoryServicesCOMException(string message) : base(message) { }
         public DirectoryServicesCOMException(string message, Exception inner) : base(message, inner) { }
         protected DirectoryServicesCOMException(SerializationInfo info, StreamingContext context) : base(info, context) { }
-
 
         internal DirectoryServicesCOMException(string extendedMessage, int extendedError, COMException e) : base(e.Message, e.ErrorCode)
         {

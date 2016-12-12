@@ -2,23 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*++
-
-Copyright (c) 2004  Microsoft Corporation
-
-Module Name:
-
-
-Abstract:
-
-    Implements the ADStoreCtx class.
-
-History:
-
-    04-May-2004    MattRim     Created
-
---*/
-
 using System;
 using System.Diagnostics;
 using System.Collections;
@@ -110,7 +93,6 @@ namespace System.DirectoryServices.AccountManagement
             s_filterPropertiesTable.Add(mappingIndex, mappingTable);
         }
 
-
         protected static void LoadPropertyMappingTable(int mappingIndex, object[,] rawPropertyMappingTable)
         {
             //
@@ -136,7 +118,6 @@ namespace System.DirectoryServices.AccountManagement
 
             Dictionary<Type, StringCollection> TypeToLdapDict = new Dictionary<Type, StringCollection>();
 
-
             for (int i = 0; i < s_propertyMappingTableRaw.GetLength(0); i++)
             {
                 string propertyName = rawPropertyMappingTable[i, 0] as string;
@@ -156,7 +137,6 @@ namespace System.DirectoryServices.AccountManagement
                 propertyEntry.suggestedADPropertyName = ldapAttribute;
                 propertyEntry.ldapToPapiConverter = fromLdap;
                 propertyEntry.papiToLdapConverter = toLdap;
-
 
                 // Build a mapping table from PAPI propertyname to ldapAttribute that we can use below
                 // to build a list of ldap attributes for each object type.
@@ -206,7 +186,6 @@ namespace System.DirectoryServices.AccountManagement
             s_propertyMappingTableByProperty.Add(mappingIndex, mappingTableByProperty);
             s_propertyMappingTableByLDAP.Add(mappingIndex, mappingTableByLDAP);
             s_propertyMappingTableByPropertyFull.Add(mappingIndex, mappingTableByPropertyFull);
-
 
             // Build a table of Type mapped to a collection of all ldap attributes for that type.
             // This table will be used to load the objects when searching.             
@@ -282,7 +261,6 @@ namespace System.DirectoryServices.AccountManagement
                     }
                 }
             }
-
 
             principalPropList.Add("objectClass");
             authPrincipalPropList.Add("objectClass");
@@ -377,7 +355,6 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-
         //
         // CRUD
         //
@@ -422,7 +399,6 @@ namespace System.DirectoryServices.AccountManagement
                 ADStoreKey key = new ADStoreKey(((DirectoryEntry)p.UnderlyingObject).Guid);
                 p.Key = key;
 
-
                 // Reset the change tracking
                 p.ResetAllChangeStatus();
 
@@ -461,8 +437,6 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-
-
         internal override bool AccessCheck(Principal p, PrincipalAccessMask targetPermission)
         {
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADStoreCtx", "AccessCheck " + targetPermission.ToString());
@@ -483,7 +457,6 @@ namespace System.DirectoryServices.AccountManagement
             return false;
         }
 
-
         /// <summary>
         /// If The enabled property was set on the principal then perform actions 
         /// neccessary on the principal to set the enabled status to match
@@ -503,7 +476,6 @@ namespace System.DirectoryServices.AccountManagement
                 SetAuthPrincipalEnableStatus((AuthenticablePrincipal)p, enable);
             }
         }
-
 
         private void SetPasswordSecurityifNeccessary(Principal p)
         {
@@ -560,7 +532,6 @@ namespace System.DirectoryServices.AccountManagement
                                                                 new MACLPrinc.SecurityIdentifier(WorldSddl),
                                                                 AccessControlType.Allow,
                                                                 s_changePasswordGuid);
-
 
             // Based on the current state of the ACL and the userCannotChangePassword status, perform the necessary modifications,
             // if any
@@ -643,7 +614,6 @@ namespace System.DirectoryServices.AccountManagement
                 int uacValue;
 
                 DirectoryEntry de = (DirectoryEntry)ap.UnderlyingObject;
-
 
                 if (de.Properties["userAccountControl"].Count > 0)
                 {
@@ -765,7 +735,6 @@ namespace System.DirectoryServices.AccountManagement
             if (p.GetChangeStatusForProperty(PropertyNames.PrincipalName))
             {
                 name = rdnPrefix + "=" + (string)p.GetValueForProperty(PropertyNames.PrincipalName);
-
 
                 // If the principal class is derived from Group, Computer or User then we need to see
                 // if the class has an RdnPrefix set that differs from the base class prefix.  If so then we need
@@ -926,7 +895,6 @@ namespace System.DirectoryServices.AccountManagement
             WriteAttribute(p, "lockoutTime", 0);
         }
 
-
         // methods for manipulating passwords
         /// <summary>
         /// Set the password on the principal. This function requires administrator privilages
@@ -1057,7 +1025,6 @@ namespace System.DirectoryServices.AccountManagement
             return FindByDate(principalType, new string[] { "accountExpires" }, matchType, dt);
         }
 
-
         private ResultSet FindByDate(Type subtype, string[] ldapAttributes, MatchType matchType, DateTime value)
         {
             Debug.Assert(ldapAttributes != null);
@@ -1172,7 +1139,6 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-
         // Get groups of which p is a direct member
         // search
         // 1.  search for group with same group id as principals primary group ID.
@@ -1198,7 +1164,6 @@ namespace System.DirectoryServices.AccountManagement
                     GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADStoreCtx", "GetGroupsMemberOf: fake principal");
                     return GetGroupsMemberOf(p, this);
                 }
-
 
                 Debug.Assert(p.UnderlyingObject != null);
 
@@ -1299,7 +1264,6 @@ namespace System.DirectoryServices.AccountManagement
                         }
                     }
                 }
-
 
                 if (false == useASQ)
                 {
@@ -1412,7 +1376,6 @@ namespace System.DirectoryServices.AccountManagement
                 }
             }
         }
-
 
         // Get groups from this ctx which contain a principal corresponding to foreignPrincipal
         // (which is a principal from foreignContext)
@@ -1572,7 +1535,6 @@ namespace System.DirectoryServices.AccountManagement
                     resultSet = new ADDNLinkedAttrSet(foreignPrincipal.DistinguishedName, memberSearcher, null, null, false, this);
                 }
 
-
                 return resultSet;
             }
             catch (System.Runtime.InteropServices.COMException e)
@@ -1589,7 +1551,6 @@ namespace System.DirectoryServices.AccountManagement
                     dncContainer.Dispose();
             }
         }
-
 
         private string GetGroupDnFromGroupID(byte[] userSid, int primaryGroupId)
         {
@@ -1633,7 +1594,6 @@ namespace System.DirectoryServices.AccountManagement
 
             return null;
         }
-
 
         // Get groups of which p is a member, using AuthZ S4U APIs for recursive membership
         internal override ResultSet GetGroupsMemberOfAZ(Principal p)
@@ -1680,7 +1640,6 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-
         // Get members of group g   
         // Need 2 searchers
         // 1.  Users with this group as their primary group ID
@@ -1703,7 +1662,6 @@ namespace System.DirectoryServices.AccountManagement
             try
             {
                 DirectoryEntry groupDE = (DirectoryEntry)g.UnderlyingObject;
-
 
                 // Create a DirectorySearcher for users who are members of this group via their primaryGroupId attribute
                 DirectorySearcher ds = null;
@@ -1955,7 +1913,6 @@ namespace System.DirectoryServices.AccountManagement
                 return true;
             }
 
-
             Debug.Assert(g.UnderlyingObject != null);
             DirectoryEntry groupDE = (DirectoryEntry)g.UnderlyingObject;
 
@@ -2111,9 +2068,6 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-
-
-
         //
         // Cross-store support
         //
@@ -2204,7 +2158,6 @@ namespace System.DirectoryServices.AccountManagement
                                             name,
                                             domainName);
 
-
                     // Since this is AD, the remote principal must be an AD principal.
                     // Build a PrincipalContext for the store which owns the principal
 
@@ -2247,8 +2200,6 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-
-
         // Returns true if AccountInfo is supported for the specified principal, false otherwise.
         // Used when a application tries to access the AccountInfo property of a newly-inserted
         // (not yet persisted) AuthenticablePrincipal, to determine whether it should be allowed.
@@ -2262,7 +2213,6 @@ namespace System.DirectoryServices.AccountManagement
             return true;
         }
 
-
         // Returns the set of credential types supported by this store for the specified principal.
         // Used when a application tries to access the PasswordInfo property of a newly-inserted
         // (not yet persisted) AuthenticablePrincipal, to determine whether it should be allowed.
@@ -2275,7 +2225,6 @@ namespace System.DirectoryServices.AccountManagement
 
             return CredentialTypes.Password | CredentialTypes.Certificate;
         }
-
 
         //
         // When called, this function does a GetInfoEx() to preload the DirectoryEntry's
@@ -2336,7 +2285,6 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-
         //
         // Construct a fake Principal to represent a well-known SID like
         // "\Everyone" or "NT AUTHORITY\NETWORK SERVICE"
@@ -2367,11 +2315,9 @@ namespace System.DirectoryServices.AccountManagement
             return p;
         }
 
-
         //
         // Private data
         //
-
 
         ///
         /// <summary>
@@ -2395,7 +2341,6 @@ namespace System.DirectoryServices.AccountManagement
                 return this.contextBasePartitionDN;
             }
         }
-
 
         internal string DefaultNamingContext
         {
@@ -2498,7 +2443,6 @@ namespace System.DirectoryServices.AccountManagement
                 return this.userSuppliedServerName;
             }
         }
-
 
         private ulong LockoutDuration
         {
@@ -2663,7 +2607,6 @@ namespace System.DirectoryServices.AccountManagement
                 }
             }
         }
-
 
         internal override bool IsValidProperty(Principal p, string propertyName)
         {

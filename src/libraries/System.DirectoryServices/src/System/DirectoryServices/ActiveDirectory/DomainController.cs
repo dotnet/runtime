@@ -2,12 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-//------------------------------------------------------------------------------
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>                                                                
-//------------------------------------------------------------------------------
-
-
 namespace System.DirectoryServices.ActiveDirectory
 {
     using System;
@@ -70,7 +64,6 @@ namespace System.DirectoryServices.ActiveDirectory
 
         // this is twice the maximum allowed RIDPool size which is 15k
         internal const int UpdateRidPoolSeizureValue = 30000;
-
 
         #region constructors
 
@@ -426,7 +419,6 @@ namespace System.DirectoryServices.ActiveDirectory
                     throw new InvalidEnumArgumentException("role", (int)role, typeof(ActiveDirectoryRole));
             }
 
-
             DirectoryEntry roleObjectEntry = null;
             try
             {
@@ -693,7 +685,6 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-
         public DateTime CurrentTime
         {
             get
@@ -714,7 +705,6 @@ namespace System.DirectoryServices.ActiveDirectory
                 return ParseDateTime(serverUTCTime);
             }
         }
-
 
         public Int64 HighestCommittedUsn
         {
@@ -737,7 +727,6 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-
         public string OSVersion
         {
             get
@@ -753,7 +742,6 @@ namespace System.DirectoryServices.ActiveDirectory
                 return _cachedOSVersion;
             }
         }
-
 
         internal double NumericOSVersion
         {
@@ -781,7 +769,6 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-
         public ActiveDirectoryRoleCollection Roles
         {
             get
@@ -794,7 +781,6 @@ namespace System.DirectoryServices.ActiveDirectory
                 return _cachedRoles;
             }
         }
-
 
         public Domain Domain
         {
@@ -845,7 +831,6 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-
         public override String SiteName
         {
             [
@@ -868,7 +853,6 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-
         internal String SiteObjectName
         {
             get
@@ -885,7 +869,6 @@ namespace System.DirectoryServices.ActiveDirectory
                 return cachedSiteObjectName;
             }
         }
-
 
         internal String ComputerObjectName
         {
@@ -904,7 +887,6 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-
         internal String ServerObjectName
         {
             get
@@ -921,7 +903,6 @@ namespace System.DirectoryServices.ActiveDirectory
                 return cachedServerObjectName;
             }
         }
-
 
         internal String NtdsaObjectName
         {
@@ -1114,7 +1095,6 @@ namespace System.DirectoryServices.ActiveDirectory
             return dc;
         }
 
-
         internal static DomainController FindOneInternal(DirectoryContext context, string domainName, string siteName, LocatorOptions flag)
         {
             DomainControllerInfo domainControllerInfo;
@@ -1200,7 +1180,6 @@ namespace System.DirectoryServices.ActiveDirectory
 
             return new DomainControllerCollection(dcList);
         }
-
 
         private void GetDomainControllerInfo()
         {

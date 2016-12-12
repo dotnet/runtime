@@ -2,23 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*++
-
-Copyright (c) 2004  Microsoft Corporation
-
-Module Name:
-
-
-Abstract:
-
-    Implements the Principal class.
-
-History:
-
-    04-May-2004    MattRim     Created
-
---*/
-
 using System;
 using System.Diagnostics;
 using System.Globalization;
@@ -127,7 +110,6 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-
         // DisplayName property
 
         [System.Diagnostics.DebuggerBrowsable(DebuggerBrowsableState.Never)]
@@ -163,7 +145,6 @@ namespace System.DirectoryServices.AccountManagement
                 HandleSet<string>(ref _displayName, value, ref _displayNameChanged, PropertyNames.PrincipalDisplayName);
             }
         }
-
 
         //
         // Convenience wrappers for the IdentityClaims property
@@ -598,8 +579,6 @@ namespace System.DirectoryServices.AccountManagement
             _ctx.QueryCtx = newStoreCtx;  // so Updates go to the right StoreCtx
         }
 
-
-
         // <SecurityKernel Critical="True" Ring="0">
         // <SatisfiesLinkDemand Name="CheckDisposedOrDeleted():Void" />
         // <SatisfiesLinkDemand Name="CheckFakePrincipal():Void" />
@@ -769,7 +748,6 @@ namespace System.DirectoryServices.AccountManagement
             if (identityValue == null)
                 throw new ArgumentNullException("identityValue");
 
-
             GroupPrincipal g = GroupPrincipal.FindByIdentity(context, identityType, identityValue);
 
             if (g != null)
@@ -782,7 +760,6 @@ namespace System.DirectoryServices.AccountManagement
                 throw new NoMatchingPrincipalException(StringResources.NoMatchingGroupExceptionText);
             }
         }
-
 
         //
         // IDisposable
@@ -809,7 +786,6 @@ namespace System.DirectoryServices.AccountManagement
                     GlobalDebug.WriteLineIf(GlobalDebug.Info, "Principal", "Dispose: disposing underlying search object");
                     ((IDisposable)this.UnderlyingSearchObject).Dispose();
                 }
-
 
                 _disposed = true;
                 GC.SuppressFinalize(this);
@@ -876,7 +852,6 @@ namespace System.DirectoryServices.AccountManagement
                 }
             }
         }
-
 
         private void ValidateExtensionObject(object value)
         {
@@ -975,7 +950,6 @@ namespace System.DirectoryServices.AccountManagement
         // Directly corresponds to the Principal.PrincipalContext public property
         [System.Security.SecuritySafeCritical]
         private PrincipalContext _ctx = null;
-
 
         internal bool Loaded
         {
@@ -1153,8 +1127,6 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-
-
         // <SecurityKernel Critical="True" Ring="0">
         // <SatisfiesLinkDemand Name="FindByIdentityWithTypeHelper(PrincipalContext, Type, Nullable`1<System.DirectoryServices.AccountManagement.IdentityType>, String, DateTime):Principal" />
         // <ReferencesCritical Name="Method: FindByIdentityWithTypeHelper(PrincipalContext, Type, Nullable`1<System.DirectoryServices.AccountManagement.IdentityType>, String, DateTime):Principal" Ring="1" />
@@ -1251,7 +1223,6 @@ namespace System.DirectoryServices.AccountManagement
             if (_ctx == null)
                 throw new InvalidOperationException(StringResources.UserMustSetContextForMethod);
 
-
             StoreCtx storeCtx = GetStoreCtxToUse();
             Debug.Assert(storeCtx != null);
 
@@ -1300,7 +1271,6 @@ namespace System.DirectoryServices.AccountManagement
                 throw new InvalidOperationException(StringResources.PrincipalNotSupportedOnFakePrincipal);
             }
         }
-
 
         // These methods implement the logic shared by all the get/set accessors for the public properties.
 
@@ -1354,7 +1324,6 @@ namespace System.DirectoryServices.AccountManagement
             currentValue = newValue;
             state = LoadState.Changed;
         }
-
 
         //
         // Load/Store implementation

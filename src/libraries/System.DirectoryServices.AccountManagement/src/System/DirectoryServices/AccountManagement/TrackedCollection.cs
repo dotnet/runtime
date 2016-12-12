@@ -2,23 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*++
-
-Copyright (c) 2004  Microsoft Corporation
-
-Module Name:
-
-
-Abstract:
-
-    Implements the TrackedCollection<T> class.
-
-History:
-
-    11-May-2004    MattRim     Created
-
---*/
-
 using System;
 using System.Diagnostics;
 using System.Collections;
@@ -94,7 +77,6 @@ namespace System.DirectoryServices.AccountManagement
             return (IEnumerator)GetEnumerator();
         }
 
-
         //
         // ICollection<T>
         //
@@ -130,7 +112,6 @@ namespace System.DirectoryServices.AccountManagement
             Debug.Fail("TrackedCollection.GetEnumerator(): should not be here");
             return new TrackedCollectionEnumerator<T>("TrackedCollectionEnumerator", this, this.combinedValues);
         }
-
 
         //
         //
@@ -181,7 +162,6 @@ namespace System.DirectoryServices.AccountManagement
             this.combinedValues.Add(el);
         }
 
-
         // If obj is an inserted value, removes it.
         // Otherwise, if obj is in the right-side of a pair of an original value, removes that pair from combinedValues
         // and adds the left-side of that pair to removedValues, to record the removal.
@@ -213,7 +193,6 @@ namespace System.DirectoryServices.AccountManagement
 
             return false;
         }
-
 
         //
         // Private implementation

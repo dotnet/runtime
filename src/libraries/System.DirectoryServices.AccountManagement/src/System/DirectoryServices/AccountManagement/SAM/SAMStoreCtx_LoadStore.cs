@@ -2,24 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*++
-
-Copyright (c) 2004  Microsoft Corporation
-
-Module Name:
-
-
-Abstract:
-
-    Implements the load/store (marshalling between Principal and DirectoryEntry)
-    portion of the SAMStoreCtx class.
-
-History:
-
-    14-June-2004    MattRim     Created
-
---*/
-
 using System;
 using System.Diagnostics;
 using System.Collections.Generic;
@@ -117,7 +99,6 @@ namespace System.DirectoryServices.AccountManagement
                     propertyMappingTableByProperty = s_computerPropertyMappingTableByProperty;
                 }
 
-
                 // propertyMappingTableByProperty has entries for all writable properties,
                 // including writable properties which we don't support in SAM for some or
                 // all principal types.
@@ -165,7 +146,6 @@ namespace System.DirectoryServices.AccountManagement
 
                     SDSUtils.SetPassword(de, password);
                 }
-
 
                 return de;
             }
@@ -227,7 +207,6 @@ namespace System.DirectoryServices.AccountManagement
 
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "SAMStoreCtx", "GetAsPrincipal: using path={0}", de.Path);
 
-
             // Construct a appropriate Principal object.
             Principal p = SDSUtils.DirectoryEntryToPrincipal(de, this.OwningContext, null);
             Debug.Assert(p != null);
@@ -242,7 +221,6 @@ namespace System.DirectoryServices.AccountManagement
 
             return p;
         }
-
 
         internal override void Load(Principal p, string principalPropertyName)
         {
@@ -291,9 +269,6 @@ namespace System.DirectoryServices.AccountManagement
                 throw ExceptionHelper.GetExceptionFromCOMException(e);
             }
         }
-
-
-
 
         // Loads the store values from p.UnderlyingObject into p, performing schema mapping as needed.        
         internal override void Load(Principal p)
@@ -565,7 +540,6 @@ namespace System.DirectoryServices.AccountManagement
 
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "SAMStoreCtx", "FindNativeByNT4IdentRef: searching for {0}", samAccountName);
 
-
             // If they specified a specific type of principal, use that as a hint to speed up
             // the lookup.
             string principalHint = "";
@@ -624,7 +598,6 @@ namespace System.DirectoryServices.AccountManagement
                 throw ExceptionHelper.GetExceptionFromCOMException(e);
             }
 
-
             // Make sure it's of the correct type           
             bool fMatch = false;
 
@@ -651,7 +624,6 @@ namespace System.DirectoryServices.AccountManagement
             return null;
         }
 
-
         // Returns a type indicating the type of object that would be returned as the wormhole for the specified
         // Principal.  For some StoreCtxs, this method may always return a constant (e.g., typeof(DirectoryEntry)
         // for ADStoreCtx).  For others, it may vary depending on the Principal passed in.
@@ -661,7 +633,6 @@ namespace System.DirectoryServices.AccountManagement
 
             return typeof(DirectoryEntry);
         }
-
 
         //
         // Property mapping tables
@@ -716,7 +687,6 @@ namespace System.DirectoryServices.AccountManagement
             {PropertyNames.PwdInfoPasswordNeverExpires,              typeof(UserPrincipal),  "UserFlags",     new FromWinNTConverterDelegate(UserFlagsFromWinNTConverter),    new ToWinNTConverterDelegate(UserFlagsToWinNTConverter)},
             {PropertyNames.PwdInfoCannotChangePassword,              typeof(UserPrincipal),  "UserFlags",     new FromWinNTConverterDelegate(UserFlagsFromWinNTConverter),    new ToWinNTConverterDelegate(UserFlagsToWinNTConverter)},
             {PropertyNames.PwdInfoAllowReversiblePasswordEncryption, typeof(UserPrincipal),  "UserFlags",     new FromWinNTConverterDelegate(UserFlagsFromWinNTConverter),    new ToWinNTConverterDelegate(UserFlagsToWinNTConverter)},
-
 
             //
             // Writable properties we don't support writing in SAM
@@ -794,7 +764,6 @@ namespace System.DirectoryServices.AccountManagement
         // For multivalued attributes, must test to make sure the value hasn't already been loaded into the DirectoryEntry
         // (to maintain idempotency when PushChangesToNative is called multiple times).
         private delegate void ToWinNTConverterDelegate(Principal p, string propertyName, DirectoryEntry de, string suggestedWinNTProperty, bool isLSAM);
-
 
         //
         // WinNT --> PAPI
@@ -1181,7 +1150,6 @@ namespace System.DirectoryServices.AccountManagement
                                         "UpdateGroupMembership: caught COMException, message={0}, code={1}",
                                         e.Message,
                                         e.ErrorCode);
-
 
                 // ADSI threw an exception trying to update the group membership
                 throw ExceptionHelper.GetExceptionFromCOMException(e);

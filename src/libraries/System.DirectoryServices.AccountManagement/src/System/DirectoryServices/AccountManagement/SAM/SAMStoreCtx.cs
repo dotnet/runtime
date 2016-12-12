@@ -2,23 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*++
-
-Copyright (c) 2004  Microsoft Corporation
-
-Module Name:
-
-
-Abstract:
-
-    Implements the SAMStoreCtx class.
-
-History:
-
-    04-May-2004    MattRim     Created
-
---*/
-
 using System;
 using System.Diagnostics;
 using System.Collections;
@@ -93,7 +76,6 @@ namespace System.DirectoryServices.AccountManagement
                 propertyEntry.winNTToPapiConverter = fromWinNT;
                 propertyEntry.papiToWinNTConverter = toWinNT;
 
-
                 // Add it to the appropriate tables
                 List<Hashtable> byPropertyTables = new List<Hashtable>();
                 List<Hashtable> byWinNTTables = new List<Hashtable>();
@@ -131,7 +113,6 @@ namespace System.DirectoryServices.AccountManagement
                     byWinNTTables.Add(s_groupPropertyMappingTableByWinNT);
                     BitMask = ObjectMask.Principal;
                 }
-
 
                 if ((winNTAttribute == null) || (winNTAttribute == "*******"))
                 {
@@ -180,7 +161,6 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-
         // Throws exception if ctxBase is not a computer object
         public SAMStoreCtx(DirectoryEntry ctxBase, bool ownCtxBase, string username, string password, ContextOptions options)
         {
@@ -218,7 +198,6 @@ namespace System.DirectoryServices.AccountManagement
                 base.Dispose();
             }
         }
-
 
         //
         // StoreCtx information
@@ -278,7 +257,6 @@ namespace System.DirectoryServices.AccountManagement
                                             (byte[])de.Properties["objectSid"].Value
                                             );
                 p.Key = key;
-
 
                 // Reset the change tracking
                 p.ResetAllChangeStatus();
@@ -451,7 +429,6 @@ namespace System.DirectoryServices.AccountManagement
             DirectoryEntry de = (DirectoryEntry)p.UnderlyingObject;
             Debug.Assert(de != null);
 
-
             // After setting the property, we need to commit the change to the store.
             // We do it in a copy of de, so that we don't inadvertently commit any other
             // pending changes in de.
@@ -569,7 +546,6 @@ namespace System.DirectoryServices.AccountManagement
             SDSUtils.WriteAttribute(de.Path, attribute, value, _credentials, _authTypes);
         }
 
-
         //
         // the various FindBy* methods
         //
@@ -635,7 +611,6 @@ namespace System.DirectoryServices.AccountManagement
 
             return resultSet;
         }
-
 
         // Get groups of which p is a direct member
         internal override ResultSet GetGroupsMemberOf(Principal p)
@@ -703,7 +678,6 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-
         // Get groups from this ctx which contain a principal corresponding to foreignPrincipal
         // (which is a principal from foreignContext)
         internal override ResultSet GetGroupsMemberOf(Principal foreignPrincipal, StoreCtx foreignContext)
@@ -741,7 +715,6 @@ namespace System.DirectoryServices.AccountManagement
             return GetGroupsMemberOf(u);
         }
 
-
         // Get groups of which p is a member, using AuthZ S4U APIs for recursive membership
         internal override ResultSet GetGroupsMemberOfAZ(Principal p)
         {
@@ -776,7 +749,6 @@ namespace System.DirectoryServices.AccountManagement
                 throw ExceptionHelper.GetExceptionFromCOMException(e);
             }
         }
-
 
         // Get members of group g
         internal override BookmarkableResultSet GetGroupMembership(GroupPrincipal g, bool recursive)
@@ -828,7 +800,6 @@ namespace System.DirectoryServices.AccountManagement
             explanationForFailure = null;
             return true;
         }
-
 
         //
         // Cross-store support
@@ -886,7 +857,6 @@ namespace System.DirectoryServices.AccountManagement
                                     name,
                                     domainName);
 
-
             // Since this is SAM, the remote principal must be an AD principal.
             // Build a PrincipalContext for the store which owns the principal
             // Use the ad default options so we turn sign and seal back on.
@@ -902,7 +872,6 @@ namespace System.DirectoryServices.AccountManagement
                             DefaultContextOptions.ADDefaultContextOption);
             
 #endif
-
 
             SecurityIdentifier sidObj = new SecurityIdentifier(sid, 0);
 
@@ -921,11 +890,9 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-
         //
         // Data Validation
         //
-
 
         // Returns true if AccountInfo is supported for the specified principal, false otherwise.
         // Used when a application tries to access the AccountInfo property of a newly-inserted
@@ -939,7 +906,6 @@ namespace System.DirectoryServices.AccountManagement
             // Both Computer and User support accounts.
             return true;
         }
-
 
         // Returns the set of credential types supported by this store for the specified principal.
         // Used when a application tries to access the PasswordInfo property of a newly-inserted
@@ -985,7 +951,6 @@ namespace System.DirectoryServices.AccountManagement
 
             return p;
         }
-
 
         //
         // Private data
@@ -1079,7 +1044,6 @@ namespace System.DirectoryServices.AccountManagement
 
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "SAMStoreCtx", "LoadComputerInfo: ver={0}.{1}", versionMajor, versionMinor);
 
-
             //
             // Machine user-supplied name
             //
@@ -1097,7 +1061,6 @@ namespace System.DirectoryServices.AccountManagement
             {
                 throw new PrincipalOperationException(StringResources.SAMStoreCtxUnableToRetrieveMachineName);
             }
-
 
             //
             // Machine flat name

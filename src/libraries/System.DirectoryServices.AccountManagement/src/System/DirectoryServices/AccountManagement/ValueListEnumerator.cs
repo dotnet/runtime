@@ -1,21 +1,3 @@
-/*++
-
-Copyright (c) 2004  Microsoft Corporation
-
-Module Name:
-
-    ValueCollectionEnumerator.cs
-
-Abstract:
-
-    Implements the ValueCollectionEnumerator<T> class.
-
-History:
-
-    10-May-2004    MattRim     Created
-
---*/
-
 using System;
 using System.Diagnostics;
 using System.Collections;
@@ -49,7 +31,6 @@ namespace System.Identity.Principals
             }
         }
 
-
         //
         // Public methods
         //
@@ -79,7 +60,6 @@ namespace System.Identity.Principals
             inner.Dispose();
         }
 
-
         //
         // Internal constructors
         //
@@ -87,7 +67,6 @@ namespace System.Identity.Principals
         {
             inner = new TrackedCollectionEnumerator<T>("ValueCollectionEnumerator", trackingList, combinedValues);
         }
-
 
         //
         // Private implementation

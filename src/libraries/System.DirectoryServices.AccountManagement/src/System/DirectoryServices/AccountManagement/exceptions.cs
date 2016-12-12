@@ -2,23 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*++
-
-Copyright (c) 2004  Microsoft Corporation
-
-Module Name:
-
-
-Abstract:
-
-    The custom exception classes
-
-History:
-
-    11-May-2004    MattRim     Created
-
---*/
-
 using System;
 using System.Diagnostics;
 using System.Runtime.Serialization;
@@ -185,7 +168,6 @@ namespace System.DirectoryServices.AccountManagement
             _errorCode = info.GetInt32("errorCode");
         }
 
-
         // <SecurityKernel Critical="True" Ring="0">
         // <SatisfiesLinkDemand Name="Exception.GetObjectData(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext):System.Void" />
         // </SecurityKernel>
@@ -317,7 +299,6 @@ namespace System.DirectoryServices.AccountManagement
             return GetExceptionFromErrorCode(errorCode, null);
         }
 
-
         // <SecurityKernel Critical="True" Ring="1">
         // <ReferencesCritical Name="Method: GetErrorMessage(Int32, Boolean):String" Ring="1" />
         // </SecurityKernel>
@@ -343,9 +324,6 @@ namespace System.DirectoryServices.AccountManagement
                 return new PrincipalOperationException(errorMsg, errorCode);
             }
         }
-
-
-
 
         // <SecurityKernel Critical="True" Ring="0">
         // <CallsSuppressUnmanagedCode Name="UnsafeNativeMethods.FormatMessageW(System.Int32,System.IntPtr,System.Int32,System.Int32,System.Text.StringBuilder,System.Int32,System.IntPtr):System.Int32" />

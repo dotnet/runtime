@@ -2,11 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-//------------------------------------------------------------------------------
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>                                                                
-//------------------------------------------------------------------------------
-
 namespace System.DirectoryServices.ActiveDirectory
 {
     using System;
@@ -179,7 +174,7 @@ namespace System.DirectoryServices.ActiveDirectory
             DirectoryEntry domainEntry = null;
 
             // CurrentDomain          Valid domainMode      Action
-            //-----------------------------------------------------------------------------------------------
+            -----------------
             // Windows2000Mixed        0                      ntMixedDomain = 0  msDS-Behavior-Version = 0
             // Windows2000Mixed        1                                         msDS-Behavior-Version = 1
             // Windows2000Mixed        2                      ntMixedDomain = 0, msDS-Behavior-Version = 2
@@ -282,7 +277,7 @@ namespace System.DirectoryServices.ActiveDirectory
             DirectoryEntry domainEntry = null;
 
             // CurrentDomain          Valid RequestedDomain      Action
-            //-----------------------------------------------------------------------------------------------
+            -----------------
             // Windows2000Mixed        Windows2000Native         ntMixedDomain = 0
             // Windows2000Mixed        Windows2003Interim        msDS-Behavior-Version = 1
             // Windows2000Mixed        Windows2003               ntMixedDomain = 0, msDS-Behavior-Version = 2
@@ -797,7 +792,6 @@ namespace System.DirectoryServices.ActiveDirectory
             TrustHelper.UpdateTrustDirection(targetDomain.GetDirectoryContext(), targetDomain.Name, Name, password, false /* not a forest */, reverseDirection);
         }
 
-
         public void RepairTrustRelationship(Domain targetDomain)
         {
             TrustDirection direction = TrustDirection.Bidirectional;
@@ -867,7 +861,6 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-
         public DomainControllerCollection DomainControllers
         {
             get
@@ -881,7 +874,6 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-
         public DomainCollection Children
         {
             get
@@ -894,7 +886,6 @@ namespace System.DirectoryServices.ActiveDirectory
                 return _cachedChildren;
             }
         }
-
 
         public DomainMode DomainMode
         {
@@ -936,7 +927,6 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-
         public DomainController PdcRoleOwner
         {
             get
@@ -950,7 +940,6 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-
         public DomainController RidRoleOwner
         {
             get
@@ -963,7 +952,6 @@ namespace System.DirectoryServices.ActiveDirectory
                 return _cachedRidRoleOwner;
             }
         }
-
 
         public DomainController InfrastructureRoleOwner
         {
@@ -1014,7 +1002,6 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             return domainFunctionality;
         }
-
 
         private DomainMode GetDomainMode()
         {

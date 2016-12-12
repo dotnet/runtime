@@ -2,11 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-//------------------------------------------------------------------------------
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>                                                                
-//------------------------------------------------------------------------------
-
 namespace System.DirectoryServices.Interop
 {
     using System.Runtime.InteropServices;
@@ -35,7 +30,6 @@ namespace System.DirectoryServices.Interop
         [FieldOffset(12)]
         public IntPtr ptr2;
     }
-
 
     [
     ComVisible(false),
@@ -125,7 +119,6 @@ namespace System.DirectoryServices.Interop
                 String bstrName,
                 [Out]
                 out object value);
-
 
             [SuppressUnmanagedCodeSecurityAttribute()]
             void PutEx(
@@ -511,5 +504,4 @@ namespace System.DirectoryServices.Interop
         internal const int SIZE_LIMIT_EXCEEDED = unchecked((int)0x80072023);
     }
 }
-
 

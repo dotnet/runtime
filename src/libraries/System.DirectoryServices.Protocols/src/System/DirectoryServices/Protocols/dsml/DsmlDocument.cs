@@ -2,14 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-//------------------------------------------------------------------------------
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>                                                                
-//------------------------------------------------------------------------------
-
-/*
- */
-
 namespace System.DirectoryServices.Protocols
 {
     using System;
@@ -354,7 +346,6 @@ namespace System.DirectoryServices.Protocols
                                "xmlns:xsi=\"" + DsmlConstants.XsiUri + "\" />";
             xmldoc.LoadXml(emptyLoad);
 
-
             //
             // Add in the DSML v2 processing directives
             //
@@ -535,7 +526,6 @@ namespace System.DirectoryServices.Protocols
                 if (node.NodeType == XmlNodeType.Element)
                 {
                     Debug.Assert(node is XmlElement);
-
 
                     DirectoryResponse el = ConstructElement((XmlElement)node);
                     _dsmlResponse.Add(el);

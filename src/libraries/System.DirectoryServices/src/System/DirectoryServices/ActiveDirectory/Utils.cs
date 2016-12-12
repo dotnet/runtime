@@ -2,11 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-//------------------------------------------------------------------------------
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>                                                                
-//------------------------------------------------------------------------------
-
 using System;
 using System.Text;
 using System.Net;
@@ -114,7 +109,6 @@ namespace System.DirectoryServices.ActiveDirectory
                                                 NORM_IGNOREWIDTH |
                                                 SORT_STRINGSORT;
 
-
         // To disable public/protected constructors for this class
         private Utils() { }
 
@@ -125,7 +119,6 @@ namespace System.DirectoryServices.ActiveDirectory
             IntPtr results = IntPtr.Zero;
 
             Debug.Assert(distinguishedName != null);
-
 
             // call DsCrackNamesW
             IntPtr functionPtr = UnsafeNativeMethods.GetProcAddress(DirectoryContext.ADHandle, "DsCrackNamesW");
@@ -374,7 +367,6 @@ namespace System.DirectoryServices.ActiveDirectory
 
             DirectoryEntry serversEntry = DirectoryEntryManager.GetDirectoryEntry(context, serversDn);
 
-
             string filter = "(|(&(" + PropertyManager.ObjectCategory + "=server)(" + PropertyManager.DistinguishedName + "=" + GetEscapedFilterValue(serverDn) + "))" +
                             "(&(" + PropertyManager.ObjectCategory + "=nTDSDSA)(" + PropertyManager.DistinguishedName + "=" + GetEscapedFilterValue(ntdsaDn) + ")))";
             string[] propertiesToLoad = new string[4];
@@ -457,7 +449,6 @@ namespace System.DirectoryServices.ActiveDirectory
 
             return resultDN;
         }
-
 
         //
         // Splits up a DN into it's components
@@ -881,7 +872,6 @@ namespace System.DirectoryServices.ActiveDirectory
                     throw ExceptionHelper.GetExceptionFromCOMException(new COMException(ExceptionHelper.GetErrorMessage(hr, true), hr));
                 }
 
-
                 ADSearcher adSearcher = new ADSearcher(de,
                                                            "(&(objectClass=nTDSDSA)(invocationID=" + stringGuid + "))",
                                                            new string[] { "distinguishedName" },
@@ -1062,7 +1052,6 @@ namespace System.DirectoryServices.ActiveDirectory
             return serverName;
         }
 
-
         internal static IntPtr GetPolicyHandle(string serverName)
         {
             IntPtr handle = (IntPtr)0;
@@ -1117,7 +1106,6 @@ namespace System.DirectoryServices.ActiveDirectory
             Hashtable propertyNamesWithRangeInfo = new Hashtable();
             ArrayList propertyNamesWithoutRangeInfo = new ArrayList();
             ArrayList propertiesStillToLoad = new ArrayList();
-
 
             //
             // The logic is as follows:
@@ -1272,7 +1260,6 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
             }
 
-
             if (useReplicaInfo)
             {
                 DirectoryEntry partitionsEntry = null;
@@ -1296,7 +1283,6 @@ namespace System.DirectoryServices.ActiveDirectory
 
                     DirectoryContext fsmoContext = Utils.GetNewDirectoryContext(fsmoRoleOwnerName, DirectoryContextType.DirectoryServer, context);
                     fsmoPartitionsEntry = DirectoryEntryManager.GetDirectoryEntry(fsmoContext, "CN=Partitions," + configurationNamingContext);
-
 
                     // get the properties using range retrieval
                     // (since msDS-NC-Replica-Locations and msDS-NC-RO-Replica-Locations are multi-valued)
@@ -1377,7 +1363,6 @@ namespace System.DirectoryServices.ActiveDirectory
                     }
                 }
             }
-
 
             string searchRootDN = null;
             DirectoryEntry searchRootEntry = null;
@@ -1493,7 +1478,6 @@ namespace System.DirectoryServices.ActiveDirectory
                     searcher2.PropertiesToLoad.Add(PropertyManager.MsDSPortLDAP);
                 }
 
-
                 try
                 {
                     string objectCategoryValue = "CN=NTDS-DSA";
@@ -1561,7 +1545,6 @@ namespace System.DirectoryServices.ActiveDirectory
                                     {
                                         Debug.Assert(dnString.Length > 10, "ConfigurationSet::GetReplicaList - dnWithBinary is not in the expected format.");
 
-
                                         if (((dnString.Length - 13) >= partitionName.Length) && (Utils.Compare(dnString, 13, partitionName.Length, partitionName, 0, partitionName.Length) == 0))
                                         {
                                             // found the entry that corresponds to this partition so even if we didn't get all the values of the 
@@ -1619,7 +1602,6 @@ namespace System.DirectoryServices.ActiveDirectory
                             resCol.Dispose();
                         }
                     }
-
 
                     if (needToContinueRangeRetrieval)
                     {
@@ -1701,7 +1683,6 @@ namespace System.DirectoryServices.ActiveDirectory
                                     foreach (string dnString in res.Properties[propertyName])
                                     {
                                         Debug.Assert(dnString.Length > 10, "ConfigurationSet::GetReplicaList - dnWithBinary is not in the expected format.");
-
 
                                         if (((dnString.Length - 13) >= partitionName.Length) && (Utils.Compare(dnString, 13, partitionName.Length, partitionName, 0, partitionName.Length) == 0))
                                         {
@@ -1871,7 +1852,6 @@ namespace System.DirectoryServices.ActiveDirectory
             NativeComInterfaces.IAdsPathname pathCracker = (NativeComInterfaces.IAdsPathname)new NativeComInterfaces.Pathname();
             return pathCracker.GetEscapedElement(0, originalPath);
         }
-
 
         internal static int Compare(string s1, string s2, uint compareFlags)
         {
@@ -2049,7 +2029,6 @@ namespace System.DirectoryServices.ActiveDirectory
             //      If NO --> is _not_ local user
             //            
 
-
             IntPtr pCopyOfUserSid = IntPtr.Zero;
             IntPtr pMachineDomainSid = IntPtr.Zero;
 
@@ -2226,7 +2205,6 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-
         //<SecurityKernel Critical="True" Ring="0">
         //<CallsSuppressUnmanagedCode Name="UnsafeNativeMethods.LsaOpenPolicy(System.IntPtr,System.IntPtr,System.Int32,System.IntPtr&amp;):System.Int32" />
         //<CallsSuppressUnmanagedCode Name="SafeNativeMethods.LsaNtStatusToWinError(System.Int32):System.Int32" />
@@ -2313,7 +2291,6 @@ namespace System.DirectoryServices.ActiveDirectory
                     Marshal.FreeHGlobal(pOA);
             }
         }
-
 
         // <SecurityKernel TreatAsSafe="Directly applied from MetaData" Critical="True" Ring="0">
         // <CallsSuppressUnmanagedCode Name="UnsafeNativeMethods.DsRoleGetPrimaryDomainInformation(System.IntPtr,System.DirectoryServices.AccountManagement.UnsafeNativeMethods+DSROLE_PRIMARY_DOMAIN_INFO_LEVEL,System.IntPtr&):System.Int32" />

@@ -2,11 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-//------------------------------------------------------------------------------
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>                                                                
-//------------------------------------------------------------------------------
-
 using INTPTR_INTCAST = System.Int32;
 using INTPTR_INTPTRCAST = System.IntPtr;
 
@@ -43,7 +38,6 @@ namespace System.DirectoryServices
         private IntPtr _adsVLVResponseName = Marshal.StringToCoTaskMemUni(ADS_VLV_RESPONSE);
         internal DirectorySearcher srch = null;
 
-
         ///<internalonly/>                                                                   
         internal SearchResultCollection(DirectoryEntry root, IntPtr searchHandle, string[] propertiesLoaded, DirectorySearcher srch)
         {
@@ -77,7 +71,6 @@ namespace System.DirectoryServices
                 return InnerList.Count;
             }
         }
-
 
         ///<internalonly/>                                                                       
         internal string Filter

@@ -2,27 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*++
-
-Copyright (c) 2004  Microsoft Corporation
-
-Module Name:
-
-
-Abstract:
-
-    Implements app-wide configuration settings
-
-History:
-
-    18-Aug-2004    MattRim     Created
-
---*/
-
 using System;
 using System.Diagnostics;
 using System.Configuration;
-
 
 namespace System.DirectoryServices.AccountManagement
 {
@@ -38,7 +20,6 @@ namespace System.DirectoryServices.AccountManagement
 #else
         public const DebugLevel DefaultDebugLevel = DebugLevel.None;
 #endif
-
 
         static public DebugLevel DebugLevel
         {

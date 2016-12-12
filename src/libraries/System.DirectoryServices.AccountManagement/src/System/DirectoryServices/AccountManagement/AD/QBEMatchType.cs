@@ -2,22 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*++
-
-Copyright (c) 2007  Microsoft Corporation
-
-Module Name:
-
-
-Abstract:
-
-
-History:
-
-    5-3-2007    TQuerec     Created
-
---*/
-
 using System;
 
 namespace System.DirectoryServices.AccountManagement

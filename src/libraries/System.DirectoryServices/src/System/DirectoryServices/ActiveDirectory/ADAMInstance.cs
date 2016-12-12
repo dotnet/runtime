@@ -2,12 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-//------------------------------------------------------------------------------
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>                                                                
-//------------------------------------------------------------------------------
-
-
 namespace System.DirectoryServices.ActiveDirectory
 {
     using System;
@@ -174,7 +168,6 @@ namespace System.DirectoryServices.ActiveDirectory
             return new AdamInstance(context, dnsHostName, directoryEntryMgr);
         }
 
-
         public static AdamInstance FindOne(DirectoryContext context, string partitionName)
         {
             // validate parameters (partitionName validated by the call to ConfigSet)
@@ -204,7 +197,6 @@ namespace System.DirectoryServices.ActiveDirectory
 
             return ConfigurationSet.FindOneAdamInstance(context, partitionName, null);
         }
-
 
         public static AdamInstanceCollection FindAll(DirectoryContext context, string partitionName)
         {
@@ -720,7 +712,6 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-
         public override string IPAddress
         {
             [
@@ -742,7 +733,6 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
             }
         }
-
 
         public override String SiteName
         {
@@ -768,7 +758,6 @@ namespace System.DirectoryServices.ActiveDirectory
                 return cachedSiteName;
             }
         }
-
 
         internal String SiteObjectName
         {
@@ -796,7 +785,6 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-
         internal String ServerObjectName
         {
             get
@@ -821,7 +809,6 @@ namespace System.DirectoryServices.ActiveDirectory
                 return cachedServerObjectName;
             }
         }
-
 
         internal String NtdsaObjectName
         {

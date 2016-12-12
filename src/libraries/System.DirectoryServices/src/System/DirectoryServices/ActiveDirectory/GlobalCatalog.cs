@@ -2,12 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-//------------------------------------------------------------------------------
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>                                                                
-//------------------------------------------------------------------------------
-
-
 namespace System.DirectoryServices.ActiveDirectory
 {
     using System;
@@ -208,7 +202,6 @@ namespace System.DirectoryServices.ActiveDirectory
 
             return FindAllInternal(context, siteName);
         }
-
 
         [
             DirectoryServicesPermission(SecurityAction.LinkDemand, Unrestricted = true),
@@ -443,7 +436,6 @@ namespace System.DirectoryServices.ActiveDirectory
             {
                 throw ExceptionHelper.GetExceptionFromErrorCode(errorCode);
             }
-
 
             // create a GlobalCatalog object
             // the name is returned in the form "\\servername", so skip the "\\"

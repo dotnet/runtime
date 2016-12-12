@@ -2,22 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*--
-Copyright (c) 2004  Microsoft Corporation
-
-Module Name:
-
-
-Abstract:
-
-    Implements the ADEntriesSet ResultSet class.
-    
-History:
-
-    25-May-2004    MattRim     Created
-
---*/
-
 using System;
 using System.Diagnostics;
 using System.Collections;
@@ -55,7 +39,6 @@ namespace System.DirectoryServices.AccountManagement
             _enumerator = src.GetEnumerator();
         }
 
-
         internal ADEntriesSet(SearchResultCollection src, ADStoreCtx storeCtx, object discriminant) : this(src, storeCtx)
         {
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADEntriesSet", "Ctor");
@@ -78,7 +61,6 @@ namespace System.DirectoryServices.AccountManagement
                 return ADUtils.SearchResultAsPrincipal(_current, _storeCtx, _discriminant);
             }
         }
-
 
         // Advance the enumerator to the next principal in the result set, pulling in additional pages
         // of results as needed.
@@ -117,7 +99,6 @@ namespace System.DirectoryServices.AccountManagement
             if (_enumerator != null)
                 _enumerator.Reset();
         }
-
 
         // IDisposable implementation
         public override void Dispose()

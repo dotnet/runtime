@@ -2,24 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*++
-
-Copyright (c) 2004  Microsoft Corporation
-
-Module Name:
-
-
-Abstract:
-
-    Implements the AuthenticablePrincipal class.
-
-History:
-
-    17-May-2004    MattRim     Created
-
---*/
-
-
 using System;
 using System.Diagnostics;
 using System.Collections.Generic;
@@ -89,7 +71,6 @@ namespace System.DirectoryServices.AccountManagement
                                   PropertyNames.AuthenticablePrincipalEnabled);
             }
         }
-
 
         //
         // AccountInfo-related properties/methods
@@ -186,7 +167,6 @@ namespace System.DirectoryServices.AccountManagement
             this.AccountInfo.UnlockAccount();
         }
 
-
         //
         // PasswordInfo-related properties/methods
         //
@@ -244,7 +224,6 @@ namespace System.DirectoryServices.AccountManagement
             set { this.PasswordInfo.AllowReversiblePasswordEncryption = value; }
         }
 
-
         internal AdvancedFilters rosf;
 
         public virtual AdvancedFilters AdvancedSearchFilter
@@ -275,12 +254,10 @@ namespace System.DirectoryServices.AccountManagement
             this.PasswordInfo.RefreshExpiredPassword();
         }
 
-
         // Certificates property
         private X509Certificate2Collection _certificates = new X509Certificate2Collection();
         private List<string> _certificateOriginalThumbprints = new List<string>();
         private LoadState _X509Certificate2CollectionLoaded = LoadState.NotSet;
-
 
         public X509Certificate2Collection Certificates
         {
@@ -319,7 +296,6 @@ namespace System.DirectoryServices.AccountManagement
             return FindByPasswordSetTime<AuthenticablePrincipal>(context, time, type);
         }
 
-
         //
         // Protected implementations
         //
@@ -354,7 +330,6 @@ namespace System.DirectoryServices.AccountManagement
 
             return new PrincipalSearchResult<T>(context.QueryCtx.FindByPasswordSetTime(time, type, typeof(T)));
         }
-
 
         //
         // Private implementation
@@ -405,8 +380,6 @@ namespace System.DirectoryServices.AccountManagement
                 throw new ArgumentNullException("subtype");
         }
 
-
-
         //
         // Load/Store
         //
@@ -456,7 +429,6 @@ namespace System.DirectoryServices.AccountManagement
                     break;
             }
         }
-
 
         //
         // Getting changes to persist (or to build a query from a QBE filter)

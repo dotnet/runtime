@@ -2,14 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-//------------------------------------------------------------------------------
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>                                                                
-//------------------------------------------------------------------------------
-
-/*
- */
-
 namespace System.DirectoryServices.Protocols
 {
     using System;
@@ -18,7 +10,6 @@ namespace System.DirectoryServices.Protocols
     using System.Text.RegularExpressions;
     using System.Globalization;
     using System.Text;
-
 
     /// <summary>
     /// Utility class to perform conversion of an string representation of 
@@ -396,7 +387,6 @@ namespace System.DirectoryServices.Protocols
         //matchingrule = MatchingRuleId from Section 4.1.9 of RFC2251
         //value      = AttributeValue from Section 4.1.6 of RFC2251
 
-
         //In order to allow whitespacing between elements and to avoid more \s* elements 
         //then necessary we always put '\s*' on the RIGHT of any element. The only exception is 
         //the the filter element which allows for white space on both sides.
@@ -414,7 +404,6 @@ namespace System.DirectoryServices.Protocols
         private const string mMatchRuleRE = @"(\:(?<matchrule>([a-zA-Z][a-zA-Z0-9]*)|([0-9]+(\.[0-9]+)+)))\s*";
         private const string mExtenRE = @"(?<extensible>((" + mExtenAttrRE + mDNAttrRE + mMatchRuleOptionalRE + @")|" +
                                                       @"(" + mDNAttrRE + mMatchRuleRE + @"))\:\=\s*" + mExtenValueRE + @")\s*";
-
 
         // substr filter grammar 
         private const string mSubstrAttrRE = @"(?<substrattr>" + mAttrRE + @")\s*";

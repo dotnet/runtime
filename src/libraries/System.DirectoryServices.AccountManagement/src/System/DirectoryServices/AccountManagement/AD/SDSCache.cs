@@ -2,22 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*++
-
-Copyright (c) 2004  Microsoft Corporation
-
-Module Name:
-
-
-Abstract:
-
-
-History:
-
-    17-July-2004    MattRim     Created
-
---*/
-
 using System;
 using System.Diagnostics;
 using System.Collections;
@@ -26,7 +10,6 @@ using System.DirectoryServices;
 using System.Net;
 using System.Threading;
 /// This is a class designed to cache DirectoryEntires instead of creating them every time.
-
 
 namespace System.DirectoryServices.AccountManagement
 {
@@ -99,7 +82,6 @@ namespace System.DirectoryServices.AccountManagement
             }
 
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "SDSCache", "GetContext: final contextName is " + contextName);
-
 
             ManualResetEvent contextReadyEvent = null;
 
@@ -186,7 +168,6 @@ namespace System.DirectoryServices.AccountManagement
                     credTable[userName] = new Placeholder();
                 }
 
-
                 // Now we just need to create a PrincipalContext for the contextName and credentials
                 GlobalDebug.WriteLineIf(
                         GlobalDebug.Info,
@@ -222,13 +203,11 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-
         //
         private SDSCache(bool isSAM)
         {
             _isSAM = isSAM;
         }
-
 
         private Hashtable _table = new Hashtable();
         private object _tableLock = new object();

@@ -2,15 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-//------------------------------------------------------------------------------
-// <copyright file="DsmlSoapConnection" company="Microsoft">
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>                                                                
-//------------------------------------------------------------------------------
-
-/*
- */
-
 namespace System.DirectoryServices.Protocols
 {
     using System;
@@ -157,7 +148,6 @@ namespace System.DirectoryServices.Protocols
                 throw new InvalidOperationException(Res.GetString(Res.SessionInUse));
             }
 
-
             try
             {
                 //
@@ -236,7 +226,6 @@ namespace System.DirectoryServices.Protocols
                 throw new InvalidOperationException(Res.GetString(Res.NoCurrentSession));
             }
 
-
             //
             // Request
             //
@@ -278,7 +267,6 @@ namespace System.DirectoryServices.Protocols
                         reqWriter.BaseStream.Close();
                         reqWriter.Close();
                     }
-
 
                     //
                     // Response
@@ -420,7 +408,6 @@ namespace System.DirectoryServices.Protocols
                     reqWriter.Close();
                 }
 
-
                 //
                 // Response
                 //
@@ -453,7 +440,6 @@ namespace System.DirectoryServices.Protocols
                 _dsmlHttpConnection = (HttpWebRequest)WebRequest.Create(((DsmlDirectoryIdentifier)directoryIdentifier).ServerUri);
             }
         }
-
 
         [EnvironmentPermission(SecurityAction.Assert, Unrestricted = true)]
         private void PrepareHttpWebRequest(HttpWebRequest dsmlConnection)

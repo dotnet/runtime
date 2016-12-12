@@ -2,11 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-//------------------------------------------------------------------------------
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>
-//------------------------------------------------------------------------------
-
 namespace System
 {
     internal static class ExternDll
@@ -40,7 +35,6 @@ namespace System
 
         public const string Kernel32 = "coreclr";
         public const string User32 = "coreclr";
-
 
 #else
         public const string Activeds = "activeds.dll";

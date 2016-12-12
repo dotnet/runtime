@@ -2,15 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-//------------------------------------------------------------------------------
-// <copyright file="DirectoryRequest" company="Microsoft">
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>                                                                
-//------------------------------------------------------------------------------
-
-/*
- */
-
 namespace System.DirectoryServices.Protocols
 {
     using System;
@@ -64,7 +55,6 @@ namespace System.DirectoryServices.Protocols
         {
             return ToXmlNode(doc);
         }
-
 
         // Overloaded to implement the operation-specific portion of transforming
         // an object into its DSML v2 XML representation.
@@ -136,7 +126,6 @@ namespace System.DirectoryServices.Protocols
                 _dn = value;
             }
         }
-
 
         //
         // Private/protected
@@ -216,7 +205,6 @@ namespace System.DirectoryServices.Protocols
             }
         }
 
-
         //
         // Private/protected
         //
@@ -282,7 +270,6 @@ namespace System.DirectoryServices.Protocols
             _attributeModificationList.Add(mod);
         }
 
-
         // Properties
         public string DistinguishedName
         {
@@ -304,7 +291,6 @@ namespace System.DirectoryServices.Protocols
                 return _attributeModificationList;
             }
         }
-
 
         //
         // Private/protected
@@ -377,14 +363,10 @@ namespace System.DirectoryServices.Protocols
             // store off the DN
             _dn = distinguishedName;
 
-
             // store off the attribute name and value            
             _attribute.Name = attributeName;
             _attribute.Add(value);
         }
-
-
-
 
         // Properties
         public string DistinguishedName
@@ -407,7 +389,6 @@ namespace System.DirectoryServices.Protocols
                 return _attribute;
             }
         }
-
 
         //
         // Private/protected
@@ -448,7 +429,6 @@ namespace System.DirectoryServices.Protocols
             _newSuperior = newParentDistinguishedName;
             _newRDN = newName;
         }
-
 
         // Properties
         public string DistinguishedName
@@ -503,7 +483,6 @@ namespace System.DirectoryServices.Protocols
             }
         }
 
-
         //
         // Private/protected
         //
@@ -527,7 +506,6 @@ namespace System.DirectoryServices.Protocols
             attrDeleteOldRDN.InnerText = _deleteOldRDN ? "true" : "false";
             elem.Attributes.Append(attrDeleteOldRDN);
 
-
             // "newSuperior" attribute (optional)
             if (_newSuperior != null)
             {
@@ -539,7 +517,6 @@ namespace System.DirectoryServices.Protocols
             return elem;
         }
     }
-
 
     /// <summary>
     /// The representation of a <extendedRequest>
@@ -560,7 +537,6 @@ namespace System.DirectoryServices.Protocols
         {
             _requestValue = requestValue;
         }
-
 
         // Properties
         public string RequestName
@@ -598,7 +574,6 @@ namespace System.DirectoryServices.Protocols
             }
         }
 
-
         //
         // Private/protected
         //
@@ -615,7 +590,6 @@ namespace System.DirectoryServices.Protocols
             elemName.InnerText = _requestName;
             elem.AppendChild(elemName);
 
-
             // <requestValue> (optional)
             if (_requestValue != null)
             {
@@ -629,7 +603,6 @@ namespace System.DirectoryServices.Protocols
 
                 elem.AppendChild(elemValue);
             }
-
 
             return elem;
         }
@@ -681,7 +654,6 @@ namespace System.DirectoryServices.Protocols
 
             Filter = ldapFilter;
         }
-
 
         // Properties
         public string DistinguishedName
@@ -807,7 +779,6 @@ namespace System.DirectoryServices.Protocols
             }
         }
 
-
         //
         // Private/protected
         //
@@ -824,7 +795,6 @@ namespace System.DirectoryServices.Protocols
         protected override XmlElement ToXmlNode(XmlDocument doc)
         {
             XmlElement elem = CreateRequestElement(doc, "searchRequest", true, _dn);
-
 
             // attach the "scope" attribute (required)
             XmlAttribute attrScope = doc.CreateAttribute("scope", null);
@@ -849,7 +819,6 @@ namespace System.DirectoryServices.Protocols
             }
 
             elem.Attributes.Append(attrScope);
-
 
             // attach the "derefAliases" attribute (required)
             XmlAttribute attrDerefAliases = doc.CreateAttribute("derefAliases", null);
@@ -878,7 +847,6 @@ namespace System.DirectoryServices.Protocols
             }
 
             elem.Attributes.Append(attrDerefAliases);
-
 
             // attach the "sizeLimit" attribute (optional)
             XmlAttribute attrSizeLimit = doc.CreateAttribute("sizeLimit", null);
@@ -945,7 +913,6 @@ namespace System.DirectoryServices.Protocols
                             throw new ArgumentException(Res.GetString(Res.BadSearchLDAPFilter));
                         }
 
-
                         // Convert ADFilter representation to a DSML filter string
                         //   Ideally, we'd skip the intemediary string, but the DSDE conversion
                         //   routines expect a XmlWriter, and the only XmlWriter available
@@ -972,7 +939,6 @@ namespace System.DirectoryServices.Protocols
             }
 
             elem.AppendChild(elemFilter);
-
 
             // add in the <attributes> element (optional)
             if (_directoryAttributes != null && _directoryAttributes.Count != 0)

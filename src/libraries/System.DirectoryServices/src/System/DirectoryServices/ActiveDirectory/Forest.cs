@@ -2,11 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-//------------------------------------------------------------------------------
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>                                                                
-//------------------------------------------------------------------------------
-
 namespace System.DirectoryServices.ActiveDirectory
 {
     using System;
@@ -218,7 +213,6 @@ namespace System.DirectoryServices.ActiveDirectory
             {
                 partitionsEntry.Dispose();
             }
-
 
             // at this point the raise forest function has succeeded
             // invalidate the cached entry so that we will go to the server next time
@@ -844,7 +838,6 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             return forestModeValue;
         }
-
 
         //
         // Returns a DomainController object for the DC that holds the the specified FSMO role

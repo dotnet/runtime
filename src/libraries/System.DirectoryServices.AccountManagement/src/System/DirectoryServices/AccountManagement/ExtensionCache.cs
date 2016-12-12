@@ -2,24 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*++
-
-Copyright (c) 2007  Microsoft Corporation
-
-Module Name:
-
-    ExtensionCache
-
-Abstract:
-
-    Class which wraps the attribute cache used by extension classes for custom attributes and search filters
-
-History:
-
-    16-Apr-2007    TQuerec     Created
-
---*/
-
 namespace System.DirectoryServices.AccountManagement
 {
     using System;

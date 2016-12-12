@@ -2,23 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*--
-Copyright (c) 2004  Microsoft Corporation
-
-Module Name:
-
-
-Abstract:
-
-    Implements the SAMMembersSet ResultSet class, used for
-    enumerating the members of a group.
-    
-History:
-
-    17-June-2004    MattRim     Created
-
---*/
-
 using System;
 using System.Diagnostics;
 using System.Collections;
@@ -28,7 +11,6 @@ using System.DirectoryServices;
 using System.Text;
 
 using System.Runtime.InteropServices;
-
 
 namespace System.DirectoryServices.AccountManagement
 {
@@ -97,7 +79,6 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-
         // Advance the enumerator to the next principal in the result set, pulling in additional pages
         // of results (or ranges of attribute values) as needed.
         // Returns true if successful, false if no more results to return.
@@ -155,7 +136,6 @@ namespace System.DirectoryServices.AccountManagement
                         return true;
                     }
 
-
                     // We do this, rather than using the DirectoryEntry constructor that takes a native IADs object,
                     // is so the credentials get transferred to the new DirectoryEntry.  If we just use the native
                     // object constructor, the native object will have the right credentials, but the DirectoryEntry
@@ -209,8 +189,6 @@ namespace System.DirectoryServices.AccountManagement
 
                         GlobalDebug.WriteLineIf(GlobalDebug.Info, "SAMMembersSet", "MoveNextLocal: real domain {0}", de.Path);
                     }
-
-
 
                     //  Debug.Assert(Utils.AreBytesEqual(sid, (byte[]) de.Properties["objectSid"].Value));
 
@@ -345,7 +323,6 @@ namespace System.DirectoryServices.AccountManagement
                         continue;
                     }
                 }
-
 
                 if (_foreignResultSet == null && _foreignGroups.Count > 0)
                 {
@@ -513,7 +490,6 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-
         override internal ResultSetBookmark BookmarkAndReset()
         {
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "SAMMembersSet", "Bookmarking");
@@ -605,7 +581,6 @@ namespace System.DirectoryServices.AccountManagement
         // Private fields
         //
 
-
         private bool _recursive;
 
         private bool _disposed = false;
@@ -614,7 +589,6 @@ namespace System.DirectoryServices.AccountManagement
         private DirectoryEntry _ctxBase;
 
         private bool _atBeginning = true;
-
 
         // local
 
@@ -631,7 +605,6 @@ namespace System.DirectoryServices.AccountManagement
 
         private IEnumerator _membersEnumerator;         // the current group's membership enumerator
 
-
         // foreign
         private List<DirectoryEntry> _foreignMembers = new List<DirectoryEntry>();
         private Principal _currentForeign = null; // current member of the group (if enumerating foreign principal)
@@ -639,7 +612,6 @@ namespace System.DirectoryServices.AccountManagement
         private List<GroupPrincipal> _foreignGroups = new List<GroupPrincipal>();
         private ResultSet _foreignResultSet = null; // current foreign group's ResultSet (if enumerating via proxy to foreign group)
     }
-
 
     internal class SAMMembersSetBookmark : ResultSetBookmark
     {

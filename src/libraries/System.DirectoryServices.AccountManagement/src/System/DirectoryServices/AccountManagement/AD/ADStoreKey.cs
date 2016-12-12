@@ -2,32 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*++
-
-Copyright (c) 2004  Microsoft Corporation
-
-Module Name:
-
-
-Abstract:
-
-    Implements the ADStoreKey class.
-
-    This class generates a unique key for each stored object.
-    This key can then be used to determine if two principals are equal.
-    Algo for key building is:
-
-    IF ( NOT Well Known Sid )
-        Hash Code from Object GUID
-    ELSE    
-        DomainName.HashCode ^ Sid.HashCode
-
-History:
-
-    05-May-2004    MattRim     Created
-
---*/
-
 using System;
 using System.Diagnostics;
 using System.Globalization;

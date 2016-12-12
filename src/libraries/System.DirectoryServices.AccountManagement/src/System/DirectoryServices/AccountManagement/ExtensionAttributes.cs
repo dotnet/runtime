@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-
 namespace System.DirectoryServices.AccountManagement
 {
     [AttributeUsage(AttributeTargets.Property, AllowMultiple = true)]
@@ -65,7 +64,6 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
     }
-
 
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = true)]
     public sealed class DirectoryObjectClassAttribute : Attribute

@@ -2,23 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*++
-
-Copyright (c) 2004  Microsoft Corporation
-
-Module Name:
-
-
-Abstract:
-
-    Implements AD-specific utility routines.
-
-History:
-
-    26-May-2004    MattRim     Created
-
---*/
-
 using System;
 using System.Diagnostics;
 using System.Globalization;
@@ -62,7 +45,6 @@ namespace System.DirectoryServices.AccountManagement
             UnsafeNativeMethods.IAdsObjectOptions objOptions = (UnsafeNativeMethods.IAdsObjectOptions)de.NativeObject;
             return (string)objOptions.GetOption(0 /* == ADS_OPTION_SERVERNAME */);
         }
-
 
         // This routine escapes values used in DNs, per RFC 2253 and ADSI escaping rules.
         // It treats its input as a unescaped literal and produces a LDAP string that represents that literal
@@ -168,10 +150,8 @@ namespace System.DirectoryServices.AccountManagement
                             dnComponent,
                             sb.ToString());
 
-
             return sb.ToString();
         }
-
 
         // This routine escapes values used in search filters, per RFC 2254 escaping rules.
         // It treats its input as a unescaped literal and produces a LDAP string that represents that literal
@@ -197,7 +177,6 @@ namespace System.DirectoryServices.AccountManagement
                         sb.Append(@"\2a");
                         break;
 
-
                     case '\\':
                         sb.Append(@"\5c");
                         break;
@@ -215,10 +194,8 @@ namespace System.DirectoryServices.AccountManagement
                             s,
                             sb.ToString());
 
-
             return sb.ToString();
         }
-
 
         // This routine escapes PAPI string values that may contain wilcards.
         // It treats its input string as a PAPI string filter (escaped according to
@@ -299,7 +276,6 @@ namespace System.DirectoryServices.AccountManagement
                 }
             }
 
-
             GlobalDebug.WriteLineIf(
                             GlobalDebug.Info,
                             "ADUtils",
@@ -352,7 +328,6 @@ namespace System.DirectoryServices.AccountManagement
 
             return i;
         }
-
 
         // Transform from hex string ("1AFF") to LDAP hex string ("\1A\FF").
         // Returns null if input string is not a valid hex string.
@@ -448,7 +423,6 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-
         [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.Assert, Unrestricted = true)]
         [System.Security.SecurityCritical]
         static internal Principal SearchResultAsPrincipal(SearchResult sr, ADStoreCtx storeCtx, object discriminant)
@@ -503,7 +477,6 @@ namespace System.DirectoryServices.AccountManagement
                 // The computer is domain joined but we are running with creds that can't access it.  We can't determine trust.
                 return false;
             }
-
 
             // If this is the same domain then we have a trust.
             // Domain.Name always returns full dns name.

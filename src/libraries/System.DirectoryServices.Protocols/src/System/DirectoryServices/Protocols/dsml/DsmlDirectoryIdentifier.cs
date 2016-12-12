@@ -2,14 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-//------------------------------------------------------------------------------
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>                                                                
-//------------------------------------------------------------------------------
-
-/*
- */
-
 namespace System.DirectoryServices.Protocols
 {
     using System;
@@ -19,7 +11,6 @@ namespace System.DirectoryServices.Protocols
     {
         // private members
         private Uri _uri = null;
-
 
         public DsmlDirectoryIdentifier(Uri serverUri)
         {
@@ -37,7 +28,6 @@ namespace System.DirectoryServices.Protocols
 
             _uri = serverUri;
         }
-
 
         public Uri ServerUri
         {

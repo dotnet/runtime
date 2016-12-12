@@ -2,23 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*++
-
-Copyright (c) 2014  Microsoft Corporation
-
-Module Name:
-
-
-Abstract:
-
-    Implements the Unknown Principal class used for returning un-resolvable SIDs
-
-History:
-
-    11-September-2014    Saketk     Created
-
---*/
-
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -51,7 +34,6 @@ namespace System.DirectoryServices.AccountManagement
             this.ContextRaw = context;
             this.unpersisted = true;
         }
-
 
         //
         // Internal "constructor": Used for constructing UnknownPrincipal

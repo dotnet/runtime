@@ -2,23 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*++
-
-Copyright (c) 2004  Microsoft Corporation
-
-Module Name:
-
-
-Abstract:
-
-    Implements the ValueCollection<T> class.
-
-History:
-
-    10-May-2004    MattRim     Created
-
---*/
-
 using System;
 using System.Diagnostics;
 using System.Collections;
@@ -220,7 +203,6 @@ namespace System.DirectoryServices.AccountManagement
             return (IEnumerator)GetEnumerator();
         }
 
-
         //
         // IList<T>
         //
@@ -266,7 +248,6 @@ namespace System.DirectoryServices.AccountManagement
         {
             if (value == null)
                 throw new ArgumentNullException("value");
-
 
             int index = 0;
 
@@ -346,7 +327,6 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-
         public T this[int index]
         {
             get
@@ -399,7 +379,6 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-
         //
         // ICollection<T>
         //
@@ -416,7 +395,6 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-
         //
         // IEnumerable<T>
         //
@@ -428,7 +406,6 @@ namespace System.DirectoryServices.AccountManagement
         {
             return new ValueCollectionEnumerator<T>(_inner, _inner.combinedValues);
         }
-
 
         //
         // Private implementation
@@ -457,7 +434,6 @@ namespace System.DirectoryServices.AccountManagement
             _inner.combinedValues.Clear();
             _inner.removedValues.Clear();
 
-
             foreach (T value in values)
             {
                 // If T was a mutable reference type, would need to make a copy of value
@@ -472,7 +448,6 @@ namespace System.DirectoryServices.AccountManagement
                 _inner.combinedValues.Add(el);
             }
         }
-
 
         internal List<T> Inserted
         {
@@ -497,7 +472,6 @@ namespace System.DirectoryServices.AccountManagement
                 return _inner.ChangedValues;
             }
         }
-
 
         internal bool Changed
         {

@@ -2,14 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-//------------------------------------------------------------------------------
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>                                                                
-//------------------------------------------------------------------------------
-
-/*
- */
-
 namespace System.DirectoryServices.Protocols
 {
     using System;
@@ -182,11 +174,9 @@ namespace System.DirectoryServices.Protocols
                             DsmlConstants.AttrSearchReqFilterExtenmatchMatchrule, exten.MatchingRule);
                     }
 
-
                     mXmlWriter.WriteAttributeString(
                         DsmlConstants.AttrSearchReqFilterExtenmatchDnattr,
                         XmlConvert.ToString(exten.DNAttributes));
-
 
                     WriteValue(DsmlConstants.ElementSearchReqFilterExtenmatchValue, exten.Value, mXmlWriter, strNamespace);
                     mXmlWriter.WriteEndElement();

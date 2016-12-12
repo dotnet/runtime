@@ -2,11 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-//------------------------------------------------------------------------------
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>                                                                
-//------------------------------------------------------------------------------
-
 namespace System.DirectoryServices.Design
 {
     using System.ComponentModel;
@@ -108,7 +103,6 @@ namespace System.DirectoryServices.Design
 
             return null;
         }
-
 
         /// <include file='doc\MessageFormatterConverter.uex' path='docs/doc[@for="DirectoryEntryConverter.GetStandardValuesExclusive"]/*' />
         /// <internalonly/>                                   

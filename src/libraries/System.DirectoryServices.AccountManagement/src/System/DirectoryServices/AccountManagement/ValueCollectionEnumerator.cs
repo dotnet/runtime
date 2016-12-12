@@ -2,23 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*++
-
-Copyright (c) 2004  Microsoft Corporation
-
-Module Name:
-
-
-Abstract:
-
-    Implements the ValueCollectionEnumerator<T> class.
-
-History:
-
-    10-May-2004    MattRim     Created
-
---*/
-
 using System;
 using System.Diagnostics;
 using System.Collections;
@@ -43,8 +26,6 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-
-
         object IEnumerator.Current
         {
             // <SecurityKernel Critical="True" Ring="0">
@@ -56,7 +37,6 @@ namespace System.DirectoryServices.AccountManagement
                 return Current;
             }
         }
-
 
         //
         // Public methods
@@ -98,7 +78,6 @@ namespace System.DirectoryServices.AccountManagement
             _inner.Dispose();
         }
 
-
         //
         // Internal constructors
         //
@@ -107,7 +86,6 @@ namespace System.DirectoryServices.AccountManagement
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "ValueCollectionEnumerator", "Ctor");
             _inner = new TrackedCollectionEnumerator<T>("ValueCollectionEnumerator", trackingList, combinedValues);
         }
-
 
         //
         // Private implementation

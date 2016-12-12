@@ -2,14 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-//------------------------------------------------------------------------------
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>                                                                
-//------------------------------------------------------------------------------
-
-/*
- */
-
 namespace System.DirectoryServices
 {
     using System;
@@ -61,7 +53,6 @@ namespace System.DirectoryServices
         private bool _objectSecurityModified = false;
         private ActiveDirectorySecurity _objectSecurity = null;
         private static string s_securityDescriptorProperty = "ntSecurityDescriptor";
-
 
         /// <include file='doc\DirectoryEntry.uex' path='docs/doc[@for="DirectoryEntry.DirectoryEntry"]/*' />
         /// <devdoc>
@@ -161,7 +152,6 @@ namespace System.DirectoryServices
             : this(adsObject, useCache, username, password, authenticationType, false)
         {
         }
-
 
         internal DirectoryEntry(object adsObject, bool useCache, string username, string password, AuthenticationTypes authenticationType, bool AdsObjIsExternal)
         {
@@ -746,14 +736,12 @@ namespace System.DirectoryServices
             }
         }
 
-
         // Create new entry with the same data, but different IADs object, and grant it Browse Permission.
         internal DirectoryEntry CloneBrowsable()
         {
             DirectoryEntry newEntry = new DirectoryEntry(this.Path, this.UsePropertyCache, this.GetUsername(), this.GetPassword(), this.AuthenticationType);
             return newEntry;
         }
-
 
         /// <include file='doc\DirectoryEntry.uex' path='docs/doc[@for="DirectoryEntry.Close"]/*' />
         /// <devdoc>
@@ -1109,7 +1097,6 @@ namespace System.DirectoryServices
                 throw e;
             }
         }
-
 
         /// <include file='doc\DirectoryEntry.uex' path='docs/doc[@for="DirectoryEntry.MoveTo"]/*' />
         /// <devdoc>

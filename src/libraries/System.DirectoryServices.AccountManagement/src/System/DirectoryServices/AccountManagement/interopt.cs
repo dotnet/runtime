@@ -2,23 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*++
-
-Copyright (c) 2004  Microsoft Corporation
-
-Module Name:
-
-
-Abstract:
-
-    Provides COM Interopt definitions.
-
-History:
-
-    05-May-2004    MattRim     Created
-
---*/
-
 namespace System.DirectoryServices.AccountManagement
 {
     using System.Runtime.InteropServices;
@@ -26,7 +9,6 @@ namespace System.DirectoryServices.AccountManagement
     using System.Security;
     using System.Security.Permissions;
     using System.Text;
-
 
     internal class Constants
     {
@@ -54,7 +36,6 @@ namespace System.DirectoryServices.AccountManagement
     {
         // To stop the compiler from autogenerating a constructor for this class
         private UnsafeNativeMethods() { }
-
 
         [DllImport(ExternDll.Activeds, ExactSpelling = true, EntryPoint = "ADsOpenObject", CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
         private static extern int IntADsOpenObject(string path, string userName, string password, int flags, [In, Out] ref Guid iid, [Out, MarshalAs(UnmanagedType.Interface)] out object ppObject);
@@ -105,7 +86,6 @@ namespace System.DirectoryServices.AccountManagement
             string DNString { get; set; }
         }
 
-
         [ComImport, Guid("9068270b-0939-11D1-8be1-00c04fd8d503"), InterfaceTypeAttribute(ComInterfaceType.InterfaceIsDual)]
         public interface IADsLargeInteger
         {
@@ -126,7 +106,6 @@ namespace System.DirectoryServices.AccountManagement
             Object GetOption(
                 [In]
                 int option);
-
 
             void PutOption(
                 [In]
@@ -174,9 +153,7 @@ namespace System.DirectoryServices.AccountManagement
                 get;
             }
 
-
             void GetInfo();
-
 
             void SetInfo();
 
@@ -184,7 +161,6 @@ namespace System.DirectoryServices.AccountManagement
             Object Get(
                 [In, MarshalAs(UnmanagedType.BStr)]
                 string bstrName);
-
 
             void Put(
                 [In, MarshalAs(UnmanagedType.BStr)]
@@ -197,7 +173,6 @@ namespace System.DirectoryServices.AccountManagement
                 [In, MarshalAs(UnmanagedType.BStr)]
                 String bstrName);
 
-
             void PutEx(
                 [In, MarshalAs(UnmanagedType.U4)]
                 int lnControlCode,
@@ -205,7 +180,6 @@ namespace System.DirectoryServices.AccountManagement
                 string bstrName,
                 [In, MarshalAs(UnmanagedType.Struct)]
                 Object vProp);
-
 
             void GetInfoEx(
                 [In, MarshalAs(UnmanagedType.Struct)]
@@ -222,7 +196,6 @@ namespace System.DirectoryServices.AccountManagement
                 [return: MarshalAs(UnmanagedType.BStr)]
                 get;
             }
-
 
             string Class
             {
@@ -241,7 +214,6 @@ namespace System.DirectoryServices.AccountManagement
                 [return: MarshalAs(UnmanagedType.BStr)]
                 get;
             }
-
 
             string Parent
             {
@@ -386,11 +358,9 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-
         //
         // DSInteropt
         //
-
 
         /*
         typedef enum 
@@ -422,7 +392,6 @@ namespace System.DirectoryServices.AccountManagement
             DsRole_MemberServerWithSharedAccountDomain
         }
 
-
         /*
         typedef enum 
         {
@@ -440,7 +409,6 @@ namespace System.DirectoryServices.AccountManagement
             DsRoleOperationState = 3,
             DsRolePrimaryDomainInfoBasicEx = 4
         }
-
 
         /*
          typedef struct _DSROLE_PRIMARY_DOMAIN_INFO_BASIC {  
@@ -486,7 +454,6 @@ namespace System.DirectoryServices.AccountManagement
             [In] DSROLE_PRIMARY_DOMAIN_INFO_LEVEL InfoLevel,
             out IntPtr Buffer);
 
-
         /*typedef struct _DOMAIN_CONTROLLER_INFO {
             LPTSTR DomainControllerName;
             LPTSTR DomainControllerAddress;
@@ -521,7 +488,6 @@ namespace System.DirectoryServices.AccountManagement
         public static extern int DsRoleFreeMemory(
             [In] IntPtr buffer);
 
-
         /*DWORD DsGetDcName(
             LPCTSTR ComputerName, 
             LPCTSTR DomainName, 
@@ -538,7 +504,6 @@ namespace System.DirectoryServices.AccountManagement
             [In] string siteName,
             [In] int flags,
             [Out] out IntPtr domainControllerInfo);
-
 
         /* typedef struct _WKSTA_INFO_100 {
                 DWORD wki100_platform_id;
@@ -563,7 +528,6 @@ namespace System.DirectoryServices.AccountManagement
         [DllImport("Netapi32.dll")]
         public static extern int NetApiBufferFree(
             [In] IntPtr buffer);
-
 
         //
         // SID
@@ -598,7 +562,6 @@ namespace System.DirectoryServices.AccountManagement
 
         [DllImport("kernel32.dll")]
         public static extern IntPtr LocalFree(IntPtr ptr);
-
 
         [DllImport("Credui.dll", SetLastError = true, CallingConvention = CallingConvention.StdCall, EntryPoint = "CredUIParseUserNameW", CharSet = CharSet.Unicode)]
         public static extern int CredUIParseUserName(
@@ -639,7 +602,6 @@ namespace System.DirectoryServices.AccountManagement
         //
         // AuthZ functions
         //
-
 
         internal sealed class AUTHZ_RM_FLAG
         {
@@ -712,14 +674,12 @@ namespace System.DirectoryServices.AccountManagement
                                         IntPtr rm
                                         );
 
-
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
         public struct LUID
         {
             public int low;
             public int high;
         }
-
 
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
         public sealed class TOKEN_GROUPS
@@ -734,7 +694,6 @@ namespace System.DirectoryServices.AccountManagement
             public IntPtr pSid = IntPtr.Zero;
             public int attrs = 0;
         }
-
 
         //
         // Token
@@ -756,7 +715,6 @@ namespace System.DirectoryServices.AccountManagement
             public byte b5 = 0;
             public byte b6 = 0;
         }
-
 
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
         public sealed class LSA_OBJECT_ATTRIBUTES
@@ -817,8 +775,6 @@ namespace System.DirectoryServices.AccountManagement
             private IntPtr _pSid = IntPtr.Zero;
         }
 
-
-
         [DllImport("advapi32.dll", SetLastError = true, CallingConvention = CallingConvention.StdCall, EntryPoint = "OpenThreadToken", CharSet = CharSet.Unicode)]
         static extern public bool OpenThreadToken(
                                         IntPtr threadHandle,
@@ -852,7 +808,6 @@ namespace System.DirectoryServices.AccountManagement
                                         ref int returnLength
                                         );
 
-
         [DllImport("advapi32.dll", CallingConvention = CallingConvention.StdCall, EntryPoint = "LsaOpenPolicy", CharSet = CharSet.Unicode)]
         static extern public int LsaOpenPolicy(
                                         IntPtr lsaUnicodeString,
@@ -881,7 +836,6 @@ namespace System.DirectoryServices.AccountManagement
 
         [DllImport("advapi32.dll", CallingConvention = CallingConvention.StdCall, EntryPoint = "LsaClose", CharSet = CharSet.Unicode)]
         static extern public int LsaClose(IntPtr policyHandle);
-
 
         //
         // Impersonation

@@ -2,11 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-//------------------------------------------------------------------------------
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>                                                                
-//------------------------------------------------------------------------------
-
 namespace System.DirectoryServices.Interop
 {
     using System;
@@ -45,11 +40,9 @@ namespace System.DirectoryServices.Interop
         [DllImport(ExternDll.Activeds, CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
         public static extern int ADsSetLastError(int error, string errorString, string provider);
 
-
         [DllImport(ExternDll.Kernel32, CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
         public static extern int FormatMessageW(int dwFlags, int lpSource, int dwMessageId,
                                                 int dwLanguageId, StringBuilder lpBuffer, int nSize, int arguments);
-
 
         [System.Runtime.InteropServices.ComVisible(false)]
         public class EnumVariant

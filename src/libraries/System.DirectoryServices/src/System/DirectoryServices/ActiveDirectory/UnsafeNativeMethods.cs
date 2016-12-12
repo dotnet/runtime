@@ -2,12 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-//------------------------------------------------------------------------------
-// <copyright file="UnsafeMethods.cs" company="Microsoft">
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>                                                                
-//------------------------------------------------------------------------------
-
 //
 //NOTE: 
 //Structures containing collection of another structures are defined without
@@ -151,7 +145,6 @@ namespace System.DirectoryServices.ActiveDirectory
         DsRole_MemberWorkstationWithSharedAccountDomain,
         DsRole_MemberServerWithSharedAccountDomain
     }
-
 
     /*
     typedef enum 
@@ -330,7 +323,6 @@ namespace System.DirectoryServices.ActiveDirectory
         public int dwReserved;
     }
 
-
     [StructLayout(LayoutKind.Sequential)]
     internal sealed class DS_REPL_ATTR_META_DATA
     {
@@ -343,7 +335,6 @@ namespace System.DirectoryServices.ActiveDirectory
         public long usnOriginatingChange;
         public long usnLocalChange;
     }
-
 
     [StructLayout(LayoutKind.Sequential)]
     internal sealed class DS_REPSYNCALL_UPDATE
@@ -798,7 +789,6 @@ namespace System.DirectoryServices.ActiveDirectory
             [In] DSROLE_PRIMARY_DOMAIN_INFO_LEVEL InfoLevel,
             out IntPtr Buffer);
 
-
         [DllImport("advapi32.dll")]
         public static extern int GetLengthSid(IntPtr sid);
 
@@ -835,7 +825,6 @@ namespace System.DirectoryServices.ActiveDirectory
                                         ref IntPtr tokenHandle
                                         );
 
-
         [DllImport("kernel32.dll", CallingConvention = CallingConvention.StdCall, EntryPoint = "GetCurrentThread", CharSet = CharSet.Unicode)]
         static extern public IntPtr GetCurrentThread();
 
@@ -850,7 +839,6 @@ namespace System.DirectoryServices.ActiveDirectory
                                         int bufferSize,
                                         ref int returnLength
                                         );
-
 
         [DllImport("advapi32.dll", CallingConvention = CallingConvention.StdCall, EntryPoint = "LsaOpenPolicy", CharSet = CharSet.Unicode)]
         static extern public int LsaOpenPolicy(

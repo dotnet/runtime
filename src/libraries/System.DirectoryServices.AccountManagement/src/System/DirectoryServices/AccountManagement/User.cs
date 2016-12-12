@@ -2,23 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*++
-
-Copyright (c) 2004  Microsoft Corporation
-
-Module Name:
-
-
-Abstract:
-
-    Implements the User class.
-
-History:
-
-    04-May-2004    MattRim     Created
-
---*/
-
 using System;
 using System.Diagnostics;
 using System.Collections.Generic;
@@ -67,7 +50,6 @@ namespace System.DirectoryServices.AccountManagement
             this.Enabled = enabled;
         }
 
-
         //
         // Public properties
         //
@@ -92,7 +74,6 @@ namespace System.DirectoryServices.AccountManagement
                                   PropertyNames.UserGivenName);
             }
         }
-
 
         // MiddleName
         private string _middleName = null;        // the actual property value
@@ -258,7 +239,6 @@ namespace System.DirectoryServices.AccountManagement
                         System.Runtime.InteropServices.Marshal.FreeHGlobal(pSid);
                 }
 
-
                 // We're running as the user, we know they must exist, but perhaps we don't have access
                 // to their user object
                 if (user == null)
@@ -270,7 +250,6 @@ namespace System.DirectoryServices.AccountManagement
                 return user;
             }
         }
-
 
         //
         // Public methods
@@ -311,7 +290,6 @@ namespace System.DirectoryServices.AccountManagement
             return (UserPrincipal)FindByIdentityWithType(context, typeof(UserPrincipal), identityType, identityValue);
         }
 
-
         public PrincipalSearchResult<Principal> GetAuthorizationGroups()
         {
             return new PrincipalSearchResult<Principal>(GetAuthorizationGroupsHelper());
@@ -327,7 +305,6 @@ namespace System.DirectoryServices.AccountManagement
 
             return u;
         }
-
 
         //
         // Private implementation
@@ -362,7 +339,6 @@ namespace System.DirectoryServices.AccountManagement
         //
         // Load/Store implementation
         //
-
 
         //
         // Loading with query results
@@ -415,7 +391,6 @@ namespace System.DirectoryServices.AccountManagement
                     break;
             }
         }
-
 
         //
         // Getting changes to persist (or to build a query from a QBE filter)
