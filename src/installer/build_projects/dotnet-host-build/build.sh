@@ -18,6 +18,8 @@ OLDPATH="$PATH"
 REPOROOT="$DIR/../.."
 source "$REPOROOT/scripts/common/_prettyprint.sh"
 
+__BuildDriverOnly=0
+
 while [[ $# > 0 ]]; do
     lowerI="$(echo $1 | awk '{print tolower($0)}')"
     case $lowerI in
@@ -40,6 +42,9 @@ while [[ $# > 0 ]]; do
             # Allow CI to disable prereqs check since the CI has the pre-reqs but not ldconfig it seems
             export DOTNET_INSTALL_SKIP_PREREQS=1
             ;;
+        --build-driver-only)
+            __BuildDriverOnly=1
+            ;;
         --help)
             echo "Usage: $0 [--configuration <CONFIGURATION>] [--skip-prereqs] [--nopackage] [--docker <IMAGENAME>] [--help] [--targets <TARGETS...>]"
             echo ""
@@ -49,6 +54,7 @@ while [[ $# > 0 ]]; do
             echo "  --env-vars <'V1=val1','V2=val2'...>  Comma separated list of environment variables"
             echo "  --nopackage                          Skip packaging targets"
             echo "  --skip-prereqs                       Skip checks for pre-reqs in dotnet_install"
+            echo "  --build-driver-only                  Just build dotnet-host-build binary"
             echo "  --docker <IMAGENAME>                 Build in Docker using the Dockerfile located in scripts/docker/IMAGENAME"
             echo "  --help                               Display this help message"
             echo "  <TARGETS...>                         The build targets to run (Init, Compile, Publish, etc.; Default is a full build and publish)"
@@ -120,6 +126,11 @@ echo "Restoring Build Script projects..."
 # Build the builder
 echo "Compiling Build Scripts..."
 dotnet publish "$DIR" -o "$DIR/bin" --framework netcoreapp1.0
+
+if [ $__BuildDriverOnly == 1 ]; then
+    echo "Skipping invoking build scripts."
+    exit 0
+fi
 
 export PATH="$OLDPATH"
 # Run the builder
