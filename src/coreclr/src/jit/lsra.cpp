@@ -7236,59 +7236,44 @@ void LinearScan::allocateRegisters()
                 assert(currentInterval != nullptr);
 
                 // It's already in a register, but not one we need.
-                // If it is a fixed use that is not marked "delayRegFree", there is already a FixedReg to ensure that
-                // the needed reg is not otherwise in use, so we can simply ignore it and codegen will do the copy.
-                // The reason we need special handling for the "delayRegFree" case is that we need to mark the
-                // fixed-reg as in-use and delayed (the FixedReg RefPosition doesn't handle the delay requirement).
-                // Otherwise, if this is a pure use localVar or tree temp, we assign a copyReg, but must free both regs
-                // if it is a last use.
-                if (!currentRefPosition->isFixedRegRef || currentRefPosition->delayRegFree)
+                if (!RefTypeIsDef(currentRefPosition->refType))
                 {
-                    if (!RefTypeIsDef(currentRefPosition->refType))
+                    regNumber copyReg = assignCopyReg(currentRefPosition);
+                    assert(copyReg != REG_NA);
+                    INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_COPY_REG, currentInterval, copyReg));
+                    lastAllocatedRefPosition = currentRefPosition;
+                    if (currentRefPosition->lastUse)
                     {
-                        regNumber copyReg = assignCopyReg(currentRefPosition);
-                        assert(copyReg != REG_NA);
-                        INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_COPY_REG, currentInterval, copyReg));
-                        lastAllocatedRefPosition = currentRefPosition;
-                        if (currentRefPosition->lastUse)
+                        if (currentRefPosition->delayRegFree)
                         {
-                            if (currentRefPosition->delayRegFree)
-                            {
-                                INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_LAST_USE_DELAYED, currentInterval,
-                                                                assignedRegister));
-                                delayRegsToFree |=
-                                    (genRegMask(assignedRegister) | currentRefPosition->registerAssignment);
-                            }
-                            else
-                            {
-                                INDEBUG(
-                                    dumpLsraAllocationEvent(LSRA_EVENT_LAST_USE, currentInterval, assignedRegister));
-                                regsToFree |= (genRegMask(assignedRegister) | currentRefPosition->registerAssignment);
-                            }
+                            INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_LAST_USE_DELAYED, currentInterval,
+                                                            assignedRegister));
+                            delayRegsToFree |= (genRegMask(assignedRegister) | currentRefPosition->registerAssignment);
                         }
-                        // If this is a tree temp (non-localVar) interval, we will need an explicit move.
-                        if (!currentInterval->isLocalVar)
+                        else
                         {
-                            currentRefPosition->moveReg = true;
-                            currentRefPosition->copyReg = false;
-                        }
-                        continue;
-                    }
-                    else
-                    {
-                        INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_NEEDS_NEW_REG, nullptr, assignedRegister));
-                        regsToFree |= genRegMask(assignedRegister);
-                        // We want a new register, but we don't want this to be considered a spill.
-                        assignedRegister = REG_NA;
-                        if (physRegRecord->assignedInterval == currentInterval)
-                        {
-                            unassignPhysRegNoSpill(physRegRecord);
+                            INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_LAST_USE, currentInterval, assignedRegister));
+                            regsToFree |= (genRegMask(assignedRegister) | currentRefPosition->registerAssignment);
                         }
                     }
+                    // If this is a tree temp (non-localVar) interval, we will need an explicit move.
+                    if (!currentInterval->isLocalVar)
+                    {
+                        currentRefPosition->moveReg = true;
+                        currentRefPosition->copyReg = false;
+                    }
+                    continue;
                 }
                 else
                 {
-                    INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_KEPT_ALLOCATION, nullptr, assignedRegister));
+                    INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_NEEDS_NEW_REG, nullptr, assignedRegister));
+                    regsToFree |= genRegMask(assignedRegister);
+                    // We want a new register, but we don't want this to be considered a spill.
+                    assignedRegister = REG_NA;
+                    if (physRegRecord->assignedInterval == currentInterval)
+                    {
+                        unassignPhysRegNoSpill(physRegRecord);
+                    }
                 }
             }
         }
@@ -11770,9 +11755,18 @@ void LinearScan::verifyFinalAllocation()
                     {
                         if (VERBOSE)
                         {
+                            // If refPos is marked as copyReg, then the reg that is spilled
+                            // is the homeReg of the interval not the reg currently assigned
+                            // to refPos.
+                            regNumber spillReg = regNum;
+                            if (currentRefPosition->copyReg)
+                            {
+                                assert(interval != nullptr);
+                                spillReg = interval->physReg;
+                            }
                             dumpRegRecords();
                             dumpEmptyRefPosition();
-                            printf("Spill %-4s ", getRegName(regNum));
+                            printf("Spill %-4s ", getRegName(spillReg));
                         }
                     }
                     else if (currentRefPosition->copyReg)
@@ -11946,6 +11940,8 @@ void LinearScan::verifyResolutionMove(GenTree* resolutionMove, LsraLocation curr
         assert(leftInterval->physReg == leftRegNum && rightInterval->physReg == rightRegNum);
         leftInterval->physReg                  = rightRegNum;
         rightInterval->physReg                 = leftRegNum;
+        leftInterval->assignedReg              = &physRegs[rightRegNum];
+        rightInterval->assignedReg             = &physRegs[leftRegNum];
         physRegs[rightRegNum].assignedInterval = leftInterval;
         physRegs[leftRegNum].assignedInterval  = rightInterval;
         if (VERBOSE)
