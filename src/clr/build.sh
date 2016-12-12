@@ -56,16 +56,33 @@ usage()
     exit 1
 }
 
-initDistroRid()
+initHostDistroRid()
 {
-    if [ "$__BuildOS" == "Linux" ]; then
+    if [ "$__HostOS" == "Linux" ]; then
         if [ ! -e /etc/os-release ]; then
             echo "WARNING: Can not determine runtime id for current distro."
-            export __DistroRid=""
+            __HostDistroRid=""
         else
             source /etc/os-release
-            export __DistroRid="$ID.$VERSION_ID-$__HostArch"
+            __HostDistroRid="$ID.$VERSION_ID-$__HostArch"
         fi
+    fi
+}
+
+initTargetDistroRid()
+{
+    if [ $__CrossBuild == 1 ]; then
+        if [ "$__BuildOS" == "Linux" ]; then
+            if [ ! -e $ROOTFS_DIR/etc/os-release ]; then
+                echo "WARNING: Can not determine runtime id for current distro."
+                export __DistroRid=""
+            else
+                source $ROOTFS_DIR/etc/os-release
+                export __DistroRid="$ID.$VERSION_ID-$__BuildArch"
+            fi
+        fi
+    else
+        export __DistroRid="$__HostDistroRid"
     fi
 }
 
@@ -234,7 +251,7 @@ isMSBuildOnNETCoreSupported()
 
     if [ "$__HostArch" == "x64" ]; then
         if [ "$__HostOS" == "Linux" ]; then
-            case "$__DistroRid" in
+            case "$__HostDistroRid" in
                 "centos.7-x64")
                     __isMSBuildOnNETCoreSupported=1
                     ;;
@@ -482,6 +499,7 @@ __CrossBuild=0
 __ClangMajorVersion=0
 __ClangMinorVersion=0
 __NuGetPath="$__PackagesDir/NuGet.exe"
+__HostDistroRid=""
 __DistroRid=""
 __cmakeargs=""
 __SkipGenerateVersion=0
@@ -670,8 +688,8 @@ fi
 # Set dependent variables
 __LogsDir="$__RootBinDir/Logs"
 
-# init the distro name
-initDistroRid
+# init the host distro name
+initHostDistroRid
 
 # Set the remaining variables based upon the determined build configuration
 __BinDir="$__RootBinDir/Product/$__BuildOS.$__BuildArch.$__BuildType"
@@ -706,6 +724,9 @@ if [ $__CrossBuild == 1 ]; then
         export ROOTFS_DIR="$__ProjectRoot/cross/rootfs/$__BuildArch"
     fi
 fi
+
+# init the target distro name
+initTargetDistroRid
 
 # Make the directories necessary for build if they don't exist
 
