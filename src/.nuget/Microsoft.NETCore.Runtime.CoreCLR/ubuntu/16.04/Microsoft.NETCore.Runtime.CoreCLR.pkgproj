@@ -4,12 +4,12 @@
   <PropertyGroup>
     <SkipPackageFileCheck>true</SkipPackageFileCheck>
     <PackageTargetRuntime>ubuntu.16.04-$(PackagePlatform)</PackageTargetRuntime>
-    <!-- only build for x64 -->
-    <PackagePlatforms>x64;</PackagePlatforms>
+    <!-- build for x64, arm -->
+    <PackagePlatforms>x64;arm;</PackagePlatforms>
   </PropertyGroup>
   <ItemGroup>
     <NativeSplittableBinary Include="$(BinDir)libcoreclr.so" />
-    <NativeSplittableBinary Include="$(BinDir)libcoreclrtraceptprovider.so" />
+    <NativeSplittableBinary Condition="'$(PackagePlatform)' != 'arm'" Include="$(BinDir)libcoreclrtraceptprovider.so" />
     <NativeSplittableBinary Include="$(BinDir)libdbgshim.so" />
     <NativeSplittableBinary Include="$(BinDir)libmscordaccore.so" />
     <NativeSplittableBinary Include="$(BinDir)libmscordbi.so" />
@@ -17,8 +17,8 @@
     <NativeSplittableBinary Include="$(BinDir)libsosplugin.so" />
     <NativeSplittableBinary Include="$(BinDir)System.Globalization.Native.so" />
     <ArchitectureSpecificNativeFile Include="$(BinDir)sosdocsunix.txt" />
-    <ArchitectureSpecificNativeFile Include="$(BinDir)mscorlib.ni.dll" />
-    <ArchitectureSpecificNativeFile Include="$(BinDir)System.Private.CoreLib.ni.dll" />
+    <ArchitectureSpecificNativeFile Condition="'$(PackagePlatform)' != 'arm'" Include="$(BinDir)mscorlib.ni.dll" />
+    <ArchitectureSpecificNativeFile Condition="'$(PackagePlatform)' != 'arm'" Include="$(BinDir)System.Private.CoreLib.ni.dll" />
     <ArchitectureSpecificLibFile Include="$(BinDir)System.Private.CoreLib.dll" />
     <ArchitectureSpecificLibFile Include="$(BinDir)mscorlib.dll" />
     <ArchitectureSpecificLibFile Include="$(BinDir)SOS.NETCore.dll" />
