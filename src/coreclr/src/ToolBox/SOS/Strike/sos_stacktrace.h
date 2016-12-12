@@ -119,7 +119,7 @@ HRESULT CALLBACK _EFN_StackTrace(
 // cbString - number of characters available in the string buffer. 
 // 
 // The output will be truncated of cbString is not long enough for the full stack trace.
-HRESULT _EFN_GetManagedExcepStack(
+HRESULT CALLBACK _EFN_GetManagedExcepStack(
     PDEBUG_CLIENT client,
     ULONG64 StackObjAddr,
     __out_ecount(cbString) PSTR szStackString,
@@ -128,7 +128,7 @@ HRESULT _EFN_GetManagedExcepStack(
 
 // _EFN_GetManagedExcepStackW - same as _EFN_GetManagedExcepStack, but returns 
 //                              the stack as a wide string.
-HRESULT _EFN_GetManagedExcepStackW(
+HRESULT CALLBACK _EFN_GetManagedExcepStackW(
     PDEBUG_CLIENT client,
     ULONG64 StackObjAddr,
     __out_ecount(cchString) PWSTR wszStackString,
@@ -141,7 +141,7 @@ HRESULT _EFN_GetManagedExcepStackW(
 // szName - a buffer to be filled with the full type name
 // cbName - the number of characters available in the buffer
 //
-HRESULT _EFN_GetManagedObjectName(
+HRESULT CALLBACK _EFN_GetManagedObjectName(
     PDEBUG_CLIENT client,
     ULONG64 objAddr,
     __out_ecount(cbName) PSTR szName,
@@ -158,7 +158,7 @@ HRESULT _EFN_GetManagedObjectName(
 // pOffset - the offset from objAddr to the field. This parameter can be NULL.
 //
 // At least one of pValue and pOffset must be non-NULL.
-HRESULT _EFN_GetManagedObjectFieldInfo(
+HRESULT CALLBACK _EFN_GetManagedObjectFieldInfo(
     PDEBUG_CLIENT client,
     ULONG64 objAddr,
     __out_ecount (mdNameLen) PSTR szFieldName,
