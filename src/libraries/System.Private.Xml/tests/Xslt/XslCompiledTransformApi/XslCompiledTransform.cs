@@ -3866,7 +3866,7 @@ param2 (correct answer is 'local-param2-arg'): local-param2-arg
 
             if ((LoadXSL("Bug109644.xsl") == 1) && (Transform("foo.xml") == 1))
             {
-                Assert.Equal(expected, File.ReadAllText("out.xml"));
+                Assert.Equal(expected, File.ReadAllText("out.xml"), ignoreLineEndingDifferences:true);
             }
             else
                 Assert.True(false);
