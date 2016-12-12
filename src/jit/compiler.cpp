@@ -2310,6 +2310,9 @@ void Compiler::compSetProcessor()
         if (opts.compCanUseAVX)
         {
             codeGen->getEmitter()->SetUseAVX(true);
+            // Assume each JITted method does not contain AVX instruction at first
+            codeGen->getEmitter()->SetContainsAVX(false);
+            codeGen->getEmitter()->SetContains256bitAVX(false);
         }
         else
 #endif // FEATURE_AVX_SUPPORT
