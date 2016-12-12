@@ -12422,6 +12422,8 @@
       <Member Name="DangerousGetPinnableReference" />
       <Member Name="op_Implicit(T[])" ReturnType="System.Span&lt;T&gt;" />
       <Member Name="op_Implicit(System.ArraySegment&lt;T&gt;)" ReturnType="System.Span&lt;T&gt;" />
+      <Member Name="op_Equality(System.Span&lt;T&gt;,System.Span&lt;T&gt;)" />
+      <Member Name="op_Inequality(System.Span&lt;T&gt;,System.Span&lt;T&gt;)" />
       <Member Name="get_Length" />
       <Member Name="get_Empty" />
       <Member Name="get_IsEmpty" />
@@ -12431,8 +12433,10 @@
       <Member Name="Slice(System.Int32)" />
       <Member Name="Slice(System.Int32,System.Int32)" />
       <Member Name="Equals(System.Span&lt;T&gt;)" />
+      <Member Name="Equals(System.Object)" />
+      <Member Name="GetHashCode" />
+      <Member Name="CopyTo(System.Span&lt;T&gt;)" />
       <Member Name="TryCopyTo(System.Span&lt;T&gt;)" />
-      <Member Name="Set(System.ReadOnlySpan&lt;T&gt;)" />
     </Type>
     <Type Name="System.ReadOnlySpan&lt;T&gt;" Condition="FEATURE_SPAN_OF_T">
       <Member Name="#ctor(T[])" />
