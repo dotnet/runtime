@@ -395,7 +395,6 @@ namespace System.IO
         }
 
         #region Task based Async APIs
-        [HostProtection(ExternalThreading = true)]
         [ComVisible(false)]
         public override Task WriteAsync(char value)
         {
@@ -457,7 +456,6 @@ namespace System.IO
             _this.CharPos_Prop = charPos;
         }
 
-        [HostProtection(ExternalThreading = true)]
         [ComVisible(false)]
         public override Task WriteAsync(String value)
         {
@@ -543,7 +541,6 @@ namespace System.IO
             _this.CharPos_Prop = charPos;
         }
 
-        [HostProtection(ExternalThreading = true)]
         [ComVisible(false)]
         public override Task WriteAsync(char[] buffer, int index, int count)
         {
@@ -631,7 +628,6 @@ namespace System.IO
             _this.CharPos_Prop = charPos;
         }
 
-        [HostProtection(ExternalThreading = true)]
         [ComVisible(false)]
         public override Task WriteLineAsync()
         {
@@ -654,7 +650,6 @@ namespace System.IO
         }
         
 
-        [HostProtection(ExternalThreading = true)]
         [ComVisible(false)]
         public override Task WriteLineAsync(char value)
         {
@@ -677,7 +672,6 @@ namespace System.IO
         }
         
 
-        [HostProtection(ExternalThreading = true)]
         [ComVisible(false)]
         public override Task WriteLineAsync(String value)
         {
@@ -700,7 +694,6 @@ namespace System.IO
         }
 
 
-        [HostProtection(ExternalThreading = true)]
         [ComVisible(false)]
         public override Task WriteLineAsync(char[] buffer, int index, int count)
         {
@@ -733,7 +726,6 @@ namespace System.IO
         }
         
 
-        [HostProtection(ExternalThreading = true)]
         [ComVisible(false)]
         public override Task FlushAsync()
         {

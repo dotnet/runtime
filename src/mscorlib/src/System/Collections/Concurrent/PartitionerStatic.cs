@@ -69,7 +69,6 @@ namespace System.Collections.Concurrent
     /// thread.
     /// </para>
     /// </remarks>
-    [HostProtection(Synchronization = true, ExternalThreading = true)]
     public static class Partitioner
     {
         /// <summary>

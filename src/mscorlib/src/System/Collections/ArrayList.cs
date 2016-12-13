@@ -725,7 +725,6 @@ namespace System.Collections {
     
         // Returns a thread-safe wrapper around an IList.
         //
-        [HostProtection(Synchronization=true)]
         public static IList Synchronized(IList list) {
             if (list==null)
                 throw new ArgumentNullException(nameof(list));
@@ -736,7 +735,6 @@ namespace System.Collections {
     
         // Returns a thread-safe wrapper around a ArrayList.
         //
-        [HostProtection(Synchronization=true)]
         public static ArrayList Synchronized(ArrayList list) {
             if (list==null)
                 throw new ArgumentNullException(nameof(list));

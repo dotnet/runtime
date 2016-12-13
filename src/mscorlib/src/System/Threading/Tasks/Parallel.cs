@@ -142,7 +142,6 @@ namespace System.Threading.Tasks
     /// The <see cref="T:System.Threading.Tasks.Parallel"/> class provides library-based data parallel replacements
     /// for common operations such as for loops, for each loops, and execution of a set of statements.
     /// </remarks>
-    [HostProtection(Synchronization = true, ExternalThreading = true)]
     public static class Parallel
     {
         // static counter for generating unique Fork/Join Context IDs to be used in ETW events

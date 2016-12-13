@@ -124,7 +124,6 @@ namespace System.IO {
         }
     
 
-        [HostProtection(Synchronization=true)]
         public static TextWriter Synchronized(TextWriter writer) {
             if (writer==null)
                 throw new ArgumentNullException(nameof(writer));
@@ -486,7 +485,6 @@ namespace System.IO {
         }
 
         #region Task based Async APIs
-        [HostProtection(ExternalThreading = true)]
         [ComVisible(false)]
         public virtual Task WriteAsync(char value)
         {
@@ -499,7 +497,6 @@ namespace System.IO {
             tuple, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
         }
 
-        [HostProtection(ExternalThreading = true)]
         [ComVisible(false)]
         public virtual Task WriteAsync(String value)
         {
@@ -512,7 +509,6 @@ namespace System.IO {
             tuple, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
         }
 
-        [HostProtection(ExternalThreading = true)]
         [ComVisible(false)]
         public Task WriteAsync(char[] buffer)
         {
@@ -520,7 +516,6 @@ namespace System.IO {
             return WriteAsync(buffer, 0, buffer.Length);
         }
 
-        [HostProtection(ExternalThreading = true)]
         [ComVisible(false)]
         public virtual Task WriteAsync(char[] buffer, int index, int count)
         {
@@ -533,7 +528,6 @@ namespace System.IO {
             tuple, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
         }
 
-        [HostProtection(ExternalThreading = true)]
         [ComVisible(false)]
         public virtual Task WriteLineAsync(char value)
         {
@@ -546,7 +540,6 @@ namespace System.IO {
             tuple, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
         }
 
-        [HostProtection(ExternalThreading = true)]
         [ComVisible(false)]
         public virtual Task WriteLineAsync(String value)
         {
@@ -559,7 +552,6 @@ namespace System.IO {
             tuple, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
         }
 
-        [HostProtection(ExternalThreading = true)]
         [ComVisible(false)]
         public Task WriteLineAsync(char[] buffer)
         {
@@ -567,7 +559,6 @@ namespace System.IO {
             return WriteLineAsync(buffer, 0, buffer.Length);
         }
 
-        [HostProtection(ExternalThreading = true)]
         [ComVisible(false)]
         public virtual Task WriteLineAsync(char[] buffer, int index, int count)
         {
@@ -580,14 +571,12 @@ namespace System.IO {
             tuple, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
         }
 
-        [HostProtection(ExternalThreading = true)]
         [ComVisible(false)]
         public virtual Task WriteLineAsync()
         {
             return WriteAsync(CoreNewLine);
         }
 
-        [HostProtection(ExternalThreading = true)]
         [ComVisible(false)]
         public virtual Task FlushAsync()
         {

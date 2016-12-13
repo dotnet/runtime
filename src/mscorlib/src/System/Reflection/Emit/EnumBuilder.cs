@@ -23,7 +23,6 @@ namespace System.Reflection.Emit {
     using System.Security.Permissions;
 
     
-    [HostProtection(MayLeakOnAbort = true)]
     [ClassInterface(ClassInterfaceType.None)]
     [ComDefaultInterface(typeof(_EnumBuilder))]
 [System.Runtime.InteropServices.ComVisible(true)]

@@ -41,7 +41,6 @@ namespace System.Threading.Tasks
     /// </remarks>
     [DebuggerDisplay("Id={Id}")]
     [DebuggerTypeProxy(typeof(SystemThreadingTasks_TaskSchedulerDebugView))]
-    [HostProtection(Synchronization = true, ExternalThreading = true)]
     public abstract class TaskScheduler
     {
         ////////////////////////////////////////////////////////////

@@ -189,7 +189,6 @@ namespace System.Collections {
     
         // Returns a synchronized Stack.
         //
-        [HostProtection(Synchronization=true)]
         public static Stack Synchronized(Stack stack) {
             if (stack==null)
                 throw new ArgumentNullException(nameof(stack));

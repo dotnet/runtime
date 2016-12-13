@@ -28,7 +28,6 @@ namespace System.Threading.Tasks
     /// Provides concurrent and exclusive task schedulers that coordinate to execute
     /// tasks while ensuring that concurrent tasks may run concurrently and exclusive tasks never do.
     /// </summary>
-    [HostProtection(Synchronization = true, ExternalThreading = true)]
     [DebuggerDisplay("Concurrent={ConcurrentTaskCountForDebugger}, Exclusive={ExclusiveTaskCountForDebugger}, Mode={ModeForDebugger}")]
     [DebuggerTypeProxy(typeof(ConcurrentExclusiveSchedulerPair.DebugView))]
     public class ConcurrentExclusiveSchedulerPair

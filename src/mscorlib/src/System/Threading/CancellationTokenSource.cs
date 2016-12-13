@@ -36,7 +36,6 @@ namespace System.Threading
     /// </para>
     /// </remarks>
     [ComVisible(false)]
-    [HostProtection(Synchronization = true, ExternalThreading = true)]
 
     public class CancellationTokenSource : IDisposable
     {

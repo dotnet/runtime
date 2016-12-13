@@ -774,7 +774,6 @@ namespace System.IO
         }
         
         #region Task based Async APIs
-        [HostProtection(ExternalThreading=true)]
         [ComVisible(false)]
         public override Task<String> ReadLineAsync()
         {
@@ -855,7 +854,6 @@ namespace System.IO
             return GetStringAndReleaseSharedStringBuilder(sb);
         }
 
-        [HostProtection(ExternalThreading=true)]
         [ComVisible(false)]
         public override Task<String> ReadToEndAsync()
         {
@@ -892,7 +890,6 @@ namespace System.IO
             return GetStringAndReleaseSharedStringBuilder(sb);
         }
 
-        [HostProtection(ExternalThreading=true)]
         [ComVisible(false)]
         public override Task<int> ReadAsync(char[] buffer, int index, int count)
         {
@@ -1080,7 +1077,6 @@ namespace System.IO
             return charsRead;
         }
 
-        [HostProtection(ExternalThreading=true)]
         [ComVisible(false)]
         public override Task<int> ReadBlockAsync(char[] buffer, int index, int count)
         {

@@ -38,7 +38,6 @@ namespace System.Collections.Concurrent
     [ComVisible(false)]
     [DebuggerDisplay("Count = {Count}")]
     [DebuggerTypeProxy(typeof(SystemCollectionsConcurrent_ProducerConsumerCollectionDebugView<>))]
-    [HostProtection(Synchronization = true, ExternalThreading = true)]
     [Serializable]
     public class ConcurrentQueue<T> : IProducerConsumerCollection<T>, IReadOnlyCollection<T>
     {

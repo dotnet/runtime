@@ -156,7 +156,6 @@ namespace System.Reflection.Emit
 
     // AssemblyBuilder class.
     // deliberately not [serializable]
-    [HostProtection(MayLeakOnAbort = true)]
     [ClassInterface(ClassInterfaceType.None)]
     [ComDefaultInterface(typeof(_AssemblyBuilder))]
     [ComVisible(true)]

@@ -10,7 +10,6 @@ namespace System.Reflection.Emit
 
     // This class is describing the fieldmarshal.
     [Serializable]
-    [HostProtection(MayLeakOnAbort = true)]
     [System.Runtime.InteropServices.ComVisible(true)]
     [Obsolete("An alternate API is available: Emit the MarshalAs custom attribute instead. http://go.microsoft.com/fwlink/?linkid=14202")]
     public sealed class UnmanagedMarshal

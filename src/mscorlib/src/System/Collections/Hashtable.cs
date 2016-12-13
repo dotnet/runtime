@@ -1046,7 +1046,6 @@ namespace System.Collections {
     
         // Returns a thread-safe wrapper for a Hashtable.
         //
-        [HostProtection(Synchronization=true)]
         public static Hashtable Synchronized(Hashtable table) {
             if (table==null)
                 throw new ArgumentNullException(nameof(table));

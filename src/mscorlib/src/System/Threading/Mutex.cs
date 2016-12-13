@@ -27,7 +27,6 @@ namespace System.Threading
     using System.Diagnostics;
     using System.Diagnostics.Contracts;
 
-    [HostProtection(Synchronization=true, ExternalThreading=true)]
     [ComVisible(true)]
     public sealed class Mutex : WaitHandle
     {

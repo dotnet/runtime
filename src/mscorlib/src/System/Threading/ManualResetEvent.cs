@@ -17,7 +17,6 @@ namespace System.Threading {
     using System.Security.Permissions;
     using System.Runtime.InteropServices;
 
-    [HostProtection(Synchronization=true, ExternalThreading=true)]
 [System.Runtime.InteropServices.ComVisible(true)]
     public sealed class ManualResetEvent : EventWaitHandle
     {        
