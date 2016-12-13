@@ -8,7 +8,7 @@ namespace System.Globalization
 {
     public partial class HijriCalendar : Calendar
     {
-        public static int GetHijriDateAdjustment()
+        private static int GetHijriDateAdjustment()
         {
             return WinRTInterop.Callbacks.GetHijriDateAdjustment();
         }

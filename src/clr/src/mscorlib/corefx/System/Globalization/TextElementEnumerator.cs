@@ -12,7 +12,6 @@
 
 using System.Collections;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Runtime.Serialization;
 
 namespace System.Globalization
@@ -126,7 +125,7 @@ namespace System.Globalization
         }
 
         //
-        // Get the starting _index of the current text element.
+        // Get the starting index of the current text element.
         //
 
         public int ElementIndex

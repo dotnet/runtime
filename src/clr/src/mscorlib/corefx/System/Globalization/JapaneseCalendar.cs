@@ -9,11 +9,6 @@ using System.Diagnostics.Contracts;
 
 namespace System.Globalization
 {
-
-#if INSIDE_CLR
-    using Debug = BCLDebug;
-#endif
-
     /*=================================JapaneseCalendar==========================
     **
     ** JapaneseCalendar is based on Gregorian calendar.  The month and day values are the same as

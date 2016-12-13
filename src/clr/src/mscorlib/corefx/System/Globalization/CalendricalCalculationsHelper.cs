@@ -2,9 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 
 namespace System.Globalization
 {
@@ -127,7 +125,7 @@ namespace System.Globalization
             return longitude;
         }
 
-        static public double AsDayFraction(double longitude)
+        public static double AsDayFraction(double longitude)
         {
             return longitude / FullCircleOfArc;
         }
@@ -221,7 +219,7 @@ namespace System.Globalization
             return DefaultEphemerisCorrection(year);
         }
 
-        static public double JulianCenturies(double moment)
+        public static double JulianCenturies(double moment)
         {
             double dynamicalMoment = moment + EphemerisCorrection(moment);
             return (dynamicalMoment - Noon2000Jan01) / DaysInUniformLengthCentury;
@@ -275,7 +273,7 @@ namespace System.Globalization
         }
 
         // midday
-        static public double Midday(double date, double longitude)
+        public static double Midday(double date, double longitude)
         {
             return AsLocalTime(date + TwelveHours, longitude) - AsDayFraction(longitude);
         }
@@ -286,7 +284,7 @@ namespace System.Globalization
         }
 
         // midday-in-tehran
-        static public double MiddayAtPersianObservationSite(double date)
+        public static double MiddayAtPersianObservationSite(double date)
         {
             return Midday(date, InitLongitude(52.5)); // 52.5 degrees east - longitude of UTC+3:30 which defines Iranian Standard Time
         }
@@ -363,7 +361,7 @@ namespace System.Globalization
             return (-0.004778 * SinOfDegree(a)) - (0.0003667 * SinOfDegree(b));
         }
 
-        static public double Compute(double time)
+        public static double Compute(double time)
         {
             double julianCenturies = JulianCenturies(time);
             double lambda = 282.7771834
@@ -374,7 +372,7 @@ namespace System.Globalization
             return InitLongitude(longitude);
         }
 
-        static public double AsSeason(double longitude)
+        public static double AsSeason(double longitude)
         {
             return (longitude < 0) ? (longitude + FullCircleOfArc) : longitude;
         }

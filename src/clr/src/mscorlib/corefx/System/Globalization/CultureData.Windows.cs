@@ -4,10 +4,12 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Runtime.InteropServices;
 using System.Text;
+
+#if ENABLE_WINRT
 using Internal.Runtime.Augments;
+#endif
 
 namespace System.Globalization
 {
@@ -265,19 +267,57 @@ namespace System.Globalization
             return null;
         }
 
-        private static string GetLanguageDisplayName(string cultureName)
+        private string GetLanguageDisplayName(string cultureName)
         {
+#if ENABLE_WINRT
             return WinRTInterop.Callbacks.GetLanguageDisplayName(cultureName);
+#else
+            // Usually the UI culture shouldn't be different than what we got from WinRT except
+            // if DefaultThreadCurrentUICulture was set
+            CultureInfo ci;
+
+            if (CultureInfo.DefaultThreadCurrentUICulture != null &&
+                ((ci = GetUserDefaultCulture()) != null) &&
+                !CultureInfo.DefaultThreadCurrentUICulture.Name.Equals(ci.Name))
+            {
+                return SNATIVEDISPLAYNAME;
+            }
+            else
+            {
+                return GetLocaleInfo(cultureName, LocaleStringData.LocalizedDisplayName);
+            }
+#endif // ENABLE_WINRT
         }
 
-        private static string GetRegionDisplayName(string isoCountryCode)
+        private string GetRegionDisplayName(string isoCountryCode)
         {
+#if ENABLE_WINRT
             return WinRTInterop.Callbacks.GetRegionDisplayName(isoCountryCode);
+#else
+            // Usually the UI culture shouldn't be different than what we got from WinRT except
+            // if DefaultThreadCurrentUICulture was set
+            CultureInfo ci;
+
+            if (CultureInfo.DefaultThreadCurrentUICulture != null &&
+                ((ci = GetUserDefaultCulture()) != null) &&
+                !CultureInfo.DefaultThreadCurrentUICulture.Name.Equals(ci.Name))
+            {
+                return SNATIVECOUNTRY;
+            }
+            else
+            {
+                return GetLocaleInfo(LocaleStringData.LocalizedCountryName);
+            }
+#endif // ENABLE_WINRT
         }
 
         private static CultureInfo GetUserDefaultCulture()
         {
+#if ENABLE_WINRT
             return (CultureInfo)WinRTInterop.Callbacks.GetUserDefaultCulture();
+#else
+            return CultureInfo.GetUserDefaultCulture();
+#endif // ENABLE_WINRT
         }
 
         // PAL methods end here.
@@ -558,50 +598,50 @@ namespace System.Globalization
 
             return null;
         }
-        
-        private static int LocaleNameToLCID(string cultureName)
+
+        private int LocaleNameToLCID(string cultureName)
         {
-            throw new NotImplementedException();
+            return GetLocaleInfo(LocaleNumberData.LanguageId);
         }
-        
+
         private static string LCIDToLocaleName(int culture)
         {
             throw new NotImplementedException();
         }
-        
-        private static int GetAnsiCodePage(string cultureName)
+
+        private int GetAnsiCodePage(string cultureName)
         {
-            throw new NotImplementedException();
+            return GetLocaleInfo(LocaleNumberData.AnsiCodePage);
         }
 
-        private static int GetOemCodePage(string cultureName)
+        private int GetOemCodePage(string cultureName)
         {
-            throw new NotImplementedException();
+            return GetLocaleInfo(LocaleNumberData.OemCodePage);
         }
 
-        private static int GetMacCodePage(string cultureName)
+        private int GetMacCodePage(string cultureName)
         {
-            throw new NotImplementedException();
+            return GetLocaleInfo(LocaleNumberData.MacCodePage);
         }
 
-        private static int GetEbcdicCodePage(string cultureName)
+        private int GetEbcdicCodePage(string cultureName)
         {
-            throw new NotImplementedException();
+            return GetLocaleInfo(LocaleNumberData.EbcdicCodePage);
         }
 
-        private static int GetGeoId(string cultureName)
+        private int GetGeoId(string cultureName)
         {
-            throw new NotImplementedException();
+            return GetLocaleInfo(LocaleNumberData.GeoId);
         }
-        
-        private static int GetDigitSubstitution(string cultureName)
+
+        private int GetDigitSubstitution(string cultureName)
         {
-            throw new NotImplementedException();
+            return GetLocaleInfo(LocaleNumberData.DigitSubstitution);
         }
-        
-        private static string GetThreeLetterWindowsLanguageName(string cultureName)
+
+        private string GetThreeLetterWindowsLanguageName(string cultureName)
         {
-            throw new NotImplementedException();
+            return GetLocaleInfo(cultureName, LocaleStringData.AbbreviatedWindowsLanguageName);
         }
 
         private static CultureInfo[] EnumCultures(CultureTypes types)
@@ -609,22 +649,22 @@ namespace System.Globalization
             throw new NotImplementedException();
         }
 
-        private static string GetConsoleFallbackName(string cultureName)
+        private string GetConsoleFallbackName(string cultureName)
         {
-            throw new NotImplementedException();
+            return GetLocaleInfo(cultureName, LocaleStringData.ConsoleFallbackName);
         }
 
-        private bool IsSupplementalCustomCulture
+        internal bool IsFramework
+        {
+            get { throw new NotImplementedException(); }
+        }
+
+        internal bool IsWin32Installed
         {
             get { throw new NotImplementedException(); }
         }
         
-        private bool IsWin32Installed
-        {
-            get { throw new NotImplementedException(); }
-        }
-        
-        private bool IsReplacementCulture
+        internal bool IsReplacementCulture
         {
             get { throw new NotImplementedException(); }
         }

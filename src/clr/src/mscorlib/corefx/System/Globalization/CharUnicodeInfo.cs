@@ -12,12 +12,6 @@
 //
 ////////////////////////////////////////////////////////////////////////////
 
-using System;
-using System.Threading;
-using System.Runtime.InteropServices;
-using System.Runtime.CompilerServices;
-using System.Reflection;
-using System.Security;
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
 
@@ -171,7 +165,7 @@ namespace System.Globalization
         //
         // Note that for ch in the range D800-DFFF we just treat it as any other non-numeric character
         //
-        internal unsafe static double InternalGetNumericValue(int ch)
+        internal static unsafe double InternalGetNumericValue(int ch)
         {
             Debug.Assert(ch >= 0 && ch <= 0x10ffff, "ch is not in valid Unicode range.");
             // Get the level 2 item from the highest 12 bit (8 - 19) of ch.
@@ -192,7 +186,7 @@ namespace System.Globalization
             }
         }
 
-        internal unsafe static ushort InternalGetDigitValues(int ch)
+        internal static unsafe ushort InternalGetDigitValues(int ch)
         {
             Debug.Assert(ch >= 0 && ch <= 0x10ffff, "ch is not in valid Unicode range.");
             // Get the level 2 item from the highest 12 bit (8 - 19) of ch.
@@ -303,7 +297,7 @@ namespace System.Globalization
             return InternalGetUnicodeCategory(s, index);
         }
 
-        internal unsafe static UnicodeCategory InternalGetUnicodeCategory(int ch)
+        internal static unsafe UnicodeCategory InternalGetUnicodeCategory(int ch)
         {
             return ((UnicodeCategory)InternalGetCategoryValue(ch, UNICODE_CATEGORY_OFFSET));
         }
@@ -323,7 +317,7 @@ namespace System.Globalization
         //
         ////////////////////////////////////////////////////////////////////////
 
-        internal unsafe static byte InternalGetCategoryValue(int ch, int offset)
+        internal static unsafe byte InternalGetCategoryValue(int ch, int offset)
         {
             Debug.Assert(ch >= 0 && ch <= 0x10ffff, "ch is not in valid Unicode range.");
             // Get the level 2 item from the highest 12 bit (8 - 19) of ch.

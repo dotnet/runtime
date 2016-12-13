@@ -21,7 +21,7 @@ namespace System.Globalization
 {
     [Serializable]
     [System.Runtime.InteropServices.ComVisible(true)]
-    public partial class StringInfo
+    public class StringInfo
     {
         [OptionalField(VersionAdded = 2)] 
         private string _str;
