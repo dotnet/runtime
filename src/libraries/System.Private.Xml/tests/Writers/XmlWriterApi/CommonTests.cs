@@ -7096,6 +7096,8 @@ namespace System.Xml.Tests
 
             public int writeValue_27()
             {
+                CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;  // So that the number format doesn't depend on the current culture
+
                 if (CurVariation.Desc.Equals("elem.WriteValue(new DateTimeOffset)"))
                 {
                     Console.WriteLine("elem.WriteValue(new DateTimeOffset)");
