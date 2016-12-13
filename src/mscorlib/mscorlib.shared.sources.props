@@ -806,7 +806,6 @@
     <IoSources Include="$(BclSourcesRoot)\System\IO\DirectoryInfo.cs" />
     <IoSources Include="$(BclSourcesRoot)\System\IO\SearchOption.cs" />
     <IoSources Include="$(BclSourcesRoot)\System\IO\DirectoryNotFoundException.cs" />
-    <IoSources Include="$(BclSourcesRoot)\System\IO\DriveInfo.cs" />
     <IoSources Include="$(BclSourcesRoot)\System\IO\DriveNotFoundException.cs" />
     <IoSources Include="$(BclSourcesRoot)\System\IO\EncodingCache.cs" />
     <IoSources Include="$(BclSourcesRoot)\System\IO\EndOfStreamException.cs" />
@@ -836,8 +835,6 @@
     <IoSources Include="$(BclSourcesRoot)\System\IO\UnmanagedMemoryAccessor.cs" />
     <IoSources Include="$(BclSourcesRoot)\System\IO\UnmanagedMemoryStream.cs" />
     <IoSources Include="$(BclSourcesRoot)\System\IO\UnmanagedMemoryStreamWrapper.cs" />
-    <IoSources Condition="'$(FeatureCoreclr)' == 'true'" Include="$(BclSourcesRoot)\System\IO\FileSecurityState.cs" />
-    <IoSources Condition="'$(FeatureCoreclr)' == 'true'" Include="$(BclSourcesRoot)\System\IO\FileSecurityStateAccess.cs" />
   </ItemGroup>
   <ItemGroup>
     <SecuritySources Include="$(BclSourcesRoot)\System\Security\Attributes.cs" />

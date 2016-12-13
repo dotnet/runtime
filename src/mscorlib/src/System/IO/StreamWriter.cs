@@ -2,23 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*============================================================
-**
-**
-** 
-**
-**
-** Purpose: For writing text to streams in a particular 
-** encoding.
-**
-**
-===========================================================*/
-using System;
 using System.Text;
-using System.Threading;
-using System.Globalization;
 using System.Runtime.CompilerServices;
-using System.Runtime.Versioning;
 using System.Security.Permissions;
 using System.Runtime.Serialization;
 using System.Diagnostics;
@@ -46,8 +31,6 @@ namespace System.IO
         private const int DefaultFileStreamBufferSize = 4096;
         private const int MinBufferSize = 128;
 
-        private const Int32 DontCopyOnWriteLineThreshold = 512;
-
         // Bit bucket - Null has no backing store. Non closable.
         public new static readonly StreamWriter Null = new StreamWriter(Stream.Null, UTF8NoBOM, MinBufferSize, true);
 
@@ -61,12 +44,6 @@ namespace System.IO
         private bool autoFlush;
         private bool haveWrittenPreamble;
         private bool closable;
-
-#if MDA_SUPPORTED
-        [NonSerialized] 
-        // For StreamWriterBufferedDataLost MDA
-        private MdaHelper mdaHelper;
-#endif
 
         // We don't guarantee thread safety on StreamWriter, but we should at 
         // least prevent users from trying to write anything while an Async
@@ -144,12 +121,10 @@ namespace System.IO
             : this(path, append, encoding, DefaultBufferSize) {
         }
 
-        public StreamWriter(String path, bool append, Encoding encoding, int bufferSize): this(path, append, encoding, bufferSize, true) { 
-        }
-
-        internal StreamWriter(String path, bool append, Encoding encoding, int bufferSize, bool checkHost)
+        public StreamWriter(String path, bool append, Encoding encoding, int bufferSize)
             : base(null)
-        { // Ask for CurrentCulture all the time
+        {
+            // Ask for CurrentCulture all the time
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
             if (encoding == null)
@@ -159,7 +134,7 @@ namespace System.IO
             if (bufferSize <= 0) throw new ArgumentOutOfRangeException(nameof(bufferSize), Environment.GetResourceString("ArgumentOutOfRange_NeedPosNum"));
             Contract.EndContractBlock();
 
-            Stream stream = CreateFile(path, append, checkHost);
+            Stream stream = CreateFile(path, append);
             Init(stream, encoding, bufferSize, false);
         }
 
@@ -177,20 +152,12 @@ namespace System.IO
             if (stream.CanSeek && stream.Position > 0)
                 haveWrittenPreamble = true;
             closable = !shouldLeaveOpen;
-#if MDA_SUPPORTED
-            if (Mda.StreamWriterBufferedDataLost.Enabled) {
-                String callstack = null;
-                if (Mda.StreamWriterBufferedDataLost.CaptureAllocatedCallStack)
-                    callstack = Environment.GetStackTrace(null, false);
-                mdaHelper = new MdaHelper(this, callstack);
-            }
-#endif
         }
 
-        private static Stream CreateFile(String path, bool append, bool checkHost) {
+        private static Stream CreateFile(String path, bool append) {
             FileMode mode = append? FileMode.Append: FileMode.Create;
             FileStream f = new FileStream(path, mode, FileAccess.Write, FileShare.Read,
-                DefaultFileStreamBufferSize, FileOptions.SequentialScan, Path.GetFileName(path), false, false, checkHost);
+                DefaultFileStreamBufferSize, FileOptions.SequentialScan, Path.GetFileName(path), false, false);
             return f;
         }
 
@@ -212,11 +179,6 @@ namespace System.IO
                         CheckAsyncTaskInProgress();
 
                         Flush(true, true);
-#if MDA_SUPPORTED
-                        // Disable buffered data loss mda
-                        if (mdaHelper != null)
-                            GC.SuppressFinalize(mdaHelper);
-#endif
                     }
                 }
             }
@@ -799,42 +761,5 @@ namespace System.IO
                 await stream.FlushAsync().ConfigureAwait(false);
         }
         #endregion
-
-#if MDA_SUPPORTED
-        // StreamWriterBufferedDataLost MDA
-        // Instead of adding a finalizer to StreamWriter for detecting buffered data loss  
-        // (ie, when the user forgets to call Close/Flush on the StreamWriter), we will 
-        // have a separate object with normal finalization semantics that maintains a 
-        // back pointer to this StreamWriter and alerts about any data loss
-        private sealed class MdaHelper
-        {
-            private StreamWriter streamWriter;
-            private String allocatedCallstack;    // captures the callstack when this streamwriter was allocated
-
-            internal MdaHelper(StreamWriter sw, String cs)
-            {
-                streamWriter = sw;
-                allocatedCallstack = cs;
-            }
-
-            // Finalizer
-            ~MdaHelper()
-            {
-                // Make sure people closed this StreamWriter, exclude StreamWriter::Null.
-                if (streamWriter.charPos != 0 && streamWriter.stream != null && streamWriter.stream != Stream.Null) {
-                    String fileName = (streamWriter.stream is FileStream) ? ((FileStream)streamWriter.stream).NameInternal : "<unknown>";
-                    String callStack = allocatedCallstack;
-
-                    if (callStack == null)
-                        callStack = Environment.GetResourceString("IO_StreamWriterBufferedDataLostCaptureAllocatedFromCallstackNotEnabled");
-
-                    String message = Environment.GetResourceString("IO_StreamWriterBufferedDataLost", streamWriter.stream.GetType().FullName, fileName, callStack);
-
-                    Mda.StreamWriterBufferedDataLost.ReportError(message);
-                }
-            }
-        }  // class MdaHelper
-#endif  // MDA_SUPPORTED
-
     }  // class StreamWriter
 }  // namespace
