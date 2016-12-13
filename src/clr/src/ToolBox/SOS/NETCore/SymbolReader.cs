@@ -37,7 +37,7 @@ namespace SOS
         /// Read memory callback
         /// </summary>
         /// <returns>number of bytes read or 0 for error</returns>
-        internal unsafe delegate int ReadMemoryDelegate(IntPtr address, byte* buffer, int count);
+        internal unsafe delegate int ReadMemoryDelegate(ulong address, byte* buffer, int count);
 
         private sealed class OpenedReader : IDisposable
         {
@@ -61,7 +61,7 @@ namespace SOS
         /// </summary>
         private class TargetStream : Stream
         {
-            readonly IntPtr _address;
+            readonly ulong _address;
             readonly ReadMemoryDelegate _readMemory;
 
             public override long Position { get; set; }
@@ -70,7 +70,7 @@ namespace SOS
             public override bool CanRead { get { return true; } }
             public override bool CanWrite { get { return false; } }
 
-            public TargetStream(IntPtr address, int size, ReadMemoryDelegate readMemory)
+            public TargetStream(ulong address, int size, ReadMemoryDelegate readMemory)
                 : base()
             {
                 _address = address;
@@ -89,7 +89,7 @@ namespace SOS
                 {
                     fixed (byte* p = &buffer[offset])
                     {
-                        int read  = _readMemory(new IntPtr(_address.ToInt64() + Position), p, count);
+                        int read  = _readMemory(_address + (ulong)Position, p, count);
                         Position += read;
                         return read;
                     }
@@ -157,18 +157,18 @@ namespace SOS
         /// <param name="inMemoryPdbAddress">in memory PDB address or zero</param>
         /// <param name="inMemoryPdbSize">in memory PDB size</param>
         /// <returns>Symbol reader handle or zero if error</returns>
-        internal static IntPtr LoadSymbolsForModule(string assemblyPath, bool isFileLayout, IntPtr loadedPeAddress, int loadedPeSize, 
-            IntPtr inMemoryPdbAddress, int inMemoryPdbSize, ReadMemoryDelegate readMemory)
+        internal static IntPtr LoadSymbolsForModule(string assemblyPath, bool isFileLayout, ulong loadedPeAddress, int loadedPeSize, 
+            ulong inMemoryPdbAddress, int inMemoryPdbSize, ReadMemoryDelegate readMemory)
         {
             try
             {
                 TargetStream peStream = null;
-                if (assemblyPath == null && loadedPeAddress != IntPtr.Zero)
+                if (assemblyPath == null && loadedPeAddress != 0)
                 {
                     peStream = new TargetStream(loadedPeAddress, loadedPeSize, readMemory);
                 }
                 TargetStream pdbStream = null;
-                if (inMemoryPdbAddress != IntPtr.Zero)
+                if (inMemoryPdbAddress != 0)
                 {
                     pdbStream = new TargetStream(inMemoryPdbAddress, inMemoryPdbSize, readMemory);
                 }
