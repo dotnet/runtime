@@ -114,5 +114,33 @@ namespace System.Linq.Tests
             Assert.Throws<ArgumentNullException>("source", () => source.Contains(42));
             Assert.Throws<ArgumentNullException>("source", () => source.Contains(42, EqualityComparer<int>.Default));
         }
+
+        [Fact]
+        public void ExplicitNullComparerDoesNotDeferToCollection()
+        {
+            IEnumerable<string> source = new HashSet<string>(new AnagramEqualityComparer()) {"ABC"};
+            Assert.False(source.Contains("BAC", null));
+        }
+
+        [Fact]
+        public void ExplicitComparerDoesNotDeferToCollection()
+        {
+            IEnumerable<string> source = new HashSet<string> {"ABC"};
+            Assert.True(source.Contains("abc", StringComparer.OrdinalIgnoreCase));
+        }
+
+        [Fact]
+        public void ExplicitComparerDoestNotDeferToCollectionWithComparer()
+        {
+            IEnumerable<string> source = new HashSet<string>(StringComparer.OrdinalIgnoreCase) {"ABC"};
+            Assert.True(source.Contains("BAC", new AnagramEqualityComparer()));
+        }
+
+        [Fact]
+        public void NoComparerDoesDeferToCollection()
+        {
+            IEnumerable<string> source = new HashSet<string>(StringComparer.OrdinalIgnoreCase) {"ABC"};
+            Assert.True(source.Contains("abc"));
+        }
     }
 }
