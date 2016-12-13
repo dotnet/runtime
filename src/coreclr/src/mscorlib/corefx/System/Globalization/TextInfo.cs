@@ -12,16 +12,10 @@
 //
 ////////////////////////////////////////////////////////////////////////////
 
-using System;
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
-using System.Runtime;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
-using System.Security;
 using System.Text;
-using System.Threading;
 
 namespace System.Globalization
 {
@@ -236,10 +230,10 @@ namespace System.Globalization
         ////
         ////  Clone
         ////
-        ////  Is the implementation of IColnable.
+        ////  Is the implementation of ICloneable.
         ////
         //////////////////////////////////////////////////////////////////////////
-        public virtual Object Clone()
+        public virtual object Clone()
         {
             object o = MemberwiseClone();
             ((TextInfo)o).SetReadOnlyState(false);
@@ -376,7 +370,7 @@ namespace System.Globalization
             return c;
         }
 
-        static private bool IsAscii(Char c)
+        private static bool IsAscii(Char c)
         {
             return c < 0x80;
         }

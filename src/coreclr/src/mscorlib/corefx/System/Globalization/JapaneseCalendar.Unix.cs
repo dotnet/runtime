@@ -3,13 +3,11 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using System.Security;
 
 namespace System.Globalization
 {
     public partial class JapaneseCalendar : Calendar
     {
-        [SecuritySafeCritical]
         private static EraInfo[] GetJapaneseEras()
         {
             string[] eraNames;
@@ -66,7 +64,6 @@ namespace System.Globalization
             return eraNames[eraIndex].Substring(0, 1);
         }
 
-        [SecuritySafeCritical]
         private static bool GetJapaneseEraStartDate(int era, out DateTime dateTime)
         {
             dateTime = default(DateTime);
