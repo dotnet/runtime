@@ -3659,17 +3659,6 @@ void Lowering::TreeNodeInfoInitCmp(GenTreePtr tree)
                         //
                         assert(!castOp1->gtOverflowEx()); // Must not be an overflow checking operation
 
-                        GenTreePtr removeTreeNode = op1;
-                        tree->gtOp.gtOp1          = castOp1;
-                        op1                       = castOp1;
-                        castOp1->gtType           = TYP_UBYTE;
-
-                        // trim down the value if castOp1 is an int constant since its type changed to UBYTE.
-                        if (castOp1Oper == GT_CNS_INT)
-                        {
-                            castOp1->gtIntCon.gtIconVal = (UINT8)castOp1->gtIntCon.gtIconVal;
-                        }
-
                         // TODO-Cleanup: we're within "if (CheckImmedAndMakeContained(tree, op2))", so isn't
                         // the following condition always true?
                         if (op2->isContainedIntOrIImmed())
@@ -3677,6 +3666,17 @@ void Lowering::TreeNodeInfoInitCmp(GenTreePtr tree)
                             ssize_t val = (ssize_t)op2->AsIntConCommon()->IconValue();
                             if (val >= 0 && val <= 255)
                             {
+                                GenTreePtr removeTreeNode = op1;
+                                tree->gtOp.gtOp1          = castOp1;
+                                op1                       = castOp1;
+                                castOp1->gtType           = TYP_UBYTE;
+
+                                // trim down the value if castOp1 is an int constant since its type changed to UBYTE.
+                                if (castOp1Oper == GT_CNS_INT)
+                                {
+                                    castOp1->gtIntCon.gtIconVal = (UINT8)castOp1->gtIntCon.gtIconVal;
+                                }
+
                                 op2->gtType = TYP_UBYTE;
                                 tree->gtFlags |= GTF_UNSIGNED;
 
@@ -3687,27 +3687,26 @@ void Lowering::TreeNodeInfoInitCmp(GenTreePtr tree)
                                     MakeSrcContained(tree, op1);
                                     op1IsMadeContained = true;
                                 }
-                            }
-                        }
 
-                        BlockRange().Remove(removeTreeNode);
+                                BlockRange().Remove(removeTreeNode);
 
-                        // We've changed the type on op1 to TYP_UBYTE, but we already processed that node. We need to
-                        // go back and mark it byteable.
-                        // TODO-Cleanup: it might be better to move this out of the TreeNodeInfoInit pass to the earlier
-                        // "lower" pass, in which case the byteable check would just fall out. But that is quite
-                        // complex!
-                        TreeNodeInfoInitCheckByteable(op1);
+                                // We've changed the type on op1 to TYP_UBYTE, but we already processed that node.
+                                // We need to go back and mark it byteable.
+                                // TODO-Cleanup: it might be better to move this out of the TreeNodeInfoInit pass to
+                                // the earlier "lower" pass, in which case the byteable check would just fall out.
+                                // But that is quite complex!
+                                TreeNodeInfoInitCheckByteable(op1);
 
 #ifdef DEBUG
-                        if (comp->verbose)
-                        {
-                            printf(
-                                "TreeNodeInfoInitCmp: Removing a GT_CAST to TYP_UBYTE and changing castOp1->gtType to "
-                                "TYP_UBYTE\n");
-                            comp->gtDispTreeRange(BlockRange(), tree);
-                        }
+                                if (comp->verbose)
+                                {
+                                    printf("TreeNodeInfoInitCmp: Removing a GT_CAST to TYP_UBYTE and changing "
+                                           "castOp1->gtType to TYP_UBYTE\n");
+                                    comp->gtDispTreeRange(BlockRange(), tree);
+                                }
 #endif
+                            }
+                        }
                     }
                 }
 
