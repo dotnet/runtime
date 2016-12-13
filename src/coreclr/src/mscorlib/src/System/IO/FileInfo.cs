@@ -2,21 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*============================================================
-**
-** 
-** 
-**
-**
-** Purpose: A collection of methods for manipulating Files.
-**
-**          April 09,2000 (some design refactorization)
-**
-===========================================================*/
-
-using System;
-using System.Security.Permissions;
-using PermissionSet = System.Security.PermissionSet;
 using Win32Native = Microsoft.Win32.Win32Native;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -37,21 +22,7 @@ namespace System.IO
         private String _name;
 
         // Migrating InheritanceDemands requires this default ctor, so we can annotate it.
-#if FEATURE_CORESYSTEM
-#else
-#endif //FEATURE_CORESYSTEM
         private FileInfo(){}
-
-        public static FileInfo UnsafeCreateFileInfo(String fileName)
-        {
-            if (fileName == null)
-                throw new ArgumentNullException(nameof(fileName));
-            Contract.EndContractBlock();
-
-            FileInfo fi = new FileInfo();
-            fi.Init(fileName, false);
-            return fi;
-        }
 
         public FileInfo(String fileName)
         {
@@ -59,23 +30,14 @@ namespace System.IO
                 throw new ArgumentNullException(nameof(fileName));
             Contract.EndContractBlock();
 
-            Init(fileName, true);
+            Init(fileName);
         }
 
-        private void Init(String fileName, bool checkHost)
+        private void Init(String fileName)
         {
             OriginalPath = fileName;
-            // Must fully qualify the path for the security check
-            String fullPath = Path.GetFullPath(fileName);
-
-            if (checkHost)
-            {
-                FileSecurityState state = new FileSecurityState(FileSecurityStateAccess.Read, fileName, fullPath);
-                state.EnsureState();
-            }
-
             _name = Path.GetFileName(fileName);
-            FullPath = fullPath;
+            FullPath = Path.GetFullPath(fileName);
             DisplayPath = GetDisplayPath(fileName);
         }
 
@@ -90,8 +52,6 @@ namespace System.IO
             DisplayPath = GetDisplayPath(OriginalPath);
         }
 
-#if FEATURE_CORESYSTEM
-#endif //FEATURE_CORESYSTEM
         internal FileInfo(String fullPath, bool ignoreThis)
         {
             Debug.Assert(PathInternal.GetRootLength(fullPath) > 0, "fullPath must be fully qualified!");
@@ -125,13 +85,7 @@ namespace System.IO
         {
             get
             {
-                String directoryName = Path.GetDirectoryName(FullPath);
-                if (directoryName != null)
-                {
-                    FileSecurityState state = new FileSecurityState(FileSecurityStateAccess.Read, DisplayPath, FullPath);
-                    state.EnsureState();
-                }
-                return directoryName;
+                return Path.GetDirectoryName(FullPath);
             }
         }
 
@@ -161,7 +115,7 @@ namespace System.IO
 
         public StreamReader OpenText()
         {
-            return new StreamReader(FullPath, Encoding.UTF8, true, StreamReader.DefaultBufferSize, false);
+            return new StreamReader(FullPath, Encoding.UTF8, true, StreamReader.DefaultBufferSize);
         }
 
         public StreamWriter CreateText()
@@ -174,16 +128,10 @@ namespace System.IO
             return new StreamWriter(FullPath,true);
         }
 
-        
         // Copies an existing file to a new file. An exception is raised if the
         // destination file already exists. Use the 
         // Copy(String, String, boolean) method to allow 
         // overwriting an existing file.
-        //
-        // The caller must have certain FileIOPermissions.  The caller must have
-        // Read permission to sourceFileName 
-        // and Write permissions to destFileName.
-        // 
         public FileInfo CopyTo(String destFileName) {
             if (destFileName == null)
                 throw new ArgumentNullException(nameof(destFileName), Environment.GetResourceString("ArgumentNull_FileName"));
@@ -191,20 +139,14 @@ namespace System.IO
                 throw new ArgumentException(Environment.GetResourceString("Argument_EmptyFileName"), nameof(destFileName));
             Contract.EndContractBlock();
 
-            destFileName = File.InternalCopy(FullPath, destFileName, false, true);
+            destFileName = File.InternalCopy(FullPath, destFileName, false);
             return new FileInfo(destFileName, false);
         }
-
 
         // Copies an existing file to a new file. If overwrite is 
         // false, then an IOException is thrown if the destination file 
         // already exists.  If overwrite is true, the file is 
         // overwritten.
-        //
-        // The caller must have certain FileIOPermissions.  The caller must have
-        // Read permission to sourceFileName and Create
-        // and Write permissions to destFileName.
-        // 
         public FileInfo CopyTo(String destFileName, bool overwrite) {
             if (destFileName == null)
                 throw new ArgumentNullException(nameof(destFileName), Environment.GetResourceString("ArgumentNull_FileName"));
@@ -212,7 +154,7 @@ namespace System.IO
                 throw new ArgumentException(Environment.GetResourceString("Argument_EmptyFileName"), nameof(destFileName));
             Contract.EndContractBlock();
 
-            destFileName = File.InternalCopy(FullPath, destFileName, overwrite, true);
+            destFileName = File.InternalCopy(FullPath, destFileName, overwrite);
             return new FileInfo(destFileName, false);
         }
 
@@ -225,16 +167,9 @@ namespace System.IO
         // an exception.
         // 
         // On NT, Delete will fail for a file that is open for normal I/O
-        // or a file that is memory mapped.  On Win95, the file will be 
-        // deleted irregardless of whether the file is being used.
-        // 
-        // Your application must have Delete permission to the target file.
-        // 
+        // or a file that is memory mapped.
         public override void Delete()
         {
-            FileSecurityState state = new FileSecurityState(FileSecurityStateAccess.Write, DisplayPath, FullPath);
-            state.EnsureState();
-
             bool r = Win32Native.DeleteFile(FullPath);
             if (!r) {
                 int hr = Marshal.GetLastWin32Error();
@@ -245,23 +180,9 @@ namespace System.IO
             }
         }
 
-        [ComVisible(false)]
-        public void Decrypt()
-        {
-            File.Decrypt(FullPath);
-        }
-
-        [ComVisible(false)]
-        public void Encrypt()
-        {
-            File.Encrypt(FullPath);
-        }
-
         // Tests if the given file exists. The result is true if the file
         // given by the specified path exists; otherwise, the result is
         // false.  
-        //
-        // Your application must have Read permission for the target directory.
         public override bool Exists {
             get {
                 try {
@@ -308,12 +229,6 @@ namespace System.IO
 
         // Moves a given file to a new location and potentially a new file name.
         // This method does work across volumes.
-        //
-        // The caller must have certain FileIOPermissions.  The caller must
-        // have Read and Write permission to 
-        // sourceFileName and Write 
-        // permissions to destFileName.
-        // 
         public void MoveTo(String destFileName) {
             if (destFileName==null)
                 throw new ArgumentNullException(nameof(destFileName));
@@ -322,11 +237,6 @@ namespace System.IO
             Contract.EndContractBlock();
 
             string fullDestFileName = Path.GetFullPath(destFileName);
-
-            FileSecurityState sourceState = new FileSecurityState(FileSecurityStateAccess.Write | FileSecurityStateAccess.Read, DisplayPath, FullPath);
-            FileSecurityState destState = new FileSecurityState(FileSecurityStateAccess.Write, destFileName, fullDestFileName);
-            sourceState.EnsureState();
-            destState.EnsureState();
 
             if (!Win32Native.MoveFile(FullPath, fullDestFileName))
                 __Error.WinIOError();
