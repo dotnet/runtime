@@ -32,10 +32,76 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "lower.h"
 #include "lsra.h"
 
-/* Lowering of GT_CAST nodes */
+//------------------------------------------------------------------------
+// LowerCast: Lower GT_CAST(srcType, DstType) nodes.
+//
+// Arguments:
+//    tree - GT_CAST node to be lowered
+//
+// Return Value:
+//    None.
+//
+// Notes:
+//    Casts from small int type to float/double are transformed as follows:
+//    GT_CAST(byte, float/double)     =   GT_CAST(GT_CAST(byte, int32), float/double)
+//    GT_CAST(sbyte, float/double)    =   GT_CAST(GT_CAST(sbyte, int32), float/double)
+//    GT_CAST(int16, float/double)    =   GT_CAST(GT_CAST(int16, int32), float/double)
+//    GT_CAST(uint16, float/double)   =   GT_CAST(GT_CAST(uint16, int32), float/double)
+//
+//    Similarly casts from float/double to a smaller int type are transformed as follows:
+//    GT_CAST(float/double, byte)     =   GT_CAST(GT_CAST(float/double, int32), byte)
+//    GT_CAST(float/double, sbyte)    =   GT_CAST(GT_CAST(float/double, int32), sbyte)
+//    GT_CAST(float/double, int16)    =   GT_CAST(GT_CAST(double/double, int32), int16)
+//    GT_CAST(float/double, uint16)   =   GT_CAST(GT_CAST(double/double, int32), uint16)
+//
+//    Note that for the overflow conversions we still depend on helper calls and
+//    don't expect to see them here.
+//    i) GT_CAST(float/double, int type with overflow detection)
+
 void Lowering::LowerCast(GenTree* tree)
 {
-    NYI_ARM("ARM Lowering for cast");
+    assert(tree->OperGet() == GT_CAST);
+
+    JITDUMP("LowerCast for: ");
+    DISPNODE(tree);
+    JITDUMP("\n");
+
+    GenTreePtr op1     = tree->gtOp.gtOp1;
+    var_types  dstType = tree->CastToType();
+    var_types  srcType = op1->TypeGet();
+    var_types  tmpType = TYP_UNDEF;
+
+    // TODO-ARM-Cleanup: Remove following NYI assertions.
+    if (varTypeIsFloating(srcType))
+    {
+        NYI_ARM("Lowering for cast from float"); // Not tested yet.
+        noway_assert(!tree->gtOverflow());
+    }
+
+    // Case of src is a small type and dst is a floating point type.
+    if (varTypeIsSmall(srcType) && varTypeIsFloating(dstType))
+    {
+        NYI_ARM("Lowering for cast from small type to float"); // Not tested yet.
+        // These conversions can never be overflow detecting ones.
+        noway_assert(!tree->gtOverflow());
+        tmpType = TYP_INT;
+    }
+    // case of src is a floating point type and dst is a small type.
+    else if (varTypeIsFloating(srcType) && varTypeIsSmall(dstType))
+    {
+        NYI_ARM("Lowering for cast from float to small type"); // Not tested yet.
+        tmpType = TYP_INT;
+    }
+
+    if (tmpType != TYP_UNDEF)
+    {
+        GenTreePtr tmp = comp->gtNewCastNode(tmpType, op1, tmpType);
+        tmp->gtFlags |= (tree->gtFlags & (GTF_UNSIGNED | GTF_OVERFLOW | GTF_EXCEPT));
+
+        tree->gtFlags &= ~GTF_UNSIGNED;
+        tree->gtOp.gtOp1 = tmp;
+        BlockRange().InsertAfter(op1, tmp);
+    }
 }
 
 void Lowering::LowerRotate(GenTreePtr tree)
