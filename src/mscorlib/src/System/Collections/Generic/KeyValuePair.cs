@@ -62,5 +62,12 @@ namespace System.Collections.Generic {
             s.Append(']');
             return StringBuilderCache.GetStringAndRelease(s);
         }
+
+        // BLOCKED (do not add now): [EditorBrowsable(EditorBrowsableState.Never)]
+        public void Deconstruct(out TKey key, out TValue value)
+        {
+            key = Key;
+            value = Value;
+        }
     }
 }

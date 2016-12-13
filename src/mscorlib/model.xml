@@ -640,6 +640,7 @@
       <Member Name="get_Value" />
       <Member Name="set_Key(System.Object)" />
       <Member Name="set_Value(System.Object)" />
+      <Member Name="Deconstruct(System.Object@,System.Object@)" />
       <Member MemberType="Property" Name="Key" />
       <Member MemberType="Property" Name="Value" />
     </Type>
@@ -795,6 +796,7 @@
       <Member Name="get_Key" />
       <Member Name="get_Value" />
       <Member Name="ToString" />
+      <Member Name="Deconstruct(TKey@,TValue@)" />
       <Member MemberType="Property" Name="Key" />
       <Member MemberType="Property" Name="Value" />
     </Type>
