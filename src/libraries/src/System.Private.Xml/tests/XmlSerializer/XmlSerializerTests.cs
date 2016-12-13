@@ -2612,6 +2612,9 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         cds.AddReserved(typeof(Employee).Name);
         cds.Add("test", new TestData());
         cds.AddUnique("test2", new TestData());
+        Assert.Equal("camelText", CodeIdentifier.MakeCamel("Camel Text"));
+        Assert.Equal("PascalText", CodeIdentifier.MakePascal("Pascal Text"));
+        Assert.Equal("ValidText", CodeIdentifier.MakeValid("Valid  Text!"));
     }
 
     [Fact]
@@ -2641,6 +2644,12 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         Assert.Equal(1, mapping.Count);
     }
 
+    [Fact]
+    public static void XmlSerializationGeneratedCodeTest()
+    {
+        var cg = new MycodeGenerator();
+        Assert.NotNull(cg);
+    }
     private static Stream GenerateStreamFromString(string s)
     {
         var stream = new MemoryStream();
