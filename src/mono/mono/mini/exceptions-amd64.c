@@ -774,6 +774,10 @@ static void
 altstack_handle_and_restore (MonoContext *ctx, MonoObject *obj, gboolean stack_ovf)
 {
 	MonoContext mctx;
+	MonoJitInfo *ji = mini_jit_info_table_find (mono_domain_get (), MONO_CONTEXT_GET_IP (ctx), NULL);
+
+	if (!ji)
+		mono_handle_native_sigsegv (SIGSEGV, NULL, NULL);
 
 	mctx = *ctx;
 
@@ -788,15 +792,12 @@ mono_arch_handle_altstack_exception (void *sigctx, MONO_SIG_HANDLER_INFO_TYPE *s
 {
 #if defined(MONO_ARCH_USE_SIGACTION)
 	MonoException *exc = NULL;
-	MonoJitInfo *ji = mini_jit_info_table_find (mono_domain_get (), (char *)UCONTEXT_REG_RIP (sigctx), NULL);
 	gpointer *sp;
 	int frame_size;
 	MonoContext *copied_ctx;
 
 	if (stack_ovf)
 		exc = mono_domain_get ()->stack_overflow_ex;
-	if (!ji)
-		mono_handle_native_sigsegv (SIGSEGV, sigctx, siginfo);
 
 	/* setup a call frame on the real stack so that control is returned there
 	 * and exception handling can continue.
