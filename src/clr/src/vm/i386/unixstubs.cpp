@@ -84,3 +84,23 @@ EXTERN_C VOID BackPatchWorkerAsmStub()
 {
     PORTABILITY_ASSERT("BackPatchWorkerAsmStub");
 }
+
+EXTERN_C VOID JIT_TailCall()
+{
+  PORTABILITY_ASSERT("JIT_TailCall");
+}
+
+EXTERN_C VOID JIT_TailCallReturnFromVSD()
+{
+  PORTABILITY_ASSERT("JIT_TailCallReturnFromVSD");
+}
+
+EXTERN_C VOID JIT_TailCallVSDLeave()
+{
+  PORTABILITY_ASSERT("JIT_TailCallVSDLeave");
+}
+
+EXTERN_C VOID JIT_TailCallLeave()
+{
+  PORTABILITY_ASSERT("JIT_TailCallLeave");
+}
