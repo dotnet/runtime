@@ -97,7 +97,6 @@ namespace System.Xml.Tests
 
         [Fact]
         [OuterLoop]
-        [ActiveIssue(1491)]
         public static void TCFullEndElement()
         {
             RunTest(() => new TCFullEndElement() { Attribute = new TestCase() { Name = "WriteFullEndElement" } });
@@ -105,7 +104,6 @@ namespace System.Xml.Tests
 
         [Fact]
         [OuterLoop]
-        [ActiveIssue(6331)]
         public static void TCEOFHandling()
         {
             RunTest(() => new TCEOFHandling() { Attribute = new TestCase() { Name = "XmlWriterSettings: NewLineHandling" } });
