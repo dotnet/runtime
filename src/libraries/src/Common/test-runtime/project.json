@@ -3,10 +3,12 @@
       "xunit.console.netcore": "1.0.3-prerelease-00921-01",
       "Microsoft.DotNet.BuildTools.TestSuite": "1.0.1-prerelease-01001-04",
       "Microsoft.xunit.netcore.extensions": "1.0.1-prerelease-01001-04",
-       "Microsoft.DotNet.xunit.performance.analysis": "1.0.0-alpha-build0040",
-       "Microsoft.DotNet.xunit.performance.analysis.cli": "1.0.0-alpha-build0040",
-       "Microsoft.DotNet.xunit.performance.runner.cli": "1.0.0-alpha-build0040",
-       "Microsoft.DotNet.xunit.performance.runner.Windows": "1.0.0-alpha-build0040"
+      "Microsoft.DotNet.xunit.performance.analysis": "1.0.0-alpha-build0040",
+      "Microsoft.DotNet.xunit.performance.analysis.cli": "1.0.0-alpha-build0040",
+      "Microsoft.DotNet.xunit.performance.runner.cli": "1.0.0-alpha-build0040",
+      "Microsoft.DotNet.xunit.performance.runner.Windows": "1.0.0-alpha-build0040",
+      "Microsoft.NETCore.Runtime.CoreCLR": "1.2.0-beta-24728-02",
+      "Microsoft.NETCore.TestHost": "1.2.0-beta-24728-02",
    },
    "frameworks": {
       "netstandard1.7": {}

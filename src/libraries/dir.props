@@ -287,6 +287,7 @@
     <NoExplicitReferenceToStdLib>true</NoExplicitReferenceToStdLib>
     <AddAdditionalExplicitAssemblyReferences>false</AddAdditionalExplicitAssemblyReferences>
     <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
+    <CopyNuGetImplementations>false</CopyNuGetImplementations>
   </PropertyGroup>
 
   <!-- Set up handling of build warnings -->

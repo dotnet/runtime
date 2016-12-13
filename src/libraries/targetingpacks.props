@@ -27,7 +27,7 @@
 
       <!-- Add Reference's to all files in the targeting pack folder, and to whitelisted items from the group above in the runtime folder. -->
       <TargetingPackItems Include="%(TargetingPackDirs.Identity)/*" />
-      <Reference Include="%(TargetingPackItems.Filename)" Exclude="@(TargetingPackExclusions)" Condition="'$(NoTargetingPackReferences)' != 'true'"> <!-- TODO: System.Private.CoreLib shouldn't even be in the targeting pack. -->
+      <Reference Include="%(TargetingPackItems.Filename)" Exclude="@(TargetingPackExclusions)"> <!-- TODO: System.Private.CoreLib shouldn't even be in the targeting pack. -->
         <Private>false</Private>
       </Reference>
       <Reference Include="@(RuntimeReferencedAssemblyNames)" />
