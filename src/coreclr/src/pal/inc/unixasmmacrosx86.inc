@@ -65,3 +65,14 @@ C_FUNC(\Name\()_End):
 .macro EPILOG_END
         pop ebp
 .endm
+
+.macro PREPARE_EXTERNAL_VAR Name, Reg
+.att_syntax
+    call  0f
+0:
+    popl  %\Reg
+1:
+    addl  $_GLOBAL_OFFSET_TABLE_ + (1b - 0b), %\Reg
+    movl  C_FUNC(\Name)@GOT(%\Reg), %\Reg
+.intel_syntax noprefix
+.endm
