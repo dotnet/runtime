@@ -109,7 +109,7 @@ void
 mono_gdb_render_native_backtraces (pid_t crashed_pid)
 {
 #ifdef HAVE_EXECV
-	const char *argv [5];
+	const char *argv [6];
 	char template [] = "/tmp/mono-gdb-commands.XXXXXX";
 	FILE *commands;
 	gboolean using_lldb = FALSE;
@@ -148,7 +148,8 @@ mono_gdb_render_native_backtraces (pid_t crashed_pid)
 		argv [1] = "-batch";
 		argv [2] = "-x";
 		argv [3] = template;
-		argv [4] = 0;
+		argv [4] = "-nx";
+		argv [5] = 0;
 	}
 	fflush (commands);
 	fclose (commands);

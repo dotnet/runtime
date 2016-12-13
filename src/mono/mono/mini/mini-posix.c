@@ -861,7 +861,7 @@ mono_runtime_syscall_fork ()
 void
 mono_gdb_render_native_backtraces (pid_t crashed_pid)
 {
-	const char *argv [9];
+	const char *argv [10];
 	char template_ [] = "/tmp/mono-lldb-commands.XXXXXX";
 	char buf1 [128];
 	FILE *commands;
@@ -903,7 +903,8 @@ mono_gdb_render_native_backtraces (pid_t crashed_pid)
 		argv [5] = "--ex";
 		argv [6] = "thread apply all bt";
 		argv [7] = "--batch";
-		argv [8] = 0;
+		argv [8] = "-nx";
+		argv [9] = 0;
 	}
 
 	execv (argv [0], (char**)argv);
