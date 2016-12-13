@@ -396,5 +396,22 @@ namespace System.Linq.Tests
 
             Assert.Equal(result, result);
         }
+
+        [Fact]
+        public void HashSetWithBuiltInComparer_HashSetContainsNotUsed()
+        {
+            IEnumerable<string> input1 = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "a" };
+            IEnumerable<string> input2 = new[] { "A" };
+
+            Assert.Equal(new[] { "a", "A" }, input1.Union(input2));
+            Assert.Equal(new[] { "a", "A" }, input1.Union(input2, null));
+            Assert.Equal(new[] { "a", "A" }, input1.Union(input2, EqualityComparer<string>.Default));
+            Assert.Equal(new[] { "a" }, input1.Union(input2, StringComparer.OrdinalIgnoreCase));
+
+            Assert.Equal(new[] { "A", "a" }, input2.Union(input1));
+            Assert.Equal(new[] { "A", "a" }, input2.Union(input1, null));
+            Assert.Equal(new[] { "A", "a" }, input2.Union(input1, EqualityComparer<string>.Default));
+            Assert.Equal(new[] { "A" }, input2.Union(input1, StringComparer.OrdinalIgnoreCase));
+        }
     }
 }
