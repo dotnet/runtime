@@ -22,7 +22,6 @@ namespace System.Diagnostics {
    // programatically, by registry (specifics....) or environment
    // variables.
     [Serializable]
-    [HostProtection(Synchronization=true, ExternalThreading=true)]
     internal delegate void LogMessageEventHandler(LoggingLevels level, LogSwitch category, 
                                                     String message, 
                                                     StackTrace location);

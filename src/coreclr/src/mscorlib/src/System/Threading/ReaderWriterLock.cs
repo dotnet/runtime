@@ -25,7 +25,6 @@ namespace System.Threading {
     using System.Runtime.Versioning;
     using System.Diagnostics.Contracts;
 
-    [HostProtection(Synchronization=true, ExternalThreading=true)]
     [ComVisible(true)]
     public sealed class ReaderWriterLock: CriticalFinalizerObject
     {

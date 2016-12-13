@@ -1341,7 +1341,6 @@ namespace System.Threading
                                        NativeOverlapped* pOVERLAP // ptr to OVERLAP structure
                                        );   
 
-    [HostProtection(Synchronization=true, ExternalThreading=true)]
     public static class ThreadPool
     {
 

@@ -756,7 +756,6 @@ namespace System.Threading
     }
 
 
-    [HostProtection(Synchronization=true, ExternalThreading=true)]
     [System.Runtime.InteropServices.ComVisible(true)]
     public sealed class Timer : MarshalByRefObject, IDisposable
     {

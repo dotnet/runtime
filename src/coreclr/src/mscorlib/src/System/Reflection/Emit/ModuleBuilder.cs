@@ -50,7 +50,6 @@ namespace System.Reflection.Emit
     }
 
     // deliberately not [serializable]
-    [HostProtection(MayLeakOnAbort = true)]
     [ClassInterface(ClassInterfaceType.None)]
     [ComDefaultInterface(typeof(_ModuleBuilder))]
     [System.Runtime.InteropServices.ComVisible(true)]

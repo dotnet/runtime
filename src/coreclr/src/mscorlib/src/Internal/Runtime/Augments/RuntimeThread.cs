@@ -47,7 +47,6 @@ namespace Internal.Runtime.Augments
         public bool IsBackground
         {
             get { return IsBackgroundNative(); }
-            [HostProtection(SelfAffectingThreading = true)]
             set { SetBackgroundNative(value); }
         }
 
@@ -77,7 +76,6 @@ namespace Internal.Runtime.Augments
         public ThreadPriority Priority
         {
             get { return (ThreadPriority)GetPriorityNative(); }
-            [HostProtection(SelfAffectingThreading = true)]
             set { SetPriorityNative((int)value); }
         }
 
@@ -113,7 +111,6 @@ namespace Internal.Runtime.Augments
         ** An unstarted thread can be marked to indicate that it will host a
         ** single-threaded or multi-threaded apartment.
         =========================================================================*/
-        [HostProtection(Synchronization = true, SelfAffectingThreading = true)]
         public bool TrySetApartmentState(ApartmentState state)
         {
 #if FEATURE_COMINTEROP_APARTMENT_SUPPORT
@@ -184,10 +181,8 @@ namespace Internal.Runtime.Augments
         **             ThreadInterruptedException if the thread is interrupted while waiting.
         **             ThreadStateException if the thread has not been started yet.
         =========================================================================*/
-        [HostProtection(Synchronization = true, ExternalThreading = true)]
         public void Join() => JoinInternal(Timeout.Infinite);
 
-        [HostProtection(Synchronization = true, ExternalThreading = true)]
         public bool Join(int millisecondsTimeout) => JoinInternal(millisecondsTimeout);
 
         [MethodImpl(MethodImplOptions.InternalCall)]

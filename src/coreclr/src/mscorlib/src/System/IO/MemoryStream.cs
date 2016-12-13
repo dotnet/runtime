@@ -181,7 +181,6 @@ namespace System.IO {
         public override void Flush() {
         }
 
-        [HostProtection(ExternalThreading=true)]
         [ComVisible(false)]
         public override Task FlushAsync(CancellationToken cancellationToken) {
 
@@ -358,7 +357,6 @@ namespace System.IO {
             return n;
         }
 
-        [HostProtection(ExternalThreading = true)]
         [ComVisible(false)]
         public override Task<int> ReadAsync(Byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
@@ -591,7 +589,6 @@ namespace System.IO {
 
         }
 
-        [HostProtection(ExternalThreading = true)]
         [ComVisible(false)]
         public override Task WriteAsync(Byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {

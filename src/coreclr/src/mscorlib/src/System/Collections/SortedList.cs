@@ -528,7 +528,6 @@ namespace System.Collections {
         
         // Returns a thread-safe SortedList.
         //
-        [HostProtection(Synchronization=true)]
         public static SortedList Synchronized(SortedList list) {
             if (list==null)
                 throw new ArgumentNullException(nameof(list));

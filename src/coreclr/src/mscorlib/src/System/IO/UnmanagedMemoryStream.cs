@@ -265,7 +265,6 @@ namespace System.IO {
             if (!_isOpen) __Error.StreamIsClosed();
         }
         
-        [HostProtection(ExternalThreading=true)] 
         [ComVisible(false)] 
         public override Task FlushAsync(CancellationToken cancellationToken) { 
         
@@ -422,7 +421,6 @@ namespace System.IO {
             return nInt;
         }
         
-        [HostProtection(ExternalThreading = true)]
         [ComVisible(false)]
         public override Task<Int32> ReadAsync(Byte[] buffer, Int32 offset, Int32 count, CancellationToken cancellationToken) {        
             if (buffer==null)
@@ -620,7 +618,6 @@ namespace System.IO {
             return;
         }
         
-        [HostProtection(ExternalThreading = true)] 
         [ComVisible(false)] 
         public override Task WriteAsync(Byte[] buffer, Int32 offset, Int32 count, CancellationToken cancellationToken) { 
         

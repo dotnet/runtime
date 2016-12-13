@@ -57,7 +57,6 @@ namespace System.Runtime.CompilerServices
 {
     /// <summary>Provides an awaiter for awaiting a <see cref="System.Threading.Tasks.Task"/>.</summary>
     /// <remarks>This type is intended for compiler use only.</remarks>
-    [HostProtection(Synchronization = true, ExternalThreading = true)]
     public struct TaskAwaiter : ICriticalNotifyCompletion
     {
         /// <summary>The task being awaited.</summary>
@@ -291,7 +290,6 @@ namespace System.Runtime.CompilerServices
 
     /// <summary>Provides an awaiter for awaiting a <see cref="System.Threading.Tasks.Task{TResult}"/>.</summary>
     /// <remarks>This type is intended for compiler use only.</remarks>
-    [HostProtection(Synchronization = true, ExternalThreading = true)]
     public struct TaskAwaiter<TResult> : ICriticalNotifyCompletion
     {
         /// <summary>The task being awaited.</summary>
@@ -372,7 +370,6 @@ namespace System.Runtime.CompilerServices
 
         /// <summary>Provides an awaiter for a <see cref="ConfiguredTaskAwaitable"/>.</summary>
         /// <remarks>This type is intended for compiler use only.</remarks>
-        [HostProtection(Synchronization = true, ExternalThreading = true)]
         public struct ConfiguredTaskAwaiter : ICriticalNotifyCompletion
         {
             /// <summary>The task being awaited.</summary>
@@ -459,7 +456,6 @@ namespace System.Runtime.CompilerServices
 
         /// <summary>Provides an awaiter for a <see cref="ConfiguredTaskAwaitable{TResult}"/>.</summary>
         /// <remarks>This type is intended for compiler use only.</remarks>
-        [HostProtection(Synchronization = true, ExternalThreading = true)]
         public struct ConfiguredTaskAwaiter : ICriticalNotifyCompletion
         {
             /// <summary>The task being awaited.</summary>

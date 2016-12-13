@@ -47,7 +47,6 @@ namespace System.Runtime {
             }
 
             // We don't want to allow this API when hosted.
-            [HostProtection(MayLeakOnAbort = true)]
             [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
             set 
             {
@@ -71,7 +70,6 @@ namespace System.Runtime {
             }
 
             // We don't want to allow this API when hosted.
-            [HostProtection(MayLeakOnAbort = true)]
             [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
             set 
             {

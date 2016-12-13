@@ -55,7 +55,6 @@ namespace System.Threading
     /// </para>
     /// </remarks>
     [ComVisible(false)]
-    [HostProtection(Synchronization = true, ExternalThreading = true)]
     [DebuggerTypeProxy(typeof(SystemThreading_SpinLockDebugView))]
     [DebuggerDisplay("IsHeld = {IsHeld}")]
     public struct SpinLock

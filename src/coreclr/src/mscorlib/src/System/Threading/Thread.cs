@@ -271,7 +271,6 @@ namespace System.Threading {
         **
         ** Exceptions: ThreadStateException if the thread has already been started.
         =========================================================================*/
-        [HostProtection(Synchronization=true,ExternalThreading=true)]
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
         public new void Start()
         {
@@ -279,7 +278,6 @@ namespace System.Threading {
             Start(ref stackMark);
         }
 
-        [HostProtection(Synchronization=true,ExternalThreading=true)]
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
         public new void Start(object parameter)
         {
@@ -395,7 +393,6 @@ namespace System.Threading {
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private extern void AbortInternal();
 
-        [HostProtection(Synchronization=true, ExternalThreading=true)]
         public bool Join(TimeSpan timeout)
         {
             long tm = (long)timeout.TotalMilliseconds;
@@ -438,11 +435,9 @@ namespace System.Threading {
            a explict busy loop because the hardware can be informed that it is busy waiting. */
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [HostProtection(Synchronization=true,ExternalThreading=true)]
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         private static extern void SpinWaitInternal(int iterations);
 
-        [HostProtection(Synchronization=true,ExternalThreading=true)]
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         public static new void SpinWait(int iterations)
         {
@@ -451,11 +446,9 @@ namespace System.Threading {
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
-        [HostProtection(Synchronization = true, ExternalThreading = true)]
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         private static extern bool YieldInternal();
 
-        [HostProtection(Synchronization = true, ExternalThreading = true)]
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         public static new bool Yield()
         {
@@ -529,14 +522,12 @@ namespace System.Threading {
                 return (ApartmentState)GetApartmentStateNative();
             }
 
-            [HostProtection(Synchronization=true, SelfAffectingThreading=true)]
             set
             {
                 SetApartmentStateNative((int)value, true);
             }
         }
 
-        [HostProtection(Synchronization=true, SelfAffectingThreading=true)]
         public void SetApartmentState(ApartmentState state)
         {
             bool result = SetApartmentStateHelper(state, true);
@@ -552,7 +543,6 @@ namespace System.Threading {
         ** Allocates an un-named data slot. The slot is allocated on ALL the
         ** threads.
         =========================================================================*/
-        [HostProtection(SharedState=true, ExternalThreading=true)]
         public static LocalDataStoreSlot AllocateDataSlot()
         {
             return LocalDataStoreManager.AllocateDataSlot();
@@ -563,7 +553,6 @@ namespace System.Threading {
         ** threads.  Named data slots are "public" and can be manipulated by
         ** anyone.
         =========================================================================*/
-        [HostProtection(SharedState=true, ExternalThreading=true)]
         public static LocalDataStoreSlot AllocateNamedDataSlot(String name)
         {
             return LocalDataStoreManager.AllocateNamedDataSlot(name);
@@ -574,7 +563,6 @@ namespace System.Threading {
         ** allocated.  Named data slots are "public" and can be manipulated by
         ** anyone.
         =========================================================================*/
-        [HostProtection(SharedState=true, ExternalThreading=true)]
         public static LocalDataStoreSlot GetNamedDataSlot(String name)
         {
             return LocalDataStoreManager.GetNamedDataSlot(name);
@@ -585,7 +573,6 @@ namespace System.Threading {
         ** threads.  Named data slots are "public" and can be manipulated by
         ** anyone.
         =========================================================================*/
-        [HostProtection(SharedState=true, ExternalThreading=true)]
         public static void FreeNamedDataSlot(String name)
         {
             LocalDataStoreManager.FreeNamedDataSlot(name);
@@ -594,7 +581,6 @@ namespace System.Threading {
         /*=========================================================================
         ** Retrieves the value from the specified slot on the current thread, for that thread's current domain.
         =========================================================================*/
-        [HostProtection(SharedState=true, ExternalThreading=true)]
         public static Object GetData(LocalDataStoreSlot slot)
         {
             LocalDataStoreHolder dls = s_LocalDataStore;
@@ -611,7 +597,6 @@ namespace System.Threading {
         /*=========================================================================
         ** Sets the data in the specified slot on the currently running thread, for that thread's current domain.
         =========================================================================*/
-        [HostProtection(SharedState=true, ExternalThreading=true)]
         public static void SetData(LocalDataStoreSlot slot, Object data)
         {
             LocalDataStoreHolder dls = s_LocalDataStore;
@@ -682,7 +667,6 @@ namespace System.Threading {
                 }
             }
 
-            [HostProtection(ExternalThreading=true)]
             set {
                 if (value == null) {
                     throw new ArgumentNullException(nameof(value));
@@ -900,7 +884,6 @@ namespace System.Threading {
             get {
                 return m_Name;
             }
-            [HostProtection(ExternalThreading=true)]
             set {
                 lock(this) {
                     if (m_Name != null)
