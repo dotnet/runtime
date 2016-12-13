@@ -113,7 +113,7 @@ static int map_hw_reg_to_dwarf_reg [16];
 #define NUM_HW_REGS (sizeof (map_hw_reg_to_dwarf_reg) / sizeof (int))
 
 #ifndef IS_DOUBLE_REG
-#define IS_DOUBLE_REG(dwarf_reg) 0
+#define IS_DOUBLE_REG(dwarf_reg) (dwarf_reg ? 0 : 0)
 #endif
 
 static gboolean dwarf_reg_to_hw_reg_inited;
