@@ -6134,7 +6134,7 @@ HRESULT SymbolReader::LoadSymbolsForWindowsPDB(___in IMetaDataImport* pMD, ___in
 int ReadMemoryForSymbols(ULONG64 address, char *buffer, int cb)
 {
     ULONG read;
-    if (SafeReadMemory(address, (PVOID)buffer, cb, &read))
+    if (SafeReadMemory(TO_TADDR(address), (PVOID)buffer, cb, &read))
     {
         return read;
     }
