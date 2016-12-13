@@ -2355,11 +2355,11 @@ static const char *SymbolReaderDllName = "SOS.NETCore";
 static const char *SymbolReaderClassName = "SOS.SymbolReader";
 
 typedef  int (*ReadMemoryDelegate)(ULONG64, char *, int);
-typedef  ULONG64 (*LoadSymbolsForModuleDelegate)(const char*, BOOL, ULONG64, int, ULONG64, int, ReadMemoryDelegate);
-typedef  void (*DisposeDelegate)(ULONG64);
-typedef  BOOL (*ResolveSequencePointDelegate)(ULONG64, const char*, unsigned int, unsigned int*, unsigned int*);
-typedef  BOOL (*GetLocalVariableName)(ULONG64, int, int, BSTR*);
-typedef  BOOL (*GetLineByILOffsetDelegate)(ULONG64, mdMethodDef, ULONG64, ULONG *, BSTR*);
+typedef  PVOID (*LoadSymbolsForModuleDelegate)(const char*, BOOL, ULONG64, int, ULONG64, int, ReadMemoryDelegate);
+typedef  void (*DisposeDelegate)(PVOID);
+typedef  BOOL (*ResolveSequencePointDelegate)(PVOID, const char*, unsigned int, unsigned int*, unsigned int*);
+typedef  BOOL (*GetLocalVariableName)(PVOID, int, int, BSTR*);
+typedef  BOOL (*GetLineByILOffsetDelegate)(PVOID, mdMethodDef, ULONG64, ULONG *, BSTR*);
 
 class SymbolReader
 {
@@ -2367,7 +2367,7 @@ private:
 #ifndef FEATURE_PAL
     ISymUnmanagedReader* m_pSymReader;
 #endif
-    ULONG64 m_symbolReaderHandle;
+    PVOID m_symbolReaderHandle;
 
     static LoadSymbolsForModuleDelegate loadSymbolsForModuleDelegate;
     static DisposeDelegate disposeDelegate;
