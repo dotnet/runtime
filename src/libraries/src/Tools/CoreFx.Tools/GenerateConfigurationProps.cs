@@ -22,6 +22,7 @@ namespace Microsoft.DotNet.Build.Tasks
         private const string ConfigurationPropsPrefix = "setConfiguration";
         private const string PropsFileExtension = ".props";
         private const string ErrorMessageProperty = "ConfigurationErrorMsg";
+        private const string CurrentDirectoryIdentifier = "$(MSBuildThisFileDirectory)";
 
         /// <summary>
         /// Directory in which to generate props files.
@@ -44,7 +45,7 @@ namespace Microsoft.DotNet.Build.Tasks
 
             var projectConfigurationNotSetCondition = $"'$({ConfigurationProperty})' == ''";
             var buildConfigurationPropsFilePath = $"{ConfigurationPropsPrefix}{PropsFileExtension}";
-            var buildConfigurationImport = project.AddImport(buildConfigurationPropsFilePath);
+            var buildConfigurationImport = project.AddImport($"{CurrentDirectoryIdentifier}{buildConfigurationPropsFilePath}");
             buildConfigurationImport.Condition = projectConfigurationNotSetCondition;
 
             CreateBuildConfigurationPropsFile(buildConfigurationPropsFilePath);
@@ -127,7 +128,7 @@ namespace Microsoft.DotNet.Build.Tasks
             // get path to import
             var buildConfigurationImportName = $"_import_{BuildConfigurationProperty}_props";
             var significantBuildConfiguration = ConfigurationFactory.IdentityConfiguration.GetSignificantConfigurationStrings().First();
-            var buildConfigurationImportPath = $"{ConfigurationPropsPrefix}.{significantBuildConfiguration}{PropsFileExtension}";
+            var buildConfigurationImportPath = $"{CurrentDirectoryIdentifier}{ConfigurationPropsPrefix}.{significantBuildConfiguration}{PropsFileExtension}";
             buildConfigurationsPropertyGroup.AddProperty(buildConfigurationImportName, buildConfigurationImportPath);
 
             var missingImportError = buildConfigurationsPropertyGroup.AddProperty(ErrorMessageProperty, $"$({ErrorMessageProperty}){ConfigurationProperty} is not set and $({BuildConfigurationProperty}) is not a known value for {BuildConfigurationProperty}.");
