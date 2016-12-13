@@ -24,7 +24,11 @@
                                                                               '%(ReferenceCopyLocalPaths.NuGetPackageId)'!='xunit.console.netcore' And 
                                                                               '%(ReferenceCopyLocalPaths.NuGetPackageId)'!='xunit.runner.utility' And 
                                                                               '%(ReferenceCopyLocalPaths.NuGetPackageId)'!='Microsoft.xunit.netcore.extensions' And
-                                                                              '%(ReferenceCopyLocalPaths.NuGetPackageId)'!='Microsoft.DotNet.xunit.performance.run.core'" />
+                                                                              '%(ReferenceCopyLocalPaths.NuGetPackageId)'!='Microsoft.DotNet.xunit.performance.run.core' And
+                                                                              '%(ReferenceCopyLocalPaths.NuGetPackageId)'!='runtime.win7-x64.Microsoft.NETCore.Runtime.CoreCLR' And
+                                                                              '%(ReferenceCopyLocalPaths.NuGetPackageId)'!='runtime.win7-x64.Microsoft.NETCore.TestHost' And
+                                                                              '%(ReferenceCopyLocalPaths.NuGetPackageId)'!='runtime.win7-x64.Microsoft.NETCore.Jit'
+                                                                              " />
     </ItemGroup>
   </Target>
 </Project>
