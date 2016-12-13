@@ -148,8 +148,8 @@
     <Compile Include="$(CommonPath)\System\Net\NegotiationInfoClass.cs">
       <Link>Common\System\Net\NegotiationInfoClass.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\NTAuthentication.cs">
-      <Link>Common\System\Net\NTAuthentication.cs</Link>
+    <Compile Include="$(CommonPath)\System\Net\NTAuthentication.Common.cs">
+      <Link>Common\System\Net\NTAuthentication.Common.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\SecurityStatusPal.cs">
       <Link>Common\System\Net\SecurityStatusPal.cs</Link>
@@ -163,7 +163,9 @@
     <Compile Include="$(CommonPath)\System\Net\Security\SSPIHandleCache.cs">
       <Link>Common\System\Net\Security\SSPIHandleCache.cs</Link>
     </Compile>
-    <Compile Include="System\Net\Security\NetEventSource.Security.cs" />
+    <Compile Include="$(CommonPath)\System\Net\Security\NetEventSource.Security.cs">
+      <Link>Common\System\Net\Security\NetEventSource.Security.cs</Link>
+    </Compile>
   </ItemGroup>
   <!-- Unix specific files -->
   <ItemGroup Condition="'$(TargetsUnix)'=='true' And '$(TargetGroup)' != 'net463'">
@@ -221,7 +223,9 @@
     <Compile Include="$(CommonPath)\System\Net\Security\NegotiateStreamPal.Windows.cs">
       <Link>Common\System\Net\Security\NegotiateStreamPal.Windows.cs</Link>
     </Compile>
-    <Compile Include="System\Net\Security\NetEventSource.Security.Windows.cs" />
+    <Compile Include="$(CommonPath)\System\Net\Security\NetEventSource.Security.Windows.cs">
+      <Link>Common\System\Net\Security\NetEventSource.Security.Windows.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Crypt32\Interop.certificates_types.cs">
       <Link>Common\Interop\Windows\Crypt32\Interop.certificates_types.cs</Link>
     </Compile>

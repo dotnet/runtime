@@ -4,12 +4,10 @@
 
 namespace System.Net
 {
-    internal struct AuthConstants
+    internal class AuthenticationTypes
     {
-        public const string NTLM = "NTLM";
-        public const string Negotiate = "Negotiate";
-        public const string Digest = "Digest";
-        public const string Basic = "Basic";
-    }
+        internal const string NTLM = "NTLM";
+        internal const string Negotiate = "Negotiate";
+        internal const string Basic = "Basic";
+     }
 }
-
