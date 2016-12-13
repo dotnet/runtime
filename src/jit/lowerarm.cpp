@@ -62,7 +62,73 @@ bool Lowering::IsCallTargetInRange(void* addr)
 // return true if the immediate can be folded into an instruction, for example small enough and non-relocatable
 bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode)
 {
-    NYI_ARM("ARM IsContainableImmed");
+    if (varTypeIsFloating(parentNode->TypeGet()))
+    {
+        // TODO-ARM-Cleanup: not tested yet.
+        NYI_ARM("ARM IsContainableImmed for floating point type");
+
+        // We can contain a floating point 0.0 constant in a compare instruction
+        switch (parentNode->OperGet())
+        {
+            default:
+                return false;
+
+            case GT_EQ:
+            case GT_NE:
+            case GT_LT:
+            case GT_LE:
+            case GT_GE:
+            case GT_GT:
+                if (childNode->IsIntegralConst(0))
+                    return true;
+                break;
+        }
+    }
+    else
+    {
+        // Make sure we have an actual immediate
+        if (!childNode->IsCnsIntOrI())
+            return false;
+        if (childNode->IsIconHandle() && comp->opts.compReloc)
+            return false;
+
+        ssize_t  immVal = childNode->gtIntCon.gtIconVal;
+        emitAttr attr   = emitActualTypeSize(childNode->TypeGet());
+        emitAttr size   = EA_SIZE(attr);
+
+        switch (parentNode->OperGet())
+        {
+            default:
+                return false;
+
+            case GT_ADD:
+            case GT_SUB:
+                if (emitter::emitIns_valid_imm_for_add(immVal, INS_FLAGS_DONT_CARE))
+                    return true;
+                break;
+
+            case GT_EQ:
+            case GT_NE:
+            case GT_LT:
+            case GT_LE:
+            case GT_GE:
+            case GT_GT:
+            case GT_AND:
+            case GT_OR:
+            case GT_XOR:
+                if (emitter::emitIns_valid_imm_for_alu(immVal))
+                    return true;
+                break;
+
+            case GT_STORE_LCL_VAR:
+                // TODO-ARM-Cleanup: not tested yet
+                NYI_ARM("ARM IsContainableImmed for GT_STORE_LCL_VAR");
+                if (immVal == 0)
+                    return true;
+                break;
+        }
+    }
+
     return false;
 }
 
