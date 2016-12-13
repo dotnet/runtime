@@ -119,5 +119,22 @@ namespace System.Linq.Tests
             var en = iterator as IEnumerator<int>;
             Assert.False(en != null && en.MoveNext());
         }
+
+        [Fact]
+        public void HashSetWithBuiltInComparer_HashSetContainsNotUsed()
+        {
+            IEnumerable<string> input1 = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "a" };
+            IEnumerable<string> input2 = new[] { "A" };
+
+            Assert.Equal(Enumerable.Empty<string>(), input1.Intersect(input2));
+            Assert.Equal(Enumerable.Empty<string>(), input1.Intersect(input2, null));
+            Assert.Equal(Enumerable.Empty<string>(), input1.Intersect(input2, EqualityComparer<string>.Default));
+            Assert.Equal(new[] { "a" }, input1.Intersect(input2, StringComparer.OrdinalIgnoreCase));
+
+            Assert.Equal(Enumerable.Empty<string>(), input2.Intersect(input1));
+            Assert.Equal(Enumerable.Empty<string>(), input2.Intersect(input1, null));
+            Assert.Equal(Enumerable.Empty<string>(), input2.Intersect(input1, EqualityComparer<string>.Default));
+            Assert.Equal(new[] { "A" }, input2.Intersect(input1, StringComparer.OrdinalIgnoreCase));
+        }
     }
 }
