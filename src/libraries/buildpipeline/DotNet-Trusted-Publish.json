@@ -560,9 +560,6 @@
     "UseLegacyBuildScripts": {
       "value": "false",
       "allowOverride": true
-    },
-    "ToolPackageSource": {
-      "value": "https://www.myget.org/F/dagood-test-buildtools/api/v3/index.json"
     }
   },
   "retentionRules": [
