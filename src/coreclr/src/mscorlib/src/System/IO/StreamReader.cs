@@ -2,19 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*============================================================
-**
-** 
-** 
-**
-**
-** Purpose: For reading text from streams in a particular 
-** encoding.
-**
-**
-===========================================================*/
-
-using System;
 using System.Text;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
@@ -189,10 +176,6 @@ namespace System.IO
         }
 
         public StreamReader(String path, Encoding encoding, bool detectEncodingFromByteOrderMarks, int bufferSize)
-            : this(path, encoding, detectEncodingFromByteOrderMarks, bufferSize, true) {
-        }
-
-        internal StreamReader(String path, Encoding encoding, bool detectEncodingFromByteOrderMarks, int bufferSize, bool checkHost)
         {
             // Don't open a Stream before checking for invalid arguments,
             // or we'll create a FileStream on disk and we won't close it until
@@ -205,7 +188,7 @@ namespace System.IO
                 throw new ArgumentOutOfRangeException(nameof(bufferSize), Environment.GetResourceString("ArgumentOutOfRange_NeedPosNum"));
             Contract.EndContractBlock();
 
-            Stream stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, DefaultFileStreamBufferSize, FileOptions.SequentialScan, Path.GetFileName(path), false, false, checkHost);
+            Stream stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, DefaultFileStreamBufferSize, FileOptions.SequentialScan, Path.GetFileName(path), false, false);
             Init(stream, encoding, detectEncodingFromByteOrderMarks, bufferSize, false);
         }
         

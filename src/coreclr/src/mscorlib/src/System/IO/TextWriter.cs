@@ -2,24 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*============================================================
-**
-** 
-** 
-**
-**
-** Purpose: Abstract base class for Text-only Writers.
-** Subclasses will include StreamWriter & StringWriter.
-**
-**
-===========================================================*/
-
-using System;
 using System.Text;
 using System.Threading;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Reflection;
 using System.Security.Permissions;
 using System.Globalization;
 using System.Diagnostics.CodeAnalysis;

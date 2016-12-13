@@ -12,14 +12,10 @@
 **
 ===========================================================*/
 
-using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Security;
-using System.Security.Permissions;
 using Microsoft.Win32;
 using Microsoft.Win32.SafeHandles;
-using System.Text;
 using System.Runtime.InteropServices;
 using System.Globalization;
 using System.Runtime.Versioning;
@@ -159,7 +155,6 @@ namespace System.IO
     // For all the dirs/files returned, demands path discovery permission for their parent folders
     internal class FileSystemEnumerableIterator<TSource> : Iterator<TSource>
     {
-
         private const int STATE_INIT = 1;
         private const int STATE_SEARCH_NEXT_DIR = 2;
         private const int STATE_FIND_NEXT_FILE = 3;
@@ -170,7 +165,6 @@ namespace System.IO
         private Directory.SearchData searchData;
         private String searchCriteria;
         SafeFindHandle _hnd = null;
-        bool needsParentPathDiscoveryDemand;
 
         // empty means we know in advance that we won’t find any search results, which can happen if:
         // 1. we don’t have a search pattern
@@ -185,7 +179,6 @@ namespace System.IO
         private String fullPath;
         private String normalizedSearchPath;
         private int oldMode;
-        private bool _checkHost;
 
         internal FileSystemEnumerableIterator(String path, String originalUserPath, String searchPattern, SearchOption searchOption, SearchResultHandler<TSource> resultHandler, bool checkHost)
         {
@@ -213,23 +206,6 @@ namespace System.IO
                 fullPath = Path.GetFullPath(path);
                 String fullSearchString = GetFullSearchString(fullPath, normalizedSearchPattern);
                 normalizedSearchPath = Path.GetDirectoryName(fullSearchString);
-
-                // permission demands
-                String[] demandPaths = new String[2];
-                // Any illegal chars such as *, ? will be caught by FileIOPermission.HasIllegalCharacters
-                demandPaths[0] = Directory.GetDemandDir(fullPath, true);
-                // For filters like foo\*.cs we need to verify if the directory foo is not denied access.
-                // Do a demand on the combined path so that we can fail early in case of deny
-                demandPaths[1] = Directory.GetDemandDir(normalizedSearchPath, true);
-                _checkHost = checkHost;
-
-                if (checkHost)
-                {
-                    FileSecurityState state1 = new FileSecurityState(FileSecurityStateAccess.PathDiscovery, String.Empty, demandPaths[0]);
-                    state1.EnsureState();
-                    FileSecurityState state2 = new FileSecurityState(FileSecurityStateAccess.PathDiscovery, String.Empty, demandPaths[1]);
-                    state2.EnsureState();
-                }
 
                 // normalize search criteria
                 searchCriteria = GetNormalizedSearchCriteria(fullSearchString, normalizedSearchPath);
@@ -302,7 +278,7 @@ namespace System.IO
             }
         }
 
-        private FileSystemEnumerableIterator(String fullPath, String normalizedSearchPath, String searchCriteria, String userPath, SearchOption searchOption, SearchResultHandler<TSource> resultHandler, bool checkHost)
+        private FileSystemEnumerableIterator(String fullPath, String normalizedSearchPath, String searchCriteria, String userPath, SearchOption searchOption, SearchResultHandler<TSource> resultHandler)
         {
             this.fullPath = fullPath;
             this.normalizedSearchPath = normalizedSearchPath;
@@ -310,28 +286,11 @@ namespace System.IO
             this._resultHandler = resultHandler;
             this.userPath = userPath;
             this.searchOption = searchOption;
-            this._checkHost = checkHost;
 
             searchStack = new List<Directory.SearchData>();
 
             if (searchCriteria != null)
             {
-                // permission demands
-                String[] demandPaths = new String[2];
-                // Any illegal chars such as *, ? will be caught by FileIOPermission.HasIllegalCharacters
-                demandPaths[0] = Directory.GetDemandDir(fullPath, true);
-                // For filters like foo\*.cs we need to verify if the directory foo is not denied access.
-                // Do a demand on the combined path so that we can fail early in case of deny
-                demandPaths[1] = Directory.GetDemandDir(normalizedSearchPath, true);
-
-                if (checkHost) 
-                {
-                    FileSecurityState state1 = new FileSecurityState(FileSecurityStateAccess.PathDiscovery, String.Empty, demandPaths[0]);
-                    state1.EnsureState();
-                    FileSecurityState state2 = new FileSecurityState(FileSecurityStateAccess.PathDiscovery, String.Empty, demandPaths[1]);
-                    state2.EnsureState();
-                }
-
                 searchData = new Directory.SearchData(normalizedSearchPath, userPath, searchOption);
                 CommonInit();
             }
@@ -343,7 +302,7 @@ namespace System.IO
 
         protected override Iterator<TSource> Clone()
         {
-            return new FileSystemEnumerableIterator<TSource>(fullPath, normalizedSearchPath, searchCriteria, userPath, searchOption, _resultHandler, _checkHost);
+            return new FileSystemEnumerableIterator<TSource>(fullPath, normalizedSearchPath, searchCriteria, userPath, searchOption, _resultHandler);
         }
 
         protected override void Dispose(bool disposing)
@@ -421,15 +380,9 @@ namespace System.IO
                             }
 
                             state = STATE_FIND_NEXT_FILE;
-                            needsParentPathDiscoveryDemand = true;
                             SearchResult searchResult = CreateSearchResult(searchData, data);
                             if (_resultHandler.IsResultIncluded(searchResult))
                             {
-                                if (needsParentPathDiscoveryDemand)
-                                {
-                                    DoDemand(searchData.fullPath);
-                                    needsParentPathDiscoveryDemand = false;
-                                }
                                 current = _resultHandler.CreateObject(searchResult);
                                 return true;
                             }
@@ -451,11 +404,6 @@ namespace System.IO
                                 SearchResult searchResult = CreateSearchResult(searchData, data);
                                 if (_resultHandler.IsResultIncluded(searchResult))
                                 {
-                                    if (needsParentPathDiscoveryDemand)
-                                    {
-                                        DoDemand(searchData.fullPath);
-                                        needsParentPathDiscoveryDemand = false;
-                                    }
                                     current = _resultHandler.CreateObject(searchResult);
                                     return true;
                                 }
@@ -565,15 +513,6 @@ namespace System.IO
             }
         }
 
-        internal void DoDemand(String fullPathToDemand)
-        {
-            if(_checkHost) {
-                String demandDir = Directory.GetDemandDir(fullPathToDemand, true);
-                FileSecurityState state = new FileSecurityState(FileSecurityStateAccess.PathDiscovery, String.Empty, demandDir);
-                state.EnsureState();
-            }
-        }
-
         private static String NormalizeSearchPattern(String searchPattern)
         {
             Contract.Requires(searchPattern != null);
@@ -674,10 +613,6 @@ namespace System.IO
         internal override FileInfo CreateObject(SearchResult result)
         {
             String name = result.FullPath;
-
-            FileSecurityState state = new FileSecurityState(FileSecurityStateAccess.Read, String.Empty, name);
-            state.EnsureState();
-
             FileInfo fi = new FileInfo(name, false);
             fi.InitializeFrom(result.FindData);
             return fi;
@@ -693,13 +628,7 @@ namespace System.IO
 
         internal override DirectoryInfo CreateObject(SearchResult result)
         {
-            String name = result.FullPath;
-            String permissionName = name + "\\.";
-
-            FileSecurityState state = new FileSecurityState(FileSecurityStateAccess.Read, String.Empty, permissionName);
-            state.EnsureState();
-
-            DirectoryInfo di = new DirectoryInfo(name, false);
+            DirectoryInfo di = new DirectoryInfo(result.FullPath, false);
             di.InitializeFrom(result.FindData);
             return di;
         }
@@ -724,25 +653,14 @@ namespace System.IO
 
             if (isDir)
             {
-                String name = result.FullPath;
-                String permissionName = name + "\\.";
-
-                FileSecurityState state = new FileSecurityState(FileSecurityStateAccess.Read, String.Empty, permissionName);
-                state.EnsureState();
-
-                DirectoryInfo di = new DirectoryInfo(name, false);
+                DirectoryInfo di = new DirectoryInfo(result.FullPath, false);
                 di.InitializeFrom(result.FindData);
                 return di;
             }
             else
             {
-                Debug.Assert(isFile);
-                String name = result.FullPath;
-
-                FileSecurityState state = new FileSecurityState(FileSecurityStateAccess.Read, String.Empty, name);
-                state.EnsureState();
-
-                FileInfo fi = new FileInfo(name, false);
+                Contract.Assert(isFile);
+                FileInfo fi = new FileInfo(result.FullPath, false);
                 fi.InitializeFrom(result.FindData);
                 return fi;
             }
@@ -780,7 +698,6 @@ namespace System.IO
         {
             get { return findData; }
         }
-
     }
 
     internal static class FileSystemEnumerableHelpers

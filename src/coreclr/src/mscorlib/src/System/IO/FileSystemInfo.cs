@@ -2,15 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Collections;
-using System.Security;
-using System.Security.Permissions;
 using Microsoft.Win32;
-using System.Text;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
-using System.Runtime.Versioning;
 using System.Diagnostics.Contracts;
 
 namespace System.IO
@@ -33,9 +27,6 @@ namespace System.IO
         protected String OriginalPath;      // path passed in by the user
         private String _displayPath = "";   // path that can be displayed to the user
 
-#if FEATURE_CORESYSTEM
-#else
-#endif //FEATURE_CORESYSTEM
         protected FileSystemInfo()
         {
         }
@@ -66,27 +57,6 @@ namespace System.IO
         public virtual String FullName {
             get 
             {
-                String demandDir;
-                if (this is DirectoryInfo)
-                    demandDir = Directory.GetDemandDir(FullPath, true);
-                else
-                    demandDir = FullPath;
-
-                FileSecurityState sourceState = new FileSecurityState(FileSecurityStateAccess.PathDiscovery, String.Empty, demandDir);
-                sourceState.EnsureState();
-                return FullPath;
-            }
-        }
-
-        internal virtual String UnsafeGetFullName
-        {
-            get
-            {
-                String demandDir;
-                if (this is DirectoryInfo)
-                    demandDir = Directory.GetDemandDir(FullPath, true);
-                else
-                    demandDir = FullPath;
                 return FullPath;
             }
         }
@@ -131,13 +101,9 @@ namespace System.IO
             }
         }
 
-        [ComVisible(false)]
+       [ComVisible(false)]
        public DateTime CreationTimeUtc {
             get {
-                // get_CreationTime also depends on this security check
-                FileSecurityState sourceState = new FileSecurityState(FileSecurityStateAccess.Read, String.Empty, FullPath);
-                sourceState.EnsureState();
-
                 if (_dataInitialised == -1) {
                     _data = new Win32Native.WIN32_FILE_ATTRIBUTE_DATA();
                     Refresh();
@@ -166,10 +132,6 @@ namespace System.IO
         [ComVisible(false)]
         public DateTime LastAccessTimeUtc {
             get {
-                // get_LastAccessTime also depends on this security check
-                FileSecurityState sourceState = new FileSecurityState(FileSecurityStateAccess.Read, String.Empty, FullPath);
-                sourceState.EnsureState();
-
                 if (_dataInitialised == -1) {
                     _data = new Win32Native.WIN32_FILE_ATTRIBUTE_DATA();
                     Refresh();
@@ -180,7 +142,6 @@ namespace System.IO
                     
                 long fileTime = ((long)_data.ftLastAccessTimeHigh << 32) | _data.ftLastAccessTimeLow;
                 return DateTime.FromFileTimeUtc(fileTime);
-    
             }
 
             set {
@@ -202,9 +163,6 @@ namespace System.IO
         [ComVisible(false)]
         public DateTime LastWriteTimeUtc {
             get {
-                // get_LastWriteTime also depends on this security check
-                FileSecurityState sourceState = new FileSecurityState(FileSecurityStateAccess.Read, String.Empty, FullPath);
-                sourceState.EnsureState();
                 if (_dataInitialised == -1) {
                     _data = new Win32Native.WIN32_FILE_ATTRIBUTE_DATA();
                     Refresh();
@@ -230,9 +188,6 @@ namespace System.IO
         public FileAttributes Attributes {
             get
             {
-                FileSecurityState sourceState = new FileSecurityState(FileSecurityStateAccess.Read, String.Empty, FullPath);
-                sourceState.EnsureState();
-
                 if (_dataInitialised == -1) {
                     _data = new Win32Native.WIN32_FILE_ATTRIBUTE_DATA();
                     Refresh(); // Call refresh to intialise the data
@@ -281,5 +236,5 @@ namespace System.IO
                 _displayPath = value;
             }
         }
-    }       
+    }
 }
