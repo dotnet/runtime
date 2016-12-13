@@ -2525,6 +2525,13 @@ mono_handle_native_crash (const char *signal, void *ctx, MONO_SIG_HANDLER_INFO_T
 #endif
  }
 #else
+#ifdef PLATFORM_ANDROID
+	/* set DUMPABLE for this process so debuggerd can attach with ptrace(2), see:
+	 * https://android.googlesource.com/platform/bionic/+/151da681000c07da3c24cd30a3279b1ca017f452/linker/debugger.cpp#206
+	 * this has changed on later versions of Android.  Also, we don't want to
+	 * set this on start-up as DUMPABLE has security implications. */
+	prctl (PR_SET_DUMPABLE, 1);
+#endif
 	mono_exception_native_unwind (ctx, info);
 #endif
 
