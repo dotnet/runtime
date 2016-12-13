@@ -621,7 +621,6 @@ mono_unwind_frame (guint8 *unwind_info, guint32 unwind_info_len,
 	cfa_val = (guint8*)regs [mono_dwarf_reg_to_hw_reg (cfa_reg)] + cfa_offset;
 	for (hwreg = 0; hwreg < NUM_HW_REGS; ++hwreg) {
 		if (reg_saved [hwreg] && locations [hwreg].loc_type == LOC_OFFSET) {
-			int dwarfreg = mono_hw_reg_to_dwarf_reg (hwreg);
 			g_assert (hwreg < nregs);
 			if (IS_DOUBLE_REG (dwarfreg))
 				regs [hwreg] = *(guint64*)(cfa_val + locations [hwreg].offset);
