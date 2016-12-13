@@ -32,7 +32,6 @@ namespace System.Runtime.CompilerServices
     /// Provides a builder for asynchronous methods that return void.
     /// This type is intended for compiler use only.
     /// </summary>
-    [HostProtection(Synchronization = true, ExternalThreading = true)]
     public struct AsyncVoidMethodBuilder
     {
         /// <summary>The synchronization context associated with this operation.</summary>
@@ -271,7 +270,6 @@ namespace System.Runtime.CompilerServices
     /// Prior to being copied, one of its Task, SetResult, or SetException members must be accessed,
     /// or else the copies may end up building distinct Task instances.
     /// </remarks>
-    [HostProtection(Synchronization = true, ExternalThreading = true)]
     public struct AsyncTaskMethodBuilder
     {
         /// <summary>A cached VoidTaskResult task used for builders that complete synchronously.</summary>
@@ -418,7 +416,6 @@ namespace System.Runtime.CompilerServices
     /// Prior to being copied, one of its Task, SetResult, or SetException members must be accessed,
     /// or else the copies may end up building distinct Task instances.
     /// </remarks>
-    [HostProtection(Synchronization = true, ExternalThreading = true)]
     public struct AsyncTaskMethodBuilder<TResult>
     {
         /// <summary>A cached task for default(TResult).</summary>

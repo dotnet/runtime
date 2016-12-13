@@ -19,7 +19,6 @@ namespace System.Reflection.Emit
     using System.Diagnostics;
     using System.Diagnostics.Contracts;
 
-    [HostProtection(MayLeakOnAbort = true)]
     [ClassInterface(ClassInterfaceType.None)]
     [ComDefaultInterface(typeof(_MethodBuilder))]
     [System.Runtime.InteropServices.ComVisible(true)]

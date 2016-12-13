@@ -35,7 +35,6 @@ namespace System.Reflection.Emit {
         Size128                     = 128,
     }
 
-    [HostProtection(MayLeakOnAbort = true)]
     [ClassInterface(ClassInterfaceType.None)]
     [ComDefaultInterface(typeof(_TypeBuilder))]
     [System.Runtime.InteropServices.ComVisible(true)]

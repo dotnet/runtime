@@ -35,7 +35,6 @@ namespace System.Threading
     /// </remarks>
     [DebuggerTypeProxy(typeof(SystemThreading_ThreadLocalDebugView<>))]
     [DebuggerDisplay("IsValueCreated={IsValueCreated}, Value={ValueForDebugDisplay}, Count={ValuesCountForDebugDisplay}")]
-    [HostProtection(Synchronization = true, ExternalThreading = true)]
     public class ThreadLocal<T> : IDisposable
     {
 

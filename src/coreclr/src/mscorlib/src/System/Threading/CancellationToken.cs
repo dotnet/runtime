@@ -39,7 +39,6 @@ namespace System.Threading
     /// </para>
     /// </remarks>
     [ComVisible(false)]
-    [HostProtection(Synchronization = true, ExternalThreading = true)]
     [DebuggerDisplay("IsCancellationRequested = {IsCancellationRequested}")]
     public struct CancellationToken
     {

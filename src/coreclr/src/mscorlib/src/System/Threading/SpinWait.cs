@@ -70,7 +70,6 @@ namespace System.Threading
     /// threads must spin, each should use its own instance of SpinWait.
     /// </para>
     /// </remarks>
-    [HostProtection(Synchronization = true, ExternalThreading = true)]
     public struct SpinWait
     {
 

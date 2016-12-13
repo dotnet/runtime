@@ -48,7 +48,6 @@ namespace System.Runtime.CompilerServices
 
         /// <summary>Provides an awaiter that switches into a target environment.</summary>
         /// <remarks>This type is intended for compiler use only.</remarks>
-        [HostProtection(Synchronization = true, ExternalThreading = true)]
         public struct YieldAwaiter : ICriticalNotifyCompletion
         {
             /// <summary>Gets whether a yield is not required.</summary>

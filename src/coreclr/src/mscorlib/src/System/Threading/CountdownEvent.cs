@@ -32,7 +32,6 @@ namespace System.Threading
     /// </remarks>
     [ComVisible(false)]
     [DebuggerDisplay("Initial Count={InitialCount}, Current Count={CurrentCount}")]
-    [HostProtection(Synchronization = true, ExternalThreading = true)]
     public class CountdownEvent : IDisposable
     {
         // CountdownEvent is a simple synchronization primitive used for fork/join parallelism. We create a

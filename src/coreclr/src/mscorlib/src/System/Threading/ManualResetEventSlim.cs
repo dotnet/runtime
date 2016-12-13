@@ -47,7 +47,6 @@ namespace System.Threading
     /// </remarks>
     [ComVisible(false)]
     [DebuggerDisplay("Set = {IsSet}")]
-    [HostProtection(Synchronization = true, ExternalThreading = true)]
     public class ManualResetEventSlim : IDisposable
     {
         // These are the default spin counts we use on single-proc and MP machines.

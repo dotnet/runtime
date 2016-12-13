@@ -13,7 +13,6 @@ namespace System.Reflection.Emit
     using System.Security.Permissions;
     using System.Diagnostics.Contracts;
     
-    [HostProtection(MayLeakOnAbort = true)]
     [ClassInterface(ClassInterfaceType.None)]
     [ComDefaultInterface(typeof(_FieldBuilder))]
 [System.Runtime.InteropServices.ComVisible(true)]

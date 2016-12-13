@@ -6,7 +6,6 @@ namespace Microsoft.Win32 {
     using Microsoft.Win32.SafeHandles;
     using System.Security.Permissions;
 
-    [HostProtectionAttribute(MayLeakOnAbort = true)]
     sealed internal class SafeLibraryHandle : SafeHandleZeroOrMinusOneIsInvalid {
         internal SafeLibraryHandle() : base(true) {}
 

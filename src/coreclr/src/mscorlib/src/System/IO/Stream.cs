@@ -109,7 +109,6 @@ namespace System.IO {
             }
         }
 
-        [HostProtection(ExternalThreading = true)]
         [ComVisible(false)]
         public Task CopyToAsync(Stream destination)
         {
@@ -147,14 +146,12 @@ namespace System.IO {
             return CopyToAsync(destination, bufferSize);
         }
 
-        [HostProtection(ExternalThreading = true)]
         [ComVisible(false)]
         public Task CopyToAsync(Stream destination, Int32 bufferSize)
         {
             return CopyToAsync(destination, bufferSize, CancellationToken.None);
         }
 
-        [HostProtection(ExternalThreading = true)]
         [ComVisible(false)]
         public virtual Task CopyToAsync(Stream destination, Int32 bufferSize, CancellationToken cancellationToken)
         {
@@ -281,14 +278,12 @@ namespace System.IO {
 
         public abstract void Flush();
 
-        [HostProtection(ExternalThreading=true)]
         [ComVisible(false)]
         public Task FlushAsync()
         {
             return FlushAsync(CancellationToken.None);
         }
 
-        [HostProtection(ExternalThreading=true)]
         [ComVisible(false)]
         public virtual Task FlushAsync(CancellationToken cancellationToken)
         {
@@ -303,14 +298,12 @@ namespace System.IO {
             return new ManualResetEvent(false);
         }
 
-        [HostProtection(ExternalThreading=true)]
         public virtual IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback callback, Object state)
         {
             Contract.Ensures(Contract.Result<IAsyncResult>() != null);
             return BeginReadInternal(buffer, offset, count, callback, state, serializeAsynchronously: false, apm: true);
         }
 
-        [HostProtection(ExternalThreading = true)]
         internal IAsyncResult BeginReadInternal(
             byte[] buffer, int offset, int count, AsyncCallback callback, Object state, 
             bool serializeAsynchronously, bool apm)
@@ -405,14 +398,12 @@ namespace System.IO {
             }
         }
 
-        [HostProtection(ExternalThreading = true)]
         [ComVisible(false)]
         public Task<int> ReadAsync(Byte[] buffer, int offset, int count)
         {
             return ReadAsync(buffer, offset, count, CancellationToken.None);
         }
 
-        [HostProtection(ExternalThreading = true)]
         [ComVisible(false)]
         public virtual Task<int> ReadAsync(Byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
@@ -451,14 +442,12 @@ namespace System.IO {
 
 
 
-        [HostProtection(ExternalThreading=true)]
         public virtual IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback callback, Object state)
         {
             Contract.Ensures(Contract.Result<IAsyncResult>() != null);
             return BeginWriteInternal(buffer, offset, count, callback, state, serializeAsynchronously: false, apm: true);
         }
 
-        [HostProtection(ExternalThreading = true)]
         internal IAsyncResult BeginWriteInternal(
             byte[] buffer, int offset, int count, AsyncCallback callback, Object state, 
             bool serializeAsynchronously, bool apm)
@@ -701,7 +690,6 @@ namespace System.IO {
             bool ITaskCompletionAction.InvokeMayRunArbitraryCode { get { return true; } }
         }
 
-        [HostProtection(ExternalThreading = true)]
         [ComVisible(false)]
         public Task WriteAsync(Byte[] buffer, int offset, int count)
         {
@@ -710,7 +698,6 @@ namespace System.IO {
 
 
 
-        [HostProtection(ExternalThreading = true)]
         [ComVisible(false)]
         public virtual Task WriteAsync(Byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
@@ -782,7 +769,6 @@ namespace System.IO {
             Write(oneByteArray, 0, 1);
         }
 
-        [HostProtection(Synchronization=true)]
         public static Stream Synchronized(Stream stream) 
         {
             if (stream==null)
@@ -928,7 +914,6 @@ namespace System.IO {
                     Task.CompletedTask;
             }
 
-            [HostProtection(ExternalThreading = true)]
             public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback callback, Object state)
             {
                 if (!CanRead) __Error.ReadNotSupported();
@@ -945,7 +930,6 @@ namespace System.IO {
                 return BlockingEndRead(asyncResult);
             }
 
-            [HostProtection(ExternalThreading = true)]
             public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback callback, Object state)
             {
                 if (!CanWrite) __Error.WriteNotSupported();
@@ -1217,7 +1201,6 @@ namespace System.IO {
                     return _stream.ReadByte();
             }
         
-            [HostProtection(ExternalThreading=true)]
             public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback callback, Object state)
             {
                 bool overridesBeginRead = _stream.HasOverriddenBeginEndRead();
@@ -1271,7 +1254,6 @@ namespace System.IO {
                     _stream.WriteByte(b);
             }
         
-            [HostProtection(ExternalThreading=true)]
             public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback callback, Object state)
             {
                 bool overridesBeginWrite = _stream.HasOverriddenBeginEndWrite();

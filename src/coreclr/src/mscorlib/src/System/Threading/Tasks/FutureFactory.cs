@@ -39,7 +39,6 @@ namespace System.Threading.Tasks
     /// <see cref="System.Threading.Tasks.Task{TResult}.Factory">Task{TResult}.Factory</see> property.
     /// </para>
     /// </remarks>
-    [HostProtection(Synchronization = true, ExternalThreading = true)]
     public class TaskFactory<TResult>
     {
         // Member variables, DefaultScheduler, other properties and ctors 
