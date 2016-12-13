@@ -105,7 +105,7 @@ namespace Microsoft.DotNet.Build.Tasks
                     var otherwiseErrorPropertyGroup = project.CreatePropertyGroupElement();
                     otherwisePropertiesElement.AppendChild(otherwiseErrorPropertyGroup);
 
-                    otherwiseErrorPropertyGroup.AddProperty(ErrorMessageProperty, $"Could not find a value for {property.Name} from {propertyName} '$({propertyName})'.");
+                    otherwiseErrorPropertyGroup.AddProperty(ErrorMessageProperty, $"$({ErrorMessageProperty})Could not find a value for {property.Name} from {propertyName} '$({propertyName})'.");
                 }
             }
         }
@@ -130,7 +130,7 @@ namespace Microsoft.DotNet.Build.Tasks
             var buildConfigurationImportPath = $"{ConfigurationPropsPrefix}.{significantBuildConfiguration}{PropsFileExtension}";
             buildConfigurationsPropertyGroup.AddProperty(buildConfigurationImportName, buildConfigurationImportPath);
 
-            var missingImportError = buildConfigurationsPropertyGroup.AddProperty(ErrorMessageProperty, $"{ConfigurationProperty} is not set and $({BuildConfigurationProperty}) is not a known value for {BuildConfigurationProperty}.");
+            var missingImportError = buildConfigurationsPropertyGroup.AddProperty(ErrorMessageProperty, $"$({ErrorMessageProperty}){ConfigurationProperty} is not set and $({BuildConfigurationProperty}) is not a known value for {BuildConfigurationProperty}.");
             missingImportError.Condition = $"!Exists('$({buildConfigurationImportName})')";
 
             // import props to set ProjectConfiguration
@@ -160,7 +160,7 @@ namespace Microsoft.DotNet.Build.Tasks
             // delimit BuildConfigurations for parsing
             var parseBuildConfigurationsPropertyGroup = configurationSpecificProps.AddPropertyGroup();
             var parseBuildConfigurationsName = $"_parse_{AvailableBuildConfigurationsProperty}";
-            var parseBuildConfigurationsValue = $"{ConfigurationSeperator}$({AvailableBuildConfigurationsProperty}){ConfigurationSeperator}";
+            var parseBuildConfigurationsValue = $"{ConfigurationSeperator}$({AvailableBuildConfigurationsProperty}.Replace('%0A','').Replace('%0D','').Replace(' ','')){ConfigurationSeperator}";
             parseBuildConfigurationsPropertyGroup.AddProperty(parseBuildConfigurationsName, parseBuildConfigurationsValue);
 
             var chooseConfigurationElement = configurationSpecificProps.CreateChooseElement();
@@ -197,8 +197,8 @@ namespace Microsoft.DotNet.Build.Tasks
             configurationOtherwiseElement.AppendChild(configurationOtherwisePropertyGroup);
 
             configurationOtherwisePropertyGroup.AddProperty(ErrorMessageProperty,
-                $"Could not find a compatible configuration for {BuildConfigurationProperty} '$({BuildConfigurationProperty})' " +
-                $"from {AvailableBuildConfigurationsProperty} '$({AvailableBuildConfigurationsProperty})'.  " +
+                $"$({ErrorMessageProperty})Could not find a compatible configuration for {BuildConfigurationProperty} '$({BuildConfigurationProperty})' " +
+                $"from {AvailableBuildConfigurationsProperty} '$({parseBuildConfigurationsName})'.  " +
                 $"Considered {compatibleConfigurationStrings}.");
 
             // save a copy of for each synonymous config string
