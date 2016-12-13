@@ -662,7 +662,7 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
         case GT_LOCKADD:
         case GT_XCHG:
         case GT_XADD:
-            genLockedInstructions(treeNode);
+            genLockedInstructions(treeNode->AsOp());
             break;
 
         case GT_CMPXCHG:
@@ -749,7 +749,7 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
 
 // generate code for the locked operations:
 // GT_LOCKADD, GT_XCHG, GT_XADD
-void CodeGen::genLockedInstructions(GenTree* treeNode)
+void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
 {
     NYI("genLockedInstructions");
 }
