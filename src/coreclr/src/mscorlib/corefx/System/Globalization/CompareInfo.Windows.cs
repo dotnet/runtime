@@ -281,14 +281,10 @@ namespace System.Globalization
 
             int sourceStartIndex = findLastIndex ? startIndex - sourceCount + 1 : startIndex;
 
-#if !TEST_CODEGEN_OPTIMIZATION
             fixed (char* pSource = source, spTarget = target)
             {
                 char* spSubSource = pSource + sourceStartIndex;
-#else
-                String.StringPointer spSubSource = source.GetStringPointer(sourceStartIndex);
-                String.StringPointer spTarget = target.GetStringPointer();
-#endif
+
                 if (findLastIndex)
                 {
                     int startPattern = (sourceCount - 1) - targetCount + 1;
@@ -348,11 +344,9 @@ namespace System.Globalization
                         retValue += startIndex;
                     }
                 }
-#if !TEST_CODEGEN_OPTIMIZATION
             }
 
             return retValue;
-#endif // TEST_CODEGEN_OPTIMIZATION
         }
 
         private unsafe SortKey CreateSortKey(String source, CompareOptions options)
@@ -362,13 +356,13 @@ namespace System.Globalization
 
             if ((options & ValidSortkeyCtorMaskOffFlags) != 0)
             {
-                throw new ArgumentException(Environment.GetResourceString("Argument_InvalidFlag"), nameof(options));
+                throw new ArgumentException(SR.Argument_InvalidFlag, nameof(options));
             }
 
             throw new NotImplementedException();
         }
 
-        private unsafe static bool IsSortable(char *text, int length)
+        private static unsafe bool IsSortable(char *text, int length)
         {
             // CompareInfo c = CultureInfo.InvariantCulture.CompareInfo;
             // return (InternalIsSortable(c.m_dataHandle, c.m_handleOrigin, c.m_sortName, text, text.Length));
@@ -412,7 +406,7 @@ namespace System.Globalization
 
             return nativeCompareFlags;
         }
-        
+
         private SortVersion GetSortVersion()
         {
             throw new NotImplementedException();

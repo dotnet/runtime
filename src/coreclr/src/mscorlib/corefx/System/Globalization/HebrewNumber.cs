@@ -2,18 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Text;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 
 namespace System.Globalization
 {
-
-#if INSIDE_CLR
-    using Debug = BCLDebug;
-#endif
-
     ////////////////////////////////////////////////////////////////////////////
     //
     // Used in HebrewNumber.ParseByChar to maintain the context information (
@@ -335,7 +328,7 @@ namespace System.Globalization
         // 
         // The state machine for Hebrew number pasing.
         //
-        private readonly static HS[] s_numberPasingState =
+        private static readonly HS[] s_numberPasingState =
         {
             // 400            300/200         100             90~10           8~1      6,       7,       9,          '           "
             /* 0 */

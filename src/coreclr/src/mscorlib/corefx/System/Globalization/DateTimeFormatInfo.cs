@@ -2,16 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
-using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
-using System.Security;
-using System.Text;
-using System.Threading;
 
 namespace System.Globalization
 {
@@ -56,7 +50,7 @@ namespace System.Globalization
 
 
     [Serializable]
-    public sealed partial class DateTimeFormatInfo : IFormatProvider, ICloneable
+    public sealed class DateTimeFormatInfo : IFormatProvider, ICloneable
     {
         // cache for the invariant culture.
         // invariantInfo is constant irrespective of your current culture.
@@ -324,8 +318,8 @@ namespace System.Globalization
 
         internal DateTimeFormatInfo(CultureData cultureData, Calendar cal)
         {
-            Contract.Requires(cultureData != null);
-            Contract.Requires(cal != null);
+            Debug.Assert(cultureData != null);
+            Debug.Assert(cal != null);
 
             // Remember our culture
             _cultureData = cultureData;
@@ -335,7 +329,7 @@ namespace System.Globalization
 
         private void InitializeOverridableProperties(CultureData cultureData, CalendarId calendarId)
         {
-            Contract.Requires(cultureData != null);
+            Debug.Assert(cultureData != null);
             Debug.Assert(calendarId != CalendarId.UNINITIALIZED_VALUE, "[DateTimeFormatInfo.Populate] Expected initalized calendarId");
 
             if (this.firstDayOfWeek == -1) { this.firstDayOfWeek = cultureData.IFIRSTDAYOFWEEK; }
@@ -820,7 +814,6 @@ namespace System.Globalization
                 Debug.Assert(this.dateSeparator != null, "DateTimeFormatInfo.DateSeparator, dateSeparator != null");
                 return dateSeparator;
             }
-           
             set
             {
                 if (IsReadOnly)
@@ -1357,8 +1350,8 @@ namespace System.Globalization
         //
         private static void CheckNullValue(String[] values, int length)
         {
-            Contract.Requires(values != null, "value != null");
-            Contract.Requires(values.Length >= length);
+            Debug.Assert(values != null, "value != null");
+            Debug.Assert(values.Length >= length);
             for (int i = 0; i < length; i++)
             {
                 if (values[i] == null)
@@ -1659,8 +1652,8 @@ namespace System.Globalization
         // Get all possible combination of inputs
         private static String[] GetCombinedPatterns(String[] patterns1, String[] patterns2, String connectString)
         {
-            Contract.Requires(patterns1 != null);
-            Contract.Requires(patterns2 != null);
+            Debug.Assert(patterns1 != null);
+            Debug.Assert(patterns2 != null);
 
             // Get array size
             String[] result = new String[patterns1.Length * patterns2.Length];
