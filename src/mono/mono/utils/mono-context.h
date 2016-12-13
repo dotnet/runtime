@@ -434,9 +434,25 @@ typedef struct {
 		"stp x24, x25, [x16], #16\n"	\
 		"stp x26, x27, [x16], #16\n"	\
 		"stp x28, x29, [x16], #16\n"	\
-		"stp x30, xzr, [x16]\n"	\
+		"stp x30, xzr, [x16], #8\n"	\
 		"mov x30, sp\n"				\
-		"str x30, [x16, #8]\n"		\
+		"str x30, [x16], #8\n"		\
+		"stp d0, d1, [x16], #16\n"	\
+		"stp d2, d3, [x16], #16\n"	\
+		"stp d4, d5, [x16], #16\n"	\
+		"stp d6, d7, [x16], #16\n"	\
+		"stp d8, d9, [x16], #16\n"	\
+		"stp d10, d11, [x16], #16\n"	\
+		"stp d12, d13, [x16], #16\n"	\
+		"stp d14, d15, [x16], #16\n"	\
+		"stp d16, d17, [x16], #16\n"	\
+		"stp d18, d19, [x16], #16\n"	\
+		"stp d20, d21, [x16], #16\n"	\
+		"stp d22, d23, [x16], #16\n"	\
+		"stp d24, d25, [x16], #16\n"	\
+		"stp d26, d27, [x16], #16\n"	\
+		"stp d28, d29, [x16], #16\n"	\
+		"stp d30, d31, [x16], #16\n"	\
 		:							\
 		: "r" (&ctx.regs)			\
 		: "x30", "memory"			\
