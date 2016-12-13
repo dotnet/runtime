@@ -15,15 +15,9 @@
 **
 ===========================================================*/
 
-using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Security;
-using System.Security.Permissions;
 using Microsoft.Win32;
-using System.Text;
 using System.Runtime.InteropServices;
-using System.Globalization;
 using System.Runtime.Serialization;
 using System.Runtime.Versioning;
 using System.Diagnostics;
@@ -35,25 +29,8 @@ namespace System.IO
     [ComVisible(true)]
     public sealed class DirectoryInfo : FileSystemInfo
     {
-        private String[] demandDir;
-
         // Migrating InheritanceDemands requires this default ctor, so we can annotate it.
-#if FEATURE_CORESYSTEM
-#else
-#endif //FEATURE_CORESYSTEM
         private DirectoryInfo(){}
-
-
-        public static DirectoryInfo UnsafeCreateDirectoryInfo(String path)
-        {
-            if (path == null)
-                throw new ArgumentNullException(nameof(path));
-            Contract.EndContractBlock();
-
-            DirectoryInfo di = new DirectoryInfo();
-            di.Init(path, false);
-            return di;
-        }
 
         public DirectoryInfo(String path)
         {
@@ -61,10 +38,10 @@ namespace System.IO
                 throw new ArgumentNullException(nameof(path));
             Contract.EndContractBlock();
 
-            Init(path, true);
+            Init(path);
         }
 
-        private void Init(String path, bool checkHost)
+        private void Init(String path)
         {
             // Special case "<DriveLetter>:" to point to "<CurrentDirectory>" instead
             if ((path.Length == 2) && (path[1] == ':'))
@@ -76,23 +53,10 @@ namespace System.IO
                 OriginalPath = path;
             }
 
-            // Must fully qualify the path for the security check
-            String fullPath = Path.GetFullPath(path);
-
-            demandDir = new String[] {Directory.GetDemandDir(fullPath, true)};
-
-            if (checkHost)
-            {
-                FileSecurityState state = new FileSecurityState(FileSecurityStateAccess.Read, OriginalPath, fullPath);
-                state.EnsureState();
-            }
-
-            FullPath = fullPath;
+            FullPath = Path.GetFullPath(path); ;
             DisplayPath = GetDisplayName(OriginalPath, FullPath);
         }
 
-#if FEATURE_CORESYSTEM
-#endif //FEATURE_CORESYSTEM
         internal DirectoryInfo(String fullPath, bool junk)
         {
             Debug.Assert(PathInternal.GetRootLength(fullPath) > 0, "fullPath must be fully qualified!");
@@ -101,7 +65,6 @@ namespace System.IO
 
             FullPath = fullPath;
             DisplayPath = GetDisplayName(OriginalPath, FullPath);
-            demandDir = new String[] {Directory.GetDemandDir(fullPath, true)};
         }
 
         private DirectoryInfo(SerializationInfo info, StreamingContext context) : base(info, context)
@@ -125,16 +88,12 @@ namespace System.IO
                 // those cases, as well as avoiding mangling "c:\".
                 String s = FullPath;
                 if (s.Length > 3 && s.EndsWith(Path.DirectorySeparatorChar))
-                    s = FullPath.Substring(0, FullPath.Length - 1);                
+                    s = FullPath.Substring(0, FullPath.Length - 1);
                 parentName = Path.GetDirectoryName(s);
                 if (parentName==null)
                     return null;
-                DirectoryInfo dir = new DirectoryInfo(parentName,false);
 
-                FileSecurityState state = new FileSecurityState(FileSecurityStateAccess.PathDiscovery | FileSecurityStateAccess.Read, String.Empty, dir.demandDir[0]);
-                state.EnsureState();
-
-                return dir;
+                return new DirectoryInfo(parentName, false);
             }
         }
 
@@ -167,11 +126,6 @@ namespace System.IO
                 throw new ArgumentException(Environment.GetResourceString("Argument_InvalidSubPath", path, displayPath));
             }
 
-            // Ensure we have permission to create this subdirectory.
-            String demandDirForCreation = Directory.GetDemandDir(fullPath, true);
-            FileSecurityState state = new FileSecurityState(FileSecurityStateAccess.Write, OriginalPath, demandDirForCreation);
-            state.EnsureState();
-
             Directory.InternalCreateDirectory(fullPath, path, directorySecurity);
 
             // Check for read permission to directory we hand back by calling this constructor.
@@ -180,14 +134,10 @@ namespace System.IO
 
         public void Create()
         {
-            Directory.InternalCreateDirectory(FullPath, OriginalPath, null, true);
+            Directory.InternalCreateDirectory(FullPath, OriginalPath, null);
         }
 
         // Tests if the given path refers to an existing DirectoryInfo on disk.
-        // 
-        // Your application must have Read permission to the directory's
-        // contents.
-        //
         public override bool Exists {
             get
             {
@@ -197,7 +147,6 @@ namespace System.IO
                         Refresh();
                     if (_dataInitialised != 0) // Refresh was unable to initialise the data
                         return false;
-                   
                     return _data.fileAttributes != -1 && (_data.fileAttributes & Win32Native.FILE_ATTRIBUTE_DIRECTORY) != 0;
                 }
                 catch
@@ -435,7 +384,7 @@ namespace System.IO
 
             return FileSystemEnumerableFactory.CreateFileSystemInfoIterator(FullPath, OriginalPath, searchPattern, searchOption);
         }
-        
+
         // Returns the root portion of the given path. The resulting string
         // consists of those rightmost characters of the path that constitute the
         // root of the path. Possible patterns for the resulting string are: An
@@ -444,18 +393,11 @@ namespace System.IO
         // where X is the drive letter), "X:\" (an absolute path on a given drive),
         // and "\\server\share" (a UNC path for a given server and share name).
         // The resulting string is null if path is null.
-        //
-
         public DirectoryInfo Root {
             get
             {
-                String demandPath;
                 int rootLength = PathInternal.GetRootLength(FullPath);
                 String rootPath = FullPath.Substring(0, rootLength);
-                demandPath = Directory.GetDemandDir(rootPath, true);
-
-                FileSecurityState sourceState = new FileSecurityState(FileSecurityStateAccess.PathDiscovery, String.Empty, demandPath);
-                sourceState.EnsureState();
 
                 return new DirectoryInfo(rootPath);
             }
@@ -468,24 +410,9 @@ namespace System.IO
                 throw new ArgumentException(Environment.GetResourceString("Argument_EmptyFileName"), nameof(destDirName));
             Contract.EndContractBlock();
 
-            FileSecurityState sourceState = new FileSecurityState(FileSecurityStateAccess.Write | FileSecurityStateAccess.Read, DisplayPath, Directory.GetDemandDir(FullPath, true));
-            sourceState.EnsureState();
-
             String fullDestDirName = Path.GetFullPath(destDirName);
-            String demandPath;
             if (!fullDestDirName.EndsWith(Path.DirectorySeparatorChar))
                 fullDestDirName = fullDestDirName + Path.DirectorySeparatorChar;
-
-            demandPath = fullDestDirName + '.';
-
-            // Demand read & write permission to destination.  The reason is
-            // we hand back a DirectoryInfo to the destination that would allow
-            // you to read a directory listing from that directory.  Sure, you 
-            // had the ability to read the file contents in the old location,
-            // but you technically also need read permissions to the new 
-            // location as well, and write is not a true superset of read.
-            FileSecurityState destState = new FileSecurityState(FileSecurityStateAccess.Write, destDirName, demandPath);
-            destState.EnsureState();
 
             String fullSourcePath;
             if (FullPath.EndsWith(Path.DirectorySeparatorChar))
@@ -519,7 +446,6 @@ namespace System.IO
             FullPath = fullDestDirName;
             OriginalPath = destDirName;
             DisplayPath = GetDisplayName(OriginalPath, FullPath);
-            demandDir = new String[] { Directory.GetDemandDir(FullPath, true) };
 
             // Flush any cached information about the directory.
             _dataInitialised = -1;
@@ -527,12 +453,12 @@ namespace System.IO
 
         public override void Delete()
         {
-            Directory.Delete(FullPath, OriginalPath, false, true);
+            Directory.Delete(FullPath, OriginalPath, false);
         }
 
         public void Delete(bool recursive)
         {
-            Directory.Delete(FullPath, OriginalPath, recursive, true);
+            Directory.Delete(FullPath, OriginalPath, recursive);
         }
 
         // Returns the fully qualified path
@@ -580,7 +506,6 @@ namespace System.IO
             }
             return dirName;
         }
-
-    }       
+    }
 }
 

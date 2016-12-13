@@ -140,11 +140,11 @@ namespace System.IO
         { }
 
         internal FileStream(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options, string msgPath, bool bFromProxy)
-            : this(path, mode, access, share, bufferSize, options, msgPath, bFromProxy, useLongPath: false, checkHost: false)
+            : this(path, mode, access, share, bufferSize, options, msgPath, bFromProxy, useLongPath: false)
         {
         }
 
-        internal FileStream(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options, string msgPath, bool bFromProxy, bool useLongPath, bool checkHost)
+        internal FileStream(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options, string msgPath, bool bFromProxy, bool useLongPath)
             : this(path, mode, access, share, bufferSize, options)
         {
             // msgPath is the path that is handed back to untrusted code, CoreCLR is always full trust
