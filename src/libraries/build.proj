@@ -98,8 +98,17 @@
   </ItemGroup>
 
   <Target Name="BuildCoreFxTools">
-    <MSBuild Projects="src\Tools\tools.builds"
-             ContinueOnError="ErrorAndContinue" />
+    <ItemGroup>
+      <BuildToolsProject Include="src\Tools\CoreFx.Tools\CoreFx.Tools.csproj" />
+      <BuildToolsProject Include="src\Tools\CoreFx.Tools\CoreFx.Tools.csproj">
+        <TargetGroup>net45</TargetGroup>
+      </BuildToolsProject>
+      <BuildToolsProject Include="src\Tools\GenerateProps\GenerateProps.proj" />
+    </ItemGroup>
+    <MSBuild Projects="@(BuildToolsProject)"
+             ContinueOnError="ErrorAndContinue"
+             Condition="'%(Identity)' != ''" 
+             Properties="TargetGroup=%(BuildToolsProject.TargetGroup)" />
   </Target>
 
   <Target Name="BatchRestorePackages" DependsOnTargets="AddGeneratedProjectJsons;VerifyDependencies">
