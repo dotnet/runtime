@@ -4,6 +4,7 @@
 
 using Internal.Runtime.Augments;
 using System.Collections;
+using System.Collections.Generic;
 
 namespace System
 {
@@ -21,12 +22,19 @@ namespace System
 
         public static IDictionary GetEnvironmentVariables()
         {
-            return EnvironmentAugments.GetEnvironmentVariables();
+            // To maintain complete compatibility with prior versions we need to return a Hashtable.
+            // We did ship a prior version of Core with LowLevelDictionary, which does iterate the
+            // same (e.g. yields DictionaryEntry), but it is not a public type.
+            //
+            // While we could pass Hashtable back from CoreCLR the type is also defined here. We only
+            // want to surface the local Hashtable.
+            return new Hashtable(EnvironmentAugments.GetEnvironmentVariables());
         }
 
         public static IDictionary GetEnvironmentVariables(EnvironmentVariableTarget target)
         {
-            return EnvironmentAugments.GetEnvironmentVariables(target);
+            // See comments in GetEnvironmentVariables()
+            return new Hashtable(EnvironmentAugments.GetEnvironmentVariables(target));
         }
 
         public static void SetEnvironmentVariable(string variable, string value)
