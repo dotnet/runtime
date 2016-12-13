@@ -54,17 +54,10 @@
       <NuGetTargetMoniker>.NETStandard,Version=v1.7</NuGetTargetMoniker>
       <Imports>netstandard1.6</Imports>
     </TargetGroups>
-    <TargetGroups Include="netstandard13aot">
-      <PackageTargetFramework>netstandard1.3</PackageTargetFramework>
-      <PackageTargetRuntime>aot</PackageTargetRuntime>
-      <NuGetTargetMoniker>.NETStandard,Version=v1.3</NuGetTargetMoniker>
-      <Imports>netstandard1.3</Imports>
-    </TargetGroups>
-    <TargetGroups Include="netstandard15aot">
-      <PackageTargetFramework>netstandard1.5</PackageTargetFramework>
-      <PackageTargetRuntime>aot</PackageTargetRuntime>
-      <NuGetTargetMoniker>.NETStandard,Version=v1.5</NuGetTargetMoniker>
-      <Imports>netstandard1.5</Imports>
+    <TargetGroups Include="netstandard">
+      <PackageTargetFramework>netstandard1.7</PackageTargetFramework>
+      <NuGetTargetMoniker>.NETStandard,Version=v1.7</NuGetTargetMoniker>
+      <Imports>netstandard1.7</Imports>
     </TargetGroups>
     <TargetGroups Include="netcoreapp1.0">
       <PackageTargetFramework>netcoreapp1.0</PackageTargetFramework>
@@ -77,36 +70,17 @@
       <Imports>netcoreapp1.0</Imports>
       <CompatibleWith>netstandard1.7</CompatibleWith>
     </TargetGroups>
-    <TargetGroups Include="dnxcore50">
-      <ConfigurationErrorMsg>$(ConfigurationErrorMsg);DNXCore50 has been deprecated.  Please use NETStandard1.X or NETCoreApp1.0 instead.</ConfigurationErrorMsg>
-    </TargetGroups>
-    <TargetGroups Include="net463">
-      <PackageTargetFramework>net463</PackageTargetFramework>
-      <TargetingPackNugetPackageId>Microsoft.TargetingPack.NETFramework.v4.6.3</TargetingPackNugetPackageId>
-      <NuGetTargetMoniker>.NETFramework,Version=v4.6.3</NuGetTargetMoniker>
-      <Imports>net462</Imports>
+    <TargetGroups Include="netcoreapp">
+      <PackageTargetFramework>netcoreapp1.1</PackageTargetFramework>
+      <NuGetTargetMoniker>.NETCoreApp,Version=v1.1</NuGetTargetMoniker>
+      <Imports>netcoreapp1.1</Imports>
       <CompatibleWith>netstandard1.7</CompatibleWith>
     </TargetGroups>
-    <TargetGroups Include="net462">
-      <PackageTargetFramework>net462</PackageTargetFramework>
-      <TargetingPackNugetPackageId>Microsoft.TargetingPack.NETFramework.v4.6.2</TargetingPackNugetPackageId>
-      <NuGetTargetMoniker>.NETFramework,Version=v4.6.2</NuGetTargetMoniker>
-      <Imports>net461</Imports>
-      <CompatibleWith>netstandard1.5</CompatibleWith>
-    </TargetGroups>
-    <TargetGroups Include="net461">
-      <PackageTargetFramework>net461</PackageTargetFramework>
-      <TargetingPackNugetPackageId>Microsoft.TargetingPack.NETFramework.v4.6.1</TargetingPackNugetPackageId>
-      <NuGetTargetMoniker>.NETFramework,Version=v4.6.1</NuGetTargetMoniker>
-      <Imports>net46</Imports>
-      <CompatibleWith>netstandard1.4</CompatibleWith>
-    </TargetGroups>
-    <TargetGroups Include="net46">
-      <PackageTargetFramework>net46</PackageTargetFramework>
-      <TargetingPackNugetPackageId>Microsoft.TargetingPack.NETFramework.v4.6</TargetingPackNugetPackageId>
-      <NuGetTargetMoniker>.NETFramework,Version=v4.6</NuGetTargetMoniker>
-      <Imports>net451</Imports>
-      <CompatibleWith>netstandard1.3</CompatibleWith>
+    <TargetGroups Include="net45">
+      <PackageTargetFramework>net45</PackageTargetFramework>
+      <TargetingPackNugetPackageId>Microsoft.TargetingPack.NETFramework.v4.5</TargetingPackNugetPackageId>
+      <NuGetTargetMoniker>.NETFramework,Version=v4.5</NuGetTargetMoniker>
+      <CompatibleWith>netstandard1.1</CompatibleWith>
     </TargetGroups>
     <TargetGroups Include="net451">
       <PackageTargetFramework>net451</PackageTargetFramework>
@@ -115,11 +89,40 @@
       <Imports>net45</Imports>
       <CompatibleWith>netstandard1.2</CompatibleWith>
     </TargetGroups>
-    <TargetGroups Include="net45">
-      <PackageTargetFramework>net45</PackageTargetFramework>
-      <TargetingPackNugetPackageId>Microsoft.TargetingPack.NETFramework.v4.5</TargetingPackNugetPackageId>
-      <NuGetTargetMoniker>.NETFramework,Version=v4.5</NuGetTargetMoniker>
-      <CompatibleWith>netstandard1.1</CompatibleWith>
+    <TargetGroups Include="net46">
+      <PackageTargetFramework>net46</PackageTargetFramework>
+      <TargetingPackNugetPackageId>Microsoft.TargetingPack.NETFramework.v4.6</TargetingPackNugetPackageId>
+      <NuGetTargetMoniker>.NETFramework,Version=v4.6</NuGetTargetMoniker>
+      <Imports>net451</Imports>
+      <CompatibleWith>netstandard1.3</CompatibleWith>
+    </TargetGroups>
+    <TargetGroups Include="net461">
+      <PackageTargetFramework>net461</PackageTargetFramework>
+      <TargetingPackNugetPackageId>Microsoft.TargetingPack.NETFramework.v4.6.1</TargetingPackNugetPackageId>
+      <NuGetTargetMoniker>.NETFramework,Version=v4.6.1</NuGetTargetMoniker>
+      <Imports>net46</Imports>
+      <CompatibleWith>netstandard1.4</CompatibleWith>
+    </TargetGroups>
+    <TargetGroups Include="net462">
+      <PackageTargetFramework>net462</PackageTargetFramework>
+      <TargetingPackNugetPackageId>Microsoft.TargetingPack.NETFramework.v4.6.2</TargetingPackNugetPackageId>
+      <NuGetTargetMoniker>.NETFramework,Version=v4.6.2</NuGetTargetMoniker>
+      <Imports>net461</Imports>
+      <CompatibleWith>netstandard1.5</CompatibleWith>
+    </TargetGroups>
+    <TargetGroups Include="net463">
+      <PackageTargetFramework>net463</PackageTargetFramework>
+      <TargetingPackNugetPackageId>Microsoft.TargetingPack.NETFramework.v4.6.3</TargetingPackNugetPackageId>
+      <NuGetTargetMoniker>.NETFramework,Version=v4.6.3</NuGetTargetMoniker>
+      <Imports>net462</Imports>
+      <CompatibleWith>netstandard1.7</CompatibleWith>
+    </TargetGroups>
+    <TargetGroups Include="netfx">
+      <PackageTargetFramework>net463</PackageTargetFramework>
+      <TargetingPackNugetPackageId>Microsoft.TargetingPack.NETFramework.v4.6.3</TargetingPackNugetPackageId>
+      <NuGetTargetMoniker>.NETFramework,Version=v4.6.3</NuGetTargetMoniker>
+      <Imports>net463</Imports>
+      <CompatibleWith>netstandard1.7</CompatibleWith>
     </TargetGroups>
     <TargetGroups Include="win8">
       <PackageTargetFramework>win8</PackageTargetFramework>
