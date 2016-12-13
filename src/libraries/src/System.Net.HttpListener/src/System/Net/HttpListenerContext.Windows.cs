@@ -132,7 +132,7 @@ namespace System.Net
 
                     // For unsafe connection ntlm auth we dont dispose this identity as yet since its cached
                     if ((user != null) &&
-                        (_user.Identity.AuthenticationType != AuthConstants.NTLM) &&
+                        (_user.Identity.AuthenticationType != NegotiationInfoClass.NTLM) &&
                         (!_listener.UnsafeConnectionNtlmAuthentication))
                     {
                         user.Dispose();
