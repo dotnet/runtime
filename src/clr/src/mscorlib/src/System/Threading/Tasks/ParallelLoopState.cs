@@ -26,7 +26,6 @@ namespace System.Threading.Tasks
     /// Enables iterations of <see cref="T:System.Threading.Tasks.Parallel"/> loops to interact with
     /// other iterations.
     /// </summary>
-    [HostProtection(Synchronization = true, ExternalThreading = true)]
     [DebuggerDisplay("ShouldExitCurrentIteration = {ShouldExitCurrentIteration}")]
     public class ParallelLoopState
     {

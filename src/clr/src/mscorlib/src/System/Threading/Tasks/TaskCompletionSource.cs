@@ -48,7 +48,6 @@ namespace System.Threading.Tasks
     /// </remarks>
     /// <typeparam name="TResult">The type of the result value assocatied with this <see
     /// cref="TaskCompletionSource{TResult}"/>.</typeparam>
-    [HostProtection(Synchronization = true, ExternalThreading = true)]
     public class TaskCompletionSource<TResult>
     {
         private readonly Task<TResult> m_task;

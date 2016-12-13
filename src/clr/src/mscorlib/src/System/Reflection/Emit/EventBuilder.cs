@@ -24,7 +24,6 @@ namespace System.Reflection.Emit {
     // A EventBuilder is always associated with a TypeBuilder.  The TypeBuilder.DefineEvent
     // method will return a new EventBuilder to a client.
     // 
-    [HostProtection(MayLeakOnAbort = true)]
     [ClassInterface(ClassInterfaceType.None)]
     [ComDefaultInterface(typeof(_EventBuilder))]
 [System.Runtime.InteropServices.ComVisible(true)]

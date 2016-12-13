@@ -25,7 +25,6 @@ namespace System.Reflection.Emit {
     // A PropertyBuilder is always associated with a TypeBuilder.  The TypeBuilder.DefineProperty
     // method will return a new PropertyBuilder to a client.
     // 
-    [HostProtection(MayLeakOnAbort = true)]
     [ClassInterface(ClassInterfaceType.None)]
     [ComDefaultInterface(typeof(_PropertyBuilder))]
     [System.Runtime.InteropServices.ComVisible(true)]

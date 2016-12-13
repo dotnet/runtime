@@ -40,7 +40,6 @@ namespace System.Collections.Concurrent
     [ComVisible(false)]
     [DebuggerTypeProxy(typeof(Mscorlib_DictionaryDebugView<,>))]
     [DebuggerDisplay("Count = {Count}")]
-    [HostProtection(Synchronization = true, ExternalThreading = true)]
     public class ConcurrentDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictionary, IReadOnlyDictionary<TKey, TValue>
     {
         /// <summary>

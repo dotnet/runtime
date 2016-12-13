@@ -40,7 +40,6 @@ namespace System.Threading
     /// </para>
     /// </remarks>
     [ComVisible(false)]
-    [HostProtection(Synchronization = true, ExternalThreading = true)]
     [DebuggerDisplay("Current Count = {m_currentCount}")]
     public class SemaphoreSlim : IDisposable
     {

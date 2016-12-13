@@ -37,7 +37,6 @@ namespace System.Threading
     using System.Security.AccessControl;
     using System.Diagnostics.Contracts;
 
-    [HostProtection(Synchronization=true, ExternalThreading=true)]
     [ComVisibleAttribute(true)]
     public class EventWaitHandle : WaitHandle
     {
