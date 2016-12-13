@@ -2,15 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Text;
 using System.Threading;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using System.Diagnostics;
-using System.Diagnostics.Contracts;
 
 namespace System.Globalization
 {
@@ -471,21 +466,21 @@ namespace System.Globalization
 
                     // Language
                     invariant._sISO639Language = "iv";                   // ISO 639 Language Name
-		            invariant._sISO639Language2 = "ivl";                  // 3 char ISO 639 lang name 2
+                    invariant._sISO639Language2 = "ivl";                  // 3 char ISO 639 lang name 2
                     invariant._sLocalizedLanguage = "Invariant Language";   // Display name for this Language
                     invariant._sEnglishLanguage = "Invariant Language";   // English name for this language
                     invariant._sNativeLanguage = "Invariant Language";   // Native name of this language
-		            invariant._sAbbrevLang = "IVL";                  // abbreviated language name (Windows Language Name)
-		            invariant._sConsoleFallbackName = "";            // The culture name for the console fallback UI culture
-		            invariant._iInputLanguageHandle = 0x07F;         // input language handle
+                    invariant._sAbbrevLang = "IVL";                  // abbreviated language name (Windows Language Name)
+                    invariant._sConsoleFallbackName = "";            // The culture name for the console fallback UI culture
+                    invariant._iInputLanguageHandle = 0x07F;         // input language handle
 
                     // Region
                     invariant._sRegionName = "IV";                    // (RegionInfo)
                     invariant._sEnglishCountry = "Invariant Country"; // english country name (RegionInfo)
                     invariant._sNativeCountry = "Invariant Country";  // native country name (Windows Only)
                     invariant._sISO3166CountryName = "IV";            // (RegionInfo), ie: US
-		            invariant._sISO3166CountryName2 = "ivc";          // 3 char ISO 3166 country name 2 2(RegionInfo)
-		            invariant._iGeoId = 244;                          // GeoId (Windows Only)
+                    invariant._sISO3166CountryName2 = "ivc";          // 3 char ISO 3166 country name 2 2(RegionInfo)
+                    invariant._iGeoId = 244;                          // GeoId (Windows Only)
 
                     // Numbers
                     invariant._sPositiveSign = "+";                    // positive sign
@@ -974,7 +969,6 @@ namespace System.Globalization
                 return _sAbbrevLang;
             }
         }
-
 
         // Localized name for this language (Windows Only) ie: Inglis
         // This is only valid for Windows 8 and higher neutrals:
@@ -2064,9 +2058,9 @@ namespace System.Globalization
         ////////////////////////////////////////////////////////////////////////////
         private static String UnescapeNlsString(String str, int start, int end)
         {
-            Contract.Requires(str != null);
-            Contract.Requires(start >= 0);
-            Contract.Requires(end >= 0);
+            Debug.Assert(str != null);
+            Debug.Assert(start >= 0);
+            Debug.Assert(end >= 0);
             StringBuilder result = null;
 
             for (int i = start; i < str.Length && i <= end; i++)
@@ -2252,7 +2246,7 @@ namespace System.Globalization
                 {
                     nfi.nativeDigits[i] = new string(digits[i], 1);
                 }
-                
+
                 nfi.digitSubstitution = GetDigitSubstitution(_sRealName);
             }
 
@@ -2346,10 +2340,14 @@ namespace System.Globalization
             EnglishLanguageName = 0x00001001,
             /// <summary>native name of language, eg "Deutsch" (coresponds to LOCALE_SNATIVELANGUAGENAME)</summary>
             NativeLanguageName = 0x00000004,
+            /// <summary>localized name of country, eg "Germany" in UI language (coresponds to LOCALE_SLOCALIZEDCOUNTRYNAME)</summary>
+            LocalizedCountryName = 0x00000006,
             /// <summary>English name of country, eg "Germany" (coresponds to LOCALE_SENGLISHCOUNTRYNAME)</summary>
             EnglishCountryName = 0x00001002,
             /// <summary>native name of country, eg "Deutschland" (coresponds to LOCALE_SNATIVECOUNTRYNAME)</summary>
             NativeCountryName = 0x00000008,
+            /// <summary>abbreviated language name (coresponds to LOCALE_SABBREVLANGNAME)</summary>
+            AbbreviatedWindowsLanguageName = 0x00000003,
             /// <summary>list item separator (coresponds to LOCALE_SLIST)</summary>
             ListSeparator = 0x0000000C,
             /// <summary>decimal separator (coresponds to LOCALE_SDECIMAL)</summary>
@@ -2382,6 +2380,8 @@ namespace System.Globalization
             Iso639LanguageTwoLetterName = 0x00000059,
             /// <summary>ISO abbreviated country name (coresponds to LOCALE_SISO639LANGNAME2)</summary>
             Iso639LanguageThreeLetterName = 0x00000067,
+            /// <summary>ISO abbreviated language name (coresponds to LOCALE_SISO639LANGNAME)</summary>
+            Iso639LanguageName = 0x00000059,
             /// <summary>ISO abbreviated country name (coresponds to LOCALE_SISO3166CTRYNAME)</summary>
             Iso3166CountryName = 0x0000005A,
             /// <summary>3 letter ISO country code (coresponds to LOCALE_SISO3166CTRYNAME2)</summary>
@@ -2394,6 +2394,8 @@ namespace System.Globalization
             NegativeInfinitySymbol = 0x0000006b,
             /// <summary>Fallback name for resources (coresponds to LOCALE_SPARENT)</summary>
             ParentName = 0x0000006d,
+            /// <summary>Fallback name for within the console (coresponds to LOCALE_SCONSOLEFALLBACKNAME)</summary>
+            ConsoleFallbackName = 0x0000006e,
             /// <summary>Returns the percent symbol (coresponds to LOCALE_SPERCENT)</summary>
             PercentSymbol = 0x00000076,
             /// <summary>Returns the permille (U+2030) symbol (coresponds to LOCALE_SPERMILLE)</summary>
@@ -2420,6 +2422,10 @@ namespace System.Globalization
         {
             /// <summary>language id (coresponds to LOCALE_ILANGUAGE)</summary>
             LanguageId = 0x00000001,
+            /// <summary>geographical location id, (coresponds to LOCALE_IGEOID)</summary>
+            GeoId = 0x00000008,
+            /// <summary>0 = context, 1 = none, 2 = national (coresponds to LOCALE_IDIGITSUBSTITUTION)</summary>
+            DigitSubstitution = 0x00001014,
             /// <summary>0 = metric, 1 = US (coresponds to LOCALE_IMEASURE)</summary>
             MeasurementSystem = 0x0000000D,
             /// <summary>number of fractional digits (coresponds to LOCALE_IDIGITS)</summary>
@@ -2450,7 +2456,15 @@ namespace System.Globalization
             /// <summary>Returns 0-11 for the negative percent format (coresponds to LOCALE_INEGATIVEPERCENT)</summary>
             NegativePercentFormat = 0x00000074,
             /// <summary>Returns 0-3 for the positive percent format (coresponds to LOCALE_IPOSITIVEPERCENT)</summary>
-            PositivePercentFormat = 0x00000075
+            PositivePercentFormat = 0x00000075,
+            /// <summary>default ansi code page (coresponds to LOCALE_IDEFAULTCODEPAGE)</summary>
+            OemCodePage = 0x0000000B,
+            /// <summary>default ansi code page (coresponds to LOCALE_IDEFAULTANSICODEPAGE)</summary>
+            AnsiCodePage = 0x00001004,
+            /// <summary>default mac code page (coresponds to LOCALE_IDEFAULTMACCODEPAGE)</summary>
+            MacCodePage = 0x00001011,
+            /// <summary>default ebcdic code page (coresponds to LOCALE_IDEFAULTEBCDICCODEPAGE)</summary>
+            EbcdicCodePage = 0x00001012,
         }
     }
 }

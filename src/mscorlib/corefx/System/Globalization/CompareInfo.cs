@@ -12,16 +12,10 @@
 //
 ////////////////////////////////////////////////////////////////////////////
 
-using System;
 using System.Reflection;
-using System.Collections;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
-using System.Threading;
 
 namespace System.Globalization
 {
@@ -174,13 +168,13 @@ namespace System.Globalization
             return CultureInfo.GetCultureInfo(name).CompareInfo;
         }
 
-        public unsafe static bool IsSortable(char ch)
+        public static unsafe bool IsSortable(char ch)
         {
             char *pChar = &ch;
             return IsSortable(pChar, 1);
         }
 
-        public unsafe static bool IsSortable(string text)
+        public static unsafe bool IsSortable(string text)
         {
             if (text == null) 
             {
