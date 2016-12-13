@@ -87,22 +87,17 @@ static mono_lazy_init_t status = MONO_LAZY_INIT_STATUS_NOT_INITIALIZED;
 
 static ThreadPool* threadpool;
 
-#define COUNTER_CHECK(counter) \
-	do { \
-		g_assert (sizeof (ThreadPoolCounter) == sizeof (gint32)); \
-		g_assert (counter._.starting >= 0); \
-		g_assert (counter._.working >= 0); \
-	} while (0)
-
 #define COUNTER_ATOMIC(threadpool,var,block) \
 	do { \
 		ThreadPoolCounter __old; \
 		do { \
 			g_assert (threadpool); \
-			__old = COUNTER_READ (threadpool); \
-			(var) = __old; \
+			(var) = __old = COUNTER_READ (threadpool); \
 			{ block; } \
-			COUNTER_CHECK (var); \
+			if (!(counter._.starting >= 0)) \
+				g_error ("%s: counter._.starting = %d, but should be >= 0", __func__, counter._.starting); \
+			if (!(counter._.working >= 0)) \
+				g_error ("%s: counter._.working = %d, but should be >= 0", __func__, counter._.working); \
 		} while (InterlockedCompareExchange (&threadpool->counters.as_gint32, (var).as_gint32, __old.as_gint32) != __old.as_gint32); \
 	} while (0)
 
@@ -145,6 +140,8 @@ initialize (void)
 	g_assert (!threadpool);
 	threadpool = g_new0 (ThreadPool, 1);
 	g_assert (threadpool);
+
+	g_assert (sizeof (ThreadPoolCounter) == sizeof (gint32));
 
 	mono_refcount_init (threadpool, destroy);
 
@@ -359,6 +356,9 @@ worker_callback (gpointer unused)
 	thread = mono_thread_internal_current ();
 
 	COUNTER_ATOMIC (threadpool, counter, {
+		if (!(counter._.working < 32767 /* G_MAXINT16 */))
+			g_error ("%s: counter._.working = %d, but should be < 32767", __func__, counter._.working);
+
 		counter._.starting --;
 		counter._.working ++;
 	});
@@ -809,6 +809,9 @@ ves_icall_System_Threading_ThreadPool_RequestWorkerThread (void)
 	mono_refcount_inc (threadpool);
 
 	COUNTER_ATOMIC (threadpool, counter, {
+		if (!(counter._.starting < 32767 /* G_MAXINT16 */))
+			g_error ("%s: counter._.starting = %d, but should be < 32767", __func__, counter._.starting);
+
 		counter._.starting ++;
 	});
 
