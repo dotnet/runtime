@@ -6,6 +6,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
+#pragma warning disable 0809  //warning CS0809: Obsolete member 'Span<T>.Equals(object)' overrides non-obsolete member 'object.Equals(object)'
+
 namespace System
 {
     /// <summary>
@@ -125,6 +127,58 @@ namespace System
         }
 
         /// <summary>
+        /// This method is not supported as spans cannot be boxed. To compare two spans, use operator==.
+        /// <exception cref="System.NotSupportedException">
+        /// Always thrown by this method.
+        /// </exception>
+        /// </summary>
+        [Obsolete("Equals() on Span will always throw an exception. Use == instead.")]
+        public override bool Equals(object obj)
+        {
+            ThrowHelper.ThrowNotSupportedException_CannotCallEqualsOnSpan();
+            // Prevent compiler error CS0161: 'Span<T>.Equals(object)': not all code paths return a value
+            return default(bool);
+        }
+
+        /// <summary>
+        /// This method is not supported as spans cannot be boxed.
+        /// <exception cref="System.NotSupportedException">
+        /// Always thrown by this method.
+        /// </exception>
+        /// </summary>
+        [Obsolete("GetHashCode() on Span will always throw an exception.")]
+        public override int GetHashCode()
+        {
+            ThrowHelper.ThrowNotSupportedException_CannotCallGetHashCodeOnSpan();
+            // Prevent compiler error CS0161: 'Span<T>.GetHashCode()': not all code paths return a value
+            return default(int);
+        }
+
+        /// <summary>
+        /// Create a new read-only span over a portion of a regular managed object. This can be useful
+        /// if part of a managed object represents a "fixed array." This is dangerous because
+        /// "length" is not checked, nor is the fact that "rawPointer" actually lies within the object.
+        /// </summary>
+        /// <param name="obj">The managed object that contains the data to span over.</param>
+        /// <param name="objectData">A reference to data within that object.</param>
+        /// <param name="length">The number of <typeparamref name="T"/> elements the memory contains.</param>
+        /// <exception cref="System.ArgumentNullException">
+        /// Thrown when the specified object is null.
+        /// </exception>
+        /// <exception cref="System.ArgumentOutOfRangeException">
+        /// Thrown when the specified <paramref name="length"/> is negative.
+        /// </exception>
+        public static ReadOnlySpan<T> DangerousCreate(object obj, ref T objectData, int length)
+        {
+            if (obj == null)
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.obj);
+            if (length < 0)
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.length);
+
+            return new ReadOnlySpan<T>(ref objectData, length);
+        }
+
+        /// <summary>
         /// Defines an implicit conversion of a <see cref="Span{T}"/> to a <see cref="ReadOnlySpan{T}"/>
         /// </summary>
         public static implicit operator ReadOnlySpan<T>(Span<T> slice)
@@ -238,13 +292,19 @@ namespace System
         }
 
         /// <summary>
-        /// Checks to see if two spans point at the same memory.  Note that
-        /// this does *not* check to see if the *contents* are equal.
+        /// Copies the contents of this read-only span into destination span. If the source
+        /// and destinations overlap, this method behaves as if the original values in
+        /// a temporary location before the destination is overwritten.
+        ///
+        /// <param name="destination">The span to copy items into.</param>
+        /// <exception cref="System.ArgumentException">
+        /// Thrown when the destination Span is shorter than the source Span.
+        /// </exception>
         /// </summary>
-        public bool Equals(ReadOnlySpan<T> other)
+        public void CopyTo(Span<T> destination)
         {
-            return (_length == other.Length) &&
-                (_length == 0 || Unsafe.AreSame(ref DangerousGetPinnableReference(), ref other.DangerousGetPinnableReference()));
+            if (!TryCopyTo(destination))
+                ThrowHelper.ThrowArgumentException_DestinationTooShort();
         }
 
         /// <summary>
@@ -260,6 +320,21 @@ namespace System
             SpanHelper.CopyTo<T>(ref destination.DangerousGetPinnableReference(), ref DangerousGetPinnableReference(), _length);
             return true;
         }
+
+        /// <summary>
+        /// Returns true if left and right point at the same memory and have the same length.  Note that
+        /// this does *not* check to see if the *contents* are equal.
+        /// </summary>
+        public static bool operator ==(ReadOnlySpan<T> left, ReadOnlySpan<T> right)
+        {
+            return left._length == right._length && Unsafe.AreSame<T>(ref left.DangerousGetPinnableReference(), ref right.DangerousGetPinnableReference());
+        }
+
+        /// <summary>
+        /// Returns false if left and right point at the same memory and have the same length.  Note that
+        /// this does *not* check to see if the *contents* are equal.
+        /// </summary>
+        public static bool operator !=(ReadOnlySpan<T> left, ReadOnlySpan<T> right) => !(left == right);
     }
 
     public static class ReadOnlySpanExtensions
