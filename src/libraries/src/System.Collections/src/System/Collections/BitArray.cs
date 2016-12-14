@@ -342,24 +342,23 @@ namespace System.Collections
         }
 
         /*=========================================================================
-        ** Shift all the bit values to right on count bits. When count less zero it
-        ** shift all the bit values to left. New bits are be set to zero. The 
-        ** current instance is updated and returned.
+        ** Shift all the bit values to right on count bits. The current instance is
+        ** updated and returned.
+        * 
+        ** Exceptions: ArgumentOutOfRangeException if count < 0
         =========================================================================*/
         public BitArray RightShift(int count)
         {
             if (count <= 0)
             {
-                if (count == 0)
-                {
-                    _version++;
-                    return this;
-                }
-                count = -count;
-                // Check int.MinValue case
                 if (count < 0)
-                    count = int.MaxValue;
-                return LeftShift(count);
+                {
+                    throw new ArgumentOutOfRangeException(nameof(count), count, SR.ArgumentOutOfRange_NeedNonNegNum);
+                }
+                Contract.EndContractBlock();
+
+                _version++;
+                return this;
             }
 
             int toIndex = 0;
@@ -405,24 +404,23 @@ namespace System.Collections
         }
 
         /*=========================================================================
-        ** Shift all the bit values to left on count bits. When count less zero it
-        ** shift all the bit values to right. New bits are be set to zero. The 
-        ** current instance is updated and returned.
+        ** Shift all the bit values to left on count bits. The current instance is
+        ** updated and returned.
+        * 
+        ** Exceptions: ArgumentOutOfRangeException if count < 0
         =========================================================================*/
         public BitArray LeftShift(int count)
         {
             if (count <= 0)
             {
-                if (count == 0)
-                {
-                    _version++;
-                    return this;
-                }
-                count = -count;
-                // Check int.MinValue case
                 if (count < 0)
-                    count = int.MaxValue;
-                return RightShift(count);
+                {
+                    throw new ArgumentOutOfRangeException(nameof(count), count, SR.ArgumentOutOfRange_NeedNonNegNum);
+                }
+                Contract.EndContractBlock();
+
+                _version++;
+                return this;
             }
 
             int lengthToClear;
