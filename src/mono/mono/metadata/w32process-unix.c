@@ -1959,10 +1959,6 @@ process_create (const gunichar2 *appname, const gunichar2 *cmdline,
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: new process startup not synchronized. We may not notice if the newly created process exits immediately.", __func__);
 	}
 
-#if HAVE_SIGACTION
-	/* FIXME: block SIGCHLD */
-#endif
-
 	switch (pid = fork ()) {
 	case -1: /* Error */ {
 		SetLastError (ERROR_OUTOFMEMORY);
@@ -2063,10 +2059,6 @@ process_create (const gunichar2 *appname, const gunichar2 *cmdline,
 		break;
 	}
 	}
-
-#if HAVE_SIGACTION
-	/* FIXME: unblock SIGCHLD */
-#endif
 
 	if (startup_pipe [1] != -1) {
 		/* Write 1 byte, doesn't matter what */
