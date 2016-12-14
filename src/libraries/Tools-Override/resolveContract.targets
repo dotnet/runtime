@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <PropertyGroup Condition="'$(ResolveMatchingContract)' == 'true'">
+    <ResolveReferencesDependsOn>
+      ResolveMatchingContract;
+      $(ResolveReferencesDependsOn)
+    </ResolveReferencesDependsOn>
+    <CleanDependsOn>
+      ResolveMatchingContract;
+      $(CleanDependsOn);
+    </CleanDependsOn>
+  </PropertyGroup>
+  
+  <Target Name="ResolveMatchingContract">
+    <PropertyGroup Condition="'$(ContractProject)' == '' AND '@(ContractProject)' == ''">
+      <ContractProject>$(SourceDir)/$(AssemblyName)/ref/$(APIVersion)/$(AssemblyName).csproj</ContractProject>
+      <!-- fall back to 'current' version if specific version does not exist -->
+      <ContractProject Condition="!(Exists('$(ContractProject)'))">$(SourceDir)/$(AssemblyName)/ref/$(AssemblyName).csproj</ContractProject>
+      <!-- don't add a project if one can't be found-->
+      <ContractProject Condition="!(Exists('$(ContractProject)'))"></ContractProject>
+    </PropertyGroup>
+
+    <ItemGroup Condition="'@(ContractProject)' == ''">
+      <ContractProject Include="$(ContractProject)" />
+    </ItemGroup>
+
+    <Error Condition="'@(ContractProject->Count())' &gt; '1'" Text="Only one value may be specified for ContractProject item but '@(ContractProject)' is '@(ContractProject->Count())' items." />
+
+    <ItemGroup Condition="'@(ContractProject)' != ''">
+      <!-- Don't flow the values for OSGroup/TargetGroup unless explicitly defined -->
+      <ContractProject>
+        <UndefineProperties Condition="'%(ContractProject.OSGroup)'==''">OSGroup;%(ContractProject.UndefineProperties)</UndefineProperties>
+        <AdditionalProperties Condition="'%(ContractProject.OSGroup)'!=''">OSGroup=%(ContractProject.OSGroup);%(ContractProject.AdditionalProperties)</AdditionalProperties>
+      </ContractProject>
+      <ContractProject>
+        <UndefineProperties Condition="'%(ContractProject.TargetGroup)'==''">TargetGroup;%(ContractProject.UndefineProperties)</UndefineProperties>
+        <AdditionalProperties Condition="'%(ContractProject.TargetGroup)'!=''">TargetGroup=%(ContractProject.TargetGroup);%(ContractProject.AdditionalProperties)</AdditionalProperties>
+      </ContractProject>
+
+      <ProjectReference Include="@(ContractProject)">
+        <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+        <OutputItemType>ResolvedMatchingContract</OutputItemType>
+      </ProjectReference>
+    </ItemGroup>
+  </Target>
+</Project>
