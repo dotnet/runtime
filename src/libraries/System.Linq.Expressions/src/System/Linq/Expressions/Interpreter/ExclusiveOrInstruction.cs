@@ -164,10 +164,7 @@ namespace System.Linq.Expressions.Interpreter
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
         public static Instruction Create(Type type)
         {
-            // Boxed enums can be unboxed as their underlying types:
-            Type underlyingType = type.GetTypeInfo().IsEnum ? Enum.GetUnderlyingType(type) : type.GetNonNullableType();
-
-            switch (underlyingType.GetTypeCode())
+            switch (type.GetNonNullableType().GetTypeCode())
             {
                 case TypeCode.SByte: return s_SByte ?? (s_SByte = new ExclusiveOrSByte());
                 case TypeCode.Int16: return s_Int16 ?? (s_Int16 = new ExclusiveOrInt16());
