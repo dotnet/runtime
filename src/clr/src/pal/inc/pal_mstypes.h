@@ -56,12 +56,6 @@ extern "C" {
 #define CDECL          __cdecl
 #endif
 
-#ifndef PAL_STDCPP_COMPAT
-#undef __fastcall
-#define __fastcall      __stdcall
-#undef _fastcall
-#define _fastcall       __fastcall
-#endif // PAL_STDCPP_COMPAT
 
 #else   // !defined(__i386__)
 
