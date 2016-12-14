@@ -305,7 +305,7 @@ wait_callback (gint fd, gint events, gpointer user_data)
 	}
 }
 
-static void
+static gsize WINAPI
 selector_thread (gpointer data)
 {
 	MonoError error;
@@ -315,7 +315,7 @@ selector_thread (gpointer data)
 
 	if (mono_runtime_is_shutting_down ()) {
 		io_selector_running = FALSE;
-		return;
+		return 0;
 	}
 
 	states = mono_g_hash_table_new_type (g_direct_hash, g_direct_equal, MONO_HASH_VALUE_GC, MONO_ROOT_SOURCE_THREAD_POOL, "i/o thread pool states table");
@@ -430,6 +430,8 @@ selector_thread (gpointer data)
 	mono_g_hash_table_destroy (states);
 
 	io_selector_running = FALSE;
+
+	return 0;
 }
 
 /* Locking: threadpool_io->updates_lock must be held */

@@ -133,6 +133,17 @@ mono_threads_platform_create_thread (MonoThreadStart thread_fn, gpointer thread_
 	return 0;
 }
 
+void
+mono_threads_platform_init (void)
+{
+}
+
+gboolean
+mono_threads_platform_in_critical_region (MonoNativeThreadId tid)
+{
+	return FALSE;
+}
+
 gboolean
 mono_threads_platform_yield (void)
 {
