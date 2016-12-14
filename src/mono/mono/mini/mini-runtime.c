@@ -2696,6 +2696,8 @@ MONO_SIG_HANDLER_FUNC (, mono_sigfpe_signal_handler)
 
 	ji = mono_jit_info_table_find_internal (mono_domain_get (), (char *)mono_arch_ip_from_context (ctx), TRUE, TRUE);
 
+	MONO_ENTER_GC_UNSAFE_UNBALANCED;
+
 #if defined(MONO_ARCH_HAVE_IS_INT_OVERFLOW)
 	if (mono_arch_is_int_overflow (ctx, info))
 		/*
@@ -2711,16 +2713,19 @@ MONO_SIG_HANDLER_FUNC (, mono_sigfpe_signal_handler)
 
 	if (!ji) {
 		if (!mono_do_crash_chaining && mono_chain_signal (MONO_SIG_HANDLER_PARAMS))
-			return;
+			goto exit;
 
 		mono_handle_native_crash ("SIGFPE", ctx, info);
 		if (mono_do_crash_chaining) {
 			mono_chain_signal (MONO_SIG_HANDLER_PARAMS);
-			return;
+			goto exit;
 		}
 	}
 
 	mono_arch_handle_exception (ctx, exc);
+
+exit:
+	MONO_EXIT_GC_UNSAFE_UNBALANCED;
 }
 
 MONO_SIG_HANDLER_FUNC (, mono_sigill_signal_handler)
