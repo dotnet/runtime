@@ -108,7 +108,13 @@ first_managed (MonoStackFrameInfo *frame, MonoContext *ctx, gpointer addr)
 	if (!frame->managed)
 		return FALSE;
 
-	*data = MONO_CONTEXT_GET_SP(ctx);
+	if (!ctx) {
+		// FIXME: Happens with llvm_only
+		*data = NULL;
+		return TRUE;
+	}
+
+	*data = MONO_CONTEXT_GET_SP (ctx);
 	g_assert (*data);
 	return TRUE;
 }
@@ -162,6 +168,9 @@ mini_above_abort_threshold (void)
 {
 	gpointer sp = mono_thread_get_managed_sp ();
 	MonoJitTlsData *jit_tls = mono_native_tls_get_value (mono_jit_tls_id);
+
+	if (!sp)
+		return TRUE;
 
 	gboolean above_threshold = mini_abort_threshold_offset (jit_tls->abort_exc_stack_threshold, sp) >= 0;
 
