@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="14.0">
   <!--
       TODO: Remove this workaround once supported.
@@ -53,7 +53,7 @@
   <Target Name="AfterBuild">
   </Target>
   -->
-  <ItemGroup Condition=" ! $(Configuration.StartsWith('netcore')) ">
+  <ItemGroup Condition=" ! $(NetCoreBuild) ">
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml" />
