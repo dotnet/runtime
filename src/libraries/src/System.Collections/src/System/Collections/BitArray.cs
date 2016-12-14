@@ -366,7 +366,7 @@ namespace System.Collections
             if (count < m_length)
             {
                 int shiftCount;
-                // int fromIndex = Math.DivRem(count, BitsPerInt32, out shiftCount); // Compilation error
+                // We can not use Math.DivRem due compilation error
                 int fromIndex = count / BitsPerInt32;
                 shiftCount = count - fromIndex * BitsPerInt32; // Optimized Rem
 
@@ -429,7 +429,7 @@ namespace System.Collections
                 int lastIndex = (m_length - 1) / BitsPerInt32;
 
                 int shiftCount;
-                //lengthToClear = Math.DivRem(count, BitsPerInt32, out shiftCount); // Compilation error
+                // We can not use Math.DivRem due compilation error
                 lengthToClear = count / BitsPerInt32;
                 shiftCount = count - lengthToClear * BitsPerInt32; // Optimized Rem
 
