@@ -9,7 +9,9 @@
 
   <PropertyGroup>
     <RunApiCompatForSrc Condition="$(MSBuildProjectDirectory.EndsWith('src'))">true</RunApiCompatForSrc>
-    <RunApiCompatForRef Condition="$(MSBuildProjectDirectory.EndsWith('ref'))">true</RunApiCompatForRef>
+    <!-- TODO: Disable the version over version ref compat checks for now because
+    we don't have a great way to get the previous version -->
+    <RunApiCompatForRef Condition="$(MSBuildProjectDirectory.EndsWith('ref'))">false</RunApiCompatForRef>
     <RunApiCompat Condition="'$(RunApiCompat)'==''">false</RunApiCompat>
 
     <ResolveMatchingContract Condition="'$(RunApiCompatForSrc)'=='true'">true</ResolveMatchingContract>
@@ -19,35 +21,17 @@
 
   <!-- ApiCompat for Implementation Assemblies  -->
   <Target Name="ValidateApiCompatForSrc"
-          Condition="'$(RunApiCompatForSrc)' == 'true' AND '$(RunApiCompat)' == 'true' AND Exists('@(ContractProject)')" >
+          Condition="'$(RunApiCompatForSrc)' == 'true' AND '$(RunApiCompat)' == 'true' and '@(ResolvedMatchingContract)' != ''">
 
     <PropertyGroup>
       <ReferenceAssembly>@(ResolvedMatchingContract)</ReferenceAssembly>
-      <!--
-        For depproj's we should approximate the dependencies based on the current contract which
-        should be a superset of the older contract dependencies.
-      -->
-      <UseCSProjForDependencies Condition="'%(ContractProject.Extension)' == '.depproj'">true</UseCSProjForDependencies>
     </PropertyGroup>
-
-    <ItemGroup>
-      <RefProjectForDependencies Condition="'$(UseCSProjForDependencies)' != 'true'" Include="@(ContractProject)" />
-      <RefProjectForDependencies Condition="'$(UseCSProjForDependencies)' == 'true'" Include="$(SourceDir)/$(AssemblyName)/ref/$(AssemblyName).csproj">
-        <UndefineProperties>OSGroup;TargetGroup</UndefineProperties>
-      </RefProjectForDependencies>
-    </ItemGroup>
-
-    <MSBuild Projects="@(RefProjectForDependencies)"
-             Targets="ResolveProjectReferences;ResolveAssemblyReferences"
-             Condition="Exists('@(RefProjectForDependencies)')">
-      <Output TaskParameter="TargetOutputs" ItemName="ReferenceAssemblyReferencePath" />
-    </MSBuild>
 
     <ItemGroup>
       <_DependencyDirectoriesTemp Include="@(ReferencePath->'%(RootDir)%(Directory)')" />
       <!-- Remove duplicate directories by batching over them -->
       <_DependencyDirectories Include="%(_DependencyDirectoriesTemp.Identity)" />
-      <_ContractDependencyDirectories Include="@(ReferenceAssemblyReferencePath->'%(RootDir)%(Directory)')" />
+      <_ContractDependencyDirectories Include="@(ResolvedMatchingContract->'%(RootDir)%(Directory)')" />
     </ItemGroup>
 
     <PropertyGroup>
