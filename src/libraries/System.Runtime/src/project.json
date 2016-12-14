@@ -20,14 +20,9 @@
         "Microsoft.TargetingPack.Private.CoreRT": "1.0.0-alpha-24806-1"
       }
     },
-    "net462": {
+    "net461": {
       "dependencies": {
-        "Microsoft.TargetingPack.NETFramework.v4.6": "1.0.1"
-      }
-    },
-    "net463": {
-      "dependencies": {
-        "Microsoft.TargetingPack.NETFramework.v4.6": "1.0.1"
+        "Microsoft.TargetingPack.NETFramework.v4.6.1": "1.0.1"
       }
     },
     "uap10.1": {

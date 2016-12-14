@@ -4,7 +4,7 @@
   <ItemGroup>
     <Project Include="System.Xml.XPath.XmlDocument.csproj" />
     <Project Include="System.Xml.XPath.XmlDocument.csproj">
-      <TargetGroup>net463</TargetGroup>
+      <TargetGroup>net461</TargetGroup>
     </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />

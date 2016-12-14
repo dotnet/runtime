@@ -14,9 +14,9 @@
         "System.Security.Cryptography.X509Certificates": "4.4.0-beta-24813-02"
       }
     },
-    "net463": {
+    "net461": {
       "dependencies": {
-        "Microsoft.TargetingPack.NETFramework.v4.6": "1.0.1"
+        "Microsoft.TargetingPack.NETFramework.v4.6.1": "1.0.1"
       }
     }
   }

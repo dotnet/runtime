@@ -23,9 +23,9 @@
         "System.Threading": "4.3.0"
       }
     },
-    "net463": {
+    "net461": {
       "dependencies": {
-        "Microsoft.TargetingPack.NETFramework.v4.6.2": "1.0.1"
+        "Microsoft.TargetingPack.NETFramework.v4.6.1": "1.0.1"
       }
     }
   }
