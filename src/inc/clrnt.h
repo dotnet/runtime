@@ -835,13 +835,18 @@ RtlVirtualUnwind_Unsafe(
 //  X86
 //
 
-#if defined(_TARGET_X86_) && !defined(FEATURE_PAL)
+#ifdef _TARGET_X86_
+#ifndef FEATURE_PAL
 
 typedef struct _DISPATCHER_CONTEXT {
     _EXCEPTION_REGISTRATION_RECORD* RegistrationPointer;
 } DISPATCHER_CONTEXT, *PDISPATCHER_CONTEXT;
 
-#endif // _TARGET_X86_ && !FEATURE_PAL
+#endif // !FEATURE_PAL
+
+#define RUNTIME_FUNCTION__BeginAddress(prf)             (prf)->BeginAddress
+
+#endif // _TARGET_X86_
 
 #ifdef _TARGET_ARM_
 #include "daccess.h"

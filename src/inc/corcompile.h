@@ -85,7 +85,6 @@ typedef struct _RUNTIME_FUNCTION {
 
 typedef DPTR(RUNTIME_FUNCTION) PTR_RUNTIME_FUNCTION;
 
-#define RUNTIME_FUNCTION__BeginAddress(prf)             (prf)->BeginAddress
 
 // Chained unwind info. Used for cold methods.
 #define RUNTIME_FUNCTION_INDIRECT 0x80000000
