@@ -423,6 +423,7 @@ public:
           m_num_vars(num_args + num_locals),
           m_entry_offset(0),
           vars(new VarDebugInfo[m_num_vars]),
+          m_linkage_name_offset(0),
           dumped(false)
     {
         m_sub_loc[0] = 1;
@@ -459,8 +460,12 @@ public:
     uint16_t m_num_vars;
     int m_entry_offset;
     VarDebugInfo* vars;
+    int m_linkage_name_offset;
 private:
     int GetArgsAndLocalsLen();
+    void MangleName(char *buf, int &buf_offset, const char *name);
+    void DumpMangledNamespaceAndMethod(char *buf, int &offset, const char *nspace, const char *mname);
+    void DumpLinkageName(char* ptr, int& offset);
     BOOL dumped;
 };
 #endif // #ifndef __GDBJIT_H__
