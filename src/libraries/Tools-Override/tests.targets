@@ -1,19 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
+  <!-- This is the target that copies the test assets to the test output -->
+  <Import Project="$(MSBuildThisFileDirectory)publishtest.targets" />
   <UsingTask TaskName="GetTargetMachineInfo" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll"/>
-
-  <PropertyGroup>
-    <TestRuntimeDir>$(RuntimeDir)</TestRuntimeDir>
-    <TestHostExecutable Condition="'$(TestHostExecutable)' == ''">$(TestRuntimeDir)/corerun</TestHostExecutable>
-    <XunitExecutable Condition="'$(XunitExecutable)' == ''">$(TestRuntimeDir)/xunit.console.netcore.exe</XunitExecutable>
-  </PropertyGroup>
 
     <!-- Which categories of tests to run by default -->
   <PropertyGroup>
     <TestDisabled>false</TestDisabled>
     <TestDisabled Condition="'$(IsTestProject)'!='true' Or '$(SkipTests)'=='true' Or '$(RunTestsForProject)'=='false'">true</TestDisabled>
     <TestsSuccessfulSemaphore>tests.passed</TestsSuccessfulSemaphore>
+  </PropertyGroup>
+
+  <!-- In case that TestPath is not yet set, default it here -->
+  <PropertyGroup>
+    <TestPath Condition="'$(TestPath)'==''">$(OutDir)</TestPath>
   </PropertyGroup>
 
   <ItemGroup>
@@ -23,6 +24,12 @@
     <DefaultNoCategories Include="$(DefaultNoCategories)" />
     <UnsupportedPlatformsItems Include="$(UnsupportedPlatforms)"/>
   </ItemGroup>
+
+  <PropertyGroup>
+    <TestRuntimeDir>$(RuntimeDir)</TestRuntimeDir>
+    <TestHostExecutable Condition="'$(TestHostExecutable)' == ''">$(TestRuntimeDir)/corerun</TestHostExecutable>
+    <XunitExecutable Condition="'$(XunitExecutable)' == ''">$(TestRuntimeDir)/xunit.console.netcore.exe</XunitExecutable>
+  </PropertyGroup>
 
   <!-- General xunit options -->
   <PropertyGroup>
@@ -49,33 +56,21 @@
     <TestCommandLine Condition="'$(Performance)'!='true'">$(TestProgram) $(TestArguments) {XunitTraitOptions}</TestCommandLine>
   </PropertyGroup>
 
-  <!-- Needs to run before RunTestsForProject target as it computes categories and set TestDisabled -->
-  <Target Name="CheckTestCategories">
-
-    <!-- Default behavior is to disable OuterLoop and failing tests if not specified in WithCategories. -->
+  <Target Name="DiscoverTestInputs" DependsOnTargets="ResolveReferences;GetCopyToOutputDirectoryItems">
     <ItemGroup>
-      <DefaultNoCategories Condition="'$(Outerloop)'!='true'" Include="OuterLoop" />
-      <DefaultNoCategories Include="failing" />
-      <WithoutCategoriesItems Include="@(DefaultNoCategories)" Exclude="@(WithCategoriesItems)" />
-      <WithoutCategoriesItemsDistinct Include="@(WithoutCategoriesItems->Distinct())" />
+      <RunTestsForProjectInputs Include="@(ReferenceCopyLocalPaths)" />
+      <RunTestsForProjectInputs Include="@(Content)" />
+      <RunTestsForProjectInputs Include="@(IntermediateAssembly)" />
+      <RunTestsForProjectInputs Include="@(_DebugSymbolsIntermediatePath)" />
+      <RunTestsForProjectInputs Include="@(AllItemsFullPathWithTargetPath)" />
     </ItemGroup>
-
-    <ItemGroup>
-      <RunWithTraits Condition="'@(WithCategoriesItems)'!=''" Include="@(WithCategoriesItems)" />
-      <RunWithoutTraits Condition="'@(WithoutCategoriesItemsDistinct)'!=''" Include="@(WithoutCategoriesItemsDistinct)" />
-    </ItemGroup>
-
-    <PropertyGroup>
-      <TestsSuccessfulSemaphore Condition="'@(RunWithTraits)' != ''">$(TestsSuccessfulSemaphore).with.@(RunWithTraits, '.')</TestsSuccessfulSemaphore>
-      <TestsSuccessfulSemaphore Condition="'@(RunWithoutTraits)' != ''">$(TestsSuccessfulSemaphore).without.@(RunWithoutTraits, '.')</TestsSuccessfulSemaphore>
-      <TestsSuccessfulSemaphore>$(TestPath)/$(TestsSuccessfulSemaphore)</TestsSuccessfulSemaphore>
-    </PropertyGroup>
-
-    <Delete Condition="'$(ForceRunTests)'=='true' And Exists($(TestsSuccessfulSemaphore))"
-            Files="$(TestsSuccessfulSemaphore)" />
   </Target>
 
-  <Target Name="RunTestsForProject">
+  <Target Name="RunTestsForProject"
+          DependsOnTargets="DiscoverTestInputs;CheckTestCategories"
+          Inputs="@(RunTestsForProjectInputs)"
+          Outputs="$(TestsSuccessfulSemaphore);$(TestPath)/$(XunitResultsFileName);$(CoverageOutputFilePath)"
+          >
 
     <ItemGroup>
       <RunWithoutTraits Condition="'$(TargetOS)'=='Windows_NT'" Include="nonwindowstests" />
@@ -101,8 +96,10 @@
           >
       <Output PropertyName="TestRunExitCode" TaskParameter="ExitCode" />
     </Exec>
-  </Target>
 
+    <Error Condition="'$(TestDisabled)'!='true' And '$(TestRunExitCode)' != '0'" Text="One or more tests failed while running tests from '$(MSBuildProjectName)' please check $(TestPath)$(XunitResultsFileName) for details!" />
+    <Touch Condition="'$(TestRunExitCode)' == '0'" Files="$(TestsSuccessfulSemaphore)" AlwaysCreate="true" />
+  </Target>
 
   <!-- Needs to run before RunTestsForProject target as it computes categories and set TestDisabled -->
   <Target Name="CheckTestCategories">
@@ -130,10 +127,6 @@
             Files="$(TestsSuccessfulSemaphore)" />
   </Target>
 
-  <PropertyGroup>
-    <ResolvePkgProjReferencesDependsOn>GetDefaultTestRid;$(ResolvePkgProjReferencesDependsOn)</ResolvePkgProjReferencesDependsOn>
-  </PropertyGroup>
-
   <Target Name="CheckTestPlatforms">
     <GetTargetMachineInfo Condition="'$(TargetOS)' == ''">
       <Output TaskParameter="TargetOS" PropertyName="TargetOS" />
@@ -150,6 +143,7 @@
   <PropertyGroup>
     <TestDependsOn>
       $(TestDependsOn);
+      DiscoverTestInputs;
       SetupTestProperties;
       RunTestsForProject;
     </TestDependsOn>
