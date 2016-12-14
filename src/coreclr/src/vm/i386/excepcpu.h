@@ -28,12 +28,37 @@ class Thread;
                               // Actually, the handler getting set is properly registered
 #endif
 
+#ifdef FEATURE_PAL
+
+extern VOID SetSEHRecord(PEXCEPTION_REGISTRATION_RECORD record);
+extern VOID ResetSEHRecord(PEXCEPTION_REGISTRATION_RECORD record);
+
+#define INSTALL_SEH_RECORD(record)                                        \
+    SetSEHRecord(record);                                                 \
+
+#define UNINSTALL_SEH_RECORD(record)                                      \
+    ResetSEHRecord(record);
+
+#else  // FEATURE_PAL
+
+#define INSTALL_SEH_RECORD(record)                                        \
+    {                                                                     \
+       (record)->Next = (PEXCEPTION_REGISTRATION_RECORD)__readfsdword(0); \
+       __writefsdword(0, (DWORD) (record));                               \
+    }
+
+#define UNINSTALL_SEH_RECORD(record)                                      \
+    {                                                                     \
+        __writefsdword(0, (DWORD) ((record)->Next));                      \
+    }
+
+#endif // FEATURE_PAL
+
 #define INSTALL_EXCEPTION_HANDLING_RECORD(record)               \
     {                                                           \
         PEXCEPTION_REGISTRATION_RECORD __record = (record);     \
         _ASSERTE(__record < GetCurrentSEHRecord());             \
-        __record->Next = (PEXCEPTION_REGISTRATION_RECORD)__readfsdword(0); \
-        __writefsdword(0, (DWORD)__record);                     \
+        INSTALL_SEH_RECORD(record);                             \
     }
 
 //
@@ -44,7 +69,7 @@ class Thread;
     {                                                           \
         PEXCEPTION_REGISTRATION_RECORD __record = (record);     \
         _ASSERTE(__record == GetCurrentSEHRecord());            \
-        __writefsdword(0, (DWORD)__record->Next);               \
+        UNINSTALL_SEH_RECORD(record);                           \
     }
 
 // stackOverwriteBarrier is used to detect overwriting of stack which will mess up handler registration
