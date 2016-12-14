@@ -145,6 +145,7 @@
       $(TestDependsOn);
       DiscoverTestInputs;
       SetupTestProperties;
+      CopySupplementalTestData;
       RunTestsForProject;
     </TestDependsOn>
   </PropertyGroup>
