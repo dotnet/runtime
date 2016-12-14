@@ -683,6 +683,10 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
                 ip += 2;
                 break;
 
+            case 0x34:                            // XOR AL, imm8
+                ip += 2;
+                break;
+
             case 0x31:
             case 0x32:
             case 0x33:
@@ -878,6 +882,10 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
 
                 datasize = b16bit?2:4;
                 goto decodeRM;
+
+            case 0x24:                           // AND AL, imm8
+                ip += 2;
+                break;
 
             case 0x01:                           // ADD mod/rm
             case 0x03:
