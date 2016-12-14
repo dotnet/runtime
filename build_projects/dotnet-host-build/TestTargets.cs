@@ -134,6 +134,7 @@ namespace Microsoft.DotNet.Host.Build
                     .WorkingDirectory(Path.Combine(Dirs.RepoRoot, "test", project))
                     .EnvironmentVariable("PATH", $"{dotnet.BinPath}{Path.PathSeparator}{Environment.GetEnvironmentVariable("PATH")}")
                     .EnvironmentVariable("TEST_ARTIFACTS", Dirs.TestArtifacts)
+                    .EnvironmentVariable("TEST_TARGETRID", rid)
                     .Execute();
 
                 if (result.ExitCode != 0)

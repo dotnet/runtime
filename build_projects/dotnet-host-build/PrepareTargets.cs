@@ -30,8 +30,10 @@ namespace Microsoft.DotNet.Host.Build
         [Target(nameof(CheckUbuntuCoreclrAndCoreFxDependencies), nameof(CheckCentOSCoreclrAndCoreFxDependencies))]
         public static BuildTargetResult CheckCoreclrPlatformDependencies(BuildTargetContext c) => c.Success();
 
-        // All major targets will depend on this in order to ensure variables are set up right if they are run independently
+        // All major targets will depend on this in order to ensure variables are set up right if they are run independently.
+        // The targets listed below are executed before Init Target is invoked.
         [Target(
+            nameof(CommonInit),
             nameof(SetNuGetPackagesDir),
             nameof(GenerateVersions),
             nameof(CheckPrereqs),
@@ -42,16 +44,8 @@ namespace Microsoft.DotNet.Host.Build
         public static BuildTargetResult Init(BuildTargetContext c)
         {
             var configEnv = Environment.GetEnvironmentVariable("CONFIGURATION");
-            string platformEnv = Environment.GetEnvironmentVariable("TARGETPLATFORM") ?? RuntimeEnvironment.RuntimeArchitecture.ToString();
-            string targetRID = Environment.GetEnvironmentVariable("TARGETRID");
-            if (targetRID == null)
-            {
-                targetRID = RuntimeEnvironment.GetRuntimeIdentifier();
-                if (targetRID.StartsWith("win") && (targetRID.EndsWith("x86") || targetRID.EndsWith("x64")))
-                {
-                    targetRID = $"win7-{RuntimeEnvironment.RuntimeArchitecture}";
-                }
-            }
+            string platformEnv = c.BuildContext.Get<string>("Platform");
+            
             string targetFramework = Environment.GetEnvironmentVariable("TARGETFRAMEWORK") ?? "netcoreapp1.1";
 
             if (string.IsNullOrEmpty(configEnv))
@@ -72,16 +66,53 @@ namespace Microsoft.DotNet.Host.Build
 
             c.BuildContext["Configuration"] = configEnv;
             c.BuildContext["Channel"] = Environment.GetEnvironmentVariable("CHANNEL");
-            c.BuildContext["Platform"] = platformEnv;
-            c.BuildContext["TargetRID"] = targetRID;
+            
             c.BuildContext["TargetFramework"] = targetFramework;
             c.BuildContext["Cross"] = crossEnv;
+            
+            bool linkPortable = c.BuildContext.Get<bool>("LinkPortable");
+            string targetRID = c.BuildContext.Get<string>("TargetRID");
 
             c.Info($"Building {c.BuildContext["Configuration"]} to: {Dirs.Output}");
             c.Info("Build Environment:");
             c.Info($" Operating System: {RuntimeEnvironment.OperatingSystem} {RuntimeEnvironment.OperatingSystemVersion}");
             c.Info($" Platform: " + platformEnv);
             c.Info($" Cross Build: " + int.Parse(crossEnv));
+            c.Info($" Portable Linking: " + linkPortable);
+            c.Info($" TargetRID: " + targetRID);
+
+            return c.Success();
+        }
+
+        [Target]
+        public static BuildTargetResult CommonInit(BuildTargetContext c)
+        {
+            string platformEnv = Environment.GetEnvironmentVariable("TARGETPLATFORM") ?? RuntimeEnvironment.RuntimeArchitecture.ToString();
+            
+            string targetRID = Environment.GetEnvironmentVariable("TARGETRID");
+            if (targetRID == null)
+            {
+                targetRID = RuntimeEnvironment.GetRuntimeIdentifier();
+                if (targetRID.StartsWith("win") && (targetRID.EndsWith("x86") || targetRID.EndsWith("x64")))
+                {
+                    targetRID = $"win7-{RuntimeEnvironment.RuntimeArchitecture}";
+                }
+            }
+            
+            string szLinkPortable = Environment.GetEnvironmentVariable("DOTNET_BUILD_LINK_PORTABLE")?? "0";
+            bool linkPortable = (int.Parse(szLinkPortable) == 1)?true:false;
+            if (linkPortable)
+            {
+                // Portable build only supports Linux RID
+                targetRID = $"linux-{platformEnv}";
+            }
+
+            // Update/set the TARGETRID environment variable that will be used by various parts of the build
+            Environment.SetEnvironmentVariable("TARGETRID", targetRID);
+            
+            c.BuildContext["TargetRID"] = targetRID;
+            c.BuildContext["LinkPortable"] = linkPortable;
+            c.BuildContext["Platform"] = platformEnv;
 
             return c.Success();
         }

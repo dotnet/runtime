@@ -37,7 +37,8 @@ namespace Microsoft.DotNet.Cli.Build
         {
             string rid = Environment.GetEnvironmentVariable("TARGETRID") ?? RuntimeEnvironment.GetRuntimeIdentifier();
 
-            if (rid == "ubuntu.16.04-x64" || rid == "ubuntu.16.10-x64" || rid == "fedora.23-x64" || rid == "fedora.24-x64" || rid == "opensuse.13.2-x64" || rid == "opensuse.42.1-x64")
+            // Look for expected RIDs, including Portable one, for Linux
+            if (rid.StartsWith("linux-") || rid == "ubuntu.16.04-x64" || rid == "ubuntu.16.10-x64" || rid == "fedora.23-x64" || rid == "fedora.24-x64" || rid == "opensuse.13.2-x64" || rid == "opensuse.42.1-x64")
             {
                 return $"{artifactPrefix}-{rid}.{version}";
             }

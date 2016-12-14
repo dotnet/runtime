@@ -28,6 +28,7 @@ namespace Microsoft.DotNet.Host.Build
             { "win10-arm64", "win10-arm64" },
             { "osx.10.10-x64", "osx.10.10-x64" },
             { "osx.10.11-x64", "osx.10.10-x64" },
+            { "linux-x64", "linux-x64" },
             { "ubuntu.14.04-x64", "ubuntu.14.04-x64" },
             { "ubuntu.16.04-x64", "ubuntu.16.04-x64" },
             { "ubuntu.14.04-arm", "ubuntu.14.04-arm" },
@@ -167,6 +168,7 @@ namespace Microsoft.DotNet.Host.Build
             string rid = c.BuildContext.Get<string>("TargetRID");
             string platform = c.BuildContext.Get<string>("Platform");
             string crossEnv = c.BuildContext.Get<string>("Cross");
+            bool linkPortable = c.BuildContext.Get<bool>("LinkPortable");
 
             // Generate build files
             var cmakeOut = Path.Combine(Dirs.CorehostLatest, "cmake");
@@ -314,6 +316,11 @@ namespace Microsoft.DotNet.Host.Build
                     buildScriptArgList.Add("--cross");
                 }
 
+                if (linkPortable)
+                {
+                    buildScriptArgList.Add("--portableLinux");
+                }
+                
                 ExecIn(cmakeOut, buildScriptFile, buildScriptArgList);
 
                 // Copy the output out
