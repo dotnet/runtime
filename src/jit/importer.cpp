@@ -4934,14 +4934,26 @@ GenTreePtr Compiler::impImportLdvirtftn(GenTreePtr              thisPtr,
     }
 
 #ifdef FEATURE_READYTORUN_COMPILER
-    if (opts.IsReadyToRun() && !pCallInfo->exactContextNeedsRuntimeLookup)
+    if (opts.IsReadyToRun())
     {
-        GenTreeCall* call = gtNewHelperCallNode(CORINFO_HELP_READYTORUN_VIRTUAL_FUNC_PTR, TYP_I_IMPL, GTF_EXCEPT,
-                                                gtNewArgList(thisPtr));
+        if (!pCallInfo->exactContextNeedsRuntimeLookup)
+        {
+            GenTreeCall* call = gtNewHelperCallNode(CORINFO_HELP_READYTORUN_VIRTUAL_FUNC_PTR, TYP_I_IMPL, GTF_EXCEPT,
+                                                    gtNewArgList(thisPtr));
 
-        call->setEntryPoint(pCallInfo->codePointerLookup.constLookup);
+            call->setEntryPoint(pCallInfo->codePointerLookup.constLookup);
 
-        return call;
+            return call;
+        }
+
+        // We need a runtime lookup. CoreRT has a ReadyToRun helper for that too.
+        if (IsTargetAbi(CORINFO_CORERT_ABI))
+        {
+            GenTreePtr ctxTree = getRuntimeContextTree(pCallInfo->codePointerLookup.lookupKind.runtimeLookupKind);
+
+            return impReadyToRunHelperToTree(pResolvedToken, CORINFO_HELP_READYTORUN_GENERIC_HANDLE, TYP_I_IMPL,
+                                             gtNewArgList(ctxTree), &pCallInfo->codePointerLookup.lookupKind);
+        }
     }
 #endif
 
