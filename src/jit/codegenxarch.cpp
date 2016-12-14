@@ -2006,7 +2006,7 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
         case GT_LOCKADD:
         case GT_XCHG:
         case GT_XADD:
-            genLockedInstructions(treeNode);
+            genLockedInstructions(treeNode->AsOp());
             break;
 
         case GT_MEMORYBARRIER:
@@ -3796,7 +3796,7 @@ void CodeGen::genJumpTable(GenTree* treeNode)
 
 // generate code for the locked operations:
 // GT_LOCKADD, GT_XCHG, GT_XADD
-void CodeGen::genLockedInstructions(GenTree* treeNode)
+void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
 {
     GenTree*    data      = treeNode->gtOp.gtOp2;
     GenTree*    addr      = treeNode->gtOp.gtOp1;
@@ -3804,11 +3804,6 @@ void CodeGen::genLockedInstructions(GenTree* treeNode)
     regNumber   dataReg   = data->gtRegNum;
     regNumber   addrReg   = addr->gtRegNum;
     instruction ins;
-
-    // all of these nodes implicitly do an indirection on op1
-    // so create a temporary node to feed into the pattern matching
-    GenTreeIndir i = indirForm(data->TypeGet(), addr);
-    genConsumeReg(addr);
 
     // The register allocator should have extended the lifetime of the address
     // so that it is not used as the target.
@@ -3819,7 +3814,7 @@ void CodeGen::genLockedInstructions(GenTree* treeNode)
     assert(targetReg != REG_NA || treeNode->OperGet() == GT_LOCKADD || !genIsRegCandidateLocal(data) ||
            (data->gtFlags & GTF_VAR_DEATH) != 0);
 
-    genConsumeIfReg(data);
+    genConsumeOperands(treeNode);
     if (targetReg != REG_NA && dataReg != REG_NA && dataReg != targetReg)
     {
         inst_RV_RV(ins_Copy(data->TypeGet()), targetReg, dataReg);
@@ -3845,6 +3840,10 @@ void CodeGen::genLockedInstructions(GenTree* treeNode)
         default:
             unreached();
     }
+
+    // all of these nodes implicitly do an indirection on op1
+    // so create a temporary node to feed into the pattern matching
+    GenTreeIndir i = indirForm(data->TypeGet(), addr);
     getEmitter()->emitInsBinary(ins, emitTypeSize(data), &i, data);
 
     if (treeNode->gtRegNum != REG_NA)
