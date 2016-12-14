@@ -405,6 +405,15 @@ NESTED_ENTRY CallDescrWorkerInternal, _TEXT, NoHandler
 
     mov     ebx, [esp + ((2 + 1) * 4)]
 
+    // compute padding size
+    mov     eax, esp
+    mov     ecx, [ebx + CallDescrData__numStackSlots]
+    shl     ecx, 2
+    sub     eax, ecx
+    and     eax, 15
+    // adjust stack offset
+    sub     esp, eax
+
     // copy the stack
     mov     ecx, [ebx +CallDescrData__numStackSlots]
     mov     eax, [ebx +CallDescrData__pSrc]
@@ -431,6 +440,7 @@ LOCAL_LABEL(donestack):
     mov     edx, DWORD PTR [eax]
     mov     ecx, DWORD PTR [eax + 4]
 
+    CHECK_STACK_ALIGNMENT
     call    [ebx + CallDescrData__pTarget]
 #ifdef _DEBUG
     nop     // This is a tag that we use in an assert.  Fcalls expect to
@@ -455,6 +465,9 @@ LOCAL_LABEL(ReturnsInt):
     mov     [ebx + CallDescrData__returnValue + 4], edx
 
 LOCAL_LABEL(Epilog):
+    // restore the stake pointer
+    lea     esp, [ebp - 4]
+
     EPILOG_BEG
     EPILOG_POP ebx
     EPILOG_END
@@ -996,18 +1009,28 @@ NESTED_ENTRY ThePreStub, _TEXT, NoHandler
 
     mov         esi, esp
 
+    // Compute padding size
+    lea         ebx, [esp - 8]
+    and         ebx, 15
+    // Adjust stack offset
+    sub         esp, ebx
+
     // EAX contains MethodDesc* from the precode. Push it here as argument
     // for PreStubWorker
     push        eax
 
     push        esi
 
+    CHECK_STACK_ALIGNMENT
     call        C_FUNC(PreStubWorker)
 
     // eax now contains replacement stub. PreStubWorker will never return
     // NULL (it throws an exception if stub creation fails.)
 
     // From here on, mustn't trash eax
+
+    // Restore stack pointer
+    mov         esp, esi
 
     STUB_EPILOG
 
