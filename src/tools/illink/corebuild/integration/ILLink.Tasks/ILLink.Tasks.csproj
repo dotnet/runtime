@@ -1,0 +1,171 @@
+<Project Sdk="Microsoft.NET.Sdk">
+   <PropertyGroup>
+    <VersionPrefix>0.1.4-preview</VersionPrefix>
+    <TargetFramework>netcoreapp2.0</TargetFramework>
+    <RuntimeFrameworkVersion>2.0.0-beta-001509-00</RuntimeFrameworkVersion>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <PackageOutputPath>../nupkgs</PackageOutputPath>
+
+    <!-- IsTool true causes the build output to be placed in the
+         package's tools folder. This allows projects to reference the
+         tasks package without including the tasks dll in their
+         output. -->
+    <!-- TODO: This has no effect currently, because we are using a
+         custom .nuspec with the tools path hardcoded. Uncomment this
+         once we are able to remove the custom .nuspec workaround. -->
+    <!-- <IsTool>true</IsTool> -->
+
+    <!-- We want to package the tasks package together with its
+         package dependencies, the linker, and the linker's
+         dependencies, in order to prevent projects that contsume the
+         tasks package from pulling in the linker. To do this, we need
+         to include project references and package references in the
+         package, and prevent any of these references from being
+         marked as dependencies in the tasks package.
+
+         To include the linker in the package, we want to package the
+         tasks project together with its project references. This is
+         not supported by the pack targets
+         (https://github.com/dotnet/cli/issues/1290,
+         https://github.com/dotnet/cli/issues/3959), so we work around
+         this by explicitly setting the package path to include the
+         build output. Using the publish directory will also cause
+         dependencies from package references to be packaged.
+
+         To prevent the linker from being marked as a package
+         dependency, we can't use PrivateAssets="All", because this
+         removes it from the publish output as well, due to an issue
+         in the SDK (https://github.com/dotnet/sdk/issues/952). To
+         work around this, we use a custom .nuspec that doesn't
+         declare any dependencies. This also prevents package
+         references from being marked as dependencies. -->
+    <!-- TODO: Remove the custom .nuspec once the P2P PrivateAssets
+         issue is fixed. -->
+   <NuspecFile>ILLink.Tasks.nuspec</NuspecFile>
+    <NuspecProperties>id=$(AssemblyName);authors=$(AssemblyName);description=linker tasks;tfm=$(TargetFramework);</NuspecProperties>
+  </PropertyGroup>
+
+  <!-- TODO: Remove this workaround once we're able to avoid using a
+       custom .nuspec. We may still need a similar workaround to
+       dynamically include the publish output in the package contents.
+
+       We can't specify the output path to package in the static
+       nuspec properties, because the project's output path gets set
+       at a later point. To work around this, we add the output path
+       to the nuspec properties dynamically as part of the pack
+       target. We use the same workaround to set the version in the
+       .nuspec file.
+
+       We can't insert this into the pack target by modifying
+       PackDependsOn, since GenerateNuspec is always prepended to
+       PackDependsOn, which would cause the nuspec file to be
+       generated before our extra properties are added.
+
+       Instead, we use GenerateNuspecDependsOn. We could probably also
+       use BeforeTargets="GenerateNuspec". -->
+  <PropertyGroup>
+    <GenerateNuspecDependsOn>Publish;SetDynamicNuspecProperties;$(GenerateNuspecDependsOn)</GenerateNuspecDependsOn>
+  </PropertyGroup>
+  <Target Name="SetDynamicNuspecProperties">
+    <PropertyGroup>
+      <NuspecProperties>$(NuspecProperties)output=$(PublishDir);version=$(Version);</NuspecProperties>
+    </PropertyGroup>
+  </Target>
+
+  <ItemGroup>
+    <Compile Include="LinkTask.cs" />
+    <Compile Include="DepsJsonLinker.cs" />
+    <Compile Include="CompareSizes.cs" />
+    <Compile Include="ComputeManagedAssemblies.cs" />
+    <Compile Include="GetRuntimeLibraries.cs" />
+    <Compile Include="CreateRootDescriptorFile.cs" />
+    <Compile Include="Microsoft.NET.Build.Tasks/LockFileCache.cs" />
+    <Compile Include="Microsoft.NET.Build.Tasks/BuildErrorException.cs" />
+  </ItemGroup>
+
+  <!-- TODO: Uncomment this once we can avoid hard-coding this in a
+       custom .nuspec. -->
+  <!-- Targets under the build directory of the package automatically
+       get included in the consumer's build.
+  -->
+  <!--
+      <ItemGroup>
+        <Content Include="ILLink.Tasks.targets">
+          <PackagePath>build</PackagePath>
+        </Content>
+      </ItemGroup>
+  -->
+
+  <!-- TODO: Use this to set the package contents once we can avoid
+       using a custom .nuspec. -->
+  <!-- We can't glob everything in the output path for two reasons:
+
+       1. Content gets expanded before "Build" is called during
+       "Pack". We could work around this by creating our own target to
+       call build and then pack, but it would be nice to avoid
+       changing the build/package pipeline.
+
+       2. We'll try to include the tasks dll twice. This only causes a
+       warning during pack, but should be avoided.
+
+       <Content Include="$(OutputPath)*.dll;$(OutputPath)*.json">
+         <PackagePath>tools</PackagePath>
+       </Content>
+
+       There may also be a better ItemGroup to use than
+       Content. Content semantics mean to output with the build, which
+       isn't our goal. Instead, we want to include these dependencies
+       in the package without necessarily including them in the build.
+  -->
+  <!--
+      <ItemGroup>
+        <Content Include="$(OutputPath)illink.dll;$(OutputPath)Mono.Cecil.dll">
+          <PackagePath>tools</PackagePath>
+        </Content>
+       </ItemGroup>
+   -->
+
+  
+  <ItemGroup>
+    <!-- TODO: Once https://github.com/dotnet/sdk/issues/952 is fixed,
+         use PrivateAssets="All" to prevent this project reference
+         from being marked as a dependency of the tasks package (while
+         still including it in the publish output). -->
+    <ProjectReference Include="../../../linker/Mono.Linker.csproj" />
+      <!-- SetConfiguration isn't required when the configuration is
+           already set in the solution. However, it should be possible
+           to set it here to allow packing the tasks csproj on its
+           own. This would let us avoid some of the strange behavior
+           that shows up when trying to build from a .sln file.
+
+           There is a nuget bug that prevents this from working
+           properly during restore
+           (https://github.com/NuGet/Home/issues/4873). For the
+           moment, the linker has a workaround for this issue.
+
+           However, this still won't work properly because the build
+           target doesn't propagate this information properly either -
+           this is probably another bug. Building from the .csproj
+           would cause cecil to be built twice, once through the
+           linker with the netstandard configuration and once directly
+           from the tasks project in the default configuration info
+           (because some target gets its reference information from
+           the lock file, which doesn't have configuration info).
+      -->
+      <!--
+          <SetConfiguration>Configuration=netcore_$(Configuration)</SetConfiguration>
+      -->
+  </ItemGroup>
+
+  <ItemGroup>
+
+    <!-- TODO: Once we can avoid using a custom .nuspec, we should be
+         able to set PrivateAssets="All" on these packages to prevent
+         them from becoming package dependencies, and use an msbuild
+         itemgroup to include their assets in the package instead of
+         passing the publish path to the .nuspec. -->
+    <PackageReference Include="Microsoft.Build.Framework" Version="0.1.0-preview-00028-160627" />
+    <PackageReference Include="Microsoft.Build.Utilities.Core" Version="0.1.0-preview-00028-160627" />
+    <PackageReference Include="NuGet.ProjectModel" Version="4.3.0-preview1-2500" />
+  </ItemGroup>
+</Project>

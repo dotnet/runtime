@@ -59,24 +59,6 @@ if ($LastExitCode -ne 0)
     exit $LastExitCode
 }
 
-# create a junction to the shared FX version directory. this is
-# so we have a stable path to dotnet.exe regardless of version.
-$runtimesPath = Join-Path $CliLocalPath "shared\Microsoft.NETCore.App"
-if ($SharedFrameworkVersion -eq "<auto>")
-{
-    $SharedFrameworkVersion = Get-ChildItem $runtimesPath -Directory | Sort-Object | Select-Object -First 1 | % { New-Object System.Version($_) }
-}
-$junctionTarget = Join-Path $runtimesPath $SharedFrameworkVersion
-$junctionParent = Split-Path $SharedFrameworkSymlinkPath -Parent
-if (-Not (Test-Path $junctionParent))
-{
-    mkdir $junctionParent | Out-Null
-}
-if (-Not (Test-Path $SharedFrameworkSymlinkPath))
-{
-    cmd.exe /c mklink /j $SharedFrameworkSymlinkPath $junctionTarget | Out-Null
-}
-
 # write semaphore file
 copy $rootCliVersion $bootstrapComplete
 exit 0

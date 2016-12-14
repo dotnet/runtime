@@ -197,26 +197,6 @@ if [ $forcedCliLocalPath = "<none>" ]; then
     fi
 fi
 
-runtimesPath="$cliLocalPath/shared/Microsoft.NETCore.App"
-if [ $sharedFxVersion = "<auto>" ]; then
-    # OSX doesn't support --version-sort, https://stackoverflow.com/questions/21394536/how-to-simulate-sort-v-on-mac-osx
-    sharedFxVersion=`ls $runtimesPath | sed 's/^[0-9]\./0&/; s/\.\([0-9]\)$/.0\1/; s/\.\([0-9]\)\./.0\1./g; s/\.\([0-9]\)\./.0\1./g' | sort -r | sed 's/^0// ; s/\.0/./g' | head -n 1`
-fi
-
-# create a junction to the shared FX version directory. this is
-# so we have a stable path to dotnet.exe regardless of version.
-junctionTarget="$runtimesPath/$sharedFxVersion"
-junctionParent="$(dirname "$symlinkPath")"
-
-if [ ! -d $junctionParent ]; then
-    mkdir -p $junctionParent
-fi
-
-if [ ! -e $symlinkPath ]; then
-    ln -s $junctionTarget $symlinkPath
-fi
-
-
 cp $rootCliVersion $bootstrapComplete
 
 say "Bootstrap finished successfully."

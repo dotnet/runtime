@@ -1,0 +1,291 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <PropertyGroup>
+    <LinkTaskDllPath Condition=" '$(LinkTaskDllPath)' == '' ">$(MSBuildThisFileDirectory)../tools/$(TargetFramework)/ILLink.Tasks.dll</LinkTaskDllPath>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <!-- LinkDuringPublish allows the linker to be disabled by passing
+         a property on the command-line. (/p:LinkDuringPublish=false)
+         -->
+    <LinkDuringPublish Condition=" '$(LinkDuringPublish)' == '' ">true</LinkDuringPublish>
+    <LinkDuringPublish Condition=" '$(LinkDuringPublish)' != 'true' ">false</LinkDuringPublish>
+    <ShowLinkerSizeComparison Condition=" '$(ShowLinkerSizeComparison)' == '' ">false</ShowLinkerSizeComparison>
+  </PropertyGroup>
+  
+  <ItemGroup>
+    <!-- LinkerRootDescriptors (the ItemGroup) is set to contain
+         LinkerRootDescriptors (the Property), which allows adding
+         linker roots on the command-line
+         (/p:LinkerRootDescriptors=path/to/a.xml;path/to/b.xml;). These
+         are relative paths from the project to the xml file.
+         LinkerRootDescriptors (the ItemGroup) can also be set in the
+         project file, and these will be included in addition to those
+         specified on the command-line. -->
+    <LinkerRootDescriptors Include="$(LinkerRootDescriptors)" />
+  </ItemGroup>
+
+  <!-- By default, the linker will generate roots for the intermediate
+       assembly that root everything in the assembly. -->
+  <PropertyGroup>
+    <_IntermediateRootDescriptorName Condition=" '$(_IntermediateRootDescriptorName)' == '' ">IntermediateAssemblyRoots.xml</_IntermediateRootDescriptorName>
+    <_IntermediateRootDescriptorPath Condition=" '$(_IntermediateRootDescriptorPath)' == '' ">$(IntermediateOutputPath)$(_IntermediateRootDescriptorName)</_IntermediateRootDescriptorPath>
+  </PropertyGroup>
+
+  <!-- The linker will place linked assemblies into an intermediate
+       directory, and hook into the rest of the publish pipeline to
+       publish the linked assemblies instead of those given as input
+       to the linker. -->
+  <PropertyGroup>
+    <IntermediateLinkDirName Condition=" '$(IntermediateLinkDirName)' == '' ">linked</IntermediateLinkDirName>
+    <IntermediateLinkDir Condition=" '$(IntermediateLinkDir)' == '' ">$(IntermediateOutputPath)$(IntermediateLinkDirName)</IntermediateLinkDir>
+  </PropertyGroup>
+
+  <!-- Used to enable incremental build for the link target. -->
+  <PropertyGroup>
+    <_LinkSemaphore>$(IntermediateOutputPath)Link.semaphore</_LinkSemaphore>
+  </PropertyGroup>
+
+  
+  <!--
+      This target runs the linker during the publish pipeline. The
+      publish pipeline has a target called ComputeFilesToPublish,
+      which computes the ItemGroup ResolvedFileToPublish. To extend
+      this target, we insert a target before
+      ComputeFilesToPublish. Our target rewrites the relevant inputs
+      (@(IntermediateAssembly) and
+      @(ResolvedAssembliesToPublish)). This lets ComputeFilesToPublish
+      be ignorant of the linker, but changes the meaning of
+      IntermediateAssembly and ResolvedAssembliesToPublish.
+  -->
+  <!-- DependsOnTargets here doesn't include the targets that compute
+       ResolvedAssembliesToPublish or IntermediateAssembly, because
+       ComputeFilesToPublish already depends on
+       these. BeforeTargets="ComputeFilesToPublish" ensures that
+       ComputeLinkedFilesToPublish will run before
+       ComputeFilesToPublish, but after all of its dependencies. -->
+  <Target Name="ComputeLinkedFilesToPublish"
+          BeforeTargets="ComputeFilesToPublish"
+          DependsOnTargets="_ComputeLinkedAssemblies"
+          Condition=" '$(LinkDuringPublish)' == 'true' ">
+    <!-- Rewrite ResolvedAssembliesToPublish, which is an input to
+         ComputeFilesToPublish. -->
+    <ItemGroup>
+      <ResolvedAssembliesToPublish Remove="@(_ManagedResolvedAssembliesToPublish)" />
+      <ResolvedAssembliesToPublish Include="@(_LinkedResolvedAssemblies)" />
+    </ItemGroup>
+    
+    <!-- Rewrite IntermediateAssembly, which is an input to
+         ComputeFilesToPublish. -->
+    <ItemGroup>
+      <IntermediateAssembly Remove="@(IntermediateAssembly)" />
+      <IntermediateAssembly Include="@(_LinkedIntermediateAssembly)" />
+    </ItemGroup>
+  </Target>
+  
+
+  <!-- Print out a size comparison report for the linked
+       assemblies. This is disabled by default, but can be turned on
+       by setting $(ShowLinkerSizeComparison) to true. This runs after
+       the top-level link target, ComputeLinkedFilesToPublish, so it
+       is output even during incremental builds. -->
+  <UsingTask TaskName="CompareAssemblySizes" AssemblyFile="$(LinkTaskDllPath)" />
+  <Target Name="_CompareLinkedAssemblySizes"
+          AfterTargets="ComputeLinkedFilesToPublish"
+          DependsOnTargets="_ComputeManagedAssembliesToLink;_ComputeLinkedAssemblies"
+          Condition=" '$(LinkDuringPublish)' == 'true' And '$(ShowLinkerSizeComparison)' == 'true' ">
+    <CompareAssemblySizes UnlinkedAssemblies="@(_ManagedAssembliesToLink)"
+                          LinkedAssemblies="@(_LinkedIntermediateAssembly);@(_LinkedResolvedAssemblies)" />
+  </Target>
+
+
+  <!-- Computes _LinkedResolvedAssemblies and
+       _LinkedIntermediateAssembly. _LinkedResolvedAssemblies needs to
+       keep metadata from _ManagedResolvedAssembliesToPublish, since
+       this is used by ComputeFilesToPublish. -->
+  <Target Name="_ComputeLinkedAssemblies"
+          DependsOnTargets="_ComputeManagedResolvedAssembliesToPublish;ILLink">
+    <ItemGroup>
+      <__LinkedResolvedAssemblies Include="@(_ManagedResolvedAssembliesToPublish->'$(IntermediateLinkDir)/%(Filename)%(Extension)')" />
+      <_LinkedResolvedAssemblies Include="@(__LinkedResolvedAssemblies)" Condition="Exists('%(Identity)')" />
+    </ItemGroup>
+    
+    <ItemGroup>
+      <__LinkedIntermediateAssembly Include="@(IntermediateAssembly->'$(IntermediateLinkDir)/%(Filename)%(Extension)')" />
+      <_LinkedIntermediateAssembly Include="@(__LinkedIntermediateAssembly)" Condition="Exists('%(Identity)')" />
+    </ItemGroup>
+  </Target>
+  
+
+  <!-- This calls the linker. Inputs are the managed assemblies to
+       link, and root specifications. The semaphore enables msbuild to
+       skip linking during an incremental build, when the semaphore is
+       up to date with respect to _ManagedAssembliesToLink. -->
+  <UsingTask TaskName="ILLink" AssemblyFile="$(LinkTaskDllPath)" />
+  <Target Name="ILLink"
+          DependsOnTargets="_ComputeManagedAssembliesToLink;_ComputeLinkerRootAssemblies;_ComputeLinkerRootDescriptors"
+          Inputs="@(_ManagedAssembliesToLink);@(LinkerRootDescriptors);$(MSBuildAllProjects)"
+          Outputs="$(_LinkSemaphore)">
+    <!-- These extra arguments have been hard-coded for now, as this
+         is what we want to use when linking a self-contained app. In
+         the future we will want to generate these depending on the
+         scenario in which the linker is invoked. -->
+    <PropertyGroup>
+      <ExtraLinkerArgs Condition=" '$(ExtraLinkerArgs)' == '' ">-t -c link -l none</ExtraLinkerArgs>
+    </PropertyGroup>
+    <ILLink AssemblyPaths="@(_ManagedAssembliesToLink)"
+            RootAssemblyNames="@(LinkerRootAssemblies)"
+            RootDescriptorFiles="@(LinkerRootDescriptors)"
+            OutputDirectory="$(IntermediateLinkDir)"
+            ExtraArgs="$(ExtraLinkerArgs)" />
+
+    <Touch Files="$(_LinkSemaphore)" AlwaysCreate="true">
+      <Output TaskParameter="TouchedFiles" ItemName="FileWrites" />
+    </Touch>
+  </Target>
+
+
+  <!-- Computes the managed assemblies that are input to the
+       linker. Includes managed assemblies from
+       ResolvedAssembliesToPublish, and IntermediateAssembly. -->
+  <Target Name="_ComputeManagedAssembliesToLink"
+          DependsOnTargets="_ComputeManagedResolvedAssembliesToPublish">
+    <ItemGroup>
+      <_ManagedAssembliesToLink Include="@(IntermediateAssembly)" />
+      <_ManagedAssembliesToLink Include="@(_ManagedResolvedAssembliesToPublish)" />
+    </ItemGroup>
+  </Target>
+
+
+  <!-- Computes the managed subset of
+       ResolvedAssembliesToPublish. This needs to preserve metadata,
+       because it is later used to compute the linked assemblies with
+       metadata that gets used by the rest of the publish
+       pipeline. This needs to run even during incremental build,
+       because we use the list of managed assemblies to filter the
+       publish output. -->
+  <UsingTask TaskName="ComputeManagedAssemblies" AssemblyFile="$(LinkTaskDllPath)" />
+  <Target Name="_ComputeManagedResolvedAssembliesToPublish">
+    <!-- TODO: Is there a better way to get the managed assemblies
+         from ResolvedAssembliesToPublish? We may be able to check for
+         AssetType="runtime" on managed assemblies - would that give
+         the same set of assemblies? -->
+    <ComputeManagedAssemblies Assemblies="@(ResolvedAssembliesToPublish)">
+      <Output TaskParameter="ManagedAssemblies" ItemName="_ManagedResolvedAssembliesToPublish" />
+    </ComputeManagedAssemblies>
+    <!-- For now, hard-code System.Private.CoreLib.ni, the only .ni
+         file we've been encountering. This is a special case matching
+         how we compute the linker roots by default - we always root
+         System.Private.CoreLib, so we want to keep it in the publish
+         output and the generated deps.json file. Excluding it from
+         _ManagedResolvedAssembliesToPublish will prevent it from
+         getting filtered out of the publish output later.
+         
+         In the future we may want to detect ngen assemblies and
+         filter them more robustly. -->
+    <!-- TODO: Which .ni files do we expect to be in
+         ResolvedAssembliesToPublish? -->
+    <ItemGroup>
+      <_ManagedResolvedAssembliesToPublish Remove="@(_ManagedResolvedAssembliesToPublish->WithMetadataValue('Filename', 'System.Private.CoreLib.ni'))" />
+    </ItemGroup>
+  </Target>
+
+
+  <!-- Compute the assemblies the linker should mark as roots. By
+       default, these are passed as "-a", but this is an
+       implementation detail of the link task and should not be relied
+       upon in general. In the future we may add other inputs to the
+       link task to control how these are rooted.
+  -->
+  <!-- We may want to add an additional mode in which we root only the
+       assembly we have built, rooting all entry points visible from
+       the outside of the assembly. We need to discuss whether this
+       even makes sense during publish, since typically libraries get
+       packaged via "dotnet pack", and the pack task takes input from
+       build, not from publish. Thus linking the library itself should
+       be part of the build step or pack step, OR pack could be made
+       to work on the publish output. -->
+  <Target Name="_ComputeLinkerRootAssemblies"
+          DependsOnTargets="_ComputeManagedResolvedAssembliesToPublish;_ComputePlatformLibraries">
+    <!-- By default, roots are everything minus the framework
+         assemblies (except for System.Private.CoreLib, which we
+         always root for now). This doesn't include the intermediate
+         assembly, because we root it separately using an xml file,
+         which lets us explicitly root everything. -->
+    <ItemGroup>
+      <LinkerRootAssemblies Include="@(_ManagedResolvedAssembliesToPublish->'%(Filename)')" />
+      <LinkerRootAssemblies Remove="@(PlatformLibraries->'%(Filename)')" />
+      <LinkerRootAssemblies Include="System.Private.CoreLib" />
+    </ItemGroup>
+  </Target>
+
+
+  <!-- Platform libraries are the managed runtime assets needed by the
+       "platform", currently Microsoft.NETCore.App. -->
+  <UsingTask TaskName="GetRuntimeLibraries" AssemblyFile="$(LinkTaskDllPath)" />
+  <Target Name="_ComputePlatformLibraries">
+    <GetRuntimeLibraries AssetsFilePath="$(ProjectAssetsFile)"
+                         TargetFramework="$(TargetFrameworkMoniker)"
+                         RuntimeIdentifier="$(RuntimeIdentifier)"
+                         PackageNames="$(MicrosoftNETPlatformLibrary)">
+      <Output TaskParameter="RuntimeLibraries" ItemName="PlatformLibraries" />
+    </GetRuntimeLibraries>
+  </Target>
+
+
+  <!-- This target prepares the LinkerRootDescriptors itemgroup for
+       input to the link task. In addition to including user-specified
+       LinkerRootDescriptors in the ItemGroup statically above, we
+       dynamically include the generated descriptor files for the
+       intermediate assembly. -->
+  <Target Name="_ComputeLinkerRootDescriptors"
+          DependsOnTargets="_GenerateIntermediateRootDescriptor">
+    <ItemGroup>
+      <LinkerRootDescriptors Include="$(_IntermediateRootDescriptorPath)" />
+    </ItemGroup>
+  </Target>
+
+
+  <!-- Generates the xml root descriptor file that completely roots
+       the intermediate assembly. -->
+  <UsingTask TaskName="CreateRootDescriptorFile" AssemblyFile="$(LinkTaskDllPath)" />
+  <Target Name="_GenerateIntermediateRootDescriptor"
+          Inputs="@(IntermediateAssembly)"
+          Outputs="$(_IntermediateRootDescriptorPath)">
+    <CreateRootDescriptorFile AssemblyNames="@(IntermediateAssembly->'%(Filename)')"
+                              RootDescriptorFilePath="$(_IntermediateRootDescriptorPath)" />
+  </Target>
+
+
+  <!-- This target needs to remove from the publish deps file those
+       assemblies that were excluded from the publish output by the
+       linker. Currently it does so by rewriting the publish
+       dependency file (as opposed to generating one without the
+       excluded assemblies in the first place).
+
+       TODO: update this to pass FilesToSkip to
+       GeneratePublishDependencyFile once
+       https://github.com/dotnet/sdk/pull/1052 is merged.
+  -->
+  <UsingTask TaskName="DepsJsonLinker" AssemblyFile="$(LinkTaskDllPath)" />
+  <Target Name="_GenerateLinkedPublishDependencyFile"
+          DependsOnTargets="_ComputeManagedAssembliesToLink;_ComputeLinkedAssemblies"
+          AfterTargets="GeneratePublishDependencyFile"
+          Condition=" '$(LinkDuringPublish)' == 'true' "
+          Inputs="@(_ManagedResolvedAssembliesToPublish);@(_LinkedResolvedAssemblies)"
+          Outputs="$(PublishDepsFilePath)">
+    <!-- DepsJsonLinker expects inputs in the form of filename.dll. -->
+    <!-- We pass _ManagedResolvedAssembliesToPublish, which doesn't
+         contain any .ni files. This correctly prevents stripping of
+         the .ni files (which we want to continue publishing at the
+         moment). -->
+    <!-- This doesn't filter any assemblies from IntermediateAssembly,
+         which should currently always be rooted by default. -->
+    <DepsJsonLinker InputDepsFilePath="$(PublishDepsFilePath)"
+                    OutputDepsFilePath="$(PublishDepsFilePath)"
+                    ManagedPublishAssemblies="@(_ManagedResolvedAssembliesToPublish->'%(Filename)%(Extension)')"
+                    KeptAssemblies="@(_LinkedResolvedAssemblies->'%(Filename)%(Extension)')" />
+  </Target>
+
+
+</Project>

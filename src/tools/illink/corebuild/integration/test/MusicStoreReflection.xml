@@ -1,0 +1,20 @@
+<linker>
+    <!--- Called by Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions:.cctor -->
+    <assembly fullname="System.Linq.Queryable">
+        <type fullname="System.Linq.Queryable" required="true" />
+    </assembly>
+
+    <!--- Called by System.Linq.Expressions.Expression:CreateLambda -->
+    <assembly fullname="System.Linq.Expressions">
+        <type fullname="System.Linq.Expressions.Expression`1" required="true" />
+    </assembly>
+
+    <assembly fullname="System.Dynamic.Runtime">
+        <!--- Called by [System.Dynamic.Runtime]System.Runtime.CompilerServices.CallSite<>.CreateCustomNoMatchDelegate and [System.Dynamic.Runtime]System.Runtime.CompilerServices.CallSite<>.CreateCustomUpdateDelegate-->
+        <type fullname="System.Runtime.CompilerServices.CallSiteOps" required="true" />
+        <!--- Called by [System.Dynamic.Runtime]System.Runtime.CompilerServices.CallSiteBinder.Stitch -->
+        <type fullname="System.Runtime.CompilerServices.CallSite" required="true" />
+        <!--- Called by [System.Dynamic.Runtime]System.Runtime.CompilerServices.CallSiteBinder.Stitch -->
+        <type fullname="System.Runtime.CompilerServices.CallSite`1" required="true" />
+    </assembly>
+</linker>
