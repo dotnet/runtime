@@ -416,24 +416,6 @@
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
-      "displayName": "Publish packages",
-      "timeoutInMinutes": 0,
-      "task": {
-        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
-        "versionSpec": "*",
-        "definitionType": "task"
-      },
-      "inputs": {
-        "filename": "docker",
-        "arguments": "run -w=\"$(GitDirectory)\" --name $(DockerContainerName) $(DockerContainerName) $(GitDirectory)/publish-packages.sh -AzureAccount=$(CloudDropAccountName) -AzureToken=$(CloudDropAccessToken) -Container=$(Label) -verbose -- /p:OverwriteOnPublish=true",
-        "workingFolder": "",
-        "failOnStandardError": "false"
-      }
-    },
-    {
-      "enabled": true,
-      "continueOnError": false,
-      "alwaysRun": false,
       "displayName": "Remove old docker build logs",
       "timeoutInMinutes": 0,
       "task": {
