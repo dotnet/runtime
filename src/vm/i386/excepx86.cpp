@@ -1971,11 +1971,17 @@ PTR_CONTEXT GetCONTEXTFromRedirectedStubStackFrame(CONTEXT * pContext)
 }
 
 #if !defined(DACCESS_COMPILE)
+#ifdef FEATURE_PAL
+static PEXCEPTION_REGISTRATION_RECORD CurrentSEHRecord = EXCEPTION_CHAIN_END;
+#endif
 
 PEXCEPTION_REGISTRATION_RECORD GetCurrentSEHRecord()
 {
     WRAPPER_NO_CONTRACT;
 
+#ifdef FEATURE_PAL
+    LPVOID fs0 = CurrentSEHRecord;
+#else  // FEATURE_PAL
     LPVOID fs0 = (LPVOID)__readfsdword(0);
 
 #if 0  // This walk is too expensive considering we hit it every time we a CONTRACT(NOTHROW)
@@ -2006,10 +2012,25 @@ PEXCEPTION_REGISTRATION_RECORD GetCurrentSEHRecord()
         pEHR = pEHR->Next;
     }
 #endif
-#endif
+#endif // 0
+#endif // FEATURE_PAL
 
     return (EXCEPTION_REGISTRATION_RECORD*) fs0;
 }
+
+#ifdef FEATURE_PAL
+VOID SetSEHRecord(PEXCEPTION_REGISTRATION_RECORD record)
+{
+    WRAPPER_NO_CONTRACT;
+    record->Next = CurrentSEHRecord;
+    CurrentSEHRecord = record;
+}
+
+VOID ResetSEHRecord(PEXCEPTION_REGISTRATION_RECORD record)
+{
+    CurrentSEHRecord = record->Next;
+}
+#endif // FEATURE_PAL
 
 PEXCEPTION_REGISTRATION_RECORD GetFirstCOMPlusSEHRecord(Thread *pThread) {
     WRAPPER_NO_CONTRACT;
@@ -3748,4 +3769,10 @@ AdjustContextForVirtualStub(
     return TRUE;
 }
 
+#ifdef FEATURE_PAL
+VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHardwareException)
+{
+    UNREACHABLE();
+}
+#endif
 #endif // !DACCESS_COMPILE
