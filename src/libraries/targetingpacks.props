@@ -24,6 +24,7 @@
       <RuntimeReferencedAssemblyNames Include="xunit.assert" />
       <RuntimeReferencedAssemblyNames Include="xunit.abstractions" />
       <RuntimeReferencedAssemblyNames Include="xunit.performance.core" />
+      <RuntimeReferencedAssemblyNames Include="Newtonsoft.Json" Condition="'$(SkipIncludeNewtonsoftJson)'!='true'" />
 
       <!-- Add Reference's to all files in the targeting pack folder, and to whitelisted items from the group above in the runtime folder. -->
       <TargetingPackItems Include="%(TargetingPackDirs.Identity)/*" />

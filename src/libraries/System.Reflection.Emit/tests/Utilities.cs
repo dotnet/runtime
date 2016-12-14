@@ -32,6 +32,14 @@ namespace System.Reflection.Emit.Tests
         public IntAllAttribute(int i) { _i = i; }
     }
 
+    public static class TypeExtensions
+    {
+        public static Type AsType(this Type type)
+        {
+            return type;
+        }
+    }
+
     public static class Helpers
     {
         public const BindingFlags AllFlags = BindingFlags.Static | BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
@@ -80,7 +88,7 @@ namespace System.Reflection.Emit.Tests
             Assert.Equal(size, type.Size);
             Assert.Equal(packingSize, type.PackingSize);
 
-            Assert.Equal(implementedInterfaces ?? new Type[0], type.ImplementedInterfaces);
+            Assert.Equal(implementedInterfaces ?? new Type[0], type.GetInterfaces());
 
             if (declaringType == null && !type.IsInterface && (implementedInterfaces == null || implementedInterfaces.Length == 0))
             {
