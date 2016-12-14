@@ -76,3 +76,12 @@ C_FUNC(\Name\()_End):
     movl  C_FUNC(\Name)@GOT(%\Reg), %\Reg
 .intel_syntax noprefix
 .endm
+
+.macro CHECK_STACK_ALIGNMENT
+#ifdef _DEBUG
+    test    esp, 0Fh
+    je      0f
+    int3
+0:
+#endif // _DEBUG
+.endm
