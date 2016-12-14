@@ -124,6 +124,31 @@ namespace System
         }
 
         /// <summary>
+        /// Create a new span over a portion of a regular managed object. This can be useful
+        /// if part of a managed object represents a "fixed array." This is dangerous because
+        /// "length" is not checked, nor is the fact that "rawPointer" actually lies within the object.
+        /// </summary>
+        /// <param name="obj">The managed object that contains the data to span over.</param>
+        /// <param name="objectData">A reference to data within that object.</param>
+        /// <param name="length">The number of <typeparamref name="T"/> elements the memory contains.</param>
+        /// <exception cref="System.ArgumentNullException">
+        /// Thrown when the specified object is null.
+        /// </exception>
+        /// <exception cref="System.ArgumentOutOfRangeException">
+        /// Thrown when the specified <paramref name="length"/> is negative.
+        /// </exception>
+        public static Span<T> DangerousCreate(object obj, ref T objectData, int length)
+        {
+            if (obj == null)
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.obj);
+            if (length < 0)
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.length);
+
+            return new Span<T>(ref objectData, length);
+        }
+        
+
+        /// <summary>
         /// An internal helper for creating spans.
         /// </summary>
         internal Span(ref T ptr, int length)
@@ -211,23 +236,16 @@ namespace System
         /// Returns true if left and right point at the same memory and have the same length.  Note that
         /// this does *not* check to see if the *contents* are equal.
         /// </summary>
-        public static bool operator ==(Span<T> left, Span<T> right) => left.Equals(right);
+        public static bool operator ==(Span<T> left, Span<T> right)
+        {
+            return left._length == right._length && Unsafe.AreSame<T>(ref left.DangerousGetPinnableReference(), ref right.DangerousGetPinnableReference());
+        }
 
         /// <summary>
         /// Returns false if left and right point at the same memory and have the same length.  Note that
         /// this does *not* check to see if the *contents* are equal.
         /// </summary>
-        public static bool operator !=(Span<T> left, Span<T> right) => !left.Equals(right);
-
-        /// <summary>
-        /// Checks to see if two spans point at the same memory.  Note that
-        /// this does *not* check to see if the *contents* are equal.
-        /// </summary>
-        public bool Equals(Span<T> other)
-        {
-            return (_length == other.Length) &&
-                (_length == 0 || Unsafe.AreSame(ref DangerousGetPinnableReference(), ref other.DangerousGetPinnableReference()));
-        }
+        public static bool operator !=(Span<T> left, Span<T> right) => !(left == right);
 
         /// <summary>
         /// This method is not supported as spans cannot be boxed. To compare two spans, use operator==.
@@ -266,6 +284,11 @@ namespace System
         /// Defines an implicit conversion of a <see cref="ArraySegment{T}"/> to a <see cref="Span{T}"/>
         /// </summary>
         public static implicit operator Span<T>(ArraySegment<T> arraySegment) =>  new Span<T>(arraySegment.Array, arraySegment.Offset, arraySegment.Count);
+
+        /// <summary>
+        /// Defines an implicit conversion of a <see cref="Span{T}"/> to a <see cref="ReadOnlySpan{T}"/>
+        /// </summary>
+        public static implicit operator ReadOnlySpan<T>(Span<T> span) => new ReadOnlySpan<T>(ref span.DangerousGetPinnableReference(), span._length);
 
         /// <summary>
         /// Forms a slice out of the given span, beginning at 'start'.

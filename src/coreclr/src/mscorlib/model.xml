@@ -12424,6 +12424,7 @@
       <Member Name="DangerousGetPinnableReference" />
       <Member Name="op_Implicit(T[])" ReturnType="System.Span&lt;T&gt;" />
       <Member Name="op_Implicit(System.ArraySegment&lt;T&gt;)" ReturnType="System.Span&lt;T&gt;" />
+      <Member Name="op_Implicit(System.Span&lt;T&gt;)" ReturnType="System.ReadOnlySpan&lt;T&gt;" />
       <Member Name="op_Equality(System.Span&lt;T&gt;,System.Span&lt;T&gt;)" />
       <Member Name="op_Inequality(System.Span&lt;T&gt;,System.Span&lt;T&gt;)" />
       <Member Name="get_Length" />
@@ -12434,8 +12435,8 @@
       <Member Name="ToArray" />
       <Member Name="Slice(System.Int32)" />
       <Member Name="Slice(System.Int32,System.Int32)" />
-      <Member Name="Equals(System.Span&lt;T&gt;)" />
       <Member Name="Equals(System.Object)" />
+      <Member Name="DangerousCreate(System.Object,T@,System.Int32)" />
       <Member Name="GetHashCode" />
       <Member Name="CopyTo(System.Span&lt;T&gt;)" />
       <Member Name="TryCopyTo(System.Span&lt;T&gt;)" />
@@ -12449,6 +12450,8 @@
       <Member Name="op_Implicit(System.Span&lt;T&gt;)" ReturnType="System.ReadOnlySpan&lt;T&gt;" />
       <Member Name="op_Implicit(T[])" ReturnType="System.ReadOnlySpan&lt;T&gt;" />
       <Member Name="op_Implicit(System.ArraySegment&lt;T&gt;)" ReturnType="System.ReadOnlySpan&lt;T&gt;" />
+      <Member Name="op_Equality(System.ReadOnlySpan&lt;T&gt;,System.ReadOnlySpan&lt;T&gt;)" />
+      <Member Name="op_Inequality(System.ReadOnlySpan&lt;T&gt;,System.ReadOnlySpan&lt;T&gt;)" />
       <Member Name="get_Length" />
       <Member Name="get_Empty" />
       <Member Name="get_IsEmpty" />
@@ -12456,8 +12459,11 @@
       <Member Name="ToArray" />
       <Member Name="Slice(System.Int32)" />
       <Member Name="Slice(System.Int32,System.Int32)" />
-      <Member Name="Equals(System.ReadOnlySpan&lt;T&gt;)" />
+      <Member Name="Equals(System.Object)" />
+      <Member Name="DangerousCreate(System.Object,T@,System.Int32)" />
+      <Member Name="GetHashCode" />
       <Member Name="TryCopyTo(System.Span&lt;T&gt;)" />
+      <Member Name="CopyTo(System.Span&lt;T&gt;)" />
     </Type>
     <Type Name="System.SpanExtensions" Condition="FEATURE_SPAN_OF_T">
       <Member Name="AsBytes&lt;T&gt;(System.Span&lt;T&gt;)" />
