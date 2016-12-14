@@ -256,7 +256,8 @@ unsigned m_stkArgOffset;
 
 #ifdef DEBUG
 GenTree* lastConsumedNode;
-void genCheckConsumeNode(GenTree* treeNode);
+void genNumberOperandUse(GenTree* const operand, int& useNum) const;
+void genCheckConsumeNode(GenTree* const node);
 #else  // !DEBUG
 inline void genCheckConsumeNode(GenTree* treeNode)
 {

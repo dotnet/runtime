@@ -971,8 +971,9 @@ public:
 #define GTF_DEBUG_NODE_SMALL 0x00000002
 #define GTF_DEBUG_NODE_LARGE 0x00000004
 #define GTF_DEBUG_NODE_CG_PRODUCED 0x00000008 // genProduceReg has been called on this node
+#define GTF_DEBUG_NODE_CG_CONSUMED 0x00000010 // genConsumeReg has been called on this node
 
-#define GTF_DEBUG_NODE_MASK 0x0000000F // These flags are all node (rather than operation) properties.
+#define GTF_DEBUG_NODE_MASK 0x0000001F // These flags are all node (rather than operation) properties.
 
 #define GTF_DEBUG_VAR_CSE_REF 0x00800000 // GT_LCL_VAR -- This is a CSE LCL_VAR node
 #endif                                   // defined(DEBUG)
@@ -983,6 +984,8 @@ public:
 #ifdef DEBUG
     unsigned gtTreeID;
     unsigned gtSeqNum; // liveness traversal order within the current statement
+
+    int gtUseNum; // use-ordered traversal within the function
 #endif
 
     static const unsigned short gtOperKindTable[];
