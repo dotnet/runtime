@@ -224,7 +224,11 @@ namespace Microsoft.DotNet.Scripts
             Regex regex = new Regex($@"{dependencyPropertyName} = ""(?<version>.*)"";");
             string newVersion = c.GetNewVersion(packageId);
 
-            return regex.ReplaceGroupValue(fileContents, "version", newVersion);
+            if (newVersion != null)
+            {
+                fileContents = regex.ReplaceGroupValue(fileContents, "version", newVersion);
+            }
+            return fileContents;
         }
 
         /// <summary>
@@ -238,7 +242,11 @@ namespace Microsoft.DotNet.Scripts
                 Regex regex = new Regex(@"Microsoft\.NETCore\.Platforms\\(?<version>.*)\\runtime\.json");
                 string newNetCorePlatformsVersion = c.GetNewVersion("Microsoft.NETCore.Platforms");
 
-                return regex.ReplaceGroupValue(contents, "version", newNetCorePlatformsVersion);
+                if (newNetCorePlatformsVersion != null)
+                {
+                    contents = regex.ReplaceGroupValue(contents, "version", newNetCorePlatformsVersion);
+                }
+                return contents;
             });
 
             return c.Success();
@@ -254,8 +262,8 @@ namespace Microsoft.DotNet.Scripts
 
             if (string.IsNullOrEmpty(newVersion))
             {
-                c.Error($"Could not find package version information for '{packageId}'");
-                return $"DEPENDENCY '{packageId}' NOT FOUND";
+                c.Info($"Could not find package version information for '{packageId}'");
+                return null;
             }
 
             return newVersion;
