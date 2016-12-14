@@ -298,7 +298,7 @@
       "value": "https://$(VsoAccountName):$(VsoPassword)@devdiv.visualstudio.com/DevDiv/_git/$(VsoRepositoryName)/"
     },
     "CleanAgent": {
-      "value": "false"
+      "value": "true"
     }
   },
   "demands": [

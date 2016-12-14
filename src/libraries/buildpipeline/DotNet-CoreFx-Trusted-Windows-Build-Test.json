@@ -456,7 +456,7 @@
       "value": "$(ProgramFiles)\\Git\\cmd\\git.exe"
     },
     "CleanAgent": {
-      "value": "false"
+      "value": "true"
     }
   },
   "retentionRules": [
