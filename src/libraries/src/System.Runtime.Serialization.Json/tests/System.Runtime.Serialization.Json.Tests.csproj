@@ -2,8 +2,6 @@
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <RootNamespace>System.Runtime.Serialization.Json.Tests</RootNamespace>
-    <AssemblyName>System.Runtime.Serialization.Json.Tests</AssemblyName>
     <ProjectGuid>{701CB3BC-00DC-435D-BDE4-C5FC29A708A7}</ProjectGuid>
   </PropertyGroup>
   <ItemGroup>
@@ -13,5 +11,5 @@
     <Compile Include="$(TestSourceFolder)DataContractJsonSerializer.cs" />
     <Compile Include="$(TestSourceFolder)DataContractJsonSerializer.CoreCLR.cs" />
   </ItemGroup>
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), System.Runtime.Serialization.Json.Tests.settings.targets))\System.Runtime.Serialization.Json.Tests.settings.targets" />
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
