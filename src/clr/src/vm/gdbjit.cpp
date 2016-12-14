@@ -683,7 +683,7 @@ const unsigned char AbbrevTable[] = {
         DW_AT_type, DW_FORM_ref4, 0, 0,
 
     4, DW_TAG_subprogram, DW_CHILDREN_yes,
-        DW_AT_name, DW_FORM_strp, DW_AT_decl_file, DW_FORM_data1, DW_AT_decl_line, DW_FORM_data1,
+        DW_AT_name, DW_FORM_strp, DW_AT_linkage_name, DW_FORM_strp, DW_AT_decl_file, DW_FORM_data1, DW_AT_decl_line, DW_FORM_data1,
         DW_AT_type, DW_FORM_ref4, DW_AT_external, DW_FORM_flag_present,
         DW_AT_low_pc, DW_FORM_addr, DW_AT_high_pc,
 #if defined(_TARGET_AMD64_)
@@ -719,7 +719,7 @@ const unsigned char AbbrevTable[] = {
         DW_AT_upper_bound, DW_FORM_exprloc, 0, 0,
 
     12, DW_TAG_subprogram, DW_CHILDREN_yes,
-        DW_AT_name, DW_FORM_strp, DW_AT_decl_file, DW_FORM_data1, DW_AT_decl_line, DW_FORM_data1,
+        DW_AT_name, DW_FORM_strp, DW_AT_linkage_name, DW_FORM_strp, DW_AT_decl_file, DW_FORM_data1, DW_AT_decl_line, DW_FORM_data1,
         DW_AT_type, DW_FORM_ref4, DW_AT_external, DW_FORM_flag_present,
         DW_AT_low_pc, DW_FORM_addr, DW_AT_high_pc, 
 #if defined(_TARGET_AMD64_)
@@ -771,6 +771,7 @@ struct __attribute__((packed)) DebugInfoSub
 {
     uint8_t m_sub_abbrev;
     uint32_t m_sub_name;
+    uint32_t m_linkage_name;
     uint8_t m_file, m_line;
     uint32_t m_sub_type;
 #if defined(_TARGET_AMD64_)
@@ -1029,6 +1030,79 @@ void TypeMember::DumpStaticDebugInfo(char* ptr, int& offset)
     offset += ptrSize + 2;
 }
 
+void FunctionMember::MangleName(char *buf, int &buf_offset, const char *name)
+{
+    int name_length = strlen(name);
+
+    char tmp[20];
+    int tmp_len = sprintf_s(tmp, _countof(tmp), "%i", name_length);
+    if (tmp_len <= 0)
+        return;
+
+    if (buf)
+        strncpy(buf + buf_offset, tmp, tmp_len);
+    buf_offset += tmp_len;
+
+    if (buf)
+    {
+        for (int i = 0; i < name_length; i++)
+        {
+            char c = name[i];
+            bool valid = (c >= 'a' && c <= 'z') ||
+                         (c >= 'A' && c <= 'Z') ||
+                         (c >= '0' && c <= '9');
+            *(buf + buf_offset + i) = valid ? c : '_';
+        }
+    }
+    buf_offset += name_length;
+}
+
+void FunctionMember::DumpMangledNamespaceAndMethod(char *buf, int &offset, const char *nspace, const char *mname)
+{
+    static const char *begin_mangled = "_ZN";
+    static const char *end_mangled = "Ev";
+    static const int begin_mangled_len = strlen(begin_mangled);
+    static const int end_mangled_len = strlen(end_mangled);
+
+    if (buf)
+        strncpy(buf + offset, begin_mangled, begin_mangled_len);
+    offset += begin_mangled_len;
+
+    MangleName(buf, offset, nspace);
+    MangleName(buf, offset, mname);
+
+    if (buf)
+        strncpy(buf + offset, end_mangled, end_mangled_len);
+    offset += end_mangled_len;
+
+    if (buf)
+        buf[offset] = '\0';
+    ++offset;
+}
+
+void FunctionMember::DumpLinkageName(char* ptr, int& offset)
+{
+    SString namespaceOrClassName;
+    SString methodName;
+
+    md->GetMethodInfoNoSig(namespaceOrClassName, methodName);
+    SString utf8namespaceOrClassName;
+    SString utf8methodName;
+    namespaceOrClassName.ConvertToUTF8(utf8namespaceOrClassName);
+    methodName.ConvertToUTF8(utf8methodName);
+
+    const char *nspace = utf8namespaceOrClassName.GetUTF8NoConvert();
+    const char *mname = utf8methodName.GetUTF8NoConvert();
+
+    if (!nspace || !mname)
+    {
+        m_linkage_name_offset = 0;
+        return;
+    }
+
+    m_linkage_name_offset = offset;
+    DumpMangledNamespaceAndMethod(ptr, offset, nspace, mname);
+}
 
 void FunctionMember::DumpStrings(char* ptr, int& offset)
 {
@@ -1037,7 +1111,9 @@ void FunctionMember::DumpStrings(char* ptr, int& offset)
     for (int i = 0; i < m_num_vars; ++i)
     {
         vars[i].DumpStrings(ptr, offset);
-    } 
+    }
+
+    DumpLinkageName(ptr, offset);
 }
 
 void FunctionMember::DumpDebugInfo(char* ptr, int& offset)
@@ -1048,6 +1124,7 @@ void FunctionMember::DumpDebugInfo(char* ptr, int& offset)
 
         subEntry.m_sub_abbrev = 4;
         subEntry.m_sub_name = m_member_name_offset;
+        subEntry.m_linkage_name = m_linkage_name_offset;
         subEntry.m_file = m_file;
         subEntry.m_line = m_line;
         subEntry.m_sub_type = m_member_type->m_type_offset;
