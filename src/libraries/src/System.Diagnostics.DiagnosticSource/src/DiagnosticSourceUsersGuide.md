@@ -251,8 +251,8 @@ A DiagnosticListener implements the IObservable<KeyValuePair<string, object>> in
 call 'Subscribe' on it as well.  Thus we can fill out the previous example a bit 
 
 ```C#
-	static IDisposable listenerSubscription = DiagnosticListener.AllListeners.Subscribe(delegate (DiagnosticListener listener)
 	static IDisposable networkSubscription = null;
+	static IDisposable listenerSubscription = DiagnosticListener.AllListeners.Subscribe(delegate (DiagnosticListener listener)
 	{
 		if (listener.Name == "System.Net.Http")
 		{
