@@ -136,25 +136,25 @@ typedef struct {
 } ProcessTime;
 
 /*
- * MonoProcess describes processes we create.
+ * Process describes processes we create.
  * It contains a semaphore that can be waited on in order to wait
  * for process termination. It's accessed in our SIGCHLD handler,
  * when status is updated (and pid cleared, to not clash with
  * subsequent processes that may get executed).
  */
-typedef struct _MonoProcess MonoProcess;
-struct _MonoProcess {
+typedef struct _Process {
 	pid_t pid; /* the pid of the process. This value is only valid until the process has exited. */
 	MonoSemType exit_sem; /* this semaphore will be released when the process exits */
 	int status; /* the exit status */
-	gint32 handle_count; /* the number of handles to this mono_process instance */
+	gint32 handle_count; /* the number of handles to this process instance */
 	/* we keep a ref to the creating _WapiHandle_process handle until
 	 * the process has exited, so that the information there isn't lost.
 	 */
 	gpointer handle;
 	gboolean freeable;
-	MonoProcess *next;
-};
+	gboolean signalled;
+	struct _Process *next;
+} Process;
 
 /* MonoW32HandleProcess is a structure containing all the required information for process handling. */
 typedef struct {
@@ -167,7 +167,7 @@ typedef struct {
 	size_t min_working_set;
 	size_t max_working_set;
 	gboolean exited;
-	MonoProcess *mono_process;
+	Process *process;
 } MonoW32HandleProcess;
 
 /*
@@ -549,7 +549,7 @@ static gchar *cli_launcher;
  * We also need to lock when adding and cleaning up so that those two
  * operations don't mess with eachother. (This lock is not used in the
  * signal handler) */
-static MonoProcess *processes;
+static Process *processes;
 static mono_mutex_t processes_mutex;
 
 static gpointer current_process;
@@ -586,7 +586,7 @@ process_wait (gpointer handle, guint32 timeout, gboolean *alerted)
 	pid_t pid G_GNUC_UNUSED, ret;
 	int status;
 	gint64 start, now;
-	MonoProcess *mp;
+	Process *process;
 	gboolean res;
 
 	/* FIXME: We can now easily wait on processes that aren't our own children,
@@ -616,8 +616,8 @@ process_wait (gpointer handle, guint32 timeout, gboolean *alerted)
 
 	/* We don't need to lock processes here, the entry
 	 * has a handle_count > 0 which means it will not be freed. */
-	mp = process_handle->mono_process;
-	if (!mp) {
+	process = process_handle->process;
+	if (!process) {
 		pid_t res;
 
 		if (pid == mono_process_current_pid ()) {
@@ -653,16 +653,16 @@ process_wait (gpointer handle, guint32 timeout, gboolean *alerted)
 		if (timeout != MONO_INFINITE_WAIT) {
 			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s (%p, %u): waiting on semaphore for %li ms...",
 				__func__, handle, timeout, (long)(timeout - (now - start)));
-			ret = mono_os_sem_timedwait (&mp->exit_sem, (timeout - (now - start)), alerted ? MONO_SEM_FLAGS_ALERTABLE : MONO_SEM_FLAGS_NONE);
+			ret = mono_os_sem_timedwait (&process->exit_sem, (timeout - (now - start)), alerted ? MONO_SEM_FLAGS_ALERTABLE : MONO_SEM_FLAGS_NONE);
 		} else {
 			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s (%p, %u): waiting on semaphore forever...",
 				__func__, handle, timeout);
-			ret = mono_os_sem_wait (&mp->exit_sem, alerted ? MONO_SEM_FLAGS_ALERTABLE : MONO_SEM_FLAGS_NONE);
+			ret = mono_os_sem_wait (&process->exit_sem, alerted ? MONO_SEM_FLAGS_ALERTABLE : MONO_SEM_FLAGS_NONE);
 		}
 
 		if (ret == MONO_SEM_TIMEDWAIT_RET_SUCCESS) {
 			/* Success, process has exited */
-			mono_os_sem_post (&mp->exit_sem);
+			mono_os_sem_post (&process->exit_sem);
 			break;
 		}
 
@@ -687,7 +687,7 @@ process_wait (gpointer handle, guint32 timeout, gboolean *alerted)
 	/* Process must have exited */
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s (%p, %u): Waited successfully", __func__, handle, timeout);
 
-	status = mp->status;
+	status = process->status;
 	if (WIFSIGNALED (status))
 		process_handle->exitstatus = 128 + WTERMSIG (status);
 	else
@@ -709,8 +709,8 @@ static void
 processes_cleanup (void)
 {
 	static gint32 cleaning_up;
-	MonoProcess *mp;
-	MonoProcess *prev = NULL;
+	Process *process;
+	Process *prev = NULL;
 	GSList *finished = NULL;
 	GSList *l;
 	gpointer unref_handle;
@@ -721,16 +721,12 @@ processes_cleanup (void)
 	if (InterlockedCompareExchange (&cleaning_up, 1, 0) != 0)
 		return;
 
-	for (mp = processes; mp; mp = mp->next) {
-		if (mp->pid == 0 && mp->handle) {
+	for (process = processes; process; process = process->next) {
+		if (process->signalled && process->handle) {
 			/* This process has exited and we need to remove the artifical ref
 			 * on the handle */
-			mono_os_mutex_lock (&processes_mutex);
-			unref_handle = mp->handle;
-			mp->handle = NULL;
-			mono_os_mutex_unlock (&processes_mutex);
-			if (unref_handle)
-				mono_w32handle_unref (unref_handle);
+			mono_w32handle_unref (process->handle);
+			process->handle = NULL;
 		}
 	}
 
@@ -742,24 +738,20 @@ processes_cleanup (void)
 	 */
 	mono_os_mutex_lock (&processes_mutex);
 
-	mp = processes;
-	while (mp) {
-		if (mp->handle_count == 0 && mp->freeable) {
+	for (process = processes; process; process = process->next) {
+		if (process->handle_count == 0 && process->freeable) {
 			/*
 			 * Unlink the entry.
 			 * This code can run parallel with the sigchld handler, but the
 			 * modifications it makes are safe.
 			 */
-			if (mp == processes)
-				processes = mp->next;
+			if (process == processes)
+				processes = process->next;
 			else
-				prev->next = mp->next;
-			finished = g_slist_prepend (finished, mp);
-
-			mp = mp->next;
+				prev->next = process->next;
+			finished = g_slist_prepend (finished, process);
 		} else {
-			prev = mp;
-			mp = mp->next;
+			prev = process;
 		}
 	}
 
@@ -771,9 +763,9 @@ processes_cleanup (void)
 		 * they have the 'finished' flag set, which means the sigchld handler is done
 		 * accessing them.
 		 */
-		mp = (MonoProcess *)l->data;
-		mono_os_sem_destroy (&mp->exit_sem);
-		g_free (mp);
+		process = (Process *)l->data;
+		mono_os_sem_destroy (&process->exit_sem);
+		g_free (process);
 	}
 	g_slist_free (finished);
 
@@ -794,8 +786,8 @@ process_close (gpointer handle, gpointer data)
 	process_handle = (MonoW32HandleProcess *) data;
 	g_free (process_handle->pname);
 	process_handle->pname = NULL;
-	if (process_handle->mono_process)
-		InterlockedDecrement (&process_handle->mono_process->handle_count);
+	if (process_handle->process)
+		InterlockedDecrement (&process_handle->process->handle_count);
 	processes_cleanup ();
 }
 
@@ -1386,7 +1378,7 @@ MONO_SIGNAL_HANDLER_FUNC (static, mono_sigchld_signal_handler, (int _dummy, sigi
 {
 	int status;
 	int pid;
-	MonoProcess *p;
+	Process *process;
 
 	do {
 		do {
@@ -1399,16 +1391,18 @@ MONO_SIGNAL_HANDLER_FUNC (static, mono_sigchld_signal_handler, (int _dummy, sigi
 		/*
 		 * This can run concurrently with the code in the rest of this module.
 		 */
-		for (p = processes; p; p = p->next) {
-			if (p->pid != pid)
+		for (process = processes; process; process = process->next) {
+			if (process->pid != pid)
+				continue;
+			if (process->signalled)
 				continue;
 
-			p->pid = 0; /* this pid doesn't exist anymore, clear it */
-			p->status = status;
-			mono_os_sem_post (&p->exit_sem);
+			process->signalled = TRUE;
+			process->status = status;
+			mono_os_sem_post (&process->exit_sem);
 			mono_memory_barrier ();
 			/* Mark this as freeable, the pointer becomes invalid afterwards */
-			p->freeable = TRUE;
+			process->freeable = TRUE;
 			break;
 		}
 	} while (1);
@@ -1600,7 +1594,7 @@ process_create (const gunichar2 *appname, const gunichar2 *cmdline,
 	pid_t pid = 0;
 	int startup_pipe [2] = {-1, -1};
 	int dummy;
-	MonoProcess *mono_process;
+	Process *process;
 
 #if HAVE_SIGACTION
 	mono_lazy_initialize (&process_sig_chld_once, process_add_sigchld_handler);
@@ -2017,20 +2011,20 @@ process_create (const gunichar2 *appname, const gunichar2 *cmdline,
 		process_handle.pname = g_strdup (prog);
 		process_set_defaults (&process_handle);
 
-		/* Add our mono_process into the linked list of processes */
-		mono_process = (MonoProcess *) g_malloc0 (sizeof (MonoProcess));
-		mono_process->pid = pid;
-		mono_process->handle_count = 1;
-		mono_os_sem_init (&mono_process->exit_sem, 0);
+		/* Add our process into the linked list of processes */
+		process = (Process *) g_malloc0 (sizeof (Process));
+		process->pid = pid;
+		process->handle_count = 1;
+		mono_os_sem_init (&process->exit_sem, 0);
 
-		process_handle.mono_process = mono_process;
+		process_handle.process = process;
 
 		handle = mono_w32handle_new (MONO_W32HANDLE_PROCESS, &process_handle);
 		if (handle == INVALID_HANDLE_VALUE) {
 			g_warning ("%s: error creating process handle", __func__);
 
-			mono_os_sem_destroy (&mono_process->exit_sem);
-			g_free (mono_process);
+			mono_os_sem_destroy (&process->exit_sem);
+			g_free (process);
 
 			SetLastError (ERROR_OUTOFMEMORY);
 			ret = FALSE;
@@ -2040,11 +2034,12 @@ process_create (const gunichar2 *appname, const gunichar2 *cmdline,
 		/* Keep the process handle artificially alive until the process
 		 * exits so that the information in the handle isn't lost. */
 		mono_w32handle_ref (handle);
-		mono_process->handle = handle;
+		process->handle = handle;
 
 		mono_os_mutex_lock (&processes_mutex);
-		mono_process->next = processes;
-		processes = mono_process;
+		process->next = processes;
+		mono_memory_barrier ();
+		processes = process;
 		mono_os_mutex_unlock (&processes_mutex);
 
 		if (process_info != NULL) {
