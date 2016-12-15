@@ -68,7 +68,8 @@ enum SIMDScalarMoveType
 };
 
 instruction getOpForSIMDIntrinsic(SIMDIntrinsicID intrinsicId, var_types baseType, unsigned* ival = nullptr);
-void genSIMDScalarMove(var_types type, regNumber target, regNumber src, SIMDScalarMoveType moveType);
+void genSIMDScalarMove(
+    var_types targetType, var_types type, regNumber target, regNumber src, SIMDScalarMoveType moveType);
 void genSIMDZero(var_types targetType, var_types baseType, regNumber targetReg);
 void genSIMDIntrinsicInit(GenTreeSIMD* simdNode);
 void genSIMDIntrinsicInitN(GenTreeSIMD* simdNode);
