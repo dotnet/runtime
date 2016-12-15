@@ -14054,8 +14054,16 @@ GenTree* Compiler::fgMorphModToSubMulDiv(GenTreeOp* tree)
         denominator = fgMakeMultiUse(&tree->gtOp2);
     }
 
+    // The numerator and denominator may have been assigned to temps, in which case
+    // their defining assignments are in the current tree. Therefore, we need to
+    // set the execuction order accordingly on the nodes we create.
+    // That is, the "mul" will be evaluated in "normal" order, and the "sub" must
+    // be set to be evaluated in reverse order.
+    //
     GenTree* mul = gtNewOperNode(GT_MUL, type, tree, gtCloneExpr(denominator));
+    assert(!mul->IsReverseOp());
     GenTree* sub = gtNewOperNode(GT_SUB, type, gtCloneExpr(numerator), mul);
+    sub->gtFlags |= GTF_REVERSE_OPS;
 
 #ifdef DEBUG
     sub->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED;
