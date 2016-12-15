@@ -7393,6 +7393,7 @@
       <Member Name="get_Length" />
       <Member Name="GetEnumerator" />
       <Member Name="GetHashCode" />
+      <Member Name="GetHashCode(System.StringComparison)" />
       <Member Name="GetTypeCode" />
       <Member Name="IndexOf(System.Char)" />
       <Member Name="IndexOf(System.Char,System.Int32)" />
@@ -7500,6 +7501,7 @@
       <Member Name="Create(System.Globalization.CultureInfo,System.Boolean)" />
       <Member Name="Equals(System.Object,System.Object)" />
       <Member Name="Equals(System.String,System.String)" />
+      <Member Name="FromComparison(System.StringComparison)" />
       <Member Name="get_CurrentCulture" />
       <Member Name="get_CurrentCultureIgnoreCase" />
       <Member Name="get_InvariantCulture" />
