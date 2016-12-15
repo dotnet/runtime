@@ -1774,12 +1774,8 @@ namespace System.Configuration
 
             if ((xmlUtil.Reader.NodeType != XmlNodeType.Element) || (xmlUtil.Reader.Name != KeywordConfiguration))
             {
-                // CONSIDER: Remove the filename from the message once visual freeze is lifted.
-                string safeFilename =
-                    ConfigurationErrorsException.AlwaysSafeFilename(xmlUtil.Filename);
-
                 throw new ConfigurationErrorsException(
-                    string.Format(SR.Config_file_doesnt_have_root_configuration, safeFilename),
+                    string.Format(SR.Config_file_doesnt_have_root_configuration, xmlUtil.Filename),
                     xmlUtil);
             }
 

@@ -29,24 +29,24 @@ namespace System.Configuration
         // the start of that representation in text.
         private static readonly int[] s_positionOffset =
         {
-            0, // None,
-            1, // Element,                 <elem
+            0,  // None,
+            1,  // Element,                 <elem
             -1, // Attribute,               N/A
-            0, // Text,
-            9, // CDATA,                   <![CDATA[
-            1, // EntityReference,         &lt
+            0,  // Text,
+            9,  // CDATA,                   <![CDATA[
+            1,  // EntityReference,         &lt
             -1, // Entity,                  N/A
-            2, // ProcessingInstruction,   <?pi
-            4, // Comment,                 <!--
+            2,  // ProcessingInstruction,   <?pi
+            4,  // Comment,                 <!--
             -1, // Document,                N/A
             10, // DocumentType,            <!DOCTYPE
             -1, // DocumentFragment,        N/A
             -1, // Notation,                N/A
-            0, // Whitespace,
-            0, // SignificantWhitespace,
-            2, // EndElement,              />
+            0,  // Whitespace,
+            0,  // SignificantWhitespace,
+            2,  // EndElement,              />
             -1, // EndEntity,               N/A
-            2, // XmlDeclaration           <?xml
+            2,  // XmlDeclaration           <?xml
         };
 
         private StringWriter _cachedStringWriter;
@@ -203,8 +203,6 @@ namespace System.Configuration
             }
         }
 
-        // StrictSkipToOurParentsEndElement
-        //
         // Skip until we hit the end element for our parent, and verify
         // that nodes at the parent level are permissible.
         internal void StrictSkipToOurParentsEndElement(ExceptionAction action)
@@ -240,7 +238,8 @@ namespace System.Configuration
         // and are therefore unrecognized.
         internal void VerifyNoUnrecognizedAttributes(ExceptionAction action)
         {
-            if (Reader.MoveToNextAttribute()) AddErrorUnrecognizedAttribute(action);
+            if (Reader.MoveToNextAttribute())
+                AddErrorUnrecognizedAttribute(action);
         }
 
         // Add an error if the retrieved attribute is null, 
@@ -460,11 +459,9 @@ namespace System.Configuration
             {
                 if (Reader.NodeType != XmlNodeType.Whitespace)
                 {
-                    //
                     // If the next non-whitepace node is on another line,
                     // seek back to the beginning of the current blank line,
                     // skip a blank line of whitespace, and copy the remaining whitespace.
-                    //
                     if (Reader.LineNumber > lineNumberOfEndElement)
                     {
                         utilWriter.SeekToLineStart();
@@ -509,7 +506,6 @@ namespace System.Configuration
             if (!isEmptyElement) CopyXmlNode(utilWriter);
         }
 
-        //
         // Copy a single XML node, attempting to preserve whitespace.
         // A side effect of this method is to advance the reader to the next node.
         //
@@ -525,16 +521,13 @@ namespace System.Configuration
         //
         // This function must NEVER require tracking the writer position to copy the Xml nodes
         // that are used in a configuration section.
-        // 
         internal bool CopyXmlNode(XmlUtilWriter utilWriter)
         {
-            //
             // For nodes that have a closing string, such as "<element  >"
             // the XmlReader API does not give us the location of the closing string, e.g. ">".
             // To correctly determine the location of the closing part, we advance the reader,
             // determine the position of the next node, then work backwards to add whitespace
             // and add the closing string.
-            //
             string close = null;
             int lineNumber = -1;
             int linePosition = -1;
@@ -564,14 +557,12 @@ namespace System.Configuration
                     //      <element    attr="value"
                     //              ^
                     //              linePosition
-                    //
                     lineNumber = Reader.LineNumber;
                     linePosition = Reader.LinePosition + Reader.Name.Length;
 
                     utilWriter.Write('<');
                     utilWriter.Write(Reader.Name);
 
-                    //
                     // Note that there is no way to get spacing between attribute name and value
                     // For example:
                     //
@@ -582,14 +573,12 @@ namespace System.Configuration
                     //          <elem attr = "value" />
                     //
                     // The first example has no spaces around '=', the second example does.
-                    //
                     while (Reader.MoveToNextAttribute())
                     {
                         // get line position of the attribute declaration
                         //      <element attr="value"
                         //               ^
                         //               attrLinePosition
-                        //
                         int attrLineNumber = Reader.LineNumber;
                         int attrLinePosition = Reader.LinePosition;
 
@@ -616,7 +605,6 @@ namespace System.Configuration
                         //      </element    >
                         //               ^
                         //               linePosition
-                        //
                         lineNumber = Reader.LineNumber;
                         linePosition = Reader.LinePosition + Reader.Name.Length;
 
@@ -639,13 +627,11 @@ namespace System.Configuration
                                     //      <?xml    version="1.0"
                                     //           ^
                                     //           linePosition
-                                    //
                                     lineNumber = Reader.LineNumber;
                                     linePosition = Reader.LinePosition + 3;
 
                                     utilWriter.Write("<?xml");
 
-                                    //
                                     // Note that there is no way to get spacing between attribute name and value
                                     // For example:
                                     //
@@ -656,14 +642,12 @@ namespace System.Configuration
                                     //          <?xml attr = "value" ?>
                                     //
                                     // The first example has no spaces around '=', the second example does.
-                                    //
                                     while (Reader.MoveToNextAttribute())
                                     {
                                         // get line position of the attribute declaration
                                         //      <?xml    version="1.0"
                                         //               ^
                                         //               attrLinePosition
-                                        //
                                         int attrLineNumber = Reader.LineNumber;
                                         int attrLinePosition = Reader.LinePosition;
 
@@ -691,7 +675,6 @@ namespace System.Configuration
                                     {
                                         if (nodeType == XmlNodeType.ProcessingInstruction)
                                         {
-                                            //
                                             // Note that there is no way to get spacing between attribute name and value
                                             // For example:
                                             //
@@ -702,7 +685,6 @@ namespace System.Configuration
                                             //          <?pi    "value" ?>
                                             //
                                             // The first example has one space between 'pi' and "value", the second has multiple spaces.
-                                            //
                                             utilWriter.AppendProcessingInstruction(Reader.Name, Reader.Value);
                                         }
                                         else
@@ -717,7 +699,6 @@ namespace System.Configuration
                                                 {
                                                     if (nodeType == XmlNodeType.DocumentType)
                                                     {
-                                                        // 
                                                         // XmlNodeType.DocumentType has the following format:
                                                         //
                                                         //      <!DOCTYPE rootElementName {(SYSTEM uriRef)|(PUBLIC id uriRef)} {[ dtdDecls ]} >
@@ -725,7 +706,6 @@ namespace System.Configuration
                                                         // The reader only gives us the position of 'rootElementName', so we must track what was
                                                         // written before "<!DOCTYPE" in order to correctly determine the position of the
                                                         // <!DOCTYPE tag
-                                                        //
                                                         Debug.Assert(utilWriter.TrackPosition,
                                                             "utilWriter.TrackPosition");
                                                         int c = utilWriter.Write("<!DOCTYPE");
@@ -801,13 +781,10 @@ namespace System.Configuration
             // Close the node we are copying.
             if (close != null)
             {
-                //
                 // Find the position of the close string, for example:
-                //
                 //          <element      >  <subElement />
                 //                        ^
                 //                        closeLinePosition
-                //
                 int startOffset = GetPositionOffset(nodeType);
                 int closeLineNumber = Reader.LineNumber;
                 int closeLinePosition = Reader.LinePosition - startOffset - close.Length;
@@ -819,11 +796,9 @@ namespace System.Configuration
                 utilWriter.Write(close);
             }
 
-            //
             // Track the position of the reader based on the position of the reader
             // before we copied this node and what we have written in copying the node.
             // This allows us to determine the position of the <!DOCTYPE tag.
-            //
             if (utilWriter.TrackPosition)
             {
                 _lastLineNumber = readerLineNumber - writerLineNumber + utilWriter.LineNumber;
@@ -836,11 +811,8 @@ namespace System.Configuration
             return moreToRead;
         }
 
-        // RetrieveFullOpenElementTag
-        //
         // Asuming that we are at an element, retrieve the text for that element
         // and attributes that can be serialized to an xml file.
-        //
         private string RetrieveFullOpenElementTag()
         {
             Debug.Assert(Reader.NodeType == XmlNodeType.Element,
@@ -868,7 +840,6 @@ namespace System.Configuration
             return element.ToString();
         }
 
-        //
         // Copy or replace an element node.
         // If the element is an empty element, replace it with a formatted start element if either:
         //   * The contents of the start element string need updating.
@@ -876,7 +847,6 @@ namespace System.Configuration
         //
         // If the element is empty and is replaced with a start/end element pair, return a 
         // end element string with whitespace formatting; otherwise return null.
-        //
         internal string UpdateStartElement(XmlUtilWriter utilWriter, string updatedStartElement, bool needsChildren,
             int linePosition, int indent)
         {
@@ -973,13 +943,14 @@ namespace System.Configuration
             return s;
         }
 
-        // Format an Xml element to be written to the config file.
-        // Params:
-        //   xmlElement      - the element
-        //   linePosition    - start position of the element
-        //   indent          - indent for each depth
-        //   skipFirstIndent - skip indent for the first element?
-        //
+        /// <summary>
+        /// Format an Xml element to be written to the config file.
+        /// </summary>
+        /// <param name="xmlElement">the element</param>
+        /// <param name="linePosition">start position of the element</param>
+        /// <param name="indent">indent for each depth</param>
+        /// <param name="skipFirstIndent">skip indent for the first element?</param>
+        /// <returns></returns>
         internal static string FormatXmlElement(string xmlElement, int linePosition, int indent, bool skipFirstIndent)
         {
             XmlParserContext context = new XmlParserContext(null, null, null, XmlSpace.Default, Encoding.Unicode);
@@ -1087,6 +1058,7 @@ namespace System.Configuration
                                 lineWidth += ((StringWriter)utilWriter.Writer).GetStringBuilder().Length - startLength;
                             }
                         }
+
                         // position reader back on element
                         reader.MoveToElement();
 
@@ -1104,9 +1076,9 @@ namespace System.Configuration
                         utilWriter.AppendEntityRef(reader.Name);
                         break;
 
-                        // Ignore <?xml and <!DOCTYPE nodes
-                        // case XmlNodeType.XmlDeclaration:
-                        // case XmlNodeType.DocumentType:
+                    // Ignore <?xml and <!DOCTYPE nodes
+                    // case XmlNodeType.XmlDeclaration:
+                    // case XmlNodeType.DocumentType:
                 }
 
                 // put each new element on a new line

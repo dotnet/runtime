@@ -8,7 +8,6 @@ using System.Configuration.Internal;
 using System.Globalization;
 using System.IO;
 using System.Runtime.Serialization;
-using System.Runtime.Versioning;
 using System.Security;
 using System.Xml;
 
@@ -57,35 +56,33 @@ namespace System.Configuration
         { }
 
         public ConfigurationErrorsException(string message, XmlNode node) :
-            this(message, null, GetUnsafeFilename(node), GetLineNumber(node))
+            this(message, null, GetFilename(node), GetLineNumber(node))
         { }
 
         public ConfigurationErrorsException(string message, Exception inner, XmlNode node) :
-            this(message, inner, GetUnsafeFilename(node), GetLineNumber(node))
+            this(message, inner, GetFilename(node), GetLineNumber(node))
         { }
 
         public ConfigurationErrorsException(string message, XmlReader reader) :
-            this(message, null, GetUnsafeFilename(reader), GetLineNumber(reader))
+            this(message, null, GetFilename(reader), GetLineNumber(reader))
         { }
 
         public ConfigurationErrorsException(string message, Exception inner, XmlReader reader) :
-            this(message, inner, GetUnsafeFilename(reader), GetLineNumber(reader))
+            this(message, inner, GetFilename(reader), GetLineNumber(reader))
         { }
 
         internal ConfigurationErrorsException(string message, IConfigErrorInfo errorInfo) :
-            this(message, null, GetUnsafeConfigErrorInfoFilename(errorInfo), GetConfigErrorInfoLineNumber(errorInfo))
+            this(message, null, GetConfigErrorInfoFilename(errorInfo), GetConfigErrorInfoLineNumber(errorInfo))
         { }
 
         internal ConfigurationErrorsException(string message, Exception inner, IConfigErrorInfo errorInfo) :
-            this(message, inner, GetUnsafeConfigErrorInfoFilename(errorInfo), GetConfigErrorInfoLineNumber(errorInfo))
+            this(message, inner, GetConfigErrorInfoFilename(errorInfo), GetConfigErrorInfoLineNumber(errorInfo))
         { }
 
         internal ConfigurationErrorsException(ConfigurationException e) :
-            this(GetBareMessage(e), GetInnerException(e), GetUnsafeFilename(e), GetLineNumber(e))
+            this(e?.BareMessage, e?.InnerException, e?.Filename, e?.Line ?? 0)
         { }
 
-
-        [ResourceExposure(ResourceScope.None)]
         internal ConfigurationErrorsException(ICollection<ConfigurationException> coll) :
             this(GetFirstException(coll))
         {
@@ -104,8 +101,6 @@ namespace System.Configuration
             coll.CopyTo(_errors, 0);
         }
 
-
-        // Serialization methods
         protected ConfigurationErrorsException(SerializationInfo info, StreamingContext context) :
             base(info, context)
         {
@@ -142,7 +137,7 @@ namespace System.Configuration
             }
         }
 
-        // The message includes the file/line number information.  
+        // The message includes the file/line number information.
         // To get the message without the extra information, use BareMessage.
         public override string Message
         {
@@ -162,7 +157,7 @@ namespace System.Configuration
             }
         }
 
-        public override string Filename => SafeFilename(_firstFilename);
+        public override string Filename => _firstFilename;
 
         public override int Line => _firstLine;
 
@@ -200,27 +195,6 @@ namespace System.Configuration
             return null;
         }
 
-        private static string GetBareMessage(ConfigurationException e)
-        {
-            return e?.BareMessage;
-        }
-
-        private static Exception GetInnerException(ConfigurationException e)
-        {
-            return e?.InnerException;
-        }
-
-        // We assert PathDiscovery so that we get the full filename when calling ConfigurationException.Filename
-        private static string GetUnsafeFilename(ConfigurationException e)
-        {
-            return e?.Filename;
-        }
-
-        private static int GetLineNumber(ConfigurationException e)
-        {
-            return e?.Line ?? 0;
-        }
-
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             int subErrors = 0;
@@ -254,9 +228,7 @@ namespace System.Configuration
             info.AddValue(SerializationParamErrorCount, subErrors);
         }
 
-        // 
         // Get file and linenumber from an XML Node in a DOM
-        //
         public static int GetLineNumber(XmlNode node)
         {
             return GetConfigErrorInfoLineNumber(node as IConfigErrorInfo);
@@ -264,12 +236,7 @@ namespace System.Configuration
 
         public static string GetFilename(XmlNode node)
         {
-            return SafeFilename(GetUnsafeFilename(node));
-        }
-
-        private static string GetUnsafeFilename(XmlNode node)
-        {
-            return GetUnsafeConfigErrorInfoFilename(node as IConfigErrorInfo);
+            return GetConfigErrorInfoFilename(node as IConfigErrorInfo);
         }
 
         // Get file and linenumber from an XML Reader
@@ -280,12 +247,7 @@ namespace System.Configuration
 
         public static string GetFilename(XmlReader reader)
         {
-            return SafeFilename(GetUnsafeFilename(reader));
-        }
-
-        private static string GetUnsafeFilename(XmlReader reader)
-        {
-            return GetUnsafeConfigErrorInfoFilename(reader as IConfigErrorInfo);
+            return GetConfigErrorInfoFilename(reader as IConfigErrorInfo);
         }
 
         // Get file and linenumber from an IConfigErrorInfo
@@ -294,96 +256,9 @@ namespace System.Configuration
             return errorInfo?.LineNumber ?? 0;
         }
 
-        private static string GetUnsafeConfigErrorInfoFilename(IConfigErrorInfo errorInfo)
+        private static string GetConfigErrorInfoFilename(IConfigErrorInfo errorInfo)
         {
             return errorInfo?.Filename;
-        }
-
-        private static string ExtractFileNameWithAssert(string filename)
-        {
-            // This method can throw; callers should wrap in try / catch.
-            string fullPath = Path.GetFullPath(filename);
-            return Path.GetFileName(fullPath);
-        }
-
-        // Internal Helper to strip a full path to just filename.ext when caller 
-        // does not have path discovery to the path (used for sane error handling).
-        internal static string SafeFilename(string filename)
-        {
-            if (string.IsNullOrEmpty(filename)) return filename;
-
-            // configuration file can be an http URL in IE
-            if (StringUtil.StartsWithOrdinalIgnoreCase(filename, HttpPrefix)) return filename;
-
-            // If it is a relative path, return it as is. 
-            // This could happen if the exception was constructed from the serialization constructor,
-            // and the caller did not have PathDiscoveryPermission for the file.
-            try
-            {
-                if (!Path.IsPathRooted(filename)) return filename;
-            }
-            catch
-            {
-                return null;
-            }
-
-            try
-            {
-                // Confirm that it is a full path.
-                // GetFullPath will also Demand PathDiscovery for the resulting path
-                Path.GetFullPath(filename);
-            }
-            catch (SecurityException)
-            {
-                // Get just the name of the file without the directory part.
-                try
-                {
-                    filename = ExtractFileNameWithAssert(filename);
-                }
-                catch
-                {
-                    filename = null;
-                }
-            }
-            catch
-            {
-                filename = null;
-            }
-
-            return filename;
-        }
-
-        // Internal Helper to always strip a full path to just filename.ext.
-        internal static string AlwaysSafeFilename(string filename)
-        {
-            if (string.IsNullOrEmpty(filename)) return filename;
-
-            // configuration file can be an http URL in IE
-            if (StringUtil.StartsWithOrdinalIgnoreCase(filename, HttpPrefix)) return filename;
-
-            // If it is a relative path, return it as is. 
-            // This could happen if the exception was constructed from the serialization constructor,
-            // and the caller did not have PathDiscoveryPermission for the file.
-            try
-            {
-                if (!Path.IsPathRooted(filename)) return filename;
-            }
-            catch
-            {
-                return null;
-            }
-
-            // Get just the name of the file without the directory part.
-            try
-            {
-                filename = ExtractFileNameWithAssert(filename);
-            }
-            catch
-            {
-                filename = null;
-            }
-
-            return filename;
         }
     }
 }

@@ -57,7 +57,7 @@ namespace System.Configuration
             Init(filename, line);
         }
 
-        // The message includes the file/line number information.  
+        // The message includes the file/line number information.
         // To get the message without the extra information, use BareMessage.
         public override string Message
         {
@@ -97,14 +97,10 @@ namespace System.Configuration
             info.AddValue("line", _line);
         }
 
-        [Obsolete(
-         "This class is obsolete, use System.Configuration!System.Configuration.ConfigurationErrorsException.GetFilename instead"
-         )]
+        [Obsolete("This class is obsolete, use System.Configuration!System.Configuration.ConfigurationErrorsException.GetFilename instead")]
         public static string GetXmlNodeFilename(XmlNode node) => (node as IConfigErrorInfo)?.Filename ?? string.Empty;
 
-        [Obsolete(
-         "This class is obsolete, use System.Configuration!System.Configuration.ConfigurationErrorsException.GetLinenumber instead"
-         )]
+        [Obsolete("This class is obsolete, use System.Configuration!System.Configuration.ConfigurationErrorsException.GetFilename instead")]
         public static int GetXmlNodeLineNumber(XmlNode node) => (node as IConfigErrorInfo)?.LineNumber ?? 0;
     }
 }

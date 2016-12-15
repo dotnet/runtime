@@ -60,7 +60,6 @@ namespace System.Configuration
         internal ConfigurationLockCollection _lockedAttributesList;
         internal ConfigurationLockCollection _lockedElementsList;
 
-
         protected ConfigurationElement()
         {
             Values = new ConfigurationValues();

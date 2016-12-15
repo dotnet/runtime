@@ -8,11 +8,8 @@ namespace System.Configuration
     {
         internal static bool EqualsOrBothNullOrEmpty(string s1, string s2)
         {
-            if (s1 == null) s1 = string.Empty;
-            if (s2 == null) s2 = string.Empty;
-
-            return string.Equals(s1, s2, StringComparison.Ordinal);
-        }
+            return string.Equals(s1 ?? string.Empty, s2 ?? string.Empty, StringComparison.Ordinal);
+        }   
 
         internal static bool EqualsIgnoreCase(string s1, string s2)
         {
