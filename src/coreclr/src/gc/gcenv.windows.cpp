@@ -12,10 +12,6 @@
 #include "env/gcenv.base.h"
 #include "env/gcenv.os.h"
 
-#ifndef FEATURE_STANDALONE_GC
-#error This file should only be compiled for a standalone GC
-#endif // FEATURE_STANDALONE_GC
-
 GCSystemInfo g_SystemInfo;
 
 typedef BOOL (WINAPI *PGET_PROCESS_MEMORY_INFO)(HANDLE handle, PROCESS_MEMORY_COUNTERS* memCounters, uint32_t cb);
@@ -422,7 +418,7 @@ size_t GCToOSInterface::GetVirtualMemoryLimit()
     MEMORYSTATUSEX memStatus;
     if (::GlobalMemoryStatusEx(&memStatus))
     {
-        return memStatus.ullAvailVirtual;
+        return (size_t)memStatus.ullAvailVirtual;
     }
 
     return 0;
