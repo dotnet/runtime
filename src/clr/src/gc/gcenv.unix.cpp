@@ -6,8 +6,6 @@
 #include "env/gcenv.base.h"
 #include "env/gcenv.os.h"
 
-#error This file should not be compiled!
-
 // Initialize the interface implementation
 // Return:
 //  true if it has succeeded, false if it has failed

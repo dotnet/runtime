@@ -84,10 +84,12 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="gcenv.ee.cpp" />
-    <ClCompile Include="gcenv.windows.cpp" />
     <ClCompile Include="GCSample.cpp" />
     <ClCompile Include="..\gccommon.cpp" />
     <ClCompile Include="..\gceewks.cpp" />
+    <ClCompile Include="..\gcenv.windows.cpp">
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="..\gcscan.cpp" />
     <ClCompile Include="..\gcwks.cpp" />
     <ClCompile Include="..\handletable.cpp" />
@@ -96,8 +98,7 @@
     <ClCompile Include="..\handletablescan.cpp" />
     <ClCompile Include="..\objecthandle.cpp" />
     <ClCompile Include="..\env\common.cpp">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
