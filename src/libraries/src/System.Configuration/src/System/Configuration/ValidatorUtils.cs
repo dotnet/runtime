@@ -39,20 +39,21 @@ namespace System.Configuration
                 valueIsInRange = false;
             }
 
-            // Throw range validation error
             if (valueIsInRange ^ exclusiveRange) return;
+
+            // Throw range validation error
             string error;
 
-            // First group of errors - the min and max range are the same. i.e. the valid value must be the same/equal to the min(max)
             if (min.Equals(max))
             {
+                // First group of errors - the min and max range are the same. i.e. the valid value must be the same/equal to the min(max)
                 error = exclusiveRange
                     ? SR.Validation_scalar_range_violation_not_different
                     : SR.Validation_scalar_range_violation_not_equal;
             }
-            // Second group of errors: min != max. I.e. its a range
             else
             {
+                // Second group of errors: min != max. I.e. its a range
                 error = exclusiveRange
                     ? SR.Validation_scalar_range_violation_not_outside_range
                     : SR.Validation_scalar_range_violation_not_in_range;

@@ -9,25 +9,84 @@ namespace System.Configuration
 {
     internal static class TypeUtil
     {
-        // Since the config APIs were originally implemented in System.dll,
-        // references to types without assembly names could be resolved to
-        // System.dll in Everett. Emulate that behavior by trying to get the
-        // type from System.dll
-        private static Type GetLegacyType(string typeString)
+        // Deliberately not being explicit about the versions to make
+        // things simpler for consumers of System.Configuration.
+        private static string[] s_implicitAssemblies =
         {
-            Type type = null;
+            // Historically we would find types in System.dll here.
+            // This is because Configuration used to live in System.dll
+            // and by resolution rules, typenames without an assembly
+            // specifier would be found there:
+            //
+            // (current executing assembly -> mscorlib / now s.p.c.l)
+            //
+            // When Configuration types moved to System.Configuration
+            // the implicit lookup for System had to be added to keep
+            // existing configuration files working.
+
+            // We also need to find types in mscorlib.dll as currently
+            // only types found in System.Private.CoreLib.dll are
+            // implicitly resolved. If this changes we can remove the
+            // explicit mscorlib lookup.
+
+            "mscorlib",
+            "System",
+
+            // TODO: ISSUE #14528
+            // System facade isn't currently part of the framework
+            // package. Once it is added the following locations can
+            // be removed. There are tests for types from each of
+            // these locations.
+            "System.Runtime",
+            "System.Collections",
+            "System.Collections.Concurrent",
+            "System.Collections.Specialized",
+        };
+
+        /// <summary>
+        /// Find type references that used to be found without assembly names
+        /// </summary>
+        private static Type GetImplicitType(string typeString)
+        {
+            // Since the config APIs were originally implemented in System.dll,
+            // references to types without assembly names could be resolved if
+            // they lived in System.dll.
+            //
+            // On NetFX we would try to emulate that behavior by looking in
+            // System. As types have moved around in CoreFX- we'll try to load
+            // from the a variety of assemblies to mimick the old behavior.
+
+            // Don't bother to look around if we've already got something that
+            // is clearly not a simple type name.
+            if (string.IsNullOrEmpty(typeString) || typeString.IndexOf(',') != -1)
+                return null;
 
             // Ignore all exceptions, otherwise callers will get unexpected
             // exceptions not related to the original failure to load the
             // desired type.
+
+            // First attempt is against our own System.Configuration types
             try
             {
-                Assembly systemAssembly = typeof(ConfigurationException).Assembly;
-                type = systemAssembly.GetType(typeString, false);
+                Assembly configurationAssembly = typeof(ConfigurationException).Assembly;
+                Type type = configurationAssembly.GetType(typeString, false);
+                if (type != null)
+                    return type;
             }
             catch { }
 
-            return type;
+            foreach (string assembly in s_implicitAssemblies)
+            {
+                try
+                {
+                    Type type = Type.GetType($"{typeString}, {assembly}");
+                    if (type != null)
+                        return type;
+                }
+                catch { }
+            }
+
+            return null;
         }
 
         // Get the type specified by typeString. If it fails, try to retrieve it 
@@ -49,7 +108,7 @@ namespace System.Configuration
 
             if (type == null)
             {
-                type = GetLegacyType(typeString);
+                type = GetImplicitType(typeString);
                 if ((type == null) && (originalException != null))
                     throw originalException;
             }
@@ -76,7 +135,7 @@ namespace System.Configuration
 
             if (type == null)
             {
-                type = GetLegacyType(typeString);
+                type = GetImplicitType(typeString);
                 if ((type == null) && (originalException != null))
                     throw originalException;
             }

@@ -53,7 +53,12 @@ namespace System.Configuration
 
             // Promote deprecated ConfigurationException to ConfigurationErrorsException
             ConfigurationException deprecatedException = e as ConfigurationException;
-            if (deprecatedException != null) return new ConfigurationErrorsException(deprecatedException);
+            if (deprecatedException != null)
+                return new ConfigurationErrorsException(
+                    deprecatedException.BareMessage,
+                    deprecatedException.InnerException,
+                    deprecatedException.Filename,
+                    deprecatedException.Line);
 
             // For XML exceptions, preserve the text of the exception in the outer message.
             XmlException xe = e as XmlException;

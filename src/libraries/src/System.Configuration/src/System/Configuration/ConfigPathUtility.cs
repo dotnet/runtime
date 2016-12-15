@@ -69,7 +69,7 @@ namespace System.Configuration
             if (string.IsNullOrEmpty(childConfigPath))
                 return parentConfigPath;
 
-            return parentConfigPath + "/" + childConfigPath;
+            return parentConfigPath + SeparatorChar + childConfigPath;
         }
 
         internal static string[] GetParts(string configPath)
@@ -90,7 +90,7 @@ namespace System.Configuration
             if (string.IsNullOrEmpty(configPath))
                 return configPath;
 
-            int index = configPath.LastIndexOf('/');
+            int index = configPath.LastIndexOf(SeparatorChar);
             if (index == -1)
                 return configPath;
 
