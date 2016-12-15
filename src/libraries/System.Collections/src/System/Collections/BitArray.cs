@@ -355,7 +355,6 @@ namespace System.Collections
                 {
                     throw new ArgumentOutOfRangeException(nameof(count), count, SR.ArgumentOutOfRange_NeedNonNegNum);
                 }
-                Contract.EndContractBlock();
 
                 _version++;
                 return this;
@@ -366,7 +365,7 @@ namespace System.Collections
             if (count < m_length)
             {
                 int shiftCount;
-                // We can not use Math.DivRem due compilation error
+                // We can not use Math.DivRem without taking a dependency on System.Runtime.Extensions
                 int fromIndex = count / BitsPerInt32;
                 shiftCount = count - fromIndex * BitsPerInt32; // Optimized Rem
 
@@ -417,7 +416,6 @@ namespace System.Collections
                 {
                     throw new ArgumentOutOfRangeException(nameof(count), count, SR.ArgumentOutOfRange_NeedNonNegNum);
                 }
-                Contract.EndContractBlock();
 
                 _version++;
                 return this;
@@ -429,7 +427,7 @@ namespace System.Collections
                 int lastIndex = (m_length - 1) / BitsPerInt32;
 
                 int shiftCount;
-                // We can not use Math.DivRem due compilation error
+                // We can not use Math.DivRem without taking a dependency on System.Runtime.Extensions
                 lengthToClear = count / BitsPerInt32;
                 shiftCount = count - lengthToClear * BitsPerInt32; // Optimized Rem
 
