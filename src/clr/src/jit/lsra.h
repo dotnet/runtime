@@ -893,6 +893,8 @@ private:
         unassignPhysReg(getRegisterRecord(reg), nullptr);
     }
 
+    void setIntervalAsSpilled(Interval* interval);
+    void setIntervalAsSplit(Interval* interval);
     void spillInterval(Interval* interval, RefPosition* fromRefPosition, RefPosition* toRefPosition);
 
     void spillGCRefs(RefPosition* killRefPosition);
@@ -1136,6 +1138,8 @@ private:
     unsigned int bbSeqCount;
     // The Location of the start of the current block.
     LsraLocation curBBStartLocation;
+    // True if the method contains any critical edges.
+    bool hasCriticalEdges;
 
     // Ordered list of RefPositions
     RefPositionList refPositions;
@@ -1155,6 +1159,12 @@ private:
     // Current set of live tracked vars, used during building of RefPositions to determine whether
     // to preference to callee-save
     VARSET_TP currentLiveVars;
+    // Set of variables that may require resolution across an edge.
+    // This is first constructed during interval building, to contain all the lclVars that are live at BB edges.
+    // Then, any lclVar that is always in the same register is removed from the set.
+    VARSET_TP resolutionCandidateVars;
+    // This set contains all the lclVars that are ever spilled or split.
+    VARSET_TP splitOrSpilledVars;
     // Set of floating point variables to consider for callee-save registers.
     VARSET_TP fpCalleeSaveCandidateVars;
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
