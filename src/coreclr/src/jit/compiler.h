@@ -670,7 +670,7 @@ public:
 #endif // defined(_TARGET_64BIT_)
     }
 
-    unsigned lvSize() // Size needed for storage representation. Only used for structs or TYP_BLK.
+    unsigned lvSize() const // Size needed for storage representation. Only used for structs or TYP_BLK.
     {
         // TODO-Review: Sometimes we get called on ARM with HFA struct variables that have been promoted,
         // where the struct itself is no longer used because all access is via its member fields.
@@ -688,7 +688,8 @@ public:
 
 #if defined(FEATURE_SIMD) && !defined(_TARGET_64BIT_)
         // For 32-bit architectures, we make local variable SIMD12 types 16 bytes instead of just 12. We can't do
-        // this for arguments, which must be passed according the defined ABI.
+        // this for arguments, which must be passed according the defined ABI. We don't want to do this for
+        // dependently promoted struct fields, but we don't know that here. See lvaMapSimd12ToSimd16().
         if ((lvType == TYP_SIMD12) && !lvIsParam)
         {
             assert(lvExactSize == 12);
@@ -1980,6 +1981,7 @@ public:
                                SIMDIntrinsicID simdIntrinsicID,
                                var_types       baseType,
                                unsigned        size);
+    void SetOpLclRelatedToSIMDIntrinsic(GenTreePtr op);
 #endif
 
     GenTreePtr gtNewLclLNode(unsigned lnum, var_types type, IL_OFFSETX ILoffs = BAD_IL_OFFSET);
@@ -2651,6 +2653,35 @@ public:
     lvaPromotionType lvaGetParentPromotionType(unsigned varNum);
     bool lvaIsFieldOfDependentlyPromotedStruct(const LclVarDsc* varDsc);
     bool lvaIsGCTracked(const LclVarDsc* varDsc);
+
+#if defined(FEATURE_SIMD)
+    bool lvaMapSimd12ToSimd16(const LclVarDsc* varDsc)
+    {
+        assert(varDsc->lvType == TYP_SIMD12);
+        assert(varDsc->lvExactSize == 12);
+
+#if defined(_TARGET_64BIT_)
+        assert(varDsc->lvSize() == 16);
+        return true;
+#else // !defined(_TARGET_64BIT_)
+
+        // For 32-bit architectures, we make local variable SIMD12 types 16 bytes instead of just 12. lvSize()
+        // already does this calculation. However, we also need to prevent mapping types if the var is a
+        // depenendently promoted struct field, which must remain its exact size within its parent struct.
+        // However, we don't know this until late, so we may have already pretended the field is bigger
+        // before that.
+        if ((varDsc->lvSize() == 16) && !lvaIsFieldOfDependentlyPromotedStruct(varDsc))
+        {
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+
+#endif // !defined(_TARGET_64BIT_)
+    }
+#endif // defined(FEATURE_SIMD)
 
     BYTE* lvaGetGcLayout(unsigned varNum);
     bool lvaTypeIsGC(unsigned varNum);

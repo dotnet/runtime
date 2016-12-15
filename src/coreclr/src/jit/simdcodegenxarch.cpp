@@ -75,22 +75,20 @@ instruction CodeGen::getOpForSIMDIntrinsic(SIMDIntrinsicID intrinsicId, var_type
                         result = INS_vbroadcastsd;
                         break;
                     case TYP_ULONG:
-                        __fallthrough;
                     case TYP_LONG:
+                        // NOTE: for x86, this instruction is valid if the src is xmm2/m64, but NOT if it is supposed
+                        // to be TYP_LONG reg.
                         result = INS_vpbroadcastq;
                         break;
                     case TYP_UINT:
-                        __fallthrough;
                     case TYP_INT:
                         result = INS_vpbroadcastd;
                         break;
                     case TYP_CHAR:
-                        __fallthrough;
                     case TYP_SHORT:
                         result = INS_vpbroadcastw;
                         break;
                     case TYP_UBYTE:
-                        __fallthrough;
                     case TYP_BYTE:
                         result = INS_vpbroadcastb;
                         break;
@@ -99,8 +97,10 @@ instruction CodeGen::getOpForSIMDIntrinsic(SIMDIntrinsicID intrinsicId, var_type
                 }
                 break;
             }
+
             // For SSE, SIMDIntrinsicInit uses the same instruction as the SIMDIntrinsicShuffleSSE2 intrinsic.
             __fallthrough;
+
         case SIMDIntrinsicShuffleSSE2:
             if (baseType == TYP_FLOAT)
             {
@@ -116,7 +116,7 @@ instruction CodeGen::getOpForSIMDIntrinsic(SIMDIntrinsicID intrinsicId, var_type
             }
             else if (baseType == TYP_LONG || baseType == TYP_ULONG)
             {
-                // We don't have a seperate SSE2 instruction and will
+                // We don't have a separate SSE2 instruction and will
                 // use the instruction meant for doubles since it is
                 // of the same size as a long.
                 result = INS_shufpd;
@@ -619,7 +619,73 @@ void CodeGen::genSIMDIntrinsicInit(GenTreeSIMD* simdNode)
     noway_assert(!varTypeIsSmallInt(baseType) || op1->IsIntegralConst(0));
 
     instruction ins = INS_invalid;
-    if (op1->isContained())
+
+#if !defined(_TARGET_64BIT_)
+    if (op1->OperGet() == GT_LONG)
+    {
+        assert(varTypeIsLong(baseType));
+
+        GenTree* op1lo = op1->gtGetOp1();
+        GenTree* op1hi = op1->gtGetOp2();
+
+        if (op1lo->IsIntegralConst(0) && op1hi->IsIntegralConst(0))
+        {
+            genSIMDZero(targetType, baseType, targetReg);
+        }
+        else if (op1lo->IsIntegralConst(-1) && op1hi->IsIntegralConst(-1))
+        {
+            // Initialize elements of vector with all 1's: generate pcmpeqd reg, reg.
+            ins = getOpForSIMDIntrinsic(SIMDIntrinsicEqual, TYP_INT);
+            inst_RV_RV(ins, targetReg, targetReg, targetType, emitActualTypeSize(targetType));
+        }
+        else
+        {
+            // Generate:
+            //     mov_i2xmm targetReg, op1lo
+            //     mov_i2xmm xmmtmp, op1hi
+            //     shl xmmtmp, 4 bytes
+            //     por targetReg, xmmtmp
+            // Now, targetReg has the long in the low 64 bits. For SSE2, move it to the high 64 bits using:
+            //     shufpd targetReg, targetReg, 0 // move the long to all the lanes
+            // For AVX2, move it to all 4 of the 64-bit lanes using:
+            //     vpbroadcastq targetReg, targetReg
+
+            instruction ins;
+
+            regNumber op1loReg = genConsumeReg(op1lo);
+            ins                = ins_CopyIntToFloat(TYP_INT, TYP_FLOAT);
+            inst_RV_RV(ins, targetReg, op1loReg, TYP_INT, emitTypeSize(TYP_INT));
+
+            assert(simdNode->gtRsvdRegs != RBM_NONE);
+            assert(genCountBits(simdNode->gtRsvdRegs) == 1);
+            regNumber tmpReg = genRegNumFromMask(simdNode->gtRsvdRegs);
+
+            regNumber op1hiReg = genConsumeReg(op1hi);
+            ins                = ins_CopyIntToFloat(TYP_INT, TYP_FLOAT);
+            inst_RV_RV(ins, tmpReg, op1hiReg, TYP_INT, emitTypeSize(TYP_INT));
+
+            ins = getOpForSIMDIntrinsic(SIMDIntrinsicShiftLeftInternal, baseType);
+            getEmitter()->emitIns_R_I(ins, EA_16BYTE, tmpReg, 4); // shift left by 4 bytes
+
+            ins = getOpForSIMDIntrinsic(SIMDIntrinsicBitwiseOr, baseType);
+            inst_RV_RV(ins, targetReg, tmpReg, targetType, emitActualTypeSize(targetType));
+
+#ifdef FEATURE_AVX_SUPPORT
+            if (compiler->canUseAVX())
+            {
+                inst_RV_RV(INS_vpbroadcastq, targetReg, targetReg, TYP_SIMD32, emitTypeSize(TYP_SIMD32));
+            }
+            else
+#endif // FEATURE_AVX_SUPPORT
+            {
+                ins = getOpForSIMDIntrinsic(SIMDIntrinsicShuffleSSE2, baseType);
+                getEmitter()->emitIns_R_R_I(ins, emitActualTypeSize(targetType), targetReg, targetReg, 0);
+            }
+        }
+    }
+    else
+#endif // !defined(_TARGET_64BIT_)
+        if (op1->isContained())
     {
         if (op1->IsIntegralConst(0) || op1->IsFPZero())
         {
@@ -1684,6 +1750,7 @@ void CodeGen::genSIMDIntrinsicGetItem(GenTreeSIMD* simdNode)
     }
 
     noway_assert(op2->isContained());
+    noway_assert(op2->IsCnsIntOrI());
     unsigned int index        = (unsigned int)op2->gtIntCon.gtIconVal;
     unsigned int byteShiftCnt = index * genTypeSize(baseType);
 
@@ -1828,7 +1895,7 @@ void CodeGen::genSIMDIntrinsicGetItem(GenTreeSIMD* simdNode)
 
             assert(tmpReg != REG_NA);
             ins = ins_CopyFloatToInt(TYP_FLOAT, baseType);
-            // (Note that for mov_xmm2i, the int register is always in the reg2 position.
+            // (Note that for mov_xmm2i, the int register is always in the reg2 position.)
             inst_RV_RV(ins, tmpReg, targetReg, baseType);
         }
     }
@@ -2055,7 +2122,7 @@ void CodeGen::genLoadIndTypeSIMD12(GenTree* treeNode)
 }
 
 //-----------------------------------------------------------------------------
-// genStoreLclFldTypeSIMD12: store a TYP_SIMD12 (i.e. Vector3) type field.
+// genStoreLclTypeSIMD12: store a TYP_SIMD12 (i.e. Vector3) type field.
 // Since Vector3 is not a hardware supported write size, it is performed
 // as two stores: 8 byte followed by 4-byte.
 //
@@ -2065,13 +2132,18 @@ void CodeGen::genLoadIndTypeSIMD12(GenTree* treeNode)
 // Return Value:
 //    None.
 //
-void CodeGen::genStoreLclFldTypeSIMD12(GenTree* treeNode)
+void CodeGen::genStoreLclTypeSIMD12(GenTree* treeNode)
 {
-    assert(treeNode->OperGet() == GT_STORE_LCL_FLD);
+    assert((treeNode->OperGet() == GT_STORE_LCL_FLD) || (treeNode->OperGet() == GT_STORE_LCL_VAR));
 
-    unsigned offs   = treeNode->gtLclFld.gtLclOffs;
+    unsigned offs   = 0;
     unsigned varNum = treeNode->gtLclVarCommon.gtLclNum;
     assert(varNum < compiler->lvaCount);
+
+    if (treeNode->OperGet() == GT_LCL_FLD)
+    {
+        offs = treeNode->gtLclFld.gtLclOffs;
+    }
 
     GenTreePtr op1 = treeNode->gtOp.gtOp1;
     assert(!op1->isContained());
@@ -2140,9 +2212,38 @@ void CodeGen::genLoadLclTypeSIMD12(GenTree* treeNode)
 #ifdef _TARGET_X86_
 
 //-----------------------------------------------------------------------------
+// genStoreSIMD12ToStack: store a TYP_SIMD12 (i.e. Vector3) type field to the stack.
+// Since Vector3 is not a hardware supported write size, it is performed
+// as two stores: 8 byte followed by 4-byte. The stack is assumed to have
+// already been adjusted.
+//
+// Arguments:
+//    operandReg - the xmm register containing the SIMD12 to store.
+//    tmpReg - an xmm register that can be used as a temporary for the operation.
+//
+// Return Value:
+//    None.
+//
+void CodeGen::genStoreSIMD12ToStack(regNumber operandReg, regNumber tmpReg)
+{
+    assert(genIsValidFloatReg(operandReg));
+    assert(genIsValidFloatReg(tmpReg));
+
+    // 8-byte write
+    getEmitter()->emitIns_AR_R(ins_Store(TYP_DOUBLE), EA_8BYTE, operandReg, REG_SPBASE, 0);
+
+    // Extract upper 4-bytes from data
+    getEmitter()->emitIns_R_R_I(INS_pshufd, emitActualTypeSize(TYP_SIMD16), tmpReg, operandReg, 0x02);
+
+    // 4-byte write
+    getEmitter()->emitIns_AR_R(ins_Store(TYP_FLOAT), EA_4BYTE, tmpReg, REG_SPBASE, 8);
+}
+
+//-----------------------------------------------------------------------------
 // genPutArgStkSIMD12: store a TYP_SIMD12 (i.e. Vector3) type field.
 // Since Vector3 is not a hardware supported write size, it is performed
-// as two stores: 8 byte followed by 4-byte.
+// as two stores: 8 byte followed by 4-byte. The stack is assumed to have
+// already been adjusted.
 //
 // Arguments:
 //    treeNode - tree node that is attempting to store TYP_SIMD12 field
@@ -2163,19 +2264,7 @@ void CodeGen::genPutArgStkSIMD12(GenTree* treeNode)
     assert(genCountBits(treeNode->gtRsvdRegs) == 1);
     regNumber tmpReg = genRegNumFromMask(treeNode->gtRsvdRegs);
 
-    // Subtract from ESP; create space for argument.
-    // TODO-CQ: use 'push' instead?
-    inst_RV_IV(INS_sub, REG_SPBASE, 12, EA_PTRSIZE);
-    genStackLevel += 12;
-
-    // 8-byte write
-    getEmitter()->emitIns_AR_R(ins_Store(TYP_DOUBLE), EA_8BYTE, operandReg, REG_SPBASE, 0);
-
-    // Extract upper 4-bytes from data
-    getEmitter()->emitIns_R_R_I(INS_pshufd, emitActualTypeSize(TYP_SIMD16), tmpReg, operandReg, 0x02);
-
-    // 4-byte write
-    getEmitter()->emitIns_AR_R(ins_Store(TYP_FLOAT), EA_4BYTE, tmpReg, REG_SPBASE, 8);
+    genStoreSIMD12ToStack(operandReg, tmpReg);
 }
 
 #endif // _TARGET_X86_
