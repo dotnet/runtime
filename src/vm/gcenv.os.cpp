@@ -370,23 +370,6 @@ static size_t g_RestrictedPhysicalMemoryLimit = (size_t)MAX_PTR;
 typedef BOOL (WINAPI *PIS_PROCESS_IN_JOB)(HANDLE processHandle, HANDLE jobHandle, BOOL* result);
 typedef BOOL (WINAPI *PQUERY_INFORMATION_JOB_OBJECT)(HANDLE jobHandle, JOBOBJECTINFOCLASS jobObjectInfoClass, void* lpJobObjectInfo, DWORD cbJobObjectInfoLength, LPDWORD lpReturnLength);
 
-#ifdef FEATURE_CORECLR
-// For coresys we need to look for an API in some apiset dll on win8 if we can't find it  
-// in the traditional dll.
-HINSTANCE LoadDllForAPI(const WCHAR* dllTraditional, const WCHAR* dllApiSet)
-{
-    HINSTANCE hinst = WszLoadLibrary(dllTraditional);
-
-    if (!hinst)
-    {
-        if(RunningOnWin8())
-            hinst = WszLoadLibrary(dllApiSet);
-    }
-
-    return hinst;
-}
-#endif
-
 static size_t GetRestrictedPhysicalMemoryLimit()
 {
     LIMITED_METHOD_CONTRACT;
@@ -398,10 +381,7 @@ static size_t GetRestrictedPhysicalMemoryLimit()
     size_t job_physical_memory_limit = (size_t)MAX_PTR;
     BOOL in_job_p = FALSE;
 #ifdef FEATURE_CORECLR
-    HINSTANCE hinstApiSetPsapiOrKernel32 = 0;
-    // these 2 modules will need to be freed no matter what as we only use them locally in this method.
-    HINSTANCE hinstApiSetJob1OrKernel32 = 0;
-    HINSTANCE hinstApiSetJob2OrKernel32 = 0;
+    HINSTANCE hinstKernel32 = 0;
 #else
     HINSTANCE hinstPsapi = 0;
 #endif
@@ -409,17 +389,7 @@ static size_t GetRestrictedPhysicalMemoryLimit()
     PIS_PROCESS_IN_JOB GCIsProcessInJob = 0;
     PQUERY_INFORMATION_JOB_OBJECT GCQueryInformationJobObject = 0;
 
-#ifdef FEATURE_CORECLR
-    hinstApiSetJob1OrKernel32 = LoadDllForAPI(L"kernel32.dll", L"api-ms-win-core-job-l1-1-0.dll");
-    if (!hinstApiSetJob1OrKernel32)
-        goto exit;
-
-    GCIsProcessInJob = (PIS_PROCESS_IN_JOB)GetProcAddress(hinstApiSetJob1OrKernel32, "IsProcessInJob");
-    if (!GCIsProcessInJob)
-        goto exit;
-#else
     GCIsProcessInJob = &(::IsProcessInJob);
-#endif
 
     if (!GCIsProcessInJob(GetCurrentProcess(), NULL, &in_job_p))
         goto exit;
@@ -427,11 +397,11 @@ static size_t GetRestrictedPhysicalMemoryLimit()
     if (in_job_p)
     {
 #ifdef FEATURE_CORECLR
-        hinstApiSetPsapiOrKernel32 = LoadDllForAPI(L"kernel32.dll", L"api-ms-win-core-psapi-l1-1-0");
-        if (!hinstApiSetPsapiOrKernel32)
+        hinstKernel32 = WszLoadLibrary(L"kernel32.dll");
+        if (!hinstKernel32)
             goto exit;
 
-        GCGetProcessMemoryInfo = (PGET_PROCESS_MEMORY_INFO)GetProcAddress(hinstApiSetPsapiOrKernel32, "K32GetProcessMemoryInfo");
+        GCGetProcessMemoryInfo = (PGET_PROCESS_MEMORY_INFO)GetProcAddress(hinstKernel32, "K32GetProcessMemoryInfo");
 #else
         // We need a way to get the working set in a job object and GetProcessMemoryInfo 
         // is the way to get that. According to MSDN, we should use GetProcessMemoryInfo In order to 
@@ -445,15 +415,7 @@ static size_t GetRestrictedPhysicalMemoryLimit()
         if (!GCGetProcessMemoryInfo)
             goto exit;
 
-#ifdef FEATURE_CORECLR
-        hinstApiSetJob2OrKernel32 = LoadDllForAPI(L"kernel32.dll", L"api-ms-win-core-job-l2-1-0");
-        if (!hinstApiSetJob2OrKernel32)
-            goto exit;
-
-        GCQueryInformationJobObject = (PQUERY_INFORMATION_JOB_OBJECT)GetProcAddress(hinstApiSetJob2OrKernel32, "QueryInformationJobObject");
-#else
         GCQueryInformationJobObject = &(::QueryInformationJobObject);
-#endif 
 
         if (!GCQueryInformationJobObject)
             goto exit;
@@ -496,19 +458,12 @@ static size_t GetRestrictedPhysicalMemoryLimit()
     }
 
 exit:
-#ifdef FEATURE_CORECLR
-    if (hinstApiSetJob1OrKernel32)
-        FreeLibrary(hinstApiSetJob1OrKernel32);
-    if (hinstApiSetJob2OrKernel32)
-        FreeLibrary(hinstApiSetJob2OrKernel32);
-#endif
-
     if (job_physical_memory_limit == (size_t)MAX_PTR)
     {
         job_physical_memory_limit = 0;
 
 #ifdef FEATURE_CORECLR
-        FreeLibrary(hinstApiSetPsapiOrKernel32);
+        FreeLibrary(hinstKernel32);
 #else
         FreeLibrary(hinstPsapi);
 #endif
