@@ -1491,10 +1491,11 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
             // storing of TYP_SIMD12 (i.e. Vector3) field
             if (treeNode->TypeGet() == TYP_SIMD12)
             {
-                genStoreLclFldTypeSIMD12(treeNode);
+                genStoreLclTypeSIMD12(treeNode);
                 break;
             }
-#endif
+#endif // FEATURE_SIMD
+
             GenTreePtr op1 = treeNode->gtGetOp1();
             genConsumeRegs(op1);
             emit->emitInsBinary(ins_Store(targetType), emitTypeSize(treeNode), treeNode, op1);
@@ -1531,6 +1532,13 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
 #endif // !defined(_TARGET_64BIT_)
 
 #ifdef FEATURE_SIMD
+                // storing of TYP_SIMD12 (i.e. Vector3) field
+                if (treeNode->TypeGet() == TYP_SIMD12)
+                {
+                    genStoreLclTypeSIMD12(treeNode);
+                    break;
+                }
+
                 if (varTypeIsSIMD(targetType) && (targetReg != REG_NA) && op1->IsCnsIntOrI())
                 {
                     // This is only possible for a zero-init.
@@ -7450,13 +7458,19 @@ unsigned CodeGen::getBaseVarForPutArgStk(GenTreePtr treeNode)
 
 #ifdef _TARGET_X86_
 //---------------------------------------------------------------------
-// adjustStackForPutArgStk:
+// genAdjustStackForPutArgStk:
 //    adjust the stack pointer for a putArgStk node if necessary.
 //
 // Arguments:
 //    putArgStk - the putArgStk node.
 //
 // Returns: true if the stack pointer was adjusted; false otherwise.
+//
+// Notes:
+//    Sets `m_pushStkArg` to true if the stack arg needs to be pushed,
+//    false if the stack arg needs to be stored at the current stack
+//    pointer address. This is exactly the opposite of the return value
+//    of this function.
 //
 bool CodeGen::genAdjustStackForPutArgStk(GenTreePutArgStk* putArgStk)
 {
@@ -7515,11 +7529,10 @@ bool CodeGen::genAdjustStackForPutArgStk(GenTreePutArgStk* putArgStk)
 }
 
 //---------------------------------------------------------------------
-// genPutArgStkFieldList - generate code for passing an arg on the stack.
+// genPutArgStkFieldList - generate code for passing a GT_FIELD_LIST arg on the stack.
 //
 // Arguments
-//    treeNode      - the GT_PUTARG_STK node
-//    targetType    - the type of the treeNode
+//    treeNode      - the GT_PUTARG_STK node whose op1 is a GT_FIELD_LIST
 //
 // Return value:
 //    None
@@ -7531,24 +7544,36 @@ void CodeGen::genPutArgStkFieldList(GenTreePutArgStk* putArgStk)
 
     // Set m_pushStkArg and pre-adjust the stack if necessary.
     const bool preAdjustedStack = genAdjustStackForPutArgStk(putArgStk);
+
     // For now, we only support the "push" case; we will push a full slot for the first field of each slot
     // within the struct.
     assert((putArgStk->isPushKind()) && !preAdjustedStack && m_pushStkArg);
 
-    // If we have pre-adjusted the stack and are simply storing the fields in order) set the offset to 0.
+    // If we have pre-adjusted the stack and are simply storing the fields in order, set the offset to 0.
     // (Note that this mode is not currently being used.)
     // If we are pushing the arguments (i.e. we have not pre-adjusted the stack), then we are pushing them
     // in reverse order, so we start with the current field offset at the size of the struct arg (which must be
     // a multiple of the target pointer size).
     unsigned  currentOffset   = (preAdjustedStack) ? 0 : putArgStk->getArgSize();
     unsigned  prevFieldOffset = currentOffset;
-    regNumber tmpReg          = REG_NA;
+    regNumber intTmpReg       = REG_NA;
+    regNumber simdTmpReg      = REG_NA;
     if (putArgStk->gtRsvdRegs != RBM_NONE)
     {
-        assert(genCountBits(putArgStk->gtRsvdRegs) == 1);
-        tmpReg = genRegNumFromMask(putArgStk->gtRsvdRegs);
-        assert(genIsValidIntReg(tmpReg));
+        regMaskTP rsvdRegs = putArgStk->gtRsvdRegs;
+        if ((rsvdRegs & RBM_ALLINT) != 0)
+        {
+            intTmpReg = genRegNumFromMask(rsvdRegs & RBM_ALLINT);
+            assert(genIsValidIntReg(intTmpReg));
+        }
+        if ((rsvdRegs & RBM_ALLFLOAT) != 0)
+        {
+            simdTmpReg = genRegNumFromMask(rsvdRegs & RBM_ALLFLOAT);
+            assert(genIsValidFloatReg(simdTmpReg));
+        }
+        assert(genCountBits(rsvdRegs) == ((intTmpReg == REG_NA) ? 0 : 1) + ((simdTmpReg == REG_NA) ? 0 : 1));
     }
+
     for (GenTreeFieldList* current = fieldList; current != nullptr; current = current->Rest())
     {
         GenTree* const fieldNode   = current->Current();
@@ -7576,7 +7601,7 @@ void CodeGen::genPutArgStkFieldList(GenTreePutArgStk* putArgStk)
         // able to detect stores into the outgoing argument area of the stack on x86.
         const bool fieldIsSlot = ((fieldOffset % 4) == 0) && ((prevFieldOffset - fieldOffset) >= 4);
         int        adjustment  = roundUp(currentOffset - fieldOffset, 4);
-        if (fieldIsSlot)
+        if (fieldIsSlot && !varTypeIsSIMD(fieldType))
         {
             fieldType         = genActualType(fieldType);
             unsigned pushSize = genTypeSize(fieldType);
@@ -7594,12 +7619,13 @@ void CodeGen::genPutArgStkFieldList(GenTreePutArgStk* putArgStk)
         else
         {
             m_pushStkArg = false;
+
             // We always "push" floating point fields (i.e. they are full slot values that don't
             // require special handling).
-            assert(varTypeIsIntegralOrI(fieldNode));
+            assert(varTypeIsIntegralOrI(fieldNode) || varTypeIsSIMD(fieldNode));
+
             // If we can't push this field, it needs to be in a register so that we can store
             // it to the stack location.
-            assert(tmpReg != REG_NA);
             if (adjustment != 0)
             {
                 // This moves the stack pointer to fieldOffset.
@@ -7611,15 +7637,16 @@ void CodeGen::genPutArgStkFieldList(GenTreePutArgStk* putArgStk)
             }
 
             // Does it need to be in a byte register?
-            // If so, we'll use tmpReg, which must have been allocated as a byte register.
+            // If so, we'll use intTmpReg, which must have been allocated as a byte register.
             // If it's already in a register, but not a byteable one, then move it.
             if (varTypeIsByte(fieldType) && ((argReg == REG_NA) || ((genRegMask(argReg) & RBM_BYTE_REGS) == 0)))
             {
-                noway_assert((genRegMask(tmpReg) & RBM_BYTE_REGS) != 0);
+                assert(intTmpReg != REG_NA);
+                noway_assert((genRegMask(intTmpReg) & RBM_BYTE_REGS) != 0);
                 if (argReg != REG_NA)
                 {
-                    inst_RV_RV(INS_mov, tmpReg, argReg, fieldType);
-                    argReg = tmpReg;
+                    inst_RV_RV(INS_mov, intTmpReg, argReg, fieldType);
+                    argReg = intTmpReg;
                 }
             }
         }
@@ -7630,6 +7657,7 @@ void CodeGen::genPutArgStkFieldList(GenTreePutArgStk* putArgStk)
             {
                 if (fieldNode->isUsedFromSpillTemp())
                 {
+                    assert(!varTypeIsSIMD(fieldType)); // Q: can we get here with SIMD?
                     assert(fieldNode->IsRegOptional());
                     TempDsc* tmp = getSpillTempDsc(fieldNode);
                     getEmitter()->emitIns_S(INS_push, emitActualTypeSize(fieldNode->TypeGet()), tmp->tdTempNum(), 0);
@@ -7662,25 +7690,35 @@ void CodeGen::genPutArgStkFieldList(GenTreePutArgStk* putArgStk)
             }
             else
             {
-                // The stack has been adjusted and we will load the field to tmpReg and then store it on the stack.
+                // The stack has been adjusted and we will load the field to intTmpReg and then store it on the stack.
                 assert(varTypeIsIntegralOrI(fieldNode));
                 switch (fieldNode->OperGet())
                 {
                     case GT_LCL_VAR:
-                        inst_RV_TT(INS_mov, tmpReg, fieldNode);
+                        inst_RV_TT(INS_mov, intTmpReg, fieldNode);
                         break;
                     case GT_CNS_INT:
-                        genSetRegToConst(tmpReg, fieldNode->TypeGet(), fieldNode);
+                        genSetRegToConst(intTmpReg, fieldNode->TypeGet(), fieldNode);
                         break;
                     default:
                         unreached();
                 }
-                genStoreRegToStackArg(fieldType, tmpReg, fieldOffset - currentOffset);
+                genStoreRegToStackArg(fieldType, intTmpReg, fieldOffset - currentOffset);
             }
         }
         else
         {
-            genStoreRegToStackArg(fieldType, argReg, fieldOffset - currentOffset);
+#if defined(_TARGET_X86_) && defined(FEATURE_SIMD)
+            if (fieldType == TYP_SIMD12)
+            {
+                assert(genIsValidFloatReg(simdTmpReg));
+                genStoreSIMD12ToStack(argReg, simdTmpReg);
+            }
+            else
+#endif // defined(_TARGET_X86_) && defined(FEATURE_SIMD)
+            {
+                genStoreRegToStackArg(fieldType, argReg, fieldOffset - currentOffset);
+            }
             if (m_pushStkArg)
             {
                 // We always push a slot-rounded size
@@ -7714,14 +7752,6 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* putArgStk)
     var_types targetType = putArgStk->TypeGet();
 
 #ifdef _TARGET_X86_
-
-#ifdef FEATURE_SIMD
-    if (targetType == TYP_SIMD12)
-    {
-        genPutArgStkSIMD12(putArgStk);
-        return;
-    }
-#endif // FEATURE_SIMD
 
     if (varTypeIsStruct(targetType))
     {
@@ -7949,6 +7979,14 @@ void CodeGen::genStoreRegToStackArg(var_types type, regNumber srcReg, int offset
 void CodeGen::genPutStructArgStk(GenTreePutArgStk* putArgStk)
 {
     var_types targetType = putArgStk->TypeGet();
+
+#if defined(_TARGET_X86_) && defined(FEATURE_SIMD)
+    if (targetType == TYP_SIMD12)
+    {
+        genPutArgStkSIMD12(putArgStk);
+        return;
+    }
+#endif // defined(_TARGET_X86_) && defined(FEATURE_SIMD)
 
     if (varTypeIsSIMD(targetType))
     {

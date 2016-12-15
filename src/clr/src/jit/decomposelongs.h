@@ -55,6 +55,8 @@ private:
     GenTree* DecomposeRotate(LIR::Use& use);
     GenTree* DecomposeMul(LIR::Use& use);
     GenTree* DecomposeUMod(LIR::Use& use);
+    GenTree* DecomposeSimd(LIR::Use& use);
+    GenTree* DecomposeSimdGetItem(LIR::Use& use);
 
     // Helper functions
     GenTree* FinalizeDecomposition(LIR::Use& use, GenTree* loResult, GenTree* hiResult, GenTree* insertResultAfter);
