@@ -27,7 +27,7 @@
 
   <PropertyGroup>
     <TestRuntimeDir>$(RuntimeDir)</TestRuntimeDir>
-    <TestHostExecutable Condition="'$(TestHostExecutable)' == ''">$(TestRuntimeDir)/corerun</TestHostExecutable>
+    <TestHostExecutable Condition="'$(TestHostExecutable)' == ''">$(TestRuntimeDir)\corerun.exe</TestHostExecutable>
     <XunitExecutable Condition="'$(XunitExecutable)' == ''">$(TestRuntimeDir)/xunit.console.netcore.exe</XunitExecutable>
   </PropertyGroup>
 
@@ -55,6 +55,9 @@
 
     <TestCommandLine Condition="'$(Performance)'!='true'">$(TestProgram) $(TestArguments) {XunitTraitOptions}</TestCommandLine>
   </PropertyGroup>
+
+  <!-- The Code Coverage targets will override TestHost and TestCommandLine if coverage is enabled -->
+  <Import Project="$(MSBuildThisFileDirectory)CodeCoverage.targets" />
 
   <Target Name="DiscoverTestInputs" DependsOnTargets="ResolveReferences;GetCopyToOutputDirectoryItems">
     <ItemGroup>
@@ -85,6 +88,8 @@
       <XunitTraitOptions Condition="'@(RunWithoutTraits)'!=''">$(XunitTraitOptions) -notrait category=@(RunWithoutTraits, ' -notrait category=') </XunitTraitOptions>
       <TestCommandLine>$(TestCommandLine.Replace('{XunitTraitOptions}', '$(XunitTraitOptions)'))</TestCommandLine>
     </PropertyGroup>
+
+    <MakeDir Condition="'$(CoverageEnabledForProject)'=='true'" Directories="$(CoverageReportDir)" />
 
     <Exec Command="$(TestCommandLine)"
           Condition="'$(TestDisabled)' != 'true'"
