@@ -116,6 +116,16 @@ __ClangMinorVersion=5
 __StaticLibLink=0
 __PortableLinux=0
 
+CPUName=$(uname -p)
+# Some Linux platforms report unknown for platform, but the arch for machine.
+if [ $CPUName == "unknown" ]; then
+    CPUName=$(uname -m)
+fi
+
+if [ $CPUName == "i686" ]; then
+    __BuildArch=x86
+fi
+
 while :; do
     if [ $# -le 0 ]; then
         break
@@ -232,11 +242,6 @@ __CMakeExtraArgs="$__CMakeExtraArgs -DFEATURE_DISTRO_AGNOSTIC_SSL=$__PortableLin
 __CMakeExtraArgs="$__CMakeExtraArgs -DCMAKE_STATIC_LIB_LINK=$__StaticLibLink"
 
 # Set cross build
-CPUName=$(uname -p)
-# Some Linux platforms report unknown for platform, but the arch for machine.
-if [ $CPUName == "unknown" ]; then
-    CPUName=$(uname -m)
-fi
 case $CPUName in
     i686)
         if [ $__BuildArch != x86 ]; then
