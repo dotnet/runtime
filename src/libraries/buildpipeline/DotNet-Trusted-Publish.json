@@ -315,7 +315,7 @@
       "enabled": true,
       "continueOnError": true,
       "alwaysRun": false,
-      "displayName": "Publish to Artifact Services Drop",
+      "displayName": "Publish to Artifact Services Drop (BuildNumber)",
       "timeoutInMinutes": 0,
       "task": {
         "id": "f9d96d25-0c81-4e77-8282-1ad1f785cbb4",
@@ -325,6 +325,27 @@
       "inputs": {
         "dropServiceURI": "https://devdiv.artifacts.visualstudio.com/DefaultCollection",
         "buildNumber": "dotnet/$(GitHubRepositoryName)/$(SourceBranch)/$(BuildNumber)/packages/$(ConfigurationGroup)",
+        "sourcePath": "$(Pipeline.SourcesDirectory)\\packages\\AzureTransfer\\$(ConfigurationGroup)",
+        "dropExePath": "",
+        "toLowerCase": "true",
+        "detailedLog": "false",
+        "usePat": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": true,
+      "alwaysRun": false,
+      "displayName": "Publish to Artifact Services Drop (OfficialBuildId)",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "f9d96d25-0c81-4e77-8282-1ad1f785cbb4",
+        "versionSpec": "*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "dropServiceURI": "https://devdiv.artifacts.visualstudio.com/DefaultCollection",
+        "buildNumber": "dotnet/$(GitHubRepositoryName)/$(SourceBranch)/$(OfficialBuildId)/packages/$(ConfigurationGroup)",
         "sourcePath": "$(Pipeline.SourcesDirectory)\\packages\\AzureTransfer\\$(ConfigurationGroup)",
         "dropExePath": "",
         "toLowerCase": "true",
