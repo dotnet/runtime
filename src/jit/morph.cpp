@@ -16971,6 +16971,14 @@ void Compiler::fgPromoteStructs()
         return;
     }
 
+#ifdef DEBUG
+    if (verbose)
+    {
+        printf("\nlvaTable before fgPromoteStructs\n");
+        lvaTableDump();
+    }
+#endif // DEBUG
+
     // The lvaTable might grow as we grab temps. Make a local copy here.
 
     unsigned startLvaCount = lvaCount;
@@ -16988,17 +16996,13 @@ void Compiler::fgPromoteStructs()
         bool       promotedVar = false;
         LclVarDsc* varDsc      = &lvaTable[lclNum];
 
-#ifdef FEATURE_SIMD
-        if (varDsc->lvSIMDType && varDsc->lvUsedInSIMDIntrinsic)
+        if (varDsc->lvIsSIMDType() && varDsc->lvIsUsedInSIMDIntrinsic())
         {
             // If we have marked this as lvUsedInSIMDIntrinsic, then we do not want to promote
             // its fields.  Instead, we will attempt to enregister the entire struct.
             varDsc->lvRegStruct = true;
         }
-        else
-#endif // FEATURE_SIMD
-            // Don't promote if we have reached the tracking limit.
-            if (lvaHaveManyLocals())
+        else if (lvaHaveManyLocals()) // Don't promote if we have reached the tracking limit.
         {
             // Print the message first time when we detected this condition
             if (!tooManyLocals)
@@ -17029,7 +17033,6 @@ void Compiler::fgPromoteStructs()
 
             if (canPromote)
             {
-
                 // We *can* promote; *should* we promote?
                 // We should only do so if promotion has potential savings.  One source of savings
                 // is if a field of the struct is accessed, since this access will be turned into
@@ -17154,6 +17157,14 @@ void Compiler::fgPromoteStructs()
         }
 #endif // FEATURE_SIMD
     }
+
+#ifdef DEBUG
+    if (verbose)
+    {
+        printf("\nlvaTable after fgPromoteStructs\n");
+        lvaTableDump();
+    }
+#endif // DEBUG
 }
 
 Compiler::fgWalkResult Compiler::fgMorphStructField(GenTreePtr tree, fgWalkData* fgWalkPre)

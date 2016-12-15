@@ -7581,9 +7581,7 @@ void Compiler::gtBlockOpInit(GenTreePtr result, GenTreePtr dst, GenTreePtr srcOr
 
             if (dst->OperIsLocal() && varTypeIsStruct(dst))
             {
-                unsigned   lclNum                = dst->AsLclVarCommon()->GetLclNum();
-                LclVarDsc* lclVarDsc             = &lvaTable[lclNum];
-                lclVarDsc->lvUsedInSIMDIntrinsic = true;
+                setLclRelatedToSIMDIntrinsic(dst);
             }
         }
     }
@@ -16869,15 +16867,8 @@ bool FieldSeqNode::IsPseudoField()
 GenTreeSIMD* Compiler::gtNewSIMDNode(
     var_types type, GenTreePtr op1, SIMDIntrinsicID simdIntrinsicID, var_types baseType, unsigned size)
 {
-    // TODO-CQ: An operand may be a GT_OBJ(GT_ADDR(GT_LCL_VAR))), in which case it should be
-    // marked lvUsedInSIMDIntrinsic.
     assert(op1 != nullptr);
-    if (op1->OperGet() == GT_LCL_VAR)
-    {
-        unsigned   lclNum                = op1->AsLclVarCommon()->GetLclNum();
-        LclVarDsc* lclVarDsc             = &lvaTable[lclNum];
-        lclVarDsc->lvUsedInSIMDIntrinsic = true;
-    }
+    SetOpLclRelatedToSIMDIntrinsic(op1);
 
     return new (this, GT_SIMD) GenTreeSIMD(type, op1, simdIntrinsicID, baseType, size);
 }
@@ -16885,24 +16876,34 @@ GenTreeSIMD* Compiler::gtNewSIMDNode(
 GenTreeSIMD* Compiler::gtNewSIMDNode(
     var_types type, GenTreePtr op1, GenTreePtr op2, SIMDIntrinsicID simdIntrinsicID, var_types baseType, unsigned size)
 {
-    // TODO-CQ: An operand may be a GT_OBJ(GT_ADDR(GT_LCL_VAR))), in which case it should be
-    // marked lvUsedInSIMDIntrinsic.
     assert(op1 != nullptr);
-    if (op1->OperIsLocal())
+    SetOpLclRelatedToSIMDIntrinsic(op1);
+    if (op2 != nullptr)
     {
-        unsigned   lclNum                = op1->AsLclVarCommon()->GetLclNum();
-        LclVarDsc* lclVarDsc             = &lvaTable[lclNum];
-        lclVarDsc->lvUsedInSIMDIntrinsic = true;
-    }
-
-    if (op2 != nullptr && op2->OperIsLocal())
-    {
-        unsigned   lclNum                = op2->AsLclVarCommon()->GetLclNum();
-        LclVarDsc* lclVarDsc             = &lvaTable[lclNum];
-        lclVarDsc->lvUsedInSIMDIntrinsic = true;
+        SetOpLclRelatedToSIMDIntrinsic(op2);
     }
 
     return new (this, GT_SIMD) GenTreeSIMD(type, op1, op2, simdIntrinsicID, baseType, size);
+}
+
+//-------------------------------------------------------------------
+// SetOpLclRelatedToSIMDIntrinsic: Determine if the tree has a local var that needs to be set
+// as used by a SIMD intrinsic, and if so, set that local var appropriately.
+//
+// Arguments:
+//     op - The tree, to be an operand of a new GT_SIMD node, to check.
+//
+void Compiler::SetOpLclRelatedToSIMDIntrinsic(GenTreePtr op)
+{
+    if (op->OperIsLocal())
+    {
+        setLclRelatedToSIMDIntrinsic(op);
+    }
+    else if ((op->OperGet() == GT_OBJ) && (op->gtOp.gtOp1->OperGet() == GT_ADDR) &&
+             op->gtOp.gtOp1->gtOp.gtOp1->OperIsLocal())
+    {
+        setLclRelatedToSIMDIntrinsic(op->gtOp.gtOp1->gtOp.gtOp1);
+    }
 }
 
 bool GenTree::isCommutativeSIMDIntrinsic()

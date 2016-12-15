@@ -1514,10 +1514,8 @@ var_types Compiler::impNormStructType(CORINFO_CLASS_HANDLE structHnd,
                 {
                     *pSimdBaseType = simdBaseType;
                 }
-#ifdef _TARGET_AMD64_
-                // Amd64: also indicate that we use floating point registers
+                // Also indicate that we use floating point registers.
                 compFloatingPointUsed = true;
-#endif
             }
         }
     }

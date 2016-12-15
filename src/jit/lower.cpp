@@ -241,20 +241,14 @@ GenTree* Lowering::LowerNode(GenTree* node)
                 unsigned   varNum = node->AsLclVarCommon()->GetLclNum();
                 LclVarDsc* varDsc = &comp->lvaTable[varNum];
 
-#if defined(_TARGET_64BIT_)
-                assert(varDsc->lvSize() == 16);
-                node->gtType = TYP_SIMD16;
-#else  // !_TARGET_64BIT_
-                if (varDsc->lvSize() == 16)
+                if (comp->lvaMapSimd12ToSimd16(varDsc))
                 {
+                    JITDUMP("Mapping TYP_SIMD12 lclvar node to TYP_SIMD16:\n");
+                    DISPNODE(node);
+                    JITDUMP("============");
+
                     node->gtType = TYP_SIMD16;
                 }
-                else
-                {
-                    // The following assert is guaranteed by lvSize().
-                    assert(varDsc->lvIsParam);
-                }
-#endif // !_TARGET_64BIT_
             }
 #endif // FEATURE_SIMD
             __fallthrough;
@@ -4479,13 +4473,12 @@ void Lowering::DoPhase()
         m_block = block;
         for (GenTree* node : BlockRange().NonPhiNodes())
         {
-/* We increment the number position of each tree node by 2 to
-* simplify the logic when there's the case of a tree that implicitly
-* does a dual-definition of temps (the long case).  In this case
-* is easier to already have an idle spot to handle a dual-def instead
-* of making some messy adjustments if we only increment the
-* number position by one.
-*/
+            // We increment the number position of each tree node by 2 to simplify the logic when there's the case of
+            // a tree that implicitly does a dual-definition of temps (the long case).  In this case it is easier to
+            // already have an idle spot to handle a dual-def instead of making some messy adjustments if we only
+            // increment the number position by one.
+            CLANG_FORMAT_COMMENT_ANCHOR;
+
 #ifdef DEBUG
             node->gtSeqNum = currentLoc;
 #endif
