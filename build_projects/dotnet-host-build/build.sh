@@ -45,6 +45,9 @@ while [[ $# > 0 ]]; do
         --build-driver-only)
             __BuildDriverOnly=1
             ;;
+        --verbose)
+            export DOTNET_BUILD_VERBOSE=1
+            ;;
         --help)
             echo "Usage: $0 [--configuration <CONFIGURATION>] [--skip-prereqs] [--nopackage] [--docker <IMAGENAME>] [--help] [--targets <TARGETS...>]"
             echo ""
