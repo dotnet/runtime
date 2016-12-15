@@ -635,25 +635,12 @@ mono_arch_create_handler_block_trampoline (MonoTrampInfo **info, gboolean aot)
 	 * then jumps into the code that deals with it.
 	 */
 
-	if (mono_get_jit_tls_offset () != -1) {
-		s390_ear  (code, s390_r1, 0);
-		s390_sllg (code, s390_r1, s390_r1, 0, 32);
-		s390_ear  (code, s390_r1, 1);
-		S390_SET  (code, s390_r14, mono_get_jit_tls_offset());
-		s390_lg   (code, s390_r14, s390_r1, 0, G_STRUCT_OFFSET(MonoJitTlsData, handler_block_return_address));
-		/* 
-		 * Simulate a call 
-		 */
-		S390_SET  (code, s390_r1, tramp);
-		s390_br   (code, s390_r1);
-	} else {
-		/*
-		 * Slow path uses a C helper
-		 */
-		S390_SET  (code, s390_r2, tramp);
-		S390_SET  (code, s390_r1, handler_block_trampoline_helper);
-		s390_br	  (code, s390_r1);
-	}
+	/*
+	 * Slow path uses a C helper
+	 */
+	S390_SET  (code, s390_r2, tramp);
+	S390_SET  (code, s390_r1, handler_block_trampoline_helper);
+	s390_br	  (code, s390_r1);
 
 	mono_arch_flush_icache (buf, code - buf);
 	mono_profiler_code_buffer_new (buf, code - buf, MONO_PROFILER_CODE_BUFFER_HELPER, NULL);
