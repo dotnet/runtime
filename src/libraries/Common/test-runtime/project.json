@@ -9,7 +9,10 @@
       "Microsoft.DotNet.xunit.performance.runner.Windows": "1.0.0-alpha-build0040",
       "Microsoft.NETCore.Runtime.CoreCLR": "1.2.0-beta-24728-02",
       "Microsoft.NETCore.TestHost": "1.2.0-beta-24728-02",
-      "Newtonsoft.Json": "9.0.1"
+      "Newtonsoft.Json": "9.0.1",
+      "coveralls.io": "1.4",
+      "OpenCover": "4.6.519",
+      "ReportGenerator": "2.5.0",
    },
    "frameworks": {
       "netstandard1.7": {}
