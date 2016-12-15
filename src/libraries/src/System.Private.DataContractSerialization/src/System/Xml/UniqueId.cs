@@ -63,7 +63,7 @@ namespace System.Xml
         {
         }
 
-        unsafe public UniqueId(byte[] guid, int offset)
+        public unsafe UniqueId(byte[] guid, int offset)
         {
             if (guid == null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentNullException(nameof(guid)));
@@ -80,7 +80,7 @@ namespace System.Xml
             }
         }
 
-        unsafe public UniqueId(string value)
+        public unsafe UniqueId(string value)
         {
             if (value == null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(value));
@@ -93,7 +93,7 @@ namespace System.Xml
             _s = value;
         }
 
-        unsafe public UniqueId(char[] chars, int offset, int count)
+        public unsafe UniqueId(char[] chars, int offset, int count)
         {
             if (chars == null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentNullException(nameof(chars)));
@@ -199,7 +199,7 @@ namespace System.Xml
             }
         }
 
-        unsafe public int ToCharArray(char[] chars, int offset)
+        public unsafe int ToCharArray(char[] chars, int offset)
         {
             int count = CharArrayLength;
 
@@ -280,7 +280,7 @@ namespace System.Xml
             return true;
         }
 
-        unsafe public bool TryGetGuid(byte[] buffer, int offset)
+        public unsafe bool TryGetGuid(byte[] buffer, int offset)
         {
             if (!IsGuid)
                 return false;
@@ -305,7 +305,7 @@ namespace System.Xml
             return true;
         }
 
-        unsafe public override string ToString()
+        public unsafe override string ToString()
         {
             if (_s == null)
             {
@@ -317,7 +317,7 @@ namespace System.Xml
             return _s;
         }
 
-        static public bool operator ==(UniqueId id1, UniqueId id2)
+        public static bool operator ==(UniqueId id1, UniqueId id2)
         {
             if (object.ReferenceEquals(id1, id2))
                 return true;
@@ -334,7 +334,7 @@ namespace System.Xml
             return id1.ToString() == id2.ToString();
         }
 
-        static public bool operator !=(UniqueId id1, UniqueId id2)
+        public static bool operator !=(UniqueId id1, UniqueId id2)
         {
             return !(id1 == id2);
         }

@@ -181,10 +181,10 @@ namespace System.Runtime.CompilerServices
 
         [Theory]
         [MemberData(nameof(InitBlockData))]
-        public static unsafe void InitBlockUIntPtrStack(int numBytes, byte value)
+        public static unsafe void InitBlockRefStack(int numBytes, byte value)
         {
             byte* stackPtr = stackalloc byte[numBytes];
-            Unsafe.InitBlock(stackPtr, value, (UIntPtr)numBytes);
+            Unsafe.InitBlock(ref *stackPtr, value, (uint)numBytes);
             for (int i = 0; i < numBytes; i++)
             {
                 Assert.Equal(stackPtr[i], value);
@@ -193,11 +193,11 @@ namespace System.Runtime.CompilerServices
 
         [Theory]
         [MemberData(nameof(InitBlockData))]
-        public static unsafe void InitBlockUIntPtrUnmanaged(int numBytes, byte value)
+        public static unsafe void InitBlockRefUnmanaged(int numBytes, byte value)
         {
             IntPtr allocatedMemory = Marshal.AllocCoTaskMem(numBytes);
             byte* bytePtr = (byte*)allocatedMemory.ToPointer();
-            Unsafe.InitBlock(bytePtr, value, (UIntPtr)numBytes);
+            Unsafe.InitBlock(ref *bytePtr, value, (uint)numBytes);
             for (int i = 0; i < numBytes; i++)
             {
                 Assert.Equal(bytePtr[i], value);
@@ -232,11 +232,11 @@ namespace System.Runtime.CompilerServices
 
         [Theory]
         [MemberData(nameof(InitBlockData))]
-        public static unsafe void InitBlockUnalignedUIntPtrStack(int numBytes, byte value)
+        public static unsafe void InitBlockUnalignedRefStack(int numBytes, byte value)
         {
             byte* stackPtr = stackalloc byte[numBytes + 1];
             stackPtr += 1; // +1 = make unaligned
-            Unsafe.InitBlockUnaligned(stackPtr, value, (UIntPtr)numBytes);
+            Unsafe.InitBlockUnaligned(ref *stackPtr, value, (uint)numBytes);
             for (int i = 0; i < numBytes; i++)
             {
                 Assert.Equal(stackPtr[i], value);
@@ -245,11 +245,11 @@ namespace System.Runtime.CompilerServices
 
         [Theory]
         [MemberData(nameof(InitBlockData))]
-        public static unsafe void InitBlockUnalignedUIntPtrUnmanaged(int numBytes, byte value)
+        public static unsafe void InitBlockUnalignedRefUnmanaged(int numBytes, byte value)
         {
             IntPtr allocatedMemory = Marshal.AllocCoTaskMem(numBytes + 1);
             byte* bytePtr = (byte*)allocatedMemory.ToPointer() + 1; // +1 = make unaligned
-            Unsafe.InitBlockUnaligned(bytePtr, value, (UIntPtr)numBytes);
+            Unsafe.InitBlockUnaligned(ref *bytePtr, value, (uint)numBytes);
             for (int i = 0; i < numBytes; i++)
             {
                 Assert.Equal(bytePtr[i], value);
@@ -291,7 +291,7 @@ namespace System.Runtime.CompilerServices
 
         [Theory]
         [MemberData(nameof(CopyBlockData))]
-        public static unsafe void CopyBlockUIntPtr(int numBytes)
+        public static unsafe void CopyBlockRef(int numBytes)
         {
             byte* source = stackalloc byte[numBytes];
             byte* destination = stackalloc byte[numBytes];
@@ -302,7 +302,7 @@ namespace System.Runtime.CompilerServices
                 source[i] = value;
             }
 
-            Unsafe.CopyBlock(destination, source, (UIntPtr)numBytes);
+            Unsafe.CopyBlock(ref destination[0], ref source[0], (uint)numBytes);
 
             for (int i = 0; i < numBytes; i++)
             {
@@ -337,10 +337,9 @@ namespace System.Runtime.CompilerServices
             }
         }
 
-
         [Theory]
         [MemberData(nameof(CopyBlockData))]
-        public static unsafe void CopyBlockUnalignedUIntPtr(int numBytes)
+        public static unsafe void CopyBlockUnalignedRef(int numBytes)
         {
             byte* source = stackalloc byte[numBytes + 1];
             byte* destination = stackalloc byte[numBytes + 1];
@@ -353,7 +352,7 @@ namespace System.Runtime.CompilerServices
                 source[i] = value;
             }
 
-            Unsafe.CopyBlockUnaligned(destination, source, (UIntPtr)numBytes);
+            Unsafe.CopyBlockUnaligned(ref destination[0], ref source[0], (uint)numBytes);
 
             for (int i = 0; i < numBytes; i++)
             {
@@ -419,7 +418,7 @@ namespace System.Runtime.CompilerServices
         }
 
         [Fact]
-        public unsafe static void AsRef()
+        public static unsafe void AsRef()
         {
             byte[] b = new byte[4] { 0x42, 0x42, 0x42, 0x42 };
             fixed (byte * p = b)

@@ -133,7 +133,7 @@ namespace System.Net.Http
             return result;
         }
 
-        public unsafe static bool GetResponseHeader(
+        public static unsafe bool GetResponseHeader(
             SafeWinHttpHandle requestHandle,
             uint infoLevel,
             ref char[] buffer,
@@ -195,7 +195,7 @@ namespace System.Net.Http
         /// <summary>
         /// Fills the buffer with the header value and returns the length, or returns 0 if the header isn't found.
         /// </summary>
-        private unsafe static int GetResponseHeader(SafeWinHttpHandle requestHandle, uint infoLevel, char[] buffer)
+        private static unsafe int GetResponseHeader(SafeWinHttpHandle requestHandle, uint infoLevel, char[] buffer)
         {
             Debug.Assert(buffer != null, "buffer must not be null.");
             Debug.Assert(buffer.Length > 0, "buffer must not be empty.");
@@ -226,7 +226,7 @@ namespace System.Net.Http
         /// <summary>
         /// Returns the size of the char array buffer.
         /// </summary>
-        private unsafe static int GetResponseHeaderCharBufferLength(SafeWinHttpHandle requestHandle, uint infoLevel)
+        private static unsafe int GetResponseHeaderCharBufferLength(SafeWinHttpHandle requestHandle, uint infoLevel)
         {
             char* buffer = null;
             int bufferLength = 0;
@@ -247,7 +247,7 @@ namespace System.Net.Http
             return bufferLength;
         }
 
-        private unsafe static bool QueryHeaders(
+        private static unsafe bool QueryHeaders(
             SafeWinHttpHandle requestHandle,
             uint infoLevel,
             char* buffer,

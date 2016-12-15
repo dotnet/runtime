@@ -16,28 +16,6 @@ namespace System
 {
     public static partial class Environment
     {
-        private static readonly unsafe Lazy<LowLevelDictionary<string, string>> s_environ = new Lazy<LowLevelDictionary<string, string>>(() =>
-        {
-            var results = new LowLevelDictionary<string, string>();
-            byte** environ = Interop.Sys.GetEnviron();
-            if (environ != null)
-            {
-                for (byte** ptr = environ; *ptr != null; ptr++)
-                {
-                    string entry = Marshal.PtrToStringAnsi((IntPtr)(*ptr));
-                    int equalsPos = entry.IndexOf('=');
-                    if (equalsPos != -1)
-                    {
-                        results.Add(entry.Substring(0, equalsPos), entry.Substring(equalsPos + 1));
-                    }
-                    else
-                    {
-                        results.Add(entry, string.Empty);
-                    }
-                }
-            }
-            return results;
-        });
         internal static readonly bool IsMac = Interop.Sys.GetUnixName() == "OSX";
         private static Func<string, IEnumerable<string>> s_fileReadLines;
         private static Action<string> s_directoryCreateDirectory;
@@ -74,45 +52,6 @@ namespace System
             result.Append(name.Substring(lastPos));
 
             return StringBuilderCache.GetStringAndRelease(result);
-        }
-
-        private static string GetEnvironmentVariableCore(string variable)
-        {
-            // Ensure variable doesn't include a null char
-            int nullEnd = variable.IndexOf('\0');
-            if (nullEnd != -1)
-            {
-                variable = variable.Substring(0, nullEnd);
-            }
-
-            // Get the value of the variable
-            lock (s_environ)
-            {
-                string value;
-                return s_environ.Value.TryGetValue(variable, out value) ? value : null;
-            }
-        }
-
-        private static string GetEnvironmentVariableCore(string variable, EnvironmentVariableTarget target)
-        {
-            return target == EnvironmentVariableTarget.Process ?
-                GetEnvironmentVariableCore(variable) :
-                null;
-        }
-
-        private static IDictionary GetEnvironmentVariablesCore()
-        {
-            lock (s_environ)
-            {
-                return s_environ.Value.Clone();
-            }
-        }
-
-        private static IDictionary GetEnvironmentVariablesCore(EnvironmentVariableTarget target)
-        {
-            return target == EnvironmentVariableTarget.Process ?
-                GetEnvironmentVariablesCore() :
-                new LowLevelDictionary<string, string>();
         }
 
         private static string GetFolderPathCore(SpecialFolder folder, SpecialFolderOption option)
@@ -418,50 +357,6 @@ namespace System
         }
 
         public static int ProcessorCount => (int)Interop.Sys.SysConf(Interop.Sys.SysConfName._SC_NPROCESSORS_ONLN);
-
-        private static void SetEnvironmentVariableCore(string variable, string value)
-        {
-            int nullEnd;
-
-            // Ensure variable doesn't include a null char
-            nullEnd = variable.IndexOf('\0');
-            if (nullEnd != -1)
-            {
-                variable = variable.Substring(0, nullEnd);
-            }
-
-            // Ensure value doesn't include a null char
-            if (value != null)
-            {
-                nullEnd = value.IndexOf('\0');
-                if (nullEnd != -1)
-                {
-                    value = value.Substring(0, nullEnd);
-                }
-            }
-
-            lock (s_environ)
-            {
-                // Remove the entry if the value is null, otherwise add/overwrite it
-                if (value == null)
-                {
-                    s_environ.Value.Remove(variable);
-                }
-                else
-                {
-                    s_environ.Value[variable] = value;
-                }
-            }
-        }
-
-        private static void SetEnvironmentVariableCore(string variable, string value, EnvironmentVariableTarget target)
-        {
-            if (target == EnvironmentVariableTarget.Process)
-            {
-                SetEnvironmentVariableCore(variable, value);
-            }
-            // other targets ignored
-        }
 
         public static string SystemDirectory => GetFolderPathCore(SpecialFolder.System, SpecialFolderOption.None);
 

@@ -7,7 +7,7 @@
       <OSGroup>Unix</OSGroup>
     </Project>
     <Project Include="System.Net.HttpListener.csproj">
-      <TargetGroup>net463</TargetGroup>
+      <TargetGroup>net461</TargetGroup>
     </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />

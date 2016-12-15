@@ -260,6 +260,39 @@ namespace System.Net.Security.Tests
                 Assert.True(_sampleMsg.SequenceEqual(recvBuf));
             }
         }
+
+
+        [OuterLoop] // TODO: Issue #11345
+        [Fact]
+        public void NegotiateStream_StreamToStream_Flush_Propagated()
+        {
+            VirtualNetwork network = new VirtualNetwork();
+
+            using (var stream = new VirtualNetworkStream(network, isServer: false))
+            using (var negotiateStream = new NegotiateStream(stream))
+            {
+                Assert.False(stream.HasBeenSyncFlushed);
+                negotiateStream.Flush();
+                Assert.True(stream.HasBeenSyncFlushed);
+            }
+        }
+
+        [OuterLoop] // TODO: Issue #11345
+        [Fact]
+        public void NegotiateStream_StreamToStream_FlushAsync_Propagated()
+        {
+            VirtualNetwork network = new VirtualNetwork();
+
+            using (var stream = new VirtualNetworkStream(network, isServer: false))
+            using (var negotiateStream = new NegotiateStream(stream))
+            {
+                Task task = negotiateStream.FlushAsync();
+
+                Assert.False(task.IsCompleted);
+                stream.CompleteAsyncFlush();
+                Assert.True(task.IsCompleted);
+            }
+        }
     }
 
     public sealed class NegotiateStreamStreamToStreamTest_Async : NegotiateStreamStreamToStreamTest

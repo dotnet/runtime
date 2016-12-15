@@ -245,7 +245,7 @@ namespace System.IO.MemoryMappedFiles
         /// type. If pinningHandle is not null, caller must free it AFTER the call to CreateFile has returned.
         /// </summary>
         [SecurityCritical]
-        private unsafe static Interop.Kernel32.SECURITY_ATTRIBUTES GetSecAttrs(HandleInheritability inheritability)
+        private static unsafe Interop.Kernel32.SECURITY_ATTRIBUTES GetSecAttrs(HandleInheritability inheritability)
         {
             Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = default(Interop.Kernel32.SECURITY_ATTRIBUTES);
             if ((inheritability & HandleInheritability.Inheritable) != 0)

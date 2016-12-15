@@ -639,8 +639,8 @@ nameof(binaryForm));
             Invalid   = GO,      // not a valid combination of flags
         }
 
-        private readonly static PM[] s_AFtoPM = CreateAFtoPMConversionMatrix();    // AceFlags-to-Propagation conversion matrix
-        private readonly static AF[] s_PMtoAF = CreatePMtoAFConversionMatrix();    // Propagation-to-AceFlags conversion matrix
+        private static readonly PM[] s_AFtoPM = CreateAFtoPMConversionMatrix();    // AceFlags-to-Propagation conversion matrix
+        private static readonly AF[] s_PMtoAF = CreatePMtoAFConversionMatrix();    // Propagation-to-AceFlags conversion matrix
 
         private static PM[] CreateAFtoPMConversionMatrix()
         {
@@ -1502,7 +1502,7 @@ nameof(binaryForm));
 
         }
 
-        static private bool AceOpaquesMatch( QualifiedAce ace, QualifiedAce newAce )
+        private static bool AceOpaquesMatch( QualifiedAce ace, QualifiedAce newAce )
         {
             byte[] aceOpaque = ace.GetOpaque();
             byte[] newAceOpaque = newAce.GetOpaque();
@@ -1528,7 +1528,7 @@ nameof(binaryForm));
             return true;
         }
 
-        static private bool AcesAreMergeable( QualifiedAce ace, QualifiedAce newAce )
+        private static bool AcesAreMergeable( QualifiedAce ace, QualifiedAce newAce )
         {
             //
             // Only interested in ACEs with the specified type
@@ -3093,7 +3093,7 @@ nameof(flags));
     public sealed class DiscretionaryAcl : CommonAcl
     {
         #region
-        static private SecurityIdentifier _sidEveryone = new SecurityIdentifier( WellKnownSidType.WorldSid, null );
+        private static SecurityIdentifier _sidEveryone = new SecurityIdentifier( WellKnownSidType.WorldSid, null );
         private bool everyOneFullAccessForNullDacl = false;
         #endregion
 
@@ -3290,7 +3290,7 @@ nameof(flags));
         /// <returns>The single ACE DACL</returns>
         /// Note: This method is created to get the best behavior for using "allow everyone full access"
         /// single ACE DACL to replace null DACL from CommonSecurityObject. 
-        static internal DiscretionaryAcl CreateAllowEveryoneFullAccess(bool isDS, bool isContainer)
+        internal static DiscretionaryAcl CreateAllowEveryoneFullAccess(bool isDS, bool isContainer)
         {
             DiscretionaryAcl dcl = new DiscretionaryAcl( isContainer, isDS, 1 );
             dcl.AddAccess(

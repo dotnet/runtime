@@ -188,7 +188,7 @@ namespace System.Diagnostics.Tests
 
         class WriteLogger : Debug.IDebugLogger
         {
-            public readonly static WriteLogger Instance = new WriteLogger();
+            public static readonly WriteLogger Instance = new WriteLogger();
 
             private WriteLogger()
             {

@@ -83,7 +83,7 @@ namespace System.Transactions
         /// 
 
 
-        internal readonly static TransactionsEtwProvider Log = new TransactionsEtwProvider();
+        internal static readonly TransactionsEtwProvider Log = new TransactionsEtwProvider();
         /// <summary>Prevent external instantiation.  All logging should go through the Log instance.</summary>
         private TransactionsEtwProvider() { }
 

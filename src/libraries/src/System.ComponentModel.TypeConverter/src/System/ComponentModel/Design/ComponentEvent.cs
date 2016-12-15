@@ -16,20 +16,12 @@ namespace System.ComponentModel.Design
     /// </summary>
     public class ComponentEventArgs : EventArgs
     {
-        private IComponent _component;
-
         /// <summary>
         ///    <para>
         ///       Gets or sets the component associated with the event.
         ///    </para>
         /// </summary>
-        public virtual IComponent Component
-        {
-            get
-            {
-                return _component;
-            }
-        }
+        public virtual IComponent Component { get; }
 
         /// <summary>
         ///    <para>
@@ -38,7 +30,7 @@ namespace System.ComponentModel.Design
         /// </summary>
         public ComponentEventArgs(IComponent component)
         {
-            _component = component;
+            Component = component;
         }
     }
 }

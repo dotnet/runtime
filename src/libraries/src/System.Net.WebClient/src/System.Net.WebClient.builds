@@ -4,7 +4,7 @@
   <ItemGroup>
     <Project Include="System.Net.WebClient.csproj" />
     <Project Include="System.Net.WebClient.csproj">
-        <TargetGroup>net463</TargetGroup>
+        <TargetGroup>net461</TargetGroup>
     </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />

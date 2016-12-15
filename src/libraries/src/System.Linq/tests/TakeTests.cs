@@ -142,6 +142,15 @@ namespace System.Linq.Tests
         }
 
         [Fact]
+        public void RunOnce()
+        {
+            int[] source = { 2, 5, 9, 1 };
+            int[] expected = { 2, 5, 9 };
+
+            Assert.Equal(expected, source.RunOnce().Take(3));
+        }
+
+        [Fact]
         public void SourceNonEmptyTakeAllButOneNotIList()
         {
             var source = GuaranteeNotIList(new[] { 2, 5, 9, 1 });

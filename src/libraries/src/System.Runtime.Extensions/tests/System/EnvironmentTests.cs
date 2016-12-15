@@ -349,7 +349,7 @@ namespace System.Tests
         internal static extern int GetLogicalDrives();
 
         [DllImport("shell32.dll", SetLastError = false, BestFitMapping = false, ExactSpelling = true)]
-        internal unsafe static extern int SHGetFolderPathW(
+        internal static extern unsafe int SHGetFolderPathW(
             IntPtr hwndOwner,
             int nFolder,
             IntPtr hToken,

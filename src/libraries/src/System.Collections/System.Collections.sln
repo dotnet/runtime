@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2013
-VisualStudioVersion = 12.0.21005.1
+# Visual Studio 14
+VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Collections", "src\System.Collections.csproj", "{D5FF747F-7A0B-9003-885A-FE9A63E755E5}"
 EndProject
@@ -29,14 +29,14 @@ Global
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{D5FF747F-7A0B-9003-885A-FE9A63E755E5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{D5FF747F-7A0B-9003-885A-FE9A63E755E5}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{D5FF747F-7A0B-9003-885A-FE9A63E755E5}.net46_Debug|Any CPU.ActiveCfg = net46_Debug|Any CPU
-		{D5FF747F-7A0B-9003-885A-FE9A63E755E5}.net46_Debug|Any CPU.Build.0 = net46_Debug|Any CPU
-		{D5FF747F-7A0B-9003-885A-FE9A63E755E5}.net46_Release|Any CPU.ActiveCfg = net46_Release|Any CPU
-		{D5FF747F-7A0B-9003-885A-FE9A63E755E5}.net46_Release|Any CPU.Build.0 = net46_Release|Any CPU
-		{D5FF747F-7A0B-9003-885A-FE9A63E755E5}.netcore50_Debug|Any CPU.ActiveCfg = netcore50aotao_Release|Any CPU
-		{D5FF747F-7A0B-9003-885A-FE9A63E755E5}.netcore50_Debug|Any CPU.Build.0 = netcore50aotao_Release|Any CPU
-		{D5FF747F-7A0B-9003-885A-FE9A63E755E5}.netcore50_Release|Any CPU.ActiveCfg = netcore50aotao_Release|Any CPU
-		{D5FF747F-7A0B-9003-885A-FE9A63E755E5}.netcore50_Release|Any CPU.Build.0 = netcore50aotao_Release|Any CPU
+		{D5FF747F-7A0B-9003-885A-FE9A63E755E5}.net46_Debug|Any CPU.ActiveCfg = net463_Release|Any CPU
+		{D5FF747F-7A0B-9003-885A-FE9A63E755E5}.net46_Debug|Any CPU.Build.0 = net463_Release|Any CPU
+		{D5FF747F-7A0B-9003-885A-FE9A63E755E5}.net46_Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D5FF747F-7A0B-9003-885A-FE9A63E755E5}.net46_Release|Any CPU.Build.0 = Release|Any CPU
+		{D5FF747F-7A0B-9003-885A-FE9A63E755E5}.netcore50_Debug|Any CPU.ActiveCfg = netcoreapp1.1_Release|Any CPU
+		{D5FF747F-7A0B-9003-885A-FE9A63E755E5}.netcore50_Debug|Any CPU.Build.0 = netcoreapp1.1_Release|Any CPU
+		{D5FF747F-7A0B-9003-885A-FE9A63E755E5}.netcore50_Release|Any CPU.ActiveCfg = netcoreapp1.1_Release|Any CPU
+		{D5FF747F-7A0B-9003-885A-FE9A63E755E5}.netcore50_Release|Any CPU.Build.0 = netcoreapp1.1_Release|Any CPU
 		{D5FF747F-7A0B-9003-885A-FE9A63E755E5}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D5FF747F-7A0B-9003-885A-FE9A63E755E5}.Release|Any CPU.Build.0 = Release|Any CPU
 		{62E1C77D-E8C7-46F5-9499-8AC302F533A6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU

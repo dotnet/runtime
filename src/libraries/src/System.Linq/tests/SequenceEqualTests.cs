@@ -81,6 +81,15 @@ namespace System.Linq.Tests
         }
 
         [Fact]
+        public void RunOnce()
+        {
+            string[] first = { "Bob", "Tim", "Chris" };
+            string[] second = { "Bbo", "mTi", "rishC" };
+
+            Assert.True(first.RunOnce().SequenceEqual(second.RunOnce(), new AnagramEqualityComparer()));
+        }
+
+        [Fact]
         public void BothSingleNullExplicitComparer()
         {
             string[] first = { null };

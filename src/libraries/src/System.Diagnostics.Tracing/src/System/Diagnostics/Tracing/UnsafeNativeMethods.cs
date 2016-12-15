@@ -100,7 +100,7 @@ namespace Microsoft.Win32
 
 
             [StructLayout(LayoutKind.Sequential)]
-            unsafe internal struct EVENT_FILTER_DESCRIPTOR
+            internal unsafe struct EVENT_FILTER_DESCRIPTOR
             {
                 public long Ptr;
                 public int Size;

@@ -19,6 +19,9 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Release|AnyCPU'" />
+  <ItemGroup>
+    <Compile Include="FxCopBaseline.cs"/>
+  </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' != 'net463'">
     <Compile Include="System\Console.cs" />
     <Compile Include="System\ConsoleCancelEventArgs.cs" />
@@ -256,12 +259,6 @@
     <TargetingPackReference Include="mscorlib" />
   </ItemGroup>
   <ItemGroup>
-    <!-- ToDo: Remove this P2P reference once new packages are produced and updated -->
-    <ProjectReference Include="..\..\System.Runtime\pkg\System.Runtime.pkgproj" />
-    <!-- ToDo: Remove this P2P reference once new packages are produced and updated -->
-    <ProjectReference Include="..\..\System.IO\pkg\System.IO.pkgproj" />
-    <!-- ToDo: Remove this P2P reference once new packages are produced and updated -->
-    <ProjectReference Include="..\..\System.IO.FileSystem.Primitives\pkg\System.IO.FileSystem.Primitives.pkgproj" />
     <None Include="project.json" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

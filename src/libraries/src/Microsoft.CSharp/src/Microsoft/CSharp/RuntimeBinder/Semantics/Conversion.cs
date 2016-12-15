@@ -116,7 +116,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         private const byte XUD = EXP | UDC;
         private const byte IUD = IMP | UDC;
 
-        static private readonly byte[][] s_simpleTypeConversions =
+        private static readonly byte[][] s_simpleTypeConversions =
         {
             //        to: BYTE  I2    I4    I8    FLT   DBL   DEC  CHAR  BOOL SBYTE U2    U4    U8
             /* from */
@@ -196,7 +196,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         private const byte neither = (byte)BetterType.Neither;
 
 
-        static private readonly byte[][] s_simpleTypeBetter =
+        private static readonly byte[][] s_simpleTypeBetter =
         {
             //           BYTE    SHORT   INT     LONG    FLOAT   DOUBLE  DECIMAL CHAR    BOOL    SBYTE   USHORT  UINT    ULONG   IPTR    UIPTR   OBJECT
             new byte[]  /* BYTE   */{same   ,left   ,left   ,left   ,left   ,left   ,left   ,neither,neither,right  ,left   ,left   ,left   ,neither,neither,left   },
@@ -217,7 +217,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
               new byte[]  /* OBJECT */{right  ,right  ,right  ,right  ,right  ,right  ,right  ,right  ,right  ,right  ,right  ,right  ,right  ,right  ,right  ,same   }
         };
 #if DEBUG
-        static private volatile bool s_fCheckedBetter = false;
+        private static volatile bool s_fCheckedBetter = false;
         private void CheckBetterTable()
         {
             if (s_fCheckedBetter)

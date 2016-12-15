@@ -35,7 +35,7 @@ namespace System.Linq.Tests
         {
             int[] source = { };
             
-            Assert.Throws<InvalidOperationException>(() => source.Aggregate((x, y) => x + y));
+            Assert.Throws<InvalidOperationException>(() => source.RunOnce().Aggregate((x, y) => x + y));
         }
 
         [Fact]
@@ -45,7 +45,15 @@ namespace System.Linq.Tests
             int expected = 5;
 
             Assert.Equal(expected, source.Aggregate((x, y) => x + y));
+        }
 
+        [Fact]
+        public void SingleElementRunOnce()
+        {
+            int[] source = { 5 };
+            int expected = 5;
+
+            Assert.Equal(expected, source.RunOnce().Aggregate((x, y) => x + y));
         }
 
         [Fact]
@@ -64,6 +72,15 @@ namespace System.Linq.Tests
             int expected = 7;
 
             Assert.Equal(expected, source.Aggregate((x, y) => x + y));
+        }
+
+        [Fact]
+        public void MultipleElementsRunOnce()
+        {
+            int[] source = { 5, 6, 0, -4 };
+            int expected = 7;
+
+            Assert.Equal(expected, source.RunOnce().Aggregate((x, y) => x + y));
         }
 
         [Fact]
@@ -107,6 +124,16 @@ namespace System.Linq.Tests
         }
 
         [Fact]
+        public void MultipleElementsAndSeedRunOnce()
+        {
+            int[] source = { 5, 6, 2, -4 };
+            long seed = 2;
+            long expected = -480;
+
+            Assert.Equal(expected, source.RunOnce().Aggregate(seed, (x, y) => x * y));
+        }
+
+        [Fact]
         public void NoElementsSeedResultSeletor()
         {
             int[] source = { };
@@ -144,6 +171,16 @@ namespace System.Linq.Tests
             long expected = -475;
 
             Assert.Equal(expected, source.Aggregate(seed, (x, y) => x * y, x => x + 5.0));
+        }
+
+        [Fact]
+        public void MultipleElementsSeedResultSelectorRunOnce()
+        {
+            int[] source = { 5, 6, 2, -4 };
+            long seed = 2;
+            long expected = -475;
+
+            Assert.Equal(expected, source.RunOnce().Aggregate(seed, (x, y) => x * y, x => x + 5.0));
         }
 
         [Fact]

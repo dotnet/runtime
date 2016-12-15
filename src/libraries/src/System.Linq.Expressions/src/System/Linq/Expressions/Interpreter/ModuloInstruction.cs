@@ -10,32 +10,13 @@ namespace System.Linq.Expressions.Interpreter
 {
     internal abstract class ModuloInstruction : Instruction
     {
-        private static Instruction s_int16, s_int32, s_int64, s_UInt16, s_UInt32, s_UInt64, s_single, s_double;
+        private static Instruction s_Int16, s_Int32, s_Int64, s_UInt16, s_UInt32, s_UInt64, s_Single, s_Double;
 
         public override int ConsumedStack => 2;
         public override int ProducedStack => 1;
         public override string InstructionName => "Modulo";
 
         private ModuloInstruction() { }
-
-        private sealed class ModuloInt32 : ModuloInstruction
-        {
-            public override int Run(InterpretedFrame frame)
-            {
-                object l = frame.Data[frame.StackIndex - 2];
-                object r = frame.Data[frame.StackIndex - 1];
-                if (l == null || r == null)
-                {
-                    frame.Data[frame.StackIndex - 2] = null;
-                }
-                else
-                {
-                    frame.Data[frame.StackIndex - 2] = ScriptingRuntimeHelpers.Int32ToObject((int)l % (int)r);
-                }
-                frame.StackIndex--;
-                return 1;
-            }
-        }
 
         private sealed class ModuloInt16 : ModuloInstruction
         {
@@ -50,6 +31,25 @@ namespace System.Linq.Expressions.Interpreter
                 else
                 {
                     frame.Data[frame.StackIndex - 2] = (short)((short)l % (short)r);
+                }
+                frame.StackIndex--;
+                return 1;
+            }
+        }
+
+        private sealed class ModuloInt32 : ModuloInstruction
+        {
+            public override int Run(InterpretedFrame frame)
+            {
+                object l = frame.Data[frame.StackIndex - 2];
+                object r = frame.Data[frame.StackIndex - 1];
+                if (l == null || r == null)
+                {
+                    frame.Data[frame.StackIndex - 2] = null;
+                }
+                else
+                {
+                    frame.Data[frame.StackIndex - 2] = ScriptingRuntimeHelpers.Int32ToObject((int)l % (int)r);
                 }
                 frame.StackIndex--;
                 return 1;
@@ -175,15 +175,14 @@ namespace System.Linq.Expressions.Interpreter
             Debug.Assert(!type.GetTypeInfo().IsEnum);
             switch (type.GetNonNullableType().GetTypeCode())
             {
-                case TypeCode.Int16: return s_int16 ?? (s_int16 = new ModuloInt16());
-                case TypeCode.Int32: return s_int32 ?? (s_int32 = new ModuloInt32());
-                case TypeCode.Int64: return s_int64 ?? (s_int64 = new ModuloInt64());
+                case TypeCode.Int16: return s_Int16 ?? (s_Int16 = new ModuloInt16());
+                case TypeCode.Int32: return s_Int32 ?? (s_Int32 = new ModuloInt32());
+                case TypeCode.Int64: return s_Int64 ?? (s_Int64 = new ModuloInt64());
                 case TypeCode.UInt16: return s_UInt16 ?? (s_UInt16 = new ModuloUInt16());
                 case TypeCode.UInt32: return s_UInt32 ?? (s_UInt32 = new ModuloUInt32());
                 case TypeCode.UInt64: return s_UInt64 ?? (s_UInt64 = new ModuloUInt64());
-                case TypeCode.Single: return s_single ?? (s_single = new ModuloSingle());
-                case TypeCode.Double: return s_double ?? (s_double = new ModuloDouble());
-
+                case TypeCode.Single: return s_Single ?? (s_Single = new ModuloSingle());
+                case TypeCode.Double: return s_Double ?? (s_Double = new ModuloDouble());
                 default:
                     throw Error.ExpressionNotSupportedForType("Modulo", type);
             }

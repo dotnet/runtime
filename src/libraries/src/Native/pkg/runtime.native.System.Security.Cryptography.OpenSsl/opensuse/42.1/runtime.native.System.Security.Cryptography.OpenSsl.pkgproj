@@ -2,14 +2,13 @@
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <PackageRid>opensuse.42.1-$(PackagePlatform)</PackageRid>
-    <IdPrefix>runtime.$(PackageRid).</IdPrefix>
+    <PackageTargetRuntime>opensuse.42.1-$(PackagePlatform)</PackageTargetRuntime>
     <!-- only build for x64 -->
     <PackagePlatforms>x64;</PackagePlatforms>
   </PropertyGroup>
   <ItemGroup>
     <NativeFile Include="$(OpenSuse421NativePath)System.Security.Cryptography.Native.OpenSsl.so">
-      <TargetPath>runtimes/$(PackageRid)/native</TargetPath>
+      <TargetPath>runtimes/$(PackageTargetRuntime)/native</TargetPath>
     </NativeFile>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

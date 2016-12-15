@@ -60,12 +60,7 @@ namespace System.ComponentModel
         /// </summary>
         public virtual string GetClassName()
         {
-            if (_parent != null)
-            {
-                return _parent.GetClassName();
-            }
-
-            return null;
+            return _parent?.GetClassName();
         }
 
         /// <summary>
@@ -74,12 +69,7 @@ namespace System.ComponentModel
         /// </summary>
         public virtual string GetComponentName()
         {
-            if (_parent != null)
-            {
-                return _parent.GetComponentName();
-            }
-
-            return null;
+            return _parent?.GetComponentName();
         }
 
         /// <summary>
@@ -102,12 +92,7 @@ namespace System.ComponentModel
         /// </summary>
         public virtual EventDescriptor GetDefaultEvent()
         {
-            if (_parent != null)
-            {
-                return _parent.GetDefaultEvent();
-            }
-
-            return null;
+            return _parent?.GetDefaultEvent();
         }
 
         /// <summary>
@@ -116,12 +101,7 @@ namespace System.ComponentModel
         /// </summary>
         public virtual PropertyDescriptor GetDefaultProperty()
         {
-            if (_parent != null)
-            {
-                return _parent.GetDefaultProperty();
-            }
-
-            return null;
+            return _parent?.GetDefaultProperty();
         }
 
         /// <summary>
@@ -130,12 +110,7 @@ namespace System.ComponentModel
         /// </summary>
         public virtual object GetEditor(Type editorBaseType)
         {
-            if (_parent != null)
-            {
-                return _parent.GetEditor(editorBaseType);
-            }
-
-            return null;
+            return _parent?.GetEditor(editorBaseType);
         }
 
         /// <summary>
@@ -215,12 +190,7 @@ namespace System.ComponentModel
         /// </summary>
         public virtual object GetPropertyOwner(PropertyDescriptor pd)
         {
-            if (_parent != null)
-            {
-                return _parent.GetPropertyOwner(pd);
-            }
-
-            return null;
+            return _parent?.GetPropertyOwner(pd);
         }
     }
 }

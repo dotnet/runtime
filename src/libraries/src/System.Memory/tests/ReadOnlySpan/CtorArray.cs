@@ -89,16 +89,6 @@ namespace System.SpanTests
         }
 
         [Fact]
-        public static void CtorArrayWrongArrayType()
-        {
-            // Cannot pass variant array, if array type is not a valuetype.
-            string[] a = { "Hello" };
-            Assert.Throws<ArrayTypeMismatchException>(() => new ReadOnlySpan<object>(a).DontBox());
-            Assert.Throws<ArrayTypeMismatchException>(() => new ReadOnlySpan<object>(a, 0).DontBox());
-            Assert.Throws<ArrayTypeMismatchException>(() => new ReadOnlySpan<object>(a, 0, a.Length).DontBox());
-        }
-
-        [Fact]
         public static void CtorArrayWrongValueType()
         {
             // Can pass variant array, if array type is a valuetype.

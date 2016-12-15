@@ -97,7 +97,7 @@ namespace System.Xml
 
     internal class BooleanArrayHelperWithString : ArrayHelper<string, bool>
     {
-        static public readonly BooleanArrayHelperWithString Instance = new BooleanArrayHelperWithString();
+        public static readonly BooleanArrayHelperWithString Instance = new BooleanArrayHelperWithString();
 
         protected override int ReadArray(XmlDictionaryReader reader, string localName, string namespaceUri, bool[] array, int offset, int count)
         {
@@ -112,7 +112,7 @@ namespace System.Xml
 
     internal class BooleanArrayHelperWithDictionaryString : ArrayHelper<XmlDictionaryString, bool>
     {
-        static public readonly BooleanArrayHelperWithDictionaryString Instance = new BooleanArrayHelperWithDictionaryString();
+        public static readonly BooleanArrayHelperWithDictionaryString Instance = new BooleanArrayHelperWithDictionaryString();
 
         protected override int ReadArray(XmlDictionaryReader reader, XmlDictionaryString localName, XmlDictionaryString namespaceUri, bool[] array, int offset, int count)
         {
@@ -127,7 +127,7 @@ namespace System.Xml
 
     internal class Int16ArrayHelperWithString : ArrayHelper<string, Int16>
     {
-        static public readonly Int16ArrayHelperWithString Instance = new Int16ArrayHelperWithString();
+        public static readonly Int16ArrayHelperWithString Instance = new Int16ArrayHelperWithString();
 
         protected override int ReadArray(XmlDictionaryReader reader, string localName, string namespaceUri, Int16[] array, int offset, int count)
         {
@@ -142,7 +142,7 @@ namespace System.Xml
 
     internal class Int16ArrayHelperWithDictionaryString : ArrayHelper<XmlDictionaryString, Int16>
     {
-        static public readonly Int16ArrayHelperWithDictionaryString Instance = new Int16ArrayHelperWithDictionaryString();
+        public static readonly Int16ArrayHelperWithDictionaryString Instance = new Int16ArrayHelperWithDictionaryString();
 
         protected override int ReadArray(XmlDictionaryReader reader, XmlDictionaryString localName, XmlDictionaryString namespaceUri, Int16[] array, int offset, int count)
         {
@@ -157,7 +157,7 @@ namespace System.Xml
 
     internal class Int32ArrayHelperWithString : ArrayHelper<string, Int32>
     {
-        static public readonly Int32ArrayHelperWithString Instance = new Int32ArrayHelperWithString();
+        public static readonly Int32ArrayHelperWithString Instance = new Int32ArrayHelperWithString();
 
         protected override int ReadArray(XmlDictionaryReader reader, string localName, string namespaceUri, Int32[] array, int offset, int count)
         {
@@ -172,7 +172,7 @@ namespace System.Xml
 
     internal class Int32ArrayHelperWithDictionaryString : ArrayHelper<XmlDictionaryString, Int32>
     {
-        static public readonly Int32ArrayHelperWithDictionaryString Instance = new Int32ArrayHelperWithDictionaryString();
+        public static readonly Int32ArrayHelperWithDictionaryString Instance = new Int32ArrayHelperWithDictionaryString();
 
         protected override int ReadArray(XmlDictionaryReader reader, XmlDictionaryString localName, XmlDictionaryString namespaceUri, Int32[] array, int offset, int count)
         {
@@ -187,7 +187,7 @@ namespace System.Xml
 
     internal class Int64ArrayHelperWithString : ArrayHelper<string, Int64>
     {
-        static public readonly Int64ArrayHelperWithString Instance = new Int64ArrayHelperWithString();
+        public static readonly Int64ArrayHelperWithString Instance = new Int64ArrayHelperWithString();
 
         protected override int ReadArray(XmlDictionaryReader reader, string localName, string namespaceUri, Int64[] array, int offset, int count)
         {
@@ -202,7 +202,7 @@ namespace System.Xml
 
     internal class Int64ArrayHelperWithDictionaryString : ArrayHelper<XmlDictionaryString, Int64>
     {
-        static public readonly Int64ArrayHelperWithDictionaryString Instance = new Int64ArrayHelperWithDictionaryString();
+        public static readonly Int64ArrayHelperWithDictionaryString Instance = new Int64ArrayHelperWithDictionaryString();
 
         protected override int ReadArray(XmlDictionaryReader reader, XmlDictionaryString localName, XmlDictionaryString namespaceUri, Int64[] array, int offset, int count)
         {
@@ -217,7 +217,7 @@ namespace System.Xml
 
     internal class SingleArrayHelperWithString : ArrayHelper<string, float>
     {
-        static public readonly SingleArrayHelperWithString Instance = new SingleArrayHelperWithString();
+        public static readonly SingleArrayHelperWithString Instance = new SingleArrayHelperWithString();
 
         protected override int ReadArray(XmlDictionaryReader reader, string localName, string namespaceUri, float[] array, int offset, int count)
         {
@@ -232,7 +232,7 @@ namespace System.Xml
 
     internal class SingleArrayHelperWithDictionaryString : ArrayHelper<XmlDictionaryString, float>
     {
-        static public readonly SingleArrayHelperWithDictionaryString Instance = new SingleArrayHelperWithDictionaryString();
+        public static readonly SingleArrayHelperWithDictionaryString Instance = new SingleArrayHelperWithDictionaryString();
 
         protected override int ReadArray(XmlDictionaryReader reader, XmlDictionaryString localName, XmlDictionaryString namespaceUri, float[] array, int offset, int count)
         {
@@ -247,7 +247,7 @@ namespace System.Xml
 
     internal class DoubleArrayHelperWithString : ArrayHelper<string, double>
     {
-        static public readonly DoubleArrayHelperWithString Instance = new DoubleArrayHelperWithString();
+        public static readonly DoubleArrayHelperWithString Instance = new DoubleArrayHelperWithString();
 
         protected override int ReadArray(XmlDictionaryReader reader, string localName, string namespaceUri, double[] array, int offset, int count)
         {
@@ -262,7 +262,7 @@ namespace System.Xml
 
     internal class DoubleArrayHelperWithDictionaryString : ArrayHelper<XmlDictionaryString, double>
     {
-        static public readonly DoubleArrayHelperWithDictionaryString Instance = new DoubleArrayHelperWithDictionaryString();
+        public static readonly DoubleArrayHelperWithDictionaryString Instance = new DoubleArrayHelperWithDictionaryString();
 
         protected override int ReadArray(XmlDictionaryReader reader, XmlDictionaryString localName, XmlDictionaryString namespaceUri, double[] array, int offset, int count)
         {
@@ -277,7 +277,7 @@ namespace System.Xml
 
     internal class DecimalArrayHelperWithString : ArrayHelper<string, decimal>
     {
-        static public readonly DecimalArrayHelperWithString Instance = new DecimalArrayHelperWithString();
+        public static readonly DecimalArrayHelperWithString Instance = new DecimalArrayHelperWithString();
 
         protected override int ReadArray(XmlDictionaryReader reader, string localName, string namespaceUri, decimal[] array, int offset, int count)
         {
@@ -292,7 +292,7 @@ namespace System.Xml
 
     internal class DecimalArrayHelperWithDictionaryString : ArrayHelper<XmlDictionaryString, decimal>
     {
-        static public readonly DecimalArrayHelperWithDictionaryString Instance = new DecimalArrayHelperWithDictionaryString();
+        public static readonly DecimalArrayHelperWithDictionaryString Instance = new DecimalArrayHelperWithDictionaryString();
 
         protected override int ReadArray(XmlDictionaryReader reader, XmlDictionaryString localName, XmlDictionaryString namespaceUri, decimal[] array, int offset, int count)
         {
@@ -307,7 +307,7 @@ namespace System.Xml
 
     internal class DateTimeArrayHelperWithString : ArrayHelper<string, DateTime>
     {
-        static public readonly DateTimeArrayHelperWithString Instance = new DateTimeArrayHelperWithString();
+        public static readonly DateTimeArrayHelperWithString Instance = new DateTimeArrayHelperWithString();
 
         protected override int ReadArray(XmlDictionaryReader reader, string localName, string namespaceUri, DateTime[] array, int offset, int count)
         {
@@ -322,7 +322,7 @@ namespace System.Xml
 
     internal class DateTimeArrayHelperWithDictionaryString : ArrayHelper<XmlDictionaryString, DateTime>
     {
-        static public readonly DateTimeArrayHelperWithDictionaryString Instance = new DateTimeArrayHelperWithDictionaryString();
+        public static readonly DateTimeArrayHelperWithDictionaryString Instance = new DateTimeArrayHelperWithDictionaryString();
 
         protected override int ReadArray(XmlDictionaryReader reader, XmlDictionaryString localName, XmlDictionaryString namespaceUri, DateTime[] array, int offset, int count)
         {
@@ -337,7 +337,7 @@ namespace System.Xml
 
     internal class GuidArrayHelperWithString : ArrayHelper<string, Guid>
     {
-        static public readonly GuidArrayHelperWithString Instance = new GuidArrayHelperWithString();
+        public static readonly GuidArrayHelperWithString Instance = new GuidArrayHelperWithString();
 
         protected override int ReadArray(XmlDictionaryReader reader, string localName, string namespaceUri, Guid[] array, int offset, int count)
         {
@@ -352,7 +352,7 @@ namespace System.Xml
 
     internal class GuidArrayHelperWithDictionaryString : ArrayHelper<XmlDictionaryString, Guid>
     {
-        static public readonly GuidArrayHelperWithDictionaryString Instance = new GuidArrayHelperWithDictionaryString();
+        public static readonly GuidArrayHelperWithDictionaryString Instance = new GuidArrayHelperWithDictionaryString();
 
         protected override int ReadArray(XmlDictionaryReader reader, XmlDictionaryString localName, XmlDictionaryString namespaceUri, Guid[] array, int offset, int count)
         {
@@ -367,7 +367,7 @@ namespace System.Xml
 
     internal class TimeSpanArrayHelperWithString : ArrayHelper<string, TimeSpan>
     {
-        static public readonly TimeSpanArrayHelperWithString Instance = new TimeSpanArrayHelperWithString();
+        public static readonly TimeSpanArrayHelperWithString Instance = new TimeSpanArrayHelperWithString();
 
         protected override int ReadArray(XmlDictionaryReader reader, string localName, string namespaceUri, TimeSpan[] array, int offset, int count)
         {
@@ -382,7 +382,7 @@ namespace System.Xml
 
     internal class TimeSpanArrayHelperWithDictionaryString : ArrayHelper<XmlDictionaryString, TimeSpan>
     {
-        static public readonly TimeSpanArrayHelperWithDictionaryString Instance = new TimeSpanArrayHelperWithDictionaryString();
+        public static readonly TimeSpanArrayHelperWithDictionaryString Instance = new TimeSpanArrayHelperWithDictionaryString();
 
         protected override int ReadArray(XmlDictionaryReader reader, XmlDictionaryString localName, XmlDictionaryString namespaceUri, TimeSpan[] array, int offset, int count)
         {

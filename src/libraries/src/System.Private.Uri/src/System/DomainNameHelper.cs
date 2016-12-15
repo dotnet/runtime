@@ -67,7 +67,7 @@ namespace System
         //           MUST NOT be used unless all input indexes are verified and trusted.
         //
 
-        internal unsafe static bool IsValid(char* name, ushort pos, ref int returnedEnd, ref bool notCanonical, bool notImplicitFile)
+        internal static unsafe bool IsValid(char* name, ushort pos, ref int returnedEnd, ref bool notCanonical, bool notImplicitFile)
         {
             char* curPos = name + pos;
             char* newPos = curPos;
@@ -130,7 +130,7 @@ namespace System
         // There are pretty much no restrictions and we effectively return the end of the
         // domain name.
         //
-        internal unsafe static bool IsValidByIri(char* name, ushort pos, ref int returnedEnd, ref bool notCanonical, bool notImplicitFile)
+        internal static unsafe bool IsValidByIri(char* name, ushort pos, ref int returnedEnd, ref bool notCanonical, bool notImplicitFile)
         {
             char* curPos = name + pos;
             char* newPos = curPos;
@@ -217,7 +217,7 @@ namespace System
         //
         // Will convert a host name into its idn equivalent + tell you if it had a valid idn label
         //
-        internal unsafe static string IdnEquivalent(char* hostname, int start, int end, ref bool allAscii, ref bool atLeastOneValidIdn)
+        internal static unsafe string IdnEquivalent(char* hostname, int start, int end, ref bool allAscii, ref bool atLeastOneValidIdn)
         {
             string bidiStrippedHost = null;
             string idnEquivalent = IdnEquivalent(hostname, start, end, ref allAscii, ref bidiStrippedHost);
@@ -297,7 +297,7 @@ namespace System
         //
         // Will convert a host name into its idn equivalent
         //
-        internal unsafe static string IdnEquivalent(char* hostname, int start, int end, ref bool allAscii, ref string bidiStrippedHost)
+        internal static unsafe string IdnEquivalent(char* hostname, int start, int end, ref bool allAscii, ref string bidiStrippedHost)
         {
             string idn = null;
             if (end <= start)
@@ -343,7 +343,7 @@ namespace System
             }
         }
 
-        private unsafe static bool IsIdnAce(string input, int index)
+        private static unsafe bool IsIdnAce(string input, int index)
         {
             if ((input[index] == 'x') &&
                 (input[index + 1] == 'n') &&
@@ -354,7 +354,7 @@ namespace System
                 return false;
         }
 
-        private unsafe static bool IsIdnAce(char* input, int index)
+        private static unsafe bool IsIdnAce(char* input, int index)
         {
             if ((input[index] == 'x') &&
                 (input[index + 1] == 'n') &&
@@ -368,7 +368,7 @@ namespace System
         //
         // Will convert a host name into its unicode equivalent expanding any existing idn names present
         //
-        internal unsafe static string UnicodeEquivalent(string idnHost, char* hostname, int start, int end)
+        internal static unsafe string UnicodeEquivalent(string idnHost, char* hostname, int start, int end)
         {
             IdnMapping map = new IdnMapping();
 
@@ -388,7 +388,7 @@ namespace System
             return UnicodeEquivalent(hostname, start, end, ref dummy, ref dummy);
         }
 
-        internal unsafe static string UnicodeEquivalent(char* hostname, int start, int end, ref bool allAscii, ref bool atLeastOneValidIdn)
+        internal static unsafe string UnicodeEquivalent(char* hostname, int start, int end, ref bool allAscii, ref bool atLeastOneValidIdn)
         {
             IdnMapping map = new IdnMapping();
 

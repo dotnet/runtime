@@ -11,7 +11,7 @@ namespace System
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
     public partial struct ReadOnlySpan<T>
     {
-        public static readonly System.ReadOnlySpan<T> Empty;
+        public static System.ReadOnlySpan<T> Empty { get { throw null; } }
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]public ReadOnlySpan(T[] array) { throw null;}
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]public ReadOnlySpan(T[] array, int start) { throw null;}
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]public ReadOnlySpan(T[] array, int start, int length) { throw null;}
@@ -48,7 +48,7 @@ namespace System
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
     public partial struct Span<T>
     {
-        public static readonly System.Span<T> Empty;
+        public static System.Span<T> Empty { get { throw null; } }
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]public Span(T[] array) { throw null;}
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]public Span(T[] array, int start) { throw null;}
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]public Span(T[] array, int start, int length) { throw null;}

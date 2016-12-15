@@ -22,7 +22,8 @@ namespace System.ComponentModel
         private Hashtable _resourceSets;
         private CultureInfo _neutralResourcesCulture;
 
-        public ComponentResourceManager() : base() {
+        public ComponentResourceManager()
+        {
         }
 
         public ComponentResourceManager(Type t) : base(t)

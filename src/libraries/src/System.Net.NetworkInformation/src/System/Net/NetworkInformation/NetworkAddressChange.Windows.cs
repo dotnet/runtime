@@ -50,12 +50,12 @@ namespace System.Net.NetworkInformation
 
         internal static class AvailabilityChangeListener
         {
-            private readonly static object s_syncObject = new object();
-            private readonly static Dictionary<NetworkAvailabilityChangedEventHandler, ExecutionContext> s_availabilityCallerArray =
+            private static readonly object s_syncObject = new object();
+            private static readonly Dictionary<NetworkAvailabilityChangedEventHandler, ExecutionContext> s_availabilityCallerArray =
                 new Dictionary<NetworkAvailabilityChangedEventHandler, ExecutionContext>();
-            private readonly static NetworkAddressChangedEventHandler s_addressChange = ChangedAddress;
+            private static readonly NetworkAddressChangedEventHandler s_addressChange = ChangedAddress;
             private static volatile bool s_isAvailable = false;
-            private readonly static ContextCallback s_RunHandlerCallback = new ContextCallback(RunHandlerCallback);
+            private static readonly ContextCallback s_RunHandlerCallback = new ContextCallback(RunHandlerCallback);
 
             private static void RunHandlerCallback(object state)
             {
@@ -122,11 +122,11 @@ namespace System.Net.NetworkInformation
         }
 
         // Helper class for detecting address change events.
-        internal unsafe static class AddressChangeListener
+        internal static unsafe class AddressChangeListener
         {
-            private readonly static Dictionary<NetworkAddressChangedEventHandler, ExecutionContext> s_callerArray =
+            private static readonly Dictionary<NetworkAddressChangedEventHandler, ExecutionContext> s_callerArray =
                 new Dictionary<NetworkAddressChangedEventHandler, ExecutionContext>();
-            private readonly static ContextCallback s_runHandlerCallback = new ContextCallback(RunHandlerCallback);
+            private static readonly ContextCallback s_runHandlerCallback = new ContextCallback(RunHandlerCallback);
             private static RegisteredWaitHandle s_registeredWait;
 
             // Need to keep the reference so it isn't GC'd before the native call executes.

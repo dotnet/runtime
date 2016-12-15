@@ -42,7 +42,7 @@ namespace System.Linq.Expressions.Interpreter
             Delegate d = _creator.CreateDelegate(closure);
 
             frame.Push(d);
-            return +1;
+            return 1;
         }
     }
 
@@ -62,7 +62,7 @@ namespace System.Linq.Expressions.Interpreter
         public override int Run(InterpretedFrame frame)
         {
             frame.Push(_type.IsInstanceOfType(frame.Pop()));
-            return +1;
+            return 1;
         }
 
         public override string ToString() => "TypeIs " + _type.ToString();
@@ -92,7 +92,7 @@ namespace System.Linq.Expressions.Interpreter
             {
                 frame.Push(null);
             }
-            return +1;
+            return 1;
         }
 
         public override string ToString() => "TypeAs " + _type.ToString();
@@ -113,7 +113,7 @@ namespace System.Linq.Expressions.Interpreter
             object type = frame.Pop();
             object obj = frame.Pop();
             frame.Push((object)obj?.GetType() == type);
-            return +1;
+            return 1;
         }
     }
 
@@ -132,7 +132,7 @@ namespace System.Linq.Expressions.Interpreter
             object type = frame.Pop();
             object obj = frame.Pop();
             frame.Push((object)obj?.GetType() == type);
-            return +1;
+            return 1;
         }
     }
 
@@ -152,7 +152,7 @@ namespace System.Linq.Expressions.Interpreter
             {
                 object obj = frame.Pop();
                 frame.Push(obj != null);
-                return +1;
+                return 1;
             }
         }
 
@@ -165,7 +165,7 @@ namespace System.Linq.Expressions.Interpreter
                     frame.Pop();
                     throw new InvalidOperationException();
                 }
-                return +1;
+                return 1;
             }
         }
 
@@ -185,7 +185,7 @@ namespace System.Linq.Expressions.Interpreter
                     frame.Pop();
                     frame.Push(Activator.CreateInstance(defaultValueType));
                 }
-                return +1;
+                return 1;
             }
         }
 
@@ -198,7 +198,7 @@ namespace System.Linq.Expressions.Interpreter
                 object dflt = frame.Pop();
                 object obj = frame.Pop();
                 frame.Push(obj ?? dflt);
-                return +1;
+                return 1;
             }
         }
 
@@ -222,7 +222,7 @@ namespace System.Linq.Expressions.Interpreter
                 {
                     frame.Push(obj.Equals(other));
                 }
-                return +1;
+                return 1;
             }
         }
 
@@ -239,7 +239,7 @@ namespace System.Linq.Expressions.Interpreter
                 {
                     frame.Push(obj.ToString());
                 }
-                return +1;
+                return 1;
             }
         }
 
@@ -256,7 +256,7 @@ namespace System.Linq.Expressions.Interpreter
                 {
                     frame.Push(obj.GetHashCode());
                 }
-                return +1;
+                return 1;
             }
         }
 
@@ -292,7 +292,7 @@ namespace System.Linq.Expressions.Interpreter
 
     internal abstract class CastInstruction : Instruction
     {
-        private static CastInstruction s_boolean, s_byte, s_char, s_dateTime, s_decimal, s_double, s_int16, s_int32, s_int64, s_SByte, s_single, s_string, s_UInt16, s_UInt32, s_UInt64;
+        private static CastInstruction s_Boolean, s_Byte, s_Char, s_DateTime, s_Decimal, s_Double, s_Int16, s_Int32, s_Int64, s_SByte, s_Single, s_String, s_UInt16, s_UInt32, s_UInt64;
 
         public override int ConsumedStack => 1;
         public override int ProducedStack => 1;
@@ -304,7 +304,7 @@ namespace System.Linq.Expressions.Interpreter
             {
                 object value = frame.Pop();
                 frame.Push((T)value);
-                return +1;
+                return 1;
             }
         }
 
@@ -353,7 +353,7 @@ namespace System.Linq.Expressions.Interpreter
                 {
                     ConvertNull(frame);
                 }
-                return +1;
+                return 1;
             }
 
             protected abstract void ConvertNull(InterpretedFrame frame);
@@ -390,18 +390,18 @@ namespace System.Linq.Expressions.Interpreter
             Debug.Assert(!t.GetTypeInfo().IsEnum);
             switch (t.GetTypeCode())
             {
-                case TypeCode.Boolean: return s_boolean ?? (s_boolean = new CastInstructionT<bool>());
-                case TypeCode.Byte: return s_byte ?? (s_byte = new CastInstructionT<byte>());
-                case TypeCode.Char: return s_char ?? (s_char = new CastInstructionT<char>());
-                case TypeCode.DateTime: return s_dateTime ?? (s_dateTime = new CastInstructionT<DateTime>());
-                case TypeCode.Decimal: return s_decimal ?? (s_decimal = new CastInstructionT<decimal>());
-                case TypeCode.Double: return s_double ?? (s_double = new CastInstructionT<double>());
-                case TypeCode.Int16: return s_int16 ?? (s_int16 = new CastInstructionT<short>());
-                case TypeCode.Int32: return s_int32 ?? (s_int32 = new CastInstructionT<int>());
-                case TypeCode.Int64: return s_int64 ?? (s_int64 = new CastInstructionT<long>());
+                case TypeCode.Boolean: return s_Boolean ?? (s_Boolean = new CastInstructionT<bool>());
+                case TypeCode.Byte: return s_Byte ?? (s_Byte = new CastInstructionT<byte>());
+                case TypeCode.Char: return s_Char ?? (s_Char = new CastInstructionT<char>());
+                case TypeCode.DateTime: return s_DateTime ?? (s_DateTime = new CastInstructionT<DateTime>());
+                case TypeCode.Decimal: return s_Decimal ?? (s_Decimal = new CastInstructionT<decimal>());
+                case TypeCode.Double: return s_Double ?? (s_Double = new CastInstructionT<double>());
+                case TypeCode.Int16: return s_Int16 ?? (s_Int16 = new CastInstructionT<short>());
+                case TypeCode.Int32: return s_Int32 ?? (s_Int32 = new CastInstructionT<int>());
+                case TypeCode.Int64: return s_Int64 ?? (s_Int64 = new CastInstructionT<long>());
                 case TypeCode.SByte: return s_SByte ?? (s_SByte = new CastInstructionT<sbyte>());
-                case TypeCode.Single: return s_single ?? (s_single = new CastInstructionT<float>());
-                case TypeCode.String: return s_string ?? (s_string = new CastInstructionT<string>());
+                case TypeCode.Single: return s_Single ?? (s_Single = new CastInstructionT<float>());
+                case TypeCode.String: return s_String ?? (s_String = new CastInstructionT<string>());
                 case TypeCode.UInt16: return s_UInt16 ?? (s_UInt16 = new CastInstructionT<ushort>());
                 case TypeCode.UInt32: return s_UInt32 ?? (s_UInt32 = new CastInstructionT<uint>());
                 case TypeCode.UInt64: return s_UInt64 ?? (s_UInt64 = new CastInstructionT<ulong>());
@@ -431,7 +431,7 @@ namespace System.Linq.Expressions.Interpreter
                     TypeCode.Byte, TypeCode.UInt16, TypeCode.UInt64, TypeCode.Char, TypeCode.Boolean
                 }.Contains(Convert.GetTypeCode(from)));
             frame.Push(from == null ? null : Enum.ToObject(_t, from));
-            return +1;
+            return 1;
         }
     }
 
@@ -520,7 +520,7 @@ namespace System.Linq.Expressions.Interpreter
                 operand = new ExpressionQuoter(_hoistedVariables, frame).Visit(operand);
             }
             frame.Push(operand);
-            return +1;
+            return 1;
         }
 
         // Modifies a quoted Expression instance by changing hoisted variables and

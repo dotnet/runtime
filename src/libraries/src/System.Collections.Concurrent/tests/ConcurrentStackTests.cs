@@ -12,13 +12,12 @@ namespace System.Collections.Concurrent.Tests
 {
     public class ConcurrentStackTests : ProducerConsumerCollectionTests
     {
-        protected override IProducerConsumerCollection<int> CreateProducerConsumerCollection() => new ConcurrentStack<int>();
+        protected override IProducerConsumerCollection<T> CreateProducerConsumerCollection<T>() => new ConcurrentStack<T>();
         protected override IProducerConsumerCollection<int> CreateProducerConsumerCollection(IEnumerable<int> collection) => new ConcurrentStack<int>(collection);
         protected override bool IsEmpty(IProducerConsumerCollection<int> pcc) => ((ConcurrentStack<int>)pcc).IsEmpty;
-        protected override bool TryPeek(IProducerConsumerCollection<int> pcc, out int result) => ((ConcurrentStack<int>)pcc).TryPeek(out result);
+        protected override bool TryPeek<T>(IProducerConsumerCollection<T> pcc, out T result) => ((ConcurrentStack<T>)pcc).TryPeek(out result);
         protected override IProducerConsumerCollection<int> CreateOracle(IEnumerable<int> collection) => new StackOracle(collection);
         protected override bool ResetImplemented => false;
-        protected override bool IEnumerable_Generic_Enumerator_Current_EnumerationNotStarted_ThrowsInvalidOperationException => false;
 
         [Fact]
         public void IsEmpty_TrueWhenEmpty_FalseWhenNot()

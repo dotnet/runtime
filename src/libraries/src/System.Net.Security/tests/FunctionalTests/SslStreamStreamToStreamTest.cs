@@ -258,6 +258,38 @@ namespace System.Net.Security.Tests
             }
         }
 
+        [OuterLoop] // TODO: Issue #11345
+        [Fact]
+        public void SslStream_StreamToStream_Flush_Propagated()
+        {
+            VirtualNetwork network = new VirtualNetwork();
+
+            using (var stream = new VirtualNetworkStream(network, isServer: false))
+            using (var sslStream = new SslStream(stream, false, AllowAnyServerCertificate))
+            {
+                Assert.False(stream.HasBeenSyncFlushed);
+                sslStream.Flush();
+                Assert.True(stream.HasBeenSyncFlushed);
+            }
+        }
+
+        [OuterLoop] // TODO: Issue #11345
+        [Fact]
+        public void SslStream_StreamToStream_FlushAsync_Propagated()
+        {
+            VirtualNetwork network = new VirtualNetwork();
+
+            using (var stream = new VirtualNetworkStream(network, isServer: false))
+            using (var sslStream = new SslStream(stream, false, AllowAnyServerCertificate))
+            {
+                Task task = sslStream.FlushAsync();
+
+                Assert.False(task.IsCompleted);
+                stream.CompleteAsyncFlush();
+                Assert.True(task.IsCompleted);
+            }
+        }
+
         private bool VerifyOutput(byte[] actualBuffer, byte[] expectedBuffer)
         {
             return expectedBuffer.SequenceEqual(actualBuffer);

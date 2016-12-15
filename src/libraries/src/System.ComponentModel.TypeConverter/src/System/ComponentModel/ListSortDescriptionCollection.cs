@@ -56,24 +56,12 @@ namespace System.ComponentModel
         /// <summary>
         ///    <para>[To be supplied.]</para>
         /// </summary>
-        bool IList.IsFixedSize
-        {
-            get
-            {
-                return true;
-            }
-        }
+        bool IList.IsFixedSize => true;
 
         /// <summary>
         ///    <para>[To be supplied.]</para>
         /// </summary>
-        bool IList.IsReadOnly
-        {
-            get
-            {
-                return true;
-            }
-        }
+        bool IList.IsReadOnly => true;
 
         /// <summary>
         ///    <para>[To be supplied.]</para>
@@ -152,36 +140,17 @@ namespace System.ComponentModel
         /// <summary>
         ///    <para>[To be supplied.]</para>
         /// </summary>
-        public int Count
-        {
-            get
-            {
-                return _sorts.Count;
-            }
-        }
+        public int Count => _sorts.Count;
 
         /// <summary>
         ///    <para>[To be supplied.]</para>
         /// </summary>
-        bool ICollection.IsSynchronized
-        {
-            get
-            {
-                // true because after the constructor finished running the ListSortDescriptionCollection is Read Only
-                return true;
-            }
-        }
+        bool ICollection.IsSynchronized => true;
 
         /// <summary>
         ///    <para>[To be supplied.]</para>
         /// </summary>
-        object ICollection.SyncRoot
-        {
-            get
-            {
-                return this;
-            }
-        }
+        object ICollection.SyncRoot => this;
 
         /// <summary>
         ///    <para>[To be supplied.]</para>

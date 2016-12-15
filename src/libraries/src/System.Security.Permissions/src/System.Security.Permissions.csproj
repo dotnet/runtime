@@ -8,14 +8,14 @@
     <PackageTargetFramework Condition="'$(TargetGroup)' == ''">netstandard1.7</PackageTargetFramework>
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
-    <PackageAsRefAndLib Condition="'$(TargetGroup)' == 'net463'">true</PackageAsRefAndLib>
+    <PackageAsRefAndLib Condition="'$(TargetGroup)' == 'net461'">true</PackageAsRefAndLib>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Release|AnyCPU'" />
-  <ItemGroup Condition="'$(TargetGroup)' != 'net463'">
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net461_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net461_Release|AnyCPU'" />
+  <ItemGroup Condition="'$(TargetGroup)' != 'net461'">
     <Compile Include="System\Net\NetworkInformation\NetworkInformationAccess.cs" />
     <Compile Include="System\Net\NetworkInformation\NetworkInformationPermission.cs" />
     <Compile Include="System\Net\NetworkInformation\NetworkInformationPermissionAttribute.cs" />
@@ -118,7 +118,7 @@
     <ProjectReference Include="..\..\System.Runtime.Extensions\ref\System.Runtime.Extensions.csproj" />
     <ProjectReference Include="..\..\System.Collections.NonGeneric\pkg\System.Collections.NonGeneric.pkgproj" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'net463'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'net461'">
     <TargetingPackReference Include="mscorlib" />
     <TargetingPackReference Include="System" />
   </ItemGroup>

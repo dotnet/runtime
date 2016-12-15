@@ -4,11 +4,13 @@
 
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Security.Permissions;
+using Enumerable = System.Linq.Enumerable;
 
 namespace System.ComponentModel.Design
 {
@@ -18,21 +20,14 @@ namespace System.ComponentModel.Design
     public abstract class DesignerOptionService : IDesignerOptionService
     {
         private DesignerOptionCollection _options;
-
+        private static readonly char[] s_slash = {'\\'};
         /// <summary>
         ///     Returns the options collection for this service.  There is 
         ///     always a global options collection that contains child collections.
         /// </summary>
         public DesignerOptionCollection Options
         {
-            get
-            {
-                if (_options == null)
-                {
-                    _options = new DesignerOptionCollection(this, null, string.Empty, null);
-                }
-                return _options;
-            }
+            get { return _options ?? (_options = new DesignerOptionCollection(this, null, string.Empty, null)); }
         }
 
         /// <summary>
@@ -80,7 +75,7 @@ namespace System.ComponentModel.Design
                 throw new ArgumentNullException(nameof(valueName));
             }
 
-            string[] optionNames = pageName.Split(new char[] { '\\' });
+            string[] optionNames = pageName.Split(s_slash);
 
             DesignerOptionCollection options = Options;
             foreach (string optionName in optionNames)
@@ -119,11 +114,7 @@ namespace System.ComponentModel.Design
         object IDesignerOptionService.GetOptionValue(string pageName, string valueName)
         {
             PropertyDescriptor optionProp = GetOptionProperty(pageName, valueName);
-            if (optionProp != null)
-            {
-                return optionProp.GetValue(null);
-            }
-            return null;
+            return optionProp?.GetValue(null);
         }
 
         /// <internalonly/>
@@ -133,10 +124,7 @@ namespace System.ComponentModel.Design
         void IDesignerOptionService.SetOptionValue(string pageName, string valueName, object value)
         {
             PropertyDescriptor optionProp = GetOptionProperty(pageName, valueName);
-            if (optionProp != null)
-            {
-                optionProp.SetValue(null, value);
-            }
+            optionProp?.SetValue(null, value);
         }
 
         /// <summary>
@@ -150,8 +138,6 @@ namespace System.ComponentModel.Design
         public sealed class DesignerOptionCollection : IList
         {
             private DesignerOptionService _service;
-            private DesignerOptionCollection _parent;
-            private string _name;
             private object _value;
             private ArrayList _children;
             private PropertyDescriptorCollection _properties;
@@ -162,17 +148,17 @@ namespace System.ComponentModel.Design
             internal DesignerOptionCollection(DesignerOptionService service, DesignerOptionCollection parent, string name, object value)
             {
                 _service = service;
-                _parent = parent;
-                _name = name;
+                Parent = parent;
+                Name = name;
                 _value = value;
 
-                if (_parent != null)
+                if (Parent != null)
                 {
-                    if (_parent._children == null)
+                    if (Parent._children == null)
                     {
-                        _parent._children = new ArrayList(1);
+                        Parent._children = new ArrayList(1);
                     }
-                    _parent._children.Add(this);
+                    Parent._children.Add(this);
                 }
             }
 
@@ -192,24 +178,12 @@ namespace System.ComponentModel.Design
             ///     The name of this collection.  Names are programmatic names and are not 
             ///     localized.  A name search is case insensitive.
             /// </summary>
-            public string Name
-            {
-                get
-                {
-                    return _name;
-                }
-            }
+            public string Name { get; }
 
             /// <summary>
             ///     Returns the parent collection object, or null if there is no parent.
             /// </summary>
-            public DesignerOptionCollection Parent
-            {
-                get
-                {
-                    return _parent;
-                }
-            }
+            public DesignerOptionCollection Parent { get; }
 
             /// <summary>
             ///     The collection of properties that this OptionCollection, along with all of 
@@ -377,49 +351,25 @@ namespace System.ComponentModel.Design
             /// <summary>
             /// Private ICollection implementation.
             /// </summary>
-            bool ICollection.IsSynchronized
-            {
-                get
-                {
-                    return false;
-                }
-            }
+            bool ICollection.IsSynchronized => false;
 
             /// <internalonly/>
             /// <summary>
             /// Private ICollection implementation.
             /// </summary>
-            object ICollection.SyncRoot
-            {
-                get
-                {
-                    return this;
-                }
-            }
+            object ICollection.SyncRoot => this;
 
             /// <internalonly/>
             /// <summary>
             /// Private IList implementation.
             /// </summary>
-            bool IList.IsFixedSize
-            {
-                get
-                {
-                    return true;
-                }
-            }
+            bool IList.IsFixedSize => true;
 
             /// <internalonly/>
             /// <summary>
             /// Private IList implementation.
             /// </summary>
-            bool IList.IsReadOnly
-            {
-                get
-                {
-                    return true;
-                }
-            }
+            bool IList.IsReadOnly => true;
 
             /// <internalonly/>
             /// <summary>
@@ -518,37 +468,13 @@ namespace System.ComponentModel.Design
                     _target = target;
                 }
 
-                public override AttributeCollection Attributes
-                {
-                    get
-                    {
-                        return _property.Attributes;
-                    }
-                }
+                public override AttributeCollection Attributes => _property.Attributes;
 
-                public override Type ComponentType
-                {
-                    get
-                    {
-                        return _property.ComponentType;
-                    }
-                }
+                public override Type ComponentType => _property.ComponentType;
 
-                public override bool IsReadOnly
-                {
-                    get
-                    {
-                        return _property.IsReadOnly;
-                    }
-                }
+                public override bool IsReadOnly => _property.IsReadOnly;
 
-                public override Type PropertyType
-                {
-                    get
-                    {
-                        return _property.PropertyType;
-                    }
-                }
+                public override Type PropertyType => _property.PropertyType;
 
                 public override bool CanResetValue(object component)
                 {
@@ -626,29 +552,11 @@ namespace System.ComponentModel.Design
                     _option = option;
                 }
 
-                public override Type ComponentType
-                {
-                    get
-                    {
-                        return _option.GetType();
-                    }
-                }
+                public override Type ComponentType => _option.GetType();
 
-                public override bool IsReadOnly
-                {
-                    get
-                    {
-                        return true;
-                    }
-                }
+                public override bool IsReadOnly => true;
 
-                public override Type PropertyType
-                {
-                    get
-                    {
-                        return _option.GetType();
-                    }
-                }
+                public override Type PropertyType => _option.GetType();
 
                 public override bool CanResetValue(object component)
                 {

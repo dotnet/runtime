@@ -8,30 +8,24 @@
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
     <PackageTargetFramework Condition="'$(TargetGroup)' == ''">netstandard1.7;uap10.1</PackageTargetFramework>
     <DefineConstants Condition="'$(TargetGroup)'==''">$(DefineConstants);netstandard17</DefineConstants>
-    <NoWarn Condition="'$(TargetGroup)' != 'net463'">CS0436</NoWarn>
+    <NoWarn Condition="'$(TargetGroup)' != 'net461'">CS0436</NoWarn>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net461_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net461_Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap101aot_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap101aot_Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(TargetGroup)' == 'net462' or '$(TargetGroup)' == 'net463'">
+  <PropertyGroup Condition="'$(TargetGroup)' == 'net462' or '$(TargetGroup)' == 'net461'">
     <ResourcesSourceOutputDirectory>None</ResourcesSourceOutputDirectory>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'net463'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'net461'">
     <ContractProject Include="..\ref\System.IO.csproj">
       <TargetGroup>netstandard1.7</TargetGroup>
     </ContractProject>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' != 'net463'">
-    <!-- ToDo: Remove this P2P reference once new packages are produced and updated -->
-    <ProjectReference Include="..\..\System.Runtime\pkg\System.Runtime.pkgproj" />
-    <!-- ToDo: Remove this P2P reference once new packages are produced and updated -->
-    <ProjectReference Include="..\..\System.Runtime.Extensions\pkg\System.Runtime.Extensions.pkgproj" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'net463'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'net461'">
     <TargetingPackReference Include="mscorlib" />
     <TargetingPackReference Include="System" />
   </ItemGroup>

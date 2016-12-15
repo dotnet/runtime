@@ -11,7 +11,7 @@
     <DefineConstants>$(DefineConstants);INTERNAL_GLOBALIZATION_EXTENSIONS</DefineConstants>
     <!-- Suppress warnings for type conflicts between SafeFileHandle in partial facade and mscorlib -->
     <NoWarn>0436</NoWarn>
-    <SkipCommonResourcesIncludes Condition="'$(TargetGroup)'=='uap101aot'">true</SkipCommonResourcesIncludes>
+    <SkipCommonResourcesIncludes Condition="'$(TargetGroup)'=='uap101aot' or '$(TargetGroup)' == 'netcoreapp1.2corert'">true</SkipCommonResourcesIncludes>
     <DefineConstants Condition="'$(TargetGroup)'==''">$(DefineConstants);netstandard10</DefineConstants>
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.0</NuGetTargetMoniker>
     <PackageTargetFramework Condition="'$(TargetGroup)'==''">netstandard1.0;uap10.1</PackageTargetFramework>
@@ -24,7 +24,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_uap101aot_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_uap101aot_Release|AnyCPU'" />
   <ItemGroup>
-    <Compile Include="$(CommonPath)\System\Diagnostics\Debug.cs" Condition="'$(TargetGroup)'!='uap101aot'">
+    <Compile Include="$(CommonPath)\System\Diagnostics\Debug.cs" Condition="'$(TargetGroup)'!='uap101aot' and '$(TargetGroup)' != 'netcoreapp1.2corert'">
       <Link>Common\System\Diagnostics\Debug.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Collections\Generic\ArrayBuilder.cs">
@@ -33,15 +33,18 @@
     <Compile Include="$(CommonPath)\System\Collections\Generic\LowLevelDictionary.cs">
       <Link>Common\System\Collections\Generic\LowLevelDictionary.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\StringNormalizationExtensions.cs" Condition="'$(TargetGroup)'=='uap101aot'">
+    <Compile Include="$(CommonPath)\System\StringNormalizationExtensions.cs" Condition="'$(TargetGroup)'=='uap101aot' or '$(TargetGroup)' == 'netcoreapp1.2corert'">
       <Link>Common\System\StringNormalizationExtensions.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Globalization\IdnMapping.cs" Condition="'$(TargetGroup)'=='uap101aot'">
+    <Compile Include="$(CommonPath)\System\Globalization\IdnMapping.cs" Condition="'$(TargetGroup)'=='uap101aot' or '$(TargetGroup)' == 'netcoreapp1.2corert'">
       <Link>Common\System\Globalization\IdnMapping.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Text\NormalizationForm.cs" Condition="'$(TargetGroup)'=='uap101aot'">
+    <Compile Include="$(CommonPath)\System\Text\NormalizationForm.cs" Condition="'$(TargetGroup)'=='uap101aot' or '$(TargetGroup)' == 'netcoreapp1.2corert'">
       <Link>Common\System\Text\NormalizationForm.cs</Link>
     </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="FxCopBaseline.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="System\DomainNameHelper.cs" />
@@ -69,27 +72,27 @@
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.OutputDebugString.cs">
       <Link>Common\Interop\Windows\kernel32\Interop.OutputDebugString.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\StringNormalizationExtensions.Windows.cs" Condition="'$(TargetGroup)'=='uap101aot'">
+    <Compile Include="$(CommonPath)\System\StringNormalizationExtensions.Windows.cs" Condition="'$(TargetGroup)'=='uap101aot' or '$(TargetGroup)' == 'netcoreapp1.2corert'">
       <Link>Common\System\StringNormalizationExtensions.Windows.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Globalization\IdnMapping.Windows.cs" Condition="'$(TargetGroup)'=='uap101aot'">
+    <Compile Include="$(CommonPath)\System\Globalization\IdnMapping.Windows.cs" Condition="'$(TargetGroup)'=='uap101aot' or '$(TargetGroup)' == 'netcoreapp1.2corert'">
       <Link>Common\System\Globalization\IdnMapping.Windows.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Diagnostics\Debug.Windows.cs" Condition="'$(TargetGroup)'!='uap101aot'">
+    <Compile Include="$(CommonPath)\System\Diagnostics\Debug.Windows.cs" Condition="'$(TargetGroup)'!='uap101aot' and '$(TargetGroup)' != 'netcoreapp1.2corert'">
       <Link>Common\System\Diagnostics\Debug.Windows.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.SetLastError.cs">
       <Link>Common\Interop\Windows\kernel32\Interop.SetLastError.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.Normalization.cs" Condition="'$(TargetGroup)'=='uap101aot'">
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.Normalization.cs" Condition="'$(TargetGroup)'=='uap101aot' or '$(TargetGroup)' == 'netcoreapp1.2corert'">
       <Link>Common\Interop\Windows\kernel32\Interop.Normalization.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\normaliz\Interop.Idna.cs" Condition="'$(TargetGroup)'=='uap101aot'">
+    <Compile Include="$(CommonPath)\Interop\Windows\normaliz\Interop.Idna.cs" Condition="'$(TargetGroup)'=='uap101aot' or '$(TargetGroup)' == 'netcoreapp1.2corert'">
       <Link>Common\Interop\Windows\normaliz\Interop.Idna.cs</Link>
   </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
-    <Compile Include="$(CommonPath)\System\Diagnostics\Debug.Unix.cs" Condition="'$(TargetGroup)'!='uap101aot'">
+    <Compile Include="$(CommonPath)\System\Diagnostics\Debug.Unix.cs" Condition="'$(TargetGroup)'!='uap101aot' and '$(TargetGroup)' != 'netcoreapp1.2corert'">
       <Link>Common\System\Diagnostics\Debug.Unix.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
@@ -132,7 +135,7 @@
       <Link>Common\Microsoft\Win32\SafeHandles\SafeFileHandleHelper.Unix.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'=='uap101aot'">
+  <ItemGroup Condition="'$(TargetGroup)'=='uap101aot' or '$(TargetGroup)' == 'netcoreapp1.2corert'">
     <EmbeddedResource Include="Resources\$(AssemblyName).rd.xml" />
     <Compile Include="$(CommonPath)\System\SR.Core.cs">
       <Link>Common\System\SR.Core.cs</Link>

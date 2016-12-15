@@ -59,6 +59,19 @@ namespace System.Linq.Tests
             }
         }
 
+        [Theory, MemberData(nameof(Int_TestData))]
+        public void IntRunOnce(IEnumerable<int> source, Func<int, bool> predicate, int expected)
+        {
+            if (predicate == null)
+            {
+                Assert.Equal(expected, source.RunOnce().Count());
+            }
+            else
+            {
+                Assert.Equal(expected, source.RunOnce().Count(predicate));
+            }
+        }
+
         [Fact]
         public void NullableIntArray_IncludesNullObjects()
         {
@@ -72,6 +85,13 @@ namespace System.Linq.Tests
             where TEn : IEnumerable<T>
         {
             Assert.Equal(count, enumerable.Count());
+        }
+
+        [Theory, MemberData(nameof(CountsAndTallies))]
+        public void RunOnce<T, TEn>(T unusedArgumentToForceTypeInference, int count, TEn enumerable)
+            where TEn : IEnumerable<T>
+        {
+            Assert.Equal(count, enumerable.RunOnce().Count());
         }
 
         private static IEnumerable<object[]> EnumerateCollectionTypesAndCounts<T>(int count, IEnumerable<T> enumerable)

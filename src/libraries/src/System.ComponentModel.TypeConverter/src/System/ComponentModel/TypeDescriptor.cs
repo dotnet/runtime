@@ -84,24 +84,12 @@ namespace System.ComponentModel
         ///     AddProvider methods to define a type description provider for interface types.
         /// </summary>
         [EditorBrowsable(EditorBrowsableState.Advanced)]
-        public static Type InterfaceType
-        {
-            get
-            {
-                return typeof(TypeDescriptorInterface);
-            }
-        }
+        public static Type InterfaceType => typeof(TypeDescriptorInterface);
 
         /// <summary>
         ///     This value increments each time someone refreshes or changes metadata.
         /// </summary>
-        internal static int MetadataVersion
-        {
-            get
-            {
-                return s_metadataVersion;
-            }
-        }
+        internal static int MetadataVersion => s_metadataVersion;
 
         /// <summary>
         ///    Occurs when Refreshed is raised for a component.
@@ -498,21 +486,13 @@ namespace System.ComponentModel
 
             // See if the provider wants to offer a TypeDescriptionProvider to delegate to.  This allows
             // a caller to have complete control over all object instantiation.
-            if (provider != null)
+            TypeDescriptionProvider p = provider?.GetService(typeof(TypeDescriptionProvider)) as TypeDescriptionProvider;
+            if (p != null)
             {
-                TypeDescriptionProvider p = provider.GetService(typeof(TypeDescriptionProvider)) as TypeDescriptionProvider;
-                if (p != null)
-                {
-                    instance = p.CreateInstance(provider, objectType, argTypes, args);
-                }
+                instance = p.CreateInstance(provider, objectType, argTypes, args);
             }
 
-            if (instance == null)
-            {
-                instance = NodeFor(objectType).CreateInstance(provider, objectType, argTypes, args);
-            }
-
-            return instance;
+            return instance ?? NodeFor(objectType).CreateInstance(provider, objectType, argTypes, args);
         }
         /// <summary>
         ///     This dynamically binds a PropertyDescriptor to a type.
@@ -592,9 +572,9 @@ namespace System.ComponentModel
                         }
                     }
                 }
-                else if (newMembers != null)
+                else
                 {
-                    newMembers.Add(members[idx]);
+                    newMembers?.Add(members[idx]);
                 }
             }
 
@@ -625,28 +605,25 @@ namespace System.ComponentModel
                 // Check our association table for a match.
                 //
                 Hashtable assocTable = s_associationTable;
-                if (assocTable != null)
+                IList associations = (IList) assocTable?[primary];
+                if (associations != null)
                 {
-                    IList associations = (IList)assocTable[primary];
-                    if (associations != null)
+                    lock (associations)
                     {
-                        lock (associations)
+                        for (int idx = associations.Count - 1; idx >= 0; idx--)
                         {
-                            for (int idx = associations.Count - 1; idx >= 0; idx--)
+                            // Look for an associated object that has a type that
+                            // matches the given type.
+                            //
+                            WeakReference weakRef = (WeakReference)associations[idx];
+                            object secondary = weakRef.Target;
+                            if (secondary == null)
                             {
-                                // Look for an associated object that has a type that
-                                // matches the given type.
-                                //
-                                WeakReference weakRef = (WeakReference)associations[idx];
-                                object secondary = weakRef.Target;
-                                if (secondary == null)
-                                {
-                                    associations.RemoveAt(idx);
-                                }
-                                else if (type.GetTypeInfo().IsInstanceOfType(secondary))
-                                {
-                                    associatedObject = secondary;
-                                }
+                                associations.RemoveAt(idx);
+                            }
+                            else if (type.GetTypeInfo().IsInstanceOfType(secondary))
+                            {
+                                associatedObject = secondary;
                             }
                         }
                     }
@@ -1209,28 +1186,25 @@ namespace System.ComponentModel
             string suffix = null;
 
             ExtenderProvidedPropertyAttribute exAttr = member.Attributes[typeof(ExtenderProvidedPropertyAttribute)] as ExtenderProvidedPropertyAttribute;
-            if (exAttr != null)
+            IExtenderProvider prov = exAttr?.Provider;
+
+            if (prov != null)
             {
-                IExtenderProvider prov = exAttr.Provider;
+                string name = null;
+                IComponent component = prov as IComponent;
 
-                if (prov != null)
+                if (component != null && component.Site != null)
                 {
-                    string name = null;
-                    IComponent component = prov as IComponent;
-
-                    if (component != null && component.Site != null)
-                    {
-                        name = component.Site.Name;
-                    }
-
-                    if (name == null || name.Length == 0)
-                    {
-                        int ci = System.Threading.Interlocked.Increment(ref s_collisionIndex) - 1;
-                        name = ci.ToString(CultureInfo.InvariantCulture);
-                    }
-
-                    suffix = string.Format(CultureInfo.InvariantCulture, "_{0}", name);
+                    name = component.Site.Name;
                 }
+
+                if (name == null || name.Length == 0)
+                {
+                    int ci = System.Threading.Interlocked.Increment(ref s_collisionIndex) - 1;
+                    name = ci.ToString(CultureInfo.InvariantCulture);
+                }
+
+                suffix = string.Format(CultureInfo.InvariantCulture, "_{0}", name);
             }
 
             return suffix;
@@ -1548,11 +1522,8 @@ namespace System.ComponentModel
 
             while (node == null)
             {
-                node = (TypeDescriptionNode)s_providerTypeTable[searchType];
-                if (node == null)
-                {
-                    node = (TypeDescriptionNode)s_providerTable[searchType];
-                }
+                node = (TypeDescriptionNode)s_providerTypeTable[searchType] ??
+                       (TypeDescriptionNode)s_providerTable[searchType];
 
                 if (node == null)
                 {
@@ -1720,8 +1691,7 @@ namespace System.ComponentModel
                         // In that case, we can remove the node
                         // altogether since no one is pointing to it.
 
-                        Type keyType = key as Type;
-                        if (keyType == null) keyType = key.GetType();
+                        Type keyType = key as Type ?? key.GetType();
 
                         target.Provider = new DelegatingTypeDescriptionProvider(keyType.GetTypeInfo().BaseType);
                     }
@@ -1822,13 +1792,10 @@ namespace System.ComponentModel
             IComponent component = instance as IComponent;
             ITypeDescriptorFilterService componentFilter = null;
 
-            if (component != null)
+            ISite site = component?.Site;
+            if (site != null)
             {
-                ISite site = component.Site;
-                if (site != null)
-                {
-                    componentFilter = site.GetService(typeof(ITypeDescriptorFilterService)) as ITypeDescriptorFilterService;
-                }
+                componentFilter = site.GetService(typeof(ITypeDescriptorFilterService)) as ITypeDescriptorFilterService;
             }
 
             // If we have no filter, there is nothing for us to do.
@@ -2070,43 +2037,40 @@ namespace System.ComponentModel
 
             // Next, if we were given a cache, see if it has accurate data.
             //
-            if (cache != null)
+            ICollection mergeCache = cache?[s_pipelineMergeKeys[pipelineType]] as ICollection;
+            if (mergeCache != null && mergeCache.Count == (primary.Count + secondary.Count))
             {
-                ICollection mergeCache = cache[s_pipelineMergeKeys[pipelineType]] as ICollection;
-                if (mergeCache != null && mergeCache.Count == (primary.Count + secondary.Count))
-                {
-                    // Walk the merge cache.
-                    IEnumerator mergeEnum = mergeCache.GetEnumerator();
-                    IEnumerator primaryEnum = primary.GetEnumerator();
-                    bool match = true;
+                // Walk the merge cache.
+                IEnumerator mergeEnum = mergeCache.GetEnumerator();
+                IEnumerator primaryEnum = primary.GetEnumerator();
+                bool match = true;
 
-                    while (primaryEnum.MoveNext() && mergeEnum.MoveNext())
+                while (primaryEnum.MoveNext() && mergeEnum.MoveNext())
+                {
+                    if (primaryEnum.Current != mergeEnum.Current)
                     {
-                        if (primaryEnum.Current != mergeEnum.Current)
+                        match = false;
+                        break;
+                    }
+                }
+
+                if (match)
+                {
+                    IEnumerator secondaryEnum = secondary.GetEnumerator();
+
+                    while (secondaryEnum.MoveNext() && mergeEnum.MoveNext())
+                    {
+                        if (secondaryEnum.Current != mergeEnum.Current)
                         {
                             match = false;
                             break;
                         }
                     }
+                }
 
-                    if (match)
-                    {
-                        IEnumerator secondaryEnum = secondary.GetEnumerator();
-
-                        while (secondaryEnum.MoveNext() && mergeEnum.MoveNext())
-                        {
-                            if (secondaryEnum.Current != mergeEnum.Current)
-                            {
-                                match = false;
-                                break;
-                            }
-                        }
-                    }
-
-                    if (match)
-                    {
-                        return mergeCache;
-                    }
+                if (match)
+                {
+                    return mergeCache;
                 }
             }
 
@@ -2170,20 +2134,14 @@ namespace System.ComponentModel
             // the JIT makes those changes is mostly theoretical
             RefreshEventHandler handler = Volatile.Read(ref Refreshed);
 
-            if (handler != null)
-            {
-                handler(new RefreshEventArgs(component));
-            }
+            handler?.Invoke(new RefreshEventArgs(component));
         }
 
         private static void RaiseRefresh(Type type)
         {
             RefreshEventHandler handler = Volatile.Read(ref Refreshed);
 
-            if (handler != null)
-            {
-                handler(new RefreshEventArgs(type));
-            }
+            handler?.Invoke(new RefreshEventArgs(type));
         }
 
         /// <summary>
@@ -2436,13 +2394,7 @@ namespace System.ComponentModel
         }
 
         [EditorBrowsable(EditorBrowsableState.Advanced)]
-        public static Type ComObjectType
-        {
-            get
-            {
-                return typeof(TypeDescriptor.TypeDescriptorComObject);
-            }
-        }
+        public static Type ComObjectType => typeof(TypeDescriptor.TypeDescriptorComObject);
 
         public static IDesigner CreateDesigner(IComponent component, Type designerBaseType)
         {
@@ -2459,14 +2411,11 @@ namespace System.ComponentModel
                     {
                         ISite site = component.Site;
                         bool flag = false;
-                        if (site != null)
+                        ITypeResolutionService typeResolutionService = (ITypeResolutionService) site?.GetService(typeof(ITypeResolutionService));
+                        if (typeResolutionService != null)
                         {
-                            ITypeResolutionService typeResolutionService = (ITypeResolutionService)site.GetService(typeof(ITypeResolutionService));
-                            if (typeResolutionService != null)
-                            {
-                                flag = true;
-                                type = typeResolutionService.GetType(designerAttribute.DesignerTypeName);
-                            }
+                            flag = true;
+                            type = typeResolutionService.GetType(designerAttribute.DesignerTypeName);
                         }
                         if (!flag)
                         {
@@ -2499,11 +2448,7 @@ namespace System.ComponentModel
                     typeDescriptionNode = typeDescriptionNode.Next;
                 }
                 while (typeDescriptionNode != null && comNativeDescriptionProvider == null);
-                if (comNativeDescriptionProvider != null)
-                {
-                    return comNativeDescriptionProvider.Handler;
-                }
-                return null;
+                return comNativeDescriptionProvider?.Handler;
             }
             set
             {
@@ -2539,24 +2484,21 @@ namespace System.ComponentModel
             }
 
             Hashtable assocTable = s_associationTable;
-            if (assocTable != null)
+            IList associations = (IList) assocTable?[primary];
+            if (associations != null)
             {
-                IList associations = (IList)assocTable[primary];
-                if (associations != null)
+                lock (associations)
                 {
-                    lock (associations)
+                    for (int idx = associations.Count - 1; idx >= 0; idx--)
                     {
-                        for (int idx = associations.Count - 1; idx >= 0; idx--)
+                        // Look for an associated object that has a type that
+                        // matches the given type.
+                        //
+                        WeakReference weakRef = (WeakReference)associations[idx];
+                        object secondaryItem = weakRef.Target;
+                        if (secondaryItem == null || secondaryItem == secondary)
                         {
-                            // Look for an associated object that has a type that
-                            // matches the given type.
-                            //
-                            WeakReference weakRef = (WeakReference)associations[idx];
-                            object secondaryItem = weakRef.Target;
-                            if (secondaryItem == null || secondaryItem == secondary)
-                            {
-                                associations.RemoveAt(idx);
-                            }
+                            associations.RemoveAt(idx);
                         }
                     }
                 }
@@ -2575,10 +2517,7 @@ namespace System.ComponentModel
             }
 
             Hashtable assocTable = s_associationTable;
-            if (assocTable != null)
-            {
-                assocTable.Remove(primary);
-            }
+            assocTable?.Remove(primary);
         }
 
         /// <summary>
@@ -3059,11 +2998,7 @@ namespace System.ComponentModel
             /// </summary>
             AttributeCollection ICustomTypeDescriptor.GetAttributes()
             {
-                AttributeCollection attrs = _primary.GetAttributes();
-                if (attrs == null)
-                {
-                    attrs = _secondary.GetAttributes();
-                }
+                AttributeCollection attrs = _primary.GetAttributes() ?? _secondary.GetAttributes();
 
                 Debug.Assert(attrs != null, "Someone should have handled this");
                 return attrs;
@@ -3074,11 +3009,7 @@ namespace System.ComponentModel
             /// </summary>
             string ICustomTypeDescriptor.GetClassName()
             {
-                string className = _primary.GetClassName();
-                if (className == null)
-                {
-                    className = _secondary.GetClassName();
-                }
+                string className = _primary.GetClassName() ?? _secondary.GetClassName();
 
                 Debug.Assert(className != null, "Someone should have handled this");
                 return className;
@@ -3089,11 +3020,7 @@ namespace System.ComponentModel
             /// </summary>
             string ICustomTypeDescriptor.GetComponentName()
             {
-                string name = _primary.GetComponentName();
-                if (name == null)
-                {
-                    name = _secondary.GetComponentName();
-                }
+                string name = _primary.GetComponentName() ?? _secondary.GetComponentName();
 
                 return name;
             }
@@ -3103,11 +3030,7 @@ namespace System.ComponentModel
             /// </summary>
             TypeConverter ICustomTypeDescriptor.GetConverter()
             {
-                TypeConverter converter = _primary.GetConverter();
-                if (converter == null)
-                {
-                    converter = _secondary.GetConverter();
-                }
+                TypeConverter converter = _primary.GetConverter() ?? _secondary.GetConverter();
 
                 Debug.Assert(converter != null, "Someone should have handled this");
                 return converter;
@@ -3118,11 +3041,7 @@ namespace System.ComponentModel
             /// </summary>
             EventDescriptor ICustomTypeDescriptor.GetDefaultEvent()
             {
-                EventDescriptor evt = _primary.GetDefaultEvent();
-                if (evt == null)
-                {
-                    evt = _secondary.GetDefaultEvent();
-                }
+                EventDescriptor evt = _primary.GetDefaultEvent() ?? _secondary.GetDefaultEvent();
 
                 return evt;
             }
@@ -3132,11 +3051,7 @@ namespace System.ComponentModel
             /// </summary>
             PropertyDescriptor ICustomTypeDescriptor.GetDefaultProperty()
             {
-                PropertyDescriptor prop = _primary.GetDefaultProperty();
-                if (prop == null)
-                {
-                    prop = _secondary.GetDefaultProperty();
-                }
+                PropertyDescriptor prop = _primary.GetDefaultProperty() ?? _secondary.GetDefaultProperty();
 
                 return prop;
             }
@@ -3151,11 +3066,7 @@ namespace System.ComponentModel
                     throw new ArgumentNullException(nameof(editorBaseType));
                 }
 
-                object editor = _primary.GetEditor(editorBaseType);
-                if (editor == null)
-                {
-                    editor = _secondary.GetEditor(editorBaseType);
-                }
+                object editor = _primary.GetEditor(editorBaseType) ?? _secondary.GetEditor(editorBaseType);
 
                 return editor;
             }
@@ -3165,11 +3076,7 @@ namespace System.ComponentModel
             /// </summary>
             EventDescriptorCollection ICustomTypeDescriptor.GetEvents()
             {
-                EventDescriptorCollection events = _primary.GetEvents();
-                if (events == null)
-                {
-                    events = _secondary.GetEvents();
-                }
+                EventDescriptorCollection events = _primary.GetEvents() ?? _secondary.GetEvents();
 
                 Debug.Assert(events != null, "Someone should have handled this");
                 return events;
@@ -3180,11 +3087,7 @@ namespace System.ComponentModel
             /// </summary>
             EventDescriptorCollection ICustomTypeDescriptor.GetEvents(Attribute[] attributes)
             {
-                EventDescriptorCollection events = _primary.GetEvents(attributes);
-                if (events == null)
-                {
-                    events = _secondary.GetEvents(attributes);
-                }
+                EventDescriptorCollection events = _primary.GetEvents(attributes) ?? _secondary.GetEvents(attributes);
 
                 Debug.Assert(events != null, "Someone should have handled this");
                 return events;
@@ -3195,11 +3098,7 @@ namespace System.ComponentModel
             /// </summary>
             PropertyDescriptorCollection ICustomTypeDescriptor.GetProperties()
             {
-                PropertyDescriptorCollection properties = _primary.GetProperties();
-                if (properties == null)
-                {
-                    properties = _secondary.GetProperties();
-                }
+                PropertyDescriptorCollection properties = _primary.GetProperties() ?? _secondary.GetProperties();
 
                 Debug.Assert(properties != null, "Someone should have handled this");
                 return properties;
@@ -3225,11 +3124,7 @@ namespace System.ComponentModel
             /// </summary>
             object ICustomTypeDescriptor.GetPropertyOwner(PropertyDescriptor pd)
             {
-                object owner = _primary.GetPropertyOwner(pd);
-                if (owner == null)
-                {
-                    owner = _secondary.GetPropertyOwner(pd);
-                }
+                object owner = _primary.GetPropertyOwner(pd) ?? _secondary.GetPropertyOwner(pd);
 
                 return owner;
             }
@@ -3455,8 +3350,7 @@ namespace System.ComponentModel
 
                     ICustomTypeDescriptor desc = p.GetExtendedTypeDescriptor(_instance);
                     if (desc == null) throw new InvalidOperationException(SR.Format(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetExtendedTypeDescriptor"));
-                    string name = desc.GetClassName();
-                    if (name == null) name = _instance.GetType().FullName;
+                    string name = desc.GetClassName() ?? _instance.GetType().FullName;
                     return name;
                 }
 
@@ -3702,8 +3596,7 @@ namespace System.ComponentModel
 
                     ICustomTypeDescriptor desc = p.GetExtendedTypeDescriptor(_instance);
                     if (desc == null) throw new InvalidOperationException(SR.Format(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetExtendedTypeDescriptor"));
-                    object owner = desc.GetPropertyOwner(pd);
-                    if (owner == null) owner = _instance;
+                    object owner = desc.GetPropertyOwner(pd) ?? _instance;
                     return owner;
                 }
             }
@@ -3776,8 +3669,7 @@ namespace System.ComponentModel
                     {
                         ICustomTypeDescriptor desc = p.GetTypeDescriptor(_objectType, _instance);
                         if (desc == null) throw new InvalidOperationException(SR.Format(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetTypeDescriptor"));
-                        name = desc.GetClassName();
-                        if (name == null) name = _objectType.FullName;
+                        name = desc.GetClassName() ?? _objectType.FullName;
                     }
 
                     return name;
@@ -4057,8 +3949,7 @@ namespace System.ComponentModel
                     {
                         ICustomTypeDescriptor desc = p.GetTypeDescriptor(_objectType, _instance);
                         if (desc == null) throw new InvalidOperationException(SR.Format(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetTypeDescriptor"));
-                        owner = desc.GetPropertyOwner(pd);
-                        if (owner == null) owner = _instance;
+                        owner = desc.GetPropertyOwner(pd) ?? _instance;
                     }
 
                     return owner;

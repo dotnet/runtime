@@ -15,72 +15,43 @@ namespace System.ComponentModel.Design
     /// </summary>
     public sealed class ComponentChangedEventArgs : EventArgs
     {
-        private object _component;
-        private MemberDescriptor _member;
-        private object _oldValue;
-        private object _newValue;
-
         /// <summary>
         ///    <para>
         ///       Gets or sets the component that is the cause of this event.      
         ///    </para>
         /// </summary>
-        public object Component
-        {
-            get
-            {
-                return _component;
-            }
-        }
+        public object Component { get; }
 
         /// <summary>
         ///    <para>
         ///       Gets or sets the member that is about to change.      
         ///    </para>
         /// </summary>
-        public MemberDescriptor Member
-        {
-            get
-            {
-                return _member;
-            }
-        }
+        public MemberDescriptor Member { get; }
 
         /// <summary>
         ///    <para>
         ///       Gets or sets the new value of the changed member.
         ///    </para>
         /// </summary>
-        public object NewValue
-        {
-            get
-            {
-                return _newValue;
-            }
-        }
+        public object NewValue { get; }
 
         /// <summary>
         ///    <para>
         ///       Gets or sets the old value of the changed member.      
         ///    </para>
         /// </summary>
-        public object OldValue
-        {
-            get
-            {
-                return _oldValue;
-            }
-        }
+        public object OldValue { get; }
 
         /// <summary>
         /// <para>Initializes a new instance of the <see cref='System.ComponentModel.Design.ComponentChangedEventArgs'/> class.</para>
         /// </summary>
         public ComponentChangedEventArgs(object component, MemberDescriptor member, object oldValue, object newValue)
         {
-            _component = component;
-            _member = member;
-            _oldValue = oldValue;
-            _newValue = newValue;
+            Component = component;
+            Member = member;
+            OldValue = oldValue;
+            NewValue = newValue;
         }
     }
 }
