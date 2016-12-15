@@ -10097,7 +10097,7 @@ compile_asm (MonoAotCompile *acfg)
 									  wrap_path (tmp_outfile_name), wrap_path (llvm_ofile),
 									  wrap_path (g_strdup_printf ("%s." AS_OBJECT_FILE_SUFFIX, acfg->tmpfname)), ld_flags);
 
-		if (acfg->llvm) {
+		if (acfg->aot_opts.llvm_only) {
 			command = g_strdup_printf ("clang++ %s", args);
 		} else {
 			command = g_strdup_printf ("\"%sld\" %s", tool_prefix, args);
