@@ -51,40 +51,14 @@
 
 //#define DEBUG_DOMAIN_UNLOAD 1
 
-/* we need to use both the Tls* functions and __thread because
- * some archs may generate faster jit code with one meachanism
- * or the other (we used to do it because tls slots were GC-tracked,
- * but we can't depend on this).
- */
-static MonoNativeTlsKey appdomain_thread_id;
-
-#ifdef MONO_HAVE_FAST_TLS
-
-MONO_FAST_TLS_DECLARE(tls_appdomain);
-
-#define GET_APPDOMAIN() ((MonoDomain*)MONO_FAST_TLS_GET(tls_appdomain))
-
+#define GET_APPDOMAIN() ((MonoDomain*)mono_tls_get_domain ())
 #define SET_APPDOMAIN(x) do { \
 	MonoThreadInfo *info; \
-	MONO_FAST_TLS_SET (tls_appdomain,x); \
-	mono_native_tls_set_value (appdomain_thread_id, x); \
+	mono_tls_set_domain (x); \
 	info = mono_thread_info_current (); \
 	if (info) \
 		mono_thread_info_tls_set (info, TLS_KEY_DOMAIN, (x));	\
 } while (FALSE)
-
-#else /* !MONO_HAVE_FAST_TLS */
-
-#define GET_APPDOMAIN() ((MonoDomain *)mono_native_tls_get_value (appdomain_thread_id))
-#define SET_APPDOMAIN(x) do {						\
-		MonoThreadInfo *info;								\
-		mono_native_tls_set_value (appdomain_thread_id, x);	\
-		info = mono_thread_info_current ();				\
-		if (info)												 \
-			mono_thread_info_tls_set (info, TLS_KEY_DOMAIN, (x));	\
-	} while (FALSE)
-
-#endif
 
 #define GET_APPCONTEXT() (mono_thread_internal_current ()->current_appcontext)
 #define SET_APPCONTEXT(x) MONO_OBJECT_SETREF (mono_thread_internal_current (), current_appcontext, (x))
@@ -144,26 +118,6 @@ get_runtimes_from_exe (const char *exe_file, MonoImage **exe_image, const MonoRu
 
 static const MonoRuntimeInfo*
 get_runtime_by_version (const char *version);
-
-MonoNativeTlsKey
-mono_domain_get_tls_key (void)
-{
-	return appdomain_thread_id;
-}
-
-gint32
-mono_domain_get_tls_offset (void)
-{
-	int offset = -1;
-
-#ifdef HOST_WIN32
-	if (appdomain_thread_id)
-		offset = appdomain_thread_id;
-#else
-	MONO_THREAD_VAR_OFFSET (tls_appdomain, offset);
-#endif
-	return offset;
-}
 
 #define ALIGN_TO(val,align) ((((guint64)val) + ((align) - 1)) & ~((align) - 1))
 #define ALIGN_PTR_TO(ptr,align) (gpointer)((((gssize)(ptr)) + (align - 1)) & (~(align - 1)))
@@ -550,9 +504,6 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 	mono_gc_base_init ();
 	mono_thread_info_attach (&dummy);
 
-	MONO_FAST_TLS_INIT (tls_appdomain);
-	mono_native_tls_alloc (&appdomain_thread_id, NULL);
-
 	mono_coop_mutex_init_recursive (&appdomains_mutex);
 
 	mono_metadata_init ();
@@ -898,7 +849,6 @@ mono_cleanup (void)
 	mono_images_cleanup ();
 	mono_metadata_cleanup ();
 
-	mono_native_tls_free (appdomain_thread_id);
 	mono_coop_mutex_destroy (&appdomains_mutex);
 
 	mono_w32process_cleanup ();

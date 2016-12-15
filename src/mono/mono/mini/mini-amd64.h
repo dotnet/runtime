@@ -370,10 +370,11 @@ typedef struct {
 #define MONO_ARCH_EMULATE_FREM 1
 #define MONO_ARCH_HAVE_IS_INT_OVERFLOW 1
 
+#ifndef HOST_WIN32
 #define MONO_ARCH_ENABLE_MONO_LMF_VAR 1
+#endif
 #define MONO_ARCH_HAVE_INVALIDATE_METHOD 1
 #define MONO_ARCH_HAVE_FULL_AOT_TRAMPOLINES 1
-#define MONO_ARCH_HAVE_TLS_GET (mono_amd64_have_tls_get ())
 #define MONO_ARCH_IMT_REG AMD64_R10
 #define MONO_ARCH_IMT_SCRATCH_REG AMD64_R11
 #define MONO_ARCH_VTABLE_REG MONO_AMD64_ARG_REG1
@@ -421,10 +422,6 @@ typedef struct {
 #define MONO_ARCH_HAVE_UNWIND_BACKTRACE 1
 #endif
 
-#if defined(TARGET_OSX) || defined(__linux__) || defined(TARGET_WIN32)
-#define MONO_ARCH_HAVE_TLS_GET_REG 1
-#endif
-
 #define MONO_ARCH_GSHAREDVT_SUPPORTED 1
 
 
@@ -470,17 +467,11 @@ mono_amd64_start_gsharedvt_call (GSharedVtCallInfo *info, gpointer *caller, gpoi
 guint64
 mono_amd64_get_original_ip (void);
 
-guint8*
-mono_amd64_emit_tls_get (guint8* code, int dreg, int tls_offset);
-
 gboolean
-mono_amd64_have_tls_get (void);
+mono_amd64_have_fast_tls (void);
 
 GSList*
 mono_amd64_get_exception_trampolines (gboolean aot);
-
-int
-mono_amd64_get_tls_gs_offset (void) MONO_LLVM_INTERNAL;
 
 gpointer
 mono_amd64_handler_block_trampoline_helper (void);

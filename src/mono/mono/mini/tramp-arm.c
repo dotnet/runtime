@@ -683,7 +683,7 @@ mono_arch_create_general_rgctx_lazy_fetch_trampoline (MonoTrampInfo **info, gboo
 static gpointer
 handler_block_trampoline_helper (gpointer *ptr)
 {
-	MonoJitTlsData *jit_tls = mono_native_tls_get_value (mono_jit_tls_id);
+	MonoJitTlsData *jit_tls = mono_tls_get_jit_tls ();
 	return jit_tls->handler_block_return_address;
 }
 

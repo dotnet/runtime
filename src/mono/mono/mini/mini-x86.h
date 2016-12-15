@@ -202,7 +202,7 @@ typedef struct {
 /* X86 uses jit_tls->lmf (See emit_push_lmf ()) */
 #define MONO_ARCH_ENABLE_MONO_LMF_VAR 1
 #endif
-#define MONO_ARCH_HAVE_TLS_GET (mono_x86_have_tls_get ())
+#define MONO_ARCH_HAVE_FAST_TLS (mono_x86_have_fast_tls ())
 #define MONO_ARCH_IMT_REG X86_EDX
 #define MONO_ARCH_VTABLE_REG X86_EDX
 #define MONO_ARCH_RGCTX_REG MONO_ARCH_IMT_REG
@@ -241,7 +241,6 @@ typedef struct {
 #define MONO_ARCH_GSHAREDVT_SUPPORTED 1
 #define MONO_ARCH_HAVE_OP_TAIL_CALL 1
 #define MONO_ARCH_HAVE_TRANSLATE_TLS_OFFSET 1
-#define MONO_ARCH_HAVE_TLS_GET_REG 1
 #define MONO_ARCH_HAVE_DUMMY_INIT 1
 #define MONO_ARCH_HAVE_SDB_TRAMPOLINES 1
 #define MONO_ARCH_HAVE_PATCH_CODE_NEW 1
@@ -336,17 +335,11 @@ typedef struct {
 	ArgInfo args [1];
 } CallInfo;
 
-guint8*
-mono_x86_emit_tls_get (guint8* code, int dreg, int tls_offset);
-
-guint8*
-mono_x86_emit_tls_get_reg (guint8* code, int dreg, int offset_reg);
-
 guint32
 mono_x86_get_this_arg_offset (MonoMethodSignature *sig);
 
 gboolean
-mono_x86_have_tls_get (void);
+mono_x86_have_fast_tls (void);
 
 void
 mono_x86_throw_exception (mgreg_t *regs, MonoObject *exc, 

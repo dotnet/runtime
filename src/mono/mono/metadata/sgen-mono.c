@@ -50,12 +50,6 @@ gboolean sgen_mono_xdomain_checks = FALSE;
 /* Functions supplied by the runtime to be called by the GC */
 static MonoGCCallbacks gc_callbacks;
 
-#ifdef HAVE_KW_THREAD
-__thread SgenThreadInfo *sgen_thread_info;
-#else
-MonoNativeTlsKey thread_info_key;
-#endif
-
 #define ALIGN_TO(val,align) ((((guint64)val) + ((align) - 1)) & ~((align) - 1))
 
 #define OPDEF(a,b,c,d,e,f,g,h,i,j) \
@@ -1015,9 +1009,6 @@ static MonoMethod* slowpath_alloc_method_cache [ATYPE_NUM];
 static gboolean use_managed_allocator = TRUE;
 
 #ifdef MANAGED_ALLOCATION
-
-#if defined(HAVE_KW_THREAD) || defined(TARGET_OSX) || defined(TARGET_WIN32) || defined(TARGET_ANDROID) || defined(TARGET_IOS)
-
 // Cache the SgenThreadInfo pointer in a local 'var'.
 #define EMIT_TLS_ACCESS_VAR(mb, var) \
 	do { \
@@ -1047,14 +1038,6 @@ static gboolean use_managed_allocator = TRUE;
 	mono_mb_emit_byte ((mb), CEE_ADD);		\
 	mono_mb_emit_byte ((mb), CEE_LDIND_I);		\
 	} while (0)
-
-#else
-#define EMIT_TLS_ACCESS_VAR(mb, _var)	do { g_error ("sgen is not supported when using --with-tls=pthread.\n"); } while (0)
-#define EMIT_TLS_ACCESS_NEXT_ADDR(mb, _var)	do { g_error ("sgen is not supported when using --with-tls=pthread.\n"); } while (0)
-#define EMIT_TLS_ACCESS_TEMP_END(mb, _var)	do { g_error ("sgen is not supported when using --with-tls=pthread.\n"); } while (0)
-#define EMIT_TLS_ACCESS_IN_CRITICAL_REGION_ADDR(mb, _var)	do { g_error ("sgen is not supported when using --with-tls=pthread.\n"); } while (0)
-
-#endif
 
 /* FIXME: Do this in the JIT, where specialized allocation sequences can be created
  * for each class. This is currently not easy to do, as it is hard to generate basic 
@@ -1473,8 +1456,6 @@ mono_gc_get_managed_allocator (MonoClass *klass, gboolean for_box, gboolean know
 #ifdef MANAGED_ALLOCATION
 	if (collect_before_allocs)
 		return NULL;
-	if (!mono_runtime_has_tls_get ())
-		return NULL;
 	if (klass->instance_size > tlab_size)
 		return NULL;
 	if (known_instance_size && ALIGN_TO (klass->instance_size, SGEN_ALLOC_ALIGN) >= SGEN_MAX_SMALL_OBJ_SIZE)
@@ -1503,8 +1484,6 @@ mono_gc_get_managed_array_allocator (MonoClass *klass)
 #ifdef MANAGED_ALLOCATION
 	if (klass->rank != 1)
 		return NULL;
-	if (!mono_runtime_has_tls_get ())
-		return NULL;
 	if (mono_profiler_get_events () & MONO_PROFILE_ALLOCATIONS)
 		return NULL;
 	if (has_per_allocation_action)
@@ -1531,9 +1510,6 @@ mono_gc_get_managed_allocator_by_type (int atype, ManagedAllocatorVariant varian
 	MonoMethod **cache;
 
 	if (variant == MANAGED_ALLOCATOR_REGULAR && !use_managed_allocator)
-		return NULL;
-
-	if (variant == MANAGED_ALLOCATOR_REGULAR && !mono_runtime_has_tls_get ())
 		return NULL;
 
 	switch (variant) {
@@ -2258,12 +2234,7 @@ sgen_client_thread_register (SgenThreadInfo* info, void *stack_bottom_fallback)
 	size_t stsize = 0;
 	guint8 *staddr = NULL;
 
-#ifndef HAVE_KW_THREAD
-	g_assert (!mono_native_tls_get_value (thread_info_key));
-	mono_native_tls_set_value (thread_info_key, info);
-#else
-	sgen_thread_info = info;
-#endif
+	mono_tls_set_sgen_thread_info (info);
 
 	info->client_info.skip = 0;
 
@@ -2302,11 +2273,7 @@ sgen_client_thread_unregister (SgenThreadInfo *p)
 {
 	MonoNativeThreadId tid;
 
-#ifndef HAVE_KW_THREAD
-	mono_native_tls_set_value (thread_info_key, NULL);
-#else
-	sgen_thread_info = NULL;
-#endif
+	mono_tls_set_sgen_thread_info (NULL);
 
 	tid = mono_thread_info_get_tid (p);
 
@@ -2903,22 +2870,7 @@ sgen_client_init (void)
 
 	mono_sgen_init_stw ();
 
-#ifndef HAVE_KW_THREAD
-	mono_native_tls_alloc (&thread_info_key, NULL);
-#if defined(TARGET_OSX) || defined(TARGET_WIN32) || defined(TARGET_ANDROID) || defined(TARGET_IOS)
-	/* 
-	 * CEE_MONO_TLS requires the tls offset, not the key, so the code below only works on darwin,
-	 * where the two are the same.
-	 */
-	mono_tls_key_set_offset (TLS_KEY_SGEN_THREAD_INFO, thread_info_key);
-#endif
-#else
-	{
-		int tls_offset = -1;
-		MONO_THREAD_VAR_OFFSET (sgen_thread_info, tls_offset);
-		mono_tls_key_set_offset (TLS_KEY_SGEN_THREAD_INFO, tls_offset);
-	}
-#endif
+	mono_tls_init_gc_keys ();
 
 	mono_gc_register_thread (&dummy);
 }
@@ -3034,12 +2986,6 @@ mono_gc_base_init (void)
 #endif
 
 	sgen_gc_init ();
-
-#if defined(HAVE_KW_THREAD)
-	/* This can happen with using libmonosgen.so */
-	if (mono_tls_key_get_offset (TLS_KEY_SGEN_THREAD_INFO) == -1)
-		sgen_set_use_managed_allocator (FALSE);
-#endif
 
 	gc_inited = TRUE;
 }

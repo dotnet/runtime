@@ -391,14 +391,6 @@ int mono_exc_esp_offset = 0;
 
 __thread int indent_level = 0;
 
-static gint appdomain_tls_offset = -1,
-	    lmf_tls_offset = -1,
-	    lmf_addr_tls_offset = -1;
-
-pthread_key_t lmf_addr_key;
-
-gboolean lmf_addr_key_inited = FALSE; 
-
 /*
  * The code generated for sequence points reads from this location, 
  * which is made read-only when single stepping is enabled.
@@ -1359,6 +1351,24 @@ mono_arch_cleanup (void)
 	if (bp_trigger_page)
 		mono_vfree (bp_trigger_page, mono_pagesize (), MONO_MEM_ACCOUNT_OTHER);
 	mono_os_mutex_destroy (&mini_arch_mutex);
+}
+
+/*========================= End of Function ========================*/
+
+/*------------------------------------------------------------------*/
+/*                                                                  */
+/* Name		- mono_arch_have_fast_tls                           */
+/*                                                                  */
+/* Function	- Returns whether we use fast inlined thread local  */
+/*                storage managed access, instead of falling back   */
+/*                to native code.                                   */
+/*		                               			    */
+/*------------------------------------------------------------------*/
+
+gboolean
+mono_arch_have_fast_tls (void)
+{
+	return FALSE;
 }
 
 /*========================= End of Function ========================*/
@@ -3908,20 +3918,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_S390_SETF4RET:
 			s390_ledbr (code, ins->dreg, ins->sreg1);
 			break;
-		case OP_TLS_GET: {
-			if (s390_is_imm16 (ins->inst_offset)) {
-				s390_lghi (code, s390_r13, ins->inst_offset);
-			} else if (s390_is_imm32 (ins->inst_offset)) {
-				s390_lgfi (code, s390_r13, ins->inst_offset);
-			} else {
-				S390_SET  (code, s390_r13, ins->inst_offset);
-			}
-			s390_ear (code, s390_r1, 0);
-			s390_sllg(code, s390_r1, s390_r1, 0, 32);
-			s390_ear (code, s390_r1, 1);
-			s390_lg  (code, ins->dreg, s390_r13, s390_r1, 0);
-		}
-			break;
 		case OP_JMP: {
 			if (cfg->method->save_lmf)
 				restoreLMF(code, cfg->frame_reg, cfg->stack_usage);
@@ -5809,20 +5805,10 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		/*---------------------------------------------------------------*/
 		/* On return from this call r2 have the address of the &lmf	 */
 		/*---------------------------------------------------------------*/
-		if (lmf_addr_tls_offset == -1) {
-			mono_add_patch_info (cfg, code - cfg->native_code, 
-					     MONO_PATCH_INFO_INTERNAL_METHOD, 
-					     (gpointer)"mono_get_lmf_addr");
-			S390_CALL_TEMPLATE(code, s390_r1);
-		} else {
-			/*-------------------------------------------------------*/
-			/* Get LMF by getting value from thread level storage    */
-			/*-------------------------------------------------------*/
-			s390_ear (code, s390_r1, 0);
-			s390_sllg(code, s390_r1, s390_r1, 0, 32);
-			s390_ear (code, s390_r1, 1);
-			s390_lg  (code, s390_r2, 0, s390_r1, lmf_addr_tls_offset);
-		}
+		mono_add_patch_info (cfg, code - cfg->native_code, 
+				MONO_PATCH_INFO_INTERNAL_METHOD, 
+				(gpointer)"mono_tls_get_lmf_addr");
+		S390_CALL_TEMPLATE(code, s390_r1);
 
 		/*---------------------------------------------------------------*/	
 		/* Set lmf.lmf_addr = jit_tls->lmf				 */	
@@ -6159,9 +6145,6 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 void
 mono_arch_finish_init (void)
 {
-	appdomain_tls_offset = mono_domain_get_tls_offset();
-	lmf_tls_offset = mono_get_lmf_tls_offset();
-	lmf_addr_tls_offset = mono_get_lmf_addr_tls_offset();
 }
 
 /*========================= End of Function ========================*/
@@ -6282,12 +6265,6 @@ mono_arch_print_tree (MonoInst *tree, int arity)
 		case OP_S390_SETF4RET:
 			printf ("[f%s,f%s]", 
 				mono_arch_regname (tree->dreg),
-				mono_arch_regname (tree->sreg1));
-			done = 1;
-			break;
-		case OP_TLS_GET:
-			printf ("[0x%lx(0x%lx,%s)]", tree->inst_offset,
-			        tree->inst_imm,
 				mono_arch_regname (tree->sreg1));
 			done = 1;
 			break;

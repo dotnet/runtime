@@ -57,17 +57,10 @@ static guint64 stat_bytes_alloced_los = 0;
  * tlab_real_end points to the end of the TLAB.
  */
 
-#ifdef HAVE_KW_THREAD
-#define TLAB_START	(sgen_thread_info->tlab_start)
-#define TLAB_NEXT	(sgen_thread_info->tlab_next)
-#define TLAB_TEMP_END	(sgen_thread_info->tlab_temp_end)
-#define TLAB_REAL_END	(sgen_thread_info->tlab_real_end)
-#else
 #define TLAB_START	(__thread_info__->tlab_start)
 #define TLAB_NEXT	(__thread_info__->tlab_next)
 #define TLAB_TEMP_END	(__thread_info__->tlab_temp_end)
 #define TLAB_REAL_END	(__thread_info__->tlab_real_end)
-#endif
 
 static GCObject*
 alloc_degraded (GCVTable vtable, size_t size, gboolean for_mature)

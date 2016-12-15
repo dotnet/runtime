@@ -650,7 +650,7 @@ thread_suspend_func (gpointer user_data, void *sigctx, MonoContext *ctx)
 		} else {
 			tls->unwind_state.valid = FALSE;
 		}
-		tls->unwind_state.unwind_data [MONO_UNWIND_DATA_JIT_TLS] = mono_native_tls_get_value (mono_jit_tls_id);
+		tls->unwind_state.unwind_data [MONO_UNWIND_DATA_JIT_TLS] = mono_tls_get_jit_tls ();
 		tls->unwind_state.unwind_data [MONO_UNWIND_DATA_DOMAIN] = mono_domain_get ();
 	}
 

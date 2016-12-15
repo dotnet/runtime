@@ -157,28 +157,13 @@ static MonoReferenceQueue *context_queue;
  */
 static MonoGHashTable *threads_starting_up = NULL;
 
-/* The TLS key that holds the MonoObject assigned to each thread */
-static MonoNativeTlsKey current_object_key;
-
 /* Contains tids */
 /* Protected by the threads lock */
 static GHashTable *joinable_threads;
 static int joinable_thread_count;
 
-#ifdef MONO_HAVE_FAST_TLS
-/* we need to use both the Tls* functions and __thread because
- * the gc needs to see all the threads 
- */
-MONO_FAST_TLS_DECLARE(tls_current_object);
-#define SET_CURRENT_OBJECT(x) do { \
-	MONO_FAST_TLS_SET (tls_current_object, x); \
-	mono_native_tls_set_value (current_object_key, x); \
-} while (FALSE)
-#define GET_CURRENT_OBJECT() ((MonoInternalThread*) MONO_FAST_TLS_GET (tls_current_object))
-#else
-#define SET_CURRENT_OBJECT(x) mono_native_tls_set_value (current_object_key, x)
-#define GET_CURRENT_OBJECT() (MonoInternalThread*) mono_native_tls_get_value (current_object_key)
-#endif
+#define SET_CURRENT_OBJECT(x) mono_tls_set_thread (x)
+#define GET_CURRENT_OBJECT() (MonoInternalThread*) mono_tls_get_thread ()
 
 /* function called at thread start */
 static MonoThreadStartCB mono_thread_start_cb = NULL;
@@ -241,26 +226,6 @@ static guint32
 get_next_managed_thread_id (void)
 {
 	return InterlockedIncrement (&managed_thread_id_counter);
-}
-
-MonoNativeTlsKey
-mono_thread_get_tls_key (void)
-{
-	return current_object_key;
-}
-
-gint32
-mono_thread_get_tls_offset (void)
-{
-	int offset = -1;
-
-#ifdef HOST_WIN32
-	if (current_object_key)
-		offset = current_object_key;
-#else
-	MONO_THREAD_VAR_OFFSET (tls_current_object,offset);
-#endif
-	return offset;
 }
 
 static inline MonoNativeThreadId
@@ -2903,13 +2868,6 @@ ves_icall_System_Runtime_Remoting_Contexts_Context_ReleaseContext (MonoAppContex
 	mono_profiler_context_unloaded (ctx);
 }
 
-void
-mono_thread_init_tls (void)
-{
-	MONO_FAST_TLS_INIT (tls_current_object);
-	mono_native_tls_alloc (&current_object_key, NULL);
-}
-
 void mono_thread_init (MonoThreadStartCB start_cb,
 		       MonoThreadAttachCB attach_cb)
 {
@@ -2922,8 +2880,6 @@ void mono_thread_init (MonoThreadStartCB start_cb,
 	
 	mono_init_static_data_info (&thread_static_info);
 	mono_init_static_data_info (&context_static_info);
-
-	THREAD_DEBUG (g_message ("%s: Allocated current_object_key %d", __func__, current_object_key));
 
 	mono_thread_start_cb = start_cb;
 	mono_thread_attach_cb = attach_cb;
@@ -2952,8 +2908,6 @@ void mono_thread_cleanup (void)
 	mono_os_mutex_destroy (&small_id_mutex);
 	mono_os_event_destroy (&background_change_event);
 #endif
-
-	mono_native_tls_free (current_object_key);
 }
 
 void
@@ -4649,20 +4603,6 @@ mono_thread_test_state (MonoInternalThread *thread, MonoThreadState test)
 	UNLOCK_THREAD (thread);
 	
 	return ret;
-}
-
-static gboolean has_tls_get = FALSE;
-
-void
-mono_runtime_set_has_tls_get (gboolean val)
-{
-	has_tls_get = val;
-}
-
-gboolean
-mono_runtime_has_tls_get (void)
-{
-	return has_tls_get;
 }
 
 static void

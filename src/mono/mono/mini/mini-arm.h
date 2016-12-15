@@ -350,10 +350,6 @@ typedef struct MonoCompileArch {
 #define MONO_ARCH_HAVE_SDB_TRAMPOLINES 1
 #define MONO_ARCH_HAVE_PATCH_CODE_NEW 1
 #define MONO_ARCH_HAVE_OP_GENERIC_CLASS_INIT 1
-#define MONO_ARCH_HAVE_GET_TLS_TRAMP 1
-
-#define MONO_ARCH_HAVE_TLS_GET (mono_arm_have_tls_get ())
-#define MONO_ARCH_HAVE_TLS_GET_REG 1
 
 #ifdef TARGET_WATCHOS
 #define MONO_ARCH_DISABLE_HW_TRAPS 1
@@ -405,7 +401,7 @@ gboolean
 mono_arm_is_hard_float (void);
 
 gboolean
-mono_arm_have_tls_get (void);
+mono_arm_have_fast_tls (void);
 
 void
 mono_arm_unaligned_stack (MonoMethod *method);

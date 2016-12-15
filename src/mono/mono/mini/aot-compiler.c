@@ -3925,15 +3925,13 @@ add_wrappers (MonoAotCompile *acfg)
 		/* stelemref */
 		add_method (acfg, mono_marshal_get_stelemref ());
 
-		if (MONO_ARCH_HAVE_TLS_GET) {
-			/* Managed Allocators */
-			nallocators = mono_gc_get_managed_allocator_types ();
-			for (i = 0; i < nallocators; ++i) {
-				if ((m = mono_gc_get_managed_allocator_by_type (i, MANAGED_ALLOCATOR_REGULAR)))
-					add_method (acfg, m);
-				if ((m = mono_gc_get_managed_allocator_by_type (i, MANAGED_ALLOCATOR_SLOW_PATH)))
-					add_method (acfg, m);
-			}
+		/* Managed Allocators */
+		nallocators = mono_gc_get_managed_allocator_types ();
+		for (i = 0; i < nallocators; ++i) {
+			if ((m = mono_gc_get_managed_allocator_by_type (i, MANAGED_ALLOCATOR_REGULAR)))
+				add_method (acfg, m);
+			if ((m = mono_gc_get_managed_allocator_by_type (i, MANAGED_ALLOCATOR_SLOW_PATH)))
+				add_method (acfg, m);
 		}
 
 		/* write barriers */
@@ -5662,7 +5660,6 @@ encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info, guint8 *buf, guint
 		encode_value (get_image_index (acfg, patch_info->data.image), p, &p);
 		break;
 	case MONO_PATCH_INFO_MSCORLIB_GOT_ADDR:
-	case MONO_PATCH_INFO_JIT_TLS_ID:
 	case MONO_PATCH_INFO_GC_CARD_TABLE_ADDR:
 	case MONO_PATCH_INFO_GC_NURSERY_START:
 	case MONO_PATCH_INFO_GC_NURSERY_BITS:
@@ -5692,6 +5689,8 @@ encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info, guint8 *buf, guint
 		encode_method_ref (acfg, patch_info->data.method, p, &p);
 		break;
 	case MONO_PATCH_INFO_AOT_JIT_INFO:
+	case MONO_PATCH_INFO_GET_TLS_TRAMP:
+	case MONO_PATCH_INFO_SET_TLS_TRAMP:
 		encode_value (patch_info->data.index, p, &p);
 		break;
 	case MONO_PATCH_INFO_INTERNAL_METHOD:
@@ -5801,9 +5800,6 @@ encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info, guint8 *buf, guint
 	case MONO_PATCH_INFO_GSHAREDVT_IN_WRAPPER:
 		encode_signature (acfg, (MonoMethodSignature*)patch_info->data.target, p, &p);
 		break;
-	case MONO_PATCH_INFO_TLS_OFFSET:
-		encode_value (GPOINTER_TO_INT (patch_info->data.target), p, &p);
-		break;
 	case MONO_PATCH_INFO_GSHAREDVT_CALL:
 		encode_signature (acfg, (MonoMethodSignature*)patch_info->data.gsharedvt->sig, p, &p);
 		encode_method_ref (acfg, patch_info->data.gsharedvt->method, p, &p);
@@ -5846,7 +5842,6 @@ encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info, guint8 *buf, guint
 		encode_method_ref (acfg, patch_info->data.virt_method->method, p, &p);
 		break;
 	case MONO_PATCH_INFO_GC_SAFE_POINT_FLAG:
-	case MONO_PATCH_INFO_GET_TLS_TRAMP:
 	case MONO_PATCH_INFO_JIT_THREAD_ATTACH:
 		break;
 	default:
@@ -10479,11 +10474,6 @@ add_preinit_got_slots (MonoAotCompile *acfg)
 	get_got_offset (acfg, TRUE, ji);
 
 	ji = (MonoJumpInfo *)mono_mempool_alloc0 (acfg->mempool, sizeof (MonoJumpInfo));
-	ji->type = MONO_PATCH_INFO_JIT_TLS_ID;
-	get_got_offset (acfg, FALSE, ji);
-	get_got_offset (acfg, TRUE, ji);
-
-	ji = (MonoJumpInfo *)mono_mempool_alloc0 (acfg->mempool, sizeof (MonoJumpInfo));
 	ji->type = MONO_PATCH_INFO_AOT_MODULE;
 	get_got_offset (acfg, FALSE, ji);
 	get_got_offset (acfg, TRUE, ji);
@@ -10493,10 +10483,19 @@ add_preinit_got_slots (MonoAotCompile *acfg)
 	get_got_offset (acfg, FALSE, ji);
 	get_got_offset (acfg, TRUE, ji);
 
-	ji = (MonoJumpInfo *)mono_mempool_alloc0 (acfg->mempool, sizeof (MonoJumpInfo));
-	ji->type = MONO_PATCH_INFO_GET_TLS_TRAMP;
-	get_got_offset (acfg, FALSE, ji);
-	get_got_offset (acfg, TRUE, ji);
+	for (i = 0; i < TLS_KEY_NUM; i++) {
+		ji = (MonoJumpInfo *)mono_mempool_alloc0 (acfg->mempool, sizeof (MonoJumpInfo));
+		ji->type = MONO_PATCH_INFO_GET_TLS_TRAMP;
+		ji->data.index = i;
+		get_got_offset (acfg, FALSE, ji);
+		get_got_offset (acfg, TRUE, ji);
+
+		ji = (MonoJumpInfo *)mono_mempool_alloc0 (acfg->mempool, sizeof (MonoJumpInfo));
+		ji->type = MONO_PATCH_INFO_SET_TLS_TRAMP;
+		ji->data.index = i;
+		get_got_offset (acfg, FALSE, ji);
+		get_got_offset (acfg, TRUE, ji);
+	}
 
 	ji = (MonoJumpInfo *)mono_mempool_alloc0 (acfg->mempool, sizeof (MonoJumpInfo));
 	ji->type = MONO_PATCH_INFO_JIT_THREAD_ATTACH;

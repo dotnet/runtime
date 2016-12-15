@@ -151,7 +151,6 @@ start_handler: len:96
 endfilter: len:96
 endfinally: len:96
 aot_const: dest:i len:48
-tls_get: dest:i len:48
 atomic_add_i4: src1:b src2:i dest:i len:48
 atomic_add_i8: src1:b src2:i dest:i len:48
 atomic_exchange_i4: src1:b src2:i dest:i len:48

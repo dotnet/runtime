@@ -66,7 +66,7 @@ static MonoThreadInfoCallbacks threads_callbacks;
 static MonoThreadInfoRuntimeCallbacks runtime_callbacks;
 static MonoNativeTlsKey thread_info_key, thread_exited_key;
 #ifdef HAVE_KW_THREAD
-static __thread guint32 tls_small_id MONO_TLS_FAST;
+static __thread guint32 tls_small_id;
 #else
 static MonoNativeTlsKey small_id_key;
 #endif

@@ -47,7 +47,7 @@ continuation_mark_frame (MonoContinuation *cont)
 	if (cont->domain)
 		return mono_get_exception_argument ("cont", "Already marked");
 
-	jit_tls = (MonoJitTlsData *)mono_native_tls_get_value (mono_jit_tls_id);
+	jit_tls = (MonoJitTlsData *)mono_tls_get_jit_tls ();
 	lmf = mono_get_lmf();
 	cont->domain = mono_domain_get ();
 	cont->thread_id = mono_native_thread_id_get ();

@@ -766,7 +766,7 @@ mono_arch_invalidate_method (MonoJitInfo *ji, void *func, gpointer func_arg)
 gpointer
 mono_amd64_handler_block_trampoline_helper (void)
 {
-	MonoJitTlsData *jit_tls = (MonoJitTlsData *)mono_native_tls_get_value (mono_jit_tls_id);
+	MonoJitTlsData *jit_tls = (MonoJitTlsData *)mono_tls_get_jit_tls ();
 	return jit_tls->handler_block_return_address;
 }
 
