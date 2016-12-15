@@ -35,6 +35,7 @@ public class TestRunner
 	class ProcessData {
 		public string test;
 		public StringBuilder stdout, stderr;
+		public object stdoutLock = new object (), stderrLock = new object ();
 		public string stdoutName, stderrName;
 	}
 
@@ -346,14 +347,16 @@ public class TestRunner
 					data.stderr = new StringBuilder ();
 
 					p.OutputDataReceived += delegate (object sender, DataReceivedEventArgs e) {
-						if (e.Data != null) {
-							data.stdout.AppendLine (e.Data);
+						lock (data.stdoutLock) {
+							if (e.Data != null)
+								data.stdout.AppendLine (e.Data);
 						}
 					};
 
 					p.ErrorDataReceived += delegate (object sender, DataReceivedEventArgs e) {
-						if (e.Data != null) {
-							data.stderr.AppendLine (e.Data);
+						lock (data.stderrLock) {
+							if (e.Data != null)
+								data.stderr.AppendLine (e.Data);
 						}
 					};
 
@@ -369,14 +372,8 @@ public class TestRunner
 							timedout.Add (data);
 						}
 
-#if !FULL_AOT_DESKTOP && !MOBILE
 						// Force the process to print a thread dump
-						try {
-							Syscall.kill (p.Id, Signum.SIGQUIT);
-							Thread.Sleep (1000);
-						} catch {
-						}
-#endif
+						TryThreadDump (p.Id, data);
 
 						if (verbose) {
 							output.Write ($"timed out ({timeout}s)");
@@ -610,5 +607,120 @@ public class TestRunner
 		// Spec at http://www.w3.org/TR/2008/REC-xml-20081126/#charsets says only the following chars are valid in XML:
 		// Char ::= #x9 | #xA | #xD | [#x20-#xD7FF] | [#xE000-#xFFFD] | [#x10000-#x10FFFF]	/* any Unicode character, excluding the surrogate blocks, FFFE, and FFFF. */
 		return Regex.Replace (text, @"[^\x09\x0A\x0D\x20-\uD7FF\uE000-\uFFFD\u10000-\u10FFFF]", "");
+	}
+
+	static void TryThreadDump (int pid, ProcessData data)
+	{
+		try {
+			TryGDB (pid, data);
+			return;
+		} catch {
+		}
+
+#if !FULL_AOT_DESKTOP && !MOBILE
+		/* LLDB cannot produce managed stacktraces for all the threads */
+		try {
+			Syscall.kill (pid, Signum.SIGQUIT);
+			Thread.Sleep (1000);
+		} catch {
+		}
+#endif
+
+		try {
+			TryLLDB (pid, data);
+			return;
+		} catch {
+		}
+	}
+
+	static void TryLLDB (int pid, ProcessData data)
+	{
+		string filename = Path.GetTempFileName ();
+
+		using (StreamWriter sw = new StreamWriter (new FileStream (filename, FileMode.Open, FileAccess.Write)))
+		{
+			sw.WriteLine ("process attach --pid " + pid);
+			sw.WriteLine ("thread list");
+			sw.WriteLine ("thread backtrace all");
+			sw.WriteLine ("detach");
+			sw.WriteLine ("quit");
+			sw.Flush ();
+
+			ProcessStartInfo psi = new ProcessStartInfo {
+				FileName = "lldb",
+				Arguments = "--batch --source \"" + filename + "\" --no-lldbinit",
+				UseShellExecute = false,
+				RedirectStandardError = true,
+				RedirectStandardOutput = true,
+			};
+
+			using (Process process = new Process { StartInfo = psi })
+			{
+				process.OutputDataReceived += delegate (object sender, DataReceivedEventArgs e) {
+					lock (data.stdoutLock) {
+						if (e.Data != null)
+							data.stdout.AppendLine (e.Data);
+					}
+				};
+
+				process.ErrorDataReceived += delegate (object sender, DataReceivedEventArgs e) {
+					lock (data.stderrLock) {
+						if (e.Data != null)
+							data.stderr.AppendLine (e.Data);
+					}
+				};
+
+				process.Start ();
+				process.BeginOutputReadLine ();
+				process.BeginErrorReadLine ();
+				if (!process.WaitForExit (60 * 1000))
+					process.Kill ();
+			}
+		}
+	}
+
+	static void TryGDB (int pid, ProcessData data)
+	{
+		string filename = Path.GetTempFileName ();
+
+		using (StreamWriter sw = new StreamWriter (new FileStream (filename, FileMode.Open, FileAccess.Write)))
+		{
+			sw.WriteLine ("attach " + pid);
+			sw.WriteLine ("info threads");
+			sw.WriteLine ("thread apply all p mono_print_thread_dump(0)");
+			sw.WriteLine ("thread apply all backtrace");
+			sw.Flush ();
+
+			ProcessStartInfo psi = new ProcessStartInfo {
+				FileName = "gdb",
+				Arguments = "-batch -x \"" + filename + "\" -nx",
+				UseShellExecute = false,
+				RedirectStandardError = true,
+				RedirectStandardOutput = true,
+			};
+
+			using (Process process = new Process { StartInfo = psi })
+			{
+				process.OutputDataReceived += delegate (object sender, DataReceivedEventArgs e) {
+					lock (data.stdoutLock) {
+						if (e.Data != null)
+							data.stdout.AppendLine (e.Data);
+					}
+				};
+
+				process.ErrorDataReceived += delegate (object sender, DataReceivedEventArgs e) {
+					lock (data.stderrLock) {
+						if (e.Data != null)
+							data.stderr.AppendLine (e.Data);
+					}
+				};
+
+				process.Start ();
+				process.BeginOutputReadLine ();
+				process.BeginErrorReadLine ();
+				if (!process.WaitForExit (60 * 1000))
+					process.Kill ();
+			}
+		}
 	}
 }
