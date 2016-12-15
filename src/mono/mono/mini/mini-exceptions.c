@@ -2488,12 +2488,21 @@ mono_handle_native_crash (const char *signal, void *ctx, MONO_SIG_HANDLER_INFO_T
 		int status;
 		pid_t crashed_pid = getpid ();
 
-		//pid = fork ();
 		/*
 		 * glibc fork acquires some locks, so if the crash happened inside malloc/free,
 		 * it will deadlock. Call the syscall directly instead.
 		 */
-		pid = mono_runtime_syscall_fork ();
+#if defined(PLATFORM_ANDROID)
+		/* SYS_fork is defined to be __NR_fork which is not defined in some ndk versions */
+		g_assert_not_reached ();
+#elif defined(SYS_fork)
+		pid = (pid_t) syscall (SYS_fork);
+#elif defined(PLATFORM_MACOSX) && HAVE_FORK
+		pid = (pid_t) fork ();
+#else
+		g_assert_not_reached ();
+#endif
+
 #if defined (HAVE_PRCTL) && defined(PR_SET_PTRACER)
 		if (pid > 0) {
 			// Allow gdb to attach to the process even if ptrace_scope sysctl variable is set to

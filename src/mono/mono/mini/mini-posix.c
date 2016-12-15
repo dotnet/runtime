@@ -832,12 +832,6 @@ mono_runtime_setup_stat_profiler (void)
 
 #if defined(__native_client__)
 
-pid_t
-mono_runtime_syscall_fork ()
-{
-	g_assert_not_reached ();
-}
-
 void
 mono_gdb_render_native_backtraces (pid_t crashed_pid)
 {
