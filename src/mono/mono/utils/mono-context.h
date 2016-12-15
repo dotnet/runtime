@@ -455,7 +455,7 @@ typedef struct {
 		"stp d30, d31, [x16], #16\n"	\
 		:							\
 		: "r" (&ctx.regs)			\
-		: "x30", "memory"			\
+		: "x16", "x30", "memory"		\
 	);								\
 	__asm__ __volatile__( \
 		"adr %0, L0%=\n" \
