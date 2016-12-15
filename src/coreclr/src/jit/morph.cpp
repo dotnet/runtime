@@ -15330,6 +15330,12 @@ bool Compiler::fgMorphBlockStmt(BasicBlock* block, GenTreeStmt* stmt DEBUGARG(co
 
     stmt->gtStmtExpr = morph;
 
+    if (lvaLocalVarRefCounted)
+    {
+        // fgMorphTree may have introduced new lclVar references. Bump the ref counts if requested.
+        lvaRecursiveIncRefCounts(stmt->gtStmtExpr);
+    }
+
     // Can the entire tree be removed?
     bool removedStmt = fgCheckRemoveStmt(block, stmt);
 
@@ -15347,12 +15353,6 @@ bool Compiler::fgMorphBlockStmt(BasicBlock* block, GenTreeStmt* stmt DEBUGARG(co
 
     if (!removedStmt)
     {
-        if (lvaLocalVarRefCounted)
-        {
-            // fgMorphTree may have introduced new lclVar references. Bump the ref counts if requested.
-            lvaRecursiveIncRefCounts(stmt->gtStmtExpr);
-        }
-
         // Have to re-do the evaluation order since for example some later code does not expect constants as op1
         gtSetStmtInfo(stmt);
 
