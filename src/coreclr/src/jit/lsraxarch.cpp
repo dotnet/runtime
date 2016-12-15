@@ -72,7 +72,7 @@ void Lowering::TreeNodeInfoInitStoreLoc(GenTreeLclVarCommon* storeLoc)
             // InitBlk
             MakeSrcContained(storeLoc, op1);
         }
-        else if ((storeLoc->TypeGet() == TYP_SIMD12) && (storeLoc->OperGet() == GT_STORE_LCL_FLD))
+        else if (storeLoc->TypeGet() == TYP_SIMD12)
         {
             // Need an additional register to extract upper 4 bytes of Vector3.
             info->internalFloatCount = 1;
@@ -1863,6 +1863,7 @@ void Lowering::TreeNodeInfoInitPutArgStk(GenTreePutArgStk* putArgStk)
     {
         unsigned fieldCount    = 0;
         bool     needsByteTemp = false;
+        bool     needsSimdTemp = false;
         unsigned prevOffset    = putArgStk->getArgSize();
         for (GenTreeFieldList* current = putArgStk->gtOp1->AsFieldList(); current != nullptr; current = current->Rest())
         {
@@ -1903,9 +1904,18 @@ void Lowering::TreeNodeInfoInitPutArgStk(GenTreePutArgStk* putArgStk)
                     SetRegOptional(fieldNode);
                 }
             }
+#if defined(FEATURE_SIMD)
+            // Note that we need to check the GT_FIELD_LIST type, not the fieldType. This is because the
+            // GT_FIELD_LIST will be TYP_SIMD12 whereas the fieldType might be TYP_SIMD16 for lclVar, where
+            // we "round up" to 16.
+            else if (current->gtFieldType == TYP_SIMD12)
+            {
+                needsSimdTemp = true;
+            }
+#endif // defined(FEATURE_SIMD)
             else
             {
-                assert(varTypeIsFloating(fieldNode));
+                assert(varTypeIsFloating(fieldNode) || varTypeIsSIMD(fieldNode));
             }
 
             // We can treat as a slot any field that is stored at a slot boundary, where the previous
@@ -1945,6 +1955,16 @@ void Lowering::TreeNodeInfoInitPutArgStk(GenTreePutArgStk* putArgStk)
             }
             info->setInternalCandidates(l, regMask);
         }
+
+#if defined(FEATURE_SIMD)
+        // For PutArgStk of a TYP_SIMD12, we need a SIMD temp register.
+        if (needsSimdTemp)
+        {
+            info->internalFloatCount += 1;
+            info->addInternalCandidates(l, l->allSIMDRegs());
+        }
+#endif // defined(FEATURE_SIMD)
+
         return;
     }
 #endif // _TARGET_X86_
@@ -2437,8 +2457,18 @@ void Lowering::TreeNodeInfoInitSIMD(GenTree* tree)
 
         case SIMDIntrinsicInit:
         {
-            info->srcCount = 1;
-            op1            = tree->gtOp.gtOp1;
+            op1 = tree->gtOp.gtOp1;
+
+#if !defined(_TARGET_64BIT_)
+            if (op1->OperGet() == GT_LONG)
+            {
+                info->srcCount = 2;
+            }
+            else
+#endif // !defined(_TARGET_64BIT_)
+            {
+                info->srcCount = 1;
+            }
 
             // This sets all fields of a SIMD struct to the given value.
             // Mark op1 as contained if it is either zero or int constant of all 1's,
@@ -2447,10 +2477,40 @@ void Lowering::TreeNodeInfoInitSIMD(GenTree* tree)
             // Should never see small int base type vectors except for zero initialization.
             assert(!varTypeIsSmallInt(simdTree->gtSIMDBaseType) || op1->IsIntegralConst(0));
 
-            if (op1->IsFPZero() || op1->IsIntegralConst(0) ||
-                (varTypeIsIntegral(simdTree->gtSIMDBaseType) && op1->IsIntegralConst(-1)))
+#if !defined(_TARGET_64BIT_)
+            if (op1->OperGet() == GT_LONG)
             {
-                MakeSrcContained(tree, tree->gtOp.gtOp1);
+                GenTree* op1lo = op1->gtGetOp1();
+                GenTree* op1hi = op1->gtGetOp2();
+
+                if ((op1lo->IsIntegralConst(0) && op1hi->IsIntegralConst(0)) ||
+                    (op1lo->IsIntegralConst(-1) && op1hi->IsIntegralConst(-1)))
+                {
+                    assert(op1->gtLsraInfo.srcCount == 0);
+                    assert(op1->gtLsraInfo.dstCount == 0);
+                    assert(op1lo->gtLsraInfo.srcCount == 0);
+                    assert(op1lo->gtLsraInfo.dstCount == 1);
+                    assert(op1hi->gtLsraInfo.srcCount == 0);
+                    assert(op1hi->gtLsraInfo.dstCount == 1);
+
+                    op1lo->gtLsraInfo.dstCount = 0;
+                    op1hi->gtLsraInfo.dstCount = 0;
+                    info->srcCount             = 0;
+                }
+                else
+                {
+                    // need a temp
+                    info->internalFloatCount = 1;
+                    info->setInternalCandidates(lsra, lsra->allSIMDRegs());
+                    info->isInternalRegDelayFree = true;
+                }
+            }
+            else
+#endif // !defined(_TARGET_64BIT_)
+                if (op1->IsFPZero() || op1->IsIntegralConst(0) ||
+                    (varTypeIsIntegral(simdTree->gtSIMDBaseType) && op1->IsIntegralConst(-1)))
+            {
+                MakeSrcContained(tree, op1);
                 info->srcCount = 0;
             }
             else if ((comp->getSIMDInstructionSet() == InstructionSet_AVX) &&
@@ -2459,7 +2519,7 @@ void Lowering::TreeNodeInfoInitSIMD(GenTree* tree)
                 // Either op1 is a float or dbl constant or an addr
                 if (op1->IsCnsFltOrDbl() || op1->OperIsLocalAddr())
                 {
-                    MakeSrcContained(tree, tree->gtOp.gtOp1);
+                    MakeSrcContained(tree, op1);
                     info->srcCount = 0;
                 }
             }
@@ -2550,7 +2610,7 @@ void Lowering::TreeNodeInfoInitSIMD(GenTree* tree)
             info->srcCount = 2;
 
             // On SSE4/AVX, we can generate optimal code for (in)equality
-            // against zero using ptest. We can safely do the this optimization
+            // against zero using ptest. We can safely do this optimization
             // for integral vectors but not for floating-point for the reason
             // that we have +0.0 and -0.0 and +0.0 == -0.0
             op2 = tree->gtGetOp2();
@@ -2560,7 +2620,6 @@ void Lowering::TreeNodeInfoInitSIMD(GenTree* tree)
             }
             else
             {
-
                 // Need one SIMD register as scratch.
                 // See genSIMDIntrinsicRelOp() for details on code sequence generated and
                 // the need for one scratch register.
@@ -3565,6 +3624,54 @@ bool Lowering::ExcludeNonByteableRegisters(GenTree* tree)
             return false;
         }
     }
+#ifdef FEATURE_SIMD
+    else if (tree->OperGet() == GT_SIMD)
+    {
+        GenTreeSIMD* simdNode = tree->AsSIMD();
+        switch (simdNode->gtSIMDIntrinsicID)
+        {
+            case SIMDIntrinsicOpEquality:
+            case SIMDIntrinsicOpInEquality:
+                // We manifest it into a byte register, so the target must be byteable.
+                return true;
+
+            case SIMDIntrinsicGetItem:
+            {
+                // This logic is duplicated from genSIMDIntrinsicGetItem().
+                // When we generate code for a SIMDIntrinsicGetItem, under certain circumstances we need to
+                // generate a movzx/movsx. On x86, these require byteable registers. So figure out which
+                // cases will require this, so the non-byteable registers can be excluded.
+
+                GenTree*  op1      = simdNode->gtGetOp1();
+                GenTree*  op2      = simdNode->gtGetOp2();
+                var_types baseType = simdNode->gtSIMDBaseType;
+                if (!op1->isMemoryOp() && op2->IsCnsIntOrI() && varTypeIsSmallInt(baseType))
+                {
+                    bool     ZeroOrSignExtnReqd = true;
+                    unsigned baseSize           = genTypeSize(baseType);
+                    if (baseSize == 1)
+                    {
+                        if ((op2->gtIntCon.gtIconVal % 2) == 1)
+                        {
+                            ZeroOrSignExtnReqd = (baseType == TYP_BYTE);
+                        }
+                    }
+                    else
+                    {
+                        assert(baseSize == 2);
+                        ZeroOrSignExtnReqd = (baseType == TYP_SHORT);
+                    }
+                    return ZeroOrSignExtnReqd;
+                }
+                break;
+            }
+
+            default:
+                break;
+        }
+        return false;
+    }
+#endif // FEATURE_SIMD
     else
     {
         return false;

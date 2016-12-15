@@ -427,16 +427,6 @@ const SIMDIntrinsicInfo* Compiler::getSIMDIntrinsicInfo(CORINFO_CLASS_HANDLE* in
         return nullptr;
     }
 
-#ifdef _TARGET_X86_
-    // NYI: support LONG type SIMD intrinsics. Need support in long decomposition.
-    // (Don't use NYI fallback mechanism; just call the function.)
-    if ((*baseType == TYP_LONG) || (*baseType == TYP_ULONG))
-    {
-        JITDUMP("NYI: x86 long base type SIMD intrinsics\n");
-        return nullptr;
-    }
-#endif // _TARGET_X86_
-
     // account for implicit "this" arg
     *argCount = sig->numArgs;
     if (sig->hasThis())
