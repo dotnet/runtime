@@ -87,7 +87,6 @@
     <Compile Include="System\Configuration\FactoryRecord.cs" />
     <Compile Include="System\Configuration\GenericEnumConverter.cs" />
     <Compile Include="System\Configuration\IConfigurationSectionHandler.cs" />
-    <Compile Include="System\Configuration\IdentityHelper.cs" />
     <Compile Include="System\Configuration\IgnoreSection.cs" />
     <Compile Include="System\Configuration\IgnoreSectionHandler.cs" />
     <Compile Include="System\Configuration\InfiniteIntConverter.cs" />
@@ -183,6 +182,9 @@
     <Compile Include="System\Configuration\WhiteSpaceTrimStringConverter.cs" />
     <Compile Include="System\Configuration\XmlUtil.cs" />
     <Compile Include="System\Configuration\XmlUtilWriter.cs" />
+    <Compile Include="$(CommonPath)\System\Security\IdentityHelper.cs">
+      <Link>Common\System\Security\IdentityHelper.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

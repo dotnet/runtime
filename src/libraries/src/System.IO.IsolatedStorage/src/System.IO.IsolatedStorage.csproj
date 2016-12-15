@@ -33,6 +33,9 @@
     <Compile Include="System\IO\IsolatedStorage\IsolatedStorageScope.cs" />
     <Compile Include="System\IO\IsolatedStorage\Helper.cs" />
     <Compile Include="System\IO\IsolatedStorage\INormalizeForIsolatedStorage.cs" />
+    <Compile Include="$(CommonPath)\System\Security\IdentityHelper.cs">
+      <Link>Common\System\Security\IdentityHelper.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == ''">
     <Compile Include="System\IO\IsolatedStorage\IsolatedStorageException.Serialization.cs" />
