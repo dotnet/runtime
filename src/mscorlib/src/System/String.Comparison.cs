@@ -997,6 +997,11 @@ namespace System
             return GetLegacyNonRandomizedHashCode();
         }
 
+        // Gets a hash code for this string and this comparison. If strings A and B and comparition C are such
+        // that String.Equals(A, B, C), then they will return the same hash code with this comparison C.
+        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
+        public int GetHashCode(StringComparison comparisonType) => StringComparer.FromComparison(comparisonType).GetHashCode(this);
+
         // Use this if and only if you need the hashcode to not change across app domains (e.g. you have an app domain agile
         // hash table).
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
