@@ -59,7 +59,7 @@
     <ClCompile Include="gcenv.ee.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="gcenv.windows.cpp">
+    <ClCompile Include="..\gcenv.windows.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
