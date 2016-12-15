@@ -8,8 +8,12 @@ using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
 
-namespace System.Configuration
+namespace System.Security
 {
+    /// <summary>
+    /// Helper class for getting identity hashes for types that used
+    /// to live in Assembly Evidence.
+    /// </summary>
     internal static class IdentityHelper
     {
         private static readonly char[] s_base32Char =
@@ -20,6 +24,9 @@ namespace System.Configuration
             'y', 'z', '0', '1', '2', '3', '4', '5'
         };
 
+        /// <summary>
+        /// Gives a hash equivalent to what Url.Normalize() gives.
+        /// </summary>
         internal static string GetNormalizedUriHash(Uri uri)
         {
             // On desktop System.Security.Url is used as evidence, it has an internal Normalize() method.
@@ -27,6 +34,10 @@ namespace System.Configuration
             return GetStrongHashSuitableForObjectName(uri.ToString());
         }
 
+        /// <summary>
+        /// Uses the AssemblyName's public key to generate a hash equivalent to what
+        /// StrongName.Normalize() gives.
+        /// </summary>
         internal static string GetNormalizedStrongNameHash(AssemblyName name)
         {
             byte[] publicKey = name.GetPublicKey();

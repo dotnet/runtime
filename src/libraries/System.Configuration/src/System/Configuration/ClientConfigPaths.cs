@@ -5,6 +5,7 @@
 using System.Globalization;
 using System.IO;
 using System.Reflection;
+using System.Security;
 
 namespace System.Configuration
 {
