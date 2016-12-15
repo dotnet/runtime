@@ -20,6 +20,10 @@ namespace System.Linq
             return new ReverseIterator<TSource>(source);
         }
 
+        /// <summary>
+        /// An iterator that yields the items of an <see cref="IEnumerable{TSource}"/> in reverse.
+        /// </summary>
+        /// <typeparam name="TSource">The type of the source enumerable.</typeparam>
         private sealed class ReverseIterator<TSource> : Iterator<TSource>, IIListProvider<TSource>
         {
             private readonly IEnumerable<TSource> _source;

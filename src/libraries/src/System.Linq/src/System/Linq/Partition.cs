@@ -77,8 +77,15 @@ namespace System.Linq
         TElement TryGetLast(out bool found);
     }
 
+    /// <summary>
+    /// Represents an enumerable with zero elements.
+    /// </summary>
+    /// <typeparam name="TElement">The element type.</typeparam>
     internal sealed class EmptyPartition<TElement> : IPartition<TElement>, IEnumerator<TElement>
     {
+        /// <summary>
+        /// A cached, immutable instance of an empty enumerable.
+        /// </summary>
         public static readonly IPartition<TElement> Instance = new EmptyPartition<TElement>();
 
         private EmptyPartition()
@@ -245,6 +252,10 @@ namespace System.Linq
 
     public static partial class Enumerable
     {
+        /// <summary>
+        /// An iterator that yields the items of part of an <see cref="IList{TSource}"/>.
+        /// </summary>
+        /// <typeparam name="TSource">The type of the source list.</typeparam>
         private sealed class ListPartition<TSource> : Iterator<TSource>, IPartition<TSource>
         {
             private readonly IList<TSource> _source;
@@ -390,6 +401,10 @@ namespace System.Linq
             }
         }
 
+        /// <summary>
+        /// An iterator that yields the items of part of an <see cref="IEnumerable{TSource}"/>.
+        /// </summary>
+        /// <typeparam name="TSource">The type of the source enumerable.</typeparam>
         private sealed class EnumerablePartition<TSource> : Iterator<TSource>, IPartition<TSource>
         {
             private readonly IEnumerable<TSource> _source;

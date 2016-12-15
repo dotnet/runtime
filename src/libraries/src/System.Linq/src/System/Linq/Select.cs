@@ -86,6 +86,11 @@ namespace System.Linq
             }
         }
 
+        /// <summary>
+        /// An iterator that maps each item of an <see cref="IEnumerable{TSource}"/>.
+        /// </summary>
+        /// <typeparam name="TSource">The type of the source enumerable.</typeparam>
+        /// <typeparam name="TResult">The type of the mapped items.</typeparam>
         internal sealed class SelectEnumerableIterator<TSource, TResult> : Iterator<TResult>, IIListProvider<TResult>
         {
             private readonly IEnumerable<TSource> _source;
@@ -160,6 +165,11 @@ namespace System.Linq
             public int GetCount(bool onlyIfCheap) => onlyIfCheap ? -1 : _source.Count();
         }
 
+        /// <summary>
+        /// An iterator that maps each item of a <see cref="T:TSource[]"/>.
+        /// </summary>
+        /// <typeparam name="TSource">The type of the source array.</typeparam>
+        /// <typeparam name="TResult">The type of the mapped items.</typeparam>
         internal sealed class SelectArrayIterator<TSource, TResult> : Iterator<TResult>, IPartition<TResult>
         {
             private readonly TSource[] _source;
@@ -274,6 +284,11 @@ namespace System.Linq
             }
         }
 
+        /// <summary>
+        /// An iterator that maps each item of a <see cref="List{TSource}"/>.
+        /// </summary>
+        /// <typeparam name="TSource">The type of the source list.</typeparam>
+        /// <typeparam name="TResult">The type of the mapped items.</typeparam>
         internal sealed class SelectListIterator<TSource, TResult> : Iterator<TResult>, IPartition<TResult>
         {
             private readonly List<TSource> _source;
@@ -403,6 +418,11 @@ namespace System.Linq
             }
         }
 
+        /// <summary>
+        /// An iterator that maps each item of an <see cref="IList{TSource}"/>.
+        /// </summary>
+        /// <typeparam name="TSource">The type of the source list.</typeparam>
+        /// <typeparam name="TResult">The type of the mapped items.</typeparam>
         internal sealed class SelectIListIterator<TSource, TResult> : Iterator<TResult>, IPartition<TResult>
         {
             private readonly IList<TSource> _source;
@@ -543,6 +563,11 @@ namespace System.Linq
             }
         }
 
+        /// <summary>
+        /// An iterator that maps each item of an <see cref="IPartition{TSource}"/>.
+        /// </summary>
+        /// <typeparam name="TSource">The type of the source partition.</typeparam>
+        /// <typeparam name="TResult">The type of the mapped items.</typeparam>
         internal sealed class SelectIPartitionIterator<TSource, TResult> : Iterator<TResult>, IPartition<TResult>
         {
             private readonly IPartition<TSource> _source;
@@ -707,6 +732,11 @@ namespace System.Linq
             }
         }
 
+        /// <summary>
+        /// An iterator that maps each item of part of an <see cref="IList{TSource}"/>.
+        /// </summary>
+        /// <typeparam name="TSource">The type of the source list.</typeparam>
+        /// <typeparam name="TResult">The type of the mapped items.</typeparam>
         private sealed class SelectListPartitionIterator<TSource, TResult> : Iterator<TResult>, IPartition<TResult>
         {
             private readonly IList<TSource> _source;
