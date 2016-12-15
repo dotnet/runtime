@@ -1226,16 +1226,9 @@ bool DoesOSSupportAVX()
     typedef DWORD64 (WINAPI *PGETENABLEDXSTATEFEATURES)();
     PGETENABLEDXSTATEFEATURES pfnGetEnabledXStateFeatures = NULL;
     
-    // Probe ApiSet first
-    HMODULE hMod = WszLoadLibraryEx(W("api-ms-win-core-xstate-l2-1-0.dll"), NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
-
-    if (hMod == NULL)
-    {
-        // On older OS's where apiset is not present probe kernel32
-        hMod = WszLoadLibraryEx(WINDOWS_KERNEL32_DLLNAME_W, NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
-        if(hMod = NULL)
-            return FALSE;
-    }
+    HMODULE hMod = WszLoadLibraryEx(WINDOWS_KERNEL32_DLLNAME_W, NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
+    if(hMod = NULL)
+        return FALSE;
         
     pfnGetEnabledXStateFeatures = (PGETENABLEDXSTATEFEATURES)GetProcAddress(hMod, "GetEnabledXStateFeatures");
         
