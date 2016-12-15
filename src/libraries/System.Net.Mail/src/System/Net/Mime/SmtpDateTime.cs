@@ -58,7 +58,7 @@ namespace System.Net.Mime
 
         // array of all possible date time values
         // if a string matches any one of these it will be parsed correctly
-        internal readonly static string[] s_validDateTimeFormats = new string[]
+        internal static readonly string[] s_validDateTimeFormats = new string[]
         {
             DateFormatWithDayOfWeek,
             DateFormatWithoutDayOfWeek,
@@ -66,7 +66,7 @@ namespace System.Net.Mime
             DateFormatWithoutDayOfWeekAndNoSeconds
         };
 
-        internal readonly static char[] s_allowedWhiteSpaceChars = new char[] { ' ', '\t' };
+        internal static readonly char[] s_allowedWhiteSpaceChars = new char[] { ' ', '\t' };
 
         internal static readonly Dictionary<string, TimeSpan> s_timeZoneOffsetLookup = InitializeShortHandLookups();
 

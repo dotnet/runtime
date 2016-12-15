@@ -57,10 +57,10 @@ namespace System.Data.SqlClient.Tests
             }
 
             TestTdsServer server = new TestTdsServer(args);
-            server._endpoint = new TDSServerEndPoint(server) { ServerEndPoint = new IPEndPoint(IPAddress.Any, 12345) };
+            server._endpoint = new TDSServerEndPoint(server) { ServerEndPoint = new IPEndPoint(IPAddress.Any, 0) };
             server._endpoint.Start();
-
-            server.connectionStringBuilder = new SqlConnectionStringBuilder() { DataSource = "localhost,12345", ConnectTimeout = 30, Encrypt = false };
+            int port = server._endpoint.ServerEndPoint.Port;
+            server.connectionStringBuilder = new SqlConnectionStringBuilder() { DataSource = "localhost,"+port, ConnectTimeout = 30, Encrypt = false };
             server.ConnectionString = server.connectionStringBuilder.ConnectionString;
             return server;
         }

@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics;
 
 [assembly: System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Globalization", "CA1303:DoNotPassLiteralsAsLocalizedParameters", Scope = "member", Target = "System.ComponentModel.PropertyDescriptorCollection.System.Collections.IDictionary.Add(System.Object,System.Object):System.Void")]
@@ -28,12 +29,11 @@ namespace System.ComponentModel
         private IDictionary _cachedFoundProperties;
         private bool _cachedIgnoreCase;
         private PropertyDescriptor[] _properties;
-        private int _propCount = 0;
         private readonly string[] _namedSort;
         private readonly IComparer _comparer;
         private bool _propsOwned;
-        private bool _needSort = false;
-        private bool _readOnly = false;
+        private bool _needSort;
+        private bool _readOnly;
 
         private readonly object _internalSyncObject = new object();
 
@@ -48,12 +48,12 @@ namespace System.ComponentModel
             if (properties == null)
             {
                 _properties = Array.Empty<PropertyDescriptor>();
-                _propCount = 0;
+                Count = 0;
             }
             else
             {
                 _properties = properties;
-                _propCount = properties.Length;
+                Count = properties.Length;
             }
             _propsOwned = true;
         }
@@ -77,7 +77,7 @@ namespace System.ComponentModel
             }
             _comparer = comparer;
             _properties = properties;
-            _propCount = propCount;
+            Count = propCount;
             _needSort = true;
         }
 
@@ -88,13 +88,7 @@ namespace System.ComponentModel
         ///       collection.
         ///    </para>
         /// </summary>
-        public int Count
-        {
-            get
-            {
-                return _propCount;
-            }
-        }
+        public int Count { get; private set; }
 
         /// <summary>
         ///    <para>Gets the property with the specified index
@@ -104,7 +98,7 @@ namespace System.ComponentModel
         {
             get
             {
-                if (index >= _propCount)
+                if (index >= Count)
                 {
                     throw new IndexOutOfRangeException();
                 }
@@ -116,13 +110,7 @@ namespace System.ComponentModel
         /// <summary>
         ///    <para>Gets the property with the specified name.</para>
         /// </summary>
-        public virtual PropertyDescriptor this[string name]
-        {
-            get
-            {
-                return Find(name, false);
-            }
-        }
+        public virtual PropertyDescriptor this[string name] => Find(name, false);
 
         /// <summary>
         ///    <para>[To be supplied.]</para>
@@ -134,9 +122,9 @@ namespace System.ComponentModel
                 throw new NotSupportedException();
             }
 
-            EnsureSize(_propCount + 1);
-            _properties[_propCount++] = value;
-            return _propCount - 1;
+            EnsureSize(Count + 1);
+            _properties[Count++] = value;
+            return Count - 1;
         }
 
         /// <summary>
@@ -149,7 +137,7 @@ namespace System.ComponentModel
                 throw new NotSupportedException();
             }
 
-            _propCount = 0;
+            Count = 0;
             _cachedFoundProperties = null;
         }
 
@@ -199,7 +187,7 @@ namespace System.ComponentModel
 
             if (_properties.Length == 0)
             {
-                _propCount = 0;
+                Count = 0;
                 _properties = new PropertyDescriptor[sizeNeeded];
                 return;
             }
@@ -208,7 +196,7 @@ namespace System.ComponentModel
 
             int newSize = Math.Max(sizeNeeded, _properties.Length * 2);
             PropertyDescriptor[] newProps = new PropertyDescriptor[newSize];
-            Array.Copy(_properties, 0, newProps, 0, _propCount);
+            Array.Copy(_properties, 0, newProps, 0, Count);
             _properties = newProps;
         }
 
@@ -246,7 +234,7 @@ namespace System.ComponentModel
                 // Now start walking from where we last left off, filling
                 // the cache as we go.
                 //
-                for (int i = 0; i < _propCount; i++)
+                for (int i = 0; i < Count; i++)
                 {
                     if (ignoreCase)
                     {
@@ -277,7 +265,7 @@ namespace System.ComponentModel
         /// </summary>
         public int IndexOf(PropertyDescriptor value)
         {
-            return Array.IndexOf(_properties, value, 0, _propCount);
+            return Array.IndexOf(_properties, value, 0, Count);
         }
 
         /// <summary>
@@ -290,13 +278,13 @@ namespace System.ComponentModel
                 throw new NotSupportedException();
             }
 
-            EnsureSize(_propCount + 1);
-            if (index < _propCount)
+            EnsureSize(Count + 1);
+            if (index < Count)
             {
-                Array.Copy(_properties, index, _properties, index + 1, _propCount - index);
+                Array.Copy(_properties, index, _properties, index + 1, Count - index);
             }
             _properties[index] = value;
-            _propCount++;
+            Count++;
         }
 
         /// <summary>
@@ -327,12 +315,12 @@ namespace System.ComponentModel
                 throw new NotSupportedException();
             }
 
-            if (index < _propCount - 1)
+            if (index < Count - 1)
             {
-                Array.Copy(_properties, index + 1, _properties, index, _propCount - index - 1);
+                Array.Copy(_properties, index + 1, _properties, index, Count - index - 1);
             }
-            _properties[_propCount - 1] = null;
-            _propCount--;
+            _properties[Count - 1] = null;
+            Count--;
         }
 
         /// <summary>
@@ -343,7 +331,7 @@ namespace System.ComponentModel
         /// </summary>
         public virtual PropertyDescriptorCollection Sort()
         {
-            return new PropertyDescriptorCollection(_properties, _propCount, _namedSort, _comparer);
+            return new PropertyDescriptorCollection(_properties, Count, _namedSort, _comparer);
         }
 
 
@@ -355,7 +343,7 @@ namespace System.ComponentModel
         /// </summary>
         public virtual PropertyDescriptorCollection Sort(string[] names)
         {
-            return new PropertyDescriptorCollection(_properties, _propCount, names, _comparer);
+            return new PropertyDescriptorCollection(_properties, Count, names, _comparer);
         }
 
         /// <summary>
@@ -366,7 +354,7 @@ namespace System.ComponentModel
         /// </summary>
         public virtual PropertyDescriptorCollection Sort(string[] names, IComparer comparer)
         {
-            return new PropertyDescriptorCollection(_properties, _propCount, names, comparer);
+            return new PropertyDescriptorCollection(_properties, Count, names, comparer);
         }
 
         /// <summary>
@@ -377,7 +365,7 @@ namespace System.ComponentModel
         /// </summary>
         public virtual PropertyDescriptorCollection Sort(IComparer comparer)
         {
-            return new PropertyDescriptorCollection(_properties, _propCount, _namedSort, comparer);
+            return new PropertyDescriptorCollection(_properties, Count, _namedSort, comparer);
         }
 
         /// <summary>
@@ -397,7 +385,7 @@ namespace System.ComponentModel
 
             if (names != null && names.Length > 0)
             {
-                ArrayList propArrayList = new ArrayList(_properties);
+                List<PropertyDescriptor> propList = new List<PropertyDescriptor>(_properties);
                 int foundCount = 0;
                 int propCount = _properties.Length;
 
@@ -405,7 +393,7 @@ namespace System.ComponentModel
                 {
                     for (int j = 0; j < propCount; j++)
                     {
-                        PropertyDescriptor currentProp = (PropertyDescriptor)propArrayList[j];
+                        PropertyDescriptor currentProp = propList[j];
 
                         // Found a matching property.  Here, we add it to our array.  We also
                         // mark it as null in our array list so we don't add it twice later.
@@ -413,7 +401,7 @@ namespace System.ComponentModel
                         if (currentProp != null && currentProp.Name.Equals(names[i]))
                         {
                             _properties[foundCount++] = currentProp;
-                            propArrayList[j] = null;
+                            propList[j] = null;
                             break;
                         }
                     }
@@ -426,9 +414,9 @@ namespace System.ComponentModel
                 //
                 for (int i = 0; i < propCount; i++)
                 {
-                    if (propArrayList[i] != null)
+                    if (propList[i] != null)
                     {
-                        _properties[foundCount++] = (PropertyDescriptor)propArrayList[i];
+                        _properties[foundCount++] = propList[i];
                     }
                 }
 
@@ -462,40 +450,22 @@ namespace System.ComponentModel
         {
             EnsurePropsOwned();
             // we can only return an enumerator on the props we actually have...
-            if (_properties.Length != _propCount)
+            if (_properties.Length != Count)
             {
-                PropertyDescriptor[] enumProps = new PropertyDescriptor[_propCount];
-                Array.Copy(_properties, 0, enumProps, 0, _propCount);
+                PropertyDescriptor[] enumProps = new PropertyDescriptor[Count];
+                Array.Copy(_properties, 0, enumProps, 0, Count);
                 return enumProps.GetEnumerator();
             }
             return _properties.GetEnumerator();
         }
 
         /// <internalonly/>
-        bool ICollection.IsSynchronized
-        {
-            get
-            {
-                return false;
-            }
-        }
+        bool ICollection.IsSynchronized => false;
 
         /// <internalonly/>
-        object ICollection.SyncRoot
-        {
-            get
-            {
-                return null;
-            }
-        }
+        object ICollection.SyncRoot => null;
 
-        int ICollection.Count
-        {
-            get
-            {
-                return Count;
-            }
-        }
+        int ICollection.Count => Count;
 
         void IList.Clear()
         {
@@ -546,22 +516,10 @@ namespace System.ComponentModel
         }
 
         /// <internalonly/>
-        bool IDictionary.IsFixedSize
-        {
-            get
-            {
-                return _readOnly;
-            }
-        }
+        bool IDictionary.IsFixedSize => _readOnly;
 
         /// <internalonly/>
-        bool IDictionary.IsReadOnly
-        {
-            get
-            {
-                return _readOnly;
-            }
-        }
+        bool IDictionary.IsReadOnly => _readOnly;
 
         /// <internalonly/>
         object IDictionary.this[object key]
@@ -593,14 +551,14 @@ namespace System.ComponentModel
                 {
                     index = (int)key;
 
-                    if (index < 0 || index >= _propCount)
+                    if (index < 0 || index >= Count)
                     {
                         throw new IndexOutOfRangeException();
                     }
                 }
                 else if (key is string)
                 {
-                    for (int i = 0; i < _propCount; i++)
+                    for (int i = 0; i < Count; i++)
                     {
                         if (_properties[i].Name.Equals((string)key))
                         {
@@ -635,8 +593,8 @@ namespace System.ComponentModel
         {
             get
             {
-                string[] keys = new string[_propCount];
-                for (int i = 0; i < _propCount; i++)
+                string[] keys = new string[Count];
+                for (int i = 0; i < Count; i++)
                 {
                     keys[i] = _properties[i].Name;
                 }
@@ -651,10 +609,10 @@ namespace System.ComponentModel
             {
                 // we can only return an enumerator on the props we actually have...
                 //
-                if (_properties.Length != _propCount)
+                if (_properties.Length != Count)
                 {
-                    PropertyDescriptor[] newProps = new PropertyDescriptor[_propCount];
-                    Array.Copy(_properties, 0, newProps, 0, _propCount);
+                    PropertyDescriptor[] newProps = new PropertyDescriptor[Count];
+                    Array.Copy(_properties, 0, newProps, 0, Count);
                     return newProps;
                 }
                 else
@@ -702,22 +660,10 @@ namespace System.ComponentModel
         }
 
         /// <internalonly/>
-        bool IList.IsReadOnly
-        {
-            get
-            {
-                return _readOnly;
-            }
-        }
+        bool IList.IsReadOnly => _readOnly;
 
         /// <internalonly/>
-        bool IList.IsFixedSize
-        {
-            get
-            {
-                return _readOnly;
-            }
-        }
+        bool IList.IsFixedSize => _readOnly;
 
         /// <internalonly/>
         void IList.Remove(object value)
@@ -739,7 +685,7 @@ namespace System.ComponentModel
                     throw new NotSupportedException();
                 }
 
-                if (index >= _propCount)
+                if (index >= Count)
                 {
                     throw new IndexOutOfRangeException();
                 }
@@ -765,13 +711,7 @@ namespace System.ComponentModel
                 _owner = owner;
             }
 
-            public object Current
-            {
-                get
-                {
-                    return Entry;
-                }
-            }
+            public object Current => Entry;
 
             public DictionaryEntry Entry
             {
@@ -782,21 +722,9 @@ namespace System.ComponentModel
                 }
             }
 
-            public object Key
-            {
-                get
-                {
-                    return _owner[_index].Name;
-                }
-            }
+            public object Key => _owner[_index].Name;
 
-            public object Value
-            {
-                get
-                {
-                    return _owner[_index].Name;
-                }
-            }
+            public object Value => _owner[_index].Name;
 
             public bool MoveNext()
             {

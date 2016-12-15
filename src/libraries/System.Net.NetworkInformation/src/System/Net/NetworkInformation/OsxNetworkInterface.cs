@@ -24,7 +24,7 @@ namespace System.Net.NetworkInformation
             _ipProperties = new OsxIpInterfaceProperties(this, (int)nativeStats.Mtu);
         }
 
-        public unsafe static NetworkInterface[] GetOsxNetworkInterfaces()
+        public static unsafe NetworkInterface[] GetOsxNetworkInterfaces()
         {
             Dictionary<string, OsxNetworkInterface> interfacesByName = new Dictionary<string, OsxNetworkInterface>();
             List<Exception> exceptions = null;

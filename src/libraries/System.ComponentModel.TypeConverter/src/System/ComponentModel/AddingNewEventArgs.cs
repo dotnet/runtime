@@ -16,13 +16,11 @@ namespace System.ComponentModel
     /// </summary>
     public class AddingNewEventArgs : EventArgs
     {
-        private object _newObject = null;
-
         /// <summary>
         ///     Initializes a new instance of the <see cref='System.ComponentModel.AddingNewEventArgs'/> class,
         ///     with no new object defined.
         /// </summary>
-        public AddingNewEventArgs() : base()
+        public AddingNewEventArgs()
         {
         }
 
@@ -30,25 +28,14 @@ namespace System.ComponentModel
         ///     Initializes a new instance of the <see cref='System.ComponentModel.AddingNewEventArgs'/> class,
         ///     with the specified object defined as the default new object.
         /// </summary>
-        public AddingNewEventArgs(object newObject) : base()
+        public AddingNewEventArgs(object newObject)
         {
-            _newObject = newObject;
+            NewObject = newObject;
         }
 
         /// <summary>
         ///     Gets or sets the new object that will be added to the list.
         /// </summary>
-        public object NewObject
-        {
-            get
-            {
-                return _newObject;
-            }
-
-            set
-            {
-                _newObject = value;
-            }
-        }
+        public object NewObject { get; set; }
     }
 }

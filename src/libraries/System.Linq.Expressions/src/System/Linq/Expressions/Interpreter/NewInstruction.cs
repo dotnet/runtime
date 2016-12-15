@@ -43,7 +43,7 @@ namespace System.Linq.Expressions.Interpreter
             frame.Data[first] = ret;
             frame.StackIndex = first + 1;
 
-            return +1;
+            return 1;
         }
 
         protected object[] GetArgs(InterpretedFrame frame, int first)

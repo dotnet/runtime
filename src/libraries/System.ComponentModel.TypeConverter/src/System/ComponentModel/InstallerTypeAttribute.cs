@@ -37,13 +37,7 @@ namespace System.ComponentModel
         ///    <para> Gets the
         ///       type of installer associated with this attribute.</para>
         /// </summary>
-        public virtual Type InstallerType
-        {
-            get
-            {
-                return Type.GetType(_typeName);
-            }
-        }
+        public virtual Type InstallerType => Type.GetType(_typeName);
 
         public override bool Equals(object obj)
         {

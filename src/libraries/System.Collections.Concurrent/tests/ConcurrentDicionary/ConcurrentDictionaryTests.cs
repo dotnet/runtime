@@ -441,25 +441,33 @@ namespace System.Collections.Concurrent.Tests
                             {
                                 if (isAdd)
                                 {
-                                    //call either of the two overloads of GetOrAdd
-                                    if (j + ii % 2 == 0)
+                                    //call one of the overloads of GetOrAdd
+                                    switch (j % 3)
                                     {
-                                        dict.GetOrAdd(j, -j);
-                                    }
-                                    else
-                                    {
-                                        dict.GetOrAdd(j, x => -x);
+                                        case 0:
+                                            dict.GetOrAdd(j, -j);
+                                            break;
+                                        case 1:
+                                            dict.GetOrAdd(j, x => -x);
+                                            break;
+                                        case 2:
+                                            dict.GetOrAdd(j, (x,m) => x * m, -1);
+                                            break;
                                     }
                                 }
                                 else
                                 {
-                                    if (j + ii % 2 == 0)
+                                    switch (j % 3)
                                     {
-                                        dict.AddOrUpdate(j, -j, (k, v) => -j);
-                                    }
-                                    else
-                                    {
-                                        dict.AddOrUpdate(j, (k) => -k, (k, v) => -k);
+                                        case 0:
+                                            dict.AddOrUpdate(j, -j, (k, v) => -j);
+                                            break;
+                                        case 1:
+                                            dict.AddOrUpdate(j, (k) => -k, (k, v) => -k);
+                                            break;
+                                        case 2:
+                                            dict.AddOrUpdate(j, (k,m) => k*m, (k, v, m) => k * m, -1);
+                                            break;
                                     }
                                 }
                             }
@@ -616,6 +624,12 @@ namespace System.Collections.Concurrent.Tests
             // "TestExceptions:  FAILED.  this[] didn't throw ANE when null key is passed");
 
             Assert.Throws<ArgumentNullException>(
+               () => dictionary.GetOrAdd(null, (k,m) => 0, 0));
+            // "TestExceptions:  FAILED.  GetOrAdd didn't throw ANE when null key is passed");
+            Assert.Throws<ArgumentNullException>(
+               () => dictionary.GetOrAdd("1", null, 0));
+            // "TestExceptions:  FAILED.  GetOrAdd didn't throw ANE when null valueFactory is passed");
+            Assert.Throws<ArgumentNullException>(
                () => dictionary.GetOrAdd(null, (k) => 0));
             // "TestExceptions:  FAILED.  GetOrAdd didn't throw ANE when null key is passed");
             Assert.Throws<ArgumentNullException>(
@@ -625,6 +639,15 @@ namespace System.Collections.Concurrent.Tests
                () => dictionary.GetOrAdd(null, 0));
             // "TestExceptions:  FAILED.  GetOrAdd didn't throw ANE when null key is passed");
 
+            Assert.Throws<ArgumentNullException>(
+               () => dictionary.AddOrUpdate(null, (k, m) => 0, (k, v, m) => 0, 42));
+            // "TestExceptions:  FAILED.  AddOrUpdate didn't throw ANE when null key is passed");
+            Assert.Throws<ArgumentNullException>(
+               () => dictionary.AddOrUpdate("1", (k, m) => 0, null, 42));
+            // "TestExceptions:  FAILED.  AddOrUpdate didn't throw ANE when null updateFactory is passed");
+            Assert.Throws<ArgumentNullException>(
+               () => dictionary.AddOrUpdate("1", null, (k, v, m) => 0, 42));
+            // "TestExceptions:  FAILED.  AddOrUpdate didn't throw ANE when null addFactory is passed");
             Assert.Throws<ArgumentNullException>(
                () => dictionary.AddOrUpdate(null, (k) => 0, (k, v) => 0));
             // "TestExceptions:  FAILED.  AddOrUpdate didn't throw ANE when null key is passed");

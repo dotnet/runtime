@@ -25,23 +25,15 @@ namespace System.ComponentModel
         /// </summary>
         public static readonly SettingsBindableAttribute No = new SettingsBindableAttribute(false);
 
-        private bool _bindable = false;
-
         public SettingsBindableAttribute(bool bindable)
         {
-            _bindable = bindable;
+            Bindable = bindable;
         }
 
         /// <summary>
         ///     Gets a value indicating whether a property is appropriate to bind settings to.
         /// </summary>
-        public bool Bindable
-        {
-            get
-            {
-                return _bindable;
-            }
-        }
+        public bool Bindable { get; }
 
         public override bool Equals(object obj)
         {
@@ -52,7 +44,7 @@ namespace System.ComponentModel
 
             if (obj != null && obj is SettingsBindableAttribute)
             {
-                return (((SettingsBindableAttribute)obj).Bindable == _bindable);
+                return (((SettingsBindableAttribute)obj).Bindable == Bindable);
             }
 
             return false;
@@ -60,7 +52,7 @@ namespace System.ComponentModel
 
         public override int GetHashCode()
         {
-            return _bindable.GetHashCode();
+            return Bindable.GetHashCode();
         }
     }
 }

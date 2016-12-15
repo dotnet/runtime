@@ -186,6 +186,12 @@
       "values": ["Numeric values"],
       "defaultValue": "--numproc ${ProcessorCount}"
     },
+    "AdditionalArgs": {
+      "description": "Pass additional arguments to the native_build script",
+      "valueType": "passThrough",
+      "values": [],
+      "defaultValue": ""
+    },
     "Project": {
       "description": "Project where the commands are going to be applied.",
       "valueType": "passThrough",
@@ -203,6 +209,12 @@
       "valueType": "target",
       "values": [],
       "defaultValue": ""
+    },
+    "RestoreForTestsAgainstPackagesOnly": {
+      "description": "MsBuild target that restores the packages.",
+      "valueType": "property",
+      "values": ["true", "false"],
+      "defaultValue": "true"
     },
     "GenerateVersionHeader": {
       "description": "MsBuild target that generates the version header.",
@@ -233,7 +245,7 @@
       "valueType": "target",
       "values": [],
       "defaultValue": ""
-    }    
+    }
   },
   "commands": {
     "build-managed": {
@@ -257,8 +269,10 @@
         "tests": {
           "description": "Builds the tests that are in the repository, doesn't restore packages.",
           "settings": {
-            "RestoreDuringBuild": "false",
-            "Project": "src/tests.builds",
+            "RestoreDuringBuild":  true,
+            "BuildTestsAgainstPackages": true,
+            "RestoreForTestsAgainstPackagesOnly": true,
+            "BuildTests": true,
             "MsBuildLogging":"/flp:v=normal;LogFile=build-tests.log"
           }
         },
@@ -323,6 +337,7 @@
         "settings": {
           "OSGroup": "default",
           "TargetOS": "default",
+          "BuildTests": false,
           "ConfigurationGroup": "default",
           "MsBuildLogging":"default",
           "MsBuildWarning":"default",
@@ -355,6 +370,12 @@
           "settings": {
             "HostOs": "default"
           }
+        },
+        "portableLinux":{
+          "description": "Make the build-native script generate binaries that are portable over glibc based Linux distros.",
+          "settings": {
+            "AdditionalArgs": "portableLinux"
+          }
         }
       },
       "defaultValues": {
@@ -364,7 +385,8 @@
            "BuildArchitecture": "default", 
            "CmakeBuildType": "default",           
            "HostOs": "default",
-           "ProcessorCount": "default"
+           "ProcessorCount": "default",
+           "AdditionalArgs": "default"
          }
       }
     },
@@ -390,7 +412,6 @@
         }
       },
       "defaultValues": {
-	    "defaultAlias": "b",
         "toolName": "msbuild",
         "settings": {
           "MsBuildLogging":"/flp:v=normal;LogFile=clean.log"
@@ -458,7 +479,7 @@
           }
         },
         "t": {
-          "description": "Generates project.jsons for test projects, restores packages, builds product and then builds tests against the generated project.json files.",
+          "description": "Generates project.jsons for test projects, restores packages.",
           "settings": {
             "RestoreDuringBuild":  true,
             "BuildTestsAgainstPackages": true,
@@ -504,7 +525,7 @@
         }
       },
       "defaultValues": {
-	  	"defaultAlias": "p",
+        "defaultAlias": "p",
         "toolName": "msbuild",
         "settings": {
           "MsBuildLogging":"/flp:v=normal;LogFile=sync.log"

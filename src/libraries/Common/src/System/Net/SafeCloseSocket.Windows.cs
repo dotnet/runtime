@@ -69,7 +69,7 @@ namespace System.Net.Sockets
             return _iocpBoundHandle;
         }
 
-        internal unsafe static SafeCloseSocket CreateWSASocket(byte* pinnedBuffer)
+        internal static unsafe SafeCloseSocket CreateWSASocket(byte* pinnedBuffer)
         {
             return CreateSocket(InnerSafeCloseSocket.CreateWSASocket(pinnedBuffer));
         }
@@ -208,7 +208,7 @@ namespace System.Net.Sockets
                 return errorCode;
             }
 
-            internal unsafe static InnerSafeCloseSocket CreateWSASocket(byte* pinnedBuffer)
+            internal static unsafe InnerSafeCloseSocket CreateWSASocket(byte* pinnedBuffer)
             {
                 // NOTE: -1 is the value for FROM_PROTOCOL_INFO.
                 InnerSafeCloseSocket result = Interop.Winsock.WSASocketW((AddressFamily)(-1), (SocketType)(-1), (ProtocolType)(-1), pinnedBuffer, 0, Interop.Winsock.SocketConstructorFlags.WSA_FLAG_OVERLAPPED);

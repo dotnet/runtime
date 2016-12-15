@@ -887,7 +887,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Oper
 
     public class Target
     {
-        static public int Status = 0;
+        public static int Status = 0;
         public static implicit operator Target(ValueType x)
         {
             Target.Status = 1;

@@ -1,0 +1,96 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+namespace System.DirectoryServices.ActiveDirectory
+{
+    using System;
+    using System.Collections;
+    using System.Globalization;
+    using System.Runtime.InteropServices;
+    using System.Security.Permissions;
+
+    public abstract class ActiveDirectoryPartition : IDisposable
+    {
+        private bool _disposed = false;
+        internal string partitionName = null;
+        internal DirectoryContext context = null;
+        internal DirectoryEntryManager directoryEntryMgr = null;
+
+        #region constructors
+        protected ActiveDirectoryPartition()
+        {
+        }
+
+        internal ActiveDirectoryPartition(DirectoryContext context, string name)
+        {
+            this.context = context;
+            this.partitionName = name;
+        }
+        #endregion constructors
+
+        #region IDisposable
+
+        public void Dispose()
+        {
+            Dispose(true);
+        }
+
+        // private Dispose method		
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!_disposed)
+            {
+                // check if this is an explicit Dispose
+                // only then clean up the directory entries
+                if (disposing)
+                {
+                    // dispose all directory entries
+                    foreach (DirectoryEntry entry in directoryEntryMgr.GetCachedDirectoryEntries())
+                    {
+                        entry.Dispose();
+                    }
+                }
+                _disposed = true;
+            }
+        }
+        #endregion IDisposable
+
+        #region public methods
+        public override string ToString()
+        {
+            return Name;
+        }
+
+        [
+            DirectoryServicesPermission(SecurityAction.LinkDemand, Unrestricted = true)
+        ]
+        public abstract DirectoryEntry GetDirectoryEntry();
+
+        #endregion public methods
+
+        #region public properties
+        // Public Properties
+        public string Name
+        {
+            get
+            {
+                CheckIfDisposed();
+                return partitionName;
+            }
+        }
+        #endregion public properties
+
+        #region private methods
+
+        internal void CheckIfDisposed()
+        {
+            if (_disposed)
+            {
+                throw new ObjectDisposedException(GetType().Name);
+            }
+        }
+
+        #endregion private methods
+    }
+}

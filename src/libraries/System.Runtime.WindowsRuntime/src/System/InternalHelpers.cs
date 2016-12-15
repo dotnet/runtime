@@ -42,7 +42,7 @@ namespace System.Runtime.WindowsRuntime.Internal
 
     internal class Helpers
     {
-        internal unsafe static void ZeroMemory(byte* src, long len)
+        internal static unsafe void ZeroMemory(byte* src, long len)
         {
             while (len-- > 0)
                 *(src + len) = 0;

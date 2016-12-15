@@ -76,7 +76,7 @@ namespace System.Linq.Expressions.Interpreter
                 return _offset;
             }
 
-            return +1;
+            return 1;
         }
     }
 
@@ -110,7 +110,7 @@ namespace System.Linq.Expressions.Interpreter
                 return _offset;
             }
 
-            return +1;
+            return 1;
         }
     }
 
@@ -145,7 +145,7 @@ namespace System.Linq.Expressions.Interpreter
                 return _offset;
             }
 
-            return +1;
+            return 1;
         }
     }
 
@@ -524,7 +524,7 @@ namespace System.Linq.Expressions.Interpreter
     /// </summary>
     internal sealed class EnterFinallyInstruction : IndexedBranchInstruction
     {
-        private readonly static EnterFinallyInstruction[] s_cache = new EnterFinallyInstruction[CacheSize];
+        private static readonly EnterFinallyInstruction[] s_cache = new EnterFinallyInstruction[CacheSize];
 
         private EnterFinallyInstruction(int labelIndex)
             : base(labelIndex)
@@ -586,7 +586,7 @@ namespace System.Linq.Expressions.Interpreter
 
     internal sealed class EnterFaultInstruction : IndexedBranchInstruction
     {
-        private readonly static EnterFaultInstruction[] s_cache = new EnterFaultInstruction[CacheSize];
+        private static readonly EnterFaultInstruction[] s_cache = new EnterFaultInstruction[CacheSize];
 
         private EnterFaultInstruction(int labelIndex)
             : base(labelIndex)

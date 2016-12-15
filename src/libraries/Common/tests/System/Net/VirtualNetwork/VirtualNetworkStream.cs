@@ -14,6 +14,8 @@ namespace System.Net.Test.Common
         private MemoryStream _readStream;
         private readonly bool _isServer;
         private object _readStreamLock = new object();
+        private TaskCompletionSource<object> _flushTcs;
+        private bool _isFlushed;
 
         public VirtualNetworkStream(VirtualNetwork network, bool isServer)
         {
@@ -68,7 +70,31 @@ namespace System.Net.Test.Common
 
         public override void Flush()
         {
-            // No-op.
+            _isFlushed = true;
+        }
+
+        public override Task FlushAsync(CancellationToken cancellationToken)
+        {
+            if (_flushTcs != null)
+            {
+                throw new InvalidOperationException();
+            }
+            _flushTcs = new TaskCompletionSource<object>();
+
+            return _flushTcs.Task;
+        }
+
+        public bool HasBeenSyncFlushed => _isFlushed;
+
+        public void CompleteAsyncFlush()
+        {
+            if (_flushTcs == null)
+            {
+                throw new InvalidOperationException();
+            }
+
+            _flushTcs.SetResult(null);
+            _flushTcs = null;
         }
 
         public override void SetLength(long value)

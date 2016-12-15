@@ -15,22 +15,12 @@ namespace System.ComponentModel.Design
     /// </summary>
     public class ComponentRenameEventArgs : EventArgs
     {
-        private object _component;
-        private string _oldName;
-        private string _newName;
-
         /// <summary>
         ///    <para>
         ///       Gets or sets the component that is being renamed.
         ///    </para>
         /// </summary>
-        public object Component
-        {
-            get
-            {
-                return _component;
-            }
-        }
+        public object Component { get; }
 
         /// <summary>
         ///    <para>
@@ -38,13 +28,7 @@ namespace System.ComponentModel.Design
         ///       sets the name of the component before the rename.
         ///    </para>
         /// </summary>
-        public virtual string OldName
-        {
-            get
-            {
-                return _oldName;
-            }
-        }
+        public virtual string OldName { get; }
 
         /// <summary>
         ///    <para>
@@ -52,13 +36,7 @@ namespace System.ComponentModel.Design
         ///       sets the current name of the component.
         ///    </para>
         /// </summary>
-        public virtual string NewName
-        {
-            get
-            {
-                return _newName;
-            }
-        }
+        public virtual string NewName { get; }
 
         /// <summary>
         ///    <para>
@@ -68,9 +46,9 @@ namespace System.ComponentModel.Design
         /// </summary>
         public ComponentRenameEventArgs(object component, string oldName, string newName)
         {
-            _oldName = oldName;
-            _newName = newName;
-            _component = component;
+            OldName = oldName;
+            NewName = newName;
+            Component = component;
         }
     }
 }

@@ -2,17 +2,19 @@
   "frameworks": {
     "netstandard1.7": {
       "dependencies": {
-        "System.Runtime": "4.4.0-beta-24721-02"
+        "System.Runtime": "4.4.0-beta-24814-01",
+        "System.Runtime.Extensions": "4.4.0-beta-24814-01"
       }
     },
-    "net463": {
+    "net461": {
       "dependencies": {
-        "Microsoft.TargetingPack.NETFramework.v4.6": "1.0.1"
+        "Microsoft.TargetingPack.NETFramework.v4.6.1": "1.0.1"
       }
     },
     "uap10.1": {
       "dependencies": {
-        "System.Runtime": "4.4.0-beta-24721-02"
+        "System.Runtime": "4.4.0-beta-24814-01",
+        "System.Runtime.Extensions": "4.4.0-beta-24814-01"
       }
     }
   }

@@ -169,7 +169,7 @@ namespace System.Reflection.Metadata
         protected int FreeBytes => _buffer.Length - Length;
 
         // internal for testing
-        internal protected int ChunkCapacity => _buffer.Length;
+        protected internal int ChunkCapacity => _buffer.Length;
 
         // internal for testing
         internal Chunks GetChunks()

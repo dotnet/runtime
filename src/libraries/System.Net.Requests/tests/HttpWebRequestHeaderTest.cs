@@ -17,7 +17,7 @@ namespace System.Net.Tests
 
     public class HttpWebRequestHeaderTest
     {
-        public readonly static object[][] EchoServers = Configuration.Http.EchoServers;
+        public static readonly object[][] EchoServers = Configuration.Http.EchoServers;
 
         [OuterLoop] 
         [Theory, MemberData(nameof(EchoServers))]

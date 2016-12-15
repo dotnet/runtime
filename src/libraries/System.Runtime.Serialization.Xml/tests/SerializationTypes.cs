@@ -4155,3 +4155,8 @@ public class SampleTextWriter : IXmlTextWriterInitializer
         Stream = stream;
     }
 }
+
+public class MycodeGenerator : XmlSerializationGeneratedCode
+{
+
+}

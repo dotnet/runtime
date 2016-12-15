@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections;
+using System.Collections.Generic;
 
 namespace System.ComponentModel
 {
@@ -91,7 +92,7 @@ namespace System.ComponentModel
                 // Perform a scavenge through our keys, looking
                 // for dead references.
                 //
-                ArrayList cleanupList = null;
+                List<object> cleanupList = null;
                 foreach (object o in Keys)
                 {
                     WeakReference wr = o as WeakReference;
@@ -99,7 +100,7 @@ namespace System.ComponentModel
                     {
                         if (cleanupList == null)
                         {
-                            cleanupList = new ArrayList();
+                            cleanupList = new List<object>();
                         }
 
                         cleanupList.Add(wr);
@@ -180,12 +181,7 @@ namespace System.ComponentModel
 
             public override bool Equals(object o)
             {
-                if (o == null)
-                {
-                    return false;
-                }
-
-                if (o.GetHashCode() != _hashCode)
+                if (o?.GetHashCode() != _hashCode)
                 {
                     return false;
                 }

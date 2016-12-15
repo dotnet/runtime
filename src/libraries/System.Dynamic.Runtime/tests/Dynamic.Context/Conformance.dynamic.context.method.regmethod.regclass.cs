@@ -1427,7 +1427,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmetho
         }
     }
 
-    static public class Extension
+    public static class Extension
     {
         public static bool IsNull(this int? value)
         {
@@ -1564,7 +1564,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmetho
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.regclass.regclass057.regclass057
 {
     using ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.regclass.regclassregmeth.regclassregmeth;
-    // <Title> Tests regular class regular method used in unsafe static method body.</Title>
+    // <Title> Tests regular class regular method used in static unsafe method body.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>

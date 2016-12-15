@@ -35,14 +35,14 @@ namespace System.Xml
             _key = key;
         }
 
-        static internal string GetString(XmlDictionaryString s)
+        internal static string GetString(XmlDictionaryString s)
         {
             if (s == null)
                 return null;
             return s.Value;
         }
 
-        static public XmlDictionaryString Empty
+        public static XmlDictionaryString Empty
         {
             get
             {

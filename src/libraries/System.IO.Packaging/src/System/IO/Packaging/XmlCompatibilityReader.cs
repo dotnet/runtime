@@ -1978,7 +1978,7 @@ namespace System.IO.Packaging
         private const string XmlnsDeclaration = "xmlns";
         private const string MarkupCompatibilityURI = "http://schemas.openxmlformats.org/markup-compatibility/2006";
 
-        static private string[] s_predefinedNamespaces = new string[4] {
+        private static string[] s_predefinedNamespaces = new string[4] {
             "http://www.w3.org/2000/xmlns/",
             "http://www.w3.org/XML/1998/namespace",
             "http://www.w3.org/2001/XMLSchema-instance",

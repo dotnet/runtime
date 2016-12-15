@@ -14,7 +14,7 @@ internal static partial class Interop
     internal static partial class Crypt32
     {
         [DllImport(Libraries.Crypt32, CharSet = CharSet.Unicode, SetLastError = true)]
-        internal static unsafe extern SafeCryptMsgHandle CryptMsgOpenToEncode(MsgEncodingType dwMsgEncodingType, int dwFlags, CryptMsgType dwMsgType, CMSG_ENVELOPED_ENCODE_INFO* pvMsgEncodeInfo, [MarshalAs(UnmanagedType.LPStr)] string pszInnerContentObjID, IntPtr pStreamInfo);
+        internal static extern unsafe SafeCryptMsgHandle CryptMsgOpenToEncode(MsgEncodingType dwMsgEncodingType, int dwFlags, CryptMsgType dwMsgType, CMSG_ENVELOPED_ENCODE_INFO* pvMsgEncodeInfo, [MarshalAs(UnmanagedType.LPStr)] string pszInnerContentObjID, IntPtr pStreamInfo);
     }
 }
 

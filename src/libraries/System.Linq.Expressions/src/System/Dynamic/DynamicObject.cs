@@ -308,7 +308,7 @@ namespace System.Dynamic
                 DynamicMetaObject call = BuildCallMethodWithResult(
                     nameof(DynamicObject.TryInvokeMember),
                     binder,
-                    DynamicMetaObject.GetExpressions(args),
+                    GetExpressions(args),
                     BuildCallMethodWithResult<GetMemberBinder>(
                         nameof(DynamicObject.TryGetMember),
                         new GetBinderAdapter(binder),
@@ -331,7 +331,7 @@ namespace System.Dynamic
                     return CallMethodWithResult(
                         nameof(DynamicObject.TryCreateInstance),
                         binder,
-                        DynamicMetaObject.GetExpressions(args),
+                        GetExpressions(args),
                         (MetaDynamic @this, CreateInstanceBinder b, DynamicMetaObject e) => b.FallbackCreateInstance(@this, localArgs, e)
                     );
                 }
@@ -348,7 +348,7 @@ namespace System.Dynamic
                     return CallMethodWithResult(
                         nameof(DynamicObject.TryInvoke),
                         binder,
-                        DynamicMetaObject.GetExpressions(args),
+                        GetExpressions(args),
                         (MetaDynamic @this, InvokeBinder b, DynamicMetaObject e) => b.FallbackInvoke(@this, localArgs, e)
                     );
                 }
@@ -365,7 +365,7 @@ namespace System.Dynamic
                     return CallMethodWithResult(
                         nameof(DynamicObject.TryBinaryOperation),
                         binder,
-                        DynamicMetaObject.GetExpressions(new DynamicMetaObject[] { arg }),
+                        new[] { arg.Expression },
                         (MetaDynamic @this, BinaryOperationBinder b, DynamicMetaObject e) => b.FallbackBinaryOperation(@this, localArg, e)
                     );
                 }
@@ -397,7 +397,7 @@ namespace System.Dynamic
                     return CallMethodWithResult(
                         nameof(DynamicObject.TryGetIndex),
                         binder,
-                        DynamicMetaObject.GetExpressions(indexes),
+                        GetExpressions(indexes),
                         (MetaDynamic @this, GetIndexBinder b, DynamicMetaObject e) => b.FallbackGetIndex(@this, localIndexes, e)
                     );
                 }
@@ -415,7 +415,7 @@ namespace System.Dynamic
                     return CallMethodReturnLast(
                         nameof(DynamicObject.TrySetIndex),
                         binder,
-                        DynamicMetaObject.GetExpressions(indexes),
+                        GetExpressions(indexes),
                         value.Expression,
                         (MetaDynamic @this, SetIndexBinder b, DynamicMetaObject e) => b.FallbackSetIndex(@this, localIndexes, localValue, e)
                     );
@@ -433,7 +433,7 @@ namespace System.Dynamic
                     return CallMethodNoResult(
                         nameof(DynamicObject.TryDeleteIndex),
                         binder,
-                        DynamicMetaObject.GetExpressions(indexes),
+                        GetExpressions(indexes),
                         (MetaDynamic @this, DeleteIndexBinder b, DynamicMetaObject e) => b.FallbackDeleteIndex(@this, localIndexes, e)
                     );
                 }
@@ -443,7 +443,7 @@ namespace System.Dynamic
 
             private delegate DynamicMetaObject Fallback<TBinder>(MetaDynamic @this, TBinder binder, DynamicMetaObject errorSuggestion);
 
-            private readonly static Expression[] s_noArgs = new Expression[0]; // used in reference comparison, requires unique object identity
+            private static readonly Expression[] s_noArgs = new Expression[0]; // used in reference comparison, requires unique object identity
 
             private static ReadOnlyCollection<Expression> GetConvertedArgs(params Expression[] args)
             {
@@ -467,21 +467,23 @@ namespace System.Dynamic
 
                 for (int i = 0; i < args.Length; i++)
                 {
-                    ContractUtils.Requires(args[i] is ParameterExpression, nameof(args));
-                    if (((ParameterExpression)args[i]).IsByRef)
+                    ParameterExpression variable = args[i] as ParameterExpression;
+                    ContractUtils.Requires(variable != null, nameof(args));
+
+                    if (variable.IsByRef)
                     {
                         if (block == null)
                             block = new ReadOnlyCollectionBuilder<Expression>();
 
                         block.Add(
                             Expression.Assign(
-                                args[i],
+                                variable,
                                 Expression.Convert(
                                     Expression.ArrayIndex(
                                         callArgs,
                                         AstUtils.Constant(i)
                                     ),
-                                    args[i].Type
+                                    variable.Type
                                 )
                             )
                         );

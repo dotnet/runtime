@@ -1398,7 +1398,7 @@ namespace System.Data
             }
         }
 
-        internal protected void CheckNotAllowNull()
+        protected internal void CheckNotAllowNull()
         {
             if (_storage == null)
             {

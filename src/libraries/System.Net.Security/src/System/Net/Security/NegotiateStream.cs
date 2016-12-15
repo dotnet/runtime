@@ -502,6 +502,11 @@ namespace System.Net.Security
 #endif
         }
 
+        public override Task FlushAsync(CancellationToken cancellationToken)
+        {
+            return InnerStream.FlushAsync(cancellationToken);
+        }
+
         protected override void Dispose(bool disposing)
         {
 #if DEBUG

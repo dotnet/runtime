@@ -53,7 +53,7 @@ namespace System.Reflection.Metadata
             return FromHash(ImmutableByteArrayInterop.DangerousGetUnderlyingArray(hashCode));
         }
 
-        public unsafe static BlobContentId FromHash(byte[] hashCode)
+        public static unsafe BlobContentId FromHash(byte[] hashCode)
         {
             const int minHashSize = 20;
 

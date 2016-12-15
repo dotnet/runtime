@@ -171,7 +171,7 @@ internal static partial class Interop
         /// <param name="buffersize">The length of the block of memory allocated for the PID array</param>
         /// <returns>Returns the number of elements (PIDs) in the buffer</returns>
         [DllImport(Interop.Libraries.libproc, SetLastError = true)]
-        private static unsafe extern int proc_listallpids(
+        private static extern unsafe int proc_listallpids(
             int*    pBuffer, 
             int     buffersize);
 
@@ -230,7 +230,7 @@ internal static partial class Interop
         /// to not having enough permissions to query for the data of that specific process
         /// </returns>
         [DllImport(Interop.Libraries.libproc, SetLastError = true)]
-        private static unsafe extern int proc_pidinfo(
+        private static extern unsafe int proc_pidinfo(
             int pid,
             int flavor,
             ulong arg,
@@ -251,7 +251,7 @@ internal static partial class Interop
         /// to not having enough permissions to query for the data of that specific process
         /// </returns>
         [DllImport(Interop.Libraries.libproc, SetLastError = true)]
-        private static unsafe extern int proc_pidinfo(
+        private static extern unsafe int proc_pidinfo(
             int pid,
             int flavor,
             ulong arg,
@@ -272,7 +272,7 @@ internal static partial class Interop
         /// to not having enough permissions to query for the data of that specific process
         /// </returns>
         [DllImport(Interop.Libraries.libproc, SetLastError = true)]
-        private static unsafe extern int proc_pidinfo(
+        private static extern unsafe int proc_pidinfo(
             int pid,
             int flavor,
             ulong arg,
@@ -293,7 +293,7 @@ internal static partial class Interop
         /// to not having enough permissions to query for the data of that specific process
         /// </returns>
         [DllImport(Interop.Libraries.libproc, SetLastError = true)]
-        private static unsafe extern int proc_pidinfo(
+        private static extern unsafe int proc_pidinfo(
             int pid,
             int flavor,
             ulong arg,
@@ -414,7 +414,7 @@ internal static partial class Interop
         /// <param name="bufferSize">The size of the buffer, should be PROC_PIDPATHINFO_MAXSIZE</param>
         /// <returns>Returns the length of the path returned on success</returns>
         [DllImport(Interop.Libraries.libproc, SetLastError = true)]
-        private static unsafe extern int proc_pidpath(
+        private static extern unsafe int proc_pidpath(
             int pid, 
             byte* buffer, 
             uint bufferSize);
@@ -457,7 +457,7 @@ internal static partial class Interop
         /// void* and not a strong type even though it returns a rusage_info struct
         /// </remarks>
         [DllImport(Interop.Libraries.libproc, SetLastError = true)]
-        private static unsafe extern int proc_pid_rusage(
+        private static extern unsafe int proc_pid_rusage(
             int pid,
             int flavor,
             rusage_info_v3* rusage_info_t);

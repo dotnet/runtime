@@ -90,12 +90,12 @@ namespace System.ComponentModel
             {
                 if (type == null)
                 {
-                    Debug.WriteLine("type == null, name == " + name);
+                    Debug.WriteLine($"type == null, name == {name}");
                     throw new ArgumentException(string.Format(SR.ErrorInvalidPropertyType, name));
                 }
                 if (componentClass == null)
                 {
-                    Debug.WriteLine("componentClass == null, name == " + name);
+                    Debug.WriteLine($"componentClass == null, name == {name}");
                     throw new ArgumentException(string.Format(SR.InvalidNullArgument, nameof(componentClass)));
                 }
                 _type = type;
@@ -103,7 +103,7 @@ namespace System.ComponentModel
             }
             catch (Exception t)
             {
-                Debug.Fail("Property '" + name + "' on component " + componentClass.FullName + " failed to init.");
+                Debug.Fail($"Property '{name}' on component {componentClass.FullName} failed to init.");
                 Debug.Fail(t.ToString());
                 throw;
             }
@@ -273,13 +273,7 @@ namespace System.ComponentModel
         /// <summary>
         ///     Retrieves the type of the component this PropertyDescriptor is bound to.
         /// </summary>
-        public override Type ComponentType
-        {
-            get
-            {
-                return _componentClass;
-            }
-        }
+        public override Type ComponentType => _componentClass;
 
         /// <summary>
         ///      Retrieves the default value for this property.
@@ -356,36 +350,18 @@ namespace System.ComponentModel
         /// <summary>
         ///     Determines if this property is an extender property.
         /// </summary>
-        private bool IsExtender
-        {
-            get
-            {
-                return (_receiverType != null);
-            }
-        }
+        private bool IsExtender => (_receiverType != null);
 
         /// <summary>
         ///     Indicates whether this property is read only.
         /// </summary>
-        public override bool IsReadOnly
-        {
-            get
-            {
-                return SetMethodValue == null || ((ReadOnlyAttribute)Attributes[typeof(ReadOnlyAttribute)]).IsReadOnly;
-            }
-        }
+        public override bool IsReadOnly => SetMethodValue == null || ((ReadOnlyAttribute)Attributes[typeof(ReadOnlyAttribute)]).IsReadOnly;
 
 
         /// <summary>
         ///     Retrieves the type of the property.
         /// </summary>
-        public override Type PropertyType
-        {
-            get
-            {
-                return _type;
-            }
-        }
+        public override Type PropertyType => _type;
 
         /// <summary>
         ///     Access to the reset method, if one exists for this property.
@@ -528,10 +504,7 @@ namespace System.ComponentModel
                 if (GetValueChangedHandler(component) == null)
                 {
                     EventDescriptor iPropChangedEvent = IPropChangedEventValue;
-                    if (iPropChangedEvent != null)
-                    {
-                        iPropChangedEvent.AddEventHandler(component, new PropertyChangedEventHandler(OnINotifyPropertyChanged));
-                    }
+                    iPropChangedEvent?.AddEventHandler(component, new PropertyChangedEventHandler(OnINotifyPropertyChanged));
                 }
 
                 base.AddValueChanged(component, handler);
@@ -687,10 +660,7 @@ namespace System.ComponentModel
 
                     // Now notify the change service that the change was successful.
                     //
-                    if (changeService != null)
-                    {
-                        changeService.OnComponentChanged(component, notifyDesc, oldValue, value);
-                    }
+                    changeService?.OnComponentChanged(component, notifyDesc, oldValue, value);
                 }
             }
         }
@@ -950,7 +920,7 @@ namespace System.ComponentModel
 
             if (IsExtender)
             {
-                Debug.WriteLine("[" + Name + "]:   ---> returning: null");
+                Debug.WriteLine($"[{Name}]:   ---> returning: null");
                 return null;
             }
 
@@ -969,13 +939,10 @@ namespace System.ComponentModel
                 {
                     string name = null;
                     IComponent comp = component as IComponent;
-                    if (comp != null)
+                    ISite site = comp?.Site;
+                    if (site?.Name != null)
                     {
-                        ISite site = comp.Site;
-                        if (site != null && site.Name != null)
-                        {
-                            name = site.Name;
-                        }
+                        name = site.Name;
                     }
 
                     if (name == null)
@@ -988,11 +955,7 @@ namespace System.ComponentModel
                         t = t.InnerException;
                     }
 
-                    string message = t.Message;
-                    if (message == null)
-                    {
-                        message = t.GetType().Name;
-                    }
+                    string message = t.Message ?? t.GetType().Name;
 
                     throw new TargetInvocationException(string.Format(SR.ErrorPropertyAccessorException, Name, name, message), t);
                 }
@@ -1054,10 +1017,7 @@ namespace System.ComponentModel
                 if (GetValueChangedHandler(component) == null)
                 {
                     EventDescriptor iPropChangedEvent = IPropChangedEventValue;
-                    if (iPropChangedEvent != null)
-                    {
-                        iPropChangedEvent.RemoveEventHandler(component, new PropertyChangedEventHandler(OnINotifyPropertyChanged));
-                    }
+                    iPropChangedEvent?.RemoveEventHandler(component, new PropertyChangedEventHandler(OnINotifyPropertyChanged));
                 }
             }
         }
@@ -1216,10 +1176,7 @@ namespace System.ComponentModel
                     {
                         // Now notify the change service that the change was successful.
                         //
-                        if (changeService != null)
-                        {
-                            changeService.OnComponentChanged(component, this, oldValue, value);
-                        }
+                        changeService?.OnComponentChanged(component, this, oldValue, value);
                     }
                 }
             }
@@ -1273,12 +1230,6 @@ namespace System.ComponentModel
         ///     from direct calls made to PropertyDescriptor.SetValue (value=false). For example, the component may
         ///     implement the INotifyPropertyChanged interface, or may have an explicit '{name}Changed' event for this property.
         /// </summary>
-        public override bool SupportsChangeEvents
-        {
-            get
-            {
-                return IPropChangedEventValue != null || ChangedEventValue != null;
-            }
-        }
+        public override bool SupportsChangeEvents => IPropChangedEventValue != null || ChangedEventValue != null;
     }
 }

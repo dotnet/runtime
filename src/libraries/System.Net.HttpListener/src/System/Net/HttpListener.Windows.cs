@@ -7,6 +7,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Net.Security;
 using System.Runtime.InteropServices;
 using System.Security;
 using System.Security.Authentication.ExtendedProtection;
@@ -628,7 +629,6 @@ namespace System.Net
                     {
                         // If an error occured while adding prefixes, free all resources allocated by previous steps.
                         DetachRequestQueueFromUrlGroup();
-                        ClearDigestCache();
                         throw;
                     }
 
@@ -751,8 +751,6 @@ namespace System.Net
 
                     _state = State.Stopped;
                 }
-
-                ClearDigestCache();
             }
             catch (Exception exception)
             {
@@ -822,7 +820,6 @@ namespace System.Net
                         CloseRequestQueueHandle();
                     }
                     CleanupV2Config();
-                    ClearDigestCache();
                 }
                 catch (Exception exception)
                 {
@@ -1248,22 +1245,17 @@ namespace System.Net
                     if (index < authorizationHeader.Length)
                     {
                         if ((authenticationScheme & AuthenticationSchemes.Negotiate) != AuthenticationSchemes.None &&
-                            string.Compare(authorizationHeader, 0, AuthConstants.Negotiate, 0, index, StringComparison.OrdinalIgnoreCase) == 0)
+                            string.Compare(authorizationHeader, 0, AuthenticationTypes.Negotiate, 0, index, StringComparison.OrdinalIgnoreCase) == 0)
                         {
                             headerScheme = AuthenticationSchemes.Negotiate;
                         }
                         else if ((authenticationScheme & AuthenticationSchemes.Ntlm) != AuthenticationSchemes.None &&
-                            string.Compare(authorizationHeader, 0, AuthConstants.NTLM, 0, index, StringComparison.OrdinalIgnoreCase) == 0)
+                            string.Compare(authorizationHeader, 0, AuthenticationTypes.NTLM, 0, index, StringComparison.OrdinalIgnoreCase) == 0)
                         {
                             headerScheme = AuthenticationSchemes.Ntlm;
                         }
-                        else if ((authenticationScheme & AuthenticationSchemes.Digest) != AuthenticationSchemes.None &&
-                            string.Compare(authorizationHeader, 0, AuthConstants.Digest, 0, index, StringComparison.OrdinalIgnoreCase) == 0)
-                        {
-                            headerScheme = AuthenticationSchemes.Digest;
-                        }
                         else if ((authenticationScheme & AuthenticationSchemes.Basic) != AuthenticationSchemes.None &&
-                            string.Compare(authorizationHeader, 0, AuthConstants.Basic, 0, index, StringComparison.OrdinalIgnoreCase) == 0)
+                            string.Compare(authorizationHeader, 0, AuthenticationTypes.Basic, 0, index, StringComparison.OrdinalIgnoreCase) == 0)
                         {
                             headerScheme = AuthenticationSchemes.Basic;
                         }
@@ -1276,6 +1268,7 @@ namespace System.Net
 
                 // httpError holds the error we will return if an Authorization header is present but can't be authenticated
                 HttpStatusCode httpError = HttpStatusCode.InternalServerError;
+                bool error = false;
 
                 // See if we found an acceptable auth header
                 if (headerScheme == AuthenticationSchemes.None)
@@ -1300,7 +1293,230 @@ namespace System.Net
                 }
                 else
                 {
-                    throw new NotImplementedException();
+                    // Perform Authentication
+                    byte[] bytes = null;
+                    byte[] decodedOutgoingBlob = null;
+                    string outBlob = null;
+
+                    // Find the beginning of the blob.  Trust that HTTP.SYS parsed out just our header ok.
+                    for (index++; index < authorizationHeader.Length; index++)
+                    {
+                        if (authorizationHeader[index] != ' ' && authorizationHeader[index] != '\t' &&
+                            authorizationHeader[index] != '\r' && authorizationHeader[index] != '\n')
+                        {
+                            break;
+                        }
+                    }
+                    string inBlob = index < authorizationHeader.Length ? authorizationHeader.Substring(index) : "";
+
+                    IPrincipal principal = null;
+                    SecurityStatusPal statusCodeNew;
+                    ChannelBinding binding;
+                    if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Performing Authentication headerScheme: {headerScheme}");
+                    switch (headerScheme)
+                    {
+                        case AuthenticationSchemes.Negotiate:
+                        case AuthenticationSchemes.Ntlm:
+                            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"context: {oldContext} for connectionId: {connectionId}");
+
+                            string package = headerScheme == AuthenticationSchemes.Ntlm ? NegotiationInfoClass.NTLM : NegotiationInfoClass.Negotiate;
+                            if (oldContext != null && oldContext.Package == package)
+                            {
+                                context = oldContext;
+                            }
+                            else
+                            {
+                                binding = GetChannelBinding(connectionId, isSecureConnection, extendedProtectionPolicy);
+                                ContextFlagsPal contextFlags = GetContextFlags(extendedProtectionPolicy, isSecureConnection);
+                                context = new NTAuthentication(true, package, CredentialCache.DefaultNetworkCredentials, null, contextFlags, binding);
+                            }
+
+                            try
+                            {
+                                bytes = Convert.FromBase64String(inBlob);
+                            }
+                            catch (FormatException)
+                            {
+                                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"FormatException from FormBase64String");
+                                httpError = HttpStatusCode.BadRequest;
+                                error = true;
+                            }
+                            if (!error)
+                            {
+                                decodedOutgoingBlob = context.GetOutgoingBlob(bytes, false, out statusCodeNew);
+                                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"GetOutgoingBlob returned IsCompleted: {context.IsCompleted} and statusCodeNew: {statusCodeNew}");
+                                error = !context.IsValidContext;
+                                if (error)
+                                {
+                                    // SSPI Workaround
+                                    // If a client sends up a blob on the initial request, Negotiate returns SEC_E_INVALID_HANDLE
+                                    // when it should return SEC_E_INVALID_TOKEN.
+                                    if (statusCodeNew.ErrorCode == SecurityStatusPalErrorCode.InvalidHandle && oldContext == null && bytes != null && bytes.Length > 0)
+                                    {
+                                        statusCodeNew = new SecurityStatusPal(SecurityStatusPalErrorCode.InvalidToken);
+                                    }
+
+                                    httpError = HttpStatusFromSecurityStatus(statusCodeNew.ErrorCode);
+                                }
+                            }
+
+                            if (decodedOutgoingBlob != null)
+                            {
+                                outBlob = Convert.ToBase64String(decodedOutgoingBlob);
+                            }
+
+                            if (!error)
+                            {
+                                if (context.IsCompleted)
+                                {
+                                    SecurityContextTokenHandle userContext = null;
+                                    try
+                                    {
+                                        if (!CheckSpn(context, isSecureConnection, extendedProtectionPolicy))
+                                        {
+                                            httpError = HttpStatusCode.Unauthorized;
+                                        }
+                                        else
+                                        {
+                                            httpContext.Request.ServiceName = context.ClientSpecifiedSpn;
+
+                                            SafeDeleteContext securityContext = context.GetContext(out statusCodeNew);
+                                            if (statusCodeNew.ErrorCode != SecurityStatusPalErrorCode.OK)
+                                            {
+                                                if (NetEventSource.IsEnabled)
+                                                {
+                                                    NetEventSource.Info(this,
+                                                        $"HandleAuthentication GetContextToken failed with statusCodeNew: {statusCodeNew}");
+                                                }
+
+                                                httpError = HttpStatusFromSecurityStatus(statusCodeNew.ErrorCode);
+                                            }
+                                            else
+                                            {
+                                                SSPIWrapper.QuerySecurityContextToken(GlobalSSPI.SSPIAuth, securityContext, out userContext);
+
+                                                if (NetEventSource.IsEnabled)
+                                                {
+                                                    NetEventSource.Info(this,
+                                                        $"HandleAuthentication creating new WindowsIdentity from user context: {userContext.DangerousGetHandle().ToString("x8")}");
+                                                }
+
+                                                WindowsPrincipal windowsPrincipal = new WindowsPrincipal(
+                                                    new WindowsIdentity(userContext.DangerousGetHandle(), context.ProtocolName));
+
+                                                principal = windowsPrincipal;
+                                                // if appropriate, cache this credential on this connection
+                                                if (UnsafeConnectionNtlmAuthentication && context.ProtocolName == NegotiationInfoClass.NTLM)
+                                                {
+                                                    if (NetEventSource.IsEnabled)
+                                                    {
+                                                        NetEventSource.Info(this,
+                                                            $"HandleAuthentication inserting principal: {principal} for connectionId: {connectionId}");
+                                                    }
+
+                                                    // We may need to call WaitForDisconnect.
+                                                    if (disconnectResult == null)
+                                                    {
+                                                        RegisterForDisconnectNotification(connectionId, ref disconnectResult);
+                                                    }
+                                                    if (disconnectResult != null)
+                                                    {
+                                                        lock ((DisconnectResults as ICollection).SyncRoot)
+                                                        {
+                                                            if (UnsafeConnectionNtlmAuthentication)
+                                                            {
+                                                                disconnectResult.AuthenticatedConnection = windowsPrincipal;
+                                                            }
+                                                        }
+                                                    }
+                                                    else
+                                                    {
+                                                        // Registration failed - UnsafeConnectionNtlmAuthentication ignored.
+                                                        if (NetEventSource.IsEnabled)
+                                                        {
+                                                            NetEventSource.Info(this, $"HandleAuthentication RegisterForDisconnectNotification failed.");
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                    finally
+                                    {
+                                        if (userContext != null)
+                                        {
+                                            userContext.Close();
+                                        }
+                                    }
+                                }
+                                else
+                                {
+                                    // auth incomplete
+                                    newContext = context;
+
+                                    challenge = (headerScheme == AuthenticationSchemes.Ntlm ? NegotiationInfoClass.NTLM : NegotiationInfoClass.Negotiate);
+                                    if (!String.IsNullOrEmpty(outBlob))
+                                    {
+                                        challenge += " " + outBlob;
+                                    }
+                                }
+                            }
+                            break;
+
+                        case AuthenticationSchemes.Basic:
+                            try
+                            {
+                                bytes = Convert.FromBase64String(inBlob);
+
+                                inBlob = WebHeaderEncoding.GetString(bytes, 0, bytes.Length);
+                                index = inBlob.IndexOf(':');
+
+                                if (index != -1)
+                                {
+                                    string userName = inBlob.Substring(0, index);
+                                    string password = inBlob.Substring(index + 1);
+                                    if (NetEventSource.IsEnabled)
+                                    {
+                                        NetEventSource.Info(this, $"Basic Identity found, userName: {userName}");
+                                    }
+
+                                    principal = new GenericPrincipal(new HttpListenerBasicIdentity(userName, password), null);
+                                }
+                                else
+                                {
+                                    httpError = HttpStatusCode.BadRequest;
+                                }
+                            }
+                            catch (FormatException)
+                            {
+                                if (NetEventSource.IsEnabled)
+                                {
+                                    NetEventSource.Info(this, $"FromBase64String threw a FormatException.");
+                                }
+                            }
+                            break;
+                    }
+
+                    if (principal != null)
+                    {
+                        if (NetEventSource.IsEnabled)
+                        {
+                            NetEventSource.Info(this, $"Got principal: {principal}, IdentityName: {principal.Identity.Name} for creating request.");
+                        }
+
+                        httpContext.SetIdentity(principal, outBlob);
+                    }
+                    else
+                    {
+                        if (NetEventSource.IsEnabled)
+                        {
+                            NetEventSource.Info(this, "Handshake has failed.");
+                        }
+
+                        httpContext.Request.DetachBlob(memoryBlob);
+                        httpContext.Close();
+                        httpContext = null;
+                    }
                 }
 
                 // if we're not giving a request to the application, we need to send an error
@@ -1397,16 +1613,7 @@ namespace System.Net
 
                     if (toClose != null)
                     {
-                        // Save digest context in digest cache, we may need it later because of
-                        // subsequest responses to the same req on the same/diff connection
-                        if ((authenticationScheme & AuthenticationSchemes.Digest) != 0)
-                        {
-                            SaveDigestContext(toClose);
-                        }
-                        else
-                        {
-                            toClose.CloseContext();
-                        }
+                        toClose.CloseContext();
                     }
                 }
 
@@ -1466,17 +1673,7 @@ namespace System.Net
                             disconnectResult.Session = null;
                         }
 
-                        // Save digest context in digest cache, we may need it later because of
-                        // subsequest responses to the same req on the same/diff connection
-
-                        if ((authenticationScheme & AuthenticationSchemes.Digest) != 0)
-                        {
-                            SaveDigestContext(oldContext);
-                        }
-                        else
-                        {
-                            oldContext.CloseContext();
-                        }
+                        oldContext.CloseContext();
                     }
 
                     // Delete any context created but not stored.
@@ -1516,17 +1713,239 @@ namespace System.Net
             // but throwing from HttpListener would be a breaking change.
             if (challenges != null) // null == Anonymous
             {
-                if (newContext != null) // Digest challenge, keep it alive for 10s - 5min.
-                {
-                    SaveDigestContext(newContext);
-                }
-
                 // Add the new WWW-Authenticate headers
                 foreach (string challenge in challenges)
                 {
                     response.Headers.Add(HttpKnownHeaderNames.WWWAuthenticate, challenge);
                 }
             }
+        }
+
+        private ChannelBinding GetChannelBinding(ulong connectionId, bool isSecureConnection, ExtendedProtectionPolicy policy)
+        {
+            if (policy.PolicyEnforcement == PolicyEnforcement.Never)
+            {
+                if (NetEventSource.IsEnabled) NetEventSource.Info(this, SR.net_log_listener_no_cbt_disabled);
+                return null;
+            }
+
+            if (!isSecureConnection)
+            {
+                if (NetEventSource.IsEnabled) NetEventSource.Info(this, SR.net_log_listener_no_cbt_http);
+                return null;
+            }
+
+            if (policy.ProtectionScenario == ProtectionScenario.TrustedProxy)
+            {
+                if (NetEventSource.IsEnabled) NetEventSource.Info(this, SR.net_log_listener_no_cbt_trustedproxy);
+                return null;
+            }
+
+            ChannelBinding result = GetChannelBindingFromTls(connectionId);
+
+            if (NetEventSource.IsEnabled && result != null) NetEventSource.Info(this,
+                "GetChannelBindingFromTls returned null even though OS supposedly supports Extended Protection");
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this, SR.net_log_listener_cbt);
+            return result;
+        }
+
+        private bool CheckSpn(NTAuthentication context, bool isSecureConnection, ExtendedProtectionPolicy policy)
+        {
+            // Kerberos does SPN check already in ASC
+            if (context.IsKerberos)
+            {
+                if (NetEventSource.IsEnabled)
+                {
+                    NetEventSource.Info(this, SR.net_log_listener_no_spn_kerberos);
+                }
+                return true;
+            }
+
+            // Don't check the SPN if Extended Protection is off or we already checked the CBT
+            if (policy.PolicyEnforcement == PolicyEnforcement.Never)
+            {
+                if (NetEventSource.IsEnabled)
+                {
+                    NetEventSource.Info(this, SR.net_log_listener_no_spn_disabled);
+                }
+                return true;
+            }
+
+            if (ScenarioChecksChannelBinding(isSecureConnection, policy.ProtectionScenario))
+            {
+                if (NetEventSource.IsEnabled)
+                {
+                    NetEventSource.Info(this, SR.net_log_listener_no_spn_cbt);
+                }
+                return true;
+            }
+
+            string clientSpn = context.ClientSpecifiedSpn;
+
+            // An empty SPN is only allowed in the WhenSupported case
+            if (String.IsNullOrEmpty(clientSpn))
+            {
+                if (policy.PolicyEnforcement == PolicyEnforcement.WhenSupported)
+                {
+                    if (NetEventSource.IsEnabled)
+                    {
+                        NetEventSource.Info(this,
+                            SR.net_log_listener_no_spn_whensupported);
+                    }
+                    return true;
+                }
+                else
+                {
+                    if (NetEventSource.IsEnabled)
+                    {
+                        NetEventSource.Info(this,
+                            SR.net_log_listener_spn_failed_always);
+                    }
+                    return false;
+                }
+            }
+            else if (string.Equals(clientSpn, "http/localhost", StringComparison.OrdinalIgnoreCase))
+            {
+                if (NetEventSource.IsEnabled)
+                {
+                    NetEventSource.Info(this, SR.net_log_listener_no_spn_loopback);
+                }
+
+                return true;
+            }
+            else
+            {
+                if (NetEventSource.IsEnabled)
+                {
+                    NetEventSource.Info(this, SR.net_log_listener_spn, clientSpn);
+                }
+
+                ServiceNameCollection serviceNames = GetServiceNames(policy);
+
+                bool found = serviceNames.Contains(clientSpn);
+
+                if (NetEventSource.IsEnabled)
+                {
+                    if (found)
+                    {
+                        NetEventSource.Info(this, SR.net_log_listener_spn_passed);
+                    }
+                    else
+                    {
+                        NetEventSource.Info(this, SR.net_log_listener_spn_failed);
+
+                        if (serviceNames.Count == 0)
+                        {
+                            if (NetEventSource.IsEnabled)
+                            {
+                                NetEventSource.Info(this, SR.net_log_listener_spn_failed_empty);
+                            }
+                        }
+                        else
+                        {
+                            NetEventSource.Info(this, SR.net_log_listener_spn_failed_dump);
+
+                            foreach (string serviceName in serviceNames)
+                            {
+                                NetEventSource.Info(this, "\t" + serviceName);
+                            }
+                        }
+                    }
+                }
+
+                return found;
+            }
+        }
+
+        private ServiceNameCollection GetServiceNames(ExtendedProtectionPolicy policy)
+        {
+            ServiceNameCollection serviceNames;
+
+            if (policy.CustomServiceNames == null)
+            {
+
+                if (_defaultServiceNames.ServiceNames.Count == 0)
+                {
+                    throw new InvalidOperationException(SR.net_listener_no_spns);
+                }
+                serviceNames = _defaultServiceNames.ServiceNames;
+            }
+            else
+            {
+                serviceNames = policy.CustomServiceNames;
+            }
+            return serviceNames;
+        }
+
+        private static bool ScenarioChecksChannelBinding(bool isSecureConnection, ProtectionScenario scenario)
+        {
+            return (isSecureConnection && scenario == ProtectionScenario.TransportSelected);
+        }
+
+        private ContextFlagsPal GetContextFlags(ExtendedProtectionPolicy policy, bool isSecureConnection)
+        {
+            ContextFlagsPal result = ContextFlagsPal.Connection;
+            if (policy.PolicyEnforcement != PolicyEnforcement.Never)
+            {
+                if (policy.PolicyEnforcement == PolicyEnforcement.WhenSupported)
+                {
+                    result |= ContextFlagsPal.AllowMissingBindings;
+                }
+
+                if (policy.ProtectionScenario == ProtectionScenario.TrustedProxy)
+                {
+                    result |= ContextFlagsPal.ProxyBindings;
+                }
+            }
+
+            return result;
+        }
+
+        // This only works for context-destroying errors.
+        private HttpStatusCode HttpStatusFromSecurityStatus(SecurityStatusPalErrorCode statusErrorCode)
+        {
+            if (IsCredentialFailure(statusErrorCode))
+            {
+                return HttpStatusCode.Unauthorized;
+            }
+            if (IsClientFault(statusErrorCode))
+            {
+                return HttpStatusCode.BadRequest;
+            }
+            return HttpStatusCode.InternalServerError;
+        }
+
+        // This only works for context-destroying errors.
+        internal static bool IsCredentialFailure(SecurityStatusPalErrorCode error)
+        {
+            return error == SecurityStatusPalErrorCode.LogonDenied ||
+                error == SecurityStatusPalErrorCode.UnknownCredentials ||
+                error == SecurityStatusPalErrorCode.NoImpersonation ||
+                error == SecurityStatusPalErrorCode.NoAuthenticatingAuthority ||
+                error == SecurityStatusPalErrorCode.UntrustedRoot ||
+                error == SecurityStatusPalErrorCode.CertExpired ||
+                error == SecurityStatusPalErrorCode.SmartcardLogonRequired ||
+                error == SecurityStatusPalErrorCode.BadBinding;
+        }
+
+        // This only works for context-destroying errors.
+        internal static bool IsClientFault(SecurityStatusPalErrorCode error)
+        {
+            return error == SecurityStatusPalErrorCode.InvalidToken ||
+                error == SecurityStatusPalErrorCode.CannotPack ||
+                error == SecurityStatusPalErrorCode.QopNotSupported ||
+                error == SecurityStatusPalErrorCode.NoCredentials ||
+                error == SecurityStatusPalErrorCode.MessageAltered ||
+                error == SecurityStatusPalErrorCode.OutOfSequence ||
+                error == SecurityStatusPalErrorCode.IncompleteMessage ||
+                error == SecurityStatusPalErrorCode.IncompleteCredentials ||
+                error == SecurityStatusPalErrorCode.WrongPrincipal ||
+                error == SecurityStatusPalErrorCode.TimeSkew ||
+                error == SecurityStatusPalErrorCode.IllegalMessage ||
+                error == SecurityStatusPalErrorCode.CertUnknown ||
+                error == SecurityStatusPalErrorCode.AlgorithmMismatch ||
+                error == SecurityStatusPalErrorCode.SecurityQosFailed ||
+                error == SecurityStatusPalErrorCode.UnsupportedPreauth;
         }
 
         private static void AddChallenge(ref ArrayList challenges, string challenge)
@@ -1555,18 +1974,12 @@ namespace System.Net
 
             if ((authenticationScheme & AuthenticationSchemes.Negotiate) != 0)
             {
-                AddChallenge(ref challenges, AuthConstants.Negotiate);
+                AddChallenge(ref challenges, AuthenticationTypes.Negotiate);
             }
 
             if ((authenticationScheme & AuthenticationSchemes.Ntlm) != 0)
             {
-                AddChallenge(ref challenges, AuthConstants.NTLM);
-            }
-
-            if ((authenticationScheme & AuthenticationSchemes.Digest) != 0)
-            {
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, "WDigest");
-                throw new NotImplementedException();
+                AddChallenge(ref challenges, AuthenticationTypes.NTLM);
             }
 
             if ((authenticationScheme & AuthenticationSchemes.Basic) != 0)
@@ -1716,7 +2129,7 @@ namespace System.Net
             }
         }
 
-        private unsafe static int GetTokenOffsetFromBlob(IntPtr blob)
+        private static unsafe int GetTokenOffsetFromBlob(IntPtr blob)
         {
             Debug.Assert(blob != IntPtr.Zero);
             IntPtr tokenPointer = Marshal.ReadIntPtr((IntPtr)blob, (int)Marshal.OffsetOf(s_channelBindingStatusType, "ChannelToken"));
@@ -1725,7 +2138,7 @@ namespace System.Net
             return (int)((long)tokenPointer - (long)blob);
         }
 
-        private unsafe static int GetTokenSizeFromBlob(IntPtr blob)
+        private static unsafe int GetTokenSizeFromBlob(IntPtr blob)
         {
             Debug.Assert(blob != IntPtr.Zero);
             return Marshal.ReadInt32(blob, (int)Marshal.OffsetOf(s_channelBindingStatusType, "ChannelTokenSize"));
@@ -1815,142 +2228,7 @@ namespace System.Net
             Started,
             Closed,
         }
-
-        private const int DigestLifetimeSeconds = 300;
-        private const int MaximumDigests = 1024;  // Must be a power of two.
-        private const int MinimumDigestLifetimeSeconds = 10;
-
-        private struct DigestContext
-        {
-            internal NTAuthentication context;
-            internal int timestamp;
-        }
-
-        private DigestContext[] _savedDigests;
-        private ArrayList _extraSavedDigests;
-        private ArrayList _extraSavedDigestsBaking;
-        private int _extraSavedDigestsTimestamp;
-        private int _newestContext;
-        private int _oldestContext;
-
-        private void SaveDigestContext(NTAuthentication digestContext)
-        {
-            if (_savedDigests == null)
-            {
-                Interlocked.CompareExchange<DigestContext[]>(ref _savedDigests, new DigestContext[MaximumDigests], null);
-            }
-
-            // We want to actually close the contexts outside the lock.
-            NTAuthentication oldContext = null;
-            ArrayList digestsToClose = null;
-            lock (_savedDigests)
-            {
-                // If we're stopped, just throw it away.
-                if (!IsListening)
-                {
-                    digestContext.CloseContext();
-                    return;
-                }
-
-                int now = ((now = Environment.TickCount) == 0 ? 1 : now);
-
-                _newestContext = (_newestContext + 1) & (MaximumDigests - 1);
-
-                int oldTimestamp = _savedDigests[_newestContext].timestamp;
-                oldContext = _savedDigests[_newestContext].context;
-                _savedDigests[_newestContext].timestamp = now;
-                _savedDigests[_newestContext].context = digestContext;
-
-                // May need to move this up.
-                if (_oldestContext == _newestContext)
-                {
-                    _oldestContext = (_newestContext + 1) & (MaximumDigests - 1);
-                }
-
-                // Delete additional contexts older than five minutes.
-                while (unchecked(now - _savedDigests[_oldestContext].timestamp) >= DigestLifetimeSeconds && _savedDigests[_oldestContext].context != null)
-                {
-                    if (digestsToClose == null)
-                    {
-                        digestsToClose = new ArrayList();
-                    }
-                    digestsToClose.Add(_savedDigests[_oldestContext].context);
-                    _savedDigests[_oldestContext].context = null;
-                    _oldestContext = (_oldestContext + 1) & (MaximumDigests - 1);
-                }
-
-                // If the old context is younger than 10 seconds, put it in the backup pile.
-                if (oldContext != null && unchecked(now - oldTimestamp) <= MinimumDigestLifetimeSeconds * 1000)
-                {
-                    // Use a two-tier ArrayList system to guarantee each entry lives at least 10 seconds.
-                    if (_extraSavedDigests == null ||
-                        unchecked(now - _extraSavedDigestsTimestamp) > MinimumDigestLifetimeSeconds * 1000)
-                    {
-                        digestsToClose = _extraSavedDigestsBaking;
-                        _extraSavedDigestsBaking = _extraSavedDigests;
-                        _extraSavedDigestsTimestamp = now;
-                        _extraSavedDigests = new ArrayList();
-                    }
-                    _extraSavedDigests.Add(oldContext);
-                    oldContext = null;
-                }
-            }
-
-            if (oldContext != null)
-            {
-                oldContext.CloseContext();
-            }
-            if (digestsToClose != null)
-            {
-                for (int i = 0; i < digestsToClose.Count; i++)
-                {
-                    ((NTAuthentication)digestsToClose[i]).CloseContext();
-                }
-            }
-        }
-
-        private void ClearDigestCache()
-        {
-            if (_savedDigests == null)
-            {
-                return;
-            }
-
-            ArrayList[] toClose = new ArrayList[3];
-            lock (_savedDigests)
-            {
-                toClose[0] = _extraSavedDigestsBaking;
-                _extraSavedDigestsBaking = null;
-                toClose[1] = _extraSavedDigests;
-                _extraSavedDigests = null;
-
-                _newestContext = 0;
-                _oldestContext = 0;
-
-                toClose[2] = new ArrayList();
-                for (int i = 0; i < MaximumDigests; i++)
-                {
-                    if (_savedDigests[i].context != null)
-                    {
-                        toClose[2].Add(_savedDigests[i].context);
-                        _savedDigests[i].context = null;
-                    }
-                    _savedDigests[i].timestamp = 0;
-                }
-            }
-
-            for (int j = 0; j < toClose.Length; j++)
-            {
-                if (toClose[j] != null)
-                {
-                    for (int k = 0; k < toClose[j].Count; k++)
-                    {
-                        ((NTAuthentication)toClose[j][k]).CloseContext();
-                    }
-                }
-            }
-        }
-
+        
         private class DisconnectAsyncResult : IAsyncResult
         {
             private static readonly IOCompletionCallback s_IOCallback = new IOCompletionCallback(WaitCallback);
@@ -2063,7 +2341,7 @@ namespace System.Net
                 _httpListener.DisconnectResults.Remove(_connectionId);
                 if (_session != null)
                 {
-                    throw new NotImplementedException();
+                    _session.CloseContext();
                 }
 
                 // Clean up the identity. This is for scenarios where identity was not cleaned up before due to
@@ -2071,7 +2349,7 @@ namespace System.Net
 
                 IDisposable identity = _authenticatedConnection == null ? null : _authenticatedConnection.Identity as IDisposable;
                 if ((identity != null) &&
-                    (_authenticatedConnection.Identity.AuthenticationType == AuthConstants.NTLM) &&
+                    (_authenticatedConnection.Identity.AuthenticationType == AuthenticationTypes.NTLM) &&
                     (_httpListener.UnsafeConnectionNtlmAuthentication))
                 {
                     identity.Dispose();

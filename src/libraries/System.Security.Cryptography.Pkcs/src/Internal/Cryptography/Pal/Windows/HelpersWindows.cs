@@ -146,7 +146,7 @@ namespace Internal.Cryptography.Pal.Windows
             return hCertContext;
         }
 
-        public unsafe static byte[] GetSubjectKeyIdentifer(this SafeCertContextHandle hCertContext)
+        public static unsafe byte[] GetSubjectKeyIdentifer(this SafeCertContextHandle hCertContext)
         {
             int cbData = 0;
             if (!Interop.Crypt32.CertGetCertificateContextProperty(hCertContext, CertContextPropId.CERT_KEY_IDENTIFIER_PROP_ID, null, ref cbData))

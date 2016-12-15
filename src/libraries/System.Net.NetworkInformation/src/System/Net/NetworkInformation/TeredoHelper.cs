@@ -31,7 +31,7 @@ namespace System.Net.NetworkInformation
     {
         // Holds a list of all pending calls to NotifyStableUnicastIpAddressTable.  Also used as a lock to protect its
         // contents.
-        private readonly static List<TeredoHelper> s_pendingNotifications = new List<TeredoHelper>();
+        private static readonly List<TeredoHelper> s_pendingNotifications = new List<TeredoHelper>();
         private readonly Action<object> _callback;
         private readonly object _state;
 

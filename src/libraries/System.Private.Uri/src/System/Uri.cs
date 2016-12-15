@@ -538,7 +538,7 @@ namespace System
         // The assumptions:
         //  - baseUri is a valid absolute Uri
         //  - relative part is not null and not empty
-        private unsafe static ParsingError GetCombinedString(Uri baseUri, string relativeStr,
+        private static unsafe ParsingError GetCombinedString(Uri baseUri, string relativeStr,
             bool dontEscape, ref string result)
         {
             // NB: This is not RFC2396 compliant although it is inline with w3c.org recommendations
@@ -1944,7 +1944,7 @@ namespace System
             return (index >= 0 && uriString[index] == ':');
         }
 
-        internal unsafe static string InternalEscapeString(string rawString)
+        internal static unsafe string InternalEscapeString(string rawString)
         {
             if ((object)rawString == null)
                 return string.Empty;
@@ -3615,7 +3615,7 @@ namespace System
         // returns the start of the next component  position
         // throws UriFormatException if invalid scheme
         //
-        unsafe static private ushort ParseSchemeCheckImplicitFile(char* uriString, ushort length,
+        private static unsafe ushort ParseSchemeCheckImplicitFile(char* uriString, ushort length,
             ref ParsingError err, ref Flags flags, ref UriParser syntax)
         {
             ushort idx = 0;
@@ -3730,7 +3730,7 @@ namespace System
         //
         // Quickly parses well known schemes.
         // nChars does not include the last ':'. Assuming there is one at the end of passed buffer
-        unsafe static private bool CheckKnownSchemes(long* lptr, ushort nChars, ref UriParser syntax)
+        private static unsafe bool CheckKnownSchemes(long* lptr, ushort nChars, ref UriParser syntax)
         {
             //NOTE beware of too short input buffers!
 
@@ -3885,7 +3885,7 @@ namespace System
         //
         // This will check whether a scheme string follows the rules
         //
-        unsafe static private ParsingError CheckSchemeSyntax(char* ptr, ushort length, ref UriParser syntax)
+        private static unsafe ParsingError CheckSchemeSyntax(char* ptr, ushort length, ref UriParser syntax)
         {
             //First character must be an alpha
             {
@@ -4830,7 +4830,7 @@ namespace System
         }
 
         // works only with ASCII characters, used to partially unescape path before compressing
-        private unsafe static void UnescapeOnly(char* pch, int start, ref int end, char ch1, char ch2, char ch3)
+        private static unsafe void UnescapeOnly(char* pch, int start, ref int end, char ch1, char ch2, char ch3)
         {
             if (end - start < 3)
             {

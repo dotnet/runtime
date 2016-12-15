@@ -16,11 +16,6 @@ namespace System.ComponentModel
     /// </summary>
     public class ListChangedEventArgs : EventArgs
     {
-        private ListChangedType _listChangedType;
-        private int _newIndex;
-        private int _oldIndex;
-        private PropertyDescriptor _propDesc;
-
         /// <summary>
         ///    <para>[To be supplied.]</para>
         /// </summary>
@@ -33,8 +28,8 @@ namespace System.ComponentModel
         /// </summary>
         public ListChangedEventArgs(ListChangedType listChangedType, int newIndex, PropertyDescriptor propDesc) : this(listChangedType, newIndex)
         {
-            _propDesc = propDesc;
-            _oldIndex = newIndex;
+            PropertyDescriptor = propDesc;
+            OldIndex = newIndex;
         }
 
         /// <summary>
@@ -47,8 +42,8 @@ namespace System.ComponentModel
             Debug.Assert(listChangedType != ListChangedType.ItemDeleted, "this constructor is used only for changes in the list MetaData");
             Debug.Assert(listChangedType != ListChangedType.ItemChanged, "this constructor is used only for changes in the list MetaData");
 
-            _listChangedType = listChangedType;
-            _propDesc = propDesc;
+            ListChangedType = listChangedType;
+            PropertyDescriptor = propDesc;
         }
 
         /// <summary>
@@ -59,54 +54,30 @@ namespace System.ComponentModel
             Debug.Assert(listChangedType != ListChangedType.PropertyDescriptorAdded, "this constructor is used only for item changed in the list");
             Debug.Assert(listChangedType != ListChangedType.PropertyDescriptorDeleted, "this constructor is used only for item changed in the list");
             Debug.Assert(listChangedType != ListChangedType.PropertyDescriptorChanged, "this constructor is used only for item changed in the list");
-            _listChangedType = listChangedType;
-            _newIndex = newIndex;
-            _oldIndex = oldIndex;
+            ListChangedType = listChangedType;
+            NewIndex = newIndex;
+            OldIndex = oldIndex;
         }
 
         /// <summary>
         ///    <para>[To be supplied.]</para>
         /// </summary>
-        public ListChangedType ListChangedType
-        {
-            get
-            {
-                return _listChangedType;
-            }
-        }
+        public ListChangedType ListChangedType { get; }
 
         /// <summary>
         ///    <para>[To be supplied.]</para>
         /// </summary>
-        public int NewIndex
-        {
-            get
-            {
-                return _newIndex;
-            }
-        }
+        public int NewIndex { get; }
 
         /// <summary>
         ///    <para>[To be supplied.]</para>
         /// </summary>
-        public int OldIndex
-        {
-            get
-            {
-                return _oldIndex;
-            }
-        }
+        public int OldIndex { get; }
 
         /// <summary>
         ///    <para>[To be supplied.]</para>
         /// </summary>
-        public PropertyDescriptor PropertyDescriptor
-        {
-            get
-            {
-                return _propDesc;
-            }
-        }
+        public PropertyDescriptor PropertyDescriptor { get; }
     }
 }
 

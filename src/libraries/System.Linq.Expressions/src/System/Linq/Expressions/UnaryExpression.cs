@@ -844,16 +844,16 @@ namespace System.Linq.Expressions
             return GetMethodBasedCoercionOperator(ExpressionType.ConvertChecked, expression, type, method);
         }
 
-        /// <summary>Creates a <see cref="UnaryExpression"/> that represents getting the length of a one-dimensional array.</summary>
+        /// <summary>Creates a <see cref="UnaryExpression"/> that represents getting the length of a one-dimensional, zero-based array.</summary>
         /// <returns>A <see cref="UnaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.ArrayLength"/> and the <see cref="UnaryExpression.Operand"/> property equal to <paramref name="array"/>.</returns>
         /// <param name="array">An <see cref="Expression"/> to set the <see cref="UnaryExpression.Operand"/> property equal to.</param>
         /// <exception cref="ArgumentNullException">
         /// <paramref name="array"/> is null.</exception>
         /// <exception cref="ArgumentException">
-        /// <paramref name="array"/>.Type does not represent an array type.</exception>
+        /// <paramref name="array"/>.Type does not represent a single-dimensional, zero-based array type.</exception>
         public static UnaryExpression ArrayLength(Expression array)
         {
-            ContractUtils.RequiresNotNull(array, nameof(array));
+            RequiresCanRead(array, nameof(array));
             if (!array.Type.IsArray || !typeof(Array).IsAssignableFrom(array.Type))
             {
                 throw Error.ArgumentMustBeArray(nameof(array));
@@ -873,9 +873,13 @@ namespace System.Linq.Expressions
         public static UnaryExpression Quote(Expression expression)
         {
             RequiresCanRead(expression, nameof(expression));
-            bool validQuote = expression is LambdaExpression;
-            if (!validQuote) throw Error.QuotedExpressionMustBeLambda(nameof(expression));
-            return new UnaryExpression(ExpressionType.Quote, expression, expression.GetType(), null);
+            LambdaExpression lambda = expression as LambdaExpression;
+            if (lambda == null)
+            {
+                throw Error.QuotedExpressionMustBeLambda(nameof(expression));
+            }
+
+            return new UnaryExpression(ExpressionType.Quote, lambda, lambda.PublicType, null);
         }
 
         /// <summary>

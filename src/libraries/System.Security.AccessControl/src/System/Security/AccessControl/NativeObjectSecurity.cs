@@ -40,7 +40,7 @@ namespace System.Security.AccessControl
 
         #region Delegates
 
-        internal protected delegate System.Exception ExceptionFromErrorCode(int errorCode, string name, SafeHandle handle, object context);
+        protected internal delegate System.Exception ExceptionFromErrorCode(int errorCode, string name, SafeHandle handle, object context);
 
         #endregion
 

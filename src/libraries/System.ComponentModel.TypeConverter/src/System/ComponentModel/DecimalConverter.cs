@@ -19,24 +19,12 @@ namespace System.ComponentModel
         /// <summary>
         /// Determines whether this editor will attempt to convert hex (0x or #) strings
         /// </summary>
-        internal override bool AllowHex
-        {
-            get
-            {
-                return false;
-            }
-        }
+        internal override bool AllowHex => false;
 
         /// <summary>
         /// The Type this converter is targeting (e.g. Int16, UInt32, etc.)
         /// </summary>
-        internal override Type TargetType
-        {
-            get
-            {
-                return typeof(Decimal);
-            }
-        }
+        internal override Type TargetType => typeof(decimal);
 
         /// <summary>
         ///    <para>

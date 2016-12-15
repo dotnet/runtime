@@ -549,6 +549,18 @@ namespace System.Linq.Tests
         }
 
         [Fact]
+        public void RunOnce()
+        {
+            var source = new[]
+            {
+                new { name="Tim", num=(int?)10 },
+                new { name="John", num=default(int?) },
+                new { name="Bob", num=(int?)-30 }
+            };
+            Assert.Equal(-20, source.RunOnce().Sum(e => e.num));
+        }
+
+        [Fact]
         public void SolitaryInt64()
         {
             long[] source = { int.MaxValue + 20L };

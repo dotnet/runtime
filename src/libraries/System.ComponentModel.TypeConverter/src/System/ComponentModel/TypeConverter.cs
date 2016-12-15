@@ -211,14 +211,7 @@ namespace System.ComponentModel
         {
             string valueTypeName;
 
-            if (value == null)
-            {
-                valueTypeName = SR.Null;
-            }
-            else
-            {
-                valueTypeName = value.GetType().FullName;
-            }
+            valueTypeName = value == null ? SR.Null : value.GetType().FullName;
 
             throw new NotSupportedException(SR.Format(SR.ConvertFromException, GetType().Name, valueTypeName));
         }
@@ -231,14 +224,7 @@ namespace System.ComponentModel
         {
             string valueTypeName;
 
-            if (value == null)
-            {
-                valueTypeName = SR.Null;
-            }
-            else
-            {
-                valueTypeName = value.GetType().FullName;
-            }
+            valueTypeName = value == null ? SR.Null : value.GetType().FullName;
 
             throw new NotSupportedException(SR.Format(SR.ConvertToException, GetType().Name, valueTypeName, destinationType.FullName));
         }
@@ -425,15 +411,12 @@ namespace System.ComponentModel
         /// </summary>
         protected abstract class SimplePropertyDescriptor : PropertyDescriptor
         {
-            private Type _componentType;
-            private Type _propertyType;
-
             /// <summary>
             ///    <para>
             ///       Initializes a new instance of the <see cref='System.ComponentModel.TypeConverter.SimplePropertyDescriptor'/> class.
             ///    </para>
             /// </summary>
-            protected SimplePropertyDescriptor(Type componentType, string name, Type propertyType) : this(componentType, name, propertyType, new Attribute[0])
+            protected SimplePropertyDescriptor(Type componentType, string name, Type propertyType) : this(componentType, name, propertyType, Array.Empty<Attribute>())
             {
             }
 
@@ -444,42 +427,24 @@ namespace System.ComponentModel
             /// </summary>
             protected SimplePropertyDescriptor(Type componentType, string name, Type propertyType, Attribute[] attributes) : base(name, attributes)
             {
-                _componentType = componentType;
-                _propertyType = propertyType;
+                ComponentType = componentType;
+                PropertyType = propertyType;
             }
 
             /// <summary>
             ///    <para>Gets the type of the component this property description is bound to.</para>
             /// </summary>
-            public override Type ComponentType
-            {
-                get
-                {
-                    return _componentType;
-                }
-            }
+            public override Type ComponentType { get; }
 
             /// <summary>
             ///    <para>Gets a value indicating whether this property is read-only.</para>
             /// </summary>
-            public override bool IsReadOnly
-            {
-                get
-                {
-                    return Attributes.Contains(ReadOnlyAttribute.Yes);
-                }
-            }
+            public override bool IsReadOnly => Attributes.Contains(ReadOnlyAttribute.Yes);
 
             /// <summary>
             ///    <para>Gets the type of the property.</para>
             /// </summary>
-            public override Type PropertyType
-            {
-                get
-                {
-                    return _propertyType;
-                }
-            }
+            public override Type PropertyType { get; }
 
             /// <summary>
             ///    <para>
@@ -534,7 +499,7 @@ namespace System.ComponentModel
             {
                 if (values == null)
                 {
-                    values = new object[0];
+                    values = Array.Empty<object>();
                 }
 
                 Array a = values as Array;
@@ -615,26 +580,14 @@ namespace System.ComponentModel
             /// Determines if this collection is synchronized. The ValidatorCollection is not synchronized for
             /// speed.  Also, since it is read-only, there is no need to synchronize it.
             /// </summary>
-            bool ICollection.IsSynchronized
-            {
-                get
-                {
-                    return false;
-                }
-            }
+            bool ICollection.IsSynchronized => false;
 
             /// <internalonly/>
             /// <summary>
             /// Retrieves the synchronization root for this collection.  Because we are not synchronized,
             /// this returns null.
             /// </summary>
-            object ICollection.SyncRoot
-            {
-                get
-                {
-                    return null;
-                }
-            }
+            object ICollection.SyncRoot => null;
         }
     }
 }

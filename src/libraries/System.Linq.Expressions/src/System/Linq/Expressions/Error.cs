@@ -562,7 +562,7 @@ namespace System.Linq.Expressions
             return ArgumentMustBeArrayIndexType(GetParamName(paramName, index));
         }
         /// <summary>
-        /// ArgumentException with message like "Argument must be single dimensional array type"
+        /// ArgumentException with message like "Argument must be single-dimensional, zero-based array type"
         /// </summary>
         internal static Exception ArgumentMustBeSingleDimensionalArrayType(string paramName)
         {

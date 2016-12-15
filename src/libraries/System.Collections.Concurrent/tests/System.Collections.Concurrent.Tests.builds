@@ -8,6 +8,9 @@
       <TestTFMs>netcoreapp1.0</TestTFMs>
     </Project>
     <Project Include="System.Collections.Concurrent.Tests.csproj">
+      <TargetGroup>netcoreapp1.1</TargetGroup>
+    </Project>
+    <Project Include="System.Collections.Concurrent.Tests.csproj">
       <TargetGroup>netstandard1.3</TargetGroup>
       <OSGroup>Windows_NT</OSGroup>
       <TestTFMs>netcore50;net46</TestTFMs>

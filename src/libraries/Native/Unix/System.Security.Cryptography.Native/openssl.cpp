@@ -716,11 +716,7 @@ static int CheckX509HostnameMatch(ASN1_STRING* candidate, const char* hostname, 
         // RFC2818 says to use RFC2595 matching rules, but then gives an example that f*.com would match foo.com
         // RFC2595 says that '*' may be used as the left name component, in which case it is a wildcard that does
         // not match a '.'.
-        //
-        // In the interest of time, and the idea that it's better to err on the side of more restrictive,
-        // this implementation does not support mid-string wildcards.
-        //
-        // TODO (3444): Determine if we're too restrictive here.
+        // The recommendation from the Windows Crypto team was not to match f*.com with foo.com.
 
         char* candidateStr;
         int i;

@@ -697,7 +697,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.genclas
         }
     }
 
-    static public class Extension
+    public static class Extension
     {
         public static int ExReturnTest(this int p)
         {
@@ -1250,7 +1250,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.genclas
         }
     }
 
-    static public class Extension
+    public static class Extension
     {
         public static int Method(this string s)
         {

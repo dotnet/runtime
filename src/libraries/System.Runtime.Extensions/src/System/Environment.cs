@@ -3,8 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using Internal.Runtime.Augments;
-using System;
-using System.Collections;
 using System.IO;
 using System.Reflection;
 using System.Text;
@@ -93,42 +91,6 @@ namespace System
 
         public static string[] GetCommandLineArgs() => EnvironmentAugments.GetCommandLineArgs();
 
-        public static string GetEnvironmentVariable(string variable) 
-        {
-            if (variable == null)
-            {
-                throw new ArgumentNullException(nameof(variable));
-            }
-
-            // separated from the EnvironmentVariableTarget overload to help with tree shaking in common case
-            return GetEnvironmentVariableCore(variable);
-        }
-
-        public static string GetEnvironmentVariable(string variable, EnvironmentVariableTarget target)
-        {
-            if (variable == null)
-            {
-                throw new ArgumentNullException(nameof(variable));
-            }
-
-            ValidateTarget(target);
-
-            return GetEnvironmentVariableCore(variable, target);
-        }
-
-        public static IDictionary GetEnvironmentVariables()
-        {
-            // separated from the EnvironmentVariableTarget overload to help with tree shaking in common case
-            return GetEnvironmentVariablesCore();
-        }
-
-        public static IDictionary GetEnvironmentVariables(EnvironmentVariableTarget target)
-        {
-            ValidateTarget(target);
-
-            return GetEnvironmentVariablesCore(target);
-        }
-
         public static string GetFolderPath(SpecialFolder folder) => GetFolderPath(folder, SpecialFolderOption.None);
 
         public static string GetFolderPath(SpecialFolder folder, SpecialFolderOption option)
@@ -151,58 +113,6 @@ namespace System
         public static bool Is64BitProcess => IntPtr.Size == 8;
 
         public static bool Is64BitOperatingSystem => Is64BitProcess || Is64BitOperatingSystemWhen32BitProcess;
-        
-        public static void SetEnvironmentVariable(string variable, string value)
-        {
-            ValidateVariableAndValue(variable, ref value);
-
-            // separated from the EnvironmentVariableTarget overload to help with tree shaking in common case
-            SetEnvironmentVariableCore(variable, value);
-        }
-
-        public static void SetEnvironmentVariable(string variable, string value, EnvironmentVariableTarget target)
-        {
-            ValidateVariableAndValue(variable, ref value);
-            ValidateTarget(target);
-
-            SetEnvironmentVariableCore(variable, value, target);
-        }
-
-        private static void ValidateVariableAndValue(string variable, ref string value)
-        {
-            const int MaxEnvVariableValueLength = 32767;
-
-            if (variable == null)
-            {
-                throw new ArgumentNullException(nameof(variable));
-            }
-            if (variable.Length == 0)
-            {
-                throw new ArgumentException(SR.Argument_StringZeroLength, nameof(variable));
-            }
-            if (variable[0] == '\0')
-            {
-                throw new ArgumentException(SR.Argument_StringFirstCharIsZero, nameof(variable));
-            }
-            if (variable.Length >= MaxEnvVariableValueLength)
-            {
-                throw new ArgumentException(SR.Argument_LongEnvVarValue, nameof(variable));
-            }
-            if (variable.IndexOf('=') != -1)
-            {
-                throw new ArgumentException(SR.Argument_IllegalEnvVarName, nameof(variable));
-            }
-
-            if (string.IsNullOrEmpty(value) || value[0] == '\0')
-            {
-                // Explicitly null out value if it's empty
-                value = null;
-            }
-            else if (value.Length >= MaxEnvVariableValueLength)
-            {
-                throw new ArgumentException(SR.Argument_LongEnvVarValue, nameof(value));
-            }
-        }
 
         public static OperatingSystem OSVersion => s_osVersion.Value;
 
@@ -242,16 +152,6 @@ namespace System
 
                 // Could not get the current working set.
                 return 0;
-            }
-        }
-
-        private static void ValidateTarget(EnvironmentVariableTarget target)
-        {
-            if (target != EnvironmentVariableTarget.Process &&
-                target != EnvironmentVariableTarget.Machine &&
-                target != EnvironmentVariableTarget.User)
-            {
-                throw new ArgumentOutOfRangeException(nameof(target), target, SR.Format(SR.Arg_EnumIllegalVal, target));
             }
         }
     }
