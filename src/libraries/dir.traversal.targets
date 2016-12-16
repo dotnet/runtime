@@ -28,27 +28,27 @@
   </Target>
 
   <!-- build vertical requires the FindBestConfiguration task which is currently in CoreFx.Tools.dll -->
-  <Import Project="buildvertical.targets" Condition="Exists('$(CoreFxToolsTaskDir)CoreFx.Tools.dll')" />
+  <Import Project="buildvertical.targets" Condition="'$(ImportedBuildVerticalTargets)' != 'true' and Exists('$(CoreFxToolsTaskDir)CoreFx.Tools.dll')" />
 
   <Target Name="BuildAllProjects">
     <PropertyGroup>
       <DefaultBuildAllTarget Condition="'$(DefaultBuildAllTarget)'==''">$(MSBuildProjectDefaultTargets)</DefaultBuildAllTarget>
     </PropertyGroup>
 
-    <MSBuild Targets="AnnotateProjectsWithConfiguration"
-             Projects="@(Project)">
-      <Output TaskParameter="TargetOutputs"
-              ItemName="ProjectWithConfiguration" />
-    </MSBuild>
-
-    <Message Text="%(ProjectWithConfiguration.Identity) - %(ProjectWithConfiguration.AdditionalProperties)" Importance="High" />
+   <!-- Clear ProjectWithConfiguration to prevent circular dependency -->
+   <ItemGroup><ProjectWithConfiguration Remove="@(ProjectWithConfiguration)" /></ItemGroup>
+   <MSBuild Targets="AnnotateProjectsWithConfiguration" 
+            Projects="@(Project)"> 
+     <Output TaskParameter="TargetOutputs" 
+             ItemName="ProjectWithConfiguration" /> 
+   </MSBuild> 
 
     <!-- To Serialize we use msbuild's batching functionality '%' to force it to batch all similar projects with the same identity
          however since the project names are unique it will essentially force each to run in its own batch -->
     <MSBuild Targets="$(DefaultBuildAllTarget)"
              Projects="@(ProjectWithConfiguration)"
              Condition="'$(SerializeProjects)'=='true' AND '%(Identity)' != ''"
-             Properties="DefaultBuildAllTarget=$(DefaultBuildAllTarget);BuildAllProjects=true;BuildConfiguration=$(BuildConfiguration);%(ProjectWithConfiguration.AdditionalProperties)"
+             Properties="DefaultBuildAllTarget=$(DefaultBuildAllTarget);BuildAllProjects=true;BuildConfiguration=$(BuildConfiguration)"
              ContinueOnError="ErrorAndContinue" />
 
     <MSBuild Targets="$(DefaultBuildAllTarget)"
@@ -218,7 +218,7 @@
 
   <PropertyGroup>
     <TraversalBuildDependsOn>
-      BuildAllProjects
+      BuildAllProjects;
       $(TraversalBuildDependsOn);
     </TraversalBuildDependsOn>
 
@@ -256,19 +256,5 @@
 
   <!-- Target will be overridden if buildagainstpackages.targets is imported. -->
   <Target Name="GenerateTestProjectJson" />
-
-  <!-- Target will be overriden if buildvertical.targets is imported -->
-  <Target Name="GetBuildConfigurations" />
-  <Target Name="FindBestConfiguration" />
-  <Target Name="AnnotateProjectsWithConfiguration"
-          Returns="@(ProjectWithConfiguration)" >
-    <Message Text="%(Project.Identity) - (%(Project.TargetGroup) - %(Project.OSGroup))" Importance="High" />
-    <ItemGroup>
-      <ProjectWithConfiguration Include="%(Project.Identity)">
-        <AdditionalProperties Condition="'%(Project.TargetGroup)' != ''">TargetGroup=%(Project.TargetGroup);OSGroup=%(Project.OSGroup)</AdditionalProperties>
-      </ProjectWithConfiguration>
-    </ItemGroup>
-  </Target>
-
-  <Import Condition="'$(_BuildAgainstPackages)' == 'true'" Project="$(ToolsDir)/buildagainstpackages.targets" />
+ <Import Condition="'$(_BuildAgainstPackages)' == 'true'" Project="$(ToolsDir)/buildagainstpackages.targets" />
 </Project>

@@ -138,12 +138,6 @@
       "values": [],
       "defaultValue": ""
     },
-    "FakeOSGroup": {
-      "description": "Ignore OSGroup.",
-      "valueType": "property",
-      "values": [],
-      "defaultValue": ""
-    },
     "GenerateNativeVersionInfo": {
       "description": "Enables generation of the native version header.",
       "valueType": "property",
@@ -283,7 +277,7 @@
         "os": {
           "description": "Sets OSGroup to the OS name where the build is going to run or it is set to the value passed by the user.",
           "settings": {
-            "FakeOSGroup": "default"
+            "OSGroup": "default"
           }
         },        
         "target-os": {

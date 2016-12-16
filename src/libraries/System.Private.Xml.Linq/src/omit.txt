@@ -1,1 +1,0 @@
-System\Xml\Xsl\Runtime\XmlSortKeyAccumulator.cs(44,37): error CS1061: 'XmlCollation' does not contain a definition for 'CreateSortKey' and no extension method 'CreateSortKey' accepting a first argument of type 'XmlCollation' could be found (are you missing a using directive or an assembly reference?) [E:\gh\chcosta\corefx\src\System.Private.Xml\src\System.Private.Xml.csproj]
