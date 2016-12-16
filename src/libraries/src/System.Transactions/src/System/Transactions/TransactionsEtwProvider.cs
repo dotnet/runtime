@@ -1099,17 +1099,17 @@ namespace System.Transactions
 
         #region Transactionstate promoted
         /// <summary>Trace an event when transaction is promoted.</summary>
-        /// <param name="txID">The transaction ID.</param>
+        /// <param name="transactionID">The transaction ID.</param>
         /// <param name="distributedTxID">The distributed transaction ID.</param>
         [NonEvent]
-        internal void TransactionPromoted(TransactionTraceIdentifier txID, TransactionTraceIdentifier distributedTxID)
+        internal void TransactionPromoted(TransactionTraceIdentifier transactionID, TransactionTraceIdentifier distributedTxID)
         {
             if (IsEnabled(EventLevel.Informational, ALL_KEYWORDS))
             {
                 String id = String.Empty;
                 String distributedId = String.Empty;
-                if (txID != null && txID.TransactionIdentifier != null)
-                    id= txID.TransactionIdentifier.ToString();
+                if (transactionID != null && transactionID.TransactionIdentifier != null)
+                    id= transactionID.TransactionIdentifier.ToString();
                 if (distributedTxID != null && distributedTxID.TransactionIdentifier != null)
                     distributedId = distributedTxID.TransactionIdentifier.ToString();
                 TransactionPromoted(id, distributedId);
@@ -1117,33 +1117,33 @@ namespace System.Transactions
         }
 
         [Event(TRANSACTION_PROMOTED_EVENTID, Keywords = Keywords.TraceLtm, Level = EventLevel.Informational, Task = Tasks.Transaction, Opcode = Opcodes.Promoted, Message = "Transaction promoted: transaction ID is {0} and distributed transaction ID is {1}")]
-        private void TransactionPromoted(string txID, string distributedTxID)
+        private void TransactionPromoted(string transactionID, string distributedTxID)
         {
-            SetActivityId(txID);
-            WriteEvent(TRANSACTION_PROMOTED_EVENTID, txID, distributedTxID);
+            SetActivityId(transactionID);
+            WriteEvent(TRANSACTION_PROMOTED_EVENTID, transactionID, distributedTxID);
         }
         #endregion
 
         #region Transactionstate aborted
         /// <summary>Trace an event when transaction is aborted.</summary>
-        /// <param name="txID">The transaction ID.</param>
+        /// <param name="transactionID">The transaction ID.</param>
         [NonEvent]
-        internal void TransactionAborted(TransactionTraceIdentifier txID)
+        internal void TransactionAborted(TransactionTraceIdentifier transactionID)
         {
             if (IsEnabled(EventLevel.Warning, ALL_KEYWORDS))
             {
-                if (txID != null)
-                    TransactionAborted(txID.ToString());
+                if (transactionID != null && transactionID.TransactionIdentifier != null)
+                    TransactionAborted(transactionID.TransactionIdentifier.ToString());
                 else
                     TransactionAborted(String.Empty);
             }
-        }
+          }
 
         [Event(TRANSACTION_ABORTED_EVENTID, Keywords = Keywords.TraceLtm, Level = EventLevel.Warning, Task = Tasks.Transaction, Opcode = Opcodes.Aborted, Message = "Transaction aborted: transaction ID is {0}")]
-        private void TransactionAborted(string txID)
+        private void TransactionAborted(string transactionID)
         {
-            SetActivityId(txID);
-            WriteEvent(TRANSACTION_ABORTED_EVENTID, txID);
+            SetActivityId(transactionID);
+            WriteEvent(TRANSACTION_ABORTED_EVENTID, transactionID);
         }
         #endregion
         public class Opcodes
