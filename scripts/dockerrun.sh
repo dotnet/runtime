@@ -59,7 +59,7 @@ if [ -z "$DOCKERFILE" ]; then
             if [ -e /etc/os-release ]; then
                source /etc/os-release
 
-               if [ -d "scritps/docker/$ID.$VERSION_ID" ]; then
+               if [ -d "scripts/docker/$ID.$VERSION_ID" ]; then
                    echo "Using '$ID.$VERSION_ID' image"
                    export DOCKERFILE="scripts/docker/$ID.$VERSION_ID"
                else
