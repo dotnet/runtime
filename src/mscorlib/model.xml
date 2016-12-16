@@ -671,6 +671,8 @@
       <Member Name="get_Keys" />
       <Member Name="get_Values" />
       <Member Name="GetEnumerator" />
+      <Member Name="GetValueOrDefault(TKey)" />
+      <Member Name="GetValueOrDefault(TKey,TValue)" />
       <Member Name="Remove(TKey)" />
       <Member Name="set_Item(TKey,TValue)" />
       <Member Name="TryGetValue(TKey,TValue@)" />
