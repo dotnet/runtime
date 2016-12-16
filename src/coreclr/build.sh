@@ -94,6 +94,11 @@ setup_dirs()
     mkdir -p "$__BinDir"
     mkdir -p "$__LogsDir"
     mkdir -p "$__IntermediatesDir"
+
+    if [ $__CrossBuild == 1 ]; then
+        mkdir -p "$__CrossComponentBinDir"
+        mkdir -p "$__CrossCompIntermediatesDir"
+    fi
 }
 
 # Check the system to ensure the right prereqs are in place
@@ -110,11 +115,10 @@ check_prereqs()
 
 }
 
-build_coreclr()
-{
 
+generate_event_logging_sources()
+{
     if [ $__SkipCoreCLR == 1 ]; then
-        echo "Skipping CoreCLR build."
         return
     fi
 
@@ -160,10 +164,23 @@ build_coreclr()
     fi
 
     rm -rf "$__GeneratedIntermediateEventProvider"
+}
+
+build_native()
+{
+    skipCondition=$1
+    platformArch="$2"
+    intermediatesForBuild="$3"
+    extraCmakeArguments="$4"
+    message="$5"
+
+    if [ $skipCondition == 1 ]; then
+        echo "Skipping $message build."
+        return
+    fi
 
     # All set to commence the build
-
-    echo "Commencing build of native components for $__BuildOS.$__BuildArch.$__BuildType in $__IntermediatesDir"
+    echo "Commencing build of $message for $__BuildOS.$__BuildArch.$__BuildType in $intermediatesForBuild"
 
     generator=""
     buildFile="Makefile"
@@ -185,8 +202,9 @@ build_coreclr()
         # if msbuild is not supported, then set __SkipGenerateVersion to 1
         if [ $__isMSBuildOnNETCoreSupported == 0 ]; then __SkipGenerateVersion=1; fi
         # Drop version.cpp file
-        __versionSourceFile=$__IntermediatesDir/version.cpp
+        __versionSourceFile="$intermediatesForBuild/version.cpp"
         if [ $__SkipGenerateVersion == 0 ]; then
+            pwd
             "$__ProjectRoot/run.sh" build -Project=$__ProjectDir/build.proj -generateHeaderUnix -NativeVersionSourceFile=$__versionSourceFile $__RunArgs $__UnprocessedBuildArgs
         else
             # Generate the dummy version.cpp, but only if it didn't exist to make sure we don't trigger unnecessary rebuild
@@ -199,22 +217,18 @@ build_coreclr()
             fi
         fi
 
-        pushd "$__IntermediatesDir"
+        pushd "$intermediatesForBuild"
         # Regenerate the CMake solution
-        __ExtraCmakeArgs="-DCLR_CMAKE_TARGET_OS=$__BuildOS -DCLR_CMAKE_PACKAGES_DIR=$__PackagesDir -DCLR_CMAKE_PGO_INSTRUMENT=$__PgoInstrument"
-        echo "Invoking \"$__ProjectRoot/src/pal/tools/gen-buildsys-clang.sh\" \"$__ProjectRoot\" $__ClangMajorVersion $__ClangMinorVersion $__BuildArch $__BuildType $__CodeCoverage $__IncludeTests $generator $__ExtraCmakeArgs $__cmakeargs"
-        "$__ProjectRoot/src/pal/tools/gen-buildsys-clang.sh" "$__ProjectRoot" $__ClangMajorVersion $__ClangMinorVersion $__BuildArch $__BuildType $__CodeCoverage $__IncludeTests $generator "$__ExtraCmakeArgs" "$__cmakeargs"
+        echo "Invoking \"$__ProjectRoot/src/pal/tools/gen-buildsys-clang.sh\" \"$__ProjectRoot\" $__ClangMajorVersion $__ClangMinorVersion $platformArch $__BuildType $__CodeCoverage $__IncludeTests $generator $extraCmakeArguments $__cmakeargs"
+        "$__ProjectRoot/src/pal/tools/gen-buildsys-clang.sh" "$__ProjectRoot" $__ClangMajorVersion $__ClangMinorVersion $platformArch $__BuildType $__CodeCoverage $__IncludeTests $generator "$extraCmakeArguments" "$__cmakeargs"
         popd
     fi
 
-    # Check that the makefiles were created.
-    pushd "$__IntermediatesDir"
-    
-    if [ ! -f "$__IntermediatesDir/$buildFile" ]; then
-        echo "Failed to generate native component build project!"
+    if [ ! -f "$intermediatesForBuild/$buildFile" ]; then
+        echo "Failed to generate $message build project!"
         exit 1
     fi
-
+    
     # Get the number of processors available to the scheduler
     # Other techniques such as `nproc` only get the number of
     # processors available to a single process.
@@ -226,22 +240,24 @@ build_coreclr()
         NumProc=$(($(getconf _NPROCESSORS_ONLN)+1))
     fi
 
-    # Build CoreCLR
-
+    # Build
     if [ $__ConfigureOnly == 1 ]; then
-        echo "Skipping CoreCLR build."
+        echo "Finish configuration & skipping $message build."
         return
     fi
+
+    # Check that the makefiles were created.
+    pushd "$intermediatesForBuild"
 
     echo "Executing $buildTool install -j $NumProc"
 
     $buildTool install -j $NumProc
     if [ $? != 0 ]; then
-        echo "Failed to build coreclr components."
+        echo "Failed to build $message."
         exit 1
     fi
 
-	popd
+    popd
 }
 
 isMSBuildOnNETCoreSupported()
@@ -503,6 +519,7 @@ __HostDistroRid=""
 __DistroRid=""
 __cmakeargs=""
 __SkipGenerateVersion=0
+__DoCrossArchBuild=0
 
 while :; do
     if [ $# -le 0 ]; then
@@ -613,6 +630,10 @@ while :; do
             __SkipCoreCLR=1
             ;;
 
+        crosscomponent)
+            __DoCrossArchBuild=1
+            ;;
+
         skipmscorlib)
             __SkipMSCorLib=1
             ;;
@@ -699,6 +720,18 @@ __TestWorkingDir="$__RootBinDir/tests/$__BuildOS.$__BuildArch.$__BuildType"
 export __IntermediatesDir="$__RootBinDir/obj/$__BuildOS.$__BuildArch.$__BuildType"
 __TestIntermediatesDir="$__RootBinDir/tests/obj/$__BuildOS.$__BuildArch.$__BuildType"
 __isMSBuildOnNETCoreSupported=0
+__CrossComponentBinDir="$__BinDir"
+__CrossCompIntermediatesDir="$__IntermediatesDir/crossgen"
+
+__CrossArch="$__HostArch"
+if [[ "$__HostArch" == "x64" && "$__BuildArch" == "arm" ]]; then
+    __CrossArch="x86"
+fi
+if [ $__CrossBuild == 1 ]; then
+    __CrossComponentBinDir="$__CrossComponentBinDir/$__CrossArch"
+fi
+__CrossgenCoreLibLog="$__LogsDir/CrossgenCoreLib_$__BuildOS.$BuildArch.$__BuildType.log"
+__CrossgenExe="$__CrossComponentBinDir/crossgen"
 
 # Init if MSBuild for .NET Core is supported for this platform
 isMSBuildOnNETCoreSupported
@@ -729,16 +762,33 @@ fi
 initTargetDistroRid
 
 # Make the directories necessary for build if they don't exist
-
 setup_dirs
 
 # Check prereqs.
-
 check_prereqs
 
-# Build the coreclr (native) components.
+# Generate event logging infrastructure sources
+generate_event_logging_sources
 
-build_coreclr
+# Build the coreclr (native) components.
+__ExtraCmakeArgs="-DCLR_CMAKE_TARGET_OS=$__BuildOS -DCLR_CMAKE_PACKAGES_DIR=$__PackagesDir -DCLR_CMAKE_PGO_INSTRUMENT=$__PgoInstrument"
+build_native $__SkipCoreCLR "$__BuildArch" "$__IntermediatesDir" "$__ExtraCmakeArgs" "CoreCLR component"
+
+# Build cross-architecture components
+if [ $__CrossBuild == 1 ]; then
+    __SkipCrossArchBuild=1
+    if [ $__DoCrossArchBuild == 1 ]; then
+        # build cross-architecture components for x86-host/arm-target
+        if [[ "$__BuildArch" == "arm" && "$__CrossArch" == "x86" ]]; then
+            __SkipCrossArchBuild=0
+        fi
+    fi
+
+    export __CMakeBinDir="$__CrossComponentBinDir"
+    export CROSSCOMPONENT=1
+    __ExtraCmakeArgs="-DCLR_CMAKE_TARGET_ARCH=$__BuildArch -DCLR_CMAKE_TARGET_OS=$__BuildOS -DCLR_CMAKE_PACKAGES_DIR=$__PackagesDir -DCLR_CMAKE_PGO_INSTRUMENT=$__PgoInstrument"
+    build_native $__SkipCrossArchBuild "$__CrossArch" "$__CrossCompIntermediatesDir" "$__ExtraCmakeArgs" "cross-architecture component"
+fi
 
 # Build System.Private.CoreLib.
 

@@ -101,7 +101,7 @@ else (WIN32)
     else (CMAKE_SYSTEM_NAME STREQUAL Darwin)
 
       # Ensure that objcopy is present
-      if (DEFINED ENV{CROSSCOMPILE})
+      if (DEFINED ENV{CROSSCOMPILE} AND NOT DEFINED CLR_CROSS_COMPONENTS_BUILD)
         if (CMAKE_SYSTEM_PROCESSOR STREQUAL armv7l OR CMAKE_SYSTEM_PROCESSOR STREQUAL aarch64)
           find_program(OBJCOPY ${TOOLCHAIN}-objcopy)
         elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL i686)
@@ -122,25 +122,40 @@ endif(WIN32)
 
 #----------------------------------------
 # Detect and set platform variable names
-#     - for non-windows build platform & architecture is detected using inbuilt CMAKE variables
+#     - for non-windows build platform & architecture is detected using inbuilt CMAKE variables and cross target component configure
 #     - for windows we use the passed in parameter to CMAKE to determine build arch
 #----------------------------------------
 if(CMAKE_SYSTEM_NAME STREQUAL Linux)
     set(CLR_CMAKE_PLATFORM_UNIX 1)
-    # CMAKE_SYSTEM_PROCESSOR returns the value of `uname -p`.
-    # For the AMD/Intel 64bit architecure two different strings are common.
-    # Linux and Darwin identify it as "x86_64" while FreeBSD and netbsd uses the
-    # "amd64" string. Accept either of the two here.
-    if(CMAKE_SYSTEM_PROCESSOR STREQUAL x86_64 OR CMAKE_SYSTEM_PROCESSOR STREQUAL amd64)
-        set(CLR_CMAKE_PLATFORM_UNIX_AMD64 1)
-    elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL armv7l)
-        set(CLR_CMAKE_PLATFORM_UNIX_ARM 1)
-    elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL aarch64)
-        set(CLR_CMAKE_PLATFORM_UNIX_ARM64 1)
-    elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL i686)
-        set(CLR_CMAKE_PLATFORM_UNIX_X86 1)
+    if(CLR_CROSS_COMPONENTS_BUILD)
+        # CMAKE_HOST_SYSTEM_PROCESSOR returns the value of `uname -p` on host.
+        if(CMAKE_HOST_SYSTEM_PROCESSOR STREQUAL x86_64 OR CMAKE_SYSTEM_PROCESSOR STREQUAL amd64)
+            if(CLR_CMAKE_TARGET_ARCH STREQUAL "arm")
+                set(CLR_CMAKE_PLATFORM_UNIX_X86 1)
+            else()
+                set(CLR_CMAKE_PLATFORM_UNIX_AMD64 1)
+            endif()
+        elseif(CMAKE_HOST_SYSTEM_PROCESSOR STREQUAL i686)
+            set(CLR_CMAKE_PLATFORM_UNIX_X86 1)
+        else()
+            clr_unknown_arch()
+        endif()
     else()
-        clr_unknown_arch()
+        # CMAKE_SYSTEM_PROCESSOR returns the value of `uname -p` on target.
+        # For the AMD/Intel 64bit architecure two different strings are common.
+        # Linux and Darwin identify it as "x86_64" while FreeBSD and netbsd uses the
+        # "amd64" string. Accept either of the two here.
+        if(CMAKE_SYSTEM_PROCESSOR STREQUAL x86_64 OR CMAKE_SYSTEM_PROCESSOR STREQUAL amd64)
+            set(CLR_CMAKE_PLATFORM_UNIX_AMD64 1)
+        elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL armv7l)
+            set(CLR_CMAKE_PLATFORM_UNIX_ARM 1)
+        elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL aarch64)
+            set(CLR_CMAKE_PLATFORM_UNIX_ARM64 1)
+        elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL i686)
+            set(CLR_CMAKE_PLATFORM_UNIX_X86 1)
+        else()
+            clr_unknown_arch()
+        endif()
     endif()
     set(CLR_CMAKE_PLATFORM_LINUX 1)
 
@@ -211,30 +226,30 @@ endif(CMAKE_SYSTEM_NAME STREQUAL SunOS)
 #-------------------------------------------------------------
 # Set HOST architecture variables
 if(CLR_CMAKE_PLATFORM_UNIX_ARM)
-  set(CLR_CMAKE_PLATFORM_ARCH_ARM 1)
-  set(CLR_CMAKE_HOST_ARCH "arm")
-elseif(CLR_CMAKE_PLATFORM_UNIX_ARM64)
-  set(CLR_CMAKE_PLATFORM_ARCH_ARM64 1) 
-  set(CLR_CMAKE_HOST_ARCH "arm64")
-elseif(CLR_CMAKE_PLATFORM_UNIX_AMD64)
-  set(CLR_CMAKE_PLATFORM_ARCH_AMD64 1)
-  set(CLR_CMAKE_HOST_ARCH "x64")
-elseif(CLR_CMAKE_PLATFORM_UNIX_X86)
-  set(CLR_CMAKE_PLATFORM_ARCH_I386 1)
-  set(CLR_CMAKE_HOST_ARCH "x86")
-elseif(WIN32)
-  # CLR_CMAKE_HOST_ARCH is passed in as param to cmake
-  if (CLR_CMAKE_HOST_ARCH STREQUAL x64)
-    set(CLR_CMAKE_PLATFORM_ARCH_AMD64 1)
-  elseif(CLR_CMAKE_HOST_ARCH STREQUAL x86)
-    set(CLR_CMAKE_PLATFORM_ARCH_I386 1)
-  elseif(CLR_CMAKE_HOST_ARCH STREQUAL arm)
     set(CLR_CMAKE_PLATFORM_ARCH_ARM 1)
-  elseif(CLR_CMAKE_HOST_ARCH STREQUAL arm64)
+    set(CLR_CMAKE_HOST_ARCH "arm")
+elseif(CLR_CMAKE_PLATFORM_UNIX_ARM64)
     set(CLR_CMAKE_PLATFORM_ARCH_ARM64 1)
-  else()
-    clr_unknown_arch()
-  endif()
+    set(CLR_CMAKE_HOST_ARCH "arm64")
+elseif(CLR_CMAKE_PLATFORM_UNIX_AMD64)
+    set(CLR_CMAKE_PLATFORM_ARCH_AMD64 1)
+    set(CLR_CMAKE_HOST_ARCH "x64")
+elseif(CLR_CMAKE_PLATFORM_UNIX_X86)
+    set(CLR_CMAKE_PLATFORM_ARCH_I386 1)
+    set(CLR_CMAKE_HOST_ARCH "x86")
+elseif(WIN32)
+    # CLR_CMAKE_HOST_ARCH is passed in as param to cmake
+    if (CLR_CMAKE_HOST_ARCH STREQUAL x64)
+        set(CLR_CMAKE_PLATFORM_ARCH_AMD64 1)
+    elseif(CLR_CMAKE_HOST_ARCH STREQUAL x86)
+        set(CLR_CMAKE_PLATFORM_ARCH_I386 1)
+    elseif(CLR_CMAKE_HOST_ARCH STREQUAL arm)
+        set(CLR_CMAKE_PLATFORM_ARCH_ARM 1)
+    elseif(CLR_CMAKE_HOST_ARCH STREQUAL arm64)
+        set(CLR_CMAKE_PLATFORM_ARCH_ARM64 1)
+    else()
+        clr_unknown_arch()
+    endif()
 endif()
 
 # Set TARGET architecture variables
@@ -259,9 +274,9 @@ endif()
 
 # check if host & target arch combination are valid
 if(NOT(CLR_CMAKE_TARGET_ARCH STREQUAL CLR_CMAKE_HOST_ARCH))
-  if(NOT((CLR_CMAKE_PLATFORM_ARCH_AMD64 AND CLR_CMAKE_TARGET_ARCH_ARM64) OR (CLR_CMAKE_PLATFORM_ARCH_I386 AND CLR_CMAKE_TARGET_ARCH_ARM)))
-    message(FATAL_ERROR "Invalid host and target arch combination")
-  endif()
+    if(NOT((CLR_CMAKE_PLATFORM_ARCH_AMD64 AND CLR_CMAKE_TARGET_ARCH_ARM64) OR (CLR_CMAKE_PLATFORM_ARCH_I386 AND CLR_CMAKE_TARGET_ARCH_ARM)))
+        message(FATAL_ERROR "Invalid host and target arch combination")
+    endif()
 endif()
 
 #-----------------------------------------------------
