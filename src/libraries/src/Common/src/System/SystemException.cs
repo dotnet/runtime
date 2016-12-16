@@ -9,7 +9,6 @@ using System.Runtime.Serialization;
 namespace System {
  
     [Serializable]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public class SystemException : Exception
     {
         public SystemException() 

@@ -222,7 +222,6 @@ namespace System.DirectoryServices.Protocols
     }
 
     [
-    ComVisible(false),
     SuppressUnmanagedCodeSecurityAttribute()
     ]
     internal class Wldap32

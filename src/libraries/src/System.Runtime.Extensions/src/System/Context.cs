@@ -38,7 +38,6 @@ namespace System
 
     [Serializable]
     [AttributeUsage(AttributeTargets.Field, Inherited = false)]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public partial class ContextStaticAttribute : System.Attribute
     {
         public ContextStaticAttribute() { }

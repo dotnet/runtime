@@ -627,7 +627,6 @@ namespace System.DirectoryServices.ActiveDirectory
     }
 
     [
-    ComVisible(false),
     SuppressUnmanagedCodeSecurityAttribute()
     ]
     internal class UnsafeNativeMethods

@@ -9,7 +9,6 @@ namespace System.Configuration.Internal
     // Exposes support in System.dll for functionality that has
     // been moved to System.Configuration.dll
 
-    [ComVisible(false)]
     public interface IConfigurationManagerHelper
     {
         void EnsureNetConfigLoaded();

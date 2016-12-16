@@ -554,8 +554,7 @@ namespace System.DirectoryServices
         /// </devdoc>
         [
             DefaultValue(false),
-            DSDescriptionAttribute(Res.DSAsynchronous),
-            ComVisible(false)
+            DSDescriptionAttribute(Res.DSAsynchronous)
         ]
         public bool Asynchronous
         {
@@ -576,8 +575,7 @@ namespace System.DirectoryServices
         /// </devdoc>
         [
             DefaultValue(false),
-            DSDescriptionAttribute(Res.DSTombstone),
-            ComVisible(false)
+            DSDescriptionAttribute(Res.DSTombstone)
         ]
         public bool Tombstone
         {
@@ -599,8 +597,7 @@ namespace System.DirectoryServices
         [
             DefaultValue(""),
             DSDescriptionAttribute(Res.DSAttributeQuery),
-            TypeConverter("System.Diagnostics.Design.StringValueConverter, " + AssemblyRef.SystemDesign),
-            ComVisible(false)
+            TypeConverter("System.Diagnostics.Design.StringValueConverter, " + AssemblyRef.SystemDesign)
         ]
         public string AttributeScopeQuery
         {
@@ -643,8 +640,7 @@ namespace System.DirectoryServices
         /// </devdoc>
         [
             DefaultValue(DereferenceAlias.Never),
-            DSDescriptionAttribute(Res.DSDerefAlias),
-            ComVisible(false)
+            DSDescriptionAttribute(Res.DSDerefAlias)
         ]
         public DereferenceAlias DerefAlias
         {
@@ -669,8 +665,7 @@ namespace System.DirectoryServices
         /// </devdoc>
         [
             DefaultValue(SecurityMasks.None),
-            DSDescriptionAttribute(Res.DSSecurityMasks),
-            ComVisible(false)
+            DSDescriptionAttribute(Res.DSSecurityMasks)
         ]
         public SecurityMasks SecurityMasks
         {
@@ -695,8 +690,7 @@ namespace System.DirectoryServices
         /// </devdoc>
         [
             DefaultValue(ExtendedDN.None),
-            DSDescriptionAttribute(Res.DSExtendedDn),
-            ComVisible(false)
+            DSDescriptionAttribute(Res.DSExtendedDn)
         ]
         public ExtendedDN ExtendedDN
         {
@@ -721,8 +715,7 @@ namespace System.DirectoryServices
         [
             DefaultValue(null),
             DSDescriptionAttribute(Res.DSDirectorySynchronization),
-            Browsable(false),
-            ComVisible(false)
+            Browsable(false)
         ]
         public DirectorySynchronization DirectorySynchronization
         {
@@ -764,8 +757,7 @@ namespace System.DirectoryServices
         [
             DefaultValue(null),
             DSDescriptionAttribute(Res.DSVirtualListView),
-            Browsable(false),
-            ComVisible(false)
+            Browsable(false)
         ]
         public DirectoryVirtualListView VirtualListView
         {

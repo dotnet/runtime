@@ -5,19 +5,15 @@
 namespace System.Runtime.CompilerServices
 {
     // Types used in Custom Modifier to specify calling conventions.
-    [System.Runtime.InteropServices.ComVisible(true)]
     public class CallConvCdecl
     {
     }
-    [System.Runtime.InteropServices.ComVisible(true)]
     public class CallConvStdcall
     {
     }
-    [System.Runtime.InteropServices.ComVisible(true)]
     public class CallConvThiscall
     {
     }
-    [System.Runtime.InteropServices.ComVisible(true)]
     public class CallConvFastcall
     {
     }
@@ -31,7 +27,6 @@ namespace System.Runtime.CompilerServices
     public static partial class IsByValue
     {
     }
-    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public static partial class IsCopyConstructed
     {
     }
@@ -66,14 +61,13 @@ namespace System.Runtime.CompilerServices
         public ScopelessEnumAttribute(){}
     }
     [Serializable]
-    [AttributeUsage(AttributeTargets.Struct, Inherited = true),System.Runtime.InteropServices.ComVisible(true)]
+    [AttributeUsage(AttributeTargets.Struct, Inherited = true)]
     public sealed class NativeCppClassAttribute : Attribute
     {
         public NativeCppClassAttribute(){}
     }
     [Serializable]
     [AttributeUsage (AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Enum | AttributeTargets.Interface,AllowMultiple=true, Inherited=false)]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public sealed class RequiredAttributeAttribute : Attribute
     {
         private Type requiredContract;

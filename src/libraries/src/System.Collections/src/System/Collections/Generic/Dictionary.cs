@@ -13,7 +13,6 @@ namespace System.Collections.Generic
 {
     [DebuggerTypeProxy(typeof(IDictionaryDebugView<,>))]
     [DebuggerDisplay("Count = {Count}")]
-    [System.Runtime.InteropServices.ComVisible(false)]
     [Serializable]
     public class Dictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictionary, IReadOnlyDictionary<TKey, TValue>, ISerializable, IDeserializationCallback
     {
