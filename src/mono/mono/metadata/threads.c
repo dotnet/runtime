@@ -1086,6 +1086,8 @@ mono_thread_detach_internal (MonoInternalThread *thread)
 	if (mono_thread_cleanup_fn)
 		mono_thread_cleanup_fn (thread_get_tid (thread));
 
+	mono_memory_barrier ();
+
 	if (mono_gc_is_moving ()) {
 		MONO_GC_UNREGISTER_ROOT (thread->thread_pinning_ref);
 		thread->thread_pinning_ref = NULL;
