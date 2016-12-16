@@ -4,14 +4,18 @@
 
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Diagnostics.Tracing;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace System.Transactions.Tests
 {
     public class AsyncTransactionScopeTests
     {
+        private readonly ITestOutputHelper output;
+
         // Number of threads to create
         private const int iterations = 5;
 
@@ -21,101 +25,405 @@ namespace System.Transactions.Tests
         private static bool s_throwExceptionDefaultOrBeforeAwait;
         private static bool s_throwExceptionAfterAwait;
 
+        public AsyncTransactionScopeTests(ITestOutputHelper output)
+        {
+            this.output = output;
+        }
+
         /// <summary>
         /// This test case will verify various Async TransactionScope usage with task and async/await and also nested mixed mode(legacy TS and async TS) usage.
         /// </summary>
-        [Fact]
-        public void AsyncTSTest()
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(3)]
+        [InlineData(4)]
+        [InlineData(5)]
+        [InlineData(6)]
+        [InlineData(7)]
+        [InlineData(8)]
+        [InlineData(9)]
+        [InlineData(10)]
+        [InlineData(11)]
+        [InlineData(12)]
+        [InlineData(13)]
+        [InlineData(14)]
+        [InlineData(15)]
+        [InlineData(16)]
+        [InlineData(17)]
+        [InlineData(18)]
+        [InlineData(19)]
+        [InlineData(20)]
+        [InlineData(21)]
+        [InlineData(22)]
+        [InlineData(23)]
+        [InlineData(24)]
+        [InlineData(25)]
+        [InlineData(26)]
+        [InlineData(27)]
+        [InlineData(28)]
+        [InlineData(29)]
+        [InlineData(30)]
+        [InlineData(31)]
+        [InlineData(32)]
+        [InlineData(33)]
+        [InlineData(34)]
+        [InlineData(35)]
+        [InlineData(36)]
+        [InlineData(37)]
+        [InlineData(38)]
+        [InlineData(39)]
+        [InlineData(40)]
+        [InlineData(41)]
+        [InlineData(42)]
+        [InlineData(43)]
+        [InlineData(44)]
+        [InlineData(45)]
+        [InlineData(46)]
+        [InlineData(47)]
+        [InlineData(48)]
+        [InlineData(49)]
+        [InlineData(50)]
+        [InlineData(51)]
+        [InlineData(52)]
+        [InlineData(53)]
+        [InlineData(54)]
+
+        public void AsyncTSTest(int variation)
         {
-            // Running exception test first to make sure any unintentional leak in ambient transaction during exception will be detected when subsequent test are run.
-            HandleException(true, false, () => DoSyncTxWork(true, null));
-            HandleException(true, false, () => AssertTransactionNullAndWaitTask(DoAsyncTxWorkAsync(true, null)));
-            HandleException(true, false, () => SyncTSL2NestedTxWork(false, false, true, null));
-            HandleException(false, true, () => AssertTransactionNullAndWaitTask(DoAsyncTSL2NestedTxWorkAsync(false, true, false, true, false, null)));
-            HandleException(true, false, () => AssertTransactionNullAndWaitTask(DoAsyncTSL2NestedTxWorkAsync(false, true, true, false, false, null)));
-            HandleException(true, false, () => AssertTransactionNullAndWaitTask(DoAsyncTSL3SyncTSL2NestedTxWorkAsync(false, true, true, false, true, false, null)));
-            HandleException(false, true, () => AssertTransactionNullAndWaitTask(DoTaskWorkAsync(false, false, null)));
-            HandleException(false, true, () => SyncTSTaskWork(false, null));
-
-            // The following test has Task under TransactionScope and has few variations.  
-            DoTaskUnderAsyncTS(false, null);
-            Task.Factory.StartNew(() => DoTaskUnderAsyncTS(false, null)).Wait();
-            SyncTSDoTaskUnderAsyncTS(false, false, null);
-            SyncTSDoTaskUnderAsyncTS(false, true, null);
-            Task.Factory.StartNew(() => SyncTSDoTaskUnderAsyncTS(false, true, null)).Wait();
-
-            // Simple Sync TS test  
-            DoSyncTxWork(false, null);
-            DoSyncTxWork(true, null);
-
-            // Simple Async TS test. "await" points explicitly switches threads across continuations.  
-            AssertTransactionNullAndWaitTask(DoAsyncTxWorkAsync(false, null));
-            AssertTransactionNullAndWaitTask(DoAsyncTxWorkAsync(true, null));
-
-            // Nested TS test. Parent is Sync TS, child TS can be sync or async.
-            SyncTSL2NestedTxWork(false, false, false, null);
-            SyncTSL2NestedTxWork(false, false, true, null);
-            SyncTSL2NestedTxWork(false, true, false, null);
-            SyncTSL2NestedTxWork(false, true, true, null);
-            SyncTSL2NestedTxWork(true, false, false, null);
-            SyncTSL2NestedTxWork(true, false, true, null);
-            SyncTSL2NestedTxWork(true, true, false, null);
-            SyncTSL2NestedTxWork(true, true, true, null);
-
-            // 2 level deep nested TS test. Parent is Aync TS, child TS can be sync or async. 
-            AssertTransactionNullAndWaitTask(DoAsyncTSL2NestedTxWorkAsync(false, false, false, false, false, null));
-            AssertTransactionNullAndWaitTask(DoAsyncTSL2NestedTxWorkAsync(false, false, true, false, false, null));
-            AssertTransactionNullAndWaitTask(DoAsyncTSL2NestedTxWorkAsync(false, true, false, false, false, null));
-            AssertTransactionNullAndWaitTask(DoAsyncTSL2NestedTxWorkAsync(false, true, true, false, false, null));
-            AssertTransactionNullAndWaitTask(DoAsyncTSL2NestedTxWorkAsync(true, false, false, false, false, null));
-            AssertTransactionNullAndWaitTask(DoAsyncTSL2NestedTxWorkAsync(true, false, true, false, false, null));
-            AssertTransactionNullAndWaitTask(DoAsyncTSL2NestedTxWorkAsync(true, true, false, false, false, null));
-            AssertTransactionNullAndWaitTask(DoAsyncTSL2NestedTxWorkAsync(true, true, true, false, false, null));
-
-            // Introduce various "await" points to switch threads before/after child TransactionScope.
-            // Introduce some Task variations by running the test under Task. 
-            AssertTransactionNullAndWaitTask(DoAsyncTSL2NestedTxWorkAsync(false, true, false, true, false, null));
-            AssertTransactionNullAndWaitTask(DoAsyncTSL2NestedTxWorkAsync(false, true, false, false, true, null));
-            Task.Factory.StartNew(() => AssertTransactionNullAndWaitTask(DoAsyncTSL2NestedTxWorkAsync(false, true, false, false, true, null))).Wait();
-            AssertTransactionNullAndWaitTask(DoAsyncTSL2NestedTxWorkAsync(false, true, false, true, true, null));
-
-            // 3 level deep nested TS test. 
-            SyncTSL3AsyncTSL2NestedTxWork(false, false, true, false, false, true, null);
-            Task.Factory.StartNew(() => SyncTSL3AsyncTSL2NestedTxWork(false, false, true, false, false, true, null)).Wait();
-            SyncTSL3AsyncTSL2NestedTxWork(false, false, true, false, true, false, null);
-
-            AssertTransactionNullAndWaitTask(DoAsyncTSL3SyncTSL2NestedTxWorkAsync(false, false, false, true, false, false, null));
-            AssertTransactionNullAndWaitTask(DoAsyncTSL3SyncTSL2NestedTxWorkAsync(false, false, true, false, false, true, null));
-            AssertTransactionNullAndWaitTask(DoAsyncTSL3SyncTSL2NestedTxWorkAsync(false, false, true, false, true, false, null));
-            AssertTransactionNullAndWaitTask(DoAsyncTSL3SyncTSL2NestedTxWorkAsync(false, false, true, false, true, true, null));
-            Task.Factory.StartNew(() => AssertTransactionNullAndWaitTask(DoAsyncTSL3SyncTSL2NestedTxWorkAsync(false, false, true, false, true, true, null))).Wait();
-
-            AssertTransactionNullAndWaitTask(DoAsyncTSL3SyncTSL2NestedTxWorkAsync(false, true, true, false, false, true, null));
-            AssertTransactionNullAndWaitTask(DoAsyncTSL3SyncTSL2NestedTxWorkAsync(false, true, true, false, true, false, null));
-            AssertTransactionNullAndWaitTask(DoAsyncTSL3SyncTSL2NestedTxWorkAsync(false, true, true, false, true, true, null));
-            Task.Factory.StartNew(() => AssertTransactionNullAndWaitTask(DoAsyncTSL3SyncTSL2NestedTxWorkAsync(false, true, true, false, true, true, null))).Wait();
-
-            // Have bunch of parallel tasks running various nested TS test cases. There parallel tasks are wrapped by a TransactionScope. 
-            AssertTransactionNullAndWaitTask(DoTaskWorkAsync(false, false, null));
-            SyncTSTaskWork(false, null);
-            SyncTSTaskWork(true, null);
-            AssertTransactionNullAndWaitTask(DoAsyncTSTaskWorkAsync(false, false, null));
-            AssertTransactionNullAndWaitTask(DoAsyncTSTaskWorkAsync(true, false, null));
-
-            // Final test - wrap the DoAsyncTSTaskWorkAsync in syncronous scope
-            string txId1 = null;
-            string txId2 = null;
-
-            using (TransactionScope scope = new TransactionScope())
+            using (var listener = new TestEventListener(new Guid("8ac2d80a-1f1a-431b-ace4-bff8824aef0b"), System.Diagnostics.Tracing.EventLevel.Verbose))
             {
-                txId1 = AssertAndGetCurrentTransactionId();
-                Task task = DoAsyncTSTaskWorkAsync(false, false, txId1);
-                txId2 = AssertAndGetCurrentTransactionId();
-                task.Wait();
-                scope.Complete();
-            }
+                var events = new ConcurrentQueue<EventWrittenEventArgs>();
 
-            VerifyTxId(false, null, txId1, txId2);
+                bool success = false;
+                try
+                {
+                    listener.RunWithCallback(events.Enqueue, () =>
+                    {
+                        switch (variation)
+                        {
+                            // Running exception test first to make sure any unintentional leak in ambient transaction during exception will be detected when subsequent test are run.
+                            case 0:
+                                {
+                                    HandleException(true, false, () => DoSyncTxWork(true, null));
+                                    break;
+                                }
+                            case 1:
+                                {
+                                    HandleException(true, false, () => AssertTransactionNullAndWaitTask(DoAsyncTxWorkAsync(true, null)));
+                                    break;
+                                }
+                            case 2:
+                                {
+                                    HandleException(true, false, () => SyncTSL2NestedTxWork(false, false, true, null));
+                                    break;
+                                }
+                            case 3:
+                                {
+                                    HandleException(false, true, () => AssertTransactionNullAndWaitTask(DoAsyncTSL2NestedTxWorkAsync(false, true, false, true, false, null)));
+                                    break;
+                                }
+                            case 4:
+                                {
+                                    HandleException(true, false, () => AssertTransactionNullAndWaitTask(DoAsyncTSL2NestedTxWorkAsync(false, true, true, false, false, null)));
+                                    break;
+                                }
+                            case 5:
+                                {
+                                    HandleException(true, false, () => AssertTransactionNullAndWaitTask(DoAsyncTSL3SyncTSL2NestedTxWorkAsync(false, true, true, false, true, false, null)));
+                                    break;
+                                }
+                            case 6:
+                                {
+                                    HandleException(false, true, () => AssertTransactionNullAndWaitTask(DoTaskWorkAsync(false, false, null)));
+                                    break;
+                                }
+                            case 7:
+                                {
+                                    HandleException(false, true, () => SyncTSTaskWork(false, null));
+                                    break;
+                                }
+
+                            // The following test has Task under TransactionScope and has few variations.  
+                            case 8:
+                                {
+                                    DoTaskUnderAsyncTS(false, null);
+                                    break;
+                                }
+                            case 9:
+                                {
+                                    Task.Factory.StartNew(() => DoTaskUnderAsyncTS(false, null)).Wait();
+                                    break;
+                                }
+                            case 10:
+                                {
+                                    SyncTSDoTaskUnderAsyncTS(false, false, null);
+                                    break;
+                                }
+                            case 11:
+                                {
+                                    SyncTSDoTaskUnderAsyncTS(false, true, null);
+                                    break;
+                                }
+                            case 12:
+                                {
+                                    Task.Factory.StartNew(() => SyncTSDoTaskUnderAsyncTS(false, true, null)).Wait();
+                                    break;
+                                }
+
+                            // Simple Sync TS test  
+                            case 13:
+                                {
+                                    DoSyncTxWork(false, null);
+                                    break;
+                                }
+                            case 14:
+                                {
+                                    DoSyncTxWork(true, null);
+                                    break;
+                                }
+
+                            // Simple Async TS test. "await" points explicitly switches threads across continuations.  
+                            case 15:
+                                {
+                                    AssertTransactionNullAndWaitTask(DoAsyncTxWorkAsync(false, null));
+                                    break;
+                                }
+                            case 16:
+                                {
+                                    AssertTransactionNullAndWaitTask(DoAsyncTxWorkAsync(true, null));
+                                    break;
+                                }
+
+                            // Nested TS test. Parent is Sync TS, child TS can be sync or async.
+                            case 17:
+                                {
+                                    SyncTSL2NestedTxWork(false, false, false, null);
+                                    break;
+                                }
+                            case 18:
+                                {
+                                    SyncTSL2NestedTxWork(false, false, true, null);
+                                    break;
+                                }
+                            case 19:
+                                {
+                                    SyncTSL2NestedTxWork(false, true, false, null);
+                                    break;
+                                }
+                            case 20:
+                                {
+                                    SyncTSL2NestedTxWork(false, true, true, null);
+                                    break;
+                                }
+                            case 21:
+                                {
+                                    SyncTSL2NestedTxWork(true, false, false, null);
+                                    break;
+                                }
+                            case 22:
+                                {
+                                    SyncTSL2NestedTxWork(true, false, true, null);
+                                    break;
+                                }
+                            case 23:
+                                {
+                                    SyncTSL2NestedTxWork(true, true, false, null);
+                                    break;
+                                }
+                            case 24:
+                                {
+                                    SyncTSL2NestedTxWork(true, true, true, null);
+                                    break;
+                                }
+
+                            // 2 level deep nested TS test. Parent is Aync TS, child TS can be sync or async. 
+                            case 25:
+                                {
+                                    AssertTransactionNullAndWaitTask(DoAsyncTSL2NestedTxWorkAsync(false, false, false, false, false, null));
+                                    break;
+                                }
+                            case 26:
+                                {
+                                    AssertTransactionNullAndWaitTask(DoAsyncTSL2NestedTxWorkAsync(false, false, true, false, false, null));
+                                    break;
+                                }
+                            case 27:
+                                {
+                                    AssertTransactionNullAndWaitTask(DoAsyncTSL2NestedTxWorkAsync(false, true, false, false, false, null));
+                                    break;
+                                }
+                            case 28:
+                                {
+                                    AssertTransactionNullAndWaitTask(DoAsyncTSL2NestedTxWorkAsync(false, true, true, false, false, null));
+                                    break;
+                                }
+                            case 29:
+                                {
+                                    AssertTransactionNullAndWaitTask(DoAsyncTSL2NestedTxWorkAsync(true, false, false, false, false, null));
+                                    break;
+                                }
+                            case 30:
+                                {
+                                    AssertTransactionNullAndWaitTask(DoAsyncTSL2NestedTxWorkAsync(true, false, true, false, false, null));
+                                    break;
+                                }
+                            case 31:
+                                {
+                                    AssertTransactionNullAndWaitTask(DoAsyncTSL2NestedTxWorkAsync(true, true, false, false, false, null));
+                                    break;
+                                }
+                            case 32:
+                                {
+                                    AssertTransactionNullAndWaitTask(DoAsyncTSL2NestedTxWorkAsync(true, true, true, false, false, null));
+                                    break;
+                                }
+
+                            // Introduce various "await" points to switch threads before/after child TransactionScope.
+                            // Introduce some Task variations by running the test under Task.
+                            case 33:
+                                {
+                                    AssertTransactionNullAndWaitTask(DoAsyncTSL2NestedTxWorkAsync(false, true, false, true, false, null));
+                                    break;
+                                }
+                            case 34:
+                                {
+                                    AssertTransactionNullAndWaitTask(DoAsyncTSL2NestedTxWorkAsync(false, true, false, false, true, null));
+                                    break;
+                                }
+                            case 35:
+                                {
+                                    Task.Factory.StartNew(() => AssertTransactionNullAndWaitTask(DoAsyncTSL2NestedTxWorkAsync(false, true, false, false, true, null))).Wait();
+                                    break;
+                                }
+                            case 36:
+                                {
+                                    AssertTransactionNullAndWaitTask(DoAsyncTSL2NestedTxWorkAsync(false, true, false, true, true, null));
+                                    break;
+                                }
+
+                            // 3 level deep nested TS test. 
+                            case 37:
+                                {
+                                    SyncTSL3AsyncTSL2NestedTxWork(false, false, true, false, false, true, null);
+                                    break;
+                                }
+                            case 38:
+                                {
+                                    Task.Factory.StartNew(() => SyncTSL3AsyncTSL2NestedTxWork(false, false, true, false, false, true, null)).Wait();
+                                    break;
+                                }
+                            case 39:
+                                {
+                                    SyncTSL3AsyncTSL2NestedTxWork(false, false, true, false, true, false, null);
+                                    break;
+                                }
+
+                            case 40:
+                                {
+                                    AssertTransactionNullAndWaitTask(DoAsyncTSL3SyncTSL2NestedTxWorkAsync(false, false, false, true, false, false, null));
+                                    break;
+                                }
+                            case 41:
+                                {
+                                    AssertTransactionNullAndWaitTask(DoAsyncTSL3SyncTSL2NestedTxWorkAsync(false, false, true, false, false, true, null));
+                                    break;
+                                }
+                            case 42:
+                                {
+                                    AssertTransactionNullAndWaitTask(DoAsyncTSL3SyncTSL2NestedTxWorkAsync(false, false, true, false, true, false, null));
+                                    break;
+                                }
+                            case 43:
+                                {
+                                    AssertTransactionNullAndWaitTask(DoAsyncTSL3SyncTSL2NestedTxWorkAsync(false, false, true, false, true, true, null));
+                                    break;
+                                }
+                            case 44:
+                                {
+                                    Task.Factory.StartNew(() => AssertTransactionNullAndWaitTask(DoAsyncTSL3SyncTSL2NestedTxWorkAsync(false, false, true, false, true, true, null))).Wait();
+                                    break;
+                                }
+
+                            case 45:
+                                {
+                                    AssertTransactionNullAndWaitTask(DoAsyncTSL3SyncTSL2NestedTxWorkAsync(false, true, true, false, false, true, null));
+                                    break;
+                                }
+                            case 46:
+                                {
+                                    AssertTransactionNullAndWaitTask(DoAsyncTSL3SyncTSL2NestedTxWorkAsync(false, true, true, false, true, false, null));
+                                    break;
+                                }
+                            case 47:
+                                {
+                                    AssertTransactionNullAndWaitTask(DoAsyncTSL3SyncTSL2NestedTxWorkAsync(false, true, true, false, true, true, null));
+                                    break;
+                                }
+                            case 48:
+                                {
+                                    Task.Factory.StartNew(() => AssertTransactionNullAndWaitTask(DoAsyncTSL3SyncTSL2NestedTxWorkAsync(false, true, true, false, true, true, null))).Wait();
+                                    break;
+                                }
+
+                            // Have bunch of parallel tasks running various nested TS test cases. There parallel tasks are wrapped by a TransactionScope. 
+                            case 49:
+                                {
+                                    AssertTransactionNullAndWaitTask(DoTaskWorkAsync(false, false, null));
+                                    break;
+                                }
+                            case 50:
+                                {
+                                    SyncTSTaskWork(false, null);
+                                    break;
+                                }
+                            case 51:
+                                {
+                                    SyncTSTaskWork(true, null);
+                                    break;
+                                }
+                            case 52:
+                                {
+                                    AssertTransactionNullAndWaitTask(DoAsyncTSTaskWorkAsync(false, false, null));
+                                    break;
+                                }
+                            case 53:
+                                {
+                                    AssertTransactionNullAndWaitTask(DoAsyncTSTaskWorkAsync(true, false, null));
+                                    break;
+                                }
+
+                            // Final test - wrap the DoAsyncTSTaskWorkAsync in syncronous scope
+                            case 54:
+                                {
+                                    string txId1 = null;
+                                    string txId2 = null;
+
+                                    using (TransactionScope scope = new TransactionScope())
+                                    {
+                                        txId1 = AssertAndGetCurrentTransactionId();
+                                        Task task = DoAsyncTSTaskWorkAsync(false, false, txId1);
+                                        txId2 = AssertAndGetCurrentTransactionId();
+                                        task.Wait();
+                                        scope.Complete();
+                                    }
+
+                                    VerifyTxId(false, null, txId1, txId2);
+                                    break;
+                                }
+                        }
+                    });
+                    success = true;
+                }
+                finally
+                {
+                    if (!success)
+                    {
+                        HelperFunctions.DisplaySysTxTracing(output, events);
+                    }
+                }
+            }
         }
 
         [Theory]
@@ -642,7 +950,7 @@ namespace System.Transactions.Tests
                 Assert.NotEqual(txId1, txId2);
                 if (child1ScopeOption == TransactionScopeOption.Suppress)
                 {
-                    Assert.Equal(txId2, null);
+                    Assert.Equal(null, txId2);
                 }
             }
 
@@ -655,7 +963,7 @@ namespace System.Transactions.Tests
                 Assert.NotEqual(txId1, txId4);
                 if (child2ScopeOption == TransactionScopeOption.Suppress)
                 {
-                    Assert.Equal(txId4, null);
+                    Assert.Equal(null, txId4);
                 }
             }
         }
@@ -746,7 +1054,7 @@ namespace System.Transactions.Tests
 
                 if (scopeOption == TransactionScopeOption.Suppress)
                 {
-                    Assert.Equal(txId1, null);
+                    Assert.Equal(null, txId1);
                     Assert.Equal(txId1, txId2);
                     Assert.Equal(txId2, txId3);
                 }
@@ -1351,12 +1659,12 @@ namespace System.Transactions.Tests
         }
         public static void AssertTransactionNull()
         {
-            Assert.Equal(Transaction.Current, null);
+            Assert.Equal(null, Transaction.Current);
         }
 
         public static void AssertTransactionNotNull()
         {
-            Assert.NotEqual(Transaction.Current, null);
+            Assert.NotEqual(null, Transaction.Current);
         }
 
         public static string AssertAndGetCurrentTransactionId()
