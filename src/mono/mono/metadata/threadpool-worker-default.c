@@ -604,6 +604,8 @@ worker_thread (gpointer data)
 	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_THREADPOOL, "[%p] worker finishing", mono_native_thread_id_get ());
 
 	mono_refcount_dec (worker);
+
+	return 0;
 }
 
 static gboolean
@@ -854,6 +856,8 @@ monitor_thread (gpointer data)
 	// printf ("monitor_thread: stop\n");
 
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_THREADPOOL, "[%p] monitor thread, finished", mono_native_thread_id_get ());
+
+	return 0;
 }
 
 static void
