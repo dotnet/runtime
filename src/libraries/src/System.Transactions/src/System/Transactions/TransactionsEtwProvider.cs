@@ -1203,10 +1203,21 @@ namespace System.Transactions
         {
             Guid guid = Guid.Empty;
 
-            if (str.Length>=36)
+            if (str.IndexOf('-')>=0)
+            { // GUID with dash
+                if (str.Length>=36)
+                {
+                    string str_part1 = str.Substring(0,36);
+                    Guid.TryParse(str_part1, out guid);
+                }
+            }
+            else
             {
-                string str_part1 = str.Substring(0,36);
-                Guid.TryParse(str_part1, out guid);
+                if (str.Length>=32)
+                {
+                    string str_part1 = str.Substring(0,32);
+                    Guid.TryParse(str_part1, out guid);
+                }
             }
             SetCurrentThreadActivityId(guid);
         }
