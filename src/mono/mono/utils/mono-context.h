@@ -139,7 +139,8 @@ typedef struct {
 		 }																\
 	} while (0)
 #else
-#define MONO_CONTEXT_GET_CURRENT(ctx) \
+
+#define MONO_CONTEXT_GET_CURRENT_GREGS(ctx) \
 	__asm__ __volatile__(   \
 	"movl $0x0, %c[eax](%0)\n" \
 	"mov %%ebx, %c[ebx](%0)\n" \
@@ -162,6 +163,40 @@ typedef struct {
 		[esi] MONO_CONTEXT_OFFSET (esi, 0, mgreg_t), \
 		[edi] MONO_CONTEXT_OFFSET (edi, 0, mgreg_t) \
 	: "memory")
+
+#ifdef UCONTEXT_REG_XMM
+#define MONO_CONTEXT_GET_CURRENT_FREGS(ctx) \
+	do { \
+		__asm__ __volatile__ ( \
+			"movups %%xmm0, %c[xmm0](%0)\n"	\
+			"movups %%xmm1, %c[xmm1](%0)\n"	\
+			"movups %%xmm2, %c[xmm2](%0)\n"	\
+			"movups %%xmm3, %c[xmm3](%0)\n"	\
+			"movups %%xmm4, %c[xmm4](%0)\n"	\
+			"movups %%xmm5, %c[xmm5](%0)\n"	\
+			"movups %%xmm6, %c[xmm6](%0)\n"	\
+			"movups %%xmm7, %c[xmm7](%0)\n"	\
+			: \
+			: "a" (&(ctx)),	\
+				[xmm0] MONO_CONTEXT_OFFSET (fregs, X86_XMM0, MonoContextSimdReg), \
+				[xmm1] MONO_CONTEXT_OFFSET (fregs, X86_XMM1, MonoContextSimdReg), \
+				[xmm2] MONO_CONTEXT_OFFSET (fregs, X86_XMM2, MonoContextSimdReg), \
+				[xmm3] MONO_CONTEXT_OFFSET (fregs, X86_XMM3, MonoContextSimdReg), \
+				[xmm4] MONO_CONTEXT_OFFSET (fregs, X86_XMM4, MonoContextSimdReg), \
+				[xmm5] MONO_CONTEXT_OFFSET (fregs, X86_XMM5, MonoContextSimdReg), \
+				[xmm6] MONO_CONTEXT_OFFSET (fregs, X86_XMM6, MonoContextSimdReg), \
+				[xmm7] MONO_CONTEXT_OFFSET (fregs, X86_XMM7, MonoContextSimdReg), \
+	} while (0)
+#else
+#define MONO_CONTEXT_GET_CURRENT_FREGS(ctx)
+#endif
+
+#define MONO_CONTEXT_GET_CURRENT(ctx) \
+    do {	\
+		MONO_CONTEXT_GET_CURRENT_GREGS(ctx);	\
+		MONO_CONTEXT_GET_CURRENT_FREGS(ctx);	\
+	} while (0)
+
 #endif
 
 #define MONO_ARCH_HAS_MONO_CONTEXT 1
