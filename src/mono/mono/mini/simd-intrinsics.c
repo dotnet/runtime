@@ -2224,7 +2224,11 @@ emit_vector_t_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSigna
 		/* Emit index check for the end (index + len - 1 < array length) */
 		end_index_reg = alloc_ireg (cfg);
 		EMIT_NEW_BIALU_IMM (cfg, ins, OP_IADD_IMM, end_index_reg, index_ins->dreg, len - 1);
-		MONO_EMIT_BOUNDS_CHECK (cfg, array_ins->dreg, MonoArray, max_length, end_index_reg);
+
+		int length_reg = alloc_ireg (cfg);
+		MONO_EMIT_NEW_LOAD_MEMBASE_OP_FAULT (cfg, OP_LOADI4_MEMBASE, length_reg, array_ins->dreg, MONO_STRUCT_OFFSET (MonoArray, max_length));
+		MONO_EMIT_NEW_BIALU (cfg, OP_COMPARE, -1, length_reg, end_index_reg);
+		MONO_EMIT_NEW_COND_EXC (cfg, LE_UN, "ArgumentException");
 
 		/* Load the simd reg into the array slice */
 		ldelema_ins = mini_emit_ldelema_1_ins (cfg, mono_class_from_mono_type (etype), array_ins, index_ins, TRUE);
