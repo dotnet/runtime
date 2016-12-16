@@ -202,7 +202,6 @@ typedef struct {
 /* X86 uses jit_tls->lmf (See emit_push_lmf ()) */
 #define MONO_ARCH_ENABLE_MONO_LMF_VAR 1
 #endif
-#define MONO_ARCH_HAVE_FAST_TLS (mono_x86_have_fast_tls ())
 #define MONO_ARCH_IMT_REG X86_EDX
 #define MONO_ARCH_VTABLE_REG X86_EDX
 #define MONO_ARCH_RGCTX_REG MONO_ARCH_IMT_REG
@@ -337,9 +336,6 @@ typedef struct {
 
 guint32
 mono_x86_get_this_arg_offset (MonoMethodSignature *sig);
-
-gboolean
-mono_x86_have_fast_tls (void);
 
 void
 mono_x86_throw_exception (mgreg_t *regs, MonoObject *exc, 

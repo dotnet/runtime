@@ -166,7 +166,6 @@ typedef struct {
 #else
 
 #define MONO_ARCH_REDZONE_SIZE 0
-#define MONO_ARCH_HAVE_FAST_TLS 1
 
 #endif
 
