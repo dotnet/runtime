@@ -37,6 +37,12 @@ namespace System.Linq
         /// <summary>
         /// Whether <see cref="Remove"/> has been called on this set.
         /// </summary>
+        /// <remarks>
+        /// When <see cref="Remove"/> runs in debug builds, this flag is set to <c>true</c>.
+        /// Other methods assert that this flag is <c>false</c> in debug builds, because
+        /// they make optimizations that may not be correct if <see cref="Remove"/> is called
+        /// beforehand.
+        /// </remarks>
         private bool _haveRemoved;
 #endif
 
@@ -190,7 +196,7 @@ namespace System.Linq
         internal int Count => _count;
 
         /// <summary>
-        /// Gets the hash code of the provided value with its sign bit zeroed out.
+        /// Gets the hash code of the provided value with its sign bit zeroed out, so that modulo has a positive result.
         /// </summary>
         /// <param name="value">The value to hash.</param>
         /// <returns>The lower 31 bits of the value's hash code.</returns>

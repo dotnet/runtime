@@ -405,7 +405,7 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// An iterator that shares code among iterators returned by <see cref="Enumerable.Concat"/>.
+        /// Represents the concatenation of two or more <see cref="IEnumerable{TSource}"/>.
         /// </summary>
         /// <typeparam name="TSource">The type of the source enumerables.</typeparam>
         private abstract class ConcatIterator<TSource> : Iterator<TSource>, IIListProvider<TSource>
