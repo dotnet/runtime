@@ -7,7 +7,6 @@ using System.Runtime.InteropServices;
 
 namespace System.Configuration.Internal
 {
-    [ComVisible(false)]
     public interface IInternalConfigHost
     {
         // change notification support - runtime only

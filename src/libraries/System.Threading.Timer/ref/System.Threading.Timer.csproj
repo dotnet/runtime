@@ -7,7 +7,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Threading.Timer.cs" />
-    <Compile Include="System.Threading.Timer.Manual.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

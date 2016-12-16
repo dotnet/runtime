@@ -11,9 +11,6 @@ namespace System.DirectoryServices.Interop
     using System.IO;
     using System.Text;
 
-    [
-    System.Runtime.InteropServices.ComVisible(false)
-    ]
     internal class NativeMethods
     {
         public enum AuthenticationModes

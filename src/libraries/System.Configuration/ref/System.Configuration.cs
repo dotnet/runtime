@@ -956,12 +956,10 @@ namespace System.Configuration.Internal
         System.Configuration.Internal.IInternalConfigRoot Root { get; }
         void Init(System.Type typeConfigHost, params object[] hostInitParams);
     }
-    [System.Runtime.InteropServices.ComVisibleAttribute(false)]
     public partial interface IConfigurationManagerHelper
     {
         void EnsureNetConfigLoaded();
     }
-    [System.Runtime.InteropServices.ComVisibleAttribute(false)]
     public partial interface IConfigurationManagerInternal
     {
         string ApplicationConfigUri { get; }
@@ -976,7 +974,6 @@ namespace System.Configuration.Internal
         bool SupportsUserConfig { get; }
         string UserConfigFilename { get; }
     }
-    [System.Runtime.InteropServices.ComVisibleAttribute(false)]
     public partial interface IInternalConfigClientHost
     {
         string GetExeConfigPath();
@@ -986,13 +983,11 @@ namespace System.Configuration.Internal
         bool IsLocalUserConfig(string configPath);
         bool IsRoamingUserConfig(string configPath);
     }
-    [System.Runtime.InteropServices.ComVisibleAttribute(false)]
     public partial interface IInternalConfigConfigurationFactory
     {
         System.Configuration.Configuration Create(System.Type typeConfigHost, params object[] hostInitConfigurationParams);
         string NormalizeLocationSubPath(string subPath, System.Configuration.Internal.IConfigErrorInfo errorInfo);
     }
-    [System.Runtime.InteropServices.ComVisibleAttribute(false)]
     public partial interface IInternalConfigHost
     {
         bool IsRemote { get; }
@@ -1033,7 +1028,6 @@ namespace System.Configuration.Internal
         void WriteCompleted(string streamName, bool success, object writeContext);
         void WriteCompleted(string streamName, bool success, object writeContext, bool assertPermissions);
     }
-    [System.Runtime.InteropServices.ComVisibleAttribute(false)]
     public partial interface IInternalConfigRecord
     {
         string ConfigPath { get; }
@@ -1045,7 +1039,6 @@ namespace System.Configuration.Internal
         void Remove();
         void ThrowIfInitErrors();
     }
-    [System.Runtime.InteropServices.ComVisibleAttribute(false)]
     public partial interface IInternalConfigRoot
     {
         bool IsDesignTime { get; }
@@ -1058,13 +1051,11 @@ namespace System.Configuration.Internal
         void Init(System.Configuration.Internal.IInternalConfigHost host, bool isDesignTime);
         void RemoveConfig(string configPath);
     }
-    [System.Runtime.InteropServices.ComVisibleAttribute(false)]
     public partial interface IInternalConfigSettingsFactory
     {
         void CompleteInit();
         void SetConfigurationSystem(System.Configuration.Internal.IInternalConfigSystem internalConfigSystem, bool initComplete);
     }
-    [System.Runtime.InteropServices.ComVisibleAttribute(false)]
     public partial interface IInternalConfigSystem
     {
         bool SupportsUserConfig { get; }

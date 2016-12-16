@@ -32,7 +32,6 @@ namespace System.DirectoryServices.Interop
     }
 
     [
-    ComVisible(false),
     SuppressUnmanagedCodeSecurityAttribute()
     ]
     internal class UnsafeNativeMethods

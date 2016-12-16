@@ -9,7 +9,6 @@ namespace System.Configuration.Internal
     // Exposes support in System.Configuration for functions that were
     // once available in System.dll
 
-    [ComVisible(false)]
     public interface IConfigurationManagerInternal
     {
         bool SupportsUserConfig { get; }

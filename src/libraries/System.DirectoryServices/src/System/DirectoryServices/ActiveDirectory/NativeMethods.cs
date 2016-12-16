@@ -293,7 +293,6 @@ namespace System.DirectoryServices.ActiveDirectory
         public string callerName;
     }
 
-    [System.Runtime.InteropServices.ComVisible(false)]
     [SuppressUnmanagedCodeSecurityAttribute()]
     internal sealed class NativeMethods
     {
@@ -593,7 +592,6 @@ namespace System.DirectoryServices.ActiveDirectory
     }
 
     [
-        ComVisible(false),
         SuppressUnmanagedCodeSecurityAttribute()
         ]
     internal sealed class NativeComInterfaces

@@ -79,7 +79,6 @@ namespace System.DirectoryServices
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        [ComVisible(false)]
         public string PropertyName
         {
             get
