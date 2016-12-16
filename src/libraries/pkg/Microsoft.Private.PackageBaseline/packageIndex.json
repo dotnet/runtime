@@ -785,6 +785,21 @@
       ],
       "BaselineVersion": "4.4.0"
     },
+    "runtime.ubuntu.16.04-arm.runtime.native.System": {
+      "BaselineVersion": "4.4.0"
+    },
+    "runtime.ubuntu.16.04-arm.runtime.native.System.IO.Compression": {
+      "BaselineVersion": "4.4.0"
+    },
+    "runtime.ubuntu.16.04-arm.runtime.native.System.Net.Http": {
+      "BaselineVersion": "4.4.0"
+    },
+    "runtime.ubuntu.16.04-arm.runtime.native.System.Net.Security": {
+      "BaselineVersion": "4.4.0"
+    },
+    "runtime.ubuntu.16.04-arm.runtime.native.System.Security.Cryptography": {
+      "BaselineVersion": "4.4.0"
+    },
     "runtime.unix.Microsoft.Win32.Primitives": {
       "StableVersions": [
         "4.0.1",
@@ -3091,6 +3106,9 @@
       "StableVersions": [
         "4.3.0"
       ],
+      "BaselineVersion": "4.4.0"
+    },
+    "runtime.ubuntu.16.04-arm.runtime.native.System.Security.Cryptography.OpenSsl": {
       "BaselineVersion": "4.4.0"
     },
     "runtime.ubuntu.16.10-x64.runtime.native.System.IO.Compression": {
