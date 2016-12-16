@@ -105,6 +105,7 @@ __BuildArch=x64
 __BuildType=Debug
 __CMakeArgs=DEBUG
 __BuildOS=Linux
+__TargetGroup=netcoreapp
 __NumProc=1
 __UnprocessedBuildArgs=
 __CrossBuild=0
@@ -157,6 +158,10 @@ while :; do
             ;;
         osx)
             __BuildOS=OSX
+            ;;
+        --targetgroup)
+            shift
+            __TargetGroup=$1
             ;;
         --numproc)
             shift
@@ -244,8 +249,8 @@ case $CPUName in
 esac
 
 # Set the remaining variables based upon the determined build configuration
-__IntermediatesDir="$__rootbinpath/obj/$__BuildOS.$__BuildArch.$__BuildType/Native"
-__BinDir="$__rootbinpath/$__BuildOS.$__BuildArch.$__BuildType/Native"
+__IntermediatesDir="$__rootbinpath/obj/runtime/$__TargetGroup-$__BuildOS-$__BuildType-$__BuildArch"
+__BinDir="$__rootbinpath/runtime/$__TargetGroup-$__BuildOS-$__BuildType-$__BuildArch"
 
 # Make the directories necessary for build if they don't exist
 setup_dirs
