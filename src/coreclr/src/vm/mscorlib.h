@@ -1353,7 +1353,6 @@ DEFINE_METHOD(JIT_HELPERS,          CONTAINSREFERENCES,     ContainsReferences, 
 DEFINE_CLASS(UNSAFE,                CompilerServices,       Unsafe)
 DEFINE_METHOD(UNSAFE,               AS_POINTER,             AsPointer, NoSig)
 DEFINE_METHOD(UNSAFE,               SIZEOF,                 SizeOf, NoSig)
-DEFINE_METHOD(UNSAFE,               AS_REF,                 AsRef, NoSig)
 DEFINE_METHOD(UNSAFE,               BYREF_AS,               As, NoSig)
 DEFINE_METHOD(UNSAFE,               BYREF_ADD,              Add, NoSig)
 DEFINE_METHOD(UNSAFE,               BYREF_ARE_SAME,         AreSame, NoSig)

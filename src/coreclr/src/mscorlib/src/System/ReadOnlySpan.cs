@@ -104,7 +104,7 @@ namespace System
             if (length < 0)
                 ThrowHelper.ThrowArgumentOutOfRangeException();
 
-            _pointer = new ByReference<T>(ref Unsafe.AsRef<T>(pointer));
+            _pointer = new ByReference<T>(ref Unsafe.As<byte, T>(ref *(byte*)pointer));
             _length = length;
         }
 
