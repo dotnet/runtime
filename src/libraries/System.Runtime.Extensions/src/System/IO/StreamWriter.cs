@@ -814,6 +814,11 @@ namespace System.IO
 
         public override Task WriteLineAsync(string value)
         {
+            if (value == null)
+            {
+                return WriteLineAsync();
+            }
+
             // If we have been inherited into a subclass, the following implementation could be incorrect
             // since it does not call through to Write() which a subclass might have overridden.  
             // To be safe we will only use this implementation in cases where we know it is safe to do so,
