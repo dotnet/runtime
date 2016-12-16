@@ -7096,8 +7096,6 @@ namespace System.Xml.Tests
 
             public int writeValue_27()
             {
-                CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;  // So that the number format doesn't depend on the current culture
-
                 if (CurVariation.Desc.Equals("elem.WriteValue(new DateTimeOffset)"))
                 {
                     Console.WriteLine("elem.WriteValue(new DateTimeOffset)");
@@ -7110,6 +7108,7 @@ namespace System.Xml.Tests
                 Type dest = typeMapper[destStr];
                 bool isValid = (bool)CurVariation.Params[3];
                 object expVal = (object)CurVariation.Params[4];
+                CultureInfo origCulture = null;
 
                 if (expVal == null && destStr.Contains("DateTime"))
                     expVal = value[destStr];
@@ -7131,6 +7130,8 @@ namespace System.Xml.Tests
                 }
                 try
                 {
+                    origCulture = CultureInfo.CurrentCulture;
+                    CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;  // So that the number format doesn't depend on the current culture
                     VerifyValue(dest, expVal, param);
                 }
                 catch (XmlException)
@@ -7157,6 +7158,10 @@ namespace System.Xml.Tests
                 {
                     if (!isValid) return TEST_PASS;
                     CError.Compare(false, "ArgumentException");
+                }
+                finally
+                {
+                    CultureInfo.CurrentCulture = origCulture;
                 }
                 return (isValid) ? TEST_PASS : TEST_FAIL;
             }
