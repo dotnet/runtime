@@ -795,7 +795,7 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, ArrayStack<G
             BlockRange().Remove(node);
             break;
 
-#ifdef _TARGET_XARCH_
+#if defined(_TARGET_XARCH_) || defined(_TARGET_ARM_)
         case GT_CLS_VAR:
         {
             // Class vars that are the target of an assignment will get rewritten into

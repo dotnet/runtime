@@ -4598,6 +4598,10 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
         codeGen->regSet.rsMaskResvd |= RBM_OPT_RSVD;
         assert(REG_OPT_RSVD != REG_FP);
     }
+    // compRsvdRegCheck() has read out the FramePointerUsed property, but doLinearScan()
+    // tries to overwrite it later. This violates the PhasedVar rule and triggers an assertion.
+    // TODO-ARM-Bug?: What is the proper way to handle this situation?
+    codeGen->resetFramePointerUsedWritePhase();
 
 #ifdef DEBUG
     //
