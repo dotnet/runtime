@@ -222,8 +222,12 @@
   .method public hidebysig static !!T& AsRef<T>(void* source) cil managed aggressiveinlining
   {
         .custom instance void System.Runtime.Versioning.NonVersionableAttribute::.ctor() = ( 01 00 00 00 )
+        .locals (int32&)
         .maxstack 1
         ldarg.0
+        // Roundtrip via a local to avoid type mismatch on return that the JIT inliner chokes on.
+        stloc.0
+        ldloc.0
         ret
   } // end of method Unsafe::AsRef
 
