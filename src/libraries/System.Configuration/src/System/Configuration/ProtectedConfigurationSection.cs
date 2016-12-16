@@ -100,7 +100,7 @@ namespace System.Configuration
         {
             return string.Format(CultureInfo.InvariantCulture, EncryptedSectionTemplate,
                 sectionName, // The section to encrypt
-                BaseConfigurationRecord.KeywordProtectionProvider, // protectionProvider keyword
+                BaseConfigurationRecord.ProtectionProviderAttibute, // protectionProvider keyword
                 providerName, // The provider name
                 encryptedXml // the encrypted xml
                 );

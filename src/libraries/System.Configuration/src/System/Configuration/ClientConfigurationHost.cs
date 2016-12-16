@@ -214,70 +214,50 @@ namespace System.Configuration
             }
         }
 
-        // config path support
         public override bool IsConfigRecordRequired(string configPath)
         {
             string configName = ConfigPathUtility.GetName(configPath);
             switch (configName)
             {
-                default:
-                    // should never get here
-                    return false;
-
                 case MachineConfigName:
                 case ExeConfigName:
                     return true;
-
                 case RoamingUserConfigName:
                     // Makes the design easier even if we only have an empty Roaming config record.
                     return HasRoamingConfig || HasLocalConfig;
-
                 case LocalUserConfigName:
                     return HasLocalConfig;
+                default:
+                    // should never get here
+                    Debug.Fail("unexpected config name: " + configName);
+                    return false;
             }
         }
 
-        // stream support
         public override string GetStreamName(string configPath)
         {
             string configName = ConfigPathUtility.GetName(configPath);
-            if (_fileMap != null)
-            {
-                switch (configName)
-                {
-                    default:
-                        // should never get here
-                        goto case MachineConfigName;
-                    case MachineConfigName:
-                        return _fileMap.MachineConfigFilename;
-                    case ExeConfigName:
-                        return _fileMap.ExeConfigFilename;
-                    case RoamingUserConfigName:
-                        return _fileMap.RoamingUserConfigFilename;
-                    case LocalUserConfigName:
-                        return _fileMap.LocalUserConfigFilename;
-                }
-            }
-
             switch (configName)
             {
+                case MachineConfigName:
+                    return _fileMap?.MachineConfigFilename ?? MachineConfigFilePath;
+                case ExeConfigName:
+                    return _fileMap?.ExeConfigFilename ?? ConfigPaths.ApplicationConfigUri;
+                case RoamingUserConfigName:
+                    return _fileMap?.RoamingUserConfigFilename ?? ConfigPaths.RoamingConfigFilename;
+                case LocalUserConfigName:
+                    return _fileMap?.LocalUserConfigFilename ?? ConfigPaths.LocalConfigFilename;
                 default:
                     // should never get here
+                    Debug.Fail("unexpected config name: " + configName);
                     goto case MachineConfigName;
-                case MachineConfigName:
-                    return MachineConfigFilePath;
-                case ExeConfigName:
-                    return ConfigPaths.ApplicationConfigUri;
-                case RoamingUserConfigName:
-                    return ConfigPaths.RoamingConfigFilename;
-                case LocalUserConfigName:
-                    return ConfigPaths.LocalConfigFilename;
             }
         }
 
         public override string GetStreamNameForConfigSource(string streamName, string configSource)
         {
-            if (IsFile(streamName)) return Host.GetStreamNameForConfigSource(streamName, configSource);
+            if (IsFile(streamName))
+                return Host.GetStreamNameForConfigSource(streamName, configSource);
 
             int index = streamName.LastIndexOf('/');
             if (index < 0)
@@ -293,7 +273,6 @@ namespace System.Configuration
         {
             return IsFile(streamName) ? Host.GetStreamVersion(streamName) : s_version;
         }
-
 
         // default impl treats name as a file name
         // null means stream doesn't exist for this name

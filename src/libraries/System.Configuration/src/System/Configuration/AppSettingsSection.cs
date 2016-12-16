@@ -43,10 +43,18 @@ namespace System.Configuration
         private static ConfigurationPropertyCollection EnsureStaticPropertyBag()
         {
             if (s_properties != null) return s_properties;
-            ConfigurationProperty propAppSettings = new ConfigurationProperty(null,
-                typeof(KeyValueConfigurationCollection), null, ConfigurationPropertyOptions.IsDefaultCollection);
-            ConfigurationProperty propFile = new ConfigurationProperty("file", typeof(string), string.Empty,
-                ConfigurationPropertyOptions.None);
+
+            ConfigurationProperty propAppSettings = new ConfigurationProperty(
+                name: null,
+                type: typeof(KeyValueConfigurationCollection),
+                defaultValue: null,
+                options: ConfigurationPropertyOptions.IsDefaultCollection);
+
+            ConfigurationProperty propFile = new ConfigurationProperty(
+                name: "file",
+                type: typeof(string),
+                defaultValue: string.Empty,
+                options: ConfigurationPropertyOptions.None);
 
             ConfigurationPropertyCollection properties = new ConfigurationPropertyCollection
             {
@@ -73,8 +81,8 @@ namespace System.Configuration
             base.Reset(parentSection);
             if (!string.IsNullOrEmpty((string)base[s_propFile]))
             {
-                // don't inherit from the parent
-                SetPropertyValue(s_propFile, null, true); // ignore the lock to prevent inheritence
+                // don't inherit from the parent by ignoring locks
+                SetPropertyValue(prop: s_propFile, value: null, ignoreLocks: true);
             }
         }
 
@@ -90,57 +98,43 @@ namespace System.Configuration
             // Determine file location
             string configFile = ElementInformation.Source;
 
-            if (string.IsNullOrEmpty(configFile))
-                sourceFileFullPath = File;
-            else
-            {
-                string configFileDirectory = Path.GetDirectoryName(configFile);
-                sourceFileFullPath = Path.Combine(configFileDirectory, File);
-            }
+            sourceFileFullPath = string.IsNullOrEmpty(configFile)
+                ? File
+                : Path.Combine(Path.GetDirectoryName(configFile), File);
 
             if (!IO.File.Exists(sourceFileFullPath)) return;
             int lineOffset;
             string rawXml;
 
-            using (
-                Stream sourceFileStream = new FileStream(sourceFileFullPath, FileMode.Open, FileAccess.Read,
-                    FileShare.Read))
+            using (Stream sourceFileStream = new FileStream(sourceFileFullPath, FileMode.Open, FileAccess.Read, FileShare.Read))
+            using (XmlUtil xmlUtil = new XmlUtil(sourceFileStream, sourceFileFullPath, true))
             {
-                using (XmlUtil xmlUtil = new XmlUtil(sourceFileStream, sourceFileFullPath, true))
+                if (xmlUtil.Reader.Name != elementName)
+                    throw new ConfigurationErrorsException(
+                        string.Format(SR.Config_name_value_file_section_file_invalid_root, elementName),
+                        xmlUtil);
+
+                lineOffset = xmlUtil.Reader.LineNumber;
+                rawXml = xmlUtil.CopySection();
+
+                // Detect if there is any XML left over after the section
+                while (!xmlUtil.Reader.EOF)
                 {
-                    if (xmlUtil.Reader.Name != elementName)
-                    {
-                        throw new ConfigurationErrorsException(
-                            string.Format(SR.Config_name_value_file_section_file_invalid_root, elementName),
-                            xmlUtil);
-                    }
+                    XmlNodeType t = xmlUtil.Reader.NodeType;
+                    if (t != XmlNodeType.Comment)
+                        throw new ConfigurationErrorsException(SR.Config_source_file_format, xmlUtil);
 
-                    lineOffset = xmlUtil.Reader.LineNumber;
-                    rawXml = xmlUtil.CopySection();
-
-                    // Detect if there is any XML left over after the section
-                    while (!xmlUtil.Reader.EOF)
-                    {
-                        XmlNodeType t = xmlUtil.Reader.NodeType;
-                        if (t != XmlNodeType.Comment)
-                        {
-                            throw new ConfigurationErrorsException(SR.Config_source_file_format,
-                                xmlUtil);
-                        }
-
-                        xmlUtil.Reader.Read();
-                    }
+                    xmlUtil.Reader.Read();
                 }
             }
 
             ConfigXmlReader internalReader = new ConfigXmlReader(rawXml, sourceFileFullPath, lineOffset);
             internalReader.Read();
+
             if (internalReader.MoveToNextAttribute())
-            {
                 throw new ConfigurationErrorsException(
                     string.Format(SR.Config_base_unrecognized_attribute, internalReader.Name),
                     (XmlReader)internalReader);
-            }
 
             internalReader.MoveToElement();
 

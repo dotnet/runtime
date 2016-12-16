@@ -16,8 +16,8 @@ namespace System.Configuration.Internal
     // taken begin with the prefix "hl", for example, "hlFindConfigRecord".
     internal sealed class InternalConfigRoot : IInternalConfigRoot
     {
-        private ReaderWriterLock _hierarchyLock; // lock to protect hierarchy
-        private bool _isDesignTime; // Is the hierarchy for runtime or designtime?
+        private ReaderWriterLock _hierarchyLock;
+        private bool _isDesignTime;
 
         internal InternalConfigRoot() { }
 
@@ -128,24 +128,16 @@ namespace System.Configuration.Internal
                 string currentConfigPath = string.Join(BaseConfigurationRecord.ConfigPathSeparatorString, parts, 0,
                     index);
 
-                //
-                // create new records
-                //
-
+                // Create new records
                 while ((index < parts.Length) && currentRecord.HlNeedsChildFor(parts[index]))
                 {
                     string configName = parts[index];
                     currentConfigPath = ConfigPathUtility.Combine(currentConfigPath, configName);
                     BaseConfigurationRecord childRecord;
 
-                    if (_isDesignTime)
-                        childRecord = MgmtConfigurationRecord.Create(this, currentRecord, currentConfigPath, null);
-                    else
-                    {
-                        childRecord =
-                            (BaseConfigurationRecord)
-                            RuntimeConfigurationRecord.Create(this, currentRecord, currentConfigPath);
-                    }
+                    childRecord = _isDesignTime
+                        ? MgmtConfigurationRecord.Create(this, currentRecord, currentConfigPath, null)
+                        : (BaseConfigurationRecord) RuntimeConfigurationRecord.Create(this, currentRecord, currentConfigPath);
 
                     currentRecord.HlAddChild(configName, childRecord);
 
@@ -172,19 +164,13 @@ namespace System.Configuration.Internal
             // Protect against unexpected recursive entry on this thread.
             // We do this in retail, too, because the results would be very bad if this were to fail,
             // and the testing for this is not easy for all scenarios.
-            Debug.Assert(!_hierarchyLock.IsReaderLockHeld, "!_hierarchyLock.IsReaderLockHeld");
             if (_hierarchyLock.IsReaderLockHeld)
-            {
                 throw ExceptionUtil.UnexpectedError(
                     "System.Configuration.Internal.InternalConfigRoot::AcquireHierarchyLockForRead - reader lock already held by this thread");
-            }
 
-            Debug.Assert(!_hierarchyLock.IsWriterLockHeld, "!_hierarchyLock.IsWriterLockHeld");
             if (_hierarchyLock.IsWriterLockHeld)
-            {
                 throw ExceptionUtil.UnexpectedError(
                     "System.Configuration.Internal.InternalConfigRoot::AcquireHierarchyLockForRead - writer lock already held by this thread");
-            }
 
             _hierarchyLock.AcquireReaderLock(-1);
         }
@@ -202,16 +188,12 @@ namespace System.Configuration.Internal
             // We do this in retail, too, because the results would be very bad if this were to fail,
             // and the testing for this is not easy for all scenarios.
             if (_hierarchyLock.IsReaderLockHeld)
-            {
                 throw ExceptionUtil.UnexpectedError(
                     "System.Configuration.Internal.InternalConfigRoot::AcquireHierarchyLockForWrite - reader lock already held by this thread");
-            }
 
             if (_hierarchyLock.IsWriterLockHeld)
-            {
                 throw ExceptionUtil.UnexpectedError(
                     "System.Configuration.Internal.InternalConfigRoot::AcquireHierarchyLockForWrite - writer lock already held by this thread");
-            }
 
             _hierarchyLock.AcquireWriterLock(-1);
         }
@@ -220,7 +202,8 @@ namespace System.Configuration.Internal
         {
             Debug.Assert(!_hierarchyLock.IsReaderLockHeld, "!_hierarchyLock.IsReaderLockHeld");
 
-            if (_hierarchyLock.IsWriterLockHeld) _hierarchyLock.ReleaseWriterLock();
+            if (_hierarchyLock.IsWriterLockHeld)
+                _hierarchyLock.ReleaseWriterLock();
         }
 
         // Find a config record.
@@ -255,9 +238,7 @@ namespace System.Configuration.Internal
             try
             {
                 int index;
-
                 AcquireHierarchyLockForWrite();
-
                 HlFindConfigRecord(parts, out index, out currentRecord);
 
                 // Return if not found, or does not match the one we are trying to remove.
@@ -294,9 +275,7 @@ namespace System.Configuration.Internal
             {
                 int index;
                 BaseConfigurationRecord currentRecord;
-
                 AcquireHierarchyLockForRead();
-
                 HlFindConfigRecord(parts, out index, out currentRecord);
 
                 // clear result only if configRecord it is still in the hierarchy

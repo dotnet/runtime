@@ -25,10 +25,12 @@ namespace System.Configuration.Provider
                     throw new InvalidOperationException(SR.Provider_Already_Initialized);
                 _initialized = true;
             }
+
             if (name == null)
                 throw new ArgumentNullException(nameof(name));
             if (name.Length == 0)
                 throw new ArgumentException(SR.Config_provider_name_null_or_empty, nameof(name));
+
             _name = name;
             if (config != null)
             {

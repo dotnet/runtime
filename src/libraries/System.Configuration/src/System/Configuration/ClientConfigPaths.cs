@@ -14,12 +14,12 @@ namespace System.Configuration
         internal const string UserConfigFilename = "user.config";
 
         private const string ConfigExtension = ".config";
-        private const int MaxPath = 260;
         private const int MaxLengthToUse = 25;
         private const string FileUriLocal = "file:///";
         private const string FileUriUnc = "file://";
         private const string FileUri = "file:";
         private const string HttpUri = "http://";
+
         private const string StrongNameDesc = "StrongName";
         private const string UrlDesc = "Url";
         private const string PathDesc = "Path";
@@ -85,7 +85,7 @@ namespace System.Configuration
                 applicationUri = Path.GetFullPath(exePath);
                 if (!File.Exists(applicationUri))
                 {
-                    throw ExceptionUtil.ParameterInvalid("exePath");
+                    throw ExceptionUtil.ParameterInvalid(nameof(exePath));
                 }
 
                 applicationFilename = applicationUri;
@@ -108,21 +108,21 @@ namespace System.Configuration
             SetNamesAndVersion(applicationFilename, exeAssembly, isHttp);
             if (isHttp) return;
 
-            string part1 = Validate(_companyName, true);
-            string validAppDomainName = Validate(AppDomain.CurrentDomain.FriendlyName, true);
+            string part1 = Validate(_companyName, limitSize: true);
+            string validAppDomainName = Validate(AppDomain.CurrentDomain.FriendlyName, limitSize: true);
             string applicationUriLower = !string.IsNullOrEmpty(ApplicationUri)
                 ? ApplicationUri.ToLower(CultureInfo.InvariantCulture)
                 : null;
             string namePrefix = !string.IsNullOrEmpty(validAppDomainName)
                 ? validAppDomainName
-                : Validate(ProductName, true);
+                : Validate(ProductName, limitSize: true);
             string hashSuffix = GetTypeAndHashSuffix(applicationUriLower);
 
             string part2 = !string.IsNullOrEmpty(namePrefix) && !string.IsNullOrEmpty(hashSuffix)
                 ? namePrefix + hashSuffix
                 : null;
 
-            string part3 = Validate(ProductVersion, false);
+            string part3 = Validate(ProductVersion, limitSize: false);
 
             string dirSuffix = CombineIfValid(CombineIfValid(part1, part2), part3);
 
@@ -193,18 +193,16 @@ namespace System.Configuration
         // Combines path2 with path1 if possible, else returns null.
         private static string CombineIfValid(string path1, string path2)
         {
-            string returnPath = null;
-
             if ((path1 == null) || (path2 == null)) return null;
 
             try
             {
-                string combinedPath = Path.Combine(path1, path2);
-                if (combinedPath.Length < MaxPath) returnPath = combinedPath;
+                return Path.Combine(path1, path2);
             }
-            catch { }
-
-            return returnPath;
+            catch
+            {
+                return null;
+            }
         }
 
         // Returns a type and hash suffix based on what used to come from app domain evidence.
@@ -330,7 +328,7 @@ namespace System.Configuration
 
         // Makes the passed in string suitable to use as a path name by replacing illegal characters
         // with underscores. Additionally, we do two things - replace spaces too with underscores and
-        // limit the resultant string's length to MAX_LENGTH_TO_USE if limitSize is true.
+        // limit the resultant string's length to MaxLengthToUse if limitSize is true.
         private static string Validate(string str, bool limitSize)
         {
             string validated = str;
