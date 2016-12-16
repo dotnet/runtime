@@ -324,7 +324,11 @@ namespace Microsoft.DotNet.Host.Build
             var dotnet = DotNetCli.Stage0;
 
             dotnet.Restore("--verbosity", "verbose", "--disable-parallel")
-                .WorkingDirectory(Path.Combine(c.BuildContext.BuildDirectory, "tools"))
+                .WorkingDirectory(Path.Combine(c.BuildContext.BuildDirectory, "tools", "dotnet-deb-tool"))
+                .Execute()
+                .EnsureSuccessful();
+            dotnet.Restore("--verbosity", "verbose", "--disable-parallel", "--infer-runtimes")
+                .WorkingDirectory(Path.Combine(c.BuildContext.BuildDirectory, "tools", "independent"))
                 .Execute()
                 .EnsureSuccessful();
 

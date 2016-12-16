@@ -10,7 +10,7 @@ call "%__ProjectDir%\init-tools.cmd"
 
 :: Restore dependencies mainly to obtain runtime.json
 pushd "%__ProjectDir%\deps"
-"%__DotNet%" restore --source "https://dotnet.myget.org/F/dotnet-core/api/v3/index.json" --packages "%__ProjectDir%\packages"
+"%__DotNet%" restore --configfile "%__ProjectDir%\..\NuGet.Config" --packages "%__ProjectDir%\packages"
 popd
 
 :: Clean up existing nupkgs
