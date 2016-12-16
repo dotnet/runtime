@@ -7,18 +7,35 @@
 init_rid_plat()
 {
     # Detect Distro
-    if [ -e /etc/os-release ]; then
-        source /etc/os-release
-
-        if [[ "$ID" == "rhel" && $VERSION_ID = 7* ]]; then
-            export __rid_plat="rhel.7"
-        elif [[ "$ID" == "centos" && "$VERSION_ID" = "7" ]]; then
-            export __rid_plat="rhel.7"
+    if [ $__CrossBuild == 1 ]; then
+        if [ -z $ROOTFS_DIR ]; then
+            echo "ROOTFS_DIR is not defined."
+            exit -1
         else
-            export __rid_plat="$ID.$VERSION_ID"
+            if [ -e $ROOTFS_DIR/etc/os-release ]; then
+                source $ROOTFS_DIR/etc/os-release
+                if [ "$__runtime_id" ==  "$ID.$VERSION_ID-$__build_arch" ]; then
+                    export __rid_plat="$ID.$VERSION_ID"
+                else
+                    echo "ROOTFS_DIR and Target RID are different. Please use correct rootfs for cross compilation."
+                    exit -1
+                fi
+            fi
         fi
     else
-        export __rid_plat=
+        if [ -e /etc/os-release ]; then
+            source /etc/os-release
+
+            if [[ "$ID" == "rhel" && $VERSION_ID = 7* ]]; then
+                export __rid_plat="rhel.7"
+            elif [[ "$ID" == "centos" && "$VERSION_ID" = "7" ]]; then
+                export __rid_plat="rhel.7"
+            else
+                export __rid_plat="$ID.$VERSION_ID"
+            fi
+        else
+            export __rid_plat=
+        fi
     fi
 }
 
