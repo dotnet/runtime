@@ -691,7 +691,7 @@ register_dyn_icall (gpointer func, const char *name, const char *sigstr, gboolea
 MonoLMF *
 mono_get_lmf (void)
 {
-#if defined(MONO_ARCH_ENABLE_MONO_LMF_VAR)
+#if defined(MONO_ARCH_ENABLE_MONO_LMF_VAR) && defined(HAVE_GET_TLS_ADDR)
 	return (MonoLMF *)mono_tls_get_lmf ();
 #else
 	MonoJitTlsData *jit_tls;
@@ -716,11 +716,11 @@ mono_get_lmf_addr (void)
 void
 mono_set_lmf (MonoLMF *lmf)
 {
-#if defined(MONO_ARCH_ENABLE_MONO_LMF_VAR)
+#if defined(MONO_ARCH_ENABLE_MONO_LMF_VAR) && defined(HAVE_GET_TLS_ADDR)
 	mono_tls_set_lmf (lmf);
-#endif
-
+#else
 	(*mono_get_lmf_addr ()) = lmf;
+#endif
 }
 
 MonoJitTlsData*
@@ -852,7 +852,15 @@ setup_jit_tls_data (gpointer stack_start, gpointer abort_func)
 
 	jit_tls->first_lmf = lmf;
 
-#if defined(MONO_ARCH_ENABLE_MONO_LMF_VAR)
+	/*
+	 * We can have 2 configurations for accessing lmf.
+	 * We can use only the tls_lmf_addr variable, which will store the address of
+	 * jit_tls->lmf, or, if we have MONO_ARCH_ENABLE_MONO_LMF_VAR enabled, we can
+	 * use both tls_lmf_addr and tls_lmf variables (in this case we need to have
+	 * means of getting the address of a tls variable; this can be done always
+	 * when using __thread or, on osx, even when using pthread)
+	 */
+#if defined(MONO_ARCH_ENABLE_MONO_LMF_VAR) && defined(HAVE_GET_TLS_ADDR)
 	/* jit_tls->lmf is unused */
 	mono_tls_set_lmf (lmf);
 	mono_set_lmf_addr (mono_tls_get_tls_addr (TLS_KEY_LMF));

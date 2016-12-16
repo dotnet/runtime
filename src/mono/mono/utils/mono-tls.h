@@ -12,6 +12,7 @@
 #ifndef __MONO_TLS_H__
 #define __MONO_TLS_H__
 
+#include <config.h>
 #include <glib.h>
 
 /* TLS entries used by the runtime */
@@ -26,6 +27,17 @@ typedef enum {
 	TLS_KEY_LMF_ADDR = 5,
 	TLS_KEY_NUM = 6
 } MonoTlsKey;
+
+#ifdef HAVE_KW_THREAD
+#define USE_KW_THREAD
+#endif
+
+#if defined(USE_KW_THREAD)
+#define HAVE_GET_TLS_ADDR
+#elif defined(TARGET_MACH) && (defined(TARGET_X86) || defined(TARGET_AMD64))
+/* mono_mach_get_tls_address_from_thread is untested for arm/arm64 */
+#define HAVE_GET_TLS_ADDR
+#endif
 
 #ifdef HOST_WIN32
 
