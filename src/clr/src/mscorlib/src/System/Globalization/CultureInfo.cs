@@ -893,20 +893,20 @@ namespace System.Globalization {
             get
             {
                 Contract.Ensures(Contract.Result<CultureInfo>() != null);
+                CultureInfo culture = null;
 
                 if (null == m_parent)
                 {
                     try
                     {
                         string parentName = this.m_cultureData.SPARENT;
-
                         if (String.IsNullOrEmpty(parentName))
                         {
-                            m_parent = InvariantCulture;
+                            culture = InvariantCulture;
                         }
                         else
                         {
-                            m_parent = new CultureInfo(parentName, this.m_cultureData.UseUserOverride);
+                            culture = new CultureInfo(parentName, this.m_cultureData.UseUserOverride);
                         }
                     }
                     catch (ArgumentException)
@@ -914,8 +914,10 @@ namespace System.Globalization {
                         // For whatever reason our IPARENT or SPARENT wasn't correct, so use invariant
                         // We can't allow ourselves to fail.  In case of custom cultures the parent of the
                         // current custom culture isn't installed.
-                        m_parent =  InvariantCulture;
+                        culture =  InvariantCulture;
                     }
+
+                    Interlocked.CompareExchange<CultureInfo>(ref m_parent, culture, null);
                 }
                 return m_parent;
             }
