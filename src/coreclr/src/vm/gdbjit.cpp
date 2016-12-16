@@ -741,6 +741,28 @@ const unsigned char AbbrevTable[] = {
     15, DW_TAG_variable, DW_CHILDREN_no, DW_AT_specification, DW_FORM_ref4, DW_AT_location, DW_FORM_exprloc,
         0, 0,
 
+    16, DW_TAG_try_block, DW_CHILDREN_no,
+        DW_AT_low_pc, DW_FORM_addr, DW_AT_high_pc,
+#if defined(_TARGET_AMD64_)
+        DW_FORM_data8,
+#elif defined(_TARGET_ARM_)
+        DW_FORM_data4,
+#else
+#error Unsupported platform!
+#endif
+        0, 0,
+
+    17, DW_TAG_catch_block, DW_CHILDREN_no,
+        DW_AT_low_pc, DW_FORM_addr, DW_AT_high_pc,
+#if defined(_TARGET_AMD64_)
+        DW_FORM_data8,
+#elif defined(_TARGET_ARM_)
+        DW_FORM_data4,
+#else
+#error Unsupported platform!
+#endif
+        0, 0,
+
     0
 };
 
@@ -765,6 +787,18 @@ struct __attribute__((packed)) DebugInfoCU
     uint32_t m_line_num;
 } debugInfoCU = {
     1, 0, DW_LANG_C89, 0, 0
+};
+
+struct __attribute__((packed)) DebugInfoTryCatchSub
+{
+    uint8_t m_sub_abbrev;
+#if defined(_TARGET_AMD64_)
+    uint64_t m_sub_low_pc, m_sub_high_pc;
+#elif defined(_TARGET_ARM_)
+    uint32_t m_sub_low_pc, m_sub_high_pc;
+#else
+#error Unsupported platform!
+#endif
 };
 
 struct __attribute__((packed)) DebugInfoSub
@@ -1116,6 +1150,109 @@ void FunctionMember::DumpStrings(char* ptr, int& offset)
     DumpLinkageName(ptr, offset);
 }
 
+bool FunctionMember::GetBlockInNativeCode(int blockILOffset, int blockILLen, TADDR *startOffset, TADDR *endOffset)
+{
+    PCODE pCode = md->GetNativeCode();
+
+    const int blockILEnd = blockILOffset + blockILLen;
+
+    *startOffset = 0;
+    *endOffset = 0;
+
+    bool inBlock = false;
+
+    for (int i = 0; i < nlines; ++i)
+    {
+        TADDR nativeOffset = lines[i].nativeOffset + pCode;
+
+        // Limit block search to current function addresses
+        if (nativeOffset < m_sub_low_pc)
+            continue;
+        if (nativeOffset >= m_sub_low_pc + m_sub_high_pc)
+            break;
+
+        // Skip invalid IL offsets
+        switch(lines[i].ilOffset)
+        {
+            case ICorDebugInfo::PROLOG:
+            case ICorDebugInfo::EPILOG:
+            case ICorDebugInfo::NO_MAPPING:
+                continue;
+            default:
+                break;
+        }
+
+        // Check if current IL is within block
+        if (blockILOffset <= lines[i].ilOffset && lines[i].ilOffset < blockILEnd)
+        {
+            if (!inBlock)
+            {
+                *startOffset = lines[i].nativeOffset;
+                inBlock = true;
+            }
+        }
+        else
+        {
+            if (inBlock)
+            {
+                *endOffset = lines[i].nativeOffset;
+                inBlock = false;
+                break;
+            }
+        }
+    }
+
+    if (inBlock)
+    {
+        *endOffset = m_sub_low_pc + m_sub_high_pc - pCode;
+    }
+
+    return *endOffset != *startOffset;
+}
+
+void FunctionMember::DumpTryCatchBlock(char* ptr, int& offset, int ilOffset, int ilLen, int abbrev)
+{
+    TADDR startOffset;
+    TADDR endOffset;
+
+    if (!GetBlockInNativeCode(ilOffset, ilLen, &startOffset, &endOffset))
+        return;
+
+    if (ptr != nullptr)
+    {
+        DebugInfoTryCatchSub subEntry;
+
+        subEntry.m_sub_abbrev = abbrev;
+        subEntry.m_sub_low_pc = md->GetNativeCode() + startOffset;
+        subEntry.m_sub_high_pc = endOffset - startOffset;
+
+        memcpy(ptr + offset, &subEntry, sizeof(DebugInfoTryCatchSub));
+    }
+    offset += sizeof(DebugInfoTryCatchSub);
+}
+
+void FunctionMember::DumpTryCatchDebugInfo(char* ptr, int& offset)
+{
+    if (!md)
+        return;
+
+    COR_ILMETHOD *pHeader = md->GetILHeader();
+    COR_ILMETHOD_DECODER header(pHeader);
+
+    unsigned ehCount = header.EHCount();
+
+    for (unsigned e = 0; e < ehCount; e++)
+    {
+        IMAGE_COR_ILMETHOD_SECT_EH_CLAUSE_FAT ehBuff;
+        const IMAGE_COR_ILMETHOD_SECT_EH_CLAUSE_FAT* ehInfo;
+
+        ehInfo = header.EH->EHClause(e, &ehBuff);
+
+        DumpTryCatchBlock(ptr, offset, ehInfo->TryOffset, ehInfo->TryLength, 16);
+        DumpTryCatchBlock(ptr, offset, ehInfo->HandlerOffset, ehInfo->HandlerLength, 17);
+    }
+}
+
 void FunctionMember::DumpDebugInfo(char* ptr, int& offset)
 {
     if (ptr != nullptr)
@@ -1161,6 +1298,8 @@ void FunctionMember::DumpDebugInfo(char* ptr, int& offset)
     {
         vars[i].DumpDebugInfo(ptr, offset);
     }
+
+    DumpTryCatchDebugInfo(ptr, offset);
 
     // terminate children
     if (ptr != nullptr)
@@ -1585,7 +1724,7 @@ void NotifyGdb::MethodCompiled(MethodDesc* MethodDescPtr)
     }
     
     /* Build .debug_info section */
-    if (!BuildDebugInfo(dbgInfo, pTypeMap))
+    if (!BuildDebugInfo(dbgInfo, pTypeMap, symInfo, symInfoLen))
     {
         return;
     }
@@ -2130,7 +2269,7 @@ bool NotifyGdb::BuildDebugAbbrev(MemBuf& buf)
 }
 
 /* Build tge DWARF .debug_info section */
-bool NotifyGdb::BuildDebugInfo(MemBuf& buf, PTK_TypeInfoMap pTypeMap)
+bool NotifyGdb::BuildDebugInfo(MemBuf& buf, PTK_TypeInfoMap pTypeMap, SymbolsInfo* lines, unsigned nlines)
 {
     int totalTypeVarSubSize = 0;
     {
@@ -2145,8 +2284,22 @@ bool NotifyGdb::BuildDebugInfo(MemBuf& buf, PTK_TypeInfoMap pTypeMap)
 
     for (int i = 0; i < method.GetCount(); ++i)
     {
+        method[i]->lines = lines;
+        method[i]->nlines = nlines;
         method[i]->DumpDebugInfo(nullptr, totalTypeVarSubSize);
     }
+    // Drop pointers to lines when exiting current scope
+    struct DropMethodLines
+    {
+        ~DropMethodLines()
+        {
+            for (int i = 0; i < method.GetCount(); ++i)
+            {
+                method[i]->lines = nullptr;
+                method[i]->nlines = 0;
+            }
+        }
+    } dropMethodLines;
 
     //int locSize = GetArgsAndLocalsLen(argsDebug, argsDebugSize, localsDebug, localsDebugSize);
     buf.MemSize = sizeof(DwarfCompUnit) + sizeof(DebugInfoCU) + totalTypeVarSubSize + 2;
