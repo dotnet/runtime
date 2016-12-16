@@ -42,6 +42,7 @@ usage()
     echo "skipmscorlib - do not build mscorlib.dll."
     echo "skiptests - skip the tests in the 'tests' subdirectory."
     echo "skipnuget - skip building nuget packages."
+    echo "portableLinux - build for Portable Linux Distribution"
     echo "verbose - optional argument to enable verbose build output."
     echo "-skiprestore: skip restoring packages ^(default: packages are restored during build^)."
 	echo "-disableoss: Disable Open Source Signing for System.Private.CoreLib."
@@ -83,6 +84,11 @@ initTargetDistroRid()
         fi
     else
         export __DistroRid="$__HostDistroRid"
+    fi
+
+    # Portable builds target the base RID only for Linux based platforms
+    if [ $__PortableLinux == 1 ]; then
+        export __DistroRid="linux-$__BuildArch"
     fi
 }
 
@@ -520,6 +526,7 @@ __DistroRid=""
 __cmakeargs=""
 __SkipGenerateVersion=0
 __DoCrossArchBuild=0
+__PortableLinux=0
 
 while :; do
     if [ $# -le 0 ]; then
@@ -572,8 +579,17 @@ while :; do
         cross)
             __CrossBuild=1
             ;;
-
-		verbose)
+            
+		portablelinux)
+            if [ "$__BuildOS" == "Linux" ]; then
+                __PortableLinux=1
+            else
+                echo "ERROR: portableLinux not supported for non-Linux platforms."
+                exit 1
+            fi
+            ;;
+            
+        verbose)
         __VerboseBuild=1
         ;;
 
