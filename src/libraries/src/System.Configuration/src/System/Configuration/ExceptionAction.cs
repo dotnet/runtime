@@ -6,8 +6,19 @@ namespace System.Configuration
 {
     internal enum ExceptionAction
     {
-        NonSpecific, // Not specific to a particular section, nor a global schema error
-        Local, // Error specific to a particular section
-        Global, // Error in the global (file) schema 
+        /// <summary>
+        /// Not specific to a particular section, nor a global schema error
+        /// </summary>
+        NonSpecific,
+
+        /// <summary>
+        /// Error specific to a particular section
+        /// </summary>
+        Local,
+
+        /// <summary>
+        /// Error in the global (file) schema
+        /// </summary>
+        Global,
     }
 }

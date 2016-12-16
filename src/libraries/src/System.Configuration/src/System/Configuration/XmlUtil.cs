@@ -163,8 +163,10 @@ namespace System.Configuration
             // We must of hit end of file
         }
 
-        // Skip this element and its children, then read to next start element,
-        // or until we hit end of file.
+        /// <summary>
+        /// Skip this element and its children, then read to next start element,
+        /// or until we hit end of file.
+        /// </summary>
         internal void SkipToNextElement()
         {
             Reader.Skip();
@@ -177,7 +179,9 @@ namespace System.Configuration
             }
         }
 
-        // Read to the next start element, and verify that all XML nodes read are permissible.
+        /// <summary>
+        /// Read to the next start element, and verify that all XML nodes read are permissible.
+        /// </summary>
         internal void StrictReadToNextElement(ExceptionAction action)
         {
             while (Reader.Read())
@@ -189,9 +193,10 @@ namespace System.Configuration
             }
         }
 
-        // Skip this element and its children, then read to next start element,
-        // or until we hit end of file. Verify that nodes that are read after the
-        // skipped element are permissible.
+        /// <summary>
+        /// Skip this element and its children, then read to next start element, or until we hit
+        /// end of file. Verify that nodes that are read after the skipped element are permissible.
+        /// </summary>
         internal void StrictSkipToNextElement(ExceptionAction action)
         {
             Reader.Skip();
@@ -203,8 +208,10 @@ namespace System.Configuration
             }
         }
 
-        // Skip until we hit the end element for our parent, and verify
-        // that nodes at the parent level are permissible.
+        /// <summary>
+        /// Skip until we hit the end element for our parent, and verify that nodes at the
+        /// parent level are permissible.
+        /// </summary>
         internal void StrictSkipToOurParentsEndElement(ExceptionAction action)
         {
             int currentDepth = Reader.Depth;
@@ -219,7 +226,9 @@ namespace System.Configuration
             }
         }
 
-        // Add an error if the node type is not permitted by the configuration schema.
+        /// <summary>
+        /// Add an error if the node type is not permitted by the configuration schema.
+        /// </summary>
         internal void VerifyIgnorableNodeType(ExceptionAction action)
         {
             XmlNodeType nodeType = Reader.NodeType;
@@ -234,25 +243,29 @@ namespace System.Configuration
             }
         }
 
-        // Add an error if there are attributes that have not been examined,
-        // and are therefore unrecognized.
+        /// <summary>
+        /// Add an error if there are attributes that have not been examined, and are therefore unrecognized.
+        /// </summary>
         internal void VerifyNoUnrecognizedAttributes(ExceptionAction action)
         {
             if (Reader.MoveToNextAttribute())
                 AddErrorUnrecognizedAttribute(action);
         }
 
-        // Add an error if the retrieved attribute is null, 
-        // and therefore not present.
-        internal bool VerifyRequiredAttribute(
-            object o, string attrName, ExceptionAction action)
+        /// <summary>
+        /// Add an error if the retrieved attribute is null, and therefore not present.
+        /// </summary>
+        internal bool VerifyRequiredAttribute(object requiredAttribute, string attrName, ExceptionAction action)
         {
-            if (o == null)
+            if (requiredAttribute == null)
             {
                 AddErrorRequiredAttribute(attrName, action);
                 return false;
             }
-            else return true;
+            else
+            {
+                return true;
+            }
         }
 
         internal void AddErrorUnrecognizedAttribute(ExceptionAction action)
@@ -306,26 +319,27 @@ namespace System.Configuration
             }
         }
 
-        // Verify and Retrieve the Boolean Attribute.  If it is not
-        // a valid value then log an error and set the value to a given default.
+        /// <summary>
+        /// Verify and Retrieve the Boolean Attribute.  If it is not
+        /// a valid value then log an error and set the value to a given default.
+        /// </summary>
         internal void VerifyAndGetBooleanAttribute(
             ExceptionAction action, bool defaultValue, out bool newValue)
         {
-            if (Reader.Value == "true") newValue = true;
-            else
+            switch (Reader.Value)
             {
-                if (Reader.Value == "false") newValue = false;
-                else
-                {
-                    // Unrecognized value
+                case "true":
+                    newValue = true;
+                    break;
+                case "false":
+                    newValue = false;
+                    break;
+                default:
                     newValue = defaultValue;
-
-                    ConfigurationErrorsException ex = new ConfigurationErrorsException(
-                        string.Format(SR.Config_invalid_boolean_attribute, Reader.Name),
-                        this);
-
-                    SchemaErrors.AddError(ex, action);
-                }
+                    SchemaErrors.AddError(
+                        new ConfigurationErrorsException(string.Format(SR.Config_invalid_boolean_attribute, Reader.Name), this),
+                        action);
+                    break;
             }
         }
 

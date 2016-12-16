@@ -56,13 +56,10 @@ namespace System.Configuration.Internal
             Host.RequireCompleteInit(configRecord);
         }
 
-        // IsSecondaryRoot
-        //
         // Is this a secondary root.  This means that it is a node in which
         // everything that is defined in it should also be treated as a root.
         // So...if a factory record is defined that was already defined above
         // then throw since it is not allowed.
-        //
         public virtual bool IsSecondaryRoot(string configPath)
         {
             return Host.IsSecondaryRoot(configPath);

@@ -10,12 +10,19 @@ namespace System.Configuration.Internal
     public interface IInternalConfigRecord
     {
         string ConfigPath { get; }
+
         string StreamName { get; }
+
         bool HasInitErrors { get; }
+
         void ThrowIfInitErrors();
+
         object GetSection(string configKey);
+
         object GetLkgSection(string configKey);
+
         void RefreshSection(string configKey);
+
         void Remove();
     }
 }

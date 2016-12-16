@@ -36,8 +36,6 @@ namespace System.Configuration.Internal
 
         internal string TempNewFilename { get; }
 
-        // Complete
-        //
         // Cleanup the WriteFileContext object based on either success
         // or failure
         //
@@ -51,7 +49,6 @@ namespace System.Configuration.Internal
         // ... This means that writing is a bit more complicated, and may
         // have to be retried (because of reading lock), but I don't see 
         // anyway to get around this given 1 and 2.
-        //
         internal void Complete(string filename, bool success)
         {
             try

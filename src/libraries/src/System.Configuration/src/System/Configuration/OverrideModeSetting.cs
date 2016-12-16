@@ -69,13 +69,13 @@ namespace System.Configuration
 
             switch (value)
             {
-                case BaseConfigurationRecord.KeywordOverridemodeInherit:
+                case BaseConfigurationRecord.OverrideModeInherit:
                     return OverrideMode.Inherit;
 
-                case BaseConfigurationRecord.KeywordOverridemodeAllow:
+                case BaseConfigurationRecord.OverrideModeAllow:
                     return OverrideMode.Allow;
 
-                case BaseConfigurationRecord.KeywordOverridemodeDeny:
+                case BaseConfigurationRecord.OverrideModeDeny:
                     return OverrideMode.Deny;
 
                 default:
@@ -224,25 +224,25 @@ namespace System.Configuration
 
                 if (needToWrite)
                 {
-                    // Legacy - allowOverride
                     string value;
                     string attrib;
 
                     if (useLegacy)
                     {
-                        attrib = BaseConfigurationRecord.KeywordLocationAllowoverride;
+                        // Legacy - allowOverride
+                        attrib = BaseConfigurationRecord.LocationAllowOverrideAttribute;
                         value = AllowOverride
                             ? BaseConfigurationRecord.KeywordTrue
                             : BaseConfigurationRecord.KeywordFalse;
                     }
                     else
                     {
-                        attrib = BaseConfigurationRecord.KeywordLocationOverridemode;
+                        attrib = BaseConfigurationRecord.LocationOverrideModeAttribute;
                         value = OverrideModeXmlValue;
                     }
 
                     result = string.Format(CultureInfo.InvariantCulture,
-                        BaseConfigurationRecord.KeywordLocationOverridemodeString, attrib, value);
+                        BaseConfigurationRecord.KeywordLocationOverrideModeString, attrib, value);
                 }
 
                 return result;
@@ -254,20 +254,16 @@ namespace System.Configuration
             get
             {
                 // Returns the xml (string) value of the current setting for override mode
-
                 switch (OverrideMode)
                 {
                     case OverrideMode.Inherit:
-                        return BaseConfigurationRecord.KeywordOverridemodeInherit;
-
+                        return BaseConfigurationRecord.OverrideModeInherit;
                     case OverrideMode.Allow:
-                        return BaseConfigurationRecord.KeywordOverridemodeAllow;
-
+                        return BaseConfigurationRecord.OverrideModeAllow;
                     case OverrideMode.Deny:
-                        return BaseConfigurationRecord.KeywordOverridemodeDeny;
-
+                        return BaseConfigurationRecord.OverrideModeDeny;
                     default:
-                        Debug.Assert(false, "Missing xml keyword for OverrideMode enum value");
+                        Debug.Fail("Missing xml keyword for OverrideMode enum value");
                         break;
                 }
 

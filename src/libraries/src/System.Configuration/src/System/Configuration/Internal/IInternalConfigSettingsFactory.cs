@@ -10,6 +10,7 @@ namespace System.Configuration.Internal
     public interface IInternalConfigSettingsFactory
     {
         void SetConfigurationSystem(IInternalConfigSystem internalConfigSystem, bool initComplete);
+
         void CompleteInit();
     }
 }
