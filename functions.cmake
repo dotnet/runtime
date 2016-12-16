@@ -1,6 +1,8 @@
 function(clr_unknown_arch)
     if (WIN32)
         message(FATAL_ERROR "Only AMD64, ARM64, ARM and I386 are supported")
+    elseif(CLR_CROSS_COMPONENTS_BUILD)
+        message(FATAL_ERROR "Only AMD64, I386 are supported for cross-architecture component")
     else()
         message(FATAL_ERROR "Only AMD64, ARM64 and ARM are supported")
     endif()
