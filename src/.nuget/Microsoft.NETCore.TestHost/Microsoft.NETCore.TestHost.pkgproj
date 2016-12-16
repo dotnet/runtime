@@ -21,6 +21,9 @@
     <ProjectReference Include="win\Microsoft.NETCore.TestHost.pkgproj">
       <Platform>arm</Platform>
     </ProjectReference>
+    <ProjectReference Include="linux\Microsoft.NETCore.TestHost.pkgproj">
+      <Platform>amd64</Platform>
+    </ProjectReference>
     <ProjectReference Include="debian\Microsoft.NETCore.TestHost.pkgproj">
       <Platform>amd64</Platform>
     </ProjectReference>
