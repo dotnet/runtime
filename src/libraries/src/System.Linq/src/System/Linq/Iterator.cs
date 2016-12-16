@@ -14,13 +14,20 @@ namespace System.Linq
         /// </summary>
         /// <typeparam name="TSource">The type of each item to yield.</typeparam>
         /// <remarks>
-        /// - The value of an iterator is immutable; when re-enumerated, it should always yield
-        ///   the same items with respect to its inputs.
-        /// - However, an iterator also serves as its own enumerator, so the state of an iterator
-        ///   may change as it is being enumerated.
-        /// - Hence, state that is relevant to an iterator's value should be kept in readonly fields.
-        ///   State that is relevant to an iterator's enumeration (such as the currently yielded item)
-        ///   should be kept in non-readonly fields.
+        /// <list type="bullet">
+        /// <item><description>
+        /// The value of an iterator is immutable; the operation it represents cannot be changed.
+        /// </description></item>
+        /// <item><description>
+        /// However, an iterator also serves as its own enumerator, so the state of an iterator
+        /// may change as it is being enumerated.
+        /// </description></item>
+        /// <item><description>
+        /// Hence, state that is relevant to an iterator's value should be kept in readonly fields.
+        /// State that is relevant to an iterator's enumeration (such as the currently yielded item)
+        /// should be kept in non-readonly fields.
+        /// </description></item>
+        /// </list>
         /// </remarks>
         internal abstract class Iterator<TSource> : IEnumerable<TSource>, IEnumerator<TSource>
         {
@@ -52,6 +59,10 @@ namespace System.Linq
             /// <summary>
             /// Puts this iterator in a state whereby no further enumeration will take place.
             /// </summary>
+            /// <remarks>
+            /// Derived classes should override this method if necessary to clean up any
+            /// mutable state they hold onto (for example, calling Dispose on other enumerators).
+            /// </remarks>
             public virtual void Dispose()
             {
                 _current = default(TSource);
@@ -61,6 +72,11 @@ namespace System.Linq
             /// <summary>
             /// Gets the enumerator used to yield values from this iterator.
             /// </summary>
+            /// <remarks>
+            /// If <see cref="GetEnumerator"/> is called for the first time on the same thread
+            /// that created this iterator, the result will be this iterator. Otherwise, the result
+            /// will be a shallow copy of this iterator.
+            /// </remarks>
             public IEnumerator<TSource> GetEnumerator()
             {
                 Iterator<TSource> enumerator = _state == 0 && _threadId == Environment.CurrentManagedThreadId ? this : Clone();

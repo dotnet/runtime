@@ -42,8 +42,7 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// An iterator that shares code among iterators returned by
-        /// <see cref="Enumerable.Append"/> and <see cref="Enumerable.Prepend"/>.
+        /// Represents the insertion of one or more items before or after an <see cref="IEnumerable{TSource}"/>.
         /// </summary>
         /// <typeparam name="TSource">The type of the source enumerable.</typeparam>
         private abstract class AppendPrependIterator<TSource> : Iterator<TSource>, IIListProvider<TSource>

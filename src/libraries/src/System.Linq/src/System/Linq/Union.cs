@@ -32,7 +32,7 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// An iterator that shares code among iterators returned by <see cref="Enumerable.Union"/>.
+        /// An iterator that yields distinct values from two or more <see cref="IEnumerable{TSource}"/>.
         /// </summary>
         /// <typeparam name="TSource">The type of the source enumerables.</typeparam>
         private abstract class UnionIterator<TSource> : Iterator<TSource>, IIListProvider<TSource>
@@ -170,9 +170,9 @@ namespace System.Linq
                 return onlyIfCheap ? -1 : FillSet().Count;
             }
         }
-
+        
         /// <summary>
-        /// An iterator that yields distinct values from two enumerables.
+        /// An iterator that yields distinct values from two <see cref="IEnumerable{TSource}"/>.
         /// </summary>
         /// <typeparam name="TSource">The type of the source enumerables.</typeparam>
         private sealed class UnionIterator2<TSource> : UnionIterator<TSource>
@@ -215,7 +215,7 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// An iterator that yields distinct values from three or more enumerables.
+        /// An iterator that yields distinct values from three or more <see cref="IEnumerable{TSource}"/>.
         /// </summary>
         /// <typeparam name="TSource">The type of the source enumerables.</typeparam>
         private sealed class UnionIteratorN<TSource> : UnionIterator<TSource>
