@@ -375,7 +375,7 @@ struct _MonoInternalThread {
 	int _serialized_principal_version;
 	gpointer appdomain_refs;
 	/* This is modified using atomic ops, so keep it a gint32 */
-	gint32 interruption_requested;
+	gint32 __interruption_requested;
 	MonoCoopMutex *synch_cs;
 	MonoBoolean threadpool_thread;
 	MonoBoolean thread_interrupt_requested;
@@ -388,18 +388,19 @@ struct _MonoInternalThread {
 	gpointer interrupt_on_stop;
 	gsize    flags;
 	gpointer thread_pinning_ref;
-	gsize abort_protected_block_count;
+	gsize __abort_protected_block_count;
 	gint32 priority;
 	GPtrArray *owned_mutexes;
 	MonoOSEvent *suspended;
 	gint32 self_suspended; // TRUE | FALSE
+
+	gsize thread_state;
 	/* 
 	 * These fields are used to avoid having to increment corlib versions
 	 * when a new field is added to this structure.
 	 * Please synchronize any changes with InternalThread in Thread.cs, i.e. add the
 	 * same field there.
 	 */
-	gsize unused1;
 	gsize unused2;
 
 	/* This is used only to check that we are in sync between the representation
