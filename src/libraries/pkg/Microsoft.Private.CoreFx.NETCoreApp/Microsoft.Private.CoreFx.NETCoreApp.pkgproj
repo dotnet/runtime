@@ -88,6 +88,8 @@
 
   <ItemGroup>
     <IgnoredReference Include="System.Private.CoreLib" />
+    <IgnoredReference Include="System.Threading.Overlapped" />
+    <IgnoredReference Include="System.Runtime.Serialization.Formatters" />
   </ItemGroup>
 
   <Target Name="VerifyClosure" AfterTargets="Build">

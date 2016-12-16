@@ -21,8 +21,6 @@
   <PropertyGroup>
     <!-- Temporarily omit code analysis -->
     <SkipImportCodeAnalysisTargets>true</SkipImportCodeAnalysisTargets>
-    <!-- Hacky BuildConfiguration -->
-    <BuildConfiguration Condition="'$(BuildConfiguration)' == ''">netcoreapp1.1-$(OSEnvironment)</BuildConfiguration>
   </PropertyGroup>
 
   <Import Condition="Exists('$(MSBuildProjectDirectory)/Configurations.props')" Project="$(MSBuildProjectDirectory)/Configurations.props" />
@@ -156,35 +154,34 @@
     <RunApiCompat>true</RunApiCompat>
   </PropertyGroup>
 
-  <!--
-  Projects that have no OS-specific implementations just use Debug and Release for $(Configuration).
-  Projects that do have OS-specific implementations use OS_Debug and OS_Release, for all OS's we support even
-  if the code is the same between some OS's (so if you have some project that just calls POSIX APIs, we still have
-  OSX_[Debug|Release] and Linux_[Debug|Release] configurations.  We do this so that we place all the output under
-  a single binary folder and can have a similar experience between the command line and Visual Studio.
-  -->
 
-  <!--
-  If Configuration is empty that means we are not being built in VS and so folks need to explicitly pass the different
-  values for $(ConfigurationGroup), $(TargetGroup), or $(OSGroup) or accept the defaults for them.
-  -->
   <PropertyGroup>
-    <ConfigurationGroup Condition="'$(ConfigurationGroup)'==''">Debug</ConfigurationGroup>
-<!-->    <TargetGroup Condition="'$(TargetGroup)' == ''">netcoreapp1.1</TargetGroup>
-    <OSGroup Condition="'$(OSGroup)' == ''">$(OSEnvironment)</OSGroup>
--->
-    <Configuration Condition="'$(OSGroup)' != 'AnyOS'">$(TargetGroup)-$(OSGroup)</Configuration>
-    <Configuration Condition="'$(OSGroup)' == 'AnyOS'">$(TargetGroup)</Configuration>
+    <ArchGroup Condition="'$(ArchGroup)'==''">x64</ArchGroup>
+    <BuildConfiguration_OSGroup>$(OS)</BuildConfiguration_OSGroup>
+    <BuildConfiguration_OSGroup Condition="'$(OSGroup)' != ''">$(OSGroup)</BuildConfiguration_OSGroup>
+    <BuildConfiguration Condition="'$(BuildConfiguration)' == ''">netcoreapp1.1-$(BuildConfiguration_OSGroup)-Debug-$(ArchGroup)</BuildConfiguration>
+
+    <BuildConfigurationImportFile>$(BinDir)tools/configuration/configuration.props</BuildConfigurationImportFile>
   </PropertyGroup>
 
-  <!-- Set up Default symbol and optimization for Configuration -->
-  <Choose>
-    <When Condition="'$(ConfigurationGroup)'=='Debug'">
-      <PropertyGroup>
-        <DebugSymbols Condition="'$(DebugSymbols)' == ''">true</DebugSymbols>
-        <Optimize Condition="'$(Optimize)' == ''">false</Optimize>
-        <DebugType Condition="'$(DebugType)' == ''">full</DebugType>
-        <DefineConstants>$(DefineConstants),DEBUG,TRACE</DefineConstants>
+  <Import Project="$(BuildConfigurationImportFile)" Condition="Exists('$(BuildConfigurationImportFile)') and '$(BuildConfigurations)' != ''" /> 
+
+  <!-- Set up Default symbol and optimization for Configuration --> 
+  <Choose> 
+    <When Condition="'$(ConfigurationGroup)'=='Debug'"> 
+      <PropertyGroup> 
+        <DebugSymbols Condition="'$(DebugSymbols)' == ''">true</DebugSymbols> 
+        <Optimize Condition="'$(Optimize)' == ''">false</Optimize> 
+        <DebugType Condition="'$(DebugType)' == ''">full</DebugType> 
+        <DefineConstants>$(DefineConstants),DEBUG,TRACE</DefineConstants> 
+      </PropertyGroup> 
+    </When> 
+    <When Condition="'$(ConfigurationGroup)' == 'Release'"> 
+      <PropertyGroup> 
+        <DebugSymbols Condition="'$(DebugSymbols)' == ''">true</DebugSymbols> 
+        <Optimize Condition="'$(Optimize)' == ''">true</Optimize> 
+        <DebugType Condition="'$(DebugType)' == ''">pdbonly</DebugType> 
+        <DefineConstants>$(DefineConstants),TRACE</DefineConstants> 
       </PropertyGroup>
     </When>
     <When Condition="'$(ConfigurationGroup)' == 'Release'">
@@ -205,6 +202,15 @@
     <TargetsOSX>false</TargetsOSX>
     <TargetsFreeBSD>false</TargetsFreeBSD>
     <TargetsNetBSD>false</TargetsNetBSD>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(BuildConfigurations)' == '' or '$(OSGroup)' == 'AnyOS'">
+    <TargetsWindows>true</TargetsWindows>
+    <TargetsUnix>true</TargetsUnix>
+    <TargetsLinux>true</TargetsLinux>
+    <TargetsOSX>true</TargetsOSX>
+    <TargetsFreeBSD>true</TargetsFreeBSD>
+    <TargetsNetBSD>true</TargetsNetBSD>
   </PropertyGroup>
 
 <!-- Probably want to make these be generated into configurations.props -->
@@ -244,11 +250,6 @@
       </PropertyGroup>
     </When>
   </Choose>
-
-  <PropertyGroup>
-    <BuildConfigurationImportFile>$(BinDir)tools/configuration/configuration.props</BuildConfigurationImportFile>
-  </PropertyGroup>
-  <Import Project="$(BuildConfigurationImportFile)" Condition="Exists('$(BuildConfigurationImportFile)')" />
 
   <!-- Default Test platform to deploy the netstandard compiled tests to -->
   <PropertyGroup>

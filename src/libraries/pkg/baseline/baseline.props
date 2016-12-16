@@ -5,11 +5,6 @@
     <!-- Set PackageIndexFile to point to our local repo's index.  This tells the packaging targets
          which index should be used for updates -->
     <PackageIndexFile>$(MSBuildThisFileDirectory)..\Microsoft.Private.PackageBaseline\packageIndex.json</PackageIndexFile>
-    
-    <!-- set the project.json file for pkgproj's to point to the project.json in this directory
-         to ensure that PKGProjs will restore harvested packages. -->
-    <ProjectJson>$(MSBuildThisFileDirectory)\project.json</ProjectJson>
-    <ProjectLockJson>$(MSBuildThisFileDirectory)\project.lock.json</ProjectLockJson>
   </PropertyGroup>
 
   <!-- make RestorePackages run before HarvestStablePackage to ensure we'll restore the baseline before harvesting  -->

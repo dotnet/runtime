@@ -1,1 +1,0 @@
-System\Runtime\Serialization\FormatterServices.cs(85,35): error CS0117: 'RuntimeHelpers' does not contain a definition for 'GetUninitializedObject'

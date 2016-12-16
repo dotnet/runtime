@@ -3,7 +3,6 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
     <Project Include="$(MSBuildThisFileDirectory)*\ref\*.*proj">
-      <UndefineProperties>OSGroup;TargetGroup</UndefineProperties>
       <AdditionalMetadata>ConfigurationGroup=$(ConfigurationGroup)</AdditionalMetadata>
     </Project>
   </ItemGroup>

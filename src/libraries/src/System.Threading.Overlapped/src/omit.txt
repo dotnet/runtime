@@ -1,1 +1,0 @@
-NativeOverlapped and IOCompletionCallback conflict with System.Private.CoreLib on Unix in contract assembly

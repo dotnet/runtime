@@ -13,24 +13,17 @@
   <Target Name="RebuildAndTest" DependsOnTargets="Rebuild;Test" />
   <Target Name="Test" />
 
-  <Target Name="AnnotateProjectsWithConfiguration"
-          Returns="@(ProjectWithConfiguration)" >
+ <!-- build vertical requires the FindBestConfiguration task which is currently in CoreFx.Tools.dll --> 
+ <Import Project="buildvertical.targets" Condition="Exists('$(CoreFxToolsTaskDir)CoreFx.Tools.dll')" /> 
+
+  <Target Name="UndefineTestTFM" 
+          BeforeTargets="AssignProjectConfiguration">
     <ItemGroup>
-      <ProjectWithConfiguration Include="@(Project)" />
-    </ItemGroup>
-  </Target>
-
-
-  <!-- build vertical requires the FindBestConfiguration task which is currently in CoreFx.Tools.dll -->
-  <Import Project="buildvertical.targets" Condition="Exists('$(CoreFxToolsTaskDir)CoreFx.Tools.dll')" />
-
-  <Target Name="UndefineTestTFM" BeforeTargets="AssignProjectConfiguration">
-    <ItemGroup>
-      <ProjectReference>
         <!--
         Always undefine TestTFM and FilterToTestTFM for all project reference as not needed for compilation and
         avoid bin clash tool to fail
         -->
+      <ProjectReference>
         <UndefineProperties>%(ProjectReference.UndefineProperties);TestTFM;FilterToTestTFM</UndefineProperties>
       </ProjectReference>
     </ItemGroup>
@@ -83,6 +76,13 @@
     <ItemGroup>
       <PackageIds Include="$(Id)" />
     </ItemGroup>
+  </Target>
+
+  <Target Name="ReportConfigurationErrorMessage"
+          BeforeTargets="AssignProjectConfiguration"
+           Condition="'$(BuildConfigurations)' != ''" >
+    <Message Importance="Low" Text="$(MSBuildProjectFullPath), C: $(Configuration) BC: $(BuildConfiguration) BCs: $(BuildConfigurations)" />
+    <Message Importance="High" Condition="'$(ConfigurationErrorMsg)' != ''" Text="$(MSBuildProjectFullPath) ConfigurationErrorMessage: $(ConfigurationErrorMsg)" />
   </Target>
 
 </Project>

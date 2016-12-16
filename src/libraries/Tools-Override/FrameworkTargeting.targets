@@ -125,29 +125,11 @@
   <Target Name="ConvertCommonMetadataToAdditionalProperties" BeforeTargets="AssignProjectConfiguration">
     <!-- list each append as a seperate item to force re-evaluation of AdditionalProperties metadata -->
     <ItemGroup>
-      <ProjectReference>
-        <UndefineProperties Condition="'$(ConfigurationGroup)' != ''">%(ProjectReference.UndefineProperties);Configuration</UndefineProperties>
-      </ProjectReference>
 
-      <!-- Set some basic configuration properties and pass them along to ProjectReference's -->
-      <ProjectReference>
-        <OSGroup Condition="'%(ProjectReference.OSGroup)'=='' and '$(OSGroup)'!='' and '$(OSGroup)'!='AnyOS'">$(OSGroup)</OSGroup>
-      </ProjectReference>
-      <ProjectReference>
-        <TargetGroup Condition="'%(ProjectReference.TargetGroup)'=='' and '$(TargetGroup)'!=''">$(TargetGroup)</TargetGroup>
-      </ProjectReference>
-
-      <!-- Configuration property shortcuts -->
-      <ProjectReference>
-        <AdditionalProperties Condition="'%(ProjectReference.TargetGroup)'!=''">TargetGroup=%(ProjectReference.TargetGroup);%(ProjectReference.AdditionalProperties)</AdditionalProperties>
-      </ProjectReference>
-      <ProjectReference>
-        <AdditionalProperties Condition="'%(ProjectReference.OSGroup)'!=''">OSGroup=%(ProjectReference.OSGroup);%(ProjectReference.AdditionalProperties)</AdditionalProperties>
-      </ProjectReference>
-      <ProjectReference>
-        <AdditionalProperties Condition="'$(ConfigurationGroup)' != ''">ConfigurationGroup=$(ConfigurationGroup);%(ProjectReference.AdditionalProperties)</AdditionalProperties>
-      </ProjectReference>
-
+     <!-- Configuration property shortcuts --> 
+     <ProjectReference>
+       <AdditionalProperties Condition="'%(ProjectReference.Configuration)' != ''">Configuration=%(ProjectReference.Configuration);%(ProjectReference.AdditionalProperties)</AdditionalProperties>
+     </ProjectReference>
       <!-- Packaging property shortcuts -->
       <ProjectReference>
         <AdditionalProperties Condition="'%(ProjectReference.PackageTargetFramework)' != ''">PackageTargetFramework=%(ProjectReference.PackageTargetFramework);%(ProjectReference.AdditionalProperties)</AdditionalProperties>

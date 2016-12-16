@@ -28,16 +28,11 @@
     <Error Condition="'@(ContractProject->Count())' &gt; '1'" Text="Only one value may be specified for ContractProject item but '@(ContractProject)' is '@(ContractProject->Count())' items." />
 
     <ItemGroup Condition="'@(ContractProject)' != ''">
-      <!-- Don't flow the values for OSGroup/TargetGroup unless explicitly defined -->
-      <ContractProject>
-        <UndefineProperties Condition="'%(ContractProject.OSGroup)'==''">OSGroup;%(ContractProject.UndefineProperties)</UndefineProperties>
-        <AdditionalProperties Condition="'%(ContractProject.OSGroup)'!=''">OSGroup=%(ContractProject.OSGroup);%(ContractProject.AdditionalProperties)</AdditionalProperties>
-      </ContractProject>
-      <ContractProject>
-        <UndefineProperties Condition="'%(ContractProject.TargetGroup)'==''">TargetGroup;%(ContractProject.UndefineProperties)</UndefineProperties>
-        <AdditionalProperties Condition="'%(ContractProject.TargetGroup)'!=''">TargetGroup=%(ContractProject.TargetGroup);%(ContractProject.AdditionalProperties)</AdditionalProperties>
-      </ContractProject>
-
+      <!--Don't flow the values for Configuration --> 
+      <ContractProject> 
+        <UndefineProperties>Configuration;%(ContractProject.UndefineProperties)</UndefineProperties> 
+      </ContractProject> 
+    
       <ProjectReference Include="@(ContractProject)">
         <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
         <OutputItemType>ResolvedMatchingContract</OutputItemType>
