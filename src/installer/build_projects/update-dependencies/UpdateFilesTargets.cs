@@ -19,6 +19,7 @@ namespace Microsoft.DotNet.Scripts
     public static class UpdateFilesTargets
     {
         private static HttpClient s_client = new HttpClient();
+        private static readonly string FileUrlScheme = "file://";
 
         [Target(nameof(GetDependencies), nameof(ReplaceVersions))]
         public static BuildTargetResult UpdateFiles(BuildTargetContext c) => c.Success();
@@ -42,7 +43,7 @@ namespace Microsoft.DotNet.Scripts
         {
             List<PackageInfo> newPackageVersions = new List<PackageInfo>();
 
-            using (Stream versionsStream = await s_client.GetStreamAsync(packageVersionsUrl))
+            using (Stream versionsStream = packageVersionsUrl.StartsWith(FileUrlScheme, StringComparison.Ordinal) ? File.OpenRead(packageVersionsUrl.Substring(FileUrlScheme.Length)) : await s_client.GetStreamAsync(packageVersionsUrl))
             using (StreamReader reader = new StreamReader(versionsStream))
             {
                 string currentLine;
@@ -208,7 +209,7 @@ namespace Microsoft.DotNet.Scripts
         [Target]
         public static BuildTargetResult ReplaceDependencyVersions(BuildTargetContext c)
         {
-            ReplaceFileContents(@"build_projects\shared-build-targets-utils\DependencyVersions.cs", fileContents =>
+            ReplaceFileContents(Path.Combine("build_projects", "shared-build-targets-utils", "DependencyVersions.cs"), fileContents =>
             {
                 fileContents = ReplaceDependencyVersion(c, fileContents, "CoreCLRVersion", "Microsoft.NETCore.Runtime.CoreCLR");
                 fileContents = ReplaceDependencyVersion(c, fileContents, "JitVersion", "Microsoft.NETCore.Jit");
@@ -237,7 +238,7 @@ namespace Microsoft.DotNet.Scripts
         [Target]
         public static BuildTargetResult ReplaceCoreHostPackaging(BuildTargetContext c)
         {
-            ReplaceFileContents(@"pkg\dir.props", contents =>
+            ReplaceFileContents(Path.Combine("pkg", "dir.props"), contents =>
             {
                 Regex regex = new Regex(@"Microsoft\.NETCore\.Platforms\\(?<version>.*)\\runtime\.json");
                 string newNetCorePlatformsVersion = c.GetNewVersion("Microsoft.NETCore.Platforms");
