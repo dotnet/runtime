@@ -6146,7 +6146,7 @@ void CodeGen::genCompareInt(GenTreePtr treeNode)
 
     // By default we use an int32 sized cmp instruction
     //
-    ins               = ((treeNode->OperGet() == GT_TEST_EQ) || (treeNode->OperGet() == GT_TEST_NE)) ? INS_test : INS_cmp;
+    ins = ((treeNode->OperGet() == GT_TEST_EQ) || (treeNode->OperGet() == GT_TEST_NE)) ? INS_test : INS_cmp;
     var_types cmpType = TYP_INT;
 
     // In the if/then/else statement below we may change the
