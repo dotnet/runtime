@@ -10,14 +10,9 @@
         "Microsoft.TargetingPack.Private.CoreCLR": "1.2.0-beta-24814-02"
       }
     },
-    "netcore50": {
-      "dependencies": {
-        "Microsoft.TargetingPack.Private.NETNative": "1.1.0-beta-24814-00"
-      }
-    },
     "netcoreapp1.2": {
       "dependencies": {
-        "Microsoft.TargetingPack.Private.CoreRT": "1.0.0-alpha-24806-1"
+        "Microsoft.TargetingPack.Private.CoreRT": "1.0.0-alpha-24815-0"
       }
     },
     "net461": {

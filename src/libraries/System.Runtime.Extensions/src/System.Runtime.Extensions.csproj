@@ -40,8 +40,7 @@
     </ContractProject>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' != 'net461'">
-    <!-- Temporarily skip AppDomain.cs for uap101aot -->
-    <Compile Include="System\AppDomain.cs" Condition="'$(TargetGroup)' != 'uap101aot'" />
+    <Compile Include="System\AppDomain.cs" Condition="'$(TargetGroup)' != 'uap101aot' and '$(TargetGroup)' != 'netcoreapp1.2corert'" />
     <Compile Include="System\Context.cs" />
     <Compile Include="System\AppDomainUnloadedException.cs" />
     <Compile Include="System\ApplicationId.cs" />

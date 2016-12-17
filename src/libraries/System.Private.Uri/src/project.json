@@ -12,7 +12,7 @@
     },
     "netcoreapp1.2": {
       "dependencies": {
-        "Microsoft.TargetingPack.Private.CoreRT": "1.0.0-alpha-24806-1"
+        "Microsoft.TargetingPack.Private.CoreRT": "1.0.0-alpha-24815-0"
       }
     },
     "uap10.1": {
