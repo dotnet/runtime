@@ -13,7 +13,7 @@ namespace System.Reflection.Emit.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        public void ILGenerator_Int_Type(bool skipVisibility)
+        public void GetILGenerator_Int_Owner(bool skipVisibility)
         {
             IDClass target = new IDClass();
             FieldInfo field = typeof(IDClass).GetField(FieldName, BindingFlags.Instance | BindingFlags.NonPublic);
@@ -28,10 +28,16 @@ namespace System.Reflection.Emit.Tests
             VerifyILGenerator(instanceCallBack, target, 0);
         }
 
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "The coreclr ignores the skipVisibility value of DynamicMethod.")]
+        public void GetILGenerator_Int_Module_CoreclrIgnoresSkipVisibility()
+        {
+            GetILGenerator_Int_Module(skipVisibility: false);
+        }
+
         [Theory]
         [InlineData(true)]
-        [InlineData(false)]
-        public void ILGenerator_Int_Module(bool skipVisibility)
+        public void GetILGenerator_Int_Module(bool skipVisibility)
         {
             Module module = typeof(IDClass).GetTypeInfo().Module;
             IDClass target = new IDClass();
@@ -50,7 +56,7 @@ namespace System.Reflection.Emit.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        public void GetILGenerator_Type(bool skipVisibility)
+        public void GetILGenerator_Owner(bool skipVisibility)
         {
             IDClass target = new IDClass();
             FieldInfo field = typeof(IDClass).GetField(FieldName, BindingFlags.Instance | BindingFlags.NonPublic);
@@ -66,9 +72,15 @@ namespace System.Reflection.Emit.Tests
             VerifyILGenerator(instanceCallBack, target, 0);
         }
 
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "The coreclr ignores the skipVisibility value of DynamicMethod.")]
+        public void GetILGenerator_Module_CoreclrIgnoresSkipVisibility()
+        {
+            GetILGenerator_Module(skipVisibility: false);
+        }
+
         [Theory]
         [InlineData(true)]
-        [InlineData(false)]
         public void GetILGenerator_Module(bool skipVisibility)
         {
             Module module = typeof(TestClass).GetTypeInfo().Module;
