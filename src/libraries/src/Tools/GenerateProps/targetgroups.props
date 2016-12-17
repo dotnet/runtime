@@ -74,7 +74,7 @@
       <PackageTargetFramework>netcoreapp1.1</PackageTargetFramework>
       <NuGetTargetMoniker>.NETCoreApp,Version=v1.1</NuGetTargetMoniker>
       <Imports>netcoreapp1.1</Imports>
-      <CompatibleWith>netstandard1.7</CompatibleWith>
+      <CompatibleWith>netstandard</CompatibleWith>
     </TargetGroups>
     <TargetGroups Include="net45">
       <PackageTargetFramework>net45</PackageTargetFramework>

@@ -154,34 +154,25 @@
     <RunApiCompat>true</RunApiCompat>
   </PropertyGroup>
 
-
   <PropertyGroup>
     <ArchGroup Condition="'$(ArchGroup)'==''">x64</ArchGroup>
     <BuildConfiguration_OSGroup>$(OS)</BuildConfiguration_OSGroup>
     <BuildConfiguration_OSGroup Condition="'$(OSGroup)' != ''">$(OSGroup)</BuildConfiguration_OSGroup>
     <BuildConfiguration Condition="'$(BuildConfiguration)' == ''">netcoreapp1.1-$(BuildConfiguration_OSGroup)-Debug-$(ArchGroup)</BuildConfiguration>
 
-    <BuildConfigurationImportFile>$(BinDir)tools/configuration/configuration.props</BuildConfigurationImportFile>
+    <BuildConfigurationImportFile>$(ToolsDir)/configuration/configuration.props</BuildConfigurationImportFile>
   </PropertyGroup>
 
-  <Import Project="$(BuildConfigurationImportFile)" Condition="Exists('$(BuildConfigurationImportFile)') and '$(BuildConfigurations)' != ''" /> 
+  <Import Project="$(BuildConfigurationImportFile)" Condition="Exists('$(BuildConfigurationImportFile)')" />
 
-  <!-- Set up Default symbol and optimization for Configuration --> 
-  <Choose> 
-    <When Condition="'$(ConfigurationGroup)'=='Debug'"> 
-      <PropertyGroup> 
-        <DebugSymbols Condition="'$(DebugSymbols)' == ''">true</DebugSymbols> 
-        <Optimize Condition="'$(Optimize)' == ''">false</Optimize> 
-        <DebugType Condition="'$(DebugType)' == ''">full</DebugType> 
-        <DefineConstants>$(DefineConstants),DEBUG,TRACE</DefineConstants> 
-      </PropertyGroup> 
-    </When> 
-    <When Condition="'$(ConfigurationGroup)' == 'Release'"> 
-      <PropertyGroup> 
-        <DebugSymbols Condition="'$(DebugSymbols)' == ''">true</DebugSymbols> 
-        <Optimize Condition="'$(Optimize)' == ''">true</Optimize> 
-        <DebugType Condition="'$(DebugType)' == ''">pdbonly</DebugType> 
-        <DefineConstants>$(DefineConstants),TRACE</DefineConstants> 
+  <!-- Set up Default symbol and optimization for Configuration -->
+  <Choose>
+    <When Condition="'$(ConfigurationGroup)'=='Debug'">
+      <PropertyGroup>
+        <DebugSymbols Condition="'$(DebugSymbols)' == ''">true</DebugSymbols>
+        <Optimize Condition="'$(Optimize)' == ''">false</Optimize>
+        <DebugType Condition="'$(DebugType)' == ''">full</DebugType>
+        <DefineConstants>$(DefineConstants),DEBUG,TRACE</DefineConstants>
       </PropertyGroup>
     </When>
     <When Condition="'$(ConfigurationGroup)' == 'Release'">
@@ -192,61 +183,12 @@
         <DefineConstants>$(DefineConstants),TRACE</DefineConstants>
       </PropertyGroup>
     </When>
-  </Choose>
-
-  <!-- initialize all the targets variables to false as they should only be set below -->
-  <PropertyGroup>
-    <TargetsWindows>false</TargetsWindows>
-    <TargetsUnix>false</TargetsUnix>
-    <TargetsLinux>false</TargetsLinux>
-    <TargetsOSX>false</TargetsOSX>
-    <TargetsFreeBSD>false</TargetsFreeBSD>
-    <TargetsNetBSD>false</TargetsNetBSD>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(BuildConfigurations)' == '' or '$(OSGroup)' == 'AnyOS'">
-    <TargetsWindows>true</TargetsWindows>
-    <TargetsUnix>true</TargetsUnix>
-    <TargetsLinux>true</TargetsLinux>
-    <TargetsOSX>true</TargetsOSX>
-    <TargetsFreeBSD>true</TargetsFreeBSD>
-    <TargetsNetBSD>true</TargetsNetBSD>
-  </PropertyGroup>
-
-<!-- Probably want to make these be generated into configurations.props -->
-  <Choose>
-    <When Condition="'$(OSGroup)'=='Windows_NT'">
+    <When Condition="'$(ConfigurationGroup)' == 'Release'">
       <PropertyGroup>
-        <TargetsWindows>true</TargetsWindows>
-      </PropertyGroup>
-    </When>
-    <When Condition="'$(OSGroup)'=='Unix'">
-      <PropertyGroup>
-        <TargetsUnix>true</TargetsUnix>
-      </PropertyGroup>
-    </When>
-    <When Condition="'$(OSGroup)'=='Linux'">
-      <PropertyGroup>
-        <TargetsUnix>true</TargetsUnix>
-        <TargetsLinux>true</TargetsLinux>
-      </PropertyGroup>
-    </When>
-    <When Condition="'$(OSGroup)'=='OSX'">
-      <PropertyGroup>
-        <TargetsUnix>true</TargetsUnix>
-        <TargetsOSX>true</TargetsOSX>
-      </PropertyGroup>
-    </When>
-    <When Condition="'$(OSGroup)'=='FreeBSD'">
-      <PropertyGroup>
-        <TargetsUnix>true</TargetsUnix>
-        <TargetsFreeBSD>true</TargetsFreeBSD>
-      </PropertyGroup>
-    </When>
-    <When Condition="'$(OSGroup)'=='NetBSD'">
-      <PropertyGroup>
-        <TargetsUnix>true</TargetsUnix>
-        <TargetsNetBSD>true</TargetsNetBSD>
+        <DebugSymbols Condition="'$(DebugSymbols)' == ''">true</DebugSymbols>
+        <Optimize Condition="'$(Optimize)' == ''">true</Optimize>
+        <DebugType Condition="'$(DebugType)' == ''">pdbonly</DebugType>
+        <DefineConstants>$(DefineConstants),TRACE</DefineConstants>
       </PropertyGroup>
     </When>
   </Choose>
@@ -313,7 +255,11 @@
     <IntermediateOutputRootPath Condition="'$(IntermediateOutputRootPath)' == ''">$(BaseIntermediateOutputPath)$(OSPlatformConfig)/</IntermediateOutputRootPath>
     <IntermediateOutputPath Condition="'$(IntermediateOutputPath)' == ''">$(IntermediateOutputRootPath)$(MSBuildProjectName)/$(TargetOutputRelPath)</IntermediateOutputPath>
 
-    <RuntimeDir Condition="'$(RuntimeDir)'==''">$(BinDir)netcoreapp\Runtime</RuntimeDir>
+    <RuntimePath Condition="'$(RuntimePath)' == ''">$(BinDir)runtime/$(BuildConfiguration)/</RuntimePath>
+    <RefRootPath>$(BinDir)ref/</RefRootPath>
+    <!-- TODO: We need to compute this based on the TargetGroup of the BuildConfiguration -->
+    <RefPath>$(RefRootPath)netcoreapp/</RefPath>
+    <NetStandardRefPath>$(RefRootPath)netstandard/</NetStandardRefPath>
 
     <PackagesBasePath Condition="'$(PackagesBasePath)'==''">$(BinDir)$(OSPlatformConfig)</PackagesBasePath>
     <PackageOutputPath Condition="'$(PackageOutputPath)'==''">$(PackageOutputRoot)$(ConfigurationGroup)/</PackageOutputPath>

@@ -4,7 +4,7 @@
   <Import Project="targetgroups.props"/>
   <Import Project="configurationgroups.props"/>
   <Import Project="archgroups.props"/>
-  
+
   <ItemGroup>
     <Property Include="OSGroup">
       <DefaultValue>AnyOS</DefaultValue>
@@ -28,9 +28,9 @@
       <Order>3</Order>
     </Property>
     <Property Include="ArchGroup">
-      <DefaultValue>AnyCPU</DefaultValue>
-      <!-- Property is insignificant to compatibility decisions, and ignored from configuration strings -->
-      <Precedence>Ignored</Precedence>
+      <DefaultValue>x64</DefaultValue>
+      <!-- Property is insignificant to compatibility decisions, and independent from the configuration strings -->
+      <Precedence>Independent</Precedence>
       <Order>4</Order>
     </Property>
 

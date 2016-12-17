@@ -31,7 +31,7 @@ namespace Microsoft.DotNet.Build.Tasks
 
         public bool Insignificant { get; }
 
-        public bool Ignored { get; }
+        public bool Independent { get; }
 
         public PropertyInfo(ITaskItem propertyItem)
         {
@@ -41,9 +41,9 @@ namespace Microsoft.DotNet.Build.Tasks
 
             Precedence = int.MaxValue;
             var precedence = propertyItem.GetMetadata(nameof(Precedence));
-            if (precedence.Equals(nameof(Ignored), StringComparison.OrdinalIgnoreCase))
+            if (precedence.Equals(nameof(Independent), StringComparison.OrdinalIgnoreCase))
             {
-                Ignored = Insignificant = true;
+                Independent = Insignificant = true;
             }
             else if (precedence.Equals(nameof(Insignificant), StringComparison.OrdinalIgnoreCase))
             {

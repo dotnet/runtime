@@ -32,11 +32,8 @@
 
   <Target Name="GetTargetingPackDir">
     <ItemGroup Condition="'$(NuGetTargetMoniker)' == '' Or $(NuGetTargetMoniker.Contains('NETCoreApp')) Or $(NuGetTargetMoniker.Contains('NETStandard'))">
-      <TargetingPackDir Include="$(BinDir)netcoreapp\TargetingPack" />
+      <TargetingPackDir Include="$(RefPath)" />
       <TargetingPackDir Condition="'$(IsNETCoreAppRef)' == 'true'" Include="$(BinDir)netcoreapp\pkg\ref" />
-    </ItemGroup>
-    <ItemGroup Condition="'$(NuGetTargetMoniker)' == '' Or $(NuGetTargetMoniker.Contains('NETStandard'))">
-      <TargetingPackDir  Include="$(BinDir)netstandard\TargetingPack" />
     </ItemGroup>
     <Error Condition="'@(TargetingPackDir)' == ''" Text="No targeting pack directory could be determined for NuGetTargetMoniker:$(NuGetTargetMoniker)" />
     <Message Text="Got TargetingPackDir:@(TargetingPackDir) from NuGetTargetMoniker:$(NuGetTargetMoniker)" Importance="Low" />
@@ -44,11 +41,8 @@
 
   <Target Name="GetRuntimeDir">
     <ItemGroup Condition="'$(NuGetTargetMoniker)' == '' Or $(NuGetTargetMoniker.Contains('NETCoreApp')) Or $(NuGetTargetMoniker.Contains('NETStandard'))">
-      <RuntimeDir Include="$(BinDir)netcoreapp\Runtime" />
+      <RuntimeDir Include="$(RuntimePath)" />
       <RuntimeDir Condition="'$(IsNETCoreApp)' == 'true'" Include="$(BinDir)netcoreapp\pkg\lib" />
-    </ItemGroup>
-    <ItemGroup Condition="'$(NuGetTargetMoniker)' == '' Or $(NuGetTargetMoniker.Contains('NETStandard'))">
-      <RuntimeDir Include="$(BinDir)netstandard\Runtime" />
     </ItemGroup>
     <Error Condition="'@(RuntimeDir)' == ''" Text="No Runtime directory could be determined for NuGetTargetMoniker:$(NuGetTargetMoniker)" />
     <Message Text="Got RuntimeDir:@(RuntimeDir) from NuGetTargetMoniker:$(NuGetTargetMoniker)" Importance="Low" />
@@ -56,7 +50,6 @@
 
   <ItemGroup>
     <AdditionalCleanDirectories Include="$(BinDir)netcoreapp" />
-    <AdditionalCleanDirectories Include="$(BinDir)netstandard" />
   </ItemGroup>
 
   <!-- Incremental clean only cleans paths under Intermediate or OutDir, handle additional paths -->
@@ -66,7 +59,7 @@
       <Output TaskParameter="InPath" ItemName="_CleanCurrentFileWrites" />
     </FindUnderPath>
   </Target>
-  
+
   <Target Name="IncrementalCleanAdditionalDirectories" BeforeTargets="IncrementalClean">
     <ItemGroup>
       <_CleanOrphanAdditionalFileWrites Include="@(_CleanPriorFileWrites)" Exclude="@(_CleanCurrentFileWrites)" />
@@ -74,7 +67,7 @@
     <FindUnderPath Path="%(AdditionalCleanDirectories.Identity)" Files="@(_CleanOrphanAdditionalFileWrites)">
       <Output TaskParameter="InPath" ItemName="_CleanOrphanFileWritesInAdditionalDirectories" />
     </FindUnderPath>
-    
+
     <!-- Delete the orphaned files.  IncrementalClean will remove these from the file list -->
     <Delete Files="@(_CleanOrphanFileWritesInAdditionalDirectories)" TreatErrorsAsWarnings="true">
       <Output TaskParameter="DeletedFiles" ItemName="_CleanOrphanFilesDeleted" />

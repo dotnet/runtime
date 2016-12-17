@@ -40,9 +40,9 @@ namespace Microsoft.DotNet.Build.Tasks
             var configurationBuilder = new StringBuilder();
             foreach (var value in Values)
             {
-                if (value.Property.Ignored)
+                if (value.Property.Independent)
                 {
-                    // skip ignored properties
+                    // skip independent properties
                     continue;
                 }
 

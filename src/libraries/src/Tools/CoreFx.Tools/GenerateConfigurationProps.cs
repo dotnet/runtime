@@ -4,6 +4,7 @@
 
 using Microsoft.Build.Construction;
 using Microsoft.Build.Framework;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -18,6 +19,7 @@ namespace Microsoft.DotNet.Build.Tasks
         private const string BuildConfigurationProperty = "BuildConfiguration";
         private const string AvailableBuildConfigurationsProperty = "BuildConfigurations";
         private const string ConfigurationProperty = "Configuration";
+        private const string RuntimeOSProperty = "RuntimeOS";
         private const string PropsFileName = "configuration";
         private const string ConfigurationPropsPrefix = "setConfiguration";
         private const string PropsFileExtension = ".props";
@@ -31,9 +33,9 @@ namespace Microsoft.DotNet.Build.Tasks
         public string PropsFolder { get; set; }
 
         /// <summary>
-        /// Generates a set of props files which can statically determine the best $(Configuration) for 
+        /// Generates a set of props files which can statically determine the best $(Configuration) for
         /// a given $(BuildConfiguration) from a set of configurations $(BuildConfigurations).
-        /// Props files also set properties based on $(Configuration) like TargetGroup, OSGroup, 
+        /// Props files also set properties based on $(Configuration) like TargetGroup, OSGroup,
         /// NuGetTargetMoniker, etc.
         /// </summary>
         /// <returns></returns>
@@ -50,7 +52,13 @@ namespace Microsoft.DotNet.Build.Tasks
 
             CreateBuildConfigurationPropsFile(buildConfigurationPropsFilePath);
 
-            ParseConfigurationString(ConfigurationProperty, project, includeAdditionalProperites:true);
+            // Parse the properties that are part of Configuration
+            ParseProperties(ConfigurationProperty, project, true, p => !p.Independent);
+
+            // Parse the independent properties that aren't part of Configuration
+            ParseProperties(BuildConfigurationProperty, project, true, p => p.Independent);
+
+            CreateRuntimeIdentifier(project);
 
             var projectPath = Path.Combine(PropsFolder, $"{PropsFileName}{PropsFileExtension}");
             project.Save(projectPath);
@@ -64,7 +72,7 @@ namespace Microsoft.DotNet.Build.Tasks
         /// </summary>
         /// <param name="propertyName">name of property to parse</param>
         /// <param name="project">project to update</param>
-        private void ParseConfigurationString(string propertyName, ProjectRootElement project, bool includeAdditionalProperites)
+        private void ParseProperties(string propertyName, ProjectRootElement project, bool includeAdditionalProperites, Func<PropertyInfo, bool> configurationSelector)
         {
             var parseConfigurationPropertyGroup = project.LastChild as ProjectPropertyGroupElement;
 
@@ -75,19 +83,19 @@ namespace Microsoft.DotNet.Build.Tasks
             }
 
             // delimit property for parsing, this gaurntees that every property value is surrounded in delimiters
-            var parseConfigurationName = $"_parse_{propertyName}";
+            var parsePropertyName = $"_parse_{propertyName}";
             var parseConfigurationValue = $"{ConfigurationFactory.PropertySeperator}$({propertyName}){ConfigurationFactory.PropertySeperator}";
-            parseConfigurationPropertyGroup.AddProperty(parseConfigurationName, parseConfigurationValue);
+            parseConfigurationPropertyGroup.AddProperty(parsePropertyName, parseConfigurationValue);
 
             // foreach property, pull it out of Configuration and set derived values.
-            foreach (var property in ConfigurationFactory.GetProperties().Where(p => !p.Ignored))
+            foreach (var property in ConfigurationFactory.GetProperties().Where(configurationSelector))
             {
                 var choosePropertiesElement = project.CreateChooseElement();
                 project.AppendChild(choosePropertiesElement);
 
                 foreach (var value in ConfigurationFactory.GetValues(property))
                 {
-                    var propertiesCondition = CreateContainsCondition(parseConfigurationName, ConfigurationFactory.PropertySeperator + value.Value + ConfigurationFactory.PropertySeperator);
+                    var propertiesCondition = CreateContainsCondition(parsePropertyName, ConfigurationFactory.PropertySeperator + value.Value + ConfigurationFactory.PropertySeperator);
                     var whenPropertiesElement = project.CreateWhenElement(propertiesCondition);
                     choosePropertiesElement.AppendChild(whenPropertiesElement);
 
@@ -111,6 +119,28 @@ namespace Microsoft.DotNet.Build.Tasks
             }
         }
 
+        private void CreateRuntimeIdentifier(ProjectRootElement project)
+        {
+            var rid = Microsoft.DotNet.PlatformAbstractions.RuntimeEnvironment.GetRuntimeIdentifier();
+
+            string[] ridParts = rid.Split('-');
+
+            if (ridParts.Length < 1)
+            {
+                throw new System.InvalidOperationException($"Unknown rid format {rid}.");
+            }
+
+            string osNameAndVersion = ridParts[0];
+
+            var propertyGroup = project.CreatePropertyGroupElement();
+            project.AppendChild(propertyGroup);
+
+            var runtimeProperty = propertyGroup.AddProperty(RuntimeOSProperty, $"{osNameAndVersion}");
+            runtimeProperty.Condition = $"'$({RuntimeOSProperty})' == ''";
+
+            Log.LogMessage($"Running on OS with RID {rid}, so defaulting RuntimeOS to '{osNameAndVersion}'");
+        }
+
         /// <summary>
         /// Creates a props file to find best $(Configuration) from $(BuildConfigurations) for any $(BuildConfiguration)
         /// </summary>
@@ -119,7 +149,7 @@ namespace Microsoft.DotNet.Build.Tasks
             var buildConfigurationProps = ProjectRootElement.Create();
 
             // pull apart BuildConfiguration, but don't set any derived properties
-            ParseConfigurationString(BuildConfigurationProperty, buildConfigurationProps, includeAdditionalProperites:false);
+            ParseProperties(BuildConfigurationProperty, buildConfigurationProps, false, p => !p.Independent);
 
             // Set error on missing import
             var buildConfigurationsPropertyGroup = buildConfigurationProps.CreatePropertyGroupElement();

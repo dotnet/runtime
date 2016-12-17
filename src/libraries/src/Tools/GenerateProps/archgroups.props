@@ -1,7 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <ArchGroups Include="AnyCPU" />
     <ArchGroups Include="x86" />
     <ArchGroups Include="x64" />
     <ArchGroups Include="ARM" />

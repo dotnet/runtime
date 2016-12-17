@@ -20,6 +20,7 @@
   <Import Project="$(ToolsDir)VersionTools.targets" Condition="Exists('$(ToolsDir)VersionTools.targets')" />
 
   <ItemGroup>
+    <Project Include="external\dir.proj" />
     <Project Include="src\ref.builds" />
     <Project Include="src\src.builds" />
     <!--
