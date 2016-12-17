@@ -145,6 +145,10 @@ GTNODE(LT               , "<"            ,GenTreeOp          ,0,GTK_BINOP|GTK_RE
 GTNODE(LE               , "<="           ,GenTreeOp          ,0,GTK_BINOP|GTK_RELOP)
 GTNODE(GE               , ">="           ,GenTreeOp          ,0,GTK_BINOP|GTK_RELOP)
 GTNODE(GT               , ">"            ,GenTreeOp          ,0,GTK_BINOP|GTK_RELOP)
+#ifndef LEGACY_BACKEND
+GTNODE(TEST_EQ          , "testEQ"       ,GenTreeOp          ,0,GTK_BINOP|GTK_RELOP)
+GTNODE(TEST_NE          , "testNE"       ,GenTreeOp          ,0,GTK_BINOP|GTK_RELOP)
+#endif
 
 GTNODE(COMMA            , "comma"        ,GenTreeOp          ,0,GTK_BINOP|GTK_NOTLIR)
 
