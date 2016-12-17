@@ -284,10 +284,6 @@ MembersMustExist : Member 'System.String.GetEnumerator()' does not exist in the 
 MembersMustExist : Member 'System.String.GetTypeCode()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.String.Intern(System.String)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.String.IsInterned(System.String)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.String.IsNormalized()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.String.IsNormalized(System.Text.NormalizationForm)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.String.Normalize()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.String.Normalize(System.Text.NormalizationForm)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.String.StartsWith(System.String, System.Boolean, System.Globalization.CultureInfo)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.String.ToLower(System.Globalization.CultureInfo)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.String.ToString(System.IFormatProvider)' does not exist in the implementation but it does exist in the contract.
@@ -298,42 +294,7 @@ CannotRemoveBaseTypeOrInterface : Type 'System.TimeoutException' does not inheri
 MembersMustExist : Member 'System.TimeoutException..ctor(System.Runtime.Serialization.SerializationInfo, System.Runtime.Serialization.StreamingContext)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.TimeSpan.CompareTo(System.Object)' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.TimeZone' does not exist in the implementation but it does exist in the contract.
-CannotRemoveBaseTypeOrInterface : Type 'System.TimeZoneInfo' does not implement interface 'System.Runtime.Serialization.ISerializable' in the implementation but it does in the contract.
-MembersMustExist : Member 'System.TimeZoneInfo.ClearCachedData()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.TimeZoneInfo.ConvertTimeBySystemTimeZoneId(System.DateTime, System.String)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.TimeZoneInfo.ConvertTimeBySystemTimeZoneId(System.DateTime, System.String, System.String)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.TimeZoneInfo.ConvertTimeBySystemTimeZoneId(System.DateTimeOffset, System.String)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.TimeZoneInfo.ConvertTimeFromUtc(System.DateTime, System.TimeZoneInfo)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.TimeZoneInfo.ConvertTimeToUtc(System.DateTime)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.TimeZoneInfo.ConvertTimeToUtc(System.DateTime, System.TimeZoneInfo)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.TimeZoneInfo.CreateCustomTimeZone(System.String, System.TimeSpan, System.String, System.String)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.TimeZoneInfo.CreateCustomTimeZone(System.String, System.TimeSpan, System.String, System.String, System.String, System.TimeZoneInfo.AdjustmentRule[])' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.TimeZoneInfo.CreateCustomTimeZone(System.String, System.TimeSpan, System.String, System.String, System.String, System.TimeZoneInfo.AdjustmentRule[], System.Boolean)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.TimeZoneInfo.FromSerializedString(System.String)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.TimeZoneInfo.GetAdjustmentRules()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.TimeZoneInfo.HasSameRules(System.TimeZoneInfo)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.TimeZoneInfo.ToSerializedString()' does not exist in the implementation but it does exist in the contract.
-CannotRemoveBaseTypeOrInterface : Type 'System.TimeZoneInfo.AdjustmentRule' does not implement interface 'System.Runtime.Serialization.IDeserializationCallback' in the implementation but it does in the contract.
-MembersMustExist : Member 'System.TimeZoneInfo.AdjustmentRule.CreateAdjustmentRule(System.DateTime, System.DateTime, System.TimeSpan, System.TimeZoneInfo.TransitionTime, System.TimeZoneInfo.TransitionTime)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.TimeZoneInfo.AdjustmentRule.DateEnd.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.TimeZoneInfo.AdjustmentRule.DateStart.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.TimeZoneInfo.AdjustmentRule.DaylightDelta.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.TimeZoneInfo.AdjustmentRule.DaylightTransitionEnd.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.TimeZoneInfo.AdjustmentRule.DaylightTransitionStart.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.TimeZoneInfo.AdjustmentRule.Equals(System.TimeZoneInfo.AdjustmentRule)' does not exist in the implementation but it does exist in the contract.
-CannotRemoveBaseTypeOrInterface : Type 'System.TimeZoneInfo.TransitionTime' does not implement interface 'System.Runtime.Serialization.IDeserializationCallback' in the implementation but it does in the contract.
-MembersMustExist : Member 'System.TimeZoneInfo.TransitionTime.CreateFixedDateRule(System.DateTime, System.Int32, System.Int32)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.TimeZoneInfo.TransitionTime.CreateFloatingDateRule(System.DateTime, System.Int32, System.Int32, System.DayOfWeek)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.TimeZoneInfo.TransitionTime.Day.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.TimeZoneInfo.TransitionTime.DayOfWeek.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.TimeZoneInfo.TransitionTime.Equals(System.TimeZoneInfo.TransitionTime)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.TimeZoneInfo.TransitionTime.IsFixedDateRule.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.TimeZoneInfo.TransitionTime.Month.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.TimeZoneInfo.TransitionTime.op_Equality(System.TimeZoneInfo.TransitionTime, System.TimeZoneInfo.TransitionTime)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.TimeZoneInfo.TransitionTime.op_Inequality(System.TimeZoneInfo.TransitionTime, System.TimeZoneInfo.TransitionTime)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.TimeZoneInfo.TransitionTime.TimeOfDay.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.TimeZoneInfo.TransitionTime.Week.get()' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.TimeZoneNotFoundException' does not exist in the implementation but it does exist in the contract.
 CannotMakeMemberNonVirtual : Member 'System.Type.IsEnum' is non-virtual in the implementation but is virtual in the contract.
 CannotMakeMemberNonVirtual : Member 'System.Type.Equals(System.Type)' is non-virtual in the implementation but is virtual in the contract.
 CannotMakeMemberNonVirtual : Member 'System.Type.IsEnum.get()' is non-virtual in the implementation but is virtual in the contract.
@@ -376,8 +337,6 @@ MembersMustExist : Member 'System.Diagnostics.DebuggableAttribute.IsJITTrackingE
 CannotRemoveBaseTypeOrInterface : Type 'System.Globalization.CompareInfo' does not implement interface 'System.Runtime.Serialization.IDeserializationCallback' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Globalization.CultureNotFoundException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
 MembersMustExist : Member 'System.Globalization.CultureNotFoundException..ctor(System.Runtime.Serialization.SerializationInfo, System.Runtime.Serialization.StreamingContext)' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Globalization.DaylightTime' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Globalization.IdnMapping' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Globalization.TextInfo' does not implement interface 'System.Runtime.Serialization.IDeserializationCallback' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.IO.DirectoryNotFoundException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
 MembersMustExist : Member 'System.IO.DirectoryNotFoundException..ctor(System.Runtime.Serialization.SerializationInfo, System.Runtime.Serialization.StreamingContext)' does not exist in the implementation but it does exist in the contract.
@@ -539,7 +498,6 @@ MembersMustExist : Member 'System.Text.Encoding.IsMailNewsDisplay.get()' does no
 MembersMustExist : Member 'System.Text.Encoding.IsMailNewsSave.get()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Text.Encoding.WindowsCodePage.get()' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Text.EncodingInfo' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Text.NormalizationForm' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Text.StringBuilder' does not implement interface 'System.Runtime.Serialization.ISerializable' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Threading.WaitHandle' does not inherit from base type 'System.MarshalByRefObject' in the implementation but it does in the contract.
 MembersMustExist : Member 'System.Threading.WaitHandle.Close()' does not exist in the implementation but it does exist in the contract.
@@ -558,4 +516,4 @@ CannotRemoveBaseTypeOrInterface : Type 'System.Threading.Tasks.Task' does not im
 MembersMustExist : Member 'System.Threading.Tasks.Task.Dispose()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Threading.Tasks.Task.Dispose(System.Boolean)' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Threading.Tasks.Task<TResult>' does not implement interface 'System.IDisposable' in the implementation but it does in the contract.
-Total Issues: 559
+Total Issues: 517

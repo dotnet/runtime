@@ -27,7 +27,7 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == '' OR '$(TargetGroup)'=='netstandard1.7' OR '$(TargetGroup)'=='netcoreapp1.1'">
     <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj">
-      <TargetGroup>netstandard1.7</TargetGroup>
+      <UndefineProperties>%(ProjectReference.UndefineProperties);TargetGroup</UndefineProperties>
     </ProjectReference>
     <ProjectReference Include="..\..\System.Diagnostics.Debug\src\System.Diagnostics.Debug.csproj">
       <UndefineProperties>%(ProjectReference.UndefineProperties);TargetGroup</UndefineProperties>
