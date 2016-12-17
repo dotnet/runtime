@@ -2057,6 +2057,10 @@ void Lowering::LowerCompare(GenTree* cmp)
         }
         else if (op1->OperGet() == GT_AND && ((cmp->OperGet() == GT_EQ) || (cmp->OperGet() == GT_NE)))
         {
+            //
+            // Transform ((x AND y) EQ|NE 0) into (x TEST_EQ|TEST_NE y) when possible.
+            //
+
             GenTree* andOp1 = op1->gtGetOp1();
             GenTree* andOp2 = op1->gtGetOp2();
 
@@ -2072,6 +2076,36 @@ void Lowering::LowerCompare(GenTree* cmp)
                     op2Value = 0;
                     op2->SetIconValue(0);
                     cmp->SetOperRaw(GenTree::ReverseRelop(cmp->OperGet()));
+                }
+            }
+
+            // TODO-CQ: The second GT_AND operand does not need to be a constant, this is a temporary
+            // restriction to prevent TreeNodeInfoInitCmp creating a contained second memory operand.
+            // Unlike CMP TEST does not have a TEST reg, mem form.
+
+            if (op2Value == 0 && andOp2->IsIntegralConst())
+            {
+                BlockRange().Remove(op1);
+                BlockRange().Remove(op2);
+
+                cmp->SetOperRaw(cmp->OperGet() == GT_EQ ? GT_TEST_EQ : GT_TEST_NE);
+                cmp->gtOp.gtOp1 = andOp1;
+                cmp->gtOp.gtOp2 = andOp2;
+
+                if (andOp1->isMemoryOp() && varTypeIsSmallInt(andOp1))
+                {
+                    ssize_t andOp2Value = andOp2->AsIntCon()->IconValue();
+
+                    // TOOD-CQ: There's more than can be done here. This is just enough to prevent
+                    // code size regressions.
+
+                    if (((andOp1->TypeGet() == TYP_UBYTE) && FitsIn<UINT8>(andOp2Value)) ||
+                        ((andOp1->TypeGet() == TYP_BYTE) && FitsIn<INT8>(andOp2Value)) ||
+                        ((andOp1->TypeGet() == TYP_CHAR) && FitsIn<UINT16>(andOp2Value)) ||
+                        ((andOp1->TypeGet() == TYP_SHORT) && FitsIn<INT16>(andOp2Value)))
+                    {
+                        andOp2->gtType = andOp1->TypeGet();
+                    }
                 }
             }
         }
