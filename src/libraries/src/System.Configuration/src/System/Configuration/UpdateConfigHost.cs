@@ -2,14 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Specialized;
+using System.Configuration.Internal;
 using System.Diagnostics;
+using System.IO;
 
 namespace System.Configuration
 {
-    using Collections.Specialized;
-    using Internal;
-    using IO;
-
     // Configuration host that intercepts calls to filename functions
     // to support SaveAs to an alternate file stream.
     internal class UpdateConfigHost : DelegatingConfigHost
@@ -30,12 +29,8 @@ namespace System.Configuration
         //                      on a remote machine.
         internal void AddStreamname(string oldStreamname, string newStreamname, bool alwaysIntercept)
         {
-            // TODO:
-            // After reviewing all the code path, oldStreamname shouldn't be Null or Empty.  It actually
-            // doesnt' make much sense if we're asked to intercept an null or empty stream.
-            // However, since we're shipping Whidbey RC soon it is too risky to remove that code.
-            // But I'll add Debug.Assert(!String.IsNullOrEmpty(oldStreamname)) to make sure my
-            // analysis is correct.
+            // After reviewing all the code paths, oldStreamname shouldn't be Null or Empty.
+            // It actually doesn't make much sense if we're asked to intercept an null or empty stream.
             Debug.Assert(!string.IsNullOrEmpty(oldStreamname));
 
             if (string.IsNullOrEmpty(oldStreamname)) return;

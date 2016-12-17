@@ -89,6 +89,7 @@
     <Compile Include="System\Configuration\IConfigurationSectionHandler.cs" />
     <Compile Include="System\Configuration\IgnoreSection.cs" />
     <Compile Include="System\Configuration\IgnoreSectionHandler.cs" />
+    <Compile Include="System\Configuration\ImplicitMachineConfigHost.cs" />
     <Compile Include="System\Configuration\InfiniteIntConverter.cs" />
     <Compile Include="System\Configuration\InfiniteTimeSpanConverter.cs" />
     <Compile Include="System\Configuration\IntegerValidator.cs" />
