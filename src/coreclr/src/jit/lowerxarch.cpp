@@ -3487,20 +3487,6 @@ void Lowering::TreeNodeInfoInitCmp(GenTreePtr tree)
                         ssize_t andOp2CnsVal = andOp2->AsIntConCommon()->IconValue();
                         ssize_t relOp2CnsVal = op2->AsIntConCommon()->IconValue();
 
-                        if ((relOp2CnsVal == andOp2CnsVal) && isPow2(andOp2CnsVal))
-                        {
-                            // We have a single bit test, so now we can change the
-                            // tree into the alternative form,
-                            // so that we can generate a test instruction.
-
-                            // Reverse the equality comparison
-                            tree->SetOperRaw((tree->gtOper == GT_EQ) ? GT_NE : GT_EQ);
-
-                            // Change the relOp2CnsVal to zero
-                            relOp2CnsVal = 0;
-                            op2->AsIntConCommon()->SetIconValue(0);
-                        }
-
                         // Now do we have a equality compare with zero?
                         //
                         if (relOp2CnsVal == 0)

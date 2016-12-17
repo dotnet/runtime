@@ -2055,6 +2055,26 @@ void Lowering::LowerCompare(GenTree* cmp)
                 }
             }
         }
+        else if (op1->OperGet() == GT_AND && ((cmp->OperGet() == GT_EQ) || (cmp->OperGet() == GT_NE)))
+        {
+            GenTree* andOp1 = op1->gtGetOp1();
+            GenTree* andOp2 = op1->gtGetOp2();
+
+            if (op2Value != 0)
+            {
+                //
+                // If we don't have a 0 compare we can get one by transforming ((x AND mask) EQ|NE mask)
+                // into ((x AND mask) NE|EQ 0) when mask is a single bit.
+                //
+
+                if (isPow2(static_cast<size_t>(op2Value)) && andOp2->IsIntegralConst(op2Value))
+                {
+                    op2Value = 0;
+                    op2->SetIconValue(0);
+                    cmp->SetOperRaw(GenTree::ReverseRelop(cmp->OperGet()));
+                }
+            }
+        }
     }
 #endif // _TARGET_XARCH_
 
