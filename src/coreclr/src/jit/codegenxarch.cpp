@@ -6072,7 +6072,7 @@ void CodeGen::genCompareInt(GenTreePtr treeNode)
     GenTreePtr op2       = tree->gtOp2;
     var_types  op1Type   = op1->TypeGet();
     var_types  op2Type   = op2->TypeGet();
-    regNumber  targetReg = treeNode->gtRegNum;
+    regNumber  targetReg = tree->gtRegNum;
 
     // Case of op1 == 0 or op1 != 0:
     // Optimize generation of 'test' instruction if op1 sets flags.
@@ -6132,9 +6132,6 @@ void CodeGen::genCompareInt(GenTreePtr treeNode)
 
     genConsumeOperands(tree);
 
-    instruction ins;
-    emitAttr    cmpAttr;
-
     // TODO-CQ: We should be able to support swapping op1 and op2 to generate cmp reg, imm.
     // https://github.com/dotnet/coreclr/issues/7270
     assert(!op1->isContainedIntOrIImmed()); // We no longer support
@@ -6144,10 +6141,10 @@ void CodeGen::genCompareInt(GenTreePtr treeNode)
     assert(!varTypeIsLong(op1Type) && !varTypeIsLong(op2Type));
 #endif // _TARGET_X86_
 
-    // By default we use an int32 sized cmp instruction
+    // By default we use an int32 sized cmp/test instruction
     //
-    ins = ((treeNode->OperGet() == GT_TEST_EQ) || (treeNode->OperGet() == GT_TEST_NE)) ? INS_test : INS_cmp;
-    var_types cmpType = TYP_INT;
+    instruction ins     = ((tree->OperGet() == GT_TEST_EQ) || (tree->OperGet() == GT_TEST_NE)) ? INS_test : INS_cmp;
+    var_types   cmpType = TYP_INT;
 
     // In the if/then/else statement below we may change the
     // 'cmpType' and/or 'ins' to generate a smaller instruction
@@ -6166,8 +6163,6 @@ void CodeGen::genCompareInt(GenTreePtr treeNode)
             // If we have two different int64 types we need to use a long compare
             cmpType = TYP_LONG;
         }
-
-        cmpAttr = emitTypeSize(cmpType);
     }
     else // Here we know that (op1Type != op2Type)
     {
@@ -6204,45 +6199,21 @@ void CodeGen::genCompareInt(GenTreePtr treeNode)
             }
         }
 #endif // _TARGET_AMD64_
-
-        cmpAttr = emitTypeSize(cmpType);
     }
 
     // See if we can generate a "test" instruction instead of a "cmp".
     // For this to generate the correct conditional branch we must have
     // a compare against zero.
     //
-    if (op2->IsIntegralConst(0))
+    if ((ins == INS_cmp) && !op1->isContained() && op2->IsIntegralConst(0))
     {
-        if (!op1->isUsedFromReg())
-        {
-            // op1 can be a contained memory op
-            // or the special contained GT_AND that we created in Lowering::TreeNodeInfoInitCmp()
-            //
-            if ((op1->OperGet() == GT_AND) && op1->gtGetOp2()->isContainedIntOrIImmed() &&
-                ((tree->OperGet() == GT_EQ) || (tree->OperGet() == GT_NE)))
-            {
-                ins = INS_test;        // we will generate "test andOp1, andOp2CnsVal"
-                op2 = op1->gtOp.gtOp2; // must assign op2 before we overwrite op1
-                op1 = op1->gtOp.gtOp1; // overwrite op1
-
-                if (op1->isUsedFromMemory())
-                {
-                    // use the size andOp1 if it is a contained memoryop.
-                    cmpAttr = emitTypeSize(op1->TypeGet());
-                }
-                // fallthrough to emit->emitInsBinary(ins, cmpAttr, op1, op2);
-            }
-        }
-        else // op1 is not contained thus it must be in a register
-        {
-            ins = INS_test;
-            op2 = op1; // we will generate "test reg1,reg1"
-            // fallthrough to emit->emitInsBinary(ins, cmpAttr, op1, op2);
-        }
+        // op1 is not contained thus it must be in a register
+        ins = INS_test;
+        op2 = op1; // we will generate "test reg1,reg1"
+        // fallthrough to emit->emitInsBinary(ins, cmpAttr, op1, op2);
     }
 
-    getEmitter()->emitInsBinary(ins, cmpAttr, op1, op2);
+    getEmitter()->emitInsBinary(ins, emitTypeSize(cmpType), op1, op2);
 
     // Are we evaluating this into a register?
     if (targetReg != REG_NA)
