@@ -3448,63 +3448,6 @@ void Lowering::TreeNodeInfoInitCmp(GenTreePtr tree)
         // we can treat the isMemoryOp as contained.
         bool op1CanBeContained = (genTypeSize(op1Type) == genTypeSize(op2Type));
 
-        // Do we have a short compare against a constant in op2
-        //
-        if (varTypeIsSmall(op1Type))
-        {
-            GenTreeIntCon* con  = op2->AsIntCon();
-            ssize_t        ival = con->gtIconVal;
-
-            bool isEqualityCompare = (tree->gtOper == GT_EQ || tree->gtOper == GT_NE);
-            bool useTest           = isEqualityCompare && (ival == 0);
-
-            if (!useTest)
-            {
-                ssize_t lo         = 0; // minimum imm value allowed for cmp reg,imm
-                ssize_t hi         = 0; // maximum imm value allowed for cmp reg,imm
-                bool    isUnsigned = false;
-
-                switch (op1Type)
-                {
-                    case TYP_BOOL:
-                        op1Type = TYP_UBYTE;
-                        __fallthrough;
-                    case TYP_UBYTE:
-                        lo         = 0;
-                        hi         = 0x7f;
-                        isUnsigned = true;
-                        break;
-                    case TYP_BYTE:
-                        lo = -0x80;
-                        hi = 0x7f;
-                        break;
-                    case TYP_CHAR:
-                        lo         = 0;
-                        hi         = 0x7fff;
-                        isUnsigned = true;
-                        break;
-                    case TYP_SHORT:
-                        lo = -0x8000;
-                        hi = 0x7fff;
-                        break;
-                    default:
-                        unreached();
-                }
-
-                if ((ival >= lo) && (ival <= hi))
-                {
-                    // We can perform a small compare with the immediate 'ival'
-                    tree->gtFlags |= GTF_RELOP_SMALL;
-                    if (isUnsigned && !isEqualityCompare)
-                    {
-                        tree->gtFlags |= GTF_UNSIGNED;
-                    }
-                    // We can treat the isMemoryOp as "contained"
-                    op1CanBeContained = true;
-                }
-            }
-        }
-
         if (op1CanBeContained)
         {
             if (op1->isMemoryOp())
