@@ -31,25 +31,31 @@ namespace System.Configuration
             _typeConfigHost = typeConfigHost;
             _hostInitConfigurationParams = hostInitConfigurationParams;
 
-            InternalConfigRoot configRoot = new InternalConfigRoot(this);
-
-            IInternalConfigHost configHost =
-                (IInternalConfigHost)TypeUtil.CreateInstance(typeConfigHost);
+            IInternalConfigHost configHost = (IInternalConfigHost)TypeUtil.CreateInstance(typeConfigHost);
 
             // Wrap the host with the UpdateConfigHost to support SaveAs.
-            IInternalConfigHost updateConfigHost = new UpdateConfigHost(configHost);
+            UpdateConfigHost updateConfigHost = new UpdateConfigHost(configHost);
 
-            ((IInternalConfigRoot)configRoot).Init(updateConfigHost, true);
+            // Now wrap in ImplicitMachineConfigHost so we can stub in a simple machine.config if needed.
+            IInternalConfigHost implicitMachineConfigHost = new ImplicitMachineConfigHost(updateConfigHost);
+
+            InternalConfigRoot configRoot = new InternalConfigRoot(this, updateConfigHost);
+            ((IInternalConfigRoot)configRoot).Init(implicitMachineConfigHost, isDesignTime: true);
 
             // Set the configuration paths for this Configuration.
+            //
             // We do this in a separate step so that the WebConfigurationHost
             // can use this object's _configRoot to get the <sites> section,
             // which is used in it's MapPath implementation.
             string configPath, locationConfigPath;
-            configHost.InitForConfiguration(ref locationSubPath, out configPath, out locationConfigPath, configRoot,
+            implicitMachineConfigHost.InitForConfiguration(
+                ref locationSubPath,
+                out configPath,
+                out locationConfigPath,
+                configRoot,
                 hostInitConfigurationParams);
 
-            if (!string.IsNullOrEmpty(locationSubPath) && !updateConfigHost.SupportsLocation)
+            if (!string.IsNullOrEmpty(locationSubPath) && !implicitMachineConfigHost.SupportsLocation)
                 throw ExceptionUtil.UnexpectedError("Configuration::ctor");
 
             if (string.IsNullOrEmpty(locationSubPath) != string.IsNullOrEmpty(locationConfigPath))

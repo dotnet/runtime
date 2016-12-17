@@ -18,9 +18,6 @@ namespace System.ConfigurationTests
             const string SimpleConfig =
 @"<?xml version='1.0' encoding='utf-8' ?>
 <configuration>
-  <configSections>
-    <section name='appSettings' type='System.Configuration.AppSettingsSection, System.Configuration' restartOnExternalChanges='false' requirePermission='false' />
-  </configSections>
   <appSettings>
     <add key='Setting1' value='May 5, 2014'/>
     <add key='Setting2' value='May 6, 2014'/>

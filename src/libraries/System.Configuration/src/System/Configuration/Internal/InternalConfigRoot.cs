@@ -19,14 +19,19 @@ namespace System.Configuration.Internal
         private ReaderWriterLock _hierarchyLock;
         private bool _isDesignTime;
 
-        internal InternalConfigRoot() { }
+        internal InternalConfigRoot()
+        {
+        }
 
-        internal InternalConfigRoot(Configuration currentConfiguration)
+        internal InternalConfigRoot(Configuration currentConfiguration, UpdateConfigHost host)
         {
             CurrentConfiguration = currentConfiguration;
+            UpdateConfigHost = host;
         }
 
         internal IInternalConfigHost Host { get; private set; }
+
+        internal UpdateConfigHost UpdateConfigHost { get; private set; }
 
         internal BaseConfigurationRecord RootConfigRecord { get; private set; }
 

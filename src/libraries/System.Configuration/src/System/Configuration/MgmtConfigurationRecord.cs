@@ -39,7 +39,7 @@ namespace System.Configuration
         private MgmtConfigurationRecord MgmtParent => (MgmtConfigurationRecord)_parent;
 
         // The IInternalConfigHost cast to UpdateConfigHost.
-        private UpdateConfigHost UpdateConfigHost => (UpdateConfigHost)Host;
+        private UpdateConfigHost UpdateConfigHost => _configRoot.UpdateConfigHost;
 
         protected override SimpleBitVector32 ClassFlags => s_mgmtClassFlags;
 
@@ -985,9 +985,7 @@ namespace System.Configuration
                     ConfigStreamInfo.StreamVersion = MonitorStream(null, null, ConfigStreamInfo.StreamName);
                 }
 
-                //
                 // Update the host to redirect filenames
-                //
                 UpdateConfigHost.AddStreamname(ConfigStreamInfo.StreamName, filename, Host.IsRemote);
 
                 // Redirect also all configSource filenames
