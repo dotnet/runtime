@@ -144,6 +144,8 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsOSX)' == 'true'">
     <Reference Include="System.Threading.Thread" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <Reference Include="System.Collections" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
