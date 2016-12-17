@@ -3492,6 +3492,17 @@ mono_arch_have_fast_tls (void)
 #endif
 }
 
+int
+mono_amd64_get_tls_gs_offset (void)
+{
+#ifdef TARGET_OSX
+	return tls_gs_offset;
+#else
+	g_assert_not_reached ();
+	return -1;
+#endif
+}
+
 /*
  * mono_amd64_emit_tls_get:
  * @code: buffer to store code to

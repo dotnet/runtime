@@ -470,6 +470,9 @@ mono_amd64_get_original_ip (void);
 GSList*
 mono_amd64_get_exception_trampolines (gboolean aot);
 
+int
+mono_amd64_get_tls_gs_offset (void) MONO_LLVM_INTERNAL;
+
 gpointer
 mono_amd64_handler_block_trampoline_helper (void);
 

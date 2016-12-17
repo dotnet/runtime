@@ -5611,6 +5611,31 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			break;
 #endif
 		}
+		case OP_TLS_GET: {
+#if (defined(TARGET_AMD64) || defined(TARGET_X86)) && defined(__linux__)
+#ifdef TARGET_AMD64
+			// 257 == FS segment register
+			LLVMTypeRef ptrtype = LLVMPointerType (IntPtrType (), 257);
+#else
+			// 256 == GS segment register
+			LLVMTypeRef ptrtype = LLVMPointerType (IntPtrType (), 256);
+#endif
+			// FIXME: XEN
+			values [ins->dreg] = LLVMBuildLoad (builder, LLVMBuildIntToPtr (builder, LLVMConstInt (IntPtrType (), ins->inst_offset, TRUE), ptrtype, ""), "");
+#elif defined(TARGET_AMD64) && defined(TARGET_OSX)
+			/* See mono_amd64_emit_tls_get () */
+			int offset = mono_amd64_get_tls_gs_offset () + (ins->inst_offset * 8);
+
+			// 256 == GS segment register
+			LLVMTypeRef ptrtype = LLVMPointerType (IntPtrType (), 256);
+			values [ins->dreg] = LLVMBuildLoad (builder, LLVMBuildIntToPtr (builder, LLVMConstInt (IntPtrType (), offset, TRUE), ptrtype, ""), "");
+#else
+			set_failure (ctx, "opcode tls-get");
+			break;
+#endif
+
+			break;
+		}
 		case OP_GC_SAFE_POINT: {
 			LLVMValueRef val, cmp, callee;
 			LLVMBasicBlockRef poll_bb, cont_bb;
