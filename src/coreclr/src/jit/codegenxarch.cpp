@@ -6169,19 +6169,8 @@ void CodeGen::genCompareInt(GenTreePtr treeNode)
     }
     else // Here we know that (op1Type != op2Type)
     {
-        // Do we have a short compare against a constant in op2?
-        //
-        // We checked for this case in TreeNodeInfoInitCmp() and if we can perform a small
-        // compare immediate we labeled this compare with a GTF_RELOP_SMALL
-        // and for unsigned small non-equality compares the GTF_UNSIGNED flag.
-        //
-        if (op2->isContainedIntOrIImmed() && ((tree->gtFlags & GTF_RELOP_SMALL) != 0))
-        {
-            assert(varTypeIsSmall(op1Type));
-            cmpType = op1Type;
-        }
 #ifdef _TARGET_AMD64_
-        else // compare two different sized operands
+        // compare two different sized operands
         {
             // For this case we don't want any memory operands, only registers or immediates
             //

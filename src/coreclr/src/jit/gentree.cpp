@@ -10277,12 +10277,6 @@ void Compiler::gtDispNode(GenTreePtr tree, IndentStack* indentStack, __in __in_z
                     --msgLength;
                     break;
                 }
-                if (tree->gtFlags & GTF_RELOP_SMALL)
-                {
-                    printf("S");
-                    --msgLength;
-                    break;
-                }
                 goto DASH;
 
             default:
