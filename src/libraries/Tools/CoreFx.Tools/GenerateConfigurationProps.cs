@@ -175,7 +175,6 @@ namespace Microsoft.DotNet.Build.Tasks
                 CreateBuildConfigurationPropsFile(buildConfiguration);
             }
 
-
             buildConfigurationProps.Save(Path.Combine(PropsFolder, fileName));
         }
 
@@ -208,8 +207,8 @@ namespace Microsoft.DotNet.Build.Tasks
                 }
                 compatibleConfigurationStrings.Append(string.Join(ConfigurationSeperatorString, configurationStrings));
 
-                var gaurdedProjectConfigurationStrings = configurationStrings.Select(c => ConfigurationSeperator + c + ConfigurationSeperator);
-                var configurationCondition = CreateContainsCondition(parseBuildConfigurationsName, gaurdedProjectConfigurationStrings);
+                var guardedProjectConfigurationStrings = configurationStrings.Select(c => ConfigurationSeperator + c + ConfigurationSeperator);
+                var configurationCondition = CreateContainsCondition(parseBuildConfigurationsName, guardedProjectConfigurationStrings);
                 var whenConfigurationElement = configurationSpecificProps.CreateWhenElement(configurationCondition);
                 chooseConfigurationElement.AppendChild(whenConfigurationElement);
 

@@ -7,7 +7,6 @@ using Microsoft.Build.Utilities;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System;
 
 namespace Microsoft.DotNet.Build.Tasks
 {
