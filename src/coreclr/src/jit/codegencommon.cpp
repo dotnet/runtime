@@ -2475,6 +2475,10 @@ emitJumpKind CodeGen::genJumpKindForOper(genTreeOps cmp, CompareKind compareKind
         EJ_jle, // GT_LE
         EJ_jge, // GT_GE
         EJ_jg,  // GT_GT
+#ifndef LEGACY_BACKEND
+        EJ_je,  // GT_TEST_EQ
+        EJ_jne, // GT_TEST_NE
+#endif
 #elif defined(_TARGET_ARMARCH_)
         EJ_eq,   // GT_EQ
         EJ_ne,   // GT_NE
@@ -2494,6 +2498,10 @@ emitJumpKind CodeGen::genJumpKindForOper(genTreeOps cmp, CompareKind compareKind
         EJ_jbe, // GT_LE
         EJ_jae, // GT_GE
         EJ_ja,  // GT_GT
+#ifndef LEGACY_BACKEND
+        EJ_je,  // GT_TEST_EQ
+        EJ_jne, // GT_TEST_NE
+#endif
 #elif defined(_TARGET_ARMARCH_)
         EJ_eq,   // GT_EQ
         EJ_ne,   // GT_NE
@@ -2513,6 +2521,10 @@ emitJumpKind CodeGen::genJumpKindForOper(genTreeOps cmp, CompareKind compareKind
         EJ_NONE, // GT_LE
         EJ_jns,  // GT_GE   (S == 0)
         EJ_NONE, // GT_GT
+#ifndef LEGACY_BACKEND
+        EJ_NONE, // GT_TEST_EQ
+        EJ_NONE, // GT_TEST_NE
+#endif
 #elif defined(_TARGET_ARMARCH_)
         EJ_eq,   // GT_EQ   (Z == 1)
         EJ_ne,   // GT_NE   (Z == 0)
@@ -2530,6 +2542,10 @@ emitJumpKind CodeGen::genJumpKindForOper(genTreeOps cmp, CompareKind compareKind
     assert(genJCCinsSigned[GT_LE - GT_EQ] == EJ_jle);
     assert(genJCCinsSigned[GT_GE - GT_EQ] == EJ_jge);
     assert(genJCCinsSigned[GT_GT - GT_EQ] == EJ_jg);
+#ifndef LEGACY_BACKEND
+    assert(genJCCinsSigned[GT_TEST_EQ - GT_EQ] == EJ_je);
+    assert(genJCCinsSigned[GT_TEST_NE - GT_EQ] == EJ_jne);
+#endif
 
     assert(genJCCinsUnsigned[GT_EQ - GT_EQ] == EJ_je);
     assert(genJCCinsUnsigned[GT_NE - GT_EQ] == EJ_jne);
@@ -2537,6 +2553,10 @@ emitJumpKind CodeGen::genJumpKindForOper(genTreeOps cmp, CompareKind compareKind
     assert(genJCCinsUnsigned[GT_LE - GT_EQ] == EJ_jbe);
     assert(genJCCinsUnsigned[GT_GE - GT_EQ] == EJ_jae);
     assert(genJCCinsUnsigned[GT_GT - GT_EQ] == EJ_ja);
+#ifndef LEGACY_BACKEND
+    assert(genJCCinsUnsigned[GT_TEST_EQ - GT_EQ] == EJ_je);
+    assert(genJCCinsUnsigned[GT_TEST_NE - GT_EQ] == EJ_jne);
+#endif
 
     assert(genJCCinsLogical[GT_EQ - GT_EQ] == EJ_je);
     assert(genJCCinsLogical[GT_NE - GT_EQ] == EJ_jne);
