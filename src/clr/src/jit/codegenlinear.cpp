@@ -1220,12 +1220,6 @@ void CodeGen::genConsumeRegs(GenTree* tree)
         {
             genConsumeAddress(tree->AsIndir()->Addr());
         }
-        else if (tree->OperGet() == GT_AND)
-        {
-            // This is the special contained GT_AND that we created in Lowering::TreeNodeInfoInitCmp()
-            // Now we need to consume the operands of the GT_AND node.
-            genConsumeOperands(tree->AsOp());
-        }
 #ifdef _TARGET_XARCH_
         else if (tree->OperGet() == GT_LCL_VAR)
         {
