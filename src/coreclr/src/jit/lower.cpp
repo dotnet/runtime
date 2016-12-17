@@ -1989,6 +1989,45 @@ GenTree* Lowering::LowerTailCallViaHelper(GenTreeCall* call, GenTree* callTarget
 //
 void Lowering::LowerCompare(GenTree* cmp)
 {
+#ifdef _TARGET_XARCH_
+    if (cmp->gtGetOp2()->IsIntegralConst())
+    {
+        GenTree*       op1      = cmp->gtGetOp1();
+        var_types      op1Type  = op1->TypeGet();
+        GenTreeIntCon* op2      = cmp->gtGetOp2()->AsIntCon();
+        ssize_t        op2Value = op2->IconValue();
+
+        if (op1->isMemoryOp() && varTypeIsSmallInt(op1Type))
+        {
+            //
+            // If op1's type is small then try to narrow op2 so it has the same type as op1.
+            // Small types are usually used by memory loads and if both compare operands have
+            // the same type then the memory load can be contained. In certain situations
+            // (e.g "cmp ubyte, 200") we also get a smaller instruction encoding.
+            //
+
+            if ((op1Type == TYP_UBYTE) && FitsIn<UINT8>(op2Value))
+            {
+                cmp->gtFlags |= GTF_UNSIGNED;
+                op2->gtType = op1Type;
+            }
+            else if ((op1Type == TYP_BYTE) && FitsIn<INT8>(op2Value))
+            {
+                op2->gtType = op1Type;
+            }
+            else if ((op1Type == TYP_CHAR) && FitsIn<UINT16>(op2Value))
+            {
+                cmp->gtFlags |= GTF_UNSIGNED;
+                op2->gtType = op1Type;
+            }
+            else if ((op1Type == TYP_SHORT) && FitsIn<INT16>(op2Value))
+            {
+                op2->gtType = op1Type;
+            }
+        }
+    }
+#endif // _TARGET_XARCH_
+
 #ifndef _TARGET_64BIT_
     if (cmp->gtGetOp1()->TypeGet() != TYP_LONG)
     {
