@@ -398,10 +398,13 @@
     <Reference Include="System.Security.Claims" />
     <Reference Include="System.Diagnostics.Contracts" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsOSX)' == 'true'">
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <Reference Include="System.IO.FileSystem" />
     <Reference Include="System.Linq" />
     <Reference Include="System.Threading.Thread" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsLinux)' == 'true'">
+    <Reference Include="System.Threading.Timer" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
