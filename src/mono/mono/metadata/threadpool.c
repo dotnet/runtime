@@ -801,18 +801,18 @@ ves_icall_System_Threading_ThreadPool_RequestWorkerThread (void)
 	tpdomain->outstanding_request ++;
 	g_assert (tpdomain->outstanding_request >= 1);
 
-	mono_refcount_inc (threadpool);
+	domains_unlock ();
 
 	COUNTER_ATOMIC (threadpool, counter, {
-		if (!(counter._.starting < 32767 /* G_MAXINT16 */))
-			g_error ("%s: counter._.starting = %d, but should be < 32767", __func__, counter._.starting);
+		if (counter._.starting == 16)
+			return TRUE;
 
 		counter._.starting ++;
 	});
 
-	mono_threadpool_worker_enqueue (threadpool->worker, worker_callback, NULL);
+	mono_refcount_inc (threadpool);
 
-	domains_unlock ();
+	mono_threadpool_worker_enqueue (threadpool->worker, worker_callback, NULL);
 
 	return TRUE;
 }
