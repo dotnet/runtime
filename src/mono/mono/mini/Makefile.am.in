@@ -622,7 +622,7 @@ basic-simd.exe: basic-simd.cs TestDriver.dll
 	$(MCS) -out:$@ $(CSFLAGS) $< -r:TestDriver.dll -r:$(CLASS)/Mono.Simd.dll
 
 basic-vectors.exe: basic-vectors.cs TestDriver.dll
-	$(MCS) -out:$@ $(CSFLAGS) $< -r:TestDriver.dll -r:$(CLASS)/System.Numerics.dll
+	$(MCS) -out:$@ $(CSFLAGS) $< -r:TestDriver.dll -r:$(CLASS)/System.Numerics.dll -r:$(CLASS)/System.Numerics.Vectors.dll
 
 nacl.exe: nacl.cs TestDriver.dll
 	$(MCS) -out:$@ $(CSFLAGS) $< -r:TestDriver.dll -r:$(CLASS)/Mono.Simd.dll
