@@ -9,7 +9,7 @@
 
   <Target Name="Build">
     <PropertyGroup>
-      <ConfigurationPropsFolder>$(CoreFxToolsDir)configuration</ConfigurationPropsFolder>
+      <ConfigurationPropsFolder>$(ToolsDir)configuration</ConfigurationPropsFolder>
     </PropertyGroup>
 
     <GenerateConfigurationProps Properties="@(Property)" PropertyValues="@(PropertyValue)" PropsFolder="$(ConfigurationPropsFolder)" />

@@ -4,16 +4,8 @@
   <PropertyGroup>
     <NuGetDeploySourceItem>Reference</NuGetDeploySourceItem>
     <NuGetTargetMoniker>.NETStandard,Version=v1.7</NuGetTargetMoniker>
-    <OutputPath>$(RestoredRefRootPath)netstandard20</OutputPath>
+    <NugetRuntimeIdentifier>None</NugetRuntimeIdentifier>
+    <OutputPath>$(NetStandardRefPath)</OutputPath>
   </PropertyGroup>
-  <ItemGroup>
-    <None Include="project.json" />
-  </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
-  <Target Name="FilterNugetPackage" AfterTargets="ResolveNuGetPackages">
-    <!-- Filter down to just netstandard ref -->
-    <ItemGroup>
-      <Reference Remove="@(Reference)" Condition="'%(Filename)' != 'netstandard'" />
-    </ItemGroup>
-  </Target>
 </Project>
