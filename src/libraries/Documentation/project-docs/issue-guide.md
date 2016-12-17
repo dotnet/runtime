@@ -64,7 +64,7 @@ Areas are tracked by labels area-&#42; (e.g. area-System.Collections). Each area
 | [System.Drawing](https://github.com/dotnet/corefx/labels/area-System.Drawing)                 | [@alexperovich](https://github.com/alexperovich) |  |
 | [System.Dynamic.Runtime](https://github.com/dotnet/corefx/labels/area-System.Dynamic.Runtime) | [@VSadov](https://github.com/VSadov), [@OmarTawfik](https://github.com/OmarTawfik) |  |
 | [System.Globalization](https://github.com/dotnet/corefx/labels/area-System.Globalization)     | [@krwq](https://github.com/krwq), [@tarekgh](https://github.com/tarekgh) |  |
-| [System.IO](https://github.com/dotnet/corefx/labels/area-System.IO)                           | [@JeremyKhune](https://github.com/JeremyKuhne), [@ianhays](https://github.com/ianhays) |  |
+| [System.IO](https://github.com/dotnet/corefx/labels/area-System.IO)                           | [@JeremyKuhne](https://github.com/JeremyKuhne), [@ianhays](https://github.com/ianhays) |  |
 | [System.IO.Compression](https://github.com/dotnet/corefx/labels/area-System.IO.Compression)   | [@ianhays](https://github.com/ianhays) |  |
 | [System.Linq](https://github.com/dotnet/corefx/labels/area-System.Linq)                       | [@VSadov](https://github.com/VSadov), [@OmarTawfik](https://github.com/OmarTawfik) |  |
 | [System.Linq.Expressions](https://github.com/dotnet/corefx/labels/area-System.Linq.Expressions)   | [@VSadov](https://github.com/VSadov), [@OmarTawfik](https://github.com/OmarTawfik) |  |
