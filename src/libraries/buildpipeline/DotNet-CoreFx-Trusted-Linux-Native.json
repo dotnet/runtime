@@ -8,7 +8,7 @@
       "timeoutInMinutes": 0,
       "task": {
         "id": "b7e8b412-0437-4065-9371-edc5881de25b",
-        "versionSpec": "*",
+        "versionSpec": "1.*",
         "definitionType": "task"
       },
       "inputs": {
@@ -24,7 +24,7 @@
       "timeoutInMinutes": 0,
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
-        "versionSpec": "*",
+        "versionSpec": "1.*",
         "definitionType": "task"
       },
       "inputs": {
@@ -42,7 +42,7 @@
       "timeoutInMinutes": 0,
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
-        "versionSpec": "*",
+        "versionSpec": "1.*",
         "definitionType": "task"
       },
       "inputs": {
@@ -60,7 +60,7 @@
       "timeoutInMinutes": 0,
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
-        "versionSpec": "*",
+        "versionSpec": "1.*",
         "definitionType": "task"
       },
       "inputs": {
@@ -78,7 +78,7 @@
       "timeoutInMinutes": 0,
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
-        "versionSpec": "*",
+        "versionSpec": "1.*",
         "definitionType": "task"
       },
       "inputs": {
@@ -92,52 +92,34 @@
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
+      "displayName": "Start detached docker container",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "docker",
+        "arguments": "run -d -w $(GitDirectory) --name $(DockerContainerName) $(DockerImageName) sleep 7200",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
       "displayName": "Clone repository",
       "timeoutInMinutes": 0,
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
-        "versionSpec": "*",
+        "versionSpec": "1.*",
         "definitionType": "task"
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "run --name $(DockerContainerName) $(DockerImageName) git clone $(VsoCorefxGitUrl) $(GitDirectory)",
-        "workingFolder": "",
-        "failOnStandardError": "false"
-      }
-    },
-    {
-      "enabled": true,
-      "continueOnError": false,
-      "alwaysRun": false,
-      "displayName": "Commit changes",
-      "timeoutInMinutes": 0,
-      "task": {
-        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
-        "versionSpec": "*",
-        "definitionType": "task"
-      },
-      "inputs": {
-        "filename": "docker",
-        "arguments": "commit $(DockerContainerName) $(DockerContainerName)",
-        "workingFolder": "",
-        "failOnStandardError": "false"
-      }
-    },
-    {
-      "enabled": true,
-      "continueOnError": false,
-      "alwaysRun": false,
-      "displayName": "Remove container",
-      "timeoutInMinutes": 0,
-      "task": {
-        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
-        "versionSpec": "*",
-        "definitionType": "task"
-      },
-      "inputs": {
-        "filename": "docker",
-        "arguments": "rm $(DockerContainerName)",
+        "arguments": "exec $(DockerContainerName) git clone $(VsoCorefxGitUrl) $(GitDirectory)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -150,48 +132,12 @@
       "timeoutInMinutes": 0,
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
-        "versionSpec": "*",
+        "versionSpec": "1.*",
         "definitionType": "task"
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "run -w=\"$(GitDirectory)\" --name $(DockerContainerName) $(DockerContainerName) $(GitDirectory)/clean.sh",
-        "workingFolder": "",
-        "failOnStandardError": "false"
-      }
-    },
-    {
-      "enabled": true,
-      "continueOnError": false,
-      "alwaysRun": false,
-      "displayName": "Commit changes",
-      "timeoutInMinutes": 0,
-      "task": {
-        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
-        "versionSpec": "*",
-        "definitionType": "task"
-      },
-      "inputs": {
-        "filename": "docker",
-        "arguments": "commit $(DockerContainerName) $(DockerContainerName)",
-        "workingFolder": "",
-        "failOnStandardError": "false"
-      }
-    },
-    {
-      "enabled": true,
-      "continueOnError": false,
-      "alwaysRun": false,
-      "displayName": "Remove container",
-      "timeoutInMinutes": 0,
-      "task": {
-        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
-        "versionSpec": "*",
-        "definitionType": "task"
-      },
-      "inputs": {
-        "filename": "docker",
-        "arguments": "rm $(DockerContainerName)",
+        "arguments": "exec $(DockerContainerName) $(GitDirectory)/clean.sh",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -204,48 +150,12 @@
       "timeoutInMinutes": 0,
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
-        "versionSpec": "*",
+        "versionSpec": "1.*",
         "definitionType": "task"
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "run -w $(GitDirectory) --name $(DockerContainerName) $(DockerContainerName) git checkout $(SourceVersion)",
-        "workingFolder": "",
-        "failOnStandardError": "false"
-      }
-    },
-    {
-      "enabled": true,
-      "continueOnError": false,
-      "alwaysRun": false,
-      "displayName": "Commit changes",
-      "timeoutInMinutes": 0,
-      "task": {
-        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
-        "versionSpec": "*",
-        "definitionType": "task"
-      },
-      "inputs": {
-        "filename": "docker",
-        "arguments": "commit $(DockerContainerName) $(DockerContainerName)",
-        "workingFolder": "",
-        "failOnStandardError": "false"
-      }
-    },
-    {
-      "enabled": true,
-      "continueOnError": false,
-      "alwaysRun": false,
-      "displayName": "Remove container",
-      "timeoutInMinutes": 0,
-      "task": {
-        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
-        "versionSpec": "*",
-        "definitionType": "task"
-      },
-      "inputs": {
-        "filename": "docker",
-        "arguments": "rm $(DockerContainerName)",
+        "arguments": "exec $(DockerContainerName) git checkout $(SourceVersion)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -258,48 +168,12 @@
       "timeoutInMinutes": 0,
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
-        "versionSpec": "*",
+        "versionSpec": "1.*",
         "definitionType": "task"
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "run -w=\"$(GitDirectory)\" --name $(DockerContainerName) $(DockerContainerName) $(GitDirectory)/build-managed.sh -OfficialBuildId=$(OfficialBuildId) -- /t:GenerateVersionSourceFile /p:GenerateVersionSourceFile=true",
-        "workingFolder": "",
-        "failOnStandardError": "false"
-      }
-    },
-    {
-      "enabled": true,
-      "continueOnError": false,
-      "alwaysRun": false,
-      "displayName": "Commit changes",
-      "timeoutInMinutes": 0,
-      "task": {
-        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
-        "versionSpec": "*",
-        "definitionType": "task"
-      },
-      "inputs": {
-        "filename": "docker",
-        "arguments": "commit $(DockerContainerName) $(DockerContainerName)",
-        "workingFolder": "",
-        "failOnStandardError": "false"
-      }
-    },
-    {
-      "enabled": true,
-      "continueOnError": false,
-      "alwaysRun": false,
-      "displayName": "Remove container",
-      "timeoutInMinutes": 0,
-      "task": {
-        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
-        "versionSpec": "*",
-        "definitionType": "task"
-      },
-      "inputs": {
-        "filename": "docker",
-        "arguments": "rm $(DockerContainerName)",
+        "arguments": "exec $(DockerContainerName) $(GitDirectory)/build-managed.sh -OfficialBuildId=$(OfficialBuildId) -- /t:GenerateVersionSourceFile /p:GenerateVersionSourceFile=true",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -312,48 +186,12 @@
       "timeoutInMinutes": 0,
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
-        "versionSpec": "*",
+        "versionSpec": "1.*",
         "definitionType": "task"
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "run -w=\"$(GitDirectory)\" --name $(DockerContainerName) $(DockerContainerName) $(GitDirectory)/build-native.sh -buildArch=$(Platform) -$(ConfigurationGroup) -- generateversion",
-        "workingFolder": "",
-        "failOnStandardError": "false"
-      }
-    },
-    {
-      "enabled": true,
-      "continueOnError": false,
-      "alwaysRun": false,
-      "displayName": "Commit changes",
-      "timeoutInMinutes": 0,
-      "task": {
-        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
-        "versionSpec": "*",
-        "definitionType": "task"
-      },
-      "inputs": {
-        "filename": "docker",
-        "arguments": "commit $(DockerContainerName) $(DockerContainerName)",
-        "workingFolder": "",
-        "failOnStandardError": "false"
-      }
-    },
-    {
-      "enabled": true,
-      "continueOnError": false,
-      "alwaysRun": false,
-      "displayName": "Remove container",
-      "timeoutInMinutes": 0,
-      "task": {
-        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
-        "versionSpec": "*",
-        "definitionType": "task"
-      },
-      "inputs": {
-        "filename": "docker",
-        "arguments": "rm $(DockerContainerName)",
+        "arguments": "exec $(DockerContainerName) $(GitDirectory)/build-native.sh -buildArch=$(Platform) -$(ConfigurationGroup) -- generateversion",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -366,48 +204,12 @@
       "timeoutInMinutes": 0,
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
-        "versionSpec": "*",
+        "versionSpec": "1.*",
         "definitionType": "task"
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "run -w=\"$(GitDirectory)\" --name $(DockerContainerName) $(DockerContainerName) $(GitDirectory)/build-packages.sh -$(ConfigurationGroup) -DisableManagedPackage",
-        "workingFolder": "",
-        "failOnStandardError": "false"
-      }
-    },
-    {
-      "enabled": true,
-      "continueOnError": false,
-      "alwaysRun": false,
-      "displayName": "Commit changes",
-      "timeoutInMinutes": 0,
-      "task": {
-        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
-        "versionSpec": "*",
-        "definitionType": "task"
-      },
-      "inputs": {
-        "filename": "docker",
-        "arguments": "commit $(DockerContainerName) $(DockerContainerName)",
-        "workingFolder": "",
-        "failOnStandardError": "false"
-      }
-    },
-    {
-      "enabled": true,
-      "continueOnError": false,
-      "alwaysRun": false,
-      "displayName": "Remove container",
-      "timeoutInMinutes": 0,
-      "task": {
-        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
-        "versionSpec": "*",
-        "definitionType": "task"
-      },
-      "inputs": {
-        "filename": "docker",
-        "arguments": "rm $(DockerContainerName)",
+        "arguments": "exec $(DockerContainerName) $(GitDirectory)/build-packages.sh -$(ConfigurationGroup) -DisableManagedPackage",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -420,7 +222,7 @@
       "timeoutInMinutes": 0,
       "task": {
         "id": "b7e8b412-0437-4065-9371-edc5881de25b",
-        "versionSpec": "*",
+        "versionSpec": "1.*",
         "definitionType": "task"
       },
       "inputs": {
@@ -436,7 +238,7 @@
       "timeoutInMinutes": 0,
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
-        "versionSpec": "*",
+        "versionSpec": "1.*",
         "definitionType": "task"
       },
       "inputs": {
@@ -450,11 +252,29 @@
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
+      "displayName": "Stop detached docker container",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "docker",
+        "arguments": "stop $(DockerContainerName)",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
       "displayName": "Remove container",
       "timeoutInMinutes": 0,
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
-        "versionSpec": "*",
+        "versionSpec": "1.*",
         "definitionType": "task"
       },
       "inputs": {
@@ -472,7 +292,7 @@
       "timeoutInMinutes": 0,
       "task": {
         "id": "1d341bb0-2106-458c-8422-d00bcea6512a",
-        "versionSpec": "*",
+        "versionSpec": "1.*",
         "definitionType": "task"
       },
       "inputs": {
@@ -491,7 +311,7 @@
       "timeoutInMinutes": 0,
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
-        "versionSpec": "*",
+        "versionSpec": "1.*",
         "definitionType": "task"
       },
       "inputs": {
@@ -509,7 +329,7 @@
       "timeoutInMinutes": 0,
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
-        "versionSpec": "*",
+        "versionSpec": "1.*",
         "definitionType": "task"
       },
       "inputs": {
@@ -527,7 +347,7 @@
       "timeoutInMinutes": 0,
       "task": {
         "id": "1d341bb0-2106-458c-8422-d00bcea6512a",
-        "versionSpec": "*",
+        "versionSpec": "1.*",
         "definitionType": "task"
       },
       "inputs": {
@@ -707,6 +527,6 @@
     "description": "Visual Studio and DevDiv team project for git source code repositories.  Work items will be added for Adams, Dev14 work items are tracked in vstfdevdiv.  ",
     "url": "https://devdiv.visualstudio.com/DefaultCollection/_apis/projects/0bdbc590-a062-4c3f-b0f6-9383f67865ee",
     "state": "wellFormed",
-    "revision": 418097423
+    "revision": 418097435
   }
 }
