@@ -6,9 +6,9 @@
 #include "common.h"
 
 /*******************************************************************/
-/* The folowing routines used to exist in all builds so they could called from the
+/* The following routines used to exist in all builds so they could called from the
  * debugger before we had strike.
- * Now most of them are only inclued in debug builds for diagnostics purposes.
+ * Now most of them are only included in debug builds for diagnostics purposes.
 */
 /*******************************************************************/
 
@@ -23,6 +23,12 @@ BOOL isMemoryReadable(const TADDR start, unsigned len)
         SO_TOLERANT;
     }
     CONTRACTL_END;
+
+#if !defined(DACCESS_COMPILE) && defined(FEATURE_PAL)
+
+    return PAL_ProbeMemory((PVOID)start, len, FALSE);
+
+#else // !DACCESS_COMPILE && FEATURE_PAL
 
     //
     // To accomplish this in a no-throw way, we have to touch each and every page
@@ -87,6 +93,7 @@ BOOL isMemoryReadable(const TADDR start, unsigned len)
     }
 
     return 1;
+#endif // !DACCESS_COMPILE && FEATURE_PAL
 }
 
 

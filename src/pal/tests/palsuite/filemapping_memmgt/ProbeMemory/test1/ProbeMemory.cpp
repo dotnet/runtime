@@ -20,12 +20,7 @@ int __cdecl main(int argc, char *argv[])
 {
     int err;
     BOOL bResult;
-    HANDLE ProcessHandle;
-    DWORD ProcessID;
     LPVOID lpProcessAddress = NULL;
-    char ProcessBuffer[REGIONSIZE];
-    ULONG_PTR size = 0;
-
 
     /*Initialize the PAL environment*/
     err = PAL_Initialize(argc, argv);
@@ -34,28 +29,12 @@ int __cdecl main(int argc, char *argv[])
        return FAIL;
     }
     
-    /*retrieve the current process ID*/    
-    ProcessID = GetCurrentProcessId();
-
-    /*retrieve the current process handle*/
-    ProcessHandle = OpenProcess(
-                PROCESS_VM_READ,/*access flag*/
-                FALSE,          /*not inherited*/
-                ProcessID);
-    
-    if(NULL == ProcessHandle)
-    {
-        Fail("\nFailed to call OpenProcess API to retrieve "
-                "current process handle error code=%u\n",
-                GetLastError());
-    }
-
     /*allocate the virtual memory*/
     lpProcessAddress = VirtualAlloc(
             NULL,            /*system determine where to allocate the region*/
             REGIONSIZE,      /*specify the size*/
             MEM_COMMIT,      /*allocation type*/
-            PAGE_READONLY);  /*access protection*/
+            PAGE_READWRITE); /*access protection*/
 
     if(NULL == lpProcessAddress)
     {
@@ -63,51 +42,41 @@ int __cdecl main(int argc, char *argv[])
                 "virtual memory, error code=%u!\n", GetLastError());
     }
 
-    /*zero the memory*/
-    memset(ProcessBuffer, 0, REGIONSIZE);
-
-    /*retrieve the memory contents*/
-    bResult = ReadProcessMemory(
-            ProcessHandle,         /*current process handle*/
+    /*probe the memory for read*/
+    bResult = PAL_ProbeMemory(
             lpProcessAddress,      /*base of memory area*/
-            (LPVOID)ProcessBuffer,
             REGIONSIZE,            /*buffer length in bytes*/
-            &size);
+            FALSE);                /*read access*/
 
-    if(!bResult || REGIONSIZE != size)
+    if(!bResult)
     {
-        Trace("\nFailed to call ReadProcessMemory API "
-                "to retrieve the memory contents, error code=%u\n",
-                GetLastError());
-
-        err = CloseHandle(ProcessHandle);
-        if(0 == err)
-        {
-            Trace("\nFailed to call CloseHandle API, error code=%u\n",
-                GetLastError());
-        }
+        Trace("\nProbeMemory for read access FAILED\n");
 
         /*decommit the specified region*/
         err = VirtualFree(lpProcessAddress, REGIONSIZE, MEM_DECOMMIT);
         if(0 == err)
         {
-            Trace("\nFailed to call VirtualFree API, error code=%u\n",
-                GetLastError());
+            Fail("\nFailed to call VirtualFree API, error code=%u\n", GetLastError());
         }
+
         Fail("");
     }
 
-    err = CloseHandle(ProcessHandle);
-    if(0 == err)
-    {
-        Trace("\nFailed to call CloseHandle API, error code = %u\n",
-                GetLastError());
+    /*probe the memory for write */
+    bResult = PAL_ProbeMemory(
+            lpProcessAddress,      /*base of memory area*/
+            REGIONSIZE,            /*buffer length in bytes*/
+            TRUE);                 /*write access*/
 
+    if(!bResult)
+    {
+        Trace("\nProbeMemory for write access FAILED\n");
+
+        /*decommit the specified region*/
         err = VirtualFree(lpProcessAddress, REGIONSIZE, MEM_DECOMMIT);
         if(0 == err)
         {
-            Trace("\nFailed to call VirtualFree API, error code=%u\n",
-                    GetLastError());
+            Fail("\nFailed to call VirtualFree API, error code=%u\n", GetLastError());
         }
 
         Fail("");
@@ -117,8 +86,7 @@ int __cdecl main(int argc, char *argv[])
     err = VirtualFree(lpProcessAddress, REGIONSIZE, MEM_DECOMMIT);
     if(0 == err)
     {
-        Fail("\nFailed to call VirtualFree API, error code=%u\n",
-                GetLastError());
+        Fail("\nFailed to call VirtualFree API, error code=%u\n", GetLastError());
     }
 
     PAL_Terminate();
