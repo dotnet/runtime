@@ -3447,7 +3447,7 @@ void Lowering::TreeNodeInfoInitCmp(GenTreePtr tree)
     {
         // If the types are the same, or if the constant is of the correct size,
         // we can treat the isMemoryOp as contained.
-        if (genTypeSize(op1Type) == genTypeSize(op2Type))
+        if (op1Type == op2Type)
         {
             if (op1->isMemoryOp())
             {
