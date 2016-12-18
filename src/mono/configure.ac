@@ -432,6 +432,10 @@ AC_HEADER_STDC
 AC_LIBTOOL_WIN32_DLL
 # This causes monodis to not link correctly
 #AC_DISABLE_FAST_INSTALL
+
+#lookup makedev() header
+AC_HEADER_MAJOR
+
 AM_PROG_LIBTOOL
 # Use dolt (http://dolt.freedesktop.org/) instead of libtool for building.
 DOLT
