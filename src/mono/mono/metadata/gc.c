@@ -1019,11 +1019,12 @@ mono_gc_cleanup (void)
 		if (mono_thread_internal_current () != gc_thread) {
 			int ret;
 			gint64 start_ticks = mono_msec_ticks ();
-			gint64 end_ticks = start_ticks + 2000;
+			gint64 end_ticks = start_ticks + 40000;
 
 			mono_gc_finalize_notify ();
 			/* Finishing the finalizer thread, so wait a little bit... */
-			/* MS seems to wait for about 2 seconds */
+			/* MS seems to wait for about 2 seconds per finalizer thread */
+			/* and 40 seconds for all finalizers to finish */
 			while (!finalizer_thread_exited) {
 				gint64 current_ticks = mono_msec_ticks ();
 				guint32 timeout;
