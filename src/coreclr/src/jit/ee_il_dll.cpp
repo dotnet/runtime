@@ -1537,6 +1537,9 @@ const char* Compiler::eeGetClassName(CORINFO_CLASS_HANDLE clsHnd)
 
 const wchar_t* Compiler::eeGetCPString(size_t strHandle)
 {
+#ifdef FEATURE_PAL
+    return nullptr;
+#else
     char buff[512 + sizeof(CORINFO_String)];
 
     // make this bulletproof, so it works even if we are wrong.
@@ -1558,6 +1561,7 @@ const wchar_t* Compiler::eeGetCPString(size_t strHandle)
     }
 
     return (asString->chars);
+#endif // FEATURE_PAL
 }
 
 #endif // DEBUG

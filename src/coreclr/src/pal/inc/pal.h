@@ -648,6 +648,13 @@ PAL_DeleteExecWatchpoint(
 
 #endif
 
+PALIMPORT
+BOOL
+PALAPI
+PAL_ProbeMemory(
+    PVOID pBuffer,
+    DWORD cbBuffer,
+    BOOL fWriteAccess);
 
 /******************* winuser.h Entrypoints *******************************/
 
@@ -3653,16 +3660,6 @@ VirtualQuery(
          IN SIZE_T dwLength);
 
 PALIMPORT
-BOOL
-PALAPI
-ReadProcessMemory(
-          IN HANDLE hProcess,
-          IN LPCVOID lpBaseAddress,
-          OUT LPVOID lpBuffer,
-          IN SIZE_T nSize,
-          OUT SIZE_T * lpNumberOfBytesRead);
-
-PALIMPORT
 VOID
 PALAPI
 RtlMoveMemory(
@@ -4714,15 +4711,6 @@ typedef struct _RUNTIME_FUNCTION {
 #endif
     DWORD UnwindData;
 } RUNTIME_FUNCTION, *PRUNTIME_FUNCTION;
-
-PALIMPORT
-BOOL
-PALAPI
-WriteProcessMemory(IN HANDLE hProcess,
-                   IN LPVOID lpBaseAddress,
-                   IN LPCVOID lpBuffer,
-                   IN SIZE_T nSize,
-                   OUT SIZE_T * lpNumberOfBytesWritten);
 
 #define STANDARD_RIGHTS_REQUIRED  (0x000F0000L)
 #define SYNCHRONIZE               (0x00100000L)
