@@ -554,7 +554,9 @@ void BasicBlock::dspBlockHeader(Compiler* compiler,
     }
     if (showFlags)
     {
-        printf(" flags=0x%08x: ", bbFlags);
+        const unsigned lowFlags  = (unsigned)bbFlags;
+        const unsigned highFlags = (unsigned)(bbFlags >> 32);
+        printf(" flags=0x%08x.%08x: ", highFlags, lowFlags);
         dspFlags();
     }
     printf("\n");

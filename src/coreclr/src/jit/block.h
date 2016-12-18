@@ -287,13 +287,13 @@ struct BasicBlock : private LIR::Range
         }
     }
 
+    unsigned __int64 bbFlags; // see BBF_xxxx below
+
     unsigned bbNum; // the block's number
 
     unsigned bbPostOrderNum; // the block's post order number in the graph.
     unsigned bbRefs; // number of blocks that can reach here, either by fall-through or a branch. If this falls to zero,
                      // the block is unreachable.
-
-    unsigned bbFlags; // see BBF_xxxx below
 
 #define BBF_VISITED 0x00000001 // BB visited during optimizations
 #define BBF_MARKED 0x00000002  // BB marked  during optimizations
