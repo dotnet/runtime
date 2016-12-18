@@ -26,6 +26,7 @@ PAL_GetSymbolModuleBase
 PAL_GetTransportPipeName
 PAL_InitializeDLL
 PAL_IsDebuggerPresent
+PAL_ProbeMemory
 PAL_iswspace
 PAL_memcpy
 PAL_malloc
