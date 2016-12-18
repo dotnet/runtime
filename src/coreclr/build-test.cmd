@@ -98,7 +98,7 @@ if not exist "%__LogsDir%"                      md "%__LogsDir%"
 echo %__MsgPrefix%Checking prerequisites
 
 :: Eval the output from probe-win1.ps1
-for /f "delims=" %%a in ('powershell -NoProfile -ExecutionPolicy RemoteSigned "& ""%__SourceDir%\pal\tools\probe-win.ps1"""') do %%a
+for /f "delims=" %%a in ('powershell -NoProfile -ExecutionPolicy ByPass "& ""%__SourceDir%\pal\tools\probe-win.ps1"""') do %%a
 
 REM =========================================================================================
 REM ===
