@@ -3890,8 +3890,7 @@ bool Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
         BBjumpKinds oldJumpKind = top->bbJumpKind;
 
         // Update block flags
-        unsigned originalFlags;
-        originalFlags = top->bbFlags | BBF_GC_SAFE_POINT;
+        const unsigned __int64 originalFlags = top->bbFlags | BBF_GC_SAFE_POINT;
 
         // Unlike Fei's inliner from puclr, I'm allowed to split loops.
         // And we keep a few other flags...
@@ -19318,14 +19317,13 @@ void Compiler::fgDispDoms()
 
 void Compiler::fgTableDispBasicBlock(BasicBlock* block, int ibcColWidth /* = 0 */)
 {
-    unsigned flags = block->bbFlags;
-
-    unsigned bbNumMax         = compIsForInlining() ? impInlineInfo->InlinerCompiler->fgBBNumMax : fgBBNumMax;
-    int      maxBlockNumWidth = CountDigits(bbNumMax);
-    maxBlockNumWidth          = max(maxBlockNumWidth, 2);
-    int blockNumWidth         = CountDigits(block->bbNum);
-    blockNumWidth             = max(blockNumWidth, 2);
-    int blockNumPadding       = maxBlockNumWidth - blockNumWidth;
+    const unsigned __int64 flags    = block->bbFlags;
+    unsigned               bbNumMax = compIsForInlining() ? impInlineInfo->InlinerCompiler->fgBBNumMax : fgBBNumMax;
+    int                    maxBlockNumWidth = CountDigits(bbNumMax);
+    maxBlockNumWidth                        = max(maxBlockNumWidth, 2);
+    int blockNumWidth                       = CountDigits(block->bbNum);
+    blockNumWidth                           = max(blockNumWidth, 2);
+    int blockNumPadding                     = maxBlockNumWidth - blockNumWidth;
 
     printf("BB%02u%*s [%08p] %2u", block->bbNum, blockNumPadding, "", dspPtr(block), block->bbRefs);
 
@@ -21746,7 +21744,7 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
                 stmtAfter = fgInsertStmtListAfter(iciBlock, stmtAfter, InlineeCompiler->fgFirstBB->bbTreeList);
 
                 // Copy inlinee bbFlags to caller bbFlags.
-                const unsigned int inlineeBlockFlags = InlineeCompiler->fgFirstBB->bbFlags;
+                const unsigned __int64 inlineeBlockFlags = InlineeCompiler->fgFirstBB->bbFlags;
                 noway_assert((inlineeBlockFlags & BBF_HAS_JMP) == 0);
                 noway_assert((inlineeBlockFlags & BBF_KEEP_BBJ_ALWAYS) == 0);
                 iciBlock->bbFlags |= inlineeBlockFlags;
@@ -21794,11 +21792,12 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
     topBlock->bbJumpKind = BBJ_NONE;
 
     // Update block flags
-    unsigned originalFlags;
-    originalFlags = topBlock->bbFlags;
-    noway_assert((originalFlags & BBF_SPLIT_NONEXIST) == 0);
-    topBlock->bbFlags &= ~(BBF_SPLIT_LOST);
-    bottomBlock->bbFlags |= originalFlags & BBF_SPLIT_GAINED;
+    {
+        const unsigned __int64 originalFlags = topBlock->bbFlags;
+        noway_assert((originalFlags & BBF_SPLIT_NONEXIST) == 0);
+        topBlock->bbFlags &= ~(BBF_SPLIT_LOST);
+        bottomBlock->bbFlags |= originalFlags & BBF_SPLIT_GAINED;
+    }
 
     //
     // Split statements between topBlock and bottomBlock
