@@ -23,7 +23,7 @@ if defined CMakePath goto DoGen
 
 :: Eval the output from probe-win1.ps1
 pushd "%__sourceDir%"
-for /f "delims=" %%a in ('powershell -NoProfile -ExecutionPolicy RemoteSigned "& .\probe-win.ps1"') do %%a
+for /f "delims=" %%a in ('powershell -NoProfile -ExecutionPolicy ByPass "& .\probe-win.ps1"') do %%a
 popd
 
 :DoGen
