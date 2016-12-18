@@ -4,9 +4,9 @@
 
 Version = 1.0
 Section = Filemapping_memmgt
-Function = ReadProcessMemory
-Name = Positive test for ReadProcessMemory API to read memory contents
+Function = PAL_ProbeMemory
+Name = Positive test for PAL_ProbeMemory API to probe for read/write
 TYPE = DEFAULT
-EXE1 = readprocessmemory
+EXE1 = probememory
 Description
-=Test the ReadProcessMemory to read the memory contents
+=Test the PAL_ProbeMemory to probe for read and write
