@@ -79,8 +79,11 @@ namespace System.Diagnostics.Tests
             psi.FileName = $"{Process.GetCurrentProcess().ProcessName}.exe";
 
             Assert.Contains("open", psi.Verbs, StringComparer.OrdinalIgnoreCase);
-            Assert.Contains("runas", psi.Verbs, StringComparer.OrdinalIgnoreCase);
-            Assert.Contains("runasuser", psi.Verbs, StringComparer.OrdinalIgnoreCase);
+            if (PlatformDetection.IsNotWindowsNanoServer)
+            {
+                Assert.Contains("runas", psi.Verbs, StringComparer.OrdinalIgnoreCase);
+                Assert.Contains("runasuser", psi.Verbs, StringComparer.OrdinalIgnoreCase);
+            }
             Assert.DoesNotContain("printto", psi.Verbs, StringComparer.OrdinalIgnoreCase);
             Assert.DoesNotContain("closed", psi.Verbs, StringComparer.OrdinalIgnoreCase);
         }
