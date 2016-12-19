@@ -1997,7 +1997,7 @@ void Lowering::LowerCompare(GenTree* cmp)
         GenTreeIntCon* op2      = cmp->gtGetOp2()->AsIntCon();
         ssize_t        op2Value = op2->IconValue();
 
-        if (op1->isMemoryOp() && varTypeIsSmallInt(op1Type))
+        if (op1->isMemoryOp() && varTypeIsSmall(op1Type))
         {
             //
             // If op1's type is small then try to narrow op2 so it has the same type as op1.
@@ -2006,7 +2006,7 @@ void Lowering::LowerCompare(GenTree* cmp)
             // (e.g "cmp ubyte, 200") we also get a smaller instruction encoding.
             //
 
-            if ((op1Type == TYP_UBYTE) && FitsIn<UINT8>(op2Value))
+            if (((op1Type == TYP_BOOL) || (op1Type == TYP_UBYTE)) && FitsIn<UINT8>(op2Value))
             {
                 cmp->gtFlags |= GTF_UNSIGNED;
                 op2->gtType = op1Type;
