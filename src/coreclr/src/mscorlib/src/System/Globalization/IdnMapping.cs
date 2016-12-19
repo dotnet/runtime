@@ -1158,7 +1158,7 @@ namespace System.Globalization
 
 
         [SuppressUnmanagedCodeSecurityAttribute()]
-        [DllImport("kernel32.dll", CharSet=CharSet.Unicode, SetLastError=true)]
+        [DllImport("normaliz.dll", CharSet=CharSet.Unicode, SetLastError=true)]
         private static extern int IdnToAscii(
                                         uint    dwFlags, 
                                         [InAttribute()]
@@ -1171,7 +1171,7 @@ namespace System.Globalization
                                         int     cchASCIIChar);
 
         [SuppressUnmanagedCodeSecurityAttribute()]
-        [DllImport("kernel32.dll", CharSet=CharSet.Unicode, SetLastError=true)]
+        [DllImport("normaliz.dll", CharSet=CharSet.Unicode, SetLastError=true)]
         private static extern int IdnToUnicode(
                                         uint    dwFlags, 
                                         [InAttribute()]
