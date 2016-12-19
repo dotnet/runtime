@@ -7,7 +7,6 @@
  * Copyright 2013 Xamarin, Inc (http://www.xamarin.com)
  */
 
-#include <config.h>
 #include <mono/utils/mach-support.h>
 
 #include "mono-tls.h"
@@ -34,9 +33,6 @@
  * wrappers and managed allocators, both of which are not aot-ed by default.
  * So far, we never supported inlined fast tls on full-aot systems.
  */
-#ifdef HAVE_KW_THREAD
-#define USE_KW_THREAD
-#endif
 
 #ifdef USE_KW_THREAD
 
@@ -270,6 +266,7 @@ mono_tls_get_tls_setter (MonoTlsKey key, gboolean name)
 gpointer
 mono_tls_get_tls_addr (MonoTlsKey key)
 {
+#ifdef HAVE_GET_TLS_ADDR
 	if (key == TLS_KEY_LMF) {
 #if defined(USE_KW_THREAD)
 		return &mono_tls_lmf;
@@ -277,6 +274,7 @@ mono_tls_get_tls_addr (MonoTlsKey key)
 		return mono_mach_get_tls_address_from_thread (pthread_self (), mono_tls_key_lmf);
 #endif
 	}
+#endif
 	/* Implement if we ever need for other targets/keys */
 	g_assert_not_reached ();
 	return NULL;
