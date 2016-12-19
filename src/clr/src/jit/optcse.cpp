@@ -2528,8 +2528,6 @@ void Compiler::optCleanupCSEs()
     //
     for (BasicBlock* block = fgFirstBB; block; block = block->bbNext)
     {
-        unsigned blkFlags = block->bbFlags;
-
         // And clear all the "visited" bits on the block
         //
         block->bbFlags &= ~(BBF_VISITED | BBF_MARKED);
