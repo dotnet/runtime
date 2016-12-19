@@ -1439,7 +1439,7 @@
       <fx_version>4.5</fx_version>
       <profile>net_4_x</profile>
       <resources></resources>
-      <response>./../../build/deps/net_4_x_System.Numerics.Vectors.dll.sources</response>
+      <response>System.Numerics.Vectors.dll.sources</response>
     </project>
     <project dir="class/System.Data" library="System.Data-net_4_x">
       <boot>false</boot>
