@@ -148,9 +148,6 @@ namespace System.Xml.Tests
         private ITestOutputHelper _output;
         public SameInstanceXslTransformReader(ITestOutputHelper output) : base(output)
         {
-            // Make sure that we don't cache the value of the switch to enable testing
-            AppContext.SetSwitch("TestSwitch.LocalAppContext.DisableCaching", true);
-
             _output = output;
         }
 
@@ -447,9 +444,6 @@ namespace System.Xml.Tests
         private ITestOutputHelper _output;
         public SameInstanceXslTransformWriter(ITestOutputHelper output) : base(output)
         {
-            // Make sure that we don't cache the value of the switch to enable testing
-            AppContext.SetSwitch("TestSwitch.LocalAppContext.DisableCaching", true);
-
             _output = output;
         }
 

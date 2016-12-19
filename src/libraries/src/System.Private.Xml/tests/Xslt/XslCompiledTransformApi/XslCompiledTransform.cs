@@ -986,9 +986,6 @@ namespace System.Xml.Tests
         private ITestOutputHelper _output;
         public CXmlResolverTest(ITestOutputHelper output) : base(output)
         {
-            // Make sure that we don't cache the value of the switch to enable testing
-            AppContext.SetSwitch("TestSwitch.LocalAppContext.DisableCaching", true);
-
             _output = output;
         }
 
@@ -2960,9 +2957,6 @@ namespace System.Xml.Tests
         private ITestOutputHelper _output;
         public CTransformResolverTest(ITestOutputHelper output) : base(output)
         {
-            // Make sure that we don't cache the value of the switch to enable testing
-            AppContext.SetSwitch("TestSwitch.LocalAppContext.DisableCaching", true);
-
             _output = output;
         }
 
@@ -3491,9 +3485,6 @@ namespace System.Xml.Tests
         private ITestOutputHelper _output;
         public CTransformStrStrResolverTest(ITestOutputHelper output) : base(output)
         {
-            // Make sure that we don't cache the value of the switch to enable testing
-            AppContext.SetSwitch("TestSwitch.LocalAppContext.DisableCaching", true);
-
             _output = output;
         }
 
@@ -3582,9 +3573,6 @@ namespace System.Xml.Tests
         private ITestOutputHelper _output;
         public CTransformConstructorWihtFourParametersTest(ITestOutputHelper output) : base(output)
         {
-            // Make sure that we don't cache the value of the switch to enable testing
-            AppContext.SetSwitch("TestSwitch.LocalAppContext.DisableCaching", true);
-
             _output = output;
         }
 
