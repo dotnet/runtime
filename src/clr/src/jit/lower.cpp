@@ -2082,11 +2082,7 @@ void Lowering::LowerCompare(GenTree* cmp)
                 }
             }
 
-            // TODO-CQ: The second GT_AND operand does not need to be a constant, this is a temporary
-            // restriction to prevent TreeNodeInfoInitCmp creating a contained second memory operand.
-            // Unlike CMP TEST does not have a TEST reg, mem form.
-
-            if (op2Value == 0 && andOp2->IsIntegralConst())
+            if (op2Value == 0)
             {
                 BlockRange().Remove(op1);
                 BlockRange().Remove(op2);
@@ -2095,12 +2091,13 @@ void Lowering::LowerCompare(GenTree* cmp)
                 cmp->gtOp.gtOp1 = andOp1;
                 cmp->gtOp.gtOp2 = andOp2;
 
-                if (andOp1->isMemoryOp() && varTypeIsSmall(andOp1))
+                if (andOp1->isMemoryOp() && andOp2->IsIntegralConst())
                 {
                     // TOOD-CQ: There's more than can be done here. This is just enough to prevent
                     // code size regressions.
 
-                    if (genTypeValueFitsIn(andOp2->AsIntCon()->IconValue(), andOp1->TypeGet()))
+                    if (varTypeIsSmall(andOp1) &&
+                        genTypeValueFitsIn(andOp2->AsIntCon()->IconValue(), andOp1->TypeGet()))
                     {
                         andOp2->gtType = andOp1->TypeGet();
                     }
