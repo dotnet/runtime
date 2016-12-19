@@ -869,7 +869,7 @@ namespace System.Text
         [Pure]
         public virtual int GetByteCount(String s)
         {
-            if (s==null)
+            if (s == null)
                 throw new ArgumentNullException(nameof(s));
             Contract.EndContractBlock();
 
@@ -883,6 +883,34 @@ namespace System.Text
         //
         [Pure]
         public abstract int GetByteCount(char[] chars, int index, int count);
+
+        // Returns the number of bytes required to encode a string range.
+        //
+        [Pure]
+        public int GetByteCount(string s, int index, int count)
+        {
+            if (s == null)
+                throw new ArgumentNullException(nameof(s), 
+                    Environment.GetResourceString("ArgumentNull_String"));
+            if (index < 0)
+                throw new ArgumentOutOfRangeException(nameof(index),
+                      Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+            if (count < 0)
+                throw new ArgumentOutOfRangeException(nameof(count),
+                      Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+            if (index > s.Length - count)
+                throw new ArgumentOutOfRangeException(nameof(index),
+                      Environment.GetResourceString("ArgumentOutOfRange_IndexCount"));
+            Contract.EndContractBlock();
+
+            unsafe
+            {
+                fixed (char* pChar = s)
+                {
+                    return GetByteCount(pChar + index, count);
+                }
+            }
+        }
 
         // We expect this to be the workhorse for NLS encodings
         // unfortunately for existing overrides, it has to call the [] version,
@@ -978,10 +1006,49 @@ namespace System.Text
             return bytes;
         }
 
+        // Returns a byte array containing the encoded representation of the given
+        // string range.
+        //
+        [Pure]
+        public byte[] GetBytes(string s, int index, int count)
+        {
+            if (s == null)
+                throw new ArgumentNullException(nameof(s),
+                    Environment.GetResourceString("ArgumentNull_String"));
+            if (index < 0)
+                throw new ArgumentOutOfRangeException(nameof(index),
+                      Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+            if (count < 0)
+                throw new ArgumentOutOfRangeException(nameof(count),
+                      Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+            if (index > s.Length - count)
+                throw new ArgumentOutOfRangeException(nameof(index),
+                      Environment.GetResourceString("ArgumentOutOfRange_IndexCount"));
+            Contract.EndContractBlock();
+
+            unsafe
+            {
+                fixed (char* pChar = s)
+                {
+                    int byteCount = GetByteCount(pChar + index, count);
+                    if (byteCount == 0)
+                        return Array.Empty<byte>();
+
+                    byte[] bytes = new byte[byteCount];
+                    fixed (byte* pBytes = &bytes[0])
+                    {
+                        int bytesReceived = GetBytes(pChar + index, count, pBytes, byteCount);
+                        Debug.Assert(byteCount == bytesReceived);
+                    }
+                    return bytes;
+                }
+            }
+        }
+
         public virtual int GetBytes(String s, int charIndex, int charCount,
                                        byte[] bytes, int byteIndex)
         {
-            if (s==null)
+            if (s == null)
                 throw new ArgumentNullException(nameof(s));
             Contract.EndContractBlock();
             return GetBytes(s.ToCharArray(), charIndex, charCount, bytes, byteIndex);
