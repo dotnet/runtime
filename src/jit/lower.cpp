@@ -2041,19 +2041,14 @@ void Lowering::LowerCompare(GenTree* cmp)
 
             if (((castToType == TYP_BOOL) || (castToType == TYP_UBYTE)) && FitsIn<UINT8>(op2Value))
             {
-                bool canNarrow = ((castOp->OperGet() == GT_CNS_INT) || (castOp->OperGet() == GT_CALL) ||
-                                  (castOp->OperGet() == GT_LCL_VAR) || castOp->OperIsLogical() || castOp->isMemoryOp());
+                bool canNarrow = ((castOp->OperGet() == GT_CALL) || (castOp->OperGet() == GT_LCL_VAR) ||
+                                  castOp->OperIsLogical() || castOp->isMemoryOp());
 
                 if (canNarrow)
                 {
                     assert(!castOp->gtOverflowEx()); // Must not be an overflow checking operation
 
                     castOp->gtType = castToType;
-
-                    if (castOp->IsIntegralConst())
-                    {
-                        castOp->AsIntCon()->SetIconValue(castOp->AsIntCon()->IconValue() & 255);
-                    }
 
                     cmp->gtOp.gtOp1 = castOp;
                     cmp->gtFlags |= GTF_UNSIGNED;
