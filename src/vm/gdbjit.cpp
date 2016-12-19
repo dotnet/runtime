@@ -1648,13 +1648,11 @@ void NotifyGdb::MethodCompiled(MethodDesc* MethodDescPtr)
     CodeHeader* pCH = (CodeHeader*)pCode - 1;
     CalledMethod* pCalledMethods = reinterpret_cast<CalledMethod*>(pCH->GetCalledMethods());
     /* Collect addresses of thunks called by method */
-    if (!CollectCalledMethods(pCalledMethods))
+    if (!CollectCalledMethods(pCalledMethods, (TADDR)MethodDescPtr->GetNativeCode()))
     {
         return;
     }
     pCH->SetCalledMethods(NULL);
-    if (!codeAddrs.Contains((TADDR)pCode))
-        codeAddrs.Add((TADDR)pCode);
 
     MetaSig sig(MethodDescPtr);
     int nArgsCount = sig.NumFixedArgs();
@@ -2102,18 +2100,17 @@ static void fixLineMapping(SymbolsInfo* lines, unsigned nlines)
     int prevLine = 0;
     for (int i = 0; i < nlines; ++i)
     {
+        if (lines[i].lineNumber == HiddenLine)
+            continue;
         if (lines[i].ilOffset == ICorDebugInfo::PROLOG) // will be fixed in next step
         {
             prevLine = 0;
         }
         else
         {
-            if (lines[i].lineNumber == 0 || lines[i].lineNumber == HiddenLine)
+            if (lines[i].lineNumber == 0)
             {
-                if (prevLine != 0)
-                {
-                    lines[i].lineNumber = prevLine;
-                }
+                lines[i].lineNumber = prevLine;
             }
             else
             {
@@ -2125,10 +2122,22 @@ static void fixLineMapping(SymbolsInfo* lines, unsigned nlines)
     prevLine = lines[nlines - 1].lineNumber;
     for (int i = nlines - 1; i >= 0; --i)
     {
-        if (lines[i].lineNumber == 0 || lines[i].lineNumber == HiddenLine)
+        if (lines[i].lineNumber == HiddenLine)
+            continue;
+        if (lines[i].lineNumber == 0)
             lines[i].lineNumber = prevLine;
         else
             prevLine = lines[i].lineNumber;
+    }
+    // Skip HiddenLines
+    for (int i = 0; i < nlines; ++i)
+    {
+        if (lines[i].lineNumber == HiddenLine)
+        {
+            lines[i].lineNumber = 0;
+            if (i + 1 < nlines && lines[i + 1].ilOffset == ICorDebugInfo::NO_MAPPING)
+                lines[i + 1].lineNumber = 0;
+        }
     }
 }
 
@@ -2165,6 +2174,13 @@ bool NotifyGdb::BuildLineProg(MemBuf& buf, PCODE startAddr, TADDR codeSize, Symb
             IssueParamCommand(ptr, DW_LNS_set_file, cnv_buf, len);
             prevFile = lines[i].fileIndex;
         }
+
+        // GCC don't use the is_prologue_end flag to mark the first instruction after the prologue.
+        // Instead of it it is issueing a line table entry for the first instruction of the prologue
+        // and one for the first instruction after the prologue.
+        // We do not want to confuse the debugger so we have to avoid adding a line in such case.
+        if (i > 0 && lines[i - 1].nativeOffset == lines[i].nativeOffset)
+            continue;
 
         IssueSetAddress(ptr, startAddr + lines[i].nativeOffset);
 
@@ -2369,9 +2385,12 @@ bool NotifyGdb::BuildDebugPub(MemBuf& buf, const char* name, uint32_t size, uint
 }
 
 /* Store addresses and names of the called methods into symbol table */
-bool NotifyGdb::CollectCalledMethods(CalledMethod* pCalledMethods)
+bool NotifyGdb::CollectCalledMethods(CalledMethod* pCalledMethods, TADDR nativeCode)
 {
     AddrSet tmpCodeAddrs;
+
+    if (!codeAddrs.Contains(nativeCode))
+        codeAddrs.Add(nativeCode);
 
     CalledMethod* pList = pCalledMethods;
 
@@ -2389,7 +2408,8 @@ bool NotifyGdb::CollectCalledMethods(CalledMethod* pCalledMethods)
     SymbolNames = new (nothrow) Elf_Symbol[SymbolCount];
 
     pList = pCalledMethods;
-    for (int i = 1 + method.GetCount(); i < SymbolCount;)
+    int i = 1 + method.GetCount();
+    while (i < SymbolCount && pList != NULL)
     {
         TADDR callAddr = (TADDR)pList->GetCallAddr();
         if (!codeAddrs.Contains(callAddr))
@@ -2408,7 +2428,7 @@ bool NotifyGdb::CollectCalledMethods(CalledMethod* pCalledMethods)
         pList = pList->GetNext();
         delete ptr;
     }
-
+    SymbolCount = i;
     return true;
 }
 
