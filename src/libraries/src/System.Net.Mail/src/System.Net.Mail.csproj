@@ -7,15 +7,15 @@
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)'=='net463'">true</IsPartialFacadeAssembly>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.7_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.7_Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard_Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Release|AnyCPU'" />
-  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard1.7'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard'">
     <Compile Include="System\Net\Base64Stream.cs" />
     <Compile Include="System\Net\Mime\MimePart.cs" />
     <Compile Include="System\Net\Mime\Base64WriteStateInfo.cs" />
@@ -165,7 +165,7 @@
     <Compile Include="System\Net\Security\NetEventSource.Security.cs" />
   </ItemGroup>
   <!-- Unix specific files -->
-  <ItemGroup Condition="'$(TargetsUnix)'=='true' And '$(TargetGroup)' == 'netstandard1.7'">
+  <ItemGroup Condition="'$(TargetsUnix)'=='true' And '$(TargetGroup)' == 'netstandard'">
     <Compile Include="$(CommonPath)\System\Net\ContextAwareResult.Unix.cs">
       <Link>Common\System\Net\ContextAwareResult.Unix.cs</Link>
     </Compile>
@@ -204,7 +204,7 @@
     </Compile>
   </ItemGroup>
   <!-- Windows specific files -->
-  <ItemGroup Condition="'$(TargetsWindows)'=='true' And '$(TargetGroup)' == 'netstandard1.7'">
+  <ItemGroup Condition="'$(TargetsWindows)'=='true' And '$(TargetGroup)' == 'netstandard'">
     <Compile Include="$(CommonPath)\System\Net\Security\SecurityContextTokenHandle.cs">
       <Link>Common\System\Net\Security\SecurityContextTokenHandle.cs</Link>
     </Compile>

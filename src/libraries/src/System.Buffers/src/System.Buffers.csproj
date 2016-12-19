@@ -6,7 +6,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DocumentationFile>$(OutputPath)$(AssemblyName).xml</DocumentationFile>
     <UseOpenKey Condition="'$(UseOpenKey)'==''">true</UseOpenKey>
-    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'netcoreapp1.1'">true</IsPartialFacadeAssembly>
+    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'netcoreapp'">true</IsPartialFacadeAssembly>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
@@ -18,7 +18,7 @@
     <Compile Include="System\Buffers\DefaultArrayPoolBucket.cs" />
     <Compile Include="System\Buffers\Utilities.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp1.1'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
     <TargetingPackReference Include="System.Private.CoreLib" />
   </ItemGroup>
   <ItemGroup>

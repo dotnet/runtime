@@ -158,7 +158,7 @@
     <ArchGroup Condition="'$(ArchGroup)'==''">x64</ArchGroup>
     <BuildConfiguration_OSGroup>$(OS)</BuildConfiguration_OSGroup>
     <BuildConfiguration_OSGroup Condition="'$(OSGroup)' != ''">$(OSGroup)</BuildConfiguration_OSGroup>
-    <BuildConfiguration Condition="'$(BuildConfiguration)' == ''">netcoreapp1.1-$(BuildConfiguration_OSGroup)-Debug-$(ArchGroup)</BuildConfiguration>
+    <BuildConfiguration Condition="'$(BuildConfiguration)' == ''">netcoreapp-$(BuildConfiguration_OSGroup)-Debug-$(ArchGroup)</BuildConfiguration>
 
     <BuildConfigurationImportFile>$(ToolsDir)/configuration/configuration.props</BuildConfigurationImportFile>
   </PropertyGroup>

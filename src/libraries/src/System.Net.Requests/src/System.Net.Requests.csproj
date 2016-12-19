@@ -17,7 +17,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Release|AnyCPU'" />
-  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard1.7'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard'">
     <Compile Include="System\Net\AuthenticationManager.cs" />
     <Compile Include="System\Net\Authorization.cs" />
     <Compile Include="System\Net\FileWebRequest.cs" />
@@ -96,7 +96,7 @@
       <Link>Common\System\Threading\Tasks\TaskToApm.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' And '$(TargetGroup)' == 'netstandard1.7'">
+  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' And '$(TargetGroup)' == 'netstandard'">
     <Compile Include="$(CommonPath)\Interop\Windows\wininet\Interop.wininet_errors.cs">
       <Link>Common\Interop\Windows\wininet\Interop.wininet_errors.cs</Link>
     </Compile>

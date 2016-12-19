@@ -22,13 +22,13 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Release|AnyCPU'" />
   <ItemGroup Condition="'$(TargetGroup)' == 'net463' OR '$(TargetGroup)' == 'uap101aot'">
     <ContractProject Include="..\ref\System.Runtime.csproj">
-      <TargetGroup>netstandard1.7</TargetGroup>
+      <TargetGroup>netstandard</TargetGroup>
     </ContractProject>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="System.Runtime.Forwards.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard1.5' or '$(TargetGroup)' == 'netstandard1.7' or '$(TargetGroup)' == 'uap101aot'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard1.5' or '$(TargetGroup)' == 'netstandard' or '$(TargetGroup)' == 'uap101aot'">
     <Compile Include="System\Action.cs" />
     <Compile Include="System\Function.cs" />
     <Compile Include="System\LazyOfTTMetadata.cs" />
@@ -39,23 +39,23 @@
     <Compile Include="System\Runtime\CompilerServices\Attributes.cs" />
     <Compile Include="System\IO\FileAttributes.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard1.7' or '$(TargetGroup)' == 'uap101aot'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard' or '$(TargetGroup)' == 'uap101aot'">
     <Compile Include="System\Runtime\NgenServicingAttributes.cs" />
     <Compile Include="System\IO\HandleInheritability.cs" />
     <Compile Include="System\Runtime\ConstrainedExecution\PrePrepareMethodAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\SpecialNameAttribute.cs" />
     <Compile Include="System\Threading\WaitHandleExtensions.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard1.5' or '$(TargetGroup)' == 'netstandard1.7'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard1.5' or '$(TargetGroup)' == 'netstandard'">
     <Compile Include="System\ComponentModel\DefaultValueAttribute.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'=='uap101aot' or '$(TargetGroup)'=='uap101'">
     <Compile Include="$(CommonPath)\System\SystemException.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\System.Private.Uri\src\System.Private.Uri.csproj" Condition="'$(TargetGroup)' == 'netstandard1.5' or '$(TargetGroup)' == 'netstandard1.7' or '$(TargetGroup)' == 'uap101aot'" />
+    <ProjectReference Include="..\..\System.Private.Uri\src\System.Private.Uri.csproj" Condition="'$(TargetGroup)' == 'netstandard1.5' or '$(TargetGroup)' == 'netstandard' or '$(TargetGroup)' == 'uap101aot'" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard1.5' or '$(TargetGroup)' == 'netstandard1.7' or '$(TargetGroup)' == 'uap101aot'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard1.5' or '$(TargetGroup)' == 'netstandard' or '$(TargetGroup)' == 'uap101aot'">
     <TargetingPackReference Include="System.Private.CoreLib" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'net462' OR '$(TargetGroup)' == 'net463'">

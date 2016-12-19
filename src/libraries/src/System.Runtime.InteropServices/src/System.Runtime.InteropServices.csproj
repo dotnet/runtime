@@ -9,7 +9,7 @@
     <GenFacadesArgs Condition="'$(TargetGroup)' == 'uap101aot'">$(GenFacadesArgs) -ignoreMissingTypes</GenFacadesArgs>
     <!-- Force string resources to be excluded for full facades. -->
     <ResourcesSourceOutputDirectory Condition="'$(TargetGroup)' == 'net463' or '$(TargetGroup)' == 'uap101aot'">None</ResourcesSourceOutputDirectory>
-    <PackageTargetFramework Condition="'$(TargetGroup)' == 'netstandard1.7'">netstandard1.7;uap10.1</PackageTargetFramework>
+    <PackageTargetFramework Condition="'$(TargetGroup)' == 'netstandard'">netstandard1.7;uap10.1</PackageTargetFramework>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
@@ -20,10 +20,10 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_uap101aot_Release|AnyCPU'" />
   <ItemGroup Condition="'$(TargetGroup)' == 'net463'">
     <ContractProject Include="..\ref\System.Runtime.InteropServices.csproj">
-      <TargetGroup>netstandard1.7</TargetGroup>
+      <TargetGroup>netstandard</TargetGroup>
     </ContractProject>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard1.7'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard'">
     <Compile Include="System\Runtime\InteropServices\ComAwareEventInfo.cs" />
     <Compile Include="System\Runtime\InteropServices\HandleCollector.CoreCLR.cs" />
     <Compile Include="System\Runtime\InteropServices\DefaultParameterValueAttribute.cs" />

@@ -15,7 +15,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Release|AnyCPU'" />
-  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard1.7'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard'">
     <Compile Include="System\Numerics\BigIntegerCalculator.AddSub.cs" />
     <Compile Include="System\Numerics\BigIntegerCalculator.BitsBuffer.cs" />
     <Compile Include="System\Numerics\BigIntegerCalculator.DivRem.cs" />

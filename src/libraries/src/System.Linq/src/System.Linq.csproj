@@ -18,7 +18,7 @@
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netstandard1.6'">
     <ContractProject Include="..\ref\System.Linq.csproj">
-      <TargetGroup>netcoreapp1.1</TargetGroup>
+      <TargetGroup>netcoreapp</TargetGroup>
     </ContractProject>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netstandard1.6'">

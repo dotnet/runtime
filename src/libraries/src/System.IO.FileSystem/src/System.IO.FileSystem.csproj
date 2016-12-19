@@ -27,7 +27,7 @@
     <TargetingPackReference Include="Windows" />
     <ProjectReference Include="$(SourceDir)/mscorlib.WinRT-Facade/mscorlib.WinRT-Facade.csproj" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard1.7'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard'">
     <Compile Include="System\IO\Error.cs" />
     <Compile Include="System\IO\Directory.cs" />
     <Compile Include="System\IO\DirectoryInfo.cs" />
@@ -68,7 +68,7 @@
     </Compile>
   </ItemGroup>
   <!-- Windows -->
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true' and '$(TargetGroup)' == 'netstandard1.7'">
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true' and '$(TargetGroup)' == 'netstandard'">
     <Compile Include="Microsoft\Win32\SafeHandles\SafeFindHandle.Windows.cs" />
     <Compile Include="System\IO\DirectoryInfo.Windows.cs" />
     <Compile Include="System\IO\FileInfo.Windows.cs" />
@@ -195,7 +195,7 @@
     </Compile>
   </ItemGroup>
   <!-- Windows : Win32 only -->
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true' and '$(EnableWinRT)' != 'true' and '$(TargetGroup)' == 'netstandard1.7'">
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true' and '$(EnableWinRT)' != 'true' and '$(TargetGroup)' == 'netstandard'">
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.UnsafeCreateFile.cs">
       <Link>Common\Interop\Windows\Interop.UnsafeCreateFile.cs</Link>
     </Compile>

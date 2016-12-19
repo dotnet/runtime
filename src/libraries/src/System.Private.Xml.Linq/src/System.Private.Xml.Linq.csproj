@@ -8,14 +8,14 @@
     <DefineConstants>$(DefineConstants);SILVERLIGHT</DefineConstants>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net46'">true</IsPartialFacadeAssembly>
     <ResourcesSourceOutputDirectory Condition="'$(TargetGroup)' == 'net46'">None</ResourcesSourceOutputDirectory>
-    <PackageTargetFramework Condition="'$(PackageTargetFramework)' == 'netstandard1.7'">netstandard1.7</PackageTargetFramework>
+    <PackageTargetFramework Condition="'$(PackageTargetFramework)' == 'netstandard'">netstandard1.7</PackageTargetFramework>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Release|AnyCPU'" />
-  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard1.7'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard'">
     <ProjectReference Include="..\..\System.Private.Xml\src\System.Private.Xml.csproj" />
     <Compile Include="$(CommonPath)\System\Collections\Generic\ArrayBuilder.cs">
       <Link>System\Collections\Generic\ArrayBuilder.cs</Link>
@@ -63,7 +63,7 @@
     <Compile Include="System\Xml\XPath\XNodeNavigator.cs" />
     <Compile Include="System\Xml\XPath\XObjectExtensions.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard1.7'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard'">
     <EmbeddedResource Include="$(MsBuildThisFileDirectory)Resources\$(AssemblyName).rd.xml" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'net463'">

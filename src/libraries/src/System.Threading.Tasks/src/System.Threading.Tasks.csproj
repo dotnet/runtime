@@ -5,14 +5,14 @@
     <ProjectGuid>{3BCAEAA6-3A29-49EC-B334-6E7BE8BE9ABA}</ProjectGuid>
     <AssemblyName>System.Threading.Tasks</AssemblyName>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
-    <PackageTargetFramework Condition="'$(TargetGroup)' == 'netstandard1.7'">netstandard1.7;uap10.1</PackageTargetFramework>
+    <PackageTargetFramework Condition="'$(TargetGroup)' == 'netstandard'">netstandard1.7;uap10.1</PackageTargetFramework>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Release|AnyCPU'" />
-  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard1.7'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard'">
     <Compile Include="System\Threading\Tasks\TaskExtensions.CoreCLR.cs" />
     <ProjectReference Include="..\..\System.Diagnostics.Debug\src\System.Diagnostics.Debug.csproj" />
     <TargetingPackReference Include="System.Private.CoreLib" />
