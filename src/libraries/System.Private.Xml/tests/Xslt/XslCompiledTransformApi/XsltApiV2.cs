@@ -112,6 +112,7 @@ namespace System.Xml.Tests
         private ITestOutputHelper _output;
         public XsltApiTestCaseBase2(ITestOutputHelper output)
         {
+            AppContext.SetSwitch("TestSwitch.LocalAppContext.DisableCaching", true);
             _output = output;
             this.Init(null);
         }

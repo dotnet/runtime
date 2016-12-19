@@ -8,6 +8,15 @@ namespace System
 {
     internal partial class LocalAppContext
     {
+        static LocalAppContext()
+        {
+            bool isEnabled;
+            if (AppContext.TryGetSwitch(@"TestSwitch.LocalAppContext.DisableCaching", out isEnabled))
+            {
+                DisableCaching = isEnabled;
+            }
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static bool GetCachedSwitchValue(string switchName, ref int switchValue)
         {
@@ -31,13 +40,6 @@ namespace System
             return isSwitchEnabled;
         }
 
-        internal static bool DisableCaching
-        {
-            get
-            {
-                //TODO: Replace with the value returned from AppContext (Issue #14064)
-                return true;
-            }
-        }
+        private static bool DisableCaching { get; set; }
     }
 }
