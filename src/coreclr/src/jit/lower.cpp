@@ -1987,6 +1987,26 @@ GenTree* Lowering::LowerTailCallViaHelper(GenTreeCall* call, GenTree* callTarget
 //    83F803       cmp      eax, 3
 //    72E2         jb       SHORT G_M50523_IG03
 //
+
+bool genTypeValueFitsIn(ssize_t value, var_types type)
+{
+    switch (type)
+    {
+        case TYP_UBYTE:
+        case TYP_BOOL:
+            return FitsIn<UINT8>(value);
+        case TYP_BYTE:
+            return FitsIn<INT8>(value);
+        case TYP_USHORT:
+        case TYP_CHAR:
+            return FitsIn<UINT16>(value);
+        case TYP_SHORT:
+            return FitsIn<INT16>(value);
+        default:
+            unreached();
+    }
+}
+
 void Lowering::LowerCompare(GenTree* cmp)
 {
 #ifdef _TARGET_XARCH_
@@ -1997,7 +2017,7 @@ void Lowering::LowerCompare(GenTree* cmp)
         GenTreeIntCon* op2      = cmp->gtGetOp2()->AsIntCon();
         ssize_t        op2Value = op2->IconValue();
 
-        if (op1->isMemoryOp() && varTypeIsSmall(op1Type))
+        if (op1->isMemoryOp() && varTypeIsSmall(op1Type) && genTypeValueFitsIn(op2Value, op1Type))
         {
             //
             // If op1's type is small then try to narrow op2 so it has the same type as op1.
@@ -2006,24 +2026,12 @@ void Lowering::LowerCompare(GenTree* cmp)
             // (e.g "cmp ubyte, 200") we also get a smaller instruction encoding.
             //
 
-            if (((op1Type == TYP_BOOL) || (op1Type == TYP_UBYTE)) && FitsIn<UINT8>(op2Value))
+            if (varTypeIsUnsigned(op1Type))
             {
                 cmp->gtFlags |= GTF_UNSIGNED;
-                op2->gtType = op1Type;
             }
-            else if ((op1Type == TYP_BYTE) && FitsIn<INT8>(op2Value))
-            {
-                op2->gtType = op1Type;
-            }
-            else if ((op1Type == TYP_CHAR) && FitsIn<UINT16>(op2Value))
-            {
-                cmp->gtFlags |= GTF_UNSIGNED;
-                op2->gtType = op1Type;
-            }
-            else if ((op1Type == TYP_SHORT) && FitsIn<INT16>(op2Value))
-            {
-                op2->gtType = op1Type;
-            }
+
+            op2->gtType = op1Type;
         }
         else if ((op1->OperGet() == GT_CAST) && !op1->gtOverflow())
         {
@@ -2092,17 +2100,12 @@ void Lowering::LowerCompare(GenTree* cmp)
                 cmp->gtOp.gtOp1 = andOp1;
                 cmp->gtOp.gtOp2 = andOp2;
 
-                if (andOp1->isMemoryOp() && varTypeIsSmallInt(andOp1))
+                if (andOp1->isMemoryOp() && varTypeIsSmall(andOp1))
                 {
-                    ssize_t andOp2Value = andOp2->AsIntCon()->IconValue();
-
                     // TOOD-CQ: There's more than can be done here. This is just enough to prevent
                     // code size regressions.
 
-                    if (((andOp1->TypeGet() == TYP_UBYTE) && FitsIn<UINT8>(andOp2Value)) ||
-                        ((andOp1->TypeGet() == TYP_BYTE) && FitsIn<INT8>(andOp2Value)) ||
-                        ((andOp1->TypeGet() == TYP_CHAR) && FitsIn<UINT16>(andOp2Value)) ||
-                        ((andOp1->TypeGet() == TYP_SHORT) && FitsIn<INT16>(andOp2Value)))
+                    if (genTypeValueFitsIn(andOp2->AsIntCon()->IconValue(), andOp1->TypeGet()))
                     {
                         andOp2->gtType = andOp1->TypeGet();
                     }
