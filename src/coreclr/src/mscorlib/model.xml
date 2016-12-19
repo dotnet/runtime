@@ -7767,10 +7767,12 @@
       <Member Name="GetByteCount(System.Char[])" />
       <Member Name="GetByteCount(System.Char[],System.Int32,System.Int32)" />
       <Member Name="GetByteCount(System.String)" />
+      <Member Name="GetByteCount(System.String,System.Int32,System.Int32)" />
       <Member Name="GetBytes(System.Char[])" />
       <Member Name="GetBytes(System.Char[],System.Int32,System.Int32)" />
       <Member Name="GetBytes(System.Char[],System.Int32,System.Int32,System.Byte[],System.Int32)" />
       <Member Name="GetBytes(System.String)" />
+      <Member Name="GetBytes(System.String,System.Int32,System.Int32)" />
       <Member Name="GetBytes(System.String,System.Int32,System.Int32,System.Byte[],System.Int32)" />
       <Member Name="GetBytes(System.Char*,System.Int32,System.Byte*,System.Int32)" />
       <Member Name="GetCharCount(System.Byte[])" />
