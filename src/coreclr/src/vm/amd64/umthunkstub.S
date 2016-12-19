@@ -83,7 +83,7 @@ LOCAL_LABEL(HaveThread):
 
         mov             r12, rax                // r12 <- Thread*
 
-        //FailFast if a native callable method invoked via ldftn and calli.
+        //FailFast if a native callable method is invoked via ldftn and calli.
         cmp             dword ptr [r12 + OFFSETOF__Thread__m_fPreemptiveGCDisabled], 1
         jz              LOCAL_LABEL(InvalidTransition)
 
