@@ -104,6 +104,7 @@ rm -rf $__RootfsDir
 qemu-debootstrap --arch $__UbuntuArch $__UbuntuCodeName $__RootfsDir $__UbuntuRepo
 cp $__CrossDir/$__BuildArch/sources.list.$__UbuntuCodeName $__RootfsDir/etc/apt/sources.list
 chroot $__RootfsDir apt-get update
+chroot $__RootfsDir apt-get -f -y install
 chroot $__RootfsDir apt-get -y install $__UbuntuPackages
 chroot $__RootfsDir symlinks -cr /usr
 umount $__RootfsDir/*
