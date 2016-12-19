@@ -15,7 +15,7 @@
   <ItemGroup Condition="'$(TargetGroup)'=='net463'">
     <TargetingPackReference Include="mscorlib" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'=='netstandard1.7' AND '$(TargetsWindows)'=='true'">
+  <ItemGroup Condition="'$(TargetGroup)'=='netstandard' AND '$(TargetsWindows)'=='true'">
     <Compile Include="System\Security\AccessControl\ACE.cs" />
     <Compile Include="System\Security\AccessControl\ACL.cs" />
     <Compile Include="System\Security\AccessControl\CommonObjectSecurity.cs" />

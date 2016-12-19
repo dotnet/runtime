@@ -3,8 +3,8 @@
   <PropertyGroup>
     <BuildConfigurations>
       net463-Windows_NT;
-      netcoreapp1.1;
-      netstandard1.7;
+      netcoreapp;
+      netstandard;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>

@@ -3,9 +3,9 @@
   <PropertyGroup>
     <BuildConfigurations>
       net463-Windows_NT;
-      netstandard1.7-Unix;
-      netstandard1.7-OSX;
-      netstandard1.7-Windows_NT;
+      netstandard-Unix;
+      netstandard-OSX;
+      netstandard-Windows_NT;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>

@@ -14,7 +14,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'" />
   <ItemGroup Condition="'$(TargetGroup)' == 'net463'">
     <ContractProject Include="..\ref\System.Security.Cryptography.X509Certificates.csproj">
-      <TargetGroup>netstandard1.7</TargetGroup>
+      <TargetGroup>netstandard</TargetGroup>
     </ContractProject>
   </ItemGroup>
   <ItemGroup Condition=" '$(IsPartialFacadeAssembly)' != 'true'">

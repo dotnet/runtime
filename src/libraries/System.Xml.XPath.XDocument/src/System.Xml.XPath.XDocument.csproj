@@ -15,7 +15,7 @@
   <ItemGroup>
     <Compile Include="System\Xml\XPath\XDocumentExtensions.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'=='netstandard1.7'">
+  <ItemGroup Condition="'$(TargetGroup)'=='netstandard'">
     <ProjectReference Include="..\..\System.Private.Xml\src\System.Private.Xml.csproj" />
     <ProjectReference Include="..\..\System.Private.Xml.Linq\src\System.Private.Xml.Linq.csproj" />
   </ItemGroup>

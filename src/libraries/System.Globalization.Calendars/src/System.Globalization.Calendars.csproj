@@ -12,7 +12,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Release|AnyCPU'" />
   <ItemGroup>
     <TargetingPackReference Include="mscorlib" Condition="'$(TargetGroup)' == 'net463'" />
-    <TargetingPackReference Include="System.Private.CoreLib" Condition="'$(TargetGroup)' == 'netstandard1.7'" />
+    <TargetingPackReference Include="System.Private.CoreLib" Condition="'$(TargetGroup)' == 'netstandard'" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Private.CoreLib" />

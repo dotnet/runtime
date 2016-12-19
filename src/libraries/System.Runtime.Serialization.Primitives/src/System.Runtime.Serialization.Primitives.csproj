@@ -12,7 +12,7 @@
     <PlatformTarget>AnyCPU</PlatformTarget>
     <ProjectGuid>{CDF0ACB5-1361-4E48-8ECB-22E8022F5F01}</ProjectGuid>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)'=='net463'">true</IsPartialFacadeAssembly>
-    <PackageTargetFramework Condition="'$(TargetGroup)' == 'netstandard1.7'">netstandard1.7;uap10.1</PackageTargetFramework>
+    <PackageTargetFramework Condition="'$(TargetGroup)' == 'netstandard'">netstandard1.7;uap10.1</PackageTargetFramework>
     <PackageTargetFramework Condition="'$(TargetGroup)' == 'netstandard1.3'">netstandard1.3;netcore50</PackageTargetFramework>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
@@ -41,7 +41,7 @@
     <Compile Include="System\Runtime\Serialization\SerializationException.cs" />
     <Compile Include="System\Runtime\Serialization\StreamingContext.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard1.7' Or '$(TargetGroup)'=='uap101aot'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard' Or '$(TargetGroup)'=='uap101aot'">
     <Compile Include="System\Runtime\Serialization\InvalidDataContractException.Serialization.cs" />
     <Compile Include="System.Runtime.Serialization.Primitives.TypeForwards.cs" />
   </ItemGroup>

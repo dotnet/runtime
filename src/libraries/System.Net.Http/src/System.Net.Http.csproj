@@ -2,7 +2,6 @@
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{1D422B1D-D7C4-41B9-862D-EB3D98DF37DE}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AssemblyName>System.Net.Http</AssemblyName>
@@ -130,7 +129,7 @@
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' And '$(TargetGroup)' != 'uap101' ">
     <Compile Include="System\Net\Http\HttpClientHandler.Windows.cs" />
   </ItemGroup>
-  <PropertyGroup Condition=" '$(TargetsWindows)' == 'true' And '$(TargetGroup)' == 'netstandard1.7'">
+  <PropertyGroup Condition=" '$(TargetsWindows)' == 'true' And '$(TargetGroup)' == 'netstandard'">
     <DefineConstants>$(DefineConstants);HTTP_DLL</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(TargetsWindows)' == 'true' And '$(TargetGroup)' == 'net46' ">

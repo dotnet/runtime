@@ -43,7 +43,7 @@
     <Reference Include="System.Collections.NonGeneric" />
     <Reference Include="System.Diagnostics.Tools" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard1.7'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard'">
     <Compile Include="System\Net\AuthenticationSchemeSelector.cs" />
     <Compile Include="System\Net\HttpListener.cs" />
     <Compile Include="System\Net\HttpListenerBasicIdentity.cs" />
@@ -58,7 +58,7 @@
       <Link>Common\System\Net\Logging\NetEventSource.Common.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true' AND '$(TargetGroup)' == 'netstandard1.7'">
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true' AND '$(TargetGroup)' == 'netstandard'">
     <Compile Include="System\Net\BoundaryType.cs" />
     <Compile Include="System\Net\AuthConstants.cs" />
     <Compile Include="System\Net\ContextFlags.cs" />
@@ -197,7 +197,7 @@
       <Link>Common\Microsoft\Win32\SafeHandles\SafeLocalAllocHandle.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsUnix)' == 'true' AND '$(TargetGroup)' == 'netstandard1.7'">
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true' AND '$(TargetGroup)' == 'netstandard'">
     <Compile Include="System\Net\HttpListener.Unix.cs" />
     <Compile Include="System\Net\HttpListenerContext.Unix.cs" />
     <Compile Include="System\Net\HttpListenerRequest.Unix.cs" />
