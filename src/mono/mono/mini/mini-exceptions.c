@@ -2561,8 +2561,9 @@ mono_handle_native_crash (const char *signal, void *ctx, MONO_SIG_HANDLER_INFO_T
 	 * this has changed on later versions of Android.  Also, we don't want to
 	 * set this on start-up as DUMPABLE has security implications. */
 	prctl (PR_SET_DUMPABLE, 1);
+
+	mono_runtime_printf_err ("\nNo native Android stacktrace (see debuggerd output).\n");
 #endif
-	mono_exception_native_unwind (ctx, info);
 #endif
 
 	/*

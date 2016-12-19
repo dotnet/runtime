@@ -3202,11 +3202,6 @@ gboolean MONO_SIG_HANDLER_SIGNATURE (mono_chain_signal);
 #endif
 
 /*
- * Native unwinder integration
- */
-void mono_exception_native_unwind (void *ctx, MONO_SIG_HANDLER_INFO_TYPE *info);
-
-/*
  * Coop support for trampolines
  */
 void mono_interruption_checkpoint_from_trampoline (void);

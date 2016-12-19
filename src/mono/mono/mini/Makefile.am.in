@@ -437,7 +437,6 @@ common_sources = \
 	graph.c			\
 	mini-codegen.c		\
 	mini-exceptions.c	\
-	mini-exceptions-native-unwinder.c	\
 	mini-trampolines.c  	\
 	branch-opts.c		\
 	mini-generic-sharing.c	\
