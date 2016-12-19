@@ -449,6 +449,24 @@ ASMCONSTANTS_C_ASSERT(CallDescrData__fpReturnSize         == offsetof(CallDescrD
 ASMCONSTANTS_C_ASSERT(CallDescrData__pTarget              == offsetof(CallDescrData, pTarget))
 ASMCONSTANTS_C_ASSERT(CallDescrData__returnValue          == offsetof(CallDescrData, returnValue))
 
+#define               UMEntryThunk__m_pUMThunkMarshInfo     0x0C
+ASMCONSTANTS_C_ASSERT(UMEntryThunk__m_pUMThunkMarshInfo == offsetof(UMEntryThunk, m_pUMThunkMarshInfo))
+
+#define               UMEntryThunk__m_dwDomainId            0x10
+ASMCONSTANTS_C_ASSERT(UMEntryThunk__m_dwDomainId == offsetof(UMEntryThunk, m_dwDomainId))
+
+#define               UMThunkMarshInfo__m_pILStub           0x00
+ASMCONSTANTS_C_ASSERT(UMThunkMarshInfo__m_pILStub == offsetof(UMThunkMarshInfo, m_pILStub))
+
+#define               UMThunkMarshInfo__m_cbActualArgSize   0x04
+ASMCONSTANTS_C_ASSERT(UMThunkMarshInfo__m_cbActualArgSize == offsetof(UMThunkMarshInfo, m_cbActualArgSize))
+
+#ifndef CROSSGEN_COMPILE
+#define               Thread__m_pDomain                     0x14
+ASMCONSTANTS_C_ASSERT(Thread__m_pDomain == offsetof(Thread, m_pDomain));
+
+#endif
+
 #undef ASMCONSTANTS_C_ASSERT
 #undef ASMCONSTANTS_RUNTIME_ASSERT
 
