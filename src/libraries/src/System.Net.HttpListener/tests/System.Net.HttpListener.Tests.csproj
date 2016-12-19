@@ -25,6 +25,9 @@
     <Compile Include="AuthenticationTests.cs" />
     <Compile Include="SimpleHttpTest.cs" />
     <Compile Include="UrlPrefix.cs" />
+    <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
+      <Link>Common\tests\System\PlatformDetection.cs</Link>
+    </Compile>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
