@@ -401,7 +401,7 @@ private:
     static void IssueSimpleCommand(char*& ptr, uint8_t command);
     static void IssueParamCommand(char*& ptr, uint8_t command, char* param, int param_len);
     static void SplitPathname(const char* path, const char*& pathName, const char*& fileName);
-    static bool CollectCalledMethods(CalledMethod* pCM);
+    static bool CollectCalledMethods(CalledMethod* pCM, TADDR nativeCode);
 #ifdef _DEBUG
     static void DumpElf(const char* methodName, const MemBuf& buf);
 #endif
