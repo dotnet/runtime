@@ -802,6 +802,7 @@ AC_ARG_WITH(bitcode,         [  --with-bitcode=yes,no           If bitcode is en
 AC_ARG_WITH(xammac,          [  --with-xammac=yes,no            If you want to build the Xamarin.Mac assemblies (defaults to no)],    [], [with_xammac=default])
 AC_ARG_WITH(aot_hybrid,      [  --with-aot_hybrid=yes,no        If you want to build the aot_hybrid assemblies (defaults to no)],     [], [with_aot_hybrid=default])
 AC_ARG_WITH(aot_only,        [  --with-aot_only=yes,no          If you want to build the aot_only assemblies (defaults to no)],       [], [with_aot_only=default])
+AC_ARG_WITH(xbox,            [  --with-xbox=yes,no              If you want to build the Xbox assemblies (defaults to no)],           [], [with_xbox=default])
 
 AC_ARG_WITH(runtime_preset, [  --with-runtime_preset=net_4_x,all,aot,hybridaot,fullaot,bitcode   Which default profile to build (defaults to net_4_x)],  [], [with_runtime_preset=net_4_x])
 
@@ -819,6 +820,7 @@ with_monotouch_tv_default=no
 with_xammac_default=no
 with_aot_hybrid_default=no
 with_aot_only_default=no
+with_xbox_default=no
 
 with_bitcode_default=no
 with_cooperative_gc_default=no
@@ -923,6 +925,10 @@ fi
 if test "x$with_aot_only" = "xdefault"; then
    with_aot_only=$with_aot_only_default
 fi
+if test "x$with_xbox" = "xdefault"; then
+   with_xbox=$with_xbox_default
+fi
+
 
 AM_CONDITIONAL(INSTALL_4_x, [test "x$with_profile4_x" = "xyes"])
 AM_CONDITIONAL(INSTALL_MONODROID, [test "x$with_monodroid" != "xno"])
