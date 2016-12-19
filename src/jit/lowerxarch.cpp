@@ -3495,6 +3495,9 @@ void Lowering::TreeNodeInfoInitCmp(GenTreePtr tree)
     }
     else if (op1Type == op2Type)
     {
+        // Note that TEST does not have a r,rm encoding like CMP has but we can still
+        // contain the second operand because the emitter maps both r,rm and rm,r to
+        // the same instruction code. This avoids the need to special case TEST here.
         if (op2->isMemoryOp())
         {
             MakeSrcContained(tree, op2);
