@@ -2139,6 +2139,11 @@ mono_arch_get_llvm_call_info (MonoCompile *cfg, MonoMethodSignature *sig)
 		linfo->ret.nslots = cinfo->ret.nregs;
 		break;
 #endif
+	case RegTypeHFA:
+		linfo->ret.storage = LLVMArgFpStruct;
+		linfo->ret.nslots = cinfo->ret.nregs;
+		linfo->ret.esize = cinfo->ret.esize;
+		break;
 	default:
 		cfg->exception_message = g_strdup_printf ("unknown ret conv (%d)", cinfo->ret.storage);
 		cfg->disable_llvm = TRUE;
@@ -2167,6 +2172,16 @@ mono_arch_get_llvm_call_info (MonoCompile *cfg, MonoMethodSignature *sig)
 		case RegTypeStructByAddrOnStack:
 			lainfo->storage = LLVMArgVtypeByRef;
 			break;
+		case RegTypeHFA: {
+			int j;
+
+			lainfo->storage = LLVMArgAsFpArgs;
+			lainfo->nslots = ainfo->nregs;
+			lainfo->esize = ainfo->esize;
+			for (j = 0; j < ainfo->nregs; ++j)
+				lainfo->pair_storage [j] = LLVMArgInFPReg;
+			break;
+		}
 		default:
 			cfg->exception_message = g_strdup_printf ("ainfo->storage (%d)", ainfo->storage);
 			cfg->disable_llvm = TRUE;
