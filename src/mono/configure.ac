@@ -801,7 +801,7 @@ AC_ARG_WITH(monotouch_tv,    [  --with-monotouch_tv=yes,no      If you want to b
 AC_ARG_WITH(bitcode,         [  --with-bitcode=yes,no           If bitcode is enabled (defaults to no)],                              [], [with_bitcode=default])
 AC_ARG_WITH(xammac,          [  --with-xammac=yes,no            If you want to build the Xamarin.Mac assemblies (defaults to no)],    [], [with_xammac=default])
 AC_ARG_WITH(aot_hybrid,      [  --with-aot_hybrid=yes,no        If you want to build the aot_hybrid assemblies (defaults to no)],     [], [with_aot_hybrid=default])
-AC_ARG_WITH(aot_only,        [  --with-aot_only=yes,no          If you want to build the aot_only assemblies (defaults to no)],       [], [with_aot_only=default])
+AC_ARG_WITH(testing_aot_full,[  --with-testing_aot_full=yes,no  If you want to build the testing_aot_full assemblies (defaults to no)],[], [with_testing_aot_full=default])
 AC_ARG_WITH(xbox,            [  --with-xbox=yes,no              If you want to build the Xbox assemblies (defaults to no)],           [], [with_xbox=default])
 
 AC_ARG_WITH(runtime_preset, [  --with-runtime_preset=net_4_x,all,aot,hybridaot,fullaot,bitcode   Which default profile to build (defaults to net_4_x)],  [], [with_runtime_preset=net_4_x])
@@ -819,7 +819,7 @@ with_monotouch_watch_default=no
 with_monotouch_tv_default=no
 with_xammac_default=no
 with_aot_hybrid_default=no
-with_aot_only_default=no
+with_testing_aot_full_default=no
 with_xbox_default=no
 
 with_bitcode_default=no
@@ -840,8 +840,8 @@ elif test x$with_runtime_preset = xall; then
    with_xammac_default=yes
 elif test x$with_runtime_preset = xfullaot; then
    DISABLE_MCS_DOCS_default=yes
-   with_aot_only_default=yes
-   TEST_PROFILE=aot_only 
+   with_testing_aot_full_default=yes
+   TEST_PROFILE=testing_aot_full
 
    mono_feature_disable_com='yes'
    mono_feature_disable_remoting='yes'
@@ -853,10 +853,10 @@ elif test x$with_runtime_preset = xfullaot; then
    AOT_RUN_FLAGS="--full-aot"
 elif test x$with_runtime_preset = xbitcode; then
    DISABLE_MCS_DOCS_default=yes
-   with_aot_only_default=yes
+   with_testing_aot_full_default=yes
    with_bitcode_default=yes
    with_cooperative_gc_default=yes
-   TEST_PROFILE=aot_only 
+   TEST_PROFILE=testing_aot_full
    enable_llvm_default=yes
 
    mono_feature_disable_com='yes'
@@ -922,8 +922,8 @@ fi
 if test "x$with_aot_hybrid" = "xdefault"; then
    with_aot_hybrid=$with_aot_hybrid_default
 fi
-if test "x$with_aot_only" = "xdefault"; then
-   with_aot_only=$with_aot_only_default
+if test "x$with_testing_aot_full" = "xdefault"; then
+   with_testing_aot_full=$with_testing_aot_full_default
 fi
 if test "x$with_xbox" = "xdefault"; then
    with_xbox=$with_xbox_default
@@ -938,10 +938,10 @@ AM_CONDITIONAL(INSTALL_MONOTOUCH_TV, [test "x$with_monotouch_tv" != "xno"])
 AM_CONDITIONAL(BITCODE, test "x$with_bitcode" = "xyes")
 AM_CONDITIONAL(INSTALL_XAMMAC, [test "x$with_xammac" != "xno"])
 AM_CONDITIONAL(INSTALL_AOT_HYBRID, [test "x$with_aot_hybrid" != "xno"])
-AM_CONDITIONAL(INSTALL_AOT_ONLY, [test "x$with_aot_only" != "xno"])
+AM_CONDITIONAL(INSTALL_TESTING_AOT_FULL, [test "x$with_testing_aot_full" != "xno"])
 
 AC_SUBST(INSTALL_AOT_HYBRID)
-AC_SUBST(INSTALL_AOT_ONLY)
+AC_SUBST(INSTALL_TESTING_AOT_FULL)
 
 default_profile=net_4_x
 if test -z "$INSTALL_MONODROID_TRUE"; then :
@@ -956,8 +956,8 @@ fi
 if test -z "$INSTALL_AOT_HYBRID_TRUE"; then :
    default_profile=aot_hybrid
 fi
-if test -z "$INSTALL_AOT_ONLY_TRUE"; then :
-   default_profile=aot_only
+if test -z "$INSTALL_TESTING_AOT_FULL_TRUE"; then :
+   default_profile=testing_aot_full
 fi
 if test -z "$INSTALL_4_x_TRUE"; then :
    default_profile=net_4_x
@@ -4499,8 +4499,8 @@ echo "
 	Xamarin.WatchOS: $with_monotouch_watch
 	Xamarin.TVOS:    $with_monotouch_tv
 	Xamarin.Mac:     $with_xammac
-	AOT preferred:   $with_aot_hybrid
-	AOT only:        $with_aot_only
+	AOT Hybrid:      $with_aot_hybrid
+	AOT Full:        $with_testing_aot_full
 	JNI support:     $jdk_headers_found
 	libgdiplus:      $libgdiplus_msg
 	zlib:            $zlib_msg
