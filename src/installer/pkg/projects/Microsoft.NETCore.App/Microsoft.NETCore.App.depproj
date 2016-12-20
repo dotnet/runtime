@@ -16,32 +16,7 @@
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 
-  <Target Name="SetRuntimeProjectJson">
-    <!-- when building with a runtime, add it to the project.json file -->
-    <PropertyGroup>
-      <RuntimeIntermediateOutputPath>$(IntermediateOutputPath)$(NuGetRuntimeIdentifier)/</RuntimeIntermediateOutputPath>
-      <SourceProjectJson>$(ProjectJson)</SourceProjectJson>
-      <ProjectJson>$(RuntimeIntermediateOutputPath)project.json</ProjectJson>
-      <ProjectLockJson>$(RuntimeIntermediateOutputPath)project.lock.json</ProjectLockJson>
-    </PropertyGroup>
-  </Target>
-  
-  <Target Name="CreateRuntimeProjectJson"
-          Condition="'$(NuGetRuntimeIdentifier)' != ''"
-          DependsOnTargets="SetRuntimeProjectJson"
-          Inputs="$(SourceProjectJson)"
-          Outputs="$(ProjectJson)">
-    <PropertyGroup>
-      <_pjText>$([System.IO.File]::ReadAllText('$(SourceProjectJson)'))</_pjText>
-      <_ridInsertAt>$(_pjText.LastIndexOf('}'))</_ridInsertAt>
-      <_pjText>$(_pjText.Insert($(_ridInsertAt), '  ,"runtimes": { "$(NuGetRuntimeIdentifier)":{} }'))</_pjText>
-    </PropertyGroup>
-    <MakeDir Directories="$(RuntimeIntermediateOutputPath)" />
-    <WriteLinesToFile File="$(ProjectJson)" Lines="$(_pjText)" Overwrite="true" />
-  </Target>
-
-  <Target Name="GetFilesToPackage" DependsOnTargets="CreateRuntimeProjectJson;ResolveNuGetPackages" Returns="@(FilesToPackage)">
-
+  <Target Name="GetFilesToPackage" DependsOnTargets="ResolveNuGetPackages" Returns="@(FilesToPackage)">
     <!-- start with all the files resolved -->
     <ItemGroup Condition="'$(NuGetRuntimeIdentifier)' != ''">
       <!-- RID-specific: include all runtime files -->
