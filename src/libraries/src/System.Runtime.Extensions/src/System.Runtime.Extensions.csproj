@@ -335,13 +335,8 @@
     <Compile Include="$(CommonPath)\System\SystemException.cs" />
     <Compile Include="System\Net\Configuration\UnicodeDecodingConformance.cs" />
     <Compile Include="System\Net\Configuration\UnicodeEncodingConformance.cs" />
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetLastError.cs" />
     <Compile Include="$(CommonPath)\System\IO\DriveInfoInternal.Uap.cs">
       <Link>Common\System\IO\DriveInfoInternal.Uap.cs</Link>
-    </Compile>
-    <!-- Temporary - until text normalization is added to System.Private.Corelib -->
-    <Compile Include="$(CommonPath)\System\Text\NormalizationForm.cs">
-      <Link>Common\System\Text\NormalizationForm.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\SR.Core.cs" />
   </ItemGroup>
