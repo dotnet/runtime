@@ -217,7 +217,7 @@ DacWriteAll(TADDR addr, PVOID buffer, ULONG32 size, bool throwEx)
     return S_OK;
 }
 
-#if defined(WIN64EXCEPTIONS) && defined(FEATURE_PAL)
+#ifdef FEATURE_PAL
 HRESULT 
 DacVirtualUnwind(DWORD threadId, PCONTEXT context, PT_KNONVOLATILE_CONTEXT_POINTERS contextPointers)
 {
@@ -242,7 +242,7 @@ DacVirtualUnwind(DWORD threadId, PCONTEXT context, PT_KNONVOLATILE_CONTEXT_POINT
 
     return hr;
 }
-#endif // defined(WIN64EXCEPTIONS) && defined(FEATURE_PAL)
+#endif // FEATURE_PAL
 
 // DacAllocVirtual - Allocate memory from the target process
 // Note: this is only available to clients supporting the legacy

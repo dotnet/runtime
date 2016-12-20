@@ -9,6 +9,11 @@
 #include "common.h"
 #include "gmscpu.h"
 
+#ifdef FEATURE_PAL
+#define USE_EXTERNAL_UNWINDER
+#endif
+
+#ifndef USE_EXTERNAL_UNWINDER
 /***************************************************************/
 /* setMachState figures out what the state of the CPU will be
    when the function that calls 'setMachState' returns.  It stores
@@ -1264,3 +1269,109 @@ done:
 #ifdef _PREFAST_
 #pragma warning(pop)
 #endif
+#else  // !USE_EXTERNAL_UNWINDER
+
+void LazyMachState::unwindLazyState(LazyMachState* baseState,
+                                    MachState* lazyState,
+                                    DWORD threadId,
+                                    int funCallDepth /* = 1 */,
+                                    HostCallPreference hostCallPreference /* = (HostCallPreference)(-1) */)
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+        SO_TOLERANT;
+        SUPPORTS_DAC;
+    } CONTRACTL_END;
+
+    CONTEXT                         ctx;
+    KNONVOLATILE_CONTEXT_POINTERS   nonVolRegPtrs;
+
+    ctx.Eip = baseState->captureEip;
+    ctx.Esp = baseState->captureEsp;
+    ctx.Ebp = baseState->captureEbp;
+
+    ctx.Edi = lazyState->_edi = baseState->_edi;
+    ctx.Esi = lazyState->_esi = baseState->_esi;
+    ctx.Ebx = lazyState->_ebx = baseState->_ebx;
+
+    nonVolRegPtrs.Edi = &(lazyState->_edi);
+    nonVolRegPtrs.Esi = &(lazyState->_esi);
+    nonVolRegPtrs.Ebx = &(lazyState->_ebx);
+    nonVolRegPtrs.Ebp = &(lazyState->_ebp);
+
+    PCODE pvControlPc;
+
+    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    LazyMachState::unwindLazyState(ip:%p,bp:%p,sp:%p)\n", baseState->captureEip, baseState->captureEbp, baseState->captureEsp));
+
+    do
+    {
+#ifdef DACCESS_COMPILE
+        HRESULT hr = DacVirtualUnwind(threadId, &ctx, &nonVolRegPtrs);
+        if (FAILED(hr))
+        {
+            DacError(hr);
+        }
+#else
+        BOOL success = PAL_VirtualUnwind(&ctx, &nonVolRegPtrs);
+        if (!success)
+        {
+            _ASSERTE(!"unwindLazyState: Unwinding failed");
+            EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
+        }
+#endif // DACCESS_COMPILE
+
+        pvControlPc = GetIP(&ctx);
+
+        if (funCallDepth > 0)
+        {
+            --funCallDepth;
+            if (funCallDepth == 0)
+                break;
+        }
+        else
+        {
+            // Determine  whether given IP resides in JITted code. (It returns nonzero in that case.) 
+            // Use it now to see if we've unwound to managed code yet.
+            BOOL fFailedReaderLock = FALSE;
+            BOOL fIsManagedCode = ExecutionManager::IsManagedCode(pvControlPc, hostCallPreference, &fFailedReaderLock);            
+            if (fFailedReaderLock)
+            {
+                // We don't know if we would have been able to find a JIT
+                // manager, because we couldn't enter the reader lock without
+                // yielding (and our caller doesn't want us to yield).  So abort
+                // now.
+                
+                // Invalidate the lazyState we're returning, so the caller knows
+                // we aborted before we could fully unwind
+                lazyState->_pRetAddr = NULL;                
+                return;
+            }
+
+            if (fIsManagedCode)
+                break;
+        }
+    }
+    while(TRUE);    
+
+    lazyState->_esp = ctx.Esp;
+    lazyState->_pRetAddr = PTR_TADDR(lazyState->_esp - 4);
+
+    lazyState->_edi = ctx.Edi;
+    lazyState->_esi = ctx.Esi;
+    lazyState->_ebx = ctx.Ebx;
+    lazyState->_ebp = ctx.Ebp;
+   
+#ifdef DACCESS_COMPILE
+    lazyState->_pEdi = NULL;
+    lazyState->_pEsi = NULL;
+    lazyState->_pEbx = NULL;
+    lazyState->_pEbp = NULL;
+#else  // DACCESS_COMPILE
+    lazyState->_pEdi = nonVolRegPtrs.Edi;
+    lazyState->_pEsi = nonVolRegPtrs.Esi;
+    lazyState->_pEbx = nonVolRegPtrs.Ebx;
+    lazyState->_pEbp = nonVolRegPtrs.Ebp;
+#endif // DACCESS_COMPILE
+}
+#endif // !USE_EXTERNAL_UNWINDER
