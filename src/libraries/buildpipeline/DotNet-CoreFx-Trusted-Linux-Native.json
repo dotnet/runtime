@@ -317,7 +317,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "run -w=\"$(GitDirectory)\" --name $(DockerContainerName) $(DockerContainerName) $(GitDirectory)/build-native.sh -buildArch=$(Platform) -$(ConfigurationGroup) -- generateversion",
+        "arguments": "run -w=\"$(GitDirectory)\" --name $(DockerContainerName) $(DockerContainerName) $(GitDirectory)/build-native.sh -buildArch=$(Platform) -$(ConfigurationGroup) $(portableLinux) -- generateversion",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -371,7 +371,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "run -w=\"$(GitDirectory)\" --name $(DockerContainerName) $(DockerContainerName) $(GitDirectory)/build-packages.sh -$(ConfigurationGroup) -DisableManagedPackage",
+        "arguments": "run -w=\"$(GitDirectory)\" --name $(DockerContainerName) $(DockerContainerName) $(GitDirectory)/build-packages.sh -$(ConfigurationGroup) -DisableManagedPackage $(portableLinux)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -686,6 +686,10 @@
     },
     "CleanAgent": {
       "value": "true"
+    },
+    "portableLinux": {
+      "value": "",
+      "allowOverride": true
     }
   },
   "demands": [
