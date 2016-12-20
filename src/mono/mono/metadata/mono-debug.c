@@ -22,6 +22,8 @@
 #include <mono/metadata/gc-internals.h>
 #include <mono/metadata/mempool.h>
 #include <mono/metadata/debug-mono-ppdb.h>
+#include <mono/metadata/exception-internals.h>
+#include <mono/metadata/runtime.h>
 #include <string.h>
 
 #define ALIGN_TO(val,align) ((((guint64)val) + ((align) - 1)) & ~((align) - 1))
@@ -861,6 +863,14 @@ mono_debug_free_source_location (MonoDebugSourceLocation *location)
 	}
 }
 
+static int (*get_seq_point) (MonoDomain *domain, MonoMethod *method, gint32 native_offset);
+
+void
+mono_install_get_seq_point (MonoGetSeqPointFunc func)
+{
+	get_seq_point = func;
+}
+
 /**
  * mono_debug_print_stack_frame:
  * @native_offset: Native offset within the @method's machine code.
@@ -891,10 +901,22 @@ mono_debug_print_stack_frame (MonoMethod *method, guint32 native_offset, MonoDom
 			offset = -1;
 		}
 
+		if (offset < 0 && get_seq_point)
+			offset = get_seq_point (domain, method, native_offset);
+
 		if (offset < 0)
 			res = g_strdup_printf ("at %s <0x%05x>", fname, native_offset);
-		else
-			res = g_strdup_printf ("at %s <IL 0x%05x, 0x%05x>", fname, offset, native_offset);
+		else {
+			char *mvid = mono_guid_to_string_minimal ((uint8_t*)method->klass->image->heap_guid.data);
+			char *aotid = mono_runtime_get_aotid ();
+			if (aotid)
+				res = g_strdup_printf ("at %s [0x%05x] in <%s#%s>:0" , fname, offset, mvid, aotid);
+			else
+				res = g_strdup_printf ("at %s [0x%05x] in <%s>:0" , fname, offset, mvid);
+
+			g_free (aotid);
+			g_free (mvid);
+		}
 		g_free (fname);
 		return res;
 	}

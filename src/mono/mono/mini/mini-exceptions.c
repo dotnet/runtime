@@ -180,6 +180,15 @@ mini_above_abort_threshold (void)
 	return above_threshold;
 }
 
+static int
+mono_get_seq_point_for_native_offset (MonoDomain *domain, MonoMethod *method, gint32 native_offset)
+{
+	SeqPoint sp;
+	if (mono_find_prev_seq_point_for_native_offset (domain, method, native_offset, NULL, &sp))
+		return sp.il_offset;
+	return -1;
+}
+
 void
 mono_exceptions_init (void)
 {
@@ -225,6 +234,7 @@ mono_exceptions_init (void)
 	cbs.mono_clear_abort_threshold = mini_clear_abort_threshold;
 	cbs.mono_above_abort_threshold = mini_above_abort_threshold;
 	mono_install_eh_callbacks (&cbs);
+	mono_install_get_seq_point (mono_get_seq_point_for_native_offset);
 }
 
 gpointer
