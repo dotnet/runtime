@@ -4537,6 +4537,8 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 	g_slist_free (virt_methods);
 	virt_methods = NULL;
 
+	g_assert (cur_slot <= max_vtsize);
+
 	/* Ensure that all vtable slots are filled with concrete instance methods */
 	if (!mono_class_is_abstract (klass)) {
 		for (i = 0; i < cur_slot; ++i) {
