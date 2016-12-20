@@ -59,7 +59,6 @@ if [ $? -ne 0 ];then
    exit 1
 fi
 
-
 if [ $__IsCentos -eq 1 ] ; then
    "$__scriptpath/build-packages.sh" -DisableManagedPackage -FilterToOSGroup=rhel.7 $__UnprocessedBuildArgs
 elif [ $__IsOSX -eq 1 ] ; then

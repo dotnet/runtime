@@ -266,6 +266,12 @@
             "MsBuildLogging":"/flp:v=normal;LogFile=build-packages.log"
           }
         },
+        "portableLinux":{
+          "description": "Make the build-native script generate binaries that are portable over glibc based Linux distros.",
+          "settings": {
+            "FilterToOSGroup":"linux"
+          }
+        },
         "tests": {
           "description": "Builds the tests that are in the repository, doesn't restore packages.",
           "settings": {
