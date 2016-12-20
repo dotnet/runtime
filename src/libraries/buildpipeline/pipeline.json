@@ -134,6 +134,19 @@
             "Type": "build/product/",
             "ConfigurationGroup": "Release"
           }
+        },
+        {
+          "Name": "DotNet-CoreFx-Trusted-Linux-Native",
+          "Parameters": {
+            "DockerTag": "rhel7_prereqs_2",
+            "portableLinux": "-portableLinux"
+          },
+          "ReportingParameters": {
+            "OperatingSystem": "RedHat 7",
+            "SubType": "native",
+            "Type": "build/product/",
+            "ConfigurationGroup": "Release"
+          }
         },        
         {
           "Name": "DotNet-CoreFx-Trusted-Mac-Native",
@@ -331,6 +344,19 @@
           },
           "ReportingParameters": {
             "OperatingSystem": "Alpine 3.4.3",
+            "SubType": "native",
+            "Type": "build/product/",
+            "ConfigurationGroup": "Debug"
+          }
+        }, 
+        {
+          "Name": "DotNet-CoreFx-Trusted-Linux-Native",
+          "Parameters": {
+            "DockerTag": "rhel7_prereqs_2",
+            "portableLinux": "-portableLinux"
+          },
+          "ReportingParameters": {
+            "OperatingSystem": "RedHat7",
             "SubType": "native",
             "Type": "build/product/",
             "ConfigurationGroup": "Debug"
