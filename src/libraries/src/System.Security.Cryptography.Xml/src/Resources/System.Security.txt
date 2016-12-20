@@ -1,0 +1,129 @@
+README: this file copied from netfx to corefx as left as-is except for this comment. It needs to be deleted once all of the System.Security.Cryptography.Xml strings have been added to a resource file (like in other corefx projects)
+
+
+
+
+; System.Security.dll resources.
+
+Arg_RankMultiDimNotSupported = Only single dimensional arrays are supported for the requested action.
+Arg_EnumIllegalVal = Illegal enum value: {0}.
+Argument_InvalidOffLen = Offset and length were out of bounds for the array or count is greater than the number of elements from index to the end of the source collection.
+Argument_InvalidPermissionState = Invalid permission state.
+Argument_InvalidValue = Value was invalid.
+Argument_WrongType = Operation on type '{0}' attempted with target of incorrect type.
+ArgumentOutOfRange_Index = Index was out of range.  Must be non-negative and less than the size of the collection.
+Arg_EmptyOrNullString = String cannot be empty or null.
+Argument_InvalidClassAttribute = The value of "class" attribute is invalid.
+InvalidOperation_DuplicateItemNotAllowed = Duplicate items are not allowed in the collection.
+
+Cryptography_Cms_Envelope_Empty_Content = Cannot create CMS enveloped for empty content.
+Cryptography_Cms_Invalid_Subject_Identifier_Type = The subject identifier type {0} is not valid.
+Cryptography_Cms_Invalid_Subject_Identifier_Type_Value_Mismatch = The subject identifier type {0} does not match the value data type {1}.
+Cryptography_Cms_Key_Agree_Date_Not_Available = The Date property is not available for none KID key agree recipient.
+Cryptography_Cms_Key_Agree_Other_Key_Attribute_Not_Available = The OtherKeyAttribute property is not available for none KID key agree recipient.
+Cryptography_Cms_MessageNotSigned = The CMS message is not signed.
+Cryptography_Cms_MessageNotEncrypted = The CMS message is not encrypted.
+Cryptography_Cms_Not_Supported = The Cryptographic Message Standard (CMS) is not supported on this platform.
+Cryptography_Cms_RecipientCertificateNotFound = The recipient certificate is not specified.
+Cryptography_Cms_Sign_Empty_Content = Cannot create CMS signature for empty content.
+Cryptography_Cms_Sign_No_Signature_First_Signer = CmsSigner has to be the first signer with NoSignature.
+Cryptography_DataProtector_InvalidAppNameOrPurpose = Application names and purposes must contain at least one character which is not white space.
+Cryptography_DataProtector_InvalidPurpose = The purpose of the protected blob does not match the expected purpose value of this data protector instance.
+Cryptography_DpApi_InvalidMemoryLength = The length of the data should be a multiple of 16 bytes.
+Cryptography_DpApi_ProfileMayNotBeLoaded = The data protection operation was unsuccessful. This may have been caused by not having the user profile loaded for the current thread's user context, which may be the case when the thread is impersonating.
+Cryptography_InvalidHandle = {0} is an invalid handle.
+Cryptography_InvalidContextHandle = The chain context handle is invalid.
+Cryptography_Pkcs9_MultipleSigningTimeNotAllowed = Cannot add multiple PKCS 9 signing time attributes.
+Cryptography_Pkcs9_AttributeMismatch = The parameter should be a PKCS 9 attribute.
+Cryptography_X509_InvalidEncodingFormat = Invalid encoding format.
+Cryptography_Xml_CipherValueElementRequired = A Cipher Data element should have either a CipherValue or a CipherReference element.
+Cryptography_Xml_CreateHashAlgorithmFailed = Could not create hash algorithm object.
+Cryptography_Xml_CreateTransformFailed = Could not create the XML transformation identified by the URI {0}.
+Cryptography_Xml_CreatedKeyFailed = Failed to create signing key.
+Cryptography_Xml_DigestMethodRequired = A DigestMethod must be specified on a Reference prior to generating XML.
+Cryptography_Xml_DigestValueRequired = A Reference must contain a DigestValue.
+Cryptography_Xml_EnvelopedSignatureRequiresContext = An XmlDocument context is required for enveloped transforms.
+Cryptography_Xml_InvalidElement = Malformed element {0}.
+Cryptography_Xml_InvalidEncryptionProperty = Malformed encryption property element.
+Cryptography_Xml_InvalidKeySize = The key size should be a non negative integer.
+Cryptography_Xml_InvalidReference = Malformed reference element.
+Cryptography_Xml_InvalidSignatureLength = The length of the signature with a MAC should be less than the hash output length.  
+Cryptography_Xml_InvalidSignatureLength2 = The length in bits of the signature with a MAC should be a multiple of 8.  
+Cryptography_Xml_KeyInfoRequired = A KeyInfo element is required to check the signature.
+Cryptography_Xml_KW_BadKeySize = The length of the encrypted data in Key Wrap is either 32, 40 or 48 bytes.
+Cryptography_Xml_LoadKeyFailed = Signing key is not loaded.
+Cryptography_Xml_MissingAlgorithm = Symmetric algorithm is not specified.
+Cryptography_Xml_MissingCipherData = Cipher data is not specified.
+Cryptography_Xml_MissingDecryptionKey = Unable to retrieve the decryption key.
+Cryptography_Xml_MissingEncryptionKey = Unable to retrieve the encryption key.
+Cryptography_Xml_NotSupportedCryptographicTransform = The specified cryptographic transform is not supported.
+Cryptography_Xml_ReferenceElementRequired = At least one Reference element is required.
+Cryptography_Xml_ReferenceTypeRequired = The Reference type must be set in an EncryptedReference object.
+Cryptography_Xml_SelfReferenceRequiresContext = An XmlDocument context is required to resolve the Reference Uri {0}.
+Cryptography_Xml_SignatureDescriptionNotCreated = SignatureDescription could not be created for the signature algorithm supplied.
+Cryptography_Xml_SignatureMethodKeyMismatch = The key does not fit the SignatureMethod.
+Cryptography_Xml_SignatureMethodRequired = A signature method is required.
+Cryptography_Xml_SignatureValueRequired = Signature requires a SignatureValue.
+Cryptography_Xml_SignedInfoRequired = Signature requires a SignedInfo.
+Cryptography_Xml_TransformIncorrectInputType = The input type was invalid for this transform. 
+Cryptography_Xml_IncorrectObjectType = Type of input object is invalid. 
+Cryptography_Xml_UnknownTransform = Unknown transform has been encountered.
+Cryptography_Xml_UriNotResolved = Unable to resolve Uri {0}.
+Cryptography_Xml_UriNotSupported =  The specified Uri is not supported.
+Cryptography_Xml_UriRequired = A Uri attribute is required for a CipherReference element.
+Cryptography_Xml_XrmlMissingContext = Null Context property encountered.
+Cryptography_Xml_XrmlMissingIRelDecryptor = IRelDecryptor is required.
+Cryptography_Xml_XrmlMissingIssuer = Issuer node is required.
+Cryptography_Xml_XrmlMissingLicence = License node is required.
+Cryptography_Xml_XrmlUnableToDecryptGrant = Unable to decrypt grant content.
+
+Environment_NotInteractive = The current session is not interactive.
+
+NotSupported_KeyAlgorithm = The certificate key algorithm is not supported.
+NotSupported_PlatformRequiresNT = This operation is only supported on Windows 2000, Windows XP, and higher.
+
+; Strings used in the SignedXMl debug log
+Log_ActualHashValue=Actual hash value: {0}
+Log_ApplicationPolicies=Application policies:
+Log_BeginCanonicalization=Beginning canonicalization using "{0}" ({1}).
+Log_BeginSignatureComputation=Beginning signature computation.
+Log_BeginSignatureVerification=Beginning signature verification.
+Log_BuildX509Chain=Building and verifying the X509 chain for certificate {0}.
+Log_CanonicalizationSettings=Canonicalization transform is using resolver {0} and base URI "{1}".
+Log_CanonicalizedOutput=Output of canonicalization transform: {0}
+Log_CertificatePolicies=Certificate policies:
+Log_CertificateChain=Certificate chain:
+Log_CheckSignatureFormat=Checking signature format using format validator "[{0}] {1}.{2}".
+Log_CheckSignedInfo=Checking signature on SignedInfo with id "{0}".
+Log_ExtraCertificateForChain=Certificate {0} is available for chain building.
+Log_FormatValidationSuccessful=Signature format validation was successful.
+Log_FormatValidationNotSuccessful=Signature format validation failed.
+Log_KeyUsages=Found key usages "{0}" in extension {1} on certificate {2}.
+Log_NoNamespacesPropagated=No namespaces are being propagated.
+Log_PropagatingNamespace=Propagating namespace {0}="{1}".
+Log_RawSignatureValue=Raw signature: {0}
+Log_ReferenceHash=Reference {0} hashed with "{1}" ({2}) has hash value {3}, expected hash value {4}.
+Log_RevocationMode=Revocation mode for chain building: {0}.
+Log_RevocationFlag=Revocation flag for chain building: {0}.
+Log_SigningAsymmetric=Calculating signature with key {0} using signature description {1}, hash algorithm {2}, and asymmetric signature formatter {3}.
+Log_SigningHmac=Calculating signature using keyed hash algorithm {0}.
+Log_SigningReference=Hashing reference {0}, Uri "{1}", Id "{2}", Type "{3}" with hash algorithm "{4}" ({5}).
+Log_TransformedReferenceContents=Transformed reference contents: {0}
+Log_UnsafeCanonicalizationMethod=Canonicalization method "{0}" is not on the safe list. Safe canonicalization methods are: {1}.
+Log_UrlTimeout=URL retrieval timeout for chain building: {0}.
+Log_VerificationFailed=Verification failed checking {0}.
+Log_VerificationFailed_References=references
+Log_VerificationFailed_SignedInfo=SignedInfo
+Log_VerificationFailed_X509Chain=X509 chain verification
+Log_VerificationFailed_X509KeyUsage=X509 key usage verification
+Log_VerificationFlag=Verification flags for chain building: {0}.
+Log_VerificationTime=Verification time for chain building: {0}.
+Log_VerificationWithKeySuccessful=Verification with key {0} was successful.
+Log_VerificationWithKeyNotSuccessful=Verification with key {0} was not successful.
+Log_VerifyReference=Processing reference {0}, Uri "{1}", Id "{2}", Type "{3}".
+Log_VerifySignedInfoAsymmetric=Verifying SignedInfo using key {0}, signature description {1}, hash algorithm {2}, and asymmetric signature deformatter {3}.
+Log_VerifySignedInfoHmac=Verifying SignedInfo using keyed hash algorithm {0}.
+Log_X509ChainError=Error building X509 chain: {0}: {1}.
+Log_XmlContext=Using context: {0}
+Log_SignedXmlRecursionLimit=Signed xml recursion limit hit while trying to decrypt the key. Reference {0} hashed with "{1}" and ({2}).
+Log_UnsafeTransformMethod=Transform method "{0}" is not on the safe list. Safe transform methods are: {1}.
