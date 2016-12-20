@@ -379,6 +379,10 @@ if test -z "$PLATFORM_LINUX_TRUE"; then :
 PLATFORM_AOT_SUFFIX=.so
 fi
 
+if test -z "$HOST_WIN32"; then :
+PLATFORM_AOT_SUFFIX=.dll
+fi
+
 AC_SUBST(PLATFORM_AOT_SUFFIX)
 
 ## PLATFORM_AOT_SUFFIX not so simple for windows :-)
@@ -855,6 +859,7 @@ elif test x$with_runtime_preset = xfullaot; then
    mono_feature_disable_appdomains='yes'
 
    AOT_BUILD_FLAGS="-O=gsharedvt --aot=full,$INVARIANT_AOT_OPTIONS"
+
    AOT_RUN_FLAGS="--full-aot"
 elif test x$with_runtime_preset = xbitcode; then
    DISABLE_MCS_DOCS_default=yes
@@ -4153,8 +4158,8 @@ mono_cfg_root=$mono_build_root/runtime
 if test x$host_win32 = xyes; then
   if test "x$cross_compiling" = "xno"; then
     mono_cfg_dir=`cygpath -w -a $mono_cfg_root`\\etc
-    CSC="'"`cygpath -w -a $CSC`"'"
-	CSC_LOCATION="'"`cygpath -w -a $CSC_LOCATION`"'"
+    CSC=`cygpath -m -a $CSC`
+    CSC_LOCATION=`cygpath -m -a $CSC_LOCATION`
   else
     mono_cfg_dir=`echo $mono_cfg_root | tr '/' '\\'`\\etc
   fi

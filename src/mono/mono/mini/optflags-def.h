@@ -21,9 +21,9 @@ OPTFLAG(SSAPRE   ,19, "ssapre",     "SSA based Partial Redundancy Elimination (o
 OPTFLAG(EXCEPTION,20, "exception",  "Optimize exception catch blocks")
 OPTFLAG(SSA      ,21, "ssa",        "Use plain SSA form")
 OPTFLAG(SSE2     ,23, "sse2",       "SSE2 instructions on x86")
-OPTFLAG(GSHARED  ,25, "gshared",    "Generic Sharing")
 /* The id has to be smaller than gshared's, the parser code depends on this */
 OPTFLAG(GSHAREDVT,24, "gsharedvt",	"Generic sharing for valuetypes")
+OPTFLAG (GSHARED, 25, "gshared", "Generic Sharing")
 OPTFLAG(SIMD	 ,26, "simd",	    "Simd intrinsics")
 OPTFLAG(UNSAFE	 ,27, "unsafe",	    "Remove bound checks and perform other dangerous changes")
 OPTFLAG(ALIAS_ANALYSIS	 ,28, "alias-analysis",      "Alias analysis of locals")
