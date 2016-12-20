@@ -2956,7 +2956,7 @@ PCODE COMDelegate::GetSecureInvoke(MethodDesc* pMD)
         // Load the arguments
         UINT paramCount = 0;
         while(paramCount < sig.NumFixedArgs())
-          pCode->EmitLDARG(paramCount++);
+            pCode->EmitLDARG(paramCount++);
 
         // Call the delegate
         pCode->EmitCALL(pCode->GetToken(pMD), sig.NumFixedArgs(), fReturnVal);
@@ -2970,19 +2970,19 @@ PCODE COMDelegate::GetSecureInvoke(MethodDesc* pMD)
         pMD->GetSig(&pSig,&cbSig);
 
         MethodDesc* pStubMD =
-          ILStubCache::CreateAndLinkNewILStubMethodDesc(pMD->GetLoaderAllocator(),
-                                                        pMD->GetMethodTable(),
-                                                        ILSTUB_SECUREDELEGATE_INVOKE,
-                                                        pMD->GetModule(),
-                                                        pSig, cbSig,
-                                                        NULL,
-                                                        &sl);
+            ILStubCache::CreateAndLinkNewILStubMethodDesc(pMD->GetLoaderAllocator(),
+                                                          pMD->GetMethodTable(),
+                                                          ILSTUB_SECUREDELEGATE_INVOKE,
+                                                          pMD->GetModule(),
+                                                          pSig, cbSig,
+                                                          NULL,
+                                                          &sl);
 
         pStub = Stub::NewStub(JitILStub(pStubMD));
 
-	    g_IBCLogger.LogEEClassCOWTableAccess(pDelegateMT);
+        g_IBCLogger.LogEEClassCOWTableAccess(pDelegateMT);
 
-	    InterlockedCompareExchangeT<PTR_Stub>(EnsureWritablePages(&delegateEEClass->m_pSecureDelegateInvokeStub), pStub, NULL);
+        InterlockedCompareExchangeT<PTR_Stub>(EnsureWritablePages(&delegateEEClass->m_pSecureDelegateInvokeStub), pStub, NULL);
 
     }
     return pStub->GetEntryPoint();
@@ -3003,12 +3003,12 @@ PCODE COMDelegate::GetSecureInvoke(MethodDesc* pMD)
     MethodTable *       pDelegateMT = pMD->GetMethodTable();
     DelegateEEClass*    delegateEEClass = (DelegateEEClass*) pDelegateMT->GetClass();
 
-	Stub *pStub = delegateEEClass->m_pSecureDelegateInvokeStub;
+    Stub *pStub = delegateEEClass->m_pSecureDelegateInvokeStub;
 
-	if (pStub == NULL)
-	{
+    if (pStub == NULL)
+    {
         GCX_PREEMP();
-    
+
         MetaSig sig(pMD);
 
         UINT_PTR hash = CPUSTUBLINKER::HashMulticastInvoke(&sig);
@@ -3035,10 +3035,10 @@ PCODE COMDelegate::GetSecureInvoke(MethodDesc* pMD)
             pStub = pWinner;
         }
 
-		g_IBCLogger.LogEEClassCOWTableAccess(pDelegateMT);
+        g_IBCLogger.LogEEClassCOWTableAccess(pDelegateMT);
         EnsureWritablePages(&delegateEEClass->m_pSecureDelegateInvokeStub);
         delegateEEClass->m_pSecureDelegateInvokeStub = pStub;
-	}
+    }
     RETURN (pStub->GetEntryPoint());
 }
 #endif // FEATURE_STUBS_AS_IL
