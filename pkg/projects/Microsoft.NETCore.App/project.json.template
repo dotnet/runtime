@@ -15,5 +15,8 @@
   },
   "frameworks": {
     "netcoreapp1.1": { }
+  },
+  "runtimes": {
+    "{RID}": { }
   }
 }
