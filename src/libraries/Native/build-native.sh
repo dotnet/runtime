@@ -25,6 +25,7 @@ setup_dirs()
 
     mkdir -p "$__BinDir"
     mkdir -p "$__IntermediatesDir"
+    mkdir -p "$__VerticalRuntimeDir"
 }
 
 # Check the system to ensure the right pre-reqs are in place
@@ -90,6 +91,12 @@ build_native()
         echo "Failed to build corefx native components."
         exit 1
     fi
+}
+
+copy_to_vertical_runtime()
+{
+    echo "Copying native shims to vertical runtime folder."
+    cp $__BinDir/* "$__VerticalRuntimeDir"
 }
 
 __scriptpath=$(cd "$(dirname "$0")"; pwd -P)
@@ -249,8 +256,9 @@ case $CPUName in
 esac
 
 # Set the remaining variables based upon the determined build configuration
-__IntermediatesDir="$__rootbinpath/obj/runtime/$__TargetGroup-$__BuildOS-$__BuildType-$__BuildArch"
-__BinDir="$__rootbinpath/runtime/$__TargetGroup-$__BuildOS-$__BuildType-$__BuildArch"
+__IntermediatesDir="$__rootbinpath/obj/$__BuildOS.$__BuildArch.$__BuildType/Native"
+__BinDir="$__rootbinpath/$__BuildOS.$__BuildArch.$__BuildType/Native"
+__VerticalRuntimeDir="$__rootbinpath/runtime/$__TargetGroup-$__BuildOS-$__BuildType-$__BuildArch"
 
 # Make the directories necessary for build if they don't exist
 setup_dirs
@@ -274,3 +282,7 @@ fi
     # Build the corefx native components.
 
     build_native
+
+    # Copy files to vertical runtime folder
+
+    copy_to_vertical_runtime
