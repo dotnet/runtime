@@ -1368,7 +1368,7 @@ mono_arch_cleanup (void)
 gboolean
 mono_arch_have_fast_tls (void)
 {
-	return FALSE;
+	return TRUE;
 }
 
 /*========================= End of Function ========================*/
@@ -3918,6 +3918,34 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_S390_SETF4RET:
 			s390_ledbr (code, ins->dreg, ins->sreg1);
 			break;
+                case OP_TLS_GET: {
+			if (s390_is_imm16 (ins->inst_offset)) {
+				s390_lghi (code, s390_r13, ins->inst_offset);
+			} else if (s390_is_imm32 (ins->inst_offset)) {
+				s390_lgfi (code, s390_r13, ins->inst_offset);
+			} else {
+				S390_SET  (code, s390_r13, ins->inst_offset);
+			}
+			s390_ear (code, s390_r1, 0);
+			s390_sllg(code, s390_r1, s390_r1, 0, 32);
+			s390_ear (code, s390_r1, 1);
+			s390_lg  (code, ins->dreg, s390_r13, s390_r1, 0);
+			}
+			break;
+                case OP_TLS_SET: {
+			if (s390_is_imm16 (ins->inst_offset)) {
+				s390_lghi (code, s390_r13, ins->inst_offset);
+			} else if (s390_is_imm32 (ins->inst_offset)) {
+				s390_lgfi (code, s390_r13, ins->inst_offset);
+			} else {
+				S390_SET  (code, s390_r13, ins->inst_offset);
+			}
+			s390_ear (code, s390_r1, 0);
+			s390_sllg(code, s390_r1, s390_r1, 0, 32);
+			s390_ear (code, s390_r1, 1);
+			s390_stg (code, ins->sreg1, s390_r13, s390_r1, 0);
+			}
+			break;
 		case OP_JMP: {
 			if (cfg->method->save_lmf)
 				restoreLMF(code, cfg->frame_reg, cfg->stack_usage);
@@ -6266,6 +6294,18 @@ mono_arch_print_tree (MonoInst *tree, int arity)
 			printf ("[f%s,f%s]", 
 				mono_arch_regname (tree->dreg),
 				mono_arch_regname (tree->sreg1));
+			done = 1;
+			break;
+		case OP_TLS_GET:
+			printf ("[0x%lx(0x%lx,%s)]", tree->inst_offset,
+			tree->inst_imm,
+			mono_arch_regname (tree->sreg1));
+			done = 1;
+			break;
+		case OP_TLS_SET:
+			printf ("[0x%lx(0x%lx,%s)]", tree->inst_offset,
+			tree->inst_imm,
+			mono_arch_regname (tree->sreg1));
 			done = 1;
 			break;
 		case OP_S390_BKCHAIN:
