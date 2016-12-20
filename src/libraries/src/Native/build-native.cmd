@@ -71,10 +71,10 @@ echo Commencing build of native components
 echo.
 
 if %__CMakeBinDir% == "" (
-    set "__CMakeBinDir=%__binDir%\runtime\%__TargetGroup%-Windows_NT-%CMAKE_BUILD_TYPE%-%__BuildArch%"
+    set "__CMakeBinDir=%__binDir%\Windows_NT.%__BuildArch%.%CMAKE_BUILD_TYPE%\Native"
 )
 if %__IntermediatesDir% == "" (
-    set "__IntermediatesDir=%__binDir%\obj\runtime\%__TargetGroup%-Windows_NT-%CMAKE_BUILD_TYPE%-%__BuildArch%"
+    set "__IntermediatesDir=%__binDir%\obj\Windows_NT.%__BuildArch%.%CMAKE_BUILD_TYPE%\Native"
 )
 set "__CMakeBinDir=%__CMakeBinDir:\=/%"
 set "__IntermediatesDir=%__IntermediatesDir:\=/%"
@@ -124,6 +124,10 @@ call %__rootDir%/run.cmd build-managed -project="%__IntermediatesDir%\install.vc
 IF ERRORLEVEL 1 (
     goto :Failure
 )
+
+:: Copy to vertical runtime directory
+xcopy "%__binDir%\Windows_NT.%__BuildArch%.%CMAKE_BUILD_TYPE%\Native\*" "%__binDir%\runtime\%__TargetGroup%-Windows_NT-%CMAKE_BUILD_TYPE%-%__BuildArch%"\ 
+
 echo Done building Native components
 
 :BuildNativeAOT
