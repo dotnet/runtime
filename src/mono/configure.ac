@@ -838,6 +838,7 @@ elif test x$with_runtime_preset = xall; then
    with_monotouch_watch_default=yes
    with_monotouch_tv_default=yes
    with_xammac_default=yes
+   with_xbox_default=yes
 elif test x$with_runtime_preset = xfullaot; then
    DISABLE_MCS_DOCS_default=yes
    with_testing_aot_full_default=yes
@@ -939,6 +940,7 @@ AM_CONDITIONAL(BITCODE, test "x$with_bitcode" = "xyes")
 AM_CONDITIONAL(INSTALL_XAMMAC, [test "x$with_xammac" != "xno"])
 AM_CONDITIONAL(INSTALL_TESTING_AOT_HYBRID, [test "x$with_testing_aot_hybrid" != "xno"])
 AM_CONDITIONAL(INSTALL_TESTING_AOT_FULL, [test "x$with_testing_aot_full" != "xno"])
+AM_CONDITIONAL(INSTALL_XBOX, [test "x$with_xbox" != "xno"])
 
 AC_SUBST(INSTALL_TESTING_AOT_HYBRID)
 AC_SUBST(INSTALL_TESTING_AOT_FULL)
@@ -4499,8 +4501,8 @@ echo "
 	Xamarin.WatchOS: $with_monotouch_watch
 	Xamarin.TVOS:    $with_monotouch_tv
 	Xamarin.Mac:     $with_xammac
-	AOT Hybrid:      $with_testing_aot_hybrid
-	AOT Full:        $with_testing_aot_full
+	Xbox:            $with_xbox
+	Test profiles:   AOT Full ($with_testing_aot_full), AOT Hybrid ($with_testing_aot_hybrid)
 	JNI support:     $jdk_headers_found
 	libgdiplus:      $libgdiplus_msg
 	zlib:            $zlib_msg
