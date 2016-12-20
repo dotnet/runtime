@@ -97,7 +97,6 @@
     <ClCompile Include="..\mono\mini\mini-codegen.c" />
     <ClCompile Include="..\mono\mini\mini-cross-helpers.c" />
     <ClCompile Include="..\mono\mini\mini-exceptions.c" />
-    <ClCompile Include="..\mono\mini\mini-exceptions-native-unwinder.c" />
     <ClCompile Include="..\mono\mini\mini-trampolines.c  " />
     <ClCompile Include="..\mono\mini\tramp-amd64.c">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
