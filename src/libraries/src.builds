@@ -4,8 +4,6 @@
   <ItemGroup>
     <ProjectExclusions Condition="'$(OS)' != 'Windows_NT'" Include="$(MSBuildThisFileDirectory)**\src\System.Memory.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)**\src\System.Threading.Overlapped.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)**\src\System.Runtime.Serialization.Formatters.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)**\src\System.Runtime.CompilerServices.Unsafe.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Project Include="$(MSBuildThisFileDirectory)*/src/*.csproj" Exclude="@(ProjectExclusions)">
