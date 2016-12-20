@@ -3,6 +3,10 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
     <Project Include="runtime.native.System.Security.Cryptography.OpenSsl.pkgproj"/>
+    <Project Include="linux\runtime.native.System.Security.Cryptography.OpenSsl.pkgproj">
+      <OSGroup>linux</OSGroup>
+      <Platform>amd64</Platform>
+    </Project>
     <Project Include="rhel\runtime.native.System.Security.Cryptography.OpenSsl.pkgproj">
       <OSGroup>rhel.7</OSGroup>
       <Platform>amd64</Platform>
