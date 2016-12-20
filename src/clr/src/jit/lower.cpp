@@ -2093,13 +2093,33 @@ void Lowering::LowerCompare(GenTree* cmp)
 
                 if (andOp1->isMemoryOp() && andOp2->IsIntegralConst())
                 {
-                    // TOOD-CQ: There's more than can be done here. This is just enough to prevent
-                    // code size regressions.
+                    //
+                    // For "test" we only care about the bits that are set in the second operand (mask).
+                    // If the mask fits in a small type then we can narrow both operands to generate a "test" 
+                    // instruction with a smaller encoding ("test" does not have a r/m32, imm8 form) and avoid 
+                    // a widening load in some cases.
+                    //
+                    // For 16 bit operands we narrow only if the memory operand is already 16 bit. This matches 
+                    // the behavior of a previous implementation and avoids adding more cases where we generate 
+                    // 16 bit instructions that require a length changing prefix (0x66). These suffer from 
+                    // significant decoder stalls on Intel CPUs.
+                    //
+                    // We could also do this for 64 bit masks that fit into 32 bit but it doesn't help.
+                    // In such cases morph narrows down the existing GT_AND by inserting a cast between it and 
+                    // the memory operand so we'd need to add more code to recognize and eliminate that cast.
+                    //
 
-                    if (varTypeIsSmall(andOp1) &&
-                        genTypeValueFitsIn(andOp2->AsIntCon()->IconValue(), andOp1->TypeGet()))
+                    size_t mask = static_cast<size_t>(andOp2->AsIntCon()->IconValue());
+
+                    if (FitsIn<UINT8>(mask))
                     {
-                        andOp2->gtType = andOp1->TypeGet();
+                        andOp1->gtType = TYP_UBYTE;
+                        andOp2->gtType = TYP_UBYTE;
+                    }
+                    else if (FitsIn<UINT16>(mask) && genTypeSize(andOp1) == 2)
+                    {
+                        andOp1->gtType = TYP_CHAR;
+                        andOp2->gtType = TYP_CHAR;
                     }
                 }
             }
