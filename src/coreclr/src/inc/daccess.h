@@ -774,18 +774,18 @@ interface IMDInternalImport* DacGetMDImport(const ReflectionModule* reflectionMo
 
 int DacGetIlMethodSize(TADDR methAddr);
 struct COR_ILMETHOD* DacGetIlMethod(TADDR methAddr);
-#if defined(WIN64EXCEPTIONS)
+#ifdef WIN64EXCEPTIONS
 struct _UNWIND_INFO * DacGetUnwindInfo(TADDR taUnwindInfo);
 
 // virtually unwind a CONTEXT out-of-process
 struct _KNONVOLATILE_CONTEXT_POINTERS;
 BOOL DacUnwindStackFrame(T_CONTEXT * pContext, T_KNONVOLATILE_CONTEXT_POINTERS* pContextPointers);
+#endif // WIN64EXCEPTIONS
 
 #if defined(FEATURE_PAL)
 // call back through data target to unwind out-of-process
 HRESULT DacVirtualUnwind(ULONG32 threadId, PCONTEXT context, PT_KNONVOLATILE_CONTEXT_POINTERS contextPointers);
 #endif // FEATURE_PAL
-#endif // _WIN64
 
 #ifdef FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
 class SString;
