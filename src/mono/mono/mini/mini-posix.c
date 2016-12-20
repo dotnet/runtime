@@ -839,23 +839,6 @@ mono_gdb_render_native_backtraces (pid_t crashed_pid)
 
 #else
 
-pid_t
-mono_runtime_syscall_fork ()
-{
-#if defined(PLATFORM_ANDROID)
-	/* SYS_fork is defined to be __NR_fork which is not defined in some ndk versions */
-	g_assert_not_reached ();
-	return 0;
-#elif defined(SYS_fork)
-	return (pid_t) syscall (SYS_fork);
-#elif defined(PLATFORM_MACOSX) && HAVE_FORK
-	return (pid_t) fork ();
-#else
-	g_assert_not_reached ();
-	return 0;
-#endif
-}
-
 static gboolean
 native_stack_with_gdb (pid_t crashed_pid, const char **argv, FILE *commands, char* commands_filename)
 {

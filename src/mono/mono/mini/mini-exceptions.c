@@ -2535,7 +2535,7 @@ mono_handle_native_crash (const char *signal, void *ctx, MONO_SIG_HANDLER_INFO_T
 #if defined(PLATFORM_ANDROID)
 		/* SYS_fork is defined to be __NR_fork which is not defined in some ndk versions */
 		g_assert_not_reached ();
-#elif defined(SYS_fork)
+#elif !defined(PLATFORM_MACOSX) && defined(SYS_fork)
 		pid = (pid_t) syscall (SYS_fork);
 #elif defined(PLATFORM_MACOSX) && HAVE_FORK
 		pid = (pid_t) fork ();
