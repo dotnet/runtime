@@ -60,10 +60,15 @@ namespace System.Collections.Tests
         protected virtual bool Enumerator_Current_UndefinedOperation_Throws => false;
 
         /// <summary>
-        /// The behavior of MoveNext at the end of the enumerable after modification is undefined for the generic
-        /// IEnumerable. It may either throw an InvalidOperationException or do nothing.
+        /// When calling MoveNext or Reset after modification of the enumeration, the resulting behavior is
+        /// undefined. Tests are included to cover two behavioral scenarios:
+        ///   - Throwing an InvalidOperationException
+        ///   - Execute MoveNext or Reset.
+        /// 
+        /// If this property is set to true, the tests ensure that the exception is thrown. The default value is
+        /// true.
         /// </summary>
-        protected bool MoveNextAtEndThrowsOnModifiedCollection => true;
+        protected virtual bool Enumerator_ModifiedDuringEnumeration_ThrowsInvalidOperationException => true;
 
         /// <summary>
         /// Specifies whether this IEnumerable follows some sort of ordering pattern.
@@ -132,15 +137,8 @@ namespace System.Collections.Tests
                 }
             }
 
-            if (!atEnd || MoveNextAtEndThrowsOnModifiedCollection)
-            {
-                Assert.Throws<InvalidOperationException>(
-                    () => enumerator.MoveNext());
-            }
-            else
-            {
-                Assert.False(enumerator.MoveNext());
-            }
+            Assert.Throws<InvalidOperationException>(
+                () => enumerator.MoveNext());
 
             if (!!ResetImplemented)
             {
@@ -367,7 +365,16 @@ namespace System.Collections.Tests
                 using (IEnumerator<T> enumerator = enumerable.GetEnumerator())
                 {
                     if (ModifyEnumerable(enumerable))
-                        Assert.Throws<InvalidOperationException>(() => enumerator.MoveNext());
+                    {
+                        if (Enumerator_ModifiedDuringEnumeration_ThrowsInvalidOperationException)
+                        {
+                            Assert.Throws<InvalidOperationException>(() => enumerator.MoveNext());
+                        }
+                        else
+                        {
+                            enumerator.MoveNext();
+                        }
+                    }
                 }
             });
         }
@@ -384,7 +391,16 @@ namespace System.Collections.Tests
                     for (int i = 0; i < count / 2; i++)
                         enumerator.MoveNext();
                     if (ModifyEnumerable(enumerable))
-                        Assert.Throws<InvalidOperationException>(() => enumerator.MoveNext());
+                    {
+                        if (Enumerator_ModifiedDuringEnumeration_ThrowsInvalidOperationException)
+                        {
+                            Assert.Throws<InvalidOperationException>(() => enumerator.MoveNext());
+                        }
+                        else
+                        {
+                            enumerator.MoveNext();
+                        }
+                    }
                 }
             });
         }
@@ -400,7 +416,16 @@ namespace System.Collections.Tests
                 {
                     while (enumerator.MoveNext()) ;
                     if (ModifyEnumerable(enumerable))
-                        Assert.Throws<InvalidOperationException>(() => enumerator.MoveNext());
+                    {
+                        if (Enumerator_ModifiedDuringEnumeration_ThrowsInvalidOperationException)
+                        {
+                            Assert.Throws<InvalidOperationException>(() => enumerator.MoveNext());
+                        }
+                        else
+                        {
+                            enumerator.MoveNext();
+                        }
+                    }
                 }
             });
         }
@@ -575,7 +600,16 @@ namespace System.Collections.Tests
                 using (IEnumerator<T> enumerator = enumerable.GetEnumerator())
                 {
                     if (ModifyEnumerable(enumerable))
-                        Assert.Throws<InvalidOperationException>(() => enumerator.Reset());
+                    {
+                        if (Enumerator_ModifiedDuringEnumeration_ThrowsInvalidOperationException)
+                        {
+                            Assert.Throws<InvalidOperationException>(() => enumerator.Reset());
+                        }
+                        else
+                        {
+                            enumerator.Reset();
+                        }
+                    }
                 }
             });
         }
@@ -592,7 +626,16 @@ namespace System.Collections.Tests
                     for (int i = 0; i < count / 2; i++)
                         enumerator.MoveNext();
                     if (ModifyEnumerable(enumerable))
-                        Assert.Throws<InvalidOperationException>(() => enumerator.Reset());
+                    {
+                        if (Enumerator_ModifiedDuringEnumeration_ThrowsInvalidOperationException)
+                        {
+                            Assert.Throws<InvalidOperationException>(() => enumerator.Reset());
+                        }
+                        else
+                        {
+                            enumerator.Reset();
+                        }
+                    }
                 }
             });
         }
@@ -608,7 +651,16 @@ namespace System.Collections.Tests
                 {
                     while (enumerator.MoveNext()) ;
                     if (ModifyEnumerable(enumerable))
-                        Assert.Throws<InvalidOperationException>(() => enumerator.Reset());
+                    {
+                        if (Enumerator_ModifiedDuringEnumeration_ThrowsInvalidOperationException)
+                        {
+                            Assert.Throws<InvalidOperationException>(() => enumerator.Reset());
+                        }
+                        else
+                        {
+                            enumerator.Reset();
+                        }
+                    }
                 }
             });
         }
