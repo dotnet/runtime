@@ -5640,10 +5640,9 @@ void Compiler::fgValueNumberTree(GenTreePtr tree, bool evalAsgLhsInd)
                                 // (we looked in a side table above for its "def" identity).  Look up that value.
                                 ValueNumPair oldLhsVNPair =
                                     lvaTable[lclFld->GetLclNum()].GetPerSsaData(lclFld->GetSsaNum())->m_vnPair;
-                                newLhsVNPair =
-                                    vnStore->VNPairApplySelectorsAssign(oldLhsVNPair, lclFld->gtFieldSeq,
-                                                                        rhsVNPair, // Pre-value.
-                                                                        lvaGetActualType(lclFld->gtLclNum), compCurBB);
+                                newLhsVNPair = vnStore->VNPairApplySelectorsAssign(oldLhsVNPair, lclFld->gtFieldSeq,
+                                                                                   rhsVNPair, // Pre-value.
+                                                                                   lclFld->TypeGet(), compCurBB);
                             }
                         }
                         lvaTable[lclFld->GetLclNum()].GetPerSsaData(lclDefSsaNum)->m_vnPair = newLhsVNPair;
