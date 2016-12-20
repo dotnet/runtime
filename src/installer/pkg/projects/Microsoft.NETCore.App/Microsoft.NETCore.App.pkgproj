@@ -19,13 +19,12 @@
     <!-- reference RID specific packages to generate lineup -->
     <ProjectReference Include="@(Project)" />
 
-    <ProjectReference Include="..\Microsoft.NETCore.DotNetHost\Microsoft.NETCore.DotNetHostPolicy.pkgproj">
-      <TargetFramework>.NETCoreApp1.1</TargetFramework>
-    </ProjectReference>
-    
     <!-- reference dependencies from previous versions -->
     <Dependency Include="@(NETCoreApp10Dependency)">
       <TargetFramework>.NETCoreApp1.0</TargetFramework>
+    </Dependency>
+    <Dependency Include="_._">
+      <TargetFramework>.NETCoreApp1.1</TargetFramework>
     </Dependency>
   </ItemGroup>
 
@@ -34,6 +33,25 @@
     <ProjectReference Include="Microsoft.NETCore.App.depproj">
       <AdditionalProperties Condition="'$(PackageTargetRuntime)' != ''">NuGetRuntimeIdentifier=$(PackageTargetRuntime)</AdditionalProperties>
     </ProjectReference>
+  </ItemGroup>
+  
+  <ItemGroup Condition="'$(PackageTargetRuntime)' != ''">
+    <ArchitectureSpecificNativeFile Include="$(DotNetHostBinDir)/dotnet.exe" />
+    <ArchitectureSpecificNativeFile Include="$(DotNetHostBinDir)/dotnet.pdb">
+      <IsSymbolFile>true</IsSymbolFile>
+    </ArchitectureSpecificNativeFile>
+    <ArchitectureSpecificNativeFile Include="$(DotNetHostBinDir)/hostfxr.dll"/>
+    <ArchitectureSpecificNativeFile Include="$(DotNetHostBinDir)/hostfxr.pdb">
+      <IsSymbolFile>true</IsSymbolFile>
+    </ArchitectureSpecificNativeFile>
+    <ArchitectureSpecificNativeFile Include="$(DotNetHostBinDir)/hostpolicy.dll"/>
+    <ArchitectureSpecificNativeFile Include="$(DotNetHostBinDir)/hostpolicy.pdb">
+      <IsSymbolFile>true</IsSymbolFile>
+    </ArchitectureSpecificNativeFile>
+
+    <File Include="@(ArchitectureSpecificNativeFile)">
+      <TargetPath>runtimes/$(PackageTargetRuntime)/native</TargetPath>
+    </File>
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
