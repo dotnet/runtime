@@ -26,6 +26,7 @@ namespace Microsoft.DotNet.Host.Build
             nameof(RestoreTests),
             nameof(BuildTests),
             nameof(RunTests))]
+        [Environment("DOTNET_BUILD_SKIP_TESTS", null, "0", "false")]
         public static BuildTargetResult Test(BuildTargetContext c) => c.Success();
 
         [Target]

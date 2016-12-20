@@ -35,6 +35,9 @@ while [[ $# > 0 ]]; do
             IFS=',' read -r -a envVars <<< $2
             shift
             ;;
+        --skiptests)
+            export DOTNET_BUILD_SKIP_TESTS=1
+            ;;
         --nopackage)
             export DOTNET_BUILD_SKIP_PACKAGING=1
             ;;
