@@ -12482,5 +12482,16 @@
       <Member Name="Slice(System.String,System.Int32)" />
       <Member Name="Slice(System.String,System.Int32,System.Int32)" />
     </Type>
+    <Type Name="System.ComponentModel.EditorBrowsableAttribute">
+      <Member Name="#ctor" />
+      <Member Name="#ctor(System.ComponentModel.EditorBrowsableState)" />
+      <Member Name="get_State" />
+      <Member MemberType="Property" Name="State" />
+    </Type>
+    <Type Name="System.ComponentModel.EditorBrowsableState">
+      <Member MemberType="Field" Name="Always" />
+      <Member MemberType="Field" Name="Never" />
+      <Member MemberType="Field" Name="Advanced" />
+    </Type>
   </Assembly>
 </ThinModel>

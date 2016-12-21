@@ -16,6 +16,7 @@
 namespace System.Collections {
     
     using System;
+    using System.ComponentModel;
     // A DictionaryEntry holds a key and a value from a dictionary.
     // It is returned by IDictionaryEnumerator::GetEntry().
 [System.Runtime.InteropServices.ComVisible(true)]
@@ -52,7 +53,7 @@ namespace System.Collections {
             }
         }
 
-        // BLOCKED (do not add now): [EditorBrowsable(EditorBrowsableState.Never)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public void Deconstruct(out object key, out object value)
         {
             key = Key;
