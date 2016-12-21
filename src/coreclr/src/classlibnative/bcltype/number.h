@@ -14,26 +14,12 @@
 
 #define NUMBER_MAXDIGITS 50
 
-#ifndef FEATURE_BCL_FORMATTING
-enum PAL_NUMBERType {
-    PALNUMBERTYPE_INT     = 1,    // PAL_IntToNumber
-    PALNUMBERTYPE_INT64   = 2,    // PAL_Int64ToNumber
-    PALNUMBERTYPE_UINT    = 3,    // PAL_UIntToNumber
-    PALNUMBERTYPE_UINT64  = 4,    // PAL_UInt64ToNumber
-    PALNUMBERTYPE_DOUBLE  = 5,    // PAL_DoubleToNumber
-};
-#endif
-
 struct NUMBER {
     int precision;
     int scale;
     int sign;
     wchar_t digits[NUMBER_MAXDIGITS + 1];
     wchar_t* allDigits;
-#ifndef FEATURE_BCL_FORMATTING
-    PAL_NUMBERHolder palNumber;
-    PAL_NUMBERType palNumberType;
-#endif
     NUMBER() : precision(0), scale(0), sign(0), allDigits(NULL) {}
 };
 

@@ -10,7 +10,6 @@
     <FeatureAppXBinder>true</FeatureAppXBinder>
     <FeatureAptca>true</FeatureAptca>
     <FeatureArrayStubAsIL Condition="('$(TargetArch)' == 'arm')">true</FeatureArrayStubAsIL>
-    <FeatureBclFormatting>true</FeatureBclFormatting>
     <FeatureCasPolicy>true</FeatureCasPolicy>
     <FeatureTraceLogging>true</FeatureTraceLogging>
     <FeatureClassicCominterop>true</FeatureClassicCominterop>
