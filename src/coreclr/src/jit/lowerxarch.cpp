@@ -623,7 +623,7 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
 
         case GT_LOCKADD:
             info->srcCount = 2;
-            info->dstCount = 0;
+            info->dstCount = (tree->TypeGet() == TYP_VOID) ? 0 : 1;
 
             CheckImmedAndMakeContained(tree, tree->gtOp.gtOp2);
             break;
@@ -883,6 +883,31 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
             // to special case them.
             if (tree->OperGet() == GT_XADD || tree->OperGet() == GT_XCHG || tree->OperGet() == GT_LOCKADD)
             {
+                // These tree nodes will have their op1 marked as isDelayFree=true.
+                // Hence these tree nodes should have a Def position so that op1's reg
+                // gets freed at DefLoc+1.
+                if (tree->TypeGet() == TYP_VOID)
+                {
+                    // Right now a GT_XADD node could be morphed into a
+                    // GT_LOCKADD of TYP_VOID. See gtExtractSideEffList().
+                    // Note that it is advantageous to use GT_LOCKADD
+                    // instead of of GT_XADD as the former uses lock.add,
+                    // which allows its second operand to be a contained
+                    // immediate wheres xadd instruction requires its
+                    // second operand to be in a register.
+                    assert(tree->gtLsraInfo.dstCount == 0);
+
+                    // Give it an artificial type and mark it isLocalDefUse = true.
+                    // This would result in a Def position created but not considered
+                    // consumed by its parent node.
+                    tree->gtType                   = TYP_INT;
+                    tree->gtLsraInfo.isLocalDefUse = true;
+                }
+                else
+                {
+                    assert(tree->gtLsraInfo.dstCount != 0);
+                }
+
                 delayUseSrc = op1;
             }
             else if ((op2 != nullptr) &&
