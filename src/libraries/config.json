@@ -78,12 +78,6 @@
       "values": ["True", "False"],
       "defaultValue": true
     },
-    "BuildTestsAgainstPackages": {
-      "description": "Allows building tests against product packages.",
-      "valueType": "property",
-      "values": ["True", "False"],
-      "defaultValue": true
-    },
     "Coverage": {
       "description": "Enables code coverage runs.",
       "valueType": "property",
@@ -192,13 +186,7 @@
       "values": [],
       "defaultValue": ""
     },
-    "BatchGenerateTestProjectJsons": {
-      "description": "MsBuild target that generates the project.json files to build tests against packages.",
-      "valueType": "target",
-      "values": [],
-      "defaultValue": ""
-    },
-    "BatchRestorePackages": {
+    "Sync": {
       "description": "MsBuild target that restores the packages.",
       "valueType": "target",
       "values": [],
@@ -447,7 +435,7 @@
           "description": "Restores all NuGet packages for repository.",
           "settings": {
             "RestoreDuringBuild":  true,
-            "BatchRestorePackages": "default"
+            "Sync": "default"
           }
         },
         "ab": {
@@ -457,12 +445,10 @@
           }
         },
         "t": {
-          "description": "Generates project.jsons for test projects, restores packages, builds product and then builds tests against the generated project.json files.",
+          "description": "Deprecated, use sync /p instead.",
           "settings": {
             "RestoreDuringBuild":  true,
-            "BuildTestsAgainstPackages": true,
-            "BatchGenerateTestProjectJsons":  "default",
-            "BatchRestorePackages": "default"
+            "Sync": "default"
           }
         },
         "AzureAccount": {
