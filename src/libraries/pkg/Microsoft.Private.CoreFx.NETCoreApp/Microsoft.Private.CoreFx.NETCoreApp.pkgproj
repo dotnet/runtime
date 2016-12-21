@@ -88,7 +88,6 @@
 
   <ItemGroup>
     <IgnoredReference Include="System.Private.CoreLib" />
-    <IgnoredReference Include="System.Threading.Overlapped" />
   </ItemGroup>
 
   <Target Name="VerifyClosure" AfterTargets="Build">
