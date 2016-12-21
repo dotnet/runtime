@@ -16,6 +16,7 @@ namespace System.Security.Cryptography
     {
         internal const byte ContextSpecificTagFlag = 0x80;
         internal const byte ConstructedFlag = 0x20;
+        internal const byte TagNumberMask = 0x1F;
 
         private readonly byte[] _data;
         private readonly int _end;
@@ -232,7 +233,7 @@ namespace System.Security.Cryptography
                 return;
             }
 
-            byte relevant = (byte)(actual & 0x1F);
+            byte relevant = (byte)(actual & TagNumberMask);
             byte expectedByte = (byte)expected;
 
             if (expectedByte != relevant)

@@ -12,6 +12,7 @@
         "System.Runtime": "4.4.0-beta-24709-02",
         "System.Runtime.Extensions": "4.4.0-beta-24709-02",
         "System.Runtime.InteropServices": "4.4.0-beta-24709-02",
+        "System.Runtime.Numerics": "4.4.0-beta-24709-02",
         "System.Text.Encoding": "4.4.0-beta-24709-02",
         "System.Security.Cryptography.Primitives": "4.4.0-beta-24709-02"
       }
