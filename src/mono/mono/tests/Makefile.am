@@ -41,6 +41,7 @@ CLASS=$(mcs_topdir)/class/lib/$(DEFAULT_PROFILE)
 with_mono_path = MONO_PATH=$(CLASS)
 
 RUNTIME = $(with_mono_path) $(top_builddir)/runtime/mono-wrapper
+TOOLS_RUNTIME = MONO_PATH=$(mcs_topdir)/class/lib/build $(top_builddir)/runtime/mono-wrapper
 
 MKBUNDLE = \
 	PKG_CONFIG_PATH=$(top_builddir):$(PKG_CONFIG_PATH) \
@@ -54,7 +55,7 @@ if INSTALL_TESTING_AOT_HYBRID
 PROFILE_MCS_FLAGS = -d:MOBILE,MOBILE_LEGACY 
 endif
 
-MCS_NO_LIB = $(RUNTIME) $(CSC) -unsafe -debug:portable \
+MCS_NO_LIB = $(TOOLS_RUNTIME) $(CSC) -unsafe -debug:portable \
 	-noconfig -nologo \
 	-nowarn:0162 -nowarn:0168 -nowarn:0219 -nowarn:0414 -nowarn:0618 \
 	-nowarn:0169 -nowarn:1690 -nowarn:0649 -nowarn:0612 -nowarn:3021 \
@@ -62,7 +63,7 @@ MCS_NO_LIB = $(RUNTIME) $(CSC) -unsafe -debug:portable \
 
 MCS = $(MCS_NO_LIB) -lib:$(CLASS)
 
-ILASM = $(RUNTIME) $(CLASS)/ilasm.exe
+ILASM = $(TOOLS_RUNTIME) $(mcs_topdir)/class/lib/build/ilasm.exe
 
 if INSTALL_TESTING_AOT_FULL
 TEST_RUNNER = ./test-runner.exe --runtime $(top_builddir)/runtime/mono-wrapper --mono-path "$(CLASS)" --aot-run-flags "$(AOT_RUN_FLAGS)" --aot-build-flags "$(AOT_BUILD_FLAGS)"

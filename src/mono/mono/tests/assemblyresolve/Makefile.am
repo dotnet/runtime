@@ -1,9 +1,6 @@
-CLASS=$(mcs_topdir)/class/lib/$(DEFAULT_PROFILE)
-
-with_mono_path = MONO_PATH=$(CLASS)
 
 RUNTIME = $(top_builddir)/runtime/mono-wrapper --debug
-MCS = $(with_mono_path) $(RUNTIME) $(CSC) -noconfig -nologo -debug:portable -target:library
+MCS = MONO_PATH=$(mcs_topdir)/class/lib/build $(RUNTIME) $(CSC) -noconfig -nologo -debug:portable -target:library
 
 if INSTALL_TESTING_AOT_FULL
 prereq: aot
