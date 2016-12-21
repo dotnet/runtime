@@ -9,6 +9,7 @@
     <SkipPackageFileCheck>true</SkipPackageFileCheck>
     <OmitDependencies>true</OmitDependencies>
     <SkipValidatePackage>true</SkipValidatePackage>
+    <ShouldCreateLayout>false</ShouldCreateLayout>
   </PropertyGroup>
   
   <Import Project="$(MSBuildProjectName).props" />
@@ -94,4 +95,6 @@
       <Dependency Include="@(PkgProjDependency)" Condition="'%(PkgProjDependency.DependencyKind)' == 'Direct'" />
     </ItemGroup>
   </Target>
+
+  <Target Name="GetPackageReport" />
 </Project>
