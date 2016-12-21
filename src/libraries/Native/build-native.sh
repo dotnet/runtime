@@ -25,7 +25,7 @@ setup_dirs()
 
     mkdir -p "$__BinDir"
     mkdir -p "$__IntermediatesDir"
-    mkdir -p "$__VerticalRuntimeDir"
+    mkdir -p "$__RuntimePath"
 }
 
 # Check the system to ensure the right pre-reqs are in place
@@ -96,7 +96,7 @@ build_native()
 copy_to_vertical_runtime()
 {
     echo "Copying native shims to vertical runtime folder."
-    cp $__BinDir/* "$__VerticalRuntimeDir"
+    cp $__BinDir/* "$__RuntimePath"
 }
 
 __scriptpath=$(cd "$(dirname "$0")"; pwd -P)
@@ -258,7 +258,7 @@ esac
 # Set the remaining variables based upon the determined build configuration
 __IntermediatesDir="$__rootbinpath/obj/$__BuildOS.$__BuildArch.$__BuildType/Native"
 __BinDir="$__rootbinpath/$__BuildOS.$__BuildArch.$__BuildType/Native"
-__VerticalRuntimeDir="$__rootbinpath/runtime/$__TargetGroup-$__BuildOS-$__BuildType-$__BuildArch"
+__RuntimePath="$__rootbinpath/runtime/$__TargetGroup-$__BuildOS-$__BuildType-$__BuildArch"
 
 # Make the directories necessary for build if they don't exist
 setup_dirs

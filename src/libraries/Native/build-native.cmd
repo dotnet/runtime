@@ -78,6 +78,7 @@ if %__IntermediatesDir% == "" (
 )
 set "__CMakeBinDir=%__CMakeBinDir:\=/%"
 set "__IntermediatesDir=%__IntermediatesDir:\=/%"
+set "__RuntimePath=%__binDir%\runtime\%__TargetGroup%-Windows_NT-%CMAKE_BUILD_TYPE%-%__BuildArch%\"
 
 :: Check that the intermediate directory exists so we can place our cmake build tree there
 if exist "%__IntermediatesDir%" rd /s /q "%__IntermediatesDir%"
@@ -126,7 +127,7 @@ IF ERRORLEVEL 1 (
 )
 
 :: Copy to vertical runtime directory
-xcopy "%__binDir%\Windows_NT.%__BuildArch%.%CMAKE_BUILD_TYPE%\Native\*" "%__binDir%\runtime\%__TargetGroup%-Windows_NT-%CMAKE_BUILD_TYPE%-%__BuildArch%"\ 
+xcopy /yqs "%__binDir%\Windows_NT.%__BuildArch%.%CMAKE_BUILD_TYPE%\Native\*" "%__RuntimePath%"
 
 echo Done building Native components
 
