@@ -1,3 +1,4 @@
+Compat issues with assembly System.Runtime.Extensions:
 TypesMustExist : Type 'System.AppDomain' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.AssemblyLoadEventArgs' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.AssemblyLoadEventHandler' does not exist in the implementation but it does exist in the contract.
@@ -46,8 +47,6 @@ MembersMustExist : Member 'System.Convert.ToString(System.String, System.IFormat
 MembersMustExist : Member 'System.Convert.ToUInt16(System.DateTime)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Convert.ToUInt32(System.DateTime)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Convert.ToUInt64(System.DateTime)' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.LoaderOptimization' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.LoaderOptimizationAttribute' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Math.BigMul(System.Int32, System.Int32)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Math.Clamp(System.Byte, System.Byte, System.Byte)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Math.Clamp(System.Decimal, System.Decimal, System.Decimal)' does not exist in the implementation but it does exist in the contract.
@@ -71,8 +70,8 @@ MembersMustExist : Member 'System.StringComparer.GetHashCode(System.Object)' doe
 MembersMustExist : Member 'System.StringComparer.InvariantCulture.get()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.StringComparer.InvariantCultureIgnoreCase.get()' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.IO.BufferedStream' does not inherit from base type 'System.MarshalByRefObject' in the implementation but it does in the contract.
-CannotRemoveBaseTypeOrInterface : Type 'System.IO.EndOfStreamException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
 MembersMustExist : Member 'System.IO.EndOfStreamException..ctor(System.Runtime.Serialization.SerializationInfo, System.Runtime.Serialization.StreamingContext)' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.IO.MemoryStream' does not inherit from base type 'System.MarshalByRefObject' in the implementation but it does in the contract.
 MembersMustExist : Member 'System.IO.TextReader.Synchronized(System.IO.TextReader)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.IO.TextWriter.Synchronized(System.IO.TextWriter)' does not exist in the implementation but it does exist in the contract.
+Total Issues: 75
