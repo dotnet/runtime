@@ -19,9 +19,6 @@ namespace System.IO
         private const char LastAnsi = (char)255;
         private const char Delete = (char)127;
 
-        [ThreadStatic]
-        private static StringBuffer t_fullPathBuffer;
-
         /// <summary>
         /// Normalize the given path.
         /// </summary>
@@ -44,10 +41,11 @@ namespace System.IO
         internal static string Normalize(string path, bool checkInvalidCharacters, bool expandShortPaths)
         {
             // Get the full path
-            StringBuffer fullPath = t_fullPathBuffer ?? (t_fullPathBuffer = new StringBuffer(PathInternal.MaxShortPath));
+            StringBuffer fullPath = new StringBuffer(PathInternal.MaxShortPath);
+
             try
             {
-                GetFullPathName(path, fullPath);
+                GetFullPathName(path, ref fullPath);
 
                 // Trim whitespace off the end of the string. Win32 normalization trims only U+0020.
                 fullPath.TrimEnd(PathInternal.s_trimEndChars);
@@ -82,17 +80,16 @@ namespace System.IO
                 // path that contains UNC or  to see if the path was doing something like \\.\GLOBALROOT\Device\Mup\,
                 // \\.\GLOBAL\UNC\, \\.\GLOBALROOT\GLOBAL??\UNC\, etc.
                 bool specialPath = fullPath.Length > 1 && fullPath[0] == '\\' && fullPath[1] == '\\';
-                bool isDevice = PathInternal.IsDevice(fullPath);
+                bool isDevice = PathInternal.IsDevice(ref fullPath);
                 bool possibleBadUnc = specialPath && !isDevice;
-                uint index = specialPath ? 2u : 0;
-                uint lastSeparator = specialPath ? 1u : 0;
-                uint segmentLength;
-                char* start = fullPath.CharPointer;
+                int index = specialPath ? 2 : 0;
+                int lastSeparator = specialPath ? 1 : 0;
+                int segmentLength;
                 char current;
 
                 while (index < fullPath.Length)
                 {
-                    current = start[index];
+                    current = fullPath[index];
 
                     // Try to skip deeper analysis. '?' and higher are valid/ignorable except for '\', '|', and '~'
                     if (current < '?' || current == '\\' || current == '|' || current == '~')
@@ -111,7 +108,7 @@ namespace System.IO
                                 break;
                             case '\\':
                                 segmentLength = index - lastSeparator - 1;
-                                if (segmentLength > (uint)PathInternal.MaxComponentLength)
+                                if (segmentLength > PathInternal.MaxComponentLength)
                                     throw new PathTooLongException(SR.IO_PathTooLong + fullPath.ToString());
                                 lastSeparator = index;
 
@@ -151,7 +148,7 @@ namespace System.IO
                     throw new ArgumentException(SR.Arg_PathIllegalUNC);
 
                 segmentLength = fullPath.Length - lastSeparator - 1;
-                if (segmentLength > (uint)PathInternal.MaxComponentLength)
+                if (segmentLength > PathInternal.MaxComponentLength)
                     throw new PathTooLongException(SR.IO_PathTooLong);
 
                 if (foundTilde && segmentLength <= MaxShortName)
@@ -161,11 +158,11 @@ namespace System.IO
                 // this is how we've always done this. This expansion is costly so we'll continue to let other short paths slide.
                 if (expandShortPaths && possibleShortPath)
                 {
-                    return TryExpandShortFileName(fullPath, originalPath: path);
+                    return TryExpandShortFileName(ref fullPath, originalPath: path);
                 }
                 else
                 {
-                    if (fullPath.Length == (uint)path.Length && fullPath.StartsWith(path))
+                    if (fullPath.Length == path.Length && fullPath.StartsWith(path))
                     {
                         // If we have the exact same string we were passed in, don't bother to allocate another string from the StringBuilder.
                         return path;
@@ -184,12 +181,12 @@ namespace System.IO
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool IsDosUnc(StringBuffer buffer)
+        private static bool IsDosUnc(ref StringBuffer buffer)
         {
-            return !PathInternal.IsDevice(buffer) && buffer.Length > 1 && buffer[0] == '\\' && buffer[1] == '\\';
+            return !PathInternal.IsDevice(ref buffer) && buffer.Length > 1 && buffer[0] == '\\' && buffer[1] == '\\';
         }
 
-        private static void GetFullPathName(string path, StringBuffer fullPath)
+        private static void GetFullPathName(string path, ref StringBuffer fullPath)
         {
             // If the string starts with an extended prefix we would need to remove it from the path before we call GetFullPathName as
             // it doesn't root extended paths correctly. We don't currently resolve extended paths, so we'll just assert here.
@@ -201,10 +198,10 @@ namespace System.IO
             fixed (char* pathStart = path)
             {
                 uint result = 0;
-                while ((result = Interop.mincore.GetFullPathNameW(pathStart + startIndex, fullPath.CharCapacity, fullPath.GetHandle(), IntPtr.Zero)) > fullPath.CharCapacity)
+                while ((result = Interop.mincore.GetFullPathNameW(pathStart + startIndex, (uint)fullPath.Capacity, fullPath.UnderlyingArray, IntPtr.Zero)) > fullPath.Capacity)
                 {
-                    // Reported size (which does not include the null) is greater than the buffer size. Increase the capacity.
-                    fullPath.EnsureCharCapacity(result);
+                    // Reported size is greater than the buffer size. Increase the capacity.
+                    fullPath.EnsureCapacity(checked((int)result));
                 }
 
                 if (result == 0)
@@ -216,19 +213,19 @@ namespace System.IO
                     throw Win32Marshal.GetExceptionForWin32Error(errorCode, path);
                 }
 
-                fullPath.Length = result;
+                fullPath.Length = checked((int)result);
             }
         }
 
-        private static uint GetInputBuffer(StringBuffer content, bool isDosUnc, out StringBuffer buffer)
+        private static int GetInputBuffer(ref StringBuffer content, bool isDosUnc, ref StringBuffer buffer)
         {
-            uint length = content.Length;
+            int length = content.Length;
 
             length += isDosUnc
-                ? (uint)PathInternal.UncExtendedPrefixLength - PathInternal.UncPrefixLength
+                ? PathInternal.UncExtendedPrefixLength - PathInternal.UncPrefixLength
                 : PathInternal.DevicePrefixLength;
 
-            buffer = new StringBuffer(length);
+            buffer.EnsureCapacity(length + 1);
 
             if (isDosUnc)
             {
@@ -238,28 +235,28 @@ namespace System.IO
                 // Copy the source buffer over after the existing UNC prefix
                 content.CopyTo(
                     bufferIndex: PathInternal.UncPrefixLength,
-                    destination: buffer,
+                    destination: ref buffer,
                     destinationIndex: PathInternal.UncExtendedPrefixLength,
                     count: content.Length - PathInternal.UncPrefixLength);
 
                 // Return the prefix difference
-                return (uint)PathInternal.UncExtendedPrefixLength - PathInternal.UncPrefixLength;
+                return PathInternal.UncExtendedPrefixLength - PathInternal.UncPrefixLength;
             }
             else
             {
-                uint prefixSize = (uint)PathInternal.ExtendedPathPrefix.Length;
+                int prefixSize = PathInternal.ExtendedPathPrefix.Length;
                 buffer.CopyFrom(bufferIndex: 0, source: PathInternal.ExtendedPathPrefix);
-                content.CopyTo(bufferIndex: 0, destination: buffer, destinationIndex: prefixSize, count: content.Length);
+                content.CopyTo(bufferIndex: 0, destination: ref buffer, destinationIndex: prefixSize, count: content.Length);
                 return prefixSize;
             }
         }
 
-        private static string TryExpandShortFileName(StringBuffer outputBuffer, string originalPath)
+        private static string TryExpandShortFileName(ref StringBuffer outputBuffer, string originalPath)
         {
             // We guarantee we'll expand short names for paths that only partially exist. As such, we need to find the part of the path that actually does exist. To
             // avoid allocating like crazy we'll create only one input array and modify the contents with embedded nulls.
 
-            Debug.Assert(!PathInternal.IsPartiallyQualified(outputBuffer), "should have resolved by now");
+            Debug.Assert(!PathInternal.IsPartiallyQualified(ref outputBuffer), "should have resolved by now");
 
             // We'll have one of a few cases by now (the normalized path will have already:
             //
@@ -271,119 +268,131 @@ namespace System.IO
             //
             // Note that we will never get \??\ here as GetFullPathName() does not recognize \??\ and will return it as C:\??\ (or whatever the current drive is).
 
-            uint rootLength = PathInternal.GetRootLength(outputBuffer);
-            bool isDevice = PathInternal.IsDevice(outputBuffer);
+            int rootLength = PathInternal.GetRootLength(ref outputBuffer);
+            bool isDevice = PathInternal.IsDevice(ref outputBuffer);
 
-            StringBuffer inputBuffer = null;
-            bool isDosUnc = false;
-            uint rootDifference = 0;
-            bool wasDotDevice = false;
-
-            // Add the extended prefix before expanding to allow growth over MAX_PATH
-            if (isDevice)
+            StringBuffer inputBuffer = new StringBuffer(0);
+            try
             {
-                // We have one of the following (\\?\ or \\.\)
-                inputBuffer = new StringBuffer();
-                inputBuffer.Append(outputBuffer);
+                bool isDosUnc = false;
+                int rootDifference = 0;
+                bool wasDotDevice = false;
 
-                if (outputBuffer[2] == '.')
+                // Add the extended prefix before expanding to allow growth over MAX_PATH
+                if (isDevice)
                 {
-                    wasDotDevice = true;
-                    inputBuffer[2] = '?';
-                }
-            }
-            else
-            {
-                isDosUnc = IsDosUnc(outputBuffer);
-                rootDifference = GetInputBuffer(outputBuffer, isDosUnc, out inputBuffer);
-            }
+                    // We have one of the following (\\?\ or \\.\)
+                    inputBuffer.Append(ref outputBuffer);
 
-            rootLength += rootDifference;
-            uint inputLength = inputBuffer.Length;
-
-            bool success = false;
-            uint foundIndex = inputBuffer.Length - 1;
-
-            while (!success)
-            {
-                uint result = Interop.mincore.GetLongPathNameW(inputBuffer.GetHandle(), outputBuffer.GetHandle(), outputBuffer.CharCapacity);
-
-                // Replace any temporary null we added
-                if (inputBuffer[foundIndex] == '\0') inputBuffer[foundIndex] = '\\';
-
-                if (result == 0)
-                {
-                    // Look to see if we couldn't find the file
-                    int error = Marshal.GetLastWin32Error();
-                    if (error != Interop.mincore.Errors.ERROR_FILE_NOT_FOUND && error != Interop.mincore.Errors.ERROR_PATH_NOT_FOUND)
+                    if (outputBuffer[2] == '.')
                     {
-                        // Some other failure, give up
-                        break;
+                        wasDotDevice = true;
+                        inputBuffer[2] = '?';
                     }
-
-                    // We couldn't find the path at the given index, start looking further back in the string.
-                    foundIndex--;
-
-                    for (; foundIndex > rootLength && inputBuffer[foundIndex] != '\\'; foundIndex--) ;
-                    if (foundIndex == rootLength)
-                    {
-                        // Can't trim the path back any further
-                        break;
-                    }
-                    else
-                    {
-                        // Temporarily set a null in the string to get Windows to look further up the path
-                        inputBuffer[foundIndex] = '\0';
-                    }
-                }
-                else if (result > outputBuffer.CharCapacity)
-                {
-                    // Not enough space. The result count for this API does not include the null terminator.
-                    outputBuffer.EnsureCharCapacity(result);
-                    result = Interop.mincore.GetLongPathNameW(inputBuffer.GetHandle(), outputBuffer.GetHandle(), outputBuffer.CharCapacity);
                 }
                 else
                 {
-                    // Found the path
-                    success = true;
-                    outputBuffer.Length = result;
-                    if (foundIndex < inputLength - 1)
+                    isDosUnc = IsDosUnc(ref outputBuffer);
+                    rootDifference = GetInputBuffer(ref outputBuffer, isDosUnc, ref inputBuffer);
+                }
+
+                rootLength += rootDifference;
+                int inputLength = inputBuffer.Length;
+
+                bool success = false;
+                int foundIndex = inputBuffer.Length - 1;
+
+                while (!success)
+                {
+                    uint result = Interop.mincore.GetLongPathNameW(inputBuffer.UnderlyingArray, outputBuffer.UnderlyingArray, (uint)outputBuffer.Capacity);
+
+                    // Replace any temporary null we added
+                    if (inputBuffer[foundIndex] == '\0') inputBuffer[foundIndex] = '\\';
+
+                    if (result == 0)
                     {
-                        // It was a partial find, put the non-existent part of the path back
-                        outputBuffer.Append(inputBuffer, foundIndex, inputBuffer.Length - foundIndex);
+                        // Look to see if we couldn't find the file
+                        int error = Marshal.GetLastWin32Error();
+                        if (error != Interop.mincore.Errors.ERROR_FILE_NOT_FOUND && error != Interop.mincore.Errors.ERROR_PATH_NOT_FOUND)
+                        {
+                            // Some other failure, give up
+                            break;
+                        }
+
+                        // We couldn't find the path at the given index, start looking further back in the string.
+                        foundIndex--;
+
+                        for (; foundIndex > rootLength && inputBuffer[foundIndex] != '\\'; foundIndex--) ;
+                        if (foundIndex == rootLength)
+                        {
+                            // Can't trim the path back any further
+                            break;
+                        }
+                        else
+                        {
+                            // Temporarily set a null in the string to get Windows to look further up the path
+                            inputBuffer[foundIndex] = '\0';
+                        }
+                    }
+                    else if (result > outputBuffer.Capacity)
+                    {
+                        // Not enough space. The result count for this API does not include the null terminator.
+                        outputBuffer.EnsureCapacity(checked((int)result));
+                        result = Interop.mincore.GetLongPathNameW(inputBuffer.UnderlyingArray, outputBuffer.UnderlyingArray, (uint)outputBuffer.Capacity);
+                    }
+                    else
+                    {
+                        // Found the path
+                        success = true;
+                        outputBuffer.Length = checked((int)result);
+                        if (foundIndex < inputLength - 1)
+                        {
+                            // It was a partial find, put the non-existent part of the path back
+                            outputBuffer.Append(ref inputBuffer, foundIndex, inputBuffer.Length - foundIndex);
+                        }
                     }
                 }
+
+                // Strip out the prefix and return the string
+                ref StringBuffer bufferToUse = ref Choose(success, ref outputBuffer, ref inputBuffer);
+
+                // Switch back from \\?\ to \\.\ if necessary
+                if (wasDotDevice)
+                    bufferToUse[2] = '.';
+
+                string returnValue = null;
+
+                int newLength = (int)(bufferToUse.Length - rootDifference);
+                if (isDosUnc)
+                {
+                    // Need to go from \\?\UNC\ to \\?\UN\\
+                    bufferToUse[PathInternal.UncExtendedPrefixLength - PathInternal.UncPrefixLength] = '\\';
+                }
+
+                // We now need to strip out any added characters at the front of the string
+                if (bufferToUse.SubstringEquals(originalPath, rootDifference, newLength))
+                {
+                    // Use the original path to avoid allocating
+                    returnValue = originalPath;
+                }
+                else
+                {
+                    returnValue = bufferToUse.Substring(rootDifference, newLength);
+                }
+
+                return returnValue;
             }
-
-            // Strip out the prefix and return the string
-            StringBuffer bufferToUse = success ? outputBuffer : inputBuffer;
-
-            // Switch back from \\?\ to \\.\ if necessary
-            if (wasDotDevice)
-                bufferToUse[2] = '.';
-
-            string returnValue = null;
-
-            int newLength = (int)(bufferToUse.Length - rootDifference);
-            if (isDosUnc)
+            finally
             {
-                // Need to go from \\?\UNC\ to \\?\UN\\
-                bufferToUse[PathInternal.UncExtendedPrefixLength - PathInternal.UncPrefixLength] = '\\';
+                inputBuffer.Free();
             }
+        }
 
-            // We now need to strip out any added characters at the front of the string
-            if (bufferToUse.SubstringEquals(originalPath, rootDifference, newLength))
-            {
-                // Use the original path to avoid allocating
-                returnValue = originalPath;
-            }
-            else
-            {
-                returnValue = bufferToUse.Substring(rootDifference, newLength);
-            }
-
-            inputBuffer.Dispose();
-            return returnValue;
+        // Helper method to workaround lack of operator ? support for ref values
+        private static ref StringBuffer Choose(bool condition, ref StringBuffer s1, ref StringBuffer s2)
+        {
+            if (condition) return ref s1;
+            else return ref s2;
         }
     }
 }

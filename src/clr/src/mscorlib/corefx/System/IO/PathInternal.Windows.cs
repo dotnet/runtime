@@ -222,15 +222,15 @@ namespace System.IO
         {
             fixed(char* value = path)
             {
-                return (int)GetRootLength(value, (uint)path.Length);
+                return GetRootLength(value, path.Length);
             }
         }
 
-        private unsafe static uint GetRootLength(char* path, uint pathLength)
+        private unsafe static int GetRootLength(char* path, int pathLength)
         {
-            uint i = 0;
-            uint volumeSeparatorLength = 2;  // Length to the colon "C:"
-            uint uncRootLength = 2;          // Length to the start of the server name "\\"
+            int i = 0;
+            int volumeSeparatorLength = 2;  // Length to the colon "C:"
+            int uncRootLength = 2;          // Length to the start of the server name "\\"
 
             bool extendedSyntax = StartsWithOrdinal(path, pathLength, ExtendedPathPrefix);
             bool extendedUncSyntax = StartsWithOrdinal(path, pathLength, UncExtendedPathPrefix);
@@ -240,12 +240,12 @@ namespace System.IO
                 if (extendedUncSyntax)
                 {
                     // "\\" -> "\\?\UNC\"
-                    uncRootLength = (uint)UncExtendedPathPrefix.Length;
+                    uncRootLength = UncExtendedPathPrefix.Length;
                 }
                 else
                 {
                     // "C:" -> "\\?\C:"
-                    volumeSeparatorLength += (uint)ExtendedPathPrefix.Length;
+                    volumeSeparatorLength += ExtendedPathPrefix.Length;
                 }
             }
 
@@ -273,9 +273,9 @@ namespace System.IO
             return i;
         }
 
-        private unsafe static bool StartsWithOrdinal(char* source, uint sourceLength, string value)
+        private unsafe static bool StartsWithOrdinal(char* source, int sourceLength, string value)
         {
-            if (sourceLength < (uint)value.Length) return false;
+            if (sourceLength < value.Length) return false;
             for (int i = 0; i < value.Length; i++)
             {
                 if (value[i] != source[i]) return false;
