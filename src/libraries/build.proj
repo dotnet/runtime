@@ -69,6 +69,15 @@
              Properties="TargetGroup=%(BuildToolsProject.TargetGroup)" />
   </Target>
 
+  <Target Name="Sync" DependsOnTargets="BuildCoreFxTools">
+    <ItemGroup>
+      <ExternalProject Include="external\dir.proj" />
+    </ItemGroup>
+
+    <MSBuild Projects="@(ExternalProject)"
+             ContinueOnError="ErrorAndContinue" />
+  </Target>
+
   <!-- TODO: Can we move this archive test build to BuildTools -->
   <UsingTask TaskName="ZipFileCreateFromDependencyLists" Condition="'$(ArchiveTests)' == 'true'" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll"/>
   <Target Name="ArchiveTestBuild" Condition="'$(ArchiveTests)' == 'true'" AfterTargets="Build" >
