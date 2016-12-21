@@ -13,6 +13,6 @@ partial class Interop
         /// WARNING: This method does not implicitly handle long paths. Use GetFullPath/PathHelper.
         /// </summary>
         [DllImport(Libraries.CoreFile_L1, SetLastError = true, CharSet = CharSet.Unicode, BestFitMapping = false, ExactSpelling = true)]
-        internal static extern uint GetLongPathNameW(SafeHandle lpszShortPath, SafeHandle lpszLongPath, uint cchBuffer);
+        internal static extern uint GetLongPathNameW(char[] lpszShortPath, char[] lpszLongPath, uint cchBuffer);
     }
 }
