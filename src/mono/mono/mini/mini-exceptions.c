@@ -2476,10 +2476,12 @@ mono_handle_native_crash (const char *signal, void *ctx, MONO_SIG_HANDLER_INFO_T
 #endif
 	MonoJitTlsData *jit_tls = (MonoJitTlsData *)mono_tls_get_jit_tls ();
 
-	if (handling_sigsegv)
+	gboolean is_sigsegv = !strcmp ("SIGSEGV", signal);
+
+	if (handling_sigsegv && is_sigsegv)
 		return;
 
-	if (mini_get_debug_options ()->suspend_on_sigsegv) {
+	if (mini_get_debug_options ()->suspend_on_sigsegv && is_sigsegv) {
 		mono_runtime_printf_err ("Received %s, suspending...", signal);
 #ifdef HOST_WIN32
 		while (1)
@@ -2492,7 +2494,8 @@ mono_handle_native_crash (const char *signal, void *ctx, MONO_SIG_HANDLER_INFO_T
 	}
 
 	/* To prevent infinite loops when the stack walk causes a crash */
-	handling_sigsegv = TRUE;
+	if (is_sigsegv)
+		handling_sigsegv = TRUE;
 
 	/* !jit_tls means the thread was not registered with the runtime */
 	if (jit_tls && mono_thread_internal_current ()) {
