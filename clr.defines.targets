@@ -11,7 +11,6 @@
         <CDefines Condition="'$(FeatureAptca)' == 'true'">$(CDefines);FEATURE_APTCA</CDefines>
         <CDefines Condition="'$(FeatureArrayStubAsIL)' == 'true'">$(CDefines);FEATURE_ARRAYSTUB_AS_IL</CDefines>
         <CDefines Condition="'$(FeatureStubsAsIL)' == 'true'">$(CDefines);FEATURE_STUBS_AS_IL</CDefines>
-        <CDefines Condition="'$(FeatureBclFormatting)' == 'true'">$(CDefines);FEATURE_BCL_FORMATTING</CDefines>
         <CDefines Condition="'$(FeatureCasPolicy)' == 'true'">$(CDefines);FEATURE_CAS_POLICY</CDefines>
         <CDefines Condition="'$(FeatureClassicCominterop)' == 'true'">$(CDefines);FEATURE_CLASSIC_COMINTEROP</CDefines>
         <CDefines Condition="'$(FeatureClickonce)' == 'true'">$(CDefines);FEATURE_CLICKONCE</CDefines>
@@ -135,7 +134,6 @@
         <DefineConstants Condition="'$(FeatureAptca)' == 'true'">$(DefineConstants);FEATURE_APTCA</DefineConstants>
         <DefineConstants Condition="'$(FeatureArrayStubAsIL)' == 'true'">$(DefineConstants);FEATURE_ARRAYSTUB_AS_IL</DefineConstants>
         <DefineConstants Condition="'$(FeatureStubsAsIL)' == 'true'">$(DefineConstants);FEATURE_STUBS_AS_IL</DefineConstants>
-        <DefineConstants Condition="'$(FeatureBclFormatting)' == 'true'">$(DefineConstants);FEATURE_BCL_FORMATTING</DefineConstants>
         <DefineConstants Condition="'$(FeatureCasPolicy)' == 'true'">$(DefineConstants);FEATURE_CAS_POLICY</DefineConstants>
         <DefineConstants Condition="'$(FeatureClassicCominterop)' == 'true'">$(DefineConstants);FEATURE_CLASSIC_COMINTEROP</DefineConstants>
         <DefineConstants Condition="'$(FeatureClickonce)' == 'true'">$(DefineConstants);FEATURE_CLICKONCE</DefineConstants>
