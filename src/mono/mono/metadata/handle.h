@@ -90,6 +90,7 @@ MonoRawHandle mono_handle_new (MonoObject *object, const char* owner);
 #endif
 
 void mono_handle_stack_scan (HandleStack *stack, GcScanFunc func, gpointer gc_data);
+gboolean mono_handle_stack_is_empty (HandleStack *stack);
 HandleStack* mono_handle_stack_alloc (void);
 void mono_handle_stack_free (HandleStack *handlestack);
 MonoRawHandle mono_stack_mark_pop_value (MonoThreadInfo *info, HandleStackMark *stackmark, MonoRawHandle value);

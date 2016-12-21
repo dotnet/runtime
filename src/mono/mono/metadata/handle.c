@@ -282,3 +282,9 @@ mono_array_handle_memcpy_refs (MonoArrayHandle dest, uintptr_t dest_idx, MonoArr
 {
 	mono_array_memcpy_refs (MONO_HANDLE_RAW (dest), dest_idx, MONO_HANDLE_RAW (src), src_idx, len);
 }
+
+gboolean
+mono_handle_stack_is_empty (HandleStack *stack)
+{
+	return (stack->top == stack->bottom && stack->top->size == 0);
+}
