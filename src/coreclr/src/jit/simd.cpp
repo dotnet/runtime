@@ -2444,9 +2444,31 @@ GenTreePtr Compiler::impSIMDIntrinsic(OPCODE                opcode,
 
         case SIMDIntrinsicAbs:
         {
+#ifdef _TARGET_XARCH_
+            // TODO-CQ-XARCH: we should be able to use conditional select
+            // to compute abs(v) as follows when there is no direct support:
+            //     BitVector = v < vector.Zero
+            //     result = ConditionalSelect(BitVector, vector.Zero - v, v)
+            if (getSIMDInstructionSet() == InstructionSet_SSE2)
+            {
+                // SSE2 doesn't support abs on signed integer type vectors.
+                if (baseType == TYP_LONG || baseType == TYP_INT || baseType == TYP_SHORT || baseType == TYP_BYTE)
+                {
+                    return nullptr;
+                }
+            }
+            else
+            {
+                assert(getSIMDInstructionSet() >= InstructionSet_SSE3_4);
+                if (baseType == TYP_LONG)
+                {
+                    // SSE3_4/AVX2 don't support abs on long type vector.
+                    return nullptr;
+                }
+            }
+
             op1 = impSIMDPopStack(simdType);
 
-#ifdef _TARGET_XARCH_
             if (varTypeIsFloating(baseType))
             {
                 // Abs(vf) = vf & new SIMDVector<float>(0x7fffffff);
@@ -2479,10 +2501,10 @@ GenTreePtr Compiler::impSIMDIntrinsic(OPCODE                opcode,
             }
             else
             {
-                // SSE/AVX doesn't support abs on signed integer vectors and hence
-                // should never be seen as an intrinsic here. See SIMDIntrinsicList.h
-                // for supported base types for this intrinsic.
-                unreached();
+                assert(getSIMDInstructionSet() >= InstructionSet_SSE3_4);
+                assert(baseType != TYP_LONG);
+
+                retVal = gtNewSIMDNode(simdType, op1, SIMDIntrinsicAbs, baseType, size);
             }
 
 #else // !_TARGET_XARCH_
