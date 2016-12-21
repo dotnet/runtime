@@ -132,6 +132,7 @@
     <Compile Include="System\IntPtrTests.netcoreapp1.1.cs" />
     <Compile Include="System\LazyTests.netcoreapp1.1.cs" />
     <Compile Include="System\Runtime\CompilerServices\RuntimeHelpersTests.netcoreapp1.1.cs" />
+    <Compile Include="System\Runtime\CompilerServices\ConditionalWeakTableTests.netcoreapp1.1.cs" />
     <Compile Include="System\UIntPtrTests.netcoreapp1.1.cs" />
     <Compile Include="System\ComponentModel\DefaultValueAttributeTests.netcoreapp1.1.cs" />
   </ItemGroup>

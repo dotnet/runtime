@@ -9,7 +9,7 @@ using Xunit;
 
 namespace System.Runtime.CompilerServices.Tests
 {
-    public class ConditionalWeakTableTests
+    public partial class ConditionalWeakTableTests
     {
         [Fact]
         public static void InvalidArgs_Throws()
