@@ -90,7 +90,7 @@ SIMD_INTRINSIC("op_Multiply",               false,       Mul,                   
 SIMD_INTRINSIC("op_Division",               false,       Div,                      "/",                      TYP_STRUCT,     2,      {TYP_STRUCT, TYP_STRUCT, TYP_UNDEF},   {TYP_FLOAT, TYP_DOUBLE, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF})
 
 // Abs and SquareRoot are recognized as intrinsics only in case of float or double vectors
-SIMD_INTRINSIC("Abs",                       false,       Abs,                      "abs",                    TYP_STRUCT,     1,      {TYP_STRUCT, TYP_UNDEF, TYP_UNDEF},    {TYP_FLOAT, TYP_DOUBLE, TYP_CHAR, TYP_UBYTE, TYP_UINT, TYP_ULONG, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF})
+SIMD_INTRINSIC("Abs",                       false,       Abs,                      "abs",                    TYP_STRUCT,     1,      {TYP_STRUCT, TYP_UNDEF, TYP_UNDEF},    {TYP_FLOAT, TYP_DOUBLE, TYP_CHAR, TYP_UBYTE, TYP_UINT, TYP_ULONG, TYP_INT, TYP_SHORT, TYP_BYTE, TYP_UNDEF})
 SIMD_INTRINSIC("SquareRoot",                false,       Sqrt,                     "sqrt",                   TYP_STRUCT,     1,      {TYP_STRUCT, TYP_UNDEF, TYP_UNDEF},    {TYP_FLOAT, TYP_DOUBLE, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF})
 
 // Min and max methods are recognized as intrinsics only in case of float or double vectors
