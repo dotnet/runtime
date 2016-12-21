@@ -84,6 +84,9 @@
     <CollectionsSources Include="$(BclSourcesRoot)\System\Collections\StructuralComparisons.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ComponentModelSources Include="$(BclSourcesRoot)\System\ComponentModel\EditorBrowsableAttribute.cs" />
+  </ItemGroup>
+  <ItemGroup>
     <InteropSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ArrayWithOffset.cs" />
     <InteropSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\Attributes.cs" />
     <InteropSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\CallingConvention.cs" />
@@ -1262,6 +1265,7 @@
     <MscorlibSources Include="@(ThreadingSources)"/>
     <MscorlibSources Include="@(DeploymentSources)"/>
     <MscorlibSources Include="@(CollectionsSources)"/>
+    <MscorlibSources Include="@(ComponentModelSources)"/>
     <MscorlibSources Include="@(GenericsSources)"/>
     <MscorlibSources Include="@(DiagnosticsSources)"/>
     <MscorlibSources Include="@(DiagnosticsCodeanalysisSources)"/>
