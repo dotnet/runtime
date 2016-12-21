@@ -49,9 +49,6 @@
   <ItemGroup Condition="'$(TargetGroup)'=='' or '$(TargetGroup)' == 'netstandard1.5'">
     <Compile Include="System\ComponentModel\DefaultValueAttribute.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'=='uap101aot' or '$(TargetGroup)' == 'netcoreapp1.2corert'">
-    <Compile Include="$(CommonPath)\System\SystemException.cs" />
-  </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\System.Private.Uri\src\System.Private.Uri.csproj" Condition="'$(TargetGroup)' == '' or '$(TargetGroup)' == 'netstandard1.5'">
       <OSGroup>Windows_NT</OSGroup>
