@@ -272,6 +272,24 @@ instruction CodeGen::getOpForSIMDIntrinsic(SIMDIntrinsicID intrinsicId, var_type
             }
             break;
 
+        case SIMDIntrinsicAbs:
+            if (compiler->getSIMDInstructionSet() >= InstructionSet_SSE3_4)
+            {
+                if (baseType == TYP_INT)
+                {
+                    result = INS_pabsd;
+                }
+                else if (baseType == TYP_SHORT)
+                {
+                    result = INS_pabsw;
+                }
+                else if (baseType == TYP_BYTE)
+                {
+                    result = INS_pabsb;
+                }
+            }
+            break;
+
         case SIMDIntrinsicEqual:
             if (baseType == TYP_FLOAT)
             {
@@ -811,7 +829,8 @@ void CodeGen::genSIMDIntrinsicInitN(GenTreeSIMD* simdNode)
 //
 void CodeGen::genSIMDIntrinsicUnOp(GenTreeSIMD* simdNode)
 {
-    assert(simdNode->gtSIMDIntrinsicID == SIMDIntrinsicSqrt || simdNode->gtSIMDIntrinsicID == SIMDIntrinsicCast);
+    assert(simdNode->gtSIMDIntrinsicID == SIMDIntrinsicSqrt || simdNode->gtSIMDIntrinsicID == SIMDIntrinsicCast ||
+           simdNode->gtSIMDIntrinsicID == SIMDIntrinsicAbs);
 
     GenTree*  op1       = simdNode->gtGetOp1();
     var_types baseType  = simdNode->gtSIMDBaseType;
@@ -2274,6 +2293,7 @@ void CodeGen::genSIMDIntrinsic(GenTreeSIMD* simdNode)
 
         case SIMDIntrinsicSqrt:
         case SIMDIntrinsicCast:
+        case SIMDIntrinsicAbs:
             genSIMDIntrinsicUnOp(simdNode);
             break;
 
