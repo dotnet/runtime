@@ -5939,6 +5939,9 @@ namespace System.Runtime.CompilerServices
     {
         public ConditionalWeakTable() { }
         public void Add(TKey key, TValue value) { }
+#if netcoreapp11
+        public void AddOrUpdate(TKey key, TValue value) { }
+#endif //netcoreapp11
         ~ConditionalWeakTable() { }
         public TValue GetOrCreateValue(TKey key) { throw null; }
         public TValue GetValue(TKey key, System.Runtime.CompilerServices.ConditionalWeakTable<TKey, TValue>.CreateValueCallback createValueCallback) { throw null; }
