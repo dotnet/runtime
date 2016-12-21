@@ -7,7 +7,7 @@
     },
     "netcoreapp1.2": {
       "dependencies": {
-        "Microsoft.TargetingPack.Private.CoreRT": "1.0.0-alpha-24815-0"
+        "Microsoft.TargetingPack.Private.CoreRT": "1.0.0-alpha-24821-02"
       }
     },
     "net461": {
