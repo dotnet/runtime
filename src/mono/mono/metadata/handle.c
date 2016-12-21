@@ -72,9 +72,25 @@ const MonoObjectHandle mono_null_value_handle = NULL;
 
 #define THIS_IS_AN_OK_NUMBER_OF_HANDLES 100
 
+static MonoObject**
+chunk_element_objslot (HandleChunk *chunk, int idx)
+{
+	return &chunk->objects[idx].o;
+}
+
+#ifdef MONO_HANDLE_TRACK_OWNER
+#define SET_OWNER(chunk,idx) do { (chunk)->objects[(idx)].owner = owner; } while (0)
+#else
+#define SET_OWNER(chunk,idx) do { } while (0)
+#endif
+
 /* Actual handles implementation */
 MonoRawHandle
+#ifndef MONO_HANDLE_TRACK_OWNER
 mono_handle_new (MonoObject *object)
+#else
+mono_handle_new (MonoObject *object, const char *owner)
+#endif
 {
 	MonoThreadInfo *info = mono_thread_info_current ();
 	HandleStack *handles = (HandleStack *)info->handle_stack;
@@ -83,6 +99,7 @@ mono_handle_new (MonoObject *object)
 retry:
 	if (G_LIKELY (top->size < OBJECTS_PER_HANDLES_CHUNK)) {
 		int idx = top->size;
+		MonoObject** objslot = chunk_element_objslot (top, idx);
 		/* can be interrupted anywhere here, so:
 		 * 1. make sure the new slot is null
 		 * 2. make the new slot scannable (increment size)
@@ -91,13 +108,13 @@ retry:
 		 * (have to do 1 then 3 so that if we're interrupted
 		 * between 1 and 2, the object is still live)
 		 */
-		top->objects [idx] = NULL;
+		*objslot = NULL;
 		mono_memory_write_barrier ();
 		top->size++;
 		mono_memory_write_barrier ();
-		MonoObject **h = &top->objects [idx];
-		*h = object;
-		return h;
+		*objslot = object;
+		SET_OWNER (top,idx);
+		return objslot;
 	}
 	if (G_LIKELY (top->next)) {
 		top->next->size = 0;
@@ -164,8 +181,9 @@ mono_handle_stack_scan (HandleStack *stack, GcScanFunc func, gpointer gc_data)
 	while (cur) {
 		int i;
 		for (i = 0; i < cur->size; ++i) {
-			if (cur->objects [i] != NULL)
-				func ((gpointer*)&cur->objects [i], gc_data);
+			MonoObject **obj_slot = chunk_element_objslot (cur, i);
+			if (*obj_slot != NULL)
+				func ((gpointer*)obj_slot, gc_data);
 		}
 		if (cur == last)
 			break;
@@ -200,7 +218,11 @@ mono_stack_mark_pop_value (MonoThreadInfo *info, HandleStackMark *stackmark, Mon
 {
 	MonoObject *obj = value ? *((MonoObject**)value) : NULL;
 	mono_stack_mark_pop (info, stackmark);
+#ifndef MONO_HANDLE_TRACK_OWNER
 	return mono_handle_new (obj);
+#else
+	return mono_handle_new (obj, "<mono_stack_mark_pop_value>");
+#endif
 }
 
 /* Temporary place for some of the handle enabled wrapper functions*/
