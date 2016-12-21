@@ -3062,6 +3062,7 @@ case "$host" in
 			AOT_SUPPORTED="yes"
 			BTLS_SUPPORTED=yes
 			BTLS_PLATFORM=x86_64
+			boehm_supported=false
 			;;
 		  openbsd*|freebsd*|kfreebsd-gnu*)
 			;;
