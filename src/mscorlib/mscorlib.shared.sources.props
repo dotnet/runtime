@@ -127,10 +127,7 @@
     <InteropSources Condition="'$(FeatureCominterop)' == 'true'" Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ObjectCreationDelegate.cs" />
   </ItemGroup>
   <ItemGroup>
-    <InteropSources Include="$(CoreFxSourcesRoot)\System\Runtime\InteropServices\NativeBuffer.cs" />
     <InteropSources Include="$(CoreFxSourcesRoot)\System\Runtime\InteropServices\StringBuffer.cs" />
-    <InteropSources Include="$(CoreFxSourcesRoot)\System\Runtime\InteropServices\SafeHeapHandle.cs" />
-    <InteropSources Include="$(CoreFxSourcesRoot)\System\Runtime\InteropServices\SafeHeapHandleCache.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(FeatureClassicCominterop)' == 'true'">
     <InteropSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\IRegistrationServices.cs" />

@@ -100,20 +100,21 @@ namespace System.IO
         public static String GetCurrentDirectory()
         {
             // Start with a buffer the size of MAX_PATH
-            using (StringBuffer buffer = new StringBuffer(260))
+            StringBuffer buffer = new StringBuffer(260);
+            try
             {
                 uint result = 0;
-                while ((result = Win32Native.GetCurrentDirectoryW(buffer.CharCapacity, buffer.GetHandle())) > buffer.CharCapacity)
+                while ((result = Win32Native.GetCurrentDirectoryW((uint)buffer.Capacity, buffer.UnderlyingArray)) > buffer.Capacity)
                 {
                     // Reported size is greater than the buffer size. Increase the capacity.
                     // The size returned includes the null only if more space is needed (this case).
-                    buffer.EnsureCharCapacity(result);
+                    buffer.EnsureCapacity(checked((int)result));
                 }
 
                 if (result == 0)
                     __Error.WinIOError();
 
-                buffer.Length = result;
+                buffer.Length = (int)result;
 
 #if !PLATFORM_UNIX
                 if (buffer.Contains('~'))
@@ -121,6 +122,10 @@ namespace System.IO
 #endif
 
                 return buffer.ToString();
+            }
+            finally
+            {
+                buffer.Free();
             }
         }
 
