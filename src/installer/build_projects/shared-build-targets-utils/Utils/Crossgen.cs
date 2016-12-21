@@ -99,7 +99,7 @@ namespace Microsoft.DotNet.Cli.Build
             string packageId = $"runtime.{jitRid}.microsoft.netcore.jit";
 
             return Path.Combine(
-                Dirs.NuGetPackages,
+                Dirs.PkgNuGetPackages,
                 packageId,
                 _jitVersion);
         }
@@ -116,7 +116,7 @@ namespace Microsoft.DotNet.Cli.Build
             string packageId = $"runtime.{coreclrRid}.microsoft.netcore.runtime.coreclr";
 
             return Path.Combine(
-                Dirs.NuGetPackages,
+                Dirs.PkgNuGetPackages,
                 packageId,
                 _coreClrVersion,
                 "runtimes",
@@ -137,7 +137,7 @@ namespace Microsoft.DotNet.Cli.Build
             string packageId = $"runtime.{coreclrRid}.microsoft.netcore.runtime.coreclr";
 
             return Path.Combine(
-                Dirs.NuGetPackages,
+                Dirs.PkgNuGetPackages,
                 packageId,
                 _coreClrVersion);
         }
