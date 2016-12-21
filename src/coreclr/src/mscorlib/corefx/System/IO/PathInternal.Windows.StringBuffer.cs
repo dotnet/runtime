@@ -13,7 +13,7 @@ namespace System.IO
         /// <summary>
         /// Returns true if the path uses the extended syntax (\\?\)
         /// </summary>
-        internal static bool IsExtended(StringBuffer path)
+        internal static bool IsExtended(ref StringBuffer path)
         {
             // While paths like "//?/C:/" will work, they're treated the same as "\\.\" paths.
             // Skipping of normalization will *only* occur if back slashes ('\') are used.
@@ -27,20 +27,24 @@ namespace System.IO
         /// <summary>
         /// Gets the length of the root of the path (drive, share, etc.).
         /// </summary>
-        internal unsafe static uint GetRootLength(StringBuffer path)
+        internal unsafe static int GetRootLength(ref StringBuffer path)
         {
             if (path.Length == 0) return 0;
-            return GetRootLength(path.CharPointer, path.Length);
+
+            fixed (char* value = path.UnderlyingArray)
+            {
+                return GetRootLength(value, path.Length);
+            }
         }
 
         /// <summary>
         /// Returns true if the path uses any of the DOS device path syntaxes. ("\\.\", "\\?\", or "\??\")
         /// </summary>
-        internal static bool IsDevice(StringBuffer path)
+        internal static bool IsDevice(ref StringBuffer path)
         {
             // If the path begins with any two separators is will be recognized and normalized and prepped with
             // "\??\" for internal usage correctly. "\??\" is recognized and handled, "/??/" is not.
-            return IsExtended(path)
+            return IsExtended(ref path)
                 ||
                 (
                     path.Length >= DevicePrefixLength
@@ -63,7 +67,7 @@ namespace System.IO
         /// for C: (rooted, but relative). "C:\a" is rooted and not relative (the current directory
         /// will not be used to modify the path).
         /// </remarks>
-        internal static bool IsPartiallyQualified(StringBuffer path)
+        internal static bool IsPartiallyQualified(ref StringBuffer path)
         {
             if (path.Length < 2)
             {
