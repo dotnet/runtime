@@ -4554,33 +4554,6 @@ PAL_GetCalendar(
 
 #define GEOID_NOT_AVAILABLE -1
 
-// "a number", might represent different types
-typedef struct PALNUMBER__* PALNUMBER;
-
-// return NULL on OOM
-PALIMPORT PALNUMBER PALAPI PAL_DoubleToNumber(double);
-PALIMPORT PALNUMBER PALAPI PAL_Int64ToNumber(INT64);
-PALIMPORT PALNUMBER PALAPI PAL_UInt64ToNumber(UINT64);
-PALIMPORT PALNUMBER PALAPI PAL_IntToNumber(int);
-PALIMPORT PALNUMBER PALAPI PAL_UIntToNumber(unsigned int);
-
-PALIMPORT void PALAPI PAL_ReleaseNumber(PALNUMBER);
-
-
-// return string length if Buffer is NULL or the result fits in cchBuffer, otherwise -1
-PALIMPORT int PALAPI PAL_FormatScientific(LPCWSTR sLocale, LPWSTR pBuffer, SIZE_T cchBuffer, PALNUMBER number, int nMinDigits, int nMaxDigits,
-                                                                      LPCWSTR sExponent, LPCWSTR sNumberDecimal, LPCWSTR sPositive, LPCWSTR sNegative, LPCWSTR sZero);
-
-PALIMPORT int PALAPI  PAL_FormatCurrency(LPCWSTR sLocale, LPWSTR pBuffer, SIZE_T cchBuffer, PALNUMBER number, int nMinDigits, int nMaxDigits, int iNegativeFormat, int iPositiveFormat,
-                      int iPrimaryGroup, int iSecondaryGroup, LPCWSTR sCurrencyDecimal, LPCWSTR sCurrencyGroup, LPCWSTR sNegative, LPCWSTR sCurrency, LPCWSTR sZero);
-
-PALIMPORT int PALAPI  PAL_FormatPercent(LPCWSTR sLocale, LPWSTR pBuffer, SIZE_T cchBuffer, PALNUMBER number,  int nMinDigits, int nMaxDigits,int iNegativeFormat, int iPositiveFormat, 
-                      int iPrimaryGroup, int iSecondaryGroup, LPCWSTR sPercentDecimal, LPCWSTR sPercentGroup, LPCWSTR sNegative, LPCWSTR sPercent, LPCWSTR sZero);
-
-PALIMPORT int PALAPI  PAL_FormatDecimal(LPCWSTR sLocale, LPWSTR pBuffer, SIZE_T cchBuffer, PALNUMBER number, int nMinDigits, int nMaxDigits, int iNegativeFormat,
-                                    int iPrimaryGroup, int iSecondaryGroup,  LPCWSTR sDecimal, LPCWSTR sGroup, LPCWSTR sNegative, LPCWSTR sZero);
-
-
 #define DATE_USE_ALT_CALENDAR 0x00000004
 
 #if ENABLE_DOWNLEVEL_FOR_NLS
