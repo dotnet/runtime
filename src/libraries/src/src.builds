@@ -3,7 +3,6 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
     <ProjectExclusions Condition="'$(OS)' != 'Windows_NT'" Include="$(MSBuildThisFileDirectory)**\src\System.Memory.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)**\src\System.Threading.Overlapped.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Project Include="$(MSBuildThisFileDirectory)*/src/*.csproj" Exclude="@(ProjectExclusions)">
