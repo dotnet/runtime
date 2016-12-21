@@ -2593,16 +2593,17 @@ mono_handle_native_crash (const char *signal, void *ctx, MONO_SIG_HANDLER_INFO_T
 			 "=================================================================\n",
 			signal);
 
-
 #ifdef MONO_ARCH_USE_SIGACTION
-
-	/* Remove our SIGABRT handler */
 	sa.sa_handler = SIG_DFL;
 	sigemptyset (&sa.sa_mask);
 	sa.sa_flags = 0;
 
+	/* Remove our SIGABRT handler */
 	g_assert (sigaction (SIGABRT, &sa, NULL) != -1);
 
+	/* On some systems we get a SIGILL when calling abort (), because it might
+	 * fail to raise SIGABRT */
+	g_assert (sigaction (SIGILL, &sa, NULL) != -1);
 #endif
 
 	if (!mono_do_crash_chaining) {
