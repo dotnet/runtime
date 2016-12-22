@@ -1431,9 +1431,6 @@ public static partial class DataContractSerializerTests
         Assert.StrictEqual(((SimpleKnownTypeValue)actual.SimpleTypeValue).StrProperty, "PropertyValue");
     }
 
-#if ReflectionOnly
-    [ActiveIssue(13071)]
-#endif
     [Fact]
     public static void DCS_ExceptionObject()
     {
@@ -1448,9 +1445,6 @@ public static partial class DataContractSerializerTests
         Assert.StrictEqual(value.HelpLink, actual.HelpLink);
     }
 
-#if ReflectionOnly
-    [ActiveIssue(13071)]
-#endif
     [Fact]
     public static void DCS_ArgumentExceptionObject()
     {
@@ -1465,9 +1459,6 @@ public static partial class DataContractSerializerTests
         Assert.StrictEqual(value.HelpLink, actual.HelpLink);
     }
 
-#if ReflectionOnly
-    [ActiveIssue(13071)]
-#endif
     [Fact]
     public static void DCS_ExceptionMesageWithSpecialChars()
     {
@@ -1482,9 +1473,6 @@ public static partial class DataContractSerializerTests
         Assert.StrictEqual(value.HelpLink, actual.HelpLink);
     }
 
-#if ReflectionOnly
-    [ActiveIssue(13071)]
-#endif
     [Fact]
     public static void DCS_InnerExceptionMesageWithSpecialChars()
     {
@@ -2756,9 +2744,6 @@ public static partial class DataContractSerializerTests
         Assert.Throws<PlatformNotSupportedException>(() => exporter.Export(typeof(Employee)));
     }
 
-#if ReflectionOnly
-    [ActiveIssue(13071)]
-#endif
     [Fact]
     public static void DCS_MyISerializableType()
     {

@@ -2240,9 +2240,6 @@ public static partial class DataContractJsonSerializerTests
         }
     }
 
-#if ReflectionOnly
-    [ActiveIssue(13071)]
-#endif
     [Fact]
     public static void DCJS_MyISerializableType()
     {
