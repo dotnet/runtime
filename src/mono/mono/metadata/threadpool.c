@@ -340,6 +340,15 @@ tpdomain_get_next (ThreadPoolDomain *current)
 	return tpdomain;
 }
 
+static MonoObject*
+try_invoke_perform_wait_callback (MonoObject** exc, MonoError *error)
+{
+	HANDLE_FUNCTION_ENTER ();
+	mono_error_init (error);
+	MonoObject *res = mono_runtime_try_invoke (mono_defaults.threadpool_perform_wait_callback_method, NULL, NULL, exc, error);
+	HANDLE_FUNCTION_RETURN_VAL (res);
+}
+
 static void
 worker_callback (gpointer unused)
 {
@@ -413,7 +422,7 @@ worker_callback (gpointer unused)
 		if (mono_domain_set (tpdomain->domain, FALSE)) {
 			MonoObject *exc = NULL, *res;
 
-			res = mono_runtime_try_invoke (mono_defaults.threadpool_perform_wait_callback_method, NULL, NULL, &exc, &error);
+			res = try_invoke_perform_wait_callback (&exc, &error);
 			if (exc || !mono_error_ok(&error)) {
 				if (exc == NULL)
 					exc = (MonoObject *) mono_error_convert_to_exception (&error);
