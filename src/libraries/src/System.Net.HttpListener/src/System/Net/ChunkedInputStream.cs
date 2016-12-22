@@ -170,7 +170,7 @@ namespace System.Net
                 asyncResult.AsyncWaitHandle.WaitOne();
 
             if (ares._error != null)
-                throw new HttpListenerException(400, SR.Format(SR.net_io_operation_aborted, ares._error.Message));
+                throw new HttpListenerException((int)HttpStatusCode.BadRequest, SR.Format(SR.net_io_operation_aborted, ares._error.Message));
 
             return ares._count;
         }

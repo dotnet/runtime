@@ -350,9 +350,10 @@ namespace System.Net
 			 *	HttpStatusCode.InternalServerError      500
 			 *	HttpStatusCode.ServiceUnavailable 	    503
 			 */
-            bool conn_close = (_statusCode == 400 || _statusCode == 408 || _statusCode == 411 ||
-                    _statusCode == 413 || _statusCode == 414 || _statusCode == 500 ||
-                    _statusCode == 503);
+            bool conn_close = (_statusCode == (int)HttpStatusCode.BadRequest || _statusCode == (int)HttpStatusCode.RequestTimeout
+                    || _statusCode == (int)HttpStatusCode.LengthRequired || _statusCode == (int)HttpStatusCode.RequestEntityTooLarge
+                    || _statusCode == (int)HttpStatusCode.RequestUriTooLong || _statusCode == (int)HttpStatusCode.InternalServerError
+                    || _statusCode == (int)HttpStatusCode.ServiceUnavailable);
 
             if (conn_close == false)
                 conn_close = !_context.Request.KeepAlive;

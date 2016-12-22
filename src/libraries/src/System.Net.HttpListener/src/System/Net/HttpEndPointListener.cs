@@ -258,7 +258,7 @@ namespace System.Net
             foreach (ListenerPrefix p in list)
             {
                 if (p.Path == prefix.Path)
-                    throw new HttpListenerException(400, SR.Format(SR.net_listener_already, prefix));
+                    throw new HttpListenerException((int)HttpStatusCode.BadRequest, SR.Format(SR.net_listener_already, prefix));
             }
             list.Add(prefix);
         }
@@ -347,7 +347,7 @@ namespace System.Net
                 {
                     HttpListener other = (HttpListener)prefs[prefix];
                     if (other != listener)
-                        throw new HttpListenerException(400, SR.Format(SR.net_listener_already, prefix));
+                        throw new HttpListenerException((int)HttpStatusCode.BadRequest, SR.Format(SR.net_listener_already, prefix));
                     return;
                 }
                 p2 = new Dictionary<ListenerPrefix, HttpListener>(prefs);

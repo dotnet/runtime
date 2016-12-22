@@ -64,7 +64,7 @@ namespace System.Net
             }
             _exception = exc;
             if (_inGet && (exc is ObjectDisposedException))
-                _exception = new HttpListenerException(500, SR.net_listener_close);
+                _exception = new HttpListenerException((int)HttpStatusCode.InternalServerError, SR.net_listener_close);
             lock (_locker)
             {
                 _completed = true;
@@ -127,7 +127,7 @@ namespace System.Net
                     for (int i = 0; next._forward != null; i++)
                     {
                         if (i > 20)
-                            Complete(new HttpListenerException(400, SR.net_listener_auth_errors));
+                            Complete(new HttpListenerException((int)HttpStatusCode.Unauthorized, SR.net_listener_auth_errors));
                         next = next._forward;
                     }
                 }
@@ -207,4 +207,3 @@ namespace System.Net
         }
     }
 }
-
