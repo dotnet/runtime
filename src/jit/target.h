@@ -1226,6 +1226,7 @@ typedef unsigned short regPairNoSmall; // arm: need 12 bits
   #define RBM_CALLEE_SAVED        (RBM_INT_CALLEE_SAVED | RBM_FLT_CALLEE_SAVED)
   #define RBM_CALLEE_TRASH        (RBM_INT_CALLEE_TRASH | RBM_FLT_CALLEE_TRASH)
   #define RBM_CALLEE_TRASH_NOGC   (RBM_R2|RBM_R3|RBM_LR)
+  #define REG_DEFAULT_HELPER_CALL_TARGET REG_R12
 
   #define RBM_ALLINT              (RBM_INT_CALLEE_SAVED | RBM_INT_CALLEE_TRASH)
   #define RBM_ALLFLOAT            (RBM_FLT_CALLEE_SAVED | RBM_FLT_CALLEE_TRASH)
@@ -1433,6 +1434,8 @@ typedef unsigned short regPairNoSmall; // arm: need 12 bits
 
   #define REG_ARG_FIRST            REG_R0
   #define REG_ARG_LAST             REG_R3
+  #define REG_ARG_FP_FIRST         REG_F0
+  #define REG_ARG_FP_LAST          REG_F7
   #define INIT_ARG_STACK_SLOT      0                  // No outgoing reserved stack slots
 
   #define REG_ARG_0                REG_R0
