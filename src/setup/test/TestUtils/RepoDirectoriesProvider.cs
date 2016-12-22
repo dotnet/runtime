@@ -12,6 +12,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
     {
         private string _repoRoot;
         private string _artifacts;
+        private string _hostArtifacts;
         private string _builtDotnet;
         private string _nugetPackages;
         private string _corehostPackages;
@@ -19,6 +20,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
         public string RepoRoot => _repoRoot;
         public string Artifacts => _artifacts;
+        public string HostArtifacts => _hostArtifacts;
         public string BuiltDotnet => _builtDotnet;
         public string NugetPackages => _nugetPackages;
         public string CorehostPackages => _corehostPackages;
@@ -40,6 +42,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
             _artifacts = Path.Combine(baseArtifactsFolder, targetRID);
 
+            _hostArtifacts = artifacts ?? Path.Combine(_artifacts, "corehost");
             _nugetPackages = nugetPackages ?? Path.Combine(_repoRoot, ".nuget", "packages");
             _corehostPackages = corehostPackages ?? Path.Combine(_artifacts, "corehost");
             _corehostDummyPackages = corehostDummyPackages ?? Path.Combine(_artifacts, "corehostdummypackages");
