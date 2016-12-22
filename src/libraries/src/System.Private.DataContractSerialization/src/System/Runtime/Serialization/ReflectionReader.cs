@@ -33,7 +33,15 @@ namespace System.Runtime.Serialization
             context.AddNewObject(obj);
             InvokeOnDeserializing(context, classContract, obj);
 
-            ReflectionReadMembers(xmlReader, context, memberNames, memberNamespaces, classContract, ref obj);
+            if (classContract.IsISerializable)
+            {
+                obj = ReadISerializable(xmlReader, context, classContract);
+            }
+            else
+            {
+                ReflectionReadMembers(xmlReader, context, memberNames, memberNamespaces, classContract, ref obj);
+            }
+
             obj = ResolveAdapterObject(obj, classContract);
             InvokeDeserializationCallback(obj);
             InvokeOnDeserialized(context, classContract, obj);
@@ -277,6 +285,16 @@ namespace System.Runtime.Serialization
             }
 
             return value;
+        }
+
+        private static object ReadISerializable(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext context, ClassDataContract classContract)
+        {
+            object obj;
+            SerializationInfo serializationInfo = context.ReadSerializationInfo(xmlReader, classContract.UnderlyingType);
+            StreamingContext streamingContext = context.GetStreamingContext();
+            ConstructorInfo iSerializableConstructor = classContract.GetISerializableConstructor();
+            obj = iSerializableConstructor.Invoke(new object[] { serializationInfo, streamingContext });
+            return obj;
         }
 
         // This method is a perf optimization for collections. The original method is ReflectionReadValue.
