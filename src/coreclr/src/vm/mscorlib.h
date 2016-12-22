@@ -797,10 +797,6 @@ DEFINE_FIELD_U(m_assertAllPossible,FrameSecurityDescriptorBaseObject,  m_assertA
 DEFINE_FIELD_U(m_DeclarativeAssertions,       FrameSecurityDescriptorBaseObject,  m_DeclarativeAssertions)
 DEFINE_FIELD_U(m_DeclarativeDenials,          FrameSecurityDescriptorBaseObject,  m_DeclarativeDenials)
 DEFINE_FIELD_U(m_DeclarativeRestrictions,      FrameSecurityDescriptorBaseObject,  m_DeclarativeRestrictions)
-#ifndef FEATURE_PAL
-DEFINE_FIELD_U(m_callerToken,      FrameSecurityDescriptorBaseObject,  m_callerToken)
-DEFINE_FIELD_U(m_impToken,         FrameSecurityDescriptorBaseObject,  m_impToken)
-#endif
 DEFINE_CLASS(FRAME_SECURITY_DESCRIPTOR, Security,           FrameSecurityDescriptor)
 
 DEFINE_CLASS(GUID,                  System,                 Guid)

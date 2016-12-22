@@ -1160,13 +1160,9 @@ namespace System.Reflection.Emit
 
         private static Type GetConsoleType()
         {
-#if FEATURE_LEGACYSURFACE
-            return typeof(Console);
-#else
             return Type.GetType(
                 "System.Console, System.Console, Version=4.0.0.0, Culture=neutral, PublicKeyToken=" + AssemblyRef.MicrosoftPublicKeyToken, 
                 throwOnError: true);
-#endif
         }
 
         public virtual void EmitWriteLine(String value)

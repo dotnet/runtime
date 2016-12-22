@@ -7,10 +7,6 @@
 
 #include "common.h"
 
-#ifndef FEATURE_PAL 
-#include "securityprincipal.h"
-#endif // !FEATURE_PAL 
-
 #ifdef WIN64EXCEPTIONS
 #include "exceptionhandling.h"
 #include "dbginterface.h"
@@ -2871,28 +2867,6 @@ CLRUnwindStatus ExceptionTracker::ProcessManagedCallFrame(
                         // we probably don't want to be so strict in not calling handlers. 
                         if (! IsStackOverflowException())
                         {
-#ifndef FEATURE_PAL 
-                            // Check for any impersonation on the frame and save that for use during EH filter callbacks
-                            OBJECTREF* pRefSecDesc = pcfThisFrame->GetAddrOfSecurityObject();
-                            if (pRefSecDesc != NULL && *pRefSecDesc != NULL)
-                            {
-                                GCX_COOP();
-                                FRAMESECDESCREF fsdRef = (FRAMESECDESCREF)*pRefSecDesc;
-                                if (fsdRef->GetCallerToken() != NULL)
-                                {
-                                    m_hCallerToken = fsdRef->GetCallerToken();
-                                    STRESS_LOG1(LF_EH, LL_INFO100, "In COMPlusThrowCallback. Found non-NULL callertoken on FSD:%d\n",m_hCallerToken);
-                                    if (!m_ExceptionFlags.ImpersonationTokenSet())
-                                    {
-                                        m_hImpersonationToken = fsdRef->GetImpersonationToken();
-                                        STRESS_LOG1(LF_EH, LL_INFO100, "In COMPlusThrowCallback. Found non-NULL impersonationtoken on FSD:%d\n",m_hImpersonationToken);
-                                        m_ExceptionFlags.SetImpersonationTokenSet();
-                                    }
-                                }
-                            }
-                            BOOL impersonating = FALSE;
-#endif // !FEATURE_PAL 
-
                             // Save the current EHClause Index and Establisher of the clause post which
                             // ThreadAbort was raised. This is done an exception handled inside a filter 
                             // reset the state that was setup before the filter was invoked.
@@ -2905,16 +2879,6 @@ CLRUnwindStatus ExceptionTracker::ProcessManagedCallFrame(
                             
                             EX_TRY
                             {
-#ifndef FEATURE_PAL 
-                                if (m_hCallerToken != NULL)
-                                {
-                                    STRESS_LOG1(LF_EH, LL_INFO100, "About to call filter with hCallerToken = %d\n",m_hCallerToken);
-                                    // CLR_ImpersonateLoggedOnUser fails fast on error
-                                    COMPrincipal::CLR_ImpersonateLoggedOnUser(m_hCallerToken);
-                                    impersonating = TRUE;
-                                }
-#endif // !FEATURE_PAL 
-
                                 // We want to call filters even if the thread is aborting, so suppress abort
                                 // checks while the filter runs.
                                 ThreadPreventAsyncHolder preventAbort(TRUE);
@@ -2944,29 +2908,10 @@ CLRUnwindStatus ExceptionTracker::ProcessManagedCallFrame(
                                     GCX_COOP();
                                     dwResult = CallHandler(dwFilterStartPC, sf, &EHClause, pMD, Filter ARM_ARG(pCurRegDisplay->pCallerContext) ARM64_ARG(pCurRegDisplay->pCallerContext));
                                 }
-                                
-#ifndef FEATURE_PAL 
-                                if (impersonating)
-                                {
-                                    STRESS_LOG1(LF_EH, LL_INFO100, "After calling filter, resetting to  hImpersonationToken = %d\n",m_hImpersonationToken);
-                                    // CLR_ImpersonateLoggedOnUser fails fast on error
-                                    COMPrincipal::CLR_ImpersonateLoggedOnUser(m_hImpersonationToken);
-                                    impersonating = FALSE;
-                                }
-#endif // !FEATURE_PAL 
                             }
                             EX_CATCH
                             {
                                 // We had an exception in filter invocation that remained unhandled.
-#ifndef FEATURE_PAL 
-                                if (impersonating)
-                                {
-                                    STRESS_LOG1(LF_EH, LL_INFO100, "Filter threw exception. In Catch. Resetting to  hImpersonationToken = %d\n",m_hImpersonationToken);
-                                    // CLR_ImpersonateLoggedOnUser fails fast on error
-                                    COMPrincipal::CLR_ImpersonateLoggedOnUser(m_hImpersonationToken);
-                                    impersonating = FALSE;
-                                }
-#endif // !FEATURE_PAL 
 
                                 // Sync managed exception state, for the managed thread, based upon the active exception tracker.
                                 pThread->SyncManagedExceptionState(false);

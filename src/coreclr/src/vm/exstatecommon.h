@@ -380,10 +380,6 @@ public:
     void SetDebuggerInterceptInfo() { LIMITED_METHOD_DAC_CONTRACT; AssertIfReadOnly(); m_flags |= Ex_DebuggerInterceptInfo; }
 #endif
 
-    BOOL ImpersonationTokenSet()      { LIMITED_METHOD_CONTRACT; return m_flags & Ex_ImpersonationTokenSet; }
-    void SetImpersonationTokenSet()   { LIMITED_METHOD_CONTRACT; AssertIfReadOnly(); m_flags |= Ex_ImpersonationTokenSet; }
-    void ResetImpersonationTokenSet() { LIMITED_METHOD_CONTRACT; AssertIfReadOnly(); m_flags &= ~Ex_ImpersonationTokenSet; }
-
     BOOL WasThrownByUs()      { LIMITED_METHOD_CONTRACT; return m_flags & Ex_WasThrownByUs; }
     void SetWasThrownByUs()   { LIMITED_METHOD_CONTRACT; AssertIfReadOnly(); m_flags |= Ex_WasThrownByUs; }
     void ResetWasThrownByUs() { LIMITED_METHOD_CONTRACT; AssertIfReadOnly(); m_flags &= ~Ex_WasThrownByUs; }
@@ -410,7 +406,7 @@ private:
         Ex_DebuggerInterceptNotPossible = 0x00000400,
         Ex_IsUnhandled                  = 0x00000800,
 #endif
-        Ex_ImpersonationTokenSet        = 0x00001000,
+        // Unused                       = 0x00001000,
 
         Ex_WasThrownByUs                = 0x00002000,
 
