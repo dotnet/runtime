@@ -78,10 +78,10 @@ namespace System.Net
         {
             ListenerPrefix lp = new ListenerPrefix(p);
             if (lp.Path.IndexOf('%') != -1)
-                throw new HttpListenerException(400, SR.net_invalid_path);
+                throw new HttpListenerException((int)HttpStatusCode.BadRequest, SR.net_invalid_path);
 
             if (lp.Path.IndexOf("//", StringComparison.Ordinal) != -1)
-                throw new HttpListenerException(400, SR.net_invalid_path);
+                throw new HttpListenerException((int)HttpStatusCode.BadRequest, SR.net_invalid_path);
 
             // listens on all the interfaces if host name cannot be parsed by IPAddress.
             HttpEndPointListener epl = GetEPListener(lp.Host, lp.Port, listener, lp.Secure);
@@ -181,6 +181,3 @@ namespace System.Net
         }
     }
 }
-
-
-
