@@ -2432,7 +2432,7 @@ print_stack_frame_to_string (StackFrameInfo *frame, MonoContext *ctx, gpointer d
 
 #ifndef MONO_CROSS_COMPILE
 
-static void print_process_map ()
+static void print_process_map (void)
 {
 #ifdef __linux__
 	FILE *fp = fopen ("/proc/self/maps", "r");
