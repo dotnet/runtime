@@ -4098,13 +4098,20 @@ AC_SUBST(mono_build_root)
 mono_runtime=mono/mini/mono
 AC_SUBST(mono_runtime)
 
-CSC=`cd $srcdir && pwd`/external/roslyn-binaries/Microsoft.Net.Compilers/Microsoft.Net.Compilers.1.3.2/tools/csc.exe
+CSC_LOCATION=`cd $srcdir && pwd`/external/roslyn-binaries/Microsoft.Net.Compilers/Microsoft.Net.Compilers.1.3.2/tools/csc.exe
+
+if test $csc_compiler = mcs; then
+  CSC=$mcs_topdir/class/lib/build/mcs.exe
+else
+  CSC=$CSC_LOCATION
+fi
 
 mono_cfg_root=$mono_build_root/runtime
 if test x$host_win32 = xyes; then
   if test "x$cross_compiling" = "xno"; then
     mono_cfg_dir=`cygpath -w -a $mono_cfg_root`\\etc
     CSC="'"`cygpath -w -a $CSC`"'"
+	CSC_LOCATION="'"`cygpath -w -a $CSC_LOCATION`"'"
   else
     mono_cfg_dir=`echo $mono_cfg_root | tr '/' '\\'`\\etc
   fi
@@ -4447,7 +4454,7 @@ fi
       echo "BCL_OPTIMIZE = 1" >> $srcdir/$mcsdir/build/config.make
     fi
 
-    echo "CSC_LOCATION = $CSC" >> $srcdir/$mcsdir/build/config.make
+    echo "CSC_LOCATION = $CSC_LOCATION" >> $srcdir/$mcsdir/build/config.make
 
     if test $csc_compiler = mcs; then
       echo "MCS_MODE = 1" >> $srcdir/$mcsdir/build/config.make
