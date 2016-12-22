@@ -611,7 +611,6 @@ void Lowering::TreeNodeInfoInitCall(GenTreeCall* call)
 
         var_types argType    = argNode->TypeGet();
         bool      argIsFloat = varTypeIsFloating(argType);
-        NYI_IF(argIsFloat, "float argument");
         callHasFloatRegArgs |= argIsFloat;
 
         regNumber argReg = curArgTabEntry->regNum;
@@ -874,6 +873,27 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
             }
             break;
 
+        case GT_INTRINSIC:
+        {
+            // TODO-ARM: Implement other type of intrinsics (round, sqrt and etc.)
+            // Both operand and its result must be of the same floating point type.
+            op1 = tree->gtOp.gtOp1;
+            assert(varTypeIsFloating(op1));
+            assert(op1->TypeGet() == tree->TypeGet());
+
+            switch (tree->gtIntrinsic.gtIntrinsicId)
+            {
+                case CORINFO_INTRINSIC_Abs:
+                    info->srcCount = 1;
+                    info->dstCount = 1;
+                    break;
+                default:
+                    NYI_ARM("Lowering::TreeNodeInfoInit for GT_INRINSIC");
+                    break;
+            }
+        }
+        break;
+
         case GT_CAST:
         {
             info->srcCount = 1;
@@ -995,6 +1015,24 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
         case GT_PROF_HOOK:
             info->srcCount = 0;
             info->dstCount = 0;
+            break;
+
+        case GT_CNS_DBL:
+            info->srcCount = 0;
+            info->dstCount = 1;
+            if (tree->TypeGet() == TYP_FLOAT)
+            {
+                // An int register for float constant
+                info->internalIntCount = 1;
+            }
+            else
+            {
+                // TYP_DOUBLE
+                assert(tree->TypeGet() == TYP_DOUBLE);
+
+                // Two int registers for double constant
+                info->internalIntCount = 2;
+            }
             break;
 
         case GT_RETURN:
@@ -1201,10 +1239,6 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode)
 {
     if (varTypeIsFloating(parentNode->TypeGet()))
     {
-        // TODO-ARM-Cleanup: not tested yet.
-        NYI_ARM("ARM IsContainableImmed for floating point type");
-
-        // We can contain a floating point 0.0 constant in a compare instruction
         switch (parentNode->OperGet())
         {
             default:
@@ -1217,7 +1251,12 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode)
             case GT_GE:
             case GT_GT:
                 if (childNode->IsIntegralConst(0))
+                {
+                    // TODO-ARM-Cleanup: not tested yet.
+                    NYI_ARM("ARM IsContainableImmed for floating point type");
+                    // We can contain a floating point 0.0 constant in a compare instruction
                     return true;
+                }
                 break;
         }
     }
