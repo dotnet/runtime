@@ -2057,12 +2057,12 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 
 	if (!usable) {
 		if (mono_aot_only) {
-			g_error ("Failed to load AOT module '%s' while running in aot-only mode: %s.\n", aot_name, msg);
+			g_error ("Failed to load AOT module '%s' while running in aot-only mode: %s.\n", found_aot_name, msg);
 		} else {
-			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT: module %s is unusable: %s.", aot_name, msg);
+			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT: module %s is unusable: %s.", found_aot_name, msg);
 		}
 		g_free (msg);
-		g_free (aot_name);
+		g_free (found_aot_name);
 		if (sofile)
 			mono_dl_close (sofile);
 		assembly->image->aot_module = NULL;
@@ -2077,7 +2077,7 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	g_assert (info->generic_tramp_num == MONO_TRAMPOLINE_NUM);
 
 	amodule = g_new0 (MonoAotModule, 1);
-	amodule->aot_name = aot_name;
+	amodule->aot_name = found_aot_name;
 	amodule->assembly = assembly;
 
 	memcpy (&amodule->info, info, sizeof (*info));
@@ -2303,7 +2303,6 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	} else {
 		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT: image '%s' found.", found_aot_name);
 	}
-	g_free (found_aot_name);
 }
 
 /*
