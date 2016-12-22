@@ -2331,9 +2331,6 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         Assert.Equal(value.StringField2, actual.StringField2);
     }
 
-#if ReflectionOnly
-    [ActiveIssue(14260)]
-#endif
     [Fact]
     public static void XmlSchemaTest()
     {
