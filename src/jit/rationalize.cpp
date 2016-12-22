@@ -116,17 +116,14 @@ void Rationalizer::RewriteSIMDOperand(LIR::Use& use, bool keepBlk)
         addr->gtType = simdType;
         use.ReplaceWith(comp, addr);
     }
-#if defined(_TARGET_X86_)
-    // For x86, if we have GT_IND(GT_ADDR(GT_SIMD)), remove the GT_IND(GT_ADDR()), leaving just
-    // the GT_SIMD.
     else if ((addr->OperGet() == GT_ADDR) && (addr->gtGetOp1()->OperGet() == GT_SIMD))
     {
+        // if we have GT_IND(GT_ADDR(GT_SIMD)), remove the GT_IND(GT_ADDR()), leaving just the GT_SIMD.
         BlockRange().Remove(tree);
         BlockRange().Remove(addr);
 
         use.ReplaceWith(comp, addr->gtGetOp1());
     }
-#endif // defined(_TARGET_X86_)
     else if (!keepBlk)
     {
         tree->SetOper(GT_IND);
@@ -729,6 +726,11 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, ArrayStack<G
         case GT_IND:
             // Clear the `GTF_IND_ASG_LHS` flag, which overlaps with `GTF_IND_REQ_ADDR_IN_REG`.
             node->gtFlags &= ~GTF_IND_ASG_LHS;
+
+            if (varTypeIsSIMD(node))
+            {
+                RewriteSIMDOperand(use, false);
+            }
             break;
 
         case GT_NOP:
