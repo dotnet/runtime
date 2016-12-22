@@ -30,6 +30,8 @@ namespace Microsoft.DotNet.Host.Build
             { "osx.10.11-x64", "osx.10.10-x64" },
             { "ubuntu.14.04-x64", "ubuntu.14.04-x64" },
             { "ubuntu.16.04-x64", "ubuntu.16.04-x64" },
+            { "ubuntu.14.04-arm", "ubuntu.14.04-arm" },
+            { "ubuntu.16.04-arm", "ubuntu.16.04-arm" },
             { "ubuntu.16.10-x64", "ubuntu.16.10-x64" },
             { "centos.7-x64", "rhel.7-x64" },
             { "rhel.7-x64", "rhel.7-x64" },
@@ -164,6 +166,7 @@ namespace Microsoft.DotNet.Host.Build
             var configuration = c.BuildContext.Get<string>("Configuration");
             string rid = c.BuildContext.Get<string>("TargetRID");
             string platform = c.BuildContext.Get<string>("Platform");
+            string crossEnv = c.BuildContext.Get<string>("Cross");
 
             // Generate build files
             var cmakeOut = Path.Combine(Dirs.CorehostLatest, "cmake");
@@ -306,6 +309,11 @@ namespace Microsoft.DotNet.Host.Build
                 buildScriptArgList.Add("--commithash");
                 buildScriptArgList.Add(commitHash);
 
+                if (string.Equals(crossEnv, "1"))
+                {
+                    buildScriptArgList.Add("--cross");
+                }
+
                 ExecIn(cmakeOut, buildScriptFile, buildScriptArgList);
 
                 // Copy the output out
@@ -380,10 +388,23 @@ namespace Microsoft.DotNet.Host.Build
             var hostNugetversion = hostVersion.LatestHostVersion.ToString();
             var content = $@"{c.BuildContext["CommitHash"]}{Environment.NewLine}{hostNugetversion}{Environment.NewLine}";
             var pkgDir = Path.Combine(c.BuildContext.BuildDirectory, "pkg");
-            var packCmd = "pack." + (CurrentPlatform.IsWindows ? "cmd" : "sh");
             string rid = HostPackageSupportedRids[c.BuildContext.Get<string>("TargetRID")];
             File.WriteAllText(Path.Combine(pkgDir, "version.txt"), content);
-            Exec(Path.Combine(pkgDir, packCmd));
+
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                Exec(Path.Combine(pkgDir, "pack.cmd"));
+            }
+            else
+            {
+                List<string> buildScriptArgList = new List<string>();
+                string buildScriptFile = Path.Combine(pkgDir, "pack.sh");
+
+                buildScriptArgList.Add("--rid");
+                buildScriptArgList.Add(rid);
+
+                Exec(buildScriptFile, buildScriptArgList);
+            }
 
             foreach (var file in Directory.GetFiles(Path.Combine(pkgDir, "bin", "packages"), "*.nupkg"))
             {

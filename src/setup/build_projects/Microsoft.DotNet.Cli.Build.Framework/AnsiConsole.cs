@@ -66,7 +66,7 @@ namespace Microsoft.DotNet.Cli.Build.Framework
             var escapeScan = 0;
             for (;;)
             {
-                var escapeIndex = message.IndexOf("\x1b[", escapeScan);
+                var escapeIndex = message.IndexOf("\x1b[", escapeScan, StringComparison.Ordinal);
                 if (escapeIndex == -1)
                 {
                     var text = message.Substring(escapeScan);
