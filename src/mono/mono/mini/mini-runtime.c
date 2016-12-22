@@ -121,6 +121,7 @@ MonoDebugOptions debug_options;
 #ifdef VALGRIND_JIT_REGISTER_MAP
 int valgrind_register;
 #endif
+GList* mono_aot_paths;
 
 static GSList *tramp_infos;
 

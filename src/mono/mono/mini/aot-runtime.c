@@ -1918,7 +1918,7 @@ init_amodule_got (MonoAotModule *amodule)
 static void
 load_aot_module (MonoAssembly *assembly, gpointer user_data)
 {
-	char *aot_name;
+	char *aot_name, *found_aot_name;
 	MonoAotModule *amodule;
 	MonoDl *sofile;
 	gboolean usable = TRUE;
@@ -1953,6 +1953,8 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 
 	sofile = NULL;
 
+	found_aot_name = NULL;
+
 	if (info) {
 		/* Statically linked AOT module */
 		aot_name = g_strdup_printf ("%s", assembly->aname.name);
@@ -1962,34 +1964,59 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 			g_assert (globals);
 		}
 	} else {
+		char *err;
+
 		if (enable_aot_cache)
 			sofile = aot_cache_load_module (assembly, &aot_name);
 		if (!sofile) {
-			char *err;
 			aot_name = g_strdup_printf ("%s%s", assembly->image->name, MONO_SOLIB_EXT);
 
 			sofile = mono_dl_open (aot_name, MONO_DL_LAZY, &err);
-
-			if (!sofile) {
-				mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT module '%s' not found: %s", aot_name, err);
+			if (sofile) {
+				found_aot_name = g_strdup (aot_name);
+			} else {
+				mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT: image '%s' not found: %s", aot_name, err);
 				g_free (err);
-
-				g_free (aot_name);
-				char *basename = g_path_get_basename (assembly->image->name);
-				aot_name = g_strdup_printf ("%s/mono/aot-cache/%s/%s%s", mono_assembly_getrootdir(), MONO_ARCHITECTURE, basename, MONO_SOLIB_EXT);
-				g_free (basename);
-				sofile = mono_dl_open (aot_name, MONO_DL_LAZY, &err);
-				if (!sofile) {
-					mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT module '%s' not found: %s", aot_name, err);
-					g_free (err);
-				}
-
+			}
+			g_free (aot_name);
+		}
+		if (!sofile) {
+			char *basename = g_path_get_basename (assembly->image->name);
+			aot_name = g_strdup_printf ("%s/mono/aot-cache/%s/%s%s", mono_assembly_getrootdir(), MONO_ARCHITECTURE, basename, MONO_SOLIB_EXT);
+			g_free (basename);
+			sofile = mono_dl_open (aot_name, MONO_DL_LAZY, &err);
+			if (!sofile) {
+				mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT: image '%s' not found: %s", aot_name, err);
+				g_free (err);
 			}
 		}
 		if (!sofile) {
-			if (mono_aot_only && assembly->image->tables [MONO_TABLE_METHOD].rows)
+			GList *l;
+
+			for (l = mono_aot_paths; l; l = l->next) {
+				char *path = l->data;
+
+				char *basename = g_path_get_basename (assembly->image->name);
+				aot_name = g_strdup_printf ("%s/%s%s", path, basename, MONO_SOLIB_EXT);
+				sofile = mono_dl_open (aot_name, MONO_DL_LAZY, &err);
+				if (sofile) {
+					found_aot_name = g_strdup (aot_name);
+				} else {
+					mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT: image '%s' not found: %s", aot_name, err);
+					g_free (err);
+				}
+				g_free (basename);
+				g_free (aot_name);
+				if (sofile)
+					break;
+			}
+		}
+		if (!sofile) {
+			if (mono_aot_only && assembly->image->tables [MONO_TABLE_METHOD].rows) {
+				aot_name = g_strdup_printf ("%s%s", assembly->image->name, MONO_SOLIB_EXT);
 				g_error ("Failed to load AOT module '%s' in aot-only mode.\n", aot_name);
-			g_free (aot_name);
+				g_free (aot_name);
+			}
 			return;
 		}
 	}
@@ -2272,10 +2299,11 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	if (amodule->out_of_date) {
 		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT: Module %s is unusable because a dependency is out-of-date.", assembly->image->name);
 		if (mono_aot_only)
-			g_error ("Failed to load AOT module '%s' while running in aot-only mode because a dependency cannot be found or it is out of date.\n", aot_name);
+			g_error ("Failed to load AOT module '%s' while running in aot-only mode because a dependency cannot be found or it is out of date.\n", found_aot_name);
+	} else {
+		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT: image '%s' found.", found_aot_name);
 	}
-	else
-		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT: loaded AOT Module for %s.", assembly->image->name);
+	g_free (found_aot_name);
 }
 
 /*

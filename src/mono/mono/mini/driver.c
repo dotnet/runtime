@@ -1276,6 +1276,7 @@ mini_usage (void)
 	        "    --mixed-mode           Enable mixed-mode image support.\n"
 #endif
 		"    --handlers             Install custom handlers, use --help-handlers for details.\n"
+		"    --aot-path=PATH        List of additional directories to search for AOT images.\n"
 	  );
 }
 
@@ -1779,6 +1780,16 @@ mono_main (int argc, char* argv[])
 			mono_compile_aot = TRUE;
 			aot_options = &argv [i][6];
 #endif
+		} else if (strncmp (argv [i], "--aot-path=", 11) == 0) {
+			char **splitted;
+
+			splitted = g_strsplit (argv [i] + 11, G_SEARCHPATH_SEPARATOR_S, 1000);
+			while (*splitted) {
+				char *tmp = *splitted;
+				mono_aot_paths = g_list_append (mono_aot_paths, g_strdup (tmp));
+				g_free (tmp);
+				splitted++;
+			}
 		} else if (strncmp (argv [i], "--compile-all=", 14) == 0) {
 			action = DO_COMPILE;
 			recompilation_times = atoi (argv [i] + 14);
