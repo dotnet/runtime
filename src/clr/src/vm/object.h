@@ -2743,10 +2743,6 @@ class FrameSecurityDescriptorBaseObject : public Object
     OBJECTREF       m_DeclarativeAssertions;
     OBJECTREF       m_DeclarativeDenials;
     OBJECTREF       m_DeclarativeRestrictions;
-#ifndef FEATURE_PAL
-    SAFEHANDLEREF   m_callerToken; // the thread token (or process token if there was no thread token) when a call to Impersonate was made ("previous" token)
-    SAFEHANDLEREF   m_impToken; // the thread token after a call to Impersonate is made (the "current" impersonation)
-#endif // !FEATURE_PAL
     CLR_BOOL        m_assertFT;
     CLR_BOOL        m_assertAllPossible;
     CLR_BOOL        m_declSecComputed;
@@ -2880,10 +2876,6 @@ class FrameSecurityDescriptorBaseObject : public Object
         LIMITED_METHOD_CONTRACT;
         m_declSecComputed = !!declSec;
     }
-#ifndef FEATURE_PAL
-    LPVOID GetCallerToken();
-    LPVOID GetImpersonationToken();
-#endif  // FEATURE_PAL
 };
 
 #ifdef FEATURE_COMPRESSEDSTACK

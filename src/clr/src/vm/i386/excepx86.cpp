@@ -2274,19 +2274,11 @@ int COMPlusThrowCallbackHelper(IJitManager *pJitManager,
     CONTRACTL_END;
 
     int iFilt = 0;
-    BOOL impersonating = FALSE;
 
 #ifndef FEATURE_PAL
     EX_TRY
     {
         GCPROTECT_BEGIN (throwable);
-        if (pData->hCallerToken != NULL)
-        {
-            STRESS_LOG1(LF_EH, LL_INFO100, "In COMPlusThrowCallbackHelper hCallerToken = %d\n",pData->hCallerToken);
-            // CLR_ImpersonateLoggedOnUser fails fast on error
-            COMPrincipal::CLR_ImpersonateLoggedOnUser(pData->hCallerToken);
-            impersonating = TRUE;
-        }
 
         // We want to call filters even if the thread is aborting, so suppress abort
         // checks while the filter runs.
@@ -2295,25 +2287,10 @@ int COMPlusThrowCallbackHelper(IJitManager *pJitManager,
         BYTE* startAddress = (BYTE*)pCf->GetCodeInfo()->GetStartAddress();
         iFilt = ::CallJitEHFilter(pCf, startAddress, EHClausePtr, nestingLevel, throwable);
 
-        if (impersonating)
-        {
-            STRESS_LOG1(LF_EH, LL_INFO100, "In COMPlusThrowCallbackHelper hImpersonationToken = %d\n",pData->hImpersonationToken);
-            // CLR_ImpersonateLoggedOnUser fails fast on error
-            COMPrincipal::CLR_ImpersonateLoggedOnUser(pData->hImpersonationToken);
-            impersonating = FALSE;
-        }
         GCPROTECT_END();
     }
     EX_CATCH
     {
-        if (impersonating)
-        {
-            STRESS_LOG1(LF_EH, LL_INFO100, "In COMPlusThrowCallbackHelper EX_CATCH hImpersonationToken = %d\n",pData->hImpersonationToken);
-            // CLR_ImpersonateLoggedOnUser fails fast on error
-            COMPrincipal::CLR_ImpersonateLoggedOnUser(pData->hImpersonationToken);
-            impersonating = FALSE;
-        }
-
         // We had an exception in filter invocation that remained unhandled.
         // Sync managed exception state, for the managed thread, based upon the active exception tracker.
         pThread->SyncManagedExceptionState(false);
@@ -2444,27 +2421,6 @@ StackWalkAction COMPlusThrowCallback(       // SWA value
     {
         pData->bSkipLastElement = FALSE;
     }
-
-#ifndef FEATURE_PAL
-    // Check for any impersonation on the frame and save that for use during EH filter callbacks
-    OBJECTREF* pRefSecDesc = pCf->GetAddrOfSecurityObject();
-    if (pRefSecDesc != NULL && *pRefSecDesc != NULL)
-    {
-        FRAMESECDESCREF fsdRef = (FRAMESECDESCREF)*pRefSecDesc;
-        if (fsdRef->GetCallerToken() != NULL)
-        {
-            // Impersonation info present on the Frame
-            pData->hCallerToken = fsdRef->GetCallerToken();
-            STRESS_LOG1(LF_EH, LL_INFO100, "In COMPlusThrowCallback. Found non-NULL callertoken on FSD:%d\n",pData->hCallerToken);
-            if (!pData->bImpersonationTokenSet)
-            {
-                pData->hImpersonationToken = fsdRef->GetImpersonationToken();
-                STRESS_LOG1(LF_EH, LL_INFO100, "In COMPlusThrowCallback. Found non-NULL impersonationtoken on FSD:%d\n",pData->hImpersonationToken);
-                pData->bImpersonationTokenSet = TRUE;
-            }
-        }
-    }
-#endif // !FEATURE_PAL
 
     // now we've got the stack trace, if we aren't allowed to catch this and we're first pass, return
     if (pData->bDontCatch)

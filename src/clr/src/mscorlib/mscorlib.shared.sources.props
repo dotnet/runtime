@@ -857,7 +857,6 @@
     <SecuritySources Include="$(BclSourcesRoot)\System\Security\PermissionToken.cs" />
     <SecuritySources Include="$(BclSourcesRoot)\System\Security\PermissionSetTriple.cs" />
     <SecuritySources Include="$(BclSourcesRoot)\System\Security\PermissionListSet.cs" />
-    <SecuritySources Include="$(BclSourcesRoot)\System\Security\SafeSecurityHandles.cs" />
     <SecuritySources Include="$(BclSourcesRoot)\System\Security\SecurityContext.cs" />
     <SecuritySources Include="$(BclSourcesRoot)\System\Security\SecurityException.cs" />
     <SecuritySources Include="$(BclSourcesRoot)\System\Security\SecurityState.cs" />
@@ -866,7 +865,6 @@
     <SecuritySources Include="$(BclSourcesRoot)\System\Security\SecurityRuntime.cs" />
     <SecuritySources Include="$(BclSourcesRoot)\System\Security\SecurityZone.cs" />
     <SecuritySources Include="$(BclSourcesRoot)\System\Security\VerificationException.cs" />
-    <SecuritySources Condition="'$(FeatureLegacySurface)' == 'true'" Include="$(BclSourcesRoot)\System\Security\securestring.cs" />
   </ItemGroup>
 
   <ItemGroup>
