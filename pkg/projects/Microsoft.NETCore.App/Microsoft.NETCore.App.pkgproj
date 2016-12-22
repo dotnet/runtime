@@ -65,15 +65,18 @@
   
   <ItemGroup Condition="'$(PackageTargetRuntime)' != ''">
     <ArchitectureSpecificNativeFile Include="$(DotNetHostBinDir)/dotnet$(ApplicationFileExtension)" />
-    <ArchitectureSpecificNativeFile Include="$(DotNetHostBinDir)/dotnet$(SymbolFileExtension)">
+    <ArchitectureSpecificNativeFile Include="$(DotNetHostBinDir)/dotnet$(SymbolFileExtension)"
+                                    Condition="Exists('$(DotNetHostBinDir)/dotnet$(SymbolFileExtension)')">
       <IsSymbolFile>true</IsSymbolFile>
     </ArchitectureSpecificNativeFile>
     <ArchitectureSpecificNativeFile Include="$(DotNetHostBinDir)/$(LibraryFilePrefix)hostfxr$(LibraryFileExtension)"/>
-    <ArchitectureSpecificNativeFile Include="$(DotNetHostBinDir)/$(LibraryFilePrefix)hostfxr$(SymbolFileExtension)">
+    <ArchitectureSpecificNativeFile Include="$(DotNetHostBinDir)/$(LibraryFilePrefix)hostfxr$(SymbolFileExtension)"
+                                    Condition="Exists('$(DotNetHostBinDir)/$(LibraryFilePrefix)hostfxr$(SymbolFileExtension)')">
       <IsSymbolFile>true</IsSymbolFile>
     </ArchitectureSpecificNativeFile>
     <ArchitectureSpecificNativeFile Include="$(DotNetHostBinDir)/$(LibraryFilePrefix)hostpolicy$(LibraryFileExtension)"/>
-    <ArchitectureSpecificNativeFile Include="$(DotNetHostBinDir)/$(LibraryFilePrefix)hostpolicy$(SymbolFileExtension)">
+    <ArchitectureSpecificNativeFile Include="$(DotNetHostBinDir)/$(LibraryFilePrefix)hostpolicy$(SymbolFileExtension)"
+                                    Condition="Exists('$(DotNetHostBinDir)/$(LibraryFilePrefix)hostpolicy$(SymbolFileExtension)')">
       <IsSymbolFile>true</IsSymbolFile>
     </ArchitectureSpecificNativeFile>
 
