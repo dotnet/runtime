@@ -170,6 +170,10 @@
     <!-- We want the sources to show up nicely in VS-->
     <Compile Include="@(MscorlibSources)">
     </Compile>
+    <Compile Include="src\System\Runtime\CompilerServices\ITuple.cs" />
+    <Compile Include="src\System\Runtime\CompilerServices\TupleElementNamesAttribute.cs" />
+    <Compile Include="src\System\TupleExtensions.cs" />
+    <Compile Include="src\System\ValueTuple.cs" />
   </ItemGroup>
   
   <!-- Resources -->

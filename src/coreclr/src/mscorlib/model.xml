@@ -8608,6 +8608,14 @@
       <Member Name="GetHashCode" />
       <Member Name="ToString" />
       <Member MemberType="Property" Name="Item1" />
+      <Member Status="ImplRoot" Name="System.Collections.IStructuralComparable.CompareTo(System.Object,System.Collections.IComparer)" />
+      <Member Status="ImplRoot" Name="System.Collections.IStructuralEquatable.Equals(System.Object,System.Collections.IEqualityComparer)" />
+      <Member Status="ImplRoot" Name="System.Collections.IStructuralEquatable.GetHashCode(System.Collections.IEqualityComparer)" />
+      <Member Status="ImplRoot" Name="System.IComparable.CompareTo(System.Object)" />
+      <Member Status="ImplRoot" Name="System.Runtime.CompilerServices.ITuple.get_Item(System.Int32)" />
+      <Member Status="ImplRoot" Name="System.Runtime.CompilerServices.ITuple.get_Length" />
+      <Member Status="ImplRoot" MemberType="Property" Name="System.Runtime.CompilerServices.ITuple.Item(System.Int32)" />
+      <Member Status="ImplRoot" MemberType="Property" Name="System.Runtime.CompilerServices.ITuple.Length" />
     </Type>
     <Type Name="System.Tuple&lt;T1,T2&gt;">
       <Member Name="#ctor(T1,T2)" />
@@ -8618,6 +8626,14 @@
       <Member Name="ToString" />
       <Member MemberType="Property" Name="Item1" />
       <Member MemberType="Property" Name="Item2" />
+      <Member Status="ImplRoot" Name="System.Collections.IStructuralComparable.CompareTo(System.Object,System.Collections.IComparer)" />
+      <Member Status="ImplRoot" Name="System.Collections.IStructuralEquatable.Equals(System.Object,System.Collections.IEqualityComparer)" />
+      <Member Status="ImplRoot" Name="System.Collections.IStructuralEquatable.GetHashCode(System.Collections.IEqualityComparer)" />
+      <Member Status="ImplRoot" Name="System.IComparable.CompareTo(System.Object)" />
+      <Member Status="ImplRoot" Name="System.Runtime.CompilerServices.ITuple.get_Item(System.Int32)" />
+      <Member Status="ImplRoot" Name="System.Runtime.CompilerServices.ITuple.get_Length" />
+      <Member Status="ImplRoot" MemberType="Property" Name="System.Runtime.CompilerServices.ITuple.Item(System.Int32)" />
+      <Member Status="ImplRoot" MemberType="Property" Name="System.Runtime.CompilerServices.ITuple.Length" />
     </Type>
     <Type Name="System.Tuple&lt;T1,T2,T3&gt;">
       <Member Name="#ctor(T1,T2,T3)" />
@@ -8630,6 +8646,14 @@
       <Member MemberType="Property" Name="Item1" />
       <Member MemberType="Property" Name="Item2" />
       <Member MemberType="Property" Name="Item3" />
+      <Member Status="ImplRoot" Name="System.Collections.IStructuralComparable.CompareTo(System.Object,System.Collections.IComparer)" />
+      <Member Status="ImplRoot" Name="System.Collections.IStructuralEquatable.Equals(System.Object,System.Collections.IEqualityComparer)" />
+      <Member Status="ImplRoot" Name="System.Collections.IStructuralEquatable.GetHashCode(System.Collections.IEqualityComparer)" />
+      <Member Status="ImplRoot" Name="System.IComparable.CompareTo(System.Object)" />
+      <Member Status="ImplRoot" Name="System.Runtime.CompilerServices.ITuple.get_Item(System.Int32)" />
+      <Member Status="ImplRoot" Name="System.Runtime.CompilerServices.ITuple.get_Length" />
+      <Member Status="ImplRoot" MemberType="Property" Name="System.Runtime.CompilerServices.ITuple.Item(System.Int32)" />
+      <Member Status="ImplRoot" MemberType="Property" Name="System.Runtime.CompilerServices.ITuple.Length" />
     </Type>
     <Type Name="System.Tuple&lt;T1,T2,T3,T4&gt;">
       <Member Name="#ctor(T1,T2,T3,T4)" />
@@ -8644,6 +8668,14 @@
       <Member MemberType="Property" Name="Item2" />
       <Member MemberType="Property" Name="Item3" />
       <Member MemberType="Property" Name="Item4" />
+      <Member Status="ImplRoot" Name="System.Collections.IStructuralComparable.CompareTo(System.Object,System.Collections.IComparer)" />
+      <Member Status="ImplRoot" Name="System.Collections.IStructuralEquatable.Equals(System.Object,System.Collections.IEqualityComparer)" />
+      <Member Status="ImplRoot" Name="System.Collections.IStructuralEquatable.GetHashCode(System.Collections.IEqualityComparer)" />
+      <Member Status="ImplRoot" Name="System.IComparable.CompareTo(System.Object)" />
+      <Member Status="ImplRoot" Name="System.Runtime.CompilerServices.ITuple.get_Item(System.Int32)" />
+      <Member Status="ImplRoot" Name="System.Runtime.CompilerServices.ITuple.get_Length" />
+      <Member Status="ImplRoot" MemberType="Property" Name="System.Runtime.CompilerServices.ITuple.Item(System.Int32)" />
+      <Member Status="ImplRoot" MemberType="Property" Name="System.Runtime.CompilerServices.ITuple.Length" />
     </Type>
     <Type Name="System.Tuple&lt;T1,T2,T3,T4,T5&gt;">
       <Member Name="#ctor(T1,T2,T3,T4,T5)" />
@@ -8660,6 +8692,14 @@
       <Member MemberType="Property" Name="Item3" />
       <Member MemberType="Property" Name="Item4" />
       <Member MemberType="Property" Name="Item5" />
+      <Member Status="ImplRoot" Name="System.Collections.IStructuralComparable.CompareTo(System.Object,System.Collections.IComparer)" />
+      <Member Status="ImplRoot" Name="System.Collections.IStructuralEquatable.Equals(System.Object,System.Collections.IEqualityComparer)" />
+      <Member Status="ImplRoot" Name="System.Collections.IStructuralEquatable.GetHashCode(System.Collections.IEqualityComparer)" />
+      <Member Status="ImplRoot" Name="System.IComparable.CompareTo(System.Object)" />
+      <Member Status="ImplRoot" Name="System.Runtime.CompilerServices.ITuple.get_Item(System.Int32)" />
+      <Member Status="ImplRoot" Name="System.Runtime.CompilerServices.ITuple.get_Length" />
+      <Member Status="ImplRoot" MemberType="Property" Name="System.Runtime.CompilerServices.ITuple.Item(System.Int32)" />
+      <Member Status="ImplRoot" MemberType="Property" Name="System.Runtime.CompilerServices.ITuple.Length" />
     </Type>
     <Type Name="System.Tuple&lt;T1,T2,T3,T4,T5,T6&gt;">
       <Member Name="#ctor(T1,T2,T3,T4,T5,T6)" />
@@ -8678,6 +8718,14 @@
       <Member MemberType="Property" Name="Item4" />
       <Member MemberType="Property" Name="Item5" />
       <Member MemberType="Property" Name="Item6" />
+      <Member Status="ImplRoot" Name="System.Collections.IStructuralComparable.CompareTo(System.Object,System.Collections.IComparer)" />
+      <Member Status="ImplRoot" Name="System.Collections.IStructuralEquatable.Equals(System.Object,System.Collections.IEqualityComparer)" />
+      <Member Status="ImplRoot" Name="System.Collections.IStructuralEquatable.GetHashCode(System.Collections.IEqualityComparer)" />
+      <Member Status="ImplRoot" Name="System.IComparable.CompareTo(System.Object)" />
+      <Member Status="ImplRoot" Name="System.Runtime.CompilerServices.ITuple.get_Item(System.Int32)" />
+      <Member Status="ImplRoot" Name="System.Runtime.CompilerServices.ITuple.get_Length" />
+      <Member Status="ImplRoot" MemberType="Property" Name="System.Runtime.CompilerServices.ITuple.Item(System.Int32)" />
+      <Member Status="ImplRoot" MemberType="Property" Name="System.Runtime.CompilerServices.ITuple.Length" />
     </Type>
     <Type Name="System.Tuple&lt;T1,T2,T3,T4,T5,T6,T7&gt;">
       <Member Name="#ctor(T1,T2,T3,T4,T5,T6,T7)" />
@@ -8698,6 +8746,14 @@
       <Member MemberType="Property" Name="Item5" />
       <Member MemberType="Property" Name="Item6" />
       <Member MemberType="Property" Name="Item7" />
+      <Member Status="ImplRoot" Name="System.Collections.IStructuralComparable.CompareTo(System.Object,System.Collections.IComparer)" />
+      <Member Status="ImplRoot" Name="System.Collections.IStructuralEquatable.Equals(System.Object,System.Collections.IEqualityComparer)" />
+      <Member Status="ImplRoot" Name="System.Collections.IStructuralEquatable.GetHashCode(System.Collections.IEqualityComparer)" />
+      <Member Status="ImplRoot" Name="System.IComparable.CompareTo(System.Object)" />
+      <Member Status="ImplRoot" Name="System.Runtime.CompilerServices.ITuple.get_Item(System.Int32)" />
+      <Member Status="ImplRoot" Name="System.Runtime.CompilerServices.ITuple.get_Length" />
+      <Member Status="ImplRoot" MemberType="Property" Name="System.Runtime.CompilerServices.ITuple.Item(System.Int32)" />
+      <Member Status="ImplRoot" MemberType="Property" Name="System.Runtime.CompilerServices.ITuple.Length" />
     </Type>
     <Type Name="System.Tuple&lt;T1,T2,T3,T4,T5,T6,T7,TRest&gt;">
       <Member Name="#ctor(T1,T2,T3,T4,T5,T6,T7,TRest)" />
@@ -8720,6 +8776,79 @@
       <Member MemberType="Property" Name="Item6" />
       <Member MemberType="Property" Name="Item7" />
       <Member MemberType="Property" Name="Rest" />
+      <Member Status="ImplRoot" Name="System.Collections.IStructuralComparable.CompareTo(System.Object,System.Collections.IComparer)" />
+      <Member Status="ImplRoot" Name="System.Collections.IStructuralEquatable.Equals(System.Object,System.Collections.IEqualityComparer)" />
+      <Member Status="ImplRoot" Name="System.Collections.IStructuralEquatable.GetHashCode(System.Collections.IEqualityComparer)" />
+      <Member Status="ImplRoot" Name="System.IComparable.CompareTo(System.Object)" />
+      <Member Status="ImplRoot" Name="System.Runtime.CompilerServices.ITuple.get_Item(System.Int32)" />
+      <Member Status="ImplRoot" Name="System.Runtime.CompilerServices.ITuple.get_Length" />
+      <Member Status="ImplRoot" MemberType="Property" Name="System.Runtime.CompilerServices.ITuple.Item(System.Int32)" />
+      <Member Status="ImplRoot" MemberType="Property" Name="System.Runtime.CompilerServices.ITuple.Length" />
+    </Type>
+    <Type Name="System.TupleExtensions">
+      <Member Name="Deconstruct&lt;T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,T15,T16,T17,T18,T19,T20,T21&gt;(System.Tuple&lt;T1,T2,T3,T4,T5,T6,T7,System.Tuple&lt;T8,T9,T10,T11,T12,T13,T14,System.Tuple&lt;T15,T16,T17,T18,T19,T20,T21&gt;&gt;&gt;,T1@,T2@,T3@,T4@,T5@,T6@,T7@,T8@,T9@,T10@,T11@,T12@,T13@,T14@,T15@,T16@,T17@,T18@,T19@,T20@,T21@)" />
+      <Member Name="Deconstruct&lt;T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,T15,T16,T17,T18,T19,T20&gt;(System.Tuple&lt;T1,T2,T3,T4,T5,T6,T7,System.Tuple&lt;T8,T9,T10,T11,T12,T13,T14,System.Tuple&lt;T15,T16,T17,T18,T19,T20&gt;&gt;&gt;,T1@,T2@,T3@,T4@,T5@,T6@,T7@,T8@,T9@,T10@,T11@,T12@,T13@,T14@,T15@,T16@,T17@,T18@,T19@,T20@)" />
+      <Member Name="Deconstruct&lt;T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,T15,T16,T17,T18,T19&gt;(System.Tuple&lt;T1,T2,T3,T4,T5,T6,T7,System.Tuple&lt;T8,T9,T10,T11,T12,T13,T14,System.Tuple&lt;T15,T16,T17,T18,T19&gt;&gt;&gt;,T1@,T2@,T3@,T4@,T5@,T6@,T7@,T8@,T9@,T10@,T11@,T12@,T13@,T14@,T15@,T16@,T17@,T18@,T19@)" />
+      <Member Name="Deconstruct&lt;T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,T15,T16,T17,T18&gt;(System.Tuple&lt;T1,T2,T3,T4,T5,T6,T7,System.Tuple&lt;T8,T9,T10,T11,T12,T13,T14,System.Tuple&lt;T15,T16,T17,T18&gt;&gt;&gt;,T1@,T2@,T3@,T4@,T5@,T6@,T7@,T8@,T9@,T10@,T11@,T12@,T13@,T14@,T15@,T16@,T17@,T18@)" />
+      <Member Name="Deconstruct&lt;T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,T15,T16,T17&gt;(System.Tuple&lt;T1,T2,T3,T4,T5,T6,T7,System.Tuple&lt;T8,T9,T10,T11,T12,T13,T14,System.Tuple&lt;T15,T16,T17&gt;&gt;&gt;,T1@,T2@,T3@,T4@,T5@,T6@,T7@,T8@,T9@,T10@,T11@,T12@,T13@,T14@,T15@,T16@,T17@)" />
+      <Member Name="Deconstruct&lt;T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,T15,T16&gt;(System.Tuple&lt;T1,T2,T3,T4,T5,T6,T7,System.Tuple&lt;T8,T9,T10,T11,T12,T13,T14,System.Tuple&lt;T15,T16&gt;&gt;&gt;,T1@,T2@,T3@,T4@,T5@,T6@,T7@,T8@,T9@,T10@,T11@,T12@,T13@,T14@,T15@,T16@)" />
+      <Member Name="Deconstruct&lt;T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,T15&gt;(System.Tuple&lt;T1,T2,T3,T4,T5,T6,T7,System.Tuple&lt;T8,T9,T10,T11,T12,T13,T14,System.Tuple&lt;T15&gt;&gt;&gt;,T1@,T2@,T3@,T4@,T5@,T6@,T7@,T8@,T9@,T10@,T11@,T12@,T13@,T14@,T15@)" />
+      <Member Name="Deconstruct&lt;T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14&gt;(System.Tuple&lt;T1,T2,T3,T4,T5,T6,T7,System.Tuple&lt;T8,T9,T10,T11,T12,T13,T14&gt;&gt;,T1@,T2@,T3@,T4@,T5@,T6@,T7@,T8@,T9@,T10@,T11@,T12@,T13@,T14@)" />
+      <Member Name="Deconstruct&lt;T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13&gt;(System.Tuple&lt;T1,T2,T3,T4,T5,T6,T7,System.Tuple&lt;T8,T9,T10,T11,T12,T13&gt;&gt;,T1@,T2@,T3@,T4@,T5@,T6@,T7@,T8@,T9@,T10@,T11@,T12@,T13@)" />
+      <Member Name="Deconstruct&lt;T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12&gt;(System.Tuple&lt;T1,T2,T3,T4,T5,T6,T7,System.Tuple&lt;T8,T9,T10,T11,T12&gt;&gt;,T1@,T2@,T3@,T4@,T5@,T6@,T7@,T8@,T9@,T10@,T11@,T12@)" />
+      <Member Name="Deconstruct&lt;T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11&gt;(System.Tuple&lt;T1,T2,T3,T4,T5,T6,T7,System.Tuple&lt;T8,T9,T10,T11&gt;&gt;,T1@,T2@,T3@,T4@,T5@,T6@,T7@,T8@,T9@,T10@,T11@)" />
+      <Member Name="Deconstruct&lt;T1,T2,T3,T4,T5,T6,T7,T8,T9,T10&gt;(System.Tuple&lt;T1,T2,T3,T4,T5,T6,T7,System.Tuple&lt;T8,T9,T10&gt;&gt;,T1@,T2@,T3@,T4@,T5@,T6@,T7@,T8@,T9@,T10@)" />
+      <Member Name="Deconstruct&lt;T1,T2,T3,T4,T5,T6,T7,T8,T9&gt;(System.Tuple&lt;T1,T2,T3,T4,T5,T6,T7,System.Tuple&lt;T8,T9&gt;&gt;,T1@,T2@,T3@,T4@,T5@,T6@,T7@,T8@,T9@)" />
+      <Member Name="Deconstruct&lt;T1,T2,T3,T4,T5,T6,T7,T8&gt;(System.Tuple&lt;T1,T2,T3,T4,T5,T6,T7,System.Tuple&lt;T8&gt;&gt;,T1@,T2@,T3@,T4@,T5@,T6@,T7@,T8@)" />
+      <Member Name="Deconstruct&lt;T1,T2,T3,T4,T5,T6,T7&gt;(System.Tuple&lt;T1,T2,T3,T4,T5,T6,T7&gt;,T1@,T2@,T3@,T4@,T5@,T6@,T7@)" />
+      <Member Name="Deconstruct&lt;T1,T2,T3,T4,T5,T6&gt;(System.Tuple&lt;T1,T2,T3,T4,T5,T6&gt;,T1@,T2@,T3@,T4@,T5@,T6@)" />
+      <Member Name="Deconstruct&lt;T1,T2,T3,T4,T5&gt;(System.Tuple&lt;T1,T2,T3,T4,T5&gt;,T1@,T2@,T3@,T4@,T5@)" />
+      <Member Name="Deconstruct&lt;T1,T2,T3,T4&gt;(System.Tuple&lt;T1,T2,T3,T4&gt;,T1@,T2@,T3@,T4@)" />
+      <Member Name="Deconstruct&lt;T1,T2,T3&gt;(System.Tuple&lt;T1,T2,T3&gt;,T1@,T2@,T3@)" />
+      <Member Name="Deconstruct&lt;T1,T2&gt;(System.Tuple&lt;T1,T2&gt;,T1@,T2@)" />
+      <Member Name="Deconstruct&lt;T1&gt;(System.Tuple&lt;T1&gt;,T1@)" />
+      <Member Name="ToTuple&lt;T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,T15,T16,T17,T18,T19,T20,T21&gt;(System.ValueTuple&lt;T1,T2,T3,T4,T5,T6,T7,System.ValueTuple&lt;T8,T9,T10,T11,T12,T13,T14,System.ValueTuple&lt;T15,T16,T17,T18,T19,T20,T21&gt;&gt;&gt;)" />
+      <Member Name="ToTuple&lt;T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,T15,T16,T17,T18,T19,T20&gt;(System.ValueTuple&lt;T1,T2,T3,T4,T5,T6,T7,System.ValueTuple&lt;T8,T9,T10,T11,T12,T13,T14,System.ValueTuple&lt;T15,T16,T17,T18,T19,T20&gt;&gt;&gt;)" />
+      <Member Name="ToTuple&lt;T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,T15,T16,T17,T18,T19&gt;(System.ValueTuple&lt;T1,T2,T3,T4,T5,T6,T7,System.ValueTuple&lt;T8,T9,T10,T11,T12,T13,T14,System.ValueTuple&lt;T15,T16,T17,T18,T19&gt;&gt;&gt;)" />
+      <Member Name="ToTuple&lt;T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,T15,T16,T17,T18&gt;(System.ValueTuple&lt;T1,T2,T3,T4,T5,T6,T7,System.ValueTuple&lt;T8,T9,T10,T11,T12,T13,T14,System.ValueTuple&lt;T15,T16,T17,T18&gt;&gt;&gt;)" />
+      <Member Name="ToTuple&lt;T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,T15,T16,T17&gt;(System.ValueTuple&lt;T1,T2,T3,T4,T5,T6,T7,System.ValueTuple&lt;T8,T9,T10,T11,T12,T13,T14,System.ValueTuple&lt;T15,T16,T17&gt;&gt;&gt;)" />
+      <Member Name="ToTuple&lt;T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,T15,T16&gt;(System.ValueTuple&lt;T1,T2,T3,T4,T5,T6,T7,System.ValueTuple&lt;T8,T9,T10,T11,T12,T13,T14,System.ValueTuple&lt;T15,T16&gt;&gt;&gt;)" />
+      <Member Name="ToTuple&lt;T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,T15&gt;(System.ValueTuple&lt;T1,T2,T3,T4,T5,T6,T7,System.ValueTuple&lt;T8,T9,T10,T11,T12,T13,T14,System.ValueTuple&lt;T15&gt;&gt;&gt;)" />
+      <Member Name="ToTuple&lt;T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14&gt;(System.ValueTuple&lt;T1,T2,T3,T4,T5,T6,T7,System.ValueTuple&lt;T8,T9,T10,T11,T12,T13,T14&gt;&gt;)" />
+      <Member Name="ToTuple&lt;T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13&gt;(System.ValueTuple&lt;T1,T2,T3,T4,T5,T6,T7,System.ValueTuple&lt;T8,T9,T10,T11,T12,T13&gt;&gt;)" />
+      <Member Name="ToTuple&lt;T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12&gt;(System.ValueTuple&lt;T1,T2,T3,T4,T5,T6,T7,System.ValueTuple&lt;T8,T9,T10,T11,T12&gt;&gt;)" />
+      <Member Name="ToTuple&lt;T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11&gt;(System.ValueTuple&lt;T1,T2,T3,T4,T5,T6,T7,System.ValueTuple&lt;T8,T9,T10,T11&gt;&gt;)" />
+      <Member Name="ToTuple&lt;T1,T2,T3,T4,T5,T6,T7,T8,T9,T10&gt;(System.ValueTuple&lt;T1,T2,T3,T4,T5,T6,T7,System.ValueTuple&lt;T8,T9,T10&gt;&gt;)" />
+      <Member Name="ToTuple&lt;T1,T2,T3,T4,T5,T6,T7,T8,T9&gt;(System.ValueTuple&lt;T1,T2,T3,T4,T5,T6,T7,System.ValueTuple&lt;T8,T9&gt;&gt;)" />
+      <Member Name="ToTuple&lt;T1,T2,T3,T4,T5,T6,T7,T8&gt;(System.ValueTuple&lt;T1,T2,T3,T4,T5,T6,T7,System.ValueTuple&lt;T8&gt;&gt;)" />
+      <Member Name="ToTuple&lt;T1,T2,T3,T4,T5,T6,T7&gt;(System.ValueTuple&lt;T1,T2,T3,T4,T5,T6,T7&gt;)" />
+      <Member Name="ToTuple&lt;T1,T2,T3,T4,T5,T6&gt;(System.ValueTuple&lt;T1,T2,T3,T4,T5,T6&gt;)" />
+      <Member Name="ToTuple&lt;T1,T2,T3,T4,T5&gt;(System.ValueTuple&lt;T1,T2,T3,T4,T5&gt;)" />
+      <Member Name="ToTuple&lt;T1,T2,T3,T4&gt;(System.ValueTuple&lt;T1,T2,T3,T4&gt;)" />
+      <Member Name="ToTuple&lt;T1,T2,T3&gt;(System.ValueTuple&lt;T1,T2,T3&gt;)" />
+      <Member Name="ToTuple&lt;T1,T2&gt;(System.ValueTuple&lt;T1,T2&gt;)" />
+      <Member Name="ToTuple&lt;T1&gt;(System.ValueTuple&lt;T1&gt;)" />
+      <Member Name="ToValueTuple&lt;T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,T15,T16,T17,T18,T19,T20,T21&gt;(System.Tuple&lt;T1,T2,T3,T4,T5,T6,T7,System.Tuple&lt;T8,T9,T10,T11,T12,T13,T14,System.Tuple&lt;T15,T16,T17,T18,T19,T20,T21&gt;&gt;&gt;)" />
+      <Member Name="ToValueTuple&lt;T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,T15,T16,T17,T18,T19,T20&gt;(System.Tuple&lt;T1,T2,T3,T4,T5,T6,T7,System.Tuple&lt;T8,T9,T10,T11,T12,T13,T14,System.Tuple&lt;T15,T16,T17,T18,T19,T20&gt;&gt;&gt;)" />
+      <Member Name="ToValueTuple&lt;T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,T15,T16,T17,T18,T19&gt;(System.Tuple&lt;T1,T2,T3,T4,T5,T6,T7,System.Tuple&lt;T8,T9,T10,T11,T12,T13,T14,System.Tuple&lt;T15,T16,T17,T18,T19&gt;&gt;&gt;)" />
+      <Member Name="ToValueTuple&lt;T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,T15,T16,T17,T18&gt;(System.Tuple&lt;T1,T2,T3,T4,T5,T6,T7,System.Tuple&lt;T8,T9,T10,T11,T12,T13,T14,System.Tuple&lt;T15,T16,T17,T18&gt;&gt;&gt;)" />
+      <Member Name="ToValueTuple&lt;T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,T15,T16,T17&gt;(System.Tuple&lt;T1,T2,T3,T4,T5,T6,T7,System.Tuple&lt;T8,T9,T10,T11,T12,T13,T14,System.Tuple&lt;T15,T16,T17&gt;&gt;&gt;)" />
+      <Member Name="ToValueTuple&lt;T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,T15,T16&gt;(System.Tuple&lt;T1,T2,T3,T4,T5,T6,T7,System.Tuple&lt;T8,T9,T10,T11,T12,T13,T14,System.Tuple&lt;T15,T16&gt;&gt;&gt;)" />
+      <Member Name="ToValueTuple&lt;T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,T15&gt;(System.Tuple&lt;T1,T2,T3,T4,T5,T6,T7,System.Tuple&lt;T8,T9,T10,T11,T12,T13,T14,System.Tuple&lt;T15&gt;&gt;&gt;)" />
+      <Member Name="ToValueTuple&lt;T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14&gt;(System.Tuple&lt;T1,T2,T3,T4,T5,T6,T7,System.Tuple&lt;T8,T9,T10,T11,T12,T13,T14&gt;&gt;)" />
+      <Member Name="ToValueTuple&lt;T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13&gt;(System.Tuple&lt;T1,T2,T3,T4,T5,T6,T7,System.Tuple&lt;T8,T9,T10,T11,T12,T13&gt;&gt;)" />
+      <Member Name="ToValueTuple&lt;T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12&gt;(System.Tuple&lt;T1,T2,T3,T4,T5,T6,T7,System.Tuple&lt;T8,T9,T10,T11,T12&gt;&gt;)" />
+      <Member Name="ToValueTuple&lt;T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11&gt;(System.Tuple&lt;T1,T2,T3,T4,T5,T6,T7,System.Tuple&lt;T8,T9,T10,T11&gt;&gt;)" />
+      <Member Name="ToValueTuple&lt;T1,T2,T3,T4,T5,T6,T7,T8,T9,T10&gt;(System.Tuple&lt;T1,T2,T3,T4,T5,T6,T7,System.Tuple&lt;T8,T9,T10&gt;&gt;)" />
+      <Member Name="ToValueTuple&lt;T1,T2,T3,T4,T5,T6,T7,T8,T9&gt;(System.Tuple&lt;T1,T2,T3,T4,T5,T6,T7,System.Tuple&lt;T8,T9&gt;&gt;)" />
+      <Member Name="ToValueTuple&lt;T1,T2,T3,T4,T5,T6,T7,T8&gt;(System.Tuple&lt;T1,T2,T3,T4,T5,T6,T7,System.Tuple&lt;T8&gt;&gt;)" />
+      <Member Name="ToValueTuple&lt;T1,T2,T3,T4,T5,T6,T7&gt;(System.Tuple&lt;T1,T2,T3,T4,T5,T6,T7&gt;)" />
+      <Member Name="ToValueTuple&lt;T1,T2,T3,T4,T5,T6&gt;(System.Tuple&lt;T1,T2,T3,T4,T5,T6&gt;)" />
+      <Member Name="ToValueTuple&lt;T1,T2,T3,T4,T5&gt;(System.Tuple&lt;T1,T2,T3,T4,T5&gt;)" />
+      <Member Name="ToValueTuple&lt;T1,T2,T3,T4&gt;(System.Tuple&lt;T1,T2,T3,T4&gt;)" />
+      <Member Name="ToValueTuple&lt;T1,T2,T3&gt;(System.Tuple&lt;T1,T2,T3&gt;)" />
+      <Member Name="ToValueTuple&lt;T1,T2&gt;(System.Tuple&lt;T1,T2&gt;)" />
+      <Member Name="ToValueTuple&lt;T1&gt;(System.Tuple&lt;T1&gt;)" />
     </Type>
     <Type Name="System.Type">
       <Member Name="#ctor" />
@@ -9218,7 +9347,207 @@
     <Type Name="System.Runtime.CompilerServices.CompilerGlobalScopeAttribute">
       <Member Name="#ctor" />
     </Type>
-<!-- SMOSIER ADDED API ROOTS FOR our build process -->
+<!-- JCOUV ADDED API ROOTS FOR C# -->
+    <Type Name="System.Runtime.CompilerServices.ITuple">
+      <Member Name="get_Item(System.Int32)" />
+      <Member Name="get_Length" />
+      <Member MemberType="Property" Name="Item(System.Int32)" />
+      <Member MemberType="Property" Name="Length" />
+    </Type>
+    <Type Name="System.Runtime.CompilerServices.TupleElementNamesAttribute">
+      <Member Name="#ctor(System.String[])" />
+      <Member Name="get_TransformNames" />
+      <Member MemberType="Property" Name="TransformNames" />
+    </Type>
+    <Type Name="System.ValueTuple">
+      <Member Name="CompareTo(System.ValueTuple)" />
+      <Member Name="Create" />
+      <Member Name="Create&lt;T1,T2,T3,T4,T5,T6,T7,T8&gt;(T1,T2,T3,T4,T5,T6,T7,T8)" />
+      <Member Name="Create&lt;T1,T2,T3,T4,T5,T6,T7&gt;(T1,T2,T3,T4,T5,T6,T7)" />
+      <Member Name="Create&lt;T1,T2,T3,T4,T5,T6&gt;(T1,T2,T3,T4,T5,T6)" />
+      <Member Name="Create&lt;T1,T2,T3,T4,T5&gt;(T1,T2,T3,T4,T5)" />
+      <Member Name="Create&lt;T1,T2,T3,T4&gt;(T1,T2,T3,T4)" />
+      <Member Name="Create&lt;T1,T2,T3&gt;(T1,T2,T3)" />
+      <Member Name="Create&lt;T1,T2&gt;(T1,T2)" />
+      <Member Name="Create&lt;T1&gt;(T1)" />
+      <Member Name="Equals(System.Object)" />
+      <Member Name="Equals(System.ValueTuple)" />
+      <Member Name="GetHashCode" />
+      <Member Name="ToString" />
+      <Member Status="ImplRoot" Name="System.Collections.IStructuralComparable.CompareTo(System.Object,System.Collections.IComparer)" />
+      <Member Status="ImplRoot" Name="System.Collections.IStructuralEquatable.Equals(System.Object,System.Collections.IEqualityComparer)" />
+      <Member Status="ImplRoot" Name="System.Collections.IStructuralEquatable.GetHashCode(System.Collections.IEqualityComparer)" />
+      <Member Status="ImplRoot" Name="System.IComparable.CompareTo(System.Object)" />
+      <Member Status="ImplRoot" Name="System.Runtime.CompilerServices.ITuple.get_Item(System.Int32)" />
+      <Member Status="ImplRoot" Name="System.Runtime.CompilerServices.ITuple.get_Length" />
+      <Member Status="ImplRoot" MemberType="Property" Name="System.Runtime.CompilerServices.ITuple.Item(System.Int32)" />
+      <Member Status="ImplRoot" MemberType="Property" Name="System.Runtime.CompilerServices.ITuple.Length" />
+    </Type>
+    <Type Name="System.ValueTuple&lt;T1&gt;">
+      <Member MemberType="Field" Name="Item1" />
+      <Member Name="#ctor(T1)" />
+      <Member Name="CompareTo(System.ValueTuple&lt;T1&gt;)" />
+      <Member Name="Equals(System.Object)" />
+      <Member Name="Equals(System.ValueTuple&lt;T1&gt;)" />
+      <Member Name="GetHashCode" />
+      <Member Name="ToString" />
+      <Member Status="ImplRoot" Name="System.Collections.IStructuralComparable.CompareTo(System.Object,System.Collections.IComparer)" />
+      <Member Status="ImplRoot" Name="System.Collections.IStructuralEquatable.Equals(System.Object,System.Collections.IEqualityComparer)" />
+      <Member Status="ImplRoot" Name="System.Collections.IStructuralEquatable.GetHashCode(System.Collections.IEqualityComparer)" />
+      <Member Status="ImplRoot" Name="System.IComparable.CompareTo(System.Object)" />
+      <Member Status="ImplRoot" Name="System.Runtime.CompilerServices.ITuple.get_Item(System.Int32)" />
+      <Member Status="ImplRoot" Name="System.Runtime.CompilerServices.ITuple.get_Length" />
+      <Member Status="ImplRoot" MemberType="Property" Name="System.Runtime.CompilerServices.ITuple.Item(System.Int32)" />
+      <Member Status="ImplRoot" MemberType="Property" Name="System.Runtime.CompilerServices.ITuple.Length" />
+    </Type>
+    <Type Name="System.ValueTuple&lt;T1,T2&gt;">
+      <Member MemberType="Field" Name="Item1" />
+      <Member MemberType="Field" Name="Item2" />
+      <Member Name="#ctor(T1,T2)" />
+      <Member Name="CompareTo(System.ValueTuple&lt;T1,T2&gt;)" />
+      <Member Name="Equals(System.Object)" />
+      <Member Name="Equals(System.ValueTuple&lt;T1,T2&gt;)" />
+      <Member Name="GetHashCode" />
+      <Member Name="ToString" />
+      <Member Status="ImplRoot" Name="System.Collections.IStructuralComparable.CompareTo(System.Object,System.Collections.IComparer)" />
+      <Member Status="ImplRoot" Name="System.Collections.IStructuralEquatable.Equals(System.Object,System.Collections.IEqualityComparer)" />
+      <Member Status="ImplRoot" Name="System.Collections.IStructuralEquatable.GetHashCode(System.Collections.IEqualityComparer)" />
+      <Member Status="ImplRoot" Name="System.IComparable.CompareTo(System.Object)" />
+      <Member Status="ImplRoot" Name="System.Runtime.CompilerServices.ITuple.get_Item(System.Int32)" />
+      <Member Status="ImplRoot" Name="System.Runtime.CompilerServices.ITuple.get_Length" />
+      <Member Status="ImplRoot" MemberType="Property" Name="System.Runtime.CompilerServices.ITuple.Item(System.Int32)" />
+      <Member Status="ImplRoot" MemberType="Property" Name="System.Runtime.CompilerServices.ITuple.Length" />
+    </Type>
+    <Type Name="System.ValueTuple&lt;T1,T2,T3&gt;">
+      <Member MemberType="Field" Name="Item1" />
+      <Member MemberType="Field" Name="Item2" />
+      <Member MemberType="Field" Name="Item3" />
+      <Member Name="#ctor(T1,T2,T3)" />
+      <Member Name="CompareTo(System.ValueTuple&lt;T1,T2,T3&gt;)" />
+      <Member Name="Equals(System.Object)" />
+      <Member Name="Equals(System.ValueTuple&lt;T1,T2,T3&gt;)" />
+      <Member Name="GetHashCode" />
+      <Member Name="ToString" />
+      <Member Status="ImplRoot" Name="System.Collections.IStructuralComparable.CompareTo(System.Object,System.Collections.IComparer)" />
+      <Member Status="ImplRoot" Name="System.Collections.IStructuralEquatable.Equals(System.Object,System.Collections.IEqualityComparer)" />
+      <Member Status="ImplRoot" Name="System.Collections.IStructuralEquatable.GetHashCode(System.Collections.IEqualityComparer)" />
+      <Member Status="ImplRoot" Name="System.IComparable.CompareTo(System.Object)" />
+      <Member Status="ImplRoot" Name="System.Runtime.CompilerServices.ITuple.get_Item(System.Int32)" />
+      <Member Status="ImplRoot" Name="System.Runtime.CompilerServices.ITuple.get_Length" />
+      <Member Status="ImplRoot" MemberType="Property" Name="System.Runtime.CompilerServices.ITuple.Item(System.Int32)" />
+      <Member Status="ImplRoot" MemberType="Property" Name="System.Runtime.CompilerServices.ITuple.Length" />
+    </Type>
+    <Type Name="System.ValueTuple&lt;T1,T2,T3,T4&gt;">
+      <Member MemberType="Field" Name="Item1" />
+      <Member MemberType="Field" Name="Item2" />
+      <Member MemberType="Field" Name="Item3" />
+      <Member MemberType="Field" Name="Item4" />
+      <Member Name="#ctor(T1,T2,T3,T4)" />
+      <Member Name="CompareTo(System.ValueTuple&lt;T1,T2,T3,T4&gt;)" />
+      <Member Name="Equals(System.Object)" />
+      <Member Name="Equals(System.ValueTuple&lt;T1,T2,T3,T4&gt;)" />
+      <Member Name="GetHashCode" />
+      <Member Name="ToString" />
+      <Member Status="ImplRoot" Name="System.Collections.IStructuralComparable.CompareTo(System.Object,System.Collections.IComparer)" />
+      <Member Status="ImplRoot" Name="System.Collections.IStructuralEquatable.Equals(System.Object,System.Collections.IEqualityComparer)" />
+      <Member Status="ImplRoot" Name="System.Collections.IStructuralEquatable.GetHashCode(System.Collections.IEqualityComparer)" />
+      <Member Status="ImplRoot" Name="System.IComparable.CompareTo(System.Object)" />
+      <Member Status="ImplRoot" Name="System.Runtime.CompilerServices.ITuple.get_Item(System.Int32)" />
+      <Member Status="ImplRoot" Name="System.Runtime.CompilerServices.ITuple.get_Length" />
+      <Member Status="ImplRoot" MemberType="Property" Name="System.Runtime.CompilerServices.ITuple.Item(System.Int32)" />
+      <Member Status="ImplRoot" MemberType="Property" Name="System.Runtime.CompilerServices.ITuple.Length" />
+    </Type>
+    <Type Name="System.ValueTuple&lt;T1,T2,T3,T4,T5&gt;">
+      <Member MemberType="Field" Name="Item1" />
+      <Member MemberType="Field" Name="Item2" />
+      <Member MemberType="Field" Name="Item3" />
+      <Member MemberType="Field" Name="Item4" />
+      <Member MemberType="Field" Name="Item5" />
+      <Member Name="#ctor(T1,T2,T3,T4,T5)" />
+      <Member Name="CompareTo(System.ValueTuple&lt;T1,T2,T3,T4,T5&gt;)" />
+      <Member Name="Equals(System.Object)" />
+      <Member Name="Equals(System.ValueTuple&lt;T1,T2,T3,T4,T5&gt;)" />
+      <Member Name="GetHashCode" />
+      <Member Name="ToString" />
+      <Member Status="ImplRoot" Name="System.Collections.IStructuralComparable.CompareTo(System.Object,System.Collections.IComparer)" />
+      <Member Status="ImplRoot" Name="System.Collections.IStructuralEquatable.Equals(System.Object,System.Collections.IEqualityComparer)" />
+      <Member Status="ImplRoot" Name="System.Collections.IStructuralEquatable.GetHashCode(System.Collections.IEqualityComparer)" />
+      <Member Status="ImplRoot" Name="System.IComparable.CompareTo(System.Object)" />
+      <Member Status="ImplRoot" Name="System.Runtime.CompilerServices.ITuple.get_Item(System.Int32)" />
+      <Member Status="ImplRoot" Name="System.Runtime.CompilerServices.ITuple.get_Length" />
+      <Member Status="ImplRoot" MemberType="Property" Name="System.Runtime.CompilerServices.ITuple.Item(System.Int32)" />
+      <Member Status="ImplRoot" MemberType="Property" Name="System.Runtime.CompilerServices.ITuple.Length" />
+    </Type>
+    <Type Name="System.ValueTuple&lt;T1,T2,T3,T4,T5,T6&gt;">
+      <Member MemberType="Field" Name="Item1" />
+      <Member MemberType="Field" Name="Item2" />
+      <Member MemberType="Field" Name="Item3" />
+      <Member MemberType="Field" Name="Item4" />
+      <Member MemberType="Field" Name="Item5" />
+      <Member MemberType="Field" Name="Item6" />
+      <Member Name="#ctor(T1,T2,T3,T4,T5,T6)" />
+      <Member Name="CompareTo(System.ValueTuple&lt;T1,T2,T3,T4,T5,T6&gt;)" />
+      <Member Name="Equals(System.Object)" />
+      <Member Name="Equals(System.ValueTuple&lt;T1,T2,T3,T4,T5,T6&gt;)" />
+      <Member Name="GetHashCode" />
+      <Member Name="ToString" />
+      <Member Status="ImplRoot" Name="System.Collections.IStructuralComparable.CompareTo(System.Object,System.Collections.IComparer)" />
+      <Member Status="ImplRoot" Name="System.Collections.IStructuralEquatable.Equals(System.Object,System.Collections.IEqualityComparer)" />
+      <Member Status="ImplRoot" Name="System.Collections.IStructuralEquatable.GetHashCode(System.Collections.IEqualityComparer)" />
+      <Member Status="ImplRoot" Name="System.IComparable.CompareTo(System.Object)" />
+      <Member Status="ImplRoot" Name="System.Runtime.CompilerServices.ITuple.get_Item(System.Int32)" />
+      <Member Status="ImplRoot" Name="System.Runtime.CompilerServices.ITuple.get_Length" />
+      <Member Status="ImplRoot" MemberType="Property" Name="System.Runtime.CompilerServices.ITuple.Item(System.Int32)" />
+      <Member Status="ImplRoot" MemberType="Property" Name="System.Runtime.CompilerServices.ITuple.Length" />
+    </Type>
+    <Type Name="System.ValueTuple&lt;T1,T2,T3,T4,T5,T6,T7&gt;">
+      <Member MemberType="Field" Name="Item1" />
+      <Member MemberType="Field" Name="Item2" />
+      <Member MemberType="Field" Name="Item3" />
+      <Member MemberType="Field" Name="Item4" />
+      <Member MemberType="Field" Name="Item5" />
+      <Member MemberType="Field" Name="Item6" />
+      <Member MemberType="Field" Name="Item7" />
+      <Member Name="#ctor(T1,T2,T3,T4,T5,T6,T7)" />
+      <Member Name="CompareTo(System.ValueTuple&lt;T1,T2,T3,T4,T5,T6,T7&gt;)" />
+      <Member Name="Equals(System.Object)" />
+      <Member Name="Equals(System.ValueTuple&lt;T1,T2,T3,T4,T5,T6,T7&gt;)" />
+      <Member Name="GetHashCode" />
+      <Member Name="ToString" />
+      <Member Status="ImplRoot" Name="System.Collections.IStructuralComparable.CompareTo(System.Object,System.Collections.IComparer)" />
+      <Member Status="ImplRoot" Name="System.Collections.IStructuralEquatable.Equals(System.Object,System.Collections.IEqualityComparer)" />
+      <Member Status="ImplRoot" Name="System.Collections.IStructuralEquatable.GetHashCode(System.Collections.IEqualityComparer)" />
+      <Member Status="ImplRoot" Name="System.IComparable.CompareTo(System.Object)" />
+      <Member Status="ImplRoot" Name="System.Runtime.CompilerServices.ITuple.get_Item(System.Int32)" />
+      <Member Status="ImplRoot" Name="System.Runtime.CompilerServices.ITuple.get_Length" />
+      <Member Status="ImplRoot" MemberType="Property" Name="System.Runtime.CompilerServices.ITuple.Item(System.Int32)" />
+      <Member Status="ImplRoot" MemberType="Property" Name="System.Runtime.CompilerServices.ITuple.Length" />
+    </Type>
+    <Type Name="System.ValueTuple&lt;T1,T2,T3,T4,T5,T6,T7,TRest&gt;">
+      <Member MemberType="Field" Name="Item1" />
+      <Member MemberType="Field" Name="Item2" />
+      <Member MemberType="Field" Name="Item3" />
+      <Member MemberType="Field" Name="Item4" />
+      <Member MemberType="Field" Name="Item5" />
+      <Member MemberType="Field" Name="Item6" />
+      <Member MemberType="Field" Name="Item7" />
+      <Member MemberType="Field" Name="Rest" />
+      <Member Name="#ctor(T1,T2,T3,T4,T5,T6,T7,TRest)" />
+      <Member Name="CompareTo(System.ValueTuple&lt;T1,T2,T3,T4,T5,T6,T7,TRest&gt;)" />
+      <Member Name="Equals(System.Object)" />
+      <Member Name="Equals(System.ValueTuple&lt;T1,T2,T3,T4,T5,T6,T7,TRest&gt;)" />
+      <Member Name="GetHashCode" />
+      <Member Name="ToString" />
+      <Member Status="ImplRoot" Name="System.Collections.IStructuralComparable.CompareTo(System.Object,System.Collections.IComparer)" />
+      <Member Status="ImplRoot" Name="System.Collections.IStructuralEquatable.Equals(System.Object,System.Collections.IEqualityComparer)" />
+      <Member Status="ImplRoot" Name="System.Collections.IStructuralEquatable.GetHashCode(System.Collections.IEqualityComparer)" />
+      <Member Status="ImplRoot" Name="System.IComparable.CompareTo(System.Object)" />
+      <Member Status="ImplRoot" Name="System.Runtime.CompilerServices.ITuple.get_Item(System.Int32)" />
+      <Member Status="ImplRoot" Name="System.Runtime.CompilerServices.ITuple.get_Length" />
+      <Member Status="ImplRoot" MemberType="Property" Name="System.Runtime.CompilerServices.ITuple.Item(System.Int32)" />
+      <Member Status="ImplRoot" MemberType="Property" Name="System.Runtime.CompilerServices.ITuple.Length" />
+    </Type>
+    <!-- SMOSIER ADDED API ROOTS FOR our build process -->
     <Type Name="System.Runtime.InteropServices.ComVisibleAttribute">
       <Member Name="#ctor(System.Boolean)" />
       <Member Name="get_Value" />
