@@ -1044,10 +1044,17 @@ public class VectorTests {
 	public static int test_0_vector_t_cast_vector_int32 () {
 		var v1 = new Vector<long> (new long [] { 0x123456789abcdef0L, 0x23456789abcdef01L });
 		var v = (Vector<int>)v1;
-		if ((uint)v [0] != 0x9abcdef0 || (uint)v [1] != 0x12345678)
-			return 1;
-		if ((uint)v [2] != 0xabcdef01 || (uint)v [3] != 0x23456789)
-			return 2;
+		if (BitConverter.IsLittleEndian) {
+			if ((uint)v [0] != 0x9abcdef0 || (uint)v [1] != 0x12345678)
+				return 1;
+			if ((uint)v [2] != 0xabcdef01 || (uint)v [3] != 0x23456789)
+				return 2;
+		} else {
+			if ((uint)v [1] != 0x9abcdef0 || (uint)v [0] != 0x12345678)
+				return 1;
+			if ((uint)v [3] != 0xabcdef01 || (uint)v [2] != 0x23456789)
+				return 2;
+		}
 		return 0;
 	}
 
