@@ -2282,3 +2282,6 @@ Globalization.cp_57011 = ISCII Punjabi
 
 ;------------------
 
+; ValueTuple
+ArgumentException_ValueTupleIncorrectType=Argument must be of type {0}.
+ArgumentException_ValueTupleLastArgumentNotAValueTuple=The last element of an eight element ValueTuple must be a ValueTuple.

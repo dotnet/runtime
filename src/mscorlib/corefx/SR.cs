@@ -585,4 +585,14 @@ internal static class SR
     {
         return string.Format(CultureInfo.CurrentCulture, formatString, args);
     }
+
+    internal static string ArgumentException_ValueTupleIncorrectType
+    {
+        get { return Environment.GetResourceString("ArgumentException_ValueTupleIncorrectType"); }
+    }
+
+    internal static string ArgumentException_ValueTupleLastArgumentNotATuple
+    {
+        get { return Environment.GetResourceString("ArgumentException_ValueTupleLastArgumentNotATuple"); }
+    }
 }
