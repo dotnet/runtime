@@ -2301,6 +2301,14 @@ mono_gc_set_skip_thread (gboolean skip)
 	LOCK_GC;
 	info->client_info.gc_disabled = skip;
 	UNLOCK_GC;
+
+	if (skip) {
+		/* If we skip scanning a thread with a non-empty handle stack, we may move an
+		 * object but fail to update the reference in the handle.
+		 */
+		HandleStack *stack = info->client_info.info.handle_stack;
+		g_assert (stack == NULL || mono_handle_stack_is_empty (stack));
+	}
 }
 
 static gboolean
@@ -2398,8 +2406,17 @@ sgen_client_scan_thread_data (void *start_nursery, void *end_nursery, gboolean p
 
 		binary_protocol_scan_stack ((gpointer)mono_thread_info_get_tid (info), info->client_info.stack_start, info->client_info.stack_end, skip_reason);
 
-		if (skip_reason)
+		if (skip_reason) {
+			if (precise) {
+				/* If we skip a thread with a non-empty handle stack and then it
+				 * resumes running we may potentially move an object but fail to
+				 * update the reference in the handle.
+				 */
+				HandleStack *stack = info->client_info.info.handle_stack;
+				g_assert (stack == NULL || mono_handle_stack_is_empty (stack));
+			}
 			continue;
+		}
 
 		g_assert (info->client_info.stack_start);
 		g_assert (info->client_info.stack_end);
