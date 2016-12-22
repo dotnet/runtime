@@ -46,8 +46,8 @@ namespace System.Net
         private HttpListenerContext _context;
         private object _locker = new object();
         private ListenerAsyncResult _forward;
-        internal bool EndCalled;
-        internal bool InGet;
+        internal bool _endCalled;
+        internal bool _inGet;
 
         public ListenerAsyncResult(AsyncCallback cb, object state)
         {
@@ -63,8 +63,8 @@ namespace System.Net
                 return;
             }
             _exception = exc;
-            if (InGet && (exc is ObjectDisposedException))
-                _exception = new HttpListenerException(500, "Listener closed");
+            if (_inGet && (exc is ObjectDisposedException))
+                _exception = new HttpListenerException(500, SR.net_listener_close);
             lock (_locker)
             {
                 _completed = true;
@@ -87,7 +87,7 @@ namespace System.Net
             }
             try
             {
-                ares.cb(ares);
+                ares._cb(ares);
             }
             catch
             {
@@ -127,7 +127,7 @@ namespace System.Net
                     for (int i = 0; next._forward != null; i++)
                     {
                         if (i > 20)
-                            Complete(new HttpListenerException(400, "Too many authentication errors"));
+                            Complete(new HttpListenerException(400, SR.net_listener_auth_errors));
                         next = next._forward;
                     }
                 }

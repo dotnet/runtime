@@ -72,7 +72,7 @@ namespace System.Net
         private bool _ka_set;
         private bool _keep_alive;
         private delegate X509Certificate2 GCCDelegate();
-        private GCCDelegate _gcc_delegate;
+        private GCCDelegate _gccDelegate;
 
         private static byte[] s_100continue = Encoding.ASCII.GetBytes("HTTP/1.1 100 Continue\r\n\r\n");
 
@@ -437,7 +437,7 @@ namespace System.Net
             {
                 HttpConnection cnc = _context.Connection;
                 if (cnc.ClientCertificate == null)
-                    throw new InvalidOperationException("No client certificate");
+                    throw new InvalidOperationException(SR.net_no_client_certificate);
                 int[] errors = cnc.ClientCertificateErrors;
                 if (errors != null && errors.Length > 0)
                     return errors[0];
@@ -613,20 +613,20 @@ namespace System.Net
 
         public IAsyncResult BeginGetClientCertificate(AsyncCallback requestCallback, object state)
         {
-            if (_gcc_delegate == null)
-                _gcc_delegate = new GCCDelegate(GetClientCertificate);
-            return _gcc_delegate.BeginInvoke(requestCallback, state);
+            if (_gccDelegate == null)
+                _gccDelegate = new GCCDelegate(GetClientCertificate);
+            return _gccDelegate.BeginInvoke(requestCallback, state);
         }
 
         public X509Certificate2 EndGetClientCertificate(IAsyncResult asyncResult)
         {
             if (asyncResult == null)
-                throw new ArgumentNullException("asyncResult");
+                throw new ArgumentNullException(nameof(asyncResult));
 
-            if (_gcc_delegate == null)
+            if (_gccDelegate == null)
                 throw new InvalidOperationException();
 
-            return _gcc_delegate.EndInvoke(asyncResult);
+            return _gccDelegate.EndInvoke(asyncResult);
         }
 
         public X509Certificate2 GetClientCertificate()

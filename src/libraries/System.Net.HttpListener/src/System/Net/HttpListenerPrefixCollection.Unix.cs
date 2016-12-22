@@ -106,7 +106,7 @@ namespace System.Net
         {
             _listener.CheckDisposed();
             if (uriPrefix == null)
-                throw new ArgumentNullException("uriPrefix");
+                throw new ArgumentNullException(nameof(uriPrefix));
 
             bool result = _prefixes.Remove(uriPrefix);
             if (result && _listener.IsListening)
