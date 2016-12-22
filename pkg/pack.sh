@@ -1,14 +1,13 @@
 #!/usr/bin/env bash
 
-init_distro_name()
+usage()
 {
-    if [ ! -e /etc/os-release ]; then
-        echo "WARNING: Can not determine runtime id for current distro."
-        export __distro_rid=""
-    else
-        source /etc/os-release
-        export __distro_rid="$ID.$VERSION_ID-x64"
-    fi
+    echo "Usage: $0 --rid <Runtime Identifier>"
+    echo ""
+    echo "Options:"
+    echo "  --rid <Runtime Identifier>         Target Runtime Identifier"
+
+    exit 1
 }
 
 set -e
@@ -25,12 +24,30 @@ done
 __project_dir="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
 __distro_rid=
 
+while [ "$1" != "" ]; do
+    lowerI="$(echo $1 | awk '{print tolower($0)}')"
+    case $lowerI in
+        -h|--help)
+            usage
+            exit 1
+            ;;
+        --rid)
+            shift
+            __distro_rid=$1
+            ;;
+        *)
+        echo "Unknown argument to pack.sh $1"
+        exit 1
+    esac
+    shift
+done
+
 # setup msbuild
 "$__project_dir/init-tools.sh"
 
 # acquire dependencies
 pushd "$__project_dir/deps"
-"$__project_dir/Tools/dotnetcli/dotnet" restore --source "https://dotnet.myget.org/F/dotnet-core/api/v3/index.json" --disable-parallel --packages "$__project_dir/packages"
+"$__project_dir/Tools/dotnetcli/dotnet" restore --configfile "$__project_dir/../NuGet.Config" --disable-parallel --packages "$__project_dir/packages"
 popd
 
 # cleanup existing packages
@@ -44,7 +61,10 @@ if [ "$(uname -s)" == "Darwin" ]; then
     __targets_param="TargetsOSX=true"
 else
     __targets_param="TargetsLinux=true"
-    init_distro_name
+    if [ -z $__distro_rid ]; then
+        echo "Runtime Identifier not defined"
+        exit 1
+    fi
 fi
 
 __common_parameters="/p:$__targets_param /p:DistroRid=$__distro_rid /verbosity:minimal"
