@@ -59,16 +59,29 @@ namespace Microsoft.DotNet.Host.Build
                 configEnv = "Debug";
             }
 
+            string crossEnv = Environment.GetEnvironmentVariable("CROSS") ?? "0";
+            if (string.Equals(crossEnv, "1"))
+            {
+                string rootfsDir = Environment.GetEnvironmentVariable("ROOTFS_DIR");
+                if (string.IsNullOrEmpty(rootfsDir))
+                {
+                    rootfsDir = Path.Combine(Dirs.RepoRoot, "cross", "rootfs", platformEnv);
+                    Environment.SetEnvironmentVariable("ROOTFS_DIR", rootfsDir);
+                }
+            }
+
             c.BuildContext["Configuration"] = configEnv;
             c.BuildContext["Channel"] = Environment.GetEnvironmentVariable("CHANNEL");
             c.BuildContext["Platform"] = platformEnv;
             c.BuildContext["TargetRID"] = targetRID;
             c.BuildContext["TargetFramework"] = targetFramework;
+            c.BuildContext["Cross"] = crossEnv;
 
             c.Info($"Building {c.BuildContext["Configuration"]} to: {Dirs.Output}");
             c.Info("Build Environment:");
             c.Info($" Operating System: {RuntimeEnvironment.OperatingSystem} {RuntimeEnvironment.OperatingSystemVersion}");
             c.Info($" Platform: " + platformEnv);
+            c.Info($" Cross Build: " + int.Parse(crossEnv));
 
             return c.Success();
         }
@@ -311,7 +324,11 @@ namespace Microsoft.DotNet.Host.Build
             var dotnet = DotNetCli.Stage0;
 
             dotnet.Restore("--verbosity", "verbose", "--disable-parallel")
-                .WorkingDirectory(Path.Combine(c.BuildContext.BuildDirectory, "tools"))
+                .WorkingDirectory(Path.Combine(c.BuildContext.BuildDirectory, "tools", "dotnet-deb-tool"))
+                .Execute()
+                .EnsureSuccessful();
+            dotnet.Restore("--verbosity", "verbose", "--disable-parallel", "--infer-runtimes")
+                .WorkingDirectory(Path.Combine(c.BuildContext.BuildDirectory, "tools", "independent"))
                 .Execute()
                 .EnsureSuccessful();
 

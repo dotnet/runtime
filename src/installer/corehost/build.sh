@@ -7,18 +7,35 @@
 init_rid_plat()
 {
     # Detect Distro
-    if [ -e /etc/os-release ]; then
-        source /etc/os-release
-
-        if [[ "$ID" == "rhel" && $VERSION_ID = 7* ]]; then
-            export __rid_plat="rhel.7"
-        elif [[ "$ID" == "centos" && "$VERSION_ID" = "7" ]]; then
-            export __rid_plat="rhel.7"
+    if [ $__CrossBuild == 1 ]; then
+        if [ -z $ROOTFS_DIR ]; then
+            echo "ROOTFS_DIR is not defined."
+            exit -1
         else
-            export __rid_plat="$ID.$VERSION_ID"
+            if [ -e $ROOTFS_DIR/etc/os-release ]; then
+                source $ROOTFS_DIR/etc/os-release
+                if [ "$__runtime_id" ==  "$ID.$VERSION_ID-$__build_arch" ]; then
+                    export __rid_plat="$ID.$VERSION_ID"
+                else
+                    echo "ROOTFS_DIR and Target RID are different. Please use correct rootfs for cross compilation."
+                    exit -1
+                fi
+            fi
         fi
     else
-        export __rid_plat=
+        if [ -e /etc/os-release ]; then
+            source /etc/os-release
+
+            if [[ "$ID" == "rhel" && $VERSION_ID = 7* ]]; then
+                export __rid_plat="rhel.7"
+            elif [[ "$ID" == "centos" && "$VERSION_ID" = "7" ]]; then
+                export __rid_plat="rhel.7"
+            else
+                export __rid_plat="$ID.$VERSION_ID"
+            fi
+        else
+            export __rid_plat=
+        fi
     fi
 }
 
@@ -33,8 +50,8 @@ usage()
     echo "  --fxrver <HostFxr version>        Version of the hostfxr library"
     echo "  --policyver <HostPolicy version>  Version of the hostpolicy library"
     echo "  --commithash <Git commit hash>   Current commit hash of the repo at build time"
-    echo "  --xcompiler <Cross C++ Compiler>  Cross Compiler when the target is arm"
-    echo "                                    e.g.) /usr/bin/arm-linux-gnueabi-g++-4.7"
+    echo "  --cross                           Optional argument to signify cross compilation,"
+    echo "                                    and use ROOTFS_DIR environment variable to find rootfs."
 
     exit 1
 }
@@ -88,9 +105,7 @@ while [ "$1" != "" ]; do
             shift
             __commit_hash=$1
             ;;
-        --xcompiler)
-            shift
-            __CrossCompiler="$1"
+        --cross)
             __CrossBuild=1
             ;;
         *)
@@ -142,7 +157,7 @@ __base_rid=$__rid_plat-$__build_arch_lowcase
 echo "Building Corehost from $DIR to $(pwd)"
 set -x # turn on trace
 if [ $__CrossBuild == 1 ]; then
-    cmake "$DIR" -G "Unix Makefiles" $__cmake_defines -DCLI_CMAKE_RUNTIME_ID:STRING=$__runtime_id -DCLI_CMAKE_HOST_VER:STRING=$__host_ver -DCLI_CMAKE_HOST_FXR_VER:STRING=$__fxr_ver -DCLI_CMAKE_HOST_POLICY_VER:STRING=$__policy_ver -DCLI_CMAKE_PKG_RID:STRING=$__base_rid -DCLI_CMAKE_COMMIT_HASH:STRING=$__commit_hash -DCMAKE_CXX_COMPILER="$__CrossCompiler"
+    cmake "$DIR" -G "Unix Makefiles" $__cmake_defines -DCLI_CMAKE_RUNTIME_ID:STRING=$__runtime_id -DCLI_CMAKE_HOST_VER:STRING=$__host_ver -DCLI_CMAKE_HOST_FXR_VER:STRING=$__fxr_ver -DCLI_CMAKE_HOST_POLICY_VER:STRING=$__policy_ver -DCLI_CMAKE_PKG_RID:STRING=$__base_rid -DCLI_CMAKE_COMMIT_HASH:STRING=$__commit_hash -DCMAKE_TOOLCHAIN_FILE=$DIR/../../cross/$__build_arch_lowcase/toolchain.cmake
 else
     cmake "$DIR" -G "Unix Makefiles" $__cmake_defines -DCLI_CMAKE_RUNTIME_ID:STRING=$__runtime_id -DCLI_CMAKE_HOST_VER:STRING=$__host_ver -DCLI_CMAKE_HOST_FXR_VER:STRING=$__fxr_ver -DCLI_CMAKE_HOST_POLICY_VER:STRING=$__policy_ver -DCLI_CMAKE_PKG_RID:STRING=$__base_rid -DCLI_CMAKE_COMMIT_HASH:STRING=$__commit_hash
 fi
