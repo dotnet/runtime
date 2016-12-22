@@ -1936,6 +1936,11 @@ public:
 
     GenTreePtr gtNewOneConNode(var_types type);
 
+#ifdef FEATURE_SIMD
+    GenTreePtr gtNewSIMDVectorZero(var_types simdType, var_types baseType, unsigned size);
+    GenTreePtr gtNewSIMDVectorOne(var_types simdType, var_types baseType, unsigned size);
+#endif
+
     GenTreeBlk* gtNewBlkOpNode(
         genTreeOps oper, GenTreePtr dst, GenTreePtr srcOrFillVal, GenTreePtr sizeOrClsTok, bool isVolatile);
 
@@ -7120,6 +7125,9 @@ private:
                                  var_types*           baseType,
                                  GenTree**            op1,
                                  GenTree**            op2);
+
+    // Creates a GT_SIMD tree for Abs intrinsic.
+    GenTreePtr impSIMDAbs(CORINFO_CLASS_HANDLE typeHnd, var_types baseType, unsigned simdVectorSize, GenTree* op1);
 
 #if defined(_TARGET_XARCH_) && !defined(LEGACY_BACKEND)
     // Transforms operands and returns the SIMD intrinsic to be applied on
