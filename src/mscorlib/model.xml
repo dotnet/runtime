@@ -9487,17 +9487,6 @@
       <Member Name="#ctor(System.String,System.Exception)" />
       <Member Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
     </Type>
-    <Type Name="System.IO.SearchOption" Condition="FEATURE_LEGACYSURFACE">
-      <Member MemberType="Field" Name="TopDirectoryOnly" />
-      <Member MemberType="Field" Name="AllDirectories" />
-      <Member MemberType="Field" Name="value__" />
-    </Type>
-    <Type Name="System.IO.SeekOrigin" Condition="FEATURE_LEGACYSURFACE">
-      <Member MemberType="Field" Name="Begin" />
-      <Member MemberType="Field" Name="Current" />
-      <Member MemberType="Field" Name="End" />
-      <Member MemberType="Field" Name="value__" />
-    </Type>
     <Type Name="System.IO.Stream">
       <Member MemberType="Field" Name="Null" />
       <Member Name="#ctor" />
@@ -10744,11 +10733,9 @@
     </Type>
     <Type Status="ImplRoot" Name="System.Security.DynamicSecurityMethodAttribute" />
     <Type Status="ImplRoot" Name="System.Security.FrameSecurityDescriptor">
-      <Member MemberType="Field" Name="m_callerToken" Condition="not FEATURE_PAL" />
       <Member MemberType="Field" Name="m_DeclarativeDenials" />
       <Member MemberType="Field" Name="m_DeclarativeRestrictions" />
       <Member MemberType="Field" Name="m_denials" />
-      <Member MemberType="Field" Name="m_impToken" Condition="not FEATURE_PAL" />
       <Member MemberType="Field" Name="m_restriction" />
     </Type>
     <Type Status="ImplRoot" Name="System.Security.PermissionListSet">

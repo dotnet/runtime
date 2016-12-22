@@ -177,7 +177,7 @@
 #include "ipcfunccall.h"
 #include "perflog.h"
 #include "../dlls/mscorrc/resource.h"
-#if defined(FEATURE_LEGACYSURFACE) || defined(FEATURE_USE_LCID)
+#ifdef FEATURE_USE_LCID
 #include "nlsinfo.h"
 #endif 
 #include "util.hpp"
