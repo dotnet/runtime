@@ -1,33 +1,32 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
-  
+
   <Import Project="$(MSBuildProjectName).props" />
-  
+
   <ItemGroup>
     <!-- identity project, runtime specific projects are included by props above -->
     <Project Include="$(MSBuildProjectName).pkgproj" />
   </ItemGroup>
+
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
 
-  <UsingTask TaskName="GetTargetMachineInfo" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll"/>
-  <Target Name="FilterPackageProjects" AfterTargets="FilterProjects">
-    <!-- If we're not on Windows, and RID wasn't specified, get native RID -->
-    <GetTargetMachineInfo Condition="'$(OS)' != 'Windows_NT' AND '$(TestNugetRuntimeId)' == ''">
-      <Output TaskParameter="RuntimeIdentifier" PropertyName="TestNugetRuntimeId" />
-    </GetTargetMachineInfo>
-    
-    <!-- If on Windows and RID isn't specified, filter by OSGroup --> 
-    <ItemGroup Condition="'$(OS)' == 'Windows_NT' AND '$(TestNugetRuntimeId)' == ''">
-      <_projectsToBuild Include="@(Project)" Condition="'%(Project.OSGroup)' == '' OR '%(Project.OSGroup)' == 'Windows_NT'" />
-    </ItemGroup>
-    
-    <!-- If RID is specified, use it -->
-    <ItemGroup Condition="'$(TestNugetRuntimeId)' != ''">
-      <_projectsToBuild Include="@(Project)" Condition="'%(Project.PackageTargetRuntime)' == '$(TestNugetRuntimeId)' OR '%(Project.PackageTargetRuntime)' == ''" />
+  <PropertyGroup>
+    <TraversalBuildDependsOn>
+      FilterProjects;
+      $(TraversalBuildDependsOn);
+    </TraversalBuildDependsOn>
+  </PropertyGroup>
+
+  <Target Name="FilterProjects">
+    <Error Condition="'$(PackageRID)' == ''" Text="'PackageRID' property must be specified."/>
+
+    <!-- Only build packages for current RID -->
+    <ItemGroup>
+      <_projectsToBuild Include="@(Project)" Condition="'%(Project.PackageTargetRuntime)' == '$(PackageRID)' OR '%(Project.PackageTargetRuntime)' == ''" />
     </ItemGroup>
 
-    <ItemGroup Condition="'@(_projectsToBuild)' != ''">
+    <ItemGroup>
       <Project Remove="@(Project)" />
       <Project Include="@(_projectsToBuild)" />
     </ItemGroup>

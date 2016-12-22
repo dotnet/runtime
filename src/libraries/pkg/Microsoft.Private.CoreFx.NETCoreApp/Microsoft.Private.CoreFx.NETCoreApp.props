@@ -1,5 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup Condition="'$(PackageRID)' == ''">
+    <PackageRID>$(RuntimeOS)-$(ArchGroup)</PackageRID>
+    <!-- On Windows x86/x64 use Win7 regardless of current RuntimeOS -->
+    <PackageRID Condition="$(RuntimeOS.StartsWith('win')) AND ('$(ArchGroup)' == 'x86' OR '$(ArchGroup)' == 'x64')">win7-$(ArchGroup)</PackageRID>
+  </PropertyGroup>
+
   <ItemGroup>
     <BuildRID Include="alpine.3.4.3-x64" />
     <BuildRID Include="debian.8-x64" />
@@ -25,6 +31,13 @@
       <Platform>arm64</Platform>
       <OSGroup>Windows_NT</OSGroup>
     </BuildRID>
+
+    <!-- Ensure we have a RID-specific package for the current build, even if it isn't in our official set -->
+    <BuildRID Include="$(PackageRID)" Condition="!@(BuildRID->AnyHaveMetadataValue('Identity', '$(PackageRID)'))">
+      <Platform Condition="'$(ArchGroup)' == 'x64'">amd64</Platform>
+      <Platform Condition="'$(ArchGroup)' != 'x64'">$(ArchGroup)</Platform>
+      <OSGroup>$(BuildConfiguration_OSGroup)</OSGroup>
+    </BuildRID>
   </ItemGroup>
 
   <ItemGroup>
@@ -32,7 +45,7 @@
       <OSGroup Condition="'%(OSGroup)' == ''">Linux</OSGroup>
       <Platform Condition="'%(Platform)' == ''">amd64</Platform>
       <PackageTargetRuntime>%(Identity)</PackageTargetRuntime>
-      <AdditionalProperties>PackageTargetRuntime=%(Identity)</AdditionalProperties>
+      <AdditionalProperties>PackageTargetRuntime=%(Identity);OSGroup=%(OSGroup);Platform=%(Platform)</AdditionalProperties>
     </_project>
     
     <Project Include="@(_project->'$(MSBuildProjectName).pkgproj')" />
