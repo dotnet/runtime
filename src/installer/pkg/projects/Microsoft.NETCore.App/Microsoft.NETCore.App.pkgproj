@@ -51,7 +51,8 @@
     <Dependency Include="@(NETCoreApp10Dependency)">
       <TargetFramework>.NETCoreApp1.0</TargetFramework>
     </Dependency>
-    <Dependency Include="_._">
+    <Dependency Include="Microsoft.NETCore.Platforms">
+      <Version>1.2.0-beta-24821-0</Version>
       <TargetFramework>.NETCoreApp1.1</TargetFramework>
     </Dependency>
   </ItemGroup>
