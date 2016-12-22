@@ -10,24 +10,17 @@
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
 
-  <UsingTask TaskName="GetTargetMachineInfo" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll"/>
-  <Target Name="FilterPackageProjects" BeforeTargets="Build">
-    <!-- If we're not on Windows, and RID wasn't specified, get native RID -->
-    <GetTargetMachineInfo Condition="'$(OS)' != 'Windows_NT' AND '$(TestNugetRuntimeId)' == ''">
-      <Output TaskParameter="RuntimeIdentifier" PropertyName="TestNugetRuntimeId" />
-    </GetTargetMachineInfo>
-    
-    <!-- If on Windows and RID isn't specified, filter by OSGroup --> 
-    <ItemGroup Condition="'$(OS)' == 'Windows_NT' AND '$(TestNugetRuntimeId)' == ''">
-      <_projectsToBuild Include="@(Project)" Condition="'%(Project.OSGroup)' == '' OR '%(Project.OSGroup)' == 'Windows_NT'" />
-    </ItemGroup>
-    
-    <!-- If RID is specified, use it -->
-    <ItemGroup Condition="'$(TestNugetRuntimeId)' != ''">
-      <_projectsToBuild Include="@(Project)" Condition="'%(Project.PackageTargetRuntime)' == '$(TestNugetRuntimeId)' OR '%(Project.PackageTargetRuntime)' == ''" />
+  <Target Name="FilterProjects" BeforeTargets="Build">
+    <Error Condition="'$(PackageRID)' == ''" Text="'PackageRID' property must be specified."/>
+
+    <!-- Build packages for current RID,
+         those that opt into building on the current RID,
+         and those with no RID -->
+    <ItemGroup>
+      <_projectsToBuild Include="@(Project)" Condition="'%(Project.PackageTargetRuntime)' == '$(PackageRID)' OR '%(Project.BuidOnRID)' == '$(PackageRID)' OR '%(Project.PackageTargetRuntime)' == ''" />
     </ItemGroup>
 
-    <ItemGroup Condition="'@(_projectsToBuild)' != ''">
+    <ItemGroup>
       <Project Remove="@(Project)" />
       <Project Include="@(_projectsToBuild)" />
     </ItemGroup>
