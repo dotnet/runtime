@@ -76,6 +76,8 @@ internal partial class VectorTest
         if (VectorAbsTest<Double>.VectorAbs(-1d, 1d) != Pass) returnVal = Fail;
         if (VectorAbsTest<int>.VectorAbs(-1, 1) != Pass) returnVal = Fail;
         if (VectorAbsTest<long>.VectorAbs(-1, 1) != Pass) returnVal = Fail;
+        if (VectorAbsTest<short>.VectorAbs((short)-1, (short)1) != Pass) returnVal = Fail;
+        if (VectorAbsTest<sbyte>.VectorAbs((sbyte)-1, (sbyte)1) != Pass) returnVal = Fail;
         if (Vector4Test.VectorAbs() != Pass) returnVal = Fail;
         if (Vector3Test.VectorAbs() != Pass) returnVal = Fail;
         if (Vector2Test.VectorAbs() != Pass) returnVal = Fail;
@@ -87,7 +89,10 @@ internal partial class VectorTest
         JitLog jitLog = new JitLog();
         if (!jitLog.Check("Abs", "Single")) returnVal = Fail;
         if (!jitLog.Check("Abs", "Double")) returnVal = Fail;
-        // Abs is not an intrinsic for Int32 and Int64, but IS for UInt32 and UInt64
+        // SSE2: Abs is not an intrinsic for Int32 and Int64, but IS for UInt32 and UInt64
+        // SSE3_4: Abs is not an intrinsic for Int64 alone.
+        // Since right now there is no way to know SIMD instruction set used by JIT, 
+        // we will check conservatively on SSE3_4 targets.
         if (!jitLog.Check("System.Numerics.Vector4:Abs")) returnVal = Fail;
         if (!jitLog.Check("System.Numerics.Vector3:Abs")) returnVal = Fail;
         if (!jitLog.Check("System.Numerics.Vector2:Abs")) returnVal = Fail;
@@ -95,6 +100,14 @@ internal partial class VectorTest
         if (!jitLog.Check("Abs", "Byte")) returnVal = Fail;
         if (!jitLog.Check("Abs", "UInt32")) returnVal = Fail;
         if (!jitLog.Check("Abs", "UInt64")) returnVal = Fail;
+
+        // AVX: Abs is not an intrinsic for Int64 alone.
+        if (Vector<int>.Count == 8)
+        {
+            if (!jitLog.Check("Abs", "Int32")) returnVal = Fail;
+            if (!jitLog.Check("Abs", "Int16")) returnVal = Fail;
+            if (!jitLog.Check("Abs", "SByte")) returnVal = Fail;
+        }
         jitLog.Dispose();
 
         return returnVal;
