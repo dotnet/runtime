@@ -12,6 +12,33 @@
     <ShouldCreateLayout>false</ShouldCreateLayout>
   </PropertyGroup>
   
+  <Choose>
+    <When Condition="$(PackageTargetRuntime.StartsWith('win'))">
+      <PropertyGroup>
+        <ApplicationFileExtension>.exe</ApplicationFileExtension>
+        <LibraryFilePrefix></LibraryFilePrefix>
+        <LibraryFileExtension>.dll</LibraryFileExtension>
+        <SymbolFileExtension>.pdb</SymbolFileExtension>
+      </PropertyGroup>
+    </When>
+    <When Condition="$(PackageTargetRuntime.StartsWith('osx'))">
+      <PropertyGroup>
+        <ApplicationFileExtension></ApplicationFileExtension>
+        <LibraryFilePrefix>lib</LibraryFilePrefix>
+        <LibraryFileExtension>.dylib</LibraryFileExtension>
+        <SymbolFileExtension>.dwarf</SymbolFileExtension>
+      </PropertyGroup>
+    </When>
+    <Otherwise>
+      <PropertyGroup>
+        <ApplicationFileExtension></ApplicationFileExtension>
+        <LibraryFilePrefix>lib</LibraryFilePrefix>
+        <LibraryFileExtension>.so</LibraryFileExtension>
+        <SymbolFileExtension>.dbg</SymbolFileExtension>
+      </PropertyGroup>
+    </Otherwise>
+  </Choose>
+  
   <Import Project="$(MSBuildProjectName).props" />
   <Import Project="netcoreapp1.0.props" />
 
@@ -37,16 +64,16 @@
   </ItemGroup>
   
   <ItemGroup Condition="'$(PackageTargetRuntime)' != ''">
-    <ArchitectureSpecificNativeFile Include="$(DotNetHostBinDir)/dotnet.exe" />
-    <ArchitectureSpecificNativeFile Include="$(DotNetHostBinDir)/dotnet.pdb">
+    <ArchitectureSpecificNativeFile Include="$(DotNetHostBinDir)/dotnet$(ApplicationFileExtension)" />
+    <ArchitectureSpecificNativeFile Include="$(DotNetHostBinDir)/dotnet$(SymbolFileExtension)">
       <IsSymbolFile>true</IsSymbolFile>
     </ArchitectureSpecificNativeFile>
-    <ArchitectureSpecificNativeFile Include="$(DotNetHostBinDir)/hostfxr.dll"/>
-    <ArchitectureSpecificNativeFile Include="$(DotNetHostBinDir)/hostfxr.pdb">
+    <ArchitectureSpecificNativeFile Include="$(DotNetHostBinDir)/$(LibraryFilePrefix)hostfxr$(LibraryFileExtension)"/>
+    <ArchitectureSpecificNativeFile Include="$(DotNetHostBinDir)/$(LibraryFilePrefix)hostfxr$(SymbolFileExtension)">
       <IsSymbolFile>true</IsSymbolFile>
     </ArchitectureSpecificNativeFile>
-    <ArchitectureSpecificNativeFile Include="$(DotNetHostBinDir)/hostpolicy.dll"/>
-    <ArchitectureSpecificNativeFile Include="$(DotNetHostBinDir)/hostpolicy.pdb">
+    <ArchitectureSpecificNativeFile Include="$(DotNetHostBinDir)/$(LibraryFilePrefix)hostpolicy$(LibraryFileExtension)"/>
+    <ArchitectureSpecificNativeFile Include="$(DotNetHostBinDir)/$(LibraryFilePrefix)hostpolicy$(SymbolFileExtension)">
       <IsSymbolFile>true</IsSymbolFile>
     </ArchitectureSpecificNativeFile>
 
