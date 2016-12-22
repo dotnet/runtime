@@ -426,6 +426,9 @@ unregister_thread (void *arg)
 	g_assert (mono_thread_info_is_current (info));
 	g_assert (mono_thread_info_is_live (info));
 
+	/* Pump the HP queue while the thread is alive.*/
+	mono_thread_hazardous_try_free_some ();
+
 	small_id = info->small_id;
 
 	/* We only enter the GC unsafe region, as when exiting this function, the thread
@@ -481,8 +484,6 @@ unregister_thread (void *arg)
 
 	/*now it's safe to free the thread info.*/
 	mono_thread_hazardous_try_free (info, free_thread_info);
-	/* Pump the HP queue */
-	mono_thread_hazardous_try_free_some ();
 
 	mono_thread_small_id_free (small_id);
 
