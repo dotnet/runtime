@@ -95,8 +95,8 @@ namespace System.Net
                 throw new ArgumentOutOfRangeException(nameof(count), SR.offset_out_of_range);
 
             HttpStreamAsyncResult ares = new HttpStreamAsyncResult();
-            ares.Callback = cback;
-            ares.State = state;
+            ares._callback = cback;
+            ares._state = state;
             if (_no_more_data)
             {
                 ares.Complete();
@@ -108,23 +108,23 @@ namespace System.Net
             if (count == 0)
             {
                 // got all we wanted, no need to bother the decoder yet
-                ares.Count = nread;
+                ares._count = nread;
                 ares.Complete();
                 return ares;
             }
             if (!_decoder.WantMore)
             {
                 _no_more_data = nread == 0;
-                ares.Count = nread;
+                ares._count = nread;
                 ares.Complete();
                 return ares;
             }
-            ares.Buffer = new byte[8192];
-            ares.Offset = 0;
-            ares.Count = 8192;
+            ares._buffer = new byte[8192];
+            ares._offset = 0;
+            ares._count = 8192;
             ReadBufferState rb = new ReadBufferState(buffer, offset, count, ares);
             rb.InitialCount += nread;
-            base.BeginRead(ares.Buffer, ares.Offset, ares.Count, OnRead, rb);
+            base.BeginRead(ares._buffer, ares._offset, ares._count, OnRead, rb);
             return ares;
         }
 
@@ -135,20 +135,20 @@ namespace System.Net
             try
             {
                 int nread = base.EndRead(base_ares);
-                _decoder.Write(ares.Buffer, ares.Offset, nread);
+                _decoder.Write(ares._buffer, ares._offset, nread);
                 nread = _decoder.Read(rb.Buffer, rb.Offset, rb.Count);
                 rb.Offset += nread;
                 rb.Count -= nread;
                 if (rb.Count == 0 || !_decoder.WantMore || nread == 0)
                 {
                     _no_more_data = !_decoder.WantMore && nread == 0;
-                    ares.Count = rb.InitialCount - rb.Count;
+                    ares._count = rb.InitialCount - rb.Count;
                     ares.Complete();
                     return;
                 }
-                ares.Offset = 0;
-                ares.Count = Math.Min(8192, _decoder.ChunkLeft + 6);
-                base.BeginRead(ares.Buffer, ares.Offset, ares.Count, OnRead, rb);
+                ares._offset = 0;
+                ares._count = Math.Min(8192, _decoder.ChunkLeft + 6);
+                base.BeginRead(ares._buffer, ares._offset, ares._count, OnRead, rb);
             }
             catch (Exception e)
             {
@@ -157,22 +157,22 @@ namespace System.Net
             }
         }
 
-        public override int EndRead(IAsyncResult ares)
+        public override int EndRead(IAsyncResult asyncResult)
         {
             if (_disposed)
                 throw new ObjectDisposedException(GetType().ToString());
 
-            HttpStreamAsyncResult my_ares = ares as HttpStreamAsyncResult;
-            if (ares == null)
-                throw new ArgumentException("Invalid IAsyncResult", "ares");
+            HttpStreamAsyncResult ares = asyncResult as HttpStreamAsyncResult;
+            if (asyncResult == null)
+                throw new ArgumentException(SR.net_io_invalidasyncresult, nameof(asyncResult));
 
-            if (!ares.IsCompleted)
-                ares.AsyncWaitHandle.WaitOne();
+            if (!asyncResult.IsCompleted)
+                asyncResult.AsyncWaitHandle.WaitOne();
 
-            if (my_ares.Error != null)
-                throw new HttpListenerException(400, "I/O operation aborted: " + my_ares.Error.Message);
+            if (ares._error != null)
+                throw new HttpListenerException(400, SR.Format(SR.net_io_operation_aborted, ares._error.Message));
 
-            return my_ares.Count;
+            return ares._count;
         }
 
         public override void Close()

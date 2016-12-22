@@ -336,12 +336,12 @@ namespace System.Net
             {
                 throw new ArgumentException(SR.net_io_invalidasyncresult, nameof(asyncResult));
             }
-            if (ares.EndCalled)
+            if (ares._endCalled)
             {
                 throw new InvalidOperationException(SR.Format(SR.net_io_invalidendcall, nameof(EndGetContext)));
             }
 
-            ares.EndCalled = true;
+            ares._endCalled = true;
 
             if (!ares.IsCompleted)
                 ares.AsyncWaitHandle.WaitOne();
@@ -376,7 +376,7 @@ namespace System.Net
             }
 
             ListenerAsyncResult ares = (ListenerAsyncResult)BeginGetContext(null, null);
-            ares.InGet = true;
+            ares._inGet = true;
 
             return EndGetContext(ares);
         }

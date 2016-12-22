@@ -156,12 +156,12 @@ namespace System.Net
             if (nread > 0 || nread == -1)
             {
                 HttpStreamAsyncResult ares = new HttpStreamAsyncResult();
-                ares.Buffer = buffer;
-                ares.Offset = offset;
-                ares.Count = count;
-                ares.Callback = cback;
-                ares.State = state;
-                ares.SynchRead = Math.Max(0, nread);
+                ares._buffer = buffer;
+                ares._offset = offset;
+                ares._count = count;
+                ares._callback = cback;
+                ares._state = state;
+                ares._synchRead = Math.Max(0, nread);
                 ares.Complete();
                 return ares;
             }
@@ -189,10 +189,9 @@ namespace System.Net
                 HttpStreamAsyncResult r = (HttpStreamAsyncResult)asyncResult;
                 if (!asyncResult.IsCompleted)
                     asyncResult.AsyncWaitHandle.WaitOne();
-                return r.SynchRead;
+                return r._synchRead;
             }
 
-            // Close on exception?
             int nread = _stream.EndRead(asyncResult);
             if (_remainingBody > 0 && nread > 0)
             {

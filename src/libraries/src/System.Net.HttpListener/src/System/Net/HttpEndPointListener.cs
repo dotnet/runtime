@@ -242,7 +242,7 @@ namespace System.Net
                 if (path.StartsWith(ppath))
                 {
                     bestLength = ppath.Length;
-                    bestMatch = p.Listener;
+                    bestMatch = p._listener;
                     prefix = p;
                 }
             }
@@ -321,7 +321,7 @@ namespace System.Net
                 {
                     current = _unhandledPrefixes;
                     future = current != null ? new List<ListenerPrefix>(current) : new List<ListenerPrefix>();
-                    prefix.Listener = listener;
+                    prefix._listener = listener;
                     AddSpecial(future, prefix);
                 } while (Interlocked.CompareExchange(ref _unhandledPrefixes, future, current) != current);
                 return;
@@ -333,7 +333,7 @@ namespace System.Net
                 {
                     current = _allPrefixes;
                     future = current != null ? new List<ListenerPrefix>(current) : new List<ListenerPrefix>();
-                    prefix.Listener = listener;
+                    prefix._listener = listener;
                     AddSpecial(future, prefix);
                 } while (Interlocked.CompareExchange(ref _allPrefixes, future, current) != current);
                 return;

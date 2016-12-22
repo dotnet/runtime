@@ -39,17 +39,17 @@ namespace System.Net
         private ManualResetEvent _handle;
         private bool _completed;
 
-        internal byte[] Buffer;
-        internal int Offset;
-        internal int Count;
-        internal AsyncCallback Callback;
-        internal object State;
-        internal int SynchRead;
-        internal Exception Error;
+        internal byte[] _buffer;
+        internal int _offset;
+        internal int _count;
+        internal AsyncCallback _callback;
+        internal object _state;
+        internal int _synchRead;
+        internal Exception _error;
 
         public void Complete(Exception e)
         {
-            Error = e;
+            _error = e;
             Complete();
         }
 
@@ -64,14 +64,14 @@ namespace System.Net
                 if (_handle != null)
                     _handle.Set();
 
-                if (Callback != null)
-                    Callback.BeginInvoke(this, null, null);
+                if (_callback != null)
+                    _callback.BeginInvoke(this, null, null);
             }
         }
 
         public object AsyncState
         {
-            get { return State; }
+            get { return _state; }
         }
 
         public WaitHandle AsyncWaitHandle
@@ -90,7 +90,7 @@ namespace System.Net
 
         public bool CompletedSynchronously
         {
-            get { return (SynchRead == Count); }
+            get { return (_synchRead == _count); }
         }
 
         public bool IsCompleted
