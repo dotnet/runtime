@@ -2791,9 +2791,14 @@ void Lowering::TreeNodeInfoInitSIMD(GenTree* tree)
             break;
 
         case SIMDIntrinsicAbs:
-            // This gets implemented as bitwise-And operation with a mask
-            // and hence should never see it here.
-            unreached();
+            // float/double vectors: This gets implemented as bitwise-And operation
+            // with a mask and hence should never see  here.
+            //
+            // Must be a Vector<int> or Vector<short> Vector<sbyte>
+            assert(simdTree->gtSIMDBaseType == TYP_INT || simdTree->gtSIMDBaseType == TYP_SHORT ||
+                   simdTree->gtSIMDBaseType == TYP_BYTE);
+            assert(comp->getSIMDInstructionSet() >= InstructionSet_SSE3_4);
+            info->srcCount = 1;
             break;
 
         case SIMDIntrinsicSqrt:
