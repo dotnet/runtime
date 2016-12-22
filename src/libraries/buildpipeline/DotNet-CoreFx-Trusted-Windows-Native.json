@@ -278,28 +278,6 @@
     {
       "enabled": true,
       "continueOnError": false,
-      "alwaysRun": false,
-      "displayName": "Publish to Symbols to Artifact Services",
-      "timeoutInMinutes": 0,
-      "task": {
-        "id": "29827cd1-5c33-4ff0-a817-abd46970ffc4",
-        "versionSpec": "0.*",
-        "definitionType": "task"
-      },
-      "inputs": {
-        "symbolServiceURI": "https://devdiv.artifacts.visualstudio.com/DefaultCollection",
-        "requestName": "$(system.teamProject)/$(Build.BuildNumber)/$(Build.BuildId)",
-        "sourcePath": "$(Build.SourcesDirectory)\\corefx\\bin",
-        "assemblyPath": "",
-        "toLowerCase": "true",
-        "detailedLog": "true",
-        "expirationInDays": "",
-        "usePat": "true"
-      }
-    },
-    {
-      "enabled": true,
-      "continueOnError": false,
       "alwaysRun": true,
       "displayName": "Execute cleanup tasks",
       "timeoutInMinutes": 0,
