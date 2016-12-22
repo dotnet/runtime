@@ -3077,62 +3077,6 @@ print_implemented_interfaces (MonoClass *klass)
 	}
 }
 
-static MonoClass*
-inflate_class_one_arg (MonoClass *gtype, MonoClass *arg0)
-{
-	MonoType *args [1];
-	args [0] = &arg0->byval_arg;
-
-	return mono_class_bind_generic_parameters (gtype, 1, args, FALSE);
-}
-
-static MonoClass*
-array_class_get_if_rank (MonoClass *klass, guint rank)
-{
-	return rank ? mono_array_class_get (klass, rank) : klass;
-}
-
-static void
-fill_valuetype_array_derived_types (MonoClass **valuetype_types, MonoClass *eclass, int rank)
-{
-	valuetype_types [0] = eclass;
-	if (eclass == mono_defaults.int16_class)
-		valuetype_types [1] = mono_defaults.uint16_class;
-	else if (eclass == mono_defaults.uint16_class)
-		valuetype_types [1] = mono_defaults.int16_class;
-	else if (eclass == mono_defaults.int32_class)
-		valuetype_types [1] = mono_defaults.uint32_class;
-	else if (eclass == mono_defaults.uint32_class)
-		valuetype_types [1] = mono_defaults.int32_class;
-	else if (eclass == mono_defaults.int64_class)
-		valuetype_types [1] = mono_defaults.uint64_class;
-	else if (eclass == mono_defaults.uint64_class)
-		valuetype_types [1] = mono_defaults.int64_class;
-	else if (eclass == mono_defaults.byte_class)
-		valuetype_types [1] = mono_defaults.sbyte_class;
-	else if (eclass == mono_defaults.sbyte_class)
-		valuetype_types [1] = mono_defaults.byte_class;
-	else if (eclass->enumtype && mono_class_enum_basetype (eclass))
-		valuetype_types [1] = mono_class_from_mono_type (mono_class_enum_basetype (eclass));
-}
-
-static GENERATE_GET_CLASS_WITH_CACHE (generic_icollection, System.Collections.Generic, ICollection`1)
-static GENERATE_GET_CLASS_WITH_CACHE (generic_ienumerable, System.Collections.Generic, IEnumerable`1)
-static GENERATE_GET_CLASS_WITH_CACHE (generic_ienumerator, System.Collections.Generic, IEnumerator`1)
-static GENERATE_GET_CLASS_WITH_CACHE (generic_ireadonlylist, System.Collections.Generic, IReadOnlyList`1)
-static GENERATE_GET_CLASS_WITH_CACHE (generic_ireadonlycollection, System.Collections.Generic, IReadOnlyCollection`1)
-
-static int
-find_array_interface (MonoClass *klass, const char *name)
-{
-	int i;
-	for (i = 0; i < klass->interface_count; ++i) {
-		if (strcmp (klass->interfaces [i]->name, name) == 0)
-			return i;
-	}
-	return -1;
-}
-
 /*
  * Return the number of virtual methods.
  * Even for interfaces we can't simply return the number of methods as all CLR types are allowed to have static methods.
@@ -3190,15 +3134,6 @@ find_interface (int num_ifaces, MonoClass **interfaces_full, MonoClass *ic)
 			l =  m + 1;
 		}
 	}
-}
-
-static int
-find_interface_offset (int num_ifaces, MonoClass **interfaces_full, int *interface_offsets_full, MonoClass *ic)
-{
-	int i = find_interface (num_ifaces, interfaces_full, ic);
-	if (i >= 0)
-		return interface_offsets_full [i];
-	return -1;
 }
 
 static mono_bool
