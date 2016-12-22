@@ -895,6 +895,19 @@ elif test x$with_runtime_preset = xaot; then
    AOT_RUN_FLAGS=""
 
    DISABLE_MCS_DOCS_default=yes
+elif test x$with_runtime_preset = xwinaot; then
+   DISABLE_MCS_DOCS_default=yes
+   with_winaot_default=yes
+   TEST_PROFILE=winaot
+
+   mono_feature_disable_com='yes'
+   mono_feature_disable_remoting='yes'
+   mono_feature_disable_reflection_emit_save='yes'
+   mono_feature_disable_reflection_emit='yes'
+   mono_feature_disable_appdomains='yes'
+
+   AOT_BUILD_FLAGS="--aot=full,$INVARIANT_AOT_OPTIONS"
+   AOT_RUN_FLAGS="--full-aot"
 else
    with_profile4_x_default=yes
 fi
@@ -954,6 +967,7 @@ AM_CONDITIONAL(INSTALL_TESTING_AOT_HYBRID, [test "x$with_testing_aot_hybrid" != 
 AM_CONDITIONAL(INSTALL_TESTING_AOT_FULL, [test "x$with_testing_aot_full" != "xno"])
 AM_CONDITIONAL(INSTALL_WINAOT, [test "x$with_winaot" != "xno"])
 AM_CONDITIONAL(INSTALL_ORBIS, [test "x$with_orbis" != "xno"])
+AM_CONDITIONAL(FULL_AOT_TESTS, [test "x$with_testing_aot_full" != "xno"] || [test "x$with_winaot" != "xno"])
 
 AC_SUBST(INSTALL_TESTING_AOT_HYBRID)
 AC_SUBST(INSTALL_TESTING_AOT_FULL)
@@ -973,6 +987,9 @@ if test -z "$INSTALL_TESTING_AOT_HYBRID_TRUE"; then :
 fi
 if test -z "$INSTALL_TESTING_AOT_FULL_TRUE"; then :
    default_profile=testing_aot_full
+fi
+if test -z "$INSTALL_WINAOT_TRUE"; then :
+   default_profile=winaot
 fi
 if test -z "$INSTALL_4_x_TRUE"; then :
    default_profile=net_4_x

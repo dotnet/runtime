@@ -1,6 +1,6 @@
 SUBDIRS = assemblyresolve gc-descriptors
 
-if INSTALL_TESTING_AOT_FULL
+if FULL_AOT_TESTS
 FEATUREFUL_RUNTIME_TEST =  
 else
 FEATUREFUL_RUNTIME_TEST = test-appdomain-unload
@@ -47,7 +47,7 @@ MKBUNDLE = \
 	PKG_CONFIG_PATH=$(top_builddir):$(PKG_CONFIG_PATH) \
 	$(RUNTIME) $(CLASS)/mkbundle.exe
 
-if INSTALL_TESTING_AOT_FULL
+if FULL_AOT_TESTS
 PROFILE_MCS_FLAGS = -d:MOBILE,MOBILE_LEGACY,FULL_AOT_DESKTOP 
 endif
 
@@ -65,7 +65,7 @@ MCS = $(MCS_NO_LIB) -lib:$(CLASS)
 
 ILASM = $(TOOLS_RUNTIME) $(mcs_topdir)/class/lib/build/ilasm.exe
 
-if INSTALL_TESTING_AOT_FULL
+if FULL_AOT_TESTS
 TEST_RUNNER = ./test-runner.exe --runtime $(top_builddir)/runtime/mono-wrapper --mono-path "$(CLASS)" --aot-run-flags "$(AOT_RUN_FLAGS)" --aot-build-flags "$(AOT_BUILD_FLAGS)"
 else
 TEST_RUNNER = ./test-runner.exe --runtime $(top_builddir)/runtime/mono-wrapper --mono-path "$(CLASS)"
@@ -714,7 +714,7 @@ endif
 
 PROFILE_DISABLED_TESTS=
 
-if INSTALL_TESTING_AOT_FULL
+if FULL_AOT_TESTS
 # Tests which rely on TypeLoadExceptions
 # In full-aot mode, these cause the relevant methods to be not AOTed.
 PROFILE_DISABLED_TESTS += \
@@ -922,13 +922,13 @@ EXTRA_DIST=test-driver test-runner.cs $(TEST_CS_SRC_DIST) $(TEST_IL_SRC) \
 %.exe: %.il
 	$(ILASM) -out:$@ $<
 
-if !INSTALL_TESTING_AOT_FULL
+if !FULL_AOT_TESTS
 if !INSTALL_TESTING_AOT_HYBRID
 TEST_DRIVER_HARD_KILL_FEATURE=-r:Mono.Posix.dll
 endif
 endif
 
-if INSTALL_TESTING_AOT_FULL
+if FULL_AOT_TESTS
 TEST_DRIVER_DEPEND=TestDriver.dll$(PLATFORM_AOT_SUFFIX)
 else
 TEST_DRIVER_DEPEND=TestDriver.dll
@@ -981,7 +981,7 @@ bug-81466-lib.dll$(PLATFORM_AOT_SUFFIX)	\
 TestingReferenceAssembly.dll$(PLATFORM_AOT_SUFFIX)	\
 TestingReferenceReferenceAssembly.dll$(PLATFORM_AOT_SUFFIX)
 
-if INSTALL_TESTING_AOT_FULL
+if FULL_AOT_TESTS
 prereqs: $(PREREQSI_IL_AOT) $(PREREQSI_CS_AOT) $(AOT_EXTRA_LIBS)
 else
 prereqs: $(PREREQSI_IL) $(PREREQSI_CS)
@@ -1026,7 +1026,7 @@ test-sgen : sgen-tests
 # Precompile the test assemblies in parallel
 compile-tests:
 	$(MAKE) -j4 $(TESTSI_CS) $(TESTSI_IL) $(TESTBS) libtest.la $(PREREQSI_IL) $(PREREQSI_CS)
-if INSTALL_TESTING_AOT_FULL
+if FULL_AOT_TESTS
 	$(MAKE) $(PREREQSI_IL_AOT) $(PREREQSI_CS_AOT) $(AOT_EXTRA_LIBS)
 endif
 
@@ -1235,7 +1235,7 @@ SGEN_REGULAR_TESTS_SRC =	\
 
 SGEN_REGULAR_DISABLED_TESTS=
 
-if INSTALL_TESTING_AOT_FULL
+if FULL_AOT_TESTS
 SGEN_REGULAR_DISABLED_TESTS += \
 	sgen-domain-unload.exe	\
 	sgen-domain-unload-2.exe
@@ -1448,7 +1448,7 @@ imt_big_iface_test.exe: $(TEST_DRIVER_DEPEND) make-imt-test.exe
 EXTRA_DIST += test-inline-call-stack-library.cs test-inline-call-stack.cs
 test-inline-call-stack-library.dll: $(TEST_DRIVER_DEPEND) $(srcdir)/test-inline-call-stack-library.cs
 	$(MCS) -t:library -out:test-inline-call-stack-library.dll $(srcdir)/test-inline-call-stack-library.cs
-if INSTALL_TESTING_AOT_FULL
+if FULL_AOT_TESTS
 	$(RUNTIME) $(AOT_BUILD_FLAGS) $@
 endif
 
@@ -1495,7 +1495,7 @@ bug-81673.exe bug-81673-interface.dll: $(srcdir)/bug-81673.cs $(srcdir)/bug-8167
 	$(MCS) -target:library -out:bug-81673-interface.dll $(srcdir)/bug-81673-interface.cs
 	$(MCS) -out:bug-81673.exe -r:bug-81673-interface.dll $(srcdir)/bug-81673.cs
 	$(MCS) -define:WITH_STOP -target:library -out:bug-81673-interface.dll $(srcdir)/bug-81673-interface.cs
-if INSTALL_TESTING_AOT_FULL
+if FULL_AOT_TESTS
 	$(RUNTIME) $(AOT_BUILD_FLAGS) $@
 endif
 
@@ -1504,7 +1504,7 @@ bug-36848.exe bug-36848-a.dll: $(srcdir)/bug-36848.cs $(srcdir)/bug-36848-a.cs
 	$(MCS) -target:library -out:bug-36848-a.dll $(srcdir)/bug-36848-a.cs
 	$(MCS) -r:bug-36848-a.dll -out:bug-36848.exe $(srcdir)/bug-36848.cs
 	$(MCS) -target:library -out:bug-36848-a.dll $(srcdir)/bug-36848-a.cs /define:WITH_STOP
-if INSTALL_TESTING_AOT_FULL
+if FULL_AOT_TESTS
 	$(RUNTIME) $(AOT_BUILD_FLAGS) $@
 endif
 
@@ -1519,7 +1519,7 @@ bug-81691.exe: bug-81691-b.dll
 EXTRA_DIST += bug-81466-lib.il
 bug-81466-lib.dll: bug-81466-lib.il
 	$(ILASM) /dll /output:bug-81466-lib.dll $(srcdir)/bug-81466-lib.il
-if INSTALL_TESTING_AOT_FULL
+if FULL_AOT_TESTS
 	$(RUNTIME) $(AOT_BUILD_FLAGS) $@
 endif
 bug-81466.exe: bug-81466.il bug-81466-lib.dll
@@ -1528,7 +1528,7 @@ bug-81466.exe: bug-81466.il bug-81466-lib.dll
 EXTRA_DIST += bug-324535-il.il
 bug-324535-il.dll : bug-324535-il.il
 	$(ILASM) /dll /output:bug-324535-il.dll $(srcdir)/bug-324535-il.il
-if INSTALL_TESTING_AOT_FULL
+if FULL_AOT_TESTS
 	$(RUNTIME) $(AOT_BUILD_FLAGS) $@
 endif
 bug-324535.exe : bug-324535.cs bug-324535-il.dll
@@ -1537,7 +1537,7 @@ bug-324535.exe : bug-324535.cs bug-324535-il.dll
 EXTRA_DIST += custom-modifiers.2.cs custom-modifiers-lib.il
 custom-modifiers-lib.dll: custom-modifiers-lib.il
 	$(ILASM) /dll /output:custom-modifiers-lib.dll $(srcdir)/custom-modifiers-lib.il
-if INSTALL_TESTING_AOT_FULL
+if FULL_AOT_TESTS
 	$(RUNTIME) $(AOT_BUILD_FLAGS) $@
 endif
 custom-modifiers.2.exe: custom-modifiers.2.cs custom-modifiers-lib.dll
@@ -1546,7 +1546,7 @@ custom-modifiers.2.exe: custom-modifiers.2.cs custom-modifiers-lib.dll
 EXTRA_DIST += bug-382986-lib.cs
 bug-382986-lib.dll: bug-382986-lib.cs
 	$(MCS) -target:library -out:$@ $(srcdir)/bug-382986-lib.cs
-if INSTALL_TESTING_AOT_FULL
+if FULL_AOT_TESTS
 	$(RUNTIME) $(AOT_BUILD_FLAGS) $@
 endif
 
@@ -1573,14 +1573,14 @@ test-coreclr-security : coreclr-security.exe
 EXTRA_DIST += generic-unboxing.2.il
 generic-unboxing.2.dll : generic-unboxing.2.il
 	$(ILASM) /dll /output:generic-unboxing.2.dll $(srcdir)/generic-unboxing.2.il
-if INSTALL_TESTING_AOT_FULL
+if FULL_AOT_TESTS
 	$(RUNTIME) $(AOT_BUILD_FLAGS) $@
 endif
 
 EXTRA_DIST += generic-boxing.2.il
 generic-boxing.2.dll : generic-boxing.2.il generic-unboxing.2.dll
 	$(ILASM) /dll /output:generic-boxing.2.dll $(srcdir)/generic-boxing.2.il
-if INSTALL_TESTING_AOT_FULL
+if FULL_AOT_TESTS
 	$(RUNTIME) $(AOT_BUILD_FLAGS) $@
 endif
 
@@ -1595,7 +1595,7 @@ generic-box.2.exe : generic-box.2.cs generic-unboxing.2.dll generic-boxing.2.dll
 EXTRA_DIST += generic-delegate2.2.cs generic-delegate2-lib.2.il
 generic-delegate2-lib.2.dll : generic-delegate2-lib.2.il
 	$(ILASM) /dll /output:$@ $(srcdir)/generic-delegate2-lib.2.il
-if INSTALL_TESTING_AOT_FULL
+if FULL_AOT_TESTS
 	$(RUNTIME) $(AOT_BUILD_FLAGS) $@
 endif
 generic-delegate2.2.exe : generic-delegate2.2.cs generic-delegate2-lib.2.dll
@@ -1666,7 +1666,7 @@ GSHARED_TESTS_SRC = \
 
 GSHARED_DISABLED_TESTS=
 
-if INSTALL_TESTING_AOT_FULL
+if FULL_AOT_TESTS
 GSHARED_DISABLED_TESTS += \
 	generic-type-builder.2.exe
 endif

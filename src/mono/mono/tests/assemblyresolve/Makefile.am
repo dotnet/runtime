@@ -2,7 +2,7 @@
 RUNTIME = $(top_builddir)/runtime/mono-wrapper --debug
 MCS = MONO_PATH=$(mcs_topdir)/class/lib/build $(RUNTIME) $(CSC) -noconfig -nologo -debug:portable -target:library
 
-if INSTALL_TESTING_AOT_FULL
+if FULL_AOT_TESTS
 prereq: aot
 else
 prereq: test/asm.dll

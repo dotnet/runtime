@@ -501,7 +501,7 @@ test_sources = 			\
 regtests_UNIVERSAL=basic.exe basic-float.exe basic-long.exe basic-calls.exe objects.exe arrays.exe basic-math.exe exceptions.exe iltests.exe devirtualization.exe generics.exe basic-simd.exe basic-vectors.exe
 iregtests=basic.exe basic-float.exe basic-long.exe basic-calls.exe
 
-if INSTALL_TESTING_AOT_FULL
+if FULL_AOT_TESTS
 regtests= \
 	$(regtests_UNIVERSAL)
 
@@ -513,7 +513,7 @@ endif
 else
 regtests= \
 	$(regtests_UNIVERSAL) \
-	$(regtests_TESTING_AOT_FULL_BLACKLIST)
+	$(regtests_FULL_AOT_TESTS_BLACKLIST)
 endif
 
 if X86
@@ -759,9 +759,9 @@ gsharedvtcheck:
 fullaot_regtests = $(regtests) aot-tests.exe $(if $(GSHAREDVT),gshared.exe)
 
 # Skip aoting the tests that aren't compiled 
-# on the testing_aot_full profile because they're skipped
+# on the full aot profiles because they're skipped
 # on mobile profiles
-FULLAOT_LIBS_TESTING_AOT_FULL_BLACKLIST = \
+FULLAOT_LIBS_FULL_AOT_TESTS_BLACKLIST = \
 	Mono.Posix.dll \
 	System.Configuration.dll
 
@@ -776,13 +776,13 @@ FULLAOT_LIBS_UNIVERSAL = \
 	System.Numerics.dll \
 	System.Numerics.Vectors.dll
 
-if INSTALL_TESTING_AOT_FULL
+if FULL_AOT_TESTS
 FULLAOT_LIBS= \
 	$(FULLAOT_LIBS_UNIVERSAL)
 else
 FULLAOT_LIBS= \
 	$(FULLAOT_LIBS_UNIVERSAL) \
-	$(FULLAOT_LIBS_TESTING_AOT_FULL_BLACKLIST)
+	$(FULLAOT_LIBS_FULL_AOT_TESTS_BLACKLIST)
 endif
 
 FULLAOT_TMP_DIR=$(top_builddir)/mono/mini/fullaot-tmp
