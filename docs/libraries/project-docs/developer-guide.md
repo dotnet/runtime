@@ -158,10 +158,9 @@ One can build in Debug or Release mode from the root by doing `build -release` o
 
 One can build 32- or 64-bit binaries or for any architecture by specifying in the root `build -buildArch=[value]` or in a project `/p:Platform=[value]` after the `msbuild` command.
 
-
 ### Tests
 
-We use the OSS testing framework [xunit](http://xunit.github.io/).
+We use the OSS testing framework [xunit](http://xunit.github.io/) with the [BuildTools test targets](https://github.com/dotnet/buildtools/blob/master/Documentation/test-targets-usage.md).
 
 #### Running tests on the command line
 
@@ -179,9 +178,9 @@ cd src\System.Collections.Immutable\tests
 msbuild System.Collections.Immutable.Tests.builds
 ```
 
-What that will do is to build the tests against all of the available configurations, and then apply some filtering to run only the project configurations that support the default TestTFM(more about this on the next section). This is the prefered way since even though we only run the tests on a specific TFM, we will cross compile the tests against all its available configurations, which is good in order to make sure that you are not breaking the test build. This is also how CI will run the tests, so if you are able to build the .builds file succesfully, chances are that CI will too.
+What that will do is to build the tests against all of the available configurations, and then apply some filtering to run only the project configurations that support the default TestTFM (more about this in the next section). This is the preferred way since even though we only run the tests on a specific TFM, we will cross compile the tests against all its available configurations, which is good in order to make sure that you are not breaking the test build. This is also how CI will run the tests, so if you are able to build the .builds file successfully, chances are that CI will too.
 
-The second way to do it, is to build the .csproj and select to run the `BuildAndTest` target:
+The second way to do it is to build the .csproj and select to run the `BuildAndTest` target:
 
 ```cmd
 cd src\System.Collections.Immutable\tests
@@ -196,28 +195,28 @@ msbuild /t:Test "/p:XunitOptions=-class Test.ClassUnderTests"
 
 There may be multiple projects in some directories so you may need to specify the path to a specific test project to get it to build and run the tests.
 
-Tests participate in the incremental build.  This means that if tests have already been run, and inputs to the incremental build have not changed, rerunning the tests target will not execute the test runner again.  To force re-executing tests in this situation, use `msbuild /t:RebuildAndTest`.
+Tests participate in the incremental build.  This means that if tests have already been run, and inputs to the incremental build have not changed, rerunning the tests target will not execute the test runner again.  To force re-executing tests in this situation, use `/p:ForceRunTests=true`.
 
 #### What is TestTFM and what possible values can it have
 
-`TestTFM` is the Framework that we will use to run your tests on. The same test assembly can be used to run tests on two different frameworks, for example, AssemblyWithMyTests.dll can be used to run your tests in TFM `A` and `B` as long as framworks `A` and `B` provide/support the NetStandard surface area needed for the test assembly to compile. For this reason, when you write your tests, you might want to run them against different frameworks, and the next section will point out how to do that.
+`TestTFM` is the Framework that we will use to run your tests on. The same test assembly can be used to run tests on two different frameworks, for example, AssemblyWithMyTests.dll can be used to run your tests in TFM `A` and `B` as long as frameworks `A` and `B` provide/support the NetStandard surface area needed for the test assembly to compile. For this reason, when you write your tests, you might want to run them against different frameworks, and the next section will point out how to do that.
 
 Some of the possible values for `TestTFM` are:
 
-_**`netcoreapp1.1` or `netcoreapp1.0`**_
+- _**`netcoreapp1.1` or `netcoreapp1.0`**_
 NetStandard implementations that run in CoreCLR.
 
-_**`netcore50` or `uap101aot`**_
+- _**`netcore50` or `uap101aot`**_
 NetStandard implementations for UWP.
 
--**`net46` or `net462` or `net463`**-
+- _**`net46` or `net462` or `net463`**_
 NetStandard implementations for Desktop.
 
 #### Running tests in a different TFM
 
-Each test project corresponds to a test .builds file. There are some tests that might be OS specific, or might be testing API that is available only on some TFMs, which is what this tests.builds files are for. By default, we will build all of these different configurations always, but we will only execute the tests on one TFM. By default, our `TestTFM` is set to `netcoreapp1.1` [here](https://github.com/dotnet/corefx/blob/master/dir.props#L495) which means that we will run tests for the configurations that either:
-- Have `netcoreapp1.1` inside their `<TestTFMs>...</TestTFMs>` clause on the .builds files, or
-- Don't have a `<TestTFMs>...</TestTFMs>` metadata in the .builds file at all because we default it to netcoreapp1.1 [here](https://github.com/dotnet/corefx/blob/master/dir.traversal.targets#L146-L147)
+Each test project corresponds to a test .builds file. There are some tests that might be OS-specific, or might be testing an API that is available only on some TFMs, so the tests.builds specifies the valid configurations. By default, we will build all of these different configurations always, but we will only execute the tests on one TFM. By default, our `TestTFM` is set to `netcoreapp1.1` [here](https://github.com/dotnet/corefx/blob/80ab4804aeb7bed16e64b988c7460c705fddd5cc/dir.props#L529) (see latest value of `DefaultTestTFM` [in dir.props](https://github.com/dotnet/corefx/blob/master/dir.props)), which means that we will run tests for the `Project`s in the .builds file that either:
+- Have `netcoreapp1.1` inside their `TestTFMs` metadata, or
+- Don't have `TestTFMs` metadata, indicating the default TFM.
 
 The rest of the configurations will still get built, but they won't be executed by default, or as part of the CI. In order to use a different TestTFM, pass in the `FilterToTestTFM` property like:
 
@@ -226,9 +225,9 @@ cd src\System.Runtime\tests
 msbuild System.Runtime.Tests.builds /p:FilterToTestTFM=net462
 ```
 
-The previous example will again build the System.Runtime csproj in all of it's different configurations, but will only execute the tests that have `net462` in their `<TestTFMs>...</TestTFMs>` metadata on System.Runtime.Tests.builds
+The previous example will again build the System.Runtime csproj in all of its different configurations, but will only execute the configurations that have `net462` in their `TestTFMs` metadata in System.Runtime.Tests.builds.
 
-One more way to run tests on a specific TFM, is to do it by building the test csproj directly and set the value of `TestTFM` like:
+One more way to run tests on a specific TFM is to build the test csproj directly and set the value of `TestTFM` like:
 
 ```cmd
 cd src\System.Runtime\tests
@@ -237,7 +236,7 @@ msbuild System.Runtime.Tests.csproj /t:BuildAndTest /p:TestTFM=net462
 
 #### Filtering tests using traits
 
-The tests can also be filtered based on xunit trait attributes defined in [`xunit.netcore.extensions`](https://github.com/dotnet/buildtools/tree/master/src/xunit.netcore.extensions). These attributes are to be specified over the test method. The available attributes are:
+The tests can also be filtered based on xunit trait attributes defined in [`xunit.netcore.extensions`](https://github.com/dotnet/buildtools/tree/master/src/xunit.netcore.extensions). These attributes are specified above the test method's definition. The available attributes are:
 
 _**`OuterLoop`:**_
 Tests marked as `Outerloop` are for scenarios that don't need to run every build. They may take longer than normal tests, cover seldom hit code paths, or require special setup or resources to execute. These tests are excluded by default when testing through msbuild but can be enabled manually by adding the  `Outerloop` property e.g. 
@@ -248,53 +247,43 @@ build-managed -Outerloop
 
 To run <b>only</b> the Outerloop tests, use the following command:
 ```cmd
-xunit.console.netcore.exe *.dll -trait category=outerloop
-msbuild *.csproj /p:WithCategories=OuterLoop
+msbuild <csproj_file> /t:BuildAndTest /p:WithCategories=OuterLoop
 ```
 
 _**`PlatformSpecific(TestPlatforms platforms)`:**_
 Use this attribute on test methods to specify that this test may only be run on the specified platforms. This attribute returns the following categories based on platform
+- `nonwindowstests` for tests that don't run on Windows
+- `nonlinuxtests` for tests that don't run on Linux
+- `nonosxtests` for tests that don't run on OS X
 
-       - `nonwindowstests`: for tests that don't run on Windows
-       - `nonlinuxtests`: for tests that don't run on Linux
-       - `nonosxtests`: for tests that don't run on OS X
-
-To run Linux-specific tests on a Linux box, use the following command line:
+When running tests by building a test project, tests that don't apply to the `OSGroup` are not run. For example, to run Linux-specific tests on a Linux box, use the following command line:
 ```sh
-xunit.console.netcore.exe *.dll -notrait category=nonlinuxtests
+<repo-root>/Tools/msbuild.sh <csproj_file> /t:BuildAndTest /p:OSGroup=Linux
 ```
 
 _**`ActiveIssue(int issue, TestPlatforms platforms)`:**_
-Use this attribute over test methods, to skip failing tests only on the specific platforms, if no platforms are specified, then the test is skipped on all platforms. This attribute returns the 'failing' category, so to run all acceptable tests on Linux that are not failing, use the following commandline,
-```sh
-xunit.console.netcore.exe *.dll -notrait category=failing -notrait category=nonlinuxtests
-```
+Use this attribute over test methods to skip failing tests only on the specific platforms; if no platforms are specified, then the test is skipped on all platforms. This attribute returns the 'failing' category, which is disabled by default.
 
-And to run all Linux-compatible tests that are failing:
+To run all Linux-compatible tests that are failing:
 ```sh
-xunit.console.netcore.exe *.dll -trait category=failing -notrait category=nonlinuxtests
+<repo-root>/Tools/msbuild.sh <csproj_file> /t:BuildAndTest /p:OSGroup=Linux /p:WithCategories=failing
 ```
 
 _**A few common examples with the above attributes:**_
 
-- Run all tests acceptable on Windows:
+- Run all tests acceptable on Windows that are not failing:
 ```cmd
-xunit.console.netcore.exe *.dll -notrait category=nonwindowstests
+msbuild <csproj_file> /t:BuildAndTest /p:OSGroup=Windows_NT
 ```
-- Run all inner loop tests acceptable on Linux:
+- Run all outer loop tests acceptable on OS X that are currently associated with active issues:
 ```sh
-xunit.console.netcore.exe *.dll -notrait category=nonlinuxtests -notrait category=OuterLoop
-```
-- Run all outer loop tests acceptable on OS X that are not currently associated with active issues:
-```sh
-xunit.console.netcore.exe *.dll -notrait category=nonosxtests -trait category=OuterLoop -notrait category=failing
-```
-- Run all tests acceptable on Linux that are currently associated with active issues:
-```sh
-xunit.console.netcore.exe *.dll -notrait category=nonlinuxtests -trait category=failing
+<repo-root>/Tools/msbuild.sh <csproj_file> /t:BuildAndTest /p:OSGroup=OSX /p:WithCategories="OuterLoop;failing""
 ```
 
-All the required dlls to run a test project can be found in `bin\tests\{Configration}\{Project}.Tests\netcoreapp1.0\` which should be created when the test project is built.
+Alternatively, you can directly invoke the XUnit executable by changing your working directory to the test execution directory at `bin\tests\{OSPlatformConfig)\{Project}.Tests\{TargetGroup}.{TestTFM}\` which is created when the test project is built.  For example, the following command runs all Linux-supported inner-loop tests:
+```sh
+./corerun xunit.console.netcore.exe <test_dll_file> -notrait category=nonlinuxtests -notrait category=OuterLoop
+```
 
 ### Code Coverage
 
