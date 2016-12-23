@@ -325,7 +325,7 @@ VOID LogSpewAlwaysValist(const char *fmt, va_list args)
 
     needsPrefix = (fmt[strlen(fmt)-1] == '\n');
 
-    int cCountWritten = _vsnprintf(&pBuffer[buflen], BUFFERSIZE-buflen, fmt, args );
+    int cCountWritten = _vsnprintf_s(&pBuffer[buflen], BUFFERSIZE-buflen, _TRUNCATE, fmt, args );
     pBuffer[BUFFERSIZE-1] = 0;
     if (cCountWritten < 0) {
         buflen = BUFFERSIZE - 1;

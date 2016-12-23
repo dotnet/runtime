@@ -168,7 +168,7 @@ void _MulticoreJitTrace(const char * format, ...)
     int len;
 
     len  =  sprintf_s(buffer,       _countof(buffer),       "Mcj TID %04x: ", GetCurrentThreadId());
-    len += _vsnprintf(buffer + len, _countof(buffer) - len, format, args);
+    len += _vsnprintf_s(buffer + len, _countof(buffer) - len, format, args);
     len +=  sprintf_s(buffer + len, _countof(buffer) - len, ", (time=%d ms)\r\n", GetTickCount() - s_startTick);
 
     OutputDebugStringA(buffer);

@@ -893,7 +893,6 @@ Remember to fix the errcode defintion in safecrt.h.
 */
 
 #define _wcslwr_s _wcslwr_unsafe
-#define _snprintf_s _snprintf_unsafe
 #define swscanf_s swscanf
 
 #define _wfopen_s _wfopen_unsafe
@@ -902,8 +901,6 @@ Remember to fix the errcode defintion in safecrt.h.
 #define _strlwr_s _strlwr_unsafe
 
 #define _vscprintf _vscprintf_unsafe
-
-#define vsprintf_s _vsnprintf
 
 extern "C++" {
 
@@ -959,36 +956,17 @@ inline int __cdecl _vscprintf_unsafe(const char *_Format, va_list _ArgList)
         if(buf == nullptr)
             return 0;
 
-        int ret = _vsnprintf(buf, guess, _Format, _ArgList);
+        va_list argListCopy;
+        va_copy(argListCopy, _ArgList);
+        int ret = _vsnprintf_s(buf, guess, _TRUNCATE, _Format, argListCopy);
         free(buf);
+        va_end(argListCopy);
 
         if ((ret != -1) && (ret < guess))
             return ret;
 
         guess *= 2;
     }
-}
-
-inline int __cdecl _vsnprintf_unsafe(char *_Dst, size_t _SizeInWords, size_t _Count, const char *_Format, va_list _ArgList)
-{
-    if (_Count == _TRUNCATE) _Count = _SizeInWords - 1;
-    int ret = _vsnprintf(_Dst, _Count, _Format, _ArgList);
-    _Dst[_SizeInWords - 1] = L'\0';
-    if (ret < 0 && errno == 0)
-    {
-        errno = ERANGE;
-    }
-    return ret;
-}
-
-inline int __cdecl _snprintf_unsafe(char *_Dst, size_t _SizeInWords, size_t _Count, const char *_Format, ...)
-{
-    int ret;
-    va_list _ArgList;
-    va_start(_ArgList, _Format);
-    ret = _vsnprintf_unsafe(_Dst, _SizeInWords, _Count, _Format, _ArgList);
-    va_end(_ArgList);
-    return ret;
 }
 
 inline errno_t __cdecl _wfopen_unsafe(PAL_FILE * *ff, const WCHAR *fileName, const WCHAR *mode)
