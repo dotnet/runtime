@@ -84,7 +84,7 @@ public:
         va_list args)
     {
         char str[4096];
-        int length = PAL__vsnprintf(str, sizeof(str), format, args);
+        int length = _vsnprintf_s(str, sizeof(str), _TRUNCATE, format, args);
         if (length > 0)
         {
             return Output(mask, "%s", str);

@@ -96,7 +96,7 @@ inline HRESULT HRESULT_FROM_WIN32(unsigned long x)
 #define UNREFERENCED_PARAMETER(P)          (void)(P)
 
 #ifdef PLATFORM_UNIX
-#define  _vsnprintf vsnprintf
+#define _vsnprintf_s(string, sizeInBytes, count, format, args) vsnprintf(string, sizeInBytes, format, args)
 #define sprintf_s snprintf
 #define swprintf_s swprintf
 #endif

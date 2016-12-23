@@ -27,7 +27,7 @@ int __cdecl main(int argc, char *argv[])
         return(FAIL);
 
 	checkstr = convert("hello world");
-    testvswp(buf, checkstr);
+    testvswp(buf, _countof(buf), checkstr);
 
     if (memcmp(checkstr, buf, wcslen(checkstr)*2+2) != 0)
     {

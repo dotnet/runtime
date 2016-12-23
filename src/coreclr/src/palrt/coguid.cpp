@@ -17,7 +17,7 @@ STDAPI_(int) StringFromGUID2(REFGUID rguid, LPOLESTR lptsz, int cchMax)
     if (cchMax < 39)
         return 0;
 
-    return swprintf(lptsz, W("{%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x}"),
+    return swprintf_s(lptsz, cchMax, W("{%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x}"),
             rguid.Data1, rguid.Data2, rguid.Data3,
             rguid.Data4[0], rguid.Data4[1],
             rguid.Data4[2], rguid.Data4[3],
