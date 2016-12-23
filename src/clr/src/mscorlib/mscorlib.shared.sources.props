@@ -1172,8 +1172,6 @@
     <BuffersSources Include="$(CoreFxSourcesRoot)\System\Buffers\ArrayPoolEventSource.cs" />
     <BuffersSources Include="$(CoreFxSourcesRoot)\System\Buffers\ConfigurableArrayPool.cs" />
     <BuffersSources Include="$(CoreFxSourcesRoot)\System\Buffers\TlsOverPerCoreLockedStacksArrayPool.cs" />
-    <BuffersSources Include="$(CoreFxSourcesRoot)\System\Buffers\TlsOverPerCoreLockedStacksArrayPool.Windows.cs" Condition="'$(TargetsUnix)' != 'true'" />
-    <BuffersSources Include="$(CoreFxSourcesRoot)\System\Buffers\TlsOverPerCoreLockedStacksArrayPool.Unix.cs" Condition="'$(TargetsUnix)' == 'true'" />
     <BuffersSources Include="$(CoreFxSourcesRoot)\System\Buffers\Utilities.cs" />
     <SecuritySources Include="$(CoreFxSourcesRoot)\System\Security\CryptographicException.cs" />
   </ItemGroup>
