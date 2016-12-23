@@ -32,22 +32,6 @@ typedef char16_t wchar_16; // __wchar_16_cpp (which is defined in palinternal.h)
 extern "C"
 {                               
     int 
-    __cdecl
-    PAL__vsnprintf(
-        LPSTR Buffer, 
-        size_t Count, 
-        LPCSTR Format, 
-        va_list ap);
-    
-    int 
-    __cdecl    
-    PAL__wvsnprintf(
-        LPWSTR Buffer, 
-        size_t Count, 
-        LPCWSTR Format, 
-        va_list ap);
-
-    int 
     __cdecl 
     PAL_vfprintf(
         PAL_FILE *stream, 
@@ -71,47 +55,8 @@ namespace CorUnix
         const char *format, 
         va_list ap);
     	
-    int 
-    InternalWvsnprintf(
-        CPalThread *pthrCurrent, 
-        LPWSTR Buffer, 
-        size_t Count, 
-        LPCWSTR Format, 
-        va_list ap);
-
-    int 
-    InternalVsnprintf(
-        CPalThread *pthrCurrent, 
-        LPSTR Buffer, 
-        size_t Count, 
-        LPCSTR Format, 
-        va_list ap);
-
-    int
-    InternalVfwprintf(
-        CPalThread *pthrCurrent,
-        PAL_FILE *stream,
-        const wchar_16 *format,
-        va_list ap); 
-    
 }
 #else // __cplusplus
-
-    int
-    __cdecl
-    PAL__vsnprintf(
-        LPSTR Buffer, 
-        size_t Count, 
-        LPCSTR Format, 
-        va_list ap);
-
-    int
-    __cdecl
-    PAL__wvsnprintf(
-        LPWSTR Buffer, 
-        size_t Count, 
-        LPCWSTR Format, 
-        va_list ap);
 
     int 
     __cdecl 

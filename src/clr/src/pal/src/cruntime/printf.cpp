@@ -1365,34 +1365,6 @@ int PAL_wvsscanf(LPCWSTR Buffer, LPCWSTR Format, va_list ap)
 
 /*++
 Function:
-  PAL_swprintf
-
-See MSDN doc.
---*/
-int
-__cdecl
-PAL_swprintf(
-          wchar_16 *buffer,
-          const wchar_16 *format,
-          ...)
-{
-    LONG Length;
-    va_list ap;
-
-    PERF_ENTRY(swprintf);
-    ENTRY("PAL_swprintf (buffer=%p, format=%p (%S))\n", buffer, format, format);
-	
-    va_start(ap, format);
-    Length = PAL__wvsnprintf(buffer, 0x7fffffff, format, ap);
-    va_end(ap);
-
-    LOGEXIT("PAL_swprintf returns int %d\n", Length);
-    PERF_EXIT(swprintf);
-    return Length;
-}
-
-/*++
-Function:
   PAL_swscanf
 
 See MSDN doc.
@@ -1416,60 +1388,6 @@ PAL_swscanf(
 
     LOGEXIT("PAL_swscanf returns int %d\n", Length);
     PERF_EXIT(swscanf);
-    return Length;
-}
-
-
-/*++
-Function:
-  PAL_vsprintf
-
-See MSDN doc.
---*/
-int 
-__cdecl 
-PAL_vsprintf(char *buffer, 
-         const char *format, 
-         va_list argptr)
-{
-    LONG Length;
-
-    PERF_ENTRY(vsprintf);
-    ENTRY("PAL_vsprintf (buffer=%p, format=%p (%s), argptr=%p)\n", 
-          buffer, format, format, argptr);
-
-    Length = InternalVsnprintf(CorUnix::InternalGetCurrentThread(), buffer, 0x7fffffff, format, argptr);
-
-    LOGEXIT("PAL_vsprintf returns int %d\n", Length);
-    PERF_EXIT(vsprintf);
-
-    return Length;
-}
-
-
-/*++
-Function:
-  PAL_vswprintf
-
-See MSDN doc.
---*/
-int 
-__cdecl 
-PAL_vswprintf(wchar_16 *buffer, 
-              const wchar_16 *format, 
-              va_list argptr)
-{
-    LONG Length;
-
-    PERF_ENTRY(vswprintf);
-    ENTRY("PAL_vswprintf (buffer=%p, format=%p (%S), argptr=%p)\n", 
-          buffer, format, format, argptr);
-
-    Length = PAL__wvsnprintf(buffer, 0x7fffffff, format, argptr);
-
-    LOGEXIT("PAL_vswprintf returns int %d\n", Length);
-    PERF_EXIT(vswprintf);
-
     return Length;
 }
 

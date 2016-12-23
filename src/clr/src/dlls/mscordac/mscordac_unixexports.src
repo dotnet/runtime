@@ -17,7 +17,6 @@ PAL_fflush
 PAL__flushall
 PAL_free
 PAL_fwprintf
-PAL_swprintf
 PAL_GetPALDirectoryW
 PAL_GetResourceString
 PAL_get_stdout
@@ -35,7 +34,6 @@ PAL_printf
 PAL_qsort
 PAL_Reenter
 PAL_fprintf
-PAL__vsnprintf
 PAL__wcstoui64
 PAL_wcstoul
 PAL_iswprint
@@ -52,6 +50,8 @@ _wcsicmp
 _stricmp
 sprintf_s
 swprintf_s
+vsprintf_s
+_snprintf_s
 _snwprintf_s
 _vsnprintf_s
 _vsnwprintf_s
