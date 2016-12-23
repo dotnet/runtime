@@ -685,14 +685,7 @@ const unsigned char AbbrevTable[] = {
     4, DW_TAG_subprogram, DW_CHILDREN_yes,
         DW_AT_name, DW_FORM_strp, DW_AT_linkage_name, DW_FORM_strp, DW_AT_decl_file, DW_FORM_data1, DW_AT_decl_line, DW_FORM_data1,
         DW_AT_type, DW_FORM_ref4, DW_AT_external, DW_FORM_flag_present,
-        DW_AT_low_pc, DW_FORM_addr, DW_AT_high_pc,
-#if defined(_TARGET_AMD64_)
-        DW_FORM_data8,
-#elif defined(_TARGET_ARM_) || defined(_TARGET_X86_)
-        DW_FORM_data4,
-#else
-#error Unsupported platform!
-#endif
+        DW_AT_low_pc, DW_FORM_addr, DW_AT_high_pc, DW_FORM_size,
         DW_AT_frame_base, DW_FORM_exprloc, 0, 0,
 
     5, DW_TAG_variable, DW_CHILDREN_no,
@@ -721,14 +714,7 @@ const unsigned char AbbrevTable[] = {
     12, DW_TAG_subprogram, DW_CHILDREN_yes,
         DW_AT_name, DW_FORM_strp, DW_AT_linkage_name, DW_FORM_strp, DW_AT_decl_file, DW_FORM_data1, DW_AT_decl_line, DW_FORM_data1,
         DW_AT_type, DW_FORM_ref4, DW_AT_external, DW_FORM_flag_present,
-        DW_AT_low_pc, DW_FORM_addr, DW_AT_high_pc, 
-#if defined(_TARGET_AMD64_)
-        DW_FORM_data8,
-#elif defined(_TARGET_ARM_) || defined(_TARGET_X86_)
-        DW_FORM_data4,
-#else
-#error Unsupported platform!
-#endif
+        DW_AT_low_pc, DW_FORM_addr, DW_AT_high_pc, DW_FORM_size,
         DW_AT_frame_base, DW_FORM_exprloc, DW_AT_object_pointer, DW_FORM_ref4, 0, 0,
 
     13, DW_TAG_formal_parameter, DW_CHILDREN_no,
@@ -742,25 +728,11 @@ const unsigned char AbbrevTable[] = {
         0, 0,
 
     16, DW_TAG_try_block, DW_CHILDREN_no,
-        DW_AT_low_pc, DW_FORM_addr, DW_AT_high_pc,
-#if defined(_TARGET_AMD64_)
-        DW_FORM_data8,
-#elif defined(_TARGET_ARM_)
-        DW_FORM_data4,
-#else
-#error Unsupported platform!
-#endif
+        DW_AT_low_pc, DW_FORM_addr, DW_AT_high_pc, DW_FORM_size,
         0, 0,
 
     17, DW_TAG_catch_block, DW_CHILDREN_no,
-        DW_AT_low_pc, DW_FORM_addr, DW_AT_high_pc,
-#if defined(_TARGET_AMD64_)
-        DW_FORM_data8,
-#elif defined(_TARGET_ARM_)
-        DW_FORM_data4,
-#else
-#error Unsupported platform!
-#endif
+        DW_AT_low_pc, DW_FORM_addr, DW_AT_high_pc, DW_FORM_size,
         0, 0,
 
     0
@@ -792,13 +764,7 @@ struct __attribute__((packed)) DebugInfoCU
 struct __attribute__((packed)) DebugInfoTryCatchSub
 {
     uint8_t m_sub_abbrev;
-#if defined(_TARGET_AMD64_)
-    uint64_t m_sub_low_pc, m_sub_high_pc;
-#elif defined(_TARGET_ARM_)
-    uint32_t m_sub_low_pc, m_sub_high_pc;
-#else
-#error Unsupported platform!
-#endif
+    pc_size_t m_sub_low_pc, m_sub_high_pc;
 };
 
 struct __attribute__((packed)) DebugInfoSub
@@ -808,13 +774,7 @@ struct __attribute__((packed)) DebugInfoSub
     uint32_t m_linkage_name;
     uint8_t m_file, m_line;
     uint32_t m_sub_type;
-#if defined(_TARGET_AMD64_)
-    uint64_t m_sub_low_pc, m_sub_high_pc;
-#elif defined(_TARGET_ARM_) || defined(_TARGET_X86_)
-    uint32_t m_sub_low_pc, m_sub_high_pc;
-#else
-#error Unsupported platform!
-#endif
+    pc_size_t m_sub_low_pc, m_sub_high_pc;
     uint8_t m_sub_loc[2];
 };
 
