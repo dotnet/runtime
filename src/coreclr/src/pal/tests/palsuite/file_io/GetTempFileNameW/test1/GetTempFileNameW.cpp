@@ -104,7 +104,7 @@ int __cdecl main(int argc, char *argv[])
         }
 
         // now verify that it only used the first 3 characters of the prefix
-        swprintf(wTempString, convert("%s\\%s"), wPath, wPrefix);
+        swprintf_s(wTempString, _countof(wTempString), convert("%s\\%s"), wPath, wPrefix);
         if (memcmp(wTempString, wReturnedName, wcslen(wTempString)*sizeof(WCHAR)) == 0)
         {
             free (wPath);

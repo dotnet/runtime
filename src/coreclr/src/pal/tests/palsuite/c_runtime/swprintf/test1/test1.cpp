@@ -31,7 +31,7 @@ int __cdecl main(int argc, char *argv[])
     }
 
     checkstr = convert("hello world");
-    swprintf(buf, convert("hello world"));
+    swprintf_s(buf, _countof(buf), convert("hello world"));
 
     if (memcmp(checkstr, buf, wcslen(checkstr)*2+2) != 0)
     {
