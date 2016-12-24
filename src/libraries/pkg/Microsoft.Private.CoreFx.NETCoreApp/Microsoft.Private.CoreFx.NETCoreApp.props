@@ -27,6 +27,10 @@
     <OfficialBuildRID Include="win7-x64">
       <OSGroup>Windows_NT</OSGroup>
     </OfficialBuildRID>
+    <OfficialBuildRID Include="win8-arm">
+      <Platform>arm</Platform>
+      <OSGroup>Windows_NT</OSGroup>
+    </OfficialBuildRID>
     <OfficialBuildRID Include="win10-arm64">
       <Platform>arm64</Platform>
       <OSGroup>Windows_NT</OSGroup>
