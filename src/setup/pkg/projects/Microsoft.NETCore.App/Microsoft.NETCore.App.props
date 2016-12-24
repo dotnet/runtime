@@ -25,10 +25,17 @@
     <OfficialBuildRID Include="win7-x64">
       <BuidOnRID>win10-x64</BuidOnRID>
     </OfficialBuildRID>
+    <OfficialBuildRID Include="win8-arm">
+      <BuidOnRID>win10-arm</BuidOnRID>
+      <Platform>arm</Platform>
+    </OfficialBuildRID>
     <OfficialBuildRID Include="win10-x86">
       <Platform>x86</Platform>
     </OfficialBuildRID>
     <OfficialBuildRID Include="win10-x64" />
+    <OfficialBuildRID Include="win10-arm">
+      <Platform>arm</Platform>
+    </OfficialBuildRID>
     <OfficialBuildRID Include="win10-arm64">
       <Platform>arm64</Platform>
     </OfficialBuildRID>
