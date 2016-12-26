@@ -1,9 +1,0 @@
-<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="dogfood">
-  <!--Import the settings-->
-  <Import Project="$(_NTDRIVE)$(_NTROOT)\ndp\clr\xplat\SetCrossGen.props" />
-  <PropertyGroup>
-    <BuildSysBinaries>true</BuildSysBinaries>
-    <OutputName>gcinfo_crossgen</OutputName>
-  </PropertyGroup>
-  <Import Project="$(_NTDRIVE)$(_NTROOT)\ndp\clr\src\gcinfo\gcinfo.settings.targets" />
-</Project>

@@ -1,7 +1,0 @@
-<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-    <Import Project="$(_NTDRIVE)$(_NTROOT)\ndp\clr\xplat\SetHostLocal.props"/>
-    <Import Project="$(_NTDRIVE)$(_NTROOT)\ndp\clr\src\toolbox\sos\strike\sos.targets" />
-  <PropertyGroup>
-    <BuildCoreBinaries>true</BuildCoreBinaries>
-  </PropertyGroup>
-</Project>
