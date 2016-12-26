@@ -413,7 +413,10 @@
     <SystemSources Include="$(BclSourcesRoot)\System\ThreadAttributes.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\TimeoutException.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\TimeSpan.cs" />
+    <SystemSources Include="$(BclSourcesRoot)\System\TimeZoneInfo.AdjustmentRule.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\TimeZoneInfo.cs" />
+    <SystemSources Include="$(BclSourcesRoot)\System\TimeZoneInfo.StringSerializer.cs" />
+    <SystemSources Include="$(BclSourcesRoot)\System\TimeZoneInfo.TransitionTime.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\TimeZoneNotFoundException.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\Type.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\TypeAccessException.cs" />
