@@ -1,4 +1,0 @@
-Compat issues with assembly System.Reflection:
-MembersMustExist : Member 'System.Reflection.Assembly.add_ModuleResolve(System.Reflection.ModuleResolveEventHandler)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Reflection.Assembly.remove_ModuleResolve(System.Reflection.ModuleResolveEventHandler)' does not exist in the implementation but it does exist in the contract.
-Total Issues: 2
