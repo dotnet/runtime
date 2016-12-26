@@ -783,7 +783,6 @@
   <ItemGroup>
     <IoSources Include="$(CoreFxSourcesRoot)\System\IO\Path.cs" />
     <IoSources Include="$(CoreFxSourcesRoot)\System\IO\PathInternal.cs" />
-    <IoSources Include="$(CoreFxSourcesRoot)\System\IO\PathInternal.CaseSensitivity.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <IoSources Include="$(CoreFxSourcesRoot)\System\IO\Path.Unix.cs" />
