@@ -2523,51 +2523,56 @@ mono_marshal_spec_from_builder (MonoImage *image, MonoAssembly *assembly,
 }
 #endif /* !DISABLE_REFLECTION_EMIT */
 
-MonoReflectionMarshalAsAttribute*
+MonoReflectionMarshalAsAttributeHandle
 mono_reflection_marshal_as_attribute_from_marshal_spec (MonoDomain *domain, MonoClass *klass,
 							MonoMarshalSpec *spec, MonoError *error)
 {
-	MonoReflectionType *rt;
-	MonoReflectionMarshalAsAttribute *minfo;
-	MonoType *mtype;
-
 	mono_error_init (error);
 	
-	minfo = (MonoReflectionMarshalAsAttribute*)mono_object_new_checked (domain, mono_class_get_marshal_as_attribute_class (), error);
-	if (!minfo)
-		return NULL;
-	minfo->utype = spec->native;
+	MonoReflectionMarshalAsAttributeHandle minfo = MONO_HANDLE_NEW (MonoReflectionMarshalAsAttribute, mono_object_new_checked (domain, mono_class_get_marshal_as_attribute_class (), error));
+	if (!is_ok (error))
+		goto fail;
+	guint32 utype = spec->native;
+	MONO_HANDLE_SETVAL (minfo, utype, guint32, utype);
 
-	switch (minfo->utype) {
+	switch (utype) {
 	case MONO_NATIVE_LPARRAY:
-		minfo->array_subtype = spec->data.array_data.elem_type;
-		minfo->size_const = spec->data.array_data.num_elem;
+		MONO_HANDLE_SETVAL (minfo, array_subtype, guint32, spec->data.array_data.elem_type);
+		MONO_HANDLE_SETVAL (minfo, size_const, gint32, spec->data.array_data.num_elem);
 		if (spec->data.array_data.param_num != -1)
-			minfo->size_param_index = spec->data.array_data.param_num;
+			MONO_HANDLE_SETVAL (minfo, size_param_index, gint16, spec->data.array_data.param_num);
 		break;
 
 	case MONO_NATIVE_BYVALTSTR:
 	case MONO_NATIVE_BYVALARRAY:
-		minfo->size_const = spec->data.array_data.num_elem;
+		MONO_HANDLE_SETVAL (minfo, size_const, gint32, spec->data.array_data.num_elem);
 		break;
 
 	case MONO_NATIVE_CUSTOM:
 		if (spec->data.custom_data.custom_name) {
-			mtype = mono_reflection_type_from_name_checked (spec->data.custom_data.custom_name, klass->image, error);
-			return_val_if_nok  (error, NULL);
+			MonoType *mtype = mono_reflection_type_from_name_checked (spec->data.custom_data.custom_name, klass->image, error);
+			if (!is_ok (error))
+				goto fail;
 
 			if (mtype) {
-				rt = mono_type_get_object_checked (domain, mtype, error);
-				if (!rt)
-					return NULL;
+				MonoReflectionTypeHandle rt = mono_type_get_object_handle (domain, mtype, error);
+				if (!is_ok (error))
+					goto fail;
 
-				MONO_OBJECT_SETREF (minfo, marshal_type_ref, rt);
+				MONO_HANDLE_SET (minfo, marshal_type_ref, rt);
 			}
 
-			MONO_OBJECT_SETREF (minfo, marshal_type, mono_string_new (domain, spec->data.custom_data.custom_name));
+			MonoStringHandle custom_name = mono_string_new_handle (domain, spec->data.custom_data.custom_name, error);
+			if (!is_ok (error))
+				goto fail;
+			MONO_HANDLE_SET (minfo, marshal_type, custom_name);
 		}
-		if (spec->data.custom_data.cookie)
-			MONO_OBJECT_SETREF (minfo, marshal_cookie, mono_string_new (domain, spec->data.custom_data.cookie));
+		if (spec->data.custom_data.cookie) {
+			MonoStringHandle cookie = mono_string_new_handle (domain, spec->data.custom_data.cookie, error);
+			if (!is_ok (error))
+				goto fail;
+			MONO_HANDLE_SET (minfo, marshal_cookie, cookie);
+		}
 		break;
 
 	default:
@@ -2575,6 +2580,8 @@ mono_reflection_marshal_as_attribute_from_marshal_spec (MonoDomain *domain, Mono
 	}
 
 	return minfo;
+fail:
+	return MONO_HANDLE_NEW (MonoReflectionMarshalAsAttribute, NULL);
 }
 
 #ifndef DISABLE_REFLECTION_EMIT

@@ -86,23 +86,7 @@ cache_object_handle (MonoDomain *domain, MonoClass *klass, gpointer item, MonoOb
 	return obj;
 }
 
-
 #define CACHE_OBJECT(t,p,o,k) ((t) (cache_object (domain, (k), (p), (o))))
-
-
-static inline MonoObject*
-check_object (MonoDomain* domain, MonoClass *klass, gpointer item)
-{
-	ReflectedEntry e;
-	e.item = item;
-	e.refclass = klass;
-	mono_domain_lock (domain);
-	if (!domain->refobject_hash)
-		domain->refobject_hash = mono_g_hash_table_new_type (reflected_hash, reflected_equal, MONO_HASH_VALUE_GC, MONO_ROOT_SOURCE_DOMAIN, "domain reflection objects table");
-	MonoObject *obj = (MonoObject*) mono_g_hash_table_lookup (domain->refobject_hash, &e);
-	mono_domain_unlock (domain);
-	return obj;
-}
 
 static inline MonoObjectHandle
 check_object_handle (MonoDomain* domain, MonoClass *klass, gpointer item)
@@ -119,23 +103,7 @@ check_object_handle (MonoDomain* domain, MonoClass *klass, gpointer item)
 }
 
 
-typedef MonoObject* (*ReflectionCacheConstructFunc) (MonoDomain*, MonoClass*, gpointer, gpointer, MonoError *);
-
 typedef MonoObjectHandle (*ReflectionCacheConstructFunc_handle) (MonoDomain*, MonoClass*, gpointer, gpointer, MonoError *);
-
-
-static inline MonoObject*
-check_or_construct (MonoDomain *domain, MonoClass *klass, gpointer item, gpointer user_data, MonoError *error, ReflectionCacheConstructFunc construct)
-{
-	mono_error_init (error);
-	MonoObject *obj = check_object (domain, klass, item);
-	if (obj)
-		return obj;
-	obj = construct (domain, klass, item, user_data, error);
-	return_val_if_nok (error, NULL);
-	/* note no caching if there was an error in construction */
-	return cache_object (domain, klass, item, obj);
-}
 
 static inline MonoObjectHandle
 check_or_construct_handle (MonoDomain *domain, MonoClass *klass, gpointer item, gpointer user_data, MonoError *error, ReflectionCacheConstructFunc_handle construct)
@@ -150,8 +118,6 @@ check_or_construct_handle (MonoDomain *domain, MonoClass *klass, gpointer item, 
 	return cache_object_handle (domain, klass, item, obj);
 }
 
-
-#define CHECK_OR_CONSTRUCT(t,p,k,construct,ud) ((t) check_or_construct (domain, (k), (p), (ud), error, (ReflectionCacheConstructFunc) (construct)))
 
 #define CHECK_OR_CONSTRUCT_HANDLE(t,p,k,construct,ud) ((t) check_or_construct_handle (domain, (k), (p), (ud), error, (ReflectionCacheConstructFunc_handle) (construct)))
 

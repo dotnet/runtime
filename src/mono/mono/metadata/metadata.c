@@ -2891,8 +2891,6 @@ mono_metadata_get_generic_inst (int type_argc, MonoType **type_argv)
 	gboolean is_open;
 	int i;
 	int size = MONO_SIZEOF_GENERIC_INST + type_argc * sizeof (MonoType *);
-	CollectData data;
-	MonoImageSet *set;
 
 	for (i = 0; i < type_argc; ++i)
 		if (mono_class_is_open_constructed_type (type_argv [i]))
@@ -2905,9 +2903,34 @@ mono_metadata_get_generic_inst (int type_argc, MonoType **type_argv)
 	ginst->type_argc = type_argc;
 	memcpy (ginst->type_argv, type_argv, type_argc * sizeof (MonoType *));
 
+	return mono_metadata_get_canonical_generic_inst (ginst);
+}
+
+
+/**
+ * mono_metadata_get_canonical_generic_inst:
+ * @candidate: an arbitrary generic instantiation
+ *
+ * Returns the canonical generic instantiation that represents the given
+ * candidate by identifying the image set for the candidate instantiation and
+ * finding the instance in the image set or adding a copy of the given instance
+ * to the image set.
+ *
+ * The returned MonoGenericInst has its own copy of the list of types.  The list
+ * passed in the argument can be freed, modified or disposed of.
+ *
+ */
+MonoGenericInst *
+mono_metadata_get_canonical_generic_inst (MonoGenericInst *candidate)
+{
+	CollectData data;
+	int type_argc = candidate->type_argc;
+	gboolean is_open = candidate->is_open;
+	MonoImageSet *set;
+
 	collect_data_init (&data);
 
-	collect_ginst_images (ginst, &data);
+	collect_ginst_images (candidate, &data);
 
 	set = get_image_set (data.images, data.nimages);
 
@@ -2915,8 +2938,9 @@ mono_metadata_get_generic_inst (int type_argc, MonoType **type_argv)
 
 	mono_image_set_lock (set);
 
-	ginst = (MonoGenericInst *)g_hash_table_lookup (set->ginst_cache, ginst);
+	MonoGenericInst *ginst = (MonoGenericInst *)g_hash_table_lookup (set->ginst_cache, candidate);
 	if (!ginst) {
+		int size = MONO_SIZEOF_GENERIC_INST + type_argc * sizeof (MonoType *);
 		ginst = (MonoGenericInst *)mono_image_set_alloc0 (set, size);
 #ifndef MONO_SMALL_CONFIG
 		ginst->id = ++next_generic_inst_id;
@@ -2924,8 +2948,8 @@ mono_metadata_get_generic_inst (int type_argc, MonoType **type_argv)
 		ginst->is_open = is_open;
 		ginst->type_argc = type_argc;
 
-		for (i = 0; i < type_argc; ++i)
-			ginst->type_argv [i] = mono_metadata_type_dup (NULL, type_argv [i]);
+		for (int i = 0; i < type_argc; ++i)
+			ginst->type_argv [i] = mono_metadata_type_dup (NULL, candidate->type_argv [i]);
 
 		g_hash_table_insert (set->ginst_cache, ginst, ginst);
 	}

@@ -775,6 +775,9 @@ MonoGenericInst *
 mono_metadata_get_generic_inst              (int 		    type_argc,
 					     MonoType 		  **type_argv);
 
+MonoGenericInst *
+mono_metadata_get_canonical_generic_inst    (MonoGenericInst *candidate);
+
 MonoGenericClass *
 mono_metadata_lookup_generic_class          (MonoClass		   *gclass,
 					     MonoGenericInst	   *inst,

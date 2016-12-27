@@ -730,11 +730,6 @@ struct _MonoReflectionMethod {
 /* Safely access System.Reflection.MonoMethod from native code */
 TYPED_HANDLE_DECL (MonoReflectionMethod);
 
-typedef struct _MonoReflectionGenericMethod MonoReflectionGenericMethod;
-struct _MonoReflectionGenericMethod {
-	MonoReflectionMethod method;
-};
-
 struct _MonoDelegate {
 	MonoObject object;
 	/* The compiled code of the target method */
@@ -772,11 +767,17 @@ struct _MonoReflectionField {
 	guint32 attrs;
 };
 
+/* Safely access System.Reflection.MonoField from native code */
+TYPED_HANDLE_DECL (MonoReflectionField);
+
 struct _MonoReflectionProperty {
 	MonoObject object;
 	MonoClass *klass;
 	MonoProperty *property;
 };
+
+/* Safely access System.Reflection.MonoProperty from native code */
+TYPED_HANDLE_DECL (MonoReflectionProperty);
 
 /*This is System.EventInfo*/
 struct _MonoReflectionEvent {
@@ -784,11 +785,17 @@ struct _MonoReflectionEvent {
 	MonoObject *cached_add_event;
 };
 
+/* Safely access System.Reflection.EventInfo from native code */
+TYPED_HANDLE_DECL (MonoReflectionEvent);
+
 typedef struct {
 	MonoReflectionEvent object;
 	MonoClass *klass;
 	MonoEvent *event;
 } MonoReflectionMonoEvent;
+
+/* Safely access Systme.Reflection.MonoEvent from native code */
+TYPED_HANDLE_DECL (MonoReflectionMonoEvent);
 
 typedef struct {
 	MonoObject object;
@@ -801,6 +808,9 @@ typedef struct {
 	MonoObject *MarshalAsImpl;
 } MonoReflectionParameter;
 
+/* Safely access System.Reflection.ParameterInfo from native code */
+TYPED_HANDLE_DECL (MonoReflectionParameter);
+
 struct _MonoReflectionMethodBody {
 	MonoObject object;
 	MonoArray *clauses;
@@ -810,6 +820,9 @@ struct _MonoReflectionMethodBody {
 	guint32 local_var_sig_token;
 	guint32 max_stack;
 };
+
+/* Safely access System.Reflection.MethodBody from native code */
+TYPED_HANDLE_DECL (MonoReflectionMethodBody);
 
 struct _MonoReflectionAssembly {
 	MonoObject object;
@@ -917,12 +930,19 @@ typedef struct {
 	gint32 handler_length;
 } MonoReflectionExceptionHandlingClause;
 
+
+/* Safely access System.Reflection.ExceptionHandlingClause from native code */
+TYPED_HANDLE_DECL (MonoReflectionExceptionHandlingClause);
+
 typedef struct {
 	MonoObject object;
 	MonoReflectionType *local_type;
 	MonoBoolean is_pinned;
 	guint16 local_index;
 } MonoReflectionLocalVariableInfo;
+
+/* Safely access System.Reflection.LocalVariableInfo from native code */
+TYPED_HANDLE_DECL (MonoReflectionLocalVariableInfo);
 
 typedef struct {
 	/*
@@ -1258,6 +1278,9 @@ typedef struct {
 	gint16 size_param_index;
 } MonoReflectionMarshalAsAttribute;
 
+/* Safely access System.Runtime.InteropServices.MarshalAsAttribute */
+TYPED_HANDLE_DECL (MonoReflectionMarshalAsAttribute);
+
 typedef struct {
 	MonoObject object;
 	gint32 call_conv;
@@ -1372,7 +1395,7 @@ void        mono_reflection_register_with_runtime (MonoReflectionType *type);
 void        mono_reflection_create_custom_attr_data_args (MonoImage *image, MonoMethod *method, const guchar *data, guint32 len, MonoArray **typed_args, MonoArray **named_args, CattrNamedArg **named_arg_info, MonoError *error);
 MonoMethodSignature * mono_reflection_lookup_signature (MonoImage *image, MonoMethod *method, guint32 token, MonoError *error);
 
-MonoArray* mono_param_get_objects_internal  (MonoDomain *domain, MonoMethod *method, MonoClass *refclass, MonoError *error);
+MonoArrayHandle mono_param_get_objects_internal  (MonoDomain *domain, MonoMethod *method, MonoClass *refclass, MonoError *error);
 
 MonoClass*
 mono_class_bind_generic_parameters (MonoClass *klass, int type_argc, MonoType **types, gboolean is_dynamic);
@@ -1390,7 +1413,8 @@ ves_icall_SignatureHelper_get_signature_local (MonoReflectionSigHelper *sig);
 MonoArray *
 ves_icall_SignatureHelper_get_signature_field (MonoReflectionSigHelper *sig);
 
-MonoReflectionMarshalAsAttribute* mono_reflection_marshal_as_attribute_from_marshal_spec (MonoDomain *domain, MonoClass *klass, MonoMarshalSpec *spec, MonoError *error);
+MonoReflectionMarshalAsAttributeHandle
+mono_reflection_marshal_as_attribute_from_marshal_spec (MonoDomain *domain, MonoClass *klass, MonoMarshalSpec *spec, MonoError *error);
 
 gpointer
 mono_reflection_lookup_dynamic_token (MonoImage *image, guint32 token, gboolean valid_token, MonoClass **handle_class, MonoGenericContext *context, MonoError *error);
