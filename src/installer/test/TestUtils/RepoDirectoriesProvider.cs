@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.DotNet.Cli.Build.Framework;
 
 namespace Microsoft.DotNet.CoreSetup.Test
 {
@@ -33,18 +34,16 @@ namespace Microsoft.DotNet.CoreSetup.Test
         {
             _repoRoot = repoRoot ?? Path.Combine(Directory.GetCurrentDirectory(), "..", "..");
             
-            var currentRid = GetCurrentRid(_repoRoot);
+            string baseArtifactsFolder = artifacts ?? Path.Combine(_repoRoot, "artifacts");
 
-            _artifacts = artifacts ?? Path.Combine(_repoRoot, "artifacts", currentRid);
+            var targetRID = Environment.GetEnvironmentVariable("TEST_TARGETRID");
+
+            _artifacts = Path.Combine(baseArtifactsFolder, targetRID);
+
             _nugetPackages = nugetPackages ?? Path.Combine(_repoRoot, ".nuget", "packages");
             _corehostPackages = corehostPackages ?? Path.Combine(_artifacts, "corehost");
             _corehostDummyPackages = corehostDummyPackages ?? Path.Combine(_artifacts, "corehostdummypackages");
             _builtDotnet = builtDotnet ?? Path.Combine(_artifacts, "intermediate", "sharedFrameworkPublish");
-        }
-
-        private string GetCurrentRid(string repoRoot)
-        {
-            return new DotNetCli(DotNetCli.GetStage0Path(repoRoot)).GetRuntimeId();
         }
     }
 }

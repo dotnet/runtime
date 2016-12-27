@@ -37,6 +37,10 @@ init_rid_plat()
             export __rid_plat=
         fi
     fi
+
+    if [ $__linkPortable == 1 ]; then
+        export __rid_plat="linux"
+    fi
 }
 
 usage()
@@ -50,6 +54,7 @@ usage()
     echo "  --fxrver <HostFxr version>        Version of the hostfxr library"
     echo "  --policyver <HostPolicy version>  Version of the hostpolicy library"
     echo "  --commithash <Git commit hash>   Current commit hash of the repo at build time"
+    echo "  --portableLinux                      Optional argument to build native libraries portable over GLIBC based Linux distros."
     echo "  --cross                           Optional argument to signify cross compilation,"
     echo "                                    and use ROOTFS_DIR environment variable to find rootfs."
 
@@ -73,6 +78,7 @@ __policy_ver=
 __fxr_ver=
 __CrossBuild=0
 __commit_hash=
+__linkPortable=0
 
 while [ "$1" != "" ]; do
         lowerI="$(echo $1 | awk '{print tolower($0)}')"
@@ -105,6 +111,9 @@ while [ "$1" != "" ]; do
             shift
             __commit_hash=$1
             ;;
+        --portablelinux)
+            __linkPortable=1
+            ;;
         --cross)
             __CrossBuild=1
             ;;
@@ -131,7 +140,6 @@ case $__build_arch in
         ;;
 esac
 __cmake_defines="${__cmake_defines} ${__arch_define}"
-
 
 # __rid_plat is the base RID that corehost is shipped for, effectively, the name of the folder in "runtimes/{__rid_plat}/native/" inside the nupkgs.
 __rid_plat=
