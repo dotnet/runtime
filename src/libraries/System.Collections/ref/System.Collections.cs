@@ -31,6 +31,10 @@ namespace System.Collections
         public void SetAll(bool value) { }
         public void CopyTo(System.Array array, int index) { }
         public System.Collections.BitArray Xor(System.Collections.BitArray value) { throw null; }
+#if netcoreapp11
+        public System.Collections.BitArray RightShift(int count) { throw null; }
+        public System.Collections.BitArray LeftShift(int count) { throw null; }
+#endif //netcoreapp11
     }
     public static partial class StructuralComparisons
     {
