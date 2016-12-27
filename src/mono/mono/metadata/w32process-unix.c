@@ -713,7 +713,6 @@ processes_cleanup (void)
 	Process *prev = NULL;
 	GSList *finished = NULL;
 	GSList *l;
-	gpointer unref_handle;
 
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s", __func__);
 
