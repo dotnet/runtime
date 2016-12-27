@@ -308,7 +308,7 @@ namespace System.Linq.Expressions.Interpreter
             NewArrayExpression data = Expression.NewArrayInit(typeof(object), parametersAsObject);
             var dlg = new Func<object[], object>(Run);
 
-            ConstantExpression dlgExpr = AstUtils.Constant(dlg);
+            ConstantExpression dlgExpr = Expression.Constant(dlg);
 
             ParameterExpression argsParam = Expression.Parameter(typeof(object[]), "$args");
 
@@ -388,7 +388,6 @@ namespace System.Linq.Expressions.Interpreter
         }
 
 #if NO_FEATURE_STATIC_DELEGATE
-        [EnableInvokeTesting]
         internal void RunVoidRef2<T0, T1>(ref T0 arg0, ref T1 arg1)
         {
             // copy in and copy out for today...
