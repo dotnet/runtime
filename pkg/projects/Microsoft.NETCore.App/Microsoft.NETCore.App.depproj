@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <!-- we intentionally don't want to produce output -->
+    <OutputPath>unused</OutputPath>
+    <!-- we don't want any analyzers by ResolveNuGetPackageAssets 
+         null-refs when this isn't set and an analyzer is in the packages -->
+    <Language>unused</Language>
+    <NuGetTargetMoniker>.NETCoreApp,Version=v1.1</NuGetTargetMoniker>
+    <PackageTargetFramework>netcoreapp1.1</PackageTargetFramework>
+    <PrimaryPackage>Microsoft.Private.CoreFx.NETCoreApp</PrimaryPackage>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="project.json" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+
+  <Target Name="GetFilesToPackage" DependsOnTargets="ResolveNuGetPackages" Returns="@(FilesToPackage)">
+    <!-- start with all the files resolved -->
+    <ItemGroup Condition="'$(NuGetRuntimeIdentifier)' != ''">
+      <!-- RID-specific: include all runtime files -->
+      <_FilesToPackage Include="@(ReferenceCopyLocalPaths)">
+        <!-- ResolveNugetPackageAssets doesn't preserve the asset type (native), 
+             calculate it by looking for native in the path -->
+        <IsNative Condition="$([System.String]::new('%(Identity)').ToLowerInvariant().Replace('\', '/').Contains('/native/'))">true</IsNative>
+      </_FilesToPackage>
+      <_FilesToPackage>
+        <TargetPath Condition="'%(_FilesToPackage.IsNative)' != 'true'">runtimes/$(NuGetRuntimeIdentifier)/lib/$(PackageTargetFramework)</TargetPath>
+        <TargetPath Condition="'%(_FilesToPackage.IsNative)' == 'true'">runtimes/$(NuGetRuntimeIdentifier)/native</TargetPath>
+      </_FilesToPackage>
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(NuGetRuntimeIdentifier)' == ''">
+      <!-- Not RID-specific: include all reference files -->
+      <_FilesToPackage Include="@(Reference)">
+        <TargetPath>ref/$(PackageTargetFramework)</TargetPath>
+      </_FilesToPackage>
+    </ItemGroup>
+
+    <ItemGroup>
+      <!-- add metadata for source and package -->
+      <_FilesToPackage>
+        <SourcePath>%(Identity)</SourcePath>
+        <PackagePath>%(TargetPath)/%(FileName)%(Extension)</PackagePath>
+      </_FilesToPackage>
+
+      <!-- transform to package path for deduping -->
+      <_primaryFilesByPackagePath Include="@(_FilesToPackage->'%(PackagePath)')" Condition="$([System.String]::new('%(NuGetPackageId)').EndsWith('$(PrimaryPackage)'))"/>
+      <_secondaryFilesByPackagePath Include="@(_FilesToPackage->'%(PackagePath)')" Condition="!$([System.String]::new('%(NuGetPackageId)').EndsWith('$(PrimaryPackage)'))"/>
+
+      <!-- remove any secondary files with same package path as primary files -->
+      <_secondaryFilesByPackagePath Remove="@(_primaryFilesByPackagePath)" />
+
+      <_filesByPackagePath Include="@(_primaryFilesByPackagePath);@(_secondaryFilesByPackagePath)" />
+
+      <!-- transform back to source -->
+      <FilesToPackage Include="@(_filesByPackagePath->'%(SourcePath)')" />
+    </ItemGroup>
+
+    <!-- simple check to make sure we don't accidentally pull an old 
+         package that should have been merged to the primary package -->
+    <Error Text="Unexpected System package %(_secondaryFilesByPackagePath.NuGetPackageId)" Condition="$([System.String]::new('%(_secondaryFilesByPackagePath.NuGetPackageId)').Contains('System.'))" />
+
+    <Message Importance="low" Text="%(FilesToPackage.PackagePath) -> @(FilesToPackage)" />
+  </Target>
+
+  <!-- only calculate paths from this project, don't copy -->
+  <Target Name="Build" DependsOnTargets="GetFilesToPackage" />
+  
+  <!-- remove when fixing https://github.com/dotnet/buildtools/issues/1273 -->
+  <Target Name="DetermineRuntimeDependencies" />
+</Project>

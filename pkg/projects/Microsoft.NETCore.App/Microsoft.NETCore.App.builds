@@ -2,9 +2,27 @@
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
 
+  <Import Project="$(MSBuildProjectName).props" />
+
   <ItemGroup>
     <Project Include="Microsoft.NETCore.App.pkgproj" />
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
+
+  <Target Name="FilterProjects" BeforeTargets="Build">
+    <Error Condition="'$(PackageRID)' == ''" Text="'PackageRID' property must be specified."/>
+
+    <!-- Build packages for current RID,
+         those that opt into building on the current RID,
+         and those with no RID -->
+    <ItemGroup>
+      <_projectsToBuild Include="@(Project)" Condition="'%(Project.PackageTargetRuntime)' == '$(PackageRID)' OR '%(Project.BuidOnRID)' == '$(PackageRID)' OR '%(Project.PackageTargetRuntime)' == ''" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Project Remove="@(Project)" />
+      <Project Include="@(_projectsToBuild)" />
+    </ItemGroup>
+  </Target>
 </Project>

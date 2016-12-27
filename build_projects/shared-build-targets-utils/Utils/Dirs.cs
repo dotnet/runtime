@@ -41,6 +41,7 @@ namespace Microsoft.DotNet.Cli.Build
 
 
         public static string NuGetPackages = Environment.GetEnvironmentVariable("NUGET_PACKAGES") ?? GetNuGetPackagesDir();
+        public static string PkgNuGetPackages = Path.Combine(Dirs.RepoRoot, "pkg", "packages");
 
         private static string GetNuGetPackagesDir()
         {
