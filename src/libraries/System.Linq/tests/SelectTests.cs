@@ -1168,5 +1168,65 @@ namespace System.Linq.Tests
             yield return new object[] { new int[1] };
             yield return new object[] { Enumerable.Range(1, 30) };
         }
+
+        [Theory]
+        [MemberData(nameof(RunSelectorDuringCountData))]
+        public void RunSelectorDuringCount(IEnumerable<int> source)
+        {
+            int timesRun = 0;
+            var selected = source.Select(i => timesRun++);
+            selected.Count();
+
+            Assert.Equal(source.Count(), timesRun);
+        }
+
+        // [Theory]
+        [MemberData(nameof(RunSelectorDuringCountData))]
+        public void RunSelectorDuringPartitionCount(IEnumerable<int> source)
+        {
+            int timesRun = 0;
+
+            var selected = source.Select(i => timesRun++);
+
+            if (source.Any())
+            {
+                selected.Skip(1).Count();
+                Assert.Equal(source.Count() - 1, timesRun);
+
+                selected.Take(source.Count() - 1).Count();
+                Assert.Equal(source.Count() * 2 - 2, timesRun);
+            }
+        }
+
+        public static IEnumerable<object[]> RunSelectorDuringCountData()
+        {
+            var transforms = new Func<IEnumerable<int>, IEnumerable<int>>[]
+            {
+                e => e,
+                e => ForceNotCollection(e),
+                e => ForceNotCollection(e).Skip(1),
+                e => ForceNotCollection(e).Where(i => true), 
+                e => e.ToArray().Where(i => true),
+                e => e.ToList().Where(i => true),
+                e => new LinkedList<int>(e).Where(i => true),
+                e => e.Select(i => i),
+                e => e.Take(e.Count()),
+                e => e.ToArray(),
+                e => e.ToList(),
+                e => new LinkedList<int>(e) // Implements IList<T>.
+            };
+
+            var r = new Random(unchecked((int)0x984bf1a3));
+
+            for (int i = 0; i <= 5; i++)
+            {
+                var enumerable = Enumerable.Range(1, i).Select(_ => r.Next());
+
+                foreach (var transform in transforms)
+                {
+                    yield return new object[] { transform(enumerable) };
+                }
+            }
+        }
     }
 }
