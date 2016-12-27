@@ -12,7 +12,7 @@ namespace System.Text
     {
         // Since only a minimum set of encodings are available by default,
         // Console encoding might not be available and require provider registering.
-        // To avoid encoding exception in Console APIs we default to UTF8 in such scenarios.
+        // To avoid encoding exception in Console APIs we fallback to OSEncoding.
         //
         //
         // The guaranteed way to identify the above is to use a try/catch pattern, however to avoid 1st chance exceptions 
@@ -30,14 +30,14 @@ namespace System.Text
 
             if ((defaultEncCodePage == codepage) || defaultEncCodePage != Encoding.UTF8.CodePage)
             {
-                try
-                {
-                    return Encoding.GetEncoding(codepage);
-                }
-                catch (NotSupportedException)
-                {
-                }
+                return Encoding.GetEncoding(codepage);
             }
+
+            if (codepage != Encoding.UTF8.CodePage)
+            {
+                return new OSEncoding(codepage);
+            }
+
             return new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
         }
     }

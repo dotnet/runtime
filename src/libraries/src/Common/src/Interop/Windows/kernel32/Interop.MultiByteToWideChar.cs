@@ -10,11 +10,9 @@ internal partial class Interop
     internal partial class Kernel32
     {
         [DllImport(Libraries.Kernel32)]
-        internal static extern unsafe int WideCharToMultiByte(
-            uint CodePage, uint dwFlags, 
-            char* lpWideCharStr, int cchWideChar, 
-            byte* lpMultiByteStr, int cbMultiByte, 
-            IntPtr lpDefaultChar, IntPtr lpUsedDefaultChar);
-
+        internal static extern unsafe int MultiByteToWideChar(
+                    uint CodePage, uint dwFlags,
+                    byte* lpMultiByteStr, int cbMultiByte,
+                    char* lpWideCharStr, int cchWideChar);
     }
 }
