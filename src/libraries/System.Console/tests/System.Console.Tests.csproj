@@ -27,6 +27,7 @@
     <Compile Include="Color.cs" />
     <Compile Include="SetOut.cs" />
     <Compile Include="NegativeTesting.cs" />
+    <Compile Include="ConsoleEncoding.cs" />
     <Compile Include="SyncTextReader.cs" />
     <Compile Include="SyncTextWriter.cs" />
     <Compile Include="Timeout.cs" />

@@ -43,21 +43,11 @@ namespace System.Diagnostics.Tests
 
             try
             {
-                {
-                    Interop.SetConsoleCP(s_ConsoleEncoding);
-                    Interop.SetConsoleOutputCP(s_ConsoleEncoding);
-
-                    run(Encoding.UTF8.CodePage);
-                }
-
                 // Don't test this on Windows Nano, Windows Nano only supports UTF8.
                 if (File.Exists(Path.Combine(Environment.GetEnvironmentVariable("windir"), "regedit.exe")))
                 {
                     Interop.SetConsoleCP(s_ConsoleEncoding);
                     Interop.SetConsoleOutputCP(s_ConsoleEncoding);
-
-                    // Register the codeprovider which will ensure 437 is enabled.
-                    Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 
                     run(s_ConsoleEncoding);
                 }
