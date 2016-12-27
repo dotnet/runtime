@@ -96,10 +96,10 @@ namespace Microsoft.DotNet.Cli.Build
                 return null;
             }
 
-            string packageId = $"runtime.{jitRid}.microsoft.netcore.jit";
+            string packageId = $"runtime.{jitRid}.Microsoft.NETCore.Jit";
 
             return Path.Combine(
-                Dirs.NuGetPackages,
+                Dirs.PkgNuGetPackages,
                 packageId,
                 _jitVersion);
         }
@@ -113,10 +113,10 @@ namespace Microsoft.DotNet.Cli.Build
                 return null;
             }
 
-            string packageId = $"runtime.{coreclrRid}.microsoft.netcore.runtime.coreclr";
+            string packageId = $"runtime.{coreclrRid}.Microsoft.NETCore.Runtime.CoreCLR";
 
             return Path.Combine(
-                Dirs.NuGetPackages,
+                Dirs.PkgNuGetPackages,
                 packageId,
                 _coreClrVersion,
                 "runtimes",
@@ -134,10 +134,10 @@ namespace Microsoft.DotNet.Cli.Build
                 return null;
             }
 
-            string packageId = $"runtime.{coreclrRid}.microsoft.netcore.runtime.coreclr";
+            string packageId = $"runtime.{coreclrRid}.Microsoft.NETCore.Runtime.CoreCLR";
 
             return Path.Combine(
-                Dirs.NuGetPackages,
+                Dirs.PkgNuGetPackages,
                 packageId,
                 _coreClrVersion);
         }
