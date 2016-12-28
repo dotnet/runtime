@@ -2,14 +2,14 @@
   "frameworks": {
     "netstandard1.7": {
       "dependencies": {
-        "Microsoft.TargetingPack.Private.CoreCLR": "1.2.0-beta-24827-03",
-        "System.IO.FileSystem": "4.4.0-beta-24827-01",
-        "System.Reflection.Metadata": "1.5.0-beta-24827-01"
+        "Microsoft.TargetingPack.Private.CoreCLR": "1.2.0-beta-24828-03",
+        "System.IO.FileSystem": "4.4.0-beta-24828-03",
+        "System.Reflection.Metadata": "1.5.0-beta-24828-03"
       }
     },
     "uap10.1": {
       "dependencies": {
-        "Microsoft.TargetingPack.Private.NETNative": "1.1.0-beta-24827-00"
+        "Microsoft.TargetingPack.Private.NETNative": "1.1.0-beta-24828-00"
       }
     },
     "net463": {
