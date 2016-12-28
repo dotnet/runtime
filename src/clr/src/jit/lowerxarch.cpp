@@ -3404,11 +3404,11 @@ void Lowering::TreeNodeInfoInitCmp(GenTreePtr tree)
         if ((tree->gtFlags & GTF_RELOP_NAN_UN) != 0)
         {
             // Unordered comparison case
-            reverseOps = (tree->gtOper == GT_GT || tree->gtOper == GT_GE);
+            reverseOps = tree->OperIs(GT_GT, GT_GE);
         }
         else
         {
-            reverseOps = (tree->gtOper == GT_LT || tree->gtOper == GT_LE);
+            reverseOps = tree->OperIs(GT_LT, GT_LE);
         }
 
         GenTreePtr otherOp;
@@ -3480,8 +3480,8 @@ void Lowering::TreeNodeInfoInitCmp(GenTreePtr tree)
             // 2) signed compare
             //        < 0  - SF=1 and js
             //       >= 0  - SF=0 and jns
-            else if (((tree->gtOper == GT_EQ) || (tree->gtOper == GT_NE)) && op1->gtSetZSFlags() &&
-                     op2->IsIntegralConst(0) && (op1->gtNext == op2) && (op2->gtNext == tree))
+            else if (tree->OperIs(GT_EQ, GT_NE) && op1->gtSetZSFlags() && op2->IsIntegralConst(0) &&
+                     (op1->gtNext == op2) && (op2->gtNext == tree))
             {
                 // Require codegen of op1 to set the flags.
                 assert(!op1->gtSetFlags());
