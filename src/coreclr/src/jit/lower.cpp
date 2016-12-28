@@ -2033,7 +2033,7 @@ void Lowering::LowerCompare(GenTree* cmp)
 
             op2->gtType = op1Type;
         }
-        else if ((op1->OperGet() == GT_CAST) && !op1->gtOverflow())
+        else if (op1->OperIs(GT_CAST) && !op1->gtOverflow())
         {
             GenTreeCast* cast       = op1->AsCast();
             var_types    castToType = cast->CastToType();
@@ -2041,8 +2041,7 @@ void Lowering::LowerCompare(GenTree* cmp)
 
             if (((castToType == TYP_BOOL) || (castToType == TYP_UBYTE)) && FitsIn<UINT8>(op2Value))
             {
-                bool canNarrow = ((castOp->OperGet() == GT_CALL) || (castOp->OperGet() == GT_LCL_VAR) ||
-                                  castOp->OperIsLogical() || castOp->isMemoryOp());
+                bool canNarrow = castOp->OperIs(GT_CALL, GT_LCL_VAR) || castOp->OperIsLogical() || castOp->isMemoryOp();
 
                 if (canNarrow)
                 {
@@ -2058,7 +2057,7 @@ void Lowering::LowerCompare(GenTree* cmp)
                 }
             }
         }
-        else if (op1->OperGet() == GT_AND && ((cmp->OperGet() == GT_EQ) || (cmp->OperGet() == GT_NE)))
+        else if (op1->OperIs(GT_AND) && cmp->OperIs(GT_EQ, GT_NE))
         {
             //
             // Transform ((x AND y) EQ|NE 0) into (x TEST_EQ|TEST_NE y) when possible.
@@ -2087,7 +2086,7 @@ void Lowering::LowerCompare(GenTree* cmp)
                 BlockRange().Remove(op1);
                 BlockRange().Remove(op2);
 
-                cmp->SetOperRaw(cmp->OperGet() == GT_EQ ? GT_TEST_EQ : GT_TEST_NE);
+                cmp->SetOperRaw(cmp->OperIs(GT_EQ) ? GT_TEST_EQ : GT_TEST_NE);
                 cmp->gtOp.gtOp1 = andOp1;
                 cmp->gtOp.gtOp2 = andOp2;
 
@@ -2095,17 +2094,17 @@ void Lowering::LowerCompare(GenTree* cmp)
                 {
                     //
                     // For "test" we only care about the bits that are set in the second operand (mask).
-                    // If the mask fits in a small type then we can narrow both operands to generate a "test" 
-                    // instruction with a smaller encoding ("test" does not have a r/m32, imm8 form) and avoid 
+                    // If the mask fits in a small type then we can narrow both operands to generate a "test"
+                    // instruction with a smaller encoding ("test" does not have a r/m32, imm8 form) and avoid
                     // a widening load in some cases.
                     //
-                    // For 16 bit operands we narrow only if the memory operand is already 16 bit. This matches 
-                    // the behavior of a previous implementation and avoids adding more cases where we generate 
-                    // 16 bit instructions that require a length changing prefix (0x66). These suffer from 
+                    // For 16 bit operands we narrow only if the memory operand is already 16 bit. This matches
+                    // the behavior of a previous implementation and avoids adding more cases where we generate
+                    // 16 bit instructions that require a length changing prefix (0x66). These suffer from
                     // significant decoder stalls on Intel CPUs.
                     //
                     // We could also do this for 64 bit masks that fit into 32 bit but it doesn't help.
-                    // In such cases morph narrows down the existing GT_AND by inserting a cast between it and 
+                    // In such cases morph narrows down the existing GT_AND by inserting a cast between it and
                     // the memory operand so we'd need to add more code to recognize and eliminate that cast.
                     //
 
