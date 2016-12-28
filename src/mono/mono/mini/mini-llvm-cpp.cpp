@@ -35,6 +35,13 @@
 
 using namespace llvm;
 
+#if LLVM_API_VERSION > 100
+// These are c++11 scoped enums in recent llvm versions
+#define Acquire AtomicOrdering::Acquire
+#define Release AtomicOrdering::Release
+#define SequentiallyConsistent AtomicOrdering::SequentiallyConsistent
+#endif
+
 void
 mono_llvm_dump_value (LLVMValueRef value)
 {

@@ -6147,8 +6147,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			values [ins->dreg] = LLVMBuildInsertElement (builder, values [ins->sreg1], convert (ctx, values [ins->sreg2], LLVMDoubleType ()), LLVMConstInt (LLVMInt32Type (), ins->inst_c0, FALSE), dname);
 			break;
 
-#if 0
-			// Requires a later llvm version
+#if LLVM_API_VERSION > 100
 		case OP_CVTDQ2PD: {
 			LLVMValueRef indexes [16];
 
@@ -6174,14 +6173,16 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			break;
 #endif
 
+#if LLVM_API_VERSION <= 100
 		case OP_CVTDQ2PD:
+		case OP_CVTPS2PD:
+		case OP_CVTTPS2DQ:
+#endif
 		case OP_CVTDQ2PS:
 		case OP_CVTPD2DQ:
 		case OP_CVTPS2DQ:
 		case OP_CVTPD2PS:
-		case OP_CVTPS2PD:
 		case OP_CVTTPD2DQ:
-		case OP_CVTTPS2DQ:
 		case OP_EXTRACT_MASK:
 		case OP_SQRTPS:
 		case OP_SQRTPD:
