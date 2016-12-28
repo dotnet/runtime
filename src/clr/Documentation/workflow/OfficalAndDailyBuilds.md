@@ -1,7 +1,7 @@
 # Official Releases and Daily Builds of CoreCLR and CoreFX components
 
 If you are not planning on actually making bug fixes or experimenting with new features, then you probably
-don't need to don't need build CoreCLR yourself, as the .NET Runtime team routinely does this for you.   
+don't need to build CoreCLR yourself, as the .NET Runtime team routinely does this for you.   
 
 Roughly every three months, the .NET Runtime team publishes a new version of .NET Core to Nuget.   .NET Core's
 official home on NuGet is 
