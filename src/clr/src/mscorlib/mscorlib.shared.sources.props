@@ -413,7 +413,10 @@
     <SystemSources Include="$(BclSourcesRoot)\System\ThreadAttributes.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\TimeoutException.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\TimeSpan.cs" />
+    <SystemSources Include="$(BclSourcesRoot)\System\TimeZoneInfo.AdjustmentRule.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\TimeZoneInfo.cs" />
+    <SystemSources Include="$(BclSourcesRoot)\System\TimeZoneInfo.StringSerializer.cs" />
+    <SystemSources Include="$(BclSourcesRoot)\System\TimeZoneInfo.TransitionTime.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\TimeZoneNotFoundException.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\Type.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\TypeAccessException.cs" />
@@ -443,6 +446,12 @@
     <SystemSources Condition="'$(FeatureSpanOfT)' == 'true'" Include="$(BclSourcesRoot)\System\ByReference.cs" />
     <SystemSources Condition="'$(FeatureSpanOfT)' == 'true'" Include="$(BclSourcesRoot)\System\Span.cs" />
     <SystemSources Condition="'$(FeatureSpanOfT)' == 'true'" Include="$(BclSourcesRoot)\System\ReadOnlySpan.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
+    <SystemSources Include="$(BclSourcesRoot)\System\TimeZoneInfo.Unix.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsUnix)' != 'true'">
+    <SystemSources Include="$(BclSourcesRoot)\System\TimeZoneInfo.Win32.cs" />
   </ItemGroup>
   <ItemGroup>
     <InternalSources Condition="'$(FeatureCoreclr)' == 'true'" Include="$(BclSourcesRoot)\Internal\Runtime\Augments\EnvironmentAugments.cs" />
