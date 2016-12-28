@@ -19,6 +19,16 @@ namespace System
         }
         private static readonly Dictionary<string, SwitchValueState> s_switchMap = new Dictionary<string, SwitchValueState>();
 
+        static AppContext()
+        {
+            // Unloading event must happen before ProcessExit event
+            AppDomain.CurrentDomain.ProcessExit += OnUnloading;
+            AppDomain.CurrentDomain.ProcessExit += OnProcessExit;
+
+            // populate the AppContext with the default set of values
+            AppContextDefaultValues.PopulateDefaultValues();
+        }
+
         public static string BaseDirectory
         {
             get
@@ -73,25 +83,28 @@ namespace System
             }  
         }  
 
-        public static event System.EventHandler ProcessExit
-        {  
-            add  
-            {  
-                AppDomain.CurrentDomain.ProcessExit += value;  
-            }  
-            remove  
-            {  
-                AppDomain.CurrentDomain.ProcessExit -= value;  
-            }  
+        public static event System.EventHandler ProcessExit;
+        public static event System.EventHandler Unloading;
+
+        private static void OnProcessExit(object sender, EventArgs e)
+        {
+            var processExit = ProcessExit;
+            if (processExit != null)
+            {
+                processExit(null, EventArgs.Empty);
+            }
+        }
+
+        private static void OnUnloading(object sender, EventArgs e)
+        {
+            var unloading = Unloading;
+            if (unloading != null)
+            {
+                unloading(null, EventArgs.Empty);
+            }
         }
 
         #region Switch APIs
-        static AppContext()
-        {
-            // populate the AppContext with the default set of values
-            AppContextDefaultValues.PopulateDefaultValues();
-        }
-
         /// <summary>
         /// Try to get the value of the switch.
         /// </summary>
