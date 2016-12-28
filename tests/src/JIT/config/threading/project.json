@@ -1,10 +1,10 @@
 {
   "dependencies": {
-    "Microsoft.NETCore.Platforms": "1.2.0-beta-24827-01",
-    "System.Console": "4.4.0-beta-24827-01",
-    "System.Runtime": "4.4.0-beta-24827-01",
-    "System.Runtime.Extensions": "4.4.0-beta-24827-01",
-    "System.Threading": "4.4.0-beta-24827-01"
+    "Microsoft.NETCore.Platforms": "1.2.0-beta-24828-03",
+    "System.Console": "4.4.0-beta-24828-03",
+    "System.Runtime": "4.4.0-beta-24828-03",
+    "System.Runtime.Extensions": "4.4.0-beta-24828-03",
+    "System.Threading": "4.4.0-beta-24828-03"
   },
   "frameworks": {
     "netcoreapp1.1": {}
