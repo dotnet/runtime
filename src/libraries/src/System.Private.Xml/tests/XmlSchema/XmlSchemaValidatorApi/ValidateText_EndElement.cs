@@ -632,9 +632,9 @@ namespace System.Xml.Tests
                     val.ValidateEndElement(info);
                     Assert.True(false);
                 }
-                catch (XmlSchemaValidationException)
+                catch (XmlSchemaValidationException e)
                 {
-                    //XmlExceptionVerifier.IsExceptionOk(e, "Sch_UnresolvedKeyref", new string[] { "3", "numberKey" });
+                    _exVerifier.IsExceptionOk(e, "Sch_UnresolvedKeyref", new string[] { "3", "numberKey" });
                     return;
                 }
             }

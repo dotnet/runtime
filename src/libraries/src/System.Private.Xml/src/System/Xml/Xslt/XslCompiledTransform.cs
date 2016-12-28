@@ -461,7 +461,7 @@ namespace System.Xml.Xsl
 
         private static XmlResolver CreateDefaultResolver()
         {
-            if (LocalAppContextSwitches.DontProhibitDefaultResolver)
+            if (LocalAppContextSwitches.AllowDefaultResolver)
             {
                 return new XmlUrlResolver();
             }

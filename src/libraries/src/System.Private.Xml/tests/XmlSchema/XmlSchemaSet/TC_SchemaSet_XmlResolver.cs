@@ -16,10 +16,10 @@ namespace System.Xml.Tests
 
         public TC_SchemaSet_XmlResolver(ITestOutputHelper output)
         {
-            _output = output;
-
             // Make sure that we don't cache the value of the switch to enable testing
             AppContext.SetSwitch("TestSwitch.LocalAppContext.DisableCaching", true);
+
+            _output = output;
         }
 
 
@@ -97,10 +97,11 @@ namespace System.Xml.Tests
         }
 
         //[Variation(Desc = "v4 - schema(Local)->schema(Local)", Priority = 1)]
+        [ActiveIssue(14064)]
         [Fact]
         public void v4()
         {
-            AppContext.SetSwitch("Switch.System.Xml.DontProhibitDefaultResolver", true);
+            AppContext.SetSwitch("Switch.System.Xml.AllowDefaultResolver", true);
 
             Initialize();
             XmlSchemaSet sc = new XmlSchemaSet();
@@ -112,10 +113,11 @@ namespace System.Xml.Tests
         }
 
         //[Variation(Desc = "v5 - schema(Local)->schema(Local)->schema(Local)", Priority = 1)]
+        [ActiveIssue(14064)]
         [Fact]
         public void v5()
         {
-            AppContext.SetSwitch("Switch.System.Xml.DontProhibitDefaultResolver", true);
+            AppContext.SetSwitch("Switch.System.Xml.AllowDefaultResolver", true);
 
             Initialize();
             XmlSchemaSet sc = new XmlSchemaSet();
@@ -131,7 +133,7 @@ namespace System.Xml.Tests
         public void v6()
         {
             // Make sure the switch has its default value
-            AppContext.SetSwitch("Switch.System.Xml.DontProhibitDefaultResolver", false);
+            AppContext.SetSwitch("Switch.System.Xml.AllowDefaultResolver", false);
 
             Initialize();
             XmlSchemaSet sc = new XmlSchemaSet();

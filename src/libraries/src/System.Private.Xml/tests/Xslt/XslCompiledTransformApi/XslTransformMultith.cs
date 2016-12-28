@@ -101,7 +101,7 @@ namespace System.Xml.Tests
         [Theory]
         public void proc2()
         {
-            AppContext.SetSwitch("Switch.System.Xml.DontProhibitDefaultResolver", true);
+            AppContext.SetSwitch("Switch.System.Xml.AllowDefaultResolver", true);
 
             Load("QFE505_multith_customer_repro_with_or_expr.xsl", "QFE505_multith_customer_repro_with_or_expr.xml");
 
@@ -400,7 +400,7 @@ namespace System.Xml.Tests
         [Theory]
         public void proc2()
         {
-            AppContext.SetSwitch("Switch.System.Xml.DontProhibitDefaultResolver", true);
+            AppContext.SetSwitch("Switch.System.Xml.AllowDefaultResolver", true);
 
             Load("QFE505_multith_customer_repro_with_or_expr.xsl", "QFE505_multith_customer_repro_with_or_expr.xml");
 

@@ -84,7 +84,7 @@ namespace System.Xml.Tests
         [Theory]
         public void XsltSettings1_1_ExternalURI(object param0, object param1, object param2, object param3, object param4)
         {
-            AppContext.SetSwitch("Switch.System.Xml.DontProhibitDefaultResolver", true);
+            AppContext.SetSwitch("Switch.System.Xml.AllowDefaultResolver", true);
 
             XsltSettings1_1(param0, param1, param2, param3, param4);
         }
@@ -94,7 +94,7 @@ namespace System.Xml.Tests
         [Theory]
         public void XsltSettings1_2_ExternalURI(object param0, object param1, object param2, object param3, object param4, object param5, object param6)
         {
-            AppContext.SetSwitch("Switch.System.Xml.DontProhibitDefaultResolver", true);
+            AppContext.SetSwitch("Switch.System.Xml.AllowDefaultResolver", true);
 
             XsltSettings1_2(param0, param1, param2, param3, param4, param5, param6);
         }
