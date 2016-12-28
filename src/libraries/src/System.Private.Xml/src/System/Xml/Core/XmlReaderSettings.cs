@@ -125,7 +125,7 @@ namespace System.Xml
         //notice we must keep GetXmlResolver() to avoid dead lock when init System.Config.ConfigurationManager
         internal XmlResolver GetXmlResolver_CheckConfig()
         {
-            if (!IsXmlResolverSet)
+            if (!LocalAppContextSwitches.DontProhibitDefaultResolver && !IsXmlResolverSet)
                 return null;
             else
                 return _xmlResolver;

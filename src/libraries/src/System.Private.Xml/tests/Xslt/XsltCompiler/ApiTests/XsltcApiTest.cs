@@ -4,12 +4,6 @@
 
 using Xunit;
 using Xunit.Abstractions;
-using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.IO;
-using System.Reflection;
-using System.Xml;
 using System.Xml.Xsl;
 using OLEDB.Test.ModuleCore;
 
@@ -56,66 +50,6 @@ namespace System.Xml.Tests
             }
 
             throw new CTestFailedException("Did not throw ArgumentException");
-        }
-
-        /*//[Variation("3", Desc = "Exercise loading from the same class within different threads", Pri = 1)]
-        [InlineData()]
-        [Theory]
-        public void Var3()
-        {
-            var xsltList = new SynchronizedCollection<XslCompiledTransform>();
-            var rThreads = new CThreads(_output);
-
-            for (int i = 0; i < 10; i++)
-            {
-                rThreads.Add(o =>
-                    {
-                        var xslt = new XslCompiledTransform();
-                        xsltList.Add(xslt);
-                        XsltcUtil.LoadFromAssembly(ref xslt, "IdentityTransform");
-                        return;
-                    }, i.ToString(CultureInfo.InvariantCulture));
-            }
-
-            //Wait until they are complete
-            rThreads.Start();
-            rThreads.Wait();
-
-            return Verify(xsltList);
-        }*/
-
-        //[Variation("4", Desc = "XSLCompiledTransform Load(Type) changes the static data of the Type to XmlILCommand", Pri = 1)]
-        [InlineData()]
-        //[Theory] //Disabled as it tries to load an assembly which does not exist on CoreFX anymore
-        public void Var4()
-        {
-            var xslt = new XslCompiledTransform();
-
-            Type t = Assembly.Load(new AssemblyName("TestStylesheet")).GetType("TestStylesheet");
-            BindingFlags bindingFlags = BindingFlags.NonPublic | BindingFlags.Static;
-
-            Type beforeLoad = t.GetTypeInfo().GetField("staticData", bindingFlags).GetValue(null).GetType();
-            xslt.Load(t);
-            Type afterLoad = t.GetTypeInfo().GetField("staticData", bindingFlags).GetValue(null).GetType();
-            CError.Compare(beforeLoad, afterLoad, "Mismatch in type, before and after load");
-            return;
-        }
-
-        public void Verify(IList<XslCompiledTransform> xsltList)
-        {
-            var inputXml = new XmlDocument();
-            inputXml.LoadXml("<foo><bar>Hello, world!</bar></foo>");
-
-            foreach (XslCompiledTransform xslt in xsltList)
-            {
-                using (var actualStream = new MemoryStream())
-                using (var sw = new StreamWriter(actualStream) { AutoFlush = true })
-                {
-                    xslt.Transform(inputXml, null, sw);
-
-                    CompareOutput("<?xml version=\"1.0\" encoding=\"utf-8\"?><foo><bar>Hello, world!</bar></foo>", actualStream);
-                }
-            }
         }
     }
 }

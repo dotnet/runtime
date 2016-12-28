@@ -3,11 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using Xunit;
-using Xunit.Abstractions;
-using System;
 using System.IO;
-using System.Net;
-using System.Xml;
 using System.Xml.Schema;
 using System.Xml.XPath;
 

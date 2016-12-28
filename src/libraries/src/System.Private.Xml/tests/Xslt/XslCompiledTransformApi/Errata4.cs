@@ -4,11 +4,9 @@
 
 using Xunit;
 using Xunit.Abstractions;
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
-using System.Xml;
 using System.Xml.Xsl;
 using XmlCoreTest.Common;
 using OLEDB.Test.ModuleCore;
@@ -122,7 +120,6 @@ namespace System.Xml.Tests
 
         #endregion private const string createElementsXsltInline = ...
 
-        [ActiveIssue(9877)]
         //[Variation(Priority = 1, Desc = "Crate elment/attribute :: Invalid start name char", Params = new object[] { false, CharType.NameStartChar })]
         [InlineData(false, CharType.NameStartChar)]
         //[Variation(Priority = 1, Desc = "Crate elment/attribute :: Invalid name char", Params = new object[] { false, CharType.NameChar })]
@@ -145,6 +142,7 @@ namespace System.Xml.Tests
         //[Variation(Priority = 0, Desc = "Crate elment/attribute :: Valid name CharType.NameStartSurrogateLowChar", Params = new object[] { true, CharType.NameStartSurrogateLowChar })]
         //[Variation(Priority = 0, Desc = "Crate elment/attribute :: Valid name CharType.NameSurrogateHighChar", Params = new object[] { true, CharType.NameSurrogateHighChar })]
         //[Variation(Priority = 0, Desc = "Crate elment/attribute :: Valid name CharType.NameSurrogateLowChar", Params = new object[] { true, CharType.NameSurrogateLowChar })]
+        [OuterLoop]
         [Theory]
         public void CreateElementsAndAttributesUsingXsltAndXPath(object param0, object param1)
         {
@@ -185,7 +183,6 @@ namespace System.Xml.Tests
             return;
         }
 
-        [ActiveIssue(9877)]
         //[Variation(Priority = 1, Desc = "Crate elment/attribute (Inline) :: Invalid start name char", Params = new object[] { false, CharType.NameStartChar })]
         [InlineData(false, CharType.NameStartChar)]
         //[Variation(Priority = 1, Desc = "Crate elment/attribute (Inline) :: Invalid name char", Params = new object[] { false, CharType.NameChar })]
@@ -208,6 +205,7 @@ namespace System.Xml.Tests
         //[Variation(Priority = 0, Desc = "Crate elment/attribute (Inline) :: Valid name CharType.NameStartSurrogateLowChar", Params = new object[] { true, CharType.NameStartSurrogateLowChar })]
         //[Variation(Priority = 0, Desc = "Crate elment/attribute (Inline) :: Valid name CharType.NameSurrogateHighChar", Params = new object[] { true, CharType.NameSurrogateHighChar })]
         //[Variation(Priority = 0, Desc = "Crate elment/attribute (Inline) :: Valid name CharType.NameSurrogateLowChar", Params = new object[] { true, CharType.NameSurrogateLowChar })]
+        [OuterLoop]
         [Theory]
         public void CreateElementsAndAttributesUsingXsltInline(object param0, object param1)
         {
@@ -268,7 +266,6 @@ namespace System.Xml.Tests
             }
         }
 
-        [ActiveIssue(9877)]
         //[Variation(Priority = 1, Desc = "Invalid start name char", Params = new object[] { false, CharType.NameStartChar })]
         [InlineData(false, CharType.NameStartChar)]
         //[Variation(Priority = 1, Desc = "Invalid name char", Params = new object[] { false, CharType.NameChar })]
@@ -380,7 +377,7 @@ namespace System.Xml.Tests
             }
         }
 
-        public /*override*/ new int Init(object objParam)
+        public new int Init(object objParam)
         {
             return 1;
         }

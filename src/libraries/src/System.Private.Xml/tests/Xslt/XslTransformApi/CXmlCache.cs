@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Xunit;
 using Xunit.Abstractions;
 using System;
 using System.IO;
@@ -167,10 +166,6 @@ abstract public class CXmlBase
 
         return rChild;
     }
-
-    //
-    // Private Methods and Properties
-    //
 }
 
 public class CXmlAttribute : CXmlBase
@@ -327,13 +322,6 @@ public class CXmlNode : CXmlBase
         string DocTypePublic = null;
         string DocTypeSystem = null;
 
-        /*
-        // Display of Indent information
-        if (this.LocalName == string.Empty)
-            _output.WriteLine("Node={0}, Indent={1}, Mixed={2}",this.NodeType, this.Flags & NodeFlags.Indent, this.Flags & NodeFlags.MixedContent);
-        else
-            _output.WriteLine("Node={0}, Indent={1}, Mixed={2}",this.LocalName, this.Flags & NodeFlags.Indent, this.Flags & NodeFlags.MixedContent);
-        */
         switch (this.NodeType)
         {
             case XmlNodeType.CDATA:
@@ -746,7 +734,6 @@ public class CXmlCache
             _eWhitespaceMode = ((XmlTextReader)rXmlReader).WhitespaceHandling;
             _fNamespaces = ((XmlTextReader)rXmlReader).Namespaces;
             _eValidationMode = ValidationType.None;
-            //			_eEntityMode = ((XmlValidatingReader)rXmlReader).EntityHandling;
         }
 #pragma warning disable 0618
         if (rXmlReader is XmlValidatingReader)
@@ -1112,10 +1099,8 @@ public class CXmlCache
                 case XmlNodeType.EntityReference:
                     if (_eValidationMode == ValidationType.DTD)
                     {
-                        //					_rXmlReader.EntityHandling = EntityHandling.ExpandEntities;
                         _rXmlReader.ResolveEntity();
                         Process(rNewNode);
-                        //					_rXmlReader.EntityHandling = _eEntityMode;
                     }
                     break;
 

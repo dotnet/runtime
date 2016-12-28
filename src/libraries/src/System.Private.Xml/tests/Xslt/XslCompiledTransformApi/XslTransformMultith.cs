@@ -4,11 +4,7 @@
 
 using Xunit;
 using Xunit.Abstractions;
-using System;
 using System.IO;
-using System.Reflection;
-using System.Runtime.Loader;
-using System.Xml;
 using System.Xml.XPath;
 using System.Xml.Xsl;
 using XmlCoreTest.Common;
@@ -30,110 +26,10 @@ namespace System.Xml.Tests
             Init(null);
         }
 
-        public /*override*/ new void Init(object objParam)
+        public new void Init(object objParam)
         {
             xsltSameInstance = new XslCompiledTransform();
             _strPath = Path.Combine(@"TestFiles\", FilePathUtil.GetTestDataPath(), @"XsltApiV2\");
-            return;
-        }
-    }
-
-    //[TestCase(Name = "Same instance testing: Transform() - Type & MethodInfo")]
-    public class SameTypeCompiledTransform : XsltApiTestCaseBase2
-    {
-        protected string _strPath; // Path of the data files
-        protected int counter;
-
-        private Assembly _asm;
-        private Type _type;
-        private MethodInfo _meth;
-        private Byte[] _staticData;
-        private Type[] _ebTypes;
-
-        private ITestOutputHelper _output;
-        public SameTypeCompiledTransform(ITestOutputHelper output) : base(output)
-        {
-            _output = output;
-            Init(null);
-        }
-
-        public /*override*/ new void Init(object objParam)
-        {
-            _strPath = Path.Combine(@"TestFiles\", FilePathUtil.GetTestDataPath(), @"XsltApiV2\");
-            counter = 0;
-            InitTestData();
-            return;
-        }
-
-        private void InitTestData()
-        {
-            string filePath = Path.Combine(@"TestFiles\", FilePathUtil.GetTestDataPath(), @"xsltc\precompiled\Scripting28.dll");
-            _asm = AssemblyLoadContext.Default.LoadFromAssemblyPath(Path.GetFullPath(filePath));
-            _type = _asm.GetType("Scripting28");
-            _meth = ReflectionTestCaseBase.GetStaticMethod(_type, "Execute");
-            _staticData = (Byte[])_type.GetTypeInfo().GetField("staticData", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static).GetValue(_type);
-            _ebTypes = (Type[])_type.GetTypeInfo().GetField("ebTypes", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static).GetValue(_type);
-        }
-
-        public int LoadAndTransformWithType(Object args)
-        {
-            XslCompiledTransform xslt = new XslCompiledTransform();
-            xslt.Load(_type);
-            string filePath = Path.Combine(@"TestFiles\", FilePathUtil.GetTestDataPath(), @"xsltc\precompiled\Scripting28.xsl");
-            xslt.Transform(filePath, String.Format("out{0}.txt", System.Threading.Interlocked.Increment(ref counter)));
-            return 1;
-        }
-
-        public int LoadAndTransformWithMethodInfo(Object args)
-        {
-            XslCompiledTransform xslt = new XslCompiledTransform();
-            xslt.Load(_meth, _staticData, _ebTypes);
-            string filePath = Path.Combine(@"TestFiles\", FilePathUtil.GetTestDataPath(), @"xsltc\precompiled\Scripting28.xsl");
-            xslt.Transform(filePath, String.Format("out{0}.txt", System.Threading.Interlocked.Increment(ref counter)));
-            return 1;
-        }
-
-        ////////////////////////////////////////////////////////////////
-        // Same type testing:
-        // Multiple Transform() over same XslCompiledTransform object
-        ////////////////////////////////////////////////////////////////
-        //[Variation("Multiple Loads on Type and Transform")]
-        [ActiveIssue(9873)]
-        [InlineData()]
-        [Theory]
-        public void proc1()
-        {
-            CThreads rThreads = new CThreads(_output);
-
-            for (int i = 0; i < 1000; i++)
-            {
-                rThreads.Add(new ThreadFunc(LoadAndTransformWithType), i.ToString());
-            }
-
-            //Wait until they are complete
-            rThreads.Start();
-            rThreads.Wait();
-
-            return;
-        }
-
-        //[Variation("Multiple Loads with Common MethodInfo, ebTypes and static data and Transform")]
-        [ActiveIssue(9873)]
-        [InlineData()]
-        [Theory]
-        public void proc2()
-        {
-            CThreads rThreads = new CThreads(_output);
-
-            for (int i = 0; i < 1000; i++)
-            {
-                rThreads.Add(new ThreadFunc(LoadAndTransformWithMethodInfo), i.ToString());
-            }
-
-            //Wait until they are complete
-            rThreads.Start();
-            rThreads.Wait();
-
             return;
         }
     }
@@ -143,7 +39,6 @@ namespace System.Xml.Tests
     {
         private XPathDocument _xd;			// Loads XML file
         private XmlReader _xrData;           // Loads XML File
-        //private XmlReader xr;				// Reader output of transform is not supported in XSLT V2
 
         private ITestOutputHelper _output;
         public SameInstanceXslTransformReader(ITestOutputHelper output) : base(output)

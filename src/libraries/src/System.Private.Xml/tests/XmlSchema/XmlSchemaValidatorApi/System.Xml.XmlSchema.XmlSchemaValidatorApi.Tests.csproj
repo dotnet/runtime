@@ -18,6 +18,7 @@
   <ItemGroup>
     <Compile Include="Constructor_AddSchema.cs" />
     <Compile Include="CustomImplementations.cs" />
+    <Compile Include="ExceptionVerifier.cs" />
     <Compile Include="GetExpectedAttributes.cs" />
     <Compile Include="GetExpectedParticles.cs" />
     <Compile Include="Initialize_EndValidation.cs" />
@@ -39,7 +40,6 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\..\System.Private.Xml\pkg\System.Private.Xml.pkgproj" />
-    <ProjectReference Include="..\..\..\..\Microsoft.Win32.Registry\pkg\Microsoft.Win32.Registry.pkgproj" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
