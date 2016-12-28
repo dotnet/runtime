@@ -6089,7 +6089,7 @@ void CodeGen::genCompareInt(GenTreePtr treeNode)
         assert(realOp1->gtSetZSFlags());
 
         // Must be (in)equality against zero.
-        assert(tree->OperGet() == GT_EQ || tree->OperGet() == GT_NE);
+        assert(tree->OperIs(GT_EQ, GT_NE));
         assert(op2->IsIntegralConst(0));
         assert(op2->isContained());
 
@@ -6113,7 +6113,7 @@ void CodeGen::genCompareInt(GenTreePtr treeNode)
     // If we have GT_JTRUE(GT_EQ/NE(GT_SIMD((in)Equality, v1, v2), true/false)),
     // then we don't need to generate code for GT_EQ/GT_NE, since SIMD (in)Equality intrinsic
     // would set or clear Zero flag.
-    if ((targetReg == REG_NA) && (tree->OperGet() == GT_EQ || tree->OperGet() == GT_NE))
+    if ((targetReg == REG_NA) && tree->OperIs(GT_EQ, GT_NE))
     {
         // Is it a SIMD (in)Equality that doesn't need to materialize result into a register?
         if ((op1->gtRegNum == REG_NA) && op1->IsSIMDEqualityOrInequality())
@@ -6143,7 +6143,7 @@ void CodeGen::genCompareInt(GenTreePtr treeNode)
 
     // By default we use an int32 sized cmp/test instruction
     //
-    instruction ins     = ((tree->OperGet() == GT_TEST_EQ) || (tree->OperGet() == GT_TEST_NE)) ? INS_test : INS_cmp;
+    instruction ins     = tree->OperIs(GT_TEST_EQ, GT_TEST_NE) ? INS_test : INS_cmp;
     var_types   cmpType = TYP_INT;
 
     // In the if/then/else statement below we may change the
