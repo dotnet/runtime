@@ -52,6 +52,13 @@ namespace Microsoft.DotNet.Cli.Build
 
         public static string GetBadgeMoniker()
         {
+            string rid = Environment.GetEnvironmentVariable("TARGETRID") ?? RuntimeEnvironment.GetRuntimeIdentifier();
+
+            if (rid.StartsWith("linux-"))
+            {
+                return $"Linux_{Environment.GetEnvironmentVariable("TARGETPLATFORM") ?? CurrentArchitecture.Current.ToString()}";
+            }
+
             switch (RuntimeEnvironment.GetRuntimeIdentifier())
             {
                 case "ubuntu.16.04-x64":
