@@ -1,11 +1,11 @@
 {
   "dependencies": {
-    "System.Runtime": "4.4.0-beta-24827-01",
-    "System.Runtime.Handles": "4.4.0-beta-24827-01",
-    "System.IO": "4.4.0-beta-24827-01",
-    "System.IO.FileSystem.Primitives": "4.4.0-beta-24827-01",
-    "System.Text.Encoding": "4.4.0-beta-24827-01",
-    "System.Threading.Tasks": "4.4.0-beta-24827-01"
+    "System.Runtime": "4.4.0-beta-24828-03",
+    "System.Runtime.Handles": "4.4.0-beta-24828-03",
+    "System.IO": "4.4.0-beta-24828-03",
+    "System.IO.FileSystem.Primitives": "4.4.0-beta-24828-03",
+    "System.Text.Encoding": "4.4.0-beta-24828-03",
+    "System.Threading.Tasks": "4.4.0-beta-24828-03"
   },
   "frameworks": {
     "netstandard1.7": {}
