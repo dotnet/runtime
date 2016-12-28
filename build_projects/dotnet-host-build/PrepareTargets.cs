@@ -43,8 +43,6 @@ namespace Microsoft.DotNet.Host.Build
             nameof(PackDotnetDebTool))]
         public static BuildTargetResult Init(BuildTargetContext c)
         {
-            // CommonInit(c);
-
             var configEnv = Environment.GetEnvironmentVariable("CONFIGURATION");
             string platformEnv = c.BuildContext.Get<string>("Platform");
             
@@ -111,7 +109,8 @@ namespace Microsoft.DotNet.Host.Build
             {
                 // Portable build only supports Linux RID
                 targetRID = $"linux-{platformEnv}";
-
+                realTargetRID = targetRID;
+                
                 // Update/set the TARGETRID environment variable that will be used by various parts of the build
                 Environment.SetEnvironmentVariable("TARGETRID", targetRID);
             }
