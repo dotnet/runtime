@@ -130,7 +130,7 @@ namespace Microsoft.DotNet.Host.Build
 
                 c.Info($"Running tests in: {project}");
 
-                string actualTargetRid = c.BuildContext.Get<string>("ActualTargetRID");
+                string actualTargetRid = c.BuildContext.Get<string>("ArtifactsTargetRID");
                 
                 var result = dotnet.Test("--configuration", configuration, "-xml", $"{project}-testResults.xml", "-notrait", "category=failing")
                     .WorkingDirectory(Path.Combine(Dirs.RepoRoot, "test", project))

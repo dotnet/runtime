@@ -110,7 +110,7 @@ namespace Microsoft.DotNet.Host.Build
                 // Portable build only supports Linux RID
                 targetRID = $"linux-{platformEnv}";
                 realTargetRID = targetRID;
-                
+
                 // Update/set the TARGETRID environment variable that will be used by various parts of the build
                 Environment.SetEnvironmentVariable("TARGETRID", targetRID);
             }
@@ -120,7 +120,7 @@ namespace Microsoft.DotNet.Host.Build
 
             // Save the RID that will be used to create the RID specific subfolder under artifacts folder.
             // See Dirs.cs for details.
-            c.BuildContext["ActualTargetRID"] = realTargetRID; 
+            c.BuildContext["ArtifactsTargetRID"] = realTargetRID; 
             c.BuildContext["LinkPortable"] = linkPortable;
             c.BuildContext["Platform"] = platformEnv;
 
