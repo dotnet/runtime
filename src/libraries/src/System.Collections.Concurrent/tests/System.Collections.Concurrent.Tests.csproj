@@ -69,9 +69,9 @@
     <Compile Include="BlockingCollectionCancellationTests.cs" />
     <Compile Include="BlockingCollectionTests.cs" />
     <Compile Include="ConcurrentBagTests.cs" />
-    <Compile Include="ConcurrentDicionary\ConcurrentDictionary.NonGeneric.Tests.cs" />
-    <Compile Include="ConcurrentDicionary\ConcurrentDictionary.Generic.Tests.cs" />
-    <Compile Include="ConcurrentDicionary\ConcurrentDictionaryTests.cs" />
+    <Compile Include="ConcurrentDictionary\ConcurrentDictionary.NonGeneric.Tests.cs" />
+    <Compile Include="ConcurrentDictionary\ConcurrentDictionary.Generic.Tests.cs" />
+    <Compile Include="ConcurrentDictionary\ConcurrentDictionaryTests.cs" />
     <Compile Include="ConcurrentQueueTests.cs" />
     <Compile Include="ConcurrentStackTests.cs" />
     <Compile Include="EtwTests.cs" />
@@ -87,7 +87,7 @@
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' != 'netcoreapp1.1'">
-    <Compile Include="ConcurrentDicionary\ConcurrentDictionaryExtensions.cs" />
+    <Compile Include="ConcurrentDictionary\ConcurrentDictionaryExtensions.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'!='' and '$(TargetGroup)'!='netcoreapp1.1'">
     <Compile Include="$(CommonPath)\System\SerializableAttribute.cs">
