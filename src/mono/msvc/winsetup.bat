@@ -12,19 +12,9 @@ SET VERSION_H=..\mono\mini\version.h
 
 ECHO Setting up Mono configuration headers...
 
-IF EXIST %CONFIG_H% (
-	IF NOT EXIST %CYG_CONFIG_H% (
-		ECHO copy %CONFIG_H% %CYG_CONFIG_H%
-		copy %CONFIG_H% %CYG_CONFIG_H%
-	)
-)
-
-IF EXIST %EGLIB_CONFIG_H% (
-	IF NOT EXIST %EGLIB_CYG_CONFIG_H% (
-		ECHO copy %EGLIB_CONFIG_H% %EGLIB_CYG_CONFIG_H%
-		copy %EGLIB_CONFIG_H% %EGLIB_CYG_CONFIG_H%
-	)
-)
+REM Backup existing config.h into cygconfig.h if its not already replaced.
+%windir%\system32\WindowsPowerShell\v1.0\powershell.exe -executionpolicy bypass -NonInteractive -File backup-config-files.ps1 %CONFIG_H% %CYG_CONFIG_H% 2>&1
+%windir%\system32\WindowsPowerShell\v1.0\powershell.exe -executionpolicy bypass -NonInteractive -File backup-config-files.ps1 %EGLIB_CONFIG_H% %EGLIB_CYG_CONFIG_H% 2>&1
 
 %windir%\system32\WindowsPowerShell\v1.0\powershell.exe -executionpolicy bypass -NonInteractive -File compare-config-files.ps1 %WIN_CONFIG_H% %CONFIG_H% %CONFIGURE_AC% 2>&1
 

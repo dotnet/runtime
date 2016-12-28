@@ -18,6 +18,10 @@
       <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\config.h" />
+    <ClInclude Include="..\eglib\config.h" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{92AE7622-5F58-4234-9A26-9EC71876B3F4}</ProjectGuid>
     <RootNamespace>buildinit</RootNamespace>
@@ -140,8 +144,6 @@
       <Command>winsetup.bat</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
-  <ItemGroup>
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
