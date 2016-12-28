@@ -109,7 +109,8 @@ namespace System.Text.Tests
             EncoderFallbackBuffer buffer = new EncoderReplacementFallback().CreateFallbackBuffer();
 
             Assert.Throws<ArgumentOutOfRangeException>("charUnknownHigh", () => buffer.Fallback('a', '\uDC00', 0));
-            Assert.Throws<ArgumentOutOfRangeException>("CharUnknownLow", () => buffer.Fallback('\uD800', 'a', 0));
+            Assert.Throws<ArgumentOutOfRangeException>(
+                RuntimeDetection.IsNetFramework ? "CharUnknownLow" : "charUnknownLow", () => buffer.Fallback('\uD800', 'a', 0));
         }
     }
 }

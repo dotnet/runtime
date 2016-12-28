@@ -12,7 +12,7 @@ namespace System
         private static readonly string s_frameworkDescription = RuntimeInformation.FrameworkDescription;
 
         // public static bool IsMono { get; } = Type.GetType("Mono.Runtime") != null;
-        // public static bool IsNetFramework { get; } = s_frameworkDescription.StartsWith(".NET Framework");
+        public static bool IsNetFramework { get; } = s_frameworkDescription.StartsWith(".NET Framework");
         // public static bool IsCoreclr { get; } = s_frameworkDescription.StartsWith(".NET Core");
         public static bool IsNetNative { get; } = s_frameworkDescription.StartsWith(".NET Native");
     }
