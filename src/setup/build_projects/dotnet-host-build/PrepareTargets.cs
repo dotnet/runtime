@@ -43,6 +43,8 @@ namespace Microsoft.DotNet.Host.Build
             nameof(PackDotnetDebTool))]
         public static BuildTargetResult Init(BuildTargetContext c)
         {
+            // CommonInit(c);
+
             var configEnv = Environment.GetEnvironmentVariable("CONFIGURATION");
             string platformEnv = c.BuildContext.Get<string>("Platform");
             
@@ -90,9 +92,13 @@ namespace Microsoft.DotNet.Host.Build
             string platformEnv = Environment.GetEnvironmentVariable("TARGETPLATFORM") ?? RuntimeEnvironment.RuntimeArchitecture.ToString();
             
             string targetRID = Environment.GetEnvironmentVariable("TARGETRID");
+            string realTargetRID = targetRID;
             if (targetRID == null)
             {
                 targetRID = RuntimeEnvironment.GetRuntimeIdentifier();
+                realTargetRID = targetRID;
+
+                // Question: Why do we perform this translation? Utilities (e.g. Dirs.cs) do not account for this.
                 if (targetRID.StartsWith("win") && (targetRID.EndsWith("x86") || targetRID.EndsWith("x64")))
                 {
                     targetRID = $"win7-{RuntimeEnvironment.RuntimeArchitecture}";
@@ -105,12 +111,17 @@ namespace Microsoft.DotNet.Host.Build
             {
                 // Portable build only supports Linux RID
                 targetRID = $"linux-{platformEnv}";
+
+                // Update/set the TARGETRID environment variable that will be used by various parts of the build
+                Environment.SetEnvironmentVariable("TARGETRID", targetRID);
             }
 
-            // Update/set the TARGETRID environment variable that will be used by various parts of the build
-            Environment.SetEnvironmentVariable("TARGETRID", targetRID);
-            
+
             c.BuildContext["TargetRID"] = targetRID;
+
+            // Save the RID that will be used to create the RID specific subfolder under artifacts folder.
+            // See Dirs.cs for details.
+            c.BuildContext["ActualTargetRID"] = realTargetRID; 
             c.BuildContext["LinkPortable"] = linkPortable;
             c.BuildContext["Platform"] = platformEnv;
 
