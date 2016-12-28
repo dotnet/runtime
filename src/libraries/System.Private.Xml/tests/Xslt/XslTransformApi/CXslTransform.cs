@@ -1,3 +1,4 @@
+
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
@@ -383,7 +384,7 @@ namespace System.Xml.Tests
         [Theory]
         public void XmlResolver1(InputType inputType, ReaderType readerType, TransformType transformType, DocType docType)
         {
-            AppContext.SetSwitch("Switch.System.Xml.DontProhibitDefaultResolver", true);
+            AppContext.SetSwitch("Switch.System.Xml.AllowDefaultResolver", true);
 
             string expected = @"<?xml version=""1.0"" encoding=""utf-8""?><result><fruit>Apple</fruit><fruit>orange</fruit></result>";
 
@@ -797,7 +798,7 @@ namespace System.Xml.Tests
         [Theory]
         public void LoadGeneric7(InputType inputType, ReaderType readerType, TransformType transformType, DocType docType)
         {
-            AppContext.SetSwitch("Switch.System.Xml.DontProhibitDefaultResolver", true);
+            AppContext.SetSwitch("Switch.System.Xml.AllowDefaultResolver", true);
 
             string expected = @"<?xml version=""1.0"" encoding=""utf-8""?><result><fruit>Apple</fruit><fruit>orange</fruit></result>";
 
@@ -835,7 +836,7 @@ namespace System.Xml.Tests
         [Theory]
         public void LoadGeneric9(InputType inputType, ReaderType readerType, TransformType transformType, DocType docType)
         {
-            AppContext.SetSwitch("Switch.System.Xml.DontProhibitDefaultResolver", true);
+            AppContext.SetSwitch("Switch.System.Xml.AllowDefaultResolver", true);
 
             string expected = @"<?xml version=""1.0"" encoding=""utf-8""?><result><fruit>Apple</fruit><fruit>orange</fruit></result>";
 
@@ -1231,7 +1232,7 @@ namespace System.Xml.Tests
         [Theory]
         public void LoadGeneric9(InputType inputType, ReaderType readerType, TransformType transformType, DocType docType)
         {
-            AppContext.SetSwitch("Switch.System.Xml.DontProhibitDefaultResolver", true);
+            AppContext.SetSwitch("Switch.System.Xml.AllowDefaultResolver", true);
 
             string expected = @"<?xml version=""1.0"" encoding=""utf-8""?><result><fruit>Apple</fruit><fruit>orange</fruit></result>";
 
@@ -2171,7 +2172,7 @@ namespace System.Xml.Tests
         [Theory]
         public void XmlResolver1(InputType inputType, ReaderType readerType, TransformType transformType, DocType docType)
         {
-            AppContext.SetSwitch("Switch.System.Xml.DontProhibitDefaultResolver", true);
+            AppContext.SetSwitch("Switch.System.Xml.AllowDefaultResolver", true);
 
             string expected = @"<?xml version=""1.0"" encoding=""utf-8""?><result><fruit>Apple</fruit><fruit>orange</fruit></result>";
 
@@ -2742,7 +2743,7 @@ namespace System.Xml.Tests
         [Theory]
         public void TransformStrStrResolver1(InputType inputType, ReaderType readerType)
         {
-            AppContext.SetSwitch("Switch.System.Xml.DontProhibitDefaultResolver", true);
+            AppContext.SetSwitch("Switch.System.Xml.AllowDefaultResolver", true);
 
             string expected = @"<?xml version=""1.0"" encoding=""utf-8""?><result><fruit>Apple</fruit><fruit>orange</fruit></result>";
             String szFullFilename = FullFilePath("fruits.xml");

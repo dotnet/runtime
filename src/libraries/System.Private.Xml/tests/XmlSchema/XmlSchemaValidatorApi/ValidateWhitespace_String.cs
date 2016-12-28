@@ -14,9 +14,11 @@ namespace System.Xml.Tests
     public class TCValidateWhitespace_String : CXmlSchemaValidatorTestCase
     {
         private ITestOutputHelper _output;
+        private ExceptionVerifier _exVerifier;
         public TCValidateWhitespace_String(ITestOutputHelper output): base(output)
         {
             _output = output;
+            _exVerifier = new ExceptionVerifier("System.Xml", _output);
         }
 
         [Fact]
@@ -99,9 +101,9 @@ namespace System.Xml.Tests
             {
                 val.ValidateWhitespace(" " + Environment.NewLine + "\t");
             }
-            catch (XmlSchemaValidationException)
+            catch (XmlSchemaValidationException e)
             {
-                //XmlExceptionVerifier.IsExceptionOk(e, "Sch_InvalidWhitespaceInEmpty");
+                _exVerifier.IsExceptionOk(e, "Sch_InvalidWhitespaceInEmpty");
                 return;
             }
 

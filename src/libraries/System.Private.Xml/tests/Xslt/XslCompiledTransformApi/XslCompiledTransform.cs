@@ -573,7 +573,7 @@ namespace System.Xml.Tests
         [Theory]
         public void XmlResolver3(object param, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
-            AppContext.SetSwitch("Switch.System.Xml.DontProhibitDefaultResolver", true);
+            AppContext.SetSwitch("Switch.System.Xml.AllowDefaultResolver", true);
 
             string Baseline = Path.Combine("baseline", (string)param);
 
@@ -606,7 +606,7 @@ namespace System.Xml.Tests
         [Theory]
         public void XmlResolver7(XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
-            AppContext.SetSwitch("Switch.System.Xml.DontProhibitDefaultResolver", true);
+            AppContext.SetSwitch("Switch.System.Xml.AllowDefaultResolver", true);
 
             string expected = @"<?xml version=""1.0"" encoding=""utf-8""?><result>123</result>";
 
@@ -2450,7 +2450,7 @@ namespace System.Xml.Tests
         [Theory]
         public void XmlResolver2(object param, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
-            AppContext.SetSwitch("Switch.System.Xml.DontProhibitDefaultResolver", true);
+            AppContext.SetSwitch("Switch.System.Xml.AllowDefaultResolver", true);
 
             // "xmlResolver_document_function.xsl" contains
             // <xsl:for-each select="document('xmlResolver_document_function.xml')//elem">
@@ -2485,7 +2485,7 @@ namespace System.Xml.Tests
         [Theory]
         public void XmlResolver3(object param, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
-            AppContext.SetSwitch("Switch.System.Xml.DontProhibitDefaultResolver", true);
+            AppContext.SetSwitch("Switch.System.Xml.AllowDefaultResolver", true);
 
             // "xmlResolver_document_function.xsl" contains
             // <xsl:for-each select="document('xmlResolver_document_function.xml')//elem">
@@ -2519,7 +2519,7 @@ namespace System.Xml.Tests
         [Theory]
         public void XmlResolver5(XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
-            AppContext.SetSwitch("Switch.System.Xml.DontProhibitDefaultResolver", true);
+            AppContext.SetSwitch("Switch.System.Xml.AllowDefaultResolver", true);
 
             string expected = @"<?xml version=""1.0"" encoding=""utf-8""?><result>123</result>";
 
@@ -3004,7 +3004,7 @@ namespace System.Xml.Tests
         [Theory]
         public void TransformStrStrResolver2(XslInputType xslInputType, ReaderType readerType)
         {
-            AppContext.SetSwitch("Switch.System.Xml.DontProhibitDefaultResolver", true);
+            AppContext.SetSwitch("Switch.System.Xml.AllowDefaultResolver", true);
 
             string expected = @"<?xml version=""1.0"" encoding=""utf-8""?><result><elem>1</elem><elem>2</elem><elem>3</elem></result>";
 
@@ -3032,7 +3032,7 @@ namespace System.Xml.Tests
         [Theory]
         public void TransformStrStrResolver3(object param, XslInputType xslInputType, ReaderType readerType)
         {
-            AppContext.SetSwitch("Switch.System.Xml.DontProhibitDefaultResolver", true);
+            AppContext.SetSwitch("Switch.System.Xml.AllowDefaultResolver", true);
 
             // "xmlResolver_document_function.xsl" contains
             // <xsl:for-each select="document('xmlResolver_document_function.xml')//elem">
@@ -3091,7 +3091,7 @@ namespace System.Xml.Tests
         [Theory]
         public void ValidCases_ExternalURI(object param0, object param1, object param2, object param3, object param4, object param5)
         {
-            AppContext.SetSwitch("Switch.System.Xml.DontProhibitDefaultResolver", true);
+            AppContext.SetSwitch("Switch.System.Xml.AllowDefaultResolver", true);
 
             ValidCases(param0, param1, param2, param3, param4, param5);
         }
