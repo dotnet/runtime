@@ -99,12 +99,12 @@ namespace System.Configuration
                 {
                     try
                     {
-                        // Create the system, but let it initialize itself
-                        // when GetConfig is called, so that it can handle its
-                        // own re-entrancy issues during initialization.
-                        // When initialization is complete, the DefaultConfigurationSystem
-                        // will call CompleteConfigInit to mark initialization as
-                        // having completed.
+                        // Create the system, but let it initialize itself when GetConfig is called,
+                        // so that it can handle its own re-entrancy issues during initialization.
+                        //
+                        // When initialization is complete, the DefaultConfigurationSystem will call
+                        // CompleteConfigInit to mark initialization as having completed.
+                        //
                         // Note: the ClientConfigurationSystem has a 2-stage initialization,
                         // and that's why s_initState isn't set to InitState.Completed yet.
                         s_configSystem = new ClientConfigurationSystem();

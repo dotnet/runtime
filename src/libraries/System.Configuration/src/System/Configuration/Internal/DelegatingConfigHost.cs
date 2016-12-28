@@ -21,7 +21,7 @@ namespace System.Configuration.Internal
     //    implementation can remain internal.
     //  * It allows straightforward chaining of host functionality,
     //    see UpdateConfigHost as an example.
-    public class DelegatingConfigHost : IInternalConfigHost
+    public class DelegatingConfigHost : IInternalConfigHost, IInternalConfigHostPaths
     {
         protected DelegatingConfigHost() { }
 
@@ -210,5 +210,19 @@ namespace System.Configuration.Internal
         }
 
         public virtual bool IsRemote => Host.IsRemote;
+
+        // Want this to fail hard if we actually try and call where there is no implementation
+        private IInternalConfigHostPaths HostPaths => (IInternalConfigHostPaths)Host;
+
+        public virtual void RefreshConfigPaths()
+        {
+            HostPaths.RefreshConfigPaths();
+        }
+
+        public virtual bool HasLocalConfig => HostPaths.HasLocalConfig;
+
+        public virtual bool HasRoamingConfig => HostPaths.HasRoamingConfig;
+
+        public virtual bool IsAppConfigHttp => HostPaths.IsAppConfigHttp;
     }
 }

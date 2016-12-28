@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Configuration.Internal;
-using System.Diagnostics;
 using System.IO;
 using System.Text;
 
@@ -12,9 +11,9 @@ namespace System.Configuration
     internal class ImplicitMachineConfigHost : DelegatingConfigHost
     {
         private string _machineStreamName;
-        ConfigurationFileMap _fileMap;
+        private ConfigurationFileMap _fileMap;
 
-        internal ImplicitMachineConfigHost(UpdateConfigHost host)
+        internal ImplicitMachineConfigHost(IInternalConfigHost host)
         {
             // Delegate to the host provided.
             Host = host;

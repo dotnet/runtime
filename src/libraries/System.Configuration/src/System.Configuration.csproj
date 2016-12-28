@@ -106,6 +106,7 @@
     <Compile Include="System\Configuration\Internal\IInternalConfigClientHost.cs" />
     <Compile Include="System\Configuration\Internal\IInternalConfigConfigurationFactory.cs" />
     <Compile Include="System\Configuration\Internal\IInternalConfigHost.cs" />
+    <Compile Include="System\Configuration\Internal\IInternalConfigHostPaths.cs" />
     <Compile Include="System\Configuration\Internal\IInternalConfigRecord.cs" />
     <Compile Include="System\Configuration\Internal\IInternalConfigRoot.cs" />
     <Compile Include="System\Configuration\Internal\IInternalConfigSettingsFactory.cs" />
