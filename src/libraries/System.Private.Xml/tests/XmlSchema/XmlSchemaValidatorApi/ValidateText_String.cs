@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Xml.Schema;
 using Xunit;
 using Xunit.Abstractions;
@@ -14,9 +13,12 @@ namespace System.Xml.Tests
     public class TCValidateText_String : CXmlSchemaValidatorTestCase
     {
         private ITestOutputHelper _output;
+        private ExceptionVerifier _exVerifier;
+
         public TCValidateText_String(ITestOutputHelper output): base(output)
         {
             _output = output;
+            _exVerifier = new ExceptionVerifier("System.Xml", _output);
         }
 
         [Fact]
@@ -135,11 +137,11 @@ namespace System.Xml.Tests
             {
                 val.ValidateText("some text");
             }
-            catch (XmlSchemaValidationException)
+            catch (XmlSchemaValidationException e)
             {
-                //XmlExceptionVerifier.IsExceptionOk(e, new object[] { "Sch_InvalidTextInElementExpecting",
-																//		new object[] { "Sch_ElementName", "ElementOnlyElement" },
-																//		new object[] { "Sch_ElementName", "child" } });
+                _exVerifier.IsExceptionOk(e, new object[] { "Sch_InvalidTextInElementExpecting",
+                    new object[] { "Sch_ElementName", "ElementOnlyElement" },
+                    new object[] { "Sch_ElementName", "child" } });
                 return;
             }
 
@@ -160,9 +162,9 @@ namespace System.Xml.Tests
             {
                 val.ValidateText("some text");
             }
-            catch (XmlSchemaValidationException)
+            catch (XmlSchemaValidationException e)
             {
-                //XmlExceptionVerifier.IsExceptionOk(e, "Sch_InvalidTextInEmpty");
+                _exVerifier.IsExceptionOk(e, "Sch_InvalidTextInEmpty");
                 return;
             }
 

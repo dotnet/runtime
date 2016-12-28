@@ -2,10 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections;
 using System.IO;
-using System.Xml;
 using System.Xml.Schema;
 using Xunit;
 using Xunit.Abstractions;
@@ -17,9 +15,12 @@ namespace System.Xml.Tests
     public class TCValidateAttribute : CXmlSchemaValidatorTestCase
     {
         private ITestOutputHelper _output;
+        private ExceptionVerifier _exVerifier;
+
         public TCValidateAttribute(ITestOutputHelper output) : base(output)
         {
             _output = output;
+            _exVerifier = new ExceptionVerifier("System.Xml", _output);
         }
 
         [Theory]
@@ -188,9 +189,9 @@ namespace System.Xml.Tests
             {
                 val.ValidateAttribute("RequiredAttribute", "", StringGetter("foo"), info);
             }
-            catch (XmlSchemaValidationException)
+            catch (XmlSchemaValidationException e)
             {
-                //XmlExceptionVerifier.IsExceptionOk(e, "Sch_DuplicateAttribute", new string[] { "RequiredAttribute" });
+                _exVerifier.IsExceptionOk(e, "Sch_DuplicateAttribute", new string[] { "RequiredAttribute" });
                 return;
             }
 
@@ -368,9 +369,12 @@ namespace System.Xml.Tests
     public class TCValidateEndOfAttributes : CXmlSchemaValidatorTestCase
     {
         private ITestOutputHelper _output;
+        private ExceptionVerifier _exVerifier;
+
         public TCValidateEndOfAttributes(ITestOutputHelper output) : base(output)
         {
             _output = output;
+            _exVerifier = new ExceptionVerifier("System.Xml", _output);
         }
 
         [Fact]
@@ -445,9 +449,9 @@ namespace System.Xml.Tests
             {
                 val.ValidateEndOfAttributes(null);
             }
-            catch (XmlSchemaValidationException)
+            catch (XmlSchemaValidationException e)
             {
-                //XmlExceptionVerifier.IsExceptionOk(e, "Sch_MissRequiredAttribute", new string[] { "RequiredAttribute" });
+                _exVerifier.IsExceptionOk(e, "Sch_MissRequiredAttribute", new string[] { "RequiredAttribute" });
                 return;
             }
 

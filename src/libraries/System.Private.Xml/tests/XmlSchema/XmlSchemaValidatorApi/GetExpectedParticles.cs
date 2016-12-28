@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.IO;
-using System.Xml;
 using System.Xml.Schema;
 using Xunit;
 using Xunit.Abstractions;

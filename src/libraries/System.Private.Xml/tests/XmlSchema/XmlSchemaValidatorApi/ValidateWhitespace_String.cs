@@ -46,7 +46,7 @@ namespace System.Xml.Tests
             val.ValidationEventHandler += new ValidationEventHandler(holder.CallbackA);
 
             val.Initialize();
-            val.ValidateWhitespace(" \t\r\n");
+            val.ValidateWhitespace(" \t" + Environment.NewLine);
             val.EndValidation();
 
             Assert.True(!holder.IsCalledA);
@@ -67,13 +67,13 @@ namespace System.Xml.Tests
             val.ValidateElement("ElementOnlyElement", "", info);
             val.ValidateEndOfAttributes(null);
 
-            val.ValidateWhitespace(" \t\r\n");
+            val.ValidateWhitespace(" \t" + Environment.NewLine);
 
             val.ValidateElement("child", "", info);
             val.ValidateEndOfAttributes(null);
             val.ValidateEndElement(info);
 
-            val.ValidateWhitespace(" \t\r\n");
+            val.ValidateWhitespace(" \t" + Environment.NewLine);
 
             val.ValidateEndElement(info);
             val.EndValidation();
@@ -97,7 +97,7 @@ namespace System.Xml.Tests
 
             try
             {
-                val.ValidateWhitespace(" \r\n\t");
+                val.ValidateWhitespace(" " + Environment.NewLine + "\t");
             }
             catch (XmlSchemaValidationException)
             {

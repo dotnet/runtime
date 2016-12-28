@@ -111,7 +111,7 @@ namespace System.Xml.Tests
                         }
                         break;
                     default:
-                        _asm = Assembly.LoadFrom(GetRuntimeInstallDir() + assemblyName + ".dll");
+                        _asm = Assembly.LoadFrom(Path.Combine(GetRuntimeInstallDir(), assemblyName + ".dll"));
                         break;
                 }
 
@@ -176,6 +176,7 @@ namespace System.Xml.Tests
                         }
                         resReader.Dispose();
                     }
+                    //break;
                 }
             }
 
@@ -188,7 +189,7 @@ namespace System.Xml.Tests
             // Get mscorlib path
             var s = typeof(object).GetTypeInfo().Module.FullyQualifiedName;
             // Remove mscorlib.dll from the path
-            return Directory.GetParent(s).ToString() + "\\";
+            return Directory.GetParent(s).ToString();
         }
 
         public ExceptionVerifier(string assemblyName, ITestOutputHelper output)
@@ -209,7 +210,8 @@ namespace System.Xml.Tests
                             "\n===== Original Exception Message =====\n" + _ex.Message +
                             "\n===== Resource Id =====\n" + fInfo.GetValue(_ex) +
                             "\n===== HelpLink =====\n" + _ex.HelpLink +
-                            "\n===== Source =====\n" + _ex.Source);
+                            "\n===== Source =====\n" + _ex.Source /*+
+                            "\n===== TargetSite =====\n" + ex.TargetSite + "\n"*/);
 
             _output.WriteLine(
                             "\n===== InnerException =====\n" + _ex.InnerException +
