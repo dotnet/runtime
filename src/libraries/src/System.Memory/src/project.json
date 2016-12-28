@@ -7,12 +7,12 @@
         "System.Resources.ResourceManager": "4.3.0",
         "System.Runtime": "4.3.0",
         "System.Reflection": "4.3.0",
-        "System.Runtime.CompilerServices.Unsafe": "4.4.0-beta-24814-01"
+        "System.Runtime.CompilerServices.Unsafe": "4.4.0-beta-24827-01"
       }
     },
     "netcoreapp1.1": {
       "dependencies": {
-        "Microsoft.TargetingPack.Private.CoreCLR": "1.2.0-beta-24814-02"
+        "Microsoft.TargetingPack.Private.CoreCLR": "1.2.0-beta-24827-03"
       }
     }
   }

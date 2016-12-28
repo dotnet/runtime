@@ -1,9 +1,9 @@
 {
   "dependencies": {
-    "System.Runtime": "4.4.0-beta-24814-01",
-    "System.Runtime.Extensions": "4.4.0-beta-24814-01",
-    "System.Xml.ReaderWriter": "4.4.0-beta-24814-01",
-    "System.IO": "4.4.0-beta-24814-01"
+    "System.Runtime": "4.4.0-beta-24827-01",
+    "System.Runtime.Extensions": "4.4.0-beta-24827-01",
+    "System.Xml.ReaderWriter": "4.4.0-beta-24827-01",
+    "System.IO": "4.4.0-beta-24827-01"
   },
   "frameworks": {
     "netstandard1.7": {}

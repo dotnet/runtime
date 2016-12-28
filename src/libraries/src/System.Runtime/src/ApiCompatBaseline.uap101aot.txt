@@ -255,6 +255,7 @@ MembersMustExist : Member 'System.WeakReference.GetObjectData(System.Runtime.Ser
 CannotRemoveBaseTypeOrInterface : Type 'System.WeakReference<T>' does not implement interface 'System.Runtime.Serialization.ISerializable' in the implementation but it does in the contract.
 MembersMustExist : Member 'System.WeakReference<T>.GetObjectData(System.Runtime.Serialization.SerializationInfo, System.Runtime.Serialization.StreamingContext)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.ComponentModel.DefaultValueAttribute.SetValue(System.Object)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.ComponentModel.EditorBrowsableAttribute..ctor()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Diagnostics.DebuggableAttribute..ctor(System.Boolean, System.Boolean)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Diagnostics.DebuggableAttribute.DebuggingFlags.get()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Diagnostics.DebuggableAttribute.IsJITOptimizerDisabled.get()' does not exist in the implementation but it does exist in the contract.
@@ -382,4 +383,4 @@ CannotRemoveBaseTypeOrInterface : Type 'System.Threading.Tasks.Task' does not im
 MembersMustExist : Member 'System.Threading.Tasks.Task.Dispose()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Threading.Tasks.Task.Dispose(System.Boolean)' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Threading.Tasks.Task<TResult>' does not implement interface 'System.IDisposable' in the implementation but it does in the contract.
-Total Issues: 383
+Total Issues: 384

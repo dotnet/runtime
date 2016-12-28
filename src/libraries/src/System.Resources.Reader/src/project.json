@@ -1,7 +1,7 @@
 {
   "dependencies": {
-    "System.Resources.ResourceManager": "4.4.0-beta-24814-01",
-    "System.Runtime": "4.4.0-beta-24814-01"
+    "System.Resources.ResourceManager": "4.4.0-beta-24827-01",
+    "System.Runtime": "4.4.0-beta-24827-01"
   },
   "frameworks": {
     "netstandard1.7": {}
