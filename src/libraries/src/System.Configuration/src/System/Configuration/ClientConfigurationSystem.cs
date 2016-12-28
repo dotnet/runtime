@@ -11,7 +11,7 @@ namespace System.Configuration
     {
         private const string SystemDiagnosticsConfigKey = "system.diagnostics";
         private const string SystemNetGroupKey = "system.net/";
-        private readonly ClientConfigurationHost _configHost;
+        private readonly IInternalConfigHost _configHost;
         private readonly IInternalConfigRoot _configRoot;
         private readonly bool _isAppConfigHttp;
         private IInternalConfigRecord _completeConfigRecord;
@@ -27,12 +27,12 @@ namespace System.Configuration
             IConfigSystem configSystem = new ConfigSystem();
             configSystem.Init(typeof(ClientConfigurationHost), null, null);
 
-            _configHost = (ClientConfigurationHost)configSystem.Host;
+            _configHost = configSystem.Host;
             _configRoot = configSystem.Root;
 
             _configRoot.ConfigRemoved += OnConfigRemoved;
 
-            _isAppConfigHttp = _configHost.IsAppConfigHttp;
+            _isAppConfigHttp = ((IInternalConfigHostPaths)_configHost).IsAppConfigHttp;
         }
 
         object IInternalConfigSystem.GetSection(string sectionName)
@@ -138,12 +138,17 @@ namespace System.Configuration
                     //}
 
                     // Now load the rest of configuration
-                    _configHost.RefreshConfigPaths();
+                    var configHostPaths = (IInternalConfigHostPaths)_configHost;
+                    configHostPaths.RefreshConfigPaths();
+
                     string configPath;
-                    if (_configHost.HasLocalConfig) configPath = ClientConfigurationHost.LocalUserConfigPath;
+                    if (configHostPaths.HasLocalConfig)
+                    {
+                        configPath = ClientConfigurationHost.LocalUserConfigPath;
+                    }
                     else
                     {
-                        configPath = _configHost.HasRoamingConfig
+                        configPath = configHostPaths.HasRoamingConfig
                             ? ClientConfigurationHost.RoamingUserConfigPath
                             : ClientConfigurationHost.ExeConfigPath;
                     }

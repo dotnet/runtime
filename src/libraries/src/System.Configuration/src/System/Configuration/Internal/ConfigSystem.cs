@@ -13,9 +13,13 @@ namespace System.Configuration.Internal
         void IConfigSystem.Init(Type typeConfigHost, params object[] hostInitParams)
         {
             _configRoot = new InternalConfigRoot();
-            _configHost = (IInternalConfigHost)TypeUtil.CreateInstance(typeConfigHost);
 
-            _configRoot.Init(_configHost, false);
+            // Create the requested host and wrap in ImplicitMachineConfigHost so we can
+            // stub in a simple machine.config if needed.
+            IInternalConfigHost host = (IInternalConfigHost)TypeUtil.CreateInstance(typeConfigHost);
+            _configHost = new ImplicitMachineConfigHost(host);
+
+            _configRoot.Init(_configHost, isDesignTime: false);
             _configHost.Init(_configRoot, hostInitParams);
         }
 

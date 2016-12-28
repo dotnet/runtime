@@ -50,11 +50,14 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Strings.resx</DependentUpon>
     </Compile>
+    <Compile Include="System\Configuration\AppSettingsTests.cs" />
     <Compile Include="System\Configuration\ConfigPathUtilityTests.cs" />
     <Compile Include="System\Configuration\ExceptionUtilTests.cs" />
+    <Compile Include="System\Configuration\ImplicitMachineConfigTests.cs" />
     <Compile Include="System\Configuration\SmokeTest.cs" />
     <Compile Include="System\Configuration\StringUtilTests.cs" />
     <Compile Include="System\Configuration\TempConfig.cs" />
+    <Compile Include="System\Configuration\TestData.cs" />
     <Compile Include="System\Configuration\TypeUtilTests.cs" />
     <Compile Include="System\Configuration\ValidatiorUtilsTests.cs" />
   </ItemGroup>

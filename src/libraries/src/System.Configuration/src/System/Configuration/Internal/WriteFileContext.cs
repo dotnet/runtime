@@ -163,9 +163,7 @@ namespace System.Configuration.Internal
                 !FileIsWriteLocked(target))
             {
                 Thread.Sleep(SavingRetryInterval);
-
                 duration += SavingRetryInterval;
-
                 writeSucceeded = AttemptMove(source, target);
             }
 
@@ -180,7 +178,7 @@ namespace System.Configuration.Internal
         {
             try
             {
-                File.Move(source, target);
+                File.Replace(source, target, null);
                 return true;
             }
             catch

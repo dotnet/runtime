@@ -55,7 +55,7 @@ namespace System.Configuration
             }
         }
 
-        internal bool HasRoamingConfig
+        public override bool HasRoamingConfig
         {
             get
             {
@@ -64,7 +64,7 @@ namespace System.Configuration
             }
         }
 
-        internal bool HasLocalConfig
+        public override bool HasLocalConfig
         {
             get
             {
@@ -73,7 +73,7 @@ namespace System.Configuration
             }
         }
 
-        internal bool IsAppConfigHttp => !IsFile(GetStreamName(ExeConfigPath));
+        public override bool IsAppConfigHttp => !IsFile(GetStreamName(ExeConfigPath));
 
         public override bool SupportsRefresh => true;
 
@@ -112,7 +112,7 @@ namespace System.Configuration
             return LocalUserConfigPath;
         }
 
-        internal void RefreshConfigPaths()
+        public override void RefreshConfigPaths()
         {
             // Refresh current config paths.
             if ((_configPaths != null) && !_configPaths.HasEntryAssembly && (_exePath == null))
