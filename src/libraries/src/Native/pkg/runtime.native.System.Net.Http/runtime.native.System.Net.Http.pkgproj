@@ -37,8 +37,14 @@
     <ProjectReference Include="ubuntu\14.04\runtime.native.System.Net.Http.pkgproj">
       <Platform>amd64</Platform>
     </ProjectReference>
+    <ProjectReference Include="ubuntu\14.04\runtime.native.System.Net.Http.pkgproj">
+      <Platform>arm</Platform>
+    </ProjectReference>
     <ProjectReference Include="ubuntu\16.04\runtime.native.System.Net.Http.pkgproj">
       <Platform>amd64</Platform>
+    </ProjectReference>
+    <ProjectReference Include="ubuntu\16.04\runtime.native.System.Net.Http.pkgproj">
+      <Platform>arm</Platform>
     </ProjectReference>
     <ProjectReference Include="ubuntu\16.10\runtime.native.System.Net.Http.pkgproj">
       <Platform>amd64</Platform>
