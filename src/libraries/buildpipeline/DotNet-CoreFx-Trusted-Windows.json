@@ -67,7 +67,7 @@
       },
       "inputs": {
         "filename": "$(PB_Git)",
-        "arguments": "checkout $(PB_SourceVersion)",
+        "arguments": "checkout $(SourceVersion)",
         "workingFolder": "corefx",
         "failOnStandardError": "false"
       }
@@ -395,14 +395,14 @@
       "value": "$(Build.BuildNumber)",
       "allowOverride": true
     },
-    "PB_SourceVersion": {
+    "SourceVersion": {
       "value": "HEAD",
       "allowOverride": true
     },
     "Build.Clean": {
       "value": "all"
     },
-    "VPB_soAccountName": {
+    "PB_VsoAccountName": {
       "value": "dn-bot"
     },
     "VsoPassword": {

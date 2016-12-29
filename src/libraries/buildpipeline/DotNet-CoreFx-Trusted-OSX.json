@@ -47,7 +47,7 @@
       },
       "inputs": {
         "filename": "git",
-        "arguments": "checkout $(PB_SourceVersion)",
+        "arguments": "checkout $(SourceVersion)",
         "workingFolder": "$(Agent.BuildDirectory)/s/corefx",
         "failOnStandardError": "false"
       }
@@ -224,7 +224,7 @@
       "value": "$(Build.BuildNumber)",
       "allowOverride": true
     },
-    "PB_SourceVersion": {
+    "SourceVersion": {
       "value": "HEAD",
       "allowOverride": true
     },
