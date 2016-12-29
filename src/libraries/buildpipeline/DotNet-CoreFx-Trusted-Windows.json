@@ -139,7 +139,7 @@
       },
       "inputs": {
         "filename": "$(Build.SourcesDirectory)\\corefx\\build-managed.cmd",
-        "arguments": "-GenerateVersion -OfficialBuildId=$(PB_OfficialBuildId)",
+        "arguments": "-GenerateVersion -OfficialBuildId=$(OfficialBuildId)",
         "workingFolder": "corefx",
         "failOnStandardError": "false"
       }
@@ -387,7 +387,7 @@
     "CloudDropAccessToken": {
       "value": "PassedViaPipeBuild"
     },
-    "PB_OfficialBuildId": {
+    "OfficialBuildId": {
       "value": "$(Build.BuildNumber)",
       "allowOverride": true
     },
