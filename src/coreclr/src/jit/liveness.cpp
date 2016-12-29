@@ -197,7 +197,7 @@ void Compiler::fgLocalVarLivenessInit()
 #ifndef LEGACY_BACKEND
 //------------------------------------------------------------------------
 // fgPerNodeLocalVarLiveness:
-//   Set fgCurHeapUse and fgCurHeapDef when the global heap is read or updated
+//   Set fgCurMemoryUse and fgCurMemoryDef when memory is read or updated
 //   Call fgMarkUseDef for any Local variables encountered
 //
 // Arguments:
@@ -225,38 +225,39 @@ void Compiler::fgPerNodeLocalVarLiveness(GenTree* tree)
             break;
 
         case GT_CLS_VAR:
-            // For Volatile indirection, first mutate the global heap
-            // see comments in ValueNum.cpp (under case GT_CLS_VAR)
-            // This models Volatile reads as def-then-use of the heap.
-            // and allows for a CSE of a subsequent non-volatile read
+            // For Volatile indirection, first mutate GcHeap.
+            // See comments in ValueNum.cpp (under case GT_CLS_VAR)
+            // This models Volatile reads as def-then-use of memory
+            // and allows for a CSE of a subsequent non-volatile read.
             if ((tree->gtFlags & GTF_FLD_VOLATILE) != 0)
             {
                 // For any Volatile indirection, we must handle it as a
-                // definition of the global heap
-                fgCurHeapDef = true;
+                // definition of GcHeap
+                fgCurMemoryDef |= memoryKindSet(GcHeap);
             }
-            // If the GT_CLS_VAR is the lhs of an assignment, we'll handle it as a heap def, when we get to assignment.
+            // If the GT_CLS_VAR is the lhs of an assignment, we'll handle it as a GcHeap def, when we get to
+            // assignment.
             // Otherwise, we treat it as a use here.
             if ((tree->gtFlags & GTF_CLS_VAR_ASG_LHS) == 0)
             {
-                fgCurHeapUse = true;
+                fgCurMemoryUse |= memoryKindSet(GcHeap);
             }
             break;
 
         case GT_IND:
-            // For Volatile indirection, first mutate the global heap
+            // For Volatile indirection, first mutate GcHeap
             // see comments in ValueNum.cpp (under case GT_CLS_VAR)
-            // This models Volatile reads as def-then-use of the heap.
+            // This models Volatile reads as def-then-use of memory.
             // and allows for a CSE of a subsequent non-volatile read
             if ((tree->gtFlags & GTF_IND_VOLATILE) != 0)
             {
                 // For any Volatile indirection, we must handle it as a
-                // definition of the global heap
-                fgCurHeapDef = true;
+                // definition of the GcHeap
+                fgCurMemoryDef |= memoryKindSet(GcHeap);
             }
 
             // If the GT_IND is the lhs of an assignment, we'll handle it
-            // as a heap def, when we get to assignment.
+            // as a memory def, when we get to assignment.
             // Otherwise, we treat it as a use here.
             if ((tree->gtFlags & GTF_IND_ASG_LHS) == 0)
             {
@@ -265,7 +266,7 @@ void Compiler::fgPerNodeLocalVarLiveness(GenTree* tree)
                 GenTreePtr           addrArg         = tree->gtOp.gtOp1->gtEffectiveVal(/*commaOnly*/ true);
                 if (!addrArg->DefinesLocalAddr(this, /*width doesn't matter*/ 0, &dummyLclVarTree, &dummyIsEntire))
                 {
-                    fgCurHeapUse = true;
+                    fgCurMemoryUse |= memoryKindSet(GcHeap);
                 }
                 else
                 {
@@ -282,22 +283,22 @@ void Compiler::fgPerNodeLocalVarLiveness(GenTree* tree)
             unreached();
             break;
 
-        // We'll assume these are use-then-defs of the heap.
+        // We'll assume these are use-then-defs of memory.
         case GT_LOCKADD:
         case GT_XADD:
         case GT_XCHG:
         case GT_CMPXCHG:
-            fgCurHeapUse   = true;
-            fgCurHeapDef   = true;
-            fgCurHeapHavoc = true;
+            fgCurMemoryUse |= memoryKindSet(GcHeap);
+            fgCurMemoryDef |= memoryKindSet(GcHeap);
+            fgCurMemoryHavoc |= memoryKindSet(GcHeap);
             break;
 
         case GT_MEMORYBARRIER:
-            // Simliar to any Volatile indirection, we must handle this as a definition of the global heap
-            fgCurHeapDef = true;
+            // Simliar to any Volatile indirection, we must handle this as a definition of GcHeap
+            fgCurMemoryDef |= memoryKindSet(GcHeap);
             break;
 
-        // For now, all calls read/write the heap, the latter in its entirety.  Might tighten this case later.
+        // For now, all calls read/write GcHeap, the latter in its entirety.  Might tighten this case later.
         case GT_CALL:
         {
             GenTreeCall* call    = tree->AsCall();
@@ -313,9 +314,9 @@ void Compiler::fgPerNodeLocalVarLiveness(GenTree* tree)
             }
             if (modHeap)
             {
-                fgCurHeapUse   = true;
-                fgCurHeapDef   = true;
-                fgCurHeapHavoc = true;
+                fgCurMemoryUse |= memoryKindSet(GcHeap);
+                fgCurMemoryDef |= memoryKindSet(GcHeap);
+                fgCurMemoryHavoc |= memoryKindSet(GcHeap);
             }
         }
 
@@ -351,14 +352,14 @@ void Compiler::fgPerNodeLocalVarLiveness(GenTree* tree)
 
         default:
 
-            // Determine whether it defines a heap location.
+            // Determine whether it defines a GcHeap location.
             if (tree->OperIsAssignment() || tree->OperIsBlkOp())
             {
                 GenTreeLclVarCommon* dummyLclVarTree = nullptr;
                 if (!tree->DefinesLocal(this, &dummyLclVarTree))
                 {
-                    // If it doesn't define a local, then it might update the heap.
-                    fgCurHeapDef = true;
+                    // If it doesn't define a local, then it might update the GC heap.
+                    fgCurMemoryDef |= memoryKindSet(GcHeap);
                 }
             }
             break;
@@ -409,10 +410,10 @@ void Compiler::fgPerBlockLocalVarLiveness()
             VarSetOps::Assign(this, block->bbVarDef, liveAll);
             VarSetOps::Assign(this, block->bbLiveIn, liveAll);
             VarSetOps::Assign(this, block->bbLiveOut, liveAll);
-            block->bbHeapUse     = true;
-            block->bbHeapDef     = true;
-            block->bbHeapLiveIn  = true;
-            block->bbHeapLiveOut = true;
+            block->bbMemoryUse     = fullMemoryKindSet;
+            block->bbMemoryDef     = fullMemoryKindSet;
+            block->bbMemoryLiveIn  = fullMemoryKindSet;
+            block->bbMemoryLiveOut = fullMemoryKindSet;
 
             switch (block->bbJumpKind)
             {
@@ -439,9 +440,9 @@ void Compiler::fgPerBlockLocalVarLiveness()
         VarSetOps::ClearD(this, fgCurUseSet);
         VarSetOps::ClearD(this, fgCurDefSet);
 
-        fgCurHeapUse   = false;
-        fgCurHeapDef   = false;
-        fgCurHeapHavoc = false;
+        fgCurMemoryUse   = emptyMemoryKindSet;
+        fgCurMemoryDef   = emptyMemoryKindSet;
+        fgCurMemoryHavoc = emptyMemoryKindSet;
 
         compCurBB = block;
         if (!block->IsLIR())
@@ -501,19 +502,25 @@ void Compiler::fgPerBlockLocalVarLiveness()
             printf("BB%02u", block->bbNum);
             printf(" USE(%d)=", VarSetOps::Count(this, fgCurUseSet));
             lvaDispVarSet(fgCurUseSet, allVars);
-            if (fgCurHeapUse)
+            for (MemoryKind memoryKind : allMemoryKinds())
             {
-                printf(" + HEAP");
+                if ((fgCurMemoryUse & memoryKindSet(memoryKind)) != 0)
+                {
+                    printf(" + %s", memoryKindNames[memoryKind]);
+                }
             }
             printf("\n     DEF(%d)=", VarSetOps::Count(this, fgCurDefSet));
             lvaDispVarSet(fgCurDefSet, allVars);
-            if (fgCurHeapDef)
+            for (MemoryKind memoryKind : allMemoryKinds())
             {
-                printf(" + HEAP");
-            }
-            if (fgCurHeapHavoc)
-            {
-                printf("*");
+                if ((fgCurMemoryDef & memoryKindSet(memoryKind)) != 0)
+                {
+                    printf(" + %s", memoryKindNames[memoryKind]);
+                }
+                if ((fgCurMemoryHavoc & memoryKindSet(memoryKind)) != 0)
+                {
+                    printf("*");
+                }
             }
             printf("\n\n");
         }
@@ -521,14 +528,14 @@ void Compiler::fgPerBlockLocalVarLiveness()
 
         VarSetOps::Assign(this, block->bbVarUse, fgCurUseSet);
         VarSetOps::Assign(this, block->bbVarDef, fgCurDefSet);
-        block->bbHeapUse   = fgCurHeapUse;
-        block->bbHeapDef   = fgCurHeapDef;
-        block->bbHeapHavoc = fgCurHeapHavoc;
+        block->bbMemoryUse   = fgCurMemoryUse;
+        block->bbMemoryDef   = fgCurMemoryDef;
+        block->bbMemoryHavoc = fgCurMemoryHavoc;
 
         /* also initialize the IN set, just in case we will do multiple DFAs */
 
         VarSetOps::AssignNoCopy(this, block->bbLiveIn, VarSetOps::MakeEmpty(this));
-        block->bbHeapLiveIn = false;
+        block->bbMemoryLiveIn = emptyMemoryKindSet;
     }
 }
 
@@ -1066,16 +1073,16 @@ class LiveVarAnalysis
 
     bool m_hasPossibleBackEdge;
 
-    bool      m_heapLiveIn;
-    bool      m_heapLiveOut;
+    unsigned  m_memoryLiveIn;
+    unsigned  m_memoryLiveOut;
     VARSET_TP m_liveIn;
     VARSET_TP m_liveOut;
 
     LiveVarAnalysis(Compiler* compiler)
         : m_compiler(compiler)
         , m_hasPossibleBackEdge(false)
-        , m_heapLiveIn(false)
-        , m_heapLiveOut(false)
+        , m_memoryLiveIn(emptyMemoryKindSet)
+        , m_memoryLiveOut(emptyMemoryKindSet)
         , m_liveIn(VarSetOps::MakeEmpty(compiler))
         , m_liveOut(VarSetOps::MakeEmpty(compiler))
     {
@@ -1085,7 +1092,7 @@ class LiveVarAnalysis
     {
         /* Compute the 'liveOut' set */
         VarSetOps::ClearD(m_compiler, m_liveOut);
-        m_heapLiveOut = false;
+        m_memoryLiveOut = emptyMemoryKindSet;
         if (block->endsWithJmpMethod(m_compiler))
         {
             // A JMP uses all the arguments, so mark them all
@@ -1108,7 +1115,7 @@ class LiveVarAnalysis
         {
             BasicBlock* succ = (*succs);
             VarSetOps::UnionD(m_compiler, m_liveOut, succ->bbLiveIn);
-            m_heapLiveOut = m_heapLiveOut || (*succs)->bbHeapLiveIn;
+            m_memoryLiveOut |= (*succs)->bbMemoryLiveIn;
             if (succ->bbNum <= block->bbNum)
             {
                 m_hasPossibleBackEdge = true;
@@ -1129,9 +1136,9 @@ class LiveVarAnalysis
         VarSetOps::DiffD(m_compiler, m_liveIn, block->bbVarDef);
         VarSetOps::UnionD(m_compiler, m_liveIn, block->bbVarUse);
 
-        // Even if block->bbHeapDef is set, we must assume that it doesn't kill heap liveness from m_heapLiveOut,
-        // since (without proof otherwise) the use and def may touch different heap memory at run-time.
-        m_heapLiveIn = m_heapLiveOut || block->bbHeapUse;
+        // Even if block->bbMemoryDef is set, we must assume that it doesn't kill memory liveness from m_memoryLiveOut,
+        // since (without proof otherwise) the use and def may touch different memory at run-time.
+        m_memoryLiveIn = m_memoryLiveOut | block->bbMemoryUse;
 
         /* Can exceptions from this block be handled (in this function)? */
 
@@ -1183,14 +1190,14 @@ class LiveVarAnalysis
             }
         }
 
-        const bool heapLiveInChanged = (block->bbHeapLiveIn == 1) != m_heapLiveIn;
-        if (heapLiveInChanged || (block->bbHeapLiveOut == 1) != m_heapLiveOut)
+        const bool memoryLiveInChanged = (block->bbMemoryLiveIn != m_memoryLiveIn);
+        if (memoryLiveInChanged || (block->bbMemoryLiveOut != m_memoryLiveOut))
         {
-            block->bbHeapLiveIn  = m_heapLiveIn;
-            block->bbHeapLiveOut = m_heapLiveOut;
+            block->bbMemoryLiveIn  = m_memoryLiveIn;
+            block->bbMemoryLiveOut = m_memoryLiveOut;
         }
 
-        return liveInChanged || heapLiveInChanged;
+        return liveInChanged || memoryLiveInChanged;
     }
 
     void Run(bool updateInternalOnly)
@@ -1209,8 +1216,8 @@ class LiveVarAnalysis
             VarSetOps::ClearD(m_compiler, m_liveIn);
             VarSetOps::ClearD(m_compiler, m_liveOut);
 
-            m_heapLiveIn  = false;
-            m_heapLiveOut = false;
+            m_memoryLiveIn  = emptyMemoryKindSet;
+            m_memoryLiveOut = emptyMemoryKindSet;
 
             for (BasicBlock* block = m_compiler->fgLastBB; block; block = block->bbPrev)
             {
@@ -2961,15 +2968,21 @@ void Compiler::fgDispBBLiveness(BasicBlock* block)
     printf("BB%02u", block->bbNum);
     printf(" IN (%d)=", VarSetOps::Count(this, block->bbLiveIn));
     lvaDispVarSet(block->bbLiveIn, allVars);
-    if (block->bbHeapLiveIn)
+    for (MemoryKind memoryKind : allMemoryKinds())
     {
-        printf(" + HEAP");
+        if ((block->bbMemoryLiveIn & memoryKindSet(memoryKind)) != 0)
+        {
+            printf(" + %s", memoryKindNames[memoryKind]);
+        }
     }
     printf("\n     OUT(%d)=", VarSetOps::Count(this, block->bbLiveOut));
     lvaDispVarSet(block->bbLiveOut, allVars);
-    if (block->bbHeapLiveOut)
+    for (MemoryKind memoryKind : allMemoryKinds())
     {
-        printf(" + HEAP");
+        if ((block->bbMemoryLiveOut & memoryKindSet(memoryKind)) != 0)
+        {
+            printf(" + %s", memoryKindNames[memoryKind]);
+        }
     }
     printf("\n\n");
 }

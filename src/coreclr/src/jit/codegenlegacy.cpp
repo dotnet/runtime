@@ -20664,17 +20664,17 @@ GenTreePtr Compiler::fgLegacyPerStatementLocalVarLiveness(GenTreePtr startNode, 
     VARSET_TP VARSET_INIT(this, defSet_BeforeSplit, fgCurDefSet); // Store the current fgCurDefSet and fgCurUseSet so
     VARSET_TP VARSET_INIT(this, useSet_BeforeSplit, fgCurUseSet); // we can restore then before entering the elseTree.
 
-    bool heapUse_BeforeSplit   = fgCurHeapUse;
-    bool heapDef_BeforeSplit   = fgCurHeapDef;
-    bool heapHavoc_BeforeSplit = fgCurHeapHavoc;
+    MemoryKindSet memoryUse_BeforeSplit   = fgCurMemoryUse;
+    MemoryKindSet memoryDef_BeforeSplit   = fgCurMemoryDef;
+    MemoryKindSet memoryHavoc_BeforeSplit = fgCurMemoryHavoc;
 
     VARSET_TP VARSET_INIT_NOCOPY(defSet_AfterThenTree, VarSetOps::MakeEmpty(this)); // These two variables will store
                                                                                     // the USE and DEF sets after
     VARSET_TP VARSET_INIT_NOCOPY(useSet_AfterThenTree, VarSetOps::MakeEmpty(this)); // evaluating the thenTree.
 
-    bool heapUse_AfterThenTree   = fgCurHeapUse;
-    bool heapDef_AfterThenTree   = fgCurHeapDef;
-    bool heapHavoc_AfterThenTree = fgCurHeapHavoc;
+    MemoryKindSet memoryUse_AfterThenTree   = fgCurMemoryUse;
+    MemoryKindSet memoryDef_AfterThenTree   = fgCurMemoryDef;
+    MemoryKindSet memoryHavoc_AfterThenTree = fgCurMemoryHavoc;
 
     // relopNode is either NULL or a GTF_RELOP_QMARK node.
     assert(!relopNode || (relopNode->OperKind() & GTK_RELOP) && (relopNode->gtFlags & GTF_RELOP_QMARK));
@@ -20701,9 +20701,9 @@ GenTreePtr Compiler::fgLegacyPerStatementLocalVarLiveness(GenTreePtr startNode, 
                 VarSetOps::IntersectionD(this, fgCurDefSet, defSet_AfterThenTree);
                 VarSetOps::UnionD(this, fgCurUseSet, useSet_AfterThenTree);
 
-                fgCurHeapDef   = fgCurHeapDef && heapDef_AfterThenTree;
-                fgCurHeapHavoc = fgCurHeapHavoc && heapHavoc_AfterThenTree;
-                fgCurHeapUse   = fgCurHeapUse || heapUse_AfterThenTree;
+                fgCurMemoryDef   = fgCurMemoryDef & memoryDef_AfterThenTree;
+                fgCurMemoryHavoc = fgCurMemoryHavoc & memoryHavoc_AfterThenTree;
+                fgCurMemoryUse   = fgCurMemoryUse | memoryUse_AfterThenTree;
 
                 // Return the GT_QMARK node itself so the caller can continue from there.
                 // NOTE: the caller will get to the next node by doing the "tree = tree->gtNext"
@@ -20720,16 +20720,16 @@ GenTreePtr Compiler::fgLegacyPerStatementLocalVarLiveness(GenTreePtr startNode, 
                 VarSetOps::Assign(this, defSet_AfterThenTree, fgCurDefSet);
                 VarSetOps::Assign(this, useSet_AfterThenTree, fgCurUseSet);
 
-                heapDef_AfterThenTree   = fgCurHeapDef;
-                heapHavoc_AfterThenTree = fgCurHeapHavoc;
-                heapUse_AfterThenTree   = fgCurHeapUse;
+                memoryDef_AfterThenTree   = fgCurMemoryDef;
+                memoryHavoc_AfterThenTree = fgCurMemoryHavoc;
+                memoryUse_AfterThenTree   = fgCurMemoryUse;
 
                 VarSetOps::Assign(this, fgCurDefSet, defSet_BeforeSplit);
                 VarSetOps::Assign(this, fgCurUseSet, useSet_BeforeSplit);
 
-                fgCurHeapDef   = heapDef_BeforeSplit;
-                fgCurHeapHavoc = heapHavoc_BeforeSplit;
-                fgCurHeapUse   = heapUse_BeforeSplit;
+                fgCurMemoryDef   = memoryDef_BeforeSplit;
+                fgCurMemoryHavoc = memoryHavoc_BeforeSplit;
+                fgCurMemoryUse   = memoryUse_BeforeSplit;
 
                 break;
 
@@ -20743,35 +20743,35 @@ GenTreePtr Compiler::fgLegacyPerStatementLocalVarLiveness(GenTreePtr startNode, 
                 break;
 
             case GT_CLS_VAR:
-                // For Volatile indirection, first mutate the global heap
+                // For Volatile indirection, first mutate GcHeap
                 // see comments in ValueNum.cpp (under case GT_CLS_VAR)
                 // This models Volatile reads as def-then-use of the heap.
                 // and allows for a CSE of a subsequent non-volatile read
                 if ((tree->gtFlags & GTF_FLD_VOLATILE) != 0)
                 {
                     // For any Volatile indirection, we must handle it as a
-                    // definition of the global heap
-                    fgCurHeapDef = true;
+                    // definition of GcHeap
+                    fgCurMemoryDef |= memoryKindSet(GcHeap);
                 }
                 // If the GT_CLS_VAR is the lhs of an assignment, we'll handle it as a heap def, when we get to
                 // assignment.
                 // Otherwise, we treat it as a use here.
                 if ((tree->gtFlags & GTF_CLS_VAR_ASG_LHS) == 0)
                 {
-                    fgCurHeapUse = true;
+                    fgCurMemoryUse |= memoryKindSet(GcHeap);
                 }
                 break;
 
             case GT_IND:
-                // For Volatile indirection, first mutate the global heap
+                // For Volatile indirection, first mutate GcHeap
                 // see comments in ValueNum.cpp (under case GT_CLS_VAR)
                 // This models Volatile reads as def-then-use of the heap.
                 // and allows for a CSE of a subsequent non-volatile read
                 if ((tree->gtFlags & GTF_IND_VOLATILE) != 0)
                 {
                     // For any Volatile indirection, we must handle it as a
-                    // definition of the global heap
-                    fgCurHeapDef = true;
+                    // definition of GcHeap
+                    fgCurMemoryDef |= memoryKindSet(GcHeap);
                 }
 
                 // If the GT_IND is the lhs of an assignment, we'll handle it
@@ -20784,7 +20784,7 @@ GenTreePtr Compiler::fgLegacyPerStatementLocalVarLiveness(GenTreePtr startNode, 
                     GenTreePtr           addrArg         = tree->gtOp.gtOp1->gtEffectiveVal(/*commaOnly*/ true);
                     if (!addrArg->DefinesLocalAddr(this, /*width doesn't matter*/ 0, &dummyLclVarTree, &dummyIsEntire))
                     {
-                        fgCurHeapUse = true;
+                        fgCurMemoryUse |= memoryKindSet(GcHeap);
                     }
                     else
                     {
@@ -20801,22 +20801,22 @@ GenTreePtr Compiler::fgLegacyPerStatementLocalVarLiveness(GenTreePtr startNode, 
                 unreached();
                 break;
 
-            // We'll assume these are use-then-defs of the heap.
+            // We'll assume these are use-then-defs of GcHeap.
             case GT_LOCKADD:
             case GT_XADD:
             case GT_XCHG:
             case GT_CMPXCHG:
-                fgCurHeapUse   = true;
-                fgCurHeapDef   = true;
-                fgCurHeapHavoc = true;
+                fgCurMemoryUse |= memoryKindSet(GcHeap);
+                fgCurMemoryDef |= memoryKindSet(GcHeap);
+                fgCurMemoryHavoc |= memoryKindSet(GcHeap);
                 break;
 
             case GT_MEMORYBARRIER:
-                // Simliar to any Volatile indirection, we must handle this as a definition of the global heap
-                fgCurHeapDef = true;
+                // Simliar to any Volatile indirection, we must handle this as a definition of GcHeap
+                fgCurMemoryDef |= memoryKindSet(GcHeap);
                 break;
 
-            // For now, all calls read/write the heap, the latter in its entirety.  Might tighten this case later.
+            // For now, all calls read/write GcHeap, the latter in its entirety.  Might tighten this case later.
             case GT_CALL:
             {
                 GenTreeCall* call    = tree->AsCall();
@@ -20832,9 +20832,9 @@ GenTreePtr Compiler::fgLegacyPerStatementLocalVarLiveness(GenTreePtr startNode, 
                 }
                 if (modHeap)
                 {
-                    fgCurHeapUse   = true;
-                    fgCurHeapDef   = true;
-                    fgCurHeapHavoc = true;
+                    fgCurMemoryUse |= memoryKindSet(GcHeap);
+                    fgCurMemoryDef |= memoryKindSet(GcHeap);
+                    fgCurMemoryHavoc |= memoryKindSet(GcHeap);
                 }
             }
 
@@ -20866,14 +20866,14 @@ GenTreePtr Compiler::fgLegacyPerStatementLocalVarLiveness(GenTreePtr startNode, 
 
             default:
 
-                // Determine whether it defines a heap location.
+                // Determine whether it defines a GC heap location.
                 if (tree->OperIsAssignment() || tree->OperIsBlkOp())
                 {
                     GenTreeLclVarCommon* dummyLclVarTree = NULL;
                     if (!tree->DefinesLocal(this, &dummyLclVarTree))
                     {
-                        // If it doesn't define a local, then it might update the heap.
-                        fgCurHeapDef = true;
+                        // If it doesn't define a local, then it might update the GC heap.
+                        fgCurMemoryDef |= memoryKindSet(GcHeap);
                     }
                 }
 

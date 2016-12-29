@@ -2749,21 +2749,21 @@ protected:
     static fgWalkPreFn lvaMarkLclRefsCallback;
     void lvaMarkLclRefs(GenTreePtr tree);
 
-    // Keeps the mapping from SSA #'s to VN's for the implicit "Heap" variable.
-    PerSsaArray lvHeapPerSsaData;
-    unsigned    lvHeapNumSsaNames;
+    // Keeps the mapping from SSA #'s to VN's for the implicit memory variables.
+    PerSsaArray lvMemoryPerSsaData;
+    unsigned    lvMemoryNumSsaNames;
 
 public:
-    // Returns the address of the per-Ssa data for "Heap" at the given ssaNum (which is required
+    // Returns the address of the per-Ssa data for memory at the given ssaNum (which is required
     // not to be the SsaConfig::RESERVED_SSA_NUM, which indicates that the variable is
     // not an SSA variable).
-    LclSsaVarDsc* GetHeapPerSsaData(unsigned ssaNum)
+    LclSsaVarDsc* GetMemoryPerSsaData(unsigned ssaNum)
     {
         assert(ssaNum != SsaConfig::RESERVED_SSA_NUM);
         assert(SsaConfig::RESERVED_SSA_NUM == 0);
         ssaNum--;
-        assert(ssaNum < lvHeapNumSsaNames);
-        return &lvHeapPerSsaData.GetRef(ssaNum);
+        assert(ssaNum < lvMemoryNumSsaNames);
+        return &lvMemoryPerSsaData.GetRef(ssaNum);
     }
 
     /*
@@ -3804,7 +3804,7 @@ public:
     // tree node).
     void fgValueNumber();
 
-    // Computes new heap VN via the assignment H[elemTypeEq][arrVN][inx][fldSeq] = rhsVN.
+    // Computes new GcHeap VN via the assignment H[elemTypeEq][arrVN][inx][fldSeq] = rhsVN.
     // Assumes that "elemTypeEq" is the (equivalence class rep) of the array element type.
     // The 'indType' is the indirection type of the lhs of the assignment and will typically
     // match the element type of the array or fldSeq.  When this type doesn't match
@@ -3835,7 +3835,7 @@ public:
 
     // Requires "funcApp" to be a VNF_PtrToArrElem, and "addrXvn" to represent the exception set thrown
     // by evaluating the array index expression "tree".  Returns the value number resulting from
-    // dereferencing the array in the current heap state.  If "tree" is non-null, it must be the
+    // dereferencing the array in the current GcHeap state.  If "tree" is non-null, it must be the
     // "GT_IND" that does the dereference, and it is given the returned value number.
     ValueNum fgValueNumberArrIndexVal(GenTreePtr tree, struct VNFuncApp* funcApp, ValueNum addrXvn);
 
@@ -3848,18 +3848,18 @@ public:
 
     // Requires that "entryBlock" is the entry block of loop "loopNum", and that "loopNum" is the
     // innermost loop of which "entryBlock" is the entry.  Returns the value number that should be
-    // assumed for the heap at the start "entryBlk".
-    ValueNum fgHeapVNForLoopSideEffects(BasicBlock* entryBlock, unsigned loopNum);
+    // assumed for the memoryKind at the start "entryBlk".
+    ValueNum fgMemoryVNForLoopSideEffects(MemoryKind memoryKind, BasicBlock* entryBlock, unsigned loopNum);
 
-    // Called when an operation (performed by "tree", described by "msg") may cause the global Heap to be mutated.
-    void fgMutateHeap(GenTreePtr tree DEBUGARG(const char* msg));
+    // Called when an operation (performed by "tree", described by "msg") may cause the GcHeap to be mutated.
+    void fgMutateGcHeap(GenTreePtr tree DEBUGARG(const char* msg));
 
-    // For a store at curTree, ecord the new heapVN in curHeapVN and curTree's HeapSsaMap entry.
-    void recordHeapStore(GenTreePtr curTree, ValueNum heapVN DEBUGARG(const char* msg));
+    // For a GC heap store at curTree, record the new curHeapVN and update curTree's MemorySsaMap.
+    void recordGcHeapStore(GenTreePtr curTree, ValueNum gcHeapVN DEBUGARG(const char* msg));
 
-    // Tree caused an update in the current heap VN.  If "tree" has an associated heap SSA #, record that
+    // Tree caused an update in the current memory VN.  If "tree" has an associated heap SSA #, record that
     // value in that SSA #.
-    void fgValueNumberRecordHeapSsa(GenTreePtr tree);
+    void fgValueNumberRecordMemorySsa(MemoryKind memoryKind, GenTreePtr tree);
 
     // The input 'tree' is a leaf node that is a constant
     // Assign the proper value number to the tree
@@ -3898,11 +3898,11 @@ public:
     // Requires "helpFunc" to be pure.  Returns the corresponding VNFunc.
     VNFunc fgValueNumberHelperMethVNFunc(CorInfoHelpFunc helpFunc);
 
-    // This is the current value number for the "Heap" implicit variable while
-    // doing value numbering.  This is the value number under the "liberal" interpretation
-    // of heap values; the "conservative" interpretation needs no VN, since every access of
-    // the heap yields an unknown value.
-    ValueNum fgCurHeapVN;
+    // These are the current value number for the memory implicit variables while
+    // doing value numbering.  These are the value numbers under the "liberal" interpretation
+    // of memory values; the "conservative" interpretation needs no VN, since every access of
+    // memory yields an unknown value.
+    ValueNum fgCurMemoryVN[MemoryKindCount];
 
     // Return a "pseudo"-class handle for an array element type.  If "elemType" is TYP_STRUCT,
     // requires "elemStructType" to be non-null (and to have a low-order zero).  Otherwise, low order bit
@@ -4674,9 +4674,9 @@ private:
     VARSET_TP fgCurUseSet; // vars used     by block (before an assignment)
     VARSET_TP fgCurDefSet; // vars assigned by block (before a use)
 
-    bool fgCurHeapUse;   // True iff the current basic block uses the heap before defining it.
-    bool fgCurHeapDef;   // True iff the current basic block defines the heap.
-    bool fgCurHeapHavoc; // True if  the current basic block is known to set the heap to a "havoc" value.
+    MemoryKindSet fgCurMemoryUse;   // True iff the current basic block uses memory.
+    MemoryKindSet fgCurMemoryDef;   // True iff the current basic block modifies memory.
+    MemoryKindSet fgCurMemoryHavoc; // True if  the current basic block is known to set memory to a "havoc" value.
 
     void fgMarkUseDef(GenTreeLclVarCommon* tree);
 
@@ -5029,9 +5029,10 @@ public:
 #define LPFLG_ASGVARS_INC 0x8000 // "lpAsgVars" is incomplete -- vars beyond those representable in an AllVarSet
                                  // type are assigned to.
 
-        bool lpLoopHasHeapHavoc; // The loop contains an operation that we assume has arbitrary heap side effects.
-                                 // If this is set, the fields below may not be accurate (since they become irrelevant.)
-        bool lpContainsCall;     // True if executing the loop body *may* execute a call
+        bool lpLoopHasMemoryHavoc[MemoryKindCount]; // The loop contains an operation that we assume has arbitrary
+                                                    // memory side effects.  If this is set, the fields below
+                                                    // may not be accurate (since they become irrelevant.)
+        bool lpContainsCall;                        // True if executing the loop body *may* execute a call
 
         VARSET_TP lpVarInOut;  // The set of variables that are IN or OUT during the execution of this loop
         VARSET_TP lpVarUseDef; // The set of variables that are USE or DEF during the execution of this loop
@@ -9028,21 +9029,22 @@ public:
         return compRoot->m_arrayInfoMap;
     }
 
-    NodeToUnsignedMap* m_heapSsaMap;
+    NodeToUnsignedMap* m_memorySsaMap[MemoryKindCount];
 
-    // In some cases, we want to assign intermediate SSA #'s to heap states, and know what nodes create those heap
-    // states. (We do this for try blocks, where, if the try block doesn't do a call that loses track of the heap state,
-    // all the possible heap states are possible initial states of the corresponding catch block(s).)
-    NodeToUnsignedMap* GetHeapSsaMap()
+    // In some cases, we want to assign intermediate SSA #'s to memory states, and know what nodes create those memory
+    // states. (We do this for try blocks, where, if the try block doesn't do a call that loses track of the memory
+    // state, all the possible memory states are possible initial states of the corresponding catch block(s).)
+    NodeToUnsignedMap* GetMemorySsaMap(MemoryKind memoryKind)
     {
+        assert(memoryKind < MemoryKindCount);
         Compiler* compRoot = impInlineRoot();
-        if (compRoot->m_heapSsaMap == nullptr)
+        if (compRoot->m_memorySsaMap[memoryKind] == nullptr)
         {
             // Create a CompAllocator that labels sub-structure with CMK_ArrayInfoMap, and use that for allocation.
-            IAllocator* ialloc     = new (this, CMK_ArrayInfoMap) CompAllocator(this, CMK_ArrayInfoMap);
-            compRoot->m_heapSsaMap = new (ialloc) NodeToUnsignedMap(ialloc);
+            IAllocator* ialloc                   = new (this, CMK_ArrayInfoMap) CompAllocator(this, CMK_ArrayInfoMap);
+            compRoot->m_memorySsaMap[memoryKind] = new (ialloc) NodeToUnsignedMap(ialloc);
         }
-        return compRoot->m_heapSsaMap;
+        return compRoot->m_memorySsaMap[memoryKind];
     }
 
     // The Refany type is the only struct type whose structure is implicitly assumed by IL.  We need its fields.
