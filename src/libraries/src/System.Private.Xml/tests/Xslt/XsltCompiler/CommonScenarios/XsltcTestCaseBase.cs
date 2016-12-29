@@ -2,16 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Xunit;
 using Xunit.Abstractions;
-using System;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
-using System.Xml;
 using System.Xml.Xsl;
 using XmlCoreTest.Common;
 using OLEDB.Test.ModuleCore;
@@ -342,16 +339,6 @@ namespace System.Xml.Tests
                     s_output.WriteLine(e.Message);
                     return false;
                 }
-                // Turning this off as this causes noise on different platforms like IA64.
-                // Also since we verify the assembly by loading there is not really a need for this verification.
-                // if (succeeded && runAssemblyVerification) {
-                //    String peOutput = String.Empty;
-                //    succeeded = XsltVerificationLibrary.VerifyAssemblyUsingPEVerify(
-                //            asmName,
-                //            logger,
-                //            ref peOutput);
-                //    logger.LogMessage("Assembly Verification Result: " + peOutput);
-                //}
             }
 
             private static byte[] loadFile(string filename)
