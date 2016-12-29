@@ -47,7 +47,7 @@
       },
       "inputs": {
         "filename": "git",
-        "arguments": "checkout $(PB_SourceVersion)",
+        "arguments": "checkout $(SourceVersion)",
         "workingFolder": "$(Build.SourcesDirectory)/corefx",
         "failOnStandardError": "false"
       }
@@ -137,7 +137,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "exec $(PB_DockerContainerName) git checkout $(PB_SourceVersion)",
+        "arguments": "exec $(PB_DockerContainerName) git checkout $(SourceVersion)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -400,7 +400,7 @@
       "value": "$(Build.BuildNumber)",
       "allowOverride": true
     },
-    "PB_SourceVersion": {
+    "SourceVersion": {
       "value": "HEAD",
       "allowOverride": true
     },
