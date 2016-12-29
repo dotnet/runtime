@@ -83,7 +83,7 @@
       },
       "inputs": {
         "filename": "$(Agent.BuildDirectory)/s/corefx/build-managed.sh",
-        "arguments": "-OfficialBuildId=$(PB_OfficialBuildId) -- /t:GenerateVersionSourceFile /p:GenerateVersionSourceFile=true",
+        "arguments": "-OfficialBuildId=$(OfficialBuildId) -- /t:GenerateVersionSourceFile /p:GenerateVersionSourceFile=true",
         "workingFolder": "$(Agent.BuildDirectory)/s/corefx",
         "failOnStandardError": "false"
       }
@@ -216,7 +216,7 @@
     "CloudDropAccessToken": {
       "value": "PassedViaPipeBuild"
     },
-    "PB_OfficialBuildId": {
+    "OfficialBuildId": {
       "value": "$(Build.BuildNumber)",
       "allowOverride": true
     },

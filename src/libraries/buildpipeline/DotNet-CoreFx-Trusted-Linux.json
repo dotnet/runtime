@@ -155,7 +155,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "exec $(PB_DockerContainerName) $(PB_GitDirectory)/build-managed.sh -OfficialBuildId=$(PB_OfficialBuildId) -- /t:GenerateVersionSourceFile /p:GenerateVersionSourceFile=true",
+        "arguments": "exec $(PB_DockerContainerName) $(PB_GitDirectory)/build-managed.sh -OfficialBuildId=$(OfficialBuildId) -- /t:GenerateVersionSourceFile /p:GenerateVersionSourceFile=true",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -392,7 +392,7 @@
     "CloudDropAccessToken": {
       "value": "PassedViaPipeBuild"
     },
-    "PB_OfficialBuildId": {
+    "OfficialBuildId": {
       "value": "$(Build.BuildNumber)",
       "allowOverride": true
     },
