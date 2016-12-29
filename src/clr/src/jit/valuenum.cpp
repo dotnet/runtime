@@ -1373,10 +1373,10 @@ TailCall:
                     goto TailCall;
                 }
             }
-            else if (funcApp.m_func == VNF_PhiDef || funcApp.m_func == VNF_PhiHeapDef)
+            else if (funcApp.m_func == VNF_PhiDef || funcApp.m_func == VNF_PhiMemoryDef)
             {
-                unsigned  lclNum = BAD_VAR_NUM;
-                bool      isHeap = false;
+                unsigned  lclNum   = BAD_VAR_NUM;
+                bool      isMemory = false;
                 VNFuncApp phiFuncApp;
                 bool      defArgIsFunc = false;
                 if (funcApp.m_func == VNF_PhiDef)
@@ -1386,8 +1386,8 @@ TailCall:
                 }
                 else
                 {
-                    assert(funcApp.m_func == VNF_PhiHeapDef);
-                    isHeap       = true;
+                    assert(funcApp.m_func == VNF_PhiMemoryDef);
+                    isMemory     = true;
                     defArgIsFunc = GetVNFunc(funcApp.m_args[1], &phiFuncApp);
                 }
                 if (defArgIsFunc && phiFuncApp.m_func == VNF_Phi)
@@ -1401,9 +1401,9 @@ TailCall:
                     assert(IsVNConstant(phiFuncApp.m_args[0]));
                     unsigned phiArgSsaNum = ConstantValue<unsigned>(phiFuncApp.m_args[0]);
                     ValueNum phiArgVN;
-                    if (isHeap)
+                    if (isMemory)
                     {
-                        phiArgVN = m_pComp->GetHeapPerSsaData(phiArgSsaNum)->m_vnPair.Get(vnk);
+                        phiArgVN = m_pComp->GetMemoryPerSsaData(phiArgSsaNum)->m_vnPair.Get(vnk);
                     }
                     else
                     {
@@ -1430,9 +1430,9 @@ TailCall:
                             }
                             assert(IsVNConstant(cur));
                             phiArgSsaNum = ConstantValue<unsigned>(cur);
-                            if (isHeap)
+                            if (isMemory)
                             {
-                                phiArgVN = m_pComp->GetHeapPerSsaData(phiArgSsaNum)->m_vnPair.Get(vnk);
+                                phiArgVN = m_pComp->GetMemoryPerSsaData(phiArgSsaNum)->m_vnPair.Get(vnk);
                             }
                             else
                             {
@@ -2465,9 +2465,10 @@ ValueNum ValueNumStore::VNApplySelectorsAssignTypeCoerce(ValueNum elem, var_type
 
 //------------------------------------------------------------------------
 // VNApplySelectorsAssign: Compute the value number corresponding to "map" but with
-//    the element at "fieldSeq" updated to have type "elem"; this is the new heap
-//    value for an assignment of value "elem" into the heap at location "fieldSeq"
-//    that occurs in block "block" and has type "indType".
+//    the element at "fieldSeq" updated to have type "elem"; this is the new memory
+//    value for an assignment of value "elem" into the memory at location "fieldSeq"
+//    that occurs in block "block" and has type "indType" (so long as the selectors
+//    into that memory occupy disjoint locations, which is true for GcHeap).
 //
 // Arguments:
 //    vnk - Identifies whether to recurse to Conservative or Liberal value numbers
@@ -2478,7 +2479,7 @@ ValueNum ValueNumStore::VNApplySelectorsAssignTypeCoerce(ValueNum elem, var_type
 //    block - Block where the assignment occurs
 //
 // Return Value:
-//    The value number corresopnding to the heap after the assignment.
+//    The value number corresponding to memory after the assignment.
 
 ValueNum ValueNumStore::VNApplySelectorsAssign(
     ValueNumKind vnk, ValueNum map, FieldSeqNode* fieldSeq, ValueNum elem, var_types indType, BasicBlock* block)
@@ -2722,7 +2723,7 @@ ValueNum Compiler::fgValueNumberArrIndexAssign(CORINFO_CLASS_HANDLE elemTypeEq,
     bool      invalidateArray      = false;
     ValueNum  elemTypeEqVN         = vnStore->VNForHandle(ssize_t(elemTypeEq), GTF_ICON_CLASS_HDL);
     var_types arrElemType          = DecodeElemType(elemTypeEq);
-    ValueNum  hAtArrType           = vnStore->VNForMapSelect(VNK_Liberal, TYP_REF, fgCurHeapVN, elemTypeEqVN);
+    ValueNum  hAtArrType           = vnStore->VNForMapSelect(VNK_Liberal, TYP_REF, fgCurMemoryVN[GcHeap], elemTypeEqVN);
     ValueNum  hAtArrTypeAtArr      = vnStore->VNForMapSelect(VNK_Liberal, TYP_REF, hAtArrType, arrVN);
     ValueNum  hAtArrTypeAtArrAtInx = vnStore->VNForMapSelect(VNK_Liberal, arrElemType, hAtArrTypeAtArr, inxVN);
 
@@ -2779,7 +2780,7 @@ ValueNum Compiler::fgValueNumberArrIndexAssign(CORINFO_CLASS_HANDLE elemTypeEq,
 #ifdef DEBUG
     if (verbose)
     {
-        printf("  hAtArrType " STR_VN "%x is MapSelect(curHeap(" STR_VN "%x), ", hAtArrType, fgCurHeapVN);
+        printf("  hAtArrType " STR_VN "%x is MapSelect(curGcHeap(" STR_VN "%x), ", hAtArrType, fgCurMemoryVN[GcHeap]);
 
         if (arrElemType == TYP_STRUCT)
         {
@@ -2809,11 +2810,11 @@ ValueNum Compiler::fgValueNumberArrIndexAssign(CORINFO_CLASS_HANDLE elemTypeEq,
         vnStore->vnDump(this, newValAtArrType);
         printf("\n");
 
-        printf("  fgCurHeapVN assigned:\n");
+        printf("  fgCurMemoryVN assigned:\n");
     }
 #endif // DEBUG
 
-    return vnStore->VNForMapStore(TYP_REF, fgCurHeapVN, elemTypeEqVN, newValAtArrType);
+    return vnStore->VNForMapStore(TYP_REF, fgCurMemoryVN[GcHeap], elemTypeEqVN, newValAtArrType);
 }
 
 ValueNum Compiler::fgValueNumberArrIndexVal(GenTreePtr tree, VNFuncApp* pFuncApp, ValueNum addrXvn)
@@ -2866,14 +2867,15 @@ ValueNum Compiler::fgValueNumberArrIndexVal(GenTreePtr           tree,
     else
     {
         ValueNum elemTypeEqVN    = vnStore->VNForHandle(ssize_t(elemTypeEq), GTF_ICON_CLASS_HDL);
-        ValueNum hAtArrType      = vnStore->VNForMapSelect(VNK_Liberal, TYP_REF, fgCurHeapVN, elemTypeEqVN);
+        ValueNum hAtArrType      = vnStore->VNForMapSelect(VNK_Liberal, TYP_REF, fgCurMemoryVN[GcHeap], elemTypeEqVN);
         ValueNum hAtArrTypeAtArr = vnStore->VNForMapSelect(VNK_Liberal, TYP_REF, hAtArrType, arrVN);
         ValueNum wholeElem       = vnStore->VNForMapSelect(VNK_Liberal, elemTyp, hAtArrTypeAtArr, inxVN);
 
 #ifdef DEBUG
         if (verbose)
         {
-            printf("  hAtArrType " STR_VN "%x is MapSelect(curHeap(" STR_VN "%x), ", hAtArrType, fgCurHeapVN);
+            printf("  hAtArrType " STR_VN "%x is MapSelect(curGcHeap(" STR_VN "%x), ", hAtArrType,
+                   fgCurMemoryVN[GcHeap]);
             if (elemTyp == TYP_STRUCT)
             {
                 printf("%s[]).\n", eeGetClassName(elemTypeEq));
@@ -4197,10 +4199,10 @@ void Compiler::fgValueNumber()
     else
     {
         ValueNumPair noVnp;
-        // Make sure the heap SSA names have no value numbers.
-        for (unsigned i = 0; i < lvHeapNumSsaNames; i++)
+        // Make sure the memory SSA names have no value numbers.
+        for (unsigned i = 0; i < lvMemoryNumSsaNames; i++)
         {
-            lvHeapPerSsaData.GetRef(i).m_vnPair = noVnp;
+            lvMemoryPerSsaData.GetRef(i).m_vnPair = noVnp;
         }
         for (BasicBlock* blk = fgFirstBB; blk != nullptr; blk = blk->bbNext)
         {
@@ -4306,13 +4308,13 @@ void Compiler::fgValueNumber()
             ssaDef->m_defLoc.m_blk = fgFirstBB;
         }
     }
-    // Give "Heap" an initial value number (about which we know nothing).
-    ValueNum heapInitVal = vnStore->VNForFunc(TYP_REF, VNF_InitVal, vnStore->VNForIntCon(-1)); // Use -1 for the heap.
-    GetHeapPerSsaData(SsaConfig::FIRST_SSA_NUM)->m_vnPair.SetBoth(heapInitVal);
+    // Give memory an initial value number (about which we know nothing).
+    ValueNum memoryInitVal = vnStore->VNForFunc(TYP_REF, VNF_InitVal, vnStore->VNForIntCon(-1)); // Use -1 for memory.
+    GetMemoryPerSsaData(SsaConfig::FIRST_SSA_NUM)->m_vnPair.SetBoth(memoryInitVal);
 #ifdef DEBUG
     if (verbose)
     {
-        printf("Heap Initial Value in BB01 is: " STR_VN "%x\n", heapInitVal);
+        printf("Memory Initial Value in BB01 is: " STR_VN "%x\n", memoryInitVal);
     }
 #endif // DEBUG
 
@@ -4485,32 +4487,32 @@ void Compiler::fgValueNumberBlock(BasicBlock* blk)
         }
     }
 
-    // Now do the same for "Heap".
+    // Now do the same for "GcHeap".
     // Is there a phi for this block?
-    if (blk->bbHeapSsaPhiFunc == nullptr)
+    if (blk->bbMemorySsaPhiFunc[GcHeap] == nullptr)
     {
-        fgCurHeapVN = GetHeapPerSsaData(blk->bbHeapSsaNumIn)->m_vnPair.GetLiberal();
-        assert(fgCurHeapVN != ValueNumStore::NoVN);
+        fgCurMemoryVN[GcHeap] = GetMemoryPerSsaData(blk->bbMemorySsaNumIn[GcHeap])->m_vnPair.GetLiberal();
+        assert(fgCurMemoryVN[GcHeap] != ValueNumStore::NoVN);
     }
     else
     {
         unsigned loopNum;
-        ValueNum newHeapVN;
+        ValueNum newGcHeapVN;
         if (optBlockIsLoopEntry(blk, &loopNum))
         {
-            newHeapVN = fgHeapVNForLoopSideEffects(blk, loopNum);
+            newGcHeapVN = fgMemoryVNForLoopSideEffects(GcHeap, blk, loopNum);
         }
         else
         {
             // Are all the VN's the same?
-            BasicBlock::HeapPhiArg* phiArgs = blk->bbHeapSsaPhiFunc;
-            assert(phiArgs != BasicBlock::EmptyHeapPhiDef);
+            BasicBlock::MemoryPhiArg* phiArgs = blk->bbMemorySsaPhiFunc[GcHeap];
+            assert(phiArgs != BasicBlock::EmptyMemoryPhiDef);
             // There should be > 1 args to a phi.
             assert(phiArgs->m_nextArg != nullptr);
             ValueNum phiAppVN = vnStore->VNForIntCon(phiArgs->GetSsaNum());
             JITDUMP("  Building phi application: $%x = SSA# %d.\n", phiAppVN, phiArgs->GetSsaNum());
             bool     allSame = true;
-            ValueNum sameVN  = GetHeapPerSsaData(phiArgs->GetSsaNum())->m_vnPair.GetLiberal();
+            ValueNum sameVN  = GetMemoryPerSsaData(phiArgs->GetSsaNum())->m_vnPair.GetLiberal();
             if (sameVN == ValueNumStore::NoVN)
             {
                 allSame = false;
@@ -4518,7 +4520,7 @@ void Compiler::fgValueNumberBlock(BasicBlock* blk)
             phiArgs = phiArgs->m_nextArg;
             while (phiArgs != nullptr)
             {
-                ValueNum phiArgVN = GetHeapPerSsaData(phiArgs->GetSsaNum())->m_vnPair.GetLiberal();
+                ValueNum phiArgVN = GetMemoryPerSsaData(phiArgs->GetSsaNum())->m_vnPair.GetLiberal();
                 if (phiArgVN == ValueNumStore::NoVN || phiArgVN != sameVN)
                 {
                     allSame = false;
@@ -4535,22 +4537,22 @@ void Compiler::fgValueNumberBlock(BasicBlock* blk)
             }
             if (allSame)
             {
-                newHeapVN = sameVN;
+                newGcHeapVN = sameVN;
             }
             else
             {
-                newHeapVN =
-                    vnStore->VNForFunc(TYP_REF, VNF_PhiHeapDef, vnStore->VNForHandle(ssize_t(blk), 0), phiAppVN);
+                newGcHeapVN =
+                    vnStore->VNForFunc(TYP_REF, VNF_PhiMemoryDef, vnStore->VNForHandle(ssize_t(blk), 0), phiAppVN);
             }
         }
-        GetHeapPerSsaData(blk->bbHeapSsaNumIn)->m_vnPair.SetLiberal(newHeapVN);
-        fgCurHeapVN = newHeapVN;
+        GetMemoryPerSsaData(blk->bbMemorySsaNumIn[GcHeap])->m_vnPair.SetLiberal(newGcHeapVN);
+        fgCurMemoryVN[GcHeap] = newGcHeapVN;
     }
 #ifdef DEBUG
     if (verbose)
     {
-        printf("The SSA definition for heap (#%d) at start of BB%02u is ", blk->bbHeapSsaNumIn, blk->bbNum);
-        vnPrint(fgCurHeapVN, 1);
+        printf("The SSA definition for GcHeap (#%d) at start of BB%02u is ", blk->bbMemorySsaNumIn[GcHeap], blk->bbNum);
+        vnPrint(fgCurMemoryVN[GcHeap], 1);
         printf("\n");
     }
 #endif // DEBUG
@@ -4589,15 +4591,17 @@ void Compiler::fgValueNumberBlock(BasicBlock* blk)
 #endif
     }
 
-    if (blk->bbHeapSsaNumOut != blk->bbHeapSsaNumIn)
+    if (blk->bbMemorySsaNumOut[GcHeap] != blk->bbMemorySsaNumIn[GcHeap])
     {
-        GetHeapPerSsaData(blk->bbHeapSsaNumOut)->m_vnPair.SetLiberal(fgCurHeapVN);
+        GetMemoryPerSsaData(blk->bbMemorySsaNumOut[GcHeap])->m_vnPair.SetLiberal(fgCurMemoryVN[GcHeap]);
     }
 
     compCurBB = nullptr;
 }
 
-ValueNum Compiler::fgHeapVNForLoopSideEffects(BasicBlock* entryBlock, unsigned innermostLoopNum)
+ValueNum Compiler::fgMemoryVNForLoopSideEffects(MemoryKind  memoryKind,
+                                                BasicBlock* entryBlock,
+                                                unsigned    innermostLoopNum)
 {
     // "loopNum" is the innermost loop for which "blk" is the entry; find the outermost one.
     assert(innermostLoopNum != BasicBlock::NOT_IN_LOOP);
@@ -4616,27 +4620,27 @@ ValueNum Compiler::fgHeapVNForLoopSideEffects(BasicBlock* entryBlock, unsigned i
 #ifdef DEBUG
     if (verbose)
     {
-        printf("Computing heap state for block BB%02u, entry block for loops %d to %d:\n", entryBlock->bbNum,
-               innermostLoopNum, loopNum);
+        printf("Computing %s state for block BB%02u, entry block for loops %d to %d:\n", memoryKindNames[memoryKind],
+               entryBlock->bbNum, innermostLoopNum, loopNum);
     }
 #endif // DEBUG
 
-    // If this loop has heap havoc effects, just use a new, unique VN.
-    if (optLoopTable[loopNum].lpLoopHasHeapHavoc)
+    // If this loop has memory havoc effects, just use a new, unique VN.
+    if (optLoopTable[loopNum].lpLoopHasMemoryHavoc[memoryKind])
     {
         ValueNum res = vnStore->VNForExpr(entryBlock, TYP_REF);
 #ifdef DEBUG
         if (verbose)
         {
-            printf("  Loop %d has heap havoc effect; heap state is new fresh $%x.\n", loopNum, res);
+            printf("  Loop %d has memory havoc effect; heap state is new fresh $%x.\n", loopNum, res);
         }
 #endif // DEBUG
         return res;
     }
 
     // Otherwise, find the predecessors of the entry block that are not in the loop.
-    // If there is only one such, use its heap value as the "base."  If more than one,
-    // use a new unique heap VN.
+    // If there is only one such, use its memory value as the "base."  If more than one,
+    // use a new unique VN.
     BasicBlock* nonLoopPred          = nullptr;
     bool        multipleNonLoopPreds = false;
     for (flowList* pred = BlockPredsWithEH(entryBlock); pred != nullptr; pred = pred->flNext)
@@ -4668,126 +4672,131 @@ ValueNum Compiler::fgHeapVNForLoopSideEffects(BasicBlock* entryBlock, unsigned i
 #ifdef DEBUG
         if (verbose)
         {
-            printf("  Therefore, heap state is new, fresh $%x.\n", res);
+            printf("  Therefore, memory state is new, fresh $%x.\n", res);
         }
 #endif // DEBUG
         return res;
     }
     // Otherwise, there is a single non-loop pred.
     assert(nonLoopPred != nullptr);
-    // What is it's heap post-state?
-    ValueNum newHeapVN = GetHeapPerSsaData(nonLoopPred->bbHeapSsaNumOut)->m_vnPair.GetLiberal();
-    assert(newHeapVN !=
+    // What is its memory post-state?
+    ValueNum newMemoryVN = GetMemoryPerSsaData(nonLoopPred->bbMemorySsaNumOut[memoryKind])->m_vnPair.GetLiberal();
+    assert(newMemoryVN !=
            ValueNumStore::NoVN); // We must have processed the single non-loop pred before reaching the loop entry.
 
 #ifdef DEBUG
     if (verbose)
     {
-        printf("  Init heap state is $%x, with new, fresh VN at:\n", newHeapVN);
+        printf("  Init %s state is $%x, with new, fresh VN at:\n", memoryKindNames[memoryKind], newMemoryVN);
     }
 #endif // DEBUG
     // Modify "base" by setting all the modified fields/field maps/array maps to unknown values.
-    // First the fields/field maps.
-
-    Compiler::LoopDsc::FieldHandleSet* fieldsMod = optLoopTable[loopNum].lpFieldsModified;
-    if (fieldsMod != nullptr)
+    // These annotations apply specifically to the GcHeap, where we disambiguate across such stores.
+    if (memoryKind == GcHeap)
     {
-        for (Compiler::LoopDsc::FieldHandleSet::KeyIterator ki = fieldsMod->Begin(); !ki.Equal(fieldsMod->End()); ++ki)
+        // First the fields/field maps.
+        Compiler::LoopDsc::FieldHandleSet* fieldsMod = optLoopTable[loopNum].lpFieldsModified;
+        if (fieldsMod != nullptr)
         {
-            CORINFO_FIELD_HANDLE fldHnd   = ki.Get();
-            ValueNum             fldHndVN = vnStore->VNForHandle(ssize_t(fldHnd), GTF_ICON_FIELD_HDL);
+            for (Compiler::LoopDsc::FieldHandleSet::KeyIterator ki = fieldsMod->Begin(); !ki.Equal(fieldsMod->End());
+                 ++ki)
+            {
+                CORINFO_FIELD_HANDLE fldHnd   = ki.Get();
+                ValueNum             fldHndVN = vnStore->VNForHandle(ssize_t(fldHnd), GTF_ICON_FIELD_HDL);
 
 #ifdef DEBUG
-            if (verbose)
-            {
-                const char* modName;
-                const char* fldName = eeGetFieldName(fldHnd, &modName);
-                printf("     VNForHandle(Fseq[%s]) is " STR_VN "%x\n", fldName, fldHndVN);
+                if (verbose)
+                {
+                    const char* modName;
+                    const char* fldName = eeGetFieldName(fldHnd, &modName);
+                    printf("     VNForHandle(Fseq[%s]) is " STR_VN "%x\n", fldName, fldHndVN);
 
-                printf("  fgCurHeapVN assigned:\n");
-            }
+                    printf("  fgCurMemoryVN assigned:\n");
+                }
 #endif // DEBUG
 
-            newHeapVN = vnStore->VNForMapStore(TYP_REF, newHeapVN, fldHndVN, vnStore->VNForExpr(entryBlock, TYP_REF));
+                newMemoryVN =
+                    vnStore->VNForMapStore(TYP_REF, newMemoryVN, fldHndVN, vnStore->VNForExpr(entryBlock, TYP_REF));
+            }
         }
-    }
-    // Now do the array maps.
-    Compiler::LoopDsc::ClassHandleSet* elemTypesMod = optLoopTable[loopNum].lpArrayElemTypesModified;
-    if (elemTypesMod != nullptr)
-    {
-        for (Compiler::LoopDsc::ClassHandleSet::KeyIterator ki = elemTypesMod->Begin(); !ki.Equal(elemTypesMod->End());
-             ++ki)
+        // Now do the array maps.
+        Compiler::LoopDsc::ClassHandleSet* elemTypesMod = optLoopTable[loopNum].lpArrayElemTypesModified;
+        if (elemTypesMod != nullptr)
         {
-            CORINFO_CLASS_HANDLE elemClsHnd = ki.Get();
+            for (Compiler::LoopDsc::ClassHandleSet::KeyIterator ki = elemTypesMod->Begin();
+                 !ki.Equal(elemTypesMod->End()); ++ki)
+            {
+                CORINFO_CLASS_HANDLE elemClsHnd = ki.Get();
 
 #ifdef DEBUG
-            if (verbose)
-            {
-                var_types elemTyp = DecodeElemType(elemClsHnd);
-                if (varTypeIsStruct(elemTyp))
+                if (verbose)
                 {
-                    printf("     Array map %s[]\n", eeGetClassName(elemClsHnd));
+                    var_types elemTyp = DecodeElemType(elemClsHnd);
+                    if (varTypeIsStruct(elemTyp))
+                    {
+                        printf("     Array map %s[]\n", eeGetClassName(elemClsHnd));
+                    }
+                    else
+                    {
+                        printf("     Array map %s[]\n", varTypeName(elemTyp));
+                    }
+                    printf("  fgCurMemoryVN assigned:\n");
                 }
-                else
-                {
-                    printf("     Array map %s[]\n", varTypeName(elemTyp));
-                }
-                printf("  fgCurHeapVN assigned:\n");
-            }
 #endif // DEBUG
 
-            ValueNum elemTypeVN = vnStore->VNForHandle(ssize_t(elemClsHnd), GTF_ICON_CLASS_HDL);
-            ValueNum uniqueVN   = vnStore->VNForExpr(entryBlock, TYP_REF);
-            newHeapVN           = vnStore->VNForMapStore(TYP_REF, newHeapVN, elemTypeVN, uniqueVN);
+                ValueNum elemTypeVN = vnStore->VNForHandle(ssize_t(elemClsHnd), GTF_ICON_CLASS_HDL);
+                ValueNum uniqueVN   = vnStore->VNForExpr(entryBlock, TYP_REF);
+                newMemoryVN         = vnStore->VNForMapStore(TYP_REF, newMemoryVN, elemTypeVN, uniqueVN);
+            }
         }
     }
 
 #ifdef DEBUG
     if (verbose)
     {
-        printf("  Final heap state is $%x.\n", newHeapVN);
+        printf("  Final %s state is $%x.\n", memoryKindNames[memoryKind], newMemoryVN);
     }
 #endif // DEBUG
-    return newHeapVN;
+    return newMemoryVN;
 }
 
-void Compiler::fgMutateHeap(GenTreePtr tree DEBUGARG(const char* msg))
+void Compiler::fgMutateGcHeap(GenTreePtr tree DEBUGARG(const char* msg))
 {
-    // Update the current heap VN, and if we're tracking the heap SSA # caused by this node, record it.
-    recordHeapStore(tree, vnStore->VNForExpr(compCurBB, TYP_REF) DEBUGARG(msg));
+    // Update the current memory VN, and if we're tracking the heap SSA # caused by this node, record it.
+    recordGcHeapStore(tree, vnStore->VNForExpr(compCurBB, TYP_REF) DEBUGARG(msg));
 }
 
-void Compiler::recordHeapStore(GenTreePtr curTree, ValueNum heapVN DEBUGARG(const char* msg))
+void Compiler::recordGcHeapStore(GenTreePtr curTree, ValueNum gcHeapVN DEBUGARG(const char* msg))
 {
-    // bbHeapDef must be set to true for any block that Mutates the global Heap
-    assert(compCurBB->bbHeapDef);
-    fgCurHeapVN = heapVN;
+    // bbMemoryDef must include GcHeap for any block that mutates the GC Heap
+    assert((compCurBB->bbMemoryDef & memoryKindSet(GcHeap)) != 0);
+    fgCurMemoryVN[GcHeap] = gcHeapVN;
 
 #ifdef DEBUG
     if (verbose)
     {
-        printf("  fgCurHeapVN assigned by %s at ", msg);
+        printf("  fgCurMemoryVN[GcHeap] assigned by %s at ", msg);
         Compiler::printTreeID(curTree);
-        printf(" to VN: " STR_VN "%x.\n", heapVN);
+        printf(" to VN: " STR_VN "%x.\n", gcHeapVN);
     }
 #endif // DEBUG
 
-    fgValueNumberRecordHeapSsa(curTree);
+    fgValueNumberRecordMemorySsa(GcHeap, curTree);
 }
 
-void Compiler::fgValueNumberRecordHeapSsa(GenTreePtr tree)
+void Compiler::fgValueNumberRecordMemorySsa(MemoryKind memoryKind, GenTreePtr tree)
 {
     unsigned ssaNum;
-    if (GetHeapSsaMap()->Lookup(tree, &ssaNum))
+    if (GetMemorySsaMap(memoryKind)->Lookup(tree, &ssaNum))
     {
-        GetHeapPerSsaData(ssaNum)->m_vnPair.SetLiberal(fgCurHeapVN);
+        GetMemoryPerSsaData(ssaNum)->m_vnPair.SetLiberal(fgCurMemoryVN[memoryKind]);
 #ifdef DEBUG
         if (verbose)
         {
             printf("Node ");
             Compiler::printTreeID(tree);
-            printf(" sets heap SSA # %d to VN $%x: ", ssaNum, fgCurHeapVN);
-            vnStore->vnDump(this, fgCurHeapVN);
+            printf(" sets %s SSA # %d to VN $%x: ", memoryKindNames[memoryKind], ssaNum, fgCurMemoryVN[memoryKind]);
+            vnStore->vnDump(this, fgCurMemoryVN[memoryKind]);
             printf("\n");
         }
 #endif // DEBUG
@@ -4891,8 +4900,8 @@ void Compiler::fgValueNumberBlockAssignment(GenTreePtr tree, bool evalAsgLhsInd)
     GenTree* lhs = tree->gtGetOp1();
     GenTree* rhs = tree->gtGetOp2();
 #ifdef DEBUG
-    // Sometimes we query the heap ssa map, and need a dummy location for the ignored result.
-    unsigned heapSsaNum;
+    // Sometimes we query the memory ssa map in an assertion, and need a dummy location for the ignored result.
+    unsigned memorySsaNum;
 #endif
 
     if (tree->OperIsInitBlkOp())
@@ -4903,8 +4912,8 @@ void Compiler::fgValueNumberBlockAssignment(GenTreePtr tree, bool evalAsgLhsInd)
         if (tree->DefinesLocal(this, &lclVarTree, &isEntire))
         {
             assert(lclVarTree->gtFlags & GTF_VAR_DEF);
-            // Should not have been recorded as updating the heap.
-            assert(!GetHeapSsaMap()->Lookup(tree, &heapSsaNum));
+            // Should not have been recorded as updating the GC heap.
+            assert(!GetMemorySsaMap(GcHeap)->Lookup(tree, &memorySsaNum));
 
             unsigned lclNum = lclVarTree->GetLclNum();
 
@@ -4945,9 +4954,9 @@ void Compiler::fgValueNumberBlockAssignment(GenTreePtr tree, bool evalAsgLhsInd)
         }
         else
         {
-            // For now, arbitrary side effect on Heap.
+            // For now, arbitrary side effect on GcHeap.
             // TODO-CQ: Why not be complete, and get this case right?
-            fgMutateHeap(tree DEBUGARG("INITBLK - non local"));
+            fgMutateGcHeap(tree DEBUGARG("INITBLK - non local"));
         }
         // Initblock's are of type void.  Give them the void "value" -- they may occur in argument lists, which we
         // want to be able to give VN's to.
@@ -4957,7 +4966,7 @@ void Compiler::fgValueNumberBlockAssignment(GenTreePtr tree, bool evalAsgLhsInd)
     {
         assert(tree->OperIsCopyBlkOp());
         // TODO-Cleanup: We should factor things so that we uniformly rely on "PtrTo" VN's, and
-        // the heap cases can be shared with assignments.
+        // the memory cases can be shared with assignments.
         GenTreeLclVarCommon* lclVarTree = nullptr;
         bool                 isEntire   = false;
         // Note that we don't care about exceptions here, since we're only using the values
@@ -4965,8 +4974,8 @@ void Compiler::fgValueNumberBlockAssignment(GenTreePtr tree, bool evalAsgLhsInd)
 
         if (tree->DefinesLocal(this, &lclVarTree, &isEntire))
         {
-            // Should not have been recorded as updating the heap.
-            assert(!GetHeapSsaMap()->Lookup(tree, &heapSsaNum));
+            // Should not have been recorded as updating the GC heap.
+            assert(!GetMemorySsaMap(GcHeap)->Lookup(tree, &memorySsaNum));
 
             unsigned      lhsLclNum = lclVarTree->GetLclNum();
             FieldSeqNode* lhsFldSeq = nullptr;
@@ -5083,10 +5092,10 @@ void Compiler::fgValueNumberBlockAssignment(GenTreePtr tree, bool evalAsgLhsInd)
 
                             if (fldSeqForStaticVar != FieldSeqStore::NotAField())
                             {
-                                // We model statics as indices into the heap variable.
+                                // We model statics as indices into the GcHeap.
                                 ValueNum selectedStaticVar;
                                 size_t   structSize = 0;
-                                selectedStaticVar   = vnStore->VNApplySelectors(VNK_Liberal, fgCurHeapVN,
+                                selectedStaticVar   = vnStore->VNApplySelectors(VNK_Liberal, fgCurMemoryVN[GcHeap],
                                                                               fldSeqForStaticVar, &structSize);
                                 selectedStaticVar =
                                     vnStore->VNApplySelectorsTypeCheck(selectedStaticVar, indType, structSize);
@@ -5166,9 +5175,9 @@ void Compiler::fgValueNumberBlockAssignment(GenTreePtr tree, bool evalAsgLhsInd)
         }
         else
         {
-            // For now, arbitrary side effect on Heap.
+            // For now, arbitrary side effect on GcHeap.
             // TODO-CQ: Why not be complete, and get this case right?
-            fgMutateHeap(tree DEBUGARG("COPYBLK - non local"));
+            fgMutateGcHeap(tree DEBUGARG("COPYBLK - non local"));
         }
         // Copyblock's are of type void.  Give them the void "value" -- they may occur in argument lists, which we want
         // to be able to give VN's to.
@@ -5367,11 +5376,11 @@ void Compiler::fgValueNumberTree(GenTreePtr tree, bool evalAsgLhsInd)
 
                     if (isVolatile)
                     {
-                        // For Volatile indirection, first mutate the global heap
-                        fgMutateHeap(tree DEBUGARG("GTF_FLD_VOLATILE - read"));
+                        // For Volatile indirection, first mutate GcHeap
+                        fgMutateGcHeap(tree DEBUGARG("GTF_FLD_VOLATILE - read"));
                     }
 
-                    // We just mutate the heap if isVolatile is true, and then do the read as normal.
+                    // We just mutate GcHeap if isVolatile is true, and then do the read as normal.
                     //
                     // This allows:
                     //   1: read s;
@@ -5400,13 +5409,13 @@ void Compiler::fgValueNumberTree(GenTreePtr tree, bool evalAsgLhsInd)
                     else
                     {
                         // This is a reference to heap memory.
-                        // We model statics as indices into the heap variable.
+                        // We model statics as indices into the GC heap variable.
 
                         FieldSeqNode* fldSeqForStaticVar =
                             GetFieldSeqStore()->CreateSingleton(tree->gtClsVar.gtClsVarHnd);
                         size_t structSize = 0;
-                        selectedStaticVar =
-                            vnStore->VNApplySelectors(VNK_Liberal, fgCurHeapVN, fldSeqForStaticVar, &structSize);
+                        selectedStaticVar = vnStore->VNApplySelectors(VNK_Liberal, fgCurMemoryVN[GcHeap],
+                                                                      fldSeqForStaticVar, &structSize);
                         selectedStaticVar =
                             vnStore->VNApplySelectorsTypeCheck(selectedStaticVar, tree->TypeGet(), structSize);
 
@@ -5430,8 +5439,8 @@ void Compiler::fgValueNumberTree(GenTreePtr tree, bool evalAsgLhsInd)
                 break;
 
             case GT_MEMORYBARRIER: // Leaf
-                // For MEMORYBARRIER add an arbitrary side effect on Heap.
-                fgMutateHeap(tree DEBUGARG("MEMORYBARRIER"));
+                // For MEMORYBARRIER add an arbitrary side effect on GcHeap.
+                fgMutateGcHeap(tree DEBUGARG("MEMORYBARRIER"));
                 break;
 
             // These do not represent values.
@@ -5463,8 +5472,8 @@ void Compiler::fgValueNumberTree(GenTreePtr tree, bool evalAsgLhsInd)
     else if (GenTree::OperIsSimple(oper))
     {
 #ifdef DEBUG
-        // Sometimes we query the heap ssa map, and need a dummy location for the ignored result.
-        unsigned heapSsaNum;
+        // Sometimes we query the memory ssa map in an assertion, and need a dummy location for the ignored result.
+        unsigned memorySsaNum;
 #endif
 
         if (GenTree::OperIsAssignment(oper) && !varTypeIsStruct(tree))
@@ -5483,7 +5492,7 @@ void Compiler::fgValueNumberTree(GenTreePtr tree, bool evalAsgLhsInd)
                 // If the LHS is an IND, we didn't evaluate it when we visited it previously.
                 // But we didn't know that the parent was an op=.  We do now, so go back and evaluate it.
                 // (We actually check if the effective val is the IND.  We will have evaluated any non-last
-                // args of an LHS comma already -- including their heap effects.)
+                // args of an LHS comma already -- including their memory effects.)
                 GenTreePtr lhsVal = lhs->gtEffectiveVal(/*commaOnly*/ true);
                 if (lhsVal->OperIsIndir() || (lhsVal->OperGet() == GT_CLS_VAR))
                 {
@@ -5568,8 +5577,8 @@ void Compiler::fgValueNumberTree(GenTreePtr tree, bool evalAsgLhsInd)
                     GenTreeLclVarCommon* lcl          = lhs->AsLclVarCommon();
                     unsigned             lclDefSsaNum = GetSsaNumForLocalVarDef(lcl);
 
-                    // Should not have been recorded as updating the heap.
-                    assert(!GetHeapSsaMap()->Lookup(tree, &heapSsaNum));
+                    // Should not have been recorded as updating the GC heap.
+                    assert(!GetMemorySsaMap(GcHeap)->Lookup(tree, &memorySsaNum));
 
                     if (lclDefSsaNum != SsaConfig::RESERVED_SSA_NUM)
                     {
@@ -5611,8 +5620,8 @@ void Compiler::fgValueNumberTree(GenTreePtr tree, bool evalAsgLhsInd)
                     GenTreeLclFld* lclFld       = lhs->AsLclFld();
                     unsigned       lclDefSsaNum = GetSsaNumForLocalVarDef(lclFld);
 
-                    // Should not have been recorded as updating the heap.
-                    assert(!GetHeapSsaMap()->Lookup(tree, &heapSsaNum));
+                    // Should not have been recorded as updating the GC heap.
+                    assert(!GetMemorySsaMap(GcHeap)->Lookup(tree, &memorySsaNum));
 
                     if (lclDefSsaNum != SsaConfig::RESERVED_SSA_NUM)
                     {
@@ -5679,8 +5688,8 @@ void Compiler::fgValueNumberTree(GenTreePtr tree, bool evalAsgLhsInd)
 
                     if (isVolatile)
                     {
-                        // For Volatile store indirection, first mutate the global heap
-                        fgMutateHeap(lhs DEBUGARG("GTF_IND_VOLATILE - store"));
+                        // For Volatile store indirection, first mutate GcHeap
+                        fgMutateGcHeap(lhs DEBUGARG("GTF_IND_VOLATILE - store"));
                         tree->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, lhs->TypeGet()));
                     }
 
@@ -5835,7 +5844,7 @@ void Compiler::fgValueNumberTree(GenTreePtr tree, bool evalAsgLhsInd)
 
                             ValueNum heapVN = fgValueNumberArrIndexAssign(elemTypeEq, arrVN, inxVN, fldSeq,
                                                                           rhsVNPair.GetLiberal(), lhs->TypeGet());
-                            recordHeapStore(tree, heapVN DEBUGARG("Array element assignment"));
+                            recordGcHeapStore(tree, heapVN DEBUGARG("Array element assignment"));
                         }
                         // It may be that we haven't parsed it yet.  Try.
                         else if (lhs->gtFlags & GTF_IND_ARR_INDEX)
@@ -5852,7 +5861,7 @@ void Compiler::fgValueNumberTree(GenTreePtr tree, bool evalAsgLhsInd)
                             arg->ParseArrayAddress(this, &arrInfo, &arr, &inxVN, &fldSeq);
                             if (arr == nullptr)
                             {
-                                fgMutateHeap(tree DEBUGARG("assignment to unparseable array expression"));
+                                fgMutateGcHeap(tree DEBUGARG("assignment to unparseable array expression"));
                                 return;
                             }
                             // Otherwise, parsing succeeded.
@@ -5872,13 +5881,13 @@ void Compiler::fgValueNumberTree(GenTreePtr tree, bool evalAsgLhsInd)
 
                             ValueNum heapVN = fgValueNumberArrIndexAssign(elemTypeEq, arrVN, inxVN, fldSeq,
                                                                           rhsVNPair.GetLiberal(), lhs->TypeGet());
-                            recordHeapStore(tree, heapVN DEBUGARG("assignment to unparseable array expression"));
+                            recordGcHeapStore(tree, heapVN DEBUGARG("assignment to unparseable array expression"));
                         }
                         else if (arg->IsFieldAddr(this, &obj, &staticOffset, &fldSeq))
                         {
                             if (fldSeq == FieldSeqStore::NotAField())
                             {
-                                fgMutateHeap(tree DEBUGARG("NotAField"));
+                                fgMutateGcHeap(tree DEBUGARG("NotAField"));
                             }
                             else
                             {
@@ -5893,8 +5902,8 @@ void Compiler::fgValueNumberTree(GenTreePtr tree, bool evalAsgLhsInd)
                                     assert(staticOffset == nullptr);
                                 }
 #endif // DEBUG
-                                // Get the first (instance or static) field from field seq.  Heap[field] will yield the
-                                // "field map".
+                                // Get the first (instance or static) field from field seq.  GcHeap[field] will yield
+                                // the "field map".
                                 if (fldSeq->IsFirstElemFieldSeq())
                                 {
                                     fldSeq = fldSeq->m_next;
@@ -5907,7 +5916,8 @@ void Compiler::fgValueNumberTree(GenTreePtr tree, bool evalAsgLhsInd)
 
                                 // The final field in the sequence will need to match the 'indType'
                                 var_types indType = lhs->TypeGet();
-                                ValueNum fldMapVN = vnStore->VNApplySelectors(VNK_Liberal, fgCurHeapVN, firstFieldOnly);
+                                ValueNum  fldMapVN =
+                                    vnStore->VNApplySelectors(VNK_Liberal, fgCurMemoryVN[GcHeap], firstFieldOnly);
 
                                 // The type of the field is "struct" if there are more fields in the sequence,
                                 // otherwise it is the type returned from VNApplySelectors above.
@@ -5963,8 +5973,8 @@ void Compiler::fgValueNumberTree(GenTreePtr tree, bool evalAsgLhsInd)
                                                                             storeVal, indType, compCurBB);
                                     }
 
-                                    newFldMapVN = vnStore->VNApplySelectorsAssign(VNK_Liberal, fgCurHeapVN, fldSeq,
-                                                                                  storeVal, indType, compCurBB);
+                                    newFldMapVN = vnStore->VNApplySelectorsAssign(VNK_Liberal, fgCurMemoryVN[GcHeap],
+                                                                                  fldSeq, storeVal, indType, compCurBB);
                                 }
 
                                 // It is not strictly necessary to set the lhs value number,
@@ -5974,18 +5984,18 @@ void Compiler::fgValueNumberTree(GenTreePtr tree, bool evalAsgLhsInd)
 #ifdef DEBUG
                                 if (verbose)
                                 {
-                                    printf("  fgCurHeapVN assigned:\n");
+                                    printf("  fgCurMemoryVN assigned:\n");
                                 }
 #endif // DEBUG
-                                // bbHeapDef must be set to true for any block that Mutates the global Heap
-                                assert(compCurBB->bbHeapDef);
+                                // bbMemoryDef must include GcHeap for any block that mutates the GC heap
+                                assert((compCurBB->bbMemoryDef & memoryKindSet(GcHeap)) != 0);
 
-                                // Update the field map for firstField in Heap to this new value.
+                                // Update the field map for firstField in GcHeap to this new value.
                                 ValueNum heapVN =
-                                    vnStore->VNApplySelectorsAssign(VNK_Liberal, fgCurHeapVN, firstFieldOnly,
+                                    vnStore->VNApplySelectorsAssign(VNK_Liberal, fgCurMemoryVN[GcHeap], firstFieldOnly,
                                                                     newFldMapVN, indType, compCurBB);
 
-                                recordHeapStore(tree, heapVN DEBUGARG("StoreField"));
+                                recordGcHeapStore(tree, heapVN DEBUGARG("StoreField"));
                             }
                         }
                         else
@@ -5993,8 +6003,8 @@ void Compiler::fgValueNumberTree(GenTreePtr tree, bool evalAsgLhsInd)
                             GenTreeLclVarCommon* dummyLclVarTree = nullptr;
                             if (!tree->DefinesLocal(this, &dummyLclVarTree))
                             {
-                                // If it doesn't define a local, then it might update the heap.
-                                fgMutateHeap(tree DEBUGARG("assign-of-IND"));
+                                // If it doesn't define a local, then it might update GcHeap.
+                                fgMutateGcHeap(tree DEBUGARG("assign-of-IND"));
                             }
                         }
                     }
@@ -6010,17 +6020,17 @@ void Compiler::fgValueNumberTree(GenTreePtr tree, bool evalAsgLhsInd)
 
                     if (isVolatile)
                     {
-                        // For Volatile store indirection, first mutate the global heap
-                        fgMutateHeap(lhs DEBUGARG("GTF_CLS_VAR - store")); // always change fgCurHeapVN
+                        // For Volatile store indirection, first mutate GcHeap
+                        fgMutateGcHeap(lhs DEBUGARG("GTF_CLS_VAR - store")); // always change fgCurMemoryVN
                     }
 
-                    // We model statics as indices into the heap variable.
+                    // We model statics as indices into the GC heap variable.
                     FieldSeqNode* fldSeqForStaticVar = GetFieldSeqStore()->CreateSingleton(lhs->gtClsVar.gtClsVarHnd);
                     assert(fldSeqForStaticVar != FieldSeqStore::NotAField());
 
                     ValueNum storeVal = rhsVNPair.GetLiberal(); // The value number from the rhs of the assignment
-                    storeVal = vnStore->VNApplySelectorsAssign(VNK_Liberal, fgCurHeapVN, fldSeqForStaticVar, storeVal,
-                                                               lhs->TypeGet(), compCurBB);
+                    storeVal = vnStore->VNApplySelectorsAssign(VNK_Liberal, fgCurMemoryVN[GcHeap], fldSeqForStaticVar,
+                                                               storeVal, lhs->TypeGet(), compCurBB);
 
                     // It is not strictly necessary to set the lhs value number,
                     // but the dumps read better with it set to the 'storeVal' that we just computed
@@ -6028,22 +6038,22 @@ void Compiler::fgValueNumberTree(GenTreePtr tree, bool evalAsgLhsInd)
 #ifdef DEBUG
                     if (verbose)
                     {
-                        printf("  fgCurHeapVN assigned:\n");
+                        printf("  fgCurMemoryVN assigned:\n");
                     }
 #endif // DEBUG
-                    // bbHeapDef must be set to true for any block that Mutates the global Heap
-                    assert(compCurBB->bbHeapDef);
+                    // bbMemoryDef must include GcHeap for any block that mutates the GC heap
+                    assert((compCurBB->bbMemoryDef & memoryKindSet(GcHeap)) != 0);
 
-                    // Update the field map for the fgCurHeapVN
-                    recordHeapStore(tree, storeVal DEBUGARG("Static Field store"));
+                    // Update the field map for the fgCurMemoryVN and SSA for the tree
+                    recordGcHeapStore(tree, storeVal DEBUGARG("Static Field store"));
                 }
                 break;
 
                 default:
                     assert(!"Unknown node for lhs of assignment!");
 
-                    // For Unknown stores, mutate the global heap
-                    fgMutateHeap(lhs DEBUGARG("Unkwown Assignment - store")); // always change fgCurHeapVN
+                    // For Unknown stores, mutate GcHeap
+                    fgMutateGcHeap(lhs DEBUGARG("Unkwown Assignment - store")); // always change fgCurMemoryVN
                     break;
             }
         }
@@ -6151,8 +6161,8 @@ void Compiler::fgValueNumberTree(GenTreePtr tree, bool evalAsgLhsInd)
             }
             else if (isVolatile)
             {
-                // For Volatile indirection, mutate the global heap
-                fgMutateHeap(tree DEBUGARG("GTF_IND_VOLATILE - read"));
+                // For Volatile indirection, mutate GcHeap
+                fgMutateGcHeap(tree DEBUGARG("GTF_IND_VOLATILE - read"));
 
                 // The value read by the GT_IND can immediately change
                 ValueNum newUniq = vnStore->VNForExpr(compCurBB, tree->TypeGet());
@@ -6300,10 +6310,10 @@ void Compiler::fgValueNumberTree(GenTreePtr tree, bool evalAsgLhsInd)
                     if (fldSeqForStaticVar != FieldSeqStore::NotAField())
                     {
                         ValueNum selectedStaticVar;
-                        // We model statics as indices into the heap variable.
+                        // We model statics as indices into the GC heap variable.
                         size_t structSize = 0;
-                        selectedStaticVar =
-                            vnStore->VNApplySelectors(VNK_Liberal, fgCurHeapVN, fldSeqForStaticVar, &structSize);
+                        selectedStaticVar = vnStore->VNApplySelectors(VNK_Liberal, fgCurMemoryVN[GcHeap],
+                                                                      fldSeqForStaticVar, &structSize);
                         selectedStaticVar = vnStore->VNApplySelectorsTypeCheck(selectedStaticVar, indType, structSize);
 
                         tree->gtVNPair.SetLiberal(selectedStaticVar);
@@ -6328,7 +6338,7 @@ void Compiler::fgValueNumberTree(GenTreePtr tree, bool evalAsgLhsInd)
                     }
                     else if (fldSeq2 != nullptr)
                     {
-                        // Get the first (instance or static) field from field seq.  Heap[field] will yield the "field
+                        // Get the first (instance or static) field from field seq.  GcHeap[field] will yield the "field
                         // map".
                         CLANG_FORMAT_COMMENT_ANCHOR;
 
@@ -6347,7 +6357,7 @@ void Compiler::fgValueNumberTree(GenTreePtr tree, bool evalAsgLhsInd)
                         FieldSeqNode* firstFieldOnly = GetFieldSeqStore()->CreateSingleton(fldSeq2->m_fieldHnd);
                         size_t        structSize     = 0;
                         ValueNum      fldMapVN =
-                            vnStore->VNApplySelectors(VNK_Liberal, fgCurHeapVN, firstFieldOnly, &structSize);
+                            vnStore->VNApplySelectors(VNK_Liberal, fgCurMemoryVN[GcHeap], firstFieldOnly, &structSize);
 
                         // The final field in the sequence will need to match the 'indType'
                         var_types indType = tree->TypeGet();
@@ -6543,8 +6553,8 @@ void Compiler::fgValueNumberTree(GenTreePtr tree, bool evalAsgLhsInd)
                 case GT_LOCKADD: // Binop
                 case GT_XADD:    // Binop
                 case GT_XCHG:    // Binop
-                    // For CMPXCHG and other intrinsics add an arbitrary side effect on Heap.
-                    fgMutateHeap(tree DEBUGARG("Interlocked intrinsic"));
+                    // For CMPXCHG and other intrinsics add an arbitrary side effect on GcHeap.
+                    fgMutateGcHeap(tree DEBUGARG("Interlocked intrinsic"));
                     tree->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, tree->TypeGet()));
                     break;
 
@@ -6590,8 +6600,8 @@ void Compiler::fgValueNumberTree(GenTreePtr tree, bool evalAsgLhsInd)
             break;
 
             case GT_CMPXCHG: // Specialop
-                // For CMPXCHG and other intrinsics add an arbitrary side effect on Heap.
-                fgMutateHeap(tree DEBUGARG("Interlocked intrinsic"));
+                // For CMPXCHG and other intrinsics add an arbitrary side effect on GcHeap.
+                fgMutateGcHeap(tree DEBUGARG("Interlocked intrinsic"));
                 tree->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, tree->TypeGet()));
                 break;
 
@@ -7025,8 +7035,8 @@ void Compiler::fgValueNumberCall(GenTreeCall* call)
 
         if (modHeap)
         {
-            // For now, arbitrary side effect on Heap.
-            fgMutateHeap(call DEBUGARG("HELPER - modifies heap"));
+            // For now, arbitrary side effect on GcHeap.
+            fgMutateGcHeap(call DEBUGARG("HELPER - modifies heap"));
         }
     }
     else
@@ -7040,8 +7050,8 @@ void Compiler::fgValueNumberCall(GenTreeCall* call)
             call->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, call->TypeGet()));
         }
 
-        // For now, arbitrary side effect on Heap.
-        fgMutateHeap(call DEBUGARG("CALL"));
+        // For now, arbitrary side effect on GcHeap.
+        fgMutateGcHeap(call DEBUGARG("CALL"));
     }
 }
 
