@@ -15127,14 +15127,17 @@ BasicBlock* Compiler::bbNewBasicBlock(BBjumpKinds jumpKind)
         VarSetOps::AssignNoCopy(this, block->bbScope, VarSetOps::UninitVal());
     }
 
-    block->bbHeapUse     = false;
-    block->bbHeapDef     = false;
-    block->bbHeapLiveIn  = false;
-    block->bbHeapLiveOut = false;
+    block->bbMemoryUse     = emptyMemoryKindSet;
+    block->bbMemoryDef     = emptyMemoryKindSet;
+    block->bbMemoryLiveIn  = emptyMemoryKindSet;
+    block->bbMemoryLiveOut = emptyMemoryKindSet;
 
-    block->bbHeapSsaPhiFunc = nullptr;
-    block->bbHeapSsaNumIn   = 0;
-    block->bbHeapSsaNumOut  = 0;
+    for (MemoryKind memoryKind : allMemoryKinds())
+    {
+        block->bbMemorySsaPhiFunc[memoryKind] = nullptr;
+        block->bbMemorySsaNumIn[memoryKind]   = 0;
+        block->bbMemorySsaNumOut[memoryKind]  = 0;
+    }
 
     // Make sure we reserve a NOT_IN_LOOP value that isn't a legal table index.
     static_assert_no_msg(MAX_LOOP_NUM < BasicBlock::NOT_IN_LOOP);

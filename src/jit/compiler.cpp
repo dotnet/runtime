@@ -1639,12 +1639,12 @@ void Compiler::compDisplayStaticSizes(FILE* fout)
             sizeof(bbDummy->bbLiveIn));
     fprintf(fout, "Offset / size of bbLiveOut             = %3u / %3u\n", offsetof(BasicBlock, bbLiveOut),
             sizeof(bbDummy->bbLiveOut));
-    fprintf(fout, "Offset / size of bbHeapSsaPhiFunc      = %3u / %3u\n", offsetof(BasicBlock, bbHeapSsaPhiFunc),
-            sizeof(bbDummy->bbHeapSsaPhiFunc));
-    fprintf(fout, "Offset / size of bbHeapSsaNumIn        = %3u / %3u\n", offsetof(BasicBlock, bbHeapSsaNumIn),
-            sizeof(bbDummy->bbHeapSsaNumIn));
-    fprintf(fout, "Offset / size of bbHeapSsaNumOut       = %3u / %3u\n", offsetof(BasicBlock, bbHeapSsaNumOut),
-            sizeof(bbDummy->bbHeapSsaNumOut));
+    fprintf(fout, "Offset / size of bbMemorySsaPhiFunc      = %3u / %3u\n", offsetof(BasicBlock, bbMemorySsaPhiFunc),
+            sizeof(bbDummy->bbMemorySsaPhiFunc));
+    fprintf(fout, "Offset / size of bbMemorySsaNumIn        = %3u / %3u\n", offsetof(BasicBlock, bbMemorySsaNumIn),
+            sizeof(bbDummy->bbMemorySsaNumIn));
+    fprintf(fout, "Offset / size of bbMemorySsaNumOut       = %3u / %3u\n", offsetof(BasicBlock, bbMemorySsaNumOut),
+            sizeof(bbDummy->bbMemorySsaNumOut));
     fprintf(fout, "Offset / size of bbScope               = %3u / %3u\n", offsetof(BasicBlock, bbScope),
             sizeof(bbDummy->bbScope));
     fprintf(fout, "Offset / size of bbCseGen              = %3u / %3u\n", offsetof(BasicBlock, bbCseGen),
@@ -1786,9 +1786,9 @@ void Compiler::compInit(ArenaAllocator* pAlloc, InlineInfo* inlineInfo)
         impSpillCliquePredMembers = ExpandArray<BYTE>(getAllocator());
         impSpillCliqueSuccMembers = ExpandArray<BYTE>(getAllocator());
 
-        memset(&lvHeapPerSsaData, 0, sizeof(PerSsaArray));
-        lvHeapPerSsaData.Init(getAllocator());
-        lvHeapNumSsaNames = 0;
+        memset(&lvMemoryPerSsaData, 0, sizeof(PerSsaArray));
+        lvMemoryPerSsaData.Init(getAllocator());
+        lvMemoryNumSsaNames = 0;
 
         //
         // Initialize all the per-method statistics gathering data structures.
@@ -1869,8 +1869,11 @@ void Compiler::compInit(ArenaAllocator* pAlloc, InlineInfo* inlineInfo)
     m_fieldSeqStore      = nullptr;
     m_zeroOffsetFieldMap = nullptr;
     m_arrayInfoMap       = nullptr;
-    m_heapSsaMap         = nullptr;
     m_refAnyClass        = nullptr;
+    for (MemoryKind memoryKind : allMemoryKinds())
+    {
+        m_memorySsaMap[memoryKind] = nullptr;
+    }
 
 #ifdef DEBUG
     if (!compIsForInlining())

@@ -23,6 +23,53 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 #include "jitstd.h"
 
+// Fixed-size array that can hold elements with no default constructor;
+// it will construct them all by forwarding whatever arguments are
+// supplied to its constructor.
+template <typename T, int N>
+class ConstructedArray
+{
+    union {
+        // Storage that gets used to hold the T objects.
+        unsigned char bytes[N * sizeof(T)];
+
+#if defined(_MSC_VER) && (_MSC_VER < 1900)
+        // With MSVC pre-VS2015, the code in the #else branch would hit error C2621,
+        // so in that case just count on pointer alignment being sufficient
+        // (currently T is only ever instantiated as jitstd::list<SsaRenameStateForBlock>)
+
+        // Unused (except to impart alignment requirement)
+        void* pointer;
+#else
+        // Unused (except to impart alignment requirement)
+        T alignedArray[N];
+#endif // defined(_MSC_VER) && (_MSC_VER < 1900)
+    };
+
+public:
+    T& operator[](size_t i)
+    {
+        return *(reinterpret_cast<T*>(bytes + i * sizeof(T)));
+    }
+
+    template <typename... Args>
+    ConstructedArray(Args&&... args)
+    {
+        for (int i = 0; i < N; ++i)
+        {
+            new (bytes + i * sizeof(T), jitstd::placement_t()) T(jitstd::forward<Args>(args)...);
+        }
+    }
+
+    ~ConstructedArray()
+    {
+        for (int i = 0; i < N; ++i)
+        {
+            operator[](i).~T();
+        }
+    }
+};
+
 struct SsaRenameStateForBlock
 {
     BasicBlock* m_bb;
@@ -74,32 +121,32 @@ struct SsaRenameState
     // Pop all stacks that have an entry for "bb" on top.
     void PopBlockStacks(BasicBlock* bb);
 
-    // Similar functions for the special implicit "Heap" variable.
-    unsigned CountForHeapDef()
+    // Similar functions for the special implicit memory variable.
+    unsigned CountForMemoryDef()
     {
-        if (heapCount == 0)
+        if (memoryCount == 0)
         {
-            heapCount = SsaConfig::FIRST_SSA_NUM;
+            memoryCount = SsaConfig::FIRST_SSA_NUM;
         }
-        unsigned res = heapCount;
-        heapCount++;
+        unsigned res = memoryCount;
+        memoryCount++;
         return res;
     }
-    unsigned CountForHeapUse()
+    unsigned CountForMemoryUse(MemoryKind memoryKind)
     {
-        return heapStack.back().m_count;
+        return memoryStack[memoryKind].back().m_count;
     }
 
-    void PushHeap(BasicBlock* bb, unsigned count)
+    void PushMemory(MemoryKind memoryKind, BasicBlock* bb, unsigned count)
     {
-        heapStack.push_back(SsaRenameStateForBlock(bb, count));
+        memoryStack[memoryKind].push_back(SsaRenameStateForBlock(bb, count));
     }
 
-    void PopBlockHeapStack(BasicBlock* bb);
+    void PopBlockMemoryStack(MemoryKind memoryKind, BasicBlock* bb);
 
-    unsigned HeapCount()
+    unsigned MemoryCount()
     {
-        return heapCount;
+        return memoryCount;
     }
 
 #ifdef DEBUG
@@ -117,9 +164,9 @@ private:
     // This list represents the set of locals defined in the current block.
     DefStack definedLocs;
 
-    // Same state for the special implicit Heap variable.
-    Stack    heapStack;
-    unsigned heapCount;
+    // Same state for the special implicit memory variables.
+    ConstructedArray<Stack, MemoryKindCount> memoryStack;
+    unsigned memoryCount;
 
     // Number of stacks/counts to allocate.
     unsigned lvaCount;
