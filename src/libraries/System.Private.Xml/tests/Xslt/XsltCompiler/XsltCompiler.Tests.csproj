@@ -18,17 +18,11 @@
     <OutputPath>$(OutputPath)\$(RootNamespace)\$(AssemblyName)</OutputPath>
   </PropertyGroup>
   <ItemGroup>
-    <!--<Reference Include="TestStylesheet">
-      <HintPath>.\TestStylesheet.dll</HintPath>
-    </Reference>-->
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CommonScenarios\XsltcTestBasicFunctionality.cs" />
     <Compile Include="CommonScenarios\XsltcTestCaseBase.cs" />
-    <Compile Include="CommonScenarios\XsltcTestClassname.cs" />
-    <Compile Include="CommonScenarios\XsltcTestCompile.cs" />
     <Compile Include="CommonScenarios\XsltcTestFile.cs" />
-    <Compile Include="CommonScenarios\XsltcTestOut.cs" />
     <Compile Include="CommonScenarios\XsltcTestPlatform.cs" />
     <Compile Include="CommonScenarios\XsltcTestSettings.cs" />
     <Compile Include="XsltcModule.cs" />
@@ -44,17 +38,6 @@
     <ProjectReference Include="$(CommonTestPath)\System\Xml\XmlCoreTest\XmlCoreTest.csproj" />
     <ProjectReference Include="$(CommonTestPath)\System\Xml\XmlDiff\XmlDiff.csproj" />
     <ProjectReference Include="..\..\..\..\System.Private.Xml\pkg\System.Private.Xml.pkgproj" />
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="Identity.xslt" />
-    <Content Include="IdentityTransform.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="IdentityTransform.xslt">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <SubType>Designer</SubType>
-    </Content>
-    <Content Include="TestStylesheet.xslt" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

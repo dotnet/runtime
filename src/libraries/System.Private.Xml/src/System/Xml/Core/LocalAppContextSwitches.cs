@@ -56,15 +56,15 @@ namespace System
             }
         }
 
-        private const string DontProhibitDefaultResolverName = "Switch.System.Xml.DontProhibitDefaultResolver";
-        private static int s_dontProhibitDefaultResolver;
+        private const string AllowDefaultResolverName = "Switch.System.Xml.AllowDefaultResolver";
+        private static int s_allowDefaultResolver;
 
-        public static bool DontProhibitDefaultResolver
+        public static bool AllowDefaultResolver
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                return LocalAppContext.GetCachedSwitchValue(DontProhibitDefaultResolverName, ref s_dontProhibitDefaultResolver);
+                return LocalAppContext.GetCachedSwitchValue(AllowDefaultResolverName, ref s_allowDefaultResolver);
             }
         }
     }

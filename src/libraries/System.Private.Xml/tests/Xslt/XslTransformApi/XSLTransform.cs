@@ -4,11 +4,8 @@
 
 using Xunit;
 using Xunit.Abstractions;
-using System;
 using System.IO;
-using System.Net;
 using System.Text;
-using System.Xml;
 using System.Xml.XmlDiff;
 using System.Xml.XPath;
 using System.Xml.Xsl;
@@ -66,11 +63,7 @@ namespace System.Xml.Tests
         private string _strPath;           // Path of the data files
 
         private string _httpPath;          // HTTP Path of the data files
-        private InputType _nInput;            // reader, url, or navigator
         private bool _fTrace;            // Should we write out the results of the transform?
-        private TransformType _nTransform;        // Type of XSL Transform to do
-        private DocType _docType;          // Data document type
-        private ReaderType _readerType;       // Reader type
 
         // Other global variables
         protected string _strOutFile = "out.xml";        // File to create when using write transforms
@@ -91,26 +84,6 @@ namespace System.Xml.Tests
             AppContext.SetSwitch("TestSwitch.LocalAppContext.DisableCaching", true);
             _output = output;
             this.Init(null);
-        }
-
-        public InputType MyInputType()
-        {
-            return _nInput;
-        }
-
-        public TransformType MyTransformType()
-        {
-            return _nTransform;
-        }
-
-        public DocType MyDocType()
-        {
-            return _docType;
-        }
-
-        public ReaderType MyReaderType()
-        {
-            return _readerType;
         }
 
         public TransformType GetTransformType(String s)
@@ -134,7 +107,6 @@ namespace System.Xml.Tests
         public XmlUrlResolver GetDefaultCredResolver()
         {
             XmlUrlResolver myDefaultCredResolver = new XmlUrlResolver();
-            //myDefaultCredResolver.Credentials = CredentialCache.DefaultCredentials;
 
             return myDefaultCredResolver;
         }
@@ -190,21 +162,10 @@ namespace System.Xml.Tests
             }
         }
 
-        public String InitStringValue(String str)
-        {
-            return String.Empty;
-        }
-
         public void Init(object objParam)
         {
-            // Get input and transform type from attribute
-            _nInput = GetInputType(String.Empty);
-            _nTransform = GetTransformType(String.Empty);
-
             // Get parameter info from runtime variables passed to LTM
-            _fTrace = (InitStringValue("trace").ToUpper() == "TRUE");
-            _docType = GetDocType(InitStringValue("doctype"));
-            _readerType = GetReaderType(InitStringValue("readertype"));
+            _fTrace = false;
 
             // FullFilePath and FullHttpPath attempt to normalize file paths, however
             // as an extra step we can normalize them here, when they are first read
@@ -299,12 +260,7 @@ namespace System.Xml.Tests
         // --------------------------------------------------------------------------------------------------------------
         //  LoadXSL
         //  -------------------------------------------------------------------------------------------------------------
-        public int LoadXSL(String _strXslFile)
-        {
-            return LoadXSL(_strXslFile, _nInput);
-        }
-
-        public int LoadXSL(String _strXslFile, InputType inputType)
+        public int LoadXSL(string _strXslFile, InputType inputType, ReaderType readerType)
         {
             _strXslFile = FullFilePath(_strXslFile);
 #pragma warning disable 0618
@@ -319,7 +275,7 @@ namespace System.Xml.Tests
                     break;
 
                 case InputType.Reader:
-                    switch (_readerType)
+                    switch (readerType)
                     {
                         case ReaderType.XmlTextReader:
                             XmlTextReader trTemp = new XmlTextReader(_strXslFile);
@@ -401,14 +357,14 @@ namespace System.Xml.Tests
         // --------------------------------------------------------------------------------------------------------------
         //  LoadXSL_Resolver
         //  -------------------------------------------------------------------------------------------------------------
-        public int LoadXSL_Resolver(String _strXslFile, XmlResolver xr)
+        public int LoadXSL_Resolver(string _strXslFile, XmlResolver xr, InputType inputType, ReaderType readerType)
         {
             _strXslFile = FullFilePath(_strXslFile);
 #pragma warning disable 0618
             xslt = new XslTransform();
 #pragma warning restore 0618
 
-            switch (_nInput)
+            switch (inputType)
             {
                 case InputType.URI:
                     _output.WriteLine("Loading style sheet as URI {0}", _strXslFile);
@@ -416,7 +372,7 @@ namespace System.Xml.Tests
                     break;
 
                 case InputType.Reader:
-                    switch (_readerType)
+                    switch (readerType)
                     {
                         case ReaderType.XmlTextReader:
                             XmlTextReader trTemp = new XmlTextReader(_strXslFile);
@@ -494,97 +450,6 @@ namespace System.Xml.Tests
             return 1;
         }
 
-        // --------------------------------------------------------------------------------------------------------------
-        //  LoadXSL_Resolver_Evidence
-        //  -------------------------------------------------------------------------------------------------------------
-        /*public int LoadXSL_Resolver_Evidence(String _strXslFile, XmlResolver xr, Evidence e)
-        {
-            _strXslFile = FullFilePath(_strXslFile);
-#pragma warning disable 0618
-            xslt = new XslTransform();
-#pragma warning restore 0618
-
-            switch (_nInput)
-            {
-                case InputType.Reader:
-                    switch (_readerType)
-                    {
-                        case ReaderType.XmlTextReader:
-                            XmlTextReader trTemp = new XmlTextReader(_strXslFile);
-                            try
-                            {
-                                _output.WriteLine("Loading style sheet as XmlTextReader {0}", _strXslFile);
-                                xslt.Load(trTemp, xr, e);
-                            }
-                            catch (Exception ex)
-                            {
-                                throw (ex);
-                            }
-                            finally
-                            {
-                                if (trTemp != null)
-                                    trTemp.Dispose();
-                            }
-                            break;
-
-                        case ReaderType.XmlNodeReader:
-                            XmlDocument docTemp = new XmlDocument();
-                            docTemp.Load(_strXslFile);
-                            XmlNodeReader nrTemp = new XmlNodeReader(docTemp);
-                            try
-                            {
-                                _output.WriteLine("Loading style sheet as XmlNodeReader {0}", _strXslFile);
-                                xslt.Load(nrTemp, xr, e);
-                            }
-                            catch (Exception ex)
-                            {
-                                throw (ex);
-                            }
-                            finally
-                            {
-                                if (nrTemp != null)
-                                    nrTemp.Dispose();
-                            }
-                            break;
-
-                        case ReaderType.XmlValidatingReader:
-                        default:
-#pragma warning disable 0618
-                            XmlValidatingReader vrTemp = new XmlValidatingReader(new XmlTextReader(_strXslFile));
-#pragma warning restore 0618
-                            vrTemp.ValidationType = ValidationType.None;
-                            vrTemp.EntityHandling = EntityHandling.ExpandEntities;
-                            try
-                            {
-                                _output.WriteLine("Loading style sheet as XmlValidatingReader {0}", _strXslFile);
-                                xslt.Load(vrTemp, xr, e);
-                            }
-                            catch (Exception ex)
-                            {
-                                throw (ex);
-                            }
-                            finally
-                            {
-                                if (vrTemp != null)
-                                    vrTemp.Dispose();
-                            }
-                            break;
-                    }
-                    break;
-
-                case InputType.Navigator:
-#pragma warning disable 0618
-                    XmlValidatingReader xrLoad = new XmlValidatingReader(new XmlTextReader(_strXslFile));
-#pragma warning restore 0618
-                    XPathDocument xdTemp = new XPathDocument(xrLoad, XmlSpace.Preserve);
-                    xrLoad.Dispose();
-                    _output.WriteLine("Loading style sheet as Navigator {0}", _strXslFile);
-                    xslt.Load(xdTemp.CreateNavigator(), xr, e);
-                    break;
-            }
-            return 1;
-        }*/
-
         //VerifyResult
         public void VerifyResult(string expectedValue)
         {
@@ -636,28 +501,35 @@ namespace System.Xml.Tests
         }
 #pragma warning restore 0618
 
-        public int Transform(String szXmlFile)
+        public int Transform(string szXmlFile, TransformType transformType, DocType docType)
         {
             // Default value of errorCase is false
-            return Transform(szXmlFile, false);
+            return Transform(szXmlFile, false, transformType, docType);
         }
 
-        public int Transform(String szXmlFile, bool errorCase)
+        public int Transform(string szXmlFile, bool errorCase, TransformType transformType, DocType docType)
         {
             lock (s_outFileMemoryLock)
             {
                 szXmlFile = FullFilePath(szXmlFile);
 
                 _output.WriteLine("Loading XML {0}", szXmlFile);
-                IXPathNavigable xd = LoadXML(szXmlFile, _docType);
+                IXPathNavigable xd = LoadXML(szXmlFile, docType);
 
                 _output.WriteLine("Executing transform");
                 xrXSLT = null;
                 Stream strmTemp = null;
-                switch (_nTransform)
+                switch (transformType)
                 {
                     case TransformType.Reader:
                         xrXSLT = xslt.Transform(xd, null);
+
+                        using (FileStream outFile = new FileStream(_strOutFile, FileMode.Create, FileAccess.ReadWrite))
+                        using (XmlWriter writer = XmlWriter.Create(outFile))
+                        {
+                            writer.WriteNode(xrXSLT, true);
+                        }
+
                         if (errorCase)
                         {
                             try
@@ -726,11 +598,6 @@ namespace System.Xml.Tests
                         {
                             throw (ex);
                         }
-                        finally
-                        {
-                            if (tw != null)
-                                tw.Dispose();
-                        }
                         break;
                 }
                 return 1;
@@ -741,28 +608,35 @@ namespace System.Xml.Tests
         //  Transform_ArgList
         //  -------------------------------------------------------------------------------------------------------------
 
-        public int Transform_ArgList(String szXmlFile)
+        public int Transform_ArgList(string szXmlFile, TransformType transformType, DocType docType)
         {
             // Default value of errorCase is false
-            return Transform_ArgList(szXmlFile, false);
+            return Transform_ArgList(szXmlFile, false, transformType, docType);
         }
 
-        public int Transform_ArgList(String szXmlFile, bool errorCase)
+        public int Transform_ArgList(string szXmlFile, bool errorCase, TransformType transformType, DocType docType)
         {
             lock (s_outFileMemoryLock)
             {
                 szXmlFile = FullFilePath(szXmlFile);
 
                 _output.WriteLine("Loading XML {0}", szXmlFile);
-                IXPathNavigable xd = LoadXML(szXmlFile, _docType);
+                IXPathNavigable xd = LoadXML(szXmlFile, docType);
 
                 _output.WriteLine("Executing transform");
                 xrXSLT = null;
                 Stream strmTemp = null;
-                switch (_nTransform)
+                switch (transformType)
                 {
                     case TransformType.Reader:
                         xrXSLT = xslt.Transform(xd, m_xsltArg);
+
+                        using (FileStream outFile = new FileStream(_strOutFile, FileMode.Create, FileAccess.ReadWrite))
+                        using (XmlWriter writer = XmlWriter.Create(outFile))
+                        {
+                            writer.WriteNode(xrXSLT, true);
+                        }
+
                         if (errorCase)
                         {
                             try
@@ -831,13 +705,6 @@ namespace System.Xml.Tests
                         {
                             throw (ex);
                         }
-                        finally
-                        {
-                            if (tw != null)
-                            {
-                                tw.Dispose();
-                            }
-                        }
                         break;
                 }
                 return 1;
@@ -848,29 +715,36 @@ namespace System.Xml.Tests
         //  TransformResolver
         //  -------------------------------------------------------------------------------------------------------------
 
-        public int TransformResolver(String szXmlFile, XmlResolver xr)
+        public int TransformResolver(string szXmlFile, TransformType transformType, DocType docType, XmlResolver xr)
         {
             // Default value of errorCase is false
-            return TransformResolver(szXmlFile, xr, false);
+            return TransformResolver(szXmlFile, xr, false, transformType, docType);
         }
 
-        public int TransformResolver(String szXmlFile, XmlResolver xr, bool errorCase)
+        public int TransformResolver(string szXmlFile, XmlResolver xr, bool errorCase, TransformType transformType, DocType docType)
         {
             lock (s_outFileMemoryLock)
             {
                 szXmlFile = FullFilePath(szXmlFile);
 
                 _output.WriteLine("Loading XML {0}", szXmlFile);
-                IXPathNavigable xd = LoadXML(szXmlFile, _docType);
+                IXPathNavigable xd = LoadXML(szXmlFile, docType);
 
                 _output.WriteLine("Executing transform");
                 xrXSLT = null;
                 Stream strmTemp = null;
 
-                switch (_nTransform)
+                switch (transformType)
                 {
                     case TransformType.Reader:
                         xrXSLT = xslt.Transform(xd, null, xr);
+
+                        using (FileStream outFile = new FileStream(_strOutFile, FileMode.Create, FileAccess.ReadWrite))
+                        using (XmlWriter writer = XmlWriter.Create(outFile))
+                        {
+                            writer.WriteNode(xrXSLT, true);
+                        }
+
                         if (errorCase)
                         {
                             try
@@ -939,11 +813,6 @@ namespace System.Xml.Tests
                         {
                             throw (ex);
                         }
-                        finally
-                        {
-                            if (tw != null)
-                                tw.Dispose();
-                        }
                         break;
                 }
                 return 1;
@@ -953,14 +822,14 @@ namespace System.Xml.Tests
         // --------------------------------------------------------------------------------------------------------------
         //  CheckResult
         //  -------------------------------------------------------------------------------------------------------------
-        public int CheckResult(double szExpResult)
+        public int CheckResult(double szExpResult, TransformType transformType)
         {
             lock (s_outFileMemoryLock)
             {
                 double checksumActual;
                 CXsltChecksum check = new CXsltChecksum(_fTrace, _output);
 
-                if (_nTransform == TransformType.Reader)
+                if (transformType == TransformType.Reader)
                     checksumActual = check.Calc(xrXSLT);
                 else
                     checksumActual = check.Calc(_strOutFile);

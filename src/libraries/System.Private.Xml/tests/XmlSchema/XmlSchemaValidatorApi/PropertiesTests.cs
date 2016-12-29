@@ -2,10 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections;
 using System.IO;
-using System.Xml;
 using System.Xml.Schema;
 using Xunit;
 using Xunit.Abstractions;
@@ -17,9 +15,12 @@ namespace System.Xml.Tests
     public class TCXmlResolver : CXmlSchemaValidatorTestCase
     {
         private ITestOutputHelper _output;
+        private ExceptionVerifier _exVerifier;
+
         public TCXmlResolver(ITestOutputHelper output): base(output)
         {
             _output = output;
+            _exVerifier = new ExceptionVerifier("System.Xml", _output);
         }
 
         //BUG #304124
@@ -181,9 +182,9 @@ namespace System.Xml.Tests
                 val.ValidateElement("bar", "", null, "t:type1", null, "uri:tempuri " + Path.Combine(TestData, XSDFILE_TARGET_NAMESPACE), null);
                 Assert.True(false);
             }
-            catch (XmlSchemaValidationException)
+            catch (XmlSchemaValidationException e)
             {
-                //XmlExceptionVerifier.IsExceptionOk(e, "Sch_XsiTypeNotFound", new string[] { "uri:tempuri:type1" });
+                _exVerifier.IsExceptionOk(e, "Sch_XsiTypeNotFound", new string[] { "uri:tempuri:type1" });
                 return;
             }
 
