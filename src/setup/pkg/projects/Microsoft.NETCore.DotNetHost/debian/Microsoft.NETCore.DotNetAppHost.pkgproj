@@ -3,27 +3,15 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   
   <PropertyGroup>
-    <Version>$(HostResolverVersion)</Version>
+    <Version>$(AppHostVersion)</Version>
     <SkipPackageFileCheck>true</SkipPackageFileCheck>
-    <MinOSForArch>win7</MinOSForArch>
-    <MinOSForArch Condition="$(PackagePlatform.StartsWith('arm'))">win8</MinOSForArch>
-    <MinOSForArch Condition="$(PackagePlatform.StartsWith('arm64'))">win10</MinOSForArch>
+    <MinOSForArch>debian.8</MinOSForArch>
     <PackageTargetRuntime>$(MinOSForArch)-$(PackagePlatform)</PackageTargetRuntime>
     <Serviceable>true</Serviceable>
   </PropertyGroup>
   
   <ItemGroup>
-    <Dependency Include="Microsoft.NETCore.DotNetHost">
-      <Version>$(HostFullVersion)</Version>
-    </Dependency>
-    <Dependency Include="Microsoft.NETCore.DotNetAppHost">
-      <Version>$(AppHostFullVersion)</Version>
-    </Dependency>
-
-    <ArchitectureSpecificNativeFile Include="$(DotNetHostBinDir)/hostfxr.dll"/>
-    <ArchitectureSpecificNativeFile Include="$(DotNetHostBinDir)/hostfxr.pdb">
-      <IsSymbolFile>true</IsSymbolFile>
-    </ArchitectureSpecificNativeFile>
+    <ArchitectureSpecificNativeFile Include="$(DotNetHostBinDir)/apphost" />
 
     <File Include="@(ArchitectureSpecificNativeFile)">
       <TargetPath>runtimes/$(PackageTargetRuntime)/native</TargetPath>

@@ -178,7 +178,6 @@ namespace Microsoft.DotNet.Host.Build
             int iPatch = int.Parse(branchInfo.Entries["PATCH_VERSION"]);
             string sReleaseSuffix = branchInfo.Entries["RELEASE_SUFFIX"];
             bool fStabilizePackageVersion = bool.Parse(branchInfo.Entries["STABILIZE_PACKAGE_VERSION"]);
-            bool fValidateHostPackages = bool.Parse(branchInfo.Entries["VALIDATE_HOST_PACKAGES"]);
             bool fLockHostVersion = bool.Parse(branchInfo.Entries["LOCK_HOST_VERSION"]);
 
             var hostVersion = new HostVersion()
@@ -201,7 +200,6 @@ namespace Microsoft.DotNet.Host.Build
                 CommitCount = commitCount
             };
 
-            c.BuildContext["ValidateHostPackages"] = fValidateHostPackages;
             c.BuildContext["BuildVersion"] = buildVersion;
             c.BuildContext["HostVersion"] = hostVersion;
             c.BuildContext["CommitHash"] = commitHash;

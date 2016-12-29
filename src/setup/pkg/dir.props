@@ -55,6 +55,7 @@
     <PreReleaseSuffix Condition="'$(EnsureStableVersion)'=='false'">-$(PreReleaseLabel)-$(BuildNumberMajor)-$(BuildNumberMinor)</PreReleaseSuffix>
     <HostPolicyFullVersion>$(HostPolicyVersion)$(PreReleaseSuffix)</HostPolicyFullVersion>
     <HostResolverFullVersion>$(HostResolverVersion)$(PreReleaseSuffix)</HostResolverFullVersion>
+    <AppHostFullVersion>$(AppHostVersion)$(PreReleaseSuffix)</AppHostFullVersion>
     <HostFullVersion>$(HostVersion)$(PreReleaseSuffix)</HostFullVersion>
   </PropertyGroup>
 

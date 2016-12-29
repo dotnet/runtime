@@ -3,7 +3,7 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   
   <PropertyGroup>
-    <Version>$(HostResolverVersion)</Version>
+    <Version>$(AppHostVersion)</Version>
     <SkipPackageFileCheck>true</SkipPackageFileCheck>
     <MinOSForArch>win7</MinOSForArch>
     <MinOSForArch Condition="$(PackagePlatform.StartsWith('arm'))">win8</MinOSForArch>
@@ -13,15 +13,8 @@
   </PropertyGroup>
   
   <ItemGroup>
-    <Dependency Include="Microsoft.NETCore.DotNetHost">
-      <Version>$(HostFullVersion)</Version>
-    </Dependency>
-    <Dependency Include="Microsoft.NETCore.DotNetAppHost">
-      <Version>$(AppHostFullVersion)</Version>
-    </Dependency>
-
-    <ArchitectureSpecificNativeFile Include="$(DotNetHostBinDir)/hostfxr.dll"/>
-    <ArchitectureSpecificNativeFile Include="$(DotNetHostBinDir)/hostfxr.pdb">
+    <ArchitectureSpecificNativeFile Include="$(DotNetHostBinDir)/apphost.exe" />
+    <ArchitectureSpecificNativeFile Include="$(DotNetHostBinDir)/apphost.pdb">
       <IsSymbolFile>true</IsSymbolFile>
     </ArchitectureSpecificNativeFile>
 
