@@ -1,6 +1,7 @@
 {
   "version": "1.0.0-*",
   "buildOptions": {
+    "allowUnsafe": true,
     "compile": {
       "include": [
         "../../build_projects/shared-build-targets-utils/Utils/DotNetCli.cs",
@@ -13,7 +14,9 @@
         "../../build_projects/Microsoft.DotNet.Cli.Build.Framework/Command.cs",
         "../../build_projects/Microsoft.DotNet.Cli.Build.Framework/CommandResult.cs",
         "../../build_projects/Microsoft.DotNet.Cli.Build.Framework/Constants.cs",
-        "../../build_projects/Microsoft.DotNet.Cli.Build.Framework/Reporter.cs"
+        "../../build_projects/Microsoft.DotNet.Cli.Build.Framework/Reporter.cs",
+        "../../build_projects/Microsoft.DotNet.Cli.Build.Framework/Enumerations/BuildPlatform.cs",
+        "../../build_projects/Microsoft.DotNet.Cli.Build.Framework/CurrentPlatform.cs"
       ]
     }
   },
