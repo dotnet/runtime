@@ -198,6 +198,7 @@ namespace Microsoft.DotNet.Host.Build
                 string cmakeBaseRid, visualStudio, archMacro, arch;
                 string ridMacro = $"-DCLI_CMAKE_RUNTIME_ID:STRING={rid}";
                 string cmakeHostVer = $"-DCLI_CMAKE_HOST_VER:STRING={hostVersion.LatestHostVersion.ToString()}";
+                string cmakeAppHostVer = $"-DCLI_CMAKE_APPHOST_VER:STRING={hostVersion.LatestAppHostVersion.ToString()}";
                 string cmakeHostPolicyVer = $"-DCLI_CMAKE_HOST_POLICY_VER:STRING={hostVersion.LatestHostPolicyVersion.ToString()}";
                 string cmakeHostFxrVer = $"-DCLI_CMAKE_HOST_FXR_VER:STRING={hostVersion.LatestHostFxrVersion.ToString()}";
                 string cmakeCommitHash = $"-DCLI_CMAKE_COMMIT_HASH:STRING={commitHash}";
@@ -243,6 +244,7 @@ namespace Microsoft.DotNet.Host.Build
                 cmakeArgList.Add(archMacro);
                 cmakeArgList.Add(ridMacro);
                 cmakeArgList.Add(cmakeHostVer);
+                cmakeArgList.Add(cmakeAppHostVer);
                 cmakeArgList.Add(cmakeHostFxrVer);
                 cmakeArgList.Add(cmakeHostPolicyVer);
                 cmakeArgList.Add(cmakeBaseRid);
@@ -271,8 +273,10 @@ namespace Microsoft.DotNet.Host.Build
                     Exec(msbuildPath, cmakeOutPath, configParameter);
 
                 // Copy the output out
-                File.Copy(Path.Combine(cmakeOut, "cli", "exe", configuration, "dotnet.exe"), Path.Combine(Dirs.CorehostLatest, "dotnet.exe"), overwrite: true);
-                File.Copy(Path.Combine(cmakeOut, "cli", "exe", configuration, "dotnet.pdb"), Path.Combine(Dirs.CorehostLatest, "dotnet.pdb"), overwrite: true);
+                File.Copy(Path.Combine(cmakeOut, "cli", "exe", "dotnet", configuration, "dotnet.exe"), Path.Combine(Dirs.CorehostLatest, "dotnet.exe"), overwrite: true);
+                File.Copy(Path.Combine(cmakeOut, "cli", "exe", "dotnet", configuration, "dotnet.pdb"), Path.Combine(Dirs.CorehostLatest, "dotnet.pdb"), overwrite: true);
+                File.Copy(Path.Combine(cmakeOut, "cli", "exe", "apphost", configuration, "apphost.exe"), Path.Combine(Dirs.CorehostLatest, "apphost.exe"), overwrite: true);
+                File.Copy(Path.Combine(cmakeOut, "cli", "exe", "apphost", configuration, "apphost.pdb"), Path.Combine(Dirs.CorehostLatest, "apphost.pdb"), overwrite: true);
                 File.Copy(Path.Combine(cmakeOut, "cli", "dll", configuration, "hostpolicy.dll"), Path.Combine(Dirs.CorehostLatest, "hostpolicy.dll"), overwrite: true);
                 File.Copy(Path.Combine(cmakeOut, "cli", "dll", configuration, "hostpolicy.pdb"), Path.Combine(Dirs.CorehostLatest, "hostpolicy.pdb"), overwrite: true);
                 File.Copy(Path.Combine(cmakeOut, "cli", "fxr", configuration, "hostfxr.dll"), Path.Combine(Dirs.CorehostLatest, "hostfxr.dll"), overwrite: true);
@@ -302,6 +306,8 @@ namespace Microsoft.DotNet.Host.Build
                 buildScriptArgList.Add(arch);
                 buildScriptArgList.Add("--hostver");
                 buildScriptArgList.Add(hostVersion.LatestHostVersion.ToString());
+                buildScriptArgList.Add("--apphostver");
+                buildScriptArgList.Add(hostVersion.LatestAppHostVersion.ToString());
                 buildScriptArgList.Add("--fxrver");
                 buildScriptArgList.Add(hostVersion.LatestHostFxrVersion.ToString());
                 buildScriptArgList.Add("--policyver");
@@ -324,7 +330,8 @@ namespace Microsoft.DotNet.Host.Build
                 ExecIn(cmakeOut, buildScriptFile, buildScriptArgList);
 
                 // Copy the output out
-                File.Copy(Path.Combine(cmakeOut, "cli", "exe", "dotnet"), Path.Combine(Dirs.CorehostLatest, "dotnet"), overwrite: true);
+                File.Copy(Path.Combine(cmakeOut, "cli", "exe", "dotnet", "dotnet"), Path.Combine(Dirs.CorehostLatest, "dotnet"), overwrite: true);
+                File.Copy(Path.Combine(cmakeOut, "cli", "exe", "apphost", "apphost"), Path.Combine(Dirs.CorehostLatest, "apphost"), overwrite: true);
                 File.Copy(Path.Combine(cmakeOut, "cli", "dll", HostArtifactNames.HostPolicyBaseName), Path.Combine(Dirs.CorehostLatest, HostArtifactNames.HostPolicyBaseName), overwrite: true);
                 File.Copy(Path.Combine(cmakeOut, "cli", "fxr", HostArtifactNames.DotnetHostFxrBaseName), Path.Combine(Dirs.CorehostLatest, HostArtifactNames.DotnetHostFxrBaseName), overwrite: true);
             }
@@ -373,6 +380,7 @@ namespace Microsoft.DotNet.Host.Build
             msbuildProps.AppendLine($"    <Platform>{platform}</Platform>");
             msbuildProps.AppendLine($"    <DotNetHostBinDir>{Dirs.CorehostLatest}</DotNetHostBinDir>");
             msbuildProps.AppendLine($"    <HostVersion>{hostVersion.LatestHostVersion.WithoutSuffix}</HostVersion>");
+            msbuildProps.AppendLine($"    <AppHostVersion>{hostVersion.LatestAppHostVersion.WithoutSuffix}</AppHostVersion>");
             msbuildProps.AppendLine($"    <HostResolverVersion>{hostVersion.LatestHostFxrVersion.WithoutSuffix}</HostResolverVersion>");
             msbuildProps.AppendLine($"    <HostPolicyVersion>{hostVersion.LatestHostPolicyVersion.WithoutSuffix}</HostPolicyVersion>");
             msbuildProps.AppendLine($"    <BuildNumberMajor>{hostVersion.LatestHostBuildMajor}</BuildNumberMajor>");
@@ -421,18 +429,12 @@ namespace Microsoft.DotNet.Host.Build
                 Console.WriteLine($"Copying package {fileName} to artifacts directory {Dirs.CorehostLocalPackages}.");
             }
 
-            bool fValidateHostPackages = c.BuildContext.Get<bool>("ValidateHostPackages");
-
-            // Validate the generated host packages only if we are building them.
-            if (fValidateHostPackages)
+            foreach (var item in hostVersion.LatestHostPackagesToValidate)
             {
-                foreach (var item in hostVersion.LatestHostPackages)
+                var fileFilter = $"runtime.{rid}.{item.Key}.{item.Value.ToString()}.nupkg";
+                if (Directory.GetFiles(Dirs.CorehostLocalPackages, fileFilter).Length == 0)
                 {
-                    var fileFilter = $"runtime.{rid}.{item.Key}.{item.Value.ToString()}.nupkg";
-                    if (Directory.GetFiles(Dirs.CorehostLocalPackages, fileFilter).Length == 0)
-                    {
-                        throw new BuildFailureException($"Nupkg for {fileFilter} was not created.");
-                    }
+                    throw new BuildFailureException($"Nupkg for {fileFilter} was not created.");
                 }
             }
 

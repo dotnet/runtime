@@ -126,7 +126,8 @@ namespace Microsoft.DotNet.Cli.Build
                 sharedFrameworkNameAndVersionRoot,
                 "framework",
                 deleteRuntimeConfigJson: true,
-                deleteDepsJson: false);
+                deleteDepsJson: false,
+                deleteAppHost: true);
 
             // Rename the .deps file
             var destinationDeps = Path.Combine(sharedFrameworkNameAndVersionRoot, $"{s_sharedFrameworkName}.deps.json");
