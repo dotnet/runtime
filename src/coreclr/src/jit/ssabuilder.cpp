@@ -103,12 +103,19 @@ void Compiler::fgResetForSsa()
     {
         lvaTable[i].lvPerSsaData.Reset();
     }
-    lvHeapPerSsaData.Reset();
-    m_heapSsaMap = nullptr;
+    lvMemoryPerSsaData.Reset();
+    for (MemoryKind memoryKind : allMemoryKinds())
+    {
+        m_memorySsaMap[memoryKind] = nullptr;
+    }
+
     for (BasicBlock* blk = fgFirstBB; blk != nullptr; blk = blk->bbNext)
     {
         // Eliminate phis.
-        blk->bbHeapSsaPhiFunc = nullptr;
+        for (MemoryKind memoryKind : allMemoryKinds())
+        {
+            blk->bbMemorySsaPhiFunc[memoryKind] = nullptr;
+        }
         if (blk->bbTreeList != nullptr)
         {
             GenTreePtr last = blk->bbTreeList->gtPrev;
@@ -804,29 +811,34 @@ void SsaBuilder::InsertPhiFunctions(BasicBlock** postOrder, int count)
             }
         }
 
-        // Now make a similar phi definition if the block defines Heap.
-        if (block->bbHeapDef)
+        // Now make a similar phi definition if the block defines memory.
+        if (block->bbMemoryDef != 0)
         {
             // For each block "bbInDomFront" that is in the dominance frontier of "block".
             for (BlkSet::KeyIterator iterBlk = blkIdf->Begin(); !iterBlk.Equal(blkIdf->End()); ++iterBlk)
             {
                 BasicBlock* bbInDomFront = iterBlk.Get();
-                DBG_SSA_JITDUMP("     Considering BB%02u in dom frontier of BB%02u for Heap phis:\n",
+                DBG_SSA_JITDUMP("     Considering BB%02u in dom frontier of BB%02u for Memory phis:\n",
                                 bbInDomFront->bbNum, block->bbNum);
 
-                // Check if Heap is live into block "*iterBlk".
-                if (!bbInDomFront->bbHeapLiveIn)
+                for (MemoryKind memoryKind : allMemoryKinds())
                 {
-                    continue;
-                }
+                    // Check if memoryKind is live into block "*iterBlk".
+                    if ((bbInDomFront->bbMemoryLiveIn & memoryKindSet(memoryKind)) == 0)
+                    {
+                        continue;
+                    }
 
-                // Check if we've already inserted a phi node.
-                if (bbInDomFront->bbHeapSsaPhiFunc == nullptr)
-                {
-                    // We have a variable i that is defined in block j and live at l, and l belongs to dom frontier of
-                    // j. So insert a phi node at l.
-                    JITDUMP("Inserting phi definition for Heap at start of BB%02u.\n", bbInDomFront->bbNum);
-                    bbInDomFront->bbHeapSsaPhiFunc = BasicBlock::EmptyHeapPhiDef;
+                    // Check if we've already inserted a phi node.
+                    if (bbInDomFront->bbMemorySsaPhiFunc[memoryKind] == nullptr)
+                    {
+                        // We have a variable i that is defined in block j and live at l, and l belongs to dom frontier
+                        // of
+                        // j. So insert a phi node at l.
+                        JITDUMP("Inserting phi definition for %s at start of BB%02u.\n", memoryKindNames[memoryKind],
+                                bbInDomFront->bbNum);
+                        bbInDomFront->bbMemorySsaPhiFunc[memoryKind] = BasicBlock::EmptyMemoryPhiDef;
+                    }
                 }
             }
         }
@@ -944,8 +956,8 @@ void SsaBuilder::TreeRenameVariables(GenTree* tree, BasicBlock* block, SsaRename
         }
     }
 
-    // Figure out if "tree" may make a new heap state (if we care for this block).
-    if (!block->bbHeapHavoc)
+    // Figure out if "tree" may make a new GC heap state (if we care for this block).
+    if ((block->bbMemoryHavoc & memoryKindSet(GcHeap)) == 0)
     {
         if (tree->OperIsAssignment() || tree->OperIsBlkOp())
         {
@@ -954,21 +966,21 @@ void SsaBuilder::TreeRenameVariables(GenTree* tree, BasicBlock* block, SsaRename
                 GenTreeLclVarCommon* lclVarNode;
                 if (!tree->DefinesLocal(m_pCompiler, &lclVarNode))
                 {
-                    // It *may* define the heap in a non-havoc way.  Make a new SSA # -- associate with this node.
-                    unsigned count = pRenameState->CountForHeapDef();
-                    pRenameState->PushHeap(block, count);
-                    m_pCompiler->GetHeapSsaMap()->Set(tree, count);
+                    // It *may* define the GC heap in a non-havoc way.  Make a new SSA # -- associate with this node.
+                    unsigned count = pRenameState->CountForMemoryDef();
+                    pRenameState->PushMemory(GcHeap, block, count);
+                    m_pCompiler->GetMemorySsaMap(GcHeap)->Set(tree, count);
 #ifdef DEBUG
                     if (JitTls::GetCompiler()->verboseSsa)
                     {
                         printf("Node ");
                         Compiler::printTreeID(tree);
-                        printf(" (in try block) may define heap; ssa # = %d.\n", count);
+                        printf(" (in try block) may define GC heap; ssa # = %d.\n", count);
                     }
 #endif // DEBUG
 
                     // Now add this SSA # to all phis of the reachable catch blocks.
-                    AddHeapDefToHandlerPhis(block, count);
+                    AddMemoryDefToHandlerPhis(GcHeap, block, count);
                 }
             }
         }
@@ -1154,7 +1166,7 @@ void SsaBuilder::AddDefToHandlerPhis(BasicBlock* block, unsigned lclNum, unsigne
     }
 }
 
-void SsaBuilder::AddHeapDefToHandlerPhis(BasicBlock* block, unsigned count)
+void SsaBuilder::AddMemoryDefToHandlerPhis(MemoryKind memoryKind, BasicBlock* block, unsigned count)
 {
     if (m_pCompiler->ehBlockHasExnFlowDsc(block))
     {
@@ -1165,39 +1177,39 @@ void SsaBuilder::AddHeapDefToHandlerPhis(BasicBlock* block, unsigned count)
         }
 
         // Otherwise...
-        DBG_SSA_JITDUMP("Definition of Heap/d:%d in block BB%02u has exn handler; adding as phi arg to handlers.\n",
-                        count, block->bbNum);
+        DBG_SSA_JITDUMP("Definition of %s/d:%d in block BB%02u has exn handler; adding as phi arg to handlers.\n",
+                        memoryKindNames[memoryKind], count, block->bbNum);
         EHblkDsc* tryBlk = m_pCompiler->ehGetBlockExnFlowDsc(block);
         while (true)
         {
             BasicBlock* handler = tryBlk->ExFlowBlock();
 
-            // Is Heap live on entry to the handler?
-            if (handler->bbHeapLiveIn)
+            // Is memoryKind live on entry to the handler?
+            if ((handler->bbMemoryLiveIn & memoryKindSet(memoryKind)) != 0)
             {
-                assert(handler->bbHeapSsaPhiFunc != nullptr);
+                assert(handler->bbMemorySsaPhiFunc != nullptr);
 
-                // Add "count" to the phi args of Heap.
-                if (handler->bbHeapSsaPhiFunc == BasicBlock::EmptyHeapPhiDef)
+                // Add "count" to the phi args of memoryKind.
+                BasicBlock::MemoryPhiArg*& handlerMemoryPhi = handler->bbMemorySsaPhiFunc[memoryKind];
+                if (handlerMemoryPhi == BasicBlock::EmptyMemoryPhiDef)
                 {
-                    handler->bbHeapSsaPhiFunc = new (m_pCompiler) BasicBlock::HeapPhiArg(count);
+                    handlerMemoryPhi = new (m_pCompiler) BasicBlock::MemoryPhiArg(count);
                 }
                 else
                 {
 #ifdef DEBUG
-                    BasicBlock::HeapPhiArg* curArg = handler->bbHeapSsaPhiFunc;
+                    BasicBlock::MemoryPhiArg* curArg = handler->bbMemorySsaPhiFunc[memoryKind];
                     while (curArg != nullptr)
                     {
                         assert(curArg->GetSsaNum() != count);
                         curArg = curArg->m_nextArg;
                     }
 #endif // DEBUG
-                    handler->bbHeapSsaPhiFunc =
-                        new (m_pCompiler) BasicBlock::HeapPhiArg(count, handler->bbHeapSsaPhiFunc);
+                    handlerMemoryPhi = new (m_pCompiler) BasicBlock::MemoryPhiArg(count, handlerMemoryPhi);
                 }
 
-                DBG_SSA_JITDUMP("   Added phi arg u:%d for Heap to phi defn in handler block BB%02u.\n", count,
-                                handler->bbNum);
+                DBG_SSA_JITDUMP("   Added phi arg u:%d for %s to phi defn in handler block BB%02u.\n", count,
+                                memoryKindNames[memoryKind], memoryKind, handler->bbNum);
             }
             unsigned tryInd = tryBlk->ebdEnclosingTryIndex;
             if (tryInd == EHblkDsc::NO_ENCLOSING_INDEX)
@@ -1221,19 +1233,22 @@ void SsaBuilder::BlockRenameVariables(BasicBlock* block, SsaRenameState* pRename
 {
     // Walk the statements of the block and rename the tree variables.
 
-    // First handle the incoming Heap state.
-
-    // Is there an Phi definition for heap at the start of this block?
-    if (block->bbHeapSsaPhiFunc != nullptr)
+    // First handle the incoming memory states.
+    for (MemoryKind memoryKind : allMemoryKinds())
     {
-        unsigned count = pRenameState->CountForHeapDef();
-        pRenameState->PushHeap(block, count);
+        // Is there an Phi definition for memoryKind at the start of this block?
+        if (block->bbMemorySsaPhiFunc[memoryKind] != nullptr)
+        {
+            unsigned count = pRenameState->CountForMemoryDef();
+            pRenameState->PushMemory(memoryKind, block, count);
 
-        DBG_SSA_JITDUMP("Ssa # for Heap phi on entry to BB%02u is %d.\n", block->bbNum, count);
+            DBG_SSA_JITDUMP("Ssa # for %s phi on entry to BB%02u is %d.\n", memoryKindNames[memoryKind], block->bbNum,
+                            count);
+        }
+
+        // Record the "in" Ssa # for memoryKind.
+        block->bbMemorySsaNumIn[memoryKind] = pRenameState->CountForMemoryUse(memoryKind);
     }
-
-    // Record the "in" Ssa # for Heap.
-    block->bbHeapSsaNumIn = pRenameState->CountForHeapUse();
 
     // We need to iterate over phi definitions, to give them SSA names, but we need
     // to know which are which, so we don't add phi definitions to handler phi arg lists.
@@ -1253,22 +1268,26 @@ void SsaBuilder::BlockRenameVariables(BasicBlock* block, SsaRenameState* pRename
         }
     }
 
-    // Now handle the final heap state.
-
-    // If the block defines Heap, allocate an SSA variable for the final heap state in the block.
-    // (This may be redundant with the last SSA var explicitly created, but there's no harm in that.)
-    if (block->bbHeapDef)
+    // Now handle the final memory states.
+    for (MemoryKind memoryKind : allMemoryKinds())
     {
-        unsigned count = pRenameState->CountForHeapDef();
-        pRenameState->PushHeap(block, count);
-        AddHeapDefToHandlerPhis(block, count);
+        MemoryKindSet memorySet = memoryKindSet(memoryKind);
+
+        // If the block defines memory, allocate an SSA variable for the final memory state in the block.
+        // (This may be redundant with the last SSA var explicitly created, but there's no harm in that.)
+        if ((block->bbMemoryDef & memorySet) != 0)
+        {
+            unsigned count = pRenameState->CountForMemoryDef();
+            pRenameState->PushMemory(memoryKind, block, count);
+            AddMemoryDefToHandlerPhis(memoryKind, block, count);
+        }
+
+        // Record the "out" Ssa" # for memoryKind.
+        block->bbMemorySsaNumOut[memoryKind] = pRenameState->CountForMemoryUse(memoryKind);
+
+        DBG_SSA_JITDUMP("Ssa # for %s on entry to BB%02u is %d; on exit is %d.\n", memoryKindNames[memoryKind],
+                        block->bbNum, block->bbMemorySsaNumIn[memoryKind], block->bbMemorySsaNumOut[memoryKind]);
     }
-
-    // Record the "out" Ssa" # for Heap.
-    block->bbHeapSsaNumOut = pRenameState->CountForHeapUse();
-
-    DBG_SSA_JITDUMP("Ssa # for Heap on entry to BB%02u is %d; on exit is %d.\n", block->bbNum, block->bbHeapSsaNumIn,
-                    block->bbHeapSsaNumOut);
 }
 
 /**
@@ -1328,35 +1347,40 @@ void SsaBuilder::AssignPhiNodeRhsVariables(BasicBlock* block, SsaRenameState* pR
             m_pCompiler->fgSetStmtSeq(stmt);
         }
 
-        // Now handle Heap.
-        if (succ->bbHeapSsaPhiFunc != nullptr)
+        // Now handle memory.
+        for (MemoryKind memoryKind : allMemoryKinds())
         {
-            if (succ->bbHeapSsaPhiFunc == BasicBlock::EmptyHeapPhiDef)
+            BasicBlock::MemoryPhiArg*& succMemoryPhi = succ->bbMemorySsaPhiFunc[memoryKind];
+            if (succMemoryPhi != nullptr)
             {
-                succ->bbHeapSsaPhiFunc = new (m_pCompiler) BasicBlock::HeapPhiArg(block->bbHeapSsaNumOut);
-            }
-            else
-            {
-                BasicBlock::HeapPhiArg* curArg = succ->bbHeapSsaPhiFunc;
-                unsigned                ssaNum = block->bbHeapSsaNumOut;
-                bool                    found  = false;
-                // This is a quadratic algorithm.  We might need to consider some switch over to a hash table
-                // representation for the arguments of a phi node, to make this linear.
-                while (curArg != nullptr)
+                if (succMemoryPhi == BasicBlock::EmptyMemoryPhiDef)
                 {
-                    if (curArg->m_ssaNum == ssaNum)
+                    succMemoryPhi = new (m_pCompiler) BasicBlock::MemoryPhiArg(block->bbMemorySsaNumOut[memoryKind]);
+                }
+                else
+                {
+                    BasicBlock::MemoryPhiArg* curArg = succMemoryPhi;
+                    unsigned                  ssaNum = block->bbMemorySsaNumOut[memoryKind];
+                    bool                      found  = false;
+                    // This is a quadratic algorithm.  We might need to consider some switch over to a hash table
+                    // representation for the arguments of a phi node, to make this linear.
+                    while (curArg != nullptr)
                     {
-                        found = true;
-                        break;
+                        if (curArg->m_ssaNum == ssaNum)
+                        {
+                            found = true;
+                            break;
+                        }
+                        curArg = curArg->m_nextArg;
                     }
-                    curArg = curArg->m_nextArg;
+                    if (!found)
+                    {
+                        succMemoryPhi = new (m_pCompiler) BasicBlock::MemoryPhiArg(ssaNum, succMemoryPhi);
+                    }
                 }
-                if (!found)
-                {
-                    succ->bbHeapSsaPhiFunc = new (m_pCompiler) BasicBlock::HeapPhiArg(ssaNum, succ->bbHeapSsaPhiFunc);
-                }
+                DBG_SSA_JITDUMP("  Added phi arg for %s u:%d from BB%02u in BB%02u.\n", memoryKindNames[memoryKind],
+                                block->bbMemorySsaNumOut[memoryKind], block->bbNum, succ->bbNum);
             }
-            DBG_SSA_JITDUMP("  Added phi arg for Heap from BB%02u in BB%02u.\n", block->bbNum, succ->bbNum);
         }
 
         // If "succ" is the first block of a try block (and "block" is not also in that try block)
@@ -1462,26 +1486,31 @@ void SsaBuilder::AssignPhiNodeRhsVariables(BasicBlock* block, SsaRenameState* pR
                     }
                 }
 
-                // Now handle Heap.
-                if (handlerStart->bbHeapSsaPhiFunc != nullptr)
+                // Now handle memory.
+                for (MemoryKind memoryKind : allMemoryKinds())
                 {
-                    if (handlerStart->bbHeapSsaPhiFunc == BasicBlock::EmptyHeapPhiDef)
+                    BasicBlock::MemoryPhiArg*& handlerMemoryPhi = handlerStart->bbMemorySsaPhiFunc[memoryKind];
+                    if (handlerMemoryPhi != nullptr)
                     {
-                        handlerStart->bbHeapSsaPhiFunc =
-                            new (m_pCompiler) BasicBlock::HeapPhiArg(block->bbHeapSsaNumOut);
+                        if (handlerMemoryPhi == BasicBlock::EmptyMemoryPhiDef)
+                        {
+                            handlerMemoryPhi =
+                                new (m_pCompiler) BasicBlock::MemoryPhiArg(block->bbMemorySsaNumOut[memoryKind]);
+                        }
+                        else
+                        {
+                            // This path has a potential to introduce redundant phi args, due to multiple
+                            // preds of the same try-begin block having the same live-out memory def, and/or
+                            // due to nested try-begins each having preds with the same live-out memory def.
+                            // Avoid doing quadratic processing on handler phis, and instead live with the
+                            // occasional redundancy.
+                            handlerMemoryPhi = new (m_pCompiler)
+                                BasicBlock::MemoryPhiArg(block->bbMemorySsaNumOut[memoryKind], handlerMemoryPhi);
+                        }
+                        DBG_SSA_JITDUMP("  Added phi arg for %s u:%d from BB%02u in BB%02u.\n",
+                                        memoryKindNames[memoryKind], block->bbMemorySsaNumOut[memoryKind], block->bbNum,
+                                        handlerStart->bbNum);
                     }
-                    else
-                    {
-                        // This path has a potential to introduce redundant phi args, due to multiple
-                        // preds of the same try-begin block having the same live-out heap def, and/or
-                        // due to nested try-begins each having preds with the same live-out heap def.
-                        // Avoid doing quadratic processing on handler phis, and instead live with the
-                        // occasional redundancy.
-                        handlerStart->bbHeapSsaPhiFunc = new (m_pCompiler)
-                            BasicBlock::HeapPhiArg(block->bbHeapSsaNumOut, handlerStart->bbHeapSsaPhiFunc);
-                    }
-                    DBG_SSA_JITDUMP("  Added phi arg for Heap from BB%02u in BB%02u.\n", block->bbNum,
-                                    handlerStart->bbNum);
                 }
 
                 tryInd = succTry->ebdEnclosingTryIndex;
@@ -1502,8 +1531,11 @@ void SsaBuilder::BlockPopStacks(BasicBlock* block, SsaRenameState* pRenameState)
     // Pop the names given to the non-phi nodes.
     pRenameState->PopBlockStacks(block);
 
-    // And for Heap.
-    pRenameState->PopBlockHeapStack(block);
+    // And for memory.
+    for (MemoryKind memoryKind : allMemoryKinds())
+    {
+        pRenameState->PopBlockMemoryStack(memoryKind, block);
+    }
 }
 
 /**
@@ -1552,20 +1584,27 @@ void SsaBuilder::RenameVariables(BlkToBlkSetMap* domTree, SsaRenameState* pRenam
             pRenameState->Push(nullptr, i, count);
         }
     }
-    // In ValueNum we'd assume un-inited heap gets FIRST_SSA_NUM.
-    // The heap is a parameter.  Use FIRST_SSA_NUM as first SSA name.
-    unsigned initHeapCount = pRenameState->CountForHeapDef();
-    assert(initHeapCount == SsaConfig::FIRST_SSA_NUM);
-    pRenameState->PushHeap(m_pCompiler->fgFirstBB, initHeapCount);
 
-    // Initialize the heap ssa numbers for unreachable blocks. ValueNum expects
-    // heap ssa numbers to have some intitial value.
+    // In ValueNum we'd assume un-inited memory gets FIRST_SSA_NUM.
+    // The memory is a parameter.  Use FIRST_SSA_NUM as first SSA name.
+    unsigned initMemoryCount = pRenameState->CountForMemoryDef();
+    assert(initMemoryCount == SsaConfig::FIRST_SSA_NUM);
+    for (MemoryKind memoryKind : allMemoryKinds())
+    {
+        pRenameState->PushMemory(memoryKind, m_pCompiler->fgFirstBB, initMemoryCount);
+    }
+
+    // Initialize the memory ssa numbers for unreachable blocks. ValueNum expects
+    // memory ssa numbers to have some intitial value.
     for (BasicBlock* block = m_pCompiler->fgFirstBB; block; block = block->bbNext)
     {
         if (block->bbIDom == nullptr)
         {
-            block->bbHeapSsaNumIn  = initHeapCount;
-            block->bbHeapSsaNumOut = initHeapCount;
+            for (MemoryKind memoryKind : allMemoryKinds())
+            {
+                block->bbMemorySsaNumIn[memoryKind]  = initMemoryCount;
+                block->bbMemorySsaNumOut[memoryKind] = initMemoryCount;
+            }
         }
     }
 
@@ -1624,8 +1663,8 @@ void SsaBuilder::RenameVariables(BlkToBlkSetMap* domTree, SsaRenameState* pRenam
         }
     }
 
-    // Remember the number of Heap SSA names.
-    m_pCompiler->lvHeapNumSsaNames = pRenameState->HeapCount();
+    // Remember the number of memory SSA names.
+    m_pCompiler->lvMemoryNumSsaNames = pRenameState->MemoryCount();
 }
 
 #ifdef DEBUG
