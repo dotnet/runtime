@@ -28,9 +28,6 @@
     <Compile Include="testspec.cs" />
     <Compile Include="testvariation.cs" />
     <Compile Include="util.cs" />
-    <Compile Include="$(CommonPath)\System\Diagnostics\CodeAnalysis\ExcludeFromCodeCoverageAttribute.cs">
-      <Link>Common\System\Diagnostics\CodeAnalysis\ExcludeFromCodeCoverageAttribute.cs</Link>
-    </Compile>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\pkg\System.Private.Xml.Linq.pkgproj" />

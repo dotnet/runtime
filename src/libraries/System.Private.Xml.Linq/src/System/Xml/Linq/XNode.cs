@@ -4,6 +4,8 @@
 
 using System.Collections.Generic;
 using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 
 using CultureInfo = System.Globalization.CultureInfo;
 using SuppressMessageAttribute = System.Diagnostics.CodeAnalysis.SuppressMessageAttribute;
@@ -462,6 +464,72 @@ namespace System.Xml.Linq
         }
 
         /// <summary>
+        /// Creates an <see cref="XNode"/> from an <see cref="XmlReader"/>.
+        /// The runtime type of the node is determined by the node type
+        /// (<see cref="XObject.NodeType"/>) of the first node encountered
+        /// in the reader.
+        /// </summary>
+        /// <param name="reader">An <see cref="XmlReader"/> positioned at the node to read into this <see cref="XNode"/>.</param>
+        /// <param name="cancellationToken">A cancellation token.</param>
+        /// <returns>An <see cref="XNode"/> that contains the nodes read from the reader.</returns>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown if the <see cref="XmlReader"/> is not positioned on a recognized node type.
+        /// </exception>
+        public static Task<XNode> ReadFromAsync(XmlReader reader, CancellationToken cancellationToken)
+        {
+            if (reader == null)
+                throw new ArgumentNullException(nameof(reader));
+            if (cancellationToken.IsCancellationRequested)
+                return Task.FromCanceled<XNode>(cancellationToken);
+            return ReadFromAsyncInternal(reader, cancellationToken);
+        }
+
+        private static async Task<XNode> ReadFromAsyncInternal(XmlReader reader, CancellationToken cancellationToken)
+        {
+            if (reader.ReadState != ReadState.Interactive) throw new InvalidOperationException(SR.InvalidOperation_ExpectedInteractive);
+
+            XNode ret;
+
+            switch (reader.NodeType)
+            {
+                case XmlNodeType.Text:
+                case XmlNodeType.SignificantWhitespace:
+                case XmlNodeType.Whitespace:
+                    ret = new XText(reader.Value);
+                    break;
+                case XmlNodeType.CDATA:
+                    ret = new XCData(reader.Value);
+                    break;
+                case XmlNodeType.Comment:
+                    ret = new XComment(reader.Value);
+                    break;
+                case XmlNodeType.DocumentType:
+                    var name = reader.Name;
+                    var publicId = reader.GetAttribute("PUBLIC");
+                    var systemId = reader.GetAttribute("SYSTEM");
+                    var internalSubset = reader.Value;
+
+                    ret = new XDocumentType(name, publicId, systemId, internalSubset);
+                    break;
+                case XmlNodeType.Element:
+                    return await XElement.CreateAsync(reader, cancellationToken).ConfigureAwait(false);
+                case XmlNodeType.ProcessingInstruction:
+                    var target = reader.Name;
+                    var data = reader.Value;
+
+                    ret = new XProcessingInstruction(target, data);
+                    break;
+                default:
+                    throw new InvalidOperationException(SR.Format(SR.InvalidOperation_UnexpectedNodeType, reader.NodeType));
+            }
+
+            cancellationToken.ThrowIfCancellationRequested();
+            await reader.ReadAsync().ConfigureAwait(false);
+
+            return ret;
+        }
+
+        /// <summary>
         /// Removes this XNode from the underlying XML tree.
         /// </summary>
         /// <exception cref="InvalidOperationException">
@@ -558,6 +626,13 @@ namespace System.Xml.Linq
         /// </summary>
         /// <param name="writer">The <see cref="XmlWriter"/> to write the current node into.</param>
         public abstract void WriteTo(XmlWriter writer);
+
+        /// <summary>
+        /// Write the current node to an <see cref="XmlWriter"/>.
+        /// </summary>
+        /// <param name="writer">The <see cref="XmlWriter"/> to write the current node into.</param>
+        /// <param name="cancellationToken">A cancellation token.</param>
+        public abstract Task WriteToAsync(XmlWriter writer, CancellationToken cancellationToken);
 
         internal virtual void AppendText(StringBuilder sb)
         {
