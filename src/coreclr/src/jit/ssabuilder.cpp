@@ -1333,17 +1333,18 @@ void SsaBuilder::AssignPhiNodeRhsVariables(BasicBlock* block, SsaRenameState* pR
         {
             if (succ->bbHeapSsaPhiFunc == BasicBlock::EmptyHeapPhiDef)
             {
-                succ->bbHeapSsaPhiFunc = new (m_pCompiler) BasicBlock::HeapPhiArg(block);
+                succ->bbHeapSsaPhiFunc = new (m_pCompiler) BasicBlock::HeapPhiArg(block->bbHeapSsaNumOut);
             }
             else
             {
                 BasicBlock::HeapPhiArg* curArg = succ->bbHeapSsaPhiFunc;
+                unsigned                ssaNum = block->bbHeapSsaNumOut;
                 bool                    found  = false;
                 // This is a quadratic algorithm.  We might need to consider some switch over to a hash table
                 // representation for the arguments of a phi node, to make this linear.
                 while (curArg != nullptr)
                 {
-                    if (curArg->m_predBB == block)
+                    if (curArg->m_ssaNum == ssaNum)
                     {
                         found = true;
                         break;
@@ -1352,7 +1353,7 @@ void SsaBuilder::AssignPhiNodeRhsVariables(BasicBlock* block, SsaRenameState* pR
                 }
                 if (!found)
                 {
-                    succ->bbHeapSsaPhiFunc = new (m_pCompiler) BasicBlock::HeapPhiArg(block, succ->bbHeapSsaPhiFunc);
+                    succ->bbHeapSsaPhiFunc = new (m_pCompiler) BasicBlock::HeapPhiArg(ssaNum, succ->bbHeapSsaPhiFunc);
                 }
             }
             DBG_SSA_JITDUMP("  Added phi arg for Heap from BB%02u in BB%02u.\n", block->bbNum, succ->bbNum);
@@ -1466,20 +1467,18 @@ void SsaBuilder::AssignPhiNodeRhsVariables(BasicBlock* block, SsaRenameState* pR
                 {
                     if (handlerStart->bbHeapSsaPhiFunc == BasicBlock::EmptyHeapPhiDef)
                     {
-                        handlerStart->bbHeapSsaPhiFunc = new (m_pCompiler) BasicBlock::HeapPhiArg(block);
+                        handlerStart->bbHeapSsaPhiFunc =
+                            new (m_pCompiler) BasicBlock::HeapPhiArg(block->bbHeapSsaNumOut);
                     }
                     else
                     {
-#ifdef DEBUG
-                        BasicBlock::HeapPhiArg* curArg = handlerStart->bbHeapSsaPhiFunc;
-                        while (curArg != nullptr)
-                        {
-                            assert(curArg->m_predBB != block);
-                            curArg = curArg->m_nextArg;
-                        }
-#endif // DEBUG
-                        handlerStart->bbHeapSsaPhiFunc =
-                            new (m_pCompiler) BasicBlock::HeapPhiArg(block, handlerStart->bbHeapSsaPhiFunc);
+                        // This path has a potential to introduce redundant phi args, due to multiple
+                        // preds of the same try-begin block having the same live-out heap def, and/or
+                        // due to nested try-begins each having preds with the same live-out heap def.
+                        // Avoid doing quadratic processing on handler phis, and instead live with the
+                        // occasional redundancy.
+                        handlerStart->bbHeapSsaPhiFunc = new (m_pCompiler)
+                            BasicBlock::HeapPhiArg(block->bbHeapSsaNumOut, handlerStart->bbHeapSsaPhiFunc);
                     }
                     DBG_SSA_JITDUMP("  Added phi arg for Heap from BB%02u in BB%02u.\n", block->bbNum,
                                     handlerStart->bbNum);
