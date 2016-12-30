@@ -260,6 +260,31 @@ namespace System.Net.Security.Tests
 
         [OuterLoop] // TODO: Issue #11345
         [Fact]
+        public async Task SslStream_StreamToStream_WriteAsync_ReadByte_Success()
+        {
+            VirtualNetwork network = new VirtualNetwork();
+
+            using (var clientStream = new VirtualNetworkStream(network, isServer: false))
+            using (var serverStream = new VirtualNetworkStream(network, isServer: true))
+            using (var clientSslStream = new SslStream(clientStream, false, AllowAnyServerCertificate))
+            using (var serverSslStream = new SslStream(serverStream))
+            {
+                bool result = DoHandshake(clientSslStream, serverSslStream);
+                Assert.True(result, "Handshake completed.");
+
+                for (int i = 0; i < 3; i++)
+                {
+                    await clientSslStream.WriteAsync(_sampleMsg, 0, _sampleMsg.Length).ConfigureAwait(false);
+                    foreach (byte b in _sampleMsg)
+                    {
+                        Assert.Equal(b, serverSslStream.ReadByte());
+                    }
+                }
+            }
+        }
+
+        [OuterLoop] // TODO: Issue #11345
+        [Fact]
         public void SslStream_StreamToStream_Flush_Propagated()
         {
             VirtualNetwork network = new VirtualNetwork();
