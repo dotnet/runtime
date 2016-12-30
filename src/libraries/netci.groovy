@@ -322,7 +322,7 @@ def testNugetRuntimeIdConfiguration = ['Debug': 'win7-x86',
                         else {
                             // Use Server GC for Ubuntu/OSX Debug PR build & test
                             def useServerGC = (configurationGroup == 'Release' && isPR) ? 'useServerGC' : ''
-                            shell("HOME=\$WORKSPACE/tempHome ./build.sh -${configurationGroup.toLowerCase()} -- ${useServerGC} /p:TestWithLocalNativeLibraries=true /p:TestNugetRuntimeId=${targetNugetRuntimeMap[osName]} /p:WithoutCategories=IgnoreForCI /p:BuildConfiguration=${targetGroup}-${osName}-${configurationGroup}-${buildArchConfiguration[configurationGroup]}")
+                            shell("HOME=\$WORKSPACE/tempHome ./build.sh -${configurationGroup.toLowerCase()} -- ${useServerGC} /p:TestWithLocalNativeLibraries=true /p:TestNugetRuntimeId=${targetNugetRuntimeMap[osName]} /p:WithoutCategories=IgnoreForCI /p:BuildConfiguration=${targetGroup}-${osName}-${configurationGroup}-x64")
                             // Tar up the appropriate bits.  On OSX the tarring is a different syntax for exclusion.
                             if (osName == 'OSX') {
                                 // TODO: Re-enable package archival when the build refactoring work allows it.
