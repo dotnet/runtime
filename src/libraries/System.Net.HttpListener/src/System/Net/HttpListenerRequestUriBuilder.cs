@@ -89,8 +89,7 @@ namespace System.Net
             if (!isValid)
             {
                 if (NetEventSource.IsEnabled)
-                    NetEventSource.Error(this,
-SR.Format(SR.net_log_listener_cant_create_uri, _cookedUriScheme, _cookedUriHost, _cookedUriPath, _cookedUriQuery));
+                    NetEventSource.Error(this, SR.Format(SR.net_log_listener_cant_create_uri, _cookedUriScheme, _cookedUriHost, _cookedUriPath, _cookedUriQuery));
             }
         }
 
@@ -115,8 +114,7 @@ SR.Format(SR.net_log_listener_cant_create_uri, _cookedUriScheme, _cookedUriHost,
             if (!isValid)
             {
                 if (NetEventSource.IsEnabled)
-                    NetEventSource.Error(this,
-SR.Format(SR.net_log_listener_cant_create_uri, _cookedUriScheme, _cookedUriHost, _rawPath, _cookedUriQuery));
+                    NetEventSource.Error(this, SR.Format(SR.net_log_listener_cant_create_uri, _cookedUriScheme, _cookedUriHost, _rawPath, _cookedUriQuery));
             }
         }
 
@@ -165,8 +163,7 @@ SR.Format(SR.net_log_listener_cant_create_uri, _cookedUriScheme, _cookedUriHost,
             if (result != ParsingResult.Success)
             {
                 if (NetEventSource.IsEnabled)
-                    NetEventSource.Error(this,
-SR.Format(SR.net_log_listener_cant_convert_raw_path, _rawPath, encoding.EncodingName));
+                    NetEventSource.Error(this, SR.Format(SR.net_log_listener_cant_convert_raw_path, _rawPath, encoding.EncodingName));
             }
 
             return result;
@@ -247,8 +244,7 @@ SR.Format(SR.net_log_listener_cant_convert_raw_path, _rawPath, encoding.Encoding
             if (!int.TryParse(codePoint, NumberStyles.HexNumber, null, out codePointValue))
             {
                 if (NetEventSource.IsEnabled)
-                    NetEventSource.Error(this,
-SR.Format(SR.net_log_listener_cant_convert_percent_value, codePoint));
+                    NetEventSource.Error(this, SR.Format(SR.net_log_listener_cant_convert_percent_value, codePoint));
                 return false;
             }
 
@@ -263,8 +259,7 @@ SR.Format(SR.net_log_listener_cant_convert_percent_value, codePoint));
             catch (ArgumentOutOfRangeException)
             {
                 if (NetEventSource.IsEnabled)
-                    NetEventSource.Error(this,
-SR.Format(SR.net_log_listener_cant_convert_percent_value, codePoint));
+                    NetEventSource.Error(this, SR.Format(SR.net_log_listener_cant_convert_percent_value, codePoint));
             }
             catch (EncoderFallbackException e)
             {

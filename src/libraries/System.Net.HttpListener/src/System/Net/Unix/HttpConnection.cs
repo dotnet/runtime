@@ -85,10 +85,16 @@ namespace System.Net
                 _sslStream = epl.Listener.CreateSslStream(new NetworkStream(sock, false), false, (t, c, ch, e) =>
                 {
                     if (c == null)
+                    {
                         return true;
+                    }
+
                     var c2 = c as X509Certificate2;
                     if (c2 == null)
+                    {
                         c2 = new X509Certificate2(c.GetRawCertData());
+                    }
+
                     _clientCert = c2;
                     _clientCertErrors = new int[] { (int)e };
                     return true;
@@ -96,6 +102,7 @@ namespace System.Net
 
                 _stream = _sslStream;
             }
+
             _timer = new Timer(OnTimeout, null, Timeout.Infinite, Timeout.Infinite);
             Init();
         }
@@ -243,7 +250,7 @@ namespace System.Net
                 _memoryStream.Write(_buffer, 0, nread);
                 if (_memoryStream.Length > 32768)
                 {
-                    SendError(HttpListenerResponseHelper.GetStatusDescription(400), 400);
+                    SendError(HttpStatusDescription.Get(400), 400);
                     Close(true);
                     return;
                 }
@@ -345,7 +352,7 @@ namespace System.Net
                 }
                 catch
                 {
-                    _context.ErrorMessage = HttpListenerResponseHelper.GetStatusDescription(400);
+                    _context.ErrorMessage = HttpStatusDescription.Get(400);
                     _context.ErrorStatus = 400;
                     return true;
                 }
@@ -432,7 +439,7 @@ namespace System.Net
                 HttpListenerResponse response = _context.Response;
                 response.StatusCode = status;
                 response.ContentType = "text/html";
-                string description = HttpListenerResponseHelper.GetStatusDescription(status);
+                string description = HttpStatusDescription.Get(status);
                 string str;
                 if (msg != null)
                     str = string.Format("<h1>{0} ({1})</h1>", description, msg);
