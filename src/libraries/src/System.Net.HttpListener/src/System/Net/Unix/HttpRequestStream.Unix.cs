@@ -75,7 +75,6 @@ namespace System.Net
             set { throw new NotSupportedException(SR.net_noseek); }
         }
 
-
         public override void Close() => _disposed = true;
 
         public override void Flush()

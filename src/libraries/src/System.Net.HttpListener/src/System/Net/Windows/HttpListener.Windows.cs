@@ -1599,8 +1599,7 @@ namespace System.Net
             ChannelBinding result = GetChannelBindingFromTls(connectionId);
 
             if (NetEventSource.IsEnabled && result != null)
-                NetEventSource.Info(this,
-"GetChannelBindingFromTls returned null even though OS supposedly supports Extended Protection");
+                NetEventSource.Info(this, "GetChannelBindingFromTls returned null even though OS supposedly supports Extended Protection");
             if (NetEventSource.IsEnabled) NetEventSource.Info(this, SR.net_log_listener_cbt);
             return result;
         }

@@ -13,14 +13,14 @@ namespace System.Net
         private HttpListenerRequest _request;
         private HttpListenerResponse _response;
         private IPrincipal _user;
-        private HttpConnection _cnc;
+        private HttpConnection _connection;
         private string _error;
         private int _err_status = 400;
         internal HttpListener Listener;
 
         internal HttpListenerContext(HttpConnection cnc)
         {
-            _cnc = cnc;
+            _connection = cnc;
             _request = new HttpListenerRequest(this);
             _response = new HttpListenerResponse(this);
         }
@@ -44,7 +44,7 @@ namespace System.Net
 
         internal HttpConnection Connection
         {
-            get { return _cnc; }
+            get { return _connection; }
         }
 
         public HttpListenerRequest Request

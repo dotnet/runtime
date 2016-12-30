@@ -171,17 +171,6 @@ namespace System.Net
             return IsPredefinedScheme(s.Substring(0, p));
         }
 
-        //
-        // Using a simple block of if's is twice as slow as the compiler generated
-        // switch statement.   But using this tuned code is faster than the
-        // compiler generated code, with a million loops on x86-64:
-        //
-        // With "http": .10 vs .51 (first check)
-        // with "https": .16 vs .51 (second check)
-        // with "foo": .22 vs .31 (never found)
-        // with "mailto": .12 vs .51  (last check)
-        //
-        //
         private static bool IsPredefinedScheme(string scheme)
         {
             if (scheme == null || scheme.Length < 3)
@@ -292,7 +281,7 @@ namespace System.Net
             int colon = header.IndexOf(':');
             if (colon == -1 || colon == 0)
             {
-                _context.ErrorMessage = HttpListenerResponseHelper.GetStatusDescription(400);
+                _context.ErrorMessage = HttpStatusDescription.Get(400);
                 _context.ErrorStatus = 400;
                 return;
             }

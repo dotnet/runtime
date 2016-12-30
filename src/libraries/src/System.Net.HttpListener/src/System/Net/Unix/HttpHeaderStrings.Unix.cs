@@ -10,7 +10,7 @@ namespace System.Net
         internal const string ContentType = "Content-Type";
         internal const string Charset = "charset=";
         internal const string Server = "Server";
-        internal const string NetCoreServerName = ".NETCore-HTTPAPI/1.0";
+        internal const string NetCoreServerName = ".NETCore";
         internal const string ContentLength = "Content-Length";
         internal const string Date = "Date";
         internal const string Connection = "Connection";
