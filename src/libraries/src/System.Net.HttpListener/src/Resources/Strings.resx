@@ -381,4 +381,28 @@
   <data name="net_MethodNotImplementedException" xml:space="preserve">
     <value>This method is not implemented by this class.</value>
   </data>
+  <data name="net_cannot_change_after_headers" xml:space="preserve">
+    <value>Cannot be changed after headers are sent.</value>
+  </data>
+  <data name="offset_out_of_range" xml:space="preserve">
+    <value>Offset exceeds the length of buffer.</value>
+  </data>
+  <data name="net_io_operation_aborted" xml:space="preserve">
+    <value>I/O operation aborted: '{0}'.</value>
+  </data>
+  <data name="net_invalid_path" xml:space="preserve">
+    <value>Invalid path.</value>
+  </data>
+  <data name="net_no_client_certificate" xml:space="preserve">
+    <value>Client certificate not found.</value>
+  </data>
+  <data name="net_listener_auth_errors" xml:space="preserve">
+    <value>Authentication errors.</value>
+  </data>
+  <data name="net_listener_close" xml:space="preserve">
+    <value>Listener closed.</value>
+  </data>
+  <data name="net_invalid_port" xml:space="preserve">
+    <value>Invalid port in prefix.</value>
+  </data>
 </root>

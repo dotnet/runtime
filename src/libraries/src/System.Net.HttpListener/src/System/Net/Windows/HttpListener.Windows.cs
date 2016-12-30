@@ -47,145 +47,27 @@ namespace System.Net
         // 0.5 seconds per request.  Respond with a 400 Bad Request.
         private const int UnknownHeaderLimit = 1000;
 
-        private static readonly byte[] s_WwwAuthenticateBytes = new byte[]
+        private static readonly byte[] s_wwwAuthenticateBytes = new byte[]
         {
             (byte) 'W', (byte) 'W', (byte) 'W', (byte) '-', (byte) 'A', (byte) 'u', (byte) 't', (byte) 'h',
             (byte) 'e', (byte) 'n', (byte) 't', (byte) 'i', (byte) 'c', (byte) 'a', (byte) 't', (byte) 'e'
         };
 
-        private AuthenticationSchemeSelector _authenticationDelegate;
-        private AuthenticationSchemes _authenticationScheme = AuthenticationSchemes.Anonymous;
-        private string _realm;
         private SafeHandle _requestQueueHandle;
         private ThreadPoolBoundHandle _requestQueueBoundHandle;
-        private volatile State _state; // _state is set only within lock blocks, but often read outside locks. 
-        private HttpListenerPrefixCollection _prefixes;
-        private bool _ignoreWriteExceptions;
         private bool _unsafeConnectionNtlmAuthentication;
-        private ExtendedProtectionSelector _extendedProtectionSelectorDelegate;
-        private ExtendedProtectionPolicy _extendedProtectionPolicy;
-        private ServiceNameStore _defaultServiceNames;
+
         private HttpServerSessionHandle _serverSessionHandle;
         private ulong _urlGroupId;
-        private HttpListenerTimeoutManager _timeoutManager;
+
         private bool _V2Initialized;
-
-        private Dictionary<ulong, DisconnectAsyncResult> _disconnectResults;         // ulong -> DisconnectAsyncResult
-        private readonly object _internalLock;
-
-        internal Hashtable _uriPrefixes = new Hashtable();
-
-        public HttpListener()
-        {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
-
-            _state = State.Stopped;
-            _internalLock = new object();
-            _defaultServiceNames = new ServiceNameStore();
-
-            _timeoutManager = new HttpListenerTimeoutManager(this);
-
-            // default: no CBT checks on any platform (appcompat reasons); applies also to PolicyEnforcement 
-            // config element
-            _extendedProtectionPolicy = new ExtendedProtectionPolicy(PolicyEnforcement.Never);
-
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
-        }
-
-        internal ICollection PrefixCollection => _uriPrefixes.Keys;
+        private Dictionary<ulong, DisconnectAsyncResult> _disconnectResults;
 
         internal SafeHandle RequestQueueHandle
         {
             get
             {
                 return _requestQueueHandle;
-            }
-        }
-
-        public AuthenticationSchemeSelector AuthenticationSchemeSelectorDelegate
-        {
-            get
-            {
-                return _authenticationDelegate;
-            }
-            set
-            {
-                CheckDisposed();
-                _authenticationDelegate = value;
-            }
-        }
-
-        public ExtendedProtectionSelector ExtendedProtectionSelectorDelegate
-        {
-            get
-            {
-                return _extendedProtectionSelectorDelegate;
-            }
-            set
-            {
-                CheckDisposed();
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
-
-                _extendedProtectionSelectorDelegate = value;
-            }
-        }
-
-        public AuthenticationSchemes AuthenticationSchemes
-        {
-            get
-            {
-                return _authenticationScheme;
-            }
-            set
-            {
-                CheckDisposed();
-                _authenticationScheme = value;
-            }
-        }
-
-        public ExtendedProtectionPolicy ExtendedProtectionPolicy
-        {
-            get
-            {
-                return _extendedProtectionPolicy;
-            }
-            set
-            {
-                CheckDisposed();
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
-                if (value.CustomChannelBinding != null)
-                {
-                    throw new ArgumentException(SR.net_listener_cannot_set_custom_cbt, nameof(value));
-                }
-
-                _extendedProtectionPolicy = value;
-            }
-        }
-
-        public ServiceNameCollection DefaultServiceNames
-        {
-            get
-            {
-                return _defaultServiceNames.ServiceNames;
-            }
-        }
-
-        public string Realm
-        {
-            get
-            {
-                return _realm;
-            }
-            set
-            {
-                CheckDisposed();
-                _realm = value;
             }
         }
 
@@ -200,6 +82,58 @@ namespace System.Net
                 SetupV2Config();
             }
         }
+
+
+        public bool UnsafeConnectionNtlmAuthentication
+        {
+            get
+            {
+                return _unsafeConnectionNtlmAuthentication;
+            }
+
+            set
+            {
+                CheckDisposed();
+                if (_unsafeConnectionNtlmAuthentication == value)
+                {
+                    return;
+                }
+                lock ((DisconnectResults as ICollection).SyncRoot)
+                {
+                    if (_unsafeConnectionNtlmAuthentication == value)
+                    {
+                        return;
+                    }
+                    _unsafeConnectionNtlmAuthentication = value;
+                    if (!value)
+                    {
+                        foreach (DisconnectAsyncResult result in DisconnectResults.Values)
+                        {
+                            result.AuthenticatedConnection = null;
+                        }
+                    }
+                }
+            }
+        }
+
+        private Dictionary<ulong, DisconnectAsyncResult> DisconnectResults
+        {
+            get
+            {
+                if (_disconnectResults == null)
+                {
+                    lock (_internalLock)
+                    {
+                        if (_disconnectResults == null)
+                        {
+                            _disconnectResults = new Dictionary<ulong, DisconnectAsyncResult>();
+                        }
+                    }
+                }
+                return _disconnectResults;
+            }
+        }
+
 
         private void SetUrlGroupProperty(Interop.HttpApi.HTTP_SERVER_PROPERTY property, IntPtr info, uint infosize)
         {
@@ -256,77 +190,6 @@ namespace System.Net
                 ValidateV2Property();
                 Debug.Assert(_timeoutManager != null, "Timeout manager is not assigned");
                 return _timeoutManager;
-            }
-        }
-
-        public bool IsListening
-        {
-            get
-            {
-                return _state == State.Started;
-            }
-        }
-
-        public bool IgnoreWriteExceptions
-        {
-            get
-            {
-                return _ignoreWriteExceptions;
-            }
-            set
-            {
-                CheckDisposed();
-                _ignoreWriteExceptions = value;
-            }
-        }
-
-        public bool UnsafeConnectionNtlmAuthentication
-        {
-            get
-            {
-                return _unsafeConnectionNtlmAuthentication;
-            }
-
-            set
-            {
-                CheckDisposed();
-                if (_unsafeConnectionNtlmAuthentication == value)
-                {
-                    return;
-                }
-                lock ((DisconnectResults as ICollection).SyncRoot)
-                {
-                    if (_unsafeConnectionNtlmAuthentication == value)
-                    {
-                        return;
-                    }
-                    _unsafeConnectionNtlmAuthentication = value;
-                    if (!value)
-                    {
-                        foreach (DisconnectAsyncResult result in DisconnectResults.Values)
-                        {
-                            result.AuthenticatedConnection = null;
-                        }
-                    }
-                }
-            }
-        }
-
-        private Dictionary<ulong, DisconnectAsyncResult> DisconnectResults
-        {
-            get
-            {
-                if (_disconnectResults == null)
-                {
-                    lock (_internalLock)
-                    {
-                        if (_disconnectResults == null)
-                        {
-                            _disconnectResults = new Dictionary<ulong, DisconnectAsyncResult>();
-                        }
-                    }
-                }
-                return _disconnectResults;
             }
         }
 
@@ -1101,14 +964,6 @@ namespace System.Net
             return httpContext;
         }
 
-        public Task<HttpListenerContext> GetContextAsync()
-        {
-            return Task.Factory.FromAsync(
-                (callback, state) => ((HttpListener)state).BeginGetContext(callback, state),
-                iar => ((HttpListener)iar.AsyncState).EndGetContext(iar),
-                this);
-        }
-
         internal HttpListenerContext HandleAuthentication(RequestContextBase memoryBlob, out bool stoleBlob)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Info(this, "HandleAuthentication() memoryBlob:0x" + ((IntPtr)memoryBlob.RequestBlob).ToString("x"));
@@ -1743,8 +1598,8 @@ namespace System.Net
 
             ChannelBinding result = GetChannelBindingFromTls(connectionId);
 
-            if (NetEventSource.IsEnabled && result != null) NetEventSource.Info(this,
-                "GetChannelBindingFromTls returned null even though OS supposedly supports Extended Protection");
+            if (NetEventSource.IsEnabled && result != null)
+                NetEventSource.Info(this, "GetChannelBindingFromTls returned null even though OS supposedly supports Extended Protection");
             if (NetEventSource.IsEnabled) NetEventSource.Info(this, SR.net_log_listener_cbt);
             return result;
         }
@@ -1863,7 +1718,6 @@ namespace System.Net
 
             if (policy.CustomServiceNames == null)
             {
-
                 if (_defaultServiceNames.ServiceNames.Count == 0)
                 {
                     throw new InvalidOperationException(SR.net_listener_no_spns);
@@ -2069,15 +1923,15 @@ namespace System.Net
                         {
                             headersArrayHandle = GCHandle.Alloc(headersArray, GCHandleType.Pinned);
                             httpResponse.Headers.pUnknownHeaders = (Interop.HttpApi.HTTP_UNKNOWN_HEADER*)Marshal.UnsafeAddrOfPinnedArrayElement(headersArray, 0);
-                            wwwAuthenticateHandle = GCHandle.Alloc(s_WwwAuthenticateBytes, GCHandleType.Pinned);
-                            sbyte* wwwAuthenticate = (sbyte*)Marshal.UnsafeAddrOfPinnedArrayElement(s_WwwAuthenticateBytes, 0);
+                            wwwAuthenticateHandle = GCHandle.Alloc(s_wwwAuthenticateBytes, GCHandleType.Pinned);
+                            sbyte* wwwAuthenticate = (sbyte*)Marshal.UnsafeAddrOfPinnedArrayElement(s_wwwAuthenticateBytes, 0);
 
                             for (int i = 0; i < challengeHandles.Length; i++)
                             {
                                 byte[] byteChallenge = Encoding.Default.GetBytes((string)challenges[i]);
                                 challengeHandles[i] = GCHandle.Alloc(byteChallenge, GCHandleType.Pinned);
                                 headersArray[i].pName = wwwAuthenticate;
-                                headersArray[i].NameLength = (ushort)s_WwwAuthenticateBytes.Length;
+                                headersArray[i].NameLength = (ushort)s_wwwAuthenticateBytes.Length;
                                 headersArray[i].pRawValue = (sbyte*)Marshal.UnsafeAddrOfPinnedArrayElement(byteChallenge, 0);
                                 headersArray[i].RawValueLength = checked((ushort)byteChallenge.Length);
                             }
@@ -2214,21 +2068,7 @@ namespace System.Net
             return token;
         }
 
-        internal void CheckDisposed()
-        {
-            if (_state == State.Closed)
-            {
-                throw new ObjectDisposedException(this.GetType().FullName);
-            }
-        }
 
-        private enum State
-        {
-            Stopped,
-            Started,
-            Closed,
-        }
-        
         private class DisconnectAsyncResult : IAsyncResult
         {
             private static readonly IOCompletionCallback s_IOCallback = new IOCompletionCallback(WaitCallback);

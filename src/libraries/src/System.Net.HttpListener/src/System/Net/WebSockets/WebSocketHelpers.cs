@@ -336,7 +336,7 @@ namespace System.Net.WebSockets
                     HttpKnownHeaderNames.SecWebSocketKey));
             }
         }
-        
+
         internal static void ValidateOptions(string subProtocol,
             int receiveBufferSize,
             int sendBufferSize,
