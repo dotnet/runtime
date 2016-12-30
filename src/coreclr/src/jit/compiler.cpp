@@ -4722,21 +4722,6 @@ void Compiler::ResetOptAnnotations()
                 tree->ClearVN();
                 tree->ClearAssertion();
                 tree->gtCSEnum = NO_CSE;
-
-                // Clear any *_ASG_LHS flags -- these are set during SSA construction,
-                // and the heap live-in calculation depends on them being unset coming
-                // into SSA construction (without clearing them, a block that has a
-                // heap def via one of these before any heap use is treated as not having
-                // an upwards-exposed heap use, even though subsequent heap uses may not
-                // be killed by the store; this seems to be a bug, worked around here).
-                if (tree->OperIsIndir())
-                {
-                    tree->gtFlags &= ~GTF_IND_ASG_LHS;
-                }
-                else if (tree->OperGet() == GT_CLS_VAR)
-                {
-                    tree->gtFlags &= ~GTF_CLS_VAR_ASG_LHS;
-                }
             }
         }
     }
