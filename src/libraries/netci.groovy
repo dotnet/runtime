@@ -306,67 +306,69 @@ def testNugetRuntimeIdConfiguration = ['Debug': 'win7-x86',
 // that don't run per PR can be requested via a magic phrase.
 // **************************
 [true, false].each { isPR ->
-    ['Debug', 'Release'].each { configurationGroup ->
-        ['Windows_NT', 'Ubuntu14.04', 'Ubuntu16.04', 'Ubuntu16.10', 'Debian8.4', 'CentOS7.1', 'OpenSUSE13.2', 'OpenSUSE42.1', 'Fedora23', 'Fedora24', 'RHEL7.2', 'OSX'].each { osName ->
-            def osGroup = osGroupMap[osName]
-            def newJobName = "${osName.toLowerCase()}_${configurationGroup.toLowerCase()}"
+    ['netcoreapp'].each { targetGroup ->
+        ['Debug', 'Release'].each { configurationGroup ->
+            ['Windows_NT', 'Ubuntu14.04', 'Ubuntu16.04', 'Ubuntu16.10', 'Debian8.4', 'CentOS7.1', 'OpenSUSE13.2', 'OpenSUSE42.1', 'Fedora23', 'Fedora24', 'RHEL7.2', 'OSX'].each { osName ->
+                def osGroup = osGroupMap[osName]
+                def newJobName = "${osName.toLowerCase()}_${configurationGroup.toLowerCase()}"
 
-            def newJob = job(Utilities.getFullJobName(project, newJobName, isPR)) {
-                // On Windows we use the packer to put together everything. On *nix we use tar
-                steps {
-                    if (osName == 'Windows 10' || osName == 'Windows 7' || osName == 'Windows_NT') {
-                        batchFile("call \"C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\vcvarsall.bat\" x86 && build.cmd -${configurationGroup} -os:${osGroup} -buildArch:${buildArchConfiguration[configurationGroup]} -TestNugetRuntimeId:${testNugetRuntimeIdConfiguration[configurationGroup]} -- /p:WithoutCategories=IgnoreForCI")
-                        batchFile("C:\\Packer\\Packer.exe .\\bin\\build.pack .\\bin")
-                    }
-                    else {
-                        // Use Server GC for Ubuntu/OSX Debug PR build & test
-                        def useServerGC = (configurationGroup == 'Release' && isPR) ? 'useServerGC' : ''
-                        shell("HOME=\$WORKSPACE/tempHome ./build.sh -${configurationGroup.toLowerCase()} -- ${useServerGC} /p:TestWithLocalNativeLibraries=true /p:TestNugetRuntimeId=${targetNugetRuntimeMap[osName]} /p:WithoutCategories=IgnoreForCI")
-                        // Tar up the appropriate bits.  On OSX the tarring is a different syntax for exclusion.
-                        if (osName == 'OSX') {
-                            // TODO: Re-enable package archival when the build refactoring work allows it.
-                            // shell("tar -czf bin/build.tar.gz --exclude *.Tests bin/*.${configurationGroup} bin/ref bin/packages")
-                            shell("tar -czf bin/build.tar.gz --exclude *.Tests bin/*.${configurationGroup} bin/ref")
+                def newJob = job(Utilities.getFullJobName(project, newJobName, isPR)) {
+                    // On Windows we use the packer to put together everything. On *nix we use tar
+                    steps {
+                        if (osName == 'Windows 10' || osName == 'Windows 7' || osName == 'Windows_NT') {
+                            batchFile("call \"C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\vcvarsall.bat\" x86 && build.cmd -${configurationGroup} -os:${osGroup} -buildArch:${buildArchConfiguration[configurationGroup]} -TestNugetRuntimeId:${testNugetRuntimeIdConfiguration[configurationGroup]} -- /p:WithoutCategories=IgnoreForCI /p:BuildConfiguration=${targetGroup}-${osName}-${configurationGroup}-${buildArchConfiguration[configurationGroup]}")
+                            batchFile("C:\\Packer\\Packer.exe .\\bin\\build.pack .\\bin")
                         }
                         else {
-                            // TODO: Re-enable package archival when the build refactoring work allows it.
-                            // shell("tar -czf bin/build.tar.gz bin/*.${configurationGroup} bin/ref bin/packages --exclude=*.Tests")
-                            shell("tar -czf bin/build.tar.gz bin/*.${configurationGroup} bin/ref --exclude=*.Tests")
+                            // Use Server GC for Ubuntu/OSX Debug PR build & test
+                            def useServerGC = (configurationGroup == 'Release' && isPR) ? 'useServerGC' : ''
+                            shell("HOME=\$WORKSPACE/tempHome ./build.sh -${configurationGroup.toLowerCase()} -- ${useServerGC} /p:TestWithLocalNativeLibraries=true /p:TestNugetRuntimeId=${targetNugetRuntimeMap[osName]} /p:WithoutCategories=IgnoreForCI /p:BuildConfiguration=${targetGroup}-${osName}-${configurationGroup}-${buildArchConfiguration[configurationGroup]}")
+                            // Tar up the appropriate bits.  On OSX the tarring is a different syntax for exclusion.
+                            if (osName == 'OSX') {
+                                // TODO: Re-enable package archival when the build refactoring work allows it.
+                                // shell("tar -czf bin/build.tar.gz --exclude *.Tests bin/*.${configurationGroup} bin/ref bin/packages")
+                                shell("tar -czf bin/build.tar.gz --exclude *.Tests bin/*.${configurationGroup} bin/ref")
+                            }
+                            else {
+                                // TODO: Re-enable package archival when the build refactoring work allows it.
+                                // shell("tar -czf bin/build.tar.gz bin/*.${configurationGroup} bin/ref bin/packages --exclude=*.Tests")
+                                shell("tar -czf bin/build.tar.gz bin/*.${configurationGroup} bin/ref --exclude=*.Tests")
+                            }
                         }
                     }
                 }
-            }
 
-            // Set the affinity.
-            Utilities.setMachineAffinity(newJob, osName, 'latest-or-auto')
-            // Set up standard options.
-            Utilities.standardJobSetup(newJob, project, isPR, "*/${branch}")
-            // Add the unit test results
-            // TODO: Re-enable test analysis when the build refactoring work allows it.
-            // Utilities.addXUnitDotNETResults(newJob, 'bin/tests/**/testResults.xml')
-            def archiveContents = "msbuild.log"
-            if (osName.contains('Windows')) {
-                // Packer.exe is a .NET Framework application. When we can use it from the tool-runtime, we can archive the ".pack" file here.
-                archiveContents += ",bin/build.pack"
-            }
-            else {
-                archiveContents += ",bin/build.tar.gz"
-            }
-            // Add archival for the built data.
-            Utilities.addArchival(newJob, archiveContents, '', doNotFailIfNothingArchived=true, archiveOnlyIfSuccessful=false)
-            // Set up triggers
-            if (isPR) {
-                // Set PR trigger, we run Windows_NT, Ubuntu 14.04, CentOS 7.1 and OSX on every PR.
-                if ( osName == 'Windows_NT' || osName == 'Ubuntu14.04' || osName == 'CentOS7.1' || osName == 'OSX' ) {
-                    Utilities.addGithubPRTriggerForBranch(newJob, branch, "Innerloop ${osName} ${configurationGroup} Build and Test")
+                // Set the affinity.
+                Utilities.setMachineAffinity(newJob, osName, 'latest-or-auto')
+                // Set up standard options.
+                Utilities.standardJobSetup(newJob, project, isPR, "*/${branch}")
+                // Add the unit test results
+                // TODO: Re-enable test analysis when the build refactoring work allows it.
+                // Utilities.addXUnitDotNETResults(newJob, 'bin/tests/**/testResults.xml')
+                def archiveContents = "msbuild.log"
+                if (osName.contains('Windows')) {
+                    // Packer.exe is a .NET Framework application. When we can use it from the tool-runtime, we can archive the ".pack" file here.
+                    archiveContents += ",bin/build.pack"
                 }
                 else {
-                    Utilities.addGithubPRTriggerForBranch(newJob, branch, "Innerloop ${osName} ${configurationGroup} Build and Test", "(?i).*test\\W+innerloop\\W+${osName}\\W+${configurationGroup}.*")
+                    archiveContents += ",bin/build.tar.gz"
                 }
-            }
-            else {
-                // Set a push trigger
-                Utilities.addGithubPushTrigger(newJob)
+                // Add archival for the built data.
+                Utilities.addArchival(newJob, archiveContents, '', doNotFailIfNothingArchived=true, archiveOnlyIfSuccessful=false)
+                // Set up triggers
+                if (isPR) {
+                    // Set PR trigger, we run Windows_NT, Ubuntu 14.04, CentOS 7.1 and OSX on every PR.
+                    if ( osName == 'Windows_NT' || osName == 'Ubuntu14.04' || osName == 'CentOS7.1' || osName == 'OSX' ) {
+                        Utilities.addGithubPRTriggerForBranch(newJob, branch, "Innerloop ${osName} ${configurationGroup} Build and Test")
+                    }
+                    else {
+                        Utilities.addGithubPRTriggerForBranch(newJob, branch, "Innerloop ${osName} ${configurationGroup} Build and Test", "(?i).*test\\W+innerloop\\W+${osName}\\W+${configurationGroup}.*")
+                    }
+                }
+                else {
+                    // Set a push trigger
+                    Utilities.addGithubPushTrigger(newJob)
+                }
             }
         }
     }

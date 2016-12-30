@@ -21,8 +21,7 @@
 
   <ItemGroup>
     <Project Include="external\dir.proj" />
-    <Project Include="src\ref.builds" />
-    <Project Include="src\src.builds" />
+    <Project Include="src\dirs.proj" />
     <!--
     <Project Include="src\tests.builds" Condition="$(BuildTests)=='true'">
       <InputOSGroup>$(InputOSGroup)</InputOSGroup>
