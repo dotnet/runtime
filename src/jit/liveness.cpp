@@ -328,7 +328,7 @@ void Compiler::fgPerNodeLocalVarLiveness(GenTree* tree, GenTree* asgdLclVar)
             }
             // If the GT_CLS_VAR is the lhs of an assignment, we'll handle it as a heap def, when we get to assignment.
             // Otherwise, we treat it as a use here.
-            if (!fgCurHeapDef && (tree->gtFlags & GTF_CLS_VAR_ASG_LHS) == 0)
+            if ((tree->gtFlags & GTF_CLS_VAR_ASG_LHS) == 0)
             {
                 fgCurHeapUse = true;
             }
@@ -381,10 +381,7 @@ void Compiler::fgPerNodeLocalVarLiveness(GenTree* tree, GenTree* asgdLclVar)
         case GT_XADD:
         case GT_XCHG:
         case GT_CMPXCHG:
-            if (!fgCurHeapDef)
-            {
-                fgCurHeapUse = true;
-            }
+            fgCurHeapUse   = true;
             fgCurHeapDef   = true;
             fgCurHeapHavoc = true;
             break;
@@ -410,10 +407,7 @@ void Compiler::fgPerNodeLocalVarLiveness(GenTree* tree, GenTree* asgdLclVar)
             }
             if (modHeap)
             {
-                if (!fgCurHeapDef)
-                {
-                    fgCurHeapUse = true;
-                }
+                fgCurHeapUse   = true;
                 fgCurHeapDef   = true;
                 fgCurHeapHavoc = true;
             }
