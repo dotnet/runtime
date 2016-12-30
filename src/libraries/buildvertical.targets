@@ -8,6 +8,22 @@
  <!-- Required for FindBestConfiguration task -->
  <Import Project="$(MSBuildThisFileDirectory)src/Tools/GenerateProps/properties.props" />
 
+ <Target Name="AnnotateProjects"
+         BeforeTargets="BuildAllProjects"
+         Condition="!$(MSBuildProjectFullPath.EndsWith('.proj'))">
+   <!-- Clear ProjectWithConfiguration to prevent circular dependency -->
+   <ItemGroup><ProjectWithConfiguration Remove="@(ProjectWithConfiguration)" /></ItemGroup>
+   <MSBuild Targets="AnnotateProjectsWithConfiguration" 
+            Projects="@(Project)"> 
+     <Output TaskParameter="TargetOutputs" 
+             ItemName="ProjectWithConfiguration" /> 
+   </MSBuild> 
+   <ItemGroup>
+     <Project Remove="@(Project)" />
+     <Project Include="@(ProjectWithConfiguration)" />
+   </ItemGroup>
+ </Target>
+
  <Target Name="AnnotateProjectsWithConfiguration" 
          Returns="@(ProjectWithConfiguration)"> 
     <ItemGroup> 
