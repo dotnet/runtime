@@ -169,6 +169,16 @@ namespace System.Net
             }
         }
 
+        public Guid RequestTraceIdentifier
+        {
+            get
+            {
+                Guid guid = new Guid();
+                *(1 + (ulong*)&guid) = RequestId;
+                return guid;
+            }
+        }
+
         public string[] AcceptTypes
         {
             get
@@ -727,8 +737,8 @@ namespace System.Net
                                 &bytesReceived,
                                 asyncResult.NativeOverlapped);
 
-                        if (NetEventSource.IsEnabled) NetEventSource.Info(this,
-                            "Call to Interop.HttpApi.HttpReceiveClientCertificate returned:" + statusCode + " bytesReceived:" + bytesReceived);
+                        if (NetEventSource.IsEnabled)
+                            NetEventSource.Info(this, "Call to Interop.HttpApi.HttpReceiveClientCertificate returned:" + statusCode + " bytesReceived:" + bytesReceived);
                         if (statusCode == Interop.HttpApi.ERROR_MORE_DATA)
                         {
                             Interop.HttpApi.HTTP_SSL_CLIENT_CERT_INFO* pClientCertInfo = asyncResult.RequestBlob;
@@ -829,8 +839,8 @@ namespace System.Net
                                 &bytesReceived,
                                 null);
 
-                        if (NetEventSource.IsEnabled) NetEventSource.Info(this,
-                            "Call to Interop.HttpApi.HttpReceiveClientCertificate returned:" + statusCode + " bytesReceived:" + bytesReceived);
+                        if (NetEventSource.IsEnabled)
+                            NetEventSource.Info(this, "Call to Interop.HttpApi.HttpReceiveClientCertificate returned:" + statusCode + " bytesReceived:" + bytesReceived);
                         if (statusCode == Interop.HttpApi.ERROR_MORE_DATA)
                         {
                             size = bytesReceived + pClientCertInfo->CertEncodedSize;
@@ -840,8 +850,8 @@ namespace System.Net
                         {
                             if (pClientCertInfo != null)
                             {
-                                if (NetEventSource.IsEnabled) NetEventSource.Info(this,
-                                    $"pClientCertInfo:{(IntPtr)pClientCertInfo} pClientCertInfo->CertFlags: {pClientCertInfo->CertFlags} pClientCertInfo->CertEncodedSize: {pClientCertInfo->CertEncodedSize} pClientCertInfo->pCertEncoded: {(IntPtr)pClientCertInfo->pCertEncoded} pClientCertInfo->Token: {(IntPtr)pClientCertInfo->Token} pClientCertInfo->CertDeniedByMapper: {pClientCertInfo->CertDeniedByMapper}");
+                                if (NetEventSource.IsEnabled)
+                                    NetEventSource.Info(this, $"pClientCertInfo:{(IntPtr)pClientCertInfo} pClientCertInfo->CertFlags: {pClientCertInfo->CertFlags} pClientCertInfo->CertEncodedSize: {pClientCertInfo->CertEncodedSize} pClientCertInfo->pCertEncoded: {(IntPtr)pClientCertInfo->pCertEncoded} pClientCertInfo->Token: {(IntPtr)pClientCertInfo->Token} pClientCertInfo->CertDeniedByMapper: {pClientCertInfo->CertDeniedByMapper}");
 
                                 if (pClientCertInfo->pCertEncoded != null)
                                 {

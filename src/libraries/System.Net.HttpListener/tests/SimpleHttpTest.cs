@@ -10,7 +10,6 @@ using Xunit;
 // TODO: #13618
 namespace System.Net.Tests
 {
-    [PlatformSpecific(TestPlatforms.Windows)]
     public class SimpleHttpTest
     {
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.HasHttpApi))]

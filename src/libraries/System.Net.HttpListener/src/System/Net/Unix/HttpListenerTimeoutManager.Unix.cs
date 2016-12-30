@@ -4,9 +4,10 @@
 
 namespace System.Net
 {
-    // TODO: #13187
     public class HttpListenerTimeoutManager
     {
+        internal HttpListenerTimeoutManager(HttpListener listener) { }
+
         public TimeSpan EntityBody
         {
             get

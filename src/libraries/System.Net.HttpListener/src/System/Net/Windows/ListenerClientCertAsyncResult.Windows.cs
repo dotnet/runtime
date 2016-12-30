@@ -115,8 +115,9 @@ namespace System.Net
                     Interop.HttpApi.HTTP_SSL_CLIENT_CERT_INFO* pClientCertInfo = asyncResult._memoryBlob;
                     if (pClientCertInfo != null)
                     {
-                        if (NetEventSource.IsEnabled) NetEventSource.Info(null, 
-                            $"pClientCertInfo:{(IntPtr)pClientCertInfo} pClientCertInfo->CertFlags: {pClientCertInfo->CertFlags} pClientCertInfo->CertEncodedSize: {pClientCertInfo->CertEncodedSize} pClientCertInfo->pCertEncoded: {(IntPtr)pClientCertInfo->pCertEncoded} pClientCertInfo->Token: {(IntPtr)pClientCertInfo->Token} pClientCertInfo->CertDeniedByMapper: {pClientCertInfo->CertDeniedByMapper}");
+                        if (NetEventSource.IsEnabled)
+                            NetEventSource.Info(null,
+  $"pClientCertInfo:{(IntPtr)pClientCertInfo} pClientCertInfo->CertFlags: {pClientCertInfo->CertFlags} pClientCertInfo->CertEncodedSize: {pClientCertInfo->CertEncodedSize} pClientCertInfo->pCertEncoded: {(IntPtr)pClientCertInfo->pCertEncoded} pClientCertInfo->Token: {(IntPtr)pClientCertInfo->Token} pClientCertInfo->CertDeniedByMapper: {pClientCertInfo->CertDeniedByMapper}");
                         if (pClientCertInfo->pCertEncoded != null)
                         {
                             try
@@ -127,8 +128,9 @@ namespace System.Net
                             }
                             catch (CryptographicException exception)
                             {
-                                if (NetEventSource.IsEnabled) NetEventSource.Info(null,
-                                    $"HttpListenerRequest: {httpListenerRequest} caught CryptographicException: {exception}");
+                                if (NetEventSource.IsEnabled)
+                                    NetEventSource.Info(null,
+          $"HttpListenerRequest: {httpListenerRequest} caught CryptographicException: {exception}");
                                 result = exception;
                             }
                             catch (SecurityException exception)

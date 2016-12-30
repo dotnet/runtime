@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
   <PropertyGroup>
-    <Configuration Condition="'$(Configuration)' == '' AND '$(TargetGroup)' == ''">Windows_Debug</Configuration>
+    <Configuration Condition="'$(Configuration)' == ''">Windows_Debug</Configuration>
   </PropertyGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
@@ -17,46 +17,45 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net461_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net461_Release|AnyCPU'" />
-  <ItemGroup>
-    <None Include="project.json" />
-  </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' != 'net461'">
+    <Compile Include="System\Net\AuthenticationTypes.cs" />
+    <Compile Include="System\Net\ServiceNameStore.cs" />
+    <Compile Include="System\Net\HttpListenerRequestUriBuilder.cs" />
     <Compile Include="System\Net\AuthenticationSchemeSelector.cs" />
     <Compile Include="System\Net\HttpListener.cs" />
     <Compile Include="System\Net\HttpListenerBasicIdentity.cs" />
     <Compile Include="System\Net\HttpListenerContext.cs" />
     <Compile Include="System\Net\HttpListenerException.cs" />
-    <Compile Include="System\Net\HttpListenerPrefixCollection.cs" />
-    <Compile Include="System\Net\HttpListenerRequest.cs" />
     <Compile Include="System\Net\HttpListenerResponse.cs" />
     <Compile Include="System\Net\NetEventSource.HttpListener.cs" />
     <Compile Include="System\Net\WebSockets\HttpListenerWebSocketContext.cs" />
     <Compile Include="$(CommonPath)\System\Net\Logging\NetEventSource.Common.cs">
       <Link>Common\System\Net\Logging\NetEventSource.Common.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Net\HttpStatusDescription.cs">
+      <Link>Common\System\Net\HttpStatusDescription.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true' AND '$(TargetGroup)' != 'net461'">
-    <Compile Include="System\Net\AuthenticationTypes.cs" />
-    <Compile Include="System\Net\BoundaryType.cs" />
-    <Compile Include="System\Net\ContextFlags.cs" />
-    <Compile Include="System\Net\CookieExtensions.cs" />
-    <Compile Include="System\Net\HttpRequestQueueV2Handle.cs" />
-    <Compile Include="System\Net\HttpServerSessionHandle.cs" />
-    <Compile Include="System\Net\HttpListenerContext.Windows.cs" />
-    <Compile Include="System\Net\HttpListenerRequestContext.cs" />
-    <Compile Include="System\Net\HttpListenerRequestUriBuilder.cs" />
-    <Compile Include="System\Net\ListenerClientCertAsyncResult.cs" />
-    <Compile Include="System\Net\AsyncRequestContext.cs" />
-    <Compile Include="System\Net\ListenerClientCertState.cs" />
-    <Compile Include="System\Net\EntitySendFormat.cs" />
-    <Compile Include="System\Net\HttpListener.Windows.cs" />
-    <Compile Include="System\Net\HttpListenerRequest.Windows.cs" />
-    <Compile Include="System\Net\HttpListenerResponse.Windows.cs" />
-    <Compile Include="System\Net\HttpListenerTimeoutManager.Windows.cs" />
-    <Compile Include="System\Net\RequestContextBase.cs" />
-    <Compile Include="System\Net\ServiceNameStore.cs" />
-    <Compile Include="System\Net\SyncRequestContext.cs" />
-    <Compile Include="System\Net\ListenerAsyncResult.cs" />
+    <Compile Include="System\Net\Windows\HttpListenerPrefixCollection.Windows.cs" />
+    <Compile Include="System\Net\Windows\HttpListener.Windows.cs" />
+    <Compile Include="System\Net\Windows\HttpListenerContext.Windows.cs" />
+    <Compile Include="System\Net\Windows\HttpListenerRequest.Windows.cs" />
+    <Compile Include="System\Net\Windows\HttpListenerResponse.Windows.cs" />
+    <Compile Include="System\Net\Windows\HttpListenerTimeoutManager.Windows.cs" />
+    <Compile Include="System\Net\Windows\BoundaryType.cs" />
+    <Compile Include="System\Net\Windows\ContextFlags.cs" />
+    <Compile Include="System\Net\Windows\CookieExtensions.cs" />
+    <Compile Include="System\Net\Windows\HttpRequestQueueV2Handle.cs" />
+    <Compile Include="System\Net\Windows\HttpServerSessionHandle.cs" />
+    <Compile Include="System\Net\Windows\HttpListenerRequestContext.cs" />
+    <Compile Include="System\Net\Windows\ListenerClientCertAsyncResult.Windows.cs" />
+    <Compile Include="System\Net\Windows\AsyncRequestContext.cs" />
+    <Compile Include="System\Net\Windows\ListenerClientCertState.cs" />
+    <Compile Include="System\Net\Windows\EntitySendFormat.cs" />
+    <Compile Include="System\Net\Windows\RequestContextBase.cs" />
+    <Compile Include="System\Net\Windows\SyncRequestContext.cs" />
+    <Compile Include="System\Net\Windows\ListenerAsyncResult.Windows.cs" />
     <Compile Include="$(CommonPath)\System\Net\CaseInsensitiveAscii.cs">
       <Link>Common\System\Net\CaseInsensitiveAscii.cs</Link>
     </Compile>
@@ -68,9 +67,6 @@
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\ExceptionCheck.cs">
       <Link>Common\System\Net\ExceptionCheck.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Net\HttpStatusDescription.cs">
-      <Link>Common\System\Net\HttpStatusDescription.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\HttpKnownHeaderNames.cs">
       <Link>Common\System\Net\HttpKnownHeaderNames.cs</Link>
@@ -87,14 +83,14 @@
     <Compile Include="$(CommonPath)\System\Net\WebHeaderEncoding.cs">
       <Link>Common\System\Net\WebHeaderEncoding.cs</Link>
     </Compile>
-    <Compile Include="System\Net\HttpResponseStream.cs" />
-    <Compile Include="System\Net\HttpResponseStreamAsyncResult.cs" />
+    <Compile Include="System\Net\Windows\HttpResponseStream.Windows.cs" />
+    <Compile Include="System\Net\Windows\HttpResponseStreamAsyncResult.cs" />
     <Compile Include="System\Net\WebSockets\ServerWebSocket.cs" />
     <Compile Include="System\Net\WebSockets\WebSocketBase.cs" />
     <Compile Include="System\Net\WebSockets\WebSocketBuffer.cs" />
     <Compile Include="System\Net\WebSockets\SafeWebSocketHandle.cs" />
     <Compile Include="System\Net\WebSockets\WebSocketHelpers.cs" />
-    <Compile Include="System\Net\HttpRequestStream.cs" />
+    <Compile Include="System\Net\Windows\HttpRequestStream.Windows.cs" />
     <Compile Include="System\Net\WebSockets\WebSocketHttpListenerDuplexStream.cs" />
     <Compile Include="System\Net\WebSockets\WebSocketProtocolComponent.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
@@ -292,13 +288,33 @@
       <Link>Common\Interop\Windows\sspicli\SSPIWrapper.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsWindows)' != 'true' AND '$(TargetGroup)' != 'net461'">
-    <Compile Include="System\Net\HttpListener.Unix.cs" />
-    <Compile Include="System\Net\HttpListenerContext.Unix.cs" />
-    <Compile Include="System\Net\HttpListenerRequest.Unix.cs" />
-    <Compile Include="System\Net\HttpListenerResponse.Unix.cs" />
-    <Compile Include="System\Net\HttpListenerTimeoutManager.Unix.cs" />
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true' AND '$(TargetGroup)' != 'net461'">
+    <Compile Include="System\Net\Unix\HttpEndPointListener.cs" />
+    <Compile Include="System\Net\Unix\HttpEndPointManager.cs" />
+    <Compile Include="System\Net\Unix\HttpConnection.cs" />
+    <Compile Include="System\Net\Unix\HttpStreamAsyncResult.cs" />
+    <Compile Include="System\Net\Unix\ListenerPrefix.cs" />
+    <Compile Include="System\Net\Unix\HttpRequestStream.Unix.cs" />
+    <Compile Include="System\Net\Unix\HttpListener.Unix.cs" />
+    <Compile Include="System\Net\Unix\HttpListenerContext.Unix.cs" />
+    <Compile Include="System\Net\Unix\HttpListenerRequest.Unix.cs" />
+    <Compile Include="System\Net\Unix\HttpListenerResponse.Unix.cs" />
+    <Compile Include="System\Net\Unix\HttpListenerTimeoutManager.Unix.cs" />
+    <Compile Include="System\Net\Unix\ListenerAsyncResult.Unix.cs" />
+    <Compile Include="System\Net\Unix\HttpHeaderStrings.Unix.cs" />
+    <Compile Include="System\Net\Unix\HttpListenerPrefixCollection.Unix.cs" />
+    <Compile Include="System\Net\Unix\ChunkedInputStream.cs" />
+    <Compile Include="System\Net\Unix\ChunkStream.cs" />
+    <Compile Include="System\Net\Unix\HttpResponseStream.Unix.cs" />
   </ItemGroup>
+  <PropertyGroup Condition=" '$(TargetsWindows)' == 'true' AND '$(ProjectJson)' == '' ">
+    <ProjectJson>win/project.json</ProjectJson>
+    <ProjectLockJson>win/project.lock.json</ProjectLockJson>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(TargetsUnix)' == 'true' and '$(ProjectJson)' == '' ">
+    <ProjectJson>unix/project.json</ProjectJson>
+    <ProjectLockJson>unix/project.lock.json</ProjectLockJson>
+  </PropertyGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'net461'">
     <TargetingPackReference Include="mscorlib" />
     <TargetingPackReference Include="System" />
