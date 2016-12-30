@@ -818,33 +818,15 @@ struct BasicBlock : private LIR::Range
     // lclVar, and thus has no local #, we can't use a GenTreePhiArg.  Instead, we use this struct.
     struct HeapPhiArg
     {
-        bool m_isSsaNum; // If true, the phi arg is an SSA # for an internal try block heap state, being
-                         // added to the phi of a catch block.  If false, it's a pred block.
-        union {
-            BasicBlock* m_predBB; // Predecessor block from which the SSA # flows.
-            unsigned    m_ssaNum; // SSA# for internal block heap state.
-        };
+        unsigned    m_ssaNum;  // SSA# for incoming value.
         HeapPhiArg* m_nextArg; // Next arg in the list, else NULL.
 
         unsigned GetSsaNum()
         {
-            if (m_isSsaNum)
-            {
-                return m_ssaNum;
-            }
-            else
-            {
-                assert(m_predBB != nullptr);
-                return m_predBB->bbHeapSsaNumOut;
-            }
+            return m_ssaNum;
         }
 
-        HeapPhiArg(BasicBlock* predBB, HeapPhiArg* nextArg = nullptr)
-            : m_isSsaNum(false), m_predBB(predBB), m_nextArg(nextArg)
-        {
-        }
-        HeapPhiArg(unsigned ssaNum, HeapPhiArg* nextArg = nullptr)
-            : m_isSsaNum(true), m_ssaNum(ssaNum), m_nextArg(nextArg)
+        HeapPhiArg(unsigned ssaNum, HeapPhiArg* nextArg = nullptr) : m_ssaNum(ssaNum), m_nextArg(nextArg)
         {
         }
 
