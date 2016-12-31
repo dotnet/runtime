@@ -3780,13 +3780,8 @@ public:
 
     // Utility functions for fgValueNumber.
 
-    // Perform value-numbering for the trees in "blk".  When giving VN's to the SSA
-    // names defined by phi definitions at the start of "blk", "newVNsForPhis" indicates
-    // that these should be given new VN's, irrespective of the values of the LHS.
-    // If "false", then we may assume that all inputs to phi RHS's of such definitions
-    // have already been assigned value numbers; if they are all assigned the *same* value
-    // number, then the LHS SSA name gets the same VN.
-    void fgValueNumberBlock(BasicBlock* blk, bool newVNsForPhis);
+    // Perform value-numbering for the trees in "blk".
+    void fgValueNumberBlock(BasicBlock* blk);
 
     // Requires that "entryBlock" is the entry block of loop "loopNum", and that "loopNum" is the
     // innermost loop of which "entryBlock" is the entry.  Returns the value number that should be
