@@ -269,6 +269,11 @@ namespace System.Net.Security
             throw new NotImplementedException();
         }
 
+        public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            throw new NotImplementedException();
+        }
+
         public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback asyncCallback, object asyncState)
         {
             throw new NotImplementedException();
