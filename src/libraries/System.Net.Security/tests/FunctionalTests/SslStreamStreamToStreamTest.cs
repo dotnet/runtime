@@ -285,6 +285,43 @@ namespace System.Net.Security.Tests
 
         [OuterLoop] // TODO: Issue #11345
         [Fact]
+        public async Task SslStream_StreamToStream_WriteAsync_ReadAsync_Pending_Success()
+        {
+            VirtualNetwork network = new VirtualNetwork();
+
+            using (var clientStream = new VirtualNetworkStream(network, isServer: false))
+            using (var serverStream = new VirtualNetworkStream(network, isServer: true))
+            using (var clientSslStream = new SslStream(clientStream, false, AllowAnyServerCertificate))
+            using (var serverSslStream = new SslStream(serverStream))
+            {
+                bool result = DoHandshake(clientSslStream, serverSslStream);
+                Assert.True(result, "Handshake completed.");
+
+                byte serverReadByte = 0;
+                var readTask = Task.Run(async () =>
+                {
+                    var serverBuffer = new byte[1];
+                    await serverSslStream.ReadAsync(serverBuffer, 0, serverBuffer.Length);
+                    serverReadByte = serverBuffer[0];
+                });
+
+                // Should not hang
+                await serverSslStream.WriteAsync(new byte[] { 1 }, 0, 1);
+
+                // Read in client
+                var clientBuffer = new byte[1];
+                await clientSslStream.ReadAsync(clientBuffer, 0, clientBuffer.Length);
+                Assert.Equal(1, clientBuffer[0]);
+
+                // Complete server read task
+                await clientSslStream.WriteAsync(new byte[] { 2 }, 0, 1);
+                await readTask;
+                Assert.Equal(2, serverReadByte);
+            }
+        }
+
+        [OuterLoop] // TODO: Issue #11345
+        [Fact]
         public void SslStream_StreamToStream_Flush_Propagated()
         {
             VirtualNetwork network = new VirtualNetwork();
