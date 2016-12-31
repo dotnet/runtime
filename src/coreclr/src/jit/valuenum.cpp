@@ -4329,7 +4329,7 @@ void Compiler::fgValueNumber()
         while (vs.m_toDoAllPredsDone.Size() > 0)
         {
             BasicBlock* toDo = vs.m_toDoAllPredsDone.Pop();
-            fgValueNumberBlock(toDo, /*newVNsForPhis*/ false);
+            fgValueNumberBlock(toDo);
             // Record that we've visited "toDo", and add successors to the right sets.
             vs.FinishVisit(toDo);
         }
@@ -4344,7 +4344,7 @@ void Compiler::fgValueNumber()
                 continue; // We may have run out, because of completed blocks on the not-all-preds done list.
             }
 
-            fgValueNumberBlock(toDo, /*newVNsForPhis*/ true);
+            fgValueNumberBlock(toDo);
             // Record that we've visited "toDo", and add successors to the right sest.
             vs.FinishVisit(toDo);
         }
@@ -4357,7 +4357,7 @@ void Compiler::fgValueNumber()
     fgVNPassesCompleted++;
 }
 
-void Compiler::fgValueNumberBlock(BasicBlock* blk, bool newVNsForPhis)
+void Compiler::fgValueNumberBlock(BasicBlock* blk)
 {
     compCurBB = blk;
 
