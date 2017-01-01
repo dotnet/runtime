@@ -1922,71 +1922,17 @@ GenTree* Lowering::LowerTailCallViaHelper(GenTreeCall* call, GenTree* callTarget
 }
 
 //------------------------------------------------------------------------
-// Lowering::LowerCompare: lowers a compare node.
+// Lowering::LowerCompare: Lowers a compare node.
 //
-// For 64-bit targets, this doesn't do much of anything: all comparisons
-// that we support can be handled in code generation on such targets.
+// Arguments:
+//    cmp - the compare node
 //
-// For 32-bit targets, however, any comparison that feeds a `GT_JTRUE`
-// node must be lowered such that the liveness of the operands to the
-// comparison is properly visible to the rest of the backend. As such,
-// a 64-bit comparison is lowered from something like this:
-//
-//    ------------ BB02 [004..014) -> BB02 (cond), preds={BB02,BB01} succs={BB03,BB02}
-//    N001 (  1,  1) [000006] ------------        t6 =    lclVar    int    V02 loc0         u:5 $148
-//
-//                                                     /--*  t6     int
-//    N002 (  2,  3) [000007] ---------U--        t7 = *  cast      long <- ulong <- uint $3c0
-//
-//    N003 (  3, 10) [000009] ------------        t9 =    lconst    long   0x0000000000000003 $101
-//
-//                                                     /--*  t7     long
-//                                                     +--*  t9     long
-//    N004 (  9, 17) [000010] N------N-U--       t10 = *  <         int    $149
-//
-//                                                     /--*  t10    int
-//    N005 ( 11, 19) [000011] ------------             *  jmpTrue   void
-//
-// To something like this:
-//
-//    ------------ BB02 [004..014) -> BB03 (cond), preds={BB06,BB07,BB01} succs={BB06,BB03}
-//                   [000099] ------------       t99 =    const     int    0
-//
-//                   [000101] ------------      t101 =    const     int    0
-//
-//                                                     /--*  t99    int
-//                                                     +--*  t101   int
-//    N004 (  9, 17) [000010] N------N-U--       t10 = *  >         int    $149
-//
-//                                                     /--*  t10    int
-//    N005 ( 11, 19) [000011] ------------             *  jmpTrue   void
-//
-//
-//    ------------ BB06 [???..???) -> BB02 (cond), preds={BB02} succs={BB07,BB02}
-//                   [000105] -------N-U--                jcc       void   cond=<
-//
-//
-//    ------------ BB07 [???..???) -> BB02 (cond), preds={BB06} succs={BB03,BB02}
-//    N001 (  1,  1) [000006] ------------        t6 =    lclVar    int    V02 loc0         u:5 $148
-//
-//    N003 (  3, 10) [000009] ------------        t9 =    const     int    3
-//
-//                                                     /--*  t6     int
-//                                                     +--*  t9     int
-//                   [000106] N------N-U--      t106 = *  <         int
-//
-//                                                     /--*  t106   int
-//                   [000107] ------------             *  jmpTrue   void
-//
-// Which will eventually generate code similar to the following:
-//
-//    33DB         xor      ebx, ebx
-//    85DB         test     ebx, ebx
-//    7707         ja       SHORT G_M50523_IG04
-//    72E7         jb       SHORT G_M50523_IG03
-//    83F803       cmp      eax, 3
-//    72E2         jb       SHORT G_M50523_IG03
-//
+// Notes:
+//    - Narrow operands to enable memory operand containment (XARCH specific).
+//    - Transform cmp(and(x, y), 0) into test(x, y) (XARCH specific but could
+//      be used for ARM as well if support for GT_TEST_EQ/GT_TEST_NE is added).
+//    - Ensures that we don't have a mix of int/long operands (XARCH specific).
+//    - Decomposes long comparisons that feed a GT_JTRUE (32 bit specific).
 
 void Lowering::LowerCompare(GenTree* cmp)
 {
@@ -2017,9 +1963,18 @@ void Lowering::LowerCompare(GenTree* cmp)
 
             if (((castToType == TYP_BOOL) || (castToType == TYP_UBYTE)) && FitsIn<UINT8>(op2Value))
             {
-                bool canNarrow = castOp->OperIs(GT_CALL, GT_LCL_VAR) || castOp->OperIsLogical() || castOp->isMemoryOp();
+                //
+                // Since we're going to remove the cast we need to be able to narrow the cast operand
+                // to the cast type. This can be done safely only for certain opers (e.g AND, OR, XOR).
+                // Some opers just can't be narrowed (e.g DIV, MUL) while other could be narrowed but
+                // doing so would produce incorrect results (e.g. RSZ, RSH).
+                //
+                // The below list of handled opers is conservative but enough to handle the most common
+                // situations. In particular this include CALL, sometimes the JIT unnecessarilly widens
+                // the result of bool returning calls.
+                //
 
-                if (canNarrow)
+                if (castOp->OperIs(GT_CALL, GT_LCL_VAR) || castOp->OperIsLogical() || castOp->isMemoryOp())
                 {
                     assert(!castOp->gtOverflowEx()); // Must not be an overflow checking operation
 
@@ -2171,6 +2126,66 @@ void Lowering::LowerCompare(GenTree* cmp)
     {
         return;
     }
+
+    // For 32-bit targets any comparison that feeds a `GT_JTRUE` node must be lowered
+    // such that the liveness of the operands to the is properly visible to the rest
+    // of the backend. As such, a 64-bit comparison is lowered from something like this:
+    //
+    //    ------------ BB02 [004..014) -> BB02 (cond), preds={BB02,BB01} succs={BB03,BB02}
+    //    N001 (  1,  1) [000006] ------------        t6 =    lclVar    int    V02 loc0         u:5 $148
+    //
+    //                                                     /--*  t6     int
+    //    N002 (  2,  3) [000007] ---------U--        t7 = *  cast      long <- ulong <- uint $3c0
+    //
+    //    N003 (  3, 10) [000009] ------------        t9 =    lconst    long   0x0000000000000003 $101
+    //
+    //                                                     /--*  t7     long
+    //                                                     +--*  t9     long
+    //    N004 (  9, 17) [000010] N------N-U--       t10 = *  <         int    $149
+    //
+    //                                                     /--*  t10    int
+    //    N005 ( 11, 19) [000011] ------------             *  jmpTrue   void
+    //
+    // To something like this:
+    //
+    //    ------------ BB02 [004..014) -> BB03 (cond), preds={BB06,BB07,BB01} succs={BB06,BB03}
+    //                   [000099] ------------       t99 =    const     int    0
+    //
+    //                   [000101] ------------      t101 =    const     int    0
+    //
+    //                                                     /--*  t99    int
+    //                                                     +--*  t101   int
+    //    N004 (  9, 17) [000010] N------N-U--       t10 = *  >         int    $149
+    //
+    //                                                     /--*  t10    int
+    //    N005 ( 11, 19) [000011] ------------             *  jmpTrue   void
+    //
+    //
+    //    ------------ BB06 [???..???) -> BB02 (cond), preds={BB02} succs={BB07,BB02}
+    //                   [000105] -------N-U--                jcc       void   cond=<
+    //
+    //
+    //    ------------ BB07 [???..???) -> BB02 (cond), preds={BB06} succs={BB03,BB02}
+    //    N001 (  1,  1) [000006] ------------        t6 =    lclVar    int    V02 loc0         u:5 $148
+    //
+    //    N003 (  3, 10) [000009] ------------        t9 =    const     int    3
+    //
+    //                                                     /--*  t6     int
+    //                                                     +--*  t9     int
+    //                   [000106] N------N-U--      t106 = *  <         int
+    //
+    //                                                     /--*  t106   int
+    //                   [000107] ------------             *  jmpTrue   void
+    //
+    // Which will eventually generate code similar to the following:
+    //
+    //    33DB         xor      ebx, ebx
+    //    85DB         test     ebx, ebx
+    //    7707         ja       SHORT G_M50523_IG04
+    //    72E7         jb       SHORT G_M50523_IG03
+    //    83F803       cmp      eax, 3
+    //    72E2         jb       SHORT G_M50523_IG03
+    //
 
     GenTree* src1   = cmp->gtGetOp1();
     GenTree* src2   = cmp->gtGetOp2();
