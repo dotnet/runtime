@@ -6137,68 +6137,55 @@ void CodeGen::genCompareInt(GenTreePtr treeNode)
     assert(!op1->isContainedIntOrIImmed()); // We no longer support
     assert(!varTypeIsFloating(op2Type));
 
-#ifdef _TARGET_X86_
-    assert(!varTypeIsLong(op1Type) && !varTypeIsLong(op2Type));
-#endif // _TARGET_X86_
+    instruction ins;
 
-    // By default we use an int32 sized cmp/test instruction
-    //
-    instruction ins     = tree->OperIs(GT_TEST_EQ, GT_TEST_NE) ? INS_test : INS_cmp;
-    var_types   cmpType = TYP_INT;
-
-    // In the if/then/else statement below we may change the
-    // 'cmpType' and/or 'ins' to generate a smaller instruction
-
-    // Are we comparing two values that are the same size?
-    //
-    if (genTypeSize(op1Type) == genTypeSize(op2Type))
+    if (tree->OperIs(GT_TEST_EQ, GT_TEST_NE))
     {
-        if (op1Type == op2Type)
-        {
-            // If both types are exactly the same we can use that type
-            cmpType = op1Type;
-        }
-        else if (genTypeSize(op1Type) == 8)
-        {
-            // If we have two different int64 types we need to use a long compare
-            cmpType = TYP_LONG;
-        }
-    }
-    else // Here we know that (op1Type != op2Type)
-    {
-#ifdef _TARGET_AMD64_
-        // compare two different sized operands
-        {
-            // For this case we don't want any memory operands, only registers or immediates
-            //
-            assert(!op1->isUsedFromMemory());
-            assert(!op2->isUsedFromMemory());
-
-            // Check for the case where one operand is an int64 type
-            // Lower should have placed 32-bit operand in a register
-            // for signed comparisons we will sign extend the 32-bit value in place.
-            //
-            bool op1Is64Bit = (genTypeSize(op1Type) == 8);
-            bool op2Is64Bit = (genTypeSize(op2Type) == 8);
-
-            assert(op1Is64Bit == op2Is64Bit);
-        }
-#endif // _TARGET_AMD64_
-    }
-
-    // See if we can generate a "test" instruction instead of a "cmp".
-    // For this to generate the correct conditional branch we must have
-    // a compare against zero.
-    //
-    if ((ins == INS_cmp) && !op1->isContained() && op2->IsIntegralConst(0))
-    {
-        // op1 is not contained thus it must be in a register
         ins = INS_test;
-        op2 = op1; // we will generate "test reg1,reg1"
-        // fallthrough to emit->emitInsBinary(ins, cmpAttr, op1, op2);
+    }
+    else if (!op1->isContained() && op2->IsIntegralConst(0))
+    {
+        // We're comparing a register to 0 so we can generate "test reg1, reg1"
+        // instead of the longer "cmp reg1, 0"
+        ins = INS_test;
+        op2 = op1;
+    }
+    else
+    {
+        ins = INS_cmp;
     }
 
-    getEmitter()->emitInsBinary(ins, emitTypeSize(cmpType), op1, op2);
+    var_types type;
+
+    if (op1Type == op2Type)
+    {
+        type = op1Type;
+    }
+    else if (genTypeSize(op1Type) == genTypeSize(op2Type))
+    {
+        type = genTypeSize(op1Type) == 8 ? TYP_LONG : TYP_INT;
+    }
+    else
+    {
+        type = TYP_INT;
+    }
+
+    // The common type cannot be larger than the machine word size
+    assert(genTypeSize(type) <= genTypeSize(TYP_I_IMPL));
+    // The common type cannot be smaller than any of the operand types, we're probably mixing int/long
+    assert(genTypeSize(type) >= max(genTypeSize(op1Type), genTypeSize(op2Type)));
+    // TYP_UINT and TYP_ULONG should not appear here, only small types can be unsigned
+    assert(!varTypeIsUnsigned(type) || varTypeIsSmall(type));
+    // Small unsigned int types (TYP_BOOL can use anything) should use unsigned comparisons
+    assert(!(varTypeIsSmallInt(type) && varTypeIsUnsigned(type)) || ((tree->gtFlags & GTF_UNSIGNED) != 0));
+    // If op1 is smaller then it cannot be contained, we're probably missing a cast
+    assert((genTypeSize(op1Type) >= genTypeSize(type)) || !op1->isContainedMemoryOp());
+    // If op2 is smaller then it cannot be contained, we're probably missing a cast
+    assert((genTypeSize(op2Type) >= genTypeSize(type)) || !op2->isContainedMemoryOp());
+    // If op2 is a constant then it should fit in the common type
+    assert(!op2->IsCnsIntOrI() || genTypeValueFitsIn(op2->AsIntCon()->IconValue(), type));
+
+    getEmitter()->emitInsBinary(ins, emitTypeSize(type), op1, op2);
 
     // Are we evaluating this into a register?
     if (targetReg != REG_NA)
