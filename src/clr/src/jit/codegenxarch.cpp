@@ -6163,10 +6163,17 @@ void CodeGen::genCompareInt(GenTreePtr treeNode)
     }
     else if (genTypeSize(op1Type) == genTypeSize(op2Type))
     {
+        // If the types are different but have the same size then we'll use TYP_INT or TYP_LONG.
+        // This primarily deals with small type mixes (e.g. byte/ubyte) that need to be widened
+        // and compared as int. We should not get long type mixes here but handle that as well
+        // just in case.
         type = genTypeSize(op1Type) == 8 ? TYP_LONG : TYP_INT;
     }
     else
     {
+        // In the types are different simply use TYP_INT. This deals with small type/int type
+        // mixes (e.g. byte/short ubyte/int) that need to be widened and compared as int.
+        // Lowering is expected to handle any mixes that involve long types (e.g. int/long).
         type = TYP_INT;
     }
 
