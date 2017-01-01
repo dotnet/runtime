@@ -6180,23 +6180,8 @@ void CodeGen::genCompareInt(GenTreePtr treeNode)
             //
             bool op1Is64Bit = (genTypeSize(op1Type) == 8);
             bool op2Is64Bit = (genTypeSize(op2Type) == 8);
-            if (op1Is64Bit)
-            {
-                cmpType = TYP_LONG;
-                if (!(tree->gtFlags & GTF_UNSIGNED) && !op2Is64Bit)
-                {
-                    assert(op2->gtRegNum != REG_NA);
-                    inst_RV_RV(INS_movsxd, op2->gtRegNum, op2->gtRegNum, op2Type);
-                }
-            }
-            else if (op2Is64Bit)
-            {
-                cmpType = TYP_LONG;
-                if (!(tree->gtFlags & GTF_UNSIGNED) && !op1Is64Bit)
-                {
-                    assert(op1->gtRegNum != REG_NA);
-                }
-            }
+
+            assert(op1Is64Bit == op2Is64Bit);
         }
 #endif // _TARGET_AMD64_
     }
