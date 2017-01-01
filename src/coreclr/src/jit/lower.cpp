@@ -2026,11 +2026,6 @@ void Lowering::LowerCompare(GenTree* cmp)
             // (e.g "cmp ubyte, 200") we also get a smaller instruction encoding.
             //
 
-            if (varTypeIsUnsigned(op1Type))
-            {
-                cmp->gtFlags |= GTF_UNSIGNED;
-            }
-
             op2->gtType = op1Type;
         }
         else if (op1->OperIs(GT_CAST) && !op1->gtOverflow())
@@ -2047,11 +2042,9 @@ void Lowering::LowerCompare(GenTree* cmp)
                 {
                     assert(!castOp->gtOverflowEx()); // Must not be an overflow checking operation
 
-                    castOp->gtType = castToType;
-
+                    castOp->gtType  = castToType;
                     cmp->gtOp.gtOp1 = castOp;
-                    cmp->gtFlags |= GTF_UNSIGNED;
-                    op2->gtType = castToType;
+                    op2->gtType     = castToType;
 
                     BlockRange().Remove(cast);
                 }
@@ -2122,6 +2115,22 @@ void Lowering::LowerCompare(GenTree* cmp)
                     }
                 }
             }
+        }
+    }
+
+    if (cmp->gtGetOp1()->TypeGet() == cmp->gtGetOp2()->TypeGet())
+    {
+        if (varTypeIsSmall(cmp->gtGetOp1()->TypeGet()) && varTypeIsUnsigned(cmp->gtGetOp1()->TypeGet()))
+        {
+            //
+            // If both operands have the same type then codegen will use the common operand type to
+            // determine the instruction type. For small types this would result in performing a
+            // signed comparison of two small unsigned values without zero extending them to TYP_INT
+            // which is incorrect. Note that making the comparison unsigned doesn't imply that codegen
+            // has to generate a small comparison, it can still correctly generate a TYP_INT comparison.
+            //
+
+            cmp->gtFlags |= GTF_UNSIGNED;
         }
     }
 #endif // _TARGET_XARCH_

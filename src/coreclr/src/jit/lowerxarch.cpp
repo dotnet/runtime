@@ -3520,16 +3520,6 @@ void Lowering::TreeNodeInfoInitCmp(GenTreePtr tree)
             // if one of them is on stack.
             SetRegOptional(PreferredRegOptionalOperand(tree));
         }
-
-        if (varTypeIsSmall(op1Type) && varTypeIsUnsigned(op1Type))
-        {
-            // Mark the tree as doing unsigned comparison if
-            // both the operands are small and unsigned types.
-            // Otherwise we will end up performing a signed comparison
-            // of two small unsigned values without zero extending them to
-            // TYP_INT size and which is incorrect.
-            tree->gtFlags |= GTF_UNSIGNED;
-        }
     }
 }
 
