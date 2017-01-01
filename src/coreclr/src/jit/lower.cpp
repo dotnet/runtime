@@ -1937,6 +1937,49 @@ GenTree* Lowering::LowerTailCallViaHelper(GenTreeCall* call, GenTree* callTarget
 void Lowering::LowerCompare(GenTree* cmp)
 {
 #ifdef _TARGET_XARCH_
+#ifdef _TARGET_AMD64_
+    if (cmp->gtGetOp1()->TypeGet() != cmp->gtGetOp2()->TypeGet())
+    {
+        bool op1Is64Bit = (genTypeSize(cmp->gtGetOp1()->TypeGet()) == 8);
+        bool op2Is64Bit = (genTypeSize(cmp->gtGetOp2()->TypeGet()) == 8);
+
+        if (op1Is64Bit != op2Is64Bit)
+        {
+            //
+            // Normally this should not happen. IL allows comparing int32 to native int but the importer
+            // automatically inserts a cast from int32 to long on 64 bit architectures. However, the JIT
+            // accidentally generates int/long comparisons internally:
+            //   - loop cloning compares int (and even small int) index limits against long constants
+            //   - switch lowering compares a 64 bit switch value against a int32 constant
+            //
+            // TODO-Cleanup: The above mentioned issues should be fixed and then the code below may be
+            // replaced with an assert or at least simplified. The special casing of constants in code
+            // below is only necessary to prevent worse code generation for switches and loop cloning.
+            //
+
+            GenTree*& longOp    = op1Is64Bit ? cmp->gtOp.gtOp1 : cmp->gtOp.gtOp2;
+            GenTree*& smallerOp = op2Is64Bit ? cmp->gtOp.gtOp1 : cmp->gtOp.gtOp2;
+
+            assert(genTypeSize(smallerOp) < 8);
+
+            if (longOp->IsCnsIntOrI() && genTypeValueFitsIn(longOp->AsIntCon()->IconValue(), smallerOp->TypeGet()))
+            {
+                longOp->gtType = smallerOp->TypeGet();
+            }
+            else if (smallerOp->IsCnsIntOrI())
+            {
+                smallerOp->gtType = TYP_LONG;
+            }
+            else
+            {
+                GenTree* cast = comp->gtNewCastNode(TYP_LONG, smallerOp, TYP_LONG);
+                smallerOp     = cast;
+                BlockRange().InsertAfter(cast->gtGetOp1(), cast);
+            }
+        }
+    }
+#endif // _TARGET_AMD64_
+
     if (cmp->gtGetOp2()->IsIntegralConst())
     {
         GenTree*       op1      = cmp->gtGetOp1();
@@ -2068,48 +2111,6 @@ void Lowering::LowerCompare(GenTree* cmp)
 
             cmp->gtFlags |= GTF_UNSIGNED;
         }
-    }
-    else
-    {
-#ifdef _TARGET_AMD64_
-        bool op1Is64Bit = (genTypeSize(cmp->gtGetOp1()->TypeGet()) == 8);
-        bool op2Is64Bit = (genTypeSize(cmp->gtGetOp2()->TypeGet()) == 8);
-
-        if (op1Is64Bit != op2Is64Bit)
-        {
-            //
-            // Normally this should not happen. IL allows comparing int32 to native int but the importer
-            // automatically inserts a cast from int32 to long on 64 bit architectures. However, the JIT
-            // accidentally generates int/long comparisons internally:
-            //   - loop cloning compares int32 index limits against long constants
-            //   - switch lowering compares a 64 bit switch value against a int32 constant
-            //
-            // TODO-Cleanup: The above mentioned issues should be fixed and then the code below may be
-            // replaced with an assert or at least simplified. The special casing of constants in code
-            // below is only necessary to prevent worse code generation for switches and loop cloning.
-            //
-
-            GenTree*& longOp    = op1Is64Bit ? cmp->gtOp.gtOp1 : cmp->gtOp.gtOp2;
-            GenTree*& smallerOp = op2Is64Bit ? cmp->gtOp.gtOp1 : cmp->gtOp.gtOp2;
-
-            assert(genTypeSize(smallerOp) < 8);
-
-            if (longOp->IsCnsIntOrI() && genTypeValueFitsIn(longOp->AsIntCon()->IconValue(), smallerOp->TypeGet()))
-            {
-                longOp->gtType = smallerOp->TypeGet();
-            }
-            else if (smallerOp->IsCnsIntOrI())
-            {
-                smallerOp->gtType = TYP_LONG;
-            }
-            else
-            {
-                GenTree* cast = comp->gtNewCastNode(TYP_LONG, smallerOp, TYP_LONG);
-                smallerOp     = cast;
-                BlockRange().InsertAfter(cast->gtGetOp1(), cast);
-            }
-        }
-#endif // _TARGET_AMD64_
     }
 
 #endif // _TARGET_XARCH_
