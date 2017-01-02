@@ -3,8 +3,8 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <PackageTargetRuntime>debian.8-$(PackagePlatform)</PackageTargetRuntime>
-    <!-- only build for x64 -->
-    <PackagePlatforms>x64;</PackagePlatforms>
+    <!-- only build for x64/armel -->
+    <PackagePlatforms>x64;armel;</PackagePlatforms>
   </PropertyGroup>
   <ItemGroup>
     <NativeFile Include="$(DebianNativePath)System.Native.so">
