@@ -912,7 +912,6 @@
     <DiagnosticsSources Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\TraceLogging\EventFieldFormat.cs" />
     <DiagnosticsSources Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\TraceLogging\EventIgnoreAttribute.cs" />
     <DiagnosticsSources Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\TraceLogging\EventPayload.cs" />
-    <DiagnosticsSources Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\TraceLogging\EventSourceActivity.cs" />
     <DiagnosticsSources Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\TraceLogging\EventSourceOptions.cs" />
     <DiagnosticsSources Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\TraceLogging\FieldMetadata.cs" />
     <DiagnosticsSources Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\TraceLogging\InvokeTypeInfo.cs" />
