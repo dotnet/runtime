@@ -752,9 +752,6 @@
     <ThreadingSources Include="$(BclSourcesRoot)\System\Threading\CancellationToken.cs" />
     <ThreadingSources Include="$(BclSourcesRoot)\System\Threading\Tasks\future.cs" />
     <ThreadingSources Include="$(BclSourcesRoot)\System\Threading\Tasks\FutureFactory.cs" />
-    <ThreadingSources Include="$(BclSourcesRoot)\System\Threading\Tasks\Parallel.cs" />
-    <ThreadingSources Include="$(BclSourcesRoot)\System\Threading\Tasks\ParallelRangeManager.cs" />
-    <ThreadingSources Include="$(BclSourcesRoot)\System\Threading\Tasks\ParallelLoopState.cs" />
     <ThreadingSources Include="$(BclSourcesRoot)\System\Threading\Tasks\Task.cs" />
     <ThreadingSources Include="$(BclSourcesRoot)\System\Threading\Tasks\TaskContinuation.cs" />
     <ThreadingSources Include="$(BclSourcesRoot)\System\Threading\Tasks\TaskCanceledException.cs" />
@@ -768,7 +765,6 @@
     <ThreadingSources Include="$(BclSourcesRoot)\System\Threading\Tasks\ConcurrentExclusiveSchedulerPair.cs" />
     <ThreadingSources Include="$(BclSourcesRoot)\System\Threading\Tasks\ProducerConsumerQueues.cs" />
     <ThreadingSources Include="$(BclSourcesRoot)\System\Threading\Tasks\TPLETWProvider.cs" />
-    <ThreadingSources Include="$(BclSourcesRoot)\System\Threading\Tasks\BeginEndAwaitableAdapter.cs" />
     <ThreadingSources Include="$(BclSourcesRoot)\System\Threading\Tasks\TaskToApm.cs" />
     <ThreadingSources Condition="'$(FeatureCominterop)' == 'true'" Include="$(BclSourcesRoot)\System\Threading\Tasks\IAsyncCausalityTracerStatics.cs" />
   </ItemGroup>
