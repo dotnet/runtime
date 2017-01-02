@@ -2,11 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Globalization;
-using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.Tests
@@ -257,6 +253,25 @@ namespace System.Tests
 
             Assert.Equal(offsetNow, TimeZoneInfo.ConvertTimeBySystemTimeZoneId(utcOffsetNow, TimeZoneInfo.Local.Id));
             Assert.Equal(utcOffsetNow, TimeZoneInfo.ConvertTimeBySystemTimeZoneId(offsetNow, TimeZoneInfo.Utc.Id));
+        }
+
+        public static IEnumerable<object[]> SystemTimeZonesTestData()
+        {
+            foreach (TimeZoneInfo tz in TimeZoneInfo.GetSystemTimeZones())
+            {
+                yield return new object[] { tz };
+            }
+        }
+
+        [ActiveIssue(14797, TestPlatforms.AnyUnix)]
+        [Theory]
+        [MemberData(nameof(SystemTimeZonesTestData))]
+        public static void ToSerializedString_FromSerializedString_RoundTrips(TimeZoneInfo timeZone)
+        {
+            string serialized = timeZone.ToSerializedString();
+            TimeZoneInfo deserializedTimeZone = TimeZoneInfo.FromSerializedString(serialized);
+            Assert.Equal(timeZone, deserializedTimeZone);
+            Assert.Equal(serialized, deserializedTimeZone.ToSerializedString());
         }
 
         private static TimeZoneInfo CreateCustomLondonTimeZone()
