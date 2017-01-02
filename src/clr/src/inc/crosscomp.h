@@ -88,6 +88,7 @@ typedef struct DECLSPEC_ALIGN(8) _T_CONTEXT {
 // each frame function.
 //
 
+#ifndef FEATURE_PAL
 typedef struct _RUNTIME_FUNCTION {
     DWORD BeginAddress;
     DWORD UnwindData;
@@ -114,6 +115,7 @@ typedef struct _UNWIND_HISTORY_TABLE {
     DWORD HighAddress;
     UNWIND_HISTORY_TABLE_ENTRY Entry[UNWIND_HISTORY_TABLE_SIZE];
 } UNWIND_HISTORY_TABLE, *PUNWIND_HISTORY_TABLE;
+#endif // !FEATURE_PAL
 
 
 //
