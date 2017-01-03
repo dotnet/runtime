@@ -378,9 +378,6 @@
   <data name="SSPIInvalidHandleType" xml:space="preserve">
     <value>'{0}' is not a supported handle type.</value>
   </data>
-  <data name="net_MethodNotImplementedException" xml:space="preserve">
-    <value>This method is not implemented by this class.</value>
-  </data>
   <data name="net_cannot_change_after_headers" xml:space="preserve">
     <value>Cannot be changed after headers are sent.</value>
   </data>

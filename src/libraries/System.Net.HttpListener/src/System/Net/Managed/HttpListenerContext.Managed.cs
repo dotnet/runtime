@@ -67,7 +67,7 @@ namespace System.Net
             if (expectedSchemes == AuthenticationSchemes.Anonymous)
                 return;
 
-            string header = _request.Headers[HttpHeaderStrings.Authorization];
+            string header = _request.Headers[HttpKnownHeaderNames.Authorization];
             if (header == null || header.Length < 2)
                 return;
 

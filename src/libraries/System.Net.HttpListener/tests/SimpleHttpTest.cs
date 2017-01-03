@@ -12,13 +12,13 @@ namespace System.Net.Tests
 {
     public class SimpleHttpTest
     {
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.HasHttpApi))]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
         public static void Supported_True()
         {
             Assert.True(HttpListener.IsSupported);
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.HasHttpApi))]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
         public static async Task SimpleRequest_Succeeds()
         {
             string url = UrlPrefix.CreateLocal();
