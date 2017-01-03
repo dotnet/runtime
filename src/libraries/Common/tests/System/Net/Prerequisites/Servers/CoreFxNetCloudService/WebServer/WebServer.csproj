@@ -206,4 +206,6 @@
   <Target Name="AfterBuild">
   </Target>
   -->
+  <Target Name="AnnotateProjectsWithConfiguration" />
+  <Target Name="FindBestConfiguration" />
 </Project>

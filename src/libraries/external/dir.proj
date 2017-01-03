@@ -5,6 +5,7 @@
   <ItemGroup>
     <Project Include="coreclr/coreclr.depproj" />
     <Project Include="netstandard20/netstandard20.depproj" />
+    <Project Include="test-runtime/XUnit.Runtime.depproj" />
   </ItemGroup>
 
   <Import Project="../dir.traversal.targets" />

@@ -27,7 +27,7 @@
 
   <PropertyGroup>
     <TestRuntimeDir>$(RuntimePath)</TestRuntimeDir>
-    <TestHostExecutable Condition="'$(TestHostExecutable)' == ''">$(TestRuntimeDir)\corerun.exe</TestHostExecutable>
+    <TestHostExecutable Condition="'$(TestHostExecutable)' == ''">$(TestRuntimeDir)\corerun</TestHostExecutable>
     <XunitExecutable Condition="'$(XunitExecutable)' == ''">$(TestRuntimeDir)/xunit.console.netcore.exe</XunitExecutable>
   </PropertyGroup>
 
@@ -137,10 +137,12 @@
       <Output TaskParameter="TargetOS" PropertyName="TargetOS" />
     </GetTargetMachineInfo>
     <PropertyGroup>
-      <TestDisabled Condition="'%(UnsupportedPlatformsItems.Identity)' == '$(TargetOS)'">true</TestDisabled>
+      <TestDisabled Condition="'%(UnsupportedPlatformsItems.Identity)' == '$(TargetOS)' Or '$(ConfigurationErrorMsg)' != ''">true</TestDisabled>
     </PropertyGroup>
     <Message Condition="'%(UnsupportedPlatformsItems.Identity)' == '$(TargetOS)'"
       Text="Skipping tests in $(AssemblyName) because it is not supported on $(TargetOS)" />
+    <Message Condition="'$(ConfigurationErrorMsg)' != ''"
+      Text="Skipping tests in $(AssemblyName) because there is no configuration compatible with the current BuildConfiguration." />
   </Target>
 
   <Target Name="SetupTestProperties" DependsOnTargets="CheckTestPlatforms;CheckTestCategories" />

@@ -49,7 +49,7 @@ namespace System.Reflection.Emit.Tests
             Type createdType = type.CreateTypeInfo().AsType();
 
             ConstructorInfo createdConstructor = createdType.GetConstructor(new Type[0]);
-            Attribute[] customAttributes = (Attribute[])createdConstructor.GetCustomAttributes(true).ToArray();
+            Attribute[] customAttributes = (Attribute[])CustomAttributeExtensions.GetCustomAttributes(createdConstructor, true).ToArray();
 
             Assert.Equal(1, customAttributes.Length);
             Assert.Equal(2, ((IntAllAttribute)customAttributes[0])._i);

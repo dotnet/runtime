@@ -59,7 +59,7 @@
     <Compile Include="UInt64ConverterTests.cs" />
     <Compile Include="UriTypeConverterTests.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetGroup)' == ''">
+  <ItemGroup Condition=" '$(TargetGroup)' == 'netstandard1.7'">
     <Compile Include="Drawing\ColorConverterTests.cs" />
     <Compile Include="Drawing\PointConverterTests.cs" />
     <Compile Include="Drawing\RectangleConverterTests.cs" />

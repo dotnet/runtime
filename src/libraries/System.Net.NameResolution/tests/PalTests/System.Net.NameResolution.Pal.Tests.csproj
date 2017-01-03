@@ -27,10 +27,10 @@
     <Compile Include="..\..\src\System\Net\NameResolutionUtilities.cs">
       <Link>ProductionCode\System\Net\NameResolutionUtilities.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Sockets\ProtocolType.cs">
+    <Compile Include="$(CommonPath)\System\Net\Sockets\ProtocolType.cs" Condition="'$(OSGroup)' == 'Windows_NT'">
       <Link>Common\System\Net\Sockets\ProtocolType.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Sockets\SocketType.cs">
+    <Compile Include="$(CommonPath)\System\Net\Sockets\SocketType.cs" Condition="'$(OSGroup)' == 'Windows_NT'">
       <Link>Common\System\Net\Sockets\SocketType.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\IPEndPointStatics.cs">
@@ -61,7 +61,7 @@
       <Link>Common\System\Net\DebugSafeHandle.cs</Link>
     </Compile>
     <!-- Common -->
-    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeHandleZeroOrMinusOneIsInvalid.cs">
+    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeHandleZeroOrMinusOneIsInvalid.cs" Condition="'$(TargetGroup)' != 'netstandard1.7'">
       <Link>Common\Microsoft\Win32\SafeHandles\SafeHandleZeroOrMinusOneIsInvalid.cs</Link>
     </Compile>
     <!-- System.Net.Internals -->
