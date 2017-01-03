@@ -2426,6 +2426,11 @@ bool Compiler::fgNormalizeEHCase2()
                                 // this once per dup.
                                 fgReplaceJumpTarget(predBlock, newTryStart, insertBeforeBlk);
 
+                                // Need to adjust ref counts here since we're retargeting edges.
+                                newTryStart->bbRefs++;
+                                assert(insertBeforeBlk->countOfInEdges() > 0);
+                                insertBeforeBlk->bbRefs--;
+
 #ifdef DEBUG
                                 if (verbose)
                                 {
