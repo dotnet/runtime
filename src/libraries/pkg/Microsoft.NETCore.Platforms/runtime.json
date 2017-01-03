@@ -147,6 +147,9 @@
         "unix-arm": {
             "#import": [ "unix" ]
         },
+        "unix-armel": {
+            "#import": [ "unix" ]
+        },
         "unix-arm64": {
             "#import": [ "unix" ]
         },
@@ -190,6 +193,9 @@
         },
         "linux-arm": {
             "#import": [ "linux", "unix-arm" ]
+        },
+        "linux-armel": {
+            "#import": [ "linux", "unix-armel" ]
         },
         "linux-arm64": {
             "#import": [ "linux", "unix-arm64" ]
@@ -291,6 +297,9 @@
         "debian-arm": {
             "#import": [ "debian", "linux-arm" ]
         },
+        "debian-armel": {
+            "#import": [ "debian", "linux-armel" ]
+        },
         "debian-arm64": {
             "#import": [ "debian", "linux-arm64" ]
         },
@@ -306,6 +315,9 @@
         },
         "debian.8-arm": {
             "#import": [ "debian.8", "debian-arm" ]
+        },
+        "debian.8-armel": {
+            "#import": [ "debian.8", "debian-armel" ]
         },
         "debian.8-arm64": {
             "#import": [ "debian.8", "debian-arm64" ]
