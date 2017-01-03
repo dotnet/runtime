@@ -104,6 +104,10 @@ namespace System.Collections.Concurrent
         private static bool IsValueWriteAtomic()
         {
             Type valueType = typeof(TValue);
+            if (valueType.IsEnum)
+            {
+                valueType = Enum.GetUnderlyingType(valueType);
+            }
 
             //
             // Section 12.6.6 of ECMA CLI explains which types can be read and written atomically without
