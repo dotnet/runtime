@@ -10998,6 +10998,8 @@ GenTreePtr Compiler::fgMorphSmpOp(GenTreePtr tree, MorphAddrContext* mac)
                 //
                 // a % b = a - (a / b) * b;
                 //
+                // NOTE: we should never need to perform this transformation when remorphing, since global morphing
+                //       should already have done so and we do not introduce new modulus nodes in later phases.
                 assert(!optValnumCSE_phase);
                 tree = fgMorphModToSubMulDiv(tree->AsOp());
                 op1  = tree->gtOp.gtOp1;
