@@ -780,13 +780,32 @@ namespace System
         }
 
         [Pure]
-        internal bool EndsWith(char value) {
+        internal bool EndsWithOrdinal(char value) {
             int thisLen = this.Length;
             if (thisLen != 0) {
                 if (this[thisLen - 1] == value)
                     return true;
             }
             return false;
+        }
+
+        [Pure]
+        public Boolean EndsWith(Char value)
+        {
+            return EndsWith(new string(value, 1), StringComparison.CurrentCulture);
+        }
+
+        [Pure]
+        [ComVisible(false)]
+        public Boolean EndsWith(Char value, StringComparison comparisonType)
+        {
+            return EndsWith(new string(value, 1), comparisonType);
+        }
+
+        [Pure]
+        public Boolean EndsWith(Char value, Boolean ignoreCase, CultureInfo culture)
+        {
+            return EndsWith(new string(value, 1), ignoreCase, culture);
         }
 
         // Determines whether two strings match.
@@ -1134,6 +1153,25 @@ namespace System
                 referenceCulture = culture;
 
             return referenceCulture.CompareInfo.IsPrefix(this, value, ignoreCase ? CompareOptions.IgnoreCase : CompareOptions.None);
+        }
+
+        [Pure]
+        public Boolean StartsWith(Char value)
+        {
+            return StartsWith(new string(value, 1));
+        }
+
+        [Pure]
+        [ComVisible(false)]
+        public Boolean StartsWith(Char value, StringComparison comparisonType)
+        {
+            return StartsWith(new string(value, 1), comparisonType);
+        }
+
+        [Pure]
+        public Boolean StartsWith(Char value, Boolean ignoreCase, CultureInfo culture)
+        {
+            return StartsWith(new string(value, 1), ignoreCase, culture);
         }
     }
 }
