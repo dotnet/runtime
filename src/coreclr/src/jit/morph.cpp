@@ -10998,6 +10998,7 @@ GenTreePtr Compiler::fgMorphSmpOp(GenTreePtr tree, MorphAddrContext* mac)
                 //
                 // a % b = a - (a / b) * b;
                 //
+                assert(!optValnumCSE_phase);
                 tree = fgMorphModToSubMulDiv(tree->AsOp());
                 op1  = tree->gtOp.gtOp1;
                 op2  = tree->gtOp.gtOp2;
@@ -11010,7 +11011,7 @@ GenTreePtr Compiler::fgMorphSmpOp(GenTreePtr tree, MorphAddrContext* mac)
                 // the redundant division. If there's no redundant division then
                 // nothing is lost, lowering would have done this transform anyway.
 
-                if ((tree->OperGet() == GT_MOD) && op2->IsIntegralConst())
+                if (!optValnumCSE_phase && ((tree->OperGet() == GT_MOD) && op2->IsIntegralConst()))
                 {
                     ssize_t divisorValue    = op2->AsIntCon()->IconValue();
                     size_t  absDivisorValue = (divisorValue == SSIZE_T_MIN) ? static_cast<size_t>(divisorValue)
