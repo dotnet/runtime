@@ -143,7 +143,7 @@ namespace Microsoft.DotNet.Host.Build
             var versionSuffix = c.BuildContext.Get<BuildVersion>("BuildVersion").VersionSuffix;
 
             dotnet.Pack(
-                    Path.Combine(Dirs.RepoRoot, "tools", "dotnet-deb-tool", "project.json"),
+                    Path.Combine(Dirs.RepoRoot, "setuptools", "dotnet-deb-tool", "project.json"),
                     "--output", Dirs.PackagesIntermediate,
                     "--version-suffix", versionSuffix)
                     .Execute()
@@ -363,11 +363,11 @@ namespace Microsoft.DotNet.Host.Build
             var dotnet = DotNetCli.Stage0;
 
             dotnet.Restore("--verbosity", "verbose", "--disable-parallel")
-                .WorkingDirectory(Path.Combine(c.BuildContext.BuildDirectory, "tools", "dotnet-deb-tool"))
+                .WorkingDirectory(Path.Combine(c.BuildContext.BuildDirectory, "setuptools", "dotnet-deb-tool"))
                 .Execute()
                 .EnsureSuccessful();
             dotnet.Restore("--verbosity", "verbose", "--disable-parallel", "--infer-runtimes")
-                .WorkingDirectory(Path.Combine(c.BuildContext.BuildDirectory, "tools", "independent"))
+                .WorkingDirectory(Path.Combine(c.BuildContext.BuildDirectory, "setuptools", "independent"))
                 .Execute()
                 .EnsureSuccessful();
 

@@ -2,7 +2,7 @@
   "version": "1.0.0-*",
   "description": "Microsoft.DotNet.Tools.Tests.Utilities Class Library",
   "buildOptions": {
-    "keyFile": "../../tools/Key.snk"
+    "keyFile": "../../setuptools/Key.snk"
   },
   "dependencies": {
     "Microsoft.NETCore.App": {
