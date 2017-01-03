@@ -856,7 +856,6 @@ CI_DISABLED_TESTS = \
 	assemblyresolve_event3.exe \
 	delegate2.exe	\
 	finally_guard.exe \
-	gc-altstack.exe \
 	generic-xdomain.2.exe
 
 # failing tests which we temporarily disable for PRs
