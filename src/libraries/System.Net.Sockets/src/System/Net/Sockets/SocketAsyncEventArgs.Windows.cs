@@ -251,7 +251,7 @@ namespace System.Net.Sockets
                     (int)(DisconnectReuseSocket ? TransmitFileOptions.ReuseSocket : 0),
                     0))
             {
-                socketError = (SocketError)Marshal.GetLastWin32Error();
+                socketError = SocketPal.GetLastSocketError();
             }
 
             return socketError;
@@ -1244,7 +1244,7 @@ namespace System.Net.Sockets
                             try
                             {
                                 // The Async IO completed with a failure.
-                                // here we need to call WSAGetOverlappedResult() just so Marshal.GetLastWin32Error() will return the correct error.
+                                // here we need to call WSAGetOverlappedResult() just so GetLastSocketError() will return the correct error.
                                 bool success = Interop.Winsock.WSAGetOverlappedResult(
                                     _currentSocket.SafeHandle,
                                     _ptrNativeOverlapped,
