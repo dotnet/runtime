@@ -13,6 +13,7 @@
       <RuntimeReferencedAssemblyNames Include="xunit.assert" />
       <RuntimeReferencedAssemblyNames Include="xunit.abstractions" />
       <RuntimeReferencedAssemblyNames Include="xunit.performance.core" />
+      <RuntimeReferencedAssemblyNames Include="xunit.execution.dotnet" />
       <RuntimeReferencedAssemblyNames Include="Newtonsoft.Json" Condition="'$(SkipIncludeNewtonsoftJson)'!='true'" />
 
       <!-- Add Reference's to all files in the targeting pack folder, and to whitelisted items from the group above in the runtime folder. -->
@@ -25,8 +26,8 @@
 
     <!-- Allow tests to reference items from the runtime directory -->
     <PropertyGroup>
-      <AssemblySearchPaths Condition="'$(NoTargetingPackReferences)' == 'true'">$(RuntimeDir);$(AssemblySearchPaths)</AssemblySearchPaths>
-      <AssemblySearchPaths Condition="'$(NoTargetingPackReferences)' != 'true'">$(AssemblySearchPaths);$(RuntimeDir)</AssemblySearchPaths>
+      <AssemblySearchPaths Condition="'$(NoTargetingPackReferences)' == 'true'">$(RuntimePath);$(AssemblySearchPaths)</AssemblySearchPaths>
+      <AssemblySearchPaths Condition="'$(NoTargetingPackReferences)' != 'true'">$(AssemblySearchPaths);$(RuntimePath)</AssemblySearchPaths>
     </PropertyGroup>
   </Target>
 

@@ -19,14 +19,23 @@ namespace System.Runtime.Loader.Tests
         [Fact]
         public static void GetAssemblyNameTest_ValidAssembly()
         {
-            var expectedName = typeof(ISet<>).GetTypeInfo().Assembly.GetName();
-            var actualAsmName = AssemblyLoadContext.GetAssemblyName("System.Runtime.dll");
-            Assert.Equal(expectedName.FullName, actualAsmName.FullName);
+            string originalDir = Environment.CurrentDirectory;
+            try
+            {
+                Environment.CurrentDirectory = AppContext.BaseDirectory;
+                var expectedName = typeof(ISet<>).GetTypeInfo().Assembly.GetName();
+                var actualAsmName = AssemblyLoadContext.GetAssemblyName("System.Runtime.dll");
+                Assert.Equal(expectedName.FullName, actualAsmName.FullName);
 
-            // Verify that the AssemblyName returned by GetAssemblyName can be used to load an assembly. System.Runtime would
-            // already be loaded, but this is just verifying it does not throw some other unexpected exception.
-            var asm = Assembly.Load(actualAsmName);
-            Assert.NotNull(asm);
+                // Verify that the AssemblyName returned by GetAssemblyName can be used to load an assembly. System.Runtime would
+                // already be loaded, but this is just verifying it does not throw some other unexpected exception.
+                var asm = Assembly.Load(actualAsmName);
+                Assert.NotNull(asm);
+            }
+            finally
+            {
+                Environment.CurrentDirectory = originalDir;
+            }
         }
 
         [Fact]
@@ -83,16 +92,25 @@ namespace System.Runtime.Loader.Tests
         [Fact]
         public static void LoadFromAssemblyName_ValidTrustedPlatformAssembly()
         {
-            var asmName = AssemblyLoadContext.GetAssemblyName("System.Runtime.dll");
-            var loadContext = new CustomTPALoadContext();
+            string originalDir = Environment.CurrentDirectory;
+            try
+            {
+                Environment.CurrentDirectory = AppContext.BaseDirectory;
+                var asmName = AssemblyLoadContext.GetAssemblyName("System.Runtime.dll");
+                var loadContext = new CustomTPALoadContext();
 
-            // We should be able to override (and thus, load) assemblies that were
-            // loaded in TPA load context.
-            var asm = loadContext.LoadFromAssemblyName(asmName);
-            Assert.NotNull(asm);
-            var loadedContext = AssemblyLoadContext.GetLoadContext(asm);
-            Assert.NotNull(loadedContext);
-            Assert.Same(loadContext, loadedContext);
+                // We should be able to override (and thus, load) assemblies that were
+                // loaded in TPA load context.
+                var asm = loadContext.LoadFromAssemblyName(asmName);
+                Assert.NotNull(asm);
+                var loadedContext = AssemblyLoadContext.GetLoadContext(asm);
+                Assert.NotNull(loadedContext);
+                Assert.Same(loadContext, loadedContext);
+            }
+            finally
+            {
+                Environment.CurrentDirectory = originalDir;
+            }
         }
 
         [Fact]

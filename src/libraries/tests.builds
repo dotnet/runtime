@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="dir.props" />
+
+  <!-- required to build the projects in their specified order -->
+  <PropertyGroup>
+    <SerializeProjects>true</SerializeProjects>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <GenerateCodeCoverageReportForAll>true</GenerateCodeCoverageReportForAll>
+  </PropertyGroup>
+
+  <Import Project="$(ToolsDir)CodeCoverage.targets" Condition="Exists('$(ToolsDir)CodeCoverage.targets')" />
+  <Import Project="$(ToolsDir)PerfTesting.targets" Condition="Exists('$(ToolsDir)PerfTesting.targets') and '$(Performance)' == 'true'"/>
+  <Import Project="$(ToolsDir)VersionTools.targets" Condition="Exists('$(ToolsDir)VersionTools.targets')" />
+
+  <ItemGroup>
+    <Project Include="src\tests.builds" />
+  </ItemGroup>
+
+  <Import Project="dir.targets" />
+
+  <Import Project="dir.traversal.targets" />
+
+  <Import Project="$(ToolsDir)clean.targets" />
+
+  <PropertyGroup>
+    <TraversalBuildDependsOn>
+      CreateOrUpdateCurrentVersionFile;
+      $(TraversalBuildDependsOn);
+    </TraversalBuildDependsOn>
+  </PropertyGroup>
+
+  <!-- TODO: Can we move this archive test build to BuildTools -->
+  <UsingTask TaskName="ZipFileCreateFromDependencyLists" Condition="'$(ArchiveTests)' == 'true'" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll"/>
+  <Target Name="ArchiveTestBuild" Condition="'$(ArchiveTests)' == 'true'" AfterTargets="Build" >
+    <ItemGroup>
+      <ExcludeFromArchive Include="nupkg$" />
+      <ExcludeFromArchive Include="Microsoft.DotNet.BuildTools" />
+      <ExcludeFromArchive Include="TestData" />
+      <TestDependencyListFile Include="$(BinDir)/TestDependencies/*.dependencylist.txt" />
+    </ItemGroup>
+
+    <PropertyGroup>
+      <TestArchiveDir>$(TestWorkingDir)$(OSPlatformConfig)/archive/tests/</TestArchiveDir>
+      <TestArchiveDir Condition="'$(TestTFM)' != ''">$(TestArchiveDir)$(TestTFM)/</TestArchiveDir>
+    </PropertyGroup>
+
+    <ZipFileCreateFromDependencyLists
+      DependencyListFiles="@(TestDependencyListFile)"
+      DestinationArchive="$(TestArchiveDir)\Packages.zip"
+      RelativePathBaseDirectory="$(PackagesDir)"
+      OverwriteDestination="true" />
+  </Target>
+
+  <!-- Hook that can be used to insert custom build tasks to the build process such as setup and/or cleanup tasks -->
+  <Import Project="build.override.targets" Condition="Exists('build.override.targets')" />
+
+</Project>

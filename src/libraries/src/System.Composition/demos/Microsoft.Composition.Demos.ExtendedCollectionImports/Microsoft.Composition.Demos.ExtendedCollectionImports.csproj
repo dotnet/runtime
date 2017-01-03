@@ -3,9 +3,8 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <ProjectGuid>{44C7E52C-3873-4C64-875C-8A23A8376D60}</ProjectGuid>
-    <RootNamespace>Microsoft.Composition.Demos.ExtendedCollectionImports</RootNamespace>
-    <AssemblyName>Microsoft.Composition.Demos.ExtendedCollectionImports</AssemblyName>
-    <NuGetTargetMoniker>.NETStandard,Version=v1.3</NuGetTargetMoniker>
+    <IsTestProject>true</IsTestProject>
+    <NoWarn>0436</NoWarn>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />

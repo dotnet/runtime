@@ -13,6 +13,12 @@
       "coveralls.io": "1.4",
       "OpenCover": "4.6.519",
       "ReportGenerator": "2.5.0",
+
+      // Supplemental test data
+      "System.IO.Compression.TestData": "1.0.4-prerelease",
+      "System.IO.Packaging.TestData": "1.0.0-prerelease",
+      "System.Security.Cryptography.X509Certificates.TestData": "1.0.2-prerelease",
+      "System.Net.TestData": "1.0.0-prerelease",
    },
    "frameworks": {
       "netstandard1.7": {}

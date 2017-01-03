@@ -37,7 +37,7 @@ namespace System.Runtime.Loader.Tests
         protected override Assembly Load(AssemblyName assemblyName)
         {
             // Override the assembly that was loaded in DefaultContext.
-            string assemblyPath = Path.Combine(Directory.GetCurrentDirectory(), assemblyName.Name + ".dll");
+            string assemblyPath = Path.Combine(AppContext.BaseDirectory, assemblyName.Name + ".dll");
             Assembly assembly = LoadFromAssemblyPath(assemblyPath);
             m_fLoadedFromContext = true;
             return assembly;
@@ -287,7 +287,7 @@ namespace System.Runtime.Loader.Tests
             
             // Get reference to the helper method that will load assemblies (actually, resolve them)
             // from DefaultContext
-            Type type = asmTargetAsm.GetType("System.Runtime.Loader.Tests.TestClass");
+            Type type = asmTargetAsm.GetType("System.Runtime.Loader.Tests.TestClass", true);
             var method = System.Reflection.TypeExtensions.GetMethod(type, "LoadFromDefaultContext");
             
             // Load System.Runtime - since this is on TPA, it should get resolved from our custom load context

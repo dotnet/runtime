@@ -5,6 +5,7 @@
   <PropertyGroup>
     <ProjectGuid>{7B57D5F1-4E6C-4280-AD5B-C71C73B66B11}</ProjectGuid>
     <DefineConstants>$(DefineConstants);FEATURE_XML_XPATH_ID</DefineConstants>
+    <RootNamespace>System.Xml.XPath.XmlDocument.Tests</RootNamespace>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
   </PropertyGroup>

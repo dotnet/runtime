@@ -50,16 +50,6 @@
     <PackageTargetFramework Condition="'$(IsTestProject)' == 'true'"></PackageTargetFramework>
   </PropertyGroup>
 
-  <!--
-    add the test-runtime project.json to the list of supplemental test data so it will get included
-    in the test archive; the stress test build system depends on it when building test mixes.
-  -->
-  <ItemGroup Condition="'$(IsTestProject)'=='true'">
-    <SupplementalTestData Include="$(SourceDir)Common/test-runtime/project.json">
-      <DestinationDir>test-runtime/</DestinationDir>
-    </SupplementalTestData>
-  </ItemGroup>
-
   <ItemGroup Condition="'$(NuGetTargetMoniker)'=='.NETStandard,Version=v1.7'">
     <!-- Temporarily suppress the message until we get a nuget version that knows about the mapping between netstandard1.7 and uap10.1 -->
     <SuppressPackageTargetFrameworkCompatibility Include="uap10.1" />

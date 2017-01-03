@@ -246,7 +246,7 @@
           "description": "Builds the tests that are in the repository, doesn't restore packages.",
           "settings": {
             "RestoreDuringBuild": "false",
-            "Project": "src/tests.builds",
+            "Project": "tests.builds",
             "MsBuildLogging":"/flp:v=normal;LogFile=build-tests.log"
           }
         },

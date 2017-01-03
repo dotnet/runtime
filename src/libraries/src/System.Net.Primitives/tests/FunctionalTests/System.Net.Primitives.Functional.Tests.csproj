@@ -4,7 +4,7 @@
   <PropertyGroup>
     <ProjectGuid>{4FE5ECEE-ACC5-4558-A946-573426599B73}</ProjectGuid>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(TargetGroup)' == ''">
+  <PropertyGroup Condition="'$(TargetGroup)' == 'netstandard1.7'">
     <DefineConstants>NetStandard17</DefineConstants>
   </PropertyGroup>
   <!-- Help VS understand available configurations -->
@@ -26,10 +26,10 @@
     <Compile Include="IPAddressMappingTest.cs" />
     <Compile Include="IPEndPointTest.cs" />
     <Compile Include="NetworkCredentialTest.cs" />
-    <Compile Include="RequestCachePolicyTest.cs" Condition="'$(TargetGroup)' == ''" />
+    <Compile Include="RequestCachePolicyTest.cs" Condition="'$(TargetGroup)' == 'netstandard1.7'" />
     <Compile Include="SocketAddressTest.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == ''">
+  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard1.7'">
     <Compile Include="LoggingTest.cs" />
     <Compile Include="SerializationTest.cs" />
     <Compile Include="CookieContainerAddTest.cs" />
