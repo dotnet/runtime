@@ -12,10 +12,9 @@ namespace System
     public sealed partial class TimeZoneInfo
     {
         /// <summary>
-        /// This class is used to serialize and deserialize TimeZoneInfo
-        /// objects based on the custom string serialization format.
+        /// Used to serialize and deserialize TimeZoneInfo objects based on the custom string serialization format.
         /// </summary>
-        private sealed class StringSerializer
+        private struct StringSerializer
         {
             private enum State
             {
@@ -124,6 +123,7 @@ namespace System
             private StringSerializer(string str)
             {
                 _serializedText = str;
+                _currentTokenStartIndex = 0;
                 _state = State.StartOfToken;
             }
 
