@@ -1168,7 +1168,7 @@ namespace System {
             Debug.Assert(ExecutionIdRefreshRate <= ExecutionIdCacheCountDownMask);
 
             // Mask with Int32.MaxValue to ensure the execution Id is not negative
-            t_executionIdCache = ((executionId << ExecutionIdCacheShift) & Int32.MaxValue) + ExecutionIdRefreshRate;
+            t_executionIdCache = ((executionId << ExecutionIdCacheShift) & Int32.MaxValue) | ExecutionIdRefreshRate;
 
             return executionId;
         }
