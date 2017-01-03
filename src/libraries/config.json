@@ -165,7 +165,7 @@
     "BuildArchitecture": {
       "description": "Sets the value of the build architecture.",
       "valueType": "passThrough",
-      "values": ["x86", "arm", "arm-softfp", "x64", "arm64"],
+      "values": ["x86", "arm", "armel", "x64", "arm64"],
       "defaultValue": "${CPUArch}"
     },
     "CmakeBuildType": {
