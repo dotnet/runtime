@@ -35,7 +35,7 @@
 
     <RefBinDir>$(BinDir)$(TargetFrameworkName)/pkg/ref</RefBinDir>
     <LibBinDir>$(BinDir)$(TargetFrameworkName)/pkg/lib</LibBinDir>
-    <NativeBinDir>$(BinDir)$(OSGroup).$(PackagePlatform).$(ConfigurationGroup)/Native</NativeBinDir>
+    <NativeBinDir>$(BinDir)$(OSGroup).$(PackagePlatform).$(ConfigurationGroup)/native</NativeBinDir>
 
     <NETStandardLibraryPackage>NETStandard.Library2</NETStandardLibraryPackage>
     <NETStandardLibraryPackageVersion>2.0.0-beta-24709-0</NETStandardLibraryPackageVersion>
