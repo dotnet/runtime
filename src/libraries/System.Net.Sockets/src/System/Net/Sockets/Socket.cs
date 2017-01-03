@@ -3233,9 +3233,6 @@ namespace System.Net.Sockets
             // Throw an appropriate SocketException if the native call fails synchronously.
             if (errorCode != SocketError.Success)
             {
-                // TODO: https://github.com/dotnet/corefx/issues/5426
-                // NetEventSource.Fail(this, "GetLastWin32Error() returned zero.");
-
                 // Update the internal state of this socket according to the error before throwing.
                 UpdateStatusAfterSocketError(errorCode);
                 var socketException = new SocketException((int)errorCode);
