@@ -167,8 +167,8 @@ namespace Microsoft.DotNet.Cli.Build
             if (!string.IsNullOrEmpty(runtimeGraphGeneratorRuntime))
             {
                 var runtimeGraphGeneratorName = "RuntimeGraphGenerator";
-                var runtimeGraphGeneratorProject = Path.Combine(Dirs.RepoRoot, "tools", "independent", runtimeGraphGeneratorName);
-                var runtimeGraphGeneratorOutput = Path.Combine(Dirs.Output, "tools", "independent", runtimeGraphGeneratorName);
+                var runtimeGraphGeneratorProject = Path.Combine(Dirs.RepoRoot, "setuptools", "independent", runtimeGraphGeneratorName);
+                var runtimeGraphGeneratorOutput = Path.Combine(Dirs.Output, "setuptools", "independent", runtimeGraphGeneratorName);
 
                 dotnetCli.Publish(
                     "--output", runtimeGraphGeneratorOutput,
