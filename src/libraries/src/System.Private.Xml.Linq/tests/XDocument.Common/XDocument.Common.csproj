@@ -24,9 +24,6 @@
     <Compile Include="InputSpace.cs" />
     <Compile Include="ManagedNodeWriter.cs" />
     <Compile Include="XLinqTestCase.cs" />
-    <Compile Include="$(CommonPath)\System\Diagnostics\CodeAnalysis\ExcludeFromCodeCoverageAttribute.cs">
-      <Link>Common\System\Diagnostics\CodeAnalysis\ExcludeFromCodeCoverageAttribute.cs</Link>
-    </Compile>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(CommonTestPath)\System\Xml\XmlCoreTest\XmlCoreTest.csproj" />
