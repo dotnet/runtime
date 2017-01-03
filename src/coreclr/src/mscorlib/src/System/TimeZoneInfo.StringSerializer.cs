@@ -35,14 +35,6 @@ namespace System
             private const char Sep = ';';
             private const char Lhs = '[';
             private const char Rhs = ']';
-            private const string EscString = "\\";
-            private const string SepString = ";";
-            private const string LhsString = "[";
-            private const string RhsString = "]";
-            private const string EscapedEsc = "\\\\";
-            private const string EscapedSep = "\\;";
-            private const string EscapedLhs = "\\[";
-            private const string EscapedRhs = "\\]";
             private const string DateTimeFormat = "MM:dd:yyyy";
             private const string TimeOfDayFormat = "HH:mm:ss.FFF";
 
@@ -56,52 +48,48 @@ namespace System
                 //
                 // <_id>;<_baseUtcOffset>;<_displayName>;<_standardDisplayName>;<_daylightDispayName>
                 //
-                serializedText.Append(SerializeSubstitute(zone.Id));
+                SerializeSubstitute(zone.Id, serializedText);
                 serializedText.Append(Sep);
-                serializedText.Append(SerializeSubstitute(
-                           zone.BaseUtcOffset.TotalMinutes.ToString(CultureInfo.InvariantCulture)));
+                serializedText.Append(zone.BaseUtcOffset.TotalMinutes.ToString(CultureInfo.InvariantCulture));
                 serializedText.Append(Sep);
-                serializedText.Append(SerializeSubstitute(zone.DisplayName));
+                SerializeSubstitute(zone.DisplayName, serializedText);
                 serializedText.Append(Sep);
-                serializedText.Append(SerializeSubstitute(zone.StandardName));
+                SerializeSubstitute(zone.StandardName, serializedText);
                 serializedText.Append(Sep);
-                serializedText.Append(SerializeSubstitute(zone.DaylightName));
+                SerializeSubstitute(zone.DaylightName, serializedText);
                 serializedText.Append(Sep);
 
                 AdjustmentRule[] rules = zone.GetAdjustmentRules();
-
-                if (rules != null && rules.Length > 0)
+                foreach (AdjustmentRule rule in rules)
                 {
-                    foreach (AdjustmentRule rule in rules)
+                    serializedText.Append(Lhs);
+                    serializedText.Append(rule.DateStart.ToString(DateTimeFormat, DateTimeFormatInfo.InvariantInfo));
+                    serializedText.Append(Sep);
+                    serializedText.Append(rule.DateEnd.ToString(DateTimeFormat, DateTimeFormatInfo.InvariantInfo));
+                    serializedText.Append(Sep);
+                    serializedText.Append(rule.DaylightDelta.TotalMinutes.ToString(CultureInfo.InvariantCulture));
+                    serializedText.Append(Sep);
+                    // serialize the TransitionTime's
+                    SerializeTransitionTime(rule.DaylightTransitionStart, serializedText);
+                    serializedText.Append(Sep);
+                    SerializeTransitionTime(rule.DaylightTransitionEnd, serializedText);
+                    serializedText.Append(Sep);
+                    if (rule.BaseUtcOffsetDelta != TimeSpan.Zero)
                     {
-                        serializedText.Append(Lhs);
-                        serializedText.Append(SerializeSubstitute(rule.DateStart.ToString(DateTimeFormat, DateTimeFormatInfo.InvariantInfo)));
+                        // Serialize it only when BaseUtcOffsetDelta has a value to reduce the impact of adding rule.BaseUtcOffsetDelta
+                        serializedText.Append(rule.BaseUtcOffsetDelta.TotalMinutes.ToString(CultureInfo.InvariantCulture));
                         serializedText.Append(Sep);
-                        serializedText.Append(SerializeSubstitute(rule.DateEnd.ToString(DateTimeFormat, DateTimeFormatInfo.InvariantInfo)));
-                        serializedText.Append(Sep);
-                        serializedText.Append(SerializeSubstitute(rule.DaylightDelta.TotalMinutes.ToString(CultureInfo.InvariantCulture)));
-                        serializedText.Append(Sep);
-                        // serialize the TransitionTime's
-                        SerializeTransitionTime(rule.DaylightTransitionStart, serializedText);
-                        serializedText.Append(Sep);
-                        SerializeTransitionTime(rule.DaylightTransitionEnd, serializedText);
-                        serializedText.Append(Sep);
-                        if (rule.BaseUtcOffsetDelta != TimeSpan.Zero)
-                        {
-                            // Serialize it only when BaseUtcOffsetDelta has a value to reduce the impact of adding rule.BaseUtcOffsetDelta
-                            serializedText.Append(SerializeSubstitute(rule.BaseUtcOffsetDelta.TotalMinutes.ToString(CultureInfo.InvariantCulture)));
-                            serializedText.Append(Sep);
-                        }
-                        if (rule.NoDaylightTransitions)
-                        {
-                            // Serialize it only when NoDaylightTransitions is true to reduce the impact of adding rule.NoDaylightTransitions
-                            serializedText.Append(SerializeSubstitute("1"));
-                            serializedText.Append(Sep);
-                        }
-                        serializedText.Append(Rhs);
                     }
+                    if (rule.NoDaylightTransitions)
+                    {
+                        // Serialize it only when NoDaylightTransitions is true to reduce the impact of adding rule.NoDaylightTransitions
+                        serializedText.Append('1');
+                        serializedText.Append(Sep);
+                    }
+                    serializedText.Append(Rhs);
                 }
                 serializedText.Append(Sep);
+
                 return StringBuilderCache.GetStringAndRelease(serializedText);
             }
 
@@ -140,19 +128,23 @@ namespace System
             }
 
             /// <summary>
-            /// Returns a new string with all of the reserved sub-strings escaped
+            /// Appends the String to the StringBuilder with all of the reserved chars escaped.
             ///
             /// ";" -> "\;"
             /// "[" -> "\["
             /// "]" -> "\]"
             /// "\" -> "\\"
             /// </summary>
-            private static string SerializeSubstitute(string text)
+            private static void SerializeSubstitute(string text, StringBuilder serializedText)
             {
-                text = text.Replace(EscString, EscapedEsc);
-                text = text.Replace(LhsString, EscapedLhs);
-                text = text.Replace(RhsString, EscapedRhs);
-                return text.Replace(SepString, EscapedSep);
+                foreach (char c in text)
+                {
+                    if (c == Esc || c == Lhs || c == Rhs || c == Sep)
+                    {
+                        serializedText.Append('\\');
+                    }
+                    serializedText.Append(c);
+                }
             }
 
             /// <summary>
@@ -161,28 +153,22 @@ namespace System
             private static void SerializeTransitionTime(TransitionTime time, StringBuilder serializedText)
             {
                 serializedText.Append(Lhs);
-                int fixedDate = (time.IsFixedDateRule ? 1 : 0);
-                serializedText.Append(fixedDate.ToString(CultureInfo.InvariantCulture));
+                serializedText.Append(time.IsFixedDateRule ? '1' : '0');
                 serializedText.Append(Sep);
-
+                serializedText.Append(time.TimeOfDay.ToString(TimeOfDayFormat, DateTimeFormatInfo.InvariantInfo));
+                serializedText.Append(Sep);
+                serializedText.Append(time.Month.ToString(CultureInfo.InvariantCulture));
+                serializedText.Append(Sep);
                 if (time.IsFixedDateRule)
                 {
-                    serializedText.Append(SerializeSubstitute(time.TimeOfDay.ToString(TimeOfDayFormat, DateTimeFormatInfo.InvariantInfo)));
-                    serializedText.Append(Sep);
-                    serializedText.Append(SerializeSubstitute(time.Month.ToString(CultureInfo.InvariantCulture)));
-                    serializedText.Append(Sep);
-                    serializedText.Append(SerializeSubstitute(time.Day.ToString(CultureInfo.InvariantCulture)));
+                    serializedText.Append(time.Day.ToString(CultureInfo.InvariantCulture));
                     serializedText.Append(Sep);
                 }
                 else
                 {
-                    serializedText.Append(SerializeSubstitute(time.TimeOfDay.ToString(TimeOfDayFormat, DateTimeFormatInfo.InvariantInfo)));
+                    serializedText.Append(time.Week.ToString(CultureInfo.InvariantCulture));
                     serializedText.Append(Sep);
-                    serializedText.Append(SerializeSubstitute(time.Month.ToString(CultureInfo.InvariantCulture)));
-                    serializedText.Append(Sep);
-                    serializedText.Append(SerializeSubstitute(time.Week.ToString(CultureInfo.InvariantCulture)));
-                    serializedText.Append(Sep);
-                    serializedText.Append(SerializeSubstitute(((int)time.DayOfWeek).ToString(CultureInfo.InvariantCulture)));
+                    serializedText.Append(((int)time.DayOfWeek).ToString(CultureInfo.InvariantCulture));
                     serializedText.Append(Sep);
                 }
                 serializedText.Append(Rhs);
