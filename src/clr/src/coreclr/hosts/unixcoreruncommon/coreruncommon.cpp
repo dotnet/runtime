@@ -321,7 +321,10 @@ int ExecuteManagedAssembly(
     {
         nativeDllSearchDirs.append(":");
         nativeDllSearchDirs.append(coreLibraries);
-        AddFilesFromDirectoryToTpaList(coreLibraries, tpaList);
+        if (std::strcmp(coreLibraries, clrFilesAbsolutePath) != 0)
+        {
+            AddFilesFromDirectoryToTpaList(coreLibraries, tpaList);
+        }
     }
     nativeDllSearchDirs.append(":");
     nativeDllSearchDirs.append(clrFilesAbsolutePath);
