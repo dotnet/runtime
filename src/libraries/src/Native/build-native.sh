@@ -146,8 +146,8 @@ while :; do
         arm)
             __BuildArch=arm
             ;;
-        arm-softfp)
-            __BuildArch=arm-softfp
+        armel)
+            __BuildArch=armel
             ;;
         arm64)
             __BuildArch=arm64

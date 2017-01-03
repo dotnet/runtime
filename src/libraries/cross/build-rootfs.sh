@@ -3,8 +3,8 @@
 usage()
 {
     echo "Usage: $0 [BuildArch] [UbuntuCodeName]"
-    echo "BuildArch can be: arm, arm-softfp, arm64, x86"
-    echo "UbuntuCodeName - optional, Code name for Ubuntu, can be: trusty(default), vivid, wily, xenial. If BuildArch is arm-softfp, UbuntuCodeName is ignored."
+    echo "BuildArch can be: arm, armel, arm64, x86"
+    echo "UbuntuCodeName - optional, Code name for Ubuntu, can be: trusty(default), vivid, wily, xenial. If BuildArch is armel, UbuntuCodeName is ignored."
     exit 1
 }
 
@@ -30,6 +30,8 @@ __UbuntuPackages+=" zlib1g-dev"
 if [ -z "$LLVM_ARM_HOME" ]; then
     __LLDB_Package="lldb-3.6-dev"
 fi
+ 
+
 
 __BuildArch=arm
 __UbuntuArch=armhf
@@ -60,11 +62,10 @@ for i in "$@" ; do
             __UbuntuArch=i386
             __UbuntuRepo="http://archive.ubuntu.com/ubuntu"
             ;;
-        arm-softfp)
-            __BuildArch=arm-softfp
+        armel)
+            __BuildArch=armel
             __UbuntuArch=armel
             __UbuntuRepo="http://ftp.debian.org/debian/"
-            __UbuntuPackages+=" ${__LLDB_Package:-}"
             __MachineTriple=arm-linux-gnueabi
             __UbuntuCodeName=jessie
             ;;
@@ -92,6 +93,11 @@ done
 if [[ "$__BuildArch" == "arm" ]]; then
     __UbuntuPackages+=" ${__LLDB_Package:-}"
 fi
+
+if [ "$__BuildArch" == "armel" ]; then  
+    __LLDB_Package="lldb-3.5-dev"
+    __UbuntuPackages+=" ${__LLDB_Package:-}"
+fi 
 
 __RootfsDir="$__CrossDir/rootfs/$__BuildArch"
 
