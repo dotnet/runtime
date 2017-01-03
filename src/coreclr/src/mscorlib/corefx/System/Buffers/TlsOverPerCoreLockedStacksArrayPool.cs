@@ -80,7 +80,7 @@ namespace System.Buffers
             {
                 // No need to log the empty array.  Our pool is effectively infinite
                 // and we'll never allocate for rents and never store for returns.
-                return EmptyArray<T>.Value;
+                return Array.Empty<T>();
             }
 
             ArrayPoolEventSource log = ArrayPoolEventSource.Log;
