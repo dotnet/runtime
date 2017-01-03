@@ -1227,7 +1227,7 @@ bool DoesOSSupportAVX()
     PGETENABLEDXSTATEFEATURES pfnGetEnabledXStateFeatures = NULL;
     
     HMODULE hMod = WszLoadLibraryEx(WINDOWS_KERNEL32_DLLNAME_W, NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
-    if(hMod = NULL)
+    if(hMod == NULL)
         return FALSE;
         
     pfnGetEnabledXStateFeatures = (PGETENABLEDXSTATEFEATURES)GetProcAddress(hMod, "GetEnabledXStateFeatures");
