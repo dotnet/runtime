@@ -4,14 +4,14 @@
   <PropertyGroup>
     <!-- common properties that point to output of native build.  Can be overriden in case of 
          a coordinating build that produces all packages from OS-specific native builds -->
-    <LinuxNativePath Condition="'$(LinuxNativePath)' == ''">$(BinDir)Linux.$(PackagePlatform).$(ConfigurationGroup)\Native\</LinuxNativePath>
-    <WinNativeAOTPath Condition="'$(WinNativeAOTPath)' == ''">$(BinDir)Windows_NT.$(PackagePlatform).$(ConfigurationGroup)\Native_aot\</WinNativeAOTPath>
-    <WinNativePath Condition="'$(WinNativePath)' == ''">$(BinDir)Windows_NT.$(PackagePlatform).$(ConfigurationGroup)\Native\</WinNativePath>
+    <LinuxNativePath Condition="'$(LinuxNativePath)' == ''">$(BinDir)Linux.$(PackagePlatform).$(ConfigurationGroup)\native\</LinuxNativePath>
+    <WinNativeAOTPath Condition="'$(WinNativeAOTPath)' == ''">$(BinDir)Windows_NT.$(PackagePlatform).$(ConfigurationGroup)\native_aot\</WinNativeAOTPath>
+    <WinNativePath Condition="'$(WinNativePath)' == ''">$(BinDir)Windows_NT.$(PackagePlatform).$(ConfigurationGroup)\native\</WinNativePath>
     <RHELNativePath Condition="'$(RHELNativePath)' == ''">$(LinuxNativePath)</RHELNativePath>
     <DebianNativePath Condition="'$(DebianNativePath)' == ''">$(LinuxNativePath)</DebianNativePath>
     <Fedora23NativePath Condition="'$(Fedora23NativePath)' == ''">$(LinuxNativePath)</Fedora23NativePath>
     <Fedora24NativePath Condition="'$(Fedora24NativePath)' == ''">$(LinuxNativePath)</Fedora24NativePath>
-    <OSXNativePath Condition="'$(OSXNativePath)' == ''">$(BinDir)OSX.$(PackagePlatform).$(ConfigurationGroup)\Native\</OSXNativePath>
+    <OSXNativePath Condition="'$(OSXNativePath)' == ''">$(BinDir)OSX.$(PackagePlatform).$(ConfigurationGroup)\native\</OSXNativePath>
     <OpenSuse132NativePath Condition="'$(OpenSuse132NativePath)' == ''">$(LinuxNativePath)</OpenSuse132NativePath>
     <OpenSuse421NativePath Condition="'$(OpenSuse421NativePath)' == ''">$(LinuxNativePath)</OpenSuse421NativePath>
     <Ubuntu1404NativePath Condition="'$(Ubuntu1404NativePath)' == ''">$(LinuxNativePath)</Ubuntu1404NativePath>

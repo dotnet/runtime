@@ -71,10 +71,10 @@ echo Commencing build of native components
 echo.
 
 if %__CMakeBinDir% == "" (
-    set "__CMakeBinDir=%__binDir%\Windows_NT.%__BuildArch%.%CMAKE_BUILD_TYPE%\Native"
+    set "__CMakeBinDir=%__binDir%\Windows_NT.%__BuildArch%.%CMAKE_BUILD_TYPE%\native"
 )
 if %__IntermediatesDir% == "" (
-    set "__IntermediatesDir=%__binDir%\obj\Windows_NT.%__BuildArch%.%CMAKE_BUILD_TYPE%\Native"
+    set "__IntermediatesDir=%__binDir%\obj\Windows_NT.%__BuildArch%.%CMAKE_BUILD_TYPE%\native"
 )
 set "__CMakeBinDir=%__CMakeBinDir:\=/%"
 set "__IntermediatesDir=%__IntermediatesDir:\=/%"
@@ -127,13 +127,13 @@ IF ERRORLEVEL 1 (
 )
 
 :: Copy to vertical runtime directory
-xcopy /yqs "%__binDir%\Windows_NT.%__BuildArch%.%CMAKE_BUILD_TYPE%\Native\*" "%__RuntimePath%"
+xcopy /yqs "%__binDir%\Windows_NT.%__BuildArch%.%CMAKE_BUILD_TYPE%\native\*" "%__RuntimePath%"
 
 echo Done building Native components
 
 :BuildNativeAOT
-set "__CMakeBinDir=%__binDir%\Windows_NT.%__BuildArch%.%CMAKE_BUILD_TYPE%\Native_aot"
-set "__IntermediatesDir=%__binDir%\obj\Windows_NT.%__BuildArch%.%CMAKE_BUILD_TYPE%\Native_aot"
+set "__CMakeBinDir=%__binDir%\Windows_NT.%__BuildArch%.%CMAKE_BUILD_TYPE%\native_aot"
+set "__IntermediatesDir=%__binDir%\obj\Windows_NT.%__BuildArch%.%CMAKE_BUILD_TYPE%\native_aot"
 set "__CMakeBinDir=%__CMakeBinDir:\=/%"
 set "__IntermediatesDir=%__IntermediatesDir:\=/%"
 if exist "%__IntermediatesDir%" rd /s /q "%__IntermediatesDir%"
