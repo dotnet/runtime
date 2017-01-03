@@ -99,12 +99,12 @@ namespace System
             {
                 StringSerializer s = new StringSerializer(source);
 
-                string id = s.GetNextStringValue(canEndWithoutSeparator: false);
-                TimeSpan baseUtcOffset = s.GetNextTimeSpanValue(canEndWithoutSeparator: false);
-                string displayName = s.GetNextStringValue(canEndWithoutSeparator: false);
-                string standardName = s.GetNextStringValue(canEndWithoutSeparator: false);
-                string daylightName = s.GetNextStringValue(canEndWithoutSeparator: false);
-                AdjustmentRule[] rules = s.GetNextAdjustmentRuleArrayValue(canEndWithoutSeparator: false);
+                string id = s.GetNextStringValue();
+                TimeSpan baseUtcOffset = s.GetNextTimeSpanValue();
+                string displayName = s.GetNextStringValue();
+                string standardName = s.GetNextStringValue();
+                string daylightName = s.GetNextStringValue();
+                AdjustmentRule[] rules = s.GetNextAdjustmentRuleArrayValue();
 
                 try
                 {
@@ -253,26 +253,12 @@ namespace System
             /// Also <see cref="_state"/> is set to either <see cref="State.StartOfToken"/> or
             /// <see cref="State.EndOfLine"/> on exit.
             /// </summary>
-            /// <param name="canEndWithoutSeparator">
-            /// - When set to 'false' the function requires the string token end with a ";".
-            /// - When set to 'true' the function requires that the string token end with either
-            ///   ";", <see cref="State.EndOfLine"/>, or "]". In the case that "]" is the terminal
-            ///   case the <see cref="_currentTokenStartIndex"/> is left pointing at index "]" to
-            ///   allow the caller to update its depth logic.
-            /// </param>
-            private string GetNextStringValue(bool canEndWithoutSeparator)
+            private string GetNextStringValue()
             {
                 // first verify the internal state of the object
                 if (_state == State.EndOfLine)
                 {
-                    if (canEndWithoutSeparator)
-                    {
-                        return null;
-                    }
-                    else
-                    {
-                        throw new SerializationException(Environment.GetResourceString("Serialization_InvalidData"));
-                    }
+                    throw new SerializationException(Environment.GetResourceString("Serialization_InvalidData"));
                 }
                 if (_currentTokenStartIndex < 0 || _currentTokenStartIndex >= _serializedText.Length)
                 {
@@ -303,20 +289,8 @@ namespace System
                                 throw new SerializationException(Environment.GetResourceString("Serialization_InvalidData"));
 
                             case Rhs:
-                                if (canEndWithoutSeparator)
-                                {
-                                    // if ';' is not a required terminal then treat ']' as a terminal
-                                    // leave _currentTokenStartIndex pointing to ']' so our callers can handle
-                                    // this special case
-                                    _currentTokenStartIndex = i;
-                                    _state = State.StartOfToken;
-                                    return token.ToString();
-                                }
-                                else
-                                {
-                                    // ']' is an unexpected character
-                                    throw new SerializationException(Environment.GetResourceString("Serialization_InvalidData"));
-                                }
+                                // ']' is an unexpected character
+                                throw new SerializationException(Environment.GetResourceString("Serialization_InvalidData"));
 
                             case Sep:
                                 _currentTokenStartIndex = i + 1;
@@ -349,21 +323,15 @@ namespace System
                     throw new SerializationException(Environment.GetResourceString("Serialization_InvalidEscapeSequence", string.Empty));
                 }
 
-                if (!canEndWithoutSeparator)
-                {
-                    throw new SerializationException(Environment.GetResourceString("Serialization_InvalidData"));
-                }
-                _currentTokenStartIndex = _serializedText.Length;
-                _state = State.EndOfLine;
-                return StringBuilderCache.GetStringAndRelease(token);
+                throw new SerializationException(Environment.GetResourceString("Serialization_InvalidData"));
             }
 
             /// <summary>
             /// Helper function to read a DateTime token.
             /// </summary>
-            private DateTime GetNextDateTimeValue(bool canEndWithoutSeparator, string format)
+            private DateTime GetNextDateTimeValue(string format)
             {
-                string token = GetNextStringValue(canEndWithoutSeparator);
+                string token = GetNextStringValue();
                 DateTime time;
                 if (!DateTime.TryParseExact(token, format, DateTimeFormatInfo.InvariantInfo, DateTimeStyles.None, out time))
                 {
@@ -375,9 +343,9 @@ namespace System
             /// <summary>
             /// Helper function to read a TimeSpan token.
             /// </summary>
-            private TimeSpan GetNextTimeSpanValue(bool canEndWithoutSeparator)
+            private TimeSpan GetNextTimeSpanValue()
             {
-                int token = GetNextInt32Value(canEndWithoutSeparator);
+                int token = GetNextInt32Value();
                 try
                 {
                     return new TimeSpan(hours: 0, minutes: token, seconds: 0);
@@ -391,9 +359,9 @@ namespace System
             /// <summary>
             /// Helper function to read an Int32 token.
             /// </summary>
-            private int GetNextInt32Value(bool canEndWithoutSeparator)
+            private int GetNextInt32Value()
             {
-                string token = GetNextStringValue(canEndWithoutSeparator);
+                string token = GetNextStringValue();
                 int value;
                 if (!int.TryParse(token, NumberStyles.AllowLeadingSign /* "[sign]digits" */, CultureInfo.InvariantCulture, out value))
                 {
@@ -405,32 +373,29 @@ namespace System
             /// <summary>
             /// Helper function to read an AdjustmentRule[] token.
             /// </summary>
-            private AdjustmentRule[] GetNextAdjustmentRuleArrayValue(bool canEndWithoutSeparator)
+            private AdjustmentRule[] GetNextAdjustmentRuleArrayValue()
             {
                 List<AdjustmentRule> rules = new List<AdjustmentRule>(1);
                 int count = 0;
 
                 // individual AdjustmentRule array elements do not require semicolons
-                AdjustmentRule rule = GetNextAdjustmentRuleValue(canEndWithoutSeparator: true);
+                AdjustmentRule rule = GetNextAdjustmentRuleValue();
                 while (rule != null)
                 {
                     rules.Add(rule);
                     count++;
 
-                    rule = GetNextAdjustmentRuleValue(canEndWithoutSeparator: true);
+                    rule = GetNextAdjustmentRuleValue();
                 }
 
-                if (!canEndWithoutSeparator)
+                // the AdjustmentRule array must end with a separator
+                if (_state == State.EndOfLine)
                 {
-                    // the AdjustmentRule array must end with a separator
-                    if (_state == State.EndOfLine)
-                    {
-                        throw new SerializationException(Environment.GetResourceString("Serialization_InvalidData"));
-                    }
-                    if (_currentTokenStartIndex < 0 || _currentTokenStartIndex >= _serializedText.Length)
-                    {
-                        throw new SerializationException(Environment.GetResourceString("Serialization_InvalidData"));
-                    }
+                    throw new SerializationException(Environment.GetResourceString("Serialization_InvalidData"));
+                }
+                if (_currentTokenStartIndex < 0 || _currentTokenStartIndex >= _serializedText.Length)
+                {
+                    throw new SerializationException(Environment.GetResourceString("Serialization_InvalidData"));
                 }
 
                 return count != 0 ? rules.ToArray() : null;
@@ -439,19 +404,12 @@ namespace System
             /// <summary>
             /// Helper function to read an AdjustmentRule token.
             /// </summary>
-            private AdjustmentRule GetNextAdjustmentRuleValue(bool canEndWithoutSeparator)
+            private AdjustmentRule GetNextAdjustmentRuleValue()
             {
                 // first verify the internal state of the object
                 if (_state == State.EndOfLine)
                 {
-                    if (canEndWithoutSeparator)
-                    {
-                        return null;
-                    }
-                    else
-                    {
-                        throw new SerializationException(Environment.GetResourceString("Serialization_InvalidData"));
-                    }
+                    return null;
                 }
 
                 if (_currentTokenStartIndex < 0 || _currentTokenStartIndex >= _serializedText.Length)
@@ -472,11 +430,11 @@ namespace System
                 }
                 _currentTokenStartIndex++;
 
-                DateTime dateStart = GetNextDateTimeValue(false, DateTimeFormat);
-                DateTime dateEnd = GetNextDateTimeValue(false, DateTimeFormat);
-                TimeSpan daylightDelta = GetNextTimeSpanValue(canEndWithoutSeparator: false);
-                TransitionTime daylightStart = GetNextTransitionTimeValue(canEndWithoutSeparator: false);
-                TransitionTime daylightEnd = GetNextTransitionTimeValue(canEndWithoutSeparator: false);
+                DateTime dateStart = GetNextDateTimeValue(DateTimeFormat);
+                DateTime dateEnd = GetNextDateTimeValue(DateTimeFormat);
+                TimeSpan daylightDelta = GetNextTimeSpanValue();
+                TransitionTime daylightStart = GetNextTransitionTimeValue();
+                TransitionTime daylightEnd = GetNextTransitionTimeValue();
                 TimeSpan baseUtcOffsetDelta = TimeSpan.Zero;
                 int noDaylightTransitions = 0;
 
@@ -491,13 +449,13 @@ namespace System
                 if ((_serializedText[_currentTokenStartIndex] >= '0' && _serializedText[_currentTokenStartIndex] <= '9') ||
                     _serializedText[_currentTokenStartIndex] == '-' || _serializedText[_currentTokenStartIndex] == '+')
                 {
-                    baseUtcOffsetDelta = GetNextTimeSpanValue(canEndWithoutSeparator: false);
+                    baseUtcOffsetDelta = GetNextTimeSpanValue();
                 }
 
                 // Check if we have NoDaylightTransitions in the serialized string and then deserialize it
                 if ((_serializedText[_currentTokenStartIndex] >= '0' && _serializedText[_currentTokenStartIndex] <= '1'))
                 {
-                    noDaylightTransitions = GetNextInt32Value(canEndWithoutSeparator: false);
+                    noDaylightTransitions = GetNextInt32Value();
                 }
 
                 if (_state == State.EndOfLine || _currentTokenStartIndex >= _serializedText.Length)
@@ -546,7 +504,7 @@ namespace System
             /// <summary>
             /// Helper function to read a TransitionTime token.
             /// </summary>
-            private TransitionTime GetNextTransitionTimeValue(bool canEndWithoutSeparator)
+            private TransitionTime GetNextTransitionTimeValue()
             {
                 // first verify the internal state of the object
 
@@ -572,7 +530,7 @@ namespace System
                 }
                 _currentTokenStartIndex++;
 
-                int isFixedDate = GetNextInt32Value(canEndWithoutSeparator: false);
+                int isFixedDate = GetNextInt32Value();
 
                 if (isFixedDate != 0 && isFixedDate != 1)
                 {
@@ -581,14 +539,14 @@ namespace System
 
                 TransitionTime transition;
 
-                DateTime timeOfDay = GetNextDateTimeValue(false, TimeOfDayFormat);
+                DateTime timeOfDay = GetNextDateTimeValue(TimeOfDayFormat);
                 timeOfDay = new DateTime(1, 1, 1, timeOfDay.Hour, timeOfDay.Minute, timeOfDay.Second, timeOfDay.Millisecond);
 
-                int month = GetNextInt32Value(canEndWithoutSeparator: false);
+                int month = GetNextInt32Value();
 
                 if (isFixedDate == 1)
                 {
-                    int day = GetNextInt32Value(canEndWithoutSeparator: false);
+                    int day = GetNextInt32Value();
 
                     try
                     {
@@ -601,8 +559,8 @@ namespace System
                 }
                 else
                 {
-                    int week = GetNextInt32Value(canEndWithoutSeparator: false);
-                    int dayOfWeek = GetNextInt32Value(canEndWithoutSeparator: false);
+                    int week = GetNextInt32Value();
+                    int dayOfWeek = GetNextInt32Value();
 
                     try
                     {
@@ -645,7 +603,7 @@ namespace System
                     sepFound = true;
                 }
 
-                if (!sepFound && !canEndWithoutSeparator)
+                if (!sepFound)
                 {
                     // we MUST end on a separator
                     throw new SerializationException(Environment.GetResourceString("Serialization_InvalidData"));
