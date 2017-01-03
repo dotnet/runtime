@@ -41,7 +41,14 @@ namespace System.Net.Sockets
 
         public static SocketError GetLastSocketError()
         {
-            return (SocketError)Marshal.GetLastWin32Error();
+            int win32Error = Marshal.GetLastWin32Error();
+
+            if (win32Error == 0)
+            {
+                NetEventSource.Fail(null, "GetLastWin32Error() returned zero.");
+            }
+
+            return (SocketError)win32Error;
         }
 
         public static SocketError CreateSocket(AddressFamily addressFamily, SocketType socketType, ProtocolType protocolType, out SafeCloseSocket socket)
@@ -62,7 +69,7 @@ namespace System.Net.Sockets
 
             if (errorCode == SocketError.SocketError)
             {
-                errorCode = (SocketError)Marshal.GetLastWin32Error();
+                errorCode = GetLastSocketError();
             }
 
             willBlock = intBlocking == 0;
@@ -153,7 +160,7 @@ namespace System.Net.Sockets
 
                 if ((SocketError)errorCode == SocketError.SocketError)
                 {
-                    errorCode = (SocketError)Marshal.GetLastWin32Error();
+                    errorCode = GetLastSocketError();
                 }
 
                 return errorCode;
@@ -278,7 +285,7 @@ namespace System.Net.Sockets
 
                 if ((SocketError)errorCode == SocketError.SocketError)
                 {
-                    errorCode = (SocketError)Marshal.GetLastWin32Error();
+                    errorCode = GetLastSocketError();
                 }
 
                 return errorCode;
@@ -341,7 +348,7 @@ namespace System.Net.Sockets
                     IntPtr.Zero,
                     IntPtr.Zero) == SocketError.SocketError)
                 {
-                    errorCode = (SocketError)Marshal.GetLastWin32Error();
+                    errorCode = GetLastSocketError();
                 }
             }
             finally
@@ -1018,7 +1025,7 @@ namespace System.Net.Sockets
             // This can throw ObjectDisposedException (handle, and retrieving the delegate).
             if (!socket.DisconnectExBlocking(handle, IntPtr.Zero, (int)(reuseSocket ? TransmitFileOptions.ReuseSocket : 0), 0))
             {
-                errorCode = (SocketError)Marshal.GetLastWin32Error();
+                errorCode = GetLastSocketError();
             }
 
             return errorCode;

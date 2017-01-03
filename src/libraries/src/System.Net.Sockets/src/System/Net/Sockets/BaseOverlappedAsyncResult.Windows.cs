@@ -111,7 +111,7 @@ namespace System.Net.Sockets
                         try
                         {
                             // The async IO completed with a failure.
-                            // Here we need to call WSAGetOverlappedResult() just so Marshal.GetLastWin32Error() will return the correct error.
+                            // Here we need to call WSAGetOverlappedResult() just so GetLastSocketError() will return the correct error.
                             SocketFlags ignore;
                             bool success = Interop.Winsock.WSAGetOverlappedResult(
                                 socket.SafeHandle,
@@ -121,11 +121,7 @@ namespace System.Net.Sockets
                                 out ignore);
                             if (!success)
                             {
-                                socketError = (SocketError)Marshal.GetLastWin32Error();
-                                if (socketError == 0)
-                                {
-                                    NetEventSource.Fail(asyncResult, $"socketError:0 numBytes:{numBytes}");
-                                }
+                                socketError = SocketPal.GetLastSocketError();
                             }
                             if (success)
                             {
