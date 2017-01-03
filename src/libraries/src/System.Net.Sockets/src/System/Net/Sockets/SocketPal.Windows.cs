@@ -330,37 +330,109 @@ namespace System.Net.Sockets
             return SocketError.Success;
         }
 
-        public static SocketError ReceiveMessageFrom(Socket socket, SafeCloseSocket handle, byte[] buffer, int offset, int size, ref SocketFlags socketFlags, Internals.SocketAddress socketAddress, out Internals.SocketAddress receiveAddress, out IPPacketInformation ipPacketInformation, out int bytesTransferred)
+        public static unsafe IPPacketInformation GetIPPacketInformation(Interop.Winsock.ControlData* controlBuffer)
         {
-            ReceiveMessageOverlappedAsyncResult asyncResult = new ReceiveMessageOverlappedAsyncResult(socket, null, null);
-            asyncResult.SetUnmanagedStructures(buffer, offset, size, socketAddress, socketFlags);
+            IPAddress address = IPAddress.None;
+            if (controlBuffer->length != UIntPtr.Zero)
+            {
+                address = new IPAddress((long)controlBuffer->address);
+            }
 
-            SocketError errorCode = SocketError.Success;
+            return new IPPacketInformation(address, (int)controlBuffer->index);
+        }
+
+        public static unsafe IPPacketInformation GetIPPacketInformation(Interop.Winsock.ControlDataIPv6* controlBuffer)
+        {
+            IPAddress address = IPAddress.IPv6None;
+            if (controlBuffer->length != UIntPtr.Zero)
+            {
+                var addressArray = new byte[Interop.Winsock.IPv6AddressLength];
+                Marshal.Copy((IntPtr)(controlBuffer->address), addressArray, 0, Interop.Winsock.IPv6AddressLength);
+                address = new IPAddress(addressArray);
+            }
+
+            return new IPPacketInformation(address, (int)controlBuffer->index);
+        }
+
+        public static unsafe SocketError ReceiveMessageFrom(Socket socket, SafeCloseSocket handle, byte[] buffer, int offset, int size, ref SocketFlags socketFlags, Internals.SocketAddress socketAddress, out Internals.SocketAddress receiveAddress, out IPPacketInformation ipPacketInformation, out int bytesTransferred)
+        {
+            bool ipv4, ipv6;
+            Socket.GetIPProtocolInformation(socket.AddressFamily, socketAddress, out ipv4, out ipv6);
 
             bytesTransferred = 0;
-            try
+            receiveAddress = socketAddress;
+            ipPacketInformation = default(IPPacketInformation);
+
+            fixed (byte * ptrBuffer = buffer)
+            fixed (byte * ptrSocketAddress = socketAddress.Buffer)
             {
-                // This can throw ObjectDisposedException (retrieving the delegate AND resolving the handle).
-                if (socket.WSARecvMsgBlocking(
-                    handle.DangerousGetHandle(),
-                    Marshal.UnsafeAddrOfPinnedArrayElement(asyncResult._messageBuffer, 0),
-                    out bytesTransferred,
-                    IntPtr.Zero,
-                    IntPtr.Zero) == SocketError.SocketError)
+                Interop.Winsock.WSAMsg wsaMsg;
+                wsaMsg.socketAddress = (IntPtr)ptrSocketAddress;
+                wsaMsg.addressLength = (uint)socketAddress.Size;
+                wsaMsg.flags = socketFlags;
+
+                WSABuffer wsaBuffer;
+                wsaBuffer.Length = size;
+                wsaBuffer.Pointer = (IntPtr)(ptrBuffer + offset);
+                wsaMsg.buffers = (IntPtr)(&wsaBuffer);
+                wsaMsg.count = 1;
+
+                if (ipv4)
                 {
-                    errorCode = GetLastSocketError();
+                    Interop.Winsock.ControlData controlBuffer;
+                    wsaMsg.controlBuffer.Pointer = (IntPtr)(&controlBuffer);
+                    wsaMsg.controlBuffer.Length = sizeof(Interop.Winsock.ControlData);
+
+                    if (socket.WSARecvMsgBlocking(
+                        handle.DangerousGetHandle(),
+                        (IntPtr)(&wsaMsg),
+                        out bytesTransferred,
+                        IntPtr.Zero,
+                        IntPtr.Zero) == SocketError.SocketError)
+                    {
+                        return GetLastSocketError();
+                    }
+
+                    ipPacketInformation = GetIPPacketInformation(&controlBuffer);
                 }
-            }
-            finally
-            {
-                asyncResult.SyncReleaseUnmanagedStructures();
+                else if (ipv6)
+                {
+                    Interop.Winsock.ControlDataIPv6 controlBuffer;
+                    wsaMsg.controlBuffer.Pointer = (IntPtr)(&controlBuffer);
+                    wsaMsg.controlBuffer.Length = sizeof(Interop.Winsock.ControlDataIPv6);
+
+                    if (socket.WSARecvMsgBlocking(
+                        handle.DangerousGetHandle(),
+                        (IntPtr)(&wsaMsg),
+                        out bytesTransferred,
+                        IntPtr.Zero,
+                        IntPtr.Zero) == SocketError.SocketError)
+                    {
+                        return GetLastSocketError();
+                    }
+
+                    ipPacketInformation = GetIPPacketInformation(&controlBuffer);
+                }
+                else
+                {
+                    wsaMsg.controlBuffer.Pointer = IntPtr.Zero;
+                    wsaMsg.controlBuffer.Length = 0;
+
+                    if (socket.WSARecvMsgBlocking(
+                        handle.DangerousGetHandle(),
+                        (IntPtr)(&wsaMsg),
+                        out bytesTransferred,
+                        IntPtr.Zero,
+                        IntPtr.Zero) == SocketError.SocketError)
+                    {
+                        return GetLastSocketError();
+                    }
+                }
+
+                socketFlags = wsaMsg.flags;
             }
 
-            socketFlags = asyncResult.SocketFlags;
-            receiveAddress = asyncResult.SocketAddress;
-            ipPacketInformation = asyncResult.IPPacketInformation;
-
-            return errorCode;
+            return SocketError.Success;
         }
 
         public static unsafe SocketError ReceiveFrom(SafeCloseSocket handle, byte[] buffer, int offset, int size, SocketFlags socketFlags, byte[] socketAddress, ref int addressLength, out int bytesTransferred)

@@ -1161,28 +1161,17 @@ namespace System.Net.Sockets
 
         private unsafe void FinishOperationReceiveMessageFrom()
         {
-            IPAddress address = null;
             Interop.Winsock.WSAMsg* PtrMessage = (Interop.Winsock.WSAMsg*)Marshal.UnsafeAddrOfPinnedArrayElement(_wsaMessageBuffer, 0);
 
             if (_controlBuffer.Length == s_controlDataSize)
             {
                 // IPv4.
-                Interop.Winsock.ControlData controlData = Marshal.PtrToStructure<Interop.Winsock.ControlData>(PtrMessage->controlBuffer.Pointer);
-                if (controlData.length != UIntPtr.Zero)
-                {
-                    address = new IPAddress((long)controlData.address);
-                }
-                _receiveMessageFromPacketInfo = new IPPacketInformation(((address != null) ? address : IPAddress.None), (int)controlData.index);
+                _receiveMessageFromPacketInfo = SocketPal.GetIPPacketInformation((Interop.Winsock.ControlData*)PtrMessage->controlBuffer.Pointer);
             }
             else if (_controlBuffer.Length == s_controlDataIPv6Size)
             {
                 // IPv6.
-                Interop.Winsock.ControlDataIPv6 controlData = Marshal.PtrToStructure<Interop.Winsock.ControlDataIPv6>(PtrMessage->controlBuffer.Pointer);
-                if (controlData.length != UIntPtr.Zero)
-                {
-                    address = new IPAddress(controlData.address);
-                }
-                _receiveMessageFromPacketInfo = new IPPacketInformation(((address != null) ? address : IPAddress.IPv6None), (int)controlData.index);
+                _receiveMessageFromPacketInfo = SocketPal.GetIPPacketInformation((Interop.Winsock.ControlDataIPv6*)PtrMessage->controlBuffer.Pointer);
             }
             else
             {
