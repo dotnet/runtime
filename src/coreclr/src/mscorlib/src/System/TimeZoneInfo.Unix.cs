@@ -230,7 +230,7 @@ namespace System
         /// <remarks>
         /// Lines that start with # are comments and are skipped.
         /// </remarks>
-        private static IEnumerable<string> GetTimeZoneIds(string timeZoneDirectory)
+        private static List<string> GetTimeZoneIds(string timeZoneDirectory)
         {
             string[] zoneTabFileLines = null;
             try
@@ -240,38 +240,41 @@ namespace System
             catch (IOException) { }
             catch (UnauthorizedAccessException) { }
 
-            List<string> timeZoneIds = new List<string>();
-            if (zoneTabFileLines != null)
+            if (zoneTabFileLines == null)
             {
-                foreach (string zoneTabFileLine in zoneTabFileLines)
+                return new List<string>();
+            }
+
+            List<string> timeZoneIds = new List<string>(zoneTabFileLines.Length);
+
+            foreach (string zoneTabFileLine in zoneTabFileLines)
+            {
+                if (!string.IsNullOrEmpty(zoneTabFileLine) && zoneTabFileLine[0] != '#')
                 {
-                    if (!string.IsNullOrEmpty(zoneTabFileLine) && !zoneTabFileLine.StartsWith("#"))
+                    // the format of the line is "country-code \t coordinates \t TimeZone Id \t comments"
+
+                    int firstTabIndex = zoneTabFileLine.IndexOf('\t');
+                    if (firstTabIndex != -1)
                     {
-                        // the format of the line is "country-code \t coordinates \t TimeZone Id \t comments"
-
-                        int firstTabIndex = zoneTabFileLine.IndexOf('\t');
-                        if (firstTabIndex != -1)
+                        int secondTabIndex = zoneTabFileLine.IndexOf('\t', firstTabIndex + 1);
+                        if (secondTabIndex != -1)
                         {
-                            int secondTabIndex = zoneTabFileLine.IndexOf('\t', firstTabIndex + 1);
-                            if (secondTabIndex != -1)
+                            string timeZoneId;
+                            int startIndex = secondTabIndex + 1;
+                            int thirdTabIndex = zoneTabFileLine.IndexOf('\t', startIndex);
+                            if (thirdTabIndex != -1)
                             {
-                                string timeZoneId;
-                                int startIndex = secondTabIndex + 1;
-                                int thirdTabIndex = zoneTabFileLine.IndexOf('\t', startIndex);
-                                if (thirdTabIndex != -1)
-                                {
-                                    int length = thirdTabIndex - startIndex;
-                                    timeZoneId = zoneTabFileLine.Substring(startIndex, length);
-                                }
-                                else
-                                {
-                                    timeZoneId = zoneTabFileLine.Substring(startIndex);
-                                }
+                                int length = thirdTabIndex - startIndex;
+                                timeZoneId = zoneTabFileLine.Substring(startIndex, length);
+                            }
+                            else
+                            {
+                                timeZoneId = zoneTabFileLine.Substring(startIndex);
+                            }
 
-                                if (!string.IsNullOrEmpty(timeZoneId))
-                                {
-                                    timeZoneIds.Add(timeZoneId);
-                                }
+                            if (!string.IsNullOrEmpty(timeZoneId))
+                            {
+                                timeZoneIds.Add(timeZoneId);
                             }
                         }
                     }
