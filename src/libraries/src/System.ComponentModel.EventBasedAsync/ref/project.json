@@ -1,9 +1,9 @@
 {
   "dependencies": {
-    "System.ComponentModel.Primitives": "4.4.0-beta-24902-02",
-    "System.ComponentModel": "4.4.0-beta-24902-02",
-    "System.Runtime": "4.4.0-beta-24902-02",
-    "System.Threading": "4.4.0-beta-24902-02"
+    "System.ComponentModel.Primitives": "4.4.0-beta-24903-01",
+    "System.ComponentModel": "4.4.0-beta-24903-01",
+    "System.Runtime": "4.4.0-beta-24903-01",
+    "System.Threading": "4.4.0-beta-24903-01"
   },
   "frameworks": {
     "netstandard1.7": {}
