@@ -157,7 +157,7 @@
       },
       "inputs": {
         "filename": "$(Build.SourcesDirectory)\\corefx\\build.cmd",
-        "arguments": "-buildArch=$(PB_Platform) -$(PB_ConfigurationGroup) -- toolsetDir=C:\\tools\\clr /p:SignType=$(PB_SignType)",
+        "arguments": "-buildArch=$(PB_Platform) -$(PB_ConfigurationGroup) -- /p:SignType=$(PB_SignType)",
         "workingFolder": "corefx",
         "failOnStandardError": "false"
       }

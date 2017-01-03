@@ -186,6 +186,12 @@
       "values": [],
       "defaultValue": ""
     },
+    "ToolSetDir": {
+      "description": "Native toolset directory",
+      "valueType": "passThrough",
+      "values": [],
+      "defaultValue": "toolSetDir=c:\\tools\\clr"
+    },
     "Sync": {
       "description": "MsBuild target that restores the packages.",
       "valueType": "target",
@@ -351,7 +357,8 @@
            "BuildArchitecture": "default", 
            "CmakeBuildType": "default",           
            "HostOs": "default",
-           "ProcessorCount": "default"
+           "ProcessorCount": "default",
+           "ToolSetDir": "default"
          }
       }
     },
