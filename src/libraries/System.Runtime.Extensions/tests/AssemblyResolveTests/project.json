@@ -1,11 +1,11 @@
 {
   "dependencies": {
-    "System.Runtime": "4.4.0-beta-24903-01",
-    "System.Runtime.Extensions": "4.4.0-beta-24903-01",
-    "System.Resources.ResourceManager": "4.4.0-beta-24903-01",
-    "System.Resources.Reader": "4.4.0-beta-24903-01",
-    "System.Reflection": "4.4.0-beta-24903-01",
-    "System.Threading.Thread": "4.4.0-beta-24903-01"
+    "System.Runtime": "4.4.0-beta-24903-02",
+    "System.Runtime.Extensions": "4.4.0-beta-24903-02",
+    "System.Resources.ResourceManager": "4.4.0-beta-24903-02",
+    "System.Resources.Reader": "4.4.0-beta-24903-02",
+    "System.Reflection": "4.4.0-beta-24903-02",
+    "System.Threading.Thread": "4.4.0-beta-24903-02"
   },
   "frameworks": {
     "netstandard1.3": {}
