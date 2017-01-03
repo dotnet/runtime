@@ -77,6 +77,10 @@ namespace System.Linq
             }
         }
 
+        /// <summary>
+        /// An iterator that filters each item of an <see cref="IEnumerable{TSource}"/>.
+        /// </summary>
+        /// <typeparam name="TSource">The type of the source enumerable.</typeparam>
         internal sealed class WhereEnumerableIterator<TSource> : Iterator<TSource>, IIListProvider<TSource>
         {
             private readonly IEnumerable<TSource> _source;
@@ -197,6 +201,10 @@ namespace System.Linq
             }
         }
 
+        /// <summary>
+        /// An iterator that filters each item of a <see cref="T:TSource[]"/>.
+        /// </summary>
+        /// <typeparam name="TSource">The type of the source array.</typeparam>
         internal sealed class WhereArrayIterator<TSource> : Iterator<TSource>, IIListProvider<TSource>
         {
             private readonly TSource[] _source;
@@ -299,6 +307,10 @@ namespace System.Linq
             }
         }
 
+        /// <summary>
+        /// An iterator that filters each item of a <see cref="List{TSource}"/>.
+        /// </summary>
+        /// <typeparam name="TSource">The type of the source list.</typeparam>
         internal sealed class WhereListIterator<TSource> : Iterator<TSource>, IIListProvider<TSource>
         {
             private readonly List<TSource> _source;
@@ -411,6 +423,11 @@ namespace System.Linq
             }
         }
 
+        /// <summary>
+        /// An iterator that filters, then maps, each item of a <see cref="T:TSource[]"/>.
+        /// </summary>
+        /// <typeparam name="TSource">The type of the source array.</typeparam>
+        /// <typeparam name="TResult">The type of the mapped items.</typeparam>
         internal sealed class WhereSelectArrayIterator<TSource, TResult> : Iterator<TResult>, IIListProvider<TResult>
         {
             private readonly TSource[] _source;
@@ -515,6 +532,11 @@ namespace System.Linq
             }
         }
 
+        /// <summary>
+        /// An iterator that filters, then maps, each item of a <see cref="List{TSource}"/>.
+        /// </summary>
+        /// <typeparam name="TSource">The type of the source list.</typeparam>
+        /// <typeparam name="TResult">The type of the mapped items.</typeparam>
         internal sealed class WhereSelectListIterator<TSource, TResult> : Iterator<TResult>, IIListProvider<TResult>
         {
             private readonly List<TSource> _source;
@@ -629,6 +651,11 @@ namespace System.Linq
             }
         }
 
+        /// <summary>
+        /// An iterator that filters, then maps, each item of an <see cref="IEnumerable{TSource}"/>.
+        /// </summary>
+        /// <typeparam name="TSource">The type of the source enumerable.</typeparam>
+        /// <typeparam name="TResult">The type of the mapped items.</typeparam>
         internal sealed class WhereSelectEnumerableIterator<TSource, TResult> : Iterator<TResult>, IIListProvider<TResult>
         {
             private readonly IEnumerable<TSource> _source;

@@ -77,40 +77,36 @@ namespace System.Linq
         TElement TryGetLast(out bool found);
     }
 
+    /// <summary>
+    /// Represents an enumerable with zero elements.
+    /// </summary>
+    /// <typeparam name="TElement">The element type.</typeparam>
+    /// <remarks>
+    /// Returning an instance of this type is useful to quickly handle scenarios where it is known
+    /// that an operation will result in zero elements.
+    /// </remarks>
     internal sealed class EmptyPartition<TElement> : IPartition<TElement>, IEnumerator<TElement>
     {
+        /// <summary>
+        /// A cached, immutable instance of an empty enumerable.
+        /// </summary>
         public static readonly IPartition<TElement> Instance = new EmptyPartition<TElement>();
 
         private EmptyPartition()
         {
         }
 
-        public IEnumerator<TElement> GetEnumerator()
-        {
-            return this;
-        }
+        public IEnumerator<TElement> GetEnumerator() => this;
 
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return this;
-        }
+        IEnumerator IEnumerable.GetEnumerator() => this;
 
-        public bool MoveNext()
-        {
-            return false;
-        }
+        public bool MoveNext() => false;
 
         [ExcludeFromCodeCoverage] // Shouldn't be called, and as undefined can return or throw anything anyway.
-        public TElement Current
-        {
-            get { return default(TElement); }
-        }
+        public TElement Current => default(TElement);
 
         [ExcludeFromCodeCoverage] // Shouldn't be called, and as undefined can return or throw anything anyway.
-        object IEnumerator.Current
-        {
-            get { return default(TElement); }
-        }
+        object IEnumerator.Current => default(TElement);
 
         void IEnumerator.Reset()
         {
@@ -122,15 +118,9 @@ namespace System.Linq
             // Do nothing.
         }
 
-        public IPartition<TElement> Skip(int count)
-        {
-            return this;
-        }
+        public IPartition<TElement> Skip(int count) => this;
 
-        public IPartition<TElement> Take(int count)
-        {
-            return this;
-        }
+        public IPartition<TElement> Take(int count) => this;
 
         public TElement TryGetElementAt(int index, out bool found)
         {
@@ -150,20 +140,11 @@ namespace System.Linq
             return default(TElement);
         }
 
-        public TElement[] ToArray()
-        {
-            return Array.Empty<TElement>();
-        }
+        public TElement[] ToArray() => Array.Empty<TElement>();
 
-        public List<TElement> ToList()
-        {
-            return new List<TElement>();
-        }
+        public List<TElement> ToList() => new List<TElement>();
 
-        public int GetCount(bool onlyIfCheap)
-        {
-            return 0;
-        }
+        public int GetCount(bool onlyIfCheap) => 0;
     }
 
     internal sealed class OrderedPartition<TElement> : IPartition<TElement>
@@ -245,6 +226,10 @@ namespace System.Linq
 
     public static partial class Enumerable
     {
+        /// <summary>
+        /// An iterator that yields the items of part of an <see cref="IList{TSource}"/>.
+        /// </summary>
+        /// <typeparam name="TSource">The type of the source list.</typeparam>
         private sealed class ListPartition<TSource> : Iterator<TSource>, IPartition<TSource>
         {
             private readonly IList<TSource> _source;
@@ -390,6 +375,10 @@ namespace System.Linq
             }
         }
 
+        /// <summary>
+        /// An iterator that yields the items of part of an <see cref="IEnumerable{TSource}"/>.
+        /// </summary>
+        /// <typeparam name="TSource">The type of the source enumerable.</typeparam>
         private sealed class EnumerablePartition<TSource> : Iterator<TSource>, IPartition<TSource>
         {
             private readonly IEnumerable<TSource> _source;
