@@ -27,6 +27,9 @@ namespace System
         public static bool HasHttpApi { get; } = (IsWindows &&
             File.Exists(Path.Combine(Environment.GetEnvironmentVariable("windir"), "System32", "httpapi.dll")));
 
+        public static bool IsNotOneCoreUAP { get; } = (!IsWindows || 
+            File.Exists(Path.Combine(Environment.GetEnvironmentVariable("windir"), "System32", "httpapi.dll")));
+
         public static int WindowsVersion { get; } = GetWindowsVersion();
 
         private static Lazy<bool> m_isWindowsSubsystemForLinux = new Lazy<bool>(GetIsWindowsSubsystemForLinux);

@@ -35,6 +35,9 @@
     <Compile Include="$(CommonPath)\System\Net\HttpStatusDescription.cs">
       <Link>Common\System\Net\HttpStatusDescription.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Net\HttpKnownHeaderNames.cs">
+      <Link>Common\System\Net\HttpKnownHeaderNames.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true' AND '$(TargetGroup)' != 'net461'">
     <Compile Include="System\Net\Windows\HttpListenerPrefixCollection.Windows.cs" />
@@ -67,9 +70,6 @@
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\ExceptionCheck.cs">
       <Link>Common\System\Net\ExceptionCheck.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Net\HttpKnownHeaderNames.cs">
-      <Link>Common\System\Net\HttpKnownHeaderNames.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\InternalException.cs">
       <Link>Common\System\Net\InternalException.cs</Link>
@@ -289,23 +289,23 @@
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true' AND '$(TargetGroup)' != 'net461'">
-    <Compile Include="System\Net\Unix\HttpEndPointListener.cs" />
-    <Compile Include="System\Net\Unix\HttpEndPointManager.cs" />
-    <Compile Include="System\Net\Unix\HttpConnection.cs" />
-    <Compile Include="System\Net\Unix\HttpStreamAsyncResult.cs" />
-    <Compile Include="System\Net\Unix\ListenerPrefix.cs" />
-    <Compile Include="System\Net\Unix\HttpRequestStream.Unix.cs" />
-    <Compile Include="System\Net\Unix\HttpListener.Unix.cs" />
-    <Compile Include="System\Net\Unix\HttpListenerContext.Unix.cs" />
-    <Compile Include="System\Net\Unix\HttpListenerRequest.Unix.cs" />
-    <Compile Include="System\Net\Unix\HttpListenerResponse.Unix.cs" />
-    <Compile Include="System\Net\Unix\HttpListenerTimeoutManager.Unix.cs" />
-    <Compile Include="System\Net\Unix\ListenerAsyncResult.Unix.cs" />
-    <Compile Include="System\Net\Unix\HttpHeaderStrings.Unix.cs" />
-    <Compile Include="System\Net\Unix\HttpListenerPrefixCollection.Unix.cs" />
-    <Compile Include="System\Net\Unix\ChunkedInputStream.cs" />
-    <Compile Include="System\Net\Unix\ChunkStream.cs" />
-    <Compile Include="System\Net\Unix\HttpResponseStream.Unix.cs" />
+    <Compile Include="System\Net\Managed\HttpEndPointListener.cs" />
+    <Compile Include="System\Net\Managed\HttpEndPointManager.cs" />
+    <Compile Include="System\Net\Managed\HttpConnection.cs" />
+    <Compile Include="System\Net\Managed\HttpStreamAsyncResult.cs" />
+    <Compile Include="System\Net\Managed\ListenerPrefix.cs" />
+    <Compile Include="System\Net\Managed\HttpRequestStream.Managed.cs" />
+    <Compile Include="System\Net\Managed\HttpListener.Managed.cs" />
+    <Compile Include="System\Net\Managed\HttpListenerContext.Managed.cs" />
+    <Compile Include="System\Net\Managed\HttpListenerRequest.Managed.cs" />
+    <Compile Include="System\Net\Managed\HttpListenerResponse.Managed.cs" />
+    <Compile Include="System\Net\Managed\HttpListenerTimeoutManager.Managed.cs" />
+    <Compile Include="System\Net\Managed\ListenerAsyncResult.Managed.cs" />
+    <Compile Include="System\Net\Managed\HttpHeaderStrings.cs" />
+    <Compile Include="System\Net\Managed\HttpListenerPrefixCollection.Managed.cs" />
+    <Compile Include="System\Net\Managed\ChunkedInputStream.cs" />
+    <Compile Include="System\Net\Managed\ChunkStream.cs" />
+    <Compile Include="System\Net\Managed\HttpResponseStream.Managed.cs" />
   </ItemGroup>
   <PropertyGroup Condition=" '$(TargetsWindows)' == 'true' AND '$(ProjectJson)' == '' ">
     <ProjectJson>win/project.json</ProjectJson>

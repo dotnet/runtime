@@ -1,5 +1,4 @@
 // Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 //
 // System.Net.HttpListenerResponse
@@ -310,20 +309,20 @@ namespace System.Net
                 if (_contentEncoding != null && _contentType.IndexOf(HttpHeaderStrings.Charset, StringComparison.Ordinal) == -1)
                 {
                     string enc_name = _contentEncoding.WebName;
-                    _webHeaders.Set(HttpHeaderStrings.ContentType, _contentType + "; " + HttpHeaderStrings.Charset + enc_name);
+                    _webHeaders.Set(HttpKnownHeaderNames.ContentType, _contentType + "; " + HttpHeaderStrings.Charset + enc_name);
                 }
                 else
                 {
-                    _webHeaders.Set(HttpHeaderStrings.ContentType, _contentType);
+                    _webHeaders.Set(HttpKnownHeaderNames.ContentType, _contentType);
                 }
             }
 
-            if (_webHeaders[HttpHeaderStrings.Server] == null)
-                _webHeaders.Set(HttpHeaderStrings.Server, HttpHeaderStrings.NetCoreServerName);
+            if (_webHeaders[HttpKnownHeaderNames.Server] == null)
+                _webHeaders.Set(HttpKnownHeaderNames.Server, HttpHeaderStrings.NetCoreServerName);
 
             CultureInfo inv = CultureInfo.InvariantCulture;
-            if (_webHeaders[HttpHeaderStrings.Date] == null)
-                _webHeaders.Set(HttpHeaderStrings.Date, DateTime.UtcNow.ToString("r", inv));
+            if (_webHeaders[HttpKnownHeaderNames.Date] == null)
+                _webHeaders.Set(HttpKnownHeaderNames.Date, DateTime.UtcNow.ToString("r", inv));
 
             if (!_chunked)
             {
@@ -334,7 +333,7 @@ namespace System.Net
                 }
 
                 if (_clSet)
-                    _webHeaders.Set(HttpHeaderStrings.ContentLength, _contentLength.ToString(inv));
+                    _webHeaders.Set(HttpKnownHeaderNames.ContentLength, _contentLength.ToString(inv));
             }
 
             Version v = _context.Request.ProtocolVersion;
@@ -361,12 +360,12 @@ namespace System.Net
             // They sent both KeepAlive: true and Connection: close
             if (!_keepAlive || conn_close)
             {
-                _webHeaders.Set(HttpHeaderStrings.Connection, HttpHeaderStrings.Close);
+                _webHeaders.Set(HttpKnownHeaderNames.Connection, HttpHeaderStrings.Close);
                 conn_close = true;
             }
 
             if (_chunked)
-                _webHeaders.Set(HttpHeaderStrings.TransferEncoding, HttpHeaderStrings.Chunked);
+                _webHeaders.Set(HttpKnownHeaderNames.TransferEncoding, HttpHeaderStrings.Chunked);
 
             int reuses = _context.Connection.Reuses;
             if (reuses >= 100)
@@ -374,25 +373,25 @@ namespace System.Net
                 _forceCloseChunked = true;
                 if (!conn_close)
                 {
-                    _webHeaders.Set(HttpHeaderStrings.Connection, HttpHeaderStrings.Close);
+                    _webHeaders.Set(HttpKnownHeaderNames.Connection, HttpHeaderStrings.Close);
                     conn_close = true;
                 }
             }
 
             if (!conn_close)
             {
-                _webHeaders.Set(HttpHeaderStrings.KeepAlive, String.Format("timeout=15,max={0}", 100 - reuses));
+                _webHeaders.Set(HttpKnownHeaderNames.KeepAlive, String.Format("timeout=15,max={0}", 100 - reuses));
                 if (_context.Request.ProtocolVersion <= HttpVersion.Version10)
-                    _webHeaders.Set(HttpHeaderStrings.Connection, HttpHeaderStrings.KeepAlive);
+                    _webHeaders.Set(HttpKnownHeaderNames.Connection, HttpHeaderStrings.KeepAlive);
             }
 
             if (_location != null)
-                _webHeaders.Set(HttpHeaderStrings.Location, _location);
+                _webHeaders.Set(HttpKnownHeaderNames.Location, _location);
 
             if (_cookies != null)
             {
                 foreach (Cookie cookie in _cookies)
-                    _webHeaders.Set(HttpHeaderStrings.SetCookie, CookieToClientString(cookie));
+                    _webHeaders.Set(HttpKnownHeaderNames.SetCookie, CookieToClientString(cookie));
             }
 
             StreamWriter writer = new StreamWriter(ms, encoding, 256);

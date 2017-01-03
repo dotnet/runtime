@@ -1,5 +1,4 @@
 // Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 //
 // System.Net.HttpListenerRequest
@@ -319,8 +318,9 @@ namespace System.Net
                     }
                     catch
                     {
-                        _referrer = new Uri("http://someone.is.screwing.with.the.headers.com/");
+                        _referrer = null;
                     }
+                    
                     break;
                 case "cookie":
                     if (_cookies == null)

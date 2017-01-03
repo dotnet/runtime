@@ -1,5 +1,4 @@
 // Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 //
 // System.Net.HttpConnection
@@ -507,7 +506,7 @@ namespace System.Net
             {
                 force |= !_context.Request.KeepAlive;
                 if (!force)
-                    force = (_context.Response.Headers[HttpHeaderStrings.Connection] == HttpHeaderStrings.Close);
+                    force = (_context.Response.Headers[HttpKnownHeaderNames.Connection] == HttpHeaderStrings.Close);
 
                 if (!force && _context.Request.FlushInput())
                 {
