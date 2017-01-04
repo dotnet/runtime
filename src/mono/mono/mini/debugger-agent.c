@@ -5236,6 +5236,21 @@ ss_start (SingleStepReq *ss_req, MonoMethod *method, SeqPoint* sp, MonoSeqPointI
 			nframes = tls->frame_count;
 		}
 
+		/* Need to stop in catch clauses as well */
+		for (i = ss_req->depth == STEP_DEPTH_OUT ? 1 : 0; i < nframes; ++i) {
+			StackFrame *frame = frames [i];
+
+			if (frame->ji) {
+				MonoJitInfo *jinfo = frame->ji;
+				for (j = 0; j < jinfo->num_clauses; ++j) {
+					MonoJitExceptionInfo *ei = &jinfo->clauses [j];
+
+					if (mono_find_next_seq_point_for_native_offset (frame->domain, frame->method, (char*)ei->handler_start - (char*)jinfo->code_start, NULL, &local_sp))
+						ss_bp_add_one (ss_req, &ss_req_bp_count, &ss_req_bp_cache, frame->method, local_sp.il_offset);
+				}
+			}
+		}
+
 		/*
 		 * Find the first sequence point in the current or in a previous frame which
 		 * is not the last in its method.
@@ -5320,26 +5335,6 @@ ss_start (SingleStepReq *ss_req, MonoMethod *method, SeqPoint* sp, MonoSeqPointI
 			 * clients who reuse the same step request, and only in this special case.
 			 */
 			ss_req->depth = STEP_DEPTH_INTO;
-		}
-
-		if (ss_req->depth == STEP_DEPTH_OVER) {
-			/* Need to stop in catch clauses as well */
-			for (i = 0; i < nframes; ++i) {
-				StackFrame *frame = frames [i];
-
-				if (frame->ji) {
-					MonoJitInfo *jinfo = frame->ji;
-					for (j = 0; j < jinfo->num_clauses; ++j) {
-						MonoJitExceptionInfo *ei = &jinfo->clauses [j];
-
-						found_sp = mono_find_next_seq_point_for_native_offset (frame->domain, frame->method, (char*)ei->handler_start - (char*)jinfo->code_start, NULL, &local_sp);
-						sp = (found_sp)? &local_sp : NULL;
-
-						if (found_sp)
-							ss_bp_add_one (ss_req, &ss_req_bp_count, &ss_req_bp_cache, frame->method, sp->il_offset);
-					}
-				}
-			}
 		}
 
 		if (ss_req->depth == STEP_DEPTH_INTO) {
