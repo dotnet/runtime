@@ -526,6 +526,34 @@ namespace System.Linq.Expressions.Tests
             FaultTriggeredOnThrow(false);
         }
 
+        [Theory, InlineData(true)]
+        public void FinallyAndFaultAfterManyLabels(bool useInterpreter)
+        {
+            // There is a caching optimisation used below a certain number of faults or
+            // finally, so go past that to catch any regressions in the non-optimised
+            // path.
+            ParameterExpression variable = Expression.Parameter(typeof(int));
+            LabelTarget target = Expression.Label(typeof(int));
+            BlockExpression block = Expression.Block(
+                new[] { variable },
+                Expression.Assign(variable, Expression.Constant(1)),
+                Expression.TryCatch(
+                    Expression.Block(
+                        Enumerable.Repeat(Expression.TryFinally(Expression.Empty(), Expression.Empty()), 40).Append(
+                            Expression.TryFault(
+                                Expression.Throw(Expression.Constant(new TestException())),
+                                Expression.Assign(variable, Expression.Constant(2))
+                                )
+                            )
+                        ),
+                    Expression.Catch(typeof(TestException), Expression.Empty())
+                    ),
+                Expression.Return(target, variable),
+                Expression.Label(target, Expression.Default(typeof(int)))
+                );
+            Assert.Equal(2, Expression.Lambda<Func<int>>(block).Compile(useInterpreter)());
+        }
+
         [Theory]
         [ClassData(typeof(CompilationTypes))]
         public void FinallyTriggeredOnNoThrow(bool useInterpreter)

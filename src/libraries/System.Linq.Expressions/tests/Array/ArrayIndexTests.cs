@@ -2769,5 +2769,57 @@ namespace System.Linq.Expressions.Tests
             Expression index = Expression.Property(null, typeof(Unreadable<int>), nameof(Unreadable<int>.WriteOnly));
             Assert.Throws<ArgumentException>("index", () => Expression.ArrayIndex(array, index));
         }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void NonZeroBasedOneDimensionalArrayIndex(bool useInterpreter)
+        {
+            Array arrayObj = Array.CreateInstance(typeof(int), new[] { 3 }, new[] { -1 });
+            arrayObj.SetValue(5, -1);
+            arrayObj.SetValue(6, 0);
+            arrayObj.SetValue(7, 1);
+            ConstantExpression array = Expression.Constant(arrayObj);
+            BinaryExpression indexM1 = Expression.ArrayIndex(array, Expression.Constant(-1));
+            BinaryExpression index0 = Expression.ArrayIndex(array, Expression.Constant(0));
+            BinaryExpression index1 = Expression.ArrayIndex(array, Expression.Constant(1));
+            Func<bool> testValues = Expression.Lambda<Func<bool>>(
+                Expression.And(
+                    Expression.Equal(indexM1, Expression.Constant(5)),
+                    Expression.And(
+                        Expression.Equal(index0, Expression.Constant(6)),
+                        Expression.Equal(index1, Expression.Constant(7))))).Compile(useInterpreter);
+            Assert.True(testValues());
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void NonZeroBasedOneDimensionalArrayIndexMethod(bool useInterpreter)
+        {
+            Array arrayObj = Array.CreateInstance(typeof(int), new[] { 3 }, new[] { -1 });
+            arrayObj.SetValue(5, -1);
+            arrayObj.SetValue(6, 0);
+            arrayObj.SetValue(7, 1);
+            ConstantExpression array = Expression.Constant(arrayObj);
+            MethodCallExpression indexM1 = Expression.ArrayIndex(array, new [] { Expression.Constant(-1)});
+            MethodCallExpression index0 = Expression.ArrayIndex(array, new[] { Expression.Constant(0)});
+            MethodCallExpression index1 = Expression.ArrayIndex(array, new[] { Expression.Constant(1)});
+            Func<bool> testValues = Expression.Lambda<Func<bool>>(
+                Expression.And(
+                    Expression.Equal(indexM1, Expression.Constant(5)),
+                    Expression.And(
+                        Expression.Equal(index0, Expression.Constant(6)),
+                        Expression.Equal(index1, Expression.Constant(7))))).Compile(useInterpreter);
+            Assert.True(testValues());
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void HighRankArrayIndex(bool useInterpreter)
+        {
+            string[,,,,,,,,,] arrayObj = {{{{{{{{{{"hugz"}}}}}}}}}};
+            ConstantExpression array = Expression.Constant(arrayObj);
+            Func<string> func = Expression.Lambda<Func<string>>(
+                Expression.ArrayIndex(array, Enumerable.Repeat(Expression.Constant(0), 10))).Compile(useInterpreter);
+            Assert.Equal("hugz", func());
+        }
+
+
     }
 }

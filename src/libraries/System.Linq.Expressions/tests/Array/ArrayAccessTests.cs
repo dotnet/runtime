@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.Reflection;
 using Xunit;
 
@@ -9,6 +10,8 @@ namespace System.Linq.Expressions.Tests
 {
     public static class ArrayAccessTests
     {
+        private static IEnumerable<object[]> Ranks() => Enumerable.Range(1, 5).Select(i => new object[] {i});
+
         [Theory]
         [ClassData(typeof(CompilationTypes))]
         public static void ArrayAccess_MultiDimensionalOf1(bool useInterpreter)
@@ -72,6 +75,47 @@ namespace System.Linq.Expressions.Tests
             ConstantExpression instance = Expression.Constant(new int[4]);
             MemberExpression index = Expression.Property(null, typeof(Unreadable<int>).GetProperty(nameof(Unreadable<int>.WriteOnly)));
             Assert.Throws<ArgumentException>("indexes", () => Expression.ArrayAccess(instance, index));
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void NonZeroBasedOneDimensionalArrayAccess(bool useInterpreter)
+        {
+            Array arrayObj = Array.CreateInstance(typeof(int), new[] { 3 }, new[] { -1 });
+            arrayObj.SetValue(5, -1);
+            arrayObj.SetValue(6, 0);
+            arrayObj.SetValue(7, 1);
+            ConstantExpression array = Expression.Constant(arrayObj);
+            IndexExpression indexM1 = Expression.ArrayAccess(array, Expression.Constant(-1));
+            IndexExpression index0 = Expression.ArrayAccess(array, Expression.Constant(0));
+            IndexExpression index1 = Expression.ArrayAccess(array, Expression.Constant(1));
+            Action setValues = Expression.Lambda<Action>(
+                Expression.Block(
+                    Expression.Assign(indexM1, Expression.Constant(5)),
+                    Expression.Assign(index0, Expression.Constant(6)),
+                    Expression.Assign(index1, Expression.Constant(7)))).Compile(useInterpreter);
+            setValues();
+            Assert.Equal(5, arrayObj.GetValue(-1));
+            Assert.Equal(6, arrayObj.GetValue(0));
+            Assert.Equal(7, arrayObj.GetValue(1));
+            Func<bool> testValues = Expression.Lambda<Func<bool>>(
+                Expression.And(
+                    Expression.Equal(indexM1, Expression.Constant(5)),
+                    Expression.And(
+                        Expression.Equal(index0, Expression.Constant(6)),
+                        Expression.Equal(index1, Expression.Constant(7))))).Compile(useInterpreter);
+            Assert.True(testValues());
+        }
+
+        [Theory, PerCompilationType(nameof(Ranks))]
+        public static void DifferentRanks(int rank, bool useInterpreter)
+        {
+            Array arrayObj = Array.CreateInstance(typeof(string), Enumerable.Repeat(1, rank).ToArray());
+            arrayObj.SetValue("solitary value", Enumerable.Repeat(0, rank).ToArray());
+            ConstantExpression array = Expression.Constant(arrayObj);
+            IEnumerable<DefaultExpression> indices = Enumerable.Repeat(Expression.Default(typeof(int)), rank);
+            Func<string> func = Expression.Lambda<Func<string>>(
+                Expression.ArrayAccess(array, indices)).Compile(useInterpreter);
+            Assert.Equal("solitary value", func());
         }
     }
 }
