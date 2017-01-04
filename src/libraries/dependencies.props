@@ -18,7 +18,7 @@
   -->
   <PropertyGroup>
     <CoreFxCurrentRef>10ae672d2e13fb79101a4991f2643cca01208075</CoreFxCurrentRef>
-    <CoreClrCurrentRef>efe21f521cf97ceb681deeeab390261eb9506552</CoreClrCurrentRef>
+    <CoreClrCurrentRef>71ca1111dc90eb30ceaafbdb1144dd411d712385</CoreClrCurrentRef>
     <ExternalCurrentRef>4e2952b5114bfa90cc45eef908204006a771a62b</ExternalCurrentRef>
     <ProjectNTfsCurrentRef>efe21f521cf97ceb681deeeab390261eb9506552</ProjectNTfsCurrentRef>
   </PropertyGroup>
@@ -26,7 +26,7 @@
   <!-- Auto-upgraded properties for each build info dependency. -->
   <PropertyGroup>
     <CoreFxExpectedPrerelease>beta-24721-02</CoreFxExpectedPrerelease>
-    <CoreClrExpectedPrerelease>beta-24728-02</CoreClrExpectedPrerelease>
+    <CoreClrExpectedPrerelease>beta-24904-03</CoreClrExpectedPrerelease>
     <ExternalExpectedPrerelease>beta-24727-00</ExternalExpectedPrerelease>
     <ProjectNTfsExpectedPrerelease>beta-24728-00</ProjectNTfsExpectedPrerelease>
   </PropertyGroup>
