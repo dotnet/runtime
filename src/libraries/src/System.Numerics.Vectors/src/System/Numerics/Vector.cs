@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics.Contracts;
 using System.Globalization;
 using System.Numerics.Hashing;
 using System.Runtime.CompilerServices;
@@ -2752,11 +2753,11 @@ namespace System.Numerics
         }
 
         /// <summary>
-        /// Returns a boolean indicating whether any single pair of elements in the given vectors are equal.
+        /// Returns a boolean indicating whether any single pair of elements in the given vectors are not equal.
         /// </summary>
         /// <param name="left">The first vector to compare.</param>
         /// <param name="right">The second vector to compare.</param>
-        /// <returns>True if any element pairs are equal; False if no element pairs are equal.</returns>
+        /// <returns>True if left and right are not equal; False otherwise.</returns>
         [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
         public static bool operator !=(Vector<T> left, Vector<T> right)
         {
