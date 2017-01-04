@@ -8,27 +8,21 @@
       <TargetingPackExclusions Include="System.Runtime.WindowsRuntime.UI.Xaml" /> <!-- Harmless, but causes PRI targets to run -->
 
       <!-- Whitelisted runtime assemblies that are OK to reference. -->
-      <RuntimeReferencedAssemblyNames Include="xunit.core" />
-      <RuntimeReferencedAssemblyNames Include="Xunit.NetCore.Extensions" />
-      <RuntimeReferencedAssemblyNames Include="xunit.assert" />
-      <RuntimeReferencedAssemblyNames Include="xunit.abstractions" />
-      <RuntimeReferencedAssemblyNames Include="xunit.performance.core" />
-      <RuntimeReferencedAssemblyNames Include="xunit.execution.dotnet" />
-      <RuntimeReferencedAssemblyNames Include="Newtonsoft.Json" Condition="'$(SkipIncludeNewtonsoftJson)'!='true'" />
+      <ReferenceFromRuntime Include="xunit.core" />
+      <ReferenceFromRuntime Include="Xunit.NetCore.Extensions" />
+      <ReferenceFromRuntime Include="xunit.assert" />
+      <ReferenceFromRuntime Include="xunit.abstractions" />
+      <ReferenceFromRuntime Include="xunit.performance.core" />
+      <ReferenceFromRuntime Include="xunit.execution.dotnet" />
+      <ReferenceFromRuntime Include="Newtonsoft.Json" Condition="'$(SkipIncludeNewtonsoftJson)'!='true'" />
 
       <!-- Add Reference's to all files in the targeting pack folder, and to whitelisted items from the group above in the runtime folder. -->
-      <TargetingPackItems Include="%(TargetingPackDirs.Identity)/*" />
+      <TargetingPackItems Include="%(TargetingPackDirs.Identity)/*" Condition="'$(NoTargetingPackReferences)' != 'true'" />
       <Reference Include="%(TargetingPackItems.Filename)" Exclude="@(TargetingPackExclusions)"> <!-- TODO: System.Private.CoreLib shouldn't even be in the targeting pack. -->
         <Private>false</Private>
       </Reference>
-      <Reference Include="@(RuntimeReferencedAssemblyNames)" />
+      <ReferencePath Include="@(ReferenceFromRuntime->'$(RuntimePath)%(Identity).dll')" />
     </ItemGroup>
-
-    <!-- Allow tests to reference items from the runtime directory -->
-    <PropertyGroup>
-      <AssemblySearchPaths Condition="'$(NoTargetingPackReferences)' == 'true'">$(RuntimePath);$(AssemblySearchPaths)</AssemblySearchPaths>
-      <AssemblySearchPaths Condition="'$(NoTargetingPackReferences)' != 'true'">$(AssemblySearchPaths);$(RuntimePath)</AssemblySearchPaths>
-    </PropertyGroup>
   </Target>
 
 </Project>
