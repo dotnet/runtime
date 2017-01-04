@@ -2065,7 +2065,7 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                         buildCommands += genStressModeScriptStep(os, scenario, Constants.jitStressModeScenarios[scenario], scriptFileName)
 
                         // Build and text corefx
-                        def fxRoot = "\$WORKSPACE%/_/fx"
+                        def fxRoot = "\$WORKSPACE/_/fx"
                         buildCommands += "python \$WORKSPACE/tests/scripts/run-corefx-tests.py -arch ${arch} -build_type ${configuration} -fx_root ${fxRoot} -fx_branch ${branch} -env_script ${scriptFileName}"
 
                         // Archive and process test result
