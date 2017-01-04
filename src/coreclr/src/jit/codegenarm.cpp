@@ -1436,7 +1436,85 @@ void CodeGen::genSetRegToCond(regNumber dstReg, GenTreePtr tree)
 //
 void CodeGen::genIntToIntCast(GenTreePtr treeNode)
 {
-    NYI("Cast");
+    assert(treeNode->OperGet() == GT_CAST);
+
+    GenTreePtr castOp = treeNode->gtCast.CastOp();
+    emitter*   emit   = getEmitter();
+
+    var_types dstType     = treeNode->CastToType();
+    var_types srcType     = genActualType(castOp->TypeGet());
+    emitAttr  movSize     = emitActualTypeSize(dstType);
+    bool      movRequired = false;
+
+    regNumber targetReg = treeNode->gtRegNum;
+    regNumber sourceReg = castOp->gtRegNum;
+
+    // For Long to Int conversion we will have a reserved integer register to hold the immediate mask
+    regNumber tmpReg = (treeNode->gtRsvdRegs == RBM_NONE) ? REG_NA : genRegNumFromMask(treeNode->gtRsvdRegs);
+
+    assert(genIsValidIntReg(targetReg));
+    assert(genIsValidIntReg(sourceReg));
+
+    instruction ins = INS_invalid;
+
+    genConsumeReg(castOp);
+    Lowering::CastInfo castInfo;
+
+    // Get information about the cast.
+    Lowering::getCastDescription(treeNode, &castInfo);
+
+    if (castInfo.requiresOverflowCheck)
+    {
+        NYI_ARM("CodeGen::genIntToIntCast for OverflowCheck");
+    }
+    else // Non-overflow checking cast.
+    {
+        if (genTypeSize(srcType) == genTypeSize(dstType))
+        {
+            ins = INS_mov;
+        }
+        else
+        {
+            var_types extendType = TYP_UNKNOWN;
+
+            // If we need to treat a signed type as unsigned
+            if ((treeNode->gtFlags & GTF_UNSIGNED) != 0)
+            {
+                extendType  = genUnsignedType(srcType);
+                movSize     = emitTypeSize(extendType);
+                movRequired = true;
+            }
+            else
+            {
+                if (genTypeSize(srcType) < genTypeSize(dstType))
+                {
+                    extendType = srcType;
+                    movSize    = emitTypeSize(srcType);
+                    if (srcType == TYP_UINT)
+                    {
+                        movRequired = true;
+                    }
+                }
+                else // (genTypeSize(srcType) > genTypeSize(dstType))
+                {
+                    extendType = dstType;
+                    movSize    = emitTypeSize(dstType);
+                }
+            }
+
+            ins = ins_Move_Extend(extendType, castOp->InReg());
+        }
+    }
+
+    // We should never be generating a load from memory instruction here!
+    assert(!emit->emitInsIsLoad(ins));
+
+    if ((ins != INS_mov) || movRequired || (targetReg != sourceReg))
+    {
+        emit->emitIns_R_R(ins, movSize, targetReg, sourceReg);
+    }
+
+    genProduceReg(treeNode);
 }
 
 //------------------------------------------------------------------------
@@ -1455,7 +1533,39 @@ void CodeGen::genIntToIntCast(GenTreePtr treeNode)
 //
 void CodeGen::genFloatToFloatCast(GenTreePtr treeNode)
 {
-    NYI("Cast");
+    // float <--> double conversions are always non-overflow ones
+    assert(treeNode->OperGet() == GT_CAST);
+    assert(!treeNode->gtOverflow());
+
+    regNumber targetReg = treeNode->gtRegNum;
+    assert(genIsValidFloatReg(targetReg));
+
+    GenTreePtr op1 = treeNode->gtOp.gtOp1;
+    assert(!op1->isContained());               // Cannot be contained
+    assert(genIsValidFloatReg(op1->gtRegNum)); // Must be a valid float reg.
+
+    var_types dstType = treeNode->CastToType();
+    var_types srcType = op1->TypeGet();
+    assert(varTypeIsFloating(srcType) && varTypeIsFloating(dstType));
+
+    genConsumeOperands(treeNode->AsOp());
+
+    // treeNode must be a reg
+    assert(!treeNode->isContained());
+
+    if (srcType != dstType)
+    {
+        instruction insVcvt = (srcType == TYP_FLOAT) ? INS_vcvt_f2d  // convert Float to Double
+                                                     : INS_vcvt_d2f; // convert Double to Float
+
+        getEmitter()->emitIns_R_R(insVcvt, emitTypeSize(treeNode), treeNode->gtRegNum, op1->gtRegNum);
+    }
+    else if (treeNode->gtRegNum != op1->gtRegNum)
+    {
+        getEmitter()->emitIns_R_R(INS_vmov, emitTypeSize(treeNode), treeNode->gtRegNum, op1->gtRegNum);
+    }
+
+    genProduceReg(treeNode);
 }
 
 //------------------------------------------------------------------------
@@ -1474,7 +1584,69 @@ void CodeGen::genFloatToFloatCast(GenTreePtr treeNode)
 //
 void CodeGen::genIntToFloatCast(GenTreePtr treeNode)
 {
-    NYI("Cast");
+    // int --> float/double conversions are always non-overflow ones
+    assert(treeNode->OperGet() == GT_CAST);
+    assert(!treeNode->gtOverflow());
+
+    regNumber targetReg = treeNode->gtRegNum;
+    assert(genIsValidFloatReg(targetReg));
+
+    GenTreePtr op1 = treeNode->gtOp.gtOp1;
+    assert(!op1->isContained());             // Cannot be contained
+    assert(genIsValidIntReg(op1->gtRegNum)); // Must be a valid int reg.
+
+    var_types dstType = treeNode->CastToType();
+    var_types srcType = op1->TypeGet();
+    assert(!varTypeIsFloating(srcType) && varTypeIsFloating(dstType));
+
+    // force the srcType to unsigned if GT_UNSIGNED flag is set
+    if (treeNode->gtFlags & GTF_UNSIGNED)
+    {
+        srcType = genUnsignedType(srcType);
+    }
+
+    // We should never see a srcType whose size is neither EA_4BYTE or EA_8BYTE
+    // For conversions from small types (byte/sbyte/int16/uint16) to float/double,
+    // we expect the front-end or lowering phase to have generated two levels of cast.
+    //
+    emitAttr srcSize = EA_ATTR(genTypeSize(srcType));
+    noway_assert((srcSize == EA_4BYTE) || (srcSize == EA_8BYTE));
+
+    instruction insVcvt = INS_invalid;
+
+    if (dstType == TYP_DOUBLE)
+    {
+        if (srcSize == EA_4BYTE)
+        {
+            insVcvt = (varTypeIsUnsigned(srcType)) ? INS_vcvt_u2d : INS_vcvt_i2d;
+        }
+        else
+        {
+            assert(srcSize == EA_8BYTE);
+            NYI_ARM("Casting int64/uint64 to double in genIntToFloatCast");
+        }
+    }
+    else
+    {
+        assert(dstType == TYP_FLOAT);
+        if (srcSize == EA_4BYTE)
+        {
+            insVcvt = (varTypeIsUnsigned(srcType)) ? INS_vcvt_u2f : INS_vcvt_i2f;
+        }
+        else
+        {
+            assert(srcSize == EA_8BYTE);
+            NYI_ARM("Casting int64/uint64 to float in genIntToFloatCast");
+        }
+    }
+
+    genConsumeOperands(treeNode->AsOp());
+
+    assert(insVcvt != INS_invalid);
+    getEmitter()->emitIns_R_R(INS_vmov_i2f, srcSize, treeNode->gtRegNum, op1->gtRegNum);
+    getEmitter()->emitIns_R_R(insVcvt, srcSize, treeNode->gtRegNum, treeNode->gtRegNum);
+
+    genProduceReg(treeNode);
 }
 
 //------------------------------------------------------------------------
@@ -1493,7 +1665,64 @@ void CodeGen::genIntToFloatCast(GenTreePtr treeNode)
 //
 void CodeGen::genFloatToIntCast(GenTreePtr treeNode)
 {
-    NYI("Cast");
+    // we don't expect to see overflow detecting float/double --> int type conversions here
+    // as they should have been converted into helper calls by front-end.
+    assert(treeNode->OperGet() == GT_CAST);
+    assert(!treeNode->gtOverflow());
+
+    regNumber targetReg = treeNode->gtRegNum;
+    assert(genIsValidIntReg(targetReg)); // Must be a valid int reg.
+
+    GenTreePtr op1 = treeNode->gtOp.gtOp1;
+    assert(!op1->isContained());               // Cannot be contained
+    assert(genIsValidFloatReg(op1->gtRegNum)); // Must be a valid float reg.
+
+    var_types dstType = treeNode->CastToType();
+    var_types srcType = op1->TypeGet();
+    assert(varTypeIsFloating(srcType) && !varTypeIsFloating(dstType));
+
+    // We should never see a dstType whose size is neither EA_4BYTE or EA_8BYTE
+    // For conversions to small types (byte/sbyte/int16/uint16) from float/double,
+    // we expect the front-end or lowering phase to have generated two levels of cast.
+    //
+    emitAttr dstSize = EA_ATTR(genTypeSize(dstType));
+    noway_assert((dstSize == EA_4BYTE) || (dstSize == EA_8BYTE));
+
+    instruction insVcvt = INS_invalid;
+
+    if (srcType == TYP_DOUBLE)
+    {
+        if (dstSize == EA_4BYTE)
+        {
+            insVcvt = (varTypeIsUnsigned(dstType)) ? INS_vcvt_d2u : INS_vcvt_d2i;
+        }
+        else
+        {
+            assert(dstSize == EA_8BYTE);
+            NYI_ARM("Casting double to int64/uint64 in genIntToFloatCast");
+        }
+    }
+    else
+    {
+        assert(srcType == TYP_FLOAT);
+        if (dstSize == EA_4BYTE)
+        {
+            insVcvt = (varTypeIsUnsigned(dstType)) ? INS_vcvt_f2u : INS_vcvt_f2i;
+        }
+        else
+        {
+            assert(dstSize == EA_8BYTE);
+            NYI_ARM("Casting float to int64/uint64 in genIntToFloatCast");
+        }
+    }
+
+    genConsumeOperands(treeNode->AsOp());
+
+    assert(insVcvt != INS_invalid);
+    getEmitter()->emitIns_R_R(insVcvt, dstSize, op1->gtRegNum, op1->gtRegNum);
+    getEmitter()->emitIns_R_R(INS_vmov_f2i, dstSize, treeNode->gtRegNum, op1->gtRegNum);
+
+    genProduceReg(treeNode);
 }
 
 //------------------------------------------------------------------------
