@@ -17,18 +17,12 @@
       <RuntimeReferencedAssemblyNames Include="Newtonsoft.Json" Condition="'$(SkipIncludeNewtonsoftJson)'!='true'" />
 
       <!-- Add Reference's to all files in the targeting pack folder, and to whitelisted items from the group above in the runtime folder. -->
-      <TargetingPackItems Include="%(TargetingPackDirs.Identity)/*" />
+      <TargetingPackItems Include="%(TargetingPackDirs.Identity)/*" Condition="'$(NoTargetingPackReferences)' != 'true'" />
       <Reference Include="%(TargetingPackItems.Filename)" Exclude="@(TargetingPackExclusions)"> <!-- TODO: System.Private.CoreLib shouldn't even be in the targeting pack. -->
         <Private>false</Private>
       </Reference>
-      <Reference Include="@(RuntimeReferencedAssemblyNames)" />
+      <ReferencePath Include="@(RuntimeReferencedAssemblyNames->'$(RuntimePath)%(Identity).dll')" />
     </ItemGroup>
-
-    <!-- Allow tests to reference items from the runtime directory -->
-    <PropertyGroup>
-      <AssemblySearchPaths Condition="'$(NoTargetingPackReferences)' == 'true'">$(RuntimePath);$(AssemblySearchPaths)</AssemblySearchPaths>
-      <AssemblySearchPaths Condition="'$(NoTargetingPackReferences)' != 'true'">$(AssemblySearchPaths);$(RuntimePath)</AssemblySearchPaths>
-    </PropertyGroup>
   </Target>
 
 </Project>

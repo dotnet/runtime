@@ -9,7 +9,6 @@
     <ResolveAssemblyWarnOrErrorOnTargetArchitectureMismatch>None</ResolveAssemblyWarnOrErrorOnTargetArchitectureMismatch>
     <NoWarn>1685</NoWarn>
     <NoTargetingPackReferences>true</NoTargetingPackReferences>
-    <WindowsAppContainer>false</WindowsAppContainer>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Debug|AnyCPU'" />
@@ -17,16 +16,16 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'" />
   <ItemGroup>
-    <Reference Include="System.Diagnostics.Debug" />
-    <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.Extensions" />
-    <Reference Include="System.Private.CoreLib" />
-    <Reference Include="System.Threading.Tasks" />
-    <Reference Include="System.Runtime.InteropServices.RuntimeInformation" />
+    <RuntimeReferencedAssemblyNames Include="System.Diagnostics.Debug" />
+    <RuntimeReferencedAssemblyNames Include="System.Runtime" />
+    <RuntimeReferencedAssemblyNames Include="System.Runtime.Extensions" />
+    <RuntimeReferencedAssemblyNames Include="System.Private.CoreLib" />
+    <RuntimeReferencedAssemblyNames Include="System.Threading.Tasks" />
+    <RuntimeReferencedAssemblyNames Include="System.Runtime.InteropServices.RuntimeInformation" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AttributeTests.cs" />
-    <Compile Include="DebuggerTests.cs" Condition="'$(TargetGroup)'==''"/>
+    <Compile Include="DebuggerTests.cs" Condition="'$(TargetGroup)'=='netstandard1.7'"/>
     <Compile Include="DebugTests.cs" />
     <Compile Include="XunitAssemblyAttributes.cs" />
   </ItemGroup>
