@@ -31,7 +31,7 @@
       <fx_version>4.0</fx_version>
       <profile>basic</profile>
       <resources></resources>
-      <response>System.dll.sources</response>
+      <response>./../../build/deps/basic_System.dll.sources</response>
     </project>
     <project dir="class/System.XML" library="System.Xml-basic">
       <boot>true</boot>
@@ -46,7 +46,7 @@
     </project>
     <project dir="class/System.Core" library="System.Core-basic">
       <boot>true</boot>
-      <flags>/codepage:65001 /nologo /noconfig -d:NET_4_0 -d:NET_4_5 -d:MONO -d:BOOTSTRAP_BASIC -nowarn:1699 -nostdlib -r:./../../class/lib/basic/mscorlib.dll -optimize -d:FEATURE_PAL,PFX_LEGACY_3_5,FEATURE_NETCORE -d:INSIDE_SYSCORE -d:LIBC -unsafe -nowarn:436 -d:NET_3_5 -nowarn:1720 -d:FEATURE_CORE_DLR,FEATURE_REFEMIT,FEATURE_PDBEMIT -r:./../../class/lib/basic/System.dll</flags>
+      <flags>/codepage:65001 /nologo /noconfig -d:NET_4_0 -d:NET_4_5 -d:MONO -d:BOOTSTRAP_BASIC -nowarn:1699 -nostdlib -r:./../../class/lib/basic/mscorlib.dll -optimize -d:FEATURE_PAL,PFX_LEGACY_3_5,FEATURE_NETCORE -d:INSIDE_SYSCORE -d:LIBC -unsafe -nowarn:436 -d:NET_3_5 -d:FEATURE_COMPILE,FEATURE_COMPILE_TO_METHODBUILDER,FEATURE_PDB_GENERATOR -r:./../../class/lib/basic/System.dll</flags>
       <output>System.Core.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/basic/System.Core.dll</library_output>
@@ -442,7 +442,7 @@
     </project>
     <project dir="class/Facades/System.ValueTuple" library="Facades_System.ValueTuple-basic">
       <boot>true</boot>
-      <flags>/codepage:65001 /nologo /noconfig -d:NET_4_0 -d:NET_4_5 -d:MONO -d:BOOTSTRAP_BASIC -nowarn:1699 -nostdlib -r:./../../../class/lib/basic/mscorlib.dll -optimize /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699</flags>
+      <flags>/codepage:65001 /nologo /noconfig -d:NET_4_0 -d:NET_4_5 -d:MONO -d:BOOTSTRAP_BASIC -nowarn:1699 -nostdlib -r:./../../../class/lib/basic/mscorlib.dll -optimize /delaysign /keyfile:../../Open.snk /nowarn:1616,1699</flags>
       <output>System.ValueTuple.dll</output>
       <built_sources></built_sources>
       <library_output>./../../../class/lib/basic/Facades/System.ValueTuple.dll</library_output>
@@ -482,7 +482,7 @@
       <fx_version>4.5</fx_version>
       <profile>build</profile>
       <resources></resources>
-      <response>System.dll.sources</response>
+      <response>./../../build/deps/build_System.dll.sources</response>
     </project>
     <project dir="class/System" library="System-bare-build">
       <boot>false</boot>
@@ -493,7 +493,7 @@
       <fx_version>4.5</fx_version>
       <profile>build</profile>
       <resources></resources>
-      <response>System.dll.sources</response>
+      <response>./../../build/deps/build_System.dll.sources</response>
     </project>
     <project dir="class/System" library="System-secxml-build">
       <boot>false</boot>
@@ -504,7 +504,7 @@
       <fx_version>4.5</fx_version>
       <profile>build</profile>
       <resources></resources>
-      <response>System.dll.sources</response>
+      <response>./../../build/deps/build_System.dll.sources</response>
     </project>
     <project dir="class/System.XML" library="System.Xml-build">
       <boot>false</boot>
@@ -541,21 +541,10 @@
     </project>
     <project dir="class/System.Core" library="System.Core-build">
       <boot>false</boot>
-      <flags>/codepage:65001 /nologo /noconfig /deterministic -d:NET_4_0 -d:NET_4_5 -d:MONO -nowarn:1699 -nostdlib -r:./../../class/lib/build/mscorlib.dll -optimize -d:FEATURE_PAL,PFX_LEGACY_3_5,FEATURE_NETCORE -d:INSIDE_SYSCORE -d:LIBC -unsafe -nowarn:436 -d:NET_3_5 -nowarn:1720 -d:FEATURE_CORE_DLR,FEATURE_REFEMIT,FEATURE_PDBEMIT -r:./../../class/lib/build/System.dll -r:./../../class/lib/build/Mono.Posix.dll</flags>
+      <flags>/codepage:65001 /nologo /noconfig /deterministic -d:NET_4_0 -d:NET_4_5 -d:MONO -nowarn:1699 -nostdlib -r:./../../class/lib/build/mscorlib.dll -optimize -d:FEATURE_PAL,PFX_LEGACY_3_5,FEATURE_NETCORE -d:INSIDE_SYSCORE -d:LIBC -unsafe -nowarn:436 -d:NET_3_5 -d:FEATURE_COMPILE,FEATURE_COMPILE_TO_METHODBUILDER,FEATURE_PDB_GENERATOR -r:./../../class/lib/build/System.dll -r:./../../class/lib/build/Mono.Posix.dll</flags>
       <output>System.Core.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/build/System.Core.dll</library_output>
-      <fx_version>4.5</fx_version>
-      <profile>build</profile>
-      <resources></resources>
-      <response>./../../build/deps/build_System.Core.dll.sources</response>
-    </project>
-    <project dir="class/System.Core" library="System.Core-plaincore-build">
-      <boot>false</boot>
-      <flags>/codepage:65001 /nologo /noconfig /deterministic -d:NET_4_0 -d:NET_4_5 -d:MONO -nowarn:1699 -nostdlib -r:./../../class/lib/build/mscorlib.dll -optimize -d:FEATURE_PAL,PFX_LEGACY_3_5,FEATURE_NETCORE -d:INSIDE_SYSCORE -d:LIBC -unsafe -nowarn:436 -d:NET_3_5 -nowarn:1720 -d:FEATURE_CORE_DLR,FEATURE_REFEMIT,FEATURE_PDBEMIT -r:./../../class/lib/build/System.dll -r:./../../class/lib/build/Mono.Posix.dll</flags>
-      <output>System.Core.dll</output>
-      <built_sources></built_sources>
-      <library_output>./../../class/lib/build/plaincore/System.Core.dll</library_output>
       <fx_version>4.5</fx_version>
       <profile>build</profile>
       <resources></resources>
@@ -615,6 +604,28 @@
       <profile>build</profile>
       <resources></resources>
       <response>Mono.Cecil.dll.sources</response>
+    </project>
+    <project dir="class/Mono.CompilerServices.SymbolWriter" library="Mono.CompilerServices.SymbolWriter-build">
+      <boot>true</boot>
+      <flags>/codepage:65001 /nologo /noconfig /deterministic -d:NET_4_0 -d:NET_4_5 -d:MONO -nowarn:1699 -nostdlib -r:./../../class/lib/build/mscorlib.dll -optimize -r:./../../class/lib/build/System.dll</flags>
+      <output>Mono.CompilerServices.SymbolWriter.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../class/lib/build/Mono.CompilerServices.SymbolWriter.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>build</profile>
+      <resources></resources>
+      <response>Mono.CompilerServices.SymbolWriter.dll.sources</response>
+    </project>
+    <project dir="class/PEAPI" library="PEAPI-build">
+      <boot>false</boot>
+      <flags>/codepage:65001 /nologo /noconfig /deterministic -d:NET_4_0 -d:NET_4_5 -d:MONO -nowarn:1699 -nostdlib -r:./../../class/lib/build/mscorlib.dll -optimize -nowarn:414,618 -r:./../../class/lib/build/System.dll</flags>
+      <output>PEAPI.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../class/lib/build/PEAPI.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>build</profile>
+      <resources></resources>
+      <response>PEAPI.dll.sources</response>
     </project>
     <project dir="tools/cil-stringreplacer" library="cil-stringreplacer-build">
       <boot></boot>
@@ -948,7 +959,7 @@
     </project>
     <project dir="class/Facades/System.ValueTuple" library="Facades_System.ValueTuple-build">
       <boot>false</boot>
-      <flags>/codepage:65001 /nologo /noconfig /deterministic -d:NET_4_0 -d:NET_4_5 -d:MONO -nowarn:1699 -nostdlib -r:./../../../class/lib/build/mscorlib.dll -optimize /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699</flags>
+      <flags>/codepage:65001 /nologo /noconfig /deterministic -d:NET_4_0 -d:NET_4_5 -d:MONO -nowarn:1699 -nostdlib -r:./../../../class/lib/build/mscorlib.dll -optimize /delaysign /keyfile:../../Open.snk /nowarn:1616,1699</flags>
       <output>System.ValueTuple.dll</output>
       <built_sources></built_sources>
       <library_output>./../../../class/lib/build/Facades/System.ValueTuple.dll</library_output>
@@ -1000,6 +1011,17 @@
       <profile>build</profile>
       <resources></resources>
       <response>commoncryptogenerator.exe.sources</response>
+    </project>
+    <project dir="ilasm" library="ilasm-build">
+      <boot></boot>
+      <flags>/codepage:65001 /nologo /noconfig /deterministic -d:NET_4_0 -d:NET_4_5 -d:MONO -nowarn:1699 -nostdlib -r:./../class/lib/build/mscorlib.dll -optimize -r:PEAPI -r:Mono.CompilerServices.SymbolWriter -r:Mono.Security</flags>
+      <output>ilasm.exe</output>
+      <built_sources>ILParser.cs</built_sources>
+      <library_output>./../class/lib/build/ilasm.exe</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>build</profile>
+      <resources></resources>
+      <response>ilasm.exe.sources</response>
     </project>
     <project dir="class/corlib" library="corlib-net_4_x">
       <boot>true</boot>
@@ -1054,7 +1076,7 @@
       <fx_version>4.5</fx_version>
       <profile>net_4_x</profile>
       <resources></resources>
-      <response>System.dll.sources</response>
+      <response>./../../build/deps/net_4_x_System.dll.sources</response>
     </project>
     <project dir="class/System" library="System-tests-net_4_x">
       <boot>false</boot>
@@ -1076,7 +1098,7 @@
       <fx_version>4.5</fx_version>
       <profile>net_4_x</profile>
       <resources></resources>
-      <response>System.dll.sources</response>
+      <response>./../../build/deps/net_4_x_System.dll.sources</response>
     </project>
     <project dir="class/System" library="System-tests-net_4_x">
       <boot>false</boot>
@@ -1098,7 +1120,7 @@
       <fx_version>4.5</fx_version>
       <profile>net_4_x</profile>
       <resources></resources>
-      <response>System.dll.sources</response>
+      <response>./../../build/deps/net_4_x_System.dll.sources</response>
     </project>
     <project dir="class/System" library="System-tests-net_4_x">
       <boot>false</boot>
@@ -1190,7 +1212,7 @@
     </project>
     <project dir="class/System.Core" library="System.Core-net_4_x">
       <boot>false</boot>
-      <flags>/codepage:65001 /nologo /noconfig /deterministic -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -nowarn:1699 -nostdlib -r:./../../class/lib/net_4_x/mscorlib.dll /debug:portable -optimize -d:FEATURE_PAL,PFX_LEGACY_3_5,FEATURE_NETCORE -d:INSIDE_SYSCORE -d:LIBC -unsafe -nowarn:436 -d:NET_3_5 -nowarn:1720 -d:FEATURE_CORE_DLR,FEATURE_REFEMIT,FEATURE_PDBEMIT -r:./../../class/lib/net_4_x/System.dll -r:./../../class/lib/net_4_x/Mono.Posix.dll</flags>
+      <flags>/codepage:65001 /nologo /noconfig /deterministic -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -nowarn:1699 -nostdlib -r:./../../class/lib/net_4_x/mscorlib.dll /debug:portable -optimize -d:FEATURE_PAL,PFX_LEGACY_3_5,FEATURE_NETCORE -d:INSIDE_SYSCORE -d:LIBC -unsafe -nowarn:436 -d:NET_3_5 -d:FEATURE_COMPILE,FEATURE_COMPILE_TO_METHODBUILDER,FEATURE_PDB_GENERATOR -r:./../../class/lib/net_4_x/System.dll -r:./../../class/lib/net_4_x/Mono.Posix.dll</flags>
       <output>System.Core.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/net_4_x/System.Core.dll</library_output>
@@ -1201,29 +1223,7 @@
     </project>
     <project dir="class/System.Core" library="System.Core-tests-net_4_x">
       <boot>false</boot>
-      <flags>/codepage:65001 /nologo /noconfig /deterministic -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -nowarn:1699 -nostdlib -r:./../../class/lib/net_4_x/mscorlib.dll /debug:portable -optimize -r:./../../class/lib/net_4_x/plaincore/System.Core.dll -d:FEATURE_PAL,PFX_LEGACY_3_5,FEATURE_NETCORE -d:INSIDE_SYSCORE -d:LIBC -unsafe -nowarn:436 -d:NET_3_5 -nowarn:1720 -d:FEATURE_CORE_DLR,FEATURE_REFEMIT,FEATURE_PDBEMIT -r:./../../class/lib/net_4_x/System.dll -r:./../../class/lib/net_4_x/Mono.Posix.dll</flags>
-      <output>net_4_x_System.Core_test.dll</output>
-      <built_sources></built_sources>
-      <library_output>net_4_x_System.Core_test.dll</library_output>
-      <fx_version>4.5</fx_version>
-      <profile>net_4_x</profile>
-      <resources></resources>
-      <response>./../../build/deps/net_4_x_System.Core_test.dll.response</response>
-    </project>
-    <project dir="class/System.Core" library="System.Core-plaincore-net_4_x">
-      <boot>false</boot>
-      <flags>/codepage:65001 /nologo /noconfig /deterministic -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -nowarn:1699 -nostdlib -r:./../../class/lib/net_4_x/mscorlib.dll /debug:portable -optimize -d:FEATURE_PAL,PFX_LEGACY_3_5,FEATURE_NETCORE -d:INSIDE_SYSCORE -d:LIBC -unsafe -nowarn:436 -d:NET_3_5 -nowarn:1720 -d:FEATURE_CORE_DLR,FEATURE_REFEMIT,FEATURE_PDBEMIT -r:./../../class/lib/net_4_x/System.dll -r:./../../class/lib/net_4_x/Mono.Posix.dll</flags>
-      <output>System.Core.dll</output>
-      <built_sources></built_sources>
-      <library_output>./../../class/lib/net_4_x/plaincore/System.Core.dll</library_output>
-      <fx_version>4.5</fx_version>
-      <profile>net_4_x</profile>
-      <resources></resources>
-      <response>./../../build/deps/net_4_x_System.Core.dll.sources</response>
-    </project>
-    <project dir="class/System.Core" library="System.Core-tests-net_4_x">
-      <boot>false</boot>
-      <flags>/codepage:65001 /nologo /noconfig /deterministic -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -nowarn:1699 -nostdlib -r:./../../class/lib/net_4_x/mscorlib.dll /debug:portable -optimize -r:./../../class/lib/net_4_x/plaincore/System.Core.dll -d:FEATURE_PAL,PFX_LEGACY_3_5,FEATURE_NETCORE -d:INSIDE_SYSCORE -d:LIBC -unsafe -nowarn:436 -d:NET_3_5 -nowarn:1720 -d:FEATURE_CORE_DLR,FEATURE_REFEMIT,FEATURE_PDBEMIT -r:./../../class/lib/net_4_x/System.dll -r:./../../class/lib/net_4_x/Mono.Posix.dll</flags>
+      <flags>/codepage:65001 /nologo /noconfig /deterministic -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -nowarn:1699 -nostdlib -r:./../../class/lib/net_4_x/mscorlib.dll /debug:portable -optimize -r:./../../class/lib/net_4_x/System.Core.dll -d:FEATURE_PAL,PFX_LEGACY_3_5,FEATURE_NETCORE -d:INSIDE_SYSCORE -d:LIBC -unsafe -nowarn:436 -d:NET_3_5 -d:FEATURE_COMPILE,FEATURE_COMPILE_TO_METHODBUILDER,FEATURE_PDB_GENERATOR -r:./../../class/lib/net_4_x/System.dll -r:./../../class/lib/net_4_x/Mono.Posix.dll</flags>
       <output>net_4_x_System.Core_test.dll</output>
       <built_sources></built_sources>
       <library_output>net_4_x_System.Core_test.dll</library_output>
@@ -1311,7 +1311,7 @@
     </project>
     <project dir="class/System.IO.Compression.FileSystem" library="System.IO.Compression.FileSystem-net_4_x">
       <boot>false</boot>
-      <flags>/codepage:65001 /nologo /noconfig /deterministic -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -nowarn:1699 -nostdlib -r:./../../class/lib/net_4_x/mscorlib.dll /debug:portable -optimize -r:./../../class/lib/net_4_x/System.dll -r:./../../class/lib/net_4_x/System.IO.Compression.dll</flags>
+      <flags>/codepage:65001 /nologo /noconfig /deterministic -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -nowarn:1699 -nostdlib -r:./../../class/lib/net_4_x/mscorlib.dll /debug:portable -optimize -unsafe -r:./../../class/lib/net_4_x/System.dll -r:./../../class/lib/net_4_x/System.IO.Compression.dll</flags>
       <output>System.IO.Compression.FileSystem.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/net_4_x/System.IO.Compression.FileSystem.dll</library_output>
@@ -1333,7 +1333,7 @@
     </project>
     <project dir="class/System.Drawing" library="System.Drawing-net_4_x">
       <boot>false</boot>
-      <flags>/codepage:65001 /nologo /noconfig /deterministic -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -nowarn:1699 -nostdlib -r:./../../class/lib/net_4_x/mscorlib.dll /debug:portable -optimize /unsafe -d:FEATURE_TYPECONVERTER -resource:Assembly/Mono.ico,Mono.ico -resource:Assembly/Information.ico,Information.ico -resource:Assembly/Error.ico,Error.ico -resource:Assembly/Warning.ico,Warning.ico -resource:Assembly/Question.ico,Question.ico -resource:Assembly/Shield.ico,Shield.ico -r:./../../class/lib/net_4_x/System.dll</flags>
+      <flags>/codepage:65001 /nologo /noconfig /deterministic -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -nowarn:1699 -nostdlib -r:./../../class/lib/net_4_x/mscorlib.dll /debug:portable -optimize /unsafe -resource:Assembly/Mono.ico,Mono.ico -resource:Assembly/Information.ico,Information.ico -resource:Assembly/Error.ico,Error.ico -resource:Assembly/Warning.ico,Warning.ico -resource:Assembly/Question.ico,Question.ico -resource:Assembly/Shield.ico,Shield.ico -d:FEATURE_TYPECONVERTER,SUPPORTS_WINDOWS_COLORS -r:./../../class/lib/net_4_x/System.dll</flags>
       <output>System.Drawing.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/net_4_x/System.Drawing.dll</library_output>
@@ -1344,7 +1344,7 @@
     </project>
     <project dir="class/System.Drawing" library="System.Drawing-tests-net_4_x">
       <boot>false</boot>
-      <flags>/codepage:65001 /nologo /noconfig /deterministic -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -nowarn:1699 -nostdlib -r:./../../class/lib/net_4_x/mscorlib.dll /debug:portable -optimize -r:./../../class/lib/net_4_x/System.Drawing.dll /unsafe -d:FEATURE_TYPECONVERTER -resource:Assembly/Mono.ico,Mono.ico -resource:Assembly/Information.ico,Information.ico -resource:Assembly/Error.ico,Error.ico -resource:Assembly/Warning.ico,Warning.ico -resource:Assembly/Question.ico,Question.ico -resource:Assembly/Shield.ico,Shield.ico -r:./../../class/lib/net_4_x/System.dll -define:TEST -resource:Test/resources/indexed.png,indexed.png -nowarn:0618 -nowarn:219 -nowarn:169</flags>
+      <flags>/codepage:65001 /nologo /noconfig /deterministic -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -nowarn:1699 -nostdlib -r:./../../class/lib/net_4_x/mscorlib.dll /debug:portable -optimize -r:./../../class/lib/net_4_x/System.Drawing.dll /unsafe -resource:Assembly/Mono.ico,Mono.ico -resource:Assembly/Information.ico,Information.ico -resource:Assembly/Error.ico,Error.ico -resource:Assembly/Warning.ico,Warning.ico -resource:Assembly/Question.ico,Question.ico -resource:Assembly/Shield.ico,Shield.ico -d:FEATURE_TYPECONVERTER,SUPPORTS_WINDOWS_COLORS -r:./../../class/lib/net_4_x/System.dll -define:TEST -resource:Test/resources/indexed.png,indexed.png -nowarn:0618 -nowarn:219 -nowarn:169</flags>
       <output>net_4_x_System.Drawing_test.dll</output>
       <built_sources></built_sources>
       <library_output>net_4_x_System.Drawing_test.dll</library_output>
@@ -4864,7 +4864,7 @@
     </project>
     <project dir="class/Facades/System.ValueTuple" library="Facades_System.ValueTuple-net_4_x">
       <boot>false</boot>
-      <flags>/codepage:65001 /nologo /noconfig /deterministic -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -nowarn:1699 -nostdlib -r:./../../../class/lib/net_4_x/mscorlib.dll /debug:portable -optimize /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699</flags>
+      <flags>/codepage:65001 /nologo /noconfig /deterministic -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -nowarn:1699 -nostdlib -r:./../../../class/lib/net_4_x/mscorlib.dll -optimize /delaysign /keyfile:../../Open.snk /nowarn:1616,1699</flags>
       <output>System.ValueTuple.dll</output>
       <built_sources></built_sources>
       <library_output>./../../../class/lib/net_4_x/Facades/System.ValueTuple.dll</library_output>
@@ -5051,7 +5051,7 @@
     </project>
     <project dir="ilasm" library="ilasm-net_4_x">
       <boot></boot>
-      <flags>/codepage:65001 /nologo /noconfig /deterministic /lib:../class/lib/net_4_x /r:../class/lib/net_4_x/PEAPI.dll /r:Mono.CompilerServices.SymbolWriter.dll /r:Mono.Security.dll -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -nowarn:1699 -nostdlib -r:./../class/lib/net_4_x/mscorlib.dll /debug:portable -optimize</flags>
+      <flags>/codepage:65001 /nologo /noconfig /deterministic -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -nowarn:1699 -nostdlib -r:./../class/lib/net_4_x/mscorlib.dll /debug:portable -optimize -r:PEAPI -r:Mono.CompilerServices.SymbolWriter -r:Mono.Security</flags>
       <output>ilasm.exe</output>
       <built_sources>ILParser.cs</built_sources>
       <library_output>./../class/lib/net_4_x/ilasm.exe</library_output>

@@ -25,8 +25,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mono.Posix-net_4_x", "mcs/c
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Core-net_4_x", "mcs/class/System.Core/System.Core-net_4_x.csproj", "{359142A1-D80F-401E-AA64-7167C9317649}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Core-plaincore-net_4_x", "mcs/class/System.Core/System.Core-plaincore-net_4_x.csproj", "{1EC0EBC0-0B35-454C-89AE-3F8F0FDD9705}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "resgen-net_4_x", "mcs/tools/resgen/resgen-net_4_x.csproj", "{647DC12E-A4EE-424A-9EC7-CE6643EE2EF7}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.IO.Compression-net_4_x", "mcs/class/System.IO.Compression/System.IO.Compression-net_4_x.csproj", "{6187D26C-54C8-4298-829E-A99B0E6036B1}"
@@ -729,10 +727,6 @@ Global
 		{359142A1-D80F-401E-AA64-7167C9317649}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{359142A1-D80F-401E-AA64-7167C9317649}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{359142A1-D80F-401E-AA64-7167C9317649}.Release|Any CPU.Build.0 = Release|Any CPU
-		{1EC0EBC0-0B35-454C-89AE-3F8F0FDD9705}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{1EC0EBC0-0B35-454C-89AE-3F8F0FDD9705}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{1EC0EBC0-0B35-454C-89AE-3F8F0FDD9705}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{1EC0EBC0-0B35-454C-89AE-3F8F0FDD9705}.Release|Any CPU.Build.0 = Release|Any CPU
 		{647DC12E-A4EE-424A-9EC7-CE6643EE2EF7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{647DC12E-A4EE-424A-9EC7-CE6643EE2EF7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{647DC12E-A4EE-424A-9EC7-CE6643EE2EF7}.Release|Any CPU.ActiveCfg = Release|Any CPU
