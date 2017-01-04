@@ -125,8 +125,6 @@ def validate_args(args):
         fx_root = os.path.join(clr_root, '_', 'fx')
     else:
         fx_root = os.path.normpath(fx_root)
-        validate_arg(fx_root, lambda item: os.path.isdir(
-            os.path.dirname(fx_root)))
 
     if env_script is not None:
         validate_arg(env_script, lambda item: os.path.isfile(env_script))
