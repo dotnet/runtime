@@ -45,9 +45,7 @@ public:
         bool    signCheckOnly; // For converting between unsigned/signed int
     };
 
-#ifdef _TARGET_64BIT_
     static void getCastDescription(GenTreePtr treeNode, CastInfo* castInfo);
-#endif // _TARGET_64BIT_
 
 private:
 #ifdef DEBUG
