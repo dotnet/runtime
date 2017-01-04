@@ -38,6 +38,12 @@ int __cdecl main(int argc, char *argv[])
     DoStrTest(u"foo %5.2s", u"bar", u"foo    ba");
     DoStrTest(u"foo %-5s", u"bar", u"foo bar  ");
     DoStrTest(u"foo %05s", u"bar", u"foo 00bar");
+    DoStrTest(u"foo %s", NULL, u"foo (null)");
+    DoStrTest(u"foo %hs", NULL, u"foo (null)");
+    DoStrTest(u"foo %ls", NULL, u"foo (null)");
+    DoStrTest(u"foo %ws", NULL, u"foo (null)");
+    DoStrTest(u"foo %Ls", NULL, u"foo (null)");
+    DoStrTest(u"foo %I64s", NULL, u"foo (null)");
 
     PAL_Terminate();
     return PASS;    

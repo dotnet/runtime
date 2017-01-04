@@ -37,6 +37,12 @@ int __cdecl main(int argc, char *argv[])
     DoStrTest(convert("foo %5.2S"),"bar", "foo    ba");
     DoStrTest(convert("foo %-5S"), "bar", "foo bar  ");
     DoStrTest(convert("foo %05S"), "bar", "foo 00bar");
+    DoStrTest(convert("foo %S"), NULL, "foo (null)");
+    DoStrTest(convert("foo %hS"), NULL, "foo (null)");
+    DoWStrTest(convert("foo %lS"), NULL, "foo (null)");
+    DoWStrTest(convert("foo %wS"), NULL, "foo (null)");
+    DoStrTest(convert("foo %LS"), NULL, "foo (null)");
+    DoStrTest(convert("foo %I64S"), NULL, "foo (null)");
 
     PAL_Terminate();
     return PASS;
