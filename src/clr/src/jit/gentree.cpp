@@ -14411,12 +14411,14 @@ GenTreePtr Compiler::gtBuildCommaList(GenTreePtr list, GenTreePtr expr)
         result->gtFlags |= (list->gtFlags & GTF_ALL_EFFECT);
         result->gtFlags |= (expr->gtFlags & GTF_ALL_EFFECT);
 
-        // 'list' and 'expr' should have valuenumbers defined for both or for neither one
-        noway_assert(list->gtVNPair.BothDefined() == expr->gtVNPair.BothDefined());
+        // 'list' and 'expr' should have valuenumbers defined for both or for neither one (unless we are remorphing,
+        // in which case a prior transform involving either node may have discarded or otherwise invalidated the value
+        // numbers).
+        assert((list->gtVNPair.BothDefined() == expr->gtVNPair.BothDefined()) || !fgGlobalMorph);
 
         // Set the ValueNumber 'gtVNPair' for the new GT_COMMA node
         //
-        if (expr->gtVNPair.BothDefined())
+        if (list->gtVNPair.BothDefined() && expr->gtVNPair.BothDefined())
         {
             // The result of a GT_COMMA node is op2, the normal value number is op2vnp
             // But we also need to include the union of side effects from op1 and op2.
