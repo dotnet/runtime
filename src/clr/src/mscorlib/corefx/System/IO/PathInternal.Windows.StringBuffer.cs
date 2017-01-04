@@ -86,7 +86,7 @@ namespace System.IO
             // The only way to specify a fixed path that doesn't begin with two slashes
             // is the drive, colon, slash format- i.e. C:\
             return !((path.Length >= 3)
-                && (path[1] == Path.VolumeSeparatorChar)
+                && (path[1] == VolumeSeparatorChar)
                 && IsDirectorySeparator(path[2]));
         }
     }
