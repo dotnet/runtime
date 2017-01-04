@@ -30,6 +30,7 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU' " />
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU' " />
   <ItemGroup>
+    <Compile Include="NotifyReadVirtualNetworkStream.cs" />
     <Compile Include="DummyTcpServer.cs" />
     <Compile Include="TestConfiguration.cs" />
     <!-- SslStream Tests -->
@@ -95,7 +96,7 @@
     <Compile Include="$(CommonTestPath)\System\Threading\Tasks\TaskTimeoutExtensions.cs">
       <Link>Common\System\Threading\Tasks\TaskTimeoutExtensions.cs</Link>
     </Compile>
-    </ItemGroup>
+  </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'=='netcoreapp1.1'">
     <!-- TODO #13070: Add net463 to the condition after the TFM gets updated to the actual .Net 4.6.3.-->
     <Compile Include="SslStreamAlertsTest.cs" />
@@ -162,7 +163,7 @@
       <Project>{89F37791-6254-4D60-AB96-ACD3CCA0E771}</Project>
       <Name>System.Net.Security</Name>
     </ProjectReference>
-	  <ProjectReference Include="$(CommonTestPath)\System\Diagnostics\RemoteExecutorConsoleApp\RemoteExecutorConsoleApp.csproj">
+    <ProjectReference Include="$(CommonTestPath)\System\Diagnostics\RemoteExecutorConsoleApp\RemoteExecutorConsoleApp.csproj">
       <Project>{69e46a6f-9966-45a5-8945-2559fe337827}</Project>
       <Name>RemoteExecutorConsoleApp</Name>
     </ProjectReference>
