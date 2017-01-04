@@ -10,16 +10,16 @@ namespace System.Reflection
     {
         private const BindingFlags everything = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static;
 
-        private static void CheckAndThrow(Type t)
+        private static void CheckAndThrow(Type type)
         {
-            if (t == null) throw new ArgumentNullException("type");
-            if (!(t is RuntimeType)) throw new ArgumentException(Environment.GetResourceString("Argument_MustBeRuntimeType"));
+            if (type == null) throw new ArgumentNullException(nameof(type));
+            if (!(type is RuntimeType)) throw new ArgumentException(Environment.GetResourceString("Argument_MustBeRuntimeType"));
         }
 
-        private static void CheckAndThrow(MethodInfo m)
+        private static void CheckAndThrow(MethodInfo method)
         {
-            if (m == null) throw new ArgumentNullException("method");
-            if (!(m is RuntimeMethodInfo)) throw new ArgumentException(Environment.GetResourceString("Argument_MustBeRuntimeMethodInfo"));
+            if (method == null) throw new ArgumentNullException(nameof(method));
+            if (!(method is RuntimeMethodInfo)) throw new ArgumentException(Environment.GetResourceString("Argument_MustBeRuntimeMethodInfo"));
         }
 
         public static IEnumerable<PropertyInfo> GetRuntimeProperties(this Type type)
