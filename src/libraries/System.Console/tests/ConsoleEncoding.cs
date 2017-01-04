@@ -29,7 +29,20 @@ public class ConsoleEncoding
 
         try
         {
-            byte [] inputBytes = Console.OutputEncoding.GetBytes(inputString);
+            byte [] inputBytes;
+            byte [] inputBytesNoBom = Console.OutputEncoding.GetBytes(inputString);
+            byte [] bom = Console.OutputEncoding.GetPreamble();
+
+            if (bom.Length > 0)
+            {
+                inputBytes = new byte[inputBytesNoBom.Length + bom.Length];
+                Array.Copy(bom, inputBytes, bom.Length);
+                Array.Copy(inputBytesNoBom, 0, inputBytes, bom.Length, inputBytesNoBom.Length);
+            }
+            else
+            {
+                inputBytes = inputBytesNoBom;
+            }
 
             byte[] outBytes = new byte[inputBytes.Length];
             using (MemoryStream ms = new MemoryStream(outBytes, true))
@@ -43,7 +56,7 @@ public class ConsoleEncoding
 
             Assert.Equal(inputBytes, outBytes);
 
-            string inString = new String(Console.InputEncoding.GetChars(inputBytes));
+            string inString = new String(Console.InputEncoding.GetChars(inputBytesNoBom));
 
             string outString;
             using (MemoryStream ms = new MemoryStream(inputBytes, false))
