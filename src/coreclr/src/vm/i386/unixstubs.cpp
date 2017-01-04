@@ -70,11 +70,6 @@ VOID __cdecl PopSEHRecords(LPVOID pTargetSP)
     PORTABILITY_ASSERT("Implement for PAL");
 }
 
-EXTERN_C VOID SinglecastDelegateInvokeStub()
-{
-    PORTABILITY_ASSERT("SinglecastDelegateInvokeStub");
-}
-
 EXTERN_C VOID ResolveWorkerChainLookupAsmStub()
 {
     PORTABILITY_ASSERT("ResolveWorkerChainLookupAsmStub");
