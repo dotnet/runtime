@@ -6,7 +6,7 @@
     <Version>$(HostResolverVersion)</Version>
     <SkipPackageFileCheck>true</SkipPackageFileCheck>
     <SkipValidatePackage>true</SkipValidatePackage>
-    <PackagePlatforms>x64;x86;arm;arm64;</PackagePlatforms>
+    <PackagePlatforms>x64;x86;arm;arm64;armel;</PackagePlatforms>
     <OutputPath>$(PackagesOutputPath)</OutputPath>
     <IncludeRuntimeJson>true</IncludeRuntimeJson>
     <Serviceable>true</Serviceable>
@@ -63,6 +63,9 @@
     </ProjectReference>
     <ProjectReference Include="debian\Microsoft.NETCore.DotNetHostResolver.pkgproj">
       <Platform>amd64</Platform>
+    </ProjectReference>
+    <ProjectReference Include="debian\Microsoft.NETCore.DotNetHostResolver.pkgproj">
+      <Platform>armel</Platform>
     </ProjectReference>
     <ProjectReference Include="opensuse.13.2\Microsoft.NETCore.DotNetHostResolver.pkgproj">
       <Platform>amd64</Platform>

@@ -63,6 +63,10 @@
       <OSGroup>Linux</OSGroup>
       <Platform>amd64</Platform>
     </Project>
+    <Project Condition="'$(TargetsLinux)' == 'true' and '$(DistroRid)' == 'debian.8-armel'" Include="debian/Microsoft.NETCore.DotNetHostResolver.pkgproj">
+      <OSGroup>Linux</OSGroup>
+      <Platform>armel</Platform>
+    </Project>
     <Project Condition="'$(TargetsLinux)' == 'true' and '$(DistroRid)' == 'debian.8-x64'" Include="debian/Microsoft.NETCore.DotNetHostResolver.pkgproj">
       <OSGroup>Linux</OSGroup>
       <Platform>amd64</Platform>
