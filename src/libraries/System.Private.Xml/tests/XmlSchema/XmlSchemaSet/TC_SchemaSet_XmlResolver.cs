@@ -16,9 +16,6 @@ namespace System.Xml.Tests
 
         public TC_SchemaSet_XmlResolver(ITestOutputHelper output)
         {
-            // Make sure that we don't cache the value of the switch to enable testing
-            AppContext.SetSwitch("TestSwitch.LocalAppContext.DisableCaching", true);
-
             _output = output;
         }
 
@@ -97,7 +94,6 @@ namespace System.Xml.Tests
         }
 
         //[Variation(Desc = "v4 - schema(Local)->schema(Local)", Priority = 1)]
-        [ActiveIssue(14064)]
         [Fact]
         public void v4()
         {
@@ -113,7 +109,6 @@ namespace System.Xml.Tests
         }
 
         //[Variation(Desc = "v5 - schema(Local)->schema(Local)->schema(Local)", Priority = 1)]
-        [ActiveIssue(14064)]
         [Fact]
         public void v5()
         {
