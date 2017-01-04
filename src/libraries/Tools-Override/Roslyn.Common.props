@@ -6,13 +6,13 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <RoslynPropsFile Condition="'$(RoslynPropsFile)' == '' and '$(OS)' != 'Unix'">$(ToolRuntimePath)/net45/roslyn/build/Microsoft.Net.Compilers.props</RoslynPropsFile>
+    <RoslynPropsFile Condition="'$(RoslynPropsFile)' == '' and '$(RunningOnUnix)' != 'true'">$(ToolRuntimePath)/net45/roslyn/build/Microsoft.Net.Compilers.props</RoslynPropsFile>
   </PropertyGroup>
 
   <!--
     On Unix we always use a version of Roslyn we restore from NuGet and we have to work around some known issues.
   -->
-  <PropertyGroup Condition="'$(RoslynPropsFile)' == '' and '$(OS)'=='Unix'">
+  <PropertyGroup Condition="'$(RoslynPropsFile)' == '' and '$(RunningOnUnix)' == 'true'">
     <RoslynPackageDir>$(PackagesDir)/$(RoslynPackageName).$(RoslynVersion)/</RoslynPackageDir>
     <RoslynPropsFile>$(RoslynPackageDir)build/$(RoslynPackageName).props</RoslynPropsFile>
 
