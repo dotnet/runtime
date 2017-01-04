@@ -42,7 +42,7 @@
       "values": ["True", "False"],
       "defaultValue": true
     },
-    "ArchitectureGroup": {
+    "ArchGroup": {
       "description": "Sets the architecture value that will be used for managed builds.",
       "valueType": "property",
       "values": ["AnyCPU", "x86", "arm", "x64", "arm64"],
@@ -302,7 +302,7 @@
         "buildArch": {
           "description": "Passes the value of the test architecture to the respective build-managed script.",
           "settings": {
-            "ArchitectureGroup": "default"
+            "ArchGroup": "default"
           }
         },
         "verbose": {
