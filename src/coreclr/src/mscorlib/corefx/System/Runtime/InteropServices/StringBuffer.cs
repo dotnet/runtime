@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Buffers;
+using System.Runtime.CompilerServices;
 
 namespace System.Runtime.InteropServices
 {
@@ -39,11 +40,13 @@ namespace System.Runtime.InteropServices
         /// <exception cref="ArgumentOutOfRangeException">Thrown if attempting to index outside of the buffer length.</exception>
         public char this[int index]
         {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
                 if (index >= _length) throw new ArgumentOutOfRangeException(nameof(index));
                 return _buffer[index];
             }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             set
             {
                 if (index >= _length) throw new ArgumentOutOfRangeException(nameof(index));
@@ -233,7 +236,7 @@ namespace System.Runtime.InteropServices
         /// of <paramref name="value"/> characters.
         /// </exception>
         /// <exception cref="ArgumentNullException">Thrown if <paramref name="destination"/> is null.</exception>
-        public unsafe void CopyTo(int bufferIndex, ref StringBuffer destination, int destinationIndex, int count)
+        public void CopyTo(int bufferIndex, ref StringBuffer destination, int destinationIndex, int count)
         {
             if (destinationIndex > destination._length) throw new ArgumentOutOfRangeException(nameof(destinationIndex));
             if (bufferIndex >= _length) throw new ArgumentOutOfRangeException(nameof(bufferIndex));
@@ -250,7 +253,7 @@ namespace System.Runtime.InteropServices
         /// Copy contents from the specified string into the buffer at the given index. Start index must be within the current length of
         /// the buffer, will grow as necessary.
         /// </summary>
-        public unsafe void CopyFrom(int bufferIndex, string source, int sourceIndex = 0, int count = -1)
+        public void CopyFrom(int bufferIndex, string source, int sourceIndex = 0, int count = -1)
         {
             if (source == null) throw new ArgumentNullException(nameof(source));
             if (bufferIndex > _length) throw new ArgumentOutOfRangeException(nameof(bufferIndex));

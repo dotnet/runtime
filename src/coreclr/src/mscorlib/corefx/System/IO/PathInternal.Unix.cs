@@ -10,11 +10,15 @@ namespace System.IO
     /// <summary>Contains internal path helpers that are shared between many projects.</summary>
     internal static partial class PathInternal
     {
+        internal const char DirectorySeparatorChar = '/';
+        internal const char AltDirectorySeparatorChar = '/';
+        internal const char VolumeSeparatorChar = '/';
+        internal const char PathSeparator = ':';
+
+        internal const string DirectorySeparatorCharAsString = "/";
+
         // There is only one invalid path character in Unix
         private const char InvalidPathChar = '\0';
-        internal static char[] GetInvalidPathChars() => new char[] { InvalidPathChar };
-
-        internal static readonly int MaxComponentLength = Interop.Sys.MaxName;
 
         internal const string ParentDirectoryPrefix = @"../";
 
@@ -34,8 +38,8 @@ namespace System.IO
         {
             // The alternate directory separator char is the same as the directory separator,
             // so we only need to check one.
-            Debug.Assert(Path.DirectorySeparatorChar == Path.AltDirectorySeparatorChar);
-            return c == Path.DirectorySeparatorChar;
+            Debug.Assert(DirectorySeparatorChar == AltDirectorySeparatorChar);
+            return c == DirectorySeparatorChar;
         }
 
         /// <summary>
@@ -101,9 +105,9 @@ namespace System.IO
         {
             // The directory separator, volume separator, and the alternate directory
             // separator should be the same on Unix, so we only need to check one.
-            Debug.Assert(Path.DirectorySeparatorChar == Path.AltDirectorySeparatorChar);
-            Debug.Assert(Path.DirectorySeparatorChar == Path.VolumeSeparatorChar);
-            return ch == Path.DirectorySeparatorChar;
+            Debug.Assert(DirectorySeparatorChar == AltDirectorySeparatorChar);
+            Debug.Assert(DirectorySeparatorChar == VolumeSeparatorChar);
+            return ch == DirectorySeparatorChar;
         }
 
         internal static bool HasInvalidVolumeSeparator(string path)

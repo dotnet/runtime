@@ -40,6 +40,13 @@ namespace System.IO
         // Local and Global MS-DOS Device Names
         // https://msdn.microsoft.com/en-us/library/windows/hardware/ff554302.aspx
 
+        internal const char DirectorySeparatorChar = '\\';
+        internal const char AltDirectorySeparatorChar = '/';
+        internal const char VolumeSeparatorChar = ':';
+        internal const char PathSeparator = ';';
+
+        internal const string DirectorySeparatorCharAsString = "\\";
+
         internal const string ExtendedPathPrefix = @"\\?\";
         internal const string UncPathPrefix = @"\\";
         internal const string UncExtendedPrefixToInsert = @"?\UNC\";
@@ -57,22 +64,6 @@ namespace System.IO
         // \\?\UNC\, \\.\UNC\
         internal const int UncExtendedPrefixLength = 8;
         internal const int MaxComponentLength = 255;
-
-        internal static char[] GetInvalidPathChars() => new char[]
-        {
-            '|', '\0',
-            (char)1, (char)2, (char)3, (char)4, (char)5, (char)6, (char)7, (char)8, (char)9, (char)10,
-            (char)11, (char)12, (char)13, (char)14, (char)15, (char)16, (char)17, (char)18, (char)19, (char)20,
-            (char)21, (char)22, (char)23, (char)24, (char)25, (char)26, (char)27, (char)28, (char)29, (char)30,
-            (char)31
-        };
-
-        // [MS - FSA] 2.1.4.4 Algorithm for Determining if a FileName Is in an Expression
-        // https://msdn.microsoft.com/en-us/library/ff469270.aspx
-        private static readonly char[] s_wildcardChars =
-        {
-            '\"', '<', '>', '*', '?'
-        };
 
         /// <summary>
         /// Returns true if the given character is a valid drive letter
@@ -193,10 +184,12 @@ namespace System.IO
             for (int i = 0; i < path.Length; i++)
             {
                 char c = path[i];
-
-                if (c <= '\u001f' || c == '|')
+                if (c <= '|') // fast path for common case - '|' is highest illegal character
                 {
-                    return true;
+                    if (c <= '\u001f' || c == '|')
+                    {
+                        return true;
+                    }
                 }
             }
 
@@ -206,13 +199,24 @@ namespace System.IO
         /// <summary>
         /// Check for known wildcard characters. '*' and '?' are the most common ones.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal unsafe static bool HasWildCardCharacters(string path)
+        internal static bool HasWildCardCharacters(string path)
         {
             // Question mark is part of dos device syntax so we have to skip if we are
             int startIndex = IsDevice(path) ? ExtendedPathPrefix.Length : 0;
 
-            return path.IndexOfAny(s_wildcardChars, startIndex) >= 0;
+            // [MS - FSA] 2.1.4.4 Algorithm for Determining if a FileName Is in an Expression
+            // https://msdn.microsoft.com/en-us/library/ff469270.aspx
+            for (int i = startIndex; i < path.Length; i++)
+            {
+                char c = path[i];
+                if (c <= '?') // fast path for common case - '?' is highest wildcard character
+                {
+                    if (c == '\"' || c == '<' || c == '>' || c == '*' || c == '?')
+                        return true;
+                }
+            }
+
+            return false;
         }
 
         /// <summary>
@@ -263,7 +267,7 @@ namespace System.IO
                     while (i < pathLength && (!IsDirectorySeparator(path[i]) || --n > 0)) i++;
                 }
             }
-            else if (pathLength >= volumeSeparatorLength && path[volumeSeparatorLength - 1] == Path.VolumeSeparatorChar)
+            else if (pathLength >= volumeSeparatorLength && path[volumeSeparatorLength - 1] == VolumeSeparatorChar)
             {
                 // Path is at least longer than where we expect a colon, and has a colon (\\?\A:, A:)
                 // If the colon is followed by a directory separator, move past it
@@ -314,7 +318,7 @@ namespace System.IO
             // The only way to specify a fixed path that doesn't begin with two slashes
             // is the drive, colon, slash format- i.e. C:\
             return !((path.Length >= 3)
-                && (path[1] == Path.VolumeSeparatorChar)
+                && (path[1] == VolumeSeparatorChar)
                 && IsDirectorySeparator(path[2])
                 // To match old behavior we'll check the drive character for validity as the path is technically
                 // not qualified if you don't have a valid drive. "=:\" is the "=" file's default data stream.
@@ -350,7 +354,7 @@ namespace System.IO
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static bool IsDirectorySeparator(char c)
         {
-            return c == Path.DirectorySeparatorChar || c == Path.AltDirectorySeparatorChar;
+            return c == DirectorySeparatorChar || c == AltDirectorySeparatorChar;
         }
 
         /// <summary>
@@ -401,7 +405,7 @@ namespace System.IO
                 {
                     current = path[i];
                     if (IsDirectorySeparator(current)
-                        && (current != Path.DirectorySeparatorChar
+                        && (current != DirectorySeparatorChar
                             // Check for sequential separators past the first position (we need to keep initial two for UNC/extended)
                             || (i > 0 && i + 1 < path.Length && IsDirectorySeparator(path[i + 1]))))
                     {
@@ -418,7 +422,7 @@ namespace System.IO
             if (IsDirectorySeparator(path[start]))
             {
                 start++;
-                builder.Append(Path.DirectorySeparatorChar);
+                builder.Append(DirectorySeparatorChar);
             }
 
             for (int i = start; i < path.Length; i++)
@@ -435,7 +439,7 @@ namespace System.IO
                     }
 
                     // Ensure it is the primary separator
-                    current = Path.DirectorySeparatorChar;
+                    current = DirectorySeparatorChar;
                 }
 
                 builder.Append(current);
@@ -450,7 +454,7 @@ namespace System.IO
         /// <param name="ch">The character to test.</param>
         internal static bool IsDirectoryOrVolumeSeparator(char ch)
         {
-            return IsDirectorySeparator(ch) || Path.VolumeSeparatorChar == ch;
+            return IsDirectorySeparator(ch) || VolumeSeparatorChar == ch;
         }
 
         /// <summary>
@@ -467,11 +471,11 @@ namespace System.IO
             int startIndex = IsExtended(path) ? ExtendedPathPrefix.Length : PathStartSkip(path);
 
             // If we start with a colon
-            if ((path.Length > startIndex && path[startIndex] == Path.VolumeSeparatorChar)
+            if ((path.Length > startIndex && path[startIndex] == VolumeSeparatorChar)
                 // Or have an invalid drive letter and colon
-                || (path.Length >= startIndex + 2 && path[startIndex + 1] == Path.VolumeSeparatorChar && !IsValidDriveChar(path[startIndex]))
+                || (path.Length >= startIndex + 2 && path[startIndex + 1] == VolumeSeparatorChar && !IsValidDriveChar(path[startIndex]))
                 // Or have any colons beyond the drive colon
-                || (path.Length > startIndex + 2 && path.IndexOf(Path.VolumeSeparatorChar, startIndex + 2) != -1))
+                || (path.Length > startIndex + 2 && path.IndexOf(VolumeSeparatorChar, startIndex + 2) != -1))
             {
                 return true;
             }
