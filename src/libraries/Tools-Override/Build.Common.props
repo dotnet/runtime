@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <!-- 
+     This file will contain all of the common properties from most repos. The intention is to only have 
+     repo specific properties inside the repos, and move to this file everything that is common.
+  -->
+
+  <!--
+    Import the reference assembly props
+    
+      Sets Properties:
+        IsReferenceAssembly - Set if the project is in the ref assm path
+  -->
+  <Import Project="$(MSBuildThisFileDirectory)ReferenceAssemblies.props" Condition="'$(ExcludeReferenceAssembliesImport)'!='true'" />
+
+  <PropertyGroup>
+    <CompilerResponseFile Condition="'$(CheckSumSHA256)'!='false'">$(MSBuildThisFileDirectory)checksum.rsp</CompilerResponseFile>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <GetNuGetPackageVersionsDependsOn>CreateVersionFileDuringBuild</GetNuGetPackageVersionsDependsOn>
+  </PropertyGroup>
+
+  <!-- Common BuildTools properties -->
+  <PropertyGroup>
+    <ToolRuntimePath Condition="'$(ToolRuntimePath)'=='' and '$(ProjectDir)'==''">$(MSBuildThisFileDirectory)</ToolRuntimePath>
+    <ToolRuntimePath Condition="'$(ToolRuntimePath)'=='' and '$(ProjectDir)'!=''">$(ProjectDir)Tools/</ToolRuntimePath>
+    <ToolsDir Condition="'$(ToolsDir)'==''">$(MSBuildThisFileDirectory)</ToolsDir>
+    <DotnetCliPath Condition="'$(DotnetCliPath)'==''">$(ToolRuntimePath)dotnetcli/</DotnetCliPath>
+    <OverrideToolHost>$(DotnetCliPath)dotnet</OverrideToolHost>
+    <BuildToolsTaskDir Condition="'$(BuildToolsTargets45)' == 'true'">$(ToolsDir)net45/</BuildToolsTaskDir>
+    <BuildToolsTaskDir Condition="'$(BuildToolsTaskDir)'==''">$(ToolsDir)</BuildToolsTaskDir>
+    <UseRoslynCompilers Condition="'$(UseRoslynCompilers)'=='' and '$(OSEnvironment)'!='Windows_NT'">false</UseRoslynCompilers>
+    <UseSharedCompilation Condition="'$(UseSharedCompilation)' == '' and '$(OSEnvironment)' == 'Windows_NT' and '$(UseRoslynCompilers)' != 'false'">true</UseSharedCompilation>
+  </PropertyGroup>
+  
+  <!-- Setting IsTestProject prior to Build.Common.targets -->
+  <PropertyGroup>
+    <IsTestProject Condition="'$(IsTestProject)'=='' And $(MSBuildProjectName.EndsWith('.tests', StringComparison.OrdinalIgnoreCase))">true</IsTestProject>
+  </PropertyGroup>
+
+  <Import Project="$(MSBuildThisFileDirectory)Roslyn.Common.props" />
+
+  <!--
+    import the MicroBuild boot-strapper props (only relevant for shipping binaries)
+  -->
+  <Import Project="$(MSBuildThisFileDirectory)MicroBuild.Core.props" Condition="'$(IsTestProject)'!='true' AND Exists('$(MSBuildThisFileDirectory)MicroBuild.Core.props')" />
+</Project>
