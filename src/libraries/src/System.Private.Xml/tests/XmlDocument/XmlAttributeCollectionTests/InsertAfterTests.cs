@@ -209,6 +209,7 @@ namespace System.Xml.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)] //Fix for this edge case was only made in NetCore
         public void InsertAfterRemovesDupRefAttrAtTheEnd()
         {
             const string attributeName = "existingAttr";
@@ -230,6 +231,7 @@ namespace System.Xml.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)] //Fix for this edge case was only made in NetCore
         public void InsertAfterReplacesDupRefAttr()
         {
             const string attributeName = "existingAttr";
