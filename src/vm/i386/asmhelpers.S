@@ -1159,3 +1159,91 @@ LOCAL_LABEL(NullObject):
 
 LEAF_END SinglecastDelegateInvokeStub, _TEXT
 #endif // FEATURE_STUBS_AS_IL
+
+#ifndef CROSSGEN_COMPILE
+// =======================================================================================
+// void ResolveWorkerChainLookupAsmStub();
+//
+//  This will perform a chained lookup of the entry if the initial cache lookup fails
+//
+//  Entry stack:
+//           dispatch token
+//           siteAddrForRegisterIndirect (used only if this is a RegisterIndirect dispatch call)
+//           return address of caller to stub
+//  Also, EAX contains the pointer to the first ResolveCacheElem pointer for the calculated
+//  bucket in the cache table.
+//
+NESTED_ENTRY ResolveWorkerChainLookupAsmStub, _TEXT, NoHandler
+
+#define CALL_STUB_CACHE_INITIAL_SUCCESS_COUNT   0x100
+
+// this is the part of the stack that is present as we enter this function:
+#define ChainLookup__token                  0x00
+#define ChainLookup__indirect_addr          0x04
+#define ChainLookup__caller_ret_addr        0x08
+#define ChainLookup__ret_esp                0x0c
+
+#define ChainLookup_spilled_reg_size        8
+
+    // spill regs
+    push    edx
+    push    ecx
+
+    // move the token into edx
+    mov     edx, [esp + ChainLookup_spilled_reg_size + ChainLookup__token]
+
+    // move the MT into ecx
+    mov     ecx, [ecx]
+
+LOCAL_LABEL(main_loop):
+
+    // get the next entry in the chain (don't bother checking the first entry again)
+    mov     eax, [eax + ResolveCacheElem__pNext]
+
+    // test if we hit a terminating NULL
+    test    eax, eax
+    jz      LOCAL_LABEL(fail)
+
+    // compare the MT of the ResolveCacheElem
+    cmp     ecx, [eax + ResolveCacheElem__pMT]
+    jne     LOCAL_LABEL(main_loop)
+
+    // compare the token of the ResolveCacheElem
+    cmp     edx, [eax + ResolveCacheElem__token]
+    jne     LOCAL_LABEL(main_loop)
+
+    // success
+    // decrement success counter and move entry to start if necessary
+    PREPARE_EXTERNAL_VAR g_dispatch_cache_chain_success_counter, edx
+    mov     ecx, dword ptr [edx]
+    sub     ecx, 1
+    mov     dword ptr [edx], ecx
+
+    //@TODO: Perhaps this should be a jl for better branch prediction?
+    jge     LOCAL_LABEL(nopromote)
+
+    // be quick to reset the counter so we don't get a bunch of contending threads
+    mov     dword ptr [edx], CALL_STUB_CACHE_INITIAL_SUCCESS_COUNT
+
+    // promote the entry to the beginning of the chain
+    mov     ecx, eax
+    // call C_FUNC(VirtualCallStubManager::PromoteChainEntry)
+    call    C_FUNC(_ZN22VirtualCallStubManager17PromoteChainEntryEP16ResolveCacheElem)
+
+LOCAL_LABEL(nopromote):
+
+    pop     ecx
+    pop     edx
+    add     esp, (ChainLookup__caller_ret_addr - ChainLookup__token)
+    mov     eax, [eax + ResolveCacheElem__target]
+    jmp     eax
+
+LOCAL_LABEL(fail):
+
+    // restore registers
+    pop     ecx
+    pop     edx
+    jmp     ResolveWorkerAsmStub
+
+NESTED_END ResolveWorkerChainLookupAsmStub, _TEXT
+#endif // CROSSGEN_COMPILE
