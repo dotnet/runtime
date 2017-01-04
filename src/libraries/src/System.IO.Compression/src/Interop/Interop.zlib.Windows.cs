@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Diagnostics;
 using System.IO.Compression;
 using System.Runtime.InteropServices;
 
@@ -10,10 +9,7 @@ internal static partial class Interop
 {
     internal static partial class zlib
     {
-        /*
-            private const string ZLibVersion = "1.2.3";       
-        */
-        private static readonly byte[] ZLibVersion = new byte[] { (byte)'1', (byte)'.', (byte)'2', (byte)'.', (byte)'3', 0 };
+        private static readonly byte[] ZLibVersion = { (byte)'1', (byte)'.', (byte)'2', (byte)'.', (byte)'3', 0 };
 
         [DllImport(Libraries.Zlib)]
         private extern static unsafe int deflateInit2_(byte* stream, int level, int method, int windowBits, int memLevel, int strategy,

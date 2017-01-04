@@ -6,18 +6,21 @@ using System.Diagnostics;
 
 namespace System.IO.Compression
 {
-    internal class CopyEncoder
+    internal sealed class CopyEncoder
     {
-        // padding for copy encoder formatting
-        //  - 1 byte for header
-        //  - 4 bytes for len, nlen
+        /// <summary>
+        /// padding for copy encoder formatting
+        ///  - 1 byte for header
+        ///  - 4 bytes for len, nlen
+        /// </summary>
         private const int PaddingSize = 5;
 
-        // max uncompressed deflate block size is 64K.
+        /// <summary>max uncompressed deflate block size is 64K.</summary>
         private const int MaxUncompressedBlockSize = 65536;
 
-
-        // null input means write an empty payload with formatting info. This is needed for the final block.
+        /// <summary>
+        /// null input means write an empty payload with formatting info. This is needed for the final block.
+        /// </summary>
         public void GetBlock(DeflateInput input, OutputBuffer output, bool isFinal)
         {
             Debug.Assert(output != null);
@@ -41,13 +44,15 @@ namespace System.IO.Compression
             // write header and flush bits
             if (isFinal)
             {
-                output.WriteBits(FastEncoderStatics.BFinalNoCompressionHeaderBitCount,
-                                        FastEncoderStatics.BFinalNoCompressionHeader);
+                output.WriteBits(
+                    FastEncoderStatics.BFinalNoCompressionHeaderBitCount,
+                    FastEncoderStatics.BFinalNoCompressionHeader);
             }
             else
             {
-                output.WriteBits(FastEncoderStatics.NoCompressionHeaderBitCount,
-                                        FastEncoderStatics.NoCompressionHeader);
+                output.WriteBits(
+                    FastEncoderStatics.NoCompressionHeaderBitCount,
+                    FastEncoderStatics.NoCompressionHeader);
             }
 
             // now we're aligned
