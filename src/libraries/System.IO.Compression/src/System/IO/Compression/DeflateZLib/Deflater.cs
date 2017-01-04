@@ -13,15 +13,15 @@ using ZFlushCode = System.IO.Compression.ZLibNative.FlushCode;
 namespace System.IO.Compression
 {
     /// <summary>
-    /// Provides a wrapper around the ZLib compression API
+    /// Provides a wrapper around the ZLib compression API.
     /// </summary>
     internal sealed class Deflater : IDisposable
     {
         private ZLibNative.ZLibStreamHandle _zlibStream;
         private GCHandle _inputBufferHandle;
         private bool _isDisposed;
-        private const int minWindowBits = -15;              // WindowBits must be between -8..-15 to write no header, 8..15 for a
-        private const int maxWindowBits = 31;               // zlib header, or 24..31 for a GZip header
+        private const int minWindowBits = -15;  // WindowBits must be between -8..-15 to write no header, 8..15 for a
+        private const int maxWindowBits = 31;   // zlib header, or 24..31 for a GZip header
 
         // Note, DeflateStream or the deflater do not try to be thread safe.
         // The lock is just used to make writing to unmanaged structures atomic to make sure
@@ -29,8 +29,6 @@ namespace System.IO.Compression
         // To prevent *managed* buffer corruption or other weird behaviour users need to synchronise
         // on the stream explicitly.
         private object SyncLock => this;
-
-        #region exposed members
 
         internal Deflater(CompressionLevel compressionLevel, int windowBits)
         {
@@ -91,10 +89,7 @@ namespace System.IO.Compression
             }
         }
 
-        public bool NeedsInput()
-        {
-            return 0 == _zlibStream.AvailIn;
-        }
+        public bool NeedsInput() => 0 == _zlibStream.AvailIn;
 
         internal void SetInput(byte[] inputBuffer, int startIndex, int count)
         {
@@ -186,11 +181,6 @@ namespace System.IO.Compression
             return ReadDeflateOutput(outputBuffer, ZFlushCode.SyncFlush, out bytesRead) == ZErrorCode.Ok;
         }
 
-        #endregion
-
-
-        #region helpers & native call wrappers
-
         private void DeallocateInputBufferHandle()
         {
             Debug.Assert(_inputBufferHandle.IsAllocated);
@@ -237,7 +227,6 @@ namespace System.IO.Compression
             }
         }
 
-
         [SecuritySafeCritical]
         private ZErrorCode Deflate(ZFlushCode flushCode)
         {
@@ -267,7 +256,5 @@ namespace System.IO.Compression
                     throw new ZLibException(SR.ZLibErrorUnexpected, "deflate", (int)errC, _zlibStream.GetErrorMessage());
             }
         }
-        #endregion
-
     }
 }

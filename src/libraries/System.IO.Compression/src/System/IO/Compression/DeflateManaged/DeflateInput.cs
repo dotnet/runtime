@@ -6,74 +6,38 @@ using System.Diagnostics;
 
 namespace System.IO.Compression
 {
-    internal class DeflateInput
+    internal sealed class DeflateInput
     {
-        private byte[] _buffer;
-        private int _count;
-        private int _startIndex;
-
-        internal byte[] Buffer
-        {
-            get
-            {
-                return _buffer;
-            }
-            set
-            {
-                _buffer = value;
-            }
-        }
-
-        internal int Count
-        {
-            get
-            {
-                return _count;
-            }
-            set
-            {
-                _count = value;
-            }
-        }
-
-        internal int StartIndex
-        {
-            get
-            {
-                return _startIndex;
-            }
-            set
-            {
-                _startIndex = value;
-            }
-        }
+        internal byte[] Buffer;
+        internal int Count;
+        internal int StartIndex;
 
         internal void ConsumeBytes(int n)
         {
-            Debug.Assert(n <= _count, "Should use more bytes than what we have in the buffer");
-            _startIndex += n;
-            _count -= n;
-            Debug.Assert(_startIndex + _count <= _buffer.Length, "Input buffer is in invalid state!");
+            Debug.Assert(n <= Count, "Should use more bytes than what we have in the buffer");
+            StartIndex += n;
+            Count -= n;
+            Debug.Assert(StartIndex + Count <= Buffer.Length, "Input buffer is in invalid state!");
         }
 
-        internal InputState DumpState()
-        {
-            InputState savedState;
-            savedState.count = _count;
-            savedState.startIndex = _startIndex;
-            return savedState;
-        }
+        internal InputState DumpState() => new InputState(Count, StartIndex);
 
         internal void RestoreState(InputState state)
         {
-            _count = state.count;
-            _startIndex = state.startIndex;
+            Count = state.Count;
+            StartIndex = state.StartIndex;
         }
 
         internal struct InputState
         {
-            internal int count;
-            internal int startIndex;
+            internal readonly int Count;
+            internal readonly int StartIndex;
+
+            public InputState(int count, int startIndex)
+            {
+                Count = count;
+                StartIndex = startIndex;
+            }
         }
     }
 }
