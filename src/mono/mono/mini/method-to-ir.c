@@ -7009,6 +7009,7 @@ emit_llvmonly_virtual_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
 	gboolean variant_iface = FALSE;
 	guint32 slot;
 	int offset;
+	gboolean special_array_interface = cmethod->klass->is_array_special_interface;
 
 	/*
 	 * In llvm-only mode, vtables contain function descriptors instead of
@@ -7067,7 +7068,7 @@ emit_llvmonly_virtual_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
 		return emit_extra_arg_calli (cfg, fsig, sp, arg_reg, call_target);
 	}
 
-	if (!fsig->generic_param_count && is_iface && !variant_iface && !is_gsharedvt) {
+	if (!fsig->generic_param_count && is_iface && !variant_iface && !is_gsharedvt && !special_array_interface) {
 		/*
 		 * A simple interface call
 		 *
@@ -7106,7 +7107,7 @@ emit_llvmonly_virtual_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
 		return emit_llvmonly_calli (cfg, fsig, sp, ftndesc_ins);
 	}
 
-	if ((fsig->generic_param_count || variant_iface) && !is_gsharedvt) {
+	if ((fsig->generic_param_count || variant_iface || special_array_interface) && !is_gsharedvt) {
 		/*
 		 * This is similar to the interface case, the vtable slot points to an imt thunk which is
 		 * dynamically extended as more instantiations are discovered.
