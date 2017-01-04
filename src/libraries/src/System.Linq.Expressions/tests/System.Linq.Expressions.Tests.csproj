@@ -16,7 +16,7 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' " />
   <ItemGroup>
     <TargetingPackExclusions Include="System.Linq.Expressions" />
-    <ProjectReference Include="..\src\System.Linq.Expressions.csproj" />
+    <RuntimeReferencedAssemblyNames Include="System.Linq.Expressions" />
   </ItemGroup>
 
   <ItemGroup>
