@@ -9,9 +9,10 @@ using System.Diagnostics.Contracts;
 
 namespace System.Text
 {
-    internal class OSEncoding : Encoding
+    [Serializable]
+    internal sealed class OSEncoding : Encoding
     {
-        private int _codePage;
+        private readonly int _codePage;
         private string _encodingName;
 
         internal OSEncoding(int codePage) : base(codePage)
