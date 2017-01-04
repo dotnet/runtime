@@ -153,7 +153,7 @@ namespace System.Threading
 #if PLATFORM_UNIX
                             case Win32Native.ERROR_FILENAME_EXCED_RANGE:
                                 // On Unix, length validation is done by CoreCLR's PAL after converting to utf-8
-                                throw new ArgumentException(Environment.GetResourceString("Argument_WaitHandleNameTooLong", PathInternal.MaxComponentLength), "name");
+                                throw new ArgumentException(Environment.GetResourceString("Argument_WaitHandleNameTooLong", Interop.Sys.MaxName), "name");
 #endif
 
                             case Win32Native.ERROR_INVALID_HANDLE:
@@ -294,7 +294,7 @@ namespace System.Threading
                 if (name != null && errorCode == Win32Native.ERROR_FILENAME_EXCED_RANGE)
                 {
                     // On Unix, length validation is done by CoreCLR's PAL after converting to utf-8
-                    throw new ArgumentException(Environment.GetResourceString("Argument_WaitHandleNameTooLong", PathInternal.MaxComponentLength), nameof(name));
+                    throw new ArgumentException(Environment.GetResourceString("Argument_WaitHandleNameTooLong", Interop.Sys.MaxName), nameof(name));
                 }
 #endif
 
