@@ -8,9 +8,9 @@ namespace System.IO.Compression
 {
     internal sealed class DeflateInput
     {
-        internal byte[] Buffer;
-        internal int Count;
-        internal int StartIndex;
+        internal byte[] Buffer { get; set; }
+        internal int Count { get; set; }
+        internal int StartIndex { get; set; }
 
         internal void ConsumeBytes(int n)
         {
@@ -24,19 +24,19 @@ namespace System.IO.Compression
 
         internal void RestoreState(InputState state)
         {
-            Count = state.Count;
-            StartIndex = state.StartIndex;
+            Count = state._count;
+            StartIndex = state._startIndex;
         }
 
         internal struct InputState
         {
-            internal readonly int Count;
-            internal readonly int StartIndex;
+            internal readonly int _count;
+            internal readonly int _startIndex;
 
-            public InputState(int count, int startIndex)
+            internal InputState(int count, int startIndex)
             {
-                Count = count;
-                StartIndex = startIndex;
+                _count = count;
+                _startIndex = startIndex;
             }
         }
     }

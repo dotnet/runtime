@@ -112,8 +112,7 @@ namespace System.IO.Compression
         private bool InputAvailable(DeflateInput input) => input.Count > 0 || BytesInHistory > 0;
 
         // Can we safely continue writing to output buffer
-        private bool SafeToWriteTo(OutputBuffer output) =>
-            output.FreeBytes > FastEncoderStatics.MaxCodeLen;
+        private bool SafeToWriteTo(OutputBuffer output) => output.FreeBytes > FastEncoderStatics.MaxCodeLen;
 
         private void WriteEndOfBlock(OutputBuffer output)
         {

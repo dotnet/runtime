@@ -252,7 +252,6 @@ namespace System.IO.Compression
             return true;
         }
 
-        /// <summary>Is compression ratio under threshold?</summary>
         private bool UseCompressed(double ratio) => ratio <= BadCompressionThreshold;
 
         private void FlushInputWindows() => _deflateEncoder.FlushInput();
