@@ -41,13 +41,15 @@ namespace XLinqTests
             AddChild(new TestVariation(LoadOptionsPWS) { Attribute = new VariationAttribute("XDocument.Load(), Load options, preserveWhitespace, Stream") { Param = "Stream", Priority = 0 } });
             AddChild(new TestVariation(LoadOptionsPWS) { Attribute = new VariationAttribute("XDocument.Load(), Load options, preserveWhitespace, Uri") { Param = "Uri", Priority = 0 } });
             AddChild(new TestVariation(LoadOptionsBU) { Attribute = new VariationAttribute("XDocument.Load(), Load options, BaseUri, Uri") { Param = "Uri", Priority = 0 } });
-            AddChild(new TestVariation(LoadOptionsLI) { Attribute = new VariationAttribute("XDocument.Load(), Load options, LineInfo, Uri") { Param = "Uri", Priority = 0 } });
-            AddChild(new TestVariation(LoadOptionsLI) { Attribute = new VariationAttribute("XDocument.Load(), Load options, LineInfo, Stream") { Param = "Stream", Priority = 0 } });
+            // TODO [ActiveIssue(14856)]: Re-enable when fixed
+            //AddChild(new TestVariation(LoadOptionsLI) { Attribute = new VariationAttribute("XDocument.Load(), Load options, LineInfo, Uri") { Param = "Uri", Priority = 0 } });
+            //AddChild(new TestVariation(LoadOptionsLI) { Attribute = new VariationAttribute("XDocument.Load(), Load options, LineInfo, Stream") { Param = "Stream", Priority = 0 } });
             AddChild(new TestVariation(XE_LoadOptionsPWS) { Attribute = new VariationAttribute("XElement.Load(), Load options, preserveWhitespace, Uri") { Param = "Uri", Priority = 0 } });
             AddChild(new TestVariation(XE_LoadOptionsPWS) { Attribute = new VariationAttribute("XElement.Load(), Load options, preserveWhitespace, Stream") { Param = "Stream", Priority = 0 } });
             AddChild(new TestVariation(XE_LoadOptionsBU) { Attribute = new VariationAttribute("XElement.Load(), Load options, BaseUri, Uri") { Param = "Uri", Priority = 0 } });
-            AddChild(new TestVariation(XE_LoadOptionsLI) { Attribute = new VariationAttribute("XElement.Load(), Load options, LineInfo, Stream") { Param = "Stream", Priority = 0 } });
-            AddChild(new TestVariation(XE_LoadOptionsLI) { Attribute = new VariationAttribute("XElement.Load(), Load options, LineInfo, Uri") { Param = "Uri", Priority = 0 } });
+            // TODO [ActiveIssue(14856)]: Re-enable when fixed
+            //AddChild(new TestVariation(XE_LoadOptionsLI) { Attribute = new VariationAttribute("XElement.Load(), Load options, LineInfo, Stream") { Param = "Stream", Priority = 0 } });
+            //AddChild(new TestVariation(XE_LoadOptionsLI) { Attribute = new VariationAttribute("XElement.Load(), Load options, LineInfo, Uri") { Param = "Uri", Priority = 0 } });
             AddChild(new TestVariation(SaveOptionsTests) { Attribute = new VariationAttribute("XDocument.Save(), SaveOptions.DisableFormatting | SaveOptions.OmitDuplicateNamespaces") { Param = 3, Priority = 1 } });
             AddChild(new TestVariation(SaveOptionsTests) { Attribute = new VariationAttribute("XDocument.Save(), SaveOptions.OmitDuplicateNamespaces") { Param = 2, Priority = 1 } });
             AddChild(new TestVariation(SaveOptionsTests) { Attribute = new VariationAttribute("XDocument.Save(), SaveOptions.None") { Param = 0, Priority = 1 } });
