@@ -8,10 +8,11 @@ using System.Diagnostics;
 
 namespace System.Text
 {
-    internal class OSEncoder : Encoder
+    [Serializable]
+    internal sealed class OSEncoder : Encoder
     {
         private char _charLeftOver;
-        private Encoding _encoding;
+        private readonly Encoding _encoding;
 
         private const char NULL_CHAR = (char)0;
 

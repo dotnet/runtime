@@ -8,28 +8,29 @@ using System.Diagnostics;
 
 namespace System.Text
 {
-    internal class DecoderDBCS : Decoder
+    [Serializable]
+    internal sealed class DecoderDBCS : Decoder
     {
-        private Encoding _encoding;
-        private byte[] _leadyByteRanges = new byte[10]; // Max 5 ranges
+        private readonly Encoding _encoding;
+        private readonly byte[] _leadByteRanges = new byte[10]; // Max 5 ranges
         private int _rangesCount;
         private byte _leftOverLeadByte;
         
         internal DecoderDBCS(Encoding encoding)
         {
             _encoding = encoding;
-            _rangesCount = Interop.Kernel32.GetLeadByteRanges(_encoding.CodePage, _leadyByteRanges);
+            _rangesCount = Interop.Kernel32.GetLeadByteRanges(_encoding.CodePage, _leadByteRanges);
             Reset();
         }
 
         private bool IsLeadByte(byte b)
         {
-            if (b < _leadyByteRanges[0])
+            if (b < _leadByteRanges[0])
                 return false;
             int i = 0;
             while (i < _rangesCount)
             {
-                if (b >= _leadyByteRanges[i] && b <= _leadyByteRanges[i + 1])
+                if (b >= _leadByteRanges[i] && b <= _leadByteRanges[i + 1])
                     return true;
                 i += 2;
             }
@@ -103,7 +104,7 @@ namespace System.Text
             if (count < 0)
                 throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
 
-            bool excludeLastByte = count > 0 || (!flush && IsLastByteALeadByte(bytes, count));
+            bool excludeLastByte = count > 0 && !flush && IsLastByteALeadByte(bytes, count);
 
             if (excludeLastByte)
                 count--;

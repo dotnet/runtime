@@ -22,42 +22,38 @@ internal partial class Interop
             internal fixed byte CodePageName[260];
         }
 
-        internal static unsafe int GetLeadByteRanges(int codePage, byte[] leadyByteRanges)
+        internal static unsafe int GetLeadByteRanges(int codePage, byte[] leadByteRanges)
         {
             int count = 0;
             CPINFOEXW cpInfo;
             if (GetCPInfoExW((uint) codePage, 0, &cpInfo) != 0)
             {
                 // we don't care about the last 2 bytes as those are nulls
-                for (int i=0; i<10; i+=2)
+                for (int i=0; i<10 && leadByteRanges[i] != 0; i+=2)
                 {
-                    if (leadyByteRanges[i] == 0)
-                        break;
-                    leadyByteRanges[i] = cpInfo.LeadByte[i];
-                    leadyByteRanges[i+1] = cpInfo.LeadByte[i+1];
+                    leadByteRanges[i] = cpInfo.LeadByte[i];
+                    leadByteRanges[i+1] = cpInfo.LeadByte[i+1];
                     count++;
                 }
             }
             return count;
         }
 
-        internal static bool TryGetACPCodePage(out int codePage)
+        internal static unsafe bool TryGetACPCodePage(out int codePage)
         {
-            codePage = 0;
             // Note: GetACP is not available in the Windows Store Profile, but calling
             // GetCPInfoEx with the value CP_ACP (0) yields the same result.
             CPINFOEXW cpInfo;
-            unsafe
+            if (GetCPInfoExW(CP_ACP, 0, &cpInfo) != 0)
             {
-                CPINFOEXW* lpCPInfoExPtr = &(cpInfo);
-                if (GetCPInfoExW(CP_ACP, 0, lpCPInfoExPtr) != 0)
-                {
-                    codePage = (int)cpInfo.CodePage;
-                    return true;
-                }
+                codePage = (int)cpInfo.CodePage;
+                return true;
             }
-
-            return false;
+            else
+            {
+                codePage = 0;
+                return false;
+            }
         }
     }
 }
