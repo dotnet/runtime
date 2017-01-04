@@ -45,14 +45,14 @@ all-local: build-shared/libmono-btls-shared$(libsuffix) build-static/libmono-btl
 
 build-shared/Makefile:
 	-mkdir -p build-shared
-	(cd build-shared && $(CMAKE) $(CMAKE_ARGS) $(BTLS_CMAKE_ARGS) -DBUILD_SHARED_LIBS=1 $(abs_top_srcdir)/mono/btls)
+	(cd build-shared && CC="$(CC)" CXX="$(CXX)" $(CMAKE) $(CMAKE_ARGS) $(BTLS_CMAKE_ARGS) -DBUILD_SHARED_LIBS=1 $(abs_top_srcdir)/mono/btls)
 
 build-shared/libmono-btls-shared$(libsuffix): build-shared/Makefile
 	$(MAKE) -C build-shared $(CMAKE_VERBOSE)
 
 build-static/Makefile:
 	-mkdir -p build-static
-	(cd build-static && $(CMAKE) $(CMAKE_ARGS) $(BTLS_CMAKE_ARGS) $(abs_top_srcdir)/mono/btls)
+	(cd build-static && CC="$(CC)" CXX="$(CXX)" $(CMAKE) $(CMAKE_ARGS) $(BTLS_CMAKE_ARGS) $(abs_top_srcdir)/mono/btls)
 
 build-static/libmono-btls-static.a: build-static/Makefile
 	$(MAKE) -C build-static $(CMAKE_VERBOSE)

@@ -3037,6 +3037,7 @@ case "$host" in
 			AOT_SUPPORTED="yes"
 			BTLS_SUPPORTED=yes
 			BTLS_PLATFORM=i386
+			AC_CHECK_HEADER(stdalign.h,[],[BTLS_SUPPORTED=no])
 			;;
 		  darwin*)
 			AOT_SUPPORTED="yes"
@@ -3059,6 +3060,7 @@ case "$host" in
 			AOT_SUPPORTED="yes"
 			BTLS_SUPPORTED=yes
 			BTLS_PLATFORM=x86_64
+			AC_CHECK_HEADER(stdalign.h,[],[BTLS_SUPPORTED=no])
 			;;
 		  darwin*)
 			AOT_SUPPORTED="yes"
