@@ -16,12 +16,12 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'" />
   <ItemGroup>
-    <RuntimeReferencedAssemblyNames Include="System.Diagnostics.Debug" />
-    <RuntimeReferencedAssemblyNames Include="System.Runtime" />
-    <RuntimeReferencedAssemblyNames Include="System.Runtime.Extensions" />
-    <RuntimeReferencedAssemblyNames Include="System.Private.CoreLib" />
-    <RuntimeReferencedAssemblyNames Include="System.Threading.Tasks" />
-    <RuntimeReferencedAssemblyNames Include="System.Runtime.InteropServices.RuntimeInformation" />
+    <ReferenceFromRuntime Include="System.Diagnostics.Debug" />
+    <ReferenceFromRuntime Include="System.Runtime" />
+    <ReferenceFromRuntime Include="System.Runtime.Extensions" />
+    <ReferenceFromRuntime Include="System.Private.CoreLib" />
+    <ReferenceFromRuntime Include="System.Threading.Tasks" />
+    <ReferenceFromRuntime Include="System.Runtime.InteropServices.RuntimeInformation" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AttributeTests.cs" />
