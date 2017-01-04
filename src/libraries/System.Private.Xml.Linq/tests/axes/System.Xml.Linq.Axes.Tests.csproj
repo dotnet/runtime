@@ -27,6 +27,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\pkg\System.Private.Xml.Linq.pkgproj" />
     <ProjectReference Include="..\..\..\System.Private.Xml\pkg\System.Private.Xml.pkgproj" />
+    <ProjectReference Include="..\..\..\System.Xml.XDocument\pkg\System.Xml.XDocument.pkgproj" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
