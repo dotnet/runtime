@@ -66,7 +66,6 @@ namespace System.IO
         /// <param name="memberName">The member name of the function calling this method.</param>
         /// <param name="lineNumber">The line number of the function calling this method.</param>
         protected string GetTestFileName(int? index = null, [CallerMemberName] string memberName = null, [CallerLineNumber] int lineNumber = 0) =>
-            string.Format(index.HasValue ? "{0}_{1}_{2}" : "{0}_{1}",
-                memberName ?? "TestBase", lineNumber, index.GetValueOrDefault());
+            string.Format(index.HasValue ? "{0}_{1}_{2}" : "{0}_{1}", memberName ?? "TestBase", lineNumber, index.GetValueOrDefault());
     }
 }

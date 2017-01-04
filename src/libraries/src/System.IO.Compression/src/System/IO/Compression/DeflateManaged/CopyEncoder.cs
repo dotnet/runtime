@@ -15,7 +15,6 @@ namespace System.IO.Compression
         /// </summary>
         private const int PaddingSize = 5;
 
-        /// <summary>max uncompressed deflate block size is 64K.</summary>
         private const int MaxUncompressedBlockSize = 65536;
 
         /// <summary>

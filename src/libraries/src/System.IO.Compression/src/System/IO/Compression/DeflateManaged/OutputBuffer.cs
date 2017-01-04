@@ -101,22 +101,22 @@ namespace System.IO.Compression
 
         internal void RestoreState(BufferState state)
         {
-            _pos = state.Pos;
-            _bitBuf = state.BitBuf;
-            _bitCount = state.BitCount;
+            _pos = state._pos;
+            _bitBuf = state._bitBuf;
+            _bitCount = state._bitCount;
         }
 
         internal struct BufferState
         {
-            internal readonly int Pos;       // position
-            internal readonly uint BitBuf;   // store uncomplete bits
-            internal readonly int BitCount;  // number of bits in bitBuffer
+            internal readonly int _pos;      // position
+            internal readonly uint _bitBuf;  // store uncomplete bits
+            internal readonly int _bitCount; // number of bits in bitBuffer
 
-            public BufferState(int pos, uint bitBuf, int bitCount)
+            internal BufferState(int pos, uint bitBuf, int bitCount)
             {
-                Pos = pos;
-                BitBuf = bitBuf;
-                BitCount = bitCount;
+                _pos = pos;
+                _bitBuf = bitBuf;
+                _bitCount = bitCount;
             }
         }
     }
