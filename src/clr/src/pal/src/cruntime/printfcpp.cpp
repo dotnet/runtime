@@ -35,6 +35,9 @@ SET_DEFAULT_DEBUG_CHANNEL(CRT);
 
 using namespace CorUnix;
 
+static const char __nullstring[] = "(null)";  /* string to print on null ptr */
+static const WCHAR __wnullstring[] = W("(null)"); /* string to print on null ptr */
+
 int CoreVfprintf(CPalThread *pthrCurrent, PAL_FILE *stream, const char *format, va_list ap);
 int CoreVfwprintf(CPalThread *pthrCurrent, PAL_FILE *stream, const wchar_16 *format, va_list ap);
 
@@ -863,7 +866,7 @@ Parameters:
     - padding style flags (PRINTF_FORMAT_FLAGS)
 *******************************************************************************/
 
-INT Internal_AddPaddingVfprintf(CPalThread *pthrCurrent, PAL_FILE *stream, LPSTR In,
+INT Internal_AddPaddingVfprintf(CPalThread *pthrCurrent, PAL_FILE *stream, LPCSTR In,
                                        INT Padding, INT Flags)
 {
     LPSTR Out;
@@ -1096,7 +1099,8 @@ int CoreVfwprintf(CPalThread *pthrCurrent, PAL_FILE *stream, const wchar_16 *for
 {
     CHAR TempBuff[1024]; /* used to hold a single %<foo> format string */
     LPCWSTR Fmt = format;
-    LPWSTR TempWStr = NULL;
+    LPCWSTR TempWStr = NULL;
+    LPWSTR AllocedTempWStr = NULL;
     LPWSTR WorkingWStr = NULL;
     WCHAR TempWChar[2];
     INT Flags;
@@ -1105,7 +1109,6 @@ int CoreVfwprintf(CPalThread *pthrCurrent, PAL_FILE *stream, const wchar_16 *for
     INT Prefix;
     INT Type;
     INT TempInt;
-    BOOL WStrWasMalloced = FALSE;
     int mbtowcResult;
     int written=0;
     int paddingReturnValue;
@@ -1133,7 +1136,7 @@ int CoreVfwprintf(CPalThread *pthrCurrent, PAL_FILE *stream, const wchar_16 *for
                  (Type == PFF_TYPE_STRING || Type == PFF_TYPE_WSTRING)) ||
                  (Type == PFF_TYPE_WSTRING && (Flags & PFF_ZERO) != 0))
             {
-                WStrWasMalloced = FALSE;
+                AllocedTempWStr = NULL;
 
                 if (WIDTH_STAR == Width)
                 {
@@ -1162,37 +1165,50 @@ int CoreVfwprintf(CPalThread *pthrCurrent, PAL_FILE *stream, const wchar_16 *for
                 else
                 {
                     /* %lS assumes a LPSTR argument. */
-                    LPSTR s = va_arg(ap, LPSTR );
-                    UINT Length = 0;
-                    Length = MultiByteToWideChar( CP_ACP, 0, s, -1, NULL, 0 );
-                    if ( Length != 0 )
+                    LPCSTR s = va_arg(ap, LPSTR );
+                    if (s == NULL)
                     {
-                        TempWStr =
-                            (LPWSTR)InternalMalloc( (Length) * sizeof( WCHAR ) );
-                        if ( TempWStr )
+                        TempWStr = NULL;
+                    }
+                    else
+                    {
+                        UINT Length = 0;
+                        Length = MultiByteToWideChar( CP_ACP, 0, s, -1, NULL, 0 );
+                        if ( Length != 0 )
                         {
-                            WStrWasMalloced = TRUE;
-                            MultiByteToWideChar( CP_ACP, 0, s, -1,
-                                                 TempWStr, Length );
+                            AllocedTempWStr =
+                                (LPWSTR)InternalMalloc( (Length) * sizeof( WCHAR ) );
+                            
+                            if ( AllocedTempWStr )
+                            {
+                                MultiByteToWideChar( CP_ACP, 0, s, -1,
+                                                     AllocedTempWStr, Length );
+                                TempWStr = AllocedTempWStr;
+                            }
+                            else
+                            {
+                                ERROR( "InternalMalloc failed.\n" );
+                                LOGEXIT("vfwprintf returns int -1\n");
+                                PERF_EXIT(vfwprintf);
+                                va_end(ap);
+                                return -1;
+                            }
                         }
                         else
                         {
-                            ERROR( "InternalMalloc failed.\n" );
+                            ASSERT( "Unable to convert from multibyte "
+                                   " to wide char.\n" );
                             LOGEXIT("vfwprintf returns int -1\n");
                             PERF_EXIT(vfwprintf);
                             va_end(ap);
                             return -1;
                         }
                     }
-                    else
-                    {
-                        ASSERT( "Unable to convert from multibyte "
-                               " to wide char.\n" );
-                        LOGEXIT("vfwprintf returns int -1\n");
-                        PERF_EXIT(vfwprintf);
-                        va_end(ap);
-                        return -1;
-                    }
+                }
+
+                if (TempWStr == NULL)
+                {
+                    TempWStr = __wnullstring;
                 }
 
                 INT Length = PAL_wcslen(TempWStr);
@@ -1203,10 +1219,7 @@ int CoreVfwprintf(CPalThread *pthrCurrent, PAL_FILE *stream, const wchar_16 *for
                     LOGEXIT("vfwprintf returns int -1\n");
                     PERF_EXIT(vfwprintf);
                     pthrCurrent->SetLastError(ERROR_NOT_ENOUGH_MEMORY);
-                    if (WStrWasMalloced)
-                    {
-                        free(TempWStr);
-                    }
+                    free(AllocedTempWStr);
                     va_end(ap);
                     return -1;
                 }
@@ -1221,10 +1234,7 @@ int CoreVfwprintf(CPalThread *pthrCurrent, PAL_FILE *stream, const wchar_16 *for
                     if (wcsncpy_s(WorkingWStr, (Length + 1), TempWStr, Precision+1) != SAFECRT_SUCCESS)
                     {
                         ERROR("Internal_AddPaddingVfwprintf failed\n");
-                        if (WStrWasMalloced)
-                        {
-                            free(TempWStr);
-                        }
+                        free(AllocedTempWStr);
                         free(WorkingWStr);
                         LOGEXIT("wcsncpy_s failed!\n");
                         PERF_EXIT(vfwprintf);
@@ -1250,10 +1260,7 @@ int CoreVfwprintf(CPalThread *pthrCurrent, PAL_FILE *stream, const wchar_16 *for
                 if (paddingReturnValue == -1)
                 {
                     ERROR("Internal_AddPaddingVfwprintf failed\n");
-                    if (WStrWasMalloced)
-                    {
-                        free(TempWStr);
-                    }
+                    free(AllocedTempWStr);
                     free(WorkingWStr);
                     LOGEXIT("vfwprintf returns int -1\n");
                     PERF_EXIT(vfwprintf);
@@ -1263,10 +1270,7 @@ int CoreVfwprintf(CPalThread *pthrCurrent, PAL_FILE *stream, const wchar_16 *for
                 written += paddingReturnValue;
 
                 free(WorkingWStr);
-                if (WStrWasMalloced)
-                {
-                    free(TempWStr);
-                }
+                free(AllocedTempWStr);
             }
             else if (Prefix == PFF_PREFIX_LONG && Type == PFF_TYPE_CHAR)
             {
@@ -1525,7 +1529,7 @@ int CoreVfprintf(CPalThread *pthrCurrent, PAL_FILE *stream, const char *format, 
 {
     CHAR TempBuff[1024]; /* used to hold a single %<foo> format string */
     LPCSTR Fmt = format;
-    LPWSTR TempWStr;
+    LPCWSTR TempWStr;
     LPSTR TempStr;
     WCHAR TempWChar;
     INT Flags;
@@ -1574,6 +1578,10 @@ int CoreVfprintf(CPalThread *pthrCurrent, PAL_FILE *stream, const char *format, 
                 }
 
                 TempWStr = va_arg(ap, LPWSTR);
+                if (TempWStr == NULL)\
+                {
+                    TempWStr = __wnullstring;
+                }
                 Length = WideCharToMultiByte(CP_ACP, 0, TempWStr, -1, 0,
                                              0, 0, 0);
                 if (!Length)
@@ -1743,9 +1751,13 @@ int CoreVfprintf(CPalThread *pthrCurrent, PAL_FILE *stream, const char *format, 
             {
                 // Some versions of fprintf don't support 0-padded strings,
                 // so we handle them here.
-                char *tempStr;
+                const char *tempStr;
 
                 tempStr = va_arg(ap, char *);
+                if (tempStr == NULL)
+                {
+                    tempStr = __nullstring;
+                }
                 Length = strlen(tempStr);
                 paddingReturnValue = Internal_AddPaddingVfprintf(
                                                 pthrCurrent,
