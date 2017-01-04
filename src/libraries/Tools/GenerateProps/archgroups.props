@@ -3,7 +3,7 @@
   <ItemGroup>
     <ArchGroups Include="x86" />
     <ArchGroups Include="x64" />
-    <ArchGroups Include="ARM" />
-    <ArchGroups Include="ARM64" />
+    <ArchGroups Include="arm" />
+    <ArchGroups Include="arm64" />
   </ItemGroup>
 </Project>

@@ -42,8 +42,8 @@
       "values": ["True", "False"],
       "defaultValue": true
     },
-    "TestArchitecture": {
-      "description": "Sets the architecture value that will be used for testing.",
+    "ArchitectureGroup": {
+      "description": "Sets the architecture value that will be used for managed builds.",
       "valueType": "property",
       "values": ["AnyCPU", "x86", "arm", "x64", "arm64"],
       "defaultValue": "x64"
@@ -302,7 +302,7 @@
         "buildArch": {
           "description": "Passes the value of the test architecture to the respective build-managed script.",
           "settings": {
-            "TestArchitecture": "default"
+            "ArchitectureGroup": "default"
           }
         },
         "verbose": {
