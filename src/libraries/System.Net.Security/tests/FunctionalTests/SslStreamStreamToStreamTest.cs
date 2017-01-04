@@ -290,23 +290,30 @@ namespace System.Net.Security.Tests
             VirtualNetwork network = new VirtualNetwork();
 
             using (var clientStream = new VirtualNetworkStream(network, isServer: false))
-            using (var serverStream = new VirtualNetworkStream(network, isServer: true))
+            using (var serverStream = new NotifyReadVirtualNetworkStream(network, isServer: true))
             using (var clientSslStream = new SslStream(clientStream, false, AllowAnyServerCertificate))
             using (var serverSslStream = new SslStream(serverStream))
             {
                 bool result = DoHandshake(clientSslStream, serverSslStream);
                 Assert.True(result, "Handshake completed.");
 
-                byte serverReadByte = 0;
-                var readTask = Task.Run(async () =>
+                var serverBuffer = new byte[1];
+                var tcs = new TaskCompletionSource<object>();
+                serverStream.OnRead += (buffer, offset, count) =>
                 {
-                    var serverBuffer = new byte[1];
-                    await serverSslStream.ReadAsync(serverBuffer, 0, serverBuffer.Length);
-                    serverReadByte = serverBuffer[0];
-                });
+                    tcs.TrySetResult(null);
+                };
+                Task readTask = serverSslStream.ReadAsync(serverBuffer, 0, serverBuffer.Length);
+
+                // Since the sequence of calls that ends in serverStream.Read() is sync, by now
+                // the read task will have acquired the semaphore shared by Stream.BeginReadInternal()
+                // and Stream.BeginWriteInternal().
+                // But to be sure, we wait until we know we're inside Read().
+                await tcs.Task.TimeoutAfter(TestConfiguration.PassingTestTimeoutMilliseconds);
 
                 // Should not hang
-                await serverSslStream.WriteAsync(new byte[] { 1 }, 0, 1);
+                await serverSslStream.WriteAsync(new byte[] { 1 }, 0, 1)
+                    .TimeoutAfter(TestConfiguration.PassingTestTimeoutMilliseconds);
 
                 // Read in client
                 var clientBuffer = new byte[1];
@@ -316,7 +323,7 @@ namespace System.Net.Security.Tests
                 // Complete server read task
                 await clientSslStream.WriteAsync(new byte[] { 2 }, 0, 1);
                 await readTask;
-                Assert.Equal(2, serverReadByte);
+                Assert.Equal(2, serverBuffer[0]);
             }
         }
 
