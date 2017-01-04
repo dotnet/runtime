@@ -83,7 +83,7 @@
 
     <ZipFileCreateFromDependencyLists
       DependencyListFiles="@(TestDependencyListFile)"
-      DestinationArchive="$(TestWorkingDir)$(OSPlatformConfig)/archive/tests/Packages.zip"
+      DestinationArchive="$(TestWorkingDir)$(OSPlatformConfig)/archive/Packages.zip"
       RelativePathBaseDirectory="$(PackagesDir)"
       OverwriteDestination="true" />
   </Target>
