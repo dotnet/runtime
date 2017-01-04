@@ -127,7 +127,7 @@ namespace System.IO
         public static void SetCurrentDirectory(String path)
         {
             if (path==null)
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(path));
             if (path.Length==0)
                 throw new ArgumentException(Environment.GetResourceString("Argument_PathEmpty"));
             if (path.Length >= Path.MaxPath)
