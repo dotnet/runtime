@@ -103,7 +103,8 @@ namespace Microsoft.DotNet.Host.Build
                 return (String.Compare(rid, "win8-arm", true) == 0)
                        || (String.Compare(rid, "win10-arm64", true) == 0)
                        || (String.Compare(rid, "ubuntu.14.04-arm", true) == 0)
-                       || (String.Compare(rid, "ubuntu.16.04-arm", true) == 0);
+                       || (String.Compare(rid, "ubuntu.16.04-arm", true) == 0)
+                       || (String.Compare(rid, "debian.8-armel", true) == 0);
             }
             return false;
         }
