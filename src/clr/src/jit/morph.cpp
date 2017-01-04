@@ -14051,10 +14051,20 @@ GenTree* Compiler::fgMorphModToSubMulDiv(GenTreeOp* tree)
     {
         numerator = fgMakeMultiUse(&tree->gtOp1);
     }
+    else if (lvaLocalVarRefCounted && numerator->OperIsLocal())
+    {
+        // Morphing introduces new lclVar references. Increase ref counts
+        lvaIncRefCnts(numerator);
+    }
 
     if (!denominator->OperIsLeaf())
     {
         denominator = fgMakeMultiUse(&tree->gtOp2);
+    }
+    else if (lvaLocalVarRefCounted && denominator->OperIsLocal())
+    {
+        // Morphing introduces new lclVar references. Increase ref counts
+        lvaIncRefCnts(denominator);
     }
 
     // The numerator and denominator may have been assigned to temps, in which case
