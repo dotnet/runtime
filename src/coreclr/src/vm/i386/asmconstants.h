@@ -485,6 +485,20 @@ ASMCONSTANTS_C_ASSERT(DelegateObject___invocationCount  == offsetof(DelegateObje
 
 #endif
 
+#ifndef CROSSGEN_COMPILE
+// ResolveCacheElem from src/vm/virtualcallstub.h
+#define ResolveCacheElem__pMT               0x00
+#define ResolveCacheElem__token             0x04
+#define ResolveCacheElem__target            0x08
+#define ResolveCacheElem__pNext             0x0C
+
+ASMCONSTANTS_C_ASSERT(ResolveCacheElem__pMT     == offsetof(ResolveCacheElem, pMT));
+ASMCONSTANTS_C_ASSERT(ResolveCacheElem__token   == offsetof(ResolveCacheElem, token));
+ASMCONSTANTS_C_ASSERT(ResolveCacheElem__target  == offsetof(ResolveCacheElem, target));
+ASMCONSTANTS_C_ASSERT(ResolveCacheElem__pNext   == offsetof(ResolveCacheElem, pNext));
+
+#endif // !CROSSGEN_COMPILE
+
 #undef ASMCONSTANTS_C_ASSERT
 #undef ASMCONSTANTS_RUNTIME_ASSERT
 
