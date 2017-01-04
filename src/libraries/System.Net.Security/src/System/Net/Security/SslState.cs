@@ -790,16 +790,23 @@ namespace System.Net.Security
                 else
                 {
                     asyncRequest.AsyncState = message;
-                    IAsyncResult ar = InnerStream.BeginWrite(message.Payload, 0, message.Size, s_writeCallback, asyncRequest);
-                    if (!ar.CompletedSynchronously)
+                    Task t = InnerStream.WriteAsync(message.Payload, 0, message.Size);
+                    if (t.IsCompleted)
                     {
-#if DEBUG
-                        asyncRequest._DebugAsyncChain = ar;
-#endif
-                        return;
+                        t.GetAwaiter().GetResult();
                     }
-
-                    InnerStream.EndWrite(ar);
+                    else
+                    {
+                        IAsyncResult ar = TaskToApm.Begin(t, s_writeCallback, asyncRequest);
+                        if (!ar.CompletedSynchronously)
+                        {
+#if DEBUG
+                            asyncRequest._DebugAsyncChain = ar;
+#endif
+                            return;
+                        }
+                        TaskToApm.End(ar);
+                    }
                 }
             }
 
@@ -996,12 +1003,20 @@ namespace System.Net.Security
             else
             {
                 asyncRequest.AsyncState = exception;
-                IAsyncResult ar = InnerStream.BeginWrite(message.Payload, 0, message.Size, s_writeCallback, asyncRequest);
-                if (!ar.CompletedSynchronously)
+                Task t = InnerStream.WriteAsync(message.Payload, 0, message.Size);
+                if (t.IsCompleted)
                 {
-                    return;
+                    t.GetAwaiter().GetResult();
                 }
-                InnerStream.EndWrite(ar);
+                else
+                {
+                    IAsyncResult ar = TaskToApm.Begin(t, s_writeCallback, asyncRequest);
+                    if (!ar.CompletedSynchronously)
+                    {
+                        return;
+                    }
+                    TaskToApm.End(ar);
+                }
             }
 
             exception.Throw();
@@ -1065,7 +1080,7 @@ namespace System.Net.Security
             // Async completion.
             try
             {
-                sslState.InnerStream.EndWrite(transportResult);
+                TaskToApm.End(transportResult);
 
                 // Special case for an error notification.
                 object asyncState = asyncRequest.AsyncState;
@@ -1833,14 +1848,14 @@ namespace System.Net.Security
             CheckThrow(authSuccessCheck:true, shutdownCheck:true);
 
             ProtocolToken message = Context.CreateShutdownToken();
-            return InnerStream.BeginWrite(message.Payload, 0, message.Payload.Length, asyncCallback, asyncState);
+            return TaskToApm.Begin(InnerStream.WriteAsync(message.Payload, 0, message.Payload.Length), asyncCallback, asyncState);
         }
 
         internal void EndShutdown(IAsyncResult result)
         {
             CheckThrow(authSuccessCheck: true, shutdownCheck:true);
 
-            InnerStream.EndWrite(result);
+            TaskToApm.End(result);
             _shutdown = true;
         }
     }
