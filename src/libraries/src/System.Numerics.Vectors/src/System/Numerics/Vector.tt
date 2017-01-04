@@ -7,7 +7,6 @@
 <#@ import namespace="System.Runtime.InteropServices" #>
 <#@ include file="GenerationConfig.ttinclude" #><# GenerateCopyrightHeader(); #>
 
-using System.Diagnostics.Contracts;
 using System.Globalization;
 using System.Numerics.Hashing;
 using System.Runtime.CompilerServices;
