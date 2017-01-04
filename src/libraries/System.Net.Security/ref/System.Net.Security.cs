@@ -176,7 +176,6 @@ namespace System.Net.Security
 #endif
         public void Write(byte[] buffer) { }
         public override void Write(byte[] buffer, int offset, int count) { }
-        public override System.Threading.Tasks.Task WriteAsync(byte[] buffer, int offset, int count, System.Threading.CancellationToken cancellationToken) { throw null; }
     }
 }
 namespace System.Security.Authentication
