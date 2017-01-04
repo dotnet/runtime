@@ -9,12 +9,9 @@
     <MinorVersion>6</MinorVersion>
   </PropertyGroup>
 
-  <!--
-    $(OS) is set to Unix/Windows_NT. This comes from an environment variable on Windows and MSBuild on Unix.
-  -->
   <PropertyGroup>
-    <!-- Temp change to make OS X build behave as a Linux build -->
-    <OsEnvironment Condition="'$(OsEnvironment)'=='' AND '$(OS)'=='OSX'">Unix</OsEnvironment>
+    <OsEnvironment Condition="'$(OsEnvironment)'=='' AND '$(OS)'=='Unix' AND Exists('/Applications')">OSX</OsEnvironment>
+    <OsEnvironment Condition="'$(OsEnvironment)'=='' AND '$(OS)'=='Unix'">Linux</OsEnvironment>
     <OsEnvironment Condition="'$(OsEnvironment)'==''">$(OS)</OsEnvironment>
   </PropertyGroup>
 
@@ -125,10 +122,10 @@
 
   <PropertyGroup>
     <DnxPackageDir Condition="'$(DnxPackageDir)'==''">$(PackagesDir)/$(DnxPackageName)/</DnxPackageDir>
-    <DnuToolPath Condition="'$(DnuToolPath)'=='' and '$(OsEnvironment)'!='Unix'">$(DnxPackageDir)/bin/dnu.cmd</DnuToolPath>
-    <DnuToolPath Condition="'$(DnuToolPath)'=='' and '$(OsEnvironment)'=='Unix'">$(DnxPackageDir)/bin/dnu</DnuToolPath>
-    <DotnetToolCommand Condition="'$(DotnetToolCommand)' == '' and '$(OsEnvironment)'!='Unix'">$(DotnetCliPath)dotnet.exe</DotnetToolCommand>
-    <DotnetToolCommand Condition="'$(DotnetToolCommand)' == '' and '$(OsEnvironment)'=='Unix'">$(DotnetCliPath)dotnet</DotnetToolCommand>
+    <DnuToolPath Condition="'$(DnuToolPath)'=='' and '$(OS)'!='Unix'">$(DnxPackageDir)/bin/dnu.cmd</DnuToolPath>
+    <DnuToolPath Condition="'$(DnuToolPath)'=='' and '$(OS)'=='Unix'">$(DnxPackageDir)/bin/dnu</DnuToolPath>
+    <DotnetToolCommand Condition="'$(DotnetToolCommand)' == '' and '$(OS)'!='Unix'">$(DotnetCliPath)dotnet.exe</DotnetToolCommand>
+    <DotnetToolCommand Condition="'$(DotnetToolCommand)' == '' and '$(OS)'=='Unix'">$(DotnetCliPath)dotnet</DotnetToolCommand>
     <DnuToolPath>$(DotnetToolCommand)</DnuToolPath>
 
     <DnuRestoreSource>@(DnuSourceList -> '--source %(Identity)', ' ')</DnuRestoreSource>
@@ -151,7 +148,7 @@
 
   <PropertyGroup>
     <ArchGroup Condition="'$(ArchGroup)'==''">x64</ArchGroup>
-    <BuildConfiguration_OSGroup>$(OS)</BuildConfiguration_OSGroup>
+    <BuildConfiguration_OSGroup>$(OSEnvironment)</BuildConfiguration_OSGroup>
     <BuildConfiguration_OSGroup Condition="'$(OSGroup)' != ''">$(OSGroup)</BuildConfiguration_OSGroup>
     <BuildConfiguration_ConfigurationGroup>Debug</BuildConfiguration_ConfigurationGroup>
     <BuildConfiguration_ConfigurationGroup Condition="'$(ConfigurationGroup)' != ''">$(ConfigurationGroup)</BuildConfiguration_ConfigurationGroup>
@@ -269,6 +266,6 @@
   </PropertyGroup>
 
   <!-- Use Roslyn Compilers to build -->
-  <Import Project="$(RoslynPropsFile)" Condition="'$(OSEnvironment)'!='Unix' and Exists('$(RoslynPropsFile)') and '$(UseRoslynCompilers)'!='false'" />
-  <Import Project="$(RoslynPropsFile)" Condition="'$(OSEnvironment)'=='Unix' and Exists('$(RoslynPropsFile)')" />
+  <Import Project="$(RoslynPropsFile)" Condition="'$(OS)'!='Unix' and Exists('$(RoslynPropsFile)') and '$(UseRoslynCompilers)'!='false'" />
+  <Import Project="$(RoslynPropsFile)" Condition="'$(OS)'=='Unix' and Exists('$(RoslynPropsFile)')" />
 </Project>

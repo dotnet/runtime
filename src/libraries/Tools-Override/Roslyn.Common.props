@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <RoslynVersion>2.0.0-beta3</RoslynVersion>
+    <RoslynPackageName>Microsoft.Net.Compilers</RoslynPackageName>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <RoslynPropsFile Condition="'$(RoslynPropsFile)' == '' and '$(OS)' != 'Unix'">$(ToolRuntimePath)/net45/roslyn/build/Microsoft.Net.Compilers.props</RoslynPropsFile>
+  </PropertyGroup>
+
+  <!--
+    On Unix we always use a version of Roslyn we restore from NuGet and we have to work around some known issues.
+  -->
+  <PropertyGroup Condition="'$(RoslynPropsFile)' == '' and '$(OS)'=='Unix'">
+    <RoslynPackageDir>$(PackagesDir)/$(RoslynPackageName).$(RoslynVersion)/</RoslynPackageDir>
+    <RoslynPropsFile>$(RoslynPackageDir)build/$(RoslynPackageName).props</RoslynPropsFile>
+
+    <!--
+      Portable PDBs are now supported in Linux and OSX with .Net Core MSBuild.
+    -->
+    <DebugType>Portable</DebugType>
+
+    <!--
+      Delay signing with the ECMA key currently doesn't work.
+      https://github.com/dotnet/roslyn/issues/2444
+    -->
+    <UseECMAKey>false</UseECMAKey>
+
+    <!--
+      Full signing with Open key doesn't work with Portable Csc.
+      https://github.com/dotnet/roslyn/issues/8210
+    -->
+    <UseOpenKey>false</UseOpenKey>
+
+    <!--
+      Mono currently doesn't include VB targets for portable, notably /lib/mono/xbuild/Microsoft/Portable/v4.5/Microsoft.Portable.VisualBasic.targets.
+      Fixed in https://github.com/mono/mono/pull/1726.
+    -->
+    <IncludeVbProjects>false</IncludeVbProjects>
+  </PropertyGroup>
+  
+</Project>
