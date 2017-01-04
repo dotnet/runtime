@@ -93,10 +93,5 @@
       <Name>System.Runtime</Name>
     </ProjectReference>
   </ItemGroup>
-  <ItemGroup>
-    <Compile Include="$(CommonTestPath)\System\RuntimeDetection.cs">
-      <Link>Common\System\RuntimeDetection.cs</Link>
-    </Compile>
-  </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
