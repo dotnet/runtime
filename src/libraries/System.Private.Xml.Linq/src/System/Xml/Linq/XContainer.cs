@@ -869,7 +869,7 @@ namespace System.Xml.Linq
             }
             if (r.ReadState != ReadState.Interactive) throw new InvalidOperationException(SR.InvalidOperation_ExpectedInteractive);
 
-            ContentReader cr = new ContentReader(this);
+            ContentReader cr = new ContentReader(this, r, o);
             while (cr.ReadContentFrom(this, r, o) && r.Read()) ;
         }
 
@@ -894,7 +894,7 @@ namespace System.Xml.Linq
             }
             if (r.ReadState != ReadState.Interactive) throw new InvalidOperationException(SR.InvalidOperation_ExpectedInteractive);
  
-            ContentReader cr = new ContentReader(this);
+            ContentReader cr = new ContentReader(this, r, o);
             do
             {
                 cancellationToken.ThrowIfCancellationRequested();
