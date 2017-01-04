@@ -1638,21 +1638,52 @@ GenTreePtr Compiler::impNormStructVal(GenTreePtr           structVal,
 
         case GT_COMMA:
         {
-            // The second thing is the block node.
+            // The second thing could either be a block node or a GT_SIMD or a GT_COMMA node.
             GenTree* blockNode = structVal->gtOp.gtOp2;
             assert(blockNode->gtType == structType);
-            // It had better be a block node - any others should not occur here.
-            assert(blockNode->OperIsBlk());
 
-            // Sink the GT_COMMA below the blockNode addr.
-            GenTree* blockNodeAddr = blockNode->gtOp.gtOp1;
-            assert(blockNodeAddr->gtType == TYP_BYREF);
-            GenTree* commaNode    = structVal;
-            commaNode->gtType     = TYP_BYREF;
-            commaNode->gtOp.gtOp2 = blockNodeAddr;
-            blockNode->gtOp.gtOp1 = commaNode;
-            structVal             = blockNode;
-            alreadyNormalized     = true;
+            // Is this GT_COMMA(op1, GT_COMMA())?
+            GenTree* parent = structVal;
+            if (blockNode->OperGet() == GT_COMMA)
+            {
+                // Find the last node in the comma chain.
+                do
+                {
+                    assert(blockNode->gtType == structType);
+                    parent    = blockNode;
+                    blockNode = blockNode->gtOp.gtOp2;
+                } while (blockNode->OperGet() == GT_COMMA);
+            }
+
+#ifdef FEATURE_SIMD
+            if (blockNode->OperGet() == GT_SIMD)
+            {
+                parent->gtOp.gtOp2 = impNormStructVal(blockNode, structHnd, curLevel, forceNormalization);
+                alreadyNormalized  = true;
+            }
+            else
+#endif
+            {
+                assert(blockNode->OperIsBlk());
+
+                // Sink the GT_COMMA below the blockNode addr.
+                // That is GT_COMMA(op1, op2=blockNode) is tranformed into
+                // blockNode(GT_COMMA(TYP_BYREF, op1, op2's op1)).
+                //
+                // In case of a chained GT_COMMA case, we sink the last
+                // GT_COMMA below the blockNode addr.
+                GenTree* blockNodeAddr = blockNode->gtOp.gtOp1;
+                assert(blockNodeAddr->gtType == TYP_BYREF);
+                GenTree* commaNode    = parent;
+                commaNode->gtType     = TYP_BYREF;
+                commaNode->gtOp.gtOp2 = blockNodeAddr;
+                blockNode->gtOp.gtOp1 = commaNode;
+                if (parent == structVal)
+                {
+                    structVal = blockNode;
+                }
+                alreadyNormalized = true;
+            }
         }
         break;
 

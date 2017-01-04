@@ -1156,6 +1156,154 @@ SIMDIntrinsicID Compiler::impSIMDRelOp(SIMDIntrinsicID      relOpIntrinsicId,
 #endif // !_TARGET_XARCH_
 }
 
+//-------------------------------------------------------------------------
+// impSIMDAbs: creates GT_SIMD node to compute Abs value of a given vector.
+//
+// Arguments:
+//    typeHnd     -  type handle of SIMD vector
+//    baseType    -  base type of vector
+//    size        -  vector size in bytes
+//    op1         -  operand of Abs intrinsic
+//
+GenTreePtr Compiler::impSIMDAbs(CORINFO_CLASS_HANDLE typeHnd, var_types baseType, unsigned size, GenTree* op1)
+{
+    assert(varTypeIsSIMD(op1));
+
+    var_types  simdType = op1->TypeGet();
+    GenTreePtr retVal   = nullptr;
+
+#ifdef _TARGET_XARCH_
+    // When there is no direct support, Abs(v) could be computed
+    // on integer vectors as follows:
+    //     BitVector = v < vector.Zero
+    //     result = ConditionalSelect(BitVector, vector.Zero - v, v)
+
+    bool useConditionalSelect = false;
+    if (getSIMDInstructionSet() == InstructionSet_SSE2)
+    {
+        // SSE2 doesn't support abs on signed integer type vectors.
+        if (baseType == TYP_LONG || baseType == TYP_INT || baseType == TYP_SHORT || baseType == TYP_BYTE)
+        {
+            useConditionalSelect = true;
+        }
+    }
+    else
+    {
+        assert(getSIMDInstructionSet() >= InstructionSet_SSE3_4);
+        if (baseType == TYP_LONG)
+        {
+            // SSE3_4/AVX2 don't support abs on long type vector.
+            useConditionalSelect = true;
+        }
+    }
+
+    if (useConditionalSelect)
+    {
+        // This works only on integer vectors not on float/double vectors.
+        assert(varTypeIsIntegral(baseType));
+
+        GenTreePtr op1Assign;
+        unsigned   op1LclNum;
+
+        if (op1->OperGet() == GT_LCL_VAR)
+        {
+            op1LclNum = op1->gtLclVarCommon.gtLclNum;
+            op1Assign = nullptr;
+        }
+        else
+        {
+            op1LclNum = lvaGrabTemp(true DEBUGARG("SIMD Abs op1"));
+            lvaSetStruct(op1LclNum, typeHnd, false);
+            op1Assign = gtNewTempAssign(op1LclNum, op1);
+            op1       = gtNewLclvNode(op1LclNum, op1->TypeGet());
+        }
+
+        // Assign Vector.Zero to a temp since it is needed more than once
+        GenTreePtr vecZero       = gtNewSIMDVectorZero(simdType, baseType, size);
+        unsigned   vecZeroLclNum = lvaGrabTemp(true DEBUGARG("SIMD Abs VecZero"));
+        lvaSetStruct(vecZeroLclNum, typeHnd, false);
+        GenTreePtr vecZeroAssign = gtNewTempAssign(vecZeroLclNum, vecZero);
+
+        // Construct BitVector = v < vector.Zero
+        GenTreePtr      bitVecOp1     = op1;
+        GenTreePtr      bitVecOp2     = gtNewLclvNode(vecZeroLclNum, vecZero->TypeGet());
+        var_types       relOpBaseType = baseType;
+        SIMDIntrinsicID relOpIntrinsic =
+            impSIMDRelOp(SIMDIntrinsicLessThan, typeHnd, size, &relOpBaseType, &bitVecOp1, &bitVecOp2);
+        GenTreePtr bitVec       = gtNewSIMDNode(simdType, bitVecOp1, bitVecOp2, relOpIntrinsic, relOpBaseType, size);
+        unsigned   bitVecLclNum = lvaGrabTemp(true DEBUGARG("SIMD Abs bitVec"));
+        lvaSetStruct(bitVecLclNum, typeHnd, false);
+        GenTreePtr bitVecAssign = gtNewTempAssign(bitVecLclNum, bitVec);
+        bitVec                  = gtNewLclvNode(bitVecLclNum, bitVec->TypeGet());
+
+        // Construct condSelectOp1 = vector.Zero - v
+        GenTreePtr subOp1 = gtNewLclvNode(vecZeroLclNum, vecZero->TypeGet());
+        GenTreePtr subOp2 = gtNewLclvNode(op1LclNum, op1->TypeGet());
+        GenTreePtr negVec = gtNewSIMDNode(simdType, subOp1, subOp2, SIMDIntrinsicSub, baseType, size);
+
+        // Construct ConditionalSelect(bitVec, vector.Zero - v, v)
+        GenTreePtr vec = gtNewLclvNode(op1LclNum, op1->TypeGet());
+        retVal         = impSIMDSelect(typeHnd, baseType, size, bitVec, negVec, vec);
+
+        // Prepend bitVec assignment to retVal.
+        // retVal = (tmp2 = v < tmp1), CondSelect(tmp2, tmp1 - v, v)
+        retVal = gtNewOperNode(GT_COMMA, simdType, bitVecAssign, retVal);
+
+        // Prepend vecZero assignment to retVal.
+        // retVal =  (tmp1 = vector.Zero), (tmp2 = v < tmp1), CondSelect(tmp2, tmp1 - v, v)
+        retVal = gtNewOperNode(GT_COMMA, simdType, vecZeroAssign, retVal);
+
+        // If op1 was assigned to a temp, prepend that to retVal.
+        if (op1Assign != nullptr)
+        {
+            // retVal = (v=op1), (tmp1 = vector.Zero), (tmp2 = v < tmp1), CondSelect(tmp2, tmp1 - v, v)
+            retVal = gtNewOperNode(GT_COMMA, simdType, op1Assign, retVal);
+        }
+    }
+    else if (varTypeIsFloating(baseType))
+    {
+        // Abs(vf) = vf & new SIMDVector<float>(0x7fffffff);
+        // Abs(vd) = vf & new SIMDVector<double>(0x7fffffffffffffff);
+        GenTree* bitMask = nullptr;
+        if (baseType == TYP_FLOAT)
+        {
+            float f;
+            static_assert_no_msg(sizeof(float) == sizeof(int));
+            *((int*)&f) = 0x7fffffff;
+            bitMask     = gtNewDconNode(f);
+        }
+        else if (baseType == TYP_DOUBLE)
+        {
+            double d;
+            static_assert_no_msg(sizeof(double) == sizeof(__int64));
+            *((__int64*)&d) = 0x7fffffffffffffffLL;
+            bitMask         = gtNewDconNode(d);
+        }
+
+        assert(bitMask != nullptr);
+        bitMask->gtType        = baseType;
+        GenTree* bitMaskVector = gtNewSIMDNode(simdType, bitMask, SIMDIntrinsicInit, baseType, size);
+        retVal                 = gtNewSIMDNode(simdType, op1, bitMaskVector, SIMDIntrinsicBitwiseAnd, baseType, size);
+    }
+    else if (baseType == TYP_CHAR || baseType == TYP_UBYTE || baseType == TYP_UINT || baseType == TYP_ULONG)
+    {
+        // Abs is a no-op on unsigned integer type vectors
+        retVal = op1;
+    }
+    else
+    {
+        assert(getSIMDInstructionSet() >= InstructionSet_SSE3_4);
+        assert(baseType != TYP_LONG);
+
+        retVal = gtNewSIMDNode(simdType, op1, SIMDIntrinsicAbs, baseType, size);
+    }
+#else  // !_TARGET_XARCH_
+    assert(!"Abs intrinsic on non-xarch target not implemented");
+#endif // !_TARGET_XARCH_
+
+    return retVal;
+}
+
 // Creates a GT_SIMD tree for Select operation
 //
 // Argumens:
@@ -1820,43 +1968,12 @@ GenTreePtr Compiler::impSIMDIntrinsic(OPCODE                opcode,
         break;
 
         case SIMDIntrinsicGetZero:
-        {
-            baseType         = genActualType(baseType);
-            GenTree* initVal = gtNewZeroConNode(baseType);
-            initVal->gtType  = baseType;
-            simdTree         = gtNewSIMDNode(simdType, initVal, nullptr, SIMDIntrinsicInit, baseType, size);
-            retVal           = simdTree;
-        }
-        break;
+            retVal = gtNewSIMDVectorZero(simdType, baseType, size);
+            break;
 
         case SIMDIntrinsicGetOne:
-        {
-            GenTree* initVal;
-            if (varTypeIsSmallInt(baseType))
-            {
-                unsigned baseSize = genTypeSize(baseType);
-                int      val;
-                if (baseSize == 1)
-                {
-                    val = 0x01010101;
-                }
-                else
-                {
-                    val = 0x00010001;
-                }
-                initVal = gtNewIconNode(val);
-            }
-            else
-            {
-                initVal = gtNewOneConNode(baseType);
-            }
-
-            baseType        = genActualType(baseType);
-            initVal->gtType = baseType;
-            simdTree        = gtNewSIMDNode(simdType, initVal, nullptr, SIMDIntrinsicInit, baseType, size);
-            retVal          = simdTree;
-        }
-        break;
+            retVal = gtNewSIMDVectorOne(simdType, baseType, size);
+            break;
 
         case SIMDIntrinsicGetAllOnes:
         {
@@ -2443,76 +2560,9 @@ GenTreePtr Compiler::impSIMDIntrinsic(OPCODE                opcode,
         break;
 
         case SIMDIntrinsicAbs:
-        {
-#ifdef _TARGET_XARCH_
-            // TODO-CQ-XARCH: we should be able to use conditional select
-            // to compute abs(v) as follows when there is no direct support:
-            //     BitVector = v < vector.Zero
-            //     result = ConditionalSelect(BitVector, vector.Zero - v, v)
-            if (getSIMDInstructionSet() == InstructionSet_SSE2)
-            {
-                // SSE2 doesn't support abs on signed integer type vectors.
-                if (baseType == TYP_LONG || baseType == TYP_INT || baseType == TYP_SHORT || baseType == TYP_BYTE)
-                {
-                    return nullptr;
-                }
-            }
-            else
-            {
-                assert(getSIMDInstructionSet() >= InstructionSet_SSE3_4);
-                if (baseType == TYP_LONG)
-                {
-                    // SSE3_4/AVX2 don't support abs on long type vector.
-                    return nullptr;
-                }
-            }
-
-            op1 = impSIMDPopStack(simdType);
-
-            if (varTypeIsFloating(baseType))
-            {
-                // Abs(vf) = vf & new SIMDVector<float>(0x7fffffff);
-                // Abs(vd) = vf & new SIMDVector<double>(0x7fffffffffffffff);
-                GenTree* bitMask = nullptr;
-                if (baseType == TYP_FLOAT)
-                {
-                    float f;
-                    static_assert_no_msg(sizeof(float) == sizeof(int));
-                    *((int*)&f) = 0x7fffffff;
-                    bitMask     = gtNewDconNode(f);
-                }
-                else if (baseType == TYP_DOUBLE)
-                {
-                    double d;
-                    static_assert_no_msg(sizeof(double) == sizeof(__int64));
-                    *((__int64*)&d) = 0x7fffffffffffffffLL;
-                    bitMask         = gtNewDconNode(d);
-                }
-
-                assert(bitMask != nullptr);
-                bitMask->gtType        = baseType;
-                GenTree* bitMaskVector = gtNewSIMDNode(simdType, bitMask, SIMDIntrinsicInit, baseType, size);
-                retVal = gtNewSIMDNode(simdType, op1, bitMaskVector, SIMDIntrinsicBitwiseAnd, baseType, size);
-            }
-            else if (baseType == TYP_CHAR || baseType == TYP_UBYTE || baseType == TYP_UINT || baseType == TYP_ULONG)
-            {
-                // Abs is a no-op on unsigned integer type vectors
-                retVal = op1;
-            }
-            else
-            {
-                assert(getSIMDInstructionSet() >= InstructionSet_SSE3_4);
-                assert(baseType != TYP_LONG);
-
-                retVal = gtNewSIMDNode(simdType, op1, SIMDIntrinsicAbs, baseType, size);
-            }
-
-#else // !_TARGET_XARCH_
-            assert(!"Abs intrinsic on non-xarch target not implemented");
-            unreached();
-#endif // !_TARGET_XARCH_
-        }
-        break;
+            op1    = impSIMDPopStack(simdType);
+            retVal = impSIMDAbs(clsHnd, baseType, size, op1);
+            break;
 
         case SIMDIntrinsicGetW:
             retVal = impSIMDGetFixed(simdType, baseType, size, 3);
