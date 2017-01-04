@@ -79,5 +79,10 @@
     <Compile Include="Decoder\Decoder.netstandard1.7.cs" />
     <Compile Include="Encoder\Encoder.netstandard1.7.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <Compile Include="$(CommonTestPath)\System\RuntimeDetection.cs">
+      <Link>Common\System\RuntimeDetection.cs</Link>
+    </Compile>
+  </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
