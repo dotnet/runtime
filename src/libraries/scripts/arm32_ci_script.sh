@@ -166,14 +166,14 @@ function mount_emulator {
 #Cross builds corefx
 function cross_build_corefx {
     #Apply fixes for softfp 
-    if [ "$__buildArch" == "arm-softfp" ]; then
+    if [ "$__buildArch" == "armel" ]; then
         #Export the needed environment variables
         (set +x; echo 'Exporting LINUX_ARM_* environment variable')
         source "$__ARMRootfsMountPath"/dotnet/setenv/setenv_incpath.sh "$__ARMRootfsMountPath"
 
         #Apply the changes needed to build for the emulator rootfs
-        (set +x; echo 'Applying cross build patch to suit Linux ARM emulator rootfs')
-        git am < "$__ARMRootfsMountPath"/dotnet/setenv/corefx_cross.patch
+        #(set +x; echo 'Applying cross build patch to suit Linux ARM emulator rootfs')
+        #git am < "$__ARMRootfsMountPath"/dotnet/setenv/corefx_cross.patch
     fi
 
     #Cross building for emulator rootfs
@@ -182,7 +182,7 @@ function cross_build_corefx {
 
     #Reset the code to the upstream version
     (set +x; echo 'Rewinding HEAD to master code')
-    git reset --hard HEAD^
+    #git reset --hard HEAD^
 }
 
 #Define script variables
@@ -212,7 +212,7 @@ do
         ;;
     --softfp)
         __ARMRootfsImageBase="rootfs-t30.ext4"
-        __buildArch="arm-softfp"
+        __buildArch="armel"
         ;;
     -v|--verbose)
         __verboseFlag="verbose"
