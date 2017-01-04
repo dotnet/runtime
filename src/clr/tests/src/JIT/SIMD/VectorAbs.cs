@@ -89,10 +89,10 @@ internal partial class VectorTest
         JitLog jitLog = new JitLog();
         if (!jitLog.Check("Abs", "Single")) returnVal = Fail;
         if (!jitLog.Check("Abs", "Double")) returnVal = Fail;
-        // SSE2: Abs is not an intrinsic for Int32 and Int64, but IS for UInt32 and UInt64
-        // SSE3_4: Abs is not an intrinsic for Int64 alone.
-        // Since right now there is no way to know SIMD instruction set used by JIT, 
-        // we will check conservatively on SSE3_4 targets.
+        if (!jitLog.Check("Abs", "Int64")) returnVal = Fail;
+        if (!jitLog.Check("Abs", "Int32")) returnVal = Fail;
+        if (!jitLog.Check("Abs", "Int16")) returnVal = Fail;
+        if (!jitLog.Check("Abs", "SByte")) returnVal = Fail;
         if (!jitLog.Check("System.Numerics.Vector4:Abs")) returnVal = Fail;
         if (!jitLog.Check("System.Numerics.Vector3:Abs")) returnVal = Fail;
         if (!jitLog.Check("System.Numerics.Vector2:Abs")) returnVal = Fail;
@@ -101,13 +101,6 @@ internal partial class VectorTest
         if (!jitLog.Check("Abs", "UInt32")) returnVal = Fail;
         if (!jitLog.Check("Abs", "UInt64")) returnVal = Fail;
 
-        // AVX: Abs is not an intrinsic for Int64 alone.
-        if (Vector<int>.Count == 8)
-        {
-            if (!jitLog.Check("Abs", "Int32")) returnVal = Fail;
-            if (!jitLog.Check("Abs", "Int16")) returnVal = Fail;
-            if (!jitLog.Check("Abs", "SByte")) returnVal = Fail;
-        }
         jitLog.Dispose();
 
         return returnVal;
