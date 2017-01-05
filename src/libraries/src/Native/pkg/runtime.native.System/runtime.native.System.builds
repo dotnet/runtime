@@ -67,6 +67,10 @@
       <OSGroup>alpine.3.4.3</OSGroup>
       <Platform>amd64</Platform>
     </Project>
+    <Project Include="tizen\4.0.0\runtime.native.System.pkgproj">
+      <OSGroup>tizen.4.0.0</OSGroup>
+      <Platform>armel</Platform>
+    </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
 </Project>
