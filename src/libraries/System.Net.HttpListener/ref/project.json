@@ -1,16 +1,16 @@
 {
   "dependencies": {
-    "System.Collections.Specialized": "4.4.0-beta-24905-01",
-    "System.Runtime": "4.4.0-beta-24905-01",
-    "System.Net.Primitives": "4.4.0-beta-24905-01",
-    "System.Net.Security": "4.4.0-beta-24905-01",
-    "System.Net.WebHeaderCollection": "4.4.0-beta-24905-01",
-    "System.Net.WebSockets": "4.4.0-beta-24905-01",
-    "System.Security.Claims": "4.4.0-beta-24905-01",
-    "System.Security.Cryptography.X509Certificates": "4.4.0-beta-24905-01",
-    "System.Security.Principal": "4.4.0-beta-24905-01",
-    "System.Threading.Tasks": "4.4.0-beta-24905-01",
-    "Microsoft.Win32.Primitives": "4.4.0-beta-24905-01"
+    "System.Collections.Specialized": "4.4.0-beta-24905-02",
+    "System.Runtime": "4.4.0-beta-24905-02",
+    "System.Net.Primitives": "4.4.0-beta-24905-02",
+    "System.Net.Security": "4.4.0-beta-24905-02",
+    "System.Net.WebHeaderCollection": "4.4.0-beta-24905-02",
+    "System.Net.WebSockets": "4.4.0-beta-24905-02",
+    "System.Security.Claims": "4.4.0-beta-24905-02",
+    "System.Security.Cryptography.X509Certificates": "4.4.0-beta-24905-02",
+    "System.Security.Principal": "4.4.0-beta-24905-02",
+    "System.Threading.Tasks": "4.4.0-beta-24905-02",
+    "Microsoft.Win32.Primitives": "4.4.0-beta-24905-02"
   },
   "frameworks": {
     "netstandard1.7": {
