@@ -1289,7 +1289,7 @@
     </project>
     <project dir="class/System.IO.Compression" library="System.IO.Compression-net_4_x">
       <boot>false</boot>
-      <flags>/codepage:65001 /nologo /noconfig /deterministic -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -nowarn:1699 -nostdlib -r:./../../class/lib/net_4_x/mscorlib.dll /debug:portable -optimize /unsafe -r:./../../class/lib/net_4_x/System.dll -r:./../../class/lib/net_4_x/System.Core.dll</flags>
+      <flags>/codepage:65001 /nologo /noconfig /deterministic -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -nowarn:1699 -nostdlib -r:./../../class/lib/net_4_x/mscorlib.dll /debug:portable -optimize -r:./../../class/lib/net_4_x/System.dll</flags>
       <output>System.IO.Compression.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/net_4_x/System.IO.Compression.dll</library_output>
