@@ -801,7 +801,6 @@ struct BasicBlock : private LIR::Range
 
     VARSET_TP bbVarUse; // variables used     by block (before an assignment)
     VARSET_TP bbVarDef; // variables assigned by block (before a use)
-    VARSET_TP bbVarTmp; // TEMP: only used by FP enregistering code!
 
     VARSET_TP bbLiveIn;  // variables live on entry
     VARSET_TP bbLiveOut; // variables live on exit
