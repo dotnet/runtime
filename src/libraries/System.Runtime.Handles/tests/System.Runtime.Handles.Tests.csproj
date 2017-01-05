@@ -15,7 +15,7 @@
     <Compile Include="SafeWaitHandle.cs" />
     <Compile Include="SafeWaitHandleExtensions.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == ''">
+  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard'">
     <Compile Include="CriticalHandle.netstandard1.7.cs" />
     <Compile Include="SafeHandle.netstandard1.7.cs" />
   </ItemGroup>

@@ -26,7 +26,7 @@
     <Compile Include="Regex.Match.Tests.cs" />
     <Compile Include="Regex.Tests.Common.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp1.1'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
     <Compile Include="PrecompiledRegexScenarioTest.cs" />
     <Compile Include="RegexGroupNameTests.cs" />
     <Compile Include="CaptureCollectionTests.netcoreapp1.1.cs" />
@@ -36,7 +36,7 @@
       <Link>Common\System\Diagnostics\DebuggerAttributes.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetGroup)' == ''">
+  <ItemGroup Condition=" '$(TargetGroup)' == 'netstandard'">
     <Compile Include="Regex.Serialization.cs" />
     <Compile Include="$(CommonTestPath)\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs">
       <Link>System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs</Link>

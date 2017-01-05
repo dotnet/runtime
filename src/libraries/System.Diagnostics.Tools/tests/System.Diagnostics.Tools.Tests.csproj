@@ -13,7 +13,7 @@
     <Compile Include="System\CodeDom\Compiler\GeneratedCodeAttributeTests.cs" />
     <Compile Include="System\Diagnostics\CodeAnalysis\SuppressMessageAttributeTests.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'==''">
+  <ItemGroup Condition="'$(TargetGroup)'=='netstandard'">
     <Compile Include="System\Diagnostics\CodeAnalysis\ExcludeFromCodeCoverageAttributeTests.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

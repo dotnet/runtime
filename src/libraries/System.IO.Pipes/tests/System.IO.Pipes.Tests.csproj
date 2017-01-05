@@ -9,7 +9,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
   <!-- Compiled Source Files -->
-  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard1.7'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard'">
     <Compile Include="NamedPipeTests\NamedPipeTest.RunAsClient.cs" />
     <Compile Include="NamedPipeTests\NamedPipeTest.Read.netstandard17.cs" />
     <Compile Include="NamedPipeTests\NamedPipeTest.netstandard17.cs" />

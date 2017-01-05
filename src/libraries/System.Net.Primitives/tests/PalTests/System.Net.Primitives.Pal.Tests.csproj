@@ -25,7 +25,7 @@
     <Compile Include="HostInformationPalTest.cs" />
     <Compile Include="SocketAddressPalTest.cs" />
     <Compile Include="Fakes\NetEventSource.cs" />
-    <Compile Include="Fakes\Serialization.cs" Condition="'$(TargetGroup)' != 'netstandard1.7'" />
+    <Compile Include="Fakes\Serialization.cs" Condition="'$(TargetGroup)' != 'netstandard'" />
     <Compile Include="..\..\src\System\Net\EndPoint.cs">
       <Link>ProductionCode\System\Net\EndPoint.cs</Link>
     </Compile>

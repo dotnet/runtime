@@ -6,7 +6,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
-  <ItemGroup Condition="'$(TargetGroup)' == ''">
+  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard'">
     <Compile Include="FileSystemWatcher.netstandard17.cs" />
     <Compile Include="InternalBufferOverflowException.cs" />
     <Compile Include="$(CommonTestPath)\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs">

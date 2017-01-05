@@ -19,7 +19,7 @@
     </Compile>
     <Compile Include="SatelliteContractVersionAttributeTests.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetGroup)' == '' ">
+  <ItemGroup Condition=" '$(TargetGroup)' == 'netstandard' ">
     <Compile Include="$(CommonTestPath)/System/Runtime/Serialization/Formatters/BinaryFormatterHelpers.cs">
       <Link>System/Runtime/Serialization/Formatters/BinaryFormatterHelpers.cs</Link>
     </Compile>

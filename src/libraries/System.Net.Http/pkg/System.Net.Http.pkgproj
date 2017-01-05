@@ -37,7 +37,7 @@
       <AsFrameworkReference>true</AsFrameworkReference>
     </InboxOnTargetFramework>
     <ValidatePackageSuppression Include="SuppressNETStandardInference">
-      <!-- we support the netstandard1.7 API version on net46, but suppress inferring netstandard support based on desktop support -->
+      <!-- we support the netstandard2.0 API version on net46, but suppress inferring netstandard support based on desktop support -->
       <Value>.NETFramework,Version=v4.6;.NETFramework,Version=v4.6.1;.NETFramework,Version=v4.6.2</Value>
     </ValidatePackageSuppression>
     <!-- TODO: Bring in Microsoft.Net.Http on older platforms -->

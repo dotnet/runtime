@@ -3,7 +3,7 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <ProjectGuid>{EE95AE39-845A-42D3-86D0-8065DBE56612}</ProjectGuid>
-    <DefineConstants Condition="'$(TargetGroup)'=='netstandard1.7'">$(DefineConstants);netstandard17</DefineConstants>
+    <DefineConstants Condition="'$(TargetGroup)'=='netstandard'">$(DefineConstants);netstandard17</DefineConstants>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' " />
@@ -48,12 +48,12 @@
       <Link>Common\System\Diagnostics\DebuggerAttributes.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'!='netstandard1.7'">
+  <ItemGroup Condition="'$(TargetGroup)'!='netstandard'">
     <Compile Include="$(CommonPath)\System\SerializableAttribute.cs">
       <Link>Common\System\SerializableAttribute.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'=='netstandard1.7'">
+  <ItemGroup Condition="'$(TargetGroup)'=='netstandard'">
     <Compile Include="CaseInsensitiveHashCodeProviderTests.cs" />
     <Compile Include="$(CommonTestPath)\System\Collections\IEnumerable.NonGeneric.Serialization.Tests.cs">
       <Link>Common\System\Collections\IEnumerable.NonGeneric.Serialization.Tests.cs</Link>

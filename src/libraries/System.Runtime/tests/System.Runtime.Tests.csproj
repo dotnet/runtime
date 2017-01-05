@@ -5,7 +5,7 @@
     <ProjectGuid>{7F5F5134-00FE-4DE8-B20C-3DA8BA2EBA68}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>1718</NoWarn>
-    <DefineConstants Condition="'$(TargetGroup)'==''">$(DefineConstants);netstandard17</DefineConstants>
+    <DefineConstants Condition="'$(TargetGroup)'=='netstandard'">$(DefineConstants);netstandard17</DefineConstants>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' " />
@@ -22,22 +22,22 @@
     <Compile Include="$(CommonTestPath)\System\EnumTypes.cs">
       <Link>Common\System\EnumTypes.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\tests\System\Collections\CollectionAsserts.cs">
+    <Compile Include="$(CommonTestPath)\System\Collections\CollectionAsserts.cs">
       <Link>Common\System\Collections\CollectionAsserts.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\tests\System\Collections\ICollection.Generic.Tests.cs">
+    <Compile Include="$(CommonTestPath)\System\Collections\ICollection.Generic.Tests.cs">
       <Link>Common\System\Collections\ICollection.Generic.Tests.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\tests\System\Collections\IEnumerable.Generic.Tests.cs">
+    <Compile Include="$(CommonTestPath)\System\Collections\IEnumerable.Generic.Tests.cs">
       <Link>Common\System\Collections\IEnumerable.Generic.Tests.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\tests\System\Collections\IList.Generic.Tests.cs">
+    <Compile Include="$(CommonTestPath)\System\Collections\IList.Generic.Tests.cs">
       <Link>Common\System\Collections\IList.Generic.Tests.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\tests\System\Collections\TestBase.Generic.cs">
+    <Compile Include="$(CommonTestPath)\System\Collections\TestBase.Generic.cs">
       <Link>Common\System\Collections\TestBase.Generic.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\tests\System\Collections\TestBase.NonGeneric.cs">
+    <Compile Include="$(CommonTestPath)\System\Collections\TestBase.NonGeneric.cs">
       <Link>Common\System\Collections\TestBase.NonGeneric.cs</Link>
     </Compile>
     <Compile Include="Helpers.cs" />
@@ -120,7 +120,7 @@
       <Link>Common\System\RuntimeDetection.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp1.1'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
     <Compile Include="System\ArrayTests.netcoreapp1.1.cs" />
     <Compile Include="System\EnumTests.netcoreapp1.1.cs" />
     <Compile Include="System\GCTests.netcoreapp1.1.cs" />
@@ -131,11 +131,11 @@
     <Compile Include="System\UIntPtrTests.netcoreapp1.1.cs" />
     <Compile Include="System\ComponentModel\DefaultValueAttributeTests.netcoreapp1.1.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' != 'netcoreapp1.1'">
+  <ItemGroup Condition="'$(TargetGroup)' != 'netcoreapp'">
     <Compile Include="System\StringSplitExtensions.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard1.7'">
-    <Compile Include="..\..\Common\tests\System\Collections\IEnumerable.Generic.Serialization.Tests.cs">
+  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard'">
+    <Compile Include="$(CommonTestPath)\System\Collections\IEnumerable.Generic.Serialization.Tests.cs">
       <Link>Common\System\Collections\IEnumerable.Generic.Serialization.Tests.cs</Link>
     </Compile>
     <Compile Include="ArrayTests.netstandard1.7.cs" />

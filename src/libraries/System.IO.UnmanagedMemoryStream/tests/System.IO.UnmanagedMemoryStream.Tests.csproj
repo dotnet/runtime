@@ -7,7 +7,7 @@
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' " />
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' " />
-  <ItemGroup Condition="'$(TargetGroup)' == ''" >
+  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard'" >
     <Compile Include="Uma.TestStructs.cs" />
     <Compile Include="Uma.ReadWriteStruct.cs" />
     <Compile Include="Uma.ReadWriteStructArray.cs"/>

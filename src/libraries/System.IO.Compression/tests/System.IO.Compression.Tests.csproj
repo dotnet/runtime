@@ -10,7 +10,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.3_Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="DeflateStreamTests.cs" />
-    <Compile Include="DeflateStreamTests.netstandard1.7.cs" Condition="'$(TargetGroup)'=='netstandard1.7'" />
+    <Compile Include="DeflateStreamTests.netstandard1.7.cs" Condition="'$(TargetGroup)'=='netstandard'" />
     <Compile Include="GZipStreamTests.cs" />
     <Compile Include="XunitAssemblyAttributes.cs" />
     <Compile Include="ZipArchive\zip_CreateTests.cs" />

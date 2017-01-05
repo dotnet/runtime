@@ -73,7 +73,7 @@
       <Link>Common\tests\System\PlatformDetection.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == ''">
+  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard'">
     <Compile Include="LoggingTest.cs" />
     <Compile Include="NetworkAvailabilityChangedTests.cs" />
     <Compile Include="NetworkInterfaceIPv4Statistics.cs" />

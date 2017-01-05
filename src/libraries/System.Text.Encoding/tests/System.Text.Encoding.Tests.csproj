@@ -73,7 +73,7 @@
     <Compile Include="UTF8Encoding\UTF8EncodingTests.cs" />
     <Compile Include="$(CommonTestPath)\System\RandomDataGenerator.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard1.7'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard'">
     <Compile Include="Encoding\Encoding.netstandard1.7.cs" />
     <Compile Include="UnicodeEncoding\UnicodeEncoding.netstandard1.7.cs" />
     <Compile Include="Decoder\Decoder.netstandard1.7.cs" />

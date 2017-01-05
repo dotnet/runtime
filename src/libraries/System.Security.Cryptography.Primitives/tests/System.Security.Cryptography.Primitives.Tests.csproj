@@ -4,8 +4,8 @@
   <Import Project="$(CommonTestPath)\Tests.props" />
   <PropertyGroup>
     <ProjectGuid>{101EB757-55A4-4F48-841C-C088640B8F57}</ProjectGuid>
-    <DefineConstants Condition="'$(TargetGroup)' == 'netcoreapp1.1'">$(DefineConstants);netcoreapp11;netstandard17</DefineConstants>
-    <DefineConstants Condition="'$(TargetGroup)'==''">$(DefineConstants);netstandard17</DefineConstants>
+    <DefineConstants Condition="'$(TargetGroup)' == 'netcoreapp'">$(DefineConstants);netcoreapp11;netstandard17</DefineConstants>
+    <DefineConstants Condition="'$(TargetGroup)'=='netstandard'">$(DefineConstants);netstandard17</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AsymmetricAlgorithm\Trivial.cs" />
@@ -22,7 +22,7 @@
       <Link>CommonTest\System\IO\PositionValueStream.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'=='netcoreapp1.1'">
+  <ItemGroup Condition="'$(TargetGroup)'=='netcoreapp'">
     <Compile Include="CryptoConfigTests.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

@@ -4,17 +4,17 @@
   <PropertyGroup>
     <ProjectGuid>{6C314C9B-3D28-4B05-9B4C-B57A00A9B3B9}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <DefineConstants Condition="'$(TargetGroup)'=='netstandard1.7'">$(DefineConstants);netstandard17</DefineConstants>
+    <DefineConstants Condition="'$(TargetGroup)'=='netstandard2.0'">$(DefineConstants);netstandard17</DefineConstants>
   </PropertyGroup>
   <!-- Folder logic needs moved into common targets: https://github.com/dotnet/corefx/issues/11468 -->
-  <ItemGroup Condition="'$(TargetGroup)'=='netstandard1.7'">
+  <ItemGroup Condition="'$(TargetGroup)'=='netstandard'">
     <TestNugetTargetMoniker Include="$(NugetTargetMoniker)">
-      <Folder>ns1.7-netcoreapp1.1</Folder>
+      <Folder>ns2.0-netcoreapp2.0</Folder>
     </TestNugetTargetMoniker>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'=='netcoreapp1.1'">
+  <ItemGroup Condition="'$(TargetGroup)'=='netcoreapp'">
     <TestNugetTargetMoniker Include="$(NugetTargetMoniker)">
-      <Folder>netcoreapp1.1</Folder>
+      <Folder>netcoreapp2.0</Folder>
     </TestNugetTargetMoniker>
   </ItemGroup>
   <!-- Default configurations to help VS understand the configurations -->
@@ -24,7 +24,7 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'netstandard1.7_Release|AnyCPU' " />
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'netcoreapp1.1_Debug|AnyCPU' " />
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'netcoreapp1.1_Release|AnyCPU' " />
-  <ItemGroup Condition="'$(TargetGroup)'=='netstandard1.7' or '$(TargetGroup)'=='netcoreapp1.1'">
+  <ItemGroup Condition="'$(TargetGroup)'=='netstandard' or '$(TargetGroup)'=='netcoreapp'">
     <Compile Include="System\ApplicationIdTests.cs" />
     <Compile Include="System\IO\PathTests.netstandard1.7.cs" />
     <Compile Include="System\Convert.netstandard1.7.cs" />
@@ -41,7 +41,7 @@
     <Compile Include="System\Reflection\AssemblyNameProxyTests.cs" />
     <Compile Include="System\MarshalByRefObjectTest.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'=='netcoreapp1.1'">
+  <ItemGroup Condition="'$(TargetGroup)'=='netcoreapp'">
     <Compile Include="System\BitConverter.netcoreapp1.1.cs" />
     <Compile Include="System\IO\Path.GetRelativePath.cs" />
     <Compile Include="System\MathTests.netcoreapp1.1.cs" />

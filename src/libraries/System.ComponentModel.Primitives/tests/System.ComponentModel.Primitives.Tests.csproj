@@ -25,7 +25,7 @@
     <Compile Include="ReadOnlyAttributeTests.cs" />
     <Compile Include="RefreshPropertiesAttributeTests.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'==''">
+  <ItemGroup Condition="'$(TargetGroup)'=='netstandard'">
     <Compile Include="EventHandlerListTests.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

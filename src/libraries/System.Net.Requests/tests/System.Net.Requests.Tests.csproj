@@ -4,7 +4,7 @@
   <PropertyGroup>
     <ProjectGuid>{851A40FE-7F07-415D-8592-5FE2096E84D3}</ProjectGuid>
     <StringResourcesPath>../src/Resources/Strings.resx</StringResourcesPath>
-    <DefineConstants Condition="'$(TargetGroup)'==''">$(DefineConstants);netstandard17</DefineConstants>
+    <DefineConstants Condition="'$(TargetGroup)'=='netstandard'">$(DefineConstants);netstandard17</DefineConstants>
   </PropertyGroup>
   <!-- Help VS understand available configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Debug|AnyCPU'" />
@@ -39,7 +39,7 @@
       <Name>RemoteExecutorConsoleApp</Name>
     </ProjectReference>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'==''">
+  <ItemGroup Condition="'$(TargetGroup)'=='netstandard'">
     <Compile Include="AuthorizationTest.cs" />
     <Compile Include="AuthenticationManagerTest.cs" />
     <Compile Include="GlobalProxySelectionTest.cs" />

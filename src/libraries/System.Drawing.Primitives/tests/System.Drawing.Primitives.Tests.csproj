@@ -21,7 +21,7 @@
     <Compile Include="SizeFTests.cs" />
     <Compile Include="SizeTests.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == ''">
+  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard'">
     <Compile Include="ColorTests.cs" />
     <Compile Include="SerializationTests.cs" />
     <Compile Include="$(CommonTestPath)\System\Diagnostics\DebuggerAttributes.cs">

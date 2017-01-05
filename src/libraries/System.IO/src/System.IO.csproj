@@ -4,8 +4,6 @@
   <PropertyGroup>
     <AssemblyName>System.IO</AssemblyName>
     <ProjectGuid>{07390899-C8F6-4e83-A3A9-6867B8CB46A0}</ProjectGuid>
-    <AssemblyVersion Condition="'$(TargetGroup)' == 'net462'">4.1.0.0</AssemblyVersion>
-    <ContractProject Condition="'$(AssemblyVersion)' == '4.1.0.0'">..\ref\4.1\System.IO.depproj</ContractProject>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <PackageTargetFramework Condition="'$(TargetGroup)' == 'netstandard'">netstandard1.7;uap10.1</PackageTargetFramework>
     <DefineConstants Condition="'$(TargetGroup)'=='netstandard'">$(DefineConstants);netstandard17</DefineConstants>
@@ -18,14 +16,9 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net461_Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap101aot_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap101aot_Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(TargetGroup)' == 'net462' or '$(TargetGroup)' == 'net461'">
+  <PropertyGroup Condition="'$(TargetGroup)' == 'net461'">
     <ResourcesSourceOutputDirectory>None</ResourcesSourceOutputDirectory>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'net461'">
-    <ContractProject Include="..\ref\System.IO.csproj">
-      <TargetGroup>netstandard1.7</TargetGroup>
-    </ContractProject>
-  </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'net461'">
     <TargetingPackReference Include="mscorlib" />
     <TargetingPackReference Include="System" />

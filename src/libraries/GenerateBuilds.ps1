@@ -185,7 +185,7 @@ function GetConfigurations($projs, $srcDir, $projName)
 }
 
 $srcDirs = dir .\src\*\src
-$layoutDir = "D:\corefx-packages-backup\packages\Debug\layout\runtimes\win7-x64\lib\netcoreapp1.1"
+$layoutDir = "D:\corefx-packages-backup\packages\Debug\layout\runtimes\win7-x64\lib\netcoreapp2.0"
 
 foreach($srcDir in $srcDirs)
 {
