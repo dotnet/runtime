@@ -128,18 +128,17 @@ if [[ -n "$LLDB_INCLUDE_DIR" ]]; then
 fi
 if [[ -n "$CROSSCOMPONENT" ]]; then
     cmake_extra_defines="$cmake_extra_defines -DCLR_CROSS_COMPONENTS_BUILD=1"
-else
-    if [[ -n "$CROSSCOMPILE" ]]; then
-        if ! [[ -n "$ROOTFS_DIR" ]]; then
-            echo "ROOTFS_DIR not set for crosscompile"
-            exit 1
-        fi
-        if [[ -z $CONFIG_DIR ]]; then
-          CONFIG_DIR="$1/cross/$build_arch"
-        fi
-        cmake_extra_defines="$cmake_extra_defines -C $CONFIG_DIR/tryrun.cmake"
-        cmake_extra_defines="$cmake_extra_defines -DCMAKE_TOOLCHAIN_FILE=$CONFIG_DIR/toolchain.cmake"
+fi
+if [[ -n "$CROSSCOMPILE" ]]; then
+    if ! [[ -n "$ROOTFS_DIR" ]]; then
+        echo "ROOTFS_DIR not set for crosscompile"
+        exit 1
     fi
+    if [[ -z $CONFIG_DIR ]]; then
+        CONFIG_DIR="$1/cross/$build_arch"
+    fi
+    cmake_extra_defines="$cmake_extra_defines -C $CONFIG_DIR/tryrun.cmake"
+    cmake_extra_defines="$cmake_extra_defines -DCMAKE_TOOLCHAIN_FILE=$CONFIG_DIR/toolchain.cmake"
 fi
 if [ "$build_arch" == "armel" ]; then
     cmake_extra_defines="$cmake_extra_defines -DARM_SOFTFP=1"
