@@ -359,6 +359,58 @@
           }
         }
       ]
-    }
+    },
+    {
+      "Name": "Publish Packages to Feeds - Release",
+      "Parameters": {
+        "TreatWarningsAsErrors": "false"
+      },
+      "BuildParameters": {
+        "ConfigurationGroup": "Release"
+      },
+      "Definitions": [
+        {
+          "Name": "DotNet-Trusted-Publish",
+          "Parameters": {
+            "VstsRepositoryName": "DotNet-CoreFX-Trusted",
+            "GitHubRepositoryName": "corefx"
+          },
+          "ReportingParameters": {
+            "TaskName": "Package Publish",
+            "Type": "build/publish/",
+            "ConfigurationGroup": "Release - Push to MyGet Feed"
+          }
+        }
+      ],
+      "DependsOn": [
+        "Trusted-All-Release"
+      ]
+    },
+    {
+      "Name": "Publish Packages to Drop - Debug",
+      "Parameters": {
+        "TreatWarningsAsErrors": "false"
+      },
+      "BuildParameters": {
+        "ConfigurationGroup": "Debug"
+      },
+      "Definitions": [
+        {
+          "Name": "DotNet-Trusted-Publish",
+          "Parameters": {
+            "VstsRepositoryName": "DotNet-CoreFX-Trusted",
+            "GitHubRepositoryName": "corefx"
+          },
+          "ReportingParameters": {
+            "TaskName": "Package Publish",
+            "Type": "build/publish/",
+            "ConfigurationGroup": "Debug - Push to Azure Storage"
+          }
+        }
+      ],
+      "DependsOn": [
+        "Trusted-All-Debug"
+      ]
+    }    
   ]
 }
