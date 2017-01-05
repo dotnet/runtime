@@ -121,7 +121,7 @@
       },
       "inputs": {
         "filename": "$(Build.SourcesDirectory)\\corefx\\sync.cmd",
-        "arguments": "-p -- /p:ArchGroup=$(PB_Platform)",
+        "arguments": "-p -- /p:ArchGroup=$(PB_Platform)  /p:RuntimeOS=$(PB_RuntimeOS)",
         "workingFolder": "corefx",
         "failOnStandardError": "false"
       }
