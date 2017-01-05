@@ -411,6 +411,8 @@ GenTree* DecomposeLongs::DecomposeLclFld(LIR::Use& use)
     GenTree* hiResult = m_compiler->gtNewLclFldNode(loResult->gtLclNum, TYP_INT, loResult->gtLclOffs + 4);
     Range().InsertAfter(loResult, hiResult);
 
+    m_compiler->lvaIncRefCnts(hiResult);
+
     return FinalizeDecomposition(use, loResult, hiResult, hiResult);
 }
 
