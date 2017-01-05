@@ -231,6 +231,27 @@ namespace System.Xml.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Netcoreapp)]
+        public void InsertAfterThrowsArgumentOutOfRangeExceptionForDupRefAttrAtTheEnd_OldBehavior()
+        {
+            const string attributeName = "existingAttr";
+            const string attributeUri = "some:existingUri";
+            XmlDocument doc = CreateDocumentWithElement();
+            XmlElement element = doc.DocumentElement;
+            XmlAttribute anotherAttr1 = element.Attributes.Append(doc.CreateAttribute("attr1", "some:uri1"));
+            XmlAttribute anotherAttr2 = element.Attributes.Append(doc.CreateAttribute("attr2", "some:uri2"));
+            XmlAttribute refAttr = element.Attributes.Append(doc.CreateAttribute(attributeName, attributeUri)); //dup
+            XmlAttribute newAttr = doc.CreateAttribute(attributeName, attributeUri);
+
+            XmlAttributeCollection target = element.Attributes;
+            Assert.Throws<ArgumentOutOfRangeException> (() => target.InsertAfter(newAttr, refAttr));
+
+            Assert.Equal(2, target.Count);
+            Assert.Same(anotherAttr1, target[0]);
+            Assert.Same(anotherAttr2, target[1]);
+        }
+
+        [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)] //Fix for this edge case was only made in NetCore
         public void InsertAfterReplacesDupRefAttr()
         {
@@ -252,6 +273,30 @@ namespace System.Xml.Tests
             Assert.Same(anotherAttr2, target[1]);
             Assert.Same(newAttr, target[2]);
             Assert.Same(anotherAttr3, target[3]);
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Netcoreapp)]
+        public void InsertAfterDoesNotReplaceDupRefAttr_OldBehavior()
+        {
+            const string attributeName = "existingAttr";
+            const string attributeUri = "some:existingUri";
+            XmlDocument doc = CreateDocumentWithElement();
+            XmlElement element = doc.DocumentElement;
+            XmlAttribute anotherAttr1 = element.Attributes.Append(doc.CreateAttribute("attr1", "some:uri1"));
+            XmlAttribute anotherAttr2 = element.Attributes.Append(doc.CreateAttribute("attr2", "some:uri2"));
+            XmlAttribute refAttr = element.Attributes.Append(doc.CreateAttribute(attributeName, attributeUri)); //dup
+            XmlAttribute anotherAttr3 = element.Attributes.Append(doc.CreateAttribute("attr3", "some:uri3"));
+            XmlAttribute newAttr = doc.CreateAttribute(attributeName, attributeUri);
+
+            XmlAttributeCollection target = element.Attributes;
+            target.InsertAfter(newAttr, refAttr);
+
+            Assert.Equal(4, target.Count);
+            Assert.Same(anotherAttr1, target[0]);
+            Assert.Same(anotherAttr2, target[1]);
+            Assert.Same(anotherAttr3, target[2]);
+            Assert.Same(newAttr, target[3]);
         }
 
         [Fact]
