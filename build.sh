@@ -28,7 +28,7 @@ fi
 usage()
 {
     echo "Usage: $0 [BuildArch] [BuildType] [verbose] [coverage] [cross] [clangx.y] [ninja] [configureonly] [skipconfigure] [skipnative] [skipmscorlib] [skiptests] [cmakeargs] [bindir]"
-    echo "BuildArch can be: x64, x86, arm, arm-softfp, arm64"
+    echo "BuildArch can be: x64, x86, arm, armel, arm64"
     echo "BuildType can be: debug, checked, release"
     echo "coverage - optional argument to enable code coverage build (currently supported only for Linux and OSX)."
     echo "ninja - target ninja instead of GNU make"
@@ -552,8 +552,8 @@ while :; do
             __BuildArch=arm
             ;;
 
-        arm-softfp)
-            __BuildArch=arm-softfp
+        armel)
+            __BuildArch=armel
             ;;
 
         arm64)

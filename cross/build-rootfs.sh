@@ -3,8 +3,8 @@
 usage()
 {
     echo "Usage: $0 [BuildArch] [UbuntuCodeName] [lldbx.y]"
-    echo "BuildArch can be: arm(default), arm-softfp, arm64, x86"
-    echo "UbuntuCodeName - optional, Code name for Ubuntu, can be: trusty(default), vivid, wily, xenial. If BuildArch is arm-softfp, UbuntuCodeName is ignored."
+    echo "BuildArch can be: arm(default), armel, arm64, x86"
+    echo "UbuntuCodeName - optional, Code name for Ubuntu, can be: trusty(default), vivid, wily, xenial. If BuildArch is armel, UbuntuCodeName is ignored."
     echo "lldbx.y - optional, LLDB version, can be: lldb3.6(default), lldb3.8"
 
     exit 1
@@ -37,8 +37,8 @@ for i in "$@"
             __BuildArch=arm64
             __UbuntuArch=arm64
             ;;
-        arm-softfp)
-            __BuildArch=arm-softfp
+        armel)
+            __BuildArch=armel
             __UbuntuArch=armel
             __UbuntuRepo="http://ftp.debian.org/debian/"
             __UbuntuCodeName=jessie
@@ -78,6 +78,10 @@ for i in "$@"
             ;;
     esac
 done
+
+if [ "$__BuildArch" == "armel" ]; then
+     __LLDB_Package="lldb-3.5-dev"
+fi
 
 __RootfsDir="$__CrossDir/rootfs/$__BuildArch"
 __UbuntuPackages="$__UbuntuPackagesBase $__LLDB_Package"
