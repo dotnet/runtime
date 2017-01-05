@@ -1,11 +1,11 @@
 {
   "dependencies": {
-    "System.Collections.NonGeneric": "4.4.0-beta-24904-01",
-    "System.Runtime": "4.4.0-beta-24904-01",
-    "System.Runtime.InteropServices": "4.4.0-beta-24904-01",
-    "System.Security.Cryptography.Algorithms": "4.4.0-beta-24904-01",
-    "System.Security.Cryptography.Encoding": "4.4.0-beta-24904-01",
-    "System.Security.Cryptography.Primitives": "4.4.0-beta-24904-01"
+    "System.Collections.NonGeneric": "4.4.0-beta-24905-01",
+    "System.Runtime": "4.4.0-beta-24905-01",
+    "System.Runtime.InteropServices": "4.4.0-beta-24905-01",
+    "System.Security.Cryptography.Algorithms": "4.4.0-beta-24905-01",
+    "System.Security.Cryptography.Encoding": "4.4.0-beta-24905-01",
+    "System.Security.Cryptography.Primitives": "4.4.0-beta-24905-01"
   },
   "frameworks": {
     "netstandard1.7": {},

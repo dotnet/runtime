@@ -3,17 +3,17 @@
     "netstandard1.7": {
       "dependencies": {
         "Microsoft.NETCore.Platforms": "1.1.0",
-        "System.Collections": "4.4.0-beta-24904-01",
-        "System.Collections.NonGeneric": "4.4.0-beta-24904-01",
-        "System.IO": "4.4.0-beta-24904-01",
-        "System.IO.FileSystem": "4.4.0-beta-24904-01",
-        "System.IO.FileSystem.AccessControl": "4.4.0-beta-24904-01",
-        "System.Runtime": "4.4.0-beta-24904-01",
-        "System.Runtime.Extensions": "4.4.0-beta-24904-01",
-        "System.Security.AccessControl": "4.4.0-beta-24904-01",
-        "System.Security.Permissions": "4.4.0-beta-24904-01",
-        "System.Security.Principal": "4.4.0-beta-24904-01",
-        "System.Security.Principal.Windows": "4.4.0-beta-24904-01"
+        "System.Collections": "4.4.0-beta-24905-01",
+        "System.Collections.NonGeneric": "4.4.0-beta-24905-01",
+        "System.IO": "4.4.0-beta-24905-01",
+        "System.IO.FileSystem": "4.4.0-beta-24905-01",
+        "System.IO.FileSystem.AccessControl": "4.4.0-beta-24905-01",
+        "System.Runtime": "4.4.0-beta-24905-01",
+        "System.Runtime.Extensions": "4.4.0-beta-24905-01",
+        "System.Security.AccessControl": "4.4.0-beta-24905-01",
+        "System.Security.Permissions": "4.4.0-beta-24905-01",
+        "System.Security.Principal": "4.4.0-beta-24905-01",
+        "System.Security.Principal.Windows": "4.4.0-beta-24905-01"
       }
     },
     "net463": {
