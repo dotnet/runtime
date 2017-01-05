@@ -12,7 +12,7 @@ using Xunit.NetCore.Extensions;
 
 namespace System.IO.Compression.Tests
 {
-    public class ZipFileTest_ConvenienceMethods : ZipFileTestBase
+    public partial class ZipFileTest_ConvenienceMethods : ZipFileTestBase
     {
         [Fact]
         public async Task CreateFromDirectoryNormal()

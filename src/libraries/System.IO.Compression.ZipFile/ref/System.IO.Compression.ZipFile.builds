@@ -2,13 +2,8 @@
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
-    <Project Include="System.IO.Compression.ZipFile.Tests.csproj" />
-    <Project Include="System.IO.Compression.ZipFile.Tests.csproj">
-      <OSGroup>Windows_NT</OSGroup>
-      <TestTFMs>netcore50;net46</TestTFMs>
-      <TargetGroup>netstandard1.3</TargetGroup>
-    </Project>
-    <Project Include="System.IO.Compression.ZipFile.Tests.csproj">
+    <Project Include="System.IO.Compression.ZipFile.csproj" />
+    <Project Include="System.IO.Compression.ZipFile.csproj">
       <TargetGroup>netstandard1.3</TargetGroup>
     </Project>
   </ItemGroup>
