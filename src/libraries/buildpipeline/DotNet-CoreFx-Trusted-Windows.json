@@ -157,7 +157,7 @@
       },
       "inputs": {
         "filename": "$(Build.SourcesDirectory)\\corefx\\build.cmd",
-        "arguments": "-buildArch=$(PB_Platform) -$(PB_ConfigurationGroup) -- /p:SignType=$(PB_SignType)",
+        "arguments": "-buildArch=$(PB_Platform) -$(PB_ConfigurationGroup) -- /p:SignType=$(PB_SignType) /p:RuntimeOS=$(PB_RuntimeOS)",
         "workingFolder": "corefx",
         "failOnStandardError": "false"
       }
@@ -424,6 +424,9 @@
     },
     "TeamName": {
       "value": "DotNetCore"
+    },
+    "PB_RuntimeOS": {
+      "value": "win10"
     }
   },
   "demands": [
