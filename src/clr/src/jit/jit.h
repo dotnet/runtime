@@ -699,11 +699,7 @@ inline unsigned int unsigned_abs(int x)
 #ifdef _TARGET_64BIT_
 inline size_t unsigned_abs(ssize_t x)
 {
-#ifndef FEATURE_PAL
     return ((size_t)abs(x));
-#else  // !FEATURE_PAL
-    return ((size_t)labs(x));
-#endif // !FEATURE_PAL
 }
 #endif // _TARGET_64BIT_
 
