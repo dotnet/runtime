@@ -12,7 +12,7 @@ function usage {
     echo '    --emulatorPath=/opt/linux-arm-emulator'
     echo '    --mountPath=/opt/linux-arm-emulator-root'
     echo '    --buildConfig=Release'
-    echo '    --softfp'
+    echo '    --armel'
     echo '    --verbose'
     echo ''
     echo 'Required Arguments:'
@@ -23,7 +23,7 @@ function usage {
     echo '    --buildConfig=<config>             : The value of config should be either Debug or Release'
     echo '                                         Any other value is not accepted'
     echo 'Optional Arguments:'
-    echo '    --softfp                           : Build as arm-softfp'
+    echo '    --armel                           : Build as armel'
     echo '    -v --verbose                       : Build made verbose'
     echo '    -h --help                          : Prints this usage message and exits'
     echo ''
@@ -165,7 +165,7 @@ function mount_emulator {
 
 #Cross builds corefx
 function cross_build_corefx {
-    #Apply fixes for softfp 
+    #Apply fixes for armel 
     if [ "$__buildArch" == "armel" ]; then
         #Export the needed environment variables
         (set +x; echo 'Exporting LINUX_ARM_* environment variable')
@@ -203,7 +203,7 @@ do
             exit_with_error "--buildConfig can be only Debug or Release" true
         fi
         ;;
-    --softfp)
+    --armel)
         __ARMRootfsImageBase="rootfs-t30.ext4"
         __buildArch="armel"
         ;;
