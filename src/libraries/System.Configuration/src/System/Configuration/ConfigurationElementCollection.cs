@@ -254,7 +254,7 @@ namespace System.Configuration
             Hashtable inheritance = new Hashtable();
             _lockedAllExceptAttributesList = sourceElement._lockedAllExceptAttributesList;
             _lockedAllExceptElementsList = sourceElement._lockedAllExceptElementsList;
-            _fItemLocked = sourceElement._fItemLocked;
+            _itemLockedFlag = sourceElement._itemLockedFlag;
             _lockedAttributesList = sourceElement._lockedAttributesList;
             _lockedElementsList = sourceElement._lockedElementsList;
 
@@ -661,11 +661,12 @@ namespace System.Configuration
                 Items.Insert(index, new Entry(entryType, key, element));
             }
             else
+            {
                 Items.Add(new Entry(entryType, key, element));
+            }
 
             _modified = true;
         }
-
 
         protected virtual void BaseAdd(int index, ConfigurationElement element)
         {

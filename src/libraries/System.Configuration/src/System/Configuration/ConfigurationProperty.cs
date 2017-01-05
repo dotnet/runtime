@@ -24,11 +24,15 @@ namespace System.Configuration
 
             ConstructorInit(name, type, ConfigurationPropertyOptions.None, null, null);
 
-            if (type == typeof(string)) defaultValue = string.Empty;
-            else
+            if (type == typeof(string))
             {
-                if (type.IsValueType) defaultValue = TypeUtil.CreateInstance(type);
+                defaultValue = string.Empty;
             }
+            else if (type.IsValueType)
+            {
+                defaultValue = TypeUtil.CreateInstance(type);
+            }
+
             SetDefaultValue(defaultValue);
         }
 
@@ -66,94 +70,91 @@ namespace System.Configuration
         {
             Debug.Assert(info != null, "info != null");
 
-            // Bellow are the attributes we handle
-            ConfigurationPropertyAttribute attribProperty = null;
+            ConfigurationPropertyAttribute propertyAttribute = null;
+            DescriptionAttribute descriptionAttribute = null;
 
-            // Compatability attributes
-            // If the approprite data is provided in the ConfigPropAttribute then the one bellow will be ignored
-            DescriptionAttribute attribStdDescription = null;
-            DefaultValueAttribute attribStdDefault = null;
+            // For compatibility we read the component model default value attribute. It is only
+            // used if ConfigurationPropertyAttribute doesn't provide the default value.
+            DefaultValueAttribute defaultValueAttribute = null;
 
             TypeConverter typeConverter = null;
             ConfigurationValidatorBase validator = null;
 
-            // Find the interesting attributes in the collection
+            // Look for relevant attributes
             foreach (Attribute attribute in Attribute.GetCustomAttributes(info))
+            {
                 if (attribute is TypeConverterAttribute)
                 {
-                    TypeConverterAttribute attribConverter = (TypeConverterAttribute)attribute;
-                    typeConverter = TypeUtil.CreateInstance<TypeConverter>(attribConverter.ConverterTypeName);
+                    typeConverter = TypeUtil.CreateInstance<TypeConverter>(((TypeConverterAttribute)attribute).ConverterTypeName);
                 }
-                else
+                else if (attribute is ConfigurationPropertyAttribute)
                 {
-                    if (attribute is ConfigurationPropertyAttribute)
-                        attribProperty = (ConfigurationPropertyAttribute)attribute;
-                    else
-                    {
-                        if (attribute is ConfigurationValidatorAttribute)
-                        {
-                            // There could be more then one validator attribute specified on a property
-                            // Currently we consider this an error since it's too late to fix it for whidbey
-                            // but the right thing to do is to introduce new validator type ( CompositeValidator ) that is a list of validators and executes
-                            // them all
-
-                            if (validator != null)
-                            {
-                                throw new ConfigurationErrorsException(
-                                    string.Format(SR.Validator_multiple_validator_attributes, info.Name));
-                            }
-
-                            ConfigurationValidatorAttribute attribValidator = (ConfigurationValidatorAttribute)attribute;
-                            attribValidator.SetDeclaringType(info.DeclaringType);
-                            validator = attribValidator.ValidatorInstance;
-                        }
-                        else
-                        {
-                            if (attribute is DescriptionAttribute)
-                                attribStdDescription = (DescriptionAttribute)attribute;
-                            else
-                            {
-                                if (attribute is DefaultValueAttribute)
-                                    attribStdDefault = (DefaultValueAttribute)attribute;
-                            }
-                        }
-                    }
+                    propertyAttribute = (ConfigurationPropertyAttribute)attribute;
                 }
+                else if (attribute is ConfigurationValidatorAttribute)
+                {
+                    if (validator != null)
+                    {
+                        // We only allow one validator to be specified on a property.
+                        //
+                        // Consider: introduce a new validator type ( CompositeValidator ) that is a
+                        // list of validators and executes them all
+
+                        throw new ConfigurationErrorsException(
+                            string.Format(SR.Validator_multiple_validator_attributes, info.Name));
+                    }
+
+                    ConfigurationValidatorAttribute validatorAttribute = (ConfigurationValidatorAttribute)attribute;
+                    validatorAttribute.SetDeclaringType(info.DeclaringType);
+                    validator = validatorAttribute.ValidatorInstance;
+                }
+                else if (attribute is DescriptionAttribute)
+                {
+                    descriptionAttribute = (DescriptionAttribute)attribute;
+                }
+                else if (attribute is DefaultValueAttribute)
+                {
+                    defaultValueAttribute = (DefaultValueAttribute)attribute;
+                }
+            }
 
             Type propertyType = info.PropertyType;
-            // Collections need some customization when the collection attribute is present
+
+            // If the property is a Collection we need to look for the ConfigurationCollectionAttribute for
+            // additional customization.
             if (typeof(ConfigurationElementCollection).IsAssignableFrom(propertyType))
             {
-                ConfigurationCollectionAttribute attribCollection =
+                // Look for the ConfigurationCollection attribute on the property itself, fall back
+                // on the property type.
+                ConfigurationCollectionAttribute collectionAttribute =
                     Attribute.GetCustomAttribute(info,
                         typeof(ConfigurationCollectionAttribute)) as ConfigurationCollectionAttribute ??
                     Attribute.GetCustomAttribute(propertyType,
                         typeof(ConfigurationCollectionAttribute)) as ConfigurationCollectionAttribute;
 
-                // If none on the property - see if there is an attribute on the collection type itself
-                if (attribCollection != null)
+                if (collectionAttribute != null)
                 {
-                    if (attribCollection.AddItemName.IndexOf(',') == -1) AddElementName = attribCollection.AddItemName;
-                    RemoveElementName = attribCollection.RemoveItemName;
-                    ClearElementName = attribCollection.ClearItemsName;
+                    if (collectionAttribute.AddItemName.IndexOf(',') == -1) AddElementName = collectionAttribute.AddItemName;
+                    RemoveElementName = collectionAttribute.RemoveItemName;
+                    ClearElementName = collectionAttribute.ClearItemsName;
                 }
             }
 
-            // This constructor shouldnt be invoked if the reflection info is not for an actual config property
-            Debug.Assert(attribProperty != null, "attribProperty != null");
+            // This constructor shouldn't be invoked if the reflection info is not for an actual config property
+            Debug.Assert(propertyAttribute != null, "attribProperty != null");
 
-            ConstructorInit(attribProperty.Name,
+            ConstructorInit(propertyAttribute.Name,
                 info.PropertyType,
-                attribProperty.Options,
+                propertyAttribute.Options,
                 validator,
                 typeConverter);
 
             // Figure out the default value
-            InitDefaultValueFromTypeInfo(attribProperty, attribStdDefault);
+            InitDefaultValueFromTypeInfo(propertyAttribute, defaultValueAttribute);
 
             // Get the description
-            if (!string.IsNullOrEmpty(attribStdDescription?.Description))
-                Description = attribStdDescription.Description;
+            if (!string.IsNullOrEmpty(descriptionAttribute?.Description))
+                Description = descriptionAttribute.Description;
         }
 
         public string Name { get; private set; }
@@ -166,7 +167,8 @@ namespace System.Configuration
         {
             get
             {
-                if (_isTypeInited) return _isConfigurationElementType;
+                if (_isTypeInited)
+                    return _isConfigurationElementType;
 
                 _isConfigurationElementType = typeof(ConfigurationElement).IsAssignableFrom(Type);
                 _isTypeInited = true;
@@ -209,7 +211,8 @@ namespace System.Configuration
 
         internal string ClearElementName { get; }
 
-        private void ConstructorInit(string name,
+        private void ConstructorInit(
+            string name,
             Type type,
             ConfigurationPropertyOptions options,
             ConfigurationValidatorBase validator,
@@ -221,11 +224,17 @@ namespace System.Configuration
                     string.Format(SR.Config_properties_may_not_be_derived_from_configuration_section, name));
             }
 
-            ProvidedName = name; // save the provided name so we can check for default collection names
-            if (((options & ConfigurationPropertyOptions.IsDefaultCollection) != 0) &&
-                string.IsNullOrEmpty(name))
+            // save the provided name so we can check for default collection names
+            ProvidedName = name;
+
+            if (((options & ConfigurationPropertyOptions.IsDefaultCollection) != 0) && string.IsNullOrEmpty(name))
+            {
                 name = s_defaultCollectionPropertyName;
-            else ValidatePropertyName(name);
+            }
+            else
+            {
+                ValidatePropertyName(name);
+            }
 
             Name = name;
             Type = type;
@@ -234,7 +243,10 @@ namespace System.Configuration
             _converter = converter;
 
             // Use the default validator if none was supplied
-            if (Validator == null) Validator = s_defaultValidatorInstance;
+            if (Validator == null)
+            {
+                Validator = s_defaultValidatorInstance;
+            }
             else
             {
                 // Make sure the supplied validator supports the type of this property
@@ -245,7 +257,8 @@ namespace System.Configuration
 
         private void ValidatePropertyName(string name)
         {
-            if (string.IsNullOrEmpty(name)) throw new ArgumentException(SR.String_null_or_empty, nameof(name));
+            if (string.IsNullOrEmpty(name))
+                throw new ArgumentException(SR.String_null_or_empty, nameof(name));
 
             if (BaseConfigurationRecord.IsReservedAttributeName(name))
                 throw new ArgumentException(string.Format(SR.Property_name_reserved, name));
@@ -254,34 +267,34 @@ namespace System.Configuration
         private void SetDefaultValue(object value)
         {
             // Validate the default value if any. This should make errors from invalid defaults easier to catch
-            if ((value == null) || (value == ConfigurationElement.s_nullPropertyValue)) return;
+            if (ConfigurationElement.IsNullOrNullProperty(value))
+                return;
 
             if (!Type.IsInstanceOfType(value))
             {
-                if (Converter.CanConvertFrom(value.GetType()))
-                    value = Converter.ConvertFrom(value);
-                else
+                if (!Converter.CanConvertFrom(value.GetType()))
                     throw new ConfigurationErrorsException(string.Format(SR.Default_value_wrong_type, Name));
+
+                value = Converter.ConvertFrom(value);
             }
 
             Validate(value);
             DefaultValue = value;
         }
 
-        private void InitDefaultValueFromTypeInfo(ConfigurationPropertyAttribute attribProperty,
-            DefaultValueAttribute attribStdDefault)
+        private void InitDefaultValueFromTypeInfo(
+            ConfigurationPropertyAttribute configurationProperty,
+            DefaultValueAttribute defaultValueAttribute)
         {
-            object defaultValue = attribProperty.DefaultValue;
+            object defaultValue = configurationProperty.DefaultValue;
 
-            // If there is no default value there - try the other attribute ( the clr standard one )
-            if (((defaultValue == null) || (defaultValue == ConfigurationElement.s_nullPropertyValue)) &&
-                (attribStdDefault != null))
-                defaultValue = attribStdDefault.Value;
+            // If the ConfigurationPropertyAttribute has no default try the DefaultValueAttribute
+            if (ConfigurationElement.IsNullOrNullProperty(defaultValue))
+                defaultValue = defaultValueAttribute?.Value;
 
-            // If there was a default value in the prop attribute - check if we need to convert it from string
+            // Convert the default value from string if necessary
             if (defaultValue is string && (Type != typeof(string)))
             {
-                // Use the converter to parse this property default value
                 try
                 {
                     defaultValue = Converter.ConvertFromInvariantString((string)defaultValue);
@@ -293,14 +306,19 @@ namespace System.Configuration
                 }
             }
 
-            if ((defaultValue == null) || (defaultValue == ConfigurationElement.s_nullPropertyValue))
+            // If we still have no default, use string Empty for string or the default for value types
+            if (ConfigurationElement.IsNullOrNullProperty(defaultValue))
             {
-                if (Type == typeof(string)) defaultValue = string.Empty;
-                else
+                if (Type == typeof(string))
                 {
-                    if (Type.IsValueType) defaultValue = TypeUtil.CreateInstance(Type);
+                    defaultValue = string.Empty;
+                }
+                else if (Type.IsValueType)
+                {
+                    defaultValue = TypeUtil.CreateInstance(Type);
                 }
             }
+
             SetDefaultValue(defaultValue);
         }
 
@@ -323,21 +341,23 @@ namespace System.Configuration
 
         internal string ConvertToString(object value)
         {
-            string result;
-
             try
             {
                 if (Type == typeof(bool))
-                    result = (bool)value ? "true" : "false"; // the converter will break 1.1 compat for bool
-                else result = Converter.ConvertToInvariantString(value);
+                {
+                    // The boolean converter will break 1.1 compat for bool
+                    return (bool)value ? "true" : "false";
+                }
+                else
+                {
+                    return Converter.ConvertToInvariantString(value);
+                }
             }
             catch (Exception ex)
             {
-                throw new ConfigurationErrorsException(string.Format(SR.Top_level_conversion_error_to_string, Name,
-                    ex.Message));
+                throw new ConfigurationErrorsException(
+                    string.Format(SR.Top_level_conversion_error_to_string, Name, ex.Message));
             }
-
-            return result;
         }
 
         internal void Validate(object value)
@@ -348,31 +368,37 @@ namespace System.Configuration
             }
             catch (Exception ex)
             {
-                throw new ConfigurationErrorsException(string.Format(SR.Top_level_validation_error, Name, ex.Message),
-                    ex);
+                throw new ConfigurationErrorsException(
+                    string.Format(SR.Top_level_validation_error, Name, ex.Message), ex);
             }
         }
 
         private void CreateConverter()
         {
-            // Some properties cannot have type converters.
-            // Such examples are properties that are ConfigurationElement ( derived classes )
-            // or properties which are user-defined and the user code handles serialization/desirialization so
-            // the property itself is never converted to/from string
-
             if (_converter != null) return;
 
-            // Enums are exception. We use our custom converter for all enums
-            if (Type.IsEnum) _converter = new GenericEnumConverter(Type);
+            if (Type.IsEnum)
+            {
+                // We use our custom converter for all enums
+                _converter = new GenericEnumConverter(Type);
+            }
+            else if (Type.IsSubclassOf(typeof(ConfigurationElement)))
+            {
+                // Type converters aren't allowed on ConfigurationElement
+                // derived classes.
+                return;
+            }
             else
             {
-                if (Type.IsSubclassOf(typeof(ConfigurationElement))) return;
-
                 _converter = TypeDescriptor.GetConverter(Type);
+
                 if ((_converter == null) ||
                     !_converter.CanConvertFrom(typeof(string)) ||
                     !_converter.CanConvertTo(typeof(string)))
+                {
+                    // Need to be able to convert to/from string
                     throw new ConfigurationErrorsException(string.Format(SR.No_converter, Name, Type.Name));
+                }
             }
         }
     }

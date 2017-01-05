@@ -52,6 +52,12 @@
     </Compile>
     <Compile Include="System\Configuration\AppSettingsTests.cs" />
     <Compile Include="System\Configuration\ConfigPathUtilityTests.cs" />
+    <Compile Include="System\Configuration\ConfigurationElementCollectionTests.cs" />
+    <Compile Include="System\Configuration\ConfigurationElementTests.cs" />
+    <Compile Include="System\Configuration\ConfigurationPropertyAttributeTests.cs" />
+    <Compile Include="System\Configuration\ConfigurationPropertyTests.cs" />
+    <Compile Include="System\Configuration\ConfigurationTests.cs" />
+    <Compile Include="System\Configuration\BasicCustomSectionTests.cs" />
     <Compile Include="System\Configuration\ExceptionUtilTests.cs" />
     <Compile Include="System\Configuration\ImplicitMachineConfigTests.cs" />
     <Compile Include="System\Configuration\SmokeTest.cs" />

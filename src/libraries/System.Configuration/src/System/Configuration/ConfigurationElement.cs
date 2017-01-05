@@ -47,14 +47,14 @@ namespace System.Configuration
         private static readonly ConfigurationElementProperty s_elementProperty =
             new ConfigurationElementProperty(new DefaultValidator());
 
-        private bool _bInited;
-        private bool _bModified;
-        private bool _bReadOnly;
+        private bool _initialized;
+        private bool _modified;
+        private bool _readOnly;
         internal BaseConfigurationRecord _configRecord;
         private ConfigurationElementProperty _elementProperty = s_elementProperty;
         internal ContextInformation _evalContext;
         private volatile ElementInformation _evaluationElement;
-        internal ConfigurationValueFlags _fItemLocked;
+        internal ConfigurationValueFlags _itemLockedFlag;
         internal ConfigurationLockCollection _lockedAllExceptAttributesList;
         internal ConfigurationLockCollection _lockedAllExceptElementsList;
         internal ConfigurationLockCollection _lockedAttributesList;
@@ -70,6 +70,11 @@ namespace System.Configuration
             ApplyValidator(this);
         }
 
+        internal static bool IsNullOrNullProperty(object value)
+        {
+            return value == null || value == s_nullPropertyValue;
+        }
+
         internal bool DataToWriteInternal { get; set; }
 
         internal bool ElementPresent { get; set; }
@@ -80,7 +85,7 @@ namespace System.Configuration
 
         internal ConfigurationLockCollection LockedAllExceptAttributesList => _lockedAllExceptAttributesList;
 
-        internal ConfigurationValueFlags ItemLocked => _fItemLocked;
+        internal ConfigurationValueFlags ItemLocked => _itemLockedFlag;
 
         public ConfigurationLockCollection LockAttributes => _lockedAttributesList
             ?? (_lockedAttributesList = new ConfigurationLockCollection(this, ConfigurationLockCollectionType.LockedAttributes));
@@ -96,15 +101,18 @@ namespace System.Configuration
 
         public bool LockItem
         {
-            get { return (_fItemLocked & ConfigurationValueFlags.Locked) != 0; }
+            get { return (_itemLockedFlag & ConfigurationValueFlags.Locked) != 0; }
             set
             {
-                if ((_fItemLocked & ConfigurationValueFlags.Inherited) == 0)
+                if ((_itemLockedFlag & ConfigurationValueFlags.Inherited) == 0)
                 {
-                    _fItemLocked = value ? ConfigurationValueFlags.Locked : ConfigurationValueFlags.Default;
-                    _fItemLocked |= ConfigurationValueFlags.Modified;
+                    _itemLockedFlag = value ? ConfigurationValueFlags.Locked : ConfigurationValueFlags.Default;
+                    _itemLockedFlag |= ConfigurationValueFlags.Modified;
                 }
-                else throw new ConfigurationErrorsException(string.Format(SR.Config_base_attribute_locked, LockItemKey));
+                else
+                {
+                    throw new ConfigurationErrorsException(string.Format(SR.Config_base_attribute_locked, LockItemKey));
+                }
             }
         }
 
@@ -124,7 +132,7 @@ namespace System.Configuration
                             {
                                 ConfigurationElement childElement = CreateElement(prop.Type);
 
-                                if (_bReadOnly) childElement.SetReadOnly();
+                                if (_readOnly) childElement.SetReadOnly();
 
                                 if (typeof(ConfigurationElementCollection).IsAssignableFrom(prop.Type))
                                 {
@@ -189,10 +197,8 @@ namespace System.Configuration
                 ConfigurationPropertyCollection result = null;
 
                 if (PropertiesFromType(GetType(), out result))
-                {
-                    ApplyInstanceAttributes(this); // Redundant but preserved to minimize code changes for Whidbey RTM
                     ApplyValidatorsRecursive(this);
-                }
+
                 return result;
             }
         }
@@ -238,16 +244,16 @@ namespace System.Configuration
             // If Init is called by the derived class, we may be able
             // to set _bInited to true if the derived class properly
             // calls Init on its base.
-            _bInited = true;
+            _initialized = true;
         }
 
         internal void CallInit()
         {
             // Ensure Init is called just once
-            if (!_bInited)
+            if (!_initialized)
             {
                 Init();
-                _bInited = true;
+                _initialized = true;
             }
         }
 
@@ -255,9 +261,9 @@ namespace System.Configuration
         {
             if (source == null) return;
 
-            _fItemLocked = (source._fItemLocked & ConfigurationValueFlags.Locked) != 0
-                ? ConfigurationValueFlags.Inherited | source._fItemLocked
-                : _fItemLocked;
+            _itemLockedFlag = (source._itemLockedFlag & ConfigurationValueFlags.Locked) != 0
+                ? ConfigurationValueFlags.Inherited | source._itemLockedFlag
+                : _itemLockedFlag;
 
             if (source._lockedAttributesList != null)
             {
@@ -421,7 +427,7 @@ namespace System.Configuration
 
         protected internal virtual bool IsModified()
         {
-            if (_bModified)
+            if (_modified)
                 return true;
             if ((_lockedAttributesList != null) && _lockedAttributesList.IsModified)
                 return true;
@@ -431,7 +437,7 @@ namespace System.Configuration
                 return true;
             if ((_lockedAllExceptElementsList != null) && _lockedAllExceptElementsList.IsModified)
                 return true;
-            if ((_fItemLocked & ConfigurationValueFlags.Modified) != 0)
+            if ((_itemLockedFlag & ConfigurationValueFlags.Modified) != 0)
                 return true;
             foreach (ConfigurationElement elem in Values.ConfigurationElements)
                 if (elem.IsModified()) return true;
@@ -440,7 +446,7 @@ namespace System.Configuration
 
         protected internal virtual void ResetModified()
         {
-            _bModified = false;
+            _modified = false;
             _lockedAttributesList?.ResetModified();
             _lockedAllExceptAttributesList?.ResetModified();
             _lockedElementsList?.ResetModified();
@@ -451,18 +457,18 @@ namespace System.Configuration
 
         public virtual bool IsReadOnly()
         {
-            return _bReadOnly;
+            return _readOnly;
         }
 
         protected internal virtual void SetReadOnly()
         {
-            _bReadOnly = true;
+            _readOnly = true;
             foreach (ConfigurationElement elem in Values.ConfigurationElements) elem.SetReadOnly();
         }
 
         internal void SetLocked()
         {
-            _fItemLocked = ConfigurationValueFlags.Locked | ConfigurationValueFlags.XmlParentInherited;
+            _itemLockedFlag = ConfigurationValueFlags.Locked | ConfigurationValueFlags.XmlParentInherited;
 
             foreach (ConfigurationProperty prop in Properties)
             {
@@ -523,12 +529,14 @@ namespace System.Configuration
             // have to check if clear was locked!
             if (elementName != null)
             {
-                if (((_lockedElementsList != null) &&
-                    (_lockedElementsList.DefinedInParent(LockAll) || _lockedElementsList.DefinedInParent(elementName))) ||
+                bool lockedInParent = (_lockedElementsList != null) &&
+                    (_lockedElementsList.DefinedInParent(LockAll) || _lockedElementsList.DefinedInParent(elementName));
+
+                if (lockedInParent ||
                     ((_lockedAllExceptElementsList != null) && (_lockedAllExceptElementsList.Count != 0) &&
                     _lockedAllExceptElementsList.HasParentElements &&
                     !_lockedAllExceptElementsList.DefinedInParent(elementName)) ||
-                    ((_fItemLocked & ConfigurationValueFlags.Inherited) != 0)
+                    ((_itemLockedFlag & ConfigurationValueFlags.Inherited) != 0)
                     )
                 {
                     throw new ConfigurationErrorsException(string.Format(SR.Config_base_element_locked, elementName),
@@ -554,8 +562,8 @@ namespace System.Configuration
 
             if (parentElement == null) return;
 
-            _fItemLocked = (parentElement._fItemLocked & ConfigurationValueFlags.Locked) != 0
-                ? ConfigurationValueFlags.Inherited | parentElement._fItemLocked
+            _itemLockedFlag = (parentElement._itemLockedFlag & ConfigurationValueFlags.Locked) != 0
+                ? ConfigurationValueFlags.Inherited | parentElement._itemLockedFlag
                 : ConfigurationValueFlags.Default;
 
             if (parentElement._lockedAttributesList != null)
@@ -683,24 +691,27 @@ namespace System.Configuration
 
         public override bool Equals(object compareTo)
         {
-            ConfigurationElement compareToElem = compareTo as ConfigurationElement;
+            ConfigurationElement otherElement = compareTo as ConfigurationElement;
 
-            if ((compareToElem == null) ||
+            if ((otherElement == null) ||
                 (compareTo.GetType() != GetType()) ||
-                (compareToElem.Properties.Count != Properties.Count))
+                (otherElement.Properties.Count != Properties.Count))
                 return false;
 
             foreach (ConfigurationProperty configProperty in Properties)
-                if (!Equals(Values[configProperty.Name], compareToElem.Values[configProperty.Name]))
+            {
+                object thisValue = Values[configProperty.Name];
+                object otherValue = otherElement.Values[configProperty.Name];
+
+                if (!Equals(thisValue, otherValue))
                 {
-                    if (!((((Values[configProperty.Name] == null) ||
-                        (Values[configProperty.Name] == s_nullPropertyValue)) &&
-                        Equals(compareToElem.Values[configProperty.Name], configProperty.DefaultValue)) ||
-                        (((compareToElem.Values[configProperty.Name] == null) ||
-                        (compareToElem.Values[configProperty.Name] == s_nullPropertyValue)) &&
-                        Equals(Values[configProperty.Name], configProperty.DefaultValue))))
+                    // The values don't match- if either is 'null' default is ok
+                    if (!((IsNullOrNullProperty(thisValue) && Equals(otherValue, configProperty.DefaultValue))
+                        || (IsNullOrNullProperty(otherValue) && Equals(thisValue, configProperty.DefaultValue))))
                         return false;
                 }
+            }
+
             return true;
         }
 
@@ -713,70 +724,6 @@ namespace System.Configuration
                 if (o != null) hHashCode ^= this[configProperty].GetHashCode();
             }
             return hHashCode;
-        }
-
-        // Note: this method is completelly redundant ( the code is duplaicated in ConfigurationProperty( PropertyInfo ) )
-        // We do not remove the code now to minimize code changes for Whidbey RTM but this method and all calls leading to it should
-        // be removed post-Whidbey
-        private static void ApplyInstanceAttributes(object instance)
-        {
-            Debug.Assert(instance is ConfigurationElement, "instance is ConfigurationElement");
-            Type type = instance.GetType();
-
-            foreach (
-                PropertyInfo propertyInformation in
-                type.GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance))
-            {
-                ConfigurationPropertyAttribute attribProperty =
-                    Attribute.GetCustomAttribute(propertyInformation,
-                        typeof(ConfigurationPropertyAttribute)) as ConfigurationPropertyAttribute;
-
-                if (attribProperty == null) continue;
-
-                Type propertyType = propertyInformation.PropertyType;
-                if (typeof(ConfigurationElementCollection).IsAssignableFrom(propertyType))
-                {
-                    // Collections need some customization when the collection attribute is present
-                    ConfigurationCollectionAttribute attribCollection =
-                        Attribute.GetCustomAttribute(propertyInformation,
-                            typeof(ConfigurationCollectionAttribute)) as ConfigurationCollectionAttribute ??
-                        Attribute.GetCustomAttribute(propertyType,
-                            typeof(ConfigurationCollectionAttribute)) as ConfigurationCollectionAttribute;
-
-                    ConfigurationElementCollection coll =
-                        propertyInformation.GetValue(instance, null) as ConfigurationElementCollection;
-
-                    if (coll == null)
-                    {
-                        throw new ConfigurationErrorsException(string.Format(SR.Config_element_null_instance,
-                            propertyInformation.Name, attribProperty.Name));
-                    }
-
-                    // If the attribute is found - get the collection instance and set the data from the attribute
-                    if (attribCollection != null)
-                    {
-                        if (attribCollection.AddItemName.IndexOf(',') == -1)
-                            coll.AddElementName = attribCollection.AddItemName;
-                        coll.RemoveElementName = attribCollection.RemoveItemName;
-                        coll.ClearElementName = attribCollection.ClearItemsName;
-                    }
-                }
-                else
-                {
-                    if (typeof(ConfigurationElement).IsAssignableFrom(propertyType))
-                    {
-                        // Nested configuration element - handle recursively
-                        object element = propertyInformation.GetValue(instance, null);
-                        if (element == null)
-                        {
-                            throw new ConfigurationErrorsException(string.Format(SR.Config_element_null_instance,
-                                propertyInformation.Name, attribProperty.Name));
-                        }
-
-                        ApplyInstanceAttributes(element);
-                    }
-                }
-            }
         }
 
         private static bool PropertiesFromType(Type type, out ConfigurationPropertyCollection result)
@@ -807,28 +754,24 @@ namespace System.Configuration
             // For ConfigurationElement derived classes - get the per-type validator
             if (typeof(ConfigurationElement).IsAssignableFrom(type))
             {
-                ConfigurationValidatorAttribute attribValidator =
+                ConfigurationValidatorAttribute validatorAttribute =
                     Attribute.GetCustomAttribute(type, typeof(ConfigurationValidatorAttribute)) as
                         ConfigurationValidatorAttribute;
 
-                if (attribValidator != null)
+                if (validatorAttribute != null)
                 {
-                    attribValidator.SetDeclaringType(type);
-                    ConfigurationValidatorBase validator = attribValidator.ValidatorInstance;
-
+                    validatorAttribute.SetDeclaringType(type);
+                    ConfigurationValidatorBase validator = validatorAttribute.ValidatorInstance;
                     if (validator != null) CachePerTypeValidator(type, validator);
                 }
             }
 
             ConfigurationPropertyCollection properties = new ConfigurationPropertyCollection();
 
-            foreach (
-                PropertyInfo propertyInformation in
-                type.GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance))
+            foreach (PropertyInfo propertyInformation in type.GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance))
             {
-                ConfigurationProperty newProp = CreateConfigurationPropertyFromAttributes(propertyInformation);
-
-                if (newProp != null) properties.Add(newProp);
+                ConfigurationProperty property = CreateConfigurationPropertyFromAttributes(propertyInformation);
+                if (property != null) properties.Add(property);
             }
 
             return properties;
@@ -844,8 +787,9 @@ namespace System.Configuration
                 Attribute.GetCustomAttribute(propertyInformation,
                     typeof(ConfigurationPropertyAttribute)) as ConfigurationPropertyAttribute;
 
-            // If there is no ConfigurationProperty attrib - this is not considered a property
-            if (attribProperty != null) result = new ConfigurationProperty(propertyInformation);
+            // If there is no ConfigurationPropertyAttribute - this is not considered a property
+            if (attribProperty != null)
+                result = new ConfigurationProperty(propertyInformation);
 
             // Handle some special cases of property types
             if ((result != null) && typeof(ConfigurationElement).IsAssignableFrom(result.Type))
@@ -889,8 +833,7 @@ namespace System.Configuration
             // Apply the validator on 'root'
             ApplyValidator(root);
 
-            // Apply validators on child elements ( note - we will do this only on already created child elements
-            // The non created ones will get their validators in the ctor
+            // Apply validators on created child elements (non created ones will get their validators run when constructed)
             foreach (ConfigurationElement elem in root.Values.ConfigurationElements) ApplyValidatorsRecursive(elem);
         }
 
@@ -911,11 +854,11 @@ namespace System.Configuration
                 !_lockedAllExceptAttributesList.DefinedInParent(prop.Name)) ||
                 ((_lockedAttributesList != null) &&
                 (_lockedAttributesList.DefinedInParent(prop.Name) || _lockedAttributesList.DefinedInParent(LockAll))) ||
-                (((_fItemLocked & ConfigurationValueFlags.Locked) != 0) &&
-                ((_fItemLocked & ConfigurationValueFlags.Inherited) != 0))))
+                (((_itemLockedFlag & ConfigurationValueFlags.Locked) != 0) &&
+                ((_itemLockedFlag & ConfigurationValueFlags.Inherited) != 0))))
                 throw new ConfigurationErrorsException(string.Format(SR.Config_base_attribute_locked, prop.Name));
 
-            _bModified = true;
+            _modified = true;
 
             // Run the new value through the validator to make sure its ok to store it
             if (value != null) prop.Validate(value);
@@ -958,7 +901,7 @@ namespace System.Configuration
 
             _lockedAllExceptAttributesList = sourceElement._lockedAllExceptAttributesList;
             _lockedAllExceptElementsList = sourceElement._lockedAllExceptElementsList;
-            _fItemLocked = sourceElement._fItemLocked;
+            _itemLockedFlag = sourceElement._itemLockedFlag;
             _lockedAttributesList = sourceElement._lockedAttributesList;
             _lockedElementsList = sourceElement._lockedElementsList;
             AssociateContext(sourceElement._configRecord);
@@ -1023,8 +966,7 @@ namespace System.Configuration
                     object value = sourceElement.Values[prop.Name];
 
                     // if the property is required or we are writing a full config make sure we have defaults
-                    if ((prop.IsRequired || (saveMode == ConfigurationSaveMode.Full)) &&
-                        ((value == null) || (value == s_nullPropertyValue)))
+                    if ((prop.IsRequired || (saveMode == ConfigurationSaveMode.Full)) && IsNullOrNullProperty(value))
                     {
                         // If the default value is null, this means there wasnt a reasonable default for the value
                         // and there is nothing more we can do. Otherwise reset the value to the default
@@ -1035,14 +977,10 @@ namespace System.Configuration
                             value = prop.DefaultValue; // need to make sure required properties are persisted
                     }
 
-                    if ((value == null) || (value == s_nullPropertyValue)) continue;
+                    if (IsNullOrNullProperty(value)) continue;
 
-                    object value2 = null;
-                    if (parentElement != null) // Is there a parent
-                        value2 = parentElement.Values[prop.Name]; // if so get it's value
-
-                    if (value2 == null) // no parent use default
-                        value2 = prop.DefaultValue;
+                    // Use the parent value if available
+                    object value2 = parentElement?.Values[prop.Name] ?? prop.DefaultValue;
 
                     // If changed and not same as parent write or required
                     switch (saveMode)
@@ -1063,7 +1001,7 @@ namespace System.Configuration
                                 Values[prop.Name] = value;
                             break;
                         case ConfigurationSaveMode.Full:
-                            if ((value != null) && (value != s_nullPropertyValue))
+                            if (IsNullOrNullProperty(value))
                                 Values[prop.Name] = value;
                             else
                                 Values[prop.Name] = value2;
@@ -1149,7 +1087,10 @@ namespace System.Configuration
                 }
 
 
-                if (prop.IsConfigurationElementType) hasAnyChildElements = true;
+                if (prop.IsConfigurationElementType)
+                {
+                    hasAnyChildElements = true;
+                }
                 else
                 {
                     if (((_lockedAllExceptAttributesList != null) && _lockedAllExceptAttributesList.HasParentElements &&
@@ -1196,9 +1137,9 @@ namespace System.Configuration
                 dataToWrite |= SerializeLockList(_lockedAllExceptAttributesList, LockAllAttributesExceptKey, writer);
                 dataToWrite |= SerializeLockList(_lockedElementsList, LockElementsKey, writer);
                 dataToWrite |= SerializeLockList(_lockedAllExceptElementsList, LockAllElementsExceptKey, writer);
-                if (((_fItemLocked & ConfigurationValueFlags.Locked) != 0) &&
-                    ((_fItemLocked & ConfigurationValueFlags.Inherited) == 0) &&
-                    ((_fItemLocked & ConfigurationValueFlags.XmlParentInherited) == 0))
+                if (((_itemLockedFlag & ConfigurationValueFlags.Locked) != 0) &&
+                    ((_itemLockedFlag & ConfigurationValueFlags.Inherited) == 0) &&
+                    ((_itemLockedFlag & ConfigurationValueFlags.XmlParentInherited) == 0))
                 {
                     dataToWrite = true;
                     writer?.WriteAttributeString(LockItemKey, true.ToString().ToLower(CultureInfo.InvariantCulture));
@@ -1487,8 +1428,8 @@ namespace System.Configuration
                 (_lockedElementsList.Contains(LockAll) && (reader.Name != ElementTagName)))) ||
                 ((_lockedAllExceptElementsList != null) && (_lockedAllExceptElementsList.Count != 0) &&
                 !_lockedAllExceptElementsList.Contains(reader.Name)) ||
-                (((_fItemLocked & ConfigurationValueFlags.Locked) != 0) &&
-                ((_fItemLocked & ConfigurationValueFlags.Inherited) != 0))
+                (((_itemLockedFlag & ConfigurationValueFlags.Locked) != 0) &&
+                ((_itemLockedFlag & ConfigurationValueFlags.Inherited) != 0))
                 )
                 throw new ConfigurationErrorsException(string.Format(SR.Config_base_element_locked, reader.Name), reader);
 
@@ -1657,7 +1598,7 @@ namespace System.Configuration
             if (itemLockedLocally)
             {
                 SetLocked();
-                _fItemLocked = ConfigurationValueFlags.Locked;
+                _itemLockedFlag = ConfigurationValueFlags.Locked;
             }
 
             if (lockedAttributesList != null)
