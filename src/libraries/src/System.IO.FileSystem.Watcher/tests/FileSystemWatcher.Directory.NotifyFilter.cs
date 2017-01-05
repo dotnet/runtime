@@ -10,7 +10,7 @@ namespace System.IO.Tests
 {
     public class Directory_NotifyFilter_Tests : FileSystemWatcherTest
     {
-        [DllImport( "api-ms-win-security-provider-l1-1-0.dll", EntryPoint = "SetNamedSecurityInfoW", 
+        [DllImport("advapi32.dll", EntryPoint = "SetNamedSecurityInfoW",
             CallingConvention = CallingConvention.Winapi, SetLastError = true, ExactSpelling = true, CharSet = CharSet.Unicode)]
         private static extern uint SetSecurityInfoByHandle( string name, uint objectType, uint securityInformation, 
             IntPtr owner, IntPtr group, IntPtr dacl, IntPtr sacl);
