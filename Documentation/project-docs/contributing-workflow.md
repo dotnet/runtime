@@ -85,7 +85,7 @@ We use and recommend the following workflow:
 1. Create an issue for your work. 
   - You can skip this step for trivial changes.
   - Reuse an existing issue on the topic, if there is one.
-  - Use [CODE_OWNERS.TXT](https://github.com/dotnet/coreclr/blob/CODE_OWNERS.TXT) to find relevant maintainers and @ mention them to ask for feedback on your issue.
+  - Use [CODE_OWNERS.TXT](https://github.com/dotnet/coreclr/blob/master/CODE_OWNERS.TXT) to find relevant maintainers and @ mention them to ask for feedback on your issue.
   - Get agreement from the team and the community that your proposed change is a good one.
   - If your change adds a new API, follow the [API Review Process](https://github.com/dotnet/corefx/blob/master/Documentation/project-docs/api-review-process.md). 
   - Clearly state that you are going to take on implementing it, if that's the case. You can request that the issue be assigned to you. Note: The issue filer and the implementer don't have to be the same person.
