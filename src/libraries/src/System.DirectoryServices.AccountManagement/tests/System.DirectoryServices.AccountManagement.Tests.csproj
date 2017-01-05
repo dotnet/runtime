@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <PropertyGroup>
+    <Configuration Condition="'$(Configuration)'==''">Windows_Debug</Configuration>
+  </PropertyGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <Configuration Condition="'$(Configuration)' == ''">Debug</Configuration>
+    <Platform Condition="'$(Platform)' == ''">AnyCPU</Platform>
+    <ProjectGuid>{57E8F8D4-0766-4CC7-B3F9-B243B81DB6A5}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AssemblyName>System.DirectoryServices.AccountManagement.Tests</AssemblyName>
+    <NugetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NugetTargetMoniker>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
+    <DebugSymbols>true</DebugSymbols>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+  </PropertyGroup>
+  <ItemGroup>
+    <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\pkg\System.DirectoryServices.AccountManagement.pkgproj">
+      <Project>{879c23dc-d828-4dfb-8e92-abbc11b71035}</Project>
+      <UndefineProperties>%(ProjectReference.UndefineProperties);TargetGroup</UndefineProperties>
+      <Name>System.DirectoryServices.AccountManagement</Name>
+      <Private>True</Private>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)'==''">
+    <Compile Include="ComputerPrincipalTest.cs" />
+    <Compile Include="ExtendedUserPrincipal.cs" />
+    <Compile Include="GroupPrincipalTest.cs" />
+    <Compile Include="PrincipalTest.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="UserPrincipalTest.cs" />
+    <Content Include="AuthoringTests.txt" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using Microsoft.Win32.SafeHandles;
 using System.Collections.Generic;
 using System.Collections;
 using System.ComponentModel;
@@ -19,7 +20,7 @@ namespace System.Net.Sockets
     {
         public const bool SupportsMultipleConnectAttempts = true;
 
-        private readonly static int s_protocolInformationSize = Marshal.SizeOf<Interop.Winsock.WSAPROTOCOL_INFO>();
+        private static readonly int s_protocolInformationSize = Marshal.SizeOf<Interop.Winsock.WSAPROTOCOL_INFO>();
 
         public static int ProtocolInformationSize { get { return s_protocolInformationSize; } }
 
@@ -40,7 +41,14 @@ namespace System.Net.Sockets
 
         public static SocketError GetLastSocketError()
         {
-            return (SocketError)Marshal.GetLastWin32Error();
+            int win32Error = Marshal.GetLastWin32Error();
+
+            if (win32Error == 0)
+            {
+                NetEventSource.Fail(null, "GetLastWin32Error() returned zero.");
+            }
+
+            return (SocketError)win32Error;
         }
 
         public static SocketError CreateSocket(AddressFamily addressFamily, SocketType socketType, ProtocolType protocolType, out SafeCloseSocket socket)
@@ -61,7 +69,7 @@ namespace System.Net.Sockets
 
             if (errorCode == SocketError.SocketError)
             {
-                errorCode = (SocketError)Marshal.GetLastWin32Error();
+                errorCode = GetLastSocketError();
             }
 
             willBlock = intBlocking == 0;
@@ -152,7 +160,7 @@ namespace System.Net.Sockets
 
                 if ((SocketError)errorCode == SocketError.SocketError)
                 {
-                    errorCode = (SocketError)Marshal.GetLastWin32Error();
+                    errorCode = GetLastSocketError();
                 }
 
                 return errorCode;
@@ -199,6 +207,15 @@ namespace System.Net.Sockets
 
             bytesTransferred = bytesSent;
             return SocketError.Success;
+        }
+
+        public static unsafe SocketError SendFile(SafeCloseSocket handle, SafeFileHandle fileHandle, byte[] preBuffer, byte[] postBuffer, TransmitFileOptions flags)
+        {
+            fixed (byte* prePinnedBuffer = preBuffer)
+            fixed (byte* postPinnedBuffer = postBuffer)
+            {
+                return TransmitFileHelper(handle, fileHandle, SafeNativeOverlapped.Zero, preBuffer, postBuffer, flags);
+            }
         }
 
         public static unsafe SocketError SendTo(SafeCloseSocket handle, byte[] buffer, int offset, int size, SocketFlags socketFlags, byte[] peerAddress, int peerAddressSize, out int bytesTransferred)
@@ -268,7 +285,7 @@ namespace System.Net.Sockets
 
                 if ((SocketError)errorCode == SocketError.SocketError)
                 {
-                    errorCode = (SocketError)Marshal.GetLastWin32Error();
+                    errorCode = GetLastSocketError();
                 }
 
                 return errorCode;
@@ -331,7 +348,7 @@ namespace System.Net.Sockets
                     IntPtr.Zero,
                     IntPtr.Zero) == SocketError.SocketError)
                 {
-                    errorCode = (SocketError)Marshal.GetLastWin32Error();
+                    errorCode = GetLastSocketError();
                 }
             }
             finally
@@ -785,6 +802,51 @@ namespace System.Net.Sockets
             return errorCode;
         }
 
+        // This assumes preBuffer/postBuffer are pinned already 
+
+        private static unsafe SocketError TransmitFileHelper(
+            SafeHandle socket, 
+            SafeHandle fileHandle,
+            SafeHandle overlapped,
+            byte[] preBuffer,
+            byte[] postBuffer,
+            TransmitFileOptions flags)
+        {
+            bool needTransmitFileBuffers = false;
+            Interop.Mswsock.TransmitFileBuffers transmitFileBuffers = default(Interop.Mswsock.TransmitFileBuffers);
+
+            if (preBuffer != null && preBuffer.Length > 0)
+            {
+                needTransmitFileBuffers = true;
+                transmitFileBuffers.Head = Marshal.UnsafeAddrOfPinnedArrayElement(preBuffer, 0);
+                transmitFileBuffers.HeadLength = preBuffer.Length;
+            }
+
+            if (postBuffer != null && postBuffer.Length > 0)
+            {
+                needTransmitFileBuffers = true;
+                transmitFileBuffers.Tail = Marshal.UnsafeAddrOfPinnedArrayElement(postBuffer, 0);
+                transmitFileBuffers.TailLength = postBuffer.Length;
+            }
+
+            bool success = Interop.Mswsock.TransmitFile(socket, fileHandle, 0, 0, overlapped,
+                needTransmitFileBuffers ? &transmitFileBuffers : null, flags);
+
+            return success ? SocketError.Success : GetLastSocketError();
+        }
+
+        public static unsafe SocketError SendFileAsync(SafeCloseSocket handle, FileStream fileStream, byte[] preBuffer, byte[] postBuffer, TransmitFileOptions flags, TransmitFileAsyncResult asyncResult)
+        {
+            asyncResult.SetUnmanagedStructures(fileStream, preBuffer, postBuffer, (flags & (TransmitFileOptions.Disconnect | TransmitFileOptions.ReuseSocket)) != 0);
+
+            SocketError errorCode = TransmitFileHelper(handle, fileStream?.SafeFileHandle, asyncResult.OverlappedHandle, preBuffer, postBuffer, flags);
+
+            // This will release resources if necessary
+            errorCode = asyncResult.CheckAsyncCallOverlappedResult(errorCode);
+
+            return errorCode;
+        }
+
         public static unsafe SocketError SendToAsync(SafeCloseSocket handle, byte[] buffer, int offset, int count, SocketFlags socketFlags, Internals.SocketAddress socketAddress, OverlappedAsyncResult asyncResult)
         {
             // Set up asyncResult for overlapped WSASendTo.
@@ -963,7 +1025,7 @@ namespace System.Net.Sockets
             // This can throw ObjectDisposedException (handle, and retrieving the delegate).
             if (!socket.DisconnectExBlocking(handle, IntPtr.Zero, (int)(reuseSocket ? TransmitFileOptions.ReuseSocket : 0), 0))
             {
-                errorCode = (SocketError)Marshal.GetLastWin32Error();
+                errorCode = GetLastSocketError();
             }
 
             return errorCode;

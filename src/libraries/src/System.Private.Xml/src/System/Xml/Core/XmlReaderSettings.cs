@@ -125,7 +125,7 @@ namespace System.Xml
         //notice we must keep GetXmlResolver() to avoid dead lock when init System.Config.ConfigurationManager
         internal XmlResolver GetXmlResolver_CheckConfig()
         {
-            if (!IsXmlResolverSet)
+            if (!LocalAppContextSwitches.AllowDefaultResolver && !IsXmlResolverSet)
                 return null;
             else
                 return _xmlResolver;
@@ -751,7 +751,7 @@ namespace System.Xml
 
         private static bool? s_enableLegacyXmlSettings = null;
 
-        static internal bool EnableLegacyXmlSettings()
+        internal static bool EnableLegacyXmlSettings()
         {
             if (s_enableLegacyXmlSettings.HasValue)
             {

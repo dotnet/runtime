@@ -286,7 +286,7 @@
         "scriptType": "inlineScript",
         "scriptName": "",
         "arguments": "-gitHubAuthToken $(UpdatePublishedVersions.AuthToken) -root $(Pipeline.SourcesDirectory)",
-        "inlineScript": "param($gitHubAuthToken, $root)\nif ($env:ConfigurationGroup -ne \"Release\") { exit }\ncd $root\n. $root\\UpdatePublishedVersions.ps1 `\n  -gitHubUser dotnet-helix-bot -gitHubEmail dotnet-helix-bot@microsoft.com `\n  -gitHubAuthToken $gitHubAuthToken `\n  -versionsRepoOwner $env:VersionsRepoOwner -versionsRepo versions `\n  -versionsRepoPath build-info/dotnet/$env:GitHubRepositoryName/$env:SourceBranch `\n  -nupkgPath $root\\packages\\AzureTransfer\\$env:ConfigurationGroup\\$env:AzureContainerPackageGlob",
+        "inlineScript": "param($gitHubAuthToken, $root)\nif ($env:ConfigurationGroup -ne \"Release\") { exit }\ncd $root\n. $root\\UpdatePublishedVersions.ps1 `\n  -gitHubUser dotnet-build-bot -gitHubEmail dotnet-build-bot@microsoft.com `\n  -gitHubAuthToken $gitHubAuthToken `\n  -versionsRepoOwner $env:VersionsRepoOwner -versionsRepo versions `\n  -versionsRepoPath build-info/dotnet/$env:GitHubRepositoryName/$env:SourceBranch `\n  -nupkgPath $root\\packages\\AzureTransfer\\$env:ConfigurationGroup\\$env:AzureContainerPackageGlob",
         "workingFolder": "",
         "failOnStandardError": "true"
       }
@@ -315,7 +315,7 @@
       "enabled": true,
       "continueOnError": true,
       "alwaysRun": false,
-      "displayName": "Publish to Artifact Services Drop",
+      "displayName": "Publish to Artifact Services Drop (BuildNumber)",
       "timeoutInMinutes": 0,
       "task": {
         "id": "f9d96d25-0c81-4e77-8282-1ad1f785cbb4",
@@ -325,6 +325,27 @@
       "inputs": {
         "dropServiceURI": "https://devdiv.artifacts.visualstudio.com/DefaultCollection",
         "buildNumber": "dotnet/$(GitHubRepositoryName)/$(SourceBranch)/$(BuildNumber)/packages/$(ConfigurationGroup)",
+        "sourcePath": "$(Pipeline.SourcesDirectory)\\packages\\AzureTransfer\\$(ConfigurationGroup)",
+        "dropExePath": "",
+        "toLowerCase": "true",
+        "detailedLog": "false",
+        "usePat": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": true,
+      "alwaysRun": false,
+      "displayName": "Publish to Artifact Services Drop (OfficialBuildId)",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "f9d96d25-0c81-4e77-8282-1ad1f785cbb4",
+        "versionSpec": "*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "dropServiceURI": "https://devdiv.artifacts.visualstudio.com/DefaultCollection",
+        "buildNumber": "dotnet/$(GitHubRepositoryName)/$(SourceBranch)/$(OfficialBuildId)/packages/$(ConfigurationGroup)",
         "sourcePath": "$(Pipeline.SourcesDirectory)\\packages\\AzureTransfer\\$(ConfigurationGroup)",
         "dropExePath": "",
         "toLowerCase": "true",
@@ -560,9 +581,6 @@
     "UseLegacyBuildScripts": {
       "value": "false",
       "allowOverride": true
-    },
-    "ToolPackageSource": {
-      "value": "https://www.myget.org/F/dagood-test-buildtools/api/v3/index.json"
     }
   },
   "retentionRules": [

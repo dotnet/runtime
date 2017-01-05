@@ -153,7 +153,7 @@ namespace System.Data.SqlClient
         }
 
 
-        static private Dictionary<string, string> s_sqlClientSynonyms;
+        private static Dictionary<string, string> s_sqlClientSynonyms;
 
         private readonly bool _integratedSecurity;
 

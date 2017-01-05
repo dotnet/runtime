@@ -32,7 +32,7 @@
   <PropertyGroup>
     <BuildToolsTargets45 Condition="'$(OsEnvironment)'=='Windows_NT'">true</BuildToolsTargets45>
   </PropertyGroup>
-
+  
   <!-- Common repo directories -->
   <PropertyGroup>
     <ProjectDir>$(MSBuildThisFileDirectory)</ProjectDir>
@@ -49,6 +49,10 @@
 
     <!-- Input Directories -->
     <PackagesDir Condition="'$(PackagesDir)'==''">$(ProjectDir)packages/</PackagesDir>
+    
+    <!-- Temporarily outside BinDir -->
+    <PackageInstallPath>$(ProjectDir)bin.localpkg/</PackageInstallPath>
+    
     <ToolsDir Condition="'$(UseToolRuntimeForToolsDir)'=='true'">$(ToolRuntimePath)</ToolsDir>
     <ToolsDir Condition="'$(ToolsDir)'==''">$(ProjectDir)Tools/</ToolsDir>
     <ToolRuntimePath Condition="'$(ToolRuntimePath)'==''">$(ToolsDir)</ToolRuntimePath>
@@ -100,7 +104,6 @@
          /t:BatchRestorePackages /p:OverridePackageSource=C:\coreclr\bin\Product\Windows_NT.x64.Debug\.nuget\pkg
     -->
     <DnuSourceList Include="$(OverridePackageSource)" />
-    <!-- PackagesDrops is passed in via the commandline "/p:PackagesDrops=[drop location]" -->
     <DnuSourceList Condition="'$(BuildTestsAgainstPackages)' == 'true'" Include="$(PackagesDrops)" />
     <!-- Need to escape double forward slash (%2F) or MSBuild will normalize to one slash on Unix. -->
     <!-- Including buildtools to pull in TestSuite packages and repackaged xunit dependencies-->
@@ -108,19 +111,30 @@
     <DnuSourceList Include="https:%2F%2Fdotnet.myget.org/F/dotnet-core/api/v3/index.json" />
     <DnuSourceList Include="https:%2F%2Fwww.nuget.org/api/v2/" />
   </ItemGroup>
-
+  
+  <ItemGroup>
+    <DnuSourceList Condition="'$(BuildTestsAgainstPackages)' == 'true'  and '$(RestoreForTestsAgainstPackagesOnly)' == 'true'" Include="$(PackageInstallPath)" />
+  </ItemGroup>
+  
   <!-- This is the directory where we dynamically generate project.json's for our test build package dependencies -->
   <PropertyGroup Condition="'$(BuildTestsAgainstPackages)' == 'true'">
     <BuildTestsAgainstPackagesIdentityRegex>$(CoreFxVersionsIdentityRegex)</BuildTestsAgainstPackagesIdentityRegex>
     <SkipVerifyPackageVersions>true</SkipVerifyPackageVersions>
   </PropertyGroup>
 
+ 
+  <!-- When restoring test projects with generated project.json's (during build.cmd), only restore using local packages -->
+  <PropertyGroup Condition="'$(RestoreForTestsAgainstPackagesOnly)' == 'true'">
+    <ExcludeInternetFeeds Condition="'$(ExcludeInternetFeeds)' == ''">true</ExcludeInternetFeeds>
+    <ExcludeNonTestRestores Condition="'$(ExcludeNonTestRestores)' == ''">true</ExcludeNonTestRestores>
+  </PropertyGroup>
+  
   <!-- list of directories to perform batch restore -->
   <ItemGroup>
-    <DnuRestoreDir Include="$(MSBuildThisFileDirectory)src" />
-    <DnuRestoreDir Include="$(MSBuildThisFileDirectory)pkg" />
-    <DnuRestoreDir Include="$(MSBuildThisFileDirectory)layout" />
-    <DnuRestoreDir Condition="'$(BuildTestsAgainstPackages)' == 'true'" Include="$(GeneratedProjectJsonDir)" />
+    <DnuRestoreDir Include="$(MSBuildThisFileDirectory)src/" />
+    <DnuRestoreDir Condition="'$(ExcludeNonTestRestores)' != 'true'" Include="$(MSBuildThisFileDirectory)pkg/" />
+    <DnuRestoreDir Condition="'$(ExcludeNonTestRestores)' != 'true'" Include="$(MSBuildThisFileDirectory)layout" />
+    <DnuRestoreDir Condition="'$(BuildTestsAgainstPackages)' == 'true'" Include="$(GeneratedProjectJsonDir)/" />
   </ItemGroup>
 
   <PropertyGroup>
@@ -135,11 +149,16 @@
 
     <DnuRestoreCommand>"$(DnuToolPath)"</DnuRestoreCommand>
     <DnuRestoreCommand>$(DnuRestoreCommand) restore</DnuRestoreCommand>
+    
+    <DnuRestoreCommandForBuildTestsAgainstPackages Condition="'$(BuildTestsAgainstPackages)' == 'true' and '$(RestoreForTestsAgainstPackagesOnly)' == 'true'">$(DnuRestoreCommand) --packages "$(PackageInstallPath)" --source $(PackagesDir)</DnuRestoreCommandForBuildTestsAgainstPackages>
+    
     <DnuRestoreCommand Condition="'$(ParallelRestore)'=='true'">$(DnuRestoreCommand) --parallel</DnuRestoreCommand>
     <DnuRestoreCommand Condition="'$(UseNuGetHttpCache)'!='true'">$(DnuRestoreCommand) --no-cache</DnuRestoreCommand>
     <DnuRestoreCommand>$(DnuRestoreCommand) --packages "$(PackagesDir.TrimEnd('/\'.ToCharArray()))" $(DnuRestoreSource)</DnuRestoreCommand>
     <DnuRestoreCommand Condition="'$(LockDependencies)' == 'true'">$(DnuRestoreCommand) --lock</DnuRestoreCommand>
     <DnuRestoreCommand Condition="'$(NuGetConfigPath)'!=''">$(DnuRestoreCommand) --configfile $(NuGetConfigPath)</DnuRestoreCommand>
+    
+    <DnuRestoreCommand Condition="'$(BuildTestsAgainstPackages)' == 'true' and '$(RestoreForTestsAgainstPackagesOnly)' == 'true'">$(DnuRestoreCommandForBuildTestsAgainstPackages)</DnuRestoreCommand>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -196,6 +215,8 @@
     <TestTFM Condition="'$(TestTFM)'==''">$(DefaultTestTFM)</TestTFM>
     <!-- we default FilterToTestTFM to DefaultTestTFM if it is not explicity defined -->
     <FilterToTestTFM Condition="'$(FilterToTestTFM)'==''">$(DefaultTestTFM)</FilterToTestTFM>
+    <!-- FilterTestNugetTargetMoniker needs to stay in the long form to be used for Framework and Runtime filtering purposes -->
+    <FilterTestNugetTargetMoniker Condition="'$(FilterTestNugetTargetMoniker)'==''">.NETCoreApp,Version=v1.1</FilterTestNugetTargetMoniker>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -261,6 +282,11 @@
     <PackagesBasePath Condition="'$(PackagesBasePath)'==''">$(BinDir)$(OSPlatformConfig)</PackagesBasePath>
     <PackageOutputPath Condition="'$(PackageOutputPath)'==''">$(PackageOutputRoot)$(ConfigurationGroup)/</PackageOutputPath>
     <SymbolPackageOutputPath Condition="'$(SymbolPackageOutputPath)'==''">$(PackageOutputPath)symbols/</SymbolPackageOutputPath>
+    
+    <!-- When testing against packages, we want to run against just the localpackages cache -->
+    <PackagesDir Condition="'$(BuildTestsAgainstPackages)'=='true'">$(PackageInstallPath)</PackagesDir>
+    <!-- PackageDrops is set to the bin folder where packages are built to generate the new test project.json for these -->
+    <PackagesDrops Condition="'$(PackagesDrops)'==''">$(PackageOutputPath)</PackagesDrops>
   </PropertyGroup>
 
   <PropertyGroup>

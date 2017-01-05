@@ -162,6 +162,17 @@ namespace System.Security.Cryptography
             return password;
         }
 
+        public byte[] CryptDeriveKey(string algname, string alghashname, int keySize, byte[] rgbIV)
+        {
+            // If this were to be implemented here, CAPI would need to be used (not CNG) because of
+            // unfortunate differences between the two. Using CNG would break compatibility. Since this
+            // assembly currently doesn't use CAPI it would require non-trivial additions.
+            // In addition, if implemented here, only Windows would be supported as it is intended as
+            // a thin wrapper over the corresponding native API.
+            // Note that this method is implemented in PasswordDeriveBytes (in the Csp assembly) using CAPI.
+            throw new PlatformNotSupportedException();
+        }
+
         public override void Reset()
         {
             Initialize();

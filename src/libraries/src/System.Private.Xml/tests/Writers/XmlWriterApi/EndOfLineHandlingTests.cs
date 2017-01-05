@@ -100,7 +100,7 @@ namespace System.Xml.Tests
                     {
                         output = output.Replace("\r\n", "\n");
                         output = output.Replace("\r", "\n");
-                        output = output.Replace("\n", "\r\n");
+                        output = output.Replace("\n", nl);
                     }
                     else
                     {
@@ -417,7 +417,7 @@ namespace System.Xml.Tests
             wSettings.Indent = true;
 
             XmlWriter w = CreateMemWriter(wSettings);
-            CError.Compare(w.Settings.NewLineChars, "\r\n", "Incorect default value for XmlWriter.Settings.NewLineChars");
+            CError.Compare(w.Settings.NewLineChars, nl, "Incorect default value for XmlWriter.Settings.NewLineChars");
             CError.Compare(w.Settings.IndentChars, "  ", "Incorect default value for XmlWriter.Settings.IndentChars");
 
             w.WriteStartElement("root");
@@ -427,7 +427,7 @@ namespace System.Xml.Tests
             w.WriteEndElement();
             w.Dispose();
 
-            VerifyOutput("<root>\r\n  <foo>\r\n    <bar />\r\n  </foo>\r\n</root>");
+            VerifyOutput(string.Format("<root>{0}  <foo>{0}    <bar />{0}  </foo>{0}</root>", nl));
 
             return TEST_PASS;
         }

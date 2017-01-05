@@ -65,6 +65,19 @@ namespace System.Linq.Tests
             }
         }
 
+        [Theory, MemberData(nameof(TestData))]
+        public void AnyRunOnce(IEnumerable<int> source, Func<int, bool> predicate, bool expected)
+        {
+            if (predicate == null)
+            {
+                Assert.Equal(expected, source.RunOnce().Any());
+            }
+            else
+            {
+                Assert.Equal(expected, source.RunOnce().Any(predicate));
+            }
+        }
+
         [Fact]
         public void NullObjectsInArray_Included()
         {

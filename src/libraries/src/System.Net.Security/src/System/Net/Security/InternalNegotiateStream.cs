@@ -5,6 +5,7 @@
 using System.Diagnostics;
 using System.IO;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.Net.Security
 {
@@ -167,13 +168,20 @@ namespace System.Net.Security
                     {
                         // prepare for the next request
                         asyncRequest.SetNextRequest(buffer, offset + chunkBytes, count - chunkBytes, null);
-                        IAsyncResult ar = InnerStream.BeginWrite(outBuffer, 0, encryptedBytes, s_writeCallback, asyncRequest);
-                        if (!ar.CompletedSynchronously)
+                        Task t = InnerStream.WriteAsync(outBuffer, 0, encryptedBytes);
+                        if (t.IsCompleted)
                         {
-                            return;
+                            t.GetAwaiter().GetResult();
                         }
-
-                        InnerStream.EndWrite(ar);
+                        else
+                        {
+                            IAsyncResult ar = TaskToApm.Begin(t, s_writeCallback, asyncRequest);
+                            if (!ar.CompletedSynchronously)
+                            {
+                                return;
+                            }
+                            TaskToApm.End(ar);
+                        }
                     }
                     else
                     {
@@ -384,7 +392,7 @@ namespace System.Net.Security
             try
             {
                 NegotiateStream negoStream = (NegotiateStream)asyncRequest.AsyncObject;
-                negoStream.InnerStream.EndWrite(transportResult);
+                TaskToApm.End(transportResult);
                 if (asyncRequest.Count == 0)
                 {
                     // This was the last chunk.

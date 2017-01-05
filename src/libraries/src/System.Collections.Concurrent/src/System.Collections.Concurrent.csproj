@@ -5,7 +5,6 @@
     <ProjectGuid>{96AA2060-C846-4E56-9509-E8CB9C114C8F}</ProjectGuid>
     <AssemblyName>System.Collections.Concurrent</AssemblyName>
     <RootNamespace>System.Collections.Concurrent</RootNamespace>
-    <DefineConstants>FEATURE_TRACING</DefineConstants>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />

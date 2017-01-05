@@ -15,7 +15,7 @@ internal static class DllImport
        FileAttributes dwFlagsAndAttributes, IntPtr hTemplateFile);
 
     [DllImport("api-ms-win-core-file-l1-1-0.dll", SetLastError = true)]
-    internal static unsafe extern int WriteFile(SafeHandle handle, byte* bytes, int numBytesToWrite, IntPtr numBytesWritten_mustBeZero, NativeOverlapped* lpOverlapped);
+    internal static extern unsafe int WriteFile(SafeHandle handle, byte* bytes, int numBytesToWrite, IntPtr numBytesWritten_mustBeZero, NativeOverlapped* lpOverlapped);
 
 
     [DllImport("api-ms-win-core-handle-l1-1-0.dll", SetLastError = true)]

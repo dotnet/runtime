@@ -3,16 +3,13 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Linq;
-using Xunit;
 using Xunit.Abstractions;
-using System;
 using System.Collections;
 using System.Globalization;
 using System.IO;
 using System.Reflection;
 using System.Resources;
 using System.Text.RegularExpressions;
-using System.Xml;
 
 namespace System.Xml.Tests
 {
@@ -113,16 +110,9 @@ namespace System.Xml.Tests
                             _asm = dom.GetType().GetTypeInfo().Assembly;
                         }
                         break;
-                    //case "SYSTEM.DATA":
-                    //{
-                    //    var ds = new DataSet();
-                    //    asm = ds.GetType().Assembly;
-                    //}
-                    //    break;
                     default:
-                        throw new FileLoadException("Cannot load assembly from " + GetRuntimeInstallDir() + assemblyName + ".dll");
-                        //asm = Assembly.LoadFrom(GetRuntimeInstallDir() + assemblyName + ".dll");
-                        //break;
+                        _asm = Assembly.LoadFrom(GetRuntimeInstallDir() + assemblyName + ".dll");
+                        break;
                 }
 
                 if (_asm == null)
@@ -186,7 +176,6 @@ namespace System.Xml.Tests
                         }
                         resReader.Dispose();
                     }
-                    //break;
                 }
             }
 
@@ -220,8 +209,7 @@ namespace System.Xml.Tests
                             "\n===== Original Exception Message =====\n" + _ex.Message +
                             "\n===== Resource Id =====\n" + fInfo.GetValue(_ex) +
                             "\n===== HelpLink =====\n" + _ex.HelpLink +
-                            "\n===== Source =====\n" + _ex.Source /*+
-                            "\n===== TargetSite =====\n" + ex.TargetSite + "\n"*/);
+                            "\n===== Source =====\n" + _ex.Source);
 
             _output.WriteLine(
                             "\n===== InnerException =====\n" + _ex.InnerException +

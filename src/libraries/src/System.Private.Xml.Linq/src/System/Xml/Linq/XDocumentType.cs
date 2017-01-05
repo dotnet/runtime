@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Threading;
+using System.Threading.Tasks;
+
 namespace System.Xml.Linq
 {
     /// <summary>
@@ -141,6 +144,24 @@ namespace System.Xml.Linq
         {
             if (writer == null) throw new ArgumentNullException(nameof(writer));
             writer.WriteDocType(_name, _publicId, _systemId, _internalSubset);
+        }
+
+        /// <summary>
+        /// Write this <see cref="XDocumentType"/> to the passed in <see cref="XmlWriter"/>.
+        /// </summary>
+        /// <param name="writer">
+        /// The <see cref="XmlWriter"/> to write this <see cref="XDocumentType"/> to.
+        /// </param>
+        /// <param name="cancellationToken">
+        /// A cancellation token.
+        /// </param>
+        public override Task WriteToAsync(XmlWriter writer, CancellationToken cancellationToken)
+        {
+            if (writer == null)
+                throw new ArgumentNullException(nameof(writer));
+            if (cancellationToken.IsCancellationRequested)
+                return Task.FromCanceled(cancellationToken);
+            return writer.WriteDocTypeAsync(_name, _publicId, _systemId, _internalSubset);
         }
 
         internal override XNode CloneNode()

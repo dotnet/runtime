@@ -9,7 +9,7 @@ using Xunit;
 
 namespace System.Collections.ObjectModel.Tests
 {
-    public abstract class KeyedCollectionTests<TKey, TValue>
+    public abstract partial class KeyedCollectionTests<TKey, TValue>
         where TValue : IComparable<TValue> where TKey : IEquatable<TKey>
     {
         private static readonly bool s_keyNullable = default(TKey)

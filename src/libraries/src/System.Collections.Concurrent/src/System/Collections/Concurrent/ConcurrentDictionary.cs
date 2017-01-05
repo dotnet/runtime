@@ -1047,6 +1047,37 @@ namespace System.Collections.Concurrent
         /// if the key does not already exist.
         /// </summary>
         /// <param name="key">The key of the element to add.</param>
+        /// <param name="valueFactory">The function used to generate a value for the key</param>
+        /// <param name="factoryArgument">An argument value to pass into <paramref name="valueFactory"/>.</param>
+        /// <exception cref="T:System.ArgumentNullException"><paramref name="key"/> is a null reference
+        /// (Nothing in Visual Basic).</exception>
+        /// <exception cref="T:System.ArgumentNullException"><paramref name="valueFactory"/> is a null reference
+        /// (Nothing in Visual Basic).</exception>
+        /// <exception cref="T:System.OverflowException">The dictionary contains too many
+        /// elements.</exception>
+        /// <returns>The value for the key.  This will be either the existing value for the key if the
+        /// key is already in the dictionary, or the new value for the key as returned by valueFactory
+        /// if the key was not in the dictionary.</returns>
+        public TValue GetOrAdd<TArg>(TKey key, Func<TKey, TArg, TValue> valueFactory, TArg factoryArgument)
+        {
+            if (key == null) throw new ArgumentNullException(nameof(key));
+            if (valueFactory == null) throw new ArgumentNullException(nameof(valueFactory));
+
+            int hashcode = _comparer.GetHashCode(key);
+
+            TValue resultingValue;
+            if (!TryGetValueInternal(key, hashcode, out resultingValue))
+            {
+                TryAddInternal(key, hashcode, valueFactory(key, factoryArgument), false, true, out resultingValue);
+            }
+            return resultingValue;
+        }
+
+        /// <summary>
+        /// Adds a key/value pair to the <see cref="ConcurrentDictionary{TKey,TValue}"/> 
+        /// if the key does not already exist.
+        /// </summary>
+        /// <param name="key">The key of the element to add.</param>
         /// <param name="value">the value to be added, if the key does not already exist</param>
         /// <exception cref="T:System.ArgumentNullException"><paramref name="key"/> is a null reference
         /// (Nothing in Visual Basic).</exception>
@@ -1066,6 +1097,59 @@ namespace System.Collections.Concurrent
                 TryAddInternal(key, hashcode, value, false, true, out resultingValue);
             }
             return resultingValue;
+        }
+
+        /// <summary>
+        /// Adds a key/value pair to the <see cref="ConcurrentDictionary{TKey,TValue}"/> if the key does not already 
+        /// exist, or updates a key/value pair in the <see cref="ConcurrentDictionary{TKey,TValue}"/> if the key 
+        /// already exists.
+        /// </summary>
+        /// <param name="key">The key to be added or whose value should be updated</param>
+        /// <param name="addValueFactory">The function used to generate a value for an absent key</param>
+        /// <param name="updateValueFactory">The function used to generate a new value for an existing key
+        /// based on the key's existing value</param>
+        /// <param name="factoryArgument">An argument to pass into <paramref name="addValueFactory"/> and <paramref name="updateValueFactory"/>.</param>
+        /// <exception cref="T:System.ArgumentNullException"><paramref name="key"/> is a null reference
+        /// (Nothing in Visual Basic).</exception>
+        /// <exception cref="T:System.ArgumentNullException"><paramref name="addValueFactory"/> is a null reference
+        /// (Nothing in Visual Basic).</exception>
+        /// <exception cref="T:System.ArgumentNullException"><paramref name="updateValueFactory"/> is a null reference
+        /// (Nothing in Visual Basic).</exception>
+        /// <exception cref="T:System.OverflowException">The dictionary contains too many
+        /// elements.</exception>
+        /// <returns>The new value for the key.  This will be either be the result of addValueFactory (if the key was 
+        /// absent) or the result of updateValueFactory (if the key was present).</returns>
+        public TValue AddOrUpdate<TArg>(
+            TKey key, Func<TKey, TArg, TValue> addValueFactory, Func<TKey, TValue, TArg, TValue> updateValueFactory, TArg factoryArgument)
+        {
+            if (key == null) throw new ArgumentNullException(nameof(key));
+            if (addValueFactory == null) throw new ArgumentNullException(nameof(addValueFactory));
+            if (updateValueFactory == null) throw new ArgumentNullException(nameof(updateValueFactory));
+
+            int hashcode = _comparer.GetHashCode(key);
+
+            while (true)
+            {
+                TValue oldValue;
+                if (TryGetValueInternal(key, hashcode, out oldValue))
+                {
+                    // key exists, try to update
+                    TValue newValue = updateValueFactory(key, oldValue, factoryArgument);
+                    if (TryUpdateInternal(key, hashcode, newValue, oldValue))
+                    {
+                        return newValue;
+                    }
+                }
+                else
+                {
+                    // key doesn't exist, try to add
+                    TValue resultingValue;
+                    if (TryAddInternal(key, hashcode, addValueFactory(key, factoryArgument), false, true, out resultingValue))
+                    {
+                        return resultingValue;
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -1099,16 +1183,17 @@ namespace System.Collections.Concurrent
             {
                 TValue oldValue;
                 if (TryGetValueInternal(key, hashcode, out oldValue))
-                //key exists, try to update
                 {
+                    // key exists, try to update
                     TValue newValue = updateValueFactory(key, oldValue);
                     if (TryUpdateInternal(key, hashcode, newValue, oldValue))
                     {
                         return newValue;
                     }
                 }
-                else //try add
+                else 
                 {
+                    // key doesn't exist, try to add
                     TValue resultingValue;
                     if (TryAddInternal(key, hashcode, addValueFactory(key), false, true, out resultingValue))
                     {
@@ -1146,16 +1231,17 @@ namespace System.Collections.Concurrent
             {
                 TValue oldValue;
                 if (TryGetValueInternal(key, hashcode, out oldValue))
-                //key exists, try to update
                 {
+                    // key exists, try to update
                     TValue newValue = updateValueFactory(key, oldValue);
                     if (TryUpdateInternal(key, hashcode, newValue, oldValue))
                     {
                         return newValue;
                     }
                 }
-                else //try add
+                else 
                 {
+                    // key doesn't exist, try to add
                     TValue resultingValue;
                     if (TryAddInternal(key, hashcode, addValue, false, true, out resultingValue))
                     {
@@ -1834,12 +1920,10 @@ namespace System.Collections.Concurrent
         /// </summary>
         private void AcquireAllLocks(ref int locksAcquired)
         {
-#if FEATURE_TRACING
             if (CDSCollectionETWBCLProvider.Log.IsEnabled())
             {
                 CDSCollectionETWBCLProvider.Log.ConcurrentDictionary_AcquiringAllLocks(_tables._buckets.Length);
             }
-#endif
 
             // First, acquire lock 0
             AcquireLocks(0, 1, ref locksAcquired);

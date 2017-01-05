@@ -129,7 +129,7 @@ namespace System.Net.Security.Tests
         private readonly ITestOutputHelper _output;
         private readonly string _emptyTarget = string.Empty;
         private readonly string _testTarget = "TestTarget";
-        private readonly static string _ntlmPassword = TestConfiguration.NtlmPassword;
+        private static readonly string _ntlmPassword = TestConfiguration.NtlmPassword;
 
         private void AssertClientPropertiesForTarget(NegotiateStream client, string target)
         {

@@ -8,10 +8,8 @@ internal partial class Interop
 {
     internal partial class Kernel32
     {
-        private const uint CP_ACP = 0x0u;
-
         [DllImport(Libraries.Kernel32, CharSet = CharSet.Unicode, EntryPoint = "GetCPInfoExW")]
-        private extern unsafe static int GetCPInfoExW(uint CodePage, uint dwFlags, CPINFOEXW* lpCPInfoEx);
+        private extern static unsafe int GetCPInfoExW(uint CodePage, uint dwFlags, CPINFOEXW* lpCPInfoEx);
 
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
         private unsafe struct CPINFOEXW
@@ -24,23 +22,38 @@ internal partial class Interop
             internal fixed byte CodePageName[260];
         }
 
-        internal static bool TryGetACPCodePage(out int codePage)
+        internal static unsafe int GetLeadByteRanges(int codePage, byte[] leadByteRanges)
         {
-            codePage = 0;
-            // Note: GetACP is not available in the Windows Store Profile, but calling
-            // GetCPInfoEx with the value CP_ACP (0) yields the same result.
-            CPINFOEXW _cpInfo;
-            unsafe
+            int count = 0;
+            CPINFOEXW cpInfo;
+            if (GetCPInfoExW((uint) codePage, 0, &cpInfo) != 0)
             {
-                CPINFOEXW* _lpCPInfoExPtr = &(_cpInfo);
-                if (GetCPInfoExW(CP_ACP, 0, _lpCPInfoExPtr) != 0)
+                // we don't care about the last 2 bytes as those are nulls
+                for (int i=0; i<10 && leadByteRanges[i] != 0; i+=2)
                 {
-                    codePage = (int)_cpInfo.CodePage;
-                    return true;
+                    leadByteRanges[i] = cpInfo.LeadByte[i];
+                    leadByteRanges[i+1] = cpInfo.LeadByte[i+1];
+                    count++;
                 }
             }
+            return count;
+        }
 
-            return false;
+        internal static unsafe bool TryGetACPCodePage(out int codePage)
+        {
+            // Note: GetACP is not available in the Windows Store Profile, but calling
+            // GetCPInfoEx with the value CP_ACP (0) yields the same result.
+            CPINFOEXW cpInfo;
+            if (GetCPInfoExW(CP_ACP, 0, &cpInfo) != 0)
+            {
+                codePage = (int)cpInfo.CodePage;
+                return true;
+            }
+            else
+            {
+                codePage = 0;
+                return false;
+            }
         }
     }
 }

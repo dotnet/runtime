@@ -22,7 +22,7 @@ namespace System.Linq.Expressions.Interpreter
         public override int Run(InterpretedFrame frame)
         {
             frame.Data[frame.StackIndex++] = _value;
-            return +1;
+            return 1;
         }
 
         public override string ToString() => "LoadObject(" + (_value ?? "null") + ")";
@@ -43,7 +43,7 @@ namespace System.Linq.Expressions.Interpreter
         public override int Run(InterpretedFrame frame)
         {
             frame.Data[frame.StackIndex++] = frame.Interpreter._objects[_index];
-            return +1;
+            return 1;
         }
 
         public override string ToDebugString(int instructionIndex, object cookie, Func<int, int> labelIndexer, IReadOnlyList<object> objects)
@@ -66,7 +66,7 @@ namespace System.Linq.Expressions.Interpreter
         public override int Run(InterpretedFrame frame)
         {
             frame.Pop();
-            return +1;
+            return 1;
         }
 
         public override string ToString() => "Pop()";
@@ -74,7 +74,7 @@ namespace System.Linq.Expressions.Interpreter
 
     internal sealed class DupInstruction : Instruction
     {
-        internal readonly static DupInstruction Instance = new DupInstruction();
+        internal static readonly DupInstruction Instance = new DupInstruction();
 
         private DupInstruction() { }
 
@@ -84,9 +84,8 @@ namespace System.Linq.Expressions.Interpreter
 
         public override int Run(InterpretedFrame frame)
         {
-            object value = frame.Peek();
-            frame.Data[frame.StackIndex++] = value;
-            return +1;
+            frame.Dup();
+            return 1;
         }
 
         public override string ToString() => "Dup()";

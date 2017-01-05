@@ -19,28 +19,5 @@ namespace System.Tests
 
             Assert.Throws<ArgumentNullException>(() => new TupleElementNamesAttribute(null));
         }
-
-        [TupleElementNames(new string[] { null, "name1", "name2" })]
-        public object appliedToField = null;
-
-        public static void AppliedToParameter([TupleElementNames(new string[] { "name1", null })] object parameter) { }
-
-        [TupleElementNames(new string[] { null, "name1", "name2" })]
-        public static object AppliedToProperty { get; set; }
-
-        [event: TupleElementNames(new[] { null, "name1", "name2" })]
-        public static event Func<int> AppliedToEvent;
-
-        [return: TupleElementNames(new[] { null, "name1", "name2" })]
-        public static void AppliedToReturn()
-        {
-            AppliedToEvent();
-        }
-
-        [TupleElementNames(new string[] { null, "name1", "name2" })]
-        public class AppliedToClass { }
-
-        [TupleElementNames(new string[] { null, "name1", "name2" })]
-        public class AppliedToStruct { }
     }
 }

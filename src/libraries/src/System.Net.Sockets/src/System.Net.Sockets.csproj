@@ -160,6 +160,7 @@
     <Compile Include="System\Net\Sockets\SocketAsyncEventArgs.Windows.cs" />
     <Compile Include="System\Net\Sockets\SocketPal.Windows.cs" />
     <Compile Include="System\Net\Sockets\TCPClient.Windows.cs" />
+    <Compile Include="System\Net\Sockets\TransmitFileAsyncResult.Windows.cs" />
     <Compile Condition="'$(TargetGroup)' != 'netcore50'" Include="System\Net\Sockets\TCPClient.Windows.netstandard17.cs" />
     <Compile Include="$(CommonPath)\System\Net\SafeCloseSocket.Windows.cs">
       <Link>Common\System\Net\SafeCloseSocket.Windows.cs</Link>
@@ -218,6 +219,9 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.shutdown.cs">
       <Link>Interop\Windows\Winsock\Interop.shutdown.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.TransmitFile.cs">
+      <Link>Interop\Windows\Winsock\Interop.TransmitFile.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.WinsockBSD.cs">
       <Link>Interop\Windows\Winsock\Interop.WinsockBSD.cs</Link>
@@ -368,6 +372,9 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.LingerOption.cs">
       <Link>Interop\Unix\System.Native\Interop.LingerOption.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.SendFile.cs">
+      <Link>Interop\Unix\System.Native\Interop.SendFile.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.SetSendTimeout.cs">
       <Link>Interop\Unix\System.Native\Interop.SetSendTimeout.cs</Link>

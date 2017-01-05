@@ -212,8 +212,8 @@ namespace System.Linq.Expressions.Interpreter
 
         private static Func<LightLambda, Delegate> MakeRunDelegateCtor(Type delegateType)
         {
-            var method = delegateType.GetMethod("Invoke");
-            var paramInfos = method.GetParameters();
+            MethodInfo method = delegateType.GetMethod("Invoke");
+            ParameterInfo[] paramInfos = method.GetParametersCached();
             Type[] paramTypes;
             string name = "Run";
 
@@ -292,8 +292,8 @@ namespace System.Linq.Expressions.Interpreter
         {
             //PerfTrack.NoteEvent(PerfTrack.Categories.Compiler, "Synchronously compiling a custom delegate");
 
-            var method = delegateType.GetMethod("Invoke");
-            var paramInfos = method.GetParameters();
+            MethodInfo method = delegateType.GetMethod("Invoke");
+            ParameterInfo[] paramInfos = method.GetParametersCached();
             var parameters = new ParameterExpression[paramInfos.Length];
             var parametersAsObject = new Expression[paramInfos.Length];
             bool hasByRef = false;
@@ -305,13 +305,12 @@ namespace System.Linq.Expressions.Interpreter
                 parametersAsObject[i] = Expression.Convert(parameter, typeof(object));
             }
 
-            var data = Expression.NewArrayInit(typeof(object), parametersAsObject);
+            NewArrayExpression data = Expression.NewArrayInit(typeof(object), parametersAsObject);
             var dlg = new Func<object[], object>(Run);
 
-            var dlgExpr = AstUtils.Constant(dlg);
+            ConstantExpression dlgExpr = Expression.Constant(dlg);
 
-
-            var argsParam = Expression.Parameter(typeof(object[]), "$args");
+            ParameterExpression argsParam = Expression.Parameter(typeof(object[]), "$args");
 
             Expression body;
             if (method.ReturnType == typeof(void))
@@ -330,7 +329,6 @@ namespace System.Linq.Expressions.Interpreter
                 {
                     if (paramInfos[i].ParameterType.IsByRef)
                     {
-
                         updates.Add(
                             Expression.Assign(
                                 parameters[i],
@@ -390,7 +388,6 @@ namespace System.Linq.Expressions.Interpreter
         }
 
 #if NO_FEATURE_STATIC_DELEGATE
-        [EnableInvokeTesting]
         internal void RunVoidRef2<T0, T1>(ref T0 arg0, ref T1 arg1)
         {
             // copy in and copy out for today...

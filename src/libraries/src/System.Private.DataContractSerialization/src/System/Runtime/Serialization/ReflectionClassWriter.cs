@@ -21,7 +21,15 @@ namespace System.Runtime.Serialization
         {
             InvokeOnSerializing(obj, context, classContract);
             obj = ResolveAdapterType(obj, classContract);
-            ReflectionWriteMembers(xmlWriter, obj, context, classContract, classContract, 0 /*childElementIndex*/, memberNames);
+            if (classContract.IsISerializable)
+            {
+                context.WriteISerializable(xmlWriter, (ISerializable) obj);
+            }
+            else
+            {
+                ReflectionWriteMembers(xmlWriter, obj, context, classContract, classContract, 0 /*childElementIndex*/, memberNames);
+            }
+
             InvokeOnSerialized(obj, context, classContract);
         }
 

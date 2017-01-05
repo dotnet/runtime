@@ -17,8 +17,8 @@ namespace System.Net.WebSockets.Client.Tests
     /// </summary>
     public class ClientWebSocketTestBase
     {
-        public readonly static object[][] EchoServers = System.Net.Test.Common.Configuration.WebSockets.EchoServers;
-        public readonly static object[][] EchoHeadersServers = System.Net.Test.Common.Configuration.WebSockets.EchoHeadersServers;
+        public static readonly object[][] EchoServers = System.Net.Test.Common.Configuration.WebSockets.EchoServers;
+        public static readonly object[][] EchoHeadersServers = System.Net.Test.Common.Configuration.WebSockets.EchoHeadersServers;
 
         public const int TimeOutMilliseconds = 10000;
         public const int CloseDescriptionMaxLength = 123;

@@ -5,7 +5,7 @@
       uap101aot-Windows_NT;
       netstandard-Windows_NT;
       netstandard-Unix;
-      net463-Windows_NT;
+      net461-Windows_NT;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>

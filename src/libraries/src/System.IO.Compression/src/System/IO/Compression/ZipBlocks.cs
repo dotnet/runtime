@@ -387,7 +387,7 @@ namespace System.IO.Compression
         public const int OffsetToBitFlagFromHeaderStart = 6;
         public const int SizeOfLocalHeader = 30;
 
-        static public List<ZipGenericExtraField> GetExtraFields(BinaryReader reader)
+        public static List<ZipGenericExtraField> GetExtraFields(BinaryReader reader)
         {
             //assumes that TrySkipBlock has already been called, so we don't have to validate twice
 
@@ -413,7 +413,7 @@ namespace System.IO.Compression
         }
 
         //will not throw end of stream exception
-        static public bool TrySkipBlock(BinaryReader reader)
+        public static bool TrySkipBlock(BinaryReader reader)
         {
             const int OffsetToFilenameLength = 22; //from the point after the signature
 
@@ -464,7 +464,7 @@ namespace System.IO.Compression
 
         //if saveExtraFieldsAndComments is false, FileComment and ExtraFields will be null
         //in either case, the zip64 extra field info will be incorporated into other fields
-        static public bool TryReadBlock(BinaryReader reader, bool saveExtraFieldsAndComments, out ZipCentralDirectoryFileHeader header)
+        public static bool TryReadBlock(BinaryReader reader, bool saveExtraFieldsAndComments, out ZipCentralDirectoryFileHeader header)
         {
             header = new ZipCentralDirectoryFileHeader();
 

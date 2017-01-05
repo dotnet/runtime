@@ -5,8 +5,6 @@
 #include "pal_x509.h"
 
 #include <assert.h>
-#include <openssl/pem.h>
-#include <openssl/x509v3.h>
 
 static_assert(PAL_X509_V_OK == X509_V_OK, "");
 static_assert(PAL_X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT == X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT, "");

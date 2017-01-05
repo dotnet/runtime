@@ -4,7 +4,7 @@
   <PropertyGroup>
     <PackageTargetRuntime>ubuntu.14.04-$(PackagePlatform)</PackageTargetRuntime>
     <!-- only build for x64 -->
-    <PackagePlatforms>x64;</PackagePlatforms>
+    <PackagePlatforms>x64;arm;</PackagePlatforms>
   </PropertyGroup>
   <ItemGroup>
     <NativeFile Include="$(Ubuntu1404NativePath)System.Native.so">

@@ -37,6 +37,9 @@
     <Compile Include="System\ComponentModel\RefreshProperties.cs" />
     <Compile Include="System\ComponentModel\RefreshPropertiesAttribute.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <Compile Include="FxCopBaseline.cs"/>
+  </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'=='netstandard'">
     <Compile Include="System\ComponentModel\Component.cs" />
   </ItemGroup>

@@ -23,6 +23,12 @@ namespace System
             File.Exists(Path.Combine(Environment.GetEnvironmentVariable("windir"), "regedit.exe")));
         public static bool IsWindows10Version1607OrGreater { get; } = IsWindows &&
             GetWindowsVersion() == 10 && GetWindowsMinorVersion() == 0 && GetWindowsBuildNumber() >= 14393;
+        // Windows OneCoreUAP SKU doesn't have httpapi.dll
+        public static bool HasHttpApi { get; } = (IsWindows &&
+            File.Exists(Path.Combine(Environment.GetEnvironmentVariable("windir"), "System32", "httpapi.dll")));
+
+        public static bool IsNotOneCoreUAP { get; } = (!IsWindows || 
+            File.Exists(Path.Combine(Environment.GetEnvironmentVariable("windir"), "System32", "httpapi.dll")));
 
         public static int WindowsVersion { get; } = GetWindowsVersion();
 

@@ -21,11 +21,11 @@ namespace WebData.BaseLib
         public int seed;
         private string _fileLocation = string.Empty;
 
-        static protected int[] cWhitespaceMap = {
+        protected static int[] cWhitespaceMap = {
                 0x20, 0x9, 0xD, 0xA
             };
 
-        static protected int[] cBaseCharMap = {
+        protected static int[] cBaseCharMap = {
             //Base Chars::
             0x0041, 0x005A, 0x0061, 0x007A, 0x00C0, 0x00D6, 0x00D8, 0x00F6, 0x00F8, 0x00FF,
                 0x0100, 0x0131, 0x0134, 0x013E, 0x0141, 0x0148, 0x014A, 0x017E, 0x0180, 0x01C3,

@@ -17,8 +17,10 @@
     <Compile Include="XHashtable.cs" />
     <Compile Include="XLinqErrata4.cs" />
     <Compile Include="XNameAPI.cs" />
+    <Compile Include="LoadSaveAsyncTests.cs" Condition="'$(TargetGroup)'==''" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="$(CommonTestPath)\System\Xml\ModuleCore\ModuleCore.csproj" />
     <ProjectReference Include="$(CommonTestPath)\System\Xml\XmlCoreTest\XmlCoreTest.csproj" />
     <ProjectReference Include="$(CommonTestPath)\System\Xml\XmlDiff\XmlDiff.csproj" />
     <ProjectReference Include="..\XDocument.Common\XDocument.Common.csproj" />

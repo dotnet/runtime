@@ -34,10 +34,10 @@ namespace System.Net.Http.Functional.Tests
 
         private readonly NetworkCredential _credential = new NetworkCredential(Username, Password);
 
-        public readonly static object[][] EchoServers = Configuration.Http.EchoServers;
-        public readonly static object[][] VerifyUploadServers = Configuration.Http.VerifyUploadServers;
-        public readonly static object[][] CompressedServers = Configuration.Http.CompressedServers;
-        public readonly static object[][] HeaderValueAndUris = {
+        public static readonly object[][] EchoServers = Configuration.Http.EchoServers;
+        public static readonly object[][] VerifyUploadServers = Configuration.Http.VerifyUploadServers;
+        public static readonly object[][] CompressedServers = Configuration.Http.CompressedServers;
+        public static readonly object[][] HeaderValueAndUris = {
             new object[] { "X-CustomHeader", "x-value", Configuration.Http.RemoteEchoServer },
             new object[] { "X-Cust-Header-NoValue", "" , Configuration.Http.RemoteEchoServer },
             new object[] { "X-CustomHeader", "x-value", Configuration.Http.RedirectUriForDestinationUri(
@@ -51,10 +51,10 @@ namespace System.Net.Http.Functional.Tests
                 destinationUri:Configuration.Http.RemoteEchoServer,
                 hops:1) },
         };
-        public readonly static object[][] Http2Servers = Configuration.Http.Http2Servers;
-        public readonly static object[][] Http2NoPushServers = Configuration.Http.Http2NoPushServers;
+        public static readonly object[][] Http2Servers = Configuration.Http.Http2Servers;
+        public static readonly object[][] Http2NoPushServers = Configuration.Http.Http2NoPushServers;
 
-        public readonly static object[][] RedirectStatusCodes = {
+        public static readonly object[][] RedirectStatusCodes = {
             new object[] { 300 },
             new object[] { 301 },
             new object[] { 302 },
@@ -64,11 +64,11 @@ namespace System.Net.Http.Functional.Tests
 
         // Standard HTTP methods defined in RFC7231: http://tools.ietf.org/html/rfc7231#section-4.3
         //     "GET", "HEAD", "POST", "PUT", "DELETE", "OPTIONS", "TRACE"
-        public readonly static IEnumerable<object[]> HttpMethods =
+        public static readonly IEnumerable<object[]> HttpMethods =
             GetMethods("GET", "HEAD", "POST", "PUT", "DELETE", "OPTIONS", "TRACE", "CUSTOM1");
-        public readonly static IEnumerable<object[]> HttpMethodsThatAllowContent =
+        public static readonly IEnumerable<object[]> HttpMethodsThatAllowContent =
             GetMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "CUSTOM1");
-        public readonly static IEnumerable<object[]> HttpMethodsThatDontAllowContent =
+        public static readonly IEnumerable<object[]> HttpMethodsThatDontAllowContent =
             GetMethods("HEAD", "TRACE");
 
         private static bool IsWindows10Version1607OrGreater => PlatformDetection.IsWindows10Version1607OrGreater;

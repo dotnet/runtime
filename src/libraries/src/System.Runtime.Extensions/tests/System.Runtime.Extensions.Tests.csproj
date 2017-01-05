@@ -46,6 +46,7 @@
     <Compile Include="System\IO\Path.GetRelativePath.cs" />
     <Compile Include="System\MathTests.netcoreapp1.1.cs" />
     <Compile Include="System\MathF.netcoreapp1.1.cs" />
+    <Compile Include="System\UnloadingAndProcessExitTests.netcoreapp1.1.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="System\Diagnostics\Stopwatch.cs" />

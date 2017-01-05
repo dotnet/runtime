@@ -15,9 +15,6 @@ namespace System.ComponentModel.Design.Serialization
     [Obsolete("This attribute has been deprecated. Use DesignerSerializerAttribute instead.  For example, to specify a root designer for CodeDom, use DesignerSerializerAttribute(...,typeof(TypeCodeDomSerializer)).  http://go.microsoft.com/fwlink/?linkid=14202")]
     public sealed class RootDesignerSerializerAttribute : Attribute
     {
-        private bool _reloadable;
-        private string _serializerTypeName;
-        private string _serializerBaseTypeName;
         private string _typeId;
 
         /// <summary>
@@ -25,9 +22,9 @@ namespace System.ComponentModel.Design.Serialization
         /// </summary>
         public RootDesignerSerializerAttribute(Type serializerType, Type baseSerializerType, bool reloadable)
         {
-            _serializerTypeName = serializerType.AssemblyQualifiedName;
-            _serializerBaseTypeName = baseSerializerType.AssemblyQualifiedName;
-            _reloadable = reloadable;
+            SerializerTypeName = serializerType.AssemblyQualifiedName;
+            SerializerBaseTypeName = baseSerializerType.AssemblyQualifiedName;
+            Reloadable = reloadable;
         }
 
         /// <summary>
@@ -35,9 +32,9 @@ namespace System.ComponentModel.Design.Serialization
         /// </summary>
         public RootDesignerSerializerAttribute(string serializerTypeName, Type baseSerializerType, bool reloadable)
         {
-            _serializerTypeName = serializerTypeName;
-            _serializerBaseTypeName = baseSerializerType.AssemblyQualifiedName;
-            _reloadable = reloadable;
+            SerializerTypeName = serializerTypeName;
+            SerializerBaseTypeName = baseSerializerType.AssemblyQualifiedName;
+            Reloadable = reloadable;
         }
 
         /// <summary>
@@ -45,9 +42,9 @@ namespace System.ComponentModel.Design.Serialization
         /// </summary>
         public RootDesignerSerializerAttribute(string serializerTypeName, string baseSerializerTypeName, bool reloadable)
         {
-            _serializerTypeName = serializerTypeName;
-            _serializerBaseTypeName = baseSerializerTypeName;
-            _reloadable = reloadable;
+            SerializerTypeName = serializerTypeName;
+            SerializerBaseTypeName = baseSerializerTypeName;
+            Reloadable = reloadable;
         }
 
         /// <summary>
@@ -55,35 +52,17 @@ namespace System.ComponentModel.Design.Serialization
         ///     will not automatically perform a reload on behalf of the user.  It will be the user's
         ///     responsibility to reload the document themselves.
         /// </summary>
-        public bool Reloadable
-        {
-            get
-            {
-                return _reloadable;
-            }
-        }
+        public bool Reloadable { get; }
 
         /// <summary>
         ///     Retrieves the fully qualified type name of the serializer.
         /// </summary>
-        public string SerializerTypeName
-        {
-            get
-            {
-                return _serializerTypeName;
-            }
-        }
+        public string SerializerTypeName { get; }
 
         /// <summary>
         ///     Retrieves the fully qualified type name of the serializer base type.
         /// </summary>
-        public string SerializerBaseTypeName
-        {
-            get
-            {
-                return _serializerBaseTypeName;
-            }
-        }
+        public string SerializerBaseTypeName { get; }
 
         /// <internalonly/>
         /// <summary>
@@ -101,7 +80,7 @@ namespace System.ComponentModel.Design.Serialization
             {
                 if (_typeId == null)
                 {
-                    string baseType = _serializerBaseTypeName;
+                    string baseType = SerializerBaseTypeName;
                     int comma = baseType.IndexOf(',');
                     if (comma != -1)
                     {

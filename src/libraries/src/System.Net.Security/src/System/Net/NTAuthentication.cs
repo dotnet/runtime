@@ -14,10 +14,7 @@ namespace System.Net
 {
     internal partial class NTAuthentication
     {
-        static private ContextCallback s_InitializeCallback = new ContextCallback(InitializeCallback);
-        private string _clientSpecifiedSpn;
-        private string _protocolName;
-        private string _lastProtocolName;
+        private static ContextCallback s_InitializeCallback = new ContextCallback(InitializeCallback);
 
         internal string AssociatedName
         {
@@ -82,43 +79,6 @@ namespace System.Net
             }
         }
 
-        internal string ClientSpecifiedSpn
-        {
-            get
-            {
-                if (_clientSpecifiedSpn == null)
-                {
-                    _clientSpecifiedSpn = GetClientSpecifiedSpn();
-                }
-
-                return _clientSpecifiedSpn;
-            }
-        }
-
-        //
-        // True indicates this instance is for Server and will use AcceptSecurityContext SSPI API.
-        //
-        internal bool IsServer
-        {
-            get
-            {
-                return _isServer;
-            }
-        }
-
-        internal bool IsKerberos
-        {
-            get
-            {
-                if (_lastProtocolName == null)
-                {
-                    _lastProtocolName = ProtocolName;
-                }
-
-                return (object)_lastProtocolName == (object)NegotiationInfoClass.Kerberos;
-            }
-        }
-
         internal bool IsNTLM
         {
             get
@@ -129,30 +89,6 @@ namespace System.Net
                 }
 
                 return (object)_lastProtocolName == (object)NegotiationInfoClass.NTLM;
-            }
-        }
-
-        internal string ProtocolName
-        {
-            get
-            {
-                // Note: May return string.Empty if the auth is not done yet or failed.
-                if (_protocolName == null)
-                {
-                    string negotiationAuthenticationPackage = null;
-
-                    if (IsValidContext)
-                    {
-                        negotiationAuthenticationPackage = NegotiateStreamPal.QueryContextAuthenticationPackage(_securityContext);
-                        if (IsCompleted)
-                        {
-                            _protocolName = negotiationAuthenticationPackage;
-                        }
-                    }
-                    return negotiationAuthenticationPackage ?? string.Empty;
-                }
-
-                return _protocolName;
             }
         }
 
@@ -184,28 +120,6 @@ namespace System.Net
             context.ThisPtr.Initialize(context.IsServer, context.Package, context.Credential, context.Spn, context.RequestedContextFlags, context.ChannelBinding);
         }
 
-        internal SafeDeleteContext GetContext(out SecurityStatusPal status)
-        {
-            status = new SecurityStatusPal(SecurityStatusPalErrorCode.OK);
-            if (!(IsCompleted && IsValidContext))
-            {
-                NetEventSource.Fail(this, "Should be called only when completed with success, currently is not!");
-            }
-
-            if (!IsServer)
-            {
-                NetEventSource.Fail(this, "The method must not be called by the client side!");
-            }
-
-            if (!IsValidContext)
-            {
-                status = new SecurityStatusPal(SecurityStatusPalErrorCode.InvalidHandle);
-                return null;
-            }
-
-            return _securityContext;
-        }
-
         internal int Encrypt(byte[] buffer, int offset, int count, ref byte[] output, uint sequenceNumber)
         {
             return NegotiateStreamPal.Encrypt(
@@ -222,20 +136,6 @@ namespace System.Net
         internal int Decrypt(byte[] payload, int offset, int count, out int newOffset, uint expectedSeqNumber)
         {
             return NegotiateStreamPal.Decrypt(_securityContext, payload, offset, count, IsConfidentialityFlag, IsNTLM, out newOffset, expectedSeqNumber);
-        }
-
-        private string GetClientSpecifiedSpn()
-        {
-            if (!(IsValidContext && IsCompleted))
-            {
-                NetEventSource.Fail(this, "Trying to get the client SPN before handshaking is done!");
-            }
-
-            string spn = NegotiateStreamPal.QueryContextClientSpecifiedSpn(_securityContext);
-
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"The client specified SPN is [{spn}]");
-
-            return spn;
         }
     }
 }

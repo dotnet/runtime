@@ -70,8 +70,8 @@ namespace System.Net.WebSockets
         }
         #endregion
 
-        readonly static WebSocketState[] s_validConnectStates = { WebSocketState.None };
-        readonly static WebSocketState[] s_validConnectingStates = { WebSocketState.Connecting };
+        static readonly WebSocketState[] s_validConnectStates = { WebSocketState.None };
+        static readonly WebSocketState[] s_validConnectingStates = { WebSocketState.Connecting };
         
         public async Task ConnectAsync(Uri uri, CancellationToken cancellationToken, ClientWebSocketOptions options)
         {
@@ -287,7 +287,7 @@ namespace System.Net.WebSockets
             }
         }
 
-        private readonly static WebSocketState[] s_validSendStates = { WebSocketState.Open, WebSocketState.CloseReceived };
+        private static readonly WebSocketState[] s_validSendStates = { WebSocketState.Open, WebSocketState.CloseReceived };
         public override Task SendAsync(
             ArraySegment<byte> buffer,
             WebSocketMessageType messageType,
@@ -349,8 +349,8 @@ namespace System.Net.WebSockets
             }
         }
 
-        private readonly static WebSocketState[] s_validReceiveStates = { WebSocketState.Open, WebSocketState.CloseSent };
-        private readonly static WebSocketState[] s_validAfterReceiveStates = { WebSocketState.Open, WebSocketState.CloseSent, WebSocketState.CloseReceived };
+        private static readonly WebSocketState[] s_validReceiveStates = { WebSocketState.Open, WebSocketState.CloseSent };
+        private static readonly WebSocketState[] s_validAfterReceiveStates = { WebSocketState.Open, WebSocketState.CloseSent, WebSocketState.CloseReceived };
         public override async Task<WebSocketReceiveResult> ReceiveAsync(
             ArraySegment<byte> buffer,
             CancellationToken cancellationToken)
@@ -523,8 +523,8 @@ namespace System.Net.WebSockets
             }
         }
 
-        private readonly static WebSocketState[] s_validCloseOutputStates = { WebSocketState.Open, WebSocketState.CloseReceived };
-        private readonly static WebSocketState[] s_validCloseOutputStatesAfterUpdate = { WebSocketState.CloseReceived, WebSocketState.CloseSent };
+        private static readonly WebSocketState[] s_validCloseOutputStates = { WebSocketState.Open, WebSocketState.CloseReceived };
+        private static readonly WebSocketState[] s_validCloseOutputStatesAfterUpdate = { WebSocketState.CloseReceived, WebSocketState.CloseSent };
         public override Task CloseOutputAsync(
             WebSocketCloseStatus closeStatus,
             string statusDescription,

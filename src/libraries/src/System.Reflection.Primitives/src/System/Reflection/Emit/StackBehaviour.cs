@@ -5,7 +5,6 @@
 namespace System.Reflection.Emit
 {
     [Serializable]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public enum StackBehaviour
     {
         Pop0 = 0,

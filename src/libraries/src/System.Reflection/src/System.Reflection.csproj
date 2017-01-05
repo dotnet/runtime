@@ -9,11 +9,11 @@
   <!-- Help VS understand available configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net461_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net461_Release|AnyCPU'" />
   <ItemGroup>
-    <TargetingPackReference Include="mscorlib" Condition="'$(TargetGroup)' == 'net463'" />
-    <TargetingPackReference Include="System.Private.CoreLib" Condition="'$(TargetGroup)' != 'net463'" />
+    <TargetingPackReference Include="mscorlib" Condition="'$(TargetGroup)' == 'net461'" />
+    <TargetingPackReference Include="System.Private.CoreLib" Condition="'$(TargetGroup)' != 'net461'" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Private.CoreLib" />

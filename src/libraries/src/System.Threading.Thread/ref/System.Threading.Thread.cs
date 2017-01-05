@@ -30,9 +30,7 @@ namespace System.Threading
         public void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public static void Run(System.Threading.CompressedStack compressedStack, System.Threading.ContextCallback callback, object state) { }
     }
-    [System.Runtime.InteropServices.ComVisibleAttribute(false)]
     public delegate void ParameterizedThreadStart(object obj);
-    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public sealed partial class Thread : System.Runtime.ConstrainedExecution.CriticalFinalizerObject
     {
         public Thread(System.Threading.ParameterizedThreadStart start) { }
@@ -156,14 +154,12 @@ namespace System.Threading
         Lowest = 0,
         Normal = 2,
     }
-    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public delegate void ThreadStart();
     public sealed partial class ThreadStartException : System.SystemException
     {
         internal ThreadStartException() { }
     }
     [System.FlagsAttribute]
-    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public enum ThreadState
     {
         Aborted = 256,
@@ -177,7 +173,6 @@ namespace System.Threading
         Unstarted = 8,
         WaitSleepJoin = 32,
     }
-    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public partial class ThreadStateException : System.SystemException
     {
         public ThreadStateException() { }

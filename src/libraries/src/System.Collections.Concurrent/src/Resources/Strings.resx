@@ -144,7 +144,7 @@
   <data name="BlockingCollection_CopyTo_NonNegative" xml:space="preserve">
     <value>The index argument must be greater than or equal zero.</value>
   </data>
-  <data name="BlockingCollection_CopyTo_TooManyElems" xml:space="preserve">
+  <data name="Collection_CopyTo_TooManyElems" xml:space="preserve">
     <value>The number of elements in the collection is greater than the available space from index to the end of the destination array.</value>
   </data>
   <data name="BlockingCollection_ctor_BoundedCapacityRange" xml:space="preserve">
@@ -183,7 +183,7 @@
   <data name="ConcurrentBag_CopyTo_ArgumentNullException" xml:space="preserve">
     <value>The array argument is null.</value>
   </data>
-  <data name="ConcurrentBag_CopyTo_ArgumentOutOfRangeException" xml:space="preserve">
+  <data name="Collection_CopyTo_ArgumentOutOfRangeException" xml:space="preserve">
     <value>The index argument must be greater than or equal zero.</value>
   </data>
   <data name="ConcurrentCollection_SyncRoot_NotSupported" xml:space="preserve">
@@ -236,5 +236,8 @@
   </data>
   <data name="PartitionerStatic_CurrentCalledBeforeMoveNext" xml:space="preserve">
     <value>MoveNext must be called at least once before calling Current.</value>
+  </data>
+  <data name="ConcurrentBag_Enumerator_EnumerationNotStartedOrAlreadyFinished" xml:space="preserve">
+    <value>Enumeration has either not started or has already finished.</value>
   </data>
 </root>

@@ -22,8 +22,8 @@ namespace System.Net.Internals
 #endif
     class SocketAddress
     {
-        internal readonly static int IPv6AddressSize = SocketAddressPal.IPv6AddressSize;
-        internal readonly static int IPv4AddressSize = SocketAddressPal.IPv4AddressSize;
+        internal static readonly int IPv6AddressSize = SocketAddressPal.IPv6AddressSize;
+        internal static readonly int IPv4AddressSize = SocketAddressPal.IPv4AddressSize;
 
         internal int InternalSize;
         internal byte[] Buffer;

@@ -1,4 +1,0 @@
-# API's don't exist in netcore50aot implementations yet. 
-MembersMustExist : Member 'System.Environment.Exit(System.Int32)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Environment.GetCommandLineArgs()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Environment.MachineName.get()' does not exist in the implementation but it does exist in the contract.

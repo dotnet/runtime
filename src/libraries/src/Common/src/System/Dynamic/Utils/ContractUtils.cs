@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Threading;
 
 namespace System.Dynamic.Utils
 {
@@ -138,6 +139,12 @@ namespace System.Dynamic.Utils
                     throw new ArgumentNullException(GetParamName(arrayName, i));
                 }
             }
+        }
+
+        [Conditional("DEBUG")]
+        public static void AssertLockHeld(object lockObject)
+        {
+            Debug.Assert(Monitor.IsEntered(lockObject), "Expected lock is not held.");
         }
 
         private static string GetParamName(string paramName, int index)

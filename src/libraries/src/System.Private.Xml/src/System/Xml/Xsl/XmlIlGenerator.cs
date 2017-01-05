@@ -88,10 +88,10 @@ namespace System.Xml.Xsl
 
 #if DEBUG
             // Trace Qil before optimization
-            XmlILTrace.WriteQil(this.qil, "qilbefore.xml");
+            XmlILTrace.WriteQil(this._qil, "qilbefore.xml");
 
             // Trace optimizations
-            XmlILTrace.TraceOptimizations(this.qil, "qilopt.xml");
+            XmlILTrace.TraceOptimizations(this._qil, "qilopt.xml");
 #endif
 
             // Optimize and annotate the Qil graph
@@ -103,7 +103,7 @@ namespace System.Xml.Xsl
 
 #if DEBUG
             // Trace Qil after optimization
-            XmlILTrace.WriteQil(this.qil, "qilafter.xml");
+            XmlILTrace.WriteQil(this._qil, "qilafter.xml");
 #endif
 
             // Create module in which methods will be generated

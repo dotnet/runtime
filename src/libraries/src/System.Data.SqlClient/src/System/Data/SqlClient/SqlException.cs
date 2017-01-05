@@ -139,12 +139,12 @@ namespace System.Data.SqlClient
             return sb.ToString();
         }
 
-        static internal SqlException CreateException(SqlErrorCollection errorCollection, string serverVersion)
+        internal static SqlException CreateException(SqlErrorCollection errorCollection, string serverVersion)
         {
             return CreateException(errorCollection, serverVersion, Guid.Empty);
         }
 
-        static internal SqlException CreateException(SqlErrorCollection errorCollection, string serverVersion, SqlInternalConnectionTds internalConnection, Exception innerException = null)
+        internal static SqlException CreateException(SqlErrorCollection errorCollection, string serverVersion, SqlInternalConnectionTds internalConnection, Exception innerException = null)
         {
             Guid connectionId = (internalConnection == null) ? Guid.Empty : internalConnection._clientConnectionId;
             var exception = CreateException(errorCollection, serverVersion, connectionId, innerException);
@@ -165,7 +165,7 @@ namespace System.Data.SqlClient
             return exception;
         }
 
-        static internal SqlException CreateException(SqlErrorCollection errorCollection, string serverVersion, Guid conId, Exception innerException = null)
+        internal static SqlException CreateException(SqlErrorCollection errorCollection, string serverVersion, Guid conId, Exception innerException = null)
         {
             Debug.Assert(null != errorCollection && errorCollection.Count > 0, "no errorCollection?");
 

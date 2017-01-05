@@ -1566,5 +1566,34 @@ namespace System.Linq.Expressions.Tests
         }
 
         #endregion
+
+        [Fact]
+        public static void NullArray()
+        {
+            Assert.Throws<ArgumentNullException>("array", () => Expression.ArrayLength(null));
+        }
+
+        [Fact]
+        public static void IsNotArray()
+        {
+            Expression notArray = Expression.Constant(8);
+            Assert.Throws<ArgumentException>("array", () => Expression.ArrayLength(notArray));
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void ArrayTypeArrayAllowed(bool useInterpreter)
+        {
+            Array arr = new[] {1, 2, 3};
+            Func<int> func =
+                Expression.Lambda<Func<int>>(Expression.ArrayLength(Expression.Constant(arr))).Compile(useInterpreter);
+            Assert.Equal(3, func());
+        }
+
+        [Fact]
+        public static void UnreadableArray()
+        {
+            Expression array = Expression.Property(null, typeof(Unreadable<int[]>), nameof(Unreadable<int>.WriteOnly));
+            Assert.Throws<ArgumentException>(() => Expression.ArrayLength(array));
+        }
     }
 }

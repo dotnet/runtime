@@ -122,6 +122,21 @@ namespace System.Linq.Tests
         }
 
         [Fact]
+        public void RunOnce()
+        {
+            StringWithIntArray[] source =
+            {
+                new StringWithIntArray { name="Prakash", total=new int?[]{1, 2, 3, 4} },
+                new StringWithIntArray { name="Bob", total=new int?[]{5, 6} },
+                new StringWithIntArray { name="Chris", total=new int?[0] },
+                new StringWithIntArray { name=null, total=new int?[]{8, 9} },
+                new StringWithIntArray { name="Prakash", total=new int?[]{-10, 100} }
+            };
+            int?[] expected = { 1, 2, 3, 4, 5, 6, 8, 9, -10, 100 };
+            Assert.Equal(expected, source.RunOnce().SelectMany(e => e.total.RunOnce()));
+        }
+
+        [Fact]
         public void SourceEmptyIndexUsed()
         {
             Assert.Empty(Enumerable.Empty<StringWithIntArray>().SelectMany((e, index) => e.total));
@@ -359,6 +374,122 @@ namespace System.Linq.Tests
             var iterator = NumberRangeGuaranteedNotCollectionType(0, 3).SelectMany((e, i) => new int[0], (e, i) => e);
             var en = iterator as IEnumerator<int>;
             Assert.False(en != null && en.MoveNext());
+        }
+
+        [Theory]
+        [MemberData(nameof(ParameterizedTestsData))]
+        public void ParameterizedTests(IEnumerable<int> source, Func<int, IEnumerable<int>> selector)
+        {
+            var expected = source.Select(i => selector(i)).Aggregate((l, r) => l.Concat(r));
+            var actual = source.SelectMany(selector);
+
+            Assert.Equal(expected, actual);
+            Assert.Equal(expected.Count(), actual.Count()); // SelectMany may employ an optimized Count implementation.
+            Assert.Equal(expected.ToArray(), actual.ToArray());
+            Assert.Equal(expected.ToList(), actual.ToList());
+        }
+
+        public static IEnumerable<object[]> ParameterizedTestsData()
+        {
+            for (int i = 1; i <= 20; i++)
+            {
+                Func<int, IEnumerable<int>> selector = n => Enumerable.Range(i, n);
+                yield return new object[] { Enumerable.Range(1, i), selector };
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(DisposeAfterEnumerationData))]
+        public void DisposeAfterEnumeration(int sourceLength, int subLength)
+        {
+            int sourceState = 0;
+            int subIndex = 0; // Index within the arrays the sub-collection is supposed to be at.
+            int[] subState = new int[sourceLength];
+
+            bool sourceDisposed = false;
+            bool[] subCollectionDisposed = new bool[sourceLength];
+
+            var sourceEnumerator = new DelegateBasedEnumerator<int>
+            {
+                MoveNextWorker = () => ++sourceState <= sourceLength,
+                CurrentWorker = () => 0,
+                DisposeWorker = () => sourceDisposed = true
+            };
+
+            var source = new DelegateBasedEnumerable<int>
+            {
+                GetEnumeratorWorker = () => sourceEnumerator
+            };
+            
+            var subEnumerator = new DelegateBasedEnumerator<int>
+            {
+                // MoveNext: Return true subLength times.
+                // Dispose: Record that Dispose was called & move to the next index.
+                MoveNextWorker = () => ++subState[subIndex] <= subLength,
+                CurrentWorker = () => subState[subIndex],
+                DisposeWorker = () => subCollectionDisposed[subIndex++] = true
+            };
+
+            var subCollection = new DelegateBasedEnumerable<int>
+            {
+                GetEnumeratorWorker = () => subEnumerator
+            };
+
+            var iterator = source.SelectMany(_ => subCollection);
+
+            int index = 0; // How much have we gone into the iterator?
+            IEnumerator<int> e = iterator.GetEnumerator();
+
+            using (e)
+            {
+                while (e.MoveNext())
+                {
+                    int item = e.Current;
+
+                    Assert.Equal(subState[subIndex], item); // Verify Current.
+                    Assert.Equal(index / subLength, subIndex);
+
+                    Assert.False(sourceDisposed); // Not yet.
+
+                    // This represents whehter the sub-collection we're iterating thru right now
+                    // has been disposed. Also not yet.
+                    Assert.False(subCollectionDisposed[subIndex]);
+
+                    // However, all of the sub-collections before us should have been disposed.
+                    // Their indices should also be maxed out.
+                    Assert.All(subState.Take(subIndex), s => Assert.Equal(subLength + 1, s));
+                    Assert.All(subCollectionDisposed.Take(subIndex), t => Assert.True(t));
+
+                    index++;
+                }
+            }
+
+            Assert.True(sourceDisposed);
+            Assert.Equal(sourceLength, subIndex);
+            Assert.All(subState, s => Assert.Equal(subLength + 1, s));
+            Assert.All(subCollectionDisposed, t => Assert.True(t));
+
+            // Make sure the iterator's enumerator has been disposed properly.
+            Assert.Equal(0, e.Current); // Default value.
+            Assert.False(e.MoveNext());
+            Assert.Equal(0, e.Current);
+        }
+
+        public static IEnumerable<object[]> DisposeAfterEnumerationData()
+        {
+            int[] lengths = { 1, 2, 3, 5, 8, 13, 21, 34 };
+
+            return lengths.SelectMany(l => lengths, (l1, l2) => new object[] { l1, l2 });
+        }
+
+        [Theory]
+        [InlineData(new[] { int.MaxValue, 1 })]
+        [InlineData(new[] { 2, int.MaxValue - 1 })]
+        [InlineData(new[] { 123, 456, int.MaxValue - 100000, 123456 })]
+        public void ThrowOverflowExceptionOnConstituentLargeCounts(int[] counts)
+        {
+            var iterator = counts.SelectMany(c => Enumerable.Range(1, c));
+            Assert.Throws<OverflowException>(() => iterator.Count());
         }
     }
 }

@@ -17,7 +17,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         // Use all the simple types plus 1 more for Object
         // See CLR section 7.4.1.3
 
-        static private readonly byte[][] s_betterConversionTable =
+        private static readonly byte[][] s_betterConversionTable =
         {
             //          BYTE    SHORT   INT     LONG    FLOAT   DOUBLE  DECIMAL CHAR    BOOL    SBYTE   USHORT  UINT    ULONG   IPTR     UIPTR    OBJECT
             new byte[] /* BYTE*/   {0,     0,      0,      0,      0,      0,      0,      0,      0,      2,      0,      0,      0,      0,       0,       0},

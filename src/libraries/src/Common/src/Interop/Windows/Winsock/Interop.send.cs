@@ -12,7 +12,7 @@ internal static partial class Interop
     {
         // This method is always blocking, so it uses an IntPtr.
         [DllImport(Interop.Libraries.Ws2_32, SetLastError = true)]
-        internal unsafe static extern int send(
+        internal static extern unsafe int send(
             [In] IntPtr socketHandle,
             [In] byte* pinnedBuffer,
             [In] int len,

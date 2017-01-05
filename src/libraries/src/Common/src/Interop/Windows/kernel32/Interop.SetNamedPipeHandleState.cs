@@ -12,7 +12,7 @@ internal partial class Interop
     {
         [DllImport(Libraries.Kernel32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static unsafe extern bool SetNamedPipeHandleState(
+        internal static extern unsafe bool SetNamedPipeHandleState(
           SafePipeHandle hNamedPipe,
           int* lpMode,
           IntPtr lpMaxCollectionCount,

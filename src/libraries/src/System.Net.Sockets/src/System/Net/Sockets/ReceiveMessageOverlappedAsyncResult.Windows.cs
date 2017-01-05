@@ -12,7 +12,7 @@ using System.Collections.Generic;
 
 namespace System.Net.Sockets
 {
-    unsafe internal sealed partial class ReceiveMessageOverlappedAsyncResult : BaseOverlappedAsyncResult
+    internal unsafe sealed partial class ReceiveMessageOverlappedAsyncResult : BaseOverlappedAsyncResult
     {
         private Interop.Winsock.WSAMsg* _message;
         private WSABuffer* _wsaBuffer;
@@ -99,7 +99,7 @@ namespace System.Net.Sockets
             _message->flags = socketFlags;
         }
 
-        unsafe private void InitIPPacketInformation()
+        private unsafe void InitIPPacketInformation()
         {
             IPAddress address = null;
 

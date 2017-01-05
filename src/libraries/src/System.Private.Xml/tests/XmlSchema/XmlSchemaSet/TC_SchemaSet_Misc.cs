@@ -4,9 +4,7 @@
 
 using Xunit;
 using Xunit.Abstractions;
-using System;
 using System.IO;
-using System.Xml;
 using System.Xml.Schema;
 using System.Xml.XPath;
 
@@ -1028,7 +1026,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation(Desc = "615444 XmlSchema.Write ((XmlWriter)null) throws InvalidOperationException instead of ArgumenNullException")]
-        [Fact(Skip = "TODO: Fix NotImplementedException")]
+        [Fact]
         public void v125()
         {
             XmlSchema xs = new XmlSchema();
@@ -1072,15 +1070,15 @@ namespace System.Xml.Tests
             return;
         }
 
-        [Fact(Skip = "TODO: Fix NotImplementedException")]
+        [Fact]
         public void GetBuiltinSimpleTypeWorksAsEcpected()
         {
             Initialize();
-            string xml = "<?xml version=\"1.0\" encoding=\"utf-16\"?>" + "\r\n" +
- "<xs:schema xmlns:xs=\"http://www.w3.org/2001/XMLSchema\">" + "\r\n" +
- "  <xs:simpleType>" + "\r\n" +
- "    <xs:restriction base=\"xs:anySimpleType\" />" + "\r\n" +
- "  </xs:simpleType>" + "\r\n" +
+            string xml = "<?xml version=\"1.0\" encoding=\"utf-16\"?>" + Environment.NewLine +
+ "<xs:schema xmlns:xs=\"http://www.w3.org/2001/XMLSchema\">" + Environment.NewLine +
+ "  <xs:simpleType>" + Environment.NewLine +
+ "    <xs:restriction base=\"xs:anySimpleType\" />" + Environment.NewLine +
+ "  </xs:simpleType>" + Environment.NewLine +
  "</xs:schema>";
             XmlSchema schema = new XmlSchema();
             XmlSchemaSimpleType stringType = XmlSchemaType.GetBuiltInSimpleType(XmlTypeCode.String);

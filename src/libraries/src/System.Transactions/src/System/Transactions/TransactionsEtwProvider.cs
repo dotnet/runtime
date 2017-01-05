@@ -83,7 +83,7 @@ namespace System.Transactions
         /// 
 
 
-        internal readonly static TransactionsEtwProvider Log = new TransactionsEtwProvider();
+        internal static readonly TransactionsEtwProvider Log = new TransactionsEtwProvider();
         /// <summary>Prevent external instantiation.  All logging should go through the Log instance.</summary>
         private TransactionsEtwProvider() { }
 
@@ -203,14 +203,17 @@ namespace System.Transactions
 
             if (IsEnabled(EventLevel.Informational, ALL_KEYWORDS))
             {
-                TransactionCreated(
-                    transaction.TransactionTraceId.TransactionIdentifier, type);
+                if (transaction != null && transaction.TransactionTraceId != null)
+                    TransactionCreated(transaction.TransactionTraceId.TransactionIdentifier, type);
+                else
+                    TransactionCreated(string.Empty, type);
             }
         }
 
         [Event(TRANSACTION_CREATED_EVENTID, Keywords = Keywords.TraceLtm, Level = EventLevel.Informational, Task = Tasks.Transaction, Opcode = Opcodes.Create, Message = "Transaction Created. ID is {0}, type is {1}")]
         private void TransactionCreated(string transactionIdentifier, string type)
         {
+            SetActivityId(transactionIdentifier);
             WriteEvent(TRANSACTION_CREATED_EVENTID, transactionIdentifier, type);
         }
         #endregion
@@ -226,14 +229,17 @@ namespace System.Transactions
 
             if (IsEnabled(EventLevel.Informational, ALL_KEYWORDS))
             {
-                TransactionCloneCreate(
-                    transaction.TransactionTraceId.TransactionIdentifier, type);
+                if (transaction != null && transaction.TransactionTraceId != null)
+                    TransactionCloneCreate(transaction.TransactionTraceId.TransactionIdentifier, type);
+                else
+                    TransactionCloneCreate(string.Empty, type);
             }
         }
 
         [Event(TRANSACTION_CLONECREATE_EVENTID, Keywords = Keywords.TraceLtm, Level = EventLevel.Informational, Task = Tasks.Transaction, Opcode = Opcodes.CloneCreate, Message = "Transaction Clone Created. ID is {0}, type is {1}")]
         private void TransactionCloneCreate(string transactionIdentifier, string type)
         {
+            SetActivityId(transactionIdentifier);
             WriteEvent(TRANSACTION_CLONECREATE_EVENTID, transactionIdentifier, type);
         }
         #endregion
@@ -249,14 +255,17 @@ namespace System.Transactions
 
             if (IsEnabled(EventLevel.Informational, ALL_KEYWORDS))
             {
-                TransactionSerialized(
-                    transaction.TransactionTraceId.TransactionIdentifier, type);
+                if (transaction != null && transaction.TransactionTraceId != null)
+                    TransactionSerialized(transaction.TransactionTraceId.TransactionIdentifier, type);
+                else
+                    TransactionSerialized(string.Empty, type);
             }
         }
 
         [Event(TRANSACTION_SERIALIZED_EVENTID, Keywords = Keywords.TraceLtm, Level = EventLevel.Informational, Task = Tasks.Transaction, Opcode = Opcodes.Serialized, Message = "Transaction Serialized. ID is {0}, type is {1}")]
         private void TransactionSerialized(string transactionIdentifier, string type)
         {
+            SetActivityId(transactionIdentifier);
             WriteEvent(TRANSACTION_SERIALIZED_EVENTID, transactionIdentifier, type);
         }
         #endregion
@@ -299,12 +308,14 @@ namespace System.Transactions
         [Event(TRANSACTION_EXCEPTION_BASE_EVENTID, Keywords = Keywords.TraceBase, Level = EventLevel.Error, Task = Tasks.TransactionException, Message = "Transaction Exception. Type is {0}, message is {1}, InnerException is {2}")]
         private void TransactionExceptionBase(string type, string message, string innerExceptionStr)
         {
+            SetActivityId(string.Empty);
             WriteEvent(TRANSACTION_EXCEPTION_BASE_EVENTID, type, message, innerExceptionStr);
         }
 
         [Event(TRANSACTION_EXCEPTION_LTM_EVENTID, Keywords = Keywords.TraceLtm, Level = EventLevel.Error, Task = Tasks.TransactionException, Message = "Transaction Exception. Type is {0}, message is {1}, InnerException is {2}")]
         private void TransactionExceptionLtm(string type, string message, string innerExceptionStr)
         {
+            SetActivityId(string.Empty);
             WriteEvent(TRANSACTION_EXCEPTION_LTM_EVENTID, type, message, innerExceptionStr);
         }
         #endregion
@@ -325,6 +336,7 @@ namespace System.Transactions
         [Event(TRANSACTION_INVALID_OPERATION_EVENTID, Keywords = Keywords.TraceBase, Level = EventLevel.Error, Task = Tasks.Transaction, Opcode = Opcodes.InvalidOperation, Message = "Transaction Invalid Operation. ID is {0}, type is {1} and operation is {2}")]
         private void TransactionInvalidOperation(string transactionIdentifier, string type, string operation)
         {
+            SetActivityId(string.Empty);
             WriteEvent(TRANSACTION_INVALID_OPERATION_EVENTID, transactionIdentifier, type, operation);
         }
         #endregion
@@ -340,14 +352,17 @@ namespace System.Transactions
 
             if (IsEnabled(EventLevel.Warning, ALL_KEYWORDS))
             {
-                TransactionRollback(
-                    transaction.TransactionTraceId.TransactionIdentifier, type);
+                if (transaction != null && transaction.TransactionTraceId != null)
+                    TransactionRollback(transaction.TransactionTraceId.TransactionIdentifier, type);
+                else
+                    TransactionRollback(string.Empty, type);
             }
         }
 
         [Event(TRANSACTION_ROLLBACK_EVENTID, Keywords = Keywords.TraceLtm, Level = EventLevel.Warning, Task = Tasks.Transaction, Opcode = Opcodes.Rollback, Message = "Transaction Rollback. ID is {0}, type is {1}")]
         private void TransactionRollback(string transactionIdentifier, string type)
         {
+            SetActivityId(transactionIdentifier);
             WriteEvent(TRANSACTION_ROLLBACK_EVENTID, transactionIdentifier, type);
         }
         #endregion
@@ -363,14 +378,17 @@ namespace System.Transactions
 
             if (IsEnabled(EventLevel.Informational, ALL_KEYWORDS))
             {
-                TransactionDependentCloneComplete(
-                    transaction.TransactionTraceId.TransactionIdentifier, type);
+                if (transaction != null && transaction.TransactionTraceId != null)
+                    TransactionDependentCloneComplete(transaction.TransactionTraceId.TransactionIdentifier, type);
+                else
+                    TransactionDependentCloneComplete(string.Empty, type);
             }
         }
 
         [Event(TRANSACTION_DEPENDENT_CLONE_COMPLETE_EVENTID, Keywords = Keywords.TraceLtm, Level = EventLevel.Informational, Task = Tasks.Transaction, Opcode = Opcodes.DependentCloneComplete, Message = "Transaction Dependent Clone Completed. ID is {0}, type is {1}")]
         private void TransactionDependentCloneComplete(string transactionIdentifier, string type)
         {
+            SetActivityId(transactionIdentifier);
             WriteEvent(TRANSACTION_DEPENDENT_CLONE_COMPLETE_EVENTID, transactionIdentifier, type);
         }
         #endregion
@@ -386,14 +404,17 @@ namespace System.Transactions
 
             if (IsEnabled(EventLevel.Verbose, ALL_KEYWORDS))
             {
-                TransactionCommit(
-                    transaction.TransactionTraceId.TransactionIdentifier, type);
+                if (transaction != null && transaction.TransactionTraceId != null)
+                    TransactionCommit(transaction.TransactionTraceId.TransactionIdentifier, type);
+                else
+                    TransactionCommit(string.Empty, type);
             }
         }
 
         [Event(TRANSACTION_COMMIT_EVENTID, Keywords = Keywords.TraceLtm, Level = EventLevel.Verbose, Task = Tasks.Transaction, Opcode = Opcodes.Commit, Message = "Transaction Commit: ID is {0}, type is {1}")]
         private void TransactionCommit(string transactionIdentifier, string type)
         {
+            SetActivityId(transactionIdentifier);
             WriteEvent(TRANSACTION_COMMIT_EVENTID, transactionIdentifier, type);
         }
         #endregion
@@ -409,13 +430,17 @@ namespace System.Transactions
 
             if (IsEnabled(EventLevel.Verbose, ALL_KEYWORDS))
             {
-                EnlistmentStatus(enlistment.EnlistmentTraceId.EnlistmentIdentifier, notificationCall.ToString());
+                if (enlistment != null && enlistment.EnlistmentTraceId != null)
+                    EnlistmentStatus(enlistment.EnlistmentTraceId.EnlistmentIdentifier, notificationCall.ToString());
+                else
+                    EnlistmentStatus(0, notificationCall.ToString());
             }
         }
 
         [Event(ENLISTMENT_EVENTID, Keywords = Keywords.TraceLtm, Level = EventLevel.Verbose, Task = Tasks.Enlistment, Message = "Enlistment status: ID is {0}, notificationcall is {1}")]
         private void EnlistmentStatus(int enlistmentIdentifier, string notificationCall)
         {
+            SetActivityId(string.Empty);
             WriteEvent(ENLISTMENT_EVENTID, enlistmentIdentifier, notificationCall);
         }
         #endregion
@@ -430,14 +455,17 @@ namespace System.Transactions
 
             if (IsEnabled(EventLevel.Verbose, ALL_KEYWORDS))
             {
-                EnlistmentDone(
-                    enlistment.EnlistmentTraceId.EnlistmentIdentifier);
+                if (enlistment != null && enlistment.EnlistmentTraceId != null)
+                    EnlistmentDone(enlistment.EnlistmentTraceId.EnlistmentIdentifier);
+                else
+                    EnlistmentDone(0);
             }
         }
 
         [Event(ENLISTMENT_DONE_EVENTID, Keywords = Keywords.TraceLtm, Level = EventLevel.Verbose, Task = Tasks.Enlistment, Opcode = Opcodes.Done, Message = "Enlistment.Done: ID is {0}")]
         private void EnlistmentDone(int enlistmentIdentifier)
         {
+            SetActivityId(string.Empty);
             WriteEvent(ENLISTMENT_DONE_EVENTID, enlistmentIdentifier);
         }
         #endregion
@@ -452,14 +480,17 @@ namespace System.Transactions
 
             if (IsEnabled(EventLevel.Verbose, ALL_KEYWORDS))
             {
-                EnlistmentPrepared(
-                    enlistment.EnlistmentTraceId.EnlistmentIdentifier);
+                if (enlistment != null && enlistment.EnlistmentTraceId != null)
+                    EnlistmentPrepared(enlistment.EnlistmentTraceId.EnlistmentIdentifier);
+                else
+                    EnlistmentPrepared(0);
             }
         }
 
         [Event(ENLISTMENT_PREPARED_EVENTID, Keywords = Keywords.TraceLtm, Level = EventLevel.Verbose, Task = Tasks.Enlistment, Opcode = Opcodes.Prepared, Message = "PreparingEnlistment.Prepared: ID is {0}")]
         private void EnlistmentPrepared(int enlistmentIdentifier)
         {
+            SetActivityId(string.Empty);
             WriteEvent(ENLISTMENT_PREPARED_EVENTID, enlistmentIdentifier);
         }
         #endregion
@@ -474,14 +505,17 @@ namespace System.Transactions
 
             if (IsEnabled(EventLevel.Warning, ALL_KEYWORDS))
             {
-                EnlistmentForceRollback(
-                    enlistment.EnlistmentTraceId.EnlistmentIdentifier);
+                if (enlistment != null && enlistment.EnlistmentTraceId != null)
+                    EnlistmentForceRollback(enlistment.EnlistmentTraceId.EnlistmentIdentifier);
+                else
+                    EnlistmentForceRollback(0);
             }
         }
 
         [Event(ENLISTMENT_FORCEROLLBACK_EVENTID, Keywords = Keywords.TraceLtm, Level = EventLevel.Warning, Task = Tasks.Enlistment, Opcode = Opcodes.ForceRollback, Message = "Enlistment forceRollback: ID is {0}")]
         private void EnlistmentForceRollback(int enlistmentIdentifier)
         {
+            SetActivityId(string.Empty);
             WriteEvent(ENLISTMENT_FORCEROLLBACK_EVENTID, enlistmentIdentifier);
         }
         #endregion
@@ -496,14 +530,18 @@ namespace System.Transactions
 
             if (IsEnabled(EventLevel.Warning, ALL_KEYWORDS))
             {
-                EnlistmentAborted(
-                    enlistment.EnlistmentTraceId.EnlistmentIdentifier);
+                if (enlistment != null && enlistment.EnlistmentTraceId != null)
+                    EnlistmentAborted(enlistment.EnlistmentTraceId.EnlistmentIdentifier);
+                else
+                    EnlistmentAborted(0);
+
             }
         }
 
         [Event(ENLISTMENT_ABORTED_EVENTID, Keywords = Keywords.TraceLtm, Level = EventLevel.Warning, Task = Tasks.Enlistment, Opcode = Opcodes.Aborted, Message = "Enlistment SinglePhase Aborted: ID is {0}")]
         private void EnlistmentAborted(int enlistmentIdentifier)
         {
+            SetActivityId(string.Empty);
             WriteEvent(ENLISTMENT_ABORTED_EVENTID, enlistmentIdentifier);
         }
         #endregion
@@ -518,14 +556,17 @@ namespace System.Transactions
 
             if (IsEnabled(EventLevel.Verbose, ALL_KEYWORDS))
             {
-                EnlistmentCommitted(
-                    enlistment.EnlistmentTraceId.EnlistmentIdentifier);
+                if (enlistment != null && enlistment.EnlistmentTraceId != null)
+                    EnlistmentCommitted(enlistment.EnlistmentTraceId.EnlistmentIdentifier);
+                else
+                    EnlistmentCommitted(0);
             }
         }
 
         [Event(ENLISTMENT_COMMITTED_EVENTID, Keywords = Keywords.TraceLtm, Level = EventLevel.Verbose, Task = Tasks.Enlistment, Opcode = Opcodes.Committed, Message = "Enlistment Committed: ID is {0}")]
         private void EnlistmentCommitted(int enlistmentIdentifier)
         {
+            SetActivityId(string.Empty);
             WriteEvent(ENLISTMENT_COMMITTED_EVENTID, enlistmentIdentifier);
         }
         #endregion
@@ -540,14 +581,17 @@ namespace System.Transactions
 
             if (IsEnabled(EventLevel.Warning, ALL_KEYWORDS))
             {
-                EnlistmentInDoubt(
-                    enlistment.EnlistmentTraceId.EnlistmentIdentifier);
+                if (enlistment != null && enlistment.EnlistmentTraceId != null)
+                    EnlistmentInDoubt(enlistment.EnlistmentTraceId.EnlistmentIdentifier);
+                else
+                    EnlistmentInDoubt(0);
             }
         }
 
         [Event(ENLISTMENT_INDOUBT_EVENTID, Keywords = Keywords.TraceLtm, Level = EventLevel.Warning, Task = Tasks.Enlistment, Opcode = Opcodes.InDoubt, Message = "Enlistment SinglePhase InDoubt: ID is {0}")]
         private void EnlistmentInDoubt(int enlistmentIdentifier)
         {
+            SetActivityId(string.Empty);
             WriteEvent(ENLISTMENT_INDOUBT_EVENTID, enlistmentIdentifier);
         }
         #endregion
@@ -603,16 +647,19 @@ namespace System.Transactions
         [Event(METHOD_ENTER_LTM_EVENTID, Keywords = Keywords.TraceLtm, Level = EventLevel.Verbose, Task = Tasks.Method, Opcode = Opcodes.Enter, Message = "Enter method : {0}.{1}")]
         private void MethodEnterTraceLtm(string thisOrContextObject, string methodname)
         {
+            SetActivityId(string.Empty);
             WriteEvent(METHOD_ENTER_LTM_EVENTID, thisOrContextObject, methodname);
         }
         [Event(METHOD_ENTER_BASE_EVENTID, Keywords = Keywords.TraceBase, Level = EventLevel.Verbose, Task = Tasks.Method, Opcode = Opcodes.Enter, Message = "Enter method : {0}.{1}")]
         private void MethodEnterTraceBase(string thisOrContextObject, string methodname)
         {
+            SetActivityId(string.Empty);
             WriteEvent(METHOD_ENTER_BASE_EVENTID, thisOrContextObject, methodname);
         }
         [Event(METHOD_ENTER_DISTRIBUTED_EVENTID, Keywords = Keywords.TraceDistributed, Level = EventLevel.Verbose, Task = Tasks.Method, Opcode = Opcodes.Enter, Message = "Enter method : {0}.{1}")]
         private void MethodEnterTraceDistributed(string thisOrContextObject, string methodname)
         {
+            SetActivityId(string.Empty);
             WriteEvent(METHOD_ENTER_DISTRIBUTED_EVENTID, thisOrContextObject, methodname);
         }
         #endregion
@@ -668,16 +715,19 @@ namespace System.Transactions
         [Event(METHOD_EXIT_LTM_EVENTID, Keywords = Keywords.TraceLtm, Level = EventLevel.Verbose, Task = Tasks.Method, Opcode = Opcodes.Exit, Message = "Exit method: {0}.{1}")]
         private void MethodExitTraceLtm(string thisOrContextObject, string methodname)
         {
+            SetActivityId(string.Empty);
             WriteEvent(METHOD_EXIT_LTM_EVENTID, thisOrContextObject, methodname);
         }
         [Event(METHOD_EXIT_BASE_EVENTID, Keywords = Keywords.TraceBase, Level = EventLevel.Verbose, Task = Tasks.Method, Opcode = Opcodes.Exit, Message = "Exit method: {0}.{1}")]
         private void MethodExitTraceBase(string thisOrContextObject, string methodname)
         {
+            SetActivityId(string.Empty);
             WriteEvent(METHOD_EXIT_BASE_EVENTID, thisOrContextObject, methodname);
         }
         [Event(METHOD_EXIT_DISTRIBUTED_EVENTID, Keywords = Keywords.TraceDistributed, Level = EventLevel.Verbose, Task = Tasks.Method, Opcode = Opcodes.Exit, Message = "Exit method: {0}.{1}")]
         private void MethodExitTraceDistributed(string thisOrContextObject, string methodname)
         {
+            SetActivityId(string.Empty);
             WriteEvent(METHOD_EXIT_DISTRIBUTED_EVENTID, thisOrContextObject, methodname);
         }
 
@@ -716,11 +766,13 @@ namespace System.Transactions
         [Event(EXCEPTION_CONSUMED_BASE_EVENTID, Keywords = Keywords.TraceBase, Level = EventLevel.Verbose, Opcode = Opcodes.ExceptionConsumed, Message = "Exception consumed: {0}")]
         private void ExceptionConsumedBase(string exceptionStr)
         {
+            SetActivityId(string.Empty);
             WriteEvent(EXCEPTION_CONSUMED_BASE_EVENTID, exceptionStr);
         }
         [Event(EXCEPTION_CONSUMED_LTM_EVENTID, Keywords = Keywords.TraceLtm, Level = EventLevel.Verbose, Opcode = Opcodes.ExceptionConsumed, Message = "Exception consumed: {0}")]
         private void ExceptionConsumedLtm(string exceptionStr)
         {
+            SetActivityId(string.Empty);
             WriteEvent(EXCEPTION_CONSUMED_LTM_EVENTID, exceptionStr);
         }
         #endregion
@@ -740,6 +792,7 @@ namespace System.Transactions
         [Event(TRANSACTIONMANAGER_REENLIST_EVENTID, Keywords = Keywords.TraceBase, Level = EventLevel.Informational, Task = Tasks.TransactionManager, Opcode = Opcodes.Reenlist, Message = "Reenlist in: {0}")]
         private void TransactionManagerReenlistTrace(string rmID)
         {
+            SetActivityId(string.Empty);
             WriteEvent(TRANSACTIONMANAGER_REENLIST_EVENTID, rmID);
         }
         #endregion
@@ -759,6 +812,7 @@ namespace System.Transactions
         [Event(TRANSACTIONMANAGER_RECOVERY_COMPLETE_EVENTID, Keywords = Keywords.TraceBase, Level = EventLevel.Informational, Task = Tasks.TransactionManager, Opcode = Opcodes.RecoveryComplete, Message = "Recovery complete: {0}")]
         private void TransactionManagerRecoveryComplete(string rmID)
         {
+            SetActivityId(string.Empty);
             WriteEvent(TRANSACTIONMANAGER_RECOVERY_COMPLETE_EVENTID, rmID);
         }
         #endregion
@@ -777,6 +831,7 @@ namespace System.Transactions
         [Event(CONFIGURED_DEFAULT_TIMEOUT_ADJUSTED_EVENTID, Keywords = Keywords.TraceBase, Level = EventLevel.Warning, Task = Tasks.ConfiguredDefaultTimeout, Opcode = Opcodes.Adjusted, Message = "Configured Default Timeout Adjusted")]
         private void ConfiguredDefaultTimeoutAdjustedTrace()
         {
+            SetActivityId(string.Empty);
             WriteEvent(CONFIGURED_DEFAULT_TIMEOUT_ADJUSTED_EVENTID);
         }
         #endregion
@@ -790,13 +845,17 @@ namespace System.Transactions
         {
             if (IsEnabled(EventLevel.Informational, ALL_KEYWORDS))
             {
-                TransactionScopeCreated(transactionID.TransactionIdentifier.ToString(), transactionScopeResult);
+                if (transactionID != null && transactionID.TransactionIdentifier != null)
+                    TransactionScopeCreated(transactionID.TransactionIdentifier.ToString(), transactionScopeResult);
+                else
+                    TransactionScopeCreated(String.Empty, transactionScopeResult);
             }
         }
 
         [Event(TRANSACTIONSCOPE_CREATED_EVENTID, Keywords = Keywords.TraceBase, Level = EventLevel.Informational, Task = Tasks.TransactionScope, Opcode = Opcodes.Created, Message = "Transactionscope was created: Transaction ID is {0}, TransactionScope Result is {1}")]
         private void TransactionScopeCreated(string transactionID, TransactionScopeResult transactionScopeResult)
         {
+            SetActivityId(transactionID);
             WriteEvent(TRANSACTIONSCOPE_CREATED_EVENTID, transactionID, transactionScopeResult);
         }
         #endregion
@@ -810,13 +869,24 @@ namespace System.Transactions
         {
             if (IsEnabled(EventLevel.Warning, ALL_KEYWORDS))
             {
-                TransactionScopeCurrentChanged(currenttransactionID.TransactionIdentifier.ToString(), newtransactionID.TransactionIdentifier.ToString());
+                String currentId = String.Empty;
+                String newId = String.Empty;
+                if (currenttransactionID != null && currenttransactionID.TransactionIdentifier != null)
+                {
+                    currentId = currenttransactionID.TransactionIdentifier.ToString();
+                }
+                if (newtransactionID!= null && newtransactionID.TransactionIdentifier != null)
+                {
+                    newId = newtransactionID.TransactionIdentifier.ToString();
+                }
+                TransactionScopeCurrentChanged(currentId, newId);
             }
         }
 
         [Event(TRANSACTIONSCOPE_CURRENT_CHANGED_EVENTID, Keywords = Keywords.TraceBase, Level = EventLevel.Warning, Task = Tasks.TransactionScope, Opcode = Opcodes.CurrentChanged, Message = "Transactionscope current transaction ID changed from {0} to {1}")]
         private void TransactionScopeCurrentChanged(string currenttransactionID, string newtransactionID)
         {
+            SetActivityId(newtransactionID);
             WriteEvent(TRANSACTIONSCOPE_CURRENT_CHANGED_EVENTID, currenttransactionID, newtransactionID);
         }
         #endregion
@@ -829,13 +899,17 @@ namespace System.Transactions
         {
             if (IsEnabled(EventLevel.Warning, ALL_KEYWORDS))
             {
-                TransactionScopeNestedIncorrectly(transactionID.TransactionIdentifier.ToString());
+                if (transactionID != null && transactionID.TransactionIdentifier != null)
+                    TransactionScopeNestedIncorrectly(transactionID.TransactionIdentifier.ToString());
+                else
+                    TransactionScopeNestedIncorrectly(String.Empty);
             }
         }
 
         [Event(TRANSACTIONSCOPE_NESTED_INCORRECTLY_EVENTID, Keywords = Keywords.TraceBase, Level = EventLevel.Warning, Task = Tasks.TransactionScope, Opcode = Opcodes.NestedIncorrectly, Message = "Transactionscope nested incorrectly: transaction ID is {0}")]
         private void TransactionScopeNestedIncorrectly(string transactionID)
         {
+            SetActivityId(transactionID);
             WriteEvent(TRANSACTIONSCOPE_NESTED_INCORRECTLY_EVENTID, transactionID);
         }
         #endregion
@@ -848,13 +922,17 @@ namespace System.Transactions
         {
             if (IsEnabled(EventLevel.Informational, ALL_KEYWORDS))
             {
-                TransactionScopeDisposed(transactionID.TransactionIdentifier.ToString());
+                if (transactionID != null && transactionID.TransactionIdentifier != null)
+                    TransactionScopeDisposed(transactionID.TransactionIdentifier.ToString());
+                else
+                    TransactionScopeDisposed(String.Empty);
             }
         }
 
         [Event(TRANSACTIONSCOPE_DISPOSED_EVENTID, Keywords = Keywords.TraceBase, Level = EventLevel.Informational, Task = Tasks.TransactionScope, Opcode = Opcodes.Disposed, Message = "Transactionscope disposed: transaction ID is {0}")]
         private void TransactionScopeDisposed(string transactionID)
         {
+            SetActivityId(transactionID);
             WriteEvent(TRANSACTIONSCOPE_DISPOSED_EVENTID, transactionID);
         }
         #endregion
@@ -867,13 +945,17 @@ namespace System.Transactions
         {
             if (IsEnabled(EventLevel.Warning, ALL_KEYWORDS))
             {
-                TransactionScopeIncomplete(transactionID.TransactionIdentifier.ToString());
+                if (transactionID != null && transactionID.TransactionIdentifier != null)
+                    TransactionScopeIncomplete(transactionID.TransactionIdentifier.ToString());
+                else
+                    TransactionScopeIncomplete(String.Empty);
             }
         }
 
         [Event(TRANSACTIONSCOPE_INCOMPLETE_EVENTID, Keywords = Keywords.TraceBase, Level = EventLevel.Warning, Task = Tasks.TransactionScope, Opcode = Opcodes.Incomplete, Message = "Transactionscope incomplete: transaction ID is {0}")]
         private void TransactionScopeIncomplete(string transactionID)
         {
+            SetActivityId(transactionID);
             WriteEvent(TRANSACTIONSCOPE_INCOMPLETE_EVENTID, transactionID);
         }
         #endregion
@@ -893,6 +975,7 @@ namespace System.Transactions
         [Event(TRANSACTIONSCOPE_INTERNAL_ERROR_EVENTID, Keywords = Keywords.TraceBase, Level = EventLevel.Critical, Task = Tasks.TransactionScope, Opcode = Opcodes.InternalError, Message = "Transactionscope internal error: {0}")]
         private void TransactionScopeInternalErrorTrace(string error)
         {
+            SetActivityId(string.Empty);
             WriteEvent(TRANSACTIONSCOPE_INTERNAL_ERROR_EVENTID, error);
         }
         #endregion
@@ -905,13 +988,17 @@ namespace System.Transactions
         {
             if (IsEnabled(EventLevel.Warning, ALL_KEYWORDS))
             {
-                TransactionScopeTimeout(transactionID.TransactionIdentifier.ToString());
+                if (transactionID != null && transactionID.TransactionIdentifier != null)
+                    TransactionScopeTimeout(transactionID.TransactionIdentifier.ToString());
+                else
+                    TransactionScopeTimeout(String.Empty);
             }
         }
 
         [Event(TRANSACTIONSCOPE_TIMEOUT_EVENTID, Keywords = Keywords.TraceBase, Level = EventLevel.Warning, Task = Tasks.TransactionScope, Opcode = Opcodes.Timeout, Message = "Transactionscope timeout: transaction ID is {0}")]
         private void TransactionScopeTimeout(string transactionID)
         {
+            SetActivityId(transactionID);
             WriteEvent(TRANSACTIONSCOPE_TIMEOUT_EVENTID, transactionID);
         }
         #endregion
@@ -924,13 +1011,17 @@ namespace System.Transactions
         {
             if (IsEnabled(EventLevel.Warning, ALL_KEYWORDS))
             {
-                TransactionTimeout(transactionID.TransactionIdentifier.ToString());
+                if (transactionID != null && transactionID.TransactionIdentifier != null)
+                    TransactionTimeout(transactionID.TransactionIdentifier.ToString());
+                else
+                    TransactionTimeout(String.Empty);
             }
         }
 
         [Event(TRANSACTION_TIMEOUT_EVENTID, Keywords = Keywords.TraceLtm, Level = EventLevel.Warning, Task = Tasks.Transaction, Opcode = Opcodes.Timeout, Message = "Transaction timeout: transaction ID is {0}")]
         private void TransactionTimeout(string transactionID)
         {
+            SetActivityId(transactionID);
             WriteEvent(TRANSACTION_TIMEOUT_EVENTID, transactionID);
         }
         #endregion
@@ -945,13 +1036,17 @@ namespace System.Transactions
         {
             if (IsEnabled(EventLevel.Informational, ALL_KEYWORDS))
             {
-                TransactionstateEnlist(enlistmentID.EnlistmentIdentifier.ToString(), enlistmentType.ToString(), enlistmentOption.ToString());
+                if (enlistmentID != null)
+                    TransactionstateEnlist(enlistmentID.EnlistmentIdentifier.ToString(), enlistmentType.ToString(), enlistmentOption.ToString());
+                else
+                    TransactionstateEnlist(String.Empty, enlistmentType.ToString(), enlistmentOption.ToString());
             }
         }
 
         [Event(TRANSACTIONSTATE_ENLIST_EVENTID, Keywords = Keywords.TraceLtm, Level = EventLevel.Informational, Task = Tasks.TransactionState, Opcode = Opcodes.Enlist, Message = "Transactionstate enlist: Enlistment ID is {0}, type is {1} and options is {2}")]
         private void TransactionstateEnlist(string enlistmentID, string type, string option)
         {
+            SetActivityId(string.Empty);
             WriteEvent(TRANSACTIONSTATE_ENLIST_EVENTID, enlistmentID, type, option);
         }
         #endregion
@@ -964,13 +1059,17 @@ namespace System.Transactions
         {
             if (IsEnabled(EventLevel.Verbose, ALL_KEYWORDS))
             {
-                TransactionCommitted(transactionID.TransactionIdentifier.ToString());
+                if (transactionID != null && transactionID.TransactionIdentifier != null)
+                    TransactionCommitted(transactionID.TransactionIdentifier.ToString());
+                else
+                    TransactionCommitted(String.Empty);
             }
         }
 
         [Event(TRANSACTION_COMMITTED_EVENTID, Keywords = Keywords.TraceLtm, Level = EventLevel.Verbose, Task = Tasks.Transaction, Opcode = Opcodes.Committed, Message = "Transaction committed: transaction ID is {0}")]
         private void TransactionCommitted(string transactionID)
         {
+            SetActivityId(transactionID);
             WriteEvent(TRANSACTION_COMMITTED_EVENTID, transactionID);
         }
         #endregion
@@ -983,53 +1082,68 @@ namespace System.Transactions
         {
             if (IsEnabled(EventLevel.Warning, ALL_KEYWORDS))
             {
-                TransactionInDoubt(transactionID.TransactionIdentifier.ToString());
+                if (transactionID != null && transactionID.TransactionIdentifier != null)
+                    TransactionInDoubt(transactionID.TransactionIdentifier.ToString());
+                else
+                    TransactionInDoubt(String.Empty);
             }
         }
 
         [Event(TRANSACTION_INDOUBT_EVENTID, Keywords = Keywords.TraceLtm, Level = EventLevel.Warning, Task = Tasks.Transaction, Opcode = Opcodes.InDoubt, Message = "Transaction indoubt: transaction ID is {0}")]
         private void TransactionInDoubt(string transactionID)
         {
+            SetActivityId(transactionID);
             WriteEvent(TRANSACTION_INDOUBT_EVENTID, transactionID);
         }
         #endregion
 
         #region Transactionstate promoted
         /// <summary>Trace an event when transaction is promoted.</summary>
-        /// <param name="txID">The transaction ID.</param>
+        /// <param name="transactionID">The transaction ID.</param>
         /// <param name="distributedTxID">The distributed transaction ID.</param>
         [NonEvent]
-        internal void TransactionPromoted(TransactionTraceIdentifier txID, TransactionTraceIdentifier distributedTxID)
+        internal void TransactionPromoted(TransactionTraceIdentifier transactionID, TransactionTraceIdentifier distributedTxID)
         {
             if (IsEnabled(EventLevel.Informational, ALL_KEYWORDS))
             {
-                TransactionPromoted(txID.TransactionIdentifier.ToString(), distributedTxID.TransactionIdentifier.ToString());
+                String id = String.Empty;
+                String distributedId = String.Empty;
+                if (transactionID != null && transactionID.TransactionIdentifier != null)
+                    id= transactionID.TransactionIdentifier.ToString();
+                if (distributedTxID != null && distributedTxID.TransactionIdentifier != null)
+                    distributedId = distributedTxID.TransactionIdentifier.ToString();
+                TransactionPromoted(id, distributedId);
             }
         }
 
         [Event(TRANSACTION_PROMOTED_EVENTID, Keywords = Keywords.TraceLtm, Level = EventLevel.Informational, Task = Tasks.Transaction, Opcode = Opcodes.Promoted, Message = "Transaction promoted: transaction ID is {0} and distributed transaction ID is {1}")]
-        private void TransactionPromoted(string txID, string distributedTxID)
+        private void TransactionPromoted(string transactionID, string distributedTxID)
         {
-            WriteEvent(TRANSACTION_PROMOTED_EVENTID, txID, distributedTxID);
+            SetActivityId(transactionID);
+            WriteEvent(TRANSACTION_PROMOTED_EVENTID, transactionID, distributedTxID);
         }
         #endregion
 
         #region Transactionstate aborted
         /// <summary>Trace an event when transaction is aborted.</summary>
-        /// <param name="txID">The transaction ID.</param>
+        /// <param name="transactionID">The transaction ID.</param>
         [NonEvent]
-        internal void TransactionAborted(TransactionTraceIdentifier txID)
+        internal void TransactionAborted(TransactionTraceIdentifier transactionID)
         {
             if (IsEnabled(EventLevel.Warning, ALL_KEYWORDS))
             {
-                TransactionAborted(txID.TransactionIdentifier.ToString());
+                if (transactionID != null && transactionID.TransactionIdentifier != null)
+                    TransactionAborted(transactionID.TransactionIdentifier.ToString());
+                else
+                    TransactionAborted(String.Empty);
             }
-        }
+          }
 
         [Event(TRANSACTION_ABORTED_EVENTID, Keywords = Keywords.TraceLtm, Level = EventLevel.Warning, Task = Tasks.Transaction, Opcode = Opcodes.Aborted, Message = "Transaction aborted: transaction ID is {0}")]
-        private void TransactionAborted(string txID)
+        private void TransactionAborted(string transactionID)
         {
-            WriteEvent(TRANSACTION_ABORTED_EVENTID, txID);
+            SetActivityId(transactionID);
+            WriteEvent(TRANSACTION_ABORTED_EVENTID, transactionID);
         }
         #endregion
         public class Opcodes
@@ -1083,6 +1197,29 @@ namespace System.Transactions
             public const EventKeywords TraceBase = (EventKeywords)0x0001;
             public const EventKeywords TraceLtm = (EventKeywords)0x0002;
             public const EventKeywords TraceDistributed = (EventKeywords)0x0004;
+        }
+
+        void SetActivityId(string str)
+        {
+            Guid guid = Guid.Empty;
+
+            if (str.IndexOf('-')>=0)
+            { // GUID with dash
+                if (str.Length>=36)
+                {
+                    string str_part1 = str.Substring(0,36);
+                    Guid.TryParse(str_part1, out guid);
+                }
+            }
+            else
+            {
+                if (str.Length>=32)
+                {
+                    string str_part1 = str.Substring(0,32);
+                    Guid.TryParse(str_part1, out guid);
+                }
+            }
+            SetCurrentThreadActivityId(guid);
         }
     }
 }

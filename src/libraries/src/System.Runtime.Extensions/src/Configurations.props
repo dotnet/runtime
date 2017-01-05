@@ -4,8 +4,7 @@
     <BuildConfigurations>
       netstandard-Unix;
       netstandard-Windows_NT;
-      net462-Windows_NT;
-      net463-Windows_NT;
+      net461-Windows_NT;
       uap101aot-Windows_NT;
     </BuildConfigurations>
   </PropertyGroup>

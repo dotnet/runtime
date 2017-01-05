@@ -7,16 +7,51 @@ using System.Diagnostics;
 
 namespace System.Linq
 {
+    /// <summary>
+    /// A lightweight hash set.
+    /// </summary>
+    /// <typeparam name="TElement">The type of the set's items.</typeparam>
     internal sealed class Set<TElement>
     {
+        /// <summary>
+        /// The comparer used to hash and compare items in the set.
+        /// </summary>
         private readonly IEqualityComparer<TElement> _comparer;
+
+        /// <summary>
+        /// The hash buckets, which are used to index into the slots.
+        /// </summary>
         private int[] _buckets;
+
+        /// <summary>
+        /// The slots, each of which store an item and its hash code.
+        /// </summary>
         private Slot[] _slots;
+
+        /// <summary>
+        /// The number of items in this set.
+        /// </summary>
         private int _count;
+
 #if DEBUG
+        /// <summary>
+        /// Whether <see cref="Remove"/> has been called on this set.
+        /// </summary>
+        /// <remarks>
+        /// When <see cref="Remove"/> runs in debug builds, this flag is set to <c>true</c>.
+        /// Other methods assert that this flag is <c>false</c> in debug builds, because
+        /// they make optimizations that may not be correct if <see cref="Remove"/> is called
+        /// beforehand.
+        /// </remarks>
         private bool _haveRemoved;
 #endif
 
+        /// <summary>
+        /// Constructs a set that compares items with the specified comparer.
+        /// </summary>
+        /// <param name="comparer">
+        /// The comparer. If this is <c>null</c>, it defaults to <see cref="EqualityComparer{TElement}.Default"/>.
+        /// </param>
         public Set(IEqualityComparer<TElement> comparer)
         {
             _comparer = comparer ?? EqualityComparer<TElement>.Default;
@@ -24,7 +59,13 @@ namespace System.Linq
             _slots = new Slot[7];
         }
 
-        // If value is not in set, add it and return true; otherwise return false
+        /// <summary>
+        /// Attempts to add an item to this set.
+        /// </summary>
+        /// <param name="value">The item to add.</param>
+        /// <returns>
+        /// <c>true</c> if the item was not in the set; otherwise, <c>false</c>.
+        /// </returns>
         public bool Add(TElement value)
         {
 #if DEBUG
@@ -54,7 +95,13 @@ namespace System.Linq
             return true;
         }
 
-        // If value is in set, remove it and return true; otherwise return false
+        /// <summary>
+        /// Attempts to remove an item from this set.
+        /// </summary>
+        /// <param name="value">The item to remove.</param>
+        /// <returns>
+        /// <c>true</c> if the item was in the set; otherwise, <c>false</c>.
+        /// </returns>
         public bool Remove(TElement value)
         {
 #if DEBUG
@@ -86,6 +133,9 @@ namespace System.Linq
             return false;
         }
 
+        /// <summary>
+        /// Expands the capacity of this set to double the current capacity, plus one.
+        /// </summary>
         private void Resize()
         {
             int newSize = checked((_count * 2) + 1);
@@ -103,6 +153,10 @@ namespace System.Linq
             _slots = newSlots;
         }
 
+        /// <summary>
+        /// Creates an array from the items in this set.
+        /// </summary>
+        /// <returns>An array of the items in this set.</returns>
         internal TElement[] ToArray()
         {
 #if DEBUG
@@ -117,6 +171,10 @@ namespace System.Linq
             return array;
         }
 
+        /// <summary>
+        /// Creates a list from the items in this set.
+        /// </summary>
+        /// <returns>A list of the items in this set.</returns>
         internal List<TElement> ToList()
         {
 #if DEBUG
@@ -132,21 +190,40 @@ namespace System.Linq
             return list;
         }
 
-        internal int Count
-        {
-            get { return _count; }
-        }
+        /// <summary>
+        /// The number of items in this set.
+        /// </summary>
+        internal int Count => _count;
 
+        /// <summary>
+        /// Gets the hash code of the provided value with its sign bit zeroed out, so that modulo has a positive result.
+        /// </summary>
+        /// <param name="value">The value to hash.</param>
+        /// <returns>The lower 31 bits of the value's hash code.</returns>
         internal int InternalGetHashCode(TElement value)
         {
             // Handle comparer implementations that throw when passed null
             return (value == null) ? 0 : _comparer.GetHashCode(value) & 0x7FFFFFFF;
         }
 
+        /// <summary>
+        /// An entry in the hash set.
+        /// </summary>
         internal struct Slot
         {
+            /// <summary>
+            /// The hash code of the item.
+            /// </summary>
             internal int _hashCode;
+
+            /// <summary>
+            /// In the case of a hash collision, the index of the next slot to probe.
+            /// </summary>
             internal int _next;
+
+            /// <summary>
+            /// The item held by this slot.
+            /// </summary>
             internal TElement _value;
         }
     }

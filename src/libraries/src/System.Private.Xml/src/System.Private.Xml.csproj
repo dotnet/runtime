@@ -7,7 +7,7 @@
     <RootNamespace>System.Xml</RootNamespace>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>$(NoWarn),649</NoWarn>
-    <DefineConstants>ASYNC;ASTORIA_LIGHT</DefineConstants><!-- TODO: this should be prepended with $(DefineConstants); - otherwise DEBUG and TRACE are not being passed -->
+    <DefineConstants>$(DefineConstants);ASYNC;ASTORIA_LIGHT</DefineConstants>
     <!--<DefineConstants Condition="'$(TargetGroup)' == 'uap101aot'">$(DefineConstants);NET_NATIVE</DefineConstants> TODO: Bring this back when uap101aot support is added -->
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->

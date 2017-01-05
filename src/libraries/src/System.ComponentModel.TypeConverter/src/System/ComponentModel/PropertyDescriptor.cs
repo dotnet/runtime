@@ -12,7 +12,7 @@ namespace System.ComponentModel
     /// </summary>
     public abstract class PropertyDescriptor : MemberDescriptor
     {
-        private TypeConverter _converter = null;
+        private TypeConverter _converter;
         private Hashtable _valueChangedHandlers;
         private object[] _editors;
         private Type[] _editorTypes;
@@ -103,13 +103,7 @@ namespace System.ComponentModel
         ///       specified in the <see cref='System.ComponentModel.LocalizableAttribute'/>.
         ///    </para>
         /// </summary>
-        public virtual bool IsLocalizable
-        {
-            get
-            {
-                return (LocalizableAttribute.Yes.Equals(Attributes[typeof(LocalizableAttribute)]));
-            }
-        }
+        public virtual bool IsLocalizable => (LocalizableAttribute.Yes.Equals(Attributes[typeof(LocalizableAttribute)]));
 
         /// <summary>
         ///    <para>
@@ -442,9 +436,9 @@ namespace System.ComponentModel
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2109:ReviewVisibleEventHandlers")]
         protected virtual void OnValueChanged(object component, EventArgs e)
         {
-            if (component != null && _valueChangedHandlers != null)
+            if (component != null)
             {
-                ((EventHandler)_valueChangedHandlers[component])?.Invoke(component, e);
+                ((EventHandler) _valueChangedHandlers?[component])?.Invoke(component, e);
             }
         }
 
@@ -476,7 +470,7 @@ namespace System.ComponentModel
         ///     component, in the form of a combined multicast event handler.
         ///     Returns null if no event handlers currently assigned to component.
         /// </summary>
-        internal protected EventHandler GetValueChangedHandler(object component)
+        protected internal EventHandler GetValueChangedHandler(object component)
         {
             if (component != null && _valueChangedHandlers != null)
             {
@@ -517,12 +511,6 @@ namespace System.ComponentModel
         ///     from direct calls made to PropertyDescriptor.SetValue (value=false). For example, the component may
         ///     implement the INotifyPropertyChanged interface, or may have an explicit '{name}Changed' event for this property.
         /// </summary>
-        public virtual bool SupportsChangeEvents
-        {
-            get
-            {
-                return false;
-            }
-        }
+        public virtual bool SupportsChangeEvents => false;
     }
 }

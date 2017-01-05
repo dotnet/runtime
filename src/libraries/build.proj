@@ -39,6 +39,12 @@
     </Project>
     -->
   </ItemGroup>
+  
+  <ItemGroup Condition="$(BuildTests)=='true'">
+    <Project Include="src\tests.builds">
+      <InputOSGroup>$(InputOSGroup)</InputOSGroup>
+    </Project>
+  </ItemGroup>
 
   <Import Project="dir.targets" />
 
@@ -87,14 +93,9 @@
       <TestDependencyListFile Include="$(BinDir)/TestDependencies/*.dependencylist.txt" />
     </ItemGroup>
 
-    <PropertyGroup>
-      <TestArchiveDir>$(TestWorkingDir)$(OSPlatformConfig)/archive/tests/</TestArchiveDir>
-      <TestArchiveDir Condition="'$(TestTFM)' != ''">$(TestArchiveDir)$(TestTFM)/</TestArchiveDir>
-    </PropertyGroup>
-
     <ZipFileCreateFromDependencyLists
       DependencyListFiles="@(TestDependencyListFile)"
-      DestinationArchive="$(TestArchiveDir)\Packages.zip"
+      DestinationArchive="$(TestWorkingDir)$(OSPlatformConfig)/archive/Packages.zip"
       RelativePathBaseDirectory="$(PackagesDir)"
       OverwriteDestination="true" />
   </Target>
@@ -102,6 +103,8 @@
   <!-- Override CleanAllProjects from dir.traversal.targets and just remove the full BinDir -->
   <Target Name="CleanAllProjects">
     <RemoveDir Directories="$(BinDir)" />
+    <!-- Temporarily outside BinDir -->
+    <RemoveDir Directories="$(PackageInstallPath)" />
   </Target>
 
   <!-- Hook that can be used to insert custom build tasks to the build process such as setup and/or cleanup tasks -->

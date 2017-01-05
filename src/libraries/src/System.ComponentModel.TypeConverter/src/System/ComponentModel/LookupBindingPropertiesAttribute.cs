@@ -15,11 +15,6 @@ namespace System.ComponentModel
     [AttributeUsage(AttributeTargets.Class)]
     public sealed class LookupBindingPropertiesAttribute : Attribute
     {
-        private readonly string _dataSource;
-        private readonly string _displayMember;
-        private readonly string _valueMember;
-        private readonly string _lookupMember;
-
         /// <summary>
         ///    <para>
         ///       Initializes a new instance of
@@ -28,10 +23,10 @@ namespace System.ComponentModel
         /// </summary>
         public LookupBindingPropertiesAttribute()
         {
-            _dataSource = null;
-            _displayMember = null;
-            _valueMember = null;
-            _lookupMember = null;
+            DataSource = null;
+            DisplayMember = null;
+            ValueMember = null;
+            LookupMember = null;
         }
 
         /// <summary>
@@ -42,10 +37,10 @@ namespace System.ComponentModel
         /// </summary>
         public LookupBindingPropertiesAttribute(string dataSource, string displayMember, string valueMember, string lookupMember)
         {
-            _dataSource = dataSource;
-            _displayMember = displayMember;
-            _valueMember = valueMember;
-            _lookupMember = lookupMember;
+            DataSource = dataSource;
+            DisplayMember = displayMember;
+            ValueMember = valueMember;
+            LookupMember = lookupMember;
         }
 
         /// <summary>
@@ -54,13 +49,7 @@ namespace System.ComponentModel
         ///       bound to.
         ///    </para>
         /// </summary>
-        public string DataSource
-        {
-            get
-            {
-                return _dataSource;
-            }
-        }
+        public string DataSource { get; }
 
         /// <summary>
         ///    <para>
@@ -68,13 +57,7 @@ namespace System.ComponentModel
         ///       bound to.
         ///    </para>
         /// </summary>
-        public string DisplayMember
-        {
-            get
-            {
-                return _displayMember;
-            }
-        }
+        public string DisplayMember { get; }
 
         /// <summary>
         ///    <para>
@@ -82,13 +65,7 @@ namespace System.ComponentModel
         ///       bound to.
         ///    </para>
         /// </summary>
-        public string ValueMember
-        {
-            get
-            {
-                return _valueMember;
-            }
-        }
+        public string ValueMember { get; }
 
         /// <summary>
         ///    <para>
@@ -96,13 +73,7 @@ namespace System.ComponentModel
         ///       bound to.
         ///    </para>
         /// </summary>
-        public string LookupMember
-        {
-            get
-            {
-                return _lookupMember;
-            }
-        }
+        public string LookupMember { get; }
 
         /// <summary>
         ///    <para>
@@ -116,10 +87,10 @@ namespace System.ComponentModel
         {
             LookupBindingPropertiesAttribute other = obj as LookupBindingPropertiesAttribute;
             return other != null &&
-                   other.DataSource == _dataSource &&
-                   other._displayMember == _displayMember &&
-                   other._valueMember == _valueMember &&
-                   other._lookupMember == _lookupMember;
+                   other.DataSource == DataSource &&
+                   other.DisplayMember == DisplayMember &&
+                   other.ValueMember == ValueMember &&
+                   other.LookupMember == LookupMember;
         }
 
         public override int GetHashCode()

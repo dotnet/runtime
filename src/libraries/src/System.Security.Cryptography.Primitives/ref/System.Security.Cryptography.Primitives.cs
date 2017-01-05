@@ -78,6 +78,7 @@ namespace System.Security.Cryptography
     public abstract partial class HashAlgorithm : System.IDisposable, System.Security.Cryptography.ICryptoTransform
     {
         protected internal byte[] HashValue;
+        protected int HashSizeValue;
         protected int State;
         protected HashAlgorithm() { }
         public virtual bool CanReuseTransform { get { throw null; } }
