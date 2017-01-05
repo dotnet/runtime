@@ -200,6 +200,8 @@ namespace pal
     bool get_own_executable_path(string_t* recv);
     bool getenv(const char_t* name, string_t* recv);
     bool get_default_servicing_directory(string_t* recv);
+    bool get_local_shared_package_dir(string_t* recv);
+    bool get_global_shared_package_dir(string_t* recv);
     bool get_default_breadcrumb_store(string_t* recv);
     bool is_path_rooted(const string_t& path);
 

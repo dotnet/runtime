@@ -18,10 +18,53 @@ arguments_t::arguments_t() :
 {
 }
 
+/**
+ *
+ * Setup the shared package directories.
+ *
+ *  o %DOTNET_SHARED_PACKAGES% -- multiple delimited paths
+ *  o $HOME/.dotnet/{x86|x64}/ or %USERPROFILE%\.dotnet\{x86|x64}
+ *  o dotnet.exe relative shared packages
+ *  o Global location
+ *      Windows: C:\Program Files (x86) or
+ *      Unix: directory of dotnet on the path.
+ */
+void setup_shared_package_paths(const hostpolicy_init_t& init, const pal::string_t& own_dir, arguments_t* args)
+{
+    if (init.tfm.empty())
+    {
+        // Old (MNA < 1.1.*) "runtimeconfig.json" files do not contain TFM property.
+        return;
+    }
+
+    // Environment variable DOTNET_SHARED_PACKAGES
+    (void) get_env_shared_package_dirs(&args->env_shared_packages, get_arch(), init.tfm);
+
+    // User profile based packages
+    pal::string_t local_shared_packages;
+    if (pal::get_local_shared_package_dir(&local_shared_packages))
+    {
+        append_path(&local_shared_packages, init.tfm.c_str());
+        args->local_shared_packages = local_shared_packages;
+    }
+
+    // "dotnet.exe" relative shared packages folder
+    if (init.host_mode == host_mode_t::muxer)
+    {
+        args->dotnet_shared_packages = own_dir;
+        append_path(&args->dotnet_shared_packages, _X("packages"));
+        append_path(&args->dotnet_shared_packages, init.tfm.c_str());
+    }
+
+    // Global shared package dir
+    if (pal::get_global_shared_package_dir(&args->global_shared_packages))
+    {
+        append_path(&args->global_shared_packages, init.tfm.c_str());
+    }
+}
+
 bool parse_arguments(
-    const pal::string_t& deps_path,
-    const std::vector<pal::string_t>& probe_paths,
-    host_mode_t mode,
+    const hostpolicy_init_t& init,
     const int argc, const pal::char_t* argv[], arguments_t* arg_out)
 {
     arguments_t& args = *arg_out;
@@ -35,7 +78,7 @@ bool parse_arguments(
     auto own_name = get_filename(args.own_path);
     auto own_dir = get_directory(args.own_path);
     
-    if (mode != host_mode_t::standalone)
+    if (init.host_mode != host_mode_t::standalone)
     {
         // corerun mode. First argument is managed app
         if (argc < 2)
@@ -70,13 +113,13 @@ bool parse_arguments(
         args.app_argc = argc - 1;
     }
 
-    if (!deps_path.empty())
+    if (!init.deps_file.empty())
     {
-        args.deps_path = deps_path;
+        args.deps_path = init.deps_file;
         args.app_dir = get_directory(args.deps_path);
     }
 
-    for (const auto& probe : probe_paths)
+    for (const auto& probe : init.probe_paths)
     {
         args.probe_paths.push_back(probe);
     }
@@ -95,6 +138,8 @@ bool parse_arguments(
 
     pal::getenv(_X("DOTNET_HOSTING_OPTIMIZATION_CACHE"), &args.dotnet_packages_cache);
     pal::get_default_servicing_directory(&args.core_servicing);
+
+    setup_shared_package_paths(init, own_dir, &args);
 
     return true;
 }

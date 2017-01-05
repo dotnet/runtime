@@ -290,7 +290,7 @@ SHARED_API int corehost_main(const int argc, const pal::char_t* argv[])
 
     // Take care of arguments
     arguments_t args;
-    if (!parse_arguments(g_init.deps_file, g_init.probe_paths, g_init.host_mode, argc, argv, &args))
+    if (!parse_arguments(g_init, argc, argv, &args))
     {
         return StatusCode::LibHostInvalidArgs;
     }
