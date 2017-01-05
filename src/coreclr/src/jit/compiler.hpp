@@ -4626,7 +4626,6 @@ inline void BasicBlock::InitVarSets(Compiler* comp)
 {
     VarSetOps::AssignNoCopy(comp, bbVarUse, VarSetOps::MakeEmpty(comp));
     VarSetOps::AssignNoCopy(comp, bbVarDef, VarSetOps::MakeEmpty(comp));
-    VarSetOps::AssignNoCopy(comp, bbVarTmp, VarSetOps::MakeEmpty(comp));
     VarSetOps::AssignNoCopy(comp, bbLiveIn, VarSetOps::MakeEmpty(comp));
     VarSetOps::AssignNoCopy(comp, bbLiveOut, VarSetOps::MakeEmpty(comp));
     VarSetOps::AssignNoCopy(comp, bbScope, VarSetOps::MakeEmpty(comp));

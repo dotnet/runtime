@@ -1635,8 +1635,6 @@ void Compiler::compDisplayStaticSizes(FILE* fout)
             sizeof(bbDummy->bbVarUse));
     fprintf(fout, "Offset / size of bbVarDef              = %3u / %3u\n", offsetof(BasicBlock, bbVarDef),
             sizeof(bbDummy->bbVarDef));
-    fprintf(fout, "Offset / size of bbVarTmp              = %3u / %3u\n", offsetof(BasicBlock, bbVarTmp),
-            sizeof(bbDummy->bbVarTmp));
     fprintf(fout, "Offset / size of bbLiveIn              = %3u / %3u\n", offsetof(BasicBlock, bbLiveIn),
             sizeof(bbDummy->bbLiveIn));
     fprintf(fout, "Offset / size of bbLiveOut             = %3u / %3u\n", offsetof(BasicBlock, bbLiveOut),
