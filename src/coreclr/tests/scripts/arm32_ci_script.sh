@@ -17,8 +17,8 @@ function usage {
     echo '    --mountPath=/opt/linux-arm-emulator-root'
     echo '    --buildConfig=Release'
     echo '    --testRootDir=~/Downloads/Windows_NT.x64.Release'
-    echo '    --mscorlibDir=~/clr/bin/Product/Linux.arm-softfp.Release'
-    echo '    --coreFxNativeBinDir=~/cfx/bin/Linux.arm-softfp.Release'
+    echo '    --mscorlibDir=~/clr/bin/Product/Linux.armel.Release'
+    echo '    --coreFxNativeBinDir=~/cfx/bin/Linux.armel.Release'
     echo '    --coreFxBinDir="~/cfx/bin/Linux.AnyCPU.Release;~/cfx/bin/Unix.AnyCPU.Release;~/cfx/bin/AnyOS.AnyCPU.Release"'
     echo '    --testDirFile=~/clr/tests/testsRunningInsideARM.txt'
     echo ''
@@ -213,10 +213,6 @@ function cross_build_coreclr {
     (set +x; echo 'Exporting LINUX_ARM_* environment variable')
     source "$__ARMEmulRootfs"/dotnet/setenv/setenv_incpath.sh "$__ARMEmulRootfs"
 
-    #Apply the changes needed to build for the emulator rootfs
-    (set +x; echo 'Applying cross build patch to suit Linux ARM emulator rootfs')
-    git am < "$__ARMEmulRootfs"/dotnet/setenv/coreclr_cross.patch
-
     #Apply release optimization patch if needed
     if [[ "$__buildConfig" == "Release" ]]; then
         (set +x; echo 'Applying release optimization patch to build in Release mode')
@@ -228,7 +224,6 @@ function cross_build_coreclr {
 
     #Reset the code to the upstream version
     (set +x; echo 'Rewinding HEAD to master code')
-    git reset --hard HEAD^
     if [[ "$__buildConfig" == "Release" ]]; then
         git reset --hard HEAD^
     fi
@@ -316,7 +311,7 @@ __coreFxBinDir=
 __testDirFile=
 __verboseFlag=
 __buildOS="Linux"
-__buildArch="arm-softfp"
+__buildArch="armel"
 __buildDirName=
 __initialGitHead=`git rev-parse --verify HEAD`
 
