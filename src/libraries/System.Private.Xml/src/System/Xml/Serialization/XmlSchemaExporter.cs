@@ -900,7 +900,7 @@ namespace System.Xml.Serialization
             }
         }
 
-        static internal string ExportDefaultValue(TypeMapping mapping, object value)
+        internal static string ExportDefaultValue(TypeMapping mapping, object value)
         {
             if (!(mapping is PrimitiveMapping))
                 // should throw, but it will be a breaking change;

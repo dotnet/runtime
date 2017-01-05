@@ -5,8 +5,8 @@
     <AssemblyName>System.IO.IsolatedStorage</AssemblyName>
     <ProjectGuid>{FAF5D1E4-BA43-4663-8429-C069066D75CB}</ProjectGuid>
     <EnableWinRT Condition="'$(TargetGroup)' == 'uap101'">true</EnableWinRT>
-    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net463'">true</IsPartialFacadeAssembly>
-    <ResourcesSourceOutputDirectory Condition="'$(TargetGroup)' == 'net463'">None</ResourcesSourceOutputDirectory>
+    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net461'">true</IsPartialFacadeAssembly>
+    <ResourcesSourceOutputDirectory Condition="'$(TargetGroup)' == 'net461'">None</ResourcesSourceOutputDirectory>
     <PackageTargetFramework Condition="'$(TargetGroup)'=='netstandard'">netstandard1.7;uap10.1</PackageTargetFramework>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->
@@ -14,8 +14,8 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap101_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap101_Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net461_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net461_Release|AnyCPU'" />
   <ItemGroup Condition="'$(EnableWinRT)' == 'true'">
     <ProjectReference Include="$(SourceDir)mscorlib.WinRT-Facade\mscorlib.WinRT-Facade.csproj" />
     <TargetingPackReference Include="Windows" />
@@ -28,6 +28,9 @@
     <Compile Include="System\IO\IsolatedStorage\IsolatedStorageScope.cs" />
     <Compile Include="System\IO\IsolatedStorage\Helper.cs" />
     <Compile Include="System\IO\IsolatedStorage\INormalizeForIsolatedStorage.cs" />
+    <Compile Include="$(CommonPath)\System\Security\IdentityHelper.cs">
+      <Link>Common\System\Security\IdentityHelper.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netstandard'">
     <Compile Include="System\IO\IsolatedStorage\IsolatedStorageException.Serialization.cs" />
@@ -38,7 +41,7 @@
   <ItemGroup Condition="'$(TargetGroup)' == 'netstandard' and '$(EnableWinRT)' == 'true'">
     <Compile Include="System\IO\IsolatedStorage\Helper.WinRT.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'net463'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'net461'">
     <TargetingPackReference Include="mscorlib" />
   </ItemGroup>
   <ItemGroup>

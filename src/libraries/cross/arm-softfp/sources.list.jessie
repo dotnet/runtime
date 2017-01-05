@@ -1,6 +1,0 @@
-deb http://ftp.debian.org/debian/ jessie main contrib non-free
-deb-src http://ftp.debian.org/debian/ jessie main contrib non-free
-
-# lldb-3.6-dev is unavailable in jessie
-deb http://ftp.debian.org/debian/ stretch main contrib non-free
-deb-src http://ftp.debian.org/debian/ stretch main contrib non-free

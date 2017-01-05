@@ -8,6 +8,11 @@ namespace System.Xml.Tests
 {
     public class TestData
     {
+        static TestData()
+        {
+            AppContext.SetSwitch("TestSwitch.LocalAppContext.DisableCaching", true);
+        }
+        
         internal static string _Root = Path.Combine("TestFiles", "TestData");
         internal static string StandardPath = Path.Combine("TestFiles", "StandardTests");
         internal static string _FileXSD1 = Path.Combine(_Root, "schema1.xsd");

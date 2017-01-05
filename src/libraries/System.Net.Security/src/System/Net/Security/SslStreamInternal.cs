@@ -5,6 +5,7 @@
 using System.Diagnostics;
 using System.IO;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.Net.Security
 {
@@ -454,14 +455,20 @@ namespace System.Net.Security
                     {
                         // Prepare for the next request.
                         asyncRequest.SetNextRequest(buffer, offset + chunkBytes, count - chunkBytes, s_resumeAsyncWriteCallback);
-                        IAsyncResult ar = _sslState.InnerStream.BeginWrite(outBuffer, 0, encryptedBytes, s_writeCallback, asyncRequest);
-                        if (!ar.CompletedSynchronously)
+                        Task t = _sslState.InnerStream.WriteAsync(outBuffer, 0, encryptedBytes);
+                        if (t.IsCompleted)
                         {
-                            return;
+                            t.GetAwaiter().GetResult();
                         }
-
-                        _sslState.InnerStream.EndWrite(ar);
-
+                        else
+                        {
+                            IAsyncResult ar = TaskToApm.Begin(t, s_writeCallback, asyncRequest);
+                            if (!ar.CompletedSynchronously)
+                            {
+                                return;
+                            }
+                            TaskToApm.End(ar);
+                        }
                     }
                     else
                     {
@@ -767,7 +774,7 @@ namespace System.Net.Security
 
             try
             {
-                sslStream._sslState.InnerStream.EndWrite(transportResult);
+                TaskToApm.End(transportResult);
                 sslStream._sslState.FinishWrite();
 
                 if (asyncRequest.Count == 0)

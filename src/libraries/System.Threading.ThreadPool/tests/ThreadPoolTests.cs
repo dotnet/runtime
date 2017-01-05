@@ -108,8 +108,7 @@ namespace System.Threading.ThreadPools.Tests
             }
         }
 
-        // TODO: Enable this test after CoreCLR packages including the fix for this issue are updated
-        //[Fact]
+        [Fact]
         // Desktop framework doesn't check for this and instead, hits an assertion failure
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public static void SetMinMaxThreadsTest_ChangedInDotNetCore()

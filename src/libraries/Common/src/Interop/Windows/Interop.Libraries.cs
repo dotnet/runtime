@@ -14,8 +14,8 @@ internal static partial class Interop
         internal const string IpHlpApi = "iphlpapi.dll";
         internal const string Kernel32 = "kernel32.dll";
         internal const string Memory_L1_3 = "api-ms-win-core-memory-l1-1-3.dll";
+        internal const string Mswsock = "mswsock.dll";
         internal const string NCrypt = "ncrypt.dll";
-        internal const string Normaliz = "normaliz.dll";
         internal const string NtDll = "ntdll.dll";
         internal const string OleAut32 = "oleaut32.dll";
         internal const string RoBuffer = "api-ms-win-core-winrt-robuffer-l1-1-0.dll";

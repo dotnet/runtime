@@ -40,6 +40,6 @@ internal static partial class Interop
         }
 
         [DllImport(Libraries.CompressionNative, EntryPoint = "CompressionNative_Crc32")]
-        private static unsafe extern uint Crc32(uint crc, byte* buffer, int len);
+        private static extern unsafe uint Crc32(uint crc, byte* buffer, int len);
     }
 }

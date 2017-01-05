@@ -140,7 +140,15 @@ namespace System.Linq.Tests
         {
             Assert.Equal(target, Enumerable.Range(0, range).SingleOrDefault(i => i == target));
         }
-        
+
+        [Theory]
+        [InlineData(1, 100)]
+        [InlineData(42, 100)]
+        public void RunOnce(int target, int range)
+        {
+            Assert.Equal(target, Enumerable.Range(0, range).RunOnce().SingleOrDefault(i => i == target));
+        }
+
         [Fact]
         public void ThrowsOnNullSource()
         {

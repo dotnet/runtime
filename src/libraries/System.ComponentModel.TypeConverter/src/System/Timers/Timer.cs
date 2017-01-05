@@ -231,12 +231,9 @@ namespace System.Timers
                 if (_synchronizingObject == null && DesignMode)
                 {
                     IDesignerHost host = (IDesignerHost)GetService(typeof(IDesignerHost));
-                    if (host != null)
-                    {
-                        object baseComponent = host.RootComponent;
-                        if (baseComponent != null && baseComponent is ISynchronizeInvoke)
-                            _synchronizingObject = (ISynchronizeInvoke)baseComponent;
-                    }
+                    object baseComponent = host?.RootComponent;
+                    if (baseComponent != null && baseComponent is ISynchronizeInvoke)
+                        _synchronizingObject = (ISynchronizeInvoke)baseComponent;
                 }
 
                 return _synchronizingObject;

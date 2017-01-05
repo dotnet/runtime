@@ -7,14 +7,14 @@
     <DefineConstants Condition="'$(TargetGroup)' == 'netcore50' OR '$(TargetGroup)' == 'netcore50aot'">$(DefineConstants);NET_NATIVE</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="..\..\..\System.Runtime.Serialization.Xml\tests\Utils.cs" />
-    <Compile Include="..\..\..\System.Runtime.Serialization.Xml\tests\SerializationTypes.cs" />
-    <Compile Include="..\..\..\System.Runtime.Serialization.Xml\tests\Performance\PerformanceTestsCommon.cs" />
-    <Compile Include="XmlSerializerTests.cs" />
-    <Compile Include="Performance\XsPerformanceTest.cs" />
+    <Compile Include="$(TestSourceFolder)..\..\..\System.Runtime.Serialization.Xml\tests\Utils.cs" />
+    <Compile Include="$(TestSourceFolder)..\..\..\System.Runtime.Serialization.Xml\tests\SerializationTypes.cs" />
+    <Compile Include="$(TestSourceFolder)..\..\..\System.Runtime.Serialization.Xml\tests\Performance\PerformanceTestsCommon.cs" />
+    <Compile Include="$(TestSourceFolder)XmlSerializerTests.cs" />
+    <Compile Include="$(TestSourceFolder)Performance\XsPerformanceTest.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' != 'netcore50' AND '$(TargetGroup)' != 'netcore50aot'">
-    <Compile Include="XmlSerializerTests.Internal.cs" Condition="'$(UseContractReferences)' == ''" />
+    <Compile Include="$(TestSourceFolder)XmlSerializerTests.Internal.cs" Condition="'$(UseContractReferences)' == ''" />
   </ItemGroup>
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), System.Xml.XmlSerializer.Tests.settings.targets))\System.Xml.XmlSerializer.Tests.settings.targets" />
 </Project>

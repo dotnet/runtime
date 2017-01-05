@@ -270,7 +270,7 @@ namespace System.Linq
             }
         }
 
-        public TElement First(Func<TElement, bool> predicate)
+        public TElement TryGetFirst(Func<TElement, bool> predicate, out bool found)
         {
             CachingComparer<TElement> comparer = GetComparer();
             using (IEnumerator<TElement> e = _source.GetEnumerator())
@@ -280,37 +280,7 @@ namespace System.Linq
                 {
                     if (!e.MoveNext())
                     {
-                        throw Error.NoMatch();
-                    }
-
-                    value = e.Current;
-                }
-                while (!predicate(value));
-
-                comparer.SetElement(value);
-                while (e.MoveNext())
-                {
-                    TElement x = e.Current;
-                    if (predicate(x) && comparer.Compare(x, true) < 0)
-                    {
-                        value = x;
-                    }
-                }
-
-                return value;
-            }
-        }
-
-        public TElement FirstOrDefault(Func<TElement, bool> predicate)
-        {
-            CachingComparer<TElement> comparer = GetComparer();
-            using (IEnumerator<TElement> e = _source.GetEnumerator())
-            {
-                TElement value;
-                do
-                {
-                    if (!e.MoveNext())
-                    {
+                        found = false;
                         return default(TElement);
                     }
 
@@ -328,6 +298,7 @@ namespace System.Linq
                     }
                 }
 
+                found = true;
                 return value;
             }
         }
@@ -392,7 +363,7 @@ namespace System.Linq
             return value;
         }
 
-        public TElement Last(Func<TElement, bool> predicate)
+        public TElement TryGetLast(Func<TElement, bool> predicate, out bool found)
         {
             CachingComparer<TElement> comparer = GetComparer();
             using (IEnumerator<TElement> e = _source.GetEnumerator())
@@ -402,7 +373,8 @@ namespace System.Linq
                 {
                     if (!e.MoveNext())
                     {
-                        throw Error.NoMatch();
+                        found = false;
+                        return default(TElement);
                     }
 
                     value = e.Current;
@@ -419,37 +391,7 @@ namespace System.Linq
                     }
                 }
 
-                return value;
-            }
-        }
-
-        public TElement LastOrDefault(Func<TElement, bool> predicate)
-        {
-            CachingComparer<TElement> comparer = GetComparer();
-            using (IEnumerator<TElement> e = _source.GetEnumerator())
-            {
-                TElement value;
-                do
-                {
-                    if (!e.MoveNext())
-                    {
-                        return default(TElement);
-                    }
-
-                    value = e.Current;
-                }
-                while (!predicate(value));
-
-                comparer.SetElement(value);
-                while (e.MoveNext())
-                {
-                    TElement x = e.Current;
-                    if (predicate(x) && comparer.Compare(x, false) > 0)
-                    {
-                        value = x;
-                    }
-                }
-
+                found = true;
                 return value;
             }
         }

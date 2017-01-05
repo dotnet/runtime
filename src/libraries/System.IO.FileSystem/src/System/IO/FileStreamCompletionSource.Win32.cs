@@ -15,7 +15,7 @@ namespace System.IO
         // This is an internal object extending TaskCompletionSource with fields
         // for all of the relevant data necessary to complete the IO operation.
         // This is used by IOCallback and all of the async methods.
-        unsafe private sealed class FileStreamCompletionSource : TaskCompletionSource<int>
+        private unsafe sealed class FileStreamCompletionSource : TaskCompletionSource<int>
         {
             private const long NoResult = 0;
             private const long ResultSuccess = (long)1 << 32;

@@ -2669,5 +2669,61 @@ namespace System.Linq.Expressions.Tests
         }
 
         #endregion
+
+        [Fact]
+        public static void ArrayIndexNotArray()
+        {
+            Expression intExp = Expression.Constant(1);
+            Assert.Throws<ArgumentException>("array", () => Expression.ArrayIndex(intExp, intExp, intExp));
+            Assert.Throws<ArgumentException>("array", () => Expression.ArrayIndex(intExp, Enumerable.Repeat(intExp, 1)));
+        }
+
+        [Fact]
+        public static void ArrayIndexNullArray()
+        {
+            Assert.Throws<ArgumentNullException>("array", () => Expression.ArrayIndex(null));
+            Assert.Throws<ArgumentNullException>(
+                "array", () => Expression.ArrayIndex(null, Enumerable.Empty<Expression>()));
+        }
+
+        [Fact]
+        public static void ArrayIndexNullIndices()
+        {
+            Expression array = Expression.Constant(new[,] { { 1, 2 }, { 2, 1 } });
+            Assert.Throws<ArgumentNullException>("indexes", () => Expression.ArrayIndex(array, default(Expression[])));
+            Assert.Throws<ArgumentNullException>("indexes[1]",
+                () => Expression.ArrayIndex(array, Expression.Constant(1), null));
+        }
+
+        [Fact]
+        public static void ArrayIndexWrongRank()
+        {
+            Expression array = Expression.Constant(new[,] { { 1, 2 }, { 2, 1 } });
+            Assert.Throws<ArgumentException>(null, () => Expression.ArrayIndex(array, new[] { Expression.Constant(2) }));
+            Assert.Throws<ArgumentException>(null, () =>
+                Expression.ArrayIndex(array, Expression.Constant(2), Expression.Constant(1), Expression.Constant(2)));
+        }
+
+        [Fact]
+        public static void ArrayIndexWrongType()
+        {
+            Expression array = Expression.Constant(new[,] { { 1, 2 }, { 2, 1 } });
+            Assert.Throws<ArgumentException>("indexes[0]", () => Expression.ArrayIndex(array, Expression.Constant(2L), Expression.Constant(1)));
+        }
+
+        [Fact]
+        public static void UnreadableArray()
+        {
+            Expression array = Expression.Property(null, typeof(Unreadable<int[,]>), nameof(Unreadable<int[,]>.WriteOnly));
+            Assert.Throws<ArgumentException>("array", () => Expression.ArrayIndex(array, Expression.Constant(0), Expression.Constant(0)));
+        }
+
+        [Fact]
+        public static void UnreadableIndex()
+        {
+            Expression array = Expression.Constant(new[,] { { 1, 2 }, { 2, 1 } });
+            Expression index = Expression.Property(null, typeof(Unreadable<int>), nameof(Unreadable<int>.WriteOnly));
+            Assert.Throws<ArgumentException>("indexes[0]", () => Expression.ArrayIndex(array, index, index));
+        }
     }
 }

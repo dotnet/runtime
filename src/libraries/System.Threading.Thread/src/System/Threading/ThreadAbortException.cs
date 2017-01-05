@@ -18,7 +18,7 @@ namespace System.Threading
         {
         }
 
-        internal ThreadAbortException(SerializationInfo info, StreamingContext context) : base(info, context)
+        private ThreadAbortException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
         }
 

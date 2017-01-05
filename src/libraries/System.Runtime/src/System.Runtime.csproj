@@ -4,10 +4,10 @@
   <PropertyGroup>
     <ProjectGuid>{56B9D0A9-44D3-488E-8B42-C14A6E30CAB2}</ProjectGuid>
     <AssemblyName>System.Runtime</AssemblyName>
-    <AssemblyVersion Condition="'$(TargetGroup)'=='net462' OR '$(TargetGroup)'=='netstandard1.5'">4.1.1.0</AssemblyVersion>
+    <AssemblyVersion Condition="'$(TargetGroup)'=='netstandard1.5'">4.1.1.0</AssemblyVersion>
     <ContractProject Condition="'$(AssemblyVersion)'=='4.1.1.0'">../ref/4.1.0/System.Runtime.depproj</ContractProject>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
-    <GenFacadesArgs Condition="'$(TargetGroup)' == 'uap101aot'">$(GenFacadesArgs) -ignoreMissingTypes</GenFacadesArgs>
+    <GenFacadesArgs Condition="'$(TargetGroup)' == 'uap101aot' Or '$(TargetGroup)' == 'netcoreapp1.2corert'">$(GenFacadesArgs) -ignoreMissingTypes</GenFacadesArgs>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
@@ -16,11 +16,9 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.5_Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap101aot_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap101aot_Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net462_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net462_Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Release|AnyCPU'" />
-  <ItemGroup Condition="'$(TargetGroup)' == 'net463' OR '$(TargetGroup)' == 'uap101aot'">
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net461_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net461_Release|AnyCPU'" />
+  <ItemGroup Condition="'$(TargetGroup)' == 'net461' OR '$(TargetGroup)' == 'uap101aot' OR '$(TargetGroup)' == 'netcoreapp1.2corert'">
     <ContractProject Include="..\ref\System.Runtime.csproj">
       <TargetGroup>netstandard</TargetGroup>
     </ContractProject>
@@ -28,18 +26,17 @@
   <ItemGroup>
     <Compile Include="System.Runtime.Forwards.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard1.5' or '$(TargetGroup)' == 'netstandard' or '$(TargetGroup)' == 'uap101aot'">
+  <ItemGroup Condition="'$(TargetGroup)' != 'net461'">
     <Compile Include="System\Action.cs" />
     <Compile Include="System\Function.cs" />
     <Compile Include="System\LazyOfTTMetadata.cs" />
     <Compile Include="System\Collections\Generic\ISet.cs" />
-    <Compile Include="System\ComponentModel\EditorBrowsableAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\StrongBox.cs" />
     <Compile Include="System\Reflection\RuntimeReflectionExtensions.cs" />
     <Compile Include="System\Runtime\CompilerServices\Attributes.cs" />
     <Compile Include="System\IO\FileAttributes.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard' or '$(TargetGroup)' == 'uap101aot'">
+  <ItemGroup Condition="'$(TargetGroup)' != 'net461' and '$(TargetGroup)' != 'netstandard1.5'">
     <Compile Include="System\Runtime\NgenServicingAttributes.cs" />
     <Compile Include="System\IO\HandleInheritability.cs" />
     <Compile Include="System\Runtime\ConstrainedExecution\PrePrepareMethodAttribute.cs" />
@@ -49,16 +46,13 @@
   <ItemGroup Condition="'$(TargetGroup)' == 'netstandard1.5' or '$(TargetGroup)' == 'netstandard'">
     <Compile Include="System\ComponentModel\DefaultValueAttribute.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'=='uap101aot' or '$(TargetGroup)'=='uap101'">
-    <Compile Include="$(CommonPath)\System\SystemException.cs" />
-  </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\System.Private.Uri\src\System.Private.Uri.csproj" Condition="'$(TargetGroup)' == 'netstandard1.5' or '$(TargetGroup)' == 'netstandard' or '$(TargetGroup)' == 'uap101aot'" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard1.5' or '$(TargetGroup)' == 'netstandard' or '$(TargetGroup)' == 'uap101aot'">
+  <ItemGroup Condition="'$(TargetGroup)' != 'net461'">
     <TargetingPackReference Include="System.Private.CoreLib" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'net462' OR '$(TargetGroup)' == 'net463'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'net461'">
     <TargetingPackReference Include="System" />
     <TargetingPackReference Include="System.Core" />
     <TargetingPackReference Include="System.ComponentModel.Composition" />

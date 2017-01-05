@@ -32,19 +32,7 @@ namespace System.Linq
                 return new ListPartition<TSource>(sourceList, 0, count - 1);
             }
 
-            return TakeIterator(source, count);
-        }
-
-        private static IEnumerable<TSource> TakeIterator<TSource>(IEnumerable<TSource> source, int count)
-        {
-            foreach (TSource element in source)
-            {
-                yield return element;
-                if (--count == 0)
-                {
-                    break;
-                }
-            }
+            return new EnumerablePartition<TSource>(source, 0, count - 1);
         }
 
         public static IEnumerable<TSource> TakeWhile<TSource>(this IEnumerable<TSource> source, Func<TSource, bool> predicate)

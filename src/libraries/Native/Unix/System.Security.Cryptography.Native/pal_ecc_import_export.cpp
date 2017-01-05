@@ -2,9 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#include <openssl/ec.h>
-#include <openssl/objects.h>
-#include "pal_crypto_config.h"
 #include "pal_ecc_import_export.h"
 #include "pal_utilities.h"
 
@@ -33,7 +30,7 @@ const EC_METHOD* CurveTypeToMethod(ECCurveType curveType)
         return EC_GFp_mont_method();
 
 #if HAVE_OPENSSL_EC2M
-    if (curveType == ECCurveType::Characteristic2)
+    if (API_EXISTS(EC_GF2m_simple_method) && (curveType == ECCurveType::Characteristic2))
         return EC_GF2m_simple_method();
 #endif
 
@@ -93,7 +90,7 @@ extern "C" int32_t CryptoNative_GetECKeyParameters(
         goto error;
 
 #if HAVE_OPENSSL_EC2M
-    if (curveType == ECCurveType::Characteristic2)
+    if (API_EXISTS(EC_POINT_get_affine_coordinates_GF2m) && (curveType == ECCurveType::Characteristic2))
     {
         if (!EC_POINT_get_affine_coordinates_GF2m(group, Q, xBn, yBn, nullptr)) 
             goto error;
@@ -221,7 +218,7 @@ extern "C" int32_t CryptoNative_GetECCurveParameters(
 
     // Extract p, a, b
 #if HAVE_OPENSSL_EC2M
-    if (*curveType == ECCurveType::Characteristic2)
+    if (API_EXISTS(EC_GROUP_get_curve_GF2m) && (*curveType == ECCurveType::Characteristic2))
     {
         // pBn represents the binary polynomial
         if (!EC_GROUP_get_curve_GF2m(group, pBn, aBn, bBn, nullptr)) 
@@ -238,7 +235,7 @@ extern "C" int32_t CryptoNative_GetECCurveParameters(
     // Extract gx and gy
     G = const_cast<EC_POINT*>(EC_GROUP_get0_generator(group));
 #if HAVE_OPENSSL_EC2M
-    if (*curveType == ECCurveType::Characteristic2)
+    if (API_EXISTS(EC_POINT_get_affine_coordinates_GF2m) && (*curveType == ECCurveType::Characteristic2))
     {
         if (!EC_POINT_get_affine_coordinates_GF2m(group, G, xBn, yBn, NULL)) 
             goto error;
@@ -431,7 +428,7 @@ extern "C" EC_KEY* CryptoNative_EcKeyCreateByExplicitParameters(
     bBn = BN_bin2bn(b, bLength, nullptr);
 
 #if HAVE_OPENSSL_EC2M
-    if (curveType == ECCurveType::Characteristic2)
+    if (API_EXISTS(EC_GROUP_set_curve_GF2m) && (curveType == ECCurveType::Characteristic2))
     {
         if (!EC_GROUP_set_curve_GF2m(group, pBn, aBn, bBn, nullptr)) 
             goto error;
@@ -449,7 +446,7 @@ extern "C" EC_KEY* CryptoNative_EcKeyCreateByExplicitParameters(
     gyBn = BN_bin2bn(gy, gyLength, nullptr);
 
 #if HAVE_OPENSSL_EC2M
-    if (curveType == ECCurveType::Characteristic2)
+    if (API_EXISTS(EC_POINT_set_affine_coordinates_GF2m) && (curveType == ECCurveType::Characteristic2))
     {
         EC_POINT_set_affine_coordinates_GF2m(group, G, gxBn, gyBn, nullptr);
     }

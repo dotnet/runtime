@@ -111,12 +111,6 @@ namespace System.Xml.Xsl.IlGen
                 // 3. Never allow assembly to Assert permissions
                 asmName = CreateAssemblyName();
 
-#if DEBUG
-                if (XmlILTrace.IsEnabled) {
-                    this.modFile = "System.Xml.Xsl.CompiledQuery";
-                }
-#endif
-
                 asmBldr = AssemblyBuilder.DefineDynamicAssembly(
                             asmName, AssemblyBuilderAccess.Run);
 

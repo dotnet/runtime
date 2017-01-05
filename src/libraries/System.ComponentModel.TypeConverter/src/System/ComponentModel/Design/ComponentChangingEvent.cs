@@ -15,34 +15,19 @@ namespace System.ComponentModel.Design
     /// </summary>
     public sealed class ComponentChangingEventArgs : EventArgs
     {
-        private object _component;
-        private MemberDescriptor _member;
-
         /// <summary>
         ///    <para>
         ///       Gets or sets the component that is being changed or that is the parent container of the member being changed.      
         ///    </para>
         /// </summary>
-        public object Component
-        {
-            get
-            {
-                return _component;
-            }
-        }
+        public object Component { get; }
 
         /// <summary>
         ///    <para>
         ///       Gets or sets the member of the component that is about to be changed.
         ///    </para>
         /// </summary>
-        public MemberDescriptor Member
-        {
-            get
-            {
-                return _member;
-            }
-        }
+        public MemberDescriptor Member { get; }
 
         /// <summary>
         ///    <para>
@@ -51,8 +36,8 @@ namespace System.ComponentModel.Design
         /// </summary>
         public ComponentChangingEventArgs(object component, MemberDescriptor member)
         {
-            _component = component;
-            _member = member;
+            Component = component;
+            Member = member;
         }
     }
 }

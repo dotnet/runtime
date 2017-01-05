@@ -2,9 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.IO;
-using System.Xml;
 using System.Xml.Schema;
 using Xunit;
 using Xunit.Abstractions;
@@ -122,7 +120,7 @@ namespace System.Xml.Tests
             XmlSchemaInfo info = new XmlSchemaInfo();
 
             XmlSchemaSet sch = new XmlSchemaSet();
-            //sch.Add("", TestData + "Basic.xsd");
+
             sch.Add("", XmlReader.Create(new StringReader("<?xml version=\"1.0\" ?>\n" +
                                                           "<xs:schema xmlns:xs=\"http://www.w3.org/2001/XMLSchema\">\n" +
                                                           "    <xs:element name=\"root\" type=\"xs:int\" />\n" +

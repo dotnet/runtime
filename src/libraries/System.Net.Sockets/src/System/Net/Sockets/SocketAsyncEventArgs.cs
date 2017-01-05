@@ -54,6 +54,9 @@ namespace System.Net.Sockets
         // SendPacketsElements property variables.
         internal SendPacketsElement[] _sendPacketsElements;
 
+        // SendPacketsFlags property variable.
+        internal TransmitFileOptions _sendPacketsFlags;
+
         // SocketError property variables.
         private SocketError _socketError;
         private Exception _connectByNameError;
@@ -115,6 +118,13 @@ namespace System.Net.Sockets
         public int Count
         {
             get { return _count; }
+        }
+
+        // SendPacketsFlags property.
+        public TransmitFileOptions SendPacketsFlags
+        {
+            get { return _sendPacketsFlags; }
+            set { _sendPacketsFlags = value; }
         }
 
         // NOTE: this property is mutually exclusive with Buffer.

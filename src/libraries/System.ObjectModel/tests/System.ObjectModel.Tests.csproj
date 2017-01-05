@@ -43,6 +43,7 @@
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'==''">
+    <Compile Include="KeyedCollection\TestMethods.netcoreapp1.1.cs" />
     <Compile Include="KeyedCollection\Serialization.netstandard1.7.cs" />
     <Compile Include="ObservableCollection\ObservableCollection_ConstructorAndPropertyTests.netstandard1.7.cs" />
     <Compile Include="ObservableCollection\ObservableCollection_Serialization.netstandard1.7.cs" />

@@ -28,6 +28,9 @@
     <Compile Include="..\src\System\IO\IsolatedStorage\Helper.Win32.Unix.cs">
       <Link>Internals\Helper.Win32.Unix.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Security\IdentityHelper.cs">
+      <Link>Common\System\Security\IdentityHelper.cs</Link>
+    </Compile>
     <Compile Include="AssemblyInfo.cs" />
     <Compile Include="StoreTestsFixture.cs" />
     <Compile Include="System\IO\IsolatedStorage\ContainsUnknownFilesTests.cs" />

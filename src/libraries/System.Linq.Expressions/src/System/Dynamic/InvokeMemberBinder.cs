@@ -7,8 +7,7 @@ using System.Dynamic.Utils;
 namespace System.Dynamic
 {
     /// <summary>
-    /// Represents the invoke member dynamic operation at the call site,
-    /// providing the binding semantic and the details about the operation.
+    /// Represents the invoke member dynamic operation at the call site, providing the binding semantic and the details about the operation.
     /// </summary>
     public abstract class InvokeMemberBinder : DynamicMetaObjectBinder
     {
@@ -62,7 +61,9 @@ namespace System.Dynamic
             return target.BindInvokeMember(this, args);
         }
 
-        // this is a standard DynamicMetaObjectBinder
+        /// <summary>
+        /// Always returns <c>true</c> because this is a standard <see cref="DynamicMetaObjectBinder"/>.
+        /// </summary>
         internal override sealed bool IsStandardBinder => true;
 
         /// <summary>

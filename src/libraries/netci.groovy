@@ -233,7 +233,7 @@ def testNugetRuntimeIdConfiguration = ['Debug': 'win7-x86',
                         batchFile("call \"C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\vcvarsall.bat\" x86 && build.cmd -${configurationGroup} -outerloop -- /p:WithoutCategories=IgnoreForCI")
                     }
                     else if (osName == 'OSX') {
-                        shell("HOME=\$WORKSPACE/tempHome ./build.sh -${configurationGroup.toLowerCase()} -outerloop -- /p:TestWithLocalNativeLibraries=true /p:WithoutCategories=IgnoreForCI")
+                        shell("HOME=\$WORKSPACE/tempHome ./build.sh -${configurationGroup.toLowerCase()} -outerloop -- /p:TestWithLocalNativeLibraries=true /p:TestNugetRuntimeId=${targetNugetRuntimeMap[osName]} /p:WithoutCategories=IgnoreForCI")
                     }
                     else {
                         shell("sudo HOME=\$WORKSPACE/tempHome ./build.sh -${configurationGroup.toLowerCase()} -outerloop -- /p:TestWithLocalNativeLibraries=true /p:TestNugetRuntimeId=${targetNugetRuntimeMap[osName]} /p:WithoutCategories=IgnoreForCI")

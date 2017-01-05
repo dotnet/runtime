@@ -28,7 +28,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public static CallInstruction Create(MethodInfo info)
         {
-            return Create(info, info.GetParameters());
+            return Create(info, info.GetParametersCached());
         }
 
         /// <summary>
@@ -247,7 +247,8 @@ namespace System.Linq.Expressions.Interpreter
             }
             catch (TargetInvocationException e)
             {
-                throw ExceptionHelpers.UpdateForRethrow(e.InnerException);
+                ExceptionHelpers.UnwrapAndRethrow(e);
+                throw ContractUtils.Unreachable;
             }
         }
 #endif
@@ -329,7 +330,8 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 catch (TargetInvocationException e)
                 {
-                    throw ExceptionHelpers.UpdateForRethrow(e.InnerException);
+                    ExceptionHelpers.UnwrapAndRethrow(e);
+                    throw ContractUtils.Unreachable;
                 }
             }
             else
@@ -353,7 +355,8 @@ namespace System.Linq.Expressions.Interpreter
                     }
                     catch (TargetInvocationException e)
                     {
-                        throw ExceptionHelpers.UpdateForRethrow(e.InnerException);
+                        ExceptionHelpers.UnwrapAndRethrow(e);
+                        throw ContractUtils.Unreachable;
                     }
                 }
             }
@@ -425,7 +428,8 @@ namespace System.Linq.Expressions.Interpreter
                     }
                     catch (TargetInvocationException e)
                     {
-                        throw ExceptionHelpers.UpdateForRethrow(e.InnerException);
+                        ExceptionHelpers.UnwrapAndRethrow(e);
+                        throw ContractUtils.Unreachable;
                     }
                 }
                 else
@@ -449,7 +453,8 @@ namespace System.Linq.Expressions.Interpreter
                         }
                         catch (TargetInvocationException e)
                         {
-                            throw ExceptionHelpers.UpdateForRethrow(e.InnerException);
+                            ExceptionHelpers.UnwrapAndRethrow(e);
+                            throw ContractUtils.Unreachable;
                         }
                     }
                 }

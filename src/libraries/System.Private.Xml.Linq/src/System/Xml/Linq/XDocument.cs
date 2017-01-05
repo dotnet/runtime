@@ -3,6 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 
 using SuppressMessageAttribute = System.Diagnostics.CodeAnalysis.SuppressMessageAttribute;
 using Encoding = System.Text.Encoding;
@@ -270,6 +272,42 @@ namespace System.Xml.Linq
 
         /// <summary>
         /// Create a new <see cref="XDocument"/> and initialize its underlying XML tree using
+        /// the passed <see cref="Stream"/> parameter.  Optionally whitespace handling
+        /// can be preserved.
+        /// </summary>
+        /// <remarks>
+        /// If LoadOptions.PreserveWhitespace is enabled then
+        /// the underlying <see cref="XmlReaderSettings"/> property <see cref="XmlReaderSettings.IgnoreWhitespace"/>
+        /// is set to false.
+        /// </remarks>
+        /// <param name="stream">
+        /// A <see cref="Stream"/> containing the raw XML to read into the newly
+        /// created <see cref="XDocument"/>.
+        /// </param>
+        /// <param name="options">
+        /// A set of <see cref="LoadOptions"/>.
+        /// </param>
+        /// <param name="cancellationToken">
+        /// A cancellation token.
+        /// </param>
+        /// <returns>
+        /// A new <see cref="XDocument"/> containing the contents of the passed in
+        /// <see cref="Stream"/>.
+        /// </returns>
+        public static async Task<XDocument> LoadAsync(Stream stream, LoadOptions options, CancellationToken cancellationToken)
+        {
+            XmlReaderSettings rs = GetXmlReaderSettings(options);
+
+            rs.Async = true;
+
+            using (XmlReader r = XmlReader.Create(stream, rs))
+            {
+                return await LoadAsync(r, options, cancellationToken).ConfigureAwait(false);
+            }
+        }
+
+        /// <summary>
+        /// Create a new <see cref="XDocument"/> and initialize its underlying XML tree using
         /// the passed <see cref="TextReader"/> parameter.  
         /// </summary>
         /// <param name="textReader">
@@ -316,6 +354,42 @@ namespace System.Xml.Linq
         }
 
         /// <summary>
+        /// Create a new <see cref="XDocument"/> and initialize its underlying XML tree using
+        /// the passed <see cref="TextReader"/> parameter.  Optionally whitespace handling
+        /// can be preserved.
+        /// </summary>
+        /// <remarks>
+        /// If LoadOptions.PreserveWhitespace is enabled then
+        /// the <see cref="XmlReaderSettings"/> property <see cref="XmlReaderSettings.IgnoreWhitespace"/>
+        /// is set to false.
+        /// </remarks>
+        /// <param name="textReader">
+        /// A <see cref="TextReader"/> containing the raw XML to read into the newly
+        /// created <see cref="XDocument"/>.
+        /// </param>
+        /// <param name="options">
+        /// A set of <see cref="LoadOptions"/>.
+        /// </param>
+        /// <param name="cancellationToken">
+        /// A cancellation token.
+        /// </param>
+        /// <returns>
+        /// A new <see cref="XDocument"/> containing the contents of the passed in
+        /// <see cref="TextReader"/>.
+        /// </returns>
+        public static async Task<XDocument> LoadAsync(TextReader textReader, LoadOptions options, CancellationToken cancellationToken)
+        {
+            XmlReaderSettings rs = GetXmlReaderSettings(options);
+
+            rs.Async = true;
+
+            using (XmlReader r = XmlReader.Create(textReader, rs))
+            {
+                return await LoadAsync(r, options, cancellationToken).ConfigureAwait(false);
+            }
+        }
+
+        /// <summary>
         /// Create a new <see cref="XDocument"/> containing the contents of the
         /// passed in <see cref="XmlReader"/>.
         /// </summary>
@@ -351,6 +425,62 @@ namespace System.Xml.Linq
         {
             if (reader == null) throw new ArgumentNullException(nameof(reader));
             if (reader.ReadState == ReadState.Initial) reader.Read();
+
+            XDocument d = InitLoad(reader, options);
+            d.ReadContentFrom(reader, options);
+
+            if( !reader.EOF) throw new InvalidOperationException(SR.InvalidOperation_ExpectedEndOfFile);
+            if (d.Root == null) throw new InvalidOperationException(SR.InvalidOperation_MissingRoot);
+            return d;
+        }
+
+        /// <summary>
+        /// Create a new <see cref="XDocument"/> containing the contents of the
+        /// passed in <see cref="XmlReader"/>.
+        /// </summary>
+        /// <param name="reader">
+        /// An <see cref="XmlReader"/> containing the XML to be read into the new
+        /// <see cref="XDocument"/>.
+        /// </param>
+        /// <param name="options">
+        /// A set of <see cref="LoadOptions"/>.
+        /// </param>
+        /// <param name="cancellationToken">
+        /// A cancellation token.
+        /// </param>
+        /// <returns>
+        /// A new <see cref="XDocument"/> containing the contents of the passed
+        /// in <see cref="XmlReader"/>.
+        /// </returns>
+        public static Task<XDocument> LoadAsync(XmlReader reader, LoadOptions options, CancellationToken cancellationToken)
+        {
+            if (reader == null)
+                throw new ArgumentNullException(nameof(reader));
+            if (cancellationToken.IsCancellationRequested)
+                return Task.FromCanceled<XDocument>(cancellationToken);
+            return LoadAsyncInternal(reader, options, cancellationToken);
+        }
+
+        private static async Task<XDocument> LoadAsyncInternal(XmlReader reader, LoadOptions options, CancellationToken cancellationToken)
+        {
+            if (reader.ReadState == ReadState.Initial)
+            {
+                await reader.ReadAsync().ConfigureAwait(false);
+            }
+
+            XDocument d = InitLoad(reader, options);
+            await d.ReadContentFromAsync(reader, options, cancellationToken).ConfigureAwait(false);
+
+            if (!reader.EOF) throw new InvalidOperationException(SR.InvalidOperation_ExpectedEndOfFile);
+            if (d.Root == null) throw new InvalidOperationException(SR.InvalidOperation_MissingRoot);
+            return d;
+        }
+
+        /// <summary>
+        /// Performs shared initialization between Load and LoadAsync.
+        /// </summary>
+        static XDocument InitLoad(XmlReader reader, LoadOptions options)
+        {
             XDocument d = new XDocument();
             if ((options & LoadOptions.SetBaseUri) != 0)
             {
@@ -372,9 +502,6 @@ namespace System.Xml.Linq
             {
                 d.Declaration = new XDeclaration(reader);
             }
-            d.ReadContentFrom(reader, options);
-            if (!reader.EOF) throw new InvalidOperationException(SR.InvalidOperation_ExpectedEndOfFile);
-            if (d.Root == null) throw new InvalidOperationException(SR.InvalidOperation_MissingRoot);
             return d;
         }
 
@@ -481,6 +608,40 @@ namespace System.Xml.Linq
         }
 
         /// <summary>
+        /// Output this <see cref="XDocument"/> to a <see cref="Stream"/>.
+        /// </summary>
+        /// <param name="stream">
+        /// The <see cref="Stream"/> to output the XML to.  
+        /// </param>
+        /// <param name="options">
+        /// If SaveOptions.DisableFormatting is enabled the output is not indented.
+        /// If SaveOptions.OmitDuplicateNamespaces is enabled duplicate namespace declarations will be removed.
+        /// </param>
+        /// <param name="cancellationToken">A cancellation token.</param>
+        public async Task SaveAsync(Stream stream, SaveOptions options, CancellationToken cancellationToken)
+        {
+            XmlWriterSettings ws = GetXmlWriterSettings(options);
+
+            ws.Async = true;
+
+            if (_declaration != null && !string.IsNullOrEmpty(_declaration.Encoding))
+            {
+                try
+                {
+                    ws.Encoding = Encoding.GetEncoding(_declaration.Encoding);
+                }
+                catch (ArgumentException)
+                {
+                }
+            }
+
+            using (XmlWriter w = XmlWriter.Create(stream, ws))
+            {
+                await WriteToAsync(w, cancellationToken).ConfigureAwait(false);
+            }
+        }
+        
+        /// <summary>
         /// Output this <see cref="XDocument"/> to the passed in <see cref="TextWriter"/>.
         /// </summary>
         /// <remarks>
@@ -529,6 +690,29 @@ namespace System.Xml.Linq
             WriteTo(writer);
         }
 
+        /// <summary>
+        /// Output this <see cref="XDocument"/> to a <see cref="TextWriter"/>.
+        /// </summary>
+        /// <param name="textWriter">
+        /// The <see cref="TextWriter"/> to output the XML to.  
+        /// </param>
+        /// <param name="options">
+        /// If SaveOptions.DisableFormatting is enabled the output is not indented.
+        /// If SaveOptions.OmitDuplicateNamespaces is enabled duplicate namespace declarations will be removed.
+        /// </param>
+        /// <param name="cancellationToken">A cancellation token.</param>
+        public async Task SaveAsync(TextWriter textWriter, SaveOptions options, CancellationToken cancellationToken)
+        {
+            XmlWriterSettings ws = GetXmlWriterSettings(options);
+
+            ws.Async = true;
+
+            using (XmlWriter w = XmlWriter.Create(textWriter, ws))
+            {
+                await WriteToAsync(w, cancellationToken).ConfigureAwait(false);
+            }
+        }
+
         ///<overloads>
         /// Outputs this <see cref="XDocument"/>'s underlying XML tree.  The output can
         /// be saved to a file, a <see cref="Stream"/>, a <see cref="TextWriter"/>,
@@ -551,6 +735,20 @@ namespace System.Xml.Linq
         public void Save(string fileName)
         {
             Save(fileName, GetSaveOptionsFromAnnotations());
+        }
+
+        /// <summary>
+        /// Output this <see cref="XDocument"/> to an <see cref="XmlWriter"/>.
+        /// </summary>
+        /// <param name="writer">
+        /// The <see cref="XmlWriter"/> to output the XML to.
+        /// </param>
+        /// <param name="cancellationToken">
+        /// A cancellation token.
+        /// </param>
+        public Task SaveAsync(XmlWriter writer, CancellationToken cancellationToken)
+        {
+            return WriteToAsync(writer, cancellationToken);
         }
 
         /// <summary>
@@ -609,6 +807,46 @@ namespace System.Xml.Linq
             }
             WriteContentTo(writer);
             writer.WriteEndDocument();
+        }
+
+        /// <summary>
+        /// Output this <see cref="XDocument"/>'s underlying XML tree to the
+        /// passed in <see cref="XmlWriter"/>.
+        /// <seealso cref="XDocument.Save(XmlWriter)"/>
+        /// </summary>
+        /// <param name="writer">
+        /// The <see cref="XmlWriter"/> to output the content of this 
+        /// <see cref="XDocument"/>.
+        /// </param>
+        /// <param name="cancellationToken">A cancellation token.</param>
+        public override Task WriteToAsync(XmlWriter writer, CancellationToken cancellationToken)
+        {
+            if (writer == null)
+                throw new ArgumentNullException(nameof(writer));
+            if (cancellationToken.IsCancellationRequested)
+                return Task.FromCanceled(cancellationToken);
+            return WriteToAsyncInternal(writer, cancellationToken);
+        }
+
+        private async Task WriteToAsyncInternal(XmlWriter writer, CancellationToken cancellationToken)
+        {
+            Task tStart;
+            if (_declaration != null && _declaration.Standalone == "yes")
+            {
+                tStart = writer.WriteStartDocumentAsync(true);
+            }
+            else if (_declaration != null && _declaration.Standalone == "no")
+            {
+                tStart = writer.WriteStartDocumentAsync(false);
+            }
+            else
+            {
+                tStart = writer.WriteStartDocumentAsync();
+            }
+            await tStart.ConfigureAwait(false);
+
+            await WriteContentToAsync(writer, cancellationToken).ConfigureAwait(false);
+            await writer.WriteEndDocumentAsync().ConfigureAwait(false);
         }
 
         internal override void AddAttribute(XAttribute a)

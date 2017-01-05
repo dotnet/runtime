@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Runtime.CompilerServices;
+using System.Threading;
 using Xunit;
 
 namespace System.Linq.Expressions.Tests
@@ -22,6 +23,28 @@ namespace System.Linq.Expressions.Tests
                 e = Expression.Add(e, Expression.Constant(1));
 
             Func<int> f = Expression.Lambda<Func<int>>(e).Compile(useInterpreter);
+
+            Assert.Equal(n, f());
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CompileDeepTree_NoStackOverflowFast(bool useInterpreter)
+        {
+            Expression e = Expression.Constant(0);
+
+            int n = 100;
+
+            for (int i = 0; i < n; i++)
+                e = Expression.Add(e, Expression.Constant(1));
+
+            Func<int> f = null;
+            // Request a stack size of 1 to get the minimum size allowed.
+            // This reduces the size of tree needed to risk a stack overflow.
+            // This though will only risk overflow once, so the outerloop test
+            // above is still needed.
+            Thread t = new Thread(() => f = Expression.Lambda<Func<int>>(e).Compile(useInterpreter), 1);
+            t.Start();
+            t.Join();
 
             Assert.Equal(n, f());
         }

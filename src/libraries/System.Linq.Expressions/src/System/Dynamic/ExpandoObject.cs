@@ -39,7 +39,7 @@ namespace System.Dynamic
         private ExpandoData _data;                                    // the data currently being held by the Expando object
         private int _count;                                           // the count of available members
 
-        internal readonly static object Uninitialized = new object(); // A marker object used to identify that a value is uninitialized.
+        internal static readonly object Uninitialized = new object(); // A marker object used to identify that a value is uninitialized.
 
         internal const int AmbiguousMatchFound = -2;        // The value is used to indicate there exists ambiguous match in the Expando object
         internal const int NoMatch = -1;                    // The value is used to indicate there is no matching member
@@ -239,6 +239,7 @@ namespace System.Dynamic
         /// </summary>
         internal bool IsDeletedMember(int index)
         {
+            ContractUtils.AssertLockHeld(LockObject);
             Debug.Assert(index >= 0 && index <= _data.Length);
 
             if (index == _data.Length)
@@ -263,15 +264,14 @@ namespace System.Dynamic
         private ExpandoData PromoteClassCore(ExpandoClass oldClass, ExpandoClass newClass)
         {
             Debug.Assert(oldClass != newClass);
+            ContractUtils.AssertLockHeld(LockObject);
 
-            lock (LockObject)
+            if (_data.Class == oldClass)
             {
-                if (_data.Class == oldClass)
-                {
-                    _data = _data.UpdateClass(newClass);
-                }
-                return _data;
+                _data = _data.UpdateClass(newClass);
             }
+
+            return _data;
         }
 
         /// <summary>
@@ -281,7 +281,10 @@ namespace System.Dynamic
         /// </summary>
         internal void PromoteClass(object oldClass, object newClass)
         {
-            PromoteClassCore((ExpandoClass)oldClass, (ExpandoClass)newClass);
+            lock (LockObject)
+            {
+                PromoteClassCore((ExpandoClass)oldClass, (ExpandoClass)newClass);
+            }
         }
 
         #endregion
@@ -311,6 +314,7 @@ namespace System.Dynamic
 
         private bool ExpandoContainsKey(string key)
         {
+            ContractUtils.AssertLockHeld(LockObject);
             return _data.Class.GetValueIndexCaseSensitive(key) >= 0;
         }
 
@@ -712,11 +716,11 @@ namespace System.Dynamic
         void ICollection<KeyValuePair<string, object>>.CopyTo(KeyValuePair<string, object>[] array, int arrayIndex)
         {
             ContractUtils.RequiresNotNull(array, nameof(array));
-            ContractUtils.RequiresArrayRange(array, arrayIndex, _count, nameof(arrayIndex), nameof(ICollection<KeyValuePair<string, object>>.Count));
 
-            // We want this to be atomic and not throw
+            // We want this to be atomic and not throw, though we must do the range checks inside this lock.
             lock (LockObject)
             {
+                ContractUtils.RequiresArrayRange(array, arrayIndex, _count, nameof(arrayIndex), nameof(ICollection<KeyValuePair<string, object>>.Count));
                 foreach (KeyValuePair<string, object> item in this)
                 {
                     array[arrayIndex++] = item;

@@ -20,6 +20,17 @@ using Xunit;
 
 public static partial class XmlSerializerTests
 {
+#if ReflectionOnly
+    private static readonly string SerializationModeSetterName = "set_Mode";
+
+    static XmlSerializerTests()
+    {
+        var method = typeof(XmlSerializer).GetMethod(SerializationModeSetterName);
+        Assert.True(method != null, $"No method named {SerializationModeSetterName}");
+        method.Invoke(null, new object[] { 1 });
+    }
+
+#endif
     [Fact]
     public static void Xml_BoolAsRoot()
     {
@@ -2354,6 +2365,9 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         Assert.Equal(originalmapping.XsdTypeNamespace, newmapping.XsdTypeNamespace);
     }
 
+#if ReflectionOnly
+    [ActiveIssue(11919)]
+#endif
     [Fact]
     public static void XmlSerializerFactoryTest()
     {
@@ -2367,6 +2381,9 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         Assert.Equal(dog1.Breed, dog2.Breed);
     }
 
+#if ReflectionOnly
+    [ActiveIssue(14259)]
+#endif
     [Fact]
     public static void XmlUnknownElementAndEventHandlerTest()
     {
@@ -2397,6 +2414,9 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         Assert.True(b);
     }
 
+#if ReflectionOnly
+    [ActiveIssue(14259)]
+#endif
     [Fact]
     public static void XmlUnknownNodeAndEventHandlerTest()
     {
@@ -2589,6 +2609,9 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         cds.AddReserved(typeof(Employee).Name);
         cds.Add("test", new TestData());
         cds.AddUnique("test2", new TestData());
+        Assert.Equal("camelText", CodeIdentifier.MakeCamel("Camel Text"));
+        Assert.Equal("PascalText", CodeIdentifier.MakePascal("Pascal Text"));
+        Assert.Equal("ValidText", CodeIdentifier.MakeValid("Valid  Text!"));
     }
 
     [Fact]
@@ -2618,6 +2641,12 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         Assert.Equal(1, mapping.Count);
     }
 
+    [Fact]
+    public static void XmlSerializationGeneratedCodeTest()
+    {
+        var cg = new MycodeGenerator();
+        Assert.NotNull(cg);
+    }
     private static Stream GenerateStreamFromString(string s)
     {
         var stream = new MemoryStream();

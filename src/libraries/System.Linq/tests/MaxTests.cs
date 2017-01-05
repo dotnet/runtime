@@ -308,6 +308,13 @@ namespace System.Linq.Tests
             Assert.Equal(expected, source.Max(x => x));
         }
 
+        [Theory, MemberData(nameof(Max_NullableInt_TestData))]
+        public void Max_NullableIntRunOnce(IEnumerable<int?> source, int? expected)
+        {
+            Assert.Equal(expected, source.RunOnce().Max());
+            Assert.Equal(expected, source.RunOnce().Max(x => x));
+        }
+
         [Fact]
         public void Max_NullableInt_NullSource_ThrowsArgumentNullException()
         {
@@ -520,6 +527,13 @@ namespace System.Linq.Tests
         {
             Assert.Equal(expected, source.Max());
             Assert.Equal(expected, source.Max(x => x));
+        }
+
+        [Theory, MemberData(nameof(Max_String_TestData))]
+        public void Max_StringRunOnce(IEnumerable<string> source, string expected)
+        {
+            Assert.Equal(expected, source.RunOnce().Max());
+            Assert.Equal(expected, source.RunOnce().Max(x => x));
         }
 
         [Fact]

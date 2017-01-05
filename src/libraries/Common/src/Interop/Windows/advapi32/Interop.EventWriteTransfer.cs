@@ -10,7 +10,7 @@ internal static partial class Interop
     internal static partial class Advapi32
     {
         [DllImport(Interop.Libraries.Advapi32)]
-        internal unsafe static extern int EventWriteTransfer(
+        internal static extern unsafe int EventWriteTransfer(
                 ulong registrationHandle,
                 void* eventDescriptor,
                 Guid* activityId,

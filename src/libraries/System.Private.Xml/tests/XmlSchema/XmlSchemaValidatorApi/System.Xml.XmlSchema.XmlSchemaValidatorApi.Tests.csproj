@@ -12,6 +12,7 @@
   <ItemGroup>
     <Compile Include="Constructor_AddSchema.cs" />
     <Compile Include="CustomImplementations.cs" />
+    <Compile Include="ExceptionVerifier.cs" />
     <Compile Include="GetExpectedAttributes.cs" />
     <Compile Include="GetExpectedParticles.cs" />
     <Compile Include="Initialize_EndValidation.cs" />

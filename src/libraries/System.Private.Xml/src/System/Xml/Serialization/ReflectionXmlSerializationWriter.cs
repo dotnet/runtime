@@ -387,7 +387,7 @@ namespace System.Xml.Serialization
                     throw new PlatformNotSupportedException();
                 }
 
-                WriteStructMethod(mapping, name, ns, o, mapping.TypeDesc.IsNullable, needType: false, parentMapping: parentMapping);
+                WriteStructMethod(mapping, name, ns, o, element.IsNullable, needType: false, parentMapping: parentMapping);
             }
             else if (element.Mapping is SpecialMapping)
             {
@@ -477,7 +477,7 @@ namespace System.Xml.Serialization
             {
                 if (mapping.TypeDesc.Type != null && typeof(XmlSchemaObject).IsAssignableFrom(mapping.TypeDesc.Type))
                 {
-                    throw new PlatformNotSupportedException(typeof(XmlSchemaObject).ToString());
+                    EscapeName = false;
                 }
 
                 XmlSerializerNamespaces xmlnsSource = null;
@@ -711,83 +711,82 @@ namespace System.Xml.Serialization
                     }
                 }
 
-                var a = memberValue as IEnumerable;
-
-                // #10593: Add More Tests for Serialization Code
-                Debug.Assert(a != null);
-
-                var e = a.GetEnumerator();
-                bool shouldAppendWhitespace = false;
-                if (e != null)
+                if (memberValue != null)
                 {
-                    while (e.MoveNext())
+                    var a = (IEnumerable) memberValue;
+                    IEnumerator e = a.GetEnumerator();
+                    bool shouldAppendWhitespace = false;
+                    if (e != null)
                     {
-                        object ai = e.Current;
-
-                        if (attribute.IsList)
+                        while (e.MoveNext())
                         {
-                            string stringValue;
-                            if (attribute.Mapping is EnumMapping)
-                            {
-                                stringValue = WriteEnumMethod((EnumMapping)attribute.Mapping, ai);
-                            }
-                            else
-                            {
-                                if (!WritePrimitiveValue(arrayElementTypeDesc, ai, true, out stringValue))
-                                {
-                                    // #10593: Add More Tests for Serialization Code
-                                    Debug.Assert(ai is byte[]);
-                                }
-                            }
+                            object ai = e.Current;
 
-                            // check to see if we can write values of the attribute sequentially
-                            if (canOptimizeWriteListSequence)
+                            if (attribute.IsList)
                             {
-                                if (shouldAppendWhitespace)
+                                string stringValue;
+                                if (attribute.Mapping is EnumMapping)
                                 {
-                                    Writer.WriteString(" ");
-                                }
-
-                                if (ai is byte[])
-                                {
-                                    WriteValue((byte[])ai);
+                                    stringValue = WriteEnumMethod((EnumMapping)attribute.Mapping, ai);
                                 }
                                 else
                                 {
-                                    WriteValue(stringValue);
+                                    if (!WritePrimitiveValue(arrayElementTypeDesc, ai, true, out stringValue))
+                                    {
+                                        // #10593: Add More Tests for Serialization Code
+                                        Debug.Assert(ai is byte[]);
+                                    }
+                                }
+
+                                // check to see if we can write values of the attribute sequentially
+                                if (canOptimizeWriteListSequence)
+                                {
+                                    if (shouldAppendWhitespace)
+                                    {
+                                        Writer.WriteString(" ");
+                                    }
+
+                                    if (ai is byte[])
+                                    {
+                                        WriteValue((byte[])ai);
+                                    }
+                                    else
+                                    {
+                                        WriteValue(stringValue);
+                                    }
+                                }
+                                else
+                                {
+                                    if (shouldAppendWhitespace)
+                                    {
+                                        sb.Append(" ");
+                                    }
+
+                                    sb.Append(stringValue);
                                 }
                             }
                             else
                             {
-                                if (shouldAppendWhitespace)
-                                {
-                                    sb.Append(" ");
-                                }
-
-                                sb.Append(stringValue);
+                                WriteAttribute(ai, attribute, parent);
                             }
-                        }
-                        else
-                        {
-                            WriteAttribute(ai, attribute, parent);
+
+                            shouldAppendWhitespace = true;
                         }
 
-                        shouldAppendWhitespace = true;
-                    }
-
-                    if (attribute.IsList)
-                    {
-                        // check to see if we can write values of the attribute sequentially
-                        if (canOptimizeWriteListSequence)
+                        if (attribute.IsList)
                         {
-                            Writer.WriteEndAttribute();
-                        }
-                        else
-                        {
-                            if (sb.Length != 0)
+                            // check to see if we can write values of the attribute sequentially
+                            if (canOptimizeWriteListSequence)
                             {
-                                string ns = attribute.Form == XmlSchemaForm.Qualified ? attribute.Namespace : String.Empty;
-                                WriteAttribute(attribute.Name, ns, sb.ToString());
+                                Writer.WriteEndAttribute();
+                            }
+                            else
+                            {
+                                if (sb.Length != 0)
+                                {
+                                    string ns = attribute.Form == XmlSchemaForm.Qualified ? attribute.Namespace : String.Empty;
+                                    WriteAttribute(attribute.Name, ns, sb.ToString());
+                                }
                             }
                         }
                     }

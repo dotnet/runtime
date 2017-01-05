@@ -7,23 +7,25 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net463'">true</IsPartialFacadeAssembly>
     <ResourcesSourceOutputDirectory Condition="'$(TargetGroup)' == 'net463'">None</ResourcesSourceOutputDirectory>
+    <NoWarn Condition="'$(TargetsUnix)' == 'true'">CS0809</NoWarn>
     <GeneratePlatformNotSupportedAssembly Condition="'$(TargetsUnix)' == 'true'">true</GeneratePlatformNotSupportedAssembly>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_NT_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_NT_Release|AnyCPU'" />
   <ItemGroup Condition="'$(TargetGroup)' == 'netstandard' AND '$(TargetsWindows)' == 'true'">
     <Compile Include="System\Security\Cryptography\AesCryptoServiceProvider.cs" />
-    <Compile Include="System\Security\Cryptography\CspProviderFlags.cs" />
-    <Compile Include="System\Security\Cryptography\ICspAsymmetricAlgorithm.cs" />
-    <Compile Include="System\Security\Cryptography\KeyNumber.cs" />
     <Compile Include="System\Security\Cryptography\CapiHelper.cs" />
     <Compile Include="System\Security\Cryptography\CapiHelper.DSA.cs" />
     <Compile Include="System\Security\Cryptography\CapiHelper.SymmetricKey.cs" />
     <Compile Include="System\Security\Cryptography\CspKeyContainerInfo.cs" />
     <Compile Include="System\Security\Cryptography\CspParameters.cs" />
+    <Compile Include="System\Security\Cryptography\CspProviderFlags.cs" />
     <Compile Include="System\Security\Cryptography\DESCryptoServiceProvider.cs" />
     <Compile Include="System\Security\Cryptography\DSACryptoServiceProvider.cs" />
+    <Compile Include="System\Security\Cryptography\ICspAsymmetricAlgorithm.cs" />
+    <Compile Include="System\Security\Cryptography\KeyNumber.cs" />
     <Compile Include="System\Security\Cryptography\MD5CryptoServiceProvider.cs" />
+    <Compile Include="System\Security\Cryptography\PasswordDeriveBytes.cs" />
     <Compile Include="System\Security\Cryptography\RC2CryptoServiceProvider.cs" />
     <Compile Include="System\Security\Cryptography\RNGCryptoServiceProvider.cs" />
     <Compile Include="System\Security\Cryptography\RSACryptoServiceProvider.cs" />

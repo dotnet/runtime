@@ -35,7 +35,7 @@ namespace System.Reflection.PortableExecutable.Tests
             }
         }
 
-        private unsafe static void VerifyStrongNameSignatureDirectory(PEReader peReader, byte[] expectedSignature)
+        private static unsafe void VerifyStrongNameSignatureDirectory(PEReader peReader, byte[] expectedSignature)
         {
             var headers = peReader.PEHeaders;
             int rva = headers.CorHeader.StrongNameSignatureDirectory.RelativeVirtualAddress;
@@ -464,7 +464,7 @@ namespace System.Reflection.PortableExecutable.Tests
             {
             }
 
-            internal protected override void Serialize(BlobBuilder builder, SectionLocation location)
+            protected internal override void Serialize(BlobBuilder builder, SectionLocation location)
             {
                 builder.WriteInt32(0x12345678);
                 builder.WriteInt32(location.PointerToRawData);
@@ -510,7 +510,7 @@ namespace System.Reflection.PortableExecutable.Tests
             {
             }
 
-            internal protected override void Serialize(BlobBuilder builder, SectionLocation location)
+            protected internal override void Serialize(BlobBuilder builder, SectionLocation location)
             {
                 throw new NotImplementedException();
             }

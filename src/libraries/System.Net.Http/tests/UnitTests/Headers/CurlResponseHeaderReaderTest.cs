@@ -21,10 +21,10 @@ namespace System.Net.Http.Tests
 
         private const string invalidChars = "()<>@,;\\\"/[]?={} \t";
 
-        public readonly static IEnumerable<object[]> ValidStatusCodeLines = GetStatusCodeLines(StatusCodeTemplate);
-        public readonly static IEnumerable<object[]> InvalidStatusCodeLines = GetStatusCodeLines(MissingSpaceFormat);
-        public readonly static IEnumerable<object[]> StatusCodeVersionLines = GetStatusCodeLinesForVersions(1, 10);
-        public readonly static IEnumerable<object[]> InvalidHeaderLines = GetInvalidHeaderLines();
+        public static readonly IEnumerable<object[]> ValidStatusCodeLines = GetStatusCodeLines(StatusCodeTemplate);
+        public static readonly IEnumerable<object[]> InvalidStatusCodeLines = GetStatusCodeLines(MissingSpaceFormat);
+        public static readonly IEnumerable<object[]> StatusCodeVersionLines = GetStatusCodeLinesForVersions(1, 10);
+        public static readonly IEnumerable<object[]> InvalidHeaderLines = GetInvalidHeaderLines();
 
         private static IEnumerable<object[]> GetStatusCodeLines(string template)
         {

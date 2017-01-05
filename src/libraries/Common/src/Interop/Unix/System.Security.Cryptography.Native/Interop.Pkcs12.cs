@@ -12,7 +12,7 @@ internal static partial class Interop
     internal static partial class Crypto
     {
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_DecodePkcs12")]
-        internal static unsafe extern SafePkcs12Handle DecodePkcs12(byte[] buf, int len);
+        internal static extern unsafe SafePkcs12Handle DecodePkcs12(byte[] buf, int len);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_DecodePkcs12FromBio")]
         internal static extern SafePkcs12Handle DecodePkcs12FromBio(SafeBioHandle bio);

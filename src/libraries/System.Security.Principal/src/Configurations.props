@@ -3,6 +3,7 @@
   <PropertyGroup>
     <BuildConfigurations>
       net463-Windows_NT;
+      uap101aot-Windows_NT;
       netstandard;
     </BuildConfigurations>
   </PropertyGroup>

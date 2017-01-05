@@ -9,7 +9,7 @@ namespace System.ComponentModel.Tests
 {
     public class MyTypeDescriptorContext : ITypeDescriptorContext
     {
-        public IContainer Container { get { return null; } }
+        public IContainer Container => null;
         public object Instance { get { return null; } }
         public PropertyDescriptor PropertyDescriptor { get { return null; } }
         public bool OnComponentChanging() { return true; }

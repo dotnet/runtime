@@ -15,6 +15,7 @@
     <Compile Include="LTMEnlistmentTests.cs" />
     <Compile Include="HelperFunctions.cs" />
     <Compile Include="TestEnlistments.cs" />
+    <Compile Include="TransactionTracingEventListener.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

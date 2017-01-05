@@ -21,7 +21,7 @@ namespace System.Security.Cryptography
             return new Implementation();
         }
 
-        static public new MD5 Create(String algName)
+        public static new MD5 Create(String algName)
         {
             return (MD5)CryptoConfig.CreateFromName(algName);
         }
@@ -33,14 +33,7 @@ namespace System.Security.Cryptography
             public Implementation()
             {
                 _hashProvider = HashProviderDispenser.CreateHashProvider(HashAlgorithmNames.MD5);
-            }
-
-            public sealed override int HashSize
-            {
-                get
-                {
-                    return _hashProvider.HashSizeInBytes * 8;
-                }
+                HashSizeValue = _hashProvider.HashSizeInBytes * 8;
             }
 
             protected sealed override void HashCore(byte[] array, int ibStart, int cbSize)

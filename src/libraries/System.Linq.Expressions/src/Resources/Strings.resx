@@ -156,6 +156,9 @@
   <data name="SetterMustBeVoid" xml:space="preserve">
     <value>Setter should have void type.</value>
   </data>
+  <data name="PropertyTypeMustMatchGetter" xml:space="preserve">
+    <value>Property type must match the value type of getter</value>
+  </data>
   <data name="PropertyTypeMustMatchSetter" xml:space="preserve">
     <value>Property type must match the value type of setter</value>
   </data>
@@ -277,7 +280,7 @@
     <value>Argument for array index must be of type Int32</value>
   </data>
   <data name="ArgumentMustBeSingleDimensionalArrayType" xml:space="preserve">
-    <value>Argument must be single dimensional array type</value>
+    <value>Argument must be single-dimensional, zero-based array type</value>
   </data>
   <data name="ArgumentTypesMustMatch" xml:space="preserve">
     <value>Argument types do not match</value>

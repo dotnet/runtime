@@ -50,8 +50,6 @@ namespace System.ComponentModel
     ]
     public sealed class ToolboxItemFilterAttribute : Attribute
     {
-        private ToolboxItemFilterType _filterType;
-        private string _filterString;
         private string _typeId;
 
         /// <summary>
@@ -67,51 +65,27 @@ namespace System.ComponentModel
         /// </summary>
         public ToolboxItemFilterAttribute(string filterString, ToolboxItemFilterType filterType)
         {
-            if (filterString == null) filterString = String.Empty;
-
-            _filterString = filterString;
-            _filterType = filterType;
+            FilterString = filterString ?? string.Empty;
+            FilterType = filterType;
         }
 
         /// <summary>
         ///     Retrieves the filter string for this attribute.  The filter string is a user-defined string that
         ///     is used to identify matching attributes.
         /// </summary>
-        public string FilterString
-        {
-            get
-            {
-                return _filterString;
-            }
-        }
+        public string FilterString { get; }
 
         /// <summary>
         ///     Retrieves the filter type for this attribute.  The filter type determines how the filter string should
         ///     be applied.
         /// </summary>
-        public ToolboxItemFilterType FilterType
-        {
-            get
-            {
-                return _filterType;
-            }
-        }
+        public ToolboxItemFilterType FilterType { get; }
 
         /// <summary>
         ///     The unique identifier for this attribute.  All ToolboxItemFilterAttributes with the same filter string
         ///     are considered the same, so they return the same TypeId.
         /// </summary>
-        public override object TypeId
-        {
-            get
-            {
-                if (_typeId == null)
-                {
-                    _typeId = GetType().FullName + _filterString;
-                }
-                return _typeId;
-            }
-        }
+        public override object TypeId => _typeId ?? (_typeId = GetType().FullName + FilterString);
 
         public override bool Equals(object obj)
         {
@@ -127,7 +101,7 @@ namespace System.ComponentModel
         public override int GetHashCode()
         {
             // No need to hash on filter type as well; there shouldn't be that many duplicates.
-            return _filterString.GetHashCode();
+            return FilterString.GetHashCode();
         }
 
         public override bool Match(object obj)
@@ -150,7 +124,7 @@ namespace System.ComponentModel
 
         public override string ToString()
         {
-            return _filterString + "," + Enum.GetName(typeof(ToolboxItemFilterType), _filterType);
+            return FilterString + "," + Enum.GetName(typeof(ToolboxItemFilterType), FilterType);
         }
     }
 }

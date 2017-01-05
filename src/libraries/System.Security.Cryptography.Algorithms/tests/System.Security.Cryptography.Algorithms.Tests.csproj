@@ -132,6 +132,7 @@
     <Compile Include="DESTests.cs" />
     <Compile Include="DSASignatureFormatterTests.cs" />
     <Compile Include="ECDiffieHellmanPublicKeyTests.cs" />
+    <Compile Include="PaddingModeTests.cs" />
     <Compile Include="PKCS1MaskGenerationMethodTest.cs" />
     <Compile Include="RC2Provider.cs" />
     <Compile Include="RC2Tests.cs" />

@@ -28,6 +28,7 @@
     <Compile Include="SelectTest.cs" />
     <Compile Include="SendPacketsAsync.cs" />
     <Compile Include="SendPacketsElementTest.cs" />
+    <Compile Include="SendFile.cs" />
     <Compile Include="SendReceive.cs" />
     <Compile Include="SelectAndPollTests.cs" />
     <Compile Include="TimeoutTest.cs" />

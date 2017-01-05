@@ -5,6 +5,7 @@
 using System.Diagnostics;
 using System.IO;
 using System.Globalization;
+using System.Threading.Tasks;
 
 namespace System.Net
 {
@@ -136,7 +137,7 @@ namespace System.Net
                                                                    _readHeaderBuffer, 0,
                                                                    _readHeaderBuffer.Length);
 
-            IAsyncResult result = _transport.BeginRead(_readHeaderBuffer, 0, _readHeaderBuffer.Length,
+            IAsyncResult result = TaskToApm.Begin(_transport.ReadAsync(_readHeaderBuffer, 0, _readHeaderBuffer.Length),
                 _readFrameCallback, workerResult);
 
             if (result.CompletedSynchronously)
@@ -199,7 +200,7 @@ namespace System.Net
 
                 WorkerAsyncResult workerResult = (WorkerAsyncResult)transportResult.AsyncState;
 
-                int bytesRead = _transport.EndRead(transportResult);
+                int bytesRead = TaskToApm.End<int>(transportResult);
                 workerResult.Offset += bytesRead;
 
                 if (!(workerResult.Offset <= workerResult.End))
@@ -260,7 +261,7 @@ namespace System.Net
                         workerResult.End = frame.Length;
                         workerResult.Offset = 0;
 
-                        // Transport.BeginRead below will pickup those changes.
+                        // Transport.ReadAsync below will pickup those changes.
                     }
                     else
                     {
@@ -271,7 +272,7 @@ namespace System.Net
                 }
 
                 // This means we need more data to complete the data block.
-                transportResult = _transport.BeginRead(workerResult.Buffer, workerResult.Offset, workerResult.End - workerResult.Offset,
+                transportResult = TaskToApm.Begin(_transport.ReadAsync(workerResult.Buffer, workerResult.Offset, workerResult.End - workerResult.Offset),
                                             _readFrameCallback, workerResult);
             } while (transportResult.CompletedSynchronously);
         }
@@ -352,7 +353,7 @@ namespace System.Net
 
             if (message.Length == 0)
             {
-                return _transport.BeginWrite(_writeHeaderBuffer, 0, _writeHeaderBuffer.Length,
+                return TaskToApm.Begin(_transport.WriteAsync(_writeHeaderBuffer, 0, _writeHeaderBuffer.Length),
                                                    asyncCallback, stateObject);
             }
 
@@ -361,7 +362,7 @@ namespace System.Net
                                                                    message, 0, message.Length);
             
             // Charge the first:
-            IAsyncResult result = _transport.BeginWrite(_writeHeaderBuffer, 0, _writeHeaderBuffer.Length,
+            IAsyncResult result = TaskToApm.Begin(_transport.WriteAsync(_writeHeaderBuffer, 0, _writeHeaderBuffer.Length),
                                  _beginWriteCallback, workerResult);
 
             if (result.CompletedSynchronously)
@@ -412,7 +413,7 @@ namespace System.Net
                 WorkerAsyncResult workerResult = (WorkerAsyncResult)transportResult.AsyncState;
 
                 // First, complete the previous portion write.
-                _transport.EndWrite(transportResult);
+                TaskToApm.End(transportResult);
 
                 // Check on exit criterion.
                 if (workerResult.Offset == workerResult.End)
@@ -425,7 +426,7 @@ namespace System.Net
                 workerResult.Offset = workerResult.End;
 
                 // Write next portion (frame body) using Async IO.
-                transportResult = _transport.BeginWrite(workerResult.Buffer, 0, workerResult.End,
+                transportResult = TaskToApm.Begin(_transport.WriteAsync(workerResult.Buffer, 0, workerResult.End),
                                             _beginWriteCallback, workerResult);
             }
             while (transportResult.CompletedSynchronously);
@@ -454,7 +455,7 @@ namespace System.Net
             }
             else
             {
-                _transport.EndWrite(asyncResult);
+                TaskToApm.End(asyncResult);
             }
         }
     }

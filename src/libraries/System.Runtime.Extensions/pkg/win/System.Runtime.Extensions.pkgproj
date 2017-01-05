@@ -9,6 +9,11 @@
     <ProjectReference Include="..\..\src\System.Runtime.Extensions.csproj">
       <OSGroup>Windows_NT</OSGroup>
     </ProjectReference>
+    <!-- AOT implementation comes from AOT package -->
+    <File Include="$(PlaceholderFile)">
+      <TargetPath>runtimes/aot/lib/uap10.1</TargetPath>
+      <TargetFramework>aot</TargetFramework>
+    </File>
     <!-- don't use the dotnet implementation for any version of desktop, it's implementation comes from the reference package -->
     <ExternalOnTargetFramework Include="net" />
   </ItemGroup>

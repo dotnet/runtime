@@ -62,7 +62,7 @@ namespace System.Net.Sockets
 
                     if (errorCode == SocketError.SocketError)
                     {
-                        errorCode = (SocketError)Marshal.GetLastWin32Error();
+                        errorCode = SocketPal.GetLastSocketError();
                     }
 
                     if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"setsockopt handle:{handle}, AcceptSocket:{_acceptSocket}, returns:{errorCode}");

@@ -9,7 +9,7 @@ namespace System.Threading.Tasks
     /// <summary>Enables awaiting a Begin/End method pair.</summary>
     internal sealed class BeginEndAwaitableAdapter : RendezvousAwaitable<IAsyncResult>
     {
-        public readonly static AsyncCallback Callback = asyncResult =>
+        public static readonly AsyncCallback Callback = asyncResult =>
         {
             Debug.Assert(asyncResult != null);
             Debug.Assert(asyncResult.IsCompleted);

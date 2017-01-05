@@ -172,9 +172,6 @@ CannotRemoveBaseTypeOrInterface : Type 'System.ThreadStaticAttribute' does not i
 CannotRemoveBaseTypeOrInterface : Type 'System.TimeoutException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.TimeZoneNotFoundException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Type' does not implement interface 'System.Runtime.InteropServices._Type' in the implementation but it does in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Type.IsEnum' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Type.Equals(System.Type)' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Type.IsEnum.get()' is non-virtual in the implementation but is virtual in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.TypeAccessException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
 TypesMustExist : Type 'System.TypedReference' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.TypeInitializationException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
@@ -240,17 +237,12 @@ MembersMustExist : Member 'System.IO.FileInfo.GetAccessControl(System.Security.A
 MembersMustExist : Member 'System.IO.FileInfo.SetAccessControl(System.Security.AccessControl.FileSecurity)' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.IO.FileLoadException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.IO.FileNotFoundException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
-MembersMustExist : Member 'System.IO.FileStream..ctor(System.IntPtr, System.IO.FileAccess)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.IO.FileStream..ctor(System.IntPtr, System.IO.FileAccess, System.Boolean)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.IO.FileStream..ctor(System.IntPtr, System.IO.FileAccess, System.Boolean, System.Int32)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.IO.FileStream..ctor(System.IntPtr, System.IO.FileAccess, System.Boolean, System.Int32, System.Boolean)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.IO.FileStream..ctor(System.String, System.IO.FileMode, System.Security.AccessControl.FileSystemRights, System.IO.FileShare, System.Int32, System.IO.FileOptions)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.IO.FileStream..ctor(System.String, System.IO.FileMode, System.Security.AccessControl.FileSystemRights, System.IO.FileShare, System.Int32, System.IO.FileOptions, System.Security.AccessControl.FileSecurity)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.IO.FileStream.GetAccessControl()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.IO.FileStream.SetAccessControl(System.Security.AccessControl.FileSecurity)' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.IO.IOException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.IO.PathTooLongException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
-CannotMakeMemberAbstract : Member 'System.IO.TextWriter.Write(System.Char)' is abstract in the implementation but is not abstract in the contract.
 MembersMustExist : Member 'System.IO.IsolatedStorage.IsolatedStorage.GetPermission(System.Security.PermissionSet)' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.IO.IsolatedStorage.IsolatedStorageException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
 MembersMustExist : Member 'System.IO.IsolatedStorage.IsolatedStorageFile.GetPermission(System.Security.PermissionSet)' does not exist in the implementation but it does exist in the contract.
@@ -259,11 +251,7 @@ TypesMustExist : Type 'System.IO.IsolatedStorage.IsolatedStorageSecurityOptions'
 TypesMustExist : Type 'System.IO.IsolatedStorage.IsolatedStorageSecurityState' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Reflection.AmbiguousMatchException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Reflection.Assembly' does not implement interface 'System.Runtime.InteropServices._Assembly' in the implementation but it does in the contract.
-MembersMustExist : Member 'System.Reflection.Assembly.EscapedCodeBase.get()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Reflection.Assembly.Evidence.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Reflection.Assembly.GetFile(System.String)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Reflection.Assembly.GetFiles()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Reflection.Assembly.GetFiles(System.Boolean)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Reflection.Assembly.Load(System.Byte[], System.Byte[], System.Security.Policy.Evidence)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Reflection.Assembly.Load(System.Byte[], System.Byte[], System.Security.SecurityContextSource)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Reflection.Assembly.Load(System.Reflection.AssemblyName, System.Security.Policy.Evidence)' does not exist in the implementation but it does exist in the contract.
@@ -271,7 +259,6 @@ MembersMustExist : Member 'System.Reflection.Assembly.Load(System.String, System
 MembersMustExist : Member 'System.Reflection.Assembly.LoadFile(System.String, System.Security.Policy.Evidence)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Reflection.Assembly.LoadFrom(System.String, System.Security.Policy.Evidence)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Reflection.Assembly.LoadFrom(System.String, System.Security.Policy.Evidence, System.Byte[], System.Configuration.Assemblies.AssemblyHashAlgorithm)' does not exist in the implementation but it does exist in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Reflection.Assembly.LoadModule(System.String, System.Byte[], System.Byte[])' is non-virtual in the implementation but is virtual in the contract.
 MembersMustExist : Member 'System.Reflection.Assembly.LoadWithPartialName(System.String, System.Security.Policy.Evidence)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Reflection.Assembly.PermissionSet.get()' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Reflection.AssemblyAlgorithmIdAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
@@ -289,7 +276,6 @@ CannotRemoveBaseTypeOrInterface : Type 'System.Reflection.AssemblyKeyFileAttribu
 CannotRemoveBaseTypeOrInterface : Type 'System.Reflection.AssemblyKeyNameAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Reflection.AssemblyMetadataAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Reflection.AssemblyName' does not implement interface 'System.Runtime.InteropServices._AssemblyName' in the implementation but it does in the contract.
-MembersMustExist : Member 'System.Reflection.AssemblyName.EscapedCodeBase.get()' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Reflection.AssemblyProductAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Reflection.AssemblySignatureKeyAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Reflection.AssemblyTitleAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
@@ -305,7 +291,6 @@ MembersMustExist : Member 'System.Reflection.FieldInfo.SetValueDirect(System.Typ
 CannotRemoveBaseTypeOrInterface : Type 'System.Reflection.InvalidFilterCriteriaException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Reflection.MemberInfo' does not implement interface 'System.Runtime.InteropServices._MemberInfo' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Reflection.MethodBase' does not implement interface 'System.Runtime.InteropServices._MethodBase' in the implementation but it does in the contract.
-MembersMustExist : Member 'System.Reflection.MethodBase.IsSecuritySafeCritical.get()' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Reflection.MethodInfo' does not implement interface 'System.Runtime.InteropServices._MethodInfo' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Reflection.Module' does not implement interface 'System.Runtime.InteropServices._Module' in the implementation but it does in the contract.
 MembersMustExist : Member 'System.Reflection.Module.GetSignerCertificate()' does not exist in the implementation but it does exist in the contract.
@@ -314,7 +299,6 @@ CannotRemoveBaseTypeOrInterface : Type 'System.Reflection.ObfuscationAttribute' 
 CannotRemoveBaseTypeOrInterface : Type 'System.Reflection.ParameterInfo' does not implement interface 'System.Runtime.InteropServices._ParameterInfo' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Reflection.PropertyInfo' does not implement interface 'System.Runtime.InteropServices._PropertyInfo' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Reflection.ReflectionTypeLoadException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
-MembersMustExist : Member 'System.Reflection.StrongNameKeyPair..ctor(System.IO.FileStream)' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Reflection.TargetException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Reflection.TargetInvocationException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Reflection.TargetParameterCountException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
@@ -333,8 +317,6 @@ MembersMustExist : Member 'System.Reflection.Emit.AssemblyBuilder.DefineUnmanage
 MembersMustExist : Member 'System.Reflection.Emit.AssemblyBuilder.DefineVersionInfoResource()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Reflection.Emit.AssemblyBuilder.DefineVersionInfoResource(System.String, System.String, System.String, System.String, System.String)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Reflection.Emit.AssemblyBuilder.Evidence.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Reflection.Emit.AssemblyBuilder.GetFile(System.String)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Reflection.Emit.AssemblyBuilder.GetFiles(System.Boolean)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Reflection.Emit.AssemblyBuilder.PermissionSet.get()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Reflection.Emit.AssemblyBuilder.Save(System.String)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Reflection.Emit.AssemblyBuilder.Save(System.String, System.Reflection.PortableExecutableKinds, System.Reflection.ImageFileMachine)' does not exist in the implementation but it does exist in the contract.
@@ -356,7 +338,6 @@ TypesMustExist : Type 'System.Reflection.Emit.DynamicILInfo' does not exist in t
 CannotRemoveBaseTypeOrInterface : Type 'System.Reflection.Emit.DynamicMethod' does not implement interface 'System.Runtime.InteropServices._MethodInfo' in the implementation but it does in the contract.
 MembersMustExist : Member 'System.Reflection.Emit.DynamicMethod.DefineParameter(System.Int32, System.Reflection.ParameterAttributes, System.String)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Reflection.Emit.DynamicMethod.GetDynamicILInfo()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Reflection.Emit.DynamicMethod.IsSecuritySafeCritical.get()' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Reflection.Emit.EnumBuilder' does not implement interface 'System.Runtime.InteropServices._EnumBuilder' in the implementation but it does in the contract.
 MembersMustExist : Member 'System.Reflection.Emit.EnumBuilder.CreateType()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Reflection.Emit.EnumBuilder.TypeToken.get()' does not exist in the implementation but it does exist in the contract.
@@ -380,7 +361,6 @@ MembersMustExist : Member 'System.Reflection.Emit.MethodBuilder.AddDeclarativeSe
 MembersMustExist : Member 'System.Reflection.Emit.MethodBuilder.CreateMethodBody(System.Byte[], System.Int32)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Reflection.Emit.MethodBuilder.GetModule()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Reflection.Emit.MethodBuilder.GetToken()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Reflection.Emit.MethodBuilder.IsSecuritySafeCritical.get()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Reflection.Emit.MethodBuilder.SetMarshal(System.Reflection.Emit.UnmanagedMarshal)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Reflection.Emit.MethodBuilder.SetMethodBody(System.Byte[], System.Int32, System.Byte[], System.Collections.Generic.IEnumerable<System.Reflection.Emit.ExceptionHandler>, System.Collections.Generic.IEnumerable<System.Int32>)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Reflection.Emit.MethodBuilder.SetSymCustomAttribute(System.String, System.Byte[])' does not exist in the implementation but it does exist in the contract.
@@ -522,7 +502,7 @@ TypesMustExist : Type 'System.Runtime.InteropServices._Type' does not exist in t
 TypesMustExist : Type 'System.Runtime.InteropServices._TypeBuilder' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Runtime.InteropServices.AllowReversePInvokeCallsAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
 TypesMustExist : Type 'System.Runtime.InteropServices.AssemblyRegistrationFlags' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Runtime.InteropServices.AutomationProxyAttribute' does not exist in the implementation but it does exist in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Runtime.InteropServices.AutomationProxyAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Runtime.InteropServices.BestFitMappingAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
 TypesMustExist : Type 'System.Runtime.InteropServices.BIND_OPTS' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Runtime.InteropServices.BINDPTR' does not exist in the implementation but it does exist in the contract.
@@ -541,7 +521,6 @@ CannotRemoveBaseTypeOrInterface : Type 'System.Runtime.InteropServices.ComSource
 CannotRemoveBaseTypeOrInterface : Type 'System.Runtime.InteropServices.ComUnregisterFunctionAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Runtime.InteropServices.ComVisibleAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
 TypesMustExist : Type 'System.Runtime.InteropServices.CONNECTDATA' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Runtime.InteropServices.CriticalHandle.Close()' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Runtime.InteropServices.DefaultCharSetAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Runtime.InteropServices.DefaultDllImportSearchPathsAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
 TypesMustExist : Type 'System.Runtime.InteropServices.DESCKIND' does not exist in the implementation but it does exist in the contract.
@@ -578,27 +557,18 @@ TypesMustExist : Type 'System.Runtime.InteropServices.ITypeLibExporterNotifySink
 TypesMustExist : Type 'System.Runtime.InteropServices.ITypeLibImporterNotifySink' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Runtime.InteropServices.LCIDConversionAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
 TypesMustExist : Type 'System.Runtime.InteropServices.LIBFLAGS' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Runtime.InteropServices.ManagedToNativeComInteropStubAttribute' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Runtime.InteropServices.Marshal.BindToMoniker(System.String)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Runtime.InteropServices.Marshal.ChangeWrapperHandleStrength(System.Object, System.Boolean)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Runtime.InteropServices.Marshal.CleanupUnusedObjectsInCurrentContext()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Runtime.InteropServices.Marshal.GenerateGuidForType(System.Type)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Runtime.InteropServices.Marshal.GenerateProgIdForType(System.Type)' does not exist in the implementation but it does exist in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Runtime.InteropServices.ManagedToNativeComInteropStubAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
 MembersMustExist : Member 'System.Runtime.InteropServices.Marshal.GetActiveObject(System.String)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Runtime.InteropServices.Marshal.GetComInterfaceForObjectInContext(System.Object, System.Type)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Runtime.InteropServices.Marshal.GetComObjectData(System.Object, System.Object)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Runtime.InteropServices.Marshal.GetComSlotForMethodInfo(System.Reflection.MemberInfo)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Runtime.InteropServices.Marshal.GetEndComSlot(System.Type)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Runtime.InteropServices.Marshal.GetExceptionPointers()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Runtime.InteropServices.Marshal.GetHINSTANCE(System.Reflection.Module)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Runtime.InteropServices.Marshal.GetIDispatchForObject(System.Object)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Runtime.InteropServices.Marshal.GetIDispatchForObjectInContext(System.Object)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Runtime.InteropServices.Marshal.GetITypeInfoForType(System.Type)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Runtime.InteropServices.Marshal.GetIUnknownForObjectInContext(System.Object)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Runtime.InteropServices.Marshal.GetManagedThunkForUnmanagedMethodPtr(System.IntPtr, System.IntPtr, System.Int32)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Runtime.InteropServices.Marshal.GetMethodInfoForComSlot(System.Type, System.Int32, System.Runtime.InteropServices.ComMemberType)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Runtime.InteropServices.Marshal.GetThreadFromFiberCookie(System.Int32)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Runtime.InteropServices.Marshal.GetTypedObjectForIUnknown(System.IntPtr, System.Type)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Runtime.InteropServices.Marshal.GetTypeForITypeInfo(System.IntPtr)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Runtime.InteropServices.Marshal.GetTypeInfoName(System.Runtime.InteropServices.UCOMITypeInfo)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Runtime.InteropServices.Marshal.GetTypeLibGuid(System.Runtime.InteropServices.ComTypes.ITypeLib)' does not exist in the implementation but it does exist in the contract.
@@ -612,10 +582,7 @@ MembersMustExist : Member 'System.Runtime.InteropServices.Marshal.GetTypeLibVers
 MembersMustExist : Member 'System.Runtime.InteropServices.Marshal.GetUnmanagedThunkForManagedMethodPtr(System.IntPtr, System.IntPtr, System.Int32)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Runtime.InteropServices.Marshal.IsTypeVisibleFromCom(System.Type)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Runtime.InteropServices.Marshal.NumParamBytes(System.Reflection.MethodInfo)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Runtime.InteropServices.Marshal.PtrToStringAuto(System.IntPtr)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Runtime.InteropServices.Marshal.PtrToStringAuto(System.IntPtr, System.Int32)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Runtime.InteropServices.Marshal.ReleaseThreadCache()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Runtime.InteropServices.Marshal.SetComObjectData(System.Object, System.Object, System.Object)' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Runtime.InteropServices.MarshalAsAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Runtime.InteropServices.MarshalDirectiveException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
 TypesMustExist : Type 'System.Runtime.InteropServices.ObjectCreationDelegate' does not exist in the implementation but it does exist in the contract.
@@ -891,16 +858,7 @@ TypesMustExist : Type 'System.Security.AccessControl.CryptoKeyAuditRule' does no
 TypesMustExist : Type 'System.Security.AccessControl.CryptoKeyRights' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Security.AccessControl.CryptoKeySecurity' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Security.AccessControl.PrivilegeNotHeldException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
-MembersMustExist : Member 'System.Security.Cryptography.Aes.Create(System.String)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Security.Cryptography.AsymmetricAlgorithm.Clear()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Security.Cryptography.AsymmetricAlgorithm.Create()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Security.Cryptography.AsymmetricAlgorithm.Create(System.String)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Security.Cryptography.AsymmetricAlgorithm.FromXmlString(System.String)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Security.Cryptography.AsymmetricAlgorithm.KeyExchangeAlgorithm.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Security.Cryptography.AsymmetricAlgorithm.SignatureAlgorithm.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Security.Cryptography.AsymmetricAlgorithm.ToXmlString(System.Boolean)' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Security.Cryptography.CryptoAPITransform' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Cryptography.CryptoConfig' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Security.Cryptography.CryptographicException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Security.Cryptography.CryptographicUnexpectedOperationException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
 MembersMustExist : Member 'System.Security.Cryptography.CspKeyContainerInfo.CryptoKeySecurity.get()' does not exist in the implementation but it does exist in the contract.
@@ -908,79 +866,27 @@ MembersMustExist : Member 'System.Security.Cryptography.CspParameters..ctor(Syst
 MembersMustExist : Member 'System.Security.Cryptography.CspParameters..ctor(System.Int32, System.String, System.String, System.Security.AccessControl.CryptoKeySecurity, System.Security.SecureString)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Security.Cryptography.CspParameters.CryptoKeySecurity.get()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Security.Cryptography.CspParameters.CryptoKeySecurity.set(System.Security.AccessControl.CryptoKeySecurity)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Security.Cryptography.CspParameters.KeyPassword.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Security.Cryptography.CspParameters.KeyPassword.set(System.Security.SecureString)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Security.Cryptography.DES.Create(System.String)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Security.Cryptography.DSA.Create(System.String)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Security.Cryptography.DSA.FromXmlString(System.String)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Security.Cryptography.DSA.ToXmlString(System.Boolean)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Security.Cryptography.DSACryptoServiceProvider.KeyExchangeAlgorithm.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Security.Cryptography.DSACryptoServiceProvider.SignatureAlgorithm.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Int32 System.Security.Cryptography.HashAlgorithm.HashSizeValue' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Security.Cryptography.HashAlgorithm.Create()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Security.Cryptography.HashAlgorithm.Create(System.String)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Security.Cryptography.HMAC.BlockSizeValue.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Security.Cryptography.HMAC.BlockSizeValue.set(System.Int32)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Security.Cryptography.HMAC.Create()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Security.Cryptography.HMAC.Create(System.String)' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Security.Cryptography.HMACRIPEMD160' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Security.Cryptography.KeyedHashAlgorithm.Create()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Security.Cryptography.KeyedHashAlgorithm.Create(System.String)' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Security.Cryptography.MACTripleDES' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Cryptography.MaskGenerationMethod' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Security.Cryptography.MD5.Create(System.String)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Security.Cryptography.PaddingMode System.Security.Cryptography.PaddingMode.ANSIX923' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Security.Cryptography.PaddingMode System.Security.Cryptography.PaddingMode.ISO10126' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Cryptography.PasswordDeriveBytes' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Cryptography.PKCS1MaskGenerationMethod' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Security.Cryptography.RandomNumberGenerator.Create(System.String)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Security.Cryptography.RC2.Create(System.String)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Security.Cryptography.Rfc2898DeriveBytes.CryptDeriveKey(System.String, System.String, System.Int32, System.Byte[])' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Security.Cryptography.Rijndael.Create(System.String)' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Security.Cryptography.RijndaelManagedTransform' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Security.Cryptography.RIPEMD160' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Security.Cryptography.RIPEMD160Managed' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Security.Cryptography.RSA.Create(System.String)' does not exist in the implementation but it does exist in the contract.
-CannotMakeMemberAbstract : Member 'System.Security.Cryptography.RSA.Decrypt(System.Byte[], System.Security.Cryptography.RSAEncryptionPadding)' is abstract in the implementation but is not abstract in the contract.
-CannotMakeMemberAbstract : Member 'System.Security.Cryptography.RSA.Encrypt(System.Byte[], System.Security.Cryptography.RSAEncryptionPadding)' is abstract in the implementation but is not abstract in the contract.
-MembersMustExist : Member 'System.Security.Cryptography.RSA.FromXmlString(System.String)' does not exist in the implementation but it does exist in the contract.
-CannotMakeMemberAbstract : Member 'System.Security.Cryptography.RSA.HashData(System.Byte[], System.Int32, System.Int32, System.Security.Cryptography.HashAlgorithmName)' is abstract in the implementation but is not abstract in the contract.
-CannotMakeMemberAbstract : Member 'System.Security.Cryptography.RSA.HashData(System.IO.Stream, System.Security.Cryptography.HashAlgorithmName)' is abstract in the implementation but is not abstract in the contract.
-MembersMustExist : Member 'System.Security.Cryptography.RSA.KeyExchangeAlgorithm.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Security.Cryptography.RSA.SignatureAlgorithm.get()' does not exist in the implementation but it does exist in the contract.
-CannotMakeMemberAbstract : Member 'System.Security.Cryptography.RSA.SignHash(System.Byte[], System.Security.Cryptography.HashAlgorithmName, System.Security.Cryptography.RSASignaturePadding)' is abstract in the implementation but is not abstract in the contract.
-MembersMustExist : Member 'System.Security.Cryptography.RSA.ToXmlString(System.Boolean)' does not exist in the implementation but it does exist in the contract.
-CannotMakeMemberAbstract : Member 'System.Security.Cryptography.RSA.VerifyHash(System.Byte[], System.Byte[], System.Security.Cryptography.HashAlgorithmName, System.Security.Cryptography.RSASignaturePadding)' is abstract in the implementation but is not abstract in the contract.
-MembersMustExist : Member 'System.Security.Cryptography.RSACryptoServiceProvider.KeyExchangeAlgorithm.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Security.Cryptography.RSACryptoServiceProvider.SignatureAlgorithm.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Security.Cryptography.SHA1.Create(System.String)' does not exist in the implementation but it does exist in the contract.
 CannotSealType : Type 'System.Security.Cryptography.SHA1Managed' is sealed in the implementation but not sealed in the contract.
 CannotMakeMemberNonVirtual : Member 'System.Security.Cryptography.SHA1Managed.HashCore(System.Byte[], System.Int32, System.Int32)' is non-virtual in the implementation but is virtual in the contract.
 CannotMakeMemberNonVirtual : Member 'System.Security.Cryptography.SHA1Managed.HashFinal()' is non-virtual in the implementation but is virtual in the contract.
 CannotMakeMemberNonVirtual : Member 'System.Security.Cryptography.SHA1Managed.Initialize()' is non-virtual in the implementation but is virtual in the contract.
-MembersMustExist : Member 'System.Security.Cryptography.SHA256.Create(System.String)' does not exist in the implementation but it does exist in the contract.
 CannotSealType : Type 'System.Security.Cryptography.SHA256Managed' is sealed in the implementation but not sealed in the contract.
 CannotMakeMemberNonVirtual : Member 'System.Security.Cryptography.SHA256Managed.HashCore(System.Byte[], System.Int32, System.Int32)' is non-virtual in the implementation but is virtual in the contract.
 CannotMakeMemberNonVirtual : Member 'System.Security.Cryptography.SHA256Managed.HashFinal()' is non-virtual in the implementation but is virtual in the contract.
 CannotMakeMemberNonVirtual : Member 'System.Security.Cryptography.SHA256Managed.Initialize()' is non-virtual in the implementation but is virtual in the contract.
-MembersMustExist : Member 'System.Security.Cryptography.SHA384.Create(System.String)' does not exist in the implementation but it does exist in the contract.
 CannotSealType : Type 'System.Security.Cryptography.SHA384Managed' is sealed in the implementation but not sealed in the contract.
 CannotMakeMemberNonVirtual : Member 'System.Security.Cryptography.SHA384Managed.HashCore(System.Byte[], System.Int32, System.Int32)' is non-virtual in the implementation but is virtual in the contract.
 CannotMakeMemberNonVirtual : Member 'System.Security.Cryptography.SHA384Managed.HashFinal()' is non-virtual in the implementation but is virtual in the contract.
 CannotMakeMemberNonVirtual : Member 'System.Security.Cryptography.SHA384Managed.Initialize()' is non-virtual in the implementation but is virtual in the contract.
-MembersMustExist : Member 'System.Security.Cryptography.SHA512.Create(System.String)' does not exist in the implementation but it does exist in the contract.
 CannotSealType : Type 'System.Security.Cryptography.SHA512Managed' is sealed in the implementation but not sealed in the contract.
 CannotMakeMemberNonVirtual : Member 'System.Security.Cryptography.SHA512Managed.HashCore(System.Byte[], System.Int32, System.Int32)' is non-virtual in the implementation but is virtual in the contract.
 CannotMakeMemberNonVirtual : Member 'System.Security.Cryptography.SHA512Managed.HashFinal()' is non-virtual in the implementation but is virtual in the contract.
 CannotMakeMemberNonVirtual : Member 'System.Security.Cryptography.SHA512Managed.Initialize()' is non-virtual in the implementation but is virtual in the contract.
-TypesMustExist : Type 'System.Security.Cryptography.SignatureDescription' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Int32 System.Security.Cryptography.SymmetricAlgorithm.FeedbackSizeValue' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Security.Cryptography.SymmetricAlgorithm.Create()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Security.Cryptography.SymmetricAlgorithm.Create(System.String)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Security.Cryptography.SymmetricAlgorithm.FeedbackSize.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Security.Cryptography.SymmetricAlgorithm.FeedbackSize.set(System.Int32)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Security.Cryptography.SymmetricAlgorithm.ValidKeySize(System.Int32)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Security.Cryptography.TripleDES.Create(System.String)' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Security.Permissions.CodeAccessSecurityAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Security.Permissions.EnvironmentPermissionAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Security.Permissions.FileDialogPermissionAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
@@ -1048,22 +954,11 @@ MembersMustExist : Member 'System.Security.Principal.WindowsPrincipal.UserClaims
 CannotRemoveBaseTypeOrInterface : Type 'System.Text.DecoderFallbackException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Text.EncoderFallbackException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Threading.AbandonedMutexException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
-TypesMustExist : Type 'System.Threading.AsyncFlowControl' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Threading.CompressedStack' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Threading.EventWaitHandle..ctor(System.Boolean, System.Threading.EventResetMode, System.String, System.Boolean, System.Security.AccessControl.EventWaitHandleSecurity)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Threading.EventWaitHandle.GetAccessControl()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Threading.EventWaitHandle.OpenExisting(System.String, System.Security.AccessControl.EventWaitHandleRights)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Threading.EventWaitHandle.SetAccessControl(System.Security.AccessControl.EventWaitHandleSecurity)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Threading.EventWaitHandle.TryOpenExisting(System.String, System.Security.AccessControl.EventWaitHandleRights, System.Threading.EventWaitHandle)' does not exist in the implementation but it does exist in the contract.
-CannotRemoveBaseTypeOrInterface : Type 'System.Threading.ExecutionContext' does not implement interface 'System.IDisposable' in the implementation but it does in the contract.
-MembersMustExist : Member 'System.Threading.ExecutionContext.CreateCopy()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Threading.ExecutionContext.Dispose()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Threading.ExecutionContext.GetObjectData(System.Runtime.Serialization.SerializationInfo, System.Runtime.Serialization.StreamingContext)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Threading.ExecutionContext.IsFlowSuppressed()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Threading.ExecutionContext.RestoreFlow()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Threading.ExecutionContext.SuppressFlow()' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Threading.HostExecutionContext' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Threading.HostExecutionContextManager' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Threading.LockRecursionException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
 MembersMustExist : Member 'System.Threading.Mutex..ctor(System.Boolean, System.String, System.Boolean, System.Security.AccessControl.MutexSecurity)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Threading.Mutex.GetAccessControl()' does not exist in the implementation but it does exist in the contract.
@@ -1071,28 +966,11 @@ MembersMustExist : Member 'System.Threading.Mutex.OpenExisting(System.String, Sy
 MembersMustExist : Member 'System.Threading.Mutex.SetAccessControl(System.Security.AccessControl.MutexSecurity)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Threading.Mutex.TryOpenExisting(System.String, System.Security.AccessControl.MutexRights, System.Threading.Mutex)' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Threading.SemaphoreFullException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
-MembersMustExist : Member 'System.Threading.SynchronizationContext.IsWaitNotificationRequired()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Threading.SynchronizationContext.SetWaitNotificationRequired()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Threading.SynchronizationContext.Wait(System.IntPtr[], System.Boolean, System.Int32)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Threading.SynchronizationContext.WaitHelper(System.IntPtr[], System.Boolean, System.Int32)' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Threading.SynchronizationLockException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Threading.Thread' does not implement interface 'System.Runtime.InteropServices._Thread' in the implementation but it does in the contract.
 MembersMustExist : Member 'System.Threading.Thread.CurrentContext.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Threading.Thread.DisableComObjectEagerCleanup()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Threading.Thread.GetCompressedStack()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Threading.Thread.SetCompressedStack(System.Threading.CompressedStack)' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Threading.ThreadAbortException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Threading.ThreadInterruptedException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
-MembersMustExist : Member 'System.Threading.ThreadPool.GetAvailableThreads(System.Int32, System.Int32)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Threading.ThreadPool.GetMaxThreads(System.Int32, System.Int32)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Threading.ThreadPool.GetMinThreads(System.Int32, System.Int32)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Threading.ThreadPool.SetMaxThreads(System.Int32, System.Int32)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Threading.ThreadPool.SetMinThreads(System.Int32, System.Int32)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Threading.ThreadPool.UnsafeQueueUserWorkItem(System.Threading.WaitCallback, System.Object)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Threading.ThreadPool.UnsafeRegisterWaitForSingleObject(System.Threading.WaitHandle, System.Threading.WaitOrTimerCallback, System.Object, System.Int32, System.Boolean)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Threading.ThreadPool.UnsafeRegisterWaitForSingleObject(System.Threading.WaitHandle, System.Threading.WaitOrTimerCallback, System.Object, System.Int64, System.Boolean)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Threading.ThreadPool.UnsafeRegisterWaitForSingleObject(System.Threading.WaitHandle, System.Threading.WaitOrTimerCallback, System.Object, System.TimeSpan, System.Boolean)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Threading.ThreadPool.UnsafeRegisterWaitForSingleObject(System.Threading.WaitHandle, System.Threading.WaitOrTimerCallback, System.Object, System.UInt32, System.Boolean)' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Threading.ThreadStartException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Threading.ThreadStateException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Threading.WaitHandleCannotBeOpenedException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
@@ -1281,12 +1159,11 @@ TypesMustExist : Type 'System.Diagnostics.PerformanceCounterPermissionAttribute'
 TypesMustExist : Type 'System.Diagnostics.PerformanceCounterPermissionEntry' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Diagnostics.PerformanceCounterPermissionEntryCollection' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Diagnostics.PerformanceCounterType' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Diagnostics.Process.Start(System.String, System.String, System.Security.SecureString, System.String)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Diagnostics.Process.Start(System.String, System.String, System.String, System.Security.SecureString, System.String)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Diagnostics.ProcessStartInfo.Password.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Diagnostics.ProcessStartInfo.Password.set(System.Security.SecureString)' does not exist in the implementation but it does exist in the contract.
+CannotMakeMoreVisible : Visibility of member 'System.Diagnostics.Switch.GetSupportedAttributes()' is 'Family' in the implementation but 'FamilyOrAssembly' in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Diagnostics.SwitchAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Diagnostics.SwitchLevelAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
+CannotMakeMoreVisible : Visibility of member 'System.Diagnostics.TraceListener.GetSupportedAttributes()' is 'Family' in the implementation but 'FamilyOrAssembly' in the contract.
+CannotMakeMoreVisible : Visibility of member 'System.Diagnostics.TraceSource.GetSupportedAttributes()' is 'Family' in the implementation but 'FamilyOrAssembly' in the contract.
 TypesMustExist : Type 'System.Diagnostics.XmlWriterTraceListener' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverageAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.IO.InternalBufferOverflowException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
@@ -1312,75 +1189,13 @@ CannotRemoveBaseTypeOrInterface : Type 'System.Net.CookieException' does not imp
 TypesMustExist : Type 'System.Net.DnsPermission' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Net.DnsPermissionAttribute' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Net.EndpointPermission' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Net.HttpListener.DefaultServiceNames.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Net.HttpListener.ExtendedProtectionPolicy.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Net.HttpListener.ExtendedProtectionPolicy.set(System.Security.Authentication.ExtendedProtection.ExtendedProtectionPolicy)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Net.HttpListener.ExtendedProtectionSelectorDelegate.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Net.HttpListener.ExtendedProtectionSelectorDelegate.set(System.Net.HttpListener.ExtendedProtectionSelector)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Net.HttpListener.TimeoutManager.get()' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.HttpListener.ExtendedProtectionSelector' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Net.HttpListenerContext.AcceptWebSocketAsync(System.String, System.TimeSpan)' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Net.HttpListenerException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
-MembersMustExist : Member 'System.Net.HttpListenerException..ctor(System.Runtime.Serialization.SerializationInfo, System.Runtime.Serialization.StreamingContext)' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.HttpListenerTimeoutManager' does not exist in the implementation but it does exist in the contract.
 CannotMakeTypeAbstract : Type 'System.Net.HttpVersion' is abstract in the implementation but is not abstract in the contract.
 CannotSealType : Type 'System.Net.HttpVersion' is sealed in the implementation but not sealed in the contract.
 MembersMustExist : Member 'System.Net.HttpVersion..ctor()' does not exist in the implementation but it does exist in the contract.
-CannotSealType : Type 'System.Net.HttpWebRequest' is sealed in the implementation but not sealed in the contract.
 MembersMustExist : Member 'System.Net.HttpWebRequest..ctor()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Net.HttpWebRequest..ctor(System.Runtime.Serialization.SerializationInfo, System.Runtime.Serialization.StreamingContext)' does not exist in the implementation but it does exist in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Net.HttpWebRequest.AllowAutoRedirect' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Net.HttpWebRequest.AllowReadStreamBuffering' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Net.HttpWebRequest.AllowWriteStreamBuffering' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Net.HttpWebRequest.ConnectionGroupName' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Net.HttpWebRequest.ContentType' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Net.HttpWebRequest.CookieContainer' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Net.HttpWebRequest.Credentials' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Net.HttpWebRequest.HaveResponse' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Net.HttpWebRequest.Headers' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Net.HttpWebRequest.Method' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Net.HttpWebRequest.RequestUri' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Net.HttpWebRequest.SupportsCookieContainer' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Net.HttpWebRequest.UseDefaultCredentials' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Net.HttpWebRequest.Abort()' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Net.HttpWebRequest.AllowAutoRedirect.get()' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Net.HttpWebRequest.AllowAutoRedirect.set(System.Boolean)' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Net.HttpWebRequest.AllowReadStreamBuffering.get()' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Net.HttpWebRequest.AllowReadStreamBuffering.set(System.Boolean)' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Net.HttpWebRequest.AllowWriteStreamBuffering.get()' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Net.HttpWebRequest.AllowWriteStreamBuffering.set(System.Boolean)' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Net.HttpWebRequest.BeginGetRequestStream(System.AsyncCallback, System.Object)' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Net.HttpWebRequest.BeginGetResponse(System.AsyncCallback, System.Object)' is non-virtual in the implementation but is virtual in the contract.
-MembersMustExist : Member 'System.Net.HttpWebRequest.Connection.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Net.HttpWebRequest.Connection.set(System.String)' does not exist in the implementation but it does exist in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Net.HttpWebRequest.ConnectionGroupName.get()' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Net.HttpWebRequest.ConnectionGroupName.set(System.String)' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Net.HttpWebRequest.ContentType.get()' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Net.HttpWebRequest.ContentType.set(System.String)' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Net.HttpWebRequest.CookieContainer.get()' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Net.HttpWebRequest.CookieContainer.set(System.Net.CookieContainer)' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Net.HttpWebRequest.Credentials.get()' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Net.HttpWebRequest.Credentials.set(System.Net.ICredentials)' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Net.HttpWebRequest.EndGetRequestStream(System.IAsyncResult)' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Net.HttpWebRequest.EndGetResponse(System.IAsyncResult)' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Net.HttpWebRequest.GetRequestStream()' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Net.HttpWebRequest.GetResponse()' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Net.HttpWebRequest.HaveResponse.get()' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Net.HttpWebRequest.Headers.get()' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Net.HttpWebRequest.Headers.set(System.Net.WebHeaderCollection)' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Net.HttpWebRequest.Method.get()' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Net.HttpWebRequest.Method.set(System.String)' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Net.HttpWebRequest.RequestUri.get()' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Net.HttpWebRequest.SupportsCookieContainer.get()' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Net.HttpWebRequest.UseDefaultCredentials.get()' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Net.HttpWebRequest.UseDefaultCredentials.set(System.Boolean)' is non-virtual in the implementation but is virtual in the contract.
-MembersMustExist : Member 'System.Net.HttpWebResponse..ctor(System.Runtime.Serialization.SerializationInfo, System.Runtime.Serialization.StreamingContext)' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Net.ICertificatePolicy' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Net.NetworkAccess' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Net.NetworkCredential..ctor(System.String, System.Security.SecureString)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Net.NetworkCredential..ctor(System.String, System.Security.SecureString, System.String)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Net.NetworkCredential.SecurePassword.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Net.NetworkCredential.SecurePassword.set(System.Security.SecureString)' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Net.ProtocolViolationException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
 MembersMustExist : Member 'System.Net.ServicePointManager.CertificatePolicy.get()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Net.ServicePointManager.CertificatePolicy.set(System.Net.ICertificatePolicy)' does not exist in the implementation but it does exist in the contract.
@@ -1389,14 +1204,10 @@ TypesMustExist : Type 'System.Net.SocketPermissionAttribute' does not exist in t
 MembersMustExist : Member 'System.Net.TransportContext.GetTlsTokenBindings()' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Net.TransportType' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Net.WebException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
-MembersMustExist : Member 'System.Net.WebHeaderCollection.Set(System.Net.HttpRequestHeader, System.String)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Net.WebHeaderCollection.Set(System.Net.HttpResponseHeader, System.String)' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Net.WebPermission' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Net.WebPermissionAttribute' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Net.WebRequest.CreatorInstance.get()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Net.WebRequest.RegisterPortableWebRequestCreator(System.Net.IWebRequestCreate)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Net.WebUtility.HtmlDecode(System.String, System.IO.TextWriter)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Net.WebUtility.HtmlEncode(System.String, System.IO.TextWriter)' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Net.Configuration.AuthenticationModuleElement' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Net.Configuration.AuthenticationModuleElementCollection' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Net.Configuration.AuthenticationModulesSection' does not exist in the implementation but it does exist in the contract.
@@ -1439,16 +1250,6 @@ TypesMustExist : Type 'System.Net.Mail.SmtpPermissionAttribute' does not exist i
 CannotRemoveBaseTypeOrInterface : Type 'System.Net.NetworkInformation.NetworkInformationException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Net.NetworkInformation.NetworkInformationPermissionAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Net.NetworkInformation.PingException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
-MembersMustExist : Member 'System.Net.Sockets.AddressFamily System.Net.Sockets.AddressFamily.Max' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Net.Sockets.Socket.BeginSendFile(System.String, System.AsyncCallback, System.Object)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Net.Sockets.Socket.BeginSendFile(System.String, System.Byte[], System.Byte[], System.Net.Sockets.TransmitFileOptions, System.AsyncCallback, System.Object)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Net.Sockets.Socket.EndAccept(System.Byte[], System.IAsyncResult)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Net.Sockets.Socket.EndAccept(System.Byte[], System.Int32, System.IAsyncResult)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Net.Sockets.Socket.EndSendFile(System.IAsyncResult)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Net.Sockets.Socket.SendFile(System.String)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Net.Sockets.Socket.SendFile(System.String, System.Byte[], System.Byte[], System.Net.Sockets.TransmitFileOptions)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Net.Sockets.SocketAsyncEventArgs.SendPacketsFlags.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Net.Sockets.SocketAsyncEventArgs.SendPacketsFlags.set(System.Net.Sockets.TransmitFileOptions)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Net.Sockets.SocketAsyncEventArgs.SocketClientAccessPolicyProtocol.get()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Net.Sockets.SocketAsyncEventArgs.SocketClientAccessPolicyProtocol.set(System.Net.Sockets.SocketClientAccessPolicyProtocol)' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Net.Sockets.SocketClientAccessPolicyProtocol' does not exist in the implementation but it does exist in the contract.
@@ -1460,17 +1261,12 @@ CannotRemoveBaseTypeOrInterface : Type 'System.Runtime.InteropServices.DefaultPa
 TypesMustExist : Type 'System.Runtime.InteropServices.StandardOleMarshalObject' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Security.Authentication.AuthenticationException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Security.Authentication.InvalidCredentialException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
-MembersMustExist : Member 'System.Security.Authentication.SslProtocols System.Security.Authentication.SslProtocols.Default' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Authentication.ExtendedProtection.ExtendedProtectionPolicyTypeConverter' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Security.Authentication.ExtendedProtection.TokenBinding' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Security.Authentication.ExtendedProtection.TokenBindingType' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Security.Authentication.ExtendedProtection.Configuration.ExtendedProtectionPolicyElement' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Security.Authentication.ExtendedProtection.Configuration.ServiceNameElement' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Security.Authentication.ExtendedProtection.Configuration.ServiceNameElementCollection' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Security.Claims.DynamicRoleClaimProvider' does not exist in the implementation but it does exist in the contract.
-CannotRemoveBaseTypeOrInterface : Type 'System.Security.Cryptography.X509Certificates.X509Certificate2Collection' does not inherit from base type 'System.Collections.CollectionBase' in the implementation but it does in the contract.
-CannotRemoveBaseTypeOrInterface : Type 'System.Security.Cryptography.X509Certificates.X509CertificateCollection' does not inherit from base type 'System.Collections.CollectionBase' in the implementation but it does in the contract.
-MembersMustExist : Member 'System.Security.Cryptography.X509Certificates.X509Chain.Create()' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Security.Permissions.ResourcePermissionBase' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Security.Permissions.ResourcePermissionBaseEntry' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Security.Permissions.StorePermission' does not exist in the implementation but it does exist in the contract.
@@ -1586,26 +1382,16 @@ CannotRemoveBaseTypeOrInterface : Type 'System.Runtime.CompilerServices.Extensio
 TypesMustExist : Type 'System.Runtime.CompilerServices.RuntimeOps' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Runtime.InteropServices.ComAwareEventInfo' does not implement interface 'System.Runtime.InteropServices._EventInfo' in the implementation but it does in the contract.
 TypesMustExist : Type 'System.Security.ManifestKinds' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Security.Cryptography.Aes.Create(System.String)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Security.Cryptography.AesManaged.FeedbackSize.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Security.Cryptography.AesManaged.FeedbackSize.set(System.Int32)' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Security.Cryptography.ECDiffieHellman' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Security.Cryptography.ECDiffieHellmanCng' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Security.Cryptography.ECDiffieHellmanCngPublicKey' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Security.Cryptography.ECDiffieHellmanKeyDerivationFunction' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Security.Cryptography.ECDsa.Create(System.String)' does not exist in the implementation but it does exist in the contract.
-CannotMakeMemberAbstract : Member 'System.Security.Cryptography.ECDsa.HashData(System.Byte[], System.Int32, System.Int32, System.Security.Cryptography.HashAlgorithmName)' is abstract in the implementation but is not abstract in the contract.
-CannotMakeMemberAbstract : Member 'System.Security.Cryptography.ECDsa.HashData(System.IO.Stream, System.Security.Cryptography.HashAlgorithmName)' is abstract in the implementation but is not abstract in the contract.
-MembersMustExist : Member 'System.Security.Cryptography.ECDsa.KeyExchangeAlgorithm.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Security.Cryptography.ECDsa.SignatureAlgorithm.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Security.Cryptography.ECDsaCng.FromXmlString(System.String)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Security.Cryptography.ECDsaCng.FromXmlString(System.String, System.Security.Cryptography.ECKeyXmlFormat)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Security.Cryptography.ECDsaCng.HashAlgorithm.get()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Security.Cryptography.ECDsaCng.HashAlgorithm.set(System.Security.Cryptography.CngAlgorithm)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Security.Cryptography.ECDsaCng.SignData(System.Byte[])' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Security.Cryptography.ECDsaCng.SignData(System.Byte[], System.Int32, System.Int32)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Security.Cryptography.ECDsaCng.SignData(System.IO.Stream)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Security.Cryptography.ECDsaCng.ToXmlString(System.Boolean)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Security.Cryptography.ECDsaCng.ToXmlString(System.Security.Cryptography.ECKeyXmlFormat)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Security.Cryptography.ECDsaCng.VerifyData(System.Byte[], System.Byte[])' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Security.Cryptography.ECDsaCng.VerifyData(System.Byte[], System.Int32, System.Int32, System.Byte[])' does not exist in the implementation but it does exist in the contract.
@@ -1736,4 +1522,4 @@ CannotRemoveBaseTypeOrInterface : Type 'System.Xml.Xsl.XsltException' does not i
 MembersMustExist : Member 'System.Xml.Xsl.XslTransform.Load(System.Xml.XmlReader, System.Xml.XmlResolver, System.Security.Policy.Evidence)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Xml.Xsl.XslTransform.Load(System.Xml.XPath.IXPathNavigable, System.Xml.XmlResolver, System.Security.Policy.Evidence)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Xml.Xsl.XslTransform.Load(System.Xml.XPath.XPathNavigator, System.Xml.XmlResolver, System.Security.Policy.Evidence)' does not exist in the implementation but it does exist in the contract.
-Total Issues: 1731
+Total Issues: 1517

@@ -145,7 +145,7 @@ namespace System.IO
         /// <summary>
         /// Gets the count of common characters from the left optionally ignoring case
         /// </summary>
-        unsafe internal static int EqualStartingCharacterCount(string first, string second, bool ignoreCase)
+        internal static unsafe int EqualStartingCharacterCount(string first, string second, bool ignoreCase)
         {
             if (string.IsNullOrEmpty(first) || string.IsNullOrEmpty(second)) return 0;
 

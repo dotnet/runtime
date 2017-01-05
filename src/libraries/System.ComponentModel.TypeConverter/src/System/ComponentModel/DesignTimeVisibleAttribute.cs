@@ -17,15 +17,13 @@ namespace System.ComponentModel
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Interface)]
     public sealed class DesignTimeVisibleAttribute : Attribute
     {
-        private bool _visible;
-
         /// <summary>
         ///     Creates a new DesignTimeVisibleAttribute with the visible
         ///     property set to the given value.
         /// </summary>
         public DesignTimeVisibleAttribute(bool visible)
         {
-            _visible = visible;
+            Visible = visible;
         }
 
         /// <summary>
@@ -40,13 +38,7 @@ namespace System.ComponentModel
         ///     True if this component should be shown at design time, or false
         ///     if it shouldn't.
         /// </summary>
-        public bool Visible
-        {
-            get
-            {
-                return _visible;
-            }
-        }
+        public bool Visible { get; }
 
         /// <summary>
         ///     Marks a component as visible in a visual designer.
@@ -74,7 +66,7 @@ namespace System.ComponentModel
             }
 
             DesignTimeVisibleAttribute other = obj as DesignTimeVisibleAttribute;
-            return other != null && other.Visible == _visible;
+            return other != null && other.Visible == Visible;
         }
 
         /// <summary>
@@ -82,7 +74,7 @@ namespace System.ComponentModel
         /// </summary>
         public override int GetHashCode()
         {
-            return typeof(DesignTimeVisibleAttribute).GetHashCode() ^ (_visible ? -1 : 0);
+            return typeof(DesignTimeVisibleAttribute).GetHashCode() ^ (Visible ? -1 : 0);
         }
 
         /// <summary>

@@ -357,4 +357,49 @@
   <data name="net_WebSockets_Argument_InvalidMessageType" xml:space="preserve">
     <value>The message type '{0}' is not allowed for the '{1}' operation. Valid message types are: '{2}, {3}'. To close the WebSocket, use the '{4}' operation instead. </value>
   </data>
+  <data name="net_securitypackagesupport" xml:space="preserve">
+    <value>The requested security package is not supported.</value>
+  </data>
+  <data name="net_log_operation_failed_with_error" xml:space="preserve">
+    <value>{0} failed with error {1}.</value>
+  </data>
+  <data name="net_MethodNotImplementedException" xml:space="preserve">
+    <value>This method is not implemented by this class.</value>
+  </data>
+  <data name="event_OperationReturnedSomething" xml:space="preserve">
+    <value>{0} returned {1}.</value>
+  </data>
+  <data name="net_invalid_enum" xml:space="preserve">
+    <value>The specified value is not valid in the '{0}' enumeration.</value>
+  </data>
+  <data name="net_auth_message_not_encrypted" xml:space="preserve">
+    <value>Protocol error: A received message contains a valid signature but it was not encrypted as required by the effective Protection Level.</value>
+  </data>
+  <data name="SSPIInvalidHandleType" xml:space="preserve">
+    <value>'{0}' is not a supported handle type.</value>
+  </data>
+  <data name="net_cannot_change_after_headers" xml:space="preserve">
+    <value>Cannot be changed after headers are sent.</value>
+  </data>
+  <data name="offset_out_of_range" xml:space="preserve">
+    <value>Offset exceeds the length of buffer.</value>
+  </data>
+  <data name="net_io_operation_aborted" xml:space="preserve">
+    <value>I/O operation aborted: '{0}'.</value>
+  </data>
+  <data name="net_invalid_path" xml:space="preserve">
+    <value>Invalid path.</value>
+  </data>
+  <data name="net_no_client_certificate" xml:space="preserve">
+    <value>Client certificate not found.</value>
+  </data>
+  <data name="net_listener_auth_errors" xml:space="preserve">
+    <value>Authentication errors.</value>
+  </data>
+  <data name="net_listener_close" xml:space="preserve">
+    <value>Listener closed.</value>
+  </data>
+  <data name="net_invalid_port" xml:space="preserve">
+    <value>Invalid port in prefix.</value>
+  </data>
 </root>

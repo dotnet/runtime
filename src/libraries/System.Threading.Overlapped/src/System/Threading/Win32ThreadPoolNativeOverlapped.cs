@@ -30,7 +30,7 @@ namespace System.Threading
             get { return s_dataArray[_dataIndex]; }
         }
 
-        internal unsafe static Win32ThreadPoolNativeOverlapped* Allocate(IOCompletionCallback callback, object state, object pinData, PreAllocatedOverlapped preAllocated)
+        internal static unsafe Win32ThreadPoolNativeOverlapped* Allocate(IOCompletionCallback callback, object state, object pinData, PreAllocatedOverlapped preAllocated)
         {
             Win32ThreadPoolNativeOverlapped* overlapped = AllocateNew();
             try
@@ -45,7 +45,7 @@ namespace System.Threading
             return overlapped;
         }
 
-        private unsafe static Win32ThreadPoolNativeOverlapped* AllocateNew()
+        private static unsafe Win32ThreadPoolNativeOverlapped* AllocateNew()
         {
             IntPtr freePtr;
             Win32ThreadPoolNativeOverlapped* overlapped;
@@ -158,7 +158,7 @@ namespace System.Threading
             }
         }
 
-        internal unsafe static void Free(Win32ThreadPoolNativeOverlapped* overlapped)
+        internal static unsafe void Free(Win32ThreadPoolNativeOverlapped* overlapped)
         {
             // Reset all data.
             overlapped->Data.Reset();
@@ -175,17 +175,17 @@ namespace System.Threading
             }
         }
 
-        internal unsafe static NativeOverlapped* ToNativeOverlapped(Win32ThreadPoolNativeOverlapped* overlapped)
+        internal static unsafe NativeOverlapped* ToNativeOverlapped(Win32ThreadPoolNativeOverlapped* overlapped)
         {
             return (NativeOverlapped*)overlapped;
         }
 
-        internal unsafe static Win32ThreadPoolNativeOverlapped* FromNativeOverlapped(NativeOverlapped* overlapped)
+        internal static unsafe Win32ThreadPoolNativeOverlapped* FromNativeOverlapped(NativeOverlapped* overlapped)
         {
             return (Win32ThreadPoolNativeOverlapped*)overlapped;
         }
 
-        internal unsafe static void CompleteWithCallback(uint errorCode, uint bytesWritten, Win32ThreadPoolNativeOverlapped* overlapped)
+        internal static unsafe void CompleteWithCallback(uint errorCode, uint bytesWritten, Win32ThreadPoolNativeOverlapped* overlapped)
         {
             OverlappedData data = overlapped->Data;
 
@@ -211,7 +211,7 @@ namespace System.Threading
             ExecutionContext.Run(data._executionContext, callback, args);
         }
 
-        private unsafe static void OnExecutionContextCallback(object state)
+        private static unsafe void OnExecutionContextCallback(object state)
         {
             ExecutionContextCallbackArgs args = (ExecutionContextCallbackArgs)state;
 

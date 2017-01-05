@@ -33,14 +33,7 @@ namespace System.Security.Cryptography
             public Implementation()
             {
                 _hashProvider = HashProviderDispenser.CreateHashProvider(HashAlgorithmNames.SHA512);
-            }
-
-            public sealed override int HashSize
-            {
-                get
-                {
-                    return _hashProvider.HashSizeInBytes * 8;
-                }
+                HashSizeValue = _hashProvider.HashSizeInBytes * 8;
             }
 
             protected sealed override void HashCore(byte[] array, int ibStart, int cbSize)

@@ -2126,7 +2126,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private void CompileMethodCallExpression(Expression @object, MethodInfo method, IArgumentProvider arguments)
         {
-            ParameterInfo[] parameters = method.GetParameters();
+            ParameterInfo[] parameters = method.GetParametersCached();
 
             // TODO: Support pass by reference.
             List<ByRefUpdater> updaters = null;
@@ -2380,7 +2380,7 @@ namespace System.Linq.Expressions.Interpreter
                 if (node.Constructor.DeclaringType.GetTypeInfo().IsAbstract)
                     throw Error.NonAbstractConstructorRequired();
 
-                ParameterInfo[] parameters = node.Constructor.GetParameters();
+                ParameterInfo[] parameters = node.Constructor.GetParametersCached();
                 List<ByRefUpdater> updaters = null;
 
                 for (int i = 0; i < parameters.Length; i++)
@@ -2657,7 +2657,6 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "expr")]
         private void CompileListInitExpression(Expression expr)
         {
             var node = (ListInitExpression)expr;
@@ -2683,7 +2682,6 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "expr")]
         private void CompileMemberInitExpression(Expression expr)
         {
             var node = (MemberInitExpression)expr;
@@ -2739,7 +2737,6 @@ namespace System.Linq.Expressions.Interpreter
             throw new InvalidOperationException("MemberNotFieldOrProperty");
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "expr")]
         private void CompileQuoteUnaryExpression(Expression expr)
         {
             var unary = (UnaryExpression)expr;
@@ -3200,8 +3197,8 @@ namespace System.Linq.Expressions.Interpreter
             }
             catch (TargetInvocationException e)
             {
-                ExceptionHelpers.UpdateForRethrow(e.InnerException);
-                throw e.InnerException;
+                ExceptionHelpers.UnwrapAndRethrow(e);
+                throw ContractUtils.Unreachable;
             }
         }
 
@@ -3245,8 +3242,8 @@ namespace System.Linq.Expressions.Interpreter
             }
             catch (TargetInvocationException e)
             {
-                ExceptionHelpers.UpdateForRethrow(e.InnerException);
-                throw e.InnerException;
+                ExceptionHelpers.UnwrapAndRethrow(e);
+                throw ContractUtils.Unreachable;
             }
         }
 

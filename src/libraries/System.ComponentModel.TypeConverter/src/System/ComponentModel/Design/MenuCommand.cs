@@ -23,9 +23,7 @@ namespace System.ComponentModel.Design
         // Events that we suface or call on
         //
         private EventHandler _execHandler;
-        private EventHandler _statusHandler;
 
-        private CommandID _commandID;
         private int _status;
         private IDictionary _properties;
 
@@ -61,7 +59,7 @@ namespace System.ComponentModel.Design
         public MenuCommand(EventHandler handler, CommandID command)
         {
             _execHandler = handler;
-            _commandID = command;
+            CommandID = command;
             _status = SUPPORTED | ENABLED;
         }
 
@@ -120,20 +118,7 @@ namespace System.ComponentModel.Design
 
         /// <summary>
         /// </summary>
-        public virtual IDictionary Properties
-        {
-            get
-            {
-                if (_properties == null)
-                {
-                    _properties = new HybridDictionary();
-                }
-
-                return _properties;
-            }
-        }
-
-
+        public virtual IDictionary Properties => _properties ?? (_properties = new HybridDictionary());
 
 
         /// <summary>
@@ -173,28 +158,13 @@ namespace System.ComponentModel.Design
         ///       Occurs when the menu command changes.
         ///    </para>
         /// </summary>
-        public event EventHandler CommandChanged
-        {
-            add
-            {
-                _statusHandler += value;
-            }
-            remove
-            {
-                _statusHandler -= value;
-            }
-        }
+        public event EventHandler CommandChanged;
+        
 
         /// <summary>
         /// <para>Gets the <see cref='System.ComponentModel.Design.CommandID'/> associated with this menu command.</para>
         /// </summary>
-        public virtual CommandID CommandID
-        {
-            get
-            {
-                return _commandID;
-            }
-        }
+        public virtual CommandID CommandID { get; }
 
         /// <summary>
         ///    <para>
@@ -235,13 +205,7 @@ namespace System.ComponentModel.Design
         ///       Gets the OLE command status code for this menu item.
         ///    </para>
         /// </summary>
-        public virtual int OleStatus
-        {
-            get
-            {
-                return _status;
-            }
-        }
+        public virtual int OleStatus => _status;
 
         /// <summary>
         ///    <para>Provides notification and is called in response to 
@@ -250,10 +214,7 @@ namespace System.ComponentModel.Design
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2109:ReviewVisibleEventHandlers")] // Safe: FullTrust LinkDemand to instantiate an object of this class.
         protected virtual void OnCommandChanged(EventArgs e)
         {
-            if (_statusHandler != null)
-            {
-                _statusHandler(this, e);
-            }
+            CommandChanged?.Invoke(this, e);
         }
 
         /// <summary>

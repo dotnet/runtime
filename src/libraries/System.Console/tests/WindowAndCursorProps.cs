@@ -305,7 +305,7 @@ public class WindowAndCursorProps : RemoteExecutorTestBase
     {
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
-            if (!Console.IsInputRedirected && !Console.IsOutputRedirected)
+            if (PlatformDetection.IsNotWindowsNanoServer && !Console.IsInputRedirected && !Console.IsOutputRedirected)
             {
                 Assert.Throws<ArgumentOutOfRangeException>(() => Console.SetWindowSize(-1, Console.WindowHeight));
                 Assert.Throws<ArgumentOutOfRangeException>(() => Console.SetWindowSize(Console.WindowWidth, -1));

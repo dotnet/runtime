@@ -8,7 +8,7 @@
     </ProjectReference>
     <ProjectReference Include="..\src\System.Runtime.Loader.builds"/>
     
-    <NotSupportedOnTargetFramework Include="net462" />
+    <NotSupportedOnTargetFramework Include="net461" />
     <NotSupportedOnTargetFramework Include="$(AllXamarinFrameworks)" />
   </ItemGroup>
   

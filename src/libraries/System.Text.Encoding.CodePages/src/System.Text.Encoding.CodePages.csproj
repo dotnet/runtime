@@ -11,7 +11,7 @@
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <PackageTargetFramework Include="netstandard1.7" />
     <!-- need to support rid-less restore for packages.config -->
-    <PackageTargetFramework Include="net463">
+    <PackageTargetFramework Include="net461">
       <TargetRuntime></TargetRuntime>
     </PackageTargetFramework>
   </ItemGroup>
@@ -44,6 +44,9 @@
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
     <Compile Include="System\Text\CodePagesEncodingProvider.Windows.cs" />
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.Encoding.Constants.cs">
+      <Link>Common\Interop\Windows\kernel32\Interop.Encoding.Constants.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
       <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
     </Compile>

@@ -99,7 +99,7 @@ Already some of the architectural elements are being exposed, namely
 
 ### Creating DiagnosticSources (Actually DiagnosticListeners)
 
-Perhaps confusingly you make a DiagnosticSource by creating DiagnosticListener
+Perhaps confusingly you make a DiagnosticSource by creating a DiagnosticListener
 
 	static DiagnosticSource mySource = new DiagnosticListener("System.Net.Http");
 
@@ -196,7 +196,7 @@ is typically not flexible enough.
 
 Instead DiagnosticListener supports a way of discovering DiagnosticListener that is
 active in the system at runtime.   The API to accomplish this is the 'AllListeners' 
-IObservable<DiagnosticListener>.     
+IObservable\<DiagnosticListener>.     
 
 The IObservable interface is the 'callback' version of the IEnumerable interface.   You can learn 
 more about it at the [Reactive Extensions Site](https://msdn.microsoft.com/en-us/data/gg577609.aspx).
@@ -240,19 +240,19 @@ to subscribe to.
 
 Finally, note that the code above is taking advantage of convenience functionality in the System.Reactive.Core
 library.   The DiagnosticListener.AllListeners.Subscribe method actually requires that it be passed
-an IObserver<DiagnosticListener>, which is a class that has three callbacks (OnNext, OnError, OnComplete),
-but we passed it a Action<DiagnosticListener>.   The magic that makes this work is an extension method
-in System.Reactive.Core that takes the Action and from it makes a IObserver (called AnonymousObserver) 
+an IObserver\<DiagnosticListener>, which is a class that has three callbacks (OnNext, OnError, OnComplete),
+but we passed it an Action\<DiagnosticListener>.   The magic that makes this work is an extension method
+in System.Reactive.Core that takes the Action and from it makes an IObserver (called AnonymousObserver) 
 which calls the Action on its OnNext callback.   This glue is what makes the code concise.  
 
 #### Subscribing to DiagnosticListeners
 
-A DiagnosticListener implements the IObservable<KeyValuePair<string, object>> interface, so you can
+A DiagnosticListener implements the IObservable\<KeyValuePair\<string, object>> interface, so you can
 call 'Subscribe' on it as well.  Thus we can fill out the previous example a bit 
 
 ```C#
-	static IDisposable listenerSubscription = DiagnosticListener.AllListeners.Subscribe(delegate (DiagnosticListener listener)
 	static IDisposable networkSubscription = null;
+	static IDisposable listenerSubscription = DiagnosticListener.AllListeners.Subscribe(delegate (DiagnosticListener listener)
 	{
 		if (listener.Name == "System.Net.Http")
 		{
@@ -274,7 +274,7 @@ call 'Subscribe' on it as well.  Thus we can fill out the previous example a bit
 In this example after finding the 'System.Net.Http' DiagnosticListener, we create an action that 
 prints out the name of the listener, event, and payload.ToString().   Notice a few things:
 
-   1. DiagnosticListener implement IObservable<KeyValuePair<string, object>>.   This means 
+   1. DiagnosticListener implement IObservable\<KeyValuePair\<string, object>>.   This means 
       on each callback we get a KeyValuePair.  The key of this pair is the name of the event
 	  and the value is the payload object.  In the code above we simply log this information
 	  to the Console.  

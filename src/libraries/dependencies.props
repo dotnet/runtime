@@ -17,18 +17,18 @@
        These ref versions are pulled from https://github.com/dotnet/versions.
   -->
   <PropertyGroup>
-    <CoreFxCurrentRef>10ae672d2e13fb79101a4991f2643cca01208075</CoreFxCurrentRef>
+    <CoreFxCurrentRef>3c36f9bf01e35591e1bf30fdac512f863643f54f</CoreFxCurrentRef>
     <CoreClrCurrentRef>71ca1111dc90eb30ceaafbdb1144dd411d712385</CoreClrCurrentRef>
     <ExternalCurrentRef>4e2952b5114bfa90cc45eef908204006a771a62b</ExternalCurrentRef>
-    <ProjectNTfsCurrentRef>efe21f521cf97ceb681deeeab390261eb9506552</ProjectNTfsCurrentRef>
+    <ProjectNTfsCurrentRef>3c36f9bf01e35591e1bf30fdac512f863643f54f</ProjectNTfsCurrentRef>
   </PropertyGroup>
 
   <!-- Auto-upgraded properties for each build info dependency. -->
   <PropertyGroup>
-    <CoreFxExpectedPrerelease>beta-24721-02</CoreFxExpectedPrerelease>
+    <CoreFxExpectedPrerelease>beta-24904-01</CoreFxExpectedPrerelease>
     <CoreClrExpectedPrerelease>beta-24904-03</CoreClrExpectedPrerelease>
     <ExternalExpectedPrerelease>beta-24727-00</ExternalExpectedPrerelease>
-    <ProjectNTfsExpectedPrerelease>beta-24728-00</ProjectNTfsExpectedPrerelease>
+    <ProjectNTfsExpectedPrerelease>beta-24904-00</ProjectNTfsExpectedPrerelease>
   </PropertyGroup>
 
   <!-- Full package version strings that are used in other parts of the build. -->

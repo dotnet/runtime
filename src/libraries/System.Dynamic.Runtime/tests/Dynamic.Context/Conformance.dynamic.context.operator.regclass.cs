@@ -861,7 +861,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclas
         }
     }
 
-    static public class Extension
+    public static class Extension
     {
         public static MyEnum ExReturnMyEnum(this MyClass mc)
         {
@@ -2817,7 +2817,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclas
         }
     }
 
-    static public class Extension
+    public static class Extension
     {
         public static int Method(this MyEnum[] mea)
         {
@@ -3068,7 +3068,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclas
         }
     }
 
-    static public class Extension
+    public static class Extension
     {
         public static float? ExReturnFloat(this MyStruct mc)
         {

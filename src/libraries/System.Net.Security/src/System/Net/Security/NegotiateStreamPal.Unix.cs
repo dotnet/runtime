@@ -37,17 +37,6 @@ namespace System.Net.Security
         {
             throw new PlatformNotSupportedException(SR.net_nego_server_not_supported);
         }
-
-        internal static string QueryContextAuthenticationPackage(SafeDeleteContext securityContext)
-        {
-            SafeDeleteNegoContext negoContext = (SafeDeleteNegoContext)securityContext;
-            return negoContext.IsNtlmUsed ? NegotiationInfoClass.NTLM : NegotiationInfoClass.Kerberos;
-        }
-        
-        internal static string QueryContextClientSpecifiedSpn(SafeDeleteContext securityContext)
-        {
-            throw new PlatformNotSupportedException(SR.net_nego_server_not_supported);
-        }
         
         internal static void ValidateImpersonationLevel(TokenImpersonationLevel impersonationLevel)
         {

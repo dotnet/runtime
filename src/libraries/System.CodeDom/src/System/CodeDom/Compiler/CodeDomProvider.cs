@@ -13,9 +13,9 @@ namespace System.CodeDom.Compiler
 {
     public abstract class CodeDomProvider // TODO: Inherit Component
     {
-        private readonly static Dictionary<string, CompilerInfo> s_compilerLanguages = new Dictionary<string, CompilerInfo>(StringComparer.OrdinalIgnoreCase);
-        private readonly static Dictionary<string, CompilerInfo> s_compilerExtensions = new Dictionary<string, CompilerInfo>(StringComparer.OrdinalIgnoreCase);
-        private readonly static List<CompilerInfo> s_allCompilerInfo = new List<CompilerInfo>();
+        private static readonly Dictionary<string, CompilerInfo> s_compilerLanguages = new Dictionary<string, CompilerInfo>(StringComparer.OrdinalIgnoreCase);
+        private static readonly Dictionary<string, CompilerInfo> s_compilerExtensions = new Dictionary<string, CompilerInfo>(StringComparer.OrdinalIgnoreCase);
+        private static readonly List<CompilerInfo> s_allCompilerInfo = new List<CompilerInfo>();
 
         static CodeDomProvider()
         {

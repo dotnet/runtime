@@ -221,6 +221,12 @@ run_test()
   fi
 
   dirName="$1/$TestRelPath"
+
+  if [ ! -d "$dirName" ]; then
+    echo "Nothing to test in $testProject"
+    exit 0
+  fi
+
   copy_test_overlay $dirName
 
   pushd $dirName > /dev/null

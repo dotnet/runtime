@@ -15,7 +15,7 @@ namespace System.Data.SqlClient
 {
     internal sealed class SqlStatistics
     {
-        static internal SqlStatistics StartTimer(SqlStatistics statistics)
+        internal static SqlStatistics StartTimer(SqlStatistics statistics)
         {
             if ((null != statistics) && !statistics.RequestExecutionTimer())
             {
@@ -25,7 +25,7 @@ namespace System.Data.SqlClient
             return statistics;
         }
 
-        static internal void StopTimer(SqlStatistics statistics)
+        internal static void StopTimer(SqlStatistics statistics)
         {
             if (null != statistics)
             {
