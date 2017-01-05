@@ -8,8 +8,8 @@
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net46'">true</IsPartialFacadeAssembly>
     <ResourcesSourceOutputDirectory Condition="'$(TargetGroup)' == 'net46'">None</ResourcesSourceOutputDirectory>
     <!-- // uncomment to use the managed "unix" implementation on Windows
-      <TargetsWindows Condition="'$(TargetGroup)' == ''">false</TargetsWindows>
-      <TargetsUnix Condition="'$(TargetGroup)' == ''">true</TargetsUnix>
+      <TargetsWindows>false</TargetsWindows>
+      <TargetsUnix>true</TargetsUnix>
     -->
   </PropertyGroup>
   <PropertyGroup Condition="'$(EnableWinRT)' != 'true'">

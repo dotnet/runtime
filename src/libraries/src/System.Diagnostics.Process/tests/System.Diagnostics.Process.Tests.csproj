@@ -33,7 +33,7 @@
     <Compile Include="ProcessWaitingTests.cs" />
     <Compile Include="XunitAssemblyAttributes.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'=='netstandard1.7'">
+  <ItemGroup Condition="'$(TargetGroup)'=='netstandard'">
     <Compile Include="ProcessTests.netstandard1.7.cs" />
     <Compile Include="ProcessStartInfoTests.netstandard1.7.cs" />
   </ItemGroup>

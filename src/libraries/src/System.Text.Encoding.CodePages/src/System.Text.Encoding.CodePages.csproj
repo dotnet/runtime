@@ -9,7 +9,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
-    <PackageTargetFramework Include="netstandard1.7" />
+    <PackageTargetFramework Include="netstandard2.0" />
     <!-- need to support rid-less restore for packages.config -->
     <PackageTargetFramework Include="net461">
       <TargetRuntime>

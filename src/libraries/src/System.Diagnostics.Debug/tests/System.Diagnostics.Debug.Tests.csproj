@@ -25,7 +25,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AttributeTests.cs" />
-    <Compile Include="DebuggerTests.cs" Condition="'$(TargetGroup)'=='netstandard1.7'"/>
+    <Compile Include="DebuggerTests.cs" Condition="'$(TargetGroup)'=='netstandard'"/>
     <Compile Include="DebugTests.cs" />
     <Compile Include="XunitAssemblyAttributes.cs" />
   </ItemGroup>

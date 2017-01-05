@@ -49,7 +49,7 @@
     <Compile Include="XNodeSequenceRemove.cs" />
     <Compile Include="XElementChangedNotificationTests.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == ''">
+  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard'">
     <Compile Include="SaveWithFileName.cs" />
   </ItemGroup>
   <ItemGroup>

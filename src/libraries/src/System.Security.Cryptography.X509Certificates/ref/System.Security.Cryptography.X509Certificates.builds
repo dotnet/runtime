@@ -4,7 +4,7 @@
   <ItemGroup>
     <Project Include="System.Security.Cryptography.X509Certificates.csproj" />
     <Project Include="System.Security.Cryptography.X509Certificates.csproj">
-      <TargetGroup>netstandard1.7</TargetGroup>
+      <TargetGroup>netcoreapp1.1</TargetGroup>
     </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
