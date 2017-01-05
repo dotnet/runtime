@@ -28,10 +28,7 @@ namespace System.IO.Compression
         public override long Position
         {
             get { return _position; }
-            set
-            {
-                throw new NotSupportedException(SR.NotSupported);
-            }
+            set { throw new NotSupportedException(SR.NotSupported); }
         }
         public override void Write(byte[] buffer, int offset, int count)
         {
@@ -87,10 +84,7 @@ namespace System.IO.Compression
 
         public override long Length
         {
-            get
-            {
-                throw new NotSupportedException(SR.NotSupported);
-            }
+            get { throw new NotSupportedException(SR.NotSupported); }
         }
 
         public override long Seek(long offset, SeekOrigin origin)
