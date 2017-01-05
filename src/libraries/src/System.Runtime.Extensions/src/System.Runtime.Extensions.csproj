@@ -110,8 +110,6 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == '' or '$(TargetGroup)' == 'netcoreapp1.2corert'">
     <Compile Include="System\IO\FileStreamHelpers.CoreClr.cs" />
-    <Compile Include="System\IO\TextReader.netstandard17.cs" />
-    <Compile Include="System\IO\TextWriter.netstandard17.cs" />
   </ItemGroup>
   <!-- WINDOWS: Shared CoreCLR and .NET Native -->
   <ItemGroup Condition="'$(TargetsWindows)' == 'true' And '$(TargetGroup)' != 'net461'">
