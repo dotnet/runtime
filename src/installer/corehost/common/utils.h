@@ -32,4 +32,5 @@ bool parse_known_args(
     std::unordered_map<pal::string_t, std::vector<pal::string_t>>* opts,
     int* num_args);
 bool skip_utf8_bom(pal::ifstream_t* stream);
+bool get_env_shared_package_dirs(std::vector<pal::string_t>* dirs, const pal::string_t& arch, const pal::string_t& tfm);
 #endif

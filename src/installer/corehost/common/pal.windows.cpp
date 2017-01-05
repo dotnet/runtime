@@ -152,21 +152,38 @@ bool pal::get_default_breadcrumb_store(string_t* recv)
     return true;
 }
 
-bool pal::get_default_servicing_directory(string_t* recv)
+static
+bool get_program_files_by_id(KNOWNFOLDERID kfid, pal::string_t* recv)
 {
     recv->clear();
+    pal::char_t* prog_files;
+    HRESULT hr = ::SHGetKnownFolderPath(kfid, 0,  NULL, &prog_files);
+    if (hr != S_OK)
+    {
+        trace::verbose(_X("Failed to obtain Program Files directory, HRESULT: 0x%X"), hr);
+        return false;
+    }
+    recv->assign(prog_files);
+    return true;
+}
 
-    // See https://github.com/dotnet/cli/issues/2179
+static
+bool get_wow_mode_program_files(pal::string_t* recv)
+{
 #if defined(_TARGET_AMD64_)
-    if (!pal::getenv(_X("ProgramFiles(x86)"), recv))
+    KNOWNFOLDERID kfid = FOLDERID_ProgramFilesX86;
 #else
-    // In WOW64 mode, PF maps to PFx86.
-    if (!pal::getenv(_X("ProgramFiles"), recv))
+    KNOWNFOLDERID kfid = FOLDERID_ProgramFiles;
 #endif
+    return get_program_files_by_id(kfid, recv);
+}
+
+bool pal::get_default_servicing_directory(string_t* recv)
+{
+    if (!get_wow_mode_program_files(recv))
     {
         return false;
     }
-
     append_path(recv, _X("coreservicing"));
     return true;
 }
@@ -318,3 +335,30 @@ void pal::readdir(const string_t& path, std::vector<pal::string_t>* list)
     pal::readdir(path, _X("*"), list);
 }
 
+bool pal::get_global_shared_package_dir(pal::string_t* dir)
+{
+    if (!get_program_files_by_id(FOLDERID_ProgramFiles, dir))
+    {
+        return false;
+    }
+    append_path(dir, _X("dotnet"));
+    append_path(dir, _X("packages"));
+    return true;
+}
+
+bool pal::get_local_shared_package_dir(pal::string_t* dir)
+{
+    pal::char_t* profile;
+    HRESULT hr = ::SHGetKnownFolderPath(FOLDERID_Profile, 0,  NULL, &profile);
+    if (hr != S_OK)
+    {
+        trace::verbose(_X("Failed to obtain user profile directory, HRESULT: 0x%X"), hr);
+        return false;
+    }
+
+    dir->assign(profile);
+    append_path(dir, _X(".dotnet"));
+    append_path(dir, get_arch());
+    append_path(dir, _X("packages"));
+    return true;
+}

@@ -170,6 +170,85 @@ bool pal::get_default_servicing_directory(string_t* recv)
     return true;
 }
 
+bool pal::get_local_shared_package_dir(pal::string_t* recv)
+{
+    recv->clear();
+    pal::string_t dir;
+    if (!pal::getenv("HOME", &dir))
+    {
+        struct passwd* pw = getpwuid(getuid());
+        if (pw && pw->pw_dir)
+        {
+            dir.assign(pw->pw_dir);
+        }
+    }
+    if (dir.empty())
+    {
+        return false;
+    }
+    append_path(&dir, _X(".dotnet"));
+    append_path(&dir, get_arch());
+    append_path(&dir, _X("packages"));
+    recv->assign(dir);
+    return true;
+}
+
+static
+bool is_executable(const pal::string_t& file_path)
+{
+    struct stat st;
+    if (::stat(file_path.c_str(), &st) < 0)
+    {
+        return false;
+    }
+
+    return ((st.st_mode & S_IEXEC) != 0);
+}
+
+static
+bool locate_dotnet_on_path(pal::string_t* dotnet_exe)
+{
+    pal::string_t path;
+    if (!pal::getenv(_X("PATH"), &path))
+    {
+        return false;
+    }
+    
+    pal::string_t tok;
+    pal::stringstream_t ss(path);
+    while (std::getline(ss, tok, PATH_SEPARATOR))
+    {
+        size_t start_pos = tok.find_first_not_of(_X(" \t"));
+        if (start_pos == pal::string_t::npos)
+        {
+            continue;
+        }
+
+        append_path(&tok, _X("dotnet"));
+        if (pal::realpath(&tok) && is_executable(tok))
+        {
+            *dotnet_exe = tok;
+            return true;
+        }
+        tok.clear();
+    }
+    return false;
+}
+
+bool pal::get_global_shared_package_dir(pal::string_t* recv)
+{
+    recv->clear();
+    pal::string_t dotnet_exe;
+    if (!locate_dotnet_on_path(&dotnet_exe))
+    {
+        return false;
+    }
+    pal::string_t dir = get_directory(dotnet_exe);
+    append_path(&dir, _X("packages"));
+    recv->assign(dir);
+    return true;
+}
+
 #if defined(__APPLE__)
 bool pal::get_os_moniker(os_moniker_t* moniker)
 {
