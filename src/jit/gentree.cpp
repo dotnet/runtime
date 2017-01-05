@@ -15099,7 +15099,6 @@ BasicBlock* Compiler::bbNewBasicBlock(BBjumpKinds jumpKind)
     {
         VarSetOps::AssignNoCopy(this, block->bbVarUse, VarSetOps::MakeEmpty(this));
         VarSetOps::AssignNoCopy(this, block->bbVarDef, VarSetOps::MakeEmpty(this));
-        VarSetOps::AssignNoCopy(this, block->bbVarTmp, VarSetOps::MakeEmpty(this));
         VarSetOps::AssignNoCopy(this, block->bbLiveIn, VarSetOps::MakeEmpty(this));
         VarSetOps::AssignNoCopy(this, block->bbLiveOut, VarSetOps::MakeEmpty(this));
         VarSetOps::AssignNoCopy(this, block->bbScope, VarSetOps::MakeEmpty(this));
@@ -15108,7 +15107,6 @@ BasicBlock* Compiler::bbNewBasicBlock(BBjumpKinds jumpKind)
     {
         VarSetOps::AssignNoCopy(this, block->bbVarUse, VarSetOps::UninitVal());
         VarSetOps::AssignNoCopy(this, block->bbVarDef, VarSetOps::UninitVal());
-        VarSetOps::AssignNoCopy(this, block->bbVarTmp, VarSetOps::UninitVal());
         VarSetOps::AssignNoCopy(this, block->bbLiveIn, VarSetOps::UninitVal());
         VarSetOps::AssignNoCopy(this, block->bbLiveOut, VarSetOps::UninitVal());
         VarSetOps::AssignNoCopy(this, block->bbScope, VarSetOps::UninitVal());
