@@ -16,8 +16,7 @@
     <!-- copy to uap10.1 until nuget makes the change to map that to ns1.7 -->
     <PackageTargetFramework Condition="'$(TargetGroup)' == ''">netstandard1.7;uap10.1</PackageTargetFramework>
     <!-- Temporarily ignore missing types for uap101aot -->
-    <GenFacadesArgs Condition="'$(TargetGroup)' == 'uap101aot'">$(GenFacadesArgs) -ignoreMissingTypes</GenFacadesArgs>
-    <TargetsWindowsUap Condition="'$(TargetGroup)'=='uap101aot'">true</TargetsWindowsUap>
+    <GenFacadesArgs Condition="'$(TargetGroup)' == 'uap101aot' or '$(TargetGroup)' == 'netcoreapp1.2corert'">$(GenFacadesArgs) -ignoreMissingTypes</GenFacadesArgs>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Debug|AnyCPU'" />
@@ -28,7 +27,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net461_Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_uap101aot_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_uap101aot_Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(TargetsWindowsUap)' == 'true'">
+  <PropertyGroup Condition="'$(TargetGroup)' == 'uap101aot' or '$(TargetGroup)' == 'netcoreapp1.2corert'">
     <SkipCommonResourcesIncludes>true</SkipCommonResourcesIncludes>
     <ExcludeAssemblyInfoPartialFile>true</ExcludeAssemblyInfoPartialFile>
   </PropertyGroup>
@@ -105,23 +104,11 @@
     <Compile Include="$(CommonPath)\System\IO\PathInternal.cs">
       <Link>Common\System\IO\PathInternal.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Runtime\InteropServices\SafeHeapHandle.cs">
-      <Link>Common\System\Runtime\InteropServices\SafeHeapHandle.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Runtime\InteropServices\SafeHeapHandleCache.cs">
-      <Link>Common\System\Runtime\InteropServices\SafeHeapHandleCache.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Runtime\InteropServices\NativeBuffer.cs">
-      <Link>Common\System\Runtime\InteropServices\NativeBuffer.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Runtime\InteropServices\StringBuffer.cs">
-      <Link>Common\System\Runtime\InteropServices\StringBuffer.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\System\HResults.cs">
       <Link>Common\System\HResults.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == ''">
+  <ItemGroup Condition="'$(TargetGroup)' == '' or '$(TargetGroup)' == 'netcoreapp1.2corert'">
     <Compile Include="System\IO\FileStreamHelpers.CoreClr.cs" />
     <Compile Include="System\IO\TextReader.netstandard17.cs" />
     <Compile Include="System\IO\TextWriter.netstandard17.cs" />
@@ -181,11 +168,11 @@
     </Compile>
   </ItemGroup>
   <!-- Win32 or Unix -->
-  <ItemGroup Condition="'$(TargetsUnix)' == 'true' or ('$(TargetsWindows)' == 'true' and '$(TargetGroup)' != 'net461' and '$(TargetsWindowsUap)' != 'true')">
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true' or ('$(TargetsWindows)' == 'true' and '$(TargetGroup)' != 'net461' and '$(TargetGroup)' != 'uap101aot')">
     <Compile Include="System\Environment.Win32.Unix.cs" />
   </ItemGroup>
   <!-- WINDOWS: Win32 -->
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true' and '$(TargetGroup)' != 'net461' and '$(TargetsWindowsUap)' != 'true'">
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true' and '$(TargetGroup)' != 'net461' and '$(TargetGroup)' != 'uap101aot'">
     <Compile Include="System\Environment.Win32.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.EnvironmentVariables.cs">
       <Link>Common\Interop\Windows\kernel32\Interop.EnvironmentVariables.cs</Link>
@@ -300,9 +287,9 @@
     </Compile>
   </ItemGroup>
   <!-- WINDOWS: UAP -->
-  <ItemGroup Condition="'$(TargetsWindowsUap)' == 'true'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'uap101aot'">
     <Compile Include="System\Environment.Uap.cs" />
-    <Compile Include="System\EnvironmentVariableTarget.cs" />
+    <Compile Include="System\IO\FileStreamHelpers.Uap.cs" />
     <Compile Include="System\IO\Path.cs" />
     <Compile Include="System\IO\Path.Windows.cs" />
     <Compile Include="System\IO\PathHelper.Windows.cs" />
@@ -316,14 +303,26 @@
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetLongPathNameW.cs">
       <Link>Common\Interop\Windows\kernel32\Interop.GetLongPathNameW.cs</Link>
     </Compile>
-    <Compile Include="System\IO\BinaryReader.cs" />
-    <Compile Include="System\IO\BinaryWriter.cs" />
-    <Compile Include="System\IO\FileStreamHelpers.Uap.cs" />
-    <Compile Include="System\IO\EndOfStreamException.cs" />
-    <Compile Include="System\IO\MemoryStream.cs" />
     <Compile Include="$(CommonPath)\System\IO\DriveInfoInternal.Uap.cs">
       <Link>Common\System\IO\DriveInfoInternal.Uap.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Runtime\InteropServices\SafeHeapHandle.cs">
+      <Link>Common\System\Runtime\InteropServices\SafeHeapHandle.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Runtime\InteropServices\SafeHeapHandleCache.cs">
+      <Link>Common\System\Runtime\InteropServices\SafeHeapHandleCache.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Runtime\InteropServices\NativeBuffer.cs">
+      <Link>Common\System\Runtime\InteropServices\NativeBuffer.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Runtime\InteropServices\StringBuffer.cs">
+      <Link>Common\System\Runtime\InteropServices\StringBuffer.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'uap101aot' or '$(TargetGroup)' == 'netcoreapp1.2corert'">
+    <Compile Include="System\IO\BinaryReader.cs" />
+    <Compile Include="System\IO\BinaryWriter.cs" />
+    <Compile Include="System\IO\MemoryStream.cs" />
     <Compile Include="$(CommonPath)\System\SR.Core.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -348,9 +347,9 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' != 'net461'">
     <TargetingPackReference Include="System.Private.CoreLib" />
+    <TargetingPackReference Include="System.Private.Interop" Condition="'$(TargetGroup)' == 'uap101aot' or '$(TargetGroup)' == 'netcoreapp1.2corert'" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsWindowsUap)' == 'true'">
-    <TargetingPackReference Include="System.Private.Interop" />
+  <ItemGroup Condition="'$(TargetGroup)' == 'uap101aot'">
     <ProjectReference Include="$(SourceDir)/mscorlib.WinRT-Facade/mscorlib.WinRT-Facade.csproj" />
     <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj" />
     <ProjectReference Include="..\..\System.Private.Uri\src\System.Private.Uri.csproj" />
