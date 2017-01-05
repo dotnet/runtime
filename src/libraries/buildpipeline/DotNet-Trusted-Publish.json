@@ -395,7 +395,7 @@
       "allowOverride": true
     },
     "PB_VstsRepoGitUrl": {
-      "value": "https://$(VstsAccountName):$(VstsRepoPat)@devdiv.visualstudio.com/DevDiv/_git/$(VstsRepositoryName)/"
+      "value": "https://$(PB_VstsAccountName):$(VstsRepoPat)@devdiv.visualstudio.com/DevDiv/_git/$(PB_VstsRepositoryName)/"
     },
     "VstsRepoPat": {
       "value": null,
