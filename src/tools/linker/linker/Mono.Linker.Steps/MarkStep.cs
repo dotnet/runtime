@@ -1036,6 +1036,10 @@ namespace Mono.Linker.Steps {
 			MarkCustomAttributes (method.MethodReturnType);
 			MarkMarshalSpec (method.MethodReturnType);
 
+			if (method.IsPInvokeImpl) {
+				ProcessPInvokeImplMethod (method);
+			}
+
 			if (ShouldParseMethodBody (method))
 				MarkMethodBody (method.Body);
 
@@ -1064,6 +1068,23 @@ namespace Mono.Linker.Steps {
 
 				MarkMethod (base_method);
 				MarkBaseMethods (base_method);
+			}
+		}
+
+		void ProcessPInvokeImplMethod(MethodDefinition method)
+		{
+			TypeDefinition returnTypeDefinition = ResolveTypeDefinition (method.ReturnType);
+			MarkDefaultConstructor (returnTypeDefinition);
+			const bool includeStaticFields = false;
+			MarkFields (returnTypeDefinition, includeStaticFields);
+
+			foreach (ParameterDefinition pd in method.Parameters) {
+				if (pd.ParameterType.IsByReference) {
+					TypeReference paramTypeReference = ((ByReferenceType)pd.ParameterType).ElementType;
+					TypeDefinition paramTypeDefinition = ResolveTypeDefinition (paramTypeReference);
+					MarkDefaultConstructor (paramTypeDefinition);
+					MarkFields (paramTypeDefinition, includeStaticFields);
+				}
 			}
 		}
 
