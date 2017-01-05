@@ -38,10 +38,5 @@
         "Name": "Microsoft.NETCore.TestHost",
         "Description": "CoreCLR application host for test applications",
         "CommonTypes": [ ]
-    },
-    {
-	"Name": "Microsoft.NETCore.Native",
-	"Description": "Native shims for .NET Core runtime",
-	"CommonTypes": [ ]
     }
 ]
