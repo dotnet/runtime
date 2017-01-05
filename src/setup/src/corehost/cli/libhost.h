@@ -48,6 +48,7 @@ struct host_interface_t
     size_t patch_roll_forward;
     size_t prerelease_roll_forward;
     size_t host_mode;
+    const pal::char_t* tfm;
     // !! WARNING / WARNING / WARNING / WARNING / WARNING / WARNING / WARNING / WARNING / WARNING
     // !! 1. Only append to this structure to maintain compat.
     // !! 2. Any nested structs should not use compiler specific padding (pack with _HOST_INTERFACE_PACK)
@@ -70,7 +71,8 @@ static_assert(offsetof(host_interface_t, probe_paths) == 10 * sizeof(size_t), "S
 static_assert(offsetof(host_interface_t, patch_roll_forward) == 12 * sizeof(size_t), "Struct offset breaks backwards compatibility");
 static_assert(offsetof(host_interface_t, prerelease_roll_forward) == 13 * sizeof(size_t), "Struct offset breaks backwards compatibility");
 static_assert(offsetof(host_interface_t, host_mode) == 14 * sizeof(size_t), "Struct offset breaks backwards compatibility");
-static_assert(sizeof(host_interface_t) == 15 * sizeof(size_t), "Did you add static asserts for the newly added fields?");
+static_assert(offsetof(host_interface_t, tfm) == 15 * sizeof(size_t), "Struct offset breaks backwards compatibility");
+static_assert(sizeof(host_interface_t) == 16 * sizeof(size_t), "Did you add static asserts for the newly added fields?");
 
 #define HOST_INTERFACE_LAYOUT_VERSION_HI 0x16041101 // YYMMDD:nn always increases when layout breaks compat.
 #define HOST_INTERFACE_LAYOUT_VERSION_LO sizeof(host_interface_t)
@@ -82,6 +84,7 @@ private:
     std::vector<pal::string_t> m_clr_values;
     std::vector<const pal::char_t*> m_clr_keys_cstr;
     std::vector<const pal::char_t*> m_clr_values_cstr;
+    const pal::string_t m_tfm;
     const pal::string_t m_fx_dir;
     const pal::string_t m_fx_name;
     const pal::string_t m_deps_file;
@@ -110,6 +113,7 @@ public:
         , m_host_mode(mode)
         , m_host_interface()
         , m_fx_ver(runtime_config.get_fx_version())
+        , m_tfm(runtime_config.get_tfm())
     {
         runtime_config.config_kv(&m_clr_keys, &m_clr_values);
         make_cstr_arr(m_clr_keys, &m_clr_keys_cstr);
@@ -120,6 +124,11 @@ public:
     const pal::string_t& fx_dir() const
     {
         return m_fx_dir;
+    }
+
+    const pal::string_t& tfm() const
+    {
+        return m_tfm;
     }
 
     const pal::string_t& fx_name() const
@@ -156,6 +165,8 @@ public:
         hi.patch_roll_forward = m_patch_roll_forward;
         hi.prerelease_roll_forward = m_prerelease_roll_forward;
         hi.host_mode = m_host_mode;
+
+        hi.tfm = m_tfm.c_str();
         
         return hi;
     }
@@ -179,6 +190,7 @@ struct hostpolicy_init_t
     std::vector<std::vector<char>> cfg_values;
     pal::string_t deps_file;
     std::vector<pal::string_t> probe_paths;
+    pal::string_t tfm;
     pal::string_t fx_dir;
     pal::string_t fx_name;
     host_mode_t host_mode;
@@ -194,27 +206,35 @@ struct hostpolicy_init_t
             trace::error(_X("The version of the data layout used to initialize %s is [0x%04x]; expected version [0x%04x]"), LIBHOSTPOLICY_NAME, input->version_hi, HOST_INTERFACE_LAYOUT_VERSION_HI);
             return false;
         }
-        // Check if the size is at least what we expect to contain.
-        if (input->version_lo < HOST_INTERFACE_LAYOUT_VERSION_LO)
-        {
-            trace::error(_X("The size of the data layout used to initialize %s is %d; expected at least %d"), LIBHOSTPOLICY_NAME, input->version_lo, HOST_INTERFACE_LAYOUT_VERSION_LO);
-            return false;
-        }
+
         trace::verbose(_X("Reading from host interface version: [0x%04x:%d] to initialize policy version: [0x%04x:%d]"), input->version_hi, input->version_lo, HOST_INTERFACE_LAYOUT_VERSION_HI, HOST_INTERFACE_LAYOUT_VERSION_LO);
 
-        make_clrstr_arr(input->config_keys.len, input->config_keys.arr, &init->cfg_keys);
-        make_clrstr_arr(input->config_values.len, input->config_values.arr, &init->cfg_values);
+        if (input->version_lo >= offsetof(host_interface_t, host_mode) + sizeof(input->host_mode))
+        {
+            make_clrstr_arr(input->config_keys.len, input->config_keys.arr, &init->cfg_keys);
+            make_clrstr_arr(input->config_values.len, input->config_values.arr, &init->cfg_values);
 
-        init->fx_dir = input->fx_dir;
-        init->fx_name = input->fx_name;
-        init->deps_file = input->deps_file;
-        init->is_portable = input->is_portable;
+            init->fx_dir = input->fx_dir;
+            init->fx_name = input->fx_name;
+            init->deps_file = input->deps_file;
+            init->is_portable = input->is_portable;
 
-        make_palstr_arr(input->probe_paths.len, input->probe_paths.arr, &init->probe_paths);
+            make_palstr_arr(input->probe_paths.len, input->probe_paths.arr, &init->probe_paths);
 
-        init->patch_roll_forward = input->patch_roll_forward;
-        init->prerelease_roll_forward = input->prerelease_roll_forward;
-        init->host_mode = (host_mode_t) input->host_mode;
+            init->patch_roll_forward = input->patch_roll_forward;
+            init->prerelease_roll_forward = input->prerelease_roll_forward;
+            init->host_mode = (host_mode_t)input->host_mode;
+        }
+        else
+        {
+            trace::error(_X("The size of the data layout used to initialize %s is %d; expected at least %d"), LIBHOSTPOLICY_NAME, input->version_lo, 
+                offsetof(host_interface_t, host_mode) + sizeof(input->host_mode));
+        }
+
+        if (input->version_lo >= offsetof(host_interface_t, tfm) + sizeof(input->tfm))
+        {
+            init->tfm = input->tfm;
+        }
 
         return true;
     }

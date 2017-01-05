@@ -133,65 +133,35 @@ void deps_resolver_t::get_dir_assemblies(
     }
 }
 
-bool deps_resolver_t::try_roll_forward(const deps_entry_t& entry,
-    const pal::string_t& probe_dir,
-    bool patch_roll_fwd,
-    bool prerelease_roll_fwd,
-    pal::string_t* candidate)
+void deps_resolver_t::setup_shared_package_probes(
+    const hostpolicy_init_t& init,
+    const arguments_t& args)
 {
-    trace::verbose(_X("Attempting a roll forward for [%s/%s/%s] in [%s]"), entry.library_name.c_str(), entry.library_version.c_str(), entry.relative_path.c_str(), probe_dir.c_str());
-
-    const pal::string_t& lib_ver = entry.library_version;
-
-    fx_ver_t cur_ver(-1, -1, -1);
-    if (!fx_ver_t::parse(lib_ver, &cur_ver, false))
+    for (const auto& shared : args.env_shared_packages)
     {
-        trace::verbose(_X("No roll forward as specified version [%s] could not be parsed"), lib_ver.c_str());
-        return false;
-    }
-    pal::string_t path = probe_dir;
-    append_path(&path, entry.library_name.c_str());
-    pal::string_t max_str = lib_ver;
-    if (cur_ver.is_prerelease() && prerelease_roll_fwd)
-    {
-        pal::string_t maj_min_pat_star = cur_ver.prerelease_glob();
-
-        pal::string_t cache_key = path;
-        append_path(&cache_key, maj_min_pat_star.c_str());
-
-        if (m_prerelease_roll_forward_cache.count(cache_key))
+        if (pal::directory_exists(shared))
         {
-            max_str = m_prerelease_roll_forward_cache[cache_key];
-            trace::verbose(_X("Found cached roll forward version [%s] -> [%s]"), lib_ver.c_str(), max_str.c_str());
-        }
-        else
-        {
-            try_prerelease_roll_forward_in_dir(path, cur_ver, &max_str);
-            m_prerelease_roll_forward_cache[cache_key] = max_str;
+            // Shared Packages probe: DOTNET_SHARED_PACKAGES
+            m_probes.push_back(probe_config_t::lookup(shared));
         }
     }
-    if (!cur_ver.is_prerelease() && patch_roll_fwd)
+
+    if (pal::directory_exists(args.local_shared_packages))
     {
-        // Extract glob string of the form: 1.0.* from the version 1.0.0-prerelease-00001.
-        pal::string_t maj_min_star = cur_ver.patch_glob();
-
-        pal::string_t cache_key = path;
-        append_path(&cache_key, maj_min_star.c_str());
-
-        if (m_patch_roll_forward_cache.count(cache_key))
-        {
-            max_str = m_patch_roll_forward_cache[cache_key];
-            trace::verbose(_X("Found cached roll forward version [%s] -> [%s]"), lib_ver.c_str(), max_str.c_str());
-        }
-        else
-        {
-            try_patch_roll_forward_in_dir(path, cur_ver, &max_str);
-            m_patch_roll_forward_cache[cache_key] = max_str;
-        }
+        // Shared Packages probe: $HOME/.dotnet/packages or %USERPROFILE%\.dotnet\packages
+        m_probes.push_back(probe_config_t::lookup(args.local_shared_packages));
     }
-    append_path(&path, max_str.c_str());
 
-    return entry.to_rel_path(path, candidate);
+    if (pal::directory_exists(args.dotnet_shared_packages))
+    {
+        m_probes.push_back(probe_config_t::lookup(args.dotnet_shared_packages));
+    }
+
+    if (args.global_shared_packages != args.dotnet_shared_packages && pal::directory_exists(args.global_shared_packages))
+    {
+        // Shared Packages probe: /usr/share/dotnet/packages or C:\Program Files (x86)\dotnet\packages
+        m_probes.push_back(probe_config_t::lookup(args.global_shared_packages));
+    }
 }
 
 void deps_resolver_t::setup_probe_config(
@@ -205,13 +175,13 @@ void deps_resolver_t::setup_probe_config(
         if (pal::directory_exists(ext_ni))
         {
             // Servicing NI probe.
-            m_probes.push_back(probe_config_t::svc_ni(ext_ni, false, false));
+            m_probes.push_back(probe_config_t::svc_ni(ext_ni));
         }
 
         // Servicing normal probe.
         pal::string_t ext_pkgs = args.core_servicing;
         append_path(&ext_pkgs, _X("pkgs"));
-        m_probes.push_back(probe_config_t::svc(ext_pkgs, false, false));
+        m_probes.push_back(probe_config_t::svc(ext_pkgs));
     }
 
     if (pal::directory_exists(args.dotnet_packages_cache))
@@ -234,10 +204,16 @@ void deps_resolver_t::setup_probe_config(
         m_probes.push_back(probe_config_t::fx(m_fx_dir, m_fx_deps.get()));
     }
 
+    // The published deps directory to be probed: either app or FX directory.
+    // The probe directory will be available at probe time.
+    m_probes.push_back(probe_config_t::published_deps_dir());
+
+    setup_shared_package_probes(init, args);
+
     for (const auto& probe : m_additional_probes)
     {
         // Additional paths
-        m_probes.push_back(probe_config_t::additional(probe));
+        m_probes.push_back(probe_config_t::lookup(probe));
     }
 
     if (trace::is_enabled())
@@ -267,9 +243,18 @@ void deps_resolver_t::setup_additional_probes(const std::vector<pal::string_t>& 
     }
 }
 
-bool deps_resolver_t::probe_entry_in_configs(const deps_entry_t& entry, pal::string_t* candidate)
+/**
+ * Given a deps entry, do a probe (lookup) for the file, based on the probe config.
+ *   -- When match hash is specified, the nuget cache SHA is matched. See .sha512 files in %USERPROFILE%\.nuget.
+ *   -- When crossgen-ed folders are looked up, look up only "runtime" (managed) assets.
+ *   -- When servicing directories are looked up, look up only if the deps file marks the entry as serviceable.
+ *   -- When a deps json based probe is performed, the deps entry's package name and version must match.
+ *   -- When looking into a published dir, for rid specific assets lookup rid split folders; for non-rid assets lookup the layout dir.
+ */
+bool deps_resolver_t::probe_deps_entry(const deps_entry_t& entry, const pal::string_t& deps_dir, pal::string_t* candidate)
 {
     candidate->clear();
+
     for (const auto& config : m_probes)
     {
         trace::verbose(_X("  Considering entry [%s/%s/%s] and probe dir [%s]"), entry.library_name.c_str(), entry.library_version.c_str(), entry.relative_path.c_str(), config.probe_dir.c_str());
@@ -289,7 +274,6 @@ bool deps_resolver_t::probe_entry_in_configs(const deps_entry_t& entry, pal::str
         {
             if (entry.to_hash_matched_path(probe_dir, candidate))
             {
-                assert(!config.is_roll_fwd_set());
                 trace::verbose(_X("    Matched hash for [%s]"), candidate->c_str());
                 return true;
             }
@@ -297,58 +281,40 @@ bool deps_resolver_t::probe_entry_in_configs(const deps_entry_t& entry, pal::str
         }
         else if (config.probe_deps_json)
         {
-            // If the deps json has it then someone has already done rid selection and put the right stuff in the dir.
-            // So checking just package name and version would suffice. No need to check further for the exact asset relative path.
+            // If the deps json has the package name and version, then someone has already done rid selection and
+            // put the right asset in the dir. So checking just package name and version would suffice.
+            // No need to check further for the exact asset relative sub path.
             if (config.probe_deps_json->has_package(entry.library_name, entry.library_version) && entry.to_dir_path(probe_dir, candidate))
             {
-                trace::verbose(_X("    Probed deps json and matched [%s]"), candidate->c_str());
+                trace::verbose(_X("    Probed deps json and matched '%s'"), candidate->c_str());
                 return true;
             }
             trace::verbose(_X("    Skipping... probe in deps json failed"));
         }
-        else if (!config.is_roll_fwd_set())
+        else if (config.probe_publish_dir)
         {
-            if (entry.to_full_path(probe_dir, candidate))
+            // This is a published dir probe, so look up rid specific assets in the rid folders.
+            if (entry.is_rid_specific && entry.to_rel_path(deps_dir, candidate))
             {
-                trace::verbose(_X("    Specified no roll forward; matched [%s]"), candidate->c_str());
+                trace::verbose(_X("    Probed deps dir and matched '%s'"), candidate->c_str());
                 return true;
             }
-            trace::verbose(_X("    Skipping... not found in probe dir"));
+            // Non-rid assets, lookup in the published dir.
+            if (!entry.is_rid_specific && entry.to_dir_path(deps_dir, candidate))
+            {
+                trace::verbose(_X("    Probed deps dir and matched '%s'"), candidate->c_str());
+                return true;
+            }
+            trace::verbose(_X("    Skipping... probe in deps dir '%s' failed"), deps_dir.c_str());
         }
-        else if (config.is_roll_fwd_set())
+        else if (entry.to_full_path(probe_dir, candidate))
         {
-            if (try_roll_forward(entry, probe_dir, config.patch_roll_fwd, config.prerelease_roll_fwd, candidate))
-            {
-                trace::verbose(_X("    Specified roll forward; matched [%s]"), candidate->c_str());
-                return true;
-            }
-            trace::verbose(_X("    Skipping... could not roll forward and match in probe dir"));
+            trace::verbose(_X("    Probed package dir and matched '%s'"), candidate->c_str());
+            return true;
         }
 
+        trace::verbose(_X("    Skipping... not found in probe dir '%s'"), probe_dir.c_str());
         // continue to try next probe config
-    }
-    return false;
-}
-
-/**
- * Probe helper for a deps entry. Lookup all probe configurations and then
- * lookup in the directory where the deps file is present. For app dirs,
- *     1. RID specific entries are present in the package relative structure.
- *     2. Non-RID entries are present in the directory path.
- */
-bool deps_resolver_t::probe_deps_entry(const deps_entry_t& entry, const pal::string_t& deps_dir, pal::string_t* candidate)
-{
-    if (probe_entry_in_configs(entry, candidate))
-    {
-        return true;
-    }
-    if (entry.is_rid_specific && entry.to_rel_path(deps_dir, candidate))
-    {
-        return true;
-    }
-    if (!entry.is_rid_specific && entry.to_dir_path(deps_dir, candidate))
-    {
-        return true;
     }
     return false;
 }
