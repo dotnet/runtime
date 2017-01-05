@@ -11,7 +11,7 @@ add_compile_options(-mthumb)
 add_compile_options(-mfpu=vfpv3)
 add_compile_options(-mfloat-abi=softfp)
 add_compile_options(--sysroot=${CROSS_ROOTFS})
-if("$ENV{__DistroRid}" STREQUAL "tizen.3.0.0-armel")
+if("$ENV{__DistroRid}" MATCHES "tizen.*")
     include_directories(SYSTEM ${CROSS_ROOTFS}/usr/lib/gcc/armv7l-tizen-linux-gnueabi/4.9.2/include/c++/ ${CROSS_ROOTFS}/usr/lib/gcc/armv7l-tizen-linux-gnueabi/4.9.2/include/c++/armv7l-tizen-linux-gnueabi)
     add_compile_options(-Wno-deprecated-declarations) # compile-time option
     add_compile_options(-D__extern_always_inline=inline) # compile-time option
