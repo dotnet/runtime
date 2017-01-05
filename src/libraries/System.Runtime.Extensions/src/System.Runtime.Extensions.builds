@@ -14,6 +14,14 @@
     <Project Include="System.Runtime.Extensions.csproj">
       <TargetGroup>uap101aot</TargetGroup>
     </Project>
+    <Project Include="System.Runtime.Extensions.csproj">
+      <OSGroup>Unix</OSGroup>
+      <TargetGroup>netcoreapp1.2corert</TargetGroup>
+    </Project>
+    <Project Include="System.Runtime.Extensions.csproj">
+      <OSGroup>Windows_NT</OSGroup>
+      <TargetGroup>netcoreapp1.2corert</TargetGroup>
+    </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
 </Project>
