@@ -18,7 +18,6 @@
   <ItemGroup Condition="'$(__SkipNativeBuild)'==''">
     <Project Include="Microsoft.NETCore.Jit\Microsoft.NETCore.Jit.builds" />     
     <Project Include="Microsoft.NETCore.TestHost\Microsoft.NETCore.TestHost.builds" />     
-    <Project Include="Microsoft.NETCore.Native\Microsoft.NETCore.Native.builds" />     
   </ItemGroup>
 
   <ItemGroup>
