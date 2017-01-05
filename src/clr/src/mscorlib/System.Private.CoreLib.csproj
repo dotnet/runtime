@@ -11,13 +11,13 @@
  
   <!-- Compilation options -->
   <PropertyGroup>
-    <AvailablePlatforms>amd64,x86,arm,arm-softfp,arm64</AvailablePlatforms>
+    <AvailablePlatforms>amd64,x86,arm,armel,arm64</AvailablePlatforms>
     <Configuration Condition=" '$(Configuration)' == '' ">$(BuildType)</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">$(BuildArch)</Platform>
     <!-- The CLR properties use amd64 as their platform string, we want to keep in sync with those, so set Platform appropriately,
          though still use the 'x64' output path (see use of BuildArch below) -->
     <Platform Condition=" '$(Platform)' == 'x64' ">amd64</Platform>
-    <Platform Condition=" '$(Platform)' == 'arm-softfp' ">arm</Platform>
+    <Platform Condition=" '$(Platform)' == 'armel' ">arm</Platform>
     <ProjectGuid>{3DA06C3A-2E7B-4CB7-80ED-9B12916013F9}</ProjectGuid>
 
     <OutputType>Library</OutputType>
