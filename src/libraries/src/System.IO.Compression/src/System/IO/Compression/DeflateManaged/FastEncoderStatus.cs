@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-using System.Globalization;
 
 namespace System.IO.Compression
 {
@@ -11,7 +10,8 @@ namespace System.IO.Compression
     {
         // static information for encoding, DO NOT MODIFY
 
-        internal static readonly byte[] FastEncoderTreeStructureData = {
+        internal static readonly byte[] FastEncoderTreeStructureData =
+        {
             0xec,0xbd,0x07,0x60,0x1c,0x49,0x96,0x25,0x26,0x2f,0x6d,0xca,
             0x7b,0x7f,0x4a,0xf5,0x4a,0xd7,0xe0,0x74,0xa1,0x08,0x80,0x60,
             0x13,0x24,0xd8,0x90,0x40,0x10,0xec,0xc1,0x88,0xcd,0xe6,0x92,
@@ -20,10 +20,11 @@ namespace System.IO.Compression
             0xef,0xbd,0xf7,0xde,0x7b,0xef,0xbd,0xf7,0xba,0x3b,0x9d,0x4e,
             0x27,0xf7,0xdf,0xff,0x3f,0x5c,0x66,0x64,0x01,0x6c,0xf6,0xce,
             0x4a,0xda,0xc9,0x9e,0x21,0x80,0xaa,0xc8,0x1f,0x3f,0x7e,0x7c,
-            0x1f,0x3f,
+            0x1f,0x3f
         };
 
-        internal static readonly byte[] BFinalFastEncoderTreeStructureData = {
+        internal static readonly byte[] BFinalFastEncoderTreeStructureData =
+        {
             0xed,0xbd,0x07,0x60,0x1c,0x49,0x96,0x25,0x26,0x2f,0x6d,0xca,
             0x7b,0x7f,0x4a,0xf5,0x4a,0xd7,0xe0,0x74,0xa1,0x08,0x80,0x60,
             0x13,0x24,0xd8,0x90,0x40,0x10,0xec,0xc1,0x88,0xcd,0xe6,0x92,
@@ -32,19 +33,19 @@ namespace System.IO.Compression
             0xef,0xbd,0xf7,0xde,0x7b,0xef,0xbd,0xf7,0xba,0x3b,0x9d,0x4e,
             0x27,0xf7,0xdf,0xff,0x3f,0x5c,0x66,0x64,0x01,0x6c,0xf6,0xce,
             0x4a,0xda,0xc9,0x9e,0x21,0x80,0xaa,0xc8,0x1f,0x3f,0x7e,0x7c,
-            0x1f,0x3f,
+            0x1f,0x3f
         };
 
         // Output a currentMatch with length matchLen (>= MIN_MATCH) and displacement matchPos
         //
         // Optimisation: unlike the other encoders, here we have an array of codes for each currentMatch
         // length (not just each currentMatch length slot), complete with all the extra bits filled in, in
-        // a single array element.  
+        // a single array element.
         //
         // There are many advantages to doing this:
         //
         // 1. A single array lookup on g_FastEncoderLiteralCodeInfo, instead of separate array lookups
-        //    on g_LengthLookup (to get the length slot), g_FastEncoderLiteralTreeLength, 
+        //    on g_LengthLookup (to get the length slot), g_FastEncoderLiteralTreeLength,
         //    g_FastEncoderLiteralTreeCode, g_ExtraLengthBits, and g_BitMask
         //
         // 2. The array is an array of ULONGs, so no access penalty, unlike for accessing those USHORT
@@ -53,8 +54,8 @@ namespace System.IO.Compression
         //
         // Note, if we could guarantee that codeLen <= 16 always, then we could skip an if statement here.
         //
-        // A completely different optimisation is used for the distance codes since, obviously, a table for 
-        // all 8192 distances combining their extra bits is not feasible.  The distance codeinfo table is 
+        // A completely different optimisation is used for the distance codes since, obviously, a table for
+        // all 8192 distances combining their extra bits is not feasible.  The distance codeinfo table is
         // made up of code[], len[] and # extraBits for this code.
         //
         // The advantages are similar to the above; a ULONG array instead of a USHORT and BYTE array, better
@@ -63,10 +64,11 @@ namespace System.IO.Compression
 
 
         // Encoding information for literal and Length.
-        // The least 5 significant bits are the length 
+        // The least 5 significant bits are the length
         // and the rest is the code bits.
 
-        internal static readonly uint[] FastEncoderLiteralCodeInfo = {
+        internal static readonly uint[] FastEncoderLiteralCodeInfo =
+        {
             0x0000d7ee,0x0004d7ee,0x0002d7ee,0x0006d7ee,0x0001d7ee,0x0005d7ee,0x0003d7ee,
             0x0007d7ee,0x000037ee,0x0000c7ec,0x00000126,0x000437ee,0x000237ee,0x000637ee,
             0x000137ee,0x000537ee,0x000337ee,0x000737ee,0x0000b7ee,0x0004b7ee,0x0002b7ee,
@@ -140,15 +142,16 @@ namespace System.IO.Compression
             0x0013e7f1,0x0015e7f1,0x0017e7f1,0x0019e7f1,0x001be7f1,0x001de7f1,0x001fe7f1,
             0x0021e7f1,0x0023e7f1,0x0025e7f1,0x0027e7f1,0x0029e7f1,0x002be7f1,0x002de7f1,
             0x002fe7f1,0x0031e7f1,0x0033e7f1,0x0035e7f1,0x0037e7f1,0x0039e7f1,0x003be7f1,
-            0x003de7f1,0x000047eb,
+            0x003de7f1,0x000047eb
         };
 
-        internal static readonly uint[] FastEncoderDistanceCodeInfo = {
+        internal static readonly uint[] FastEncoderDistanceCodeInfo =
+        {
             0x00000f06,0x0001ff0a,0x0003ff0b,0x0007ff0b,0x0000ff19,0x00003f18,0x0000bf28,
             0x00007f28,0x00001f37,0x00005f37,0x00000d45,0x00002f46,0x00000054,0x00001d55,
             0x00000864,0x00000365,0x00000474,0x00001375,0x00000c84,0x00000284,0x00000a94,
             0x00000694,0x00000ea4,0x000001a4,0x000009b4,0x00000bb5,0x000005c4,0x00001bc5,
-            0x000007d5,0x000017d5,0x00000000,0x00000100,
+            0x000007d5,0x000017d5,0x00000000,0x00000100
         };
 
         internal static readonly uint[] BitMask = { 0, 1, 3, 7, 15, 31, 63, 127, 255, 511, 1023, 2047, 4095, 8191, 16383, 32767 };
@@ -167,14 +170,14 @@ namespace System.IO.Compression
         internal const int BFinalNoCompressionHeaderBitCount = 3;
         internal const int MaxCodeLen = 16;
 
-        private static byte[] s_distLookup;
+        private static readonly byte[] s_distLookup = CreateDistanceLookup();
 
-        static FastEncoderStatics()
+        private static byte[] CreateDistanceLookup()
         {
-            s_distLookup = new byte[512];
+            byte[] result = new byte[512];
 
             // Generate the global slot tables which allow us to convert a distance
-            // (0..32K) to a distance slot (0..29) 
+            // (0..32K) to a distance slot (0..29)
             //
             // Distance table
             //   Extra           Extra               Extra
@@ -204,24 +207,24 @@ namespace System.IO.Compression
             int code;
             for (code = 0; code < 16; code++)
             {
-                for (int n = 0; n < (1 << FastEncoderStatics.ExtraDistanceBits[code]); n++)
-                    s_distLookup[dist++] = (byte)code;
+                for (int n = 0; n < (1 << ExtraDistanceBits[code]); n++)
+                    result[dist++] = (byte)code;
             }
 
-            dist >>= 7; // from now on, all distances are divided by 128 
+            dist >>= 7; // from now on, all distances are divided by 128
 
-            for (; code < FastEncoderStatics.NumDistBaseCodes; code++)
+            for (; code < NumDistBaseCodes; code++)
             {
-                for (int n = 0; n < (1 << (FastEncoderStatics.ExtraDistanceBits[code] - 7)); n++)
-                    s_distLookup[256 + dist++] = (byte)code;
+                for (int n = 0; n < (1 << (ExtraDistanceBits[code] - 7)); n++)
+                    result[256 + dist++] = (byte)code;
             }
+
+            return result;
         }
 
         // Return the position slot (0...29) of a match offset (0...32767)
-        internal static int GetSlot(int pos)
-        {
-            return s_distLookup[((pos) < 256) ? (pos) : (256 + ((pos) >> 7))];
-        }
+        internal static int GetSlot(int pos) =>
+            s_distLookup[((pos) < 256) ? (pos) : (256 + ((pos) >> 7))];
 
         // Reverse 'length' of the bits in code
         public static uint BitReverse(uint code, int length)

@@ -2,16 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Diagnostics;
-using System.Globalization;
 
 namespace System.IO.Compression
 {
-    internal class FastEncoder
+    internal sealed class FastEncoder
     {
-        private FastEncoderWindow _inputWindow; // input history window
-        private Match _currentMatch;            // current match in history window
+        private readonly FastEncoderWindow _inputWindow; // input history window
+        private readonly Match _currentMatch;            // current match in history window
         private double _lastCompressionRatio;
 
         public FastEncoder()
@@ -20,33 +18,15 @@ namespace System.IO.Compression
             _currentMatch = new Match();
         }
 
-        internal int BytesInHistory
-        {
-            get
-            {
-                return _inputWindow.BytesAvailable;
-            }
-        }
+        internal int BytesInHistory => _inputWindow.BytesAvailable;
 
-        internal DeflateInput UnprocessedInput
-        {
-            get
-            {
-                return _inputWindow.UnprocessedInput;
-            }
-        }
+        internal DeflateInput UnprocessedInput => _inputWindow.UnprocessedInput;
 
-        internal void FlushInput()
-        {
-            _inputWindow.FlushWindow();
-        }
+        internal void FlushInput() => _inputWindow.FlushWindow();
 
-        internal Double LastCompressionRatio
-        {
-            get { return _lastCompressionRatio; }
-        }
+        internal double LastCompressionRatio => _lastCompressionRatio;
 
-        // Copy the compressed bytes to output buffer as a block. maxBytesToCopy limits the number of 
+        // Copy the compressed bytes to output buffer as a block. maxBytesToCopy limits the number of
         // bytes we can copy from input. Set to any value < 1 if no limit
         internal void GetBlock(DeflateInput input, OutputBuffer output, int maxBytesToCopy)
         {
@@ -58,20 +38,12 @@ namespace System.IO.Compression
         }
 
         // Compress data but don't format as block (doesn't have header and footer)
-        internal void GetCompressedData(DeflateInput input, OutputBuffer output)
-        {
-            GetCompressedOutput(input, output, -1);
-        }
+        internal void GetCompressedData(DeflateInput input, OutputBuffer output) =>
+            GetCompressedOutput(input, output, maxBytesToCopy:- 1);
 
-        internal void GetBlockHeader(OutputBuffer output)
-        {
-            WriteDeflatePreamble(output);
-        }
+        internal void GetBlockHeader(OutputBuffer output) => WriteDeflatePreamble(output);
 
-        internal void GetBlockFooter(OutputBuffer output)
-        {
-            WriteEndOfBlock(output);
-        }
+        internal void GetBlockFooter(OutputBuffer output) => WriteEndOfBlock(output);
 
         // maxBytesToCopy limits the number of bytes we can copy from input. Set to any value < 1 if no limit
         private void GetCompressedOutput(DeflateInput input, OutputBuffer output, int maxBytesToCopy)
@@ -117,7 +89,7 @@ namespace System.IO.Compression
         {
             while (_inputWindow.BytesAvailable > 0 && SafeToWriteTo(output))
             {
-                // Find next match. A match can be a symbol, 
+                // Find next match. A match can be a symbol,
                 // a distance/length pair, a symbol followed by a distance/Length pair
                 _inputWindow.GetNextSymbolOrMatch(_currentMatch);
 
@@ -137,15 +109,10 @@ namespace System.IO.Compression
             }
         }
 
-        private bool InputAvailable(DeflateInput input)
-        {
-            return input.Count > 0 || BytesInHistory > 0;
-        }
+        private bool InputAvailable(DeflateInput input) => input.Count > 0 || BytesInHistory > 0;
 
-        private bool SafeToWriteTo(OutputBuffer output)
-        {  // can we safely continue writing to output buffer
-            return output.FreeBytes > FastEncoderStatics.MaxCodeLen;
-        }
+        // Can we safely continue writing to output buffer
+        private bool SafeToWriteTo(OutputBuffer output) => output.FreeBytes > FastEncoderStatics.MaxCodeLen;
 
         private void WriteEndOfBlock(OutputBuffer output)
         {

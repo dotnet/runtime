@@ -18,22 +18,15 @@ public class FileData
     public bool IsFolder { get; set; }
     public string OrigFolder { get; set; }
 
-    public override string ToString()
-    {
-        return FullName;
-    }
+    public override string ToString() => FullName;
 
-    public static List<FileData> Files { get; private set; }
+    public static List<FileData> Files { get; }
 
-    public static FileData GetFile(string Path)
-    {
-        return Files.Where(f => string.Equals(System.IO.Path.Combine(f.OrigFolder, f.FullName), Path, StringComparison.OrdinalIgnoreCase)).First();
-    }
+    public static FileData GetFile(string Path) =>
+        Files.Where(f => string.Equals(System.IO.Path.Combine(f.OrigFolder, f.FullName), Path, StringComparison.OrdinalIgnoreCase)).First();
 
-    public static List<FileData> InPath(string Path)
-    {
-        return Files.Where(f => string.Equals(f.OrigFolder, Path, StringComparison.OrdinalIgnoreCase)).ToList();
-    }
+    public static List<FileData> InPath(string Path) =>
+        Files.Where(f => string.Equals(f.OrigFolder, Path, StringComparison.OrdinalIgnoreCase)).ToList();
 
     static FileData()
     {

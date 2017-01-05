@@ -91,7 +91,7 @@ namespace System.IO.Compression.Tests
         {
             var ms = await LocalMemoryStream.readAppFileAsync(gzTestFile("GZTestDocument.txt.gz"));
 
-            var zip = new GZipStream(ms, CompressionMode.Decompress, true);
+            var zip = new GZipStream(ms, CompressionMode.Decompress, leaveOpen: true);
             var baseStream = zip.BaseStream;
             zip.Dispose();
 
@@ -268,7 +268,7 @@ namespace System.IO.Compression.Tests
             //Create the GZipStream
             int _bufferSize = 1024;
             var bytes = new byte[_bufferSize];
-            var baseStream = new MemoryStream(bytes, true);
+            var baseStream = new MemoryStream(bytes, writable: true);
             GZipStream ds;
 
             if (leaveOpen == null)
@@ -296,7 +296,7 @@ namespace System.IO.Compression.Tests
 
             //Read the data
             byte[] data2 = new byte[_bufferSize];
-            baseStream = new MemoryStream(bytes, false);
+            baseStream = new MemoryStream(bytes, writable: false);
             ds = new GZipStream(baseStream, CompressionMode.Decompress);
             int size = ds.Read(data2, 0, _bufferSize - 5);
 
