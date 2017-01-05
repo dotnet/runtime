@@ -22,7 +22,7 @@ add_compile_options(--sysroot=${CROSS_ROOTFS})
 set(CROSS_LINK_FLAGS "${CROSS_LINK_FLAGS} -target ${TOOLCHAIN}")
 set(CROSS_LINK_FLAGS "${CROSS_LINK_FLAGS} --sysroot=${CROSS_ROOTFS}")
 
-if("$ENV{__DistroRid}" STREQUAL "tizen.3.0.0-armel")
+if("$ENV{__DistroRid}" MATCHES "tizen.*")
     add_compile_options(-I$ENV{ROOTFS_DIR}/usr/lib/gcc/armv7l-tizen-linux-gnueabi/4.9.2/include/c++/)
     add_compile_options(-I$ENV{ROOTFS_DIR}/usr/lib/gcc/armv7l-tizen-linux-gnueabi/4.9.2/include/c++/armv7l-tizen-linux-gnueabi)
     add_compile_options(-Wno-deprecated-declarations) # compile-time option
