@@ -6,6 +6,7 @@
     "System.Text.Encoding": "4.3.0"
   },
   "frameworks": {
-    "netstandard1.3": {}
+    "netstandard1.3": {},
+    "netcoreapp1.1": {}
   }
 }

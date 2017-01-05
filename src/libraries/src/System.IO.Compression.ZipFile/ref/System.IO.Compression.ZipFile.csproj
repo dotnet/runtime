@@ -4,7 +4,8 @@
   <PropertyGroup>
     <UseECMAKey Condition="'$(UseECMAKey)' == ''">true</UseECMAKey>
     <OutputType>Library</OutputType>
-    <NuGetTargetMoniker>.NETStandard,Version=v1.3</NuGetTargetMoniker>
+    <NuGetTargetMoniker Condition="'$(NuGetTargetMoniker)'==''">.NETCoreApp,Version=v1.1</NuGetTargetMoniker>
+    <DefineConstants Condition="'$(TargetGroup)'==''">$(DefineConstants);netcoreapp11</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.IO.Compression.ZipFile.cs" />
