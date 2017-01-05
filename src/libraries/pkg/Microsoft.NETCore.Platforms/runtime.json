@@ -323,6 +323,16 @@
             "#import": [ "debian.8", "debian-arm64" ]
         },
 
+        "tizen": {
+            "#import": [ "linux" ]
+        },
+        "tizen-armel": {
+            "#import": [ "tizen", "linux-armel" ]
+        },
+        "tizen.4.0.0-armel": {
+            "#import": [ "tizen.4.0.0", "tizen-armel" ]
+        },
+
         "ubuntu": {
             "#import": [ "debian" ]
         },
