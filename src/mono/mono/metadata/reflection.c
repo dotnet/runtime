@@ -2238,14 +2238,12 @@ mono_reflection_type_from_name_checked (char *name, MonoImage *image, MonoError 
  * representing a metadata element.
  */
 guint32
-mono_reflection_get_token (MonoObject *obj_raw)
+mono_reflection_get_token (MonoObject *obj)
 {
-	HANDLE_FUNCTION_ENTER ();
-	MONO_HANDLE_DCL (MonoObject, obj);
 	MonoError error;
 	guint32 result = mono_reflection_get_token_checked (obj, &error);
 	mono_error_assert_ok (&error);
-	HANDLE_FUNCTION_RETURN_VAL (result);
+	return result;
 }
 
 /**
@@ -2257,31 +2255,32 @@ mono_reflection_get_token (MonoObject *obj_raw)
  * representing a metadata element.  On failure sets @error.
  */
 guint32
-mono_reflection_get_token_checked (MonoObjectHandle obj, MonoError *error)
+mono_reflection_get_token_checked (MonoObject *obj, MonoError *error)
 {
+	MonoClass *klass;
 	guint32 token = 0;
 
 	mono_error_init (error);
 
-	MonoClass *klass = mono_handle_class (obj);
+	klass = obj->vtable->klass;
 
 	if (strcmp (klass->name, "MethodBuilder") == 0) {
-		MonoReflectionMethodBuilderHandle mb = MONO_HANDLE_CAST (MonoReflectionMethodBuilder, obj);
+		MonoReflectionMethodBuilder *mb = (MonoReflectionMethodBuilder *)obj;
 
-		token = MONO_HANDLE_GETVAL (mb, table_idx) | MONO_TOKEN_METHOD_DEF;
+		token = mb->table_idx | MONO_TOKEN_METHOD_DEF;
 	} else if (strcmp (klass->name, "ConstructorBuilder") == 0) {
-		MonoReflectionCtorBuilderHandle mb = MONO_HANDLE_CAST (MonoReflectionCtorBuilder, obj);
+		MonoReflectionCtorBuilder *mb = (MonoReflectionCtorBuilder *)obj;
 
-		token = MONO_HANDLE_GETVAL (mb, table_idx) | MONO_TOKEN_METHOD_DEF;
+		token = mb->table_idx | MONO_TOKEN_METHOD_DEF;
 	} else if (strcmp (klass->name, "FieldBuilder") == 0) {
-		MonoReflectionFieldBuilderHandle fb = MONO_HANDLE_CAST (MonoReflectionFieldBuilder, obj);
+		MonoReflectionFieldBuilder *fb = (MonoReflectionFieldBuilder *)obj;
 
-		token = MONO_HANDLE_GETVAL (fb, table_idx) | MONO_TOKEN_FIELD_DEF;
+		token = fb->table_idx | MONO_TOKEN_FIELD_DEF;
 	} else if (strcmp (klass->name, "TypeBuilder") == 0) {
-		MonoReflectionTypeBuilderHandle tb = MONO_HANDLE_CAST (MonoReflectionTypeBuilder, obj);
-		token = MONO_HANDLE_GETVAL (tb, table_idx) | MONO_TOKEN_TYPE_DEF;
+		MonoReflectionTypeBuilder *tb = (MonoReflectionTypeBuilder *)obj;
+		token = tb->table_idx | MONO_TOKEN_TYPE_DEF;
 	} else if (strcmp (klass->name, "RuntimeType") == 0) {
-		MonoType *type = mono_reflection_type_get_handle (MONO_HANDLE_RAW (MONO_HANDLE_CAST (MonoReflectionType, obj)), error); /* FIXME use handles */
+		MonoType *type = mono_reflection_type_get_handle ((MonoReflectionType*)obj, error);
 		return_val_if_nok (error, 0);
 		MonoClass *mc = mono_class_from_mono_type (type);
 		if (!mono_class_init (mc)) {
@@ -2292,39 +2291,35 @@ mono_reflection_get_token_checked (MonoObjectHandle obj, MonoError *error)
 		token = mc->type_token;
 	} else if (strcmp (klass->name, "MonoCMethod") == 0 ||
 			   strcmp (klass->name, "MonoMethod") == 0) {
-		MonoReflectionMethodHandle m = MONO_HANDLE_CAST (MonoReflectionMethod, obj);
-		MonoMethod *method = MONO_HANDLE_GETVAL (m, method);
-		if (method->is_inflated) {
-			MonoMethodInflated *inflated = (MonoMethodInflated *) method;
+		MonoReflectionMethod *m = (MonoReflectionMethod *)obj;
+		if (m->method->is_inflated) {
+			MonoMethodInflated *inflated = (MonoMethodInflated *) m->method;
 			return inflated->declaring->token;
 		} else {
-			token = method->token;
+			token = m->method->token;
 		}
 	} else if (strcmp (klass->name, "MonoField") == 0) {
-		MonoReflectionFieldHandle f = MONO_HANDLE_CAST (MonoReflectionField, obj);
+		MonoReflectionField *f = (MonoReflectionField*)obj;
 
-		token = mono_class_get_field_token (MONO_HANDLE_GETVAL (f, field));
+		token = mono_class_get_field_token (f->field);
 	} else if (strcmp (klass->name, "MonoProperty") == 0) {
-		MonoReflectionPropertyHandle p = MONO_HANDLE_CAST (MonoReflectionProperty, obj);
+		MonoReflectionProperty *p = (MonoReflectionProperty*)obj;
 
-		token = mono_class_get_property_token (MONO_HANDLE_GETVAL (p, property));
+		token = mono_class_get_property_token (p->property);
 	} else if (strcmp (klass->name, "MonoEvent") == 0) {
-		MonoReflectionMonoEventHandle p = MONO_HANDLE_CAST (MonoReflectionMonoEvent, obj);
+		MonoReflectionMonoEvent *p = (MonoReflectionMonoEvent*)obj;
 
-		token = mono_class_get_event_token (MONO_HANDLE_GETVAL (p, event));
+		token = mono_class_get_event_token (p->event);
 	} else if (strcmp (klass->name, "ParameterInfo") == 0 || strcmp (klass->name, "MonoParameterInfo") == 0) {
-		MonoReflectionParameterHandle p = MONO_HANDLE_CAST (MonoReflectionParameter, obj);
-		MonoObjectHandle member_impl = MONO_HANDLE_NEW (MonoObject, NULL);
-		MONO_HANDLE_GET (member_impl, p, MemberImpl);
-		MonoClass *member_class = mono_handle_class (member_impl);
+		MonoReflectionParameter *p = (MonoReflectionParameter*)obj;
+		MonoClass *member_class = mono_object_class (p->MemberImpl);
 		g_assert (mono_class_is_reflection_method_or_constructor (member_class));
-		MonoMethod *method = MONO_HANDLE_GETVAL (MONO_HANDLE_CAST (MonoReflectionMethod, member_impl), method);
 
-		token = mono_method_get_param_token (method, MONO_HANDLE_GETVAL (p, PositionImpl));
+		token = mono_method_get_param_token (((MonoReflectionMethod*)p->MemberImpl)->method, p->PositionImpl);
 	} else if (strcmp (klass->name, "Module") == 0 || strcmp (klass->name, "MonoModule") == 0) {
-		MonoReflectionModuleHandle m = MONO_HANDLE_CAST (MonoReflectionModule, obj);
+		MonoReflectionModule *m = (MonoReflectionModule*)obj;
 
-		token = MONO_HANDLE_GETVAL (m, token);
+		token = m->token;
 	} else if (strcmp (klass->name, "Assembly") == 0 || strcmp (klass->name, "MonoAssembly") == 0) {
 		token = mono_metadata_make_token (MONO_TABLE_ASSEMBLY, 1);
 	} else {
