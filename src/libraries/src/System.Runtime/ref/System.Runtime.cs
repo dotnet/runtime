@@ -245,6 +245,10 @@ namespace System
         public static System.Array CreateInstance(System.Type elementType, params long[] lengths) { throw null; }
         public static T[] Empty<T>() { throw null; }
         public static bool Exists<T>(T[] array, System.Predicate<T> match) { throw null; }
+#if netcoreapp11
+        public static void Fill<T>(T[] array, T value) { throw null; }
+        public static void Fill<T>(T[] array, T value, int startIndex, int count) { throw null; }
+#endif
         public static T Find<T>(T[] array, System.Predicate<T> match) { throw null; }
         public static T[] FindAll<T>(T[] array, System.Predicate<T> match) { throw null; }
         public static int FindIndex<T>(T[] array, int startIndex, int count, System.Predicate<T> match) { throw null; }
