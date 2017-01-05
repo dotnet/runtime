@@ -758,6 +758,7 @@ FULLAOT_LIBS_UNIVERSAL = \
 	System.Security.dll \
 	Mono.Simd.dll \
 	Mono.Security.dll \
+	System.Numerics.dll \
 	System.Numerics.Vectors.dll
 
 if INSTALL_TESTING_AOT_FULL
