@@ -24,7 +24,7 @@
     <AdditionalLibPackageExcludes Condition="'$(SymbolFileExtension)' != ''" Include="%2A%2A\%2A$(SymbolFileExtension)" />
     <AdditionalSymbolPackageExcludes Condition="'$(LibraryFileExtension)' != ''" Include="%2A%2A\%2A.a;%2A%2A\%2A$(LibraryFileExtension)" />
   </ItemGroup>
-  
+
   <PropertyGroup>
     <IsLineupPackage Condition="'$(PackageTargetRuntime)' == ''">true</IsLineupPackage>
     <TargetFrameworkName>netcoreapp</TargetFrameworkName>
@@ -35,13 +35,12 @@
 
     <RefBinDir>$(BinDir)$(TargetFrameworkName)/pkg/ref</RefBinDir>
     <LibBinDir>$(BinDir)$(TargetFrameworkName)/pkg/lib</LibBinDir>
-    <NativeBinDir>$(BinDir)$(OSGroup).$(PackagePlatform).$(ConfigurationGroup)/native</NativeBinDir>
 
     <NETStandardLibraryPackage>NETStandard.Library2</NETStandardLibraryPackage>
     <NETStandardLibraryPackageVersion>2.0.0-beta-24709-0</NETStandardLibraryPackageVersion>
     <NETStandardVersion>1.7</NETStandardVersion>
   </PropertyGroup>
-  
+
   <ItemGroup>
     <SuppressNETStandardMissingFile Include="mscorlib" />
     <SuppressNETStandardMissingFile Include="netstandard" />
@@ -57,7 +56,7 @@
 
   <ItemGroup Condition="'$(PackageTargetRuntime)' == ''">
     <ProjectReference Include="@(Project)" />
-    
+
     <!-- Include refs -->
     <RefFile Include="$(RefBinDir)/*.*">
       <TargetPath>ref/$(TargetFramework)</TargetPath>
@@ -113,7 +112,7 @@
     <Message Condition="'@(_NETStandardSuppressedMissingFile)' != ''" Text="Files'@(_NETStandardSuppressedMissingFile)' are part of '$(NETStandardLibraryPackage)' but missing from this package.  This error has been suppressed." />
     <Error Condition="'@(_NETStandardMissingFileError)' != ''" Text="Files '@(_NETStandardMissingFileError)' are part of '$(NETStandardLibraryPackage)' but missing from this package." />
   </Target>
-  
+
   <Target Name="GetSymbolPackageFiles" BeforeTargets="GetPackageFiles">
     <ItemGroup>
       <File>

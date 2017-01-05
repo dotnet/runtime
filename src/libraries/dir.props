@@ -146,6 +146,9 @@
     <BuildConfiguration Condition="'$(BuildConfiguration)' == ''">netcoreapp-$(BuildConfiguration_OSGroup)-$(BuildConfiguration_ConfigurationGroup)-$(ArchGroup)</BuildConfiguration>
 
     <BuildConfigurationImportFile>$(ToolsDir)/configuration/configuration.props</BuildConfigurationImportFile>
+
+    <!-- Need to try and keep the same logic as the native builds as we need this for packaging -->
+    <NativeBinDir>$(BinDir)$(BuildConfiguration_OSGroup).$(ArchGroup).$(ConfigurationGroup)/native</NativeBinDir>
   </PropertyGroup>
 
   <Import Project="$(BuildConfigurationImportFile)" Condition="Exists('$(BuildConfigurationImportFile)')" />

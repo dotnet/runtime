@@ -13,27 +13,20 @@
     <OfficialBuildRID Include="fedora.24-x64" />
     <OfficialBuildRID Include="opensuse.13.2-x64" />
     <OfficialBuildRID Include="opensuse.42.1-x64" />
-    <OfficialBuildRID Include="osx.10.10-x64">
-      <OSGroup>OSX</OSGroup>
-    </OfficialBuildRID>
+    <OfficialBuildRID Include="osx.10.10-x64" />
     <OfficialBuildRID Include="rhel.7-x64" />
     <OfficialBuildRID Include="ubuntu.14.04-x64" />
     <OfficialBuildRID Include="ubuntu.16.04-x64" />
     <OfficialBuildRID Include="ubuntu.16.10-x64" />
     <OfficialBuildRID Include="win7-x86">
       <Platform>x86</Platform>
-      <OSGroup>Windows_NT</OSGroup>
     </OfficialBuildRID>
-    <OfficialBuildRID Include="win7-x64">
-      <OSGroup>Windows_NT</OSGroup>
-    </OfficialBuildRID>
+    <OfficialBuildRID Include="win7-x64" />
     <OfficialBuildRID Include="win8-arm">
       <Platform>arm</Platform>
-      <OSGroup>Windows_NT</OSGroup>
     </OfficialBuildRID>
     <OfficialBuildRID Include="win10-arm64">
       <Platform>arm64</Platform>
-      <OSGroup>Windows_NT</OSGroup>
     </OfficialBuildRID>
 
     <!-- Ensure we have a RID-specific package for the current build, even if it isn't in our official set -->
@@ -41,18 +34,16 @@
     <BuildRID Include="$(PackageRID)">
       <Platform Condition="'$(ArchGroup)' == 'x64'">amd64</Platform>
       <Platform Condition="'$(ArchGroup)' != 'x64'">$(ArchGroup)</Platform>
-      <OSGroup>$(BuildConfiguration_OSGroup)</OSGroup>
     </BuildRID>
   </ItemGroup>
 
   <ItemGroup>
     <_project Include="@(BuildRID)">
-      <OSGroup Condition="'%(OSGroup)' == ''">Linux</OSGroup>
       <Platform Condition="'%(Platform)' == ''">amd64</Platform>
       <PackageTargetRuntime>%(Identity)</PackageTargetRuntime>
-      <AdditionalProperties>PackageTargetRuntime=%(Identity);OSGroup=%(OSGroup);Platform=%(Platform)</AdditionalProperties>
+      <AdditionalProperties>PackageTargetRuntime=%(Identity);Platform=%(Platform)</AdditionalProperties>
     </_project>
-    
+
     <Project Include="@(_project->'$(MSBuildProjectName).pkgproj')" />
   </ItemGroup>
 </Project>

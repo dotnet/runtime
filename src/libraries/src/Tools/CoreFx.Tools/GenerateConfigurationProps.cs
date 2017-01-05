@@ -61,6 +61,7 @@ namespace Microsoft.DotNet.Build.Tasks
             CreateRuntimeIdentifier(project);
 
             var projectPath = Path.Combine(PropsFolder, $"{PropsFileName}{PropsFileExtension}");
+            project.TreatAsLocalProperty = string.Join<string>(";", ConfigurationFactory.GetProperties().Select(pi => pi.Name));
             project.Save(projectPath);
 
             return !Log.HasLoggedErrors;
