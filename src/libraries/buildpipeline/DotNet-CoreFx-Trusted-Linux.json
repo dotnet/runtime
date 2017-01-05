@@ -164,7 +164,7 @@
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
-      "displayName": "Run sync",
+      "displayName": "prebuild corefx.tools",
       "timeoutInMinutes": 0,
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
@@ -173,7 +173,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "exec $(PB_DockerContainerName) $(PB_GitDirectory)/sync.sh -p -- /p:ArchGroup=$(PB_Platform)",
+        "arguments": "exec $(PB_DockerContainerName) $(PB_GitDirectory)/Tools/msbuild.sh $(PB_GitDirectory)/src/Tools/CoreFx.Tools/CoreFx.Tools.csproj",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
