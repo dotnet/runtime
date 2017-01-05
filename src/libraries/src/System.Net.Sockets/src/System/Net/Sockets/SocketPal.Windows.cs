@@ -332,12 +332,7 @@ namespace System.Net.Sockets
 
         public static unsafe IPPacketInformation GetIPPacketInformation(Interop.Winsock.ControlData* controlBuffer)
         {
-            IPAddress address = IPAddress.None;
-            if (controlBuffer->length != UIntPtr.Zero)
-            {
-                address = new IPAddress((long)controlBuffer->address);
-            }
-
+            IPAddress address = controlBuffer->length == UIntPtr.Zero ? IPAddress.None : new IPAddress((long)controlBuffer->address);
             return new IPPacketInformation(address, (int)controlBuffer->index);
         }
 
@@ -363,8 +358,8 @@ namespace System.Net.Sockets
             receiveAddress = socketAddress;
             ipPacketInformation = default(IPPacketInformation);
 
-            fixed (byte * ptrBuffer = buffer)
-            fixed (byte * ptrSocketAddress = socketAddress.Buffer)
+            fixed (byte* ptrBuffer = buffer)
+            fixed (byte* ptrSocketAddress = socketAddress.Buffer)
             {
                 Interop.Winsock.WSAMsg wsaMsg;
                 wsaMsg.socketAddress = (IntPtr)ptrSocketAddress;
@@ -384,7 +379,7 @@ namespace System.Net.Sockets
                     wsaMsg.controlBuffer.Length = sizeof(Interop.Winsock.ControlData);
 
                     if (socket.WSARecvMsgBlocking(
-                        handle.DangerousGetHandle(),
+                        handle,
                         (IntPtr)(&wsaMsg),
                         out bytesTransferred,
                         IntPtr.Zero,
@@ -402,7 +397,7 @@ namespace System.Net.Sockets
                     wsaMsg.controlBuffer.Length = sizeof(Interop.Winsock.ControlDataIPv6);
 
                     if (socket.WSARecvMsgBlocking(
-                        handle.DangerousGetHandle(),
+                        handle,
                         (IntPtr)(&wsaMsg),
                         out bytesTransferred,
                         IntPtr.Zero,
@@ -419,7 +414,7 @@ namespace System.Net.Sockets
                     wsaMsg.controlBuffer.Length = 0;
 
                     if (socket.WSARecvMsgBlocking(
-                        handle.DangerousGetHandle(),
+                        handle,
                         (IntPtr)(&wsaMsg),
                         out bytesTransferred,
                         IntPtr.Zero,
