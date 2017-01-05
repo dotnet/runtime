@@ -38,7 +38,9 @@ namespace System.Configuration
             // when add is called and teh key already exists.
             KeyValueConfigurationElement oldValue = (KeyValueConfigurationElement)BaseGet(keyValue.Key);
             if (oldValue == null)
+            {
                 BaseAdd(keyValue);
+            }
             else
             {
                 oldValue.Value += "," + keyValue.Value;
