@@ -20725,10 +20725,9 @@ bool CodeGen::genRegTrashable(regNumber reg, GenTreePtr tree)
 */
 
 GenTreePtr Compiler::fgLegacyPerStatementLocalVarLiveness(GenTreePtr startNode, // The node to start walking with.
-                                                          GenTreePtr relopNode, // The node before the startNode.
+                                                          GenTreePtr relopNode) // The node before the startNode.
                                                                                 // (It should either be NULL or
                                                                                 // a GTF_RELOP_QMARK node.)
-                                                          GenTreePtr asgdLclVar)
 {
     GenTreePtr tree;
 
@@ -20810,7 +20809,7 @@ GenTreePtr Compiler::fgLegacyPerStatementLocalVarLiveness(GenTreePtr startNode, 
             case GT_LCL_FLD_ADDR:
             case GT_STORE_LCL_VAR:
             case GT_STORE_LCL_FLD:
-                fgMarkUseDef(tree->AsLclVarCommon(), asgdLclVar);
+                fgMarkUseDef(tree->AsLclVarCommon());
                 break;
 
             case GT_CLS_VAR:
@@ -20864,7 +20863,7 @@ GenTreePtr Compiler::fgLegacyPerStatementLocalVarLiveness(GenTreePtr startNode, 
                     {
                         // Defines a local addr
                         assert(dummyLclVarTree != nullptr);
-                        fgMarkUseDef(dummyLclVarTree->AsLclVarCommon(), asgdLclVar);
+                        fgMarkUseDef(dummyLclVarTree->AsLclVarCommon());
                     }
                 }
                 break;
@@ -20967,7 +20966,7 @@ GenTreePtr Compiler::fgLegacyPerStatementLocalVarLiveness(GenTreePtr startNode, 
                     // fgCurDefSet and fgCurUseSet into local variables defSet_BeforeSplit and useSet_BeforeSplit.
                     // The cached values will be used to restore fgCurDefSet and fgCurUseSet once we see the GT_COLON
                     // node.
-                    tree = fgLegacyPerStatementLocalVarLiveness(tree->gtNext, tree, asgdLclVar);
+                    tree = fgLegacyPerStatementLocalVarLiveness(tree->gtNext, tree);
 
                     // We must have been returned here after seeing a GT_QMARK node.
                     noway_assert(tree->gtOper == GT_QMARK);
