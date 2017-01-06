@@ -23,7 +23,7 @@
     <Compile Include="XHashtable.cs" />
     <Compile Include="XLinqErrata4.cs" />
     <Compile Include="XNameAPI.cs" />
-    <Compile Include="LoadSaveAsyncTests.cs" Condition="'$(TargetGroup)'==''" />
+    <Compile Include="LoadSaveAsyncTests.cs" Condition="'$(TargetGroup)'=='netcoreapp1.1'" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(CommonTestPath)\System\Xml\ModuleCore\ModuleCore.csproj" />
