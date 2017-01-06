@@ -172,11 +172,17 @@ namespace System.Threading.Tasks.Tests.Status
                         {
                             //we may have reach this point too soon, let's keep spinning until the status changes.
                             while (_task.Status == TaskStatus.Running)
-                                ;
+                            {
+                                Task.Delay(1).Wait();
+                            }
+
                             //
-                            // If we're still waiting for children our Status should reflect so
+                            // If we're still waiting for children our Status should reflect so. For this verification, the
+                            // parent task's status needs to be read before the child task's status (they are volatile loads) to
+                            // make the child task's status more recent, since the child task may complete during the status
+                            // reads.
                             //
-                            if (_task.Status != TaskStatus.WaitingForChildrenToComplete)
+                            if (_task.Status != TaskStatus.WaitingForChildrenToComplete && !_childTask.IsCompleted)
                             {
                                 Assert.True(false, string.Format("Expecting currrent Task status to be WaitingForChildren but getting {0}", _task.Status.ToString()));
                             }
