@@ -4066,30 +4066,33 @@ add_wrappers (MonoAotCompile *acfg)
 
 			/* begin-invoke */
 			method = mono_get_delegate_begin_invoke (klass);
-			create_gsharedvt_inst (acfg, method, &ctx);
+			if (method) {
+				create_gsharedvt_inst (acfg, method, &ctx);
 
-			inst = mono_class_inflate_generic_method_checked (method, &ctx, &error);
-			g_assert (mono_error_ok (&error)); /* FIXME don't swallow the error */
+				inst = mono_class_inflate_generic_method_checked (method, &ctx, &error);
+				g_assert (mono_error_ok (&error)); /* FIXME don't swallow the error */
 
-			m = mono_marshal_get_delegate_begin_invoke (inst);
-			g_assert (m->is_inflated);
+				m = mono_marshal_get_delegate_begin_invoke (inst);
+				g_assert (m->is_inflated);
 
-			gshared = mini_get_shared_method_full (m, FALSE, TRUE);
-			add_extra_method (acfg, gshared);
+				gshared = mini_get_shared_method_full (m, FALSE, TRUE);
+				add_extra_method (acfg, gshared);
+			}
 
 			/* end-invoke */
 			method = mono_get_delegate_end_invoke (klass);
-			create_gsharedvt_inst (acfg, method, &ctx);
+			if (method) {
+				create_gsharedvt_inst (acfg, method, &ctx);
 
-			inst = mono_class_inflate_generic_method_checked (method, &ctx, &error);
-			g_assert (mono_error_ok (&error)); /* FIXME don't swallow the error */
+				inst = mono_class_inflate_generic_method_checked (method, &ctx, &error);
+				g_assert (mono_error_ok (&error)); /* FIXME don't swallow the error */
 
-			m = mono_marshal_get_delegate_end_invoke (inst);
-			g_assert (m->is_inflated);
+				m = mono_marshal_get_delegate_end_invoke (inst);
+				g_assert (m->is_inflated);
 
-			gshared = mini_get_shared_method_full (m, FALSE, TRUE);
-			add_extra_method (acfg, gshared);
-
+				gshared = mini_get_shared_method_full (m, FALSE, TRUE);
+				add_extra_method (acfg, gshared);
+			}
 		}
 	}
 
