@@ -659,7 +659,7 @@ namespace System.IO.Compression
                 throw new IOException(SR.CreateModeWriteOnceAndOneEntryAtATime);
 
             // we assume that if another entry grabbed the archive stream, that it set this entry's _everOpenedForWrite property to true by calling WriteLocalFileHeaderIfNeeed
-            Debug.Assert(_archive.IsStillArchiveStreamOwner(this));
+            _archive.DebugAssertIsStillArchiveStreamOwner(this);
 
             _everOpenedForWrite = true;
             CheckSumAndSizeWriteStream crcSizeStream = GetDataCompressor(_archive.ArchiveStream, true, (object o, EventArgs e) =>
