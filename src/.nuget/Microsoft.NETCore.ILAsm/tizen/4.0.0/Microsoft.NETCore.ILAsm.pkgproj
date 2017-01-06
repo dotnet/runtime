@@ -3,12 +3,12 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <SkipPackageFileCheck>true</SkipPackageFileCheck>
-    <PackageTargetRuntime>debian.8-$(PackagePlatform)</PackageTargetRuntime>
-    <!-- build for x64, armel -->
-    <PackagePlatforms>x64;armel;</PackagePlatforms>
+    <PackageTargetRuntime>tizen.4.0.0-$(PackagePlatform)</PackageTargetRuntime>
+    <!-- only build for armel -->
+    <PackagePlatforms>armel;</PackagePlatforms>
   </PropertyGroup>
   <ItemGroup>
-    <NativeSplittableBinary Include="$(BinDir)corerun" />
+    <NativeSplittableBinary Include="$(BinDir)ilasm" />
     <ArchitectureSpecificNativeFile Include="@(NativeSplittableBinary)" />
     <File Include="@(ArchitectureSpecificNativeFile)">
       <TargetPath>runtimes/$(PackageTargetRuntime)/native</TargetPath>
@@ -19,7 +19,7 @@
     <AdditionalLibPackageExcludes Include="%2A%2A\%2A.dbg" />
     <AdditionalSymbolPackageExcludes Include="%2A%2A\%2A.so" />
     <AdditionalSymbolPackageExcludes Include="%2A%2A\%2A.dll" />
-    <ArchitectureSpecificNativeSymbol Include="..\..\_.pdb" />
+    <ArchitectureSpecificNativeSymbol Include="..\..\..\_.pdb" />
     <File Include="@(ArchitectureSpecificNativeSymbol)">
       <TargetPath>runtimes/$(PackageTargetRuntime)/native</TargetPath>
       <IsSymbolFile>true</IsSymbolFile>
