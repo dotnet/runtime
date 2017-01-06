@@ -124,8 +124,7 @@ namespace System.Linq.Expressions
         {
             if (newExpression == NewExpression & bindings != null)
             {
-                bindings = bindings as ICollection<MemberBinding> ?? bindings.ToReadOnly();
-                if (ExpressionUtils.SameElements(bindings, Bindings))
+                if (ExpressionUtils.SameElements(ref bindings, Bindings))
                 {
                     return this;
                 }

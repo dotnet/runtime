@@ -60,8 +60,7 @@ namespace System.Linq.Expressions
         {
             if (variables != null)
             {
-                variables = variables as ICollection<ParameterExpression> ?? variables.ToReadOnly();
-                if (ExpressionUtils.SameElements(variables, Variables))
+                if (ExpressionUtils.SameElements(ref variables, Variables))
                 {
                     return this;
                 }

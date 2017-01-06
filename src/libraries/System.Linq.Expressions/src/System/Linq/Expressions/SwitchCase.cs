@@ -52,8 +52,7 @@ namespace System.Linq.Expressions
         {
             if (body == Body & testValues != null)
             {
-                testValues = testValues as ICollection<Expression> ?? testValues.ToReadOnly();
-                if (ExpressionUtils.SameElements(testValues, TestValues))
+                if (ExpressionUtils.SameElements(ref testValues, TestValues))
                 {
                     return this;
                 }

@@ -85,8 +85,7 @@ namespace System.Linq.Expressions
         {
             if (body == Body & @finally == Finally & fault == Fault)
             {
-                handlers = handlers as ICollection<CatchBlock> ?? handlers.ToReadOnly();
-                if (ExpressionUtils.SameElements(handlers, Handlers))
+                if (ExpressionUtils.SameElements(ref handlers, Handlers))
                 {
                     return this;
                 }

@@ -92,8 +92,7 @@ namespace System.Linq.Expressions
         {
             if (switchValue == SwitchValue & defaultBody == DefaultBody & cases != null)
             {
-                cases = cases as ICollection<SwitchCase> ?? cases.ToReadOnly();
-                if (ExpressionUtils.SameElements(cases, Cases))
+                if (ExpressionUtils.SameElements(ref cases, Cases))
                 {
                     return this;
                 }
