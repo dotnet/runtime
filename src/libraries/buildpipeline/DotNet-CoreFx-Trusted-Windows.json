@@ -482,7 +482,7 @@
     "name": "DotNet-BuildPipeline",
     "url": "https://devdiv.visualstudio.com/DevDiv/_git/DotNet-BuildPipeline",
     "defaultBranch": "refs/heads/master",
-    "clean": "true",
+    "clean": "false",
     "checkoutSubmodules": false
   },
   "quality": "definition",

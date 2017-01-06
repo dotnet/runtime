@@ -503,14 +503,14 @@
       "fetchDepth": "0",
       "gitLfsSupport": "false",
       "skipSyncSource": "true",
-      "cleanOptions": "3"
+      "cleanOptions": "0"
     },
     "id": "58fa2458-e392-4373-ba2b-dd3ef0c2d7ce",
     "type": "TfsGit",
     "name": "DotNet-CoreFX-Trusted",
     "url": "https://devdiv.visualstudio.com/DevDiv/_git/DotNet-CoreFX-Trusted",
     "defaultBranch": "refs/heads/master",
-    "clean": "true",
+    "clean": "false",
     "checkoutSubmodules": false
   },
   "quality": "definition",
