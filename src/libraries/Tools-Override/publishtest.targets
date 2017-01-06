@@ -9,7 +9,6 @@
 
   <PropertyGroup>
     <SerializeProjects Condition="'$(TestWithLocalLibraries)'=='true'">true</SerializeProjects>
-    <TargetOS Condition="'$(OSGroup)'!='AnyOS'">$(OSGroup)</TargetOS>
   </PropertyGroup>
 
   <!--
