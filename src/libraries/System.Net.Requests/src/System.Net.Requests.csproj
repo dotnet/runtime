@@ -126,6 +126,7 @@
     <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Diagnostics.Debug" />
+    <Reference Include="System.Diagnostics.Tools" />
     <Reference Include="System.Collections.Specialized" />
     <Reference Include="System.Collections.NonGeneric" />
     <Reference Include="System.Net.Primitives" />

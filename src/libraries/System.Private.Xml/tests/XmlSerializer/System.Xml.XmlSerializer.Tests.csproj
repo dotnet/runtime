@@ -16,5 +16,5 @@
   <ItemGroup Condition="'$(TargetGroup)' != 'netcore50' AND '$(TargetGroup)' != 'netcore50aot'">
     <Compile Include="$(TestSourceFolder)XmlSerializerTests.Internal.cs" Condition="'$(UseContractReferences)' == ''" />
   </ItemGroup>
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), System.Xml.XmlSerializer.Tests.settings.targets))\System.Xml.XmlSerializer.Tests.settings.targets" />
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

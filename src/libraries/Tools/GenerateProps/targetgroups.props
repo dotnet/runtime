@@ -76,6 +76,14 @@
       <Imports>netcoreapp1.1</Imports>
       <CompatibleWith>netstandard</CompatibleWith>
     </TargetGroups>
+    <TargetGroups Include="netcoreapp1.2">
+      <PackageTargetFramework>netcoreapp1.2</PackageTargetFramework>
+      <NuGetTargetMoniker>.NETCoreApp,Version=v1.2</NuGetTargetMoniker>
+    </TargetGroups>
+    <TargetGroups Include="netcoreapp1.2corert">
+      <PackageTargetFramework>netcoreapp1.2</PackageTargetFramework>
+      <NuGetTargetMoniker>.NETCoreApp,Version=v1.2</NuGetTargetMoniker>
+    </TargetGroups>
     <TargetGroups Include="net45">
       <PackageTargetFramework>net45</PackageTargetFramework>
       <TargetingPackNugetPackageId>Microsoft.TargetingPack.NETFramework.v4.5</TargetingPackNugetPackageId>

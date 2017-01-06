@@ -54,6 +54,7 @@
     <Reference Include="System.ComponentModel" />
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Threading" />
+    <Reference Include="System.Diagnostics.Tools" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
