@@ -22,19 +22,12 @@
  */
 void Compiler::fgMarkUseDef(GenTreeLclVarCommon* tree)
 {
-    unsigned lclNum;
-    if (tree->gtOper == GT_LCL_VAR || tree->gtOper == GT_LCL_VAR_ADDR || tree->gtOper == GT_STORE_LCL_VAR)
-    {
-        lclNum = tree->gtLclNum;
-    }
-    else
-    {
-        assert(tree->OperIsLocalField());
-        lclNum = tree->gtLclFld.gtLclNum;
-    }
+    assert((tree->OperIsLocal() && (tree->OperGet() != GT_PHI_ARG)) || tree->OperIsLocalAddr());
 
+    const unsigned lclNum = tree->gtLclNum;
     assert(lclNum < lvaCount);
-    LclVarDsc* const varDsc = lvaTable + lclNum;
+
+    LclVarDsc* const varDsc = &lvaTable[lclNum];
 
     // We should never encounter a reference to a lclVar that has a zero refCnt.
     if (varDsc->lvRefCnt == 0 && (!varTypeIsPromotable(varDsc) || !varDsc->lvPromoted))
