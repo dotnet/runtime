@@ -177,16 +177,12 @@ namespace System.Threading.Tasks.Tests.Status
                             }
 
                             //
-                            // If we're still waiting for children our Status should reflect so. For this verification, read the
-                            // parent task's status before the child task's status to make the child task's status more recent,
-                            // since the child task may complete during the status reads.
+                            // If we're still waiting for children our Status should reflect so. For this verification, the
+                            // parent task's status needs to be read before the child task's status (they are volatile loads) to
+                            // make the child task's status more recent, since the child task may complete during the status
+                            // reads.
                             //
-                            TaskStatus taskStatus = _task.Status;
-                            Interlocked.MemoryBarrier();
-                            TaskStatus childTaskStatus = _childTask.Status;
-                            if (taskStatus != TaskStatus.WaitingForChildrenToComplete &&
-                                childTaskStatus != TaskStatus.RanToCompletion &&
-                                childTaskStatus != TaskStatus.Faulted)
+                            if (_task.Status != TaskStatus.WaitingForChildrenToComplete && !_childTask.IsCompleted)
                             {
                                 Assert.True(false, string.Format("Expecting currrent Task status to be WaitingForChildren but getting {0}", _task.Status.ToString()));
                             }
