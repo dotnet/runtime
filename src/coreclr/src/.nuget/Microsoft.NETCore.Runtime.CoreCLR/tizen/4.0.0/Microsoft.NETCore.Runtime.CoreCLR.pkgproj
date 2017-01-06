@@ -3,13 +3,12 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <SkipPackageFileCheck>true</SkipPackageFileCheck>
-    <PackageTargetRuntime>debian.8-$(PackagePlatform)</PackageTargetRuntime>
-    <!-- build for x64, armel -->
-    <PackagePlatforms>x64;armel;</PackagePlatforms>
+    <PackageTargetRuntime>tizen.4.0.0-$(PackagePlatform)</PackageTargetRuntime>
+    <!-- only build for armel -->
+    <PackagePlatforms>armel;</PackagePlatforms>
   </PropertyGroup>
   <ItemGroup>
     <NativeSplittableBinary Include="$(BinDir)libcoreclr.so" />
-    <NativeSplittableBinary Condition="'$(PackagePlatform)' != 'armel'" Include="$(BinDir)libcoreclrtraceptprovider.so" />
     <NativeSplittableBinary Include="$(BinDir)libdbgshim.so" />
     <NativeSplittableBinary Include="$(BinDir)libmscordaccore.so" />
     <NativeSplittableBinary Include="$(BinDir)libmscordbi.so" />
@@ -17,8 +16,10 @@
     <NativeSplittableBinary Include="$(BinDir)libsosplugin.so" />
     <NativeSplittableBinary Include="$(BinDir)System.Globalization.Native.so" />
     <ArchitectureSpecificNativeFile Include="$(BinDir)sosdocsunix.txt" />
-    <ArchitectureSpecificNativeFile Condition="'$(PackagePlatform)' != 'armel'" Include="$(BinDir)mscorlib.ni.dll" />
-    <ArchitectureSpecificNativeFile Condition="'$(PackagePlatform)' != 'armel'" Include="$(BinDir)System.Private.CoreLib.ni.dll" />
+    <!-- cannot generate in build now
+    <ArchitectureSpecificNativeFile Include="$(BinDir)mscorlib.ni.dll" />
+    <ArchitectureSpecificNativeFile Include="$(BinDir)System.Private.CoreLib.ni.dll" /> 
+    -->
     <ArchitectureSpecificLibFile Include="$(BinDir)mscorlib.dll" />
     <ArchitectureSpecificLibFile Include="$(BinDir)System.Private.CoreLib.dll" />
     <ArchitectureSpecificLibFile Include="$(BinDir)SOS.NETCore.dll" />
@@ -46,7 +47,7 @@
     <AdditionalSymbolPackageExcludes Include="%2A%2A\%2A.dll" />
     <AdditionalSymbolPackageExcludes Include="%2A%2A\sosdocsunix.txt" />
     <AdditionalSymbolPackageExcludes Include="%2A%2A\crossgen" />
-    <ArchitectureSpecificNativeSymbol Include="..\..\_.pdb" />
+    <ArchitectureSpecificNativeSymbol Include="..\..\..\_.pdb" />
     <File Include="@(ArchitectureSpecificNativeSymbol)">
       <TargetPath>runtimes/$(PackageTargetRuntime)/native</TargetPath>
       <IsSymbolFile>true</IsSymbolFile>
