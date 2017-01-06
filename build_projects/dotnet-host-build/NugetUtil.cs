@@ -35,6 +35,7 @@ namespace Microsoft.DotNet.Cli.Build
                     "push",
                     "-s", destinationUrl,
                     "-k", apiKey,
+                    "--timeout", "3600",
                     path);
 
                 if (result != 0)
