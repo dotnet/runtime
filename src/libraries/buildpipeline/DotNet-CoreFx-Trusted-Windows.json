@@ -176,7 +176,7 @@
       "inputs": {
         "filename": "$(Build.SourcesDirectory)\\corefx\\publish-packages.cmd",
         "arguments": "-AzureAccount=$(PB_CloudDropAccountName) -AzureToken=$(CloudDropAccessToken) -Container=$(PB_Label) -- /p:OverwriteOnPublish=true",
-        "workingFolder": "",
+        "workingFolder": "corefx",
         "failOnStandardError": "false"
       }
     },
