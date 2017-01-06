@@ -1896,19 +1896,15 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                             buildCommands += genStressModeScriptStep(os, scenario, Constants.jitStressModeScenarios[scenario], stepScriptLocation)
 
                             if (enableCorefxTesting) {
-                                def fxRoot = "%WORKSPACE%\\_\\fx"
-                                buildCommands += "python %WORKSPACE%\\tests\\scripts\\run-corefx-tests.py -arch ${arch} -build_type ${configuration} -fx_root ${fxRoot} -fx_branch ${branch} -env_script ${stepScriptLocation}"
+                                def workspaceRelativeFxRoot = "_/fx"
+                                def absoluteFxRoot = "%WORKSPACE%\\_\\fx"
+                                buildCommands += "python %WORKSPACE%\\tests\\scripts\\run-corefx-tests.py -arch ${arch} -build_type ${configuration} -fx_root ${absoluteFxRoot} -fx_branch ${branch} -env_script ${stepScriptLocation}"
 
-                                // Archive only result xml files since corefx/bin/tests is very large around 10 GB.
-                                // For windows, pull full test results and test drops for x86/x64
-                                Utilities.addArchival(newJob, "${fxRoot}/bin/tests/**/testResults.xml")
-
-                                // Set timeout
                                 setTestJobTimeOut(newJob, scenario)
 
-                                if (architecture == 'x64' || !isPR) {
-                                    Utilities.addXUnitDotNETResults(newJob, "${fxRoot}/bin/tests/**/testResults.xml")
-                                }
+                                // Archive and process (only) the test results
+                                Utilities.addArchival(newJob, "${workspaceRelativeFxRoot}/bin/tests/**/testResults.xml")
+                                Utilities.addXUnitDotNETResults(newJob, "${workspaceRelativeFxRoot}/bin/tests/**/testResults.xml")
                             }
                             else {
                                 buildCommands += "%WORKSPACE%\\tests\\runtest.cmd ${runtestArguments} TestEnv ${stepScriptLocation}"
@@ -2065,13 +2061,15 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                         buildCommands += genStressModeScriptStep(os, scenario, Constants.jitStressModeScenarios[scenario], scriptFileName)
 
                         // Build and text corefx
-                        def fxRoot = "\$WORKSPACE/_/fx"
-                        buildCommands += "python \$WORKSPACE/tests/scripts/run-corefx-tests.py -arch ${arch} -build_type ${configuration} -fx_root ${fxRoot} -fx_branch ${branch} -env_script ${scriptFileName}"
+                        def workspaceRelativeFxRoot = "_/fx"
+                        def absoluteFxRoot = "\$WORKSPACE/${workspaceRelativeFxRoot}"
+                        buildCommands += "python \$WORKSPACE/tests/scripts/run-corefx-tests.py -arch ${arch} -build_type ${configuration} -fx_root ${absoluteFxRoot} -fx_branch ${branch} -env_script ${scriptFileName}"
 
-                        // Archive and process test result
-                        Utilities.addArchival(newJob, "${fxRoot}/bin/tests/**/testResults.xml")
                         setTestJobTimeOut(newJob, scenario)
-                        Utilities.addXUnitDotNETResults(newJob, "${fxRoot}/bin/tests/**/testResults.xml")
+
+                        // Archive and process (only) the test results
+                        Utilities.addArchival(newJob, "${workspaceRelativeFxRoot}/bin/tests/**/testResults.xml")
+                        Utilities.addXUnitDotNETResults(newJob, "${workspaceRelativeFxRoot}/bin/tests/**/testResults.xml")
                     }
                     break
                 case 'arm64':
