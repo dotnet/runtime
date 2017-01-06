@@ -8,7 +8,6 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
 using System.Text;
 
@@ -372,8 +371,8 @@ namespace System.IO.Compression
             }
         }
 
-        [SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode", Justification = "This code is used in a contract check.")]
-        internal bool IsStillArchiveStreamOwner(ZipArchiveEntry entry) => _archiveStreamOwner == entry;
+        [Conditional("DEBUG")]
+        internal void DebugAssertIsStillArchiveStreamOwner(ZipArchiveEntry entry) => Debug.Assert(_archiveStreamOwner == entry);
 
         internal void ReleaseArchiveStream(ZipArchiveEntry entry)
         {
