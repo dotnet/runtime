@@ -209,6 +209,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\pkg\System.Private.Xml.Linq.pkgproj" />
+    <ProjectReference Include="..\..\..\..\System.Xml.XDocument\pkg\System.Xml.XDocument.pkgproj" />
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

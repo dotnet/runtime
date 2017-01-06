@@ -14,7 +14,15 @@
     </Project>
     <Project Include="misc\System.Xml.Linq.Misc.Tests.csproj" />
     <Project Include="misc\System.Xml.Linq.Misc.Tests.csproj">
+      <TargetGroup>netcoreapp1.1</TargetGroup>
+    </Project>
+    <Project Include="misc\System.Xml.Linq.Misc.Tests.csproj">
       <OSGroup>Windows_NT</OSGroup>
+      <TestTFMs>net463</TestTFMs>
+    </Project>
+    <Project Include="misc\System.Xml.Linq.Misc.Tests.csproj">
+      <OSGroup>Windows_NT</OSGroup>
+      <TargetGroup>netstandard1.3</TargetGroup>
       <TestTFMs>netcore50;net46</TestTFMs>
     </Project>
     <Project Include="Properties\System.Xml.Linq.Properties.Tests.csproj" />
@@ -35,6 +43,7 @@
     <Project Include="TreeManipulation\System.Xml.Linq.TreeManipulation.Tests.csproj" />
     <Project Include="TreeManipulation\System.Xml.Linq.TreeManipulation.Tests.csproj">
       <OSGroup>Windows_NT</OSGroup>
+      <TargetGroup>netstandard1.3</TargetGroup>
       <TestTFMs>netcore50;net46</TestTFMs>
     </Project>
     <Project Include="XDocument.Common\XDocument.Common.csproj" />
