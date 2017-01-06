@@ -35,20 +35,19 @@ Below is a list of all the various options we pivot the project builds on:
 - **Platform Runtimes:** NetFx (aka CLR/Desktop), CoreCLR, CoreRT (aka NetNative/AOT/MRT)
 - **OS:** Windows_NT, Linux, OSX, FreeBSD, AnyOS
 - **Flavor:** Debug, Release
-- **Architecture:** x86, x64, ARM, ARM64, AnyCPU
+- **Architecture:** x86, x64, arm, arm64, AnyCPU
 
 ##Individual build properties
 The following are the properties associated with each build pivot
 
 - `$(TargetGroup) -> netstandard | netcoreapp | netcoreappcorert | netfx | uap | uapaot`
 //**CONSIDER**: naming netcoreappcorert something shorter maybe just corert.
-- `$(OSGroup) -> empty/AnyOS* | Windows | Linux | OSX | FreeBSD`
-- `$(ConfigurationGroup) -> empty/Debug* | Release`
-- `$(ArchGroup) - empty/AnyCPU* | x86 | x64 | ARM | ARM64`
+- `$(OSGroup) -> Windows | Linux | OSX | FreeBSD | [defaults to running OS when empty]`
+- `$(ConfigurationGroup) -> Release | [defaults to Debug when empty]`
+- `$(ArchGroup) - x86 | x64 | arm | arm64 | [defaults to x64 when empty]`
+- `$(RuntimeOS) - win7 | osx10.10 | ubuntu.14.04 | [any other RID OS+version] | [defaults to runnning OS when empty]` See [RIDs](https://github.com/dotnet/corefx/tree/master/pkg/Microsoft.NETCore.Platforms) for more info.
 
 For more information on various targets see also [.NET Standard](https://github.com/dotnet/standard/blob/master/docs/versions.md)
-
-<BR/>`*` -> *default values*
 
 ##Aggregate build properties
 Each project will define a set of supported build configurations
@@ -89,10 +88,18 @@ All supported targets with unique windows/unix build for netcoreapp:
 <PropertyGroup>
 ```
 
-##Full build configuration
-The `BuildConfiguration` property can either be set directly via
-`/p:BuildConfiguration=[BuildConfiguration]` or will be defaulted based
-on where you are running the build. The default will look like `netcoreapp-[RunningOS]-Debug-[RunningProcessArch]`, example `netcoreapp-Windows_NT-Debug-x64`.
+##Options for building
+
+A full or individual project build is centered around BuildConfiguration and will be setup in one of the following ways:
+
+1. `$(BuildConfiguration)` can directly be passed to the build.
+2. `$(Configuration)` can be passed to the build and `$(BuildConfiguration)` will be set to `$(Configuration)-$(ArchGroup)`. This is a convinence mechanism primarily to help with VS support because VS uses the `Configuration` property for switching between various configurations in the UI. NOTE: this only works well for individual projects and not the root builds.
+3. `$(TargetGroup), $(OSGroup), $(ConfigurationGroup), $(ArchGroup)` can individually be passed in to change the default value for just part of the `BuildConfiguration`.
+4. If nothing is passed to the build then we will default `BuildConfiguration` from the environment. Example: `netcoreapp-[OSGroup Running On]-Debug-x64]`.
+
+On top of the `BuildConfiguration` we also have `RuntimeOS` which can be passed to customize the specific OS and version needed for native package builds as well as package restoration. If not passed it will default based on the OS you are running on.
+
+Any of the mentioned properties can be set via `/p:<Property>=<Value>` at the command line. When building using our run tool or any of the wrapper scripts around it (i.e. build.cmd) a number of these properties have aliases which make them easier to pass (run build.cmd/sh -? for the aliases).
 
 ##Selecting the correct build configuration
 When building an individual project the `BuildConfiguation` will be used to select the closest matching configuration listed in the projects `BuildConfigurations` property. The rules used to select the configuration will consider compatible target frameworks and OS fallbacks.

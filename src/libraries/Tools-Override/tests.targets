@@ -74,13 +74,18 @@
           Inputs="@(RunTestsForProjectInputs)"
           Outputs="$(TestsSuccessfulSemaphore);$(TestPath)/$(XunitResultsFileName);$(CoverageOutputFilePath)"
           >
+    <PropertyGroup>
+      <TargetOSTrait Condition="'$(TargetOS)'=='Windows_NT'">nonwindowstests</TargetOSTrait>
+      <TargetOSTrait Condition="'$(TargetOS)'=='Linux'">nonlinuxtests</TargetOSTrait>
+      <TargetOSTrait Condition="'$(TargetOS)'=='OSX'">nonosxtests</TargetOSTrait>
+      <TargetOSTrait Condition="'$(TargetOS)'=='FreeBSD'">nonfreebsdtests</TargetOSTrait>
+      <TargetOSTrait Condition="'$(TargetOS)'=='NetBSD'">nonnetbsdtests</TargetOSTrait>
+    </PropertyGroup>
+
+    <Error Condition="'$(TargetOSTrait)' == ''" Text="TargetOS [$(TargetOS)] is unknown so we don't know how to configure the test run for this project [$(MSBuildProjectName)]" />
 
     <ItemGroup>
-      <RunWithoutTraits Condition="'$(TargetOS)'=='Windows_NT'" Include="nonwindowstests" />
-      <RunWithoutTraits Condition="'$(TargetOS)'=='Linux'" Include="nonlinuxtests" />
-      <RunWithoutTraits Condition="'$(TargetOS)'=='OSX'" Include="nonosxtests"/>
-      <RunWithoutTraits Condition="'$(TargetOS)'=='FreeBSD'" Include="nonfreebsdtests"/>
-      <RunWithoutTraits Condition="'$(TargetOS)'=='NetBSD'" Include="nonnetbsdtests"/>
+      <RunWithoutTraits Condition="'$(TargetOSTrait)'!=''" Include="$(TargetOSTrait)" />
     </ItemGroup>
 
     <PropertyGroup>
@@ -139,6 +144,7 @@
     <PropertyGroup>
       <TestDisabled Condition="'%(UnsupportedPlatformsItems.Identity)' == '$(TargetOS)' Or '$(ConfigurationErrorMsg)' != ''">true</TestDisabled>
     </PropertyGroup>
+    <Message Text="CheckTestPlatforms found TargetOS of [$(TargetOS)]." Importance="Low" />
     <Message Condition="'%(UnsupportedPlatformsItems.Identity)' == '$(TargetOS)'"
       Text="Skipping tests in $(AssemblyName) because it is not supported on $(TargetOS)" />
     <Message Condition="'$(ConfigurationErrorMsg)' != ''"

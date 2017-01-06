@@ -27,19 +27,6 @@ def osGroupMap = ['Ubuntu14.04':'Linux',
                   'RHEL7.2': 'Linux',
                   'LinuxARMEmulator': 'Linux']
 
-// Map of osName -> nuget runtime
-def targetNugetRuntimeMap = ['OSX' : 'osx.10.10-x64',
-                             'Ubuntu14.04' : 'ubuntu.14.04-x64',
-                             'Ubuntu16.04' : 'ubuntu.16.04-x64',
-                             'Ubuntu16.10' : 'ubuntu.16.10-x64',
-                             'Fedora23' : 'fedora.23-x64',
-                             'Fedora24' : 'fedora.24-x64',
-                             'Debian8.4' : 'debian.8-x64',
-                             'CentOS7.1' : 'centos.7-x64',
-                             'OpenSUSE13.2' : 'opensuse.13.2-x64',
-                             'OpenSUSE42.1' : 'opensuse.42.1-x64',
-                             'RHEL7.2': 'rhel.7-x64']
-
 def osShortName = ['Windows 10': 'win10',
                    'Windows 7' : 'win7',
                    'Windows_NT' : 'windows_nt',
@@ -71,7 +58,7 @@ def buildArchConfiguration = ['Debug': 'x86',
         def batchCommand = 'call build.cmd -coverage -outerloop -- /p:WithoutCategories=IgnoreForCI'
         if (isLocal) {
             newJobName = "${newJobName}_local"
-            batchCommand = "${batchCommand} /p:TestWithLocalNativeLibraries=true"
+            batchCommand = "${batchCommand}"
         }
         def newJob = job(Utilities.getFullJobName(project, newJobName, isPR)) {
             steps {
@@ -113,7 +100,7 @@ def buildArchConfiguration = ['Debug': 'x86',
             shell('python src/Native/Unix/format-code.py checkonly')
         }
     }
-    
+
     // Set up standard options.
     Utilities.standardJobSetup(newJob, project, isPR, "*/${branch}")
     // Set the machine affinity to Ubuntu14.04 machines
@@ -136,7 +123,7 @@ def buildArchConfiguration = ['Debug': 'x86',
         ['Debug', 'Release'].each { configurationGroup ->
 
             def newJobName = "outerloop_${osShortName[osName]}_${configurationGroup.toLowerCase()}"
-            
+
             def newBuildJobName = "outerloop_${osShortName[osName]}_${configurationGroup.toLowerCase()}_bld"
 
             def newBuildJob = job(Utilities.getFullJobName(project, newBuildJobName, isPR)) {
@@ -153,7 +140,7 @@ def buildArchConfiguration = ['Debug': 'x86',
             Utilities.standardJobSetup(newBuildJob, project, isPR, "*/${branch}")
             // Archive the results
             Utilities.addArchival(newBuildJob, "bin/build.pack,run-test.cmd,msbuild.log")
-            
+
             def fullCoreFXBuildJobName = projectFolder + '/' + newBuildJob.name
             def newTestJobName =  "outerloop_${osShortName[osName]}_${configurationGroup.toLowerCase()}_tst"
             def newTestJob = job(Utilities.getFullJobName(project, newTestJobName, isPR)) {
@@ -289,12 +276,12 @@ def buildArchConfiguration = ['Debug': 'x86',
                 helix("Build.cmd -- /p:Creator=dotnet-bot /p:ArchiveTests=true /p:ConfigurationGroup=${configurationGroup} /p:Configuration=Windows_${configurationGroup} /p:TestDisabled=true /p:EnableCloudTest=true /p:BuildMoniker={uniqueId} /p:TargetQueue=Windows.10.Amd64 /p:TestProduct=CoreFx /p:Branch=master /p:OSGroup=Windows_NT /p:CloudDropAccountName=dotnetbuilddrops /p:CloudResultsAccountName=dotnetjobresults /p:CloudDropAccessToken={CloudDropAccessToken} /p:CloudResultsAccessToken={CloudResultsAccessToken} /p:BuildCompleteConnection={BuildCompleteConnection} /p:BuildIsOfficialConnection={BuildIsOfficialConnection} /p:DocumentDbKey={DocumentDbKey} /p:DocumentDbUri=https://hms.documents.azure.com:443/ /p:FuncTestsDisabled=true /p:Performance=true")
             }
         }
-        
+
         Utilities.setMachineAffinity(newJob, 'Windows_NT', 'latest-or-auto')
 
         // Set up standard options.
         Utilities.standardJobSetup(newJob, project, /* isPR */ false, "*/${branch}")
-        
+
         // Set a periodic trigger
         Utilities.addPeriodicTrigger(newJob, '@daily')
 
@@ -317,15 +304,15 @@ def buildArchConfiguration = ['Debug': 'x86',
                     // On Windows we use the packer to put together everything. On *nix we use tar
                     steps {
                         if (osName == 'Windows 10' || osName == 'Windows 7' || osName == 'Windows_NT') {
-                            batchFile("call \"C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\vcvarsall.bat\" x86 && build.cmd -${configurationGroup} -os:${osGroup} -buildArch:${buildArchConfiguration[configurationGroup]} -- /p:BuildConfiguration=${targetGroup}-${osGroup}-${configurationGroup}-${buildArchConfiguration[configurationGroup]}")
-                            batchFile("call \"C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\vcvarsall.bat\" x86 && build-tests.cmd -${configurationGroup} -os:${osGroup} -buildArch:${buildArchConfiguration[configurationGroup]} -- /p:WithoutCategories=IgnoreForCI /p:BuildConfiguration=${targetGroup}-${osGroup}-${configurationGroup}-${buildArchConfiguration[configurationGroup]}")
+                            batchFile("call \"C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\vcvarsall.bat\" x86 && build.cmd -${configurationGroup} -os:${osGroup} -buildArch:${buildArchConfiguration[configurationGroup]} -framework:${targetGroup}")
+                            batchFile("call \"C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\vcvarsall.bat\" x86 && build-tests.cmd -${configurationGroup} -os:${osGroup} -buildArch:${buildArchConfiguration[configurationGroup]} -framework:${targetGroup} -- /p:WithoutCategories=IgnoreForCI")
                             batchFile("C:\\Packer\\Packer.exe .\\bin\\build.pack .\\bin")
                         }
                         else {
                             // Use Server GC for Ubuntu/OSX Debug PR build & test
                             def useServerGC = (configurationGroup == 'Release' && isPR) ? 'useServerGC' : ''
-                            shell("HOME=\$WORKSPACE/tempHome ./build.sh -${configurationGroup.toLowerCase()} -- /p:BuildConfiguration=${targetGroup}-${osGroup}-${configurationGroup}-x64")
-                            shell("HOME=\$WORKSPACE/tempHome ./build-tests.sh -${configurationGroup.toLowerCase()} -- ${useServerGC} /p:TestWithLocalNativeLibraries=true /p:WithoutCategories=IgnoreForCI /p:BuildConfiguration=${targetGroup}-${osGroup}-${configurationGroup}-x64")
+                            shell("HOME=\$WORKSPACE/tempHome ./build.sh -${configurationGroup.toLowerCase()} -framework:${targetGroup} -os:${osGroup} -runtimeos:${osName}")
+                            shell("HOME=\$WORKSPACE/tempHome ./build-tests.sh -${configurationGroup.toLowerCase()} -framework:${targetGroup} -os:${osGroup} -runtimeos:${osName} -- ${useServerGC} /p:WithoutCategories=IgnoreForCI")
                             // Tar up the appropriate bits.  On OSX the tarring is a different syntax for exclusion.
                             if (osName == 'OSX') {
                                 // TODO: Re-enable package archival when the build refactoring work allows it.

@@ -55,7 +55,6 @@
   <Import Project="$(ToolsDir)Build.Common.props" Condition="Exists('$(ToolsDir)Build.Common.props')" />
 
   <PropertyGroup>
-    <InputOSGroup Condition="'$(InputOSGroup)'==''">$(OSEnvironment)</InputOSGroup>
     <BuildToolsTargets45 Condition="'$(OsEnvironment)'=='Windows_NT'">true</BuildToolsTargets45>
   </PropertyGroup>
 
@@ -137,17 +136,27 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <ArchGroup Condition="'$(ArchGroup)'==''">x64</ArchGroup>
-    <BuildConfiguration_OSGroup>$(OSEnvironment)</BuildConfiguration_OSGroup>
-    <BuildConfiguration_OSGroup Condition="'$(OSGroup)' != ''">$(OSGroup)</BuildConfiguration_OSGroup>
-    <BuildConfiguration_ConfigurationGroup>Debug</BuildConfiguration_ConfigurationGroup>
-    <BuildConfiguration_ConfigurationGroup Condition="'$(ConfigurationGroup)' != ''">$(ConfigurationGroup)</BuildConfiguration_ConfigurationGroup>
-    <BuildConfiguration Condition="'$(BuildConfiguration)' == ''">netcoreapp-$(BuildConfiguration_OSGroup)-$(BuildConfiguration_ConfigurationGroup)-$(ArchGroup)</BuildConfiguration>
+    <!--
+      These *Group properties are only intended to enable passing them individually at the command line to initialize
+      BuildConfiguration. They will be overwritten by our configurations/configuration.props file and defaulted
+      based on Configuration for the individual projects which is selected based on BuildConfiguration.
 
+      See Documentation/coding-guidelines/project-guidelines.md for more details on our configurations.
+    -->
+    <TargetGroup Condition="'$(TargetGroup)' == ''">netcoreapp</TargetGroup>
+    <OSGroup Condition="'$(OSGroup)' == ''">$(OSEnvironment)</OSGroup>
+    <ConfigurationGroup Condition="'$(ConfigurationGroup)' == ''">Debug</ConfigurationGroup>
+    <ArchGroup Condition="'$(ArchGroup)' == ''">x64</ArchGroup>
+
+    <!-- For VS support if Configuration is set we default BuildConfiguration based on that property -->
+    <BuildConfiguration Condition="'$(BuildConfiguration)' == '' and '$(Configuration)' != ''">$(Configuration)-$(ArchGroup)</BuildConfiguration>
+
+    <!-- Initialize BuildConfiguration from the individual properties if it wasn't already explicitly set -->
+    <BuildConfiguration Condition="'$(BuildConfiguration)' == ''">$(TargetGroup)-$(OSGroup)-$(ConfigurationGroup)-$(ArchGroup)</BuildConfiguration>
     <BuildConfigurationImportFile>$(ToolsDir)/configuration/configuration.props</BuildConfigurationImportFile>
 
     <!-- Need to try and keep the same logic as the native builds as we need this for packaging -->
-    <NativeBinDir>$(BinDir)$(BuildConfiguration_OSGroup).$(ArchGroup).$(ConfigurationGroup)/native</NativeBinDir>
+    <NativeBinDir>$(BinDir)$(OSGroup).$(ArchGroup).$(ConfigurationGroup)/native</NativeBinDir>
   </PropertyGroup>
 
   <Import Project="$(BuildConfigurationImportFile)" Condition="Exists('$(BuildConfigurationImportFile)')" />
@@ -160,14 +169,6 @@
         <Optimize Condition="'$(Optimize)' == ''">false</Optimize>
         <DebugType Condition="'$(DebugType)' == ''">full</DebugType>
         <DefineConstants>$(DefineConstants),DEBUG,TRACE</DefineConstants>
-      </PropertyGroup>
-    </When>
-    <When Condition="'$(ConfigurationGroup)' == 'Release'">
-      <PropertyGroup>
-        <DebugSymbols Condition="'$(DebugSymbols)' == ''">true</DebugSymbols>
-        <Optimize Condition="'$(Optimize)' == ''">true</Optimize>
-        <DebugType Condition="'$(DebugType)' == ''">pdbonly</DebugType>
-        <DefineConstants>$(DefineConstants),TRACE</DefineConstants>
       </PropertyGroup>
     </When>
     <When Condition="'$(ConfigurationGroup)' == 'Release'">
