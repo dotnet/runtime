@@ -114,7 +114,7 @@
         "scriptType": "inlineScript",
         "scriptName": "",
         "arguments": "-OfficialBuildId $(OfficialBuildId)",
-        "inlineScript": "params($OfficialBuildId)\n  msbuild build.proj /t:CreateOrUpdateCurrentVersionFile /p:OfficialBuildId=$OfficialBuildId /p:BuildVersionFile=bin\\obj\\BuildVersion-$OfficialBuildId.props",
+        "inlineScript": "param($OfficialBuildId)\n  msbuild build.proj /t:CreateOrUpdateCurrentVersionFile /p:OfficialBuildId=$OfficialBuildId /p:BuildVersionFile=bin\\obj\\BuildVersion-$OfficialBuildId.props",
         "workingFolder": "$(Pipeline.SourcesDirectory)",
         "failOnStandardError": "true"
       }
