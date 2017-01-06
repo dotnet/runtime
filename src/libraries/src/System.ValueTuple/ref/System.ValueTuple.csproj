@@ -2,13 +2,10 @@
 <Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <!-- rev'ed to 4.0.1.0 even though 4.0.0.0 never shipped so that we can drop pre-release down to beta -->
-    <ProjectGuid>{4C2655DB-BD9E-4C86-83A6-744ECDDBDF29}</ProjectGuid>
-    <DocumentationFile>$(OutputPath)$(AssemblyName).xml</DocumentationFile>
-    <UseOpenKey Condition="'$(UseOpenKey)'==''">true</UseOpenKey>
+    <OutputType>Library</OutputType>
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETCoreApp,Version=v1.1</NuGetTargetMoniker>
-    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == ''">true</IsPartialFacadeAssembly>
-    <RunApiCompat Condition="'$(TargetGroup)' != ''">false</RunApiCompat> 
+    <ProjectGuid>{11AE73F7-3532-47B9-8FF6-B4F22D76456D}</ProjectGuid>
+    <UseOpenKey Condition="'$(UseOpenKey)'==''">true</UseOpenKey>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
@@ -17,12 +14,15 @@
     <RootNamespace>System</RootNamespace>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetGroup)' != ''">
-    <Compile Include="System\Runtime\CompilerServices\TupleElementNamesAttribute.cs" />
-    <Compile Include="System\ValueTuple\TupleExtensions.cs" />
-    <Compile Include="System\ValueTuple\ValueTuple.cs" />
-    <Compile Include="$(CommonPath)\System\Numerics\Hashing\HashHelpers.cs">
-      <Link>Common\System\Numerics\Hashing\HashHelpers.cs</Link>
-    </Compile>
+    <Compile Include="System.ValueTuple.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'portable-net40+sl4+win8+wp8'">
+    <!-- Those files only serve to unblock the compilation given that this profile didn't have those attributes -->
+    <Compile Include="System.Security.AllowPartiallyTrustedCallersAttribute.cs" />
+    <Compile Include="System.Runtime.CompilerServices.ReferenceAssemblyAttribute.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == ''">
+    <Compile Include="System.ValueTuple.TypeForwards.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'portable-net40+sl4+win8+wp8'">
     <TargetingPackReference Include="mscorlib" />
@@ -30,7 +30,9 @@
     <TargetingPackReference Include="System.Core" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == ''">
-    <TargetingPackReference Include="System.Private.CoreLib" />
+    <!-- Temporary till we publish System.Runtime updated package -->
+    <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj">
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

@@ -7,7 +7,8 @@
     <ProjectGuid>{CBD5AE8D-8595-48E2-848F-1A3492A28FDB}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AssemblyName>System.ValueTuple.Tests</AssemblyName>
-    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
+    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETCoreApp,Version=v1.1</NuGetTargetMoniker>
+    <DefineConstants Condition="'$(TargetGroup)'==''">$(DefineConstants);netcoreapp11</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
     <LangVersion>5</LangVersion>
@@ -15,12 +16,18 @@
   <ItemGroup>
     <Compile Include="TupleElementNamesTests.cs" />
     <Compile Include="ExtensionsTests.cs" />
+    <Compile Include="TupleTests.cs" />
     <Compile Include="ValueTupleTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\pkg\System.ValueTuple.pkgproj">
       <Name>System.ValueTuple</Name>
       <Project>{4C2655DB-BD9E-4C86-83A6-744ECDDBDF29}</Project>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == ''">
+    <!-- Temporary till we publish System.Runtime updated package -->
+    <ProjectReference Include="..\..\System.Runtime\pkg\System.Runtime.pkgproj">
     </ProjectReference>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
