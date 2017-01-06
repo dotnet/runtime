@@ -89,7 +89,7 @@ namespace System.IO.Compression
             Debug.Assert(_bufPos == 2 * FastEncoderWindowSize, "only call this at the end of the window");
 
             // verify that the hash table is correct
-            VerifyHashes();   // Debug only code
+            DebugAssertVerifyHashes();
 
             Array.Copy(_window, _bufPos - FastEncoderWindowSize, _window, 0, FastEncoderWindowSize);
 
@@ -132,7 +132,7 @@ namespace System.IO.Compression
             Array.Clear(_window, FastEncoderWindowSize, _window.Length - FastEncoderWindowSize);
 #endif
 
-            VerifyHashes(); // debug: verify hash table is correct
+            DebugAssertVerifyHashes();
 
             _bufPos = FastEncoderWindowSize;
             _bufEnd = _bufPos;
@@ -193,7 +193,7 @@ namespace System.IO.Compression
             int matchLen;
             int matchPos = 0;
 
-            VerifyHashes();   // Debug only code
+            DebugAssertVerifyHashes();
             if (_bufEnd - _bufPos <= 3)
             {
                 // The hash value becomes corrupt when we get within 3 characters of the end of the
@@ -340,7 +340,7 @@ namespace System.IO.Compression
         {
             Debug.Assert(_bufPos >= 0 && _bufPos < 2 * FastEncoderWindowSize, "Invalid Buffer position!");
             Debug.Assert(search < _bufPos, "Invalid starting search point!");
-            Debug.Assert(RecalculateHash(search) == RecalculateHash(_bufPos));
+            DebugAssertRecalculatedHashesAreEqual(search, _bufPos);
 
             int bestMatch = 0;    // best match length found so far
             int bestMatchPos = 0; // absolute match position of best match found
@@ -353,7 +353,7 @@ namespace System.IO.Compression
             while (search > earliest)
             {
                 // make sure all our hash links are valid
-                Debug.Assert(RecalculateHash(search) == RecalculateHash(_bufPos), "Corrupted hash link!");
+                DebugAssertRecalculatedHashesAreEqual(search, _bufPos, "Corrupted hash link!");
 
                 // Start by checking the character that would allow us to increase the match
                 // length by one.  This improves performance quite a bit.
@@ -400,12 +400,12 @@ namespace System.IO.Compression
             return bestMatch;
         }
 
-
-        // This function makes any execution take a *very* long time to complete.
-        // Disabling for now by using non-"DEBUG" compilation constant.
-        [Conditional("VERIFY_HASHES")]
-        private void VerifyHashes()
+        [Conditional("DEBUG")]
+        private void DebugAssertVerifyHashes()
         {
+            // This function makes any execution take a *very* long time to complete.
+            // Disabling for now by using non-"DEBUG" compilation constant.
+#if DEBUG && VERIFY_HASHES
             for (int i = 0; i < FastEncoderHashtableSize; i++)
             {
                 ushort where = _lookup[i];
@@ -424,12 +424,22 @@ namespace System.IO.Compression
                     where = nextWhere;
                 }
             }
+#endif
         }
 
-        // can't use conditional attribute here.
+        [Conditional("DEBUG")]
+        private void DebugAssertRecalculatedHashesAreEqual(int position1, int position2, string message = "")
+        {
+#if DEBUG
+            Debug.Assert(RecalculateHash(position1) == RecalculateHash(position2), message);
+#endif
+        }
+
+#if DEBUG
         private uint RecalculateHash(int position) =>
             (uint)(((_window[position] << (2 * FastEncoderHashShift)) ^
             (_window[position + 1] << FastEncoderHashShift) ^
             (_window[position + 2])) & FastEncoderHashMask);
+#endif
     }
 }
