@@ -13,6 +13,13 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'" />
   <ItemGroup>
+    <Compile Include="System\Configuration\DictionarySectionHandler.cs" />
+    <Compile Include="System\Configuration\IConfigurationSystem.cs" />
+    <Compile Include="System\Configuration\IPersistComponentSettings.cs" />
+    <Compile Include="System\Configuration\ApplicationSettingsBase.cs" />
+    <Compile Include="System\Configuration\ApplicationScopedSettingAttribute.cs" />
+    <Compile Include="System\Configuration\ApplicationSettingsGroup.cs" />
+    <Compile Include="System\Configuration\AppSettingsReader.cs" />
     <Compile Include="System\Configuration\AppSettingsSection.cs" />
     <Compile Include="System\Configuration\BaseConfigurationRecord.cs" />
     <Compile Include="System\Configuration\CallbackValidator.cs" />
@@ -20,7 +27,10 @@
     <Compile Include="System\Configuration\ClientConfigPaths.cs" />
     <Compile Include="System\Configuration\ClientConfigurationHost.cs" />
     <Compile Include="System\Configuration\ClientConfigurationSystem.cs" />
+    <Compile Include="System\Configuration\ClientSettingsSection.cs" />
+    <Compile Include="System\Configuration\ClientSettingsStore.cs" />
     <Compile Include="System\Configuration\CommaDelimitedStringAttributeCollectionConverter.cs" />
+    <Compile Include="System\Configuration\CommonConfigurationStrings.cs" />
     <Compile Include="System\Configuration\ConfigDefinitionUpdates.cs" />
     <Compile Include="System\Configuration\ConfigPathUtility.cs" />
     <Compile Include="System\Configuration\Configuration.cs" />
@@ -40,6 +50,7 @@
     <Compile Include="System\Configuration\ConfigurationLockCollection.cs" />
     <Compile Include="System\Configuration\ConfigurationLockCollectionType.cs" />
     <Compile Include="System\Configuration\ConfigurationManager.cs" />
+    <Compile Include="System\Configuration\ConfigurationManagerInternalFactory.cs" />
     <Compile Include="System\Configuration\ConfigurationPermission.cs" />
     <Compile Include="System\Configuration\ConfigurationProperty.cs" />
     <Compile Include="System\Configuration\ConfigurationPropertyAttribute.cs" />
@@ -51,6 +62,7 @@
     <Compile Include="System\Configuration\ConfigurationSectionCollection.cs" />
     <Compile Include="System\Configuration\ConfigurationSectionGroup.cs" />
     <Compile Include="System\Configuration\ConfigurationSectionGroupCollection.cs" />
+    <Compile Include="System\Configuration\ConfigurationSettings.cs" />
     <Compile Include="System\Configuration\ConfigurationUserLevel.cs" />
     <Compile Include="System\Configuration\ConfigurationValidatorAttribute.cs" />
     <Compile Include="System\Configuration\ConfigurationValidatorBase.cs" />
@@ -60,6 +72,7 @@
     <Compile Include="System\Configuration\ConfigXmlAttribute.cs" />
     <Compile Include="System\Configuration\ConfigXmlCDataSection.cs" />
     <Compile Include="System\Configuration\ConfigXmlComment.cs" />
+    <Compile Include="System\Configuration\ConfigXmlDocument.cs" />
     <Compile Include="System\Configuration\ConfigXmlElement.cs" />
     <Compile Include="System\Configuration\ConfigXmlReader.cs" />
     <Compile Include="System\Configuration\ConfigXmlSignificantWhitespace.cs" />
@@ -73,6 +86,7 @@
     <Compile Include="System\Configuration\DateTimeConfigurationElement.cs" />
     <Compile Include="System\Configuration\DeclarationUpdate.cs" />
     <Compile Include="System\Configuration\DefaultSection.cs" />
+    <Compile Include="System\Configuration\DefaultSettingValueAttribute.cs" />
     <Compile Include="System\Configuration\DefaultValidator.cs" />
     <Compile Include="System\Configuration\DefinitionUpdate.cs" />
     <Compile Include="System\Configuration\ElementInformation.cs" />
@@ -86,6 +100,8 @@
     <Compile Include="System\Configuration\FactoryId.cs" />
     <Compile Include="System\Configuration\FactoryRecord.cs" />
     <Compile Include="System\Configuration\GenericEnumConverter.cs" />
+    <Compile Include="System\Configuration\HandlerBase.cs" />
+    <Compile Include="System\Configuration\IApplicationSettingsProvider.cs" />
     <Compile Include="System\Configuration\IConfigurationSectionHandler.cs" />
     <Compile Include="System\Configuration\IgnoreSection.cs" />
     <Compile Include="System\Configuration\IgnoreSectionHandler.cs" />
@@ -120,9 +136,12 @@
     <Compile Include="System\Configuration\Internal\StreamChangeCallback.cs" />
     <Compile Include="System\Configuration\Internal\WriteFileContext.cs" />
     <Compile Include="System\Configuration\InvalidPropValue.cs" />
+    <Compile Include="System\Configuration\IriParsingElement.cs" />
+    <Compile Include="System\Configuration\ISettingsProviderService.cs" />
     <Compile Include="System\Configuration\KeyValueConfigurationCollection.cs" />
     <Compile Include="System\Configuration\KeyValueConfigurationElement.cs" />
     <Compile Include="System\Configuration\KeyValueInternalCollection.cs" />
+    <Compile Include="System\Configuration\LocalFileSettingsProvider.cs" />
     <Compile Include="System\Configuration\LocationSectionRecord.cs" />
     <Compile Include="System\Configuration\LocationUpdates.cs" />
     <Compile Include="System\Configuration\LongValidator.cs" />
@@ -131,6 +150,8 @@
     <Compile Include="System\Configuration\NamespaceChange.cs" />
     <Compile Include="System\Configuration\NameValueConfigurationCollection.cs" />
     <Compile Include="System\Configuration\NameValueConfigurationElement.cs" />
+    <Compile Include="System\Configuration\NameValueFileSectionHandler.cs" />
+    <Compile Include="System\Configuration\NameValueSectionHandler.cs" />
     <Compile Include="System\Configuration\OverrideMode.cs" />
     <Compile Include="System\Configuration\OverrideModeSetting.cs" />
     <Compile Include="System\Configuration\PositiveTimeSpanValidator.cs" />
@@ -150,16 +171,49 @@
     <Compile Include="System\Configuration\Provider\ProviderException.cs" />
     <Compile Include="System\Configuration\ProviderSettings.cs" />
     <Compile Include="System\Configuration\ProviderSettingsCollection.cs" />
+    <Compile Include="System\Configuration\ReadOnlyNameValueCollection.cs" />
     <Compile Include="System\Configuration\RegexStringValidator.cs" />
     <Compile Include="System\Configuration\RegexStringValidatorAttribute.cs" />
     <Compile Include="System\Configuration\RuntimeConfigurationRecord.cs" />
     <Compile Include="System\Configuration\SafeBitVector32.cs" />
+    <Compile Include="System\Configuration\SchemeSettingElement.cs" />
+    <Compile Include="System\Configuration\SchemeSettingElementCollection.cs" />
+    <Compile Include="System\Configuration\SchemeSettingInternal.cs" />
     <Compile Include="System\Configuration\SectionInformation.cs" />
     <Compile Include="System\Configuration\SectionInput.cs" />
     <Compile Include="System\Configuration\SectionRecord.cs" />
     <Compile Include="System\Configuration\SectionUpdates.cs" />
     <Compile Include="System\Configuration\SectionXmlInfo.cs" />
+    <Compile Include="System\Configuration\SettingAttribute.cs" />
+    <Compile Include="System\Configuration\SettingChangingEventArgs.cs" />
+    <Compile Include="System\Configuration\SettingChangingEventHandler.cs" />
+    <Compile Include="System\Configuration\SettingElement.cs" />
+    <Compile Include="System\Configuration\SettingElementCollection.cs" />
+    <Compile Include="System\Configuration\SettingsAttributeDictionary.cs" />
+    <Compile Include="System\Configuration\SettingsBase.cs" />
+    <Compile Include="System\Configuration\SettingsContext.cs" />
+    <Compile Include="System\Configuration\SettingsDescriptionAttribute.cs" />
+    <Compile Include="System\Configuration\SettingsGroupDescriptionAttribute.cs" />
+    <Compile Include="System\Configuration\SettingsGroupNameAttribute.cs" />
+    <Compile Include="System\Configuration\SettingsLoadedEventArgs.cs" />
+    <Compile Include="System\Configuration\SettingsLoadedEventHandler.cs" />
+    <Compile Include="System\Configuration\SettingsManageability.cs" />
+    <Compile Include="System\Configuration\SettingsManageabilityAttribute.cs" />
+    <Compile Include="System\Configuration\SettingsPropertyCollection.cs" />
+    <Compile Include="System\Configuration\SettingsPropertyIsReadOnlyException.cs" />
+    <Compile Include="System\Configuration\SettingsPropertyNotFoundException.cs" />
+    <Compile Include="System\Configuration\SettingsPropertyValueCollection.cs" />
+    <Compile Include="System\Configuration\SettingsPropertyWrongTypeException.cs" />
+    <Compile Include="System\Configuration\SettingsProvider.cs" />
+    <Compile Include="System\Configuration\SettingsProviderAttribute.cs" />
+    <Compile Include="System\Configuration\SettingsProviderCollection.cs" />
+    <Compile Include="System\Configuration\SettingsSavingEventHandler.cs" />
+    <Compile Include="System\Configuration\SettingsSerializeAsAttribute.cs" />
+    <Compile Include="System\Configuration\SettingValueElement.cs" />
     <Compile Include="System\Configuration\SimpleBitVector32.cs" />
+    <Compile Include="System\Configuration\SingleTagSectionHandler.cs" />
+    <Compile Include="System\Configuration\SpecialSetting.cs" />
+    <Compile Include="System\Configuration\SpecialSettingAttribute.cs" />
     <Compile Include="System\Configuration\StreamInfo.cs" />
     <Compile Include="System\Configuration\StreamUpdate.cs" />
     <Compile Include="System\Configuration\StringAttributeCollection.cs" />
@@ -179,6 +233,8 @@
     <Compile Include="System\Configuration\Update.cs" />
     <Compile Include="System\Configuration\UpdateConfigHost.cs" />
     <Compile Include="System\Configuration\UrlPath.cs" />
+    <Compile Include="System\Configuration\UserScopedSettingAttribute.cs" />
+    <Compile Include="System\Configuration\UserSettingsGroup.cs" />
     <Compile Include="System\Configuration\ValidatorCallback.cs" />
     <Compile Include="System\Configuration\ValidatorUtils.cs" />
     <Compile Include="System\Configuration\WhiteSpaceTrimStringConverter.cs" />
@@ -187,6 +243,10 @@
     <Compile Include="$(CommonPath)\System\Security\IdentityHelper.cs">
       <Link>Common\System\Security\IdentityHelper.cs</Link>
     </Compile>
+    <Compile Include="System\Configuration\SettingsProperty.cs" />
+    <Compile Include="System\Configuration\SettingsPropertyValue.cs" />
+    <Compile Include="System\Configuration\SettingsSerializeAs.cs" />
+    <Compile Include="System\Configuration\NoSettingsVersionUpgradeAttribute.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

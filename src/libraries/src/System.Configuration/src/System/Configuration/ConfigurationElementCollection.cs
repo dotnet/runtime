@@ -206,10 +206,12 @@ namespace System.Configuration
 
         public override bool Equals(object compareTo)
         {
-            if (compareTo.GetType() != GetType()) return false;
+            if (compareTo == null || compareTo.GetType() != GetType())
+                return false;
 
             ConfigurationElementCollection compareToElem = (ConfigurationElementCollection)compareTo;
-            if (Count != compareToElem.Count) return false;
+            if (Count != compareToElem.Count)
+                return false;
 
             foreach (Entry thisEntry in Items)
             {
@@ -1022,7 +1024,6 @@ namespace System.Configuration
             }
             _modified = true;
         }
-
 
         protected internal override bool SerializeElement(XmlWriter writer, bool serializeCollectionKey)
         {

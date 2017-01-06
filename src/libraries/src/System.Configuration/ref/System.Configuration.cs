@@ -3,6 +3,14 @@
 // See the LICENSE file in the project root for more information.
 
 #pragma warning disable CS0618
+using System.Collections;
+using System.Collections.Specialized;
+using System.ComponentModel;
+using System.Configuration.Internal;
+using System.Configuration.Provider;
+using System.Runtime.Serialization;
+using System.Xml;
+
 namespace System.Configuration
 {
     public sealed partial class AppSettingsSection : System.Configuration.ConfigurationSection
@@ -899,6 +907,398 @@ namespace System.Configuration
         public WhiteSpaceTrimStringConverter() { }
         public override object ConvertFrom(System.ComponentModel.ITypeDescriptorContext ctx, System.Globalization.CultureInfo ci, object data) { throw null; }
         public override object ConvertTo(System.ComponentModel.ITypeDescriptorContext ctx, System.Globalization.CultureInfo ci, object value, System.Type type) { throw null; }
+    }
+    public sealed class ApplicationScopedSettingAttribute : SettingAttribute
+    {
+        public ApplicationScopedSettingAttribute() { throw null; }
+    }
+    public abstract class ApplicationSettingsBase : SettingsBase, INotifyPropertyChanged
+    {
+        protected ApplicationSettingsBase() { throw null; }
+        protected ApplicationSettingsBase(IComponent owner) { throw null; }
+        protected ApplicationSettingsBase(IComponent owner, string settingsKey) { throw null; }
+        protected ApplicationSettingsBase(string settingsKey) { throw null; }
+        public override SettingsContext Context { get; }
+        public override SettingsPropertyCollection Properties { get; }
+        public override SettingsPropertyValueCollection PropertyValues { get; }
+        public override SettingsProviderCollection Providers { get; }
+        public string SettingsKey { get; set; }
+        public override object this[string propertyName] { get { throw null; } set { throw null; } }
+        public event PropertyChangedEventHandler PropertyChanged;
+        public event SettingChangingEventHandler SettingChanging;
+        public event SettingsLoadedEventHandler SettingsLoaded;
+        public event SettingsSavingEventHandler SettingsSaving;
+        public object GetPreviousVersion(string propertyName) { throw null; }
+        protected virtual void OnPropertyChanged(object sender, PropertyChangedEventArgs e) { throw null; }
+        protected virtual void OnSettingChanging(object sender, SettingChangingEventArgs e) { throw null; }
+        protected virtual void OnSettingsLoaded(object sender, SettingsLoadedEventArgs e) { throw null; }
+        protected virtual void OnSettingsSaving(object sender, CancelEventArgs e) { throw null; }
+        public void Reload() { throw null; }
+        public void Reset() { throw null; }
+        public override void Save() { throw null; }
+        public virtual void Upgrade() { throw null; }
+    }
+    public sealed class ApplicationSettingsGroup : ConfigurationSectionGroup
+    {
+        public ApplicationSettingsGroup() { throw null; }
+    }
+    public class AppSettingsReader
+    {
+        public AppSettingsReader() { throw null; }
+        public object GetValue(string key, Type type) { throw null; }
+    }
+    public sealed class ClientSettingsSection : ConfigurationSection
+    {
+        public ClientSettingsSection() { throw null; }
+        public SettingElementCollection Settings { get; }
+    }
+    public sealed class ConfigurationSettings
+    {
+        [Obsolete("This method is obsolete, it has been replaced by System.Configuration!System.Configuration.ConfigurationManager.AppSettings")]
+        public static NameValueCollection AppSettings { get; }
+        [Obsolete("This method is obsolete, it has been replaced by System.Configuration!System.Configuration.ConfigurationManager.GetSection")]
+        public static object GetConfig(string sectionName) { throw null; }
+    }
+    public sealed class ConfigXmlDocument : XmlDocument, IConfigErrorInfo
+    {
+        public ConfigXmlDocument() { throw null; }
+        public string Filename { get; }
+        public int LineNumber { get; }
+        string System.Configuration.Internal.IConfigErrorInfo.Filename { get { throw null; } }
+        int System.Configuration.Internal.IConfigErrorInfo.LineNumber { get { throw null; } }
+        public override XmlAttribute CreateAttribute(string prefix, string localName, string namespaceUri) { throw null; }
+        public override XmlCDataSection CreateCDataSection(string data) { throw null; }
+        public override XmlComment CreateComment(string data) { throw null; }
+        public override XmlElement CreateElement(string prefix, string localName, string namespaceUri) { throw null; }
+        public override XmlSignificantWhitespace CreateSignificantWhitespace(string data) { throw null; }
+        public override XmlText CreateTextNode(string text) { throw null; }
+        public override XmlWhitespace CreateWhitespace(string data) { throw null; }
+        public override void Load(string filename) { throw null; }
+        public void LoadSingleElement(string filename, XmlTextReader sourceReader) { throw null; }
+    }
+    public sealed class DefaultSettingValueAttribute : Attribute
+    {
+        public DefaultSettingValueAttribute(string value) { throw null; }
+        public string Value { get; }
+    }
+    public class DictionarySectionHandler : IConfigurationSectionHandler
+    {
+        public DictionarySectionHandler() { throw null; }
+        protected virtual string KeyAttributeName { get; }
+        protected virtual string ValueAttributeName { get; }
+        public virtual object Create(object parent, object context, XmlNode section) { throw null; }
+    }
+    public interface IApplicationSettingsProvider
+    {
+        SettingsPropertyValue GetPreviousVersion(SettingsContext context, SettingsProperty property);
+        void Reset(SettingsContext context);
+        void Upgrade(SettingsContext context, SettingsPropertyCollection properties);
+    }
+    public interface IConfigurationSectionHandler
+    {
+        object Create(object parent, object configContext, XmlNode section);
+    }
+    public interface IConfigurationSystem
+    {
+        object GetConfig(string configKey);
+        void Init();
+    }
+    public class IgnoreSectionHandler : IConfigurationSectionHandler
+    {
+        public IgnoreSectionHandler() { throw null; }
+        public virtual object Create(object parent, object configContext, XmlNode section) { throw null; }
+    }
+    public interface IPersistComponentSettings
+    {
+        bool SaveSettings { get; set; }
+        string SettingsKey { get; set; }
+        void LoadComponentSettings();
+        void ResetComponentSettings();
+        void SaveComponentSettings();
+    }
+    public sealed class IriParsingElement : ConfigurationElement
+    {
+        public IriParsingElement() { throw null; }
+        public bool Enabled { get; set; }
+    }
+    public interface ISettingsProviderService
+    {
+        SettingsProvider GetSettingsProvider(SettingsProperty property);
+    }
+    public class LocalFileSettingsProvider : SettingsProvider, IApplicationSettingsProvider
+    {
+        public LocalFileSettingsProvider() { throw null; }
+        public override string ApplicationName { get; set; }
+        public SettingsPropertyValue GetPreviousVersion(SettingsContext context, SettingsProperty property) { throw null; }
+        public override SettingsPropertyValueCollection GetPropertyValues(SettingsContext context, SettingsPropertyCollection properties) { throw null; }
+        public override void Initialize(string name, NameValueCollection values) { throw null; }
+        public void Reset(SettingsContext context) { throw null; }
+        public override void SetPropertyValues(SettingsContext context, SettingsPropertyValueCollection values) { throw null; }
+        public void Upgrade(SettingsContext context, SettingsPropertyCollection properties) { throw null; }
+    }
+    public class NameValueFileSectionHandler : IConfigurationSectionHandler
+    {
+        public NameValueFileSectionHandler() { throw null; }
+        public object Create(object parent, object configContext, XmlNode section) { throw null; }
+    }
+    public class NameValueSectionHandler : IConfigurationSectionHandler
+    {
+        public NameValueSectionHandler() { throw null; }
+        protected virtual string KeyAttributeName { get; }
+        protected virtual string ValueAttributeName { get; }
+        public object Create(object parent, object context, XmlNode section) { throw null; }
+    }
+    public sealed class NoSettingsVersionUpgradeAttribute : Attribute
+    {
+        public NoSettingsVersionUpgradeAttribute() { throw null; }
+    }
+    public sealed class SchemeSettingElement : ConfigurationElement
+    {
+        public SchemeSettingElement() { throw null; }
+        public GenericUriParserOptions GenericUriParserOptions { get; }
+        public string Name { get; }
+    }
+    public sealed class SchemeSettingElementCollection : ConfigurationElementCollection
+    {
+        public SchemeSettingElementCollection() { throw null; }
+        public override ConfigurationElementCollectionType CollectionType { get; }
+        public SchemeSettingElement this[int index] { get { throw null; } }
+        public new SchemeSettingElement this[string name] { get { throw null; } }
+        protected override ConfigurationElement CreateNewElement() { throw null; }
+        protected override object GetElementKey(ConfigurationElement element) { throw null; }
+        public int IndexOf(SchemeSettingElement element) { throw null; }
+    }
+    public class SettingAttribute : Attribute
+    {
+        public SettingAttribute() { throw null; }
+    }
+    public class SettingChangingEventArgs : CancelEventArgs
+    {
+        public SettingChangingEventArgs(string settingName, string settingClass, string settingKey, object newValue, bool cancel) { throw null; }
+        public object NewValue { get; }
+        public string SettingClass { get; }
+        public string SettingKey { get; }
+        public string SettingName { get; }
+    }
+    public delegate void SettingChangingEventHandler(object sender, SettingChangingEventArgs e);
+    public sealed class SettingElement : ConfigurationElement
+    {
+        public SettingElement() { throw null; }
+        public SettingElement(string name, SettingsSerializeAs serializeAs) { throw null; }
+        public string Name { get; set; }
+        public SettingsSerializeAs SerializeAs { get; set; }
+        public SettingValueElement Value { get; set; }
+        public override bool Equals(object settings) { throw null; }
+        public override int GetHashCode() { throw null; }
+    }
+    public sealed class SettingElementCollection : ConfigurationElementCollection
+    {
+        public SettingElementCollection() { throw null; }
+        public override ConfigurationElementCollectionType CollectionType { get; }
+        protected override string ElementName { get; }
+        public void Add(SettingElement element) { throw null; }
+        public void Clear() { throw null; }
+        protected override ConfigurationElement CreateNewElement() { throw null; }
+        public SettingElement Get(string elementKey) { throw null; }
+        protected override object GetElementKey(ConfigurationElement element) { throw null; }
+        public void Remove(SettingElement element) { throw null; }
+    }
+    public class SettingsAttributeDictionary : Hashtable
+    {
+        public SettingsAttributeDictionary() { throw null; }
+        public SettingsAttributeDictionary(SettingsAttributeDictionary attributes) { throw null; }
+    }
+    public abstract class SettingsBase
+    {
+        protected SettingsBase() { throw null; }
+        public virtual SettingsContext Context { get; }
+        public bool IsSynchronized { get; }
+        public virtual SettingsPropertyCollection Properties { get; }
+        public virtual SettingsPropertyValueCollection PropertyValues { get; }
+        public virtual SettingsProviderCollection Providers { get; }
+        public virtual object this[string propertyName] { get { throw null; } set { throw null; } }
+        public void Initialize(SettingsContext context, SettingsPropertyCollection properties, SettingsProviderCollection providers) { throw null; }
+        public virtual void Save() { throw null; }
+        public static SettingsBase Synchronized(SettingsBase settingsBase) { throw null; }
+    }
+    public class SettingsContext : Hashtable
+    {
+        public SettingsContext() { throw null; }
+    }
+    public sealed class SettingsDescriptionAttribute : Attribute
+    {
+        public SettingsDescriptionAttribute(string description) { throw null; }
+        public string Description { get; }
+    }
+    public sealed class SettingsGroupDescriptionAttribute : Attribute
+    {
+        public SettingsGroupDescriptionAttribute(string description) { throw null; }
+        public string Description { get; }
+    }
+    public sealed class SettingsGroupNameAttribute : Attribute
+    {
+        public SettingsGroupNameAttribute(string groupName) { throw null; }
+        public string GroupName { get; }
+    }
+    public class SettingsLoadedEventArgs : EventArgs
+    {
+        public SettingsLoadedEventArgs(SettingsProvider provider) { throw null; }
+        public SettingsProvider Provider { get; }
+    }
+    public delegate void SettingsLoadedEventHandler(object sender, SettingsLoadedEventArgs e);
+    public enum SettingsManageability
+    {
+        Roaming = 0,
+    }
+    public sealed class SettingsManageabilityAttribute : Attribute
+    {
+        public SettingsManageabilityAttribute(SettingsManageability manageability) { throw null; }
+        public SettingsManageability Manageability { get; }
+    }
+    public class SettingsProperty
+    {
+        public SettingsProperty(SettingsProperty propertyToCopy) { throw null; }
+        public SettingsProperty(string name) { throw null; }
+        public SettingsProperty(string name, Type propertyType, SettingsProvider provider, bool isReadOnly, object defaultValue, SettingsSerializeAs serializeAs, SettingsAttributeDictionary attributes, bool throwOnErrorDeserializing, bool throwOnErrorSerializing) { throw null; }
+        public virtual SettingsAttributeDictionary Attributes { get; }
+        public virtual object DefaultValue { get; set; }
+        public virtual bool IsReadOnly { get; set; }
+        public virtual string Name { get; set; }
+        public virtual Type PropertyType { get; set; }
+        public virtual SettingsProvider Provider { get; set; }
+        public virtual SettingsSerializeAs SerializeAs { get; set; }
+        public bool ThrowOnErrorDeserializing { get; set; }
+        public bool ThrowOnErrorSerializing { get; set; }
+    }
+    public class SettingsPropertyCollection : ICloneable, ICollection, IEnumerable
+    {
+        public SettingsPropertyCollection() { throw null; }
+        public int Count { get; }
+        public bool IsSynchronized { get; }
+        public object SyncRoot { get; }
+        public SettingsProperty this[string name] { get { throw null; } }
+        public void Add(SettingsProperty property) { throw null; }
+        public void Clear() { throw null; }
+        public object Clone() { throw null; }
+        public void CopyTo(Array array, int index) { throw null; }
+        public IEnumerator GetEnumerator() { throw null; }
+        protected virtual void OnAdd(SettingsProperty property) { throw null; }
+        protected virtual void OnAddComplete(SettingsProperty property) { throw null; }
+        protected virtual void OnClear() { throw null; }
+        protected virtual void OnClearComplete() { throw null; }
+        protected virtual void OnRemove(SettingsProperty property) { throw null; }
+        protected virtual void OnRemoveComplete(SettingsProperty property) { throw null; }
+        public void Remove(string name) { throw null; }
+        public void SetReadOnly() { throw null; }
+    }
+    public class SettingsPropertyIsReadOnlyException : Exception
+    {
+        public SettingsPropertyIsReadOnlyException() { throw null; }
+        protected SettingsPropertyIsReadOnlyException(SerializationInfo info, StreamingContext context) { throw null; }
+        public SettingsPropertyIsReadOnlyException(string message) { throw null; }
+        public SettingsPropertyIsReadOnlyException(string message, Exception innerException) { throw null; }
+    }
+    public class SettingsPropertyNotFoundException : Exception
+    {
+        public SettingsPropertyNotFoundException() { throw null; }
+        protected SettingsPropertyNotFoundException(SerializationInfo info, StreamingContext context) { throw null; }
+        public SettingsPropertyNotFoundException(string message) { throw null; }
+        public SettingsPropertyNotFoundException(string message, Exception innerException) { throw null; }
+    }
+    public class SettingsPropertyValue
+    {
+        public SettingsPropertyValue(SettingsProperty property) { throw null; }
+        public bool Deserialized { get; set; }
+        public bool IsDirty { get; set; }
+        public string Name { get; }
+        public SettingsProperty Property { get; }
+        public object PropertyValue { get; set; }
+        public object SerializedValue { get; set; }
+        public bool UsingDefaultValue { get; }
+    }
+    public class SettingsPropertyValueCollection : ICloneable, ICollection, IEnumerable
+    {
+        public SettingsPropertyValueCollection() { throw null; }
+        public int Count { get; }
+        public bool IsSynchronized { get; }
+        public object SyncRoot { get; }
+        public SettingsPropertyValue this[string name] { get { throw null; } }
+        public void Add(SettingsPropertyValue property) { throw null; }
+        public void Clear() { throw null; }
+        public object Clone() { throw null; }
+        public void CopyTo(Array array, int index) { throw null; }
+        public IEnumerator GetEnumerator() { throw null; }
+        public void Remove(string name) { throw null; }
+        public void SetReadOnly() { throw null; }
+    }
+    public class SettingsPropertyWrongTypeException : Exception
+    {
+        public SettingsPropertyWrongTypeException() { throw null; }
+        protected SettingsPropertyWrongTypeException(SerializationInfo info, StreamingContext context) { throw null; }
+        public SettingsPropertyWrongTypeException(string message) { throw null; }
+        public SettingsPropertyWrongTypeException(string message, Exception innerException) { throw null; }
+    }
+    public abstract class SettingsProvider : ProviderBase
+    {
+        protected SettingsProvider() { throw null; }
+        public abstract string ApplicationName { get; set; }
+        public abstract SettingsPropertyValueCollection GetPropertyValues(SettingsContext context, SettingsPropertyCollection collection);
+        public abstract void SetPropertyValues(SettingsContext context, SettingsPropertyValueCollection collection);
+    }
+    public sealed class SettingsProviderAttribute : Attribute
+    {
+        public SettingsProviderAttribute(string providerTypeName) { throw null; }
+        public SettingsProviderAttribute(Type providerType) { throw null; }
+        public string ProviderTypeName { get; }
+    }
+    public class SettingsProviderCollection : ProviderCollection
+    {
+        public SettingsProviderCollection() { throw null; }
+        public new SettingsProvider this[string name] { get { throw null; } }
+        public override void Add(ProviderBase provider) { throw null; }
+    }
+    public delegate void SettingsSavingEventHandler(object sender, CancelEventArgs e);
+    public enum SettingsSerializeAs
+    {
+        Binary = 2,
+        ProviderSpecific = 3,
+        String = 0,
+        Xml = 1,
+    }
+    public sealed class SettingsSerializeAsAttribute : Attribute
+    {
+        public SettingsSerializeAsAttribute(SettingsSerializeAs serializeAs) { throw null; }
+        public SettingsSerializeAs SerializeAs { get; }
+    }
+    public sealed class SettingValueElement : ConfigurationElement
+    {
+        public SettingValueElement() { throw null; }
+        public XmlNode ValueXml { get; set; }
+        public override bool Equals(object settingValue) { throw null; }
+        public override int GetHashCode() { throw null; }
+    }
+    public class SingleTagSectionHandler : IConfigurationSectionHandler
+    {
+        public SingleTagSectionHandler() { throw null; }
+        public virtual object Create(object parent, object context, XmlNode section) { throw null; }
+    }
+    public enum SpecialSetting
+    {
+        ConnectionString = 0,
+        WebServiceUrl = 1,
+    }
+    public sealed class SpecialSettingAttribute : Attribute
+    {
+        public SpecialSettingAttribute(SpecialSetting specialSetting) { throw null; }
+        public SpecialSetting SpecialSetting { get; }
+    }
+    public sealed class UserScopedSettingAttribute : SettingAttribute
+    {
+        public UserScopedSettingAttribute() { throw null; }
+    }
+    public sealed class UserSettingsGroup : ConfigurationSectionGroup
+    {
+        public UserSettingsGroup() { throw null; }
     }
 }
 namespace System.Configuration.Internal

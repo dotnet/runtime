@@ -164,7 +164,6 @@ namespace System.Configuration
 
                 return o;
             }
-
             set
             {
                 SetPropertyValue(prop, value, false); // Do not ignore locks!!!
@@ -427,20 +426,17 @@ namespace System.Configuration
 
         protected internal virtual bool IsModified()
         {
-            if (_modified)
+            if (_modified
+                || ((_lockedAttributesList != null) && _lockedAttributesList.IsModified)
+                || ((_lockedAllExceptAttributesList != null) && _lockedAllExceptAttributesList.IsModified)
+                || ((_lockedElementsList != null) && _lockedElementsList.IsModified)
+                || ((_lockedAllExceptElementsList != null) && _lockedAllExceptElementsList.IsModified)
+                || ((_itemLockedFlag & ConfigurationValueFlags.Modified) != 0))
                 return true;
-            if ((_lockedAttributesList != null) && _lockedAttributesList.IsModified)
-                return true;
-            if ((_lockedAllExceptAttributesList != null) && _lockedAllExceptAttributesList.IsModified)
-                return true;
-            if ((_lockedElementsList != null) && _lockedElementsList.IsModified)
-                return true;
-            if ((_lockedAllExceptElementsList != null) && _lockedAllExceptElementsList.IsModified)
-                return true;
-            if ((_itemLockedFlag & ConfigurationValueFlags.Modified) != 0)
-                return true;
+
             foreach (ConfigurationElement elem in Values.ConfigurationElements)
                 if (elem.IsModified()) return true;
+
             return false;
         }
 

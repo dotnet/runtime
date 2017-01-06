@@ -4,7 +4,6 @@
 
 using System.Globalization;
 using System.ComponentModel;
-using System.Diagnostics;
 using System.Text;
 
 namespace System.Configuration
@@ -22,8 +21,6 @@ namespace System.Configuration
 
         public override object ConvertTo(ITypeDescriptorContext ctx, CultureInfo ci, object value, Type type)
         {
-            Debug.Assert(value is Enum, "should be Enum type");
-
             return value.ToString();
         }
 
