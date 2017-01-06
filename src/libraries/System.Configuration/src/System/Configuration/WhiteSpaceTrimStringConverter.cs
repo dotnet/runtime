@@ -4,7 +4,6 @@
 
 using System.Globalization;
 using System.ComponentModel;
-using System.Diagnostics;
 
 namespace System.Configuration
 {
@@ -19,7 +18,6 @@ namespace System.Configuration
 
         public override object ConvertFrom(ITypeDescriptorContext ctx, CultureInfo ci, object data)
         {
-            Debug.Assert(data is string, "data is string");
             return ((string)data).Trim();
         }
     }

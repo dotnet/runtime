@@ -45,7 +45,7 @@ namespace System.Configuration
         public string Source => _thisElement.Values.GetSourceInfo(_thisElement.ElementTagName)?.FileName;
 
         /// <summary>
-        ///     The line number or 0 if no source.
+        /// The line number or 0 if no source.
         /// </summary>
         public int LineNumber => _thisElement.Values.GetSourceInfo(_thisElement.ElementTagName)?.LineNumber ?? 0;
 
