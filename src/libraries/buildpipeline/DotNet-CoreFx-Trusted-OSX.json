@@ -127,6 +127,24 @@
     {
       "enabled": true,
       "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Push packages to Azure",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "$(Build.SourcesDirectory)\\corefx\\publish-packages.cmd",
+        "arguments": "-AzureAccount=$(PB_CloudDropAccountName) -AzureToken=$(CloudDropAccessToken) -Container=$(PB_Label) -- /p:OverwriteOnPublish=true",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
       "alwaysRun": true,
       "displayName": "Copy Publish Artifact: BuildLogs",
       "timeoutInMinutes": 0,
@@ -290,8 +308,8 @@
       "reportBuildStatus": "true",
       "fetchDepth": "0",
       "gitLfsSupport": "false",
-      "skipSyncSource": "false",
-      "cleanOptions": "0"
+      "skipSyncSource": "true",
+      "cleanOptions": "3"
     },
     "id": "0a2b2664-c1be-429c-9b40-8a24dee27a4a",
     "type": "TfsGit",
