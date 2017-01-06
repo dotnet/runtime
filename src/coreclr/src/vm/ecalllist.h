@@ -1637,7 +1637,9 @@ FCFuncStart(gInteropMarshalFuncs)
 
     FCFuncElement("GetNativeActivationFactory", MarshalNative::GetNativeActivationFactory)
     FCFuncElement("GetIUnknownForObjectNative", MarshalNative::GetIUnknownForObjectNative)
+#ifndef FEATURE_CORECLR
     FCFuncElement("GetIDispatchForObjectNative", MarshalNative::GetIDispatchForObjectNative)
+#endif // FEATURE_CORECLR
     FCFuncElement("GetComInterfaceForObjectNative", MarshalNative::GetComInterfaceForObjectNative)
     FCFuncElement("InternalReleaseComObject", MarshalNative::ReleaseComObject)
     FCFuncElement("Release", MarshalNative::Release)

@@ -122,36 +122,13 @@
     <InteropSources Condition="'$(FeatureCoreClr)'=='true'"  Include="$(BclSourcesRoot)\System\Runtime\InteropServices\NativeCallableAttribute.cs" />
     <InteropSources Condition="'$(FeatureCominterop)' != 'true'" Include="$(BclSourcesRoot)\System\Runtime\InteropServices\NonPortable.cs" />
     <InteropSources Condition="'$(FeatureCominterop)' == 'true'" Include="$(BclSourcesRoot)\System\Runtime\InteropServices\DispatchWrapper.cs" />
-    <InteropSources Condition="'$(FeatureCominterop)' == 'true'" Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ExtensibleClassFactory.cs" />
     <InteropSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ICustomFactory.cs" />
-    <InteropSources Condition="'$(FeatureCominterop)' == 'true'" Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ObjectCreationDelegate.cs" />
   </ItemGroup>
   <ItemGroup>
     <InteropSources Include="$(CoreFxSourcesRoot)\System\Runtime\InteropServices\StringBuffer.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(FeatureClassicCominterop)' == 'true'">
-    <InteropSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\IRegistrationServices.cs" />
     <InteropSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ITypeLibConverter.cs" />
-    <InteropSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\RegistrationServices.cs" />
-    <InteropSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\UCOMIBindCtx.cs" />
-    <InteropSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\UCOMIConnectionPointContainer.cs" />
-    <InteropSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\UCOMIConnectionPoint.cs" />
-    <InteropSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\UCOMIEnumerable.cs" />
-    <InteropSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\UCOMIEnumerator.cs" />
-    <InteropSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\UCOMIEnumMoniker.cs" />
-    <InteropSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\UCOMIEnumConnections.cs" />
-    <InteropSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\UCOMIEnumConnectionPoints.cs" />
-    <InteropSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\UCOMIEnumString.cs" />
-    <InteropSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\UCOMIEnumVARIANT.cs" />
-    <InteropSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\UCOMIExpando.cs" />
-    <InteropSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\UCOMIMoniker.cs" />
-    <InteropSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\UCOMIPersistFile.cs" />
-    <InteropSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\UCOMIReflect.cs" />
-    <InteropSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\UCOMIRunningObjectTable.cs" />
-    <InteropSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\UCOMIStream.cs" />
-    <InteropSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\UCOMITypeComp.cs" />
-    <InteropSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\UCOMITypeInfo.cs" />
-    <InteropSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\UCOMITypeLib.cs" />
   </ItemGroup>
   <ItemGroup>
     <InteropExpandoSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\Expando\IExpando.cs" />
@@ -162,23 +139,18 @@
     <InteropComeventsSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComEventsMethod.cs" />
     <InteropComeventsSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComEventsSink.cs" />
     <InteropComeventsSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\NativeMethods.cs" />
-    <InteropComeventsSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\Variant.cs" />
   </ItemGroup>
   <ItemGroup>
     <InteropComtypesSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComTypes\IBindCtx.cs" />
     <InteropComtypesSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComTypes\IConnectionPointContainer.cs" />
     <InteropComtypesSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComTypes\IConnectionPoint.cs" />
-    <InteropComtypesSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComTypes\IEnumerable.cs" />
-    <InteropComtypesSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComTypes\IEnumerator.cs" />
     <InteropComtypesSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComTypes\IEnumMoniker.cs" />
     <InteropComtypesSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComTypes\IEnumConnections.cs" />
     <InteropComtypesSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComTypes\IEnumConnectionPoints.cs" />
     <InteropComtypesSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComTypes\IEnumString.cs" />
     <InteropComtypesSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComTypes\IEnumVARIANT.cs" />
-    <InteropComtypesSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComTypes\IExpando.cs" />
     <InteropComtypesSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComTypes\IMoniker.cs" />
     <InteropComtypesSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComTypes\IPersistFile.cs" />
-    <InteropComtypesSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComTypes\IReflect.cs" />
     <InteropComtypesSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComTypes\IRunningObjectTable.cs" />
     <InteropComtypesSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComTypes\IStream.cs" />
     <InteropComtypesSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComTypes\ITypeComp.cs" />
@@ -1049,13 +1021,6 @@
     <Win32Sources Condition="'$(FeatureWin32Registry)' == 'true'" Include="$(BclSourcesRoot)\Microsoft\Win32\RegistryView.cs" />
     <Win32Sources Condition="'$(FeatureClassicCominterop)' == 'true'" Include="$(BclSourcesRoot)\Microsoft\Win32\OAVariantLib.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(FeatureClassicCominterop)' == 'true'" >
-    <InteropTceadaptergenSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\TCEAdapterGen\EventProviderWriter.cs" />
-    <InteropTceadaptergenSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\TCEAdapterGen\EventSinkHelperWriter.cs" />
-    <InteropTceadaptergenSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\TCEAdapterGen\EventItfInfo.cs" />
-    <InteropTceadaptergenSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\TCEAdapterGen\NameSpaceExtractor.cs" />
-    <InteropTceadaptergenSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\TCEAdapterGen\TCEAdapterGenerator.cs" />
-  </ItemGroup>
   <ItemGroup>
     <SecurityPrincipalSources Include="$(BclSourcesRoot)\System\Security\Principal\IIdentity.cs" />
     <SecurityPrincipalSources Include="$(BclSourcesRoot)\System\Security\Principal\IPrincipal.cs" />
@@ -1285,7 +1250,6 @@
     <MscorlibSources Include="@(ConfigurationAssembliesSources)"/>
     <MscorlibSources Include="@(SecCryptographySources)"/>
     <MscorlibSources Include="@(SecPublickeySources)"/>
-    <MscorlibSources Include="@(InteropTceadaptergenSources)"/>
     <MscorlibSources Include="@(SecurityAclSources)"/>
     <MscorlibSources Include="@(IdentitySources)"/>
     <MscorlibSources Include="@(VersioningSources)"/>
