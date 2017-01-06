@@ -1,14 +1,14 @@
 {
   "dependencies": {
-    "System.Collections.NonGeneric": "4.4.0-beta-24906-02",
-    "System.Reflection": "4.4.0-beta-24906-02",
-    "System.Runtime.Extensions": "4.4.0-beta-24906-02",
-    "System.Runtime": "4.4.0-beta-24906-02",
-    "System.Security.AccessControl": "4.4.0-beta-24906-02",
-    "System.Security.Cryptography.Primitives": "4.4.0-beta-24906-02",
-    "System.Security.Cryptography.X509Certificates": "4.4.0-beta-24906-02",
-    "System.Security.Principal": "4.4.0-beta-24906-02",
-    "System.Threading": "4.4.0-beta-24906-02"
+    "System.Collections.NonGeneric": "4.4.0-beta-24906-03",
+    "System.Reflection": "4.4.0-beta-24906-03",
+    "System.Runtime.Extensions": "4.4.0-beta-24906-03",
+    "System.Runtime": "4.4.0-beta-24906-03",
+    "System.Security.AccessControl": "4.4.0-beta-24906-03",
+    "System.Security.Cryptography.Primitives": "4.4.0-beta-24906-03",
+    "System.Security.Cryptography.X509Certificates": "4.4.0-beta-24906-03",
+    "System.Security.Principal": "4.4.0-beta-24906-03",
+    "System.Threading": "4.4.0-beta-24906-03"
   },
   "frameworks": {
     "netstandard1.7": {}

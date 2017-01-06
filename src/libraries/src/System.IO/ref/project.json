@@ -1,8 +1,8 @@
 {
   "dependencies": {
-    "System.Runtime": "4.4.0-beta-24906-02",
-    "System.Runtime.Extensions": "4.4.0-beta-24906-02",
-    "System.Text.Encoding": "4.4.0-beta-24906-02"
+    "System.Runtime": "4.4.0-beta-24906-03",
+    "System.Runtime.Extensions": "4.4.0-beta-24906-03",
+    "System.Text.Encoding": "4.4.0-beta-24906-03"
   },
   "frameworks": {
     "netstandard1.7": {},

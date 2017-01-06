@@ -2,8 +2,8 @@
   "frameworks": {
     "netstandard1.7": {
       "dependencies": {
-        "System.Runtime": "4.4.0-beta-24906-02",
-        "System.Collections.NonGeneric": "4.4.0-beta-24906-02"
+        "System.Runtime": "4.4.0-beta-24906-03",
+        "System.Collections.NonGeneric": "4.4.0-beta-24906-03"
       }
     },
     "net463": {
@@ -14,8 +14,8 @@
     "uap10.1": {
       "dependencies": {
         "Microsoft.TargetingPack.Private.NETNative": "1.1.0-beta-24906-00",
-        "System.Collections.NonGeneric": "4.4.0-beta-24906-02",
-        "System.Runtime": "4.4.0-beta-24906-02"
+        "System.Collections.NonGeneric": "4.4.0-beta-24906-03",
+        "System.Runtime": "4.4.0-beta-24906-03"
       }
     }
   }
