@@ -20,7 +20,7 @@
       Overwrite="true"
                       />
     <ItemGroup>
-      <FileWrites Include="$(ProjectJson)" />
+      <FileWrites Include="$(ProjectJson);$(ProjectLockJson)" />
     </ItemGroup>
 
   </Target>

@@ -164,6 +164,42 @@
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
+      "displayName": "prebuild corefx.tools",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "docker",
+        "arguments": "exec $(PB_DockerContainerName) $(PB_GitDirectory)/Tools/msbuild.sh $(PB_GitDirectory)/src/Tools/CoreFx.Tools/CoreFx.Tools.csproj",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Run sync",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "docker",
+        "arguments": "exec $(PB_DockerContainerName) $(PB_GitDirectory)/sync.sh -p -- /p:ArchGroup=$(PB_Platform)",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
       "displayName": "Run build.sh",
       "timeoutInMinutes": 0,
       "task": {
@@ -174,6 +210,24 @@
       "inputs": {
         "filename": "docker",
         "arguments": "exec $(PB_DockerContainerName) $(PB_GitDirectory)/build.sh -buildArch=$(PB_Platform) -$(PB_ConfigurationGroup)",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Push packages to Azure",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "docker",
+        "arguments": "exec $(PB_DockerContainerName) $(PB_GitDirectory)/publish-packages.sh -AzureAccount=$(PB_CloudDropAccountName) -AzureToken=$(CloudDropAccessToken) -Container=$(PB_Label) -verbose -- /p:OverwriteOnPublish=true",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -448,7 +502,7 @@
       "reportBuildStatus": "true",
       "fetchDepth": "0",
       "gitLfsSupport": "false",
-      "skipSyncSource": "false",
+      "skipSyncSource": "true",
       "cleanOptions": "0"
     },
     "id": "58fa2458-e392-4373-ba2b-dd3ef0c2d7ce",
@@ -456,18 +510,18 @@
     "name": "DotNet-CoreFX-Trusted",
     "url": "https://devdiv.visualstudio.com/DevDiv/_git/DotNet-CoreFX-Trusted",
     "defaultBranch": "refs/heads/master",
-    "clean": "true",
+    "clean": "false",
     "checkoutSubmodules": false
   },
   "quality": "definition",
   "defaultBranch": "refs/heads/master",
   "queue": {
     "pool": {
-      "id": 83,
-      "name": "DotNetCore-Test"
+      "id": 39,
+      "name": "DotNet-Build"
     },
-    "id": 159,
-    "name": "DotNetCore-Test"
+    "id": 36,
+    "name": "DotNet-Build"
   },
   "path": "\\",
   "type": "build",
@@ -479,6 +533,6 @@
     "description": "Visual Studio and DevDiv team project for git source code repositories.  Work items will be added for Adams, Dev14 work items are tracked in vstfdevdiv.  ",
     "url": "https://devdiv.visualstudio.com/DefaultCollection/_apis/projects/0bdbc590-a062-4c3f-b0f6-9383f67865ee",
     "state": "wellFormed",
-    "revision": 418097435
+    "revision": 418097459
   }
 }

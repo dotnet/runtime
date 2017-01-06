@@ -5,6 +5,7 @@
     <IsRuntimeAssembly>false</IsRuntimeAssembly>
   </PropertyGroup>
   <PropertyGroup>
+    <IntermediateOutputPath>$(IntermediateOutputPath)$(ArchGroup)/</IntermediateOutputPath>
     <ProjectJsonTemplate>$(MSBuildThisProjectDirectory)project.json.template</ProjectJsonTemplate>
     <ProjectJson Condition="Exists('$(ProjectJsonTemplate)')">$(IntermediateOutputPath)project.json</ProjectJson>
     <ProjectLockJson Condition="Exists('$(ProjectJsonTemplate)')">$(IntermediateOutputPath)project.lock.json</ProjectLockJson>

@@ -21,35 +21,25 @@
     <GetNuGetPackageVersionsDependsOn>CreateVersionFileDuringBuild</GetNuGetPackageVersionsDependsOn>
   </PropertyGroup>
 
-
-  <PropertyGroup Condition="'$(___BuildConfiguration)'==''">
-    <!--
-        Build Configuration is composed by: $(OSGroup).$(Platform).$(ConfigurationGroup).$(TargetGroup)
-        TargetGroup will be "default" if no value is specified. 
-    -->
-    <___BuildConfiguration>$(OSGroup).$(Platform).$(ConfigurationGroup)</___BuildConfiguration>
-    <___BuildConfiguration Condition="'$(TargetGroup)'!=''">$(___BuildConfiguration).$(TargetGroup)</___BuildConfiguration>
-    <___BuildConfiguration Condition="'$(TargetGroup)'==''">$(___BuildConfiguration).default</___BuildConfiguration>
+  <!-- Platform detection -->
+  <PropertyGroup>
+    <OsEnvironment Condition="'$(OsEnvironment)'=='' AND '$(OS)'=='Unix' AND Exists('/Applications')">OSX</OsEnvironment>
+    <OsEnvironment Condition="'$(OsEnvironment)'=='' AND '$(OS)'=='Unix'">Linux</OsEnvironment>
+    <OsEnvironment Condition="'$(OsEnvironment)'==''">$(OS)</OsEnvironment>
+    <RunningOnUnix Condition="'$(OS)' != 'Windows_NT'">true</RunningOnUnix>
   </PropertyGroup>
 
   <!-- Common BuildTools properties -->
   <PropertyGroup>
-    <!--
-        Test Configuration is composed by: $(OSGroup).$(Platform).$(ConfigurationGroup).$(TargetGroup).$(TestTFM)
-        TargetGroup will be "default" if no value is specified.
-        TestTFM will be "default" if no value is specified. 
-    -->
-    <TestConfiguration Condition="'$(TestTFM)'!=''">$(___BuildConfiguration).$(TestTFM)</TestConfiguration>
-    <TestConfiguration Condition="'$(TestTFM)'==''">$(___BuildConfiguration).default</TestConfiguration>
     <ToolRuntimePath Condition="'$(ToolRuntimePath)'=='' and '$(ProjectDir)'==''">$(MSBuildThisFileDirectory)</ToolRuntimePath>
     <ToolRuntimePath Condition="'$(ToolRuntimePath)'=='' and '$(ProjectDir)'!=''">$(ProjectDir)Tools/</ToolRuntimePath>
     <ToolsDir Condition="'$(ToolsDir)'==''">$(MSBuildThisFileDirectory)</ToolsDir>
     <DotnetCliPath Condition="'$(DotnetCliPath)'==''">$(ToolRuntimePath)dotnetcli/</DotnetCliPath>
     <OverrideToolHost>$(DotnetCliPath)dotnet</OverrideToolHost>
-    <BuildToolsTaskDir Condition="'$(BuildToolsTargets45)' == 'true'">$(ToolsDir)net45/</BuildToolsTaskDir>
-    <BuildToolsTaskDir Condition="'$(BuildToolsTaskDir)'==''">$(ToolsDir)</BuildToolsTaskDir>
-    <UseRoslynCompilers Condition="'$(UseRoslynCompilers)'=='' and '$(OSEnvironment)'!='Windows_NT'">false</UseRoslynCompilers>
-    <UseSharedCompilation Condition="'$(UseSharedCompilation)' == '' and '$(OSEnvironment)' == 'Windows_NT' and '$(UseRoslynCompilers)' != 'false'">true</UseSharedCompilation>
+    <BuildToolsTaskDir Condition="'$(MSBuildRuntimeType)'!='core'">$(ToolsDir)net45/</BuildToolsTaskDir>
+    <BuildToolsTaskDir Condition="'$(MSBuildRuntimeType)'=='core'">$(ToolsDir)</BuildToolsTaskDir>
+    <UseRoslynCompilers Condition="'$(UseRoslynCompilers)'=='' and '$(RunningOnUnix)'=='true'">false</UseRoslynCompilers>
+    <UseSharedCompilation Condition="'$(UseSharedCompilation)' == '' and '$(RunningOnUnix)' != 'true' and '$(UseRoslynCompilers)' != 'false'">true</UseSharedCompilation>
   </PropertyGroup>
   
   <!-- Setting IsTestProject prior to Build.Common.targets -->

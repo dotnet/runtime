@@ -5,7 +5,7 @@
     <!-- Temporarily enable local build of tools -->
     <CoreFxToolsDir Condition="'$(CoreFxToolsDir)' == ''">$(ToolsDir)</CoreFxToolsDir>
     <CoreFxDesktopToolsDir Condition="'$(CoreFxDesktopToolsDir)' == ''">$(ToolsDir)net45/</CoreFxDesktopToolsDir>
-    <CoreFxToolsTaskDir Condition="'$(CoreFxToolsTaskDir)' == '' AND '$(BuildToolsTargets45)' != 'true'">$(CoreFxToolsDir)</CoreFxToolsTaskDir>
-    <CoreFxToolsTaskDir Condition="'$(CoreFxToolsTaskDir)' == '' AND '$(BuildToolsTargets45)' == 'true'">$(CoreFxDesktopToolsDir)</CoreFxToolsTaskDir>
+    <CoreFxToolsTaskDir Condition="'$(CoreFxToolsTaskDir)' == '' AND '$(MSBuildRuntimeType)' == 'core'">$(CoreFxToolsDir)</CoreFxToolsTaskDir>
+    <CoreFxToolsTaskDir Condition="'$(CoreFxToolsTaskDir)' == '' AND '$(MSBuildRuntimeType)' != 'core'">$(CoreFxDesktopToolsDir)</CoreFxToolsTaskDir>
   </PropertyGroup>
 </Project>
