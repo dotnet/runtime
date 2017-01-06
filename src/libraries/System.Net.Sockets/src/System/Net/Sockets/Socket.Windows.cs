@@ -103,7 +103,7 @@ namespace System.Net.Sockets
             return recvMsg(socketHandle, msg, out bytesTransferred, overlapped, completionRoutine);
         }
 
-        internal SocketError WSARecvMsgBlocking(SafeCloseSocket socketHandle, IntPtr msg, out int bytesTransferred, IntPtr overlapped, IntPtr completionRoutine)
+        internal SocketError WSARecvMsgBlocking(IntPtr socketHandle, IntPtr msg, out int bytesTransferred, IntPtr overlapped, IntPtr completionRoutine)
         {
             EnsureDynamicWinsockMethods();
             WSARecvMsgDelegateBlocking recvMsg_Blocking = _dynamicWinsockMethods.GetDelegate<WSARecvMsgDelegateBlocking>(_handle);

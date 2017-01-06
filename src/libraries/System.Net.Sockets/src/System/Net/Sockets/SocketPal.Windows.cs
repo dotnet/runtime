@@ -379,7 +379,7 @@ namespace System.Net.Sockets
                     wsaMsg.controlBuffer.Length = sizeof(Interop.Winsock.ControlData);
 
                     if (socket.WSARecvMsgBlocking(
-                        handle,
+                        handle.DangerousGetHandle(),
                         (IntPtr)(&wsaMsg),
                         out bytesTransferred,
                         IntPtr.Zero,
@@ -397,7 +397,7 @@ namespace System.Net.Sockets
                     wsaMsg.controlBuffer.Length = sizeof(Interop.Winsock.ControlDataIPv6);
 
                     if (socket.WSARecvMsgBlocking(
-                        handle,
+                        handle.DangerousGetHandle(),
                         (IntPtr)(&wsaMsg),
                         out bytesTransferred,
                         IntPtr.Zero,
@@ -414,7 +414,7 @@ namespace System.Net.Sockets
                     wsaMsg.controlBuffer.Length = 0;
 
                     if (socket.WSARecvMsgBlocking(
-                        handle,
+                        handle.DangerousGetHandle(),
                         (IntPtr)(&wsaMsg),
                         out bytesTransferred,
                         IntPtr.Zero,
