@@ -7,7 +7,7 @@
     <ProjectGuid>{35FA1FA9-A504-4B9E-93F0-E5D03C21BECA}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AssemblyName>System.Xml.Linq.Misc.Tests</AssemblyName>
-    <NuGetTargetMoniker>.NETStandard,Version=v1.7</NuGetTargetMoniker>
+    <NuGetTargetMoniker Condition="'$(TargetGroup)'==''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
     <RootNamespace>System.Xml.Linq.Tests</RootNamespace>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
@@ -23,7 +23,7 @@
     <Compile Include="XHashtable.cs" />
     <Compile Include="XLinqErrata4.cs" />
     <Compile Include="XNameAPI.cs" />
-    <Compile Include="LoadSaveAsyncTests.cs" Condition="'$(TargetGroup)'==''" />
+    <Compile Include="LoadSaveAsyncTests.cs" Condition="'$(TargetGroup)'=='netcoreapp1.1'" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(CommonTestPath)\System\Xml\ModuleCore\ModuleCore.csproj" />
