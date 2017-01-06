@@ -4,7 +4,7 @@
   <PropertyGroup>
     <SkipPackageFileCheck>true</SkipPackageFileCheck>
     <SkipValidatePackage>true</SkipValidatePackage>
-    <PackagePlatforms>x64;x86;arm64;arm;</PackagePlatforms>
+    <PackagePlatforms>x64;x86;arm64;arm;armel;</PackagePlatforms>
     <OutputPath>$(PackagesOutputPath)</OutputPath>
     <IncludeRuntimeJson>true</IncludeRuntimeJson>
   </PropertyGroup>
@@ -27,6 +27,9 @@
     </ProjectReference>
     <ProjectReference Include="debian\Microsoft.NETCore.ILDAsm.pkgproj">
       <Platform>amd64</Platform>
+    </ProjectReference>
+    <ProjectReference Include="debian\Microsoft.NETCore.ILDAsm.pkgproj">
+      <Platform>armel</Platform>
     </ProjectReference>
     <ProjectReference Include="fedora\23\Microsoft.NETCore.ILDAsm.pkgproj">
       <Platform>amd64</Platform>
@@ -60,6 +63,9 @@
     </ProjectReference>
     <ProjectReference Include="alpine\3.4.3\Microsoft.NETCore.ILDAsm.pkgproj">
       <Platform>amd64</Platform>
+    </ProjectReference>
+    <ProjectReference Include="tizen\4.0.0\Microsoft.NETCore.ILDAsm.pkgproj">
+      <Platform>armel</Platform>
     </ProjectReference>
     <ProjectReference Include="osx\Microsoft.NETCore.ILDAsm.pkgproj">
       <Platform>amd64</Platform>

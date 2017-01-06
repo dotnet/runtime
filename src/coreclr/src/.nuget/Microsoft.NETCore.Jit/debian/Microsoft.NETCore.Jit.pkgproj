@@ -4,8 +4,8 @@
   <PropertyGroup>
     <SkipPackageFileCheck>true</SkipPackageFileCheck>
     <PackageTargetRuntime>debian.8-$(PackagePlatform)</PackageTargetRuntime>
-    <!-- only build for x64 -->
-    <PackagePlatforms>x64;</PackagePlatforms>
+    <!-- build for x64, armel -->
+    <PackagePlatforms>x64;armel;</PackagePlatforms>
   </PropertyGroup>
   <ItemGroup>
     <NativeSplittableBinary Include="$(BinDir)libclrjit.so" />
