@@ -529,7 +529,7 @@
             "TestContainerSuffix": "windows10desktop",
             "TargetTestCategory": "Full Framework",
             "FilterToTestTFM": "net46",
-            "TestNugetRuntimeId": "win10-x64",
+            "TestNugetRuntimeId": "win-x64",
             "EnableCloudTest": "true"
           },
           "ReportingParameters": {
@@ -903,7 +903,7 @@
             "TestContainerSuffix": "windows10desktop",
             "TargetTestCategory": "Full Framework",            
             "FilterToTestTFM": "net46",
-            "TestNugetRuntimeId": "win10-x64",
+            "TestNugetRuntimeId": "win-x64",
             "EnableCloudTest": "true"
           },
           "ReportingParameters": {
