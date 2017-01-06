@@ -312,7 +312,7 @@ namespace System.Net.Sockets
                 IntPtr completionRoutine);
 
     internal delegate SocketError WSARecvMsgDelegateBlocking(
-                SafeCloseSocket socketHandle,
+                IntPtr socketHandle,
                 IntPtr msg,
                 out int bytesTransferred,
                 IntPtr overlapped,
