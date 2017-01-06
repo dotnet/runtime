@@ -227,10 +227,9 @@ namespace System.Dynamic.Utils
             return pis;
         }
 
-        internal static bool SameElements<T>(IEnumerable<T> replacement, IReadOnlyList<T> current) where T : class
+        internal static bool SameElements<T>(ICollection<T> replacement, IReadOnlyList<T> current) where T : class
         {
             Debug.Assert(current != null);
-            Debug.Assert(replacement == null | replacement is ICollection<T>);
             if (replacement == current) // Relatively common case, so particularly useful to take the short-circuit.
             {
                 return true;
@@ -241,8 +240,38 @@ namespace System.Dynamic.Utils
                 return current.Count == 0;
             }
 
+            return SameElementsInCollection(replacement, current);
+        }
+
+        internal static bool SameElements<T>(ref IEnumerable<T> replacement, IReadOnlyList<T> current) where T : class
+        {
+            Debug.Assert(current != null);
+            if (replacement == current) // Relatively common case, so particularly useful to take the short-circuit.
+            {
+                return true;
+            }
+
+            if (replacement == null) // Treat null as empty.
+            {
+                return current.Count == 0;
+            }
+
+            // Ensure arguments is safe to enumerate twice.
+            // If we have to build a collection, build a TrueReadOnlyCollection<T>
+            // so it won't be built a second time if used.
+            ICollection<T> replacementCol = replacement as ICollection<T>;
+            if (replacementCol == null)
+            {
+                replacement = replacementCol = replacement.ToReadOnly();
+            }
+
+            return SameElementsInCollection(replacementCol, current);
+        }
+
+        private static bool SameElementsInCollection<T>(ICollection<T> replacement, IReadOnlyList<T> current) where T : class
+        { 
             int count = current.Count;
-            if (((ICollection<T>)replacement).Count != count)
+            if (replacement.Count != count)
             {
                 return false;
             }

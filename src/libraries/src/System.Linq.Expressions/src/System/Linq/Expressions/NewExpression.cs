@@ -82,10 +82,7 @@ namespace System.Linq.Expressions
         /// <returns>This expression if no children changed, or an expression with the updated children.</returns>
         public NewExpression Update(IEnumerable<Expression> arguments)
         {
-            // Ensure arguments is safe to enumerate twice.
-            // (If this means a second call to ToReadOnly it will return quickly).
-            arguments = arguments as ICollection<Expression> ?? arguments.ToReadOnly();
-            if (ExpressionUtils.SameElements(arguments, Arguments))
+            if (ExpressionUtils.SameElements(ref arguments, Arguments))
             {
                 return this;
             }

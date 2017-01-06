@@ -66,10 +66,7 @@ namespace System.Linq.Expressions
             // Explicit null check here as otherwise wrong parameter name will be used.
             ContractUtils.RequiresNotNull(expressions, nameof(expressions));
 
-            // Ensure expressions is safe to enumerate twice.
-            // (If this means a second call to ToReadOnly it will return quickly).
-            expressions = expressions as ICollection<Expression> ?? expressions.ToReadOnly();
-            if (ExpressionUtils.SameElements(expressions, Expressions))
+            if (ExpressionUtils.SameElements(ref expressions, Expressions))
             {
                 return this;
             }

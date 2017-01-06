@@ -86,8 +86,7 @@ namespace System.Linq.Expressions
         {
             if (newExpression == NewExpression & initializers != null)
             {
-                initializers = initializers as ICollection<ElementInit> ?? initializers.ToReadOnly();
-                if (ExpressionUtils.SameElements(initializers, Initializers))
+                if (ExpressionUtils.SameElements(ref initializers, Initializers))
                 {
                     return this;
                 }
