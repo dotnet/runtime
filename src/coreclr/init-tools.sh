@@ -111,9 +111,9 @@ if [ ! -e $__INIT_TOOLS_DONE_MARKER ]; then
             # curl has HTTPS CA trust-issues less often than wget, so lets try that first.
             echo "Installing '${__DOTNET_LOCATION}' to '$__DOTNET_PATH/dotnet.tar'" >> $__init_tools_log
             if command -v curl > /dev/null; then
-                wget -q -O $__DOTNET_PATH/dotnet.tar ${__DOTNET_LOCATION}
-            else
                 curl --retry 10 -sSL --create-dirs -o $__DOTNET_PATH/dotnet.tar ${__DOTNET_LOCATION}
+            else
+                wget -q -O $__DOTNET_PATH/dotnet.tar ${__DOTNET_LOCATION}
             fi
             cd $__DOTNET_PATH
             tar -xf $__DOTNET_PATH/dotnet.tar
