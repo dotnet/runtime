@@ -6,9 +6,7 @@ if /I [%1] == [-?] goto Usage
 :Build
 call %~dp0build-native.cmd %*
 if NOT [%ERRORLEVEL%]==[0] exit /b 1
-call %~dp0build-managed.cmd -FilterToOSGroup=Windows_NT %*
-if NOT [%ERRORLEVEL%]==[0] exit /b 1
-call %~dp0build-tests.cmd %*
+call %~dp0build-managed.cmd %*
 exit /b %ERRORLEVEL%
 
 :Usage

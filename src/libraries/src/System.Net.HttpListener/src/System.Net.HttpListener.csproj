@@ -332,6 +332,9 @@
     <Compile Include="System\Net\Managed\ChunkedInputStream.cs" />
     <Compile Include="System\Net\Managed\ChunkStream.cs" />
     <Compile Include="System\Net\Managed\HttpResponseStream.Managed.cs" />
+    <Reference Include="System.Net.Sockets" />
+    <Reference Include="System.Threading.ThreadPool" />
+    <Reference Include="System.Net.ServicePoint" />
   </ItemGroup>
   <PropertyGroup Condition=" '$(TargetsWindows)' == 'true' AND '$(ProjectJson)' == '' ">
     <ProjectJson>win/project.json</ProjectJson>
