@@ -16,7 +16,6 @@ namespace CoreXml.Test.XLinq
 {
     public class LoadSaveAsyncTests : BridgeHelpers
     {
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Async methods defined only on Core")]
         [Fact]
         public static void ArgumentValidation()
         {
@@ -27,7 +26,6 @@ namespace CoreXml.Test.XLinq
             Assert.Throws<ArgumentNullException>(() => { new XElement("Name").SaveAsync((XmlWriter)null, CancellationToken.None); });
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Async methods defined only on Core")]
         [Fact]
         public static async Task AlreadyCanceled()
         {
@@ -50,7 +48,6 @@ namespace CoreXml.Test.XLinq
             await Assert.ThrowsAnyAsync<OperationCanceledException>(() => new XElement("Name").SaveAsync(XmlWriter.Create(Stream.Null), new CancellationToken(true)));
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Async methods defined only on Core")]
         [Theory]
         [MemberData("RoundtripOptions_MemberData")]
         public static async Task RoundtripSyncAsyncMatches_XmlReader(bool document, LoadOptions loadOptions, SaveOptions saveOptions)
@@ -108,7 +105,6 @@ namespace CoreXml.Test.XLinq
             Assert.Equal(syncOutput.ToArray(), asyncOutput.ToArray());
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Async methods defined only on Core")]
         [Theory]
         [MemberData("RoundtripOptions_MemberData")]
         public static async Task RoundtripSyncAsyncMatches_StreamReader(bool document, LoadOptions loadOptions, SaveOptions saveOptions)
@@ -151,7 +147,6 @@ namespace CoreXml.Test.XLinq
             Assert.Equal(syncOutput.ToArray(), asyncOutput.ToArray());
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Async methods defined only on Core")]
         [Theory]
         [MemberData("RoundtripOptions_MemberData")]
         public static async Task RoundtripSyncAsyncMatches_Stream(bool document, LoadOptions loadOptions, SaveOptions saveOptions)
