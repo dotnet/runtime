@@ -3575,10 +3575,9 @@ public:
     void fgLocalVarLivenessInit();
 
 #ifdef LEGACY_BACKEND
-    GenTreePtr fgLegacyPerStatementLocalVarLiveness(GenTreePtr startNode, GenTreePtr relopNode, GenTreePtr asgdLclVar);
+    GenTreePtr fgLegacyPerStatementLocalVarLiveness(GenTreePtr startNode, GenTreePtr relopNode);
 #else
-    void fgPerNodeLocalVarLiveness(GenTree* node, GenTree* asgdLclVar);
-    void fgPerStatementLocalVarLiveness(GenTree* node, GenTree* asgdLclVar);
+    void fgPerNodeLocalVarLiveness(GenTree* node);
 #endif
     void fgPerBlockLocalVarLiveness();
 
@@ -4617,7 +4616,7 @@ private:
     bool fgCurHeapDef;   // True iff the current basic block defines the heap.
     bool fgCurHeapHavoc; // True if  the current basic block is known to set the heap to a "havoc" value.
 
-    void fgMarkUseDef(GenTreeLclVarCommon* tree, GenTree* asgdLclVar = nullptr);
+    void fgMarkUseDef(GenTreeLclVarCommon* tree);
 
     void fgBeginScopeLife(VARSET_TP* inScope, VarScopeDsc* var);
     void fgEndScopeLife(VARSET_TP* inScope, VarScopeDsc* var);
