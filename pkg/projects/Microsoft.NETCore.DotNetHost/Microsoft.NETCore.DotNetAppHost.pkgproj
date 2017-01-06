@@ -67,6 +67,9 @@
     <ProjectReference Include="opensuse.42.1\Microsoft.NETCore.DotNetAppHost.pkgproj">
       <Platform>amd64</Platform>
     </ProjectReference>
+    <ProjectReference Include="tizen.4.0.0\Microsoft.NETCore.DotNetAppHost.pkgproj">
+      <Platform>armel</Platform>
+    </ProjectReference>
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

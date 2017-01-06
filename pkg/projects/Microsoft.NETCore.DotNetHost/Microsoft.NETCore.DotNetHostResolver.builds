@@ -79,6 +79,10 @@
       <OSGroup>Linux</OSGroup>
       <Platform>amd64</Platform>
     </Project>
+    <Project Condition="'$(TargetsLinux)' == 'true' and '$(DistroRid)' == 'tizen.4.0.0-armel'" Include="tizen.4.0.0/Microsoft.NETCore.DotNetHostResolver.pkgproj">
+      <OSGroup>Linux</OSGroup>
+      <Platform>armel</Platform>
+    </Project>
     <Project Condition="'$(TargetsOSX)' == 'true'" Include="osx/Microsoft.NETCore.DotNetHostResolver.pkgproj">
       <OSGroup>OSX</OSGroup>
       <Platform>amd64</Platform>
