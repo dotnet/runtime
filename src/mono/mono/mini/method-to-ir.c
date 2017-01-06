@@ -8871,7 +8871,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				 * request a generic sharing context.
 				 */
 				if (context_used &&
-						((method->flags & METHOD_ATTRIBUTE_STATIC) || method->klass->valuetype))
+						((cfg->method->flags & METHOD_ATTRIBUTE_STATIC) || cfg->method->klass->valuetype))
 					mono_get_vtable_var (cfg);
 			}
 
