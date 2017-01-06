@@ -121,24 +121,6 @@
     },
     {
       "enabled": true,
-      "continueOnError": true,
-      "alwaysRun": false,
-      "displayName": "Log Native Version Assets Files",
-      "timeoutInMinutes": 0,
-      "task": {
-        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
-        "versionSpec": "1.*",
-        "definitionType": "task"
-      },
-      "inputs": {
-        "filename": "dir",
-        "arguments": "$(PB_Pipeline.SourcesDirectory)\\bin\\obj\\BuildVersion*",
-        "workingFolder": "",
-        "failOnStandardError": "false"
-      }
-    },
-    {
-      "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "packages -> dotnet.myget.org",
@@ -151,8 +133,8 @@
       "inputs": {
         "scriptType": "inlineScript",
         "scriptName": "",
-        "arguments": "-ApiKey $(MyGetApiKey)  -PipelineSrcDir $(Pipeline.SourcesDirectory) -ConfigurationGroup $(PB_ConfigurationGroup) -AzureContainerPackageGlob $(AzureContainerPackageGlob) -MyGetFeedUrl $(MyGetFeedUrl) -CustomNuGetPath $(CustomNuGetPath)",
-        "inlineScript": "param($ApiKey, $PipelineSrcDir, $ConfigurationGroup, $AzureContainerPackageGlob, $MyGetFeedUrl, $CustomNuGetPath)\nif ($ConfigurationGroup -ne \"Release\") { exit }\n& $CustomNuGetPath push $PipelineSrcDir\\packages\\AzureTransfer\\$ConfigurationGroup\\$AzureContainerPackageGlob $ApiKey -Source $MyGetFeedUrl -Timeout 3600",
+        "arguments": "-ApiKey $(MyGetApiKey)  -PipelineSrcDir $(Pipeline.SourcesDirectory) -ConfigurationGroup $(PB_ConfigurationGroup) -AzureContainerPackageGlob $(PB_AzureContainerPackageGlob) -MyGetFeedUrl $(PB_MyGetFeedUrl)",
+        "inlineScript": "param($ApiKey, $PipelineSrcDir, $ConfigurationGroup, $AzureContainerPackageGlob, $MyGetFeedUrl)\nif ($ConfigurationGroup -ne \"Release\") { exit }\n& $env:CustomNuGetPath push $PipelineSrcDir\\packages\\AzureTransfer\\$ConfigurationGroup\\$AzureContainerPackageGlob $ApiKey -Source $MyGetFeedUrl -Timeout 3600",
         "workingFolder": "",
         "failOnStandardError": "true"
       }
@@ -171,8 +153,8 @@
       "inputs": {
         "scriptType": "inlineScript",
         "scriptName": "",
-        "arguments": "-ApiKey $(MyGetApiKey) -ConfigurationGroup $(ConfigurationGroup) -CustomNuGetPath $(CustomNuGetPath) -MyGetFeedUrl $(MyGetFeedUrl)",
-        "inlineScript": "param($ApiKey, $ConfigurationGroup, $CustomNuGetPath, $MyGetFeedUrl)\nif ($ConfigurationGroup -ne \"Release\") { exit }\n& $CustomNuGetPath push $env:Build_StagingDirectory\\IndexedSymbolPackages\\*.nupkg $ApiKey -Source $MyGetFeedUrl -Timeout 3600",
+        "arguments": "-ApiKey $(MyGetApiKey) -ConfigurationGroup $(PB_ConfigurationGroup) -MyGetFeedUrl $(PB_MyGetFeedUrl)",
+        "inlineScript": "param($ApiKey, $ConfigurationGroup, $CustomNuGetPath, $MyGetFeedUrl)\nif ($ConfigurationGroup -ne \"Release\") { exit }\n& $env:CustomNuGetPath push $env:Build_StagingDirectory\\IndexedSymbolPackages\\*.nupkg $ApiKey -Source $MyGetFeedUrl -Timeout 3600",
         "workingFolder": "",
         "failOnStandardError": "true"
       }
