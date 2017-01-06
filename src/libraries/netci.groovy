@@ -59,8 +59,6 @@ def osShortName = ['Windows 10': 'win10',
 def buildArchConfiguration = ['Debug': 'x86',
                               'Release': 'x64']
 
-def testNugetRuntimeIdConfiguration = ['Debug': 'win7-x86',
-                                       'Release': 'win7-x64']
 // **************************
 // Define code coverage build
 // **************************
@@ -230,13 +228,16 @@ def testNugetRuntimeIdConfiguration = ['Debug': 'win7-x86',
             def newJob = job(Utilities.getFullJobName(project, newJobName, isPR)) {
                 steps {
                     if (osName == 'Windows 10' || osName == 'Windows 7' || osName == 'Windows_NT') {
-                        batchFile("call \"C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\vcvarsall.bat\" x86 && build.cmd -${configurationGroup} -outerloop -- /p:WithoutCategories=IgnoreForCI")
+                        batchFile("call \"C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\vcvarsall.bat\" x86 && build.cmd -${configurationGroup}")
+                        batchFile("call \"C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\vcvarsall.bat\" x86 && build-tests.cmd -${configurationGroup} -outerloop -- /p:WithoutCategories=IgnoreForCI")
                     }
                     else if (osName == 'OSX') {
-                        shell("HOME=\$WORKSPACE/tempHome ./build.sh -${configurationGroup.toLowerCase()} -outerloop -- /p:TestWithLocalNativeLibraries=true /p:TestNugetRuntimeId=${targetNugetRuntimeMap[osName]} /p:WithoutCategories=IgnoreForCI")
+                        shell("HOME=\$WORKSPACE/tempHome ./build.sh -${configurationGroup.toLowerCase()}")
+                        shell("HOME=\$WORKSPACE/tempHome ./build-tests.sh -${configurationGroup.toLowerCase()} -outerloop -- /p:WithoutCategories=IgnoreForCI")
                     }
                     else {
-                        shell("sudo HOME=\$WORKSPACE/tempHome ./build.sh -${configurationGroup.toLowerCase()} -outerloop -- /p:TestWithLocalNativeLibraries=true /p:TestNugetRuntimeId=${targetNugetRuntimeMap[osName]} /p:WithoutCategories=IgnoreForCI")
+                        shell("sudo HOME=\$WORKSPACE/tempHome ./build.sh -${configurationGroup.toLowerCase()}")
+                        shell("sudo HOME=\$WORKSPACE/tempHome ./build-tests.sh -${configurationGroup.toLowerCase()} -outerloop -- /p:WithoutCategories=IgnoreForCI")
                     }
                 }
             }
@@ -316,13 +317,15 @@ def testNugetRuntimeIdConfiguration = ['Debug': 'win7-x86',
                     // On Windows we use the packer to put together everything. On *nix we use tar
                     steps {
                         if (osName == 'Windows 10' || osName == 'Windows 7' || osName == 'Windows_NT') {
-                            batchFile("call \"C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\vcvarsall.bat\" x86 && build.cmd -${configurationGroup} -os:${osGroup} -buildArch:${buildArchConfiguration[configurationGroup]} -TestNugetRuntimeId:${testNugetRuntimeIdConfiguration[configurationGroup]} -- /p:WithoutCategories=IgnoreForCI /p:BuildConfiguration=${targetGroup}-${osGroup}-${configurationGroup}-${buildArchConfiguration[configurationGroup]}")
+                            batchFile("call \"C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\vcvarsall.bat\" x86 && build.cmd -${configurationGroup} -os:${osGroup} -buildArch:${buildArchConfiguration[configurationGroup]} -- /p:BuildConfiguration=${targetGroup}-${osGroup}-${configurationGroup}-${buildArchConfiguration[configurationGroup]}")
+                            batchFile("call \"C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\vcvarsall.bat\" x86 && build-tests.cmd -${configurationGroup} -os:${osGroup} -buildArch:${buildArchConfiguration[configurationGroup]} -- /p:WithoutCategories=IgnoreForCI /p:BuildConfiguration=${targetGroup}-${osGroup}-${configurationGroup}-${buildArchConfiguration[configurationGroup]}")
                             batchFile("C:\\Packer\\Packer.exe .\\bin\\build.pack .\\bin")
                         }
                         else {
                             // Use Server GC for Ubuntu/OSX Debug PR build & test
                             def useServerGC = (configurationGroup == 'Release' && isPR) ? 'useServerGC' : ''
-                            shell("HOME=\$WORKSPACE/tempHome ./build.sh -${configurationGroup.toLowerCase()} -- ${useServerGC} /p:TestWithLocalNativeLibraries=true /p:TestNugetRuntimeId=${targetNugetRuntimeMap[osName]} /p:WithoutCategories=IgnoreForCI /p:BuildConfiguration=${targetGroup}-${osGroup}-${configurationGroup}-x64")
+                            shell("HOME=\$WORKSPACE/tempHome ./build.sh -${configurationGroup.toLowerCase()} -- /p:BuildConfiguration=${targetGroup}-${osGroup}-${configurationGroup}-x64")
+                            shell("HOME=\$WORKSPACE/tempHome ./build-tests.sh -${configurationGroup.toLowerCase()} -- ${useServerGC} /p:TestWithLocalNativeLibraries=true /p:WithoutCategories=IgnoreForCI /p:BuildConfiguration=${targetGroup}-${osGroup}-${configurationGroup}-x64")
                             // Tar up the appropriate bits.  On OSX the tarring is a different syntax for exclusion.
                             if (osName == 'OSX') {
                                 // TODO: Re-enable package archival when the build refactoring work allows it.

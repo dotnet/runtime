@@ -71,7 +71,7 @@
     <MSBuild Projects="@(BuildToolsProject)"
              ContinueOnError="ErrorAndContinue"
              Condition="'%(Identity)' != ''"
-             Properties="TargetGroup=%(BuildToolsProject.TargetGroup)" />
+             Properties="Configuration=%(BuildToolsProject.TargetGroup);TargetGroup=%(BuildToolsProject.TargetGroup)" />
   </Target>
 
   <Target Name="Sync" DependsOnTargets="BuildCoreFxTools">

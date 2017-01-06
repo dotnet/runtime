@@ -8,7 +8,7 @@
       "timeoutInMinutes": 0,
       "task": {
         "id": "bfc8bf76-e7ac-4a8c-9a55-a944a9f632fd",
-        "versionSpec": "*",
+        "versionSpec": "1.*",
         "definitionType": "task"
       },
       "inputs": {
@@ -27,7 +27,7 @@
       "timeoutInMinutes": 0,
       "task": {
         "id": "e213ff0f-5d5c-4791-802d-52ea3e7be1f1",
-        "versionSpec": "*",
+        "versionSpec": "1.*",
         "definitionType": "task"
       },
       "inputs": {
@@ -47,13 +47,13 @@
       "timeoutInMinutes": 0,
       "task": {
         "id": "e213ff0f-5d5c-4791-802d-52ea3e7be1f1",
-        "versionSpec": "*",
+        "versionSpec": "1.*",
         "definitionType": "task"
       },
       "inputs": {
         "scriptType": "inlineScript",
         "scriptName": "",
-        "arguments": "-gitUrl $(VstsRepoGitUrl) -root $(Pipeline.SourcesDirectory)",
+        "arguments": "-gitUrl $(PB_VstsRepoGitUrl) -root $(Pipeline.SourcesDirectory)",
         "inlineScript": "param($gitUrl, $root)\n\nif (Test-Path $root)\n{\n  Remove-Item -Recurse -Force $root\n}\ngit clone --no-checkout $gitUrl $root 2>&1 | Write-Host\ncd $root\ngit checkout $env:SourceVersion 2>&1 | Write-Host\n\nWrite-Host (\"##vso[task.setvariable variable=Pipeline.SourcesDirectory;]$root\")",
         "workingFolder": "",
         "failOnStandardError": "true"
@@ -67,13 +67,13 @@
       "timeoutInMinutes": 0,
       "task": {
         "id": "e213ff0f-5d5c-4791-802d-52ea3e7be1f1",
-        "versionSpec": "*",
+        "versionSpec": "1.*",
         "definitionType": "task"
       },
       "inputs": {
         "scriptType": "inlineScript",
         "scriptName": "",
-        "arguments": "$(CloudDropAccountName) $(CloudDropAccessToken) $(Label)",
+        "arguments": "$(PB_CloudDropAccountName) $(CloudDropAccessToken) $(PB_Label)",
         "inlineScript": "param($account, $token, $container)\nif ($env:UseLegacyBuildScripts -eq \"true\")\n{\n  .\\sync.cmd /ab /p:CloudDropAccountName=$account /p:CloudDropAccessToken=$token /p:ContainerName=$container\n}\nelse\n{\n#  .\\sync.cmd -ab \"-AzureAccount=$account\" \"-AzureToken=$token\" \"-Container=$container\"\n  .\\init-tools.cmd\n  msbuild src\\syncAzure.proj /p:CloudDropAccountName=$account /p:CloudDropAccessToken=$token /p:ContainerName=$container\n}",
         "workingFolder": "$(Pipeline.SourcesDirectory)",
         "failOnStandardError": "false"
@@ -87,14 +87,14 @@
       "timeoutInMinutes": 0,
       "task": {
         "id": "e213ff0f-5d5c-4791-802d-52ea3e7be1f1",
-        "versionSpec": "*",
+        "versionSpec": "1.*",
         "definitionType": "task"
       },
       "inputs": {
         "scriptType": "inlineScript",
         "scriptName": "",
-        "arguments": "",
-        "inlineScript": "if ($env:ConfigurationGroup -ne \"Release\") { exit }\n\n& $env:Build_SourcesDirectory\\scripts\\DotNet-Trusted-Publish\\Embed-Index.ps1 `\n  $env:Pipeline_SourcesDirectory\\packages\\AzureTransfer\\$env:ConfigurationGroup\\$env:AzureContainerSymbolPackageGlob `\n  $env:Build_StagingDirectory\\IndexedSymbolPackages",
+        "arguments": "-ConfigGroup $(PB_ConfigurationGroup) -SymPkgGlob $(PB_AzureContainerSymbolPackageGlob) -PipelineSrcDir $(Pipeline.SourcesDirectory)",
+        "inlineScript": "param($ConfigGroup, $SymPkgGlob, $PipelineSrcDir)\nif ($ConfigGroup -ne \"Release\") { exit }\n\n& $env:Build_SourcesDirectory\\scripts\\DotNet-Trusted-Publish\\Embed-Index.ps1 `\n  $PipelineSrcDir\\packages\\AzureTransfer\\$ConfigGroup\\$SymbolPkgGlob `\n  $env:Build_StagingDirectory\\IndexedSymbolPackages",
         "workingFolder": "",
         "failOnStandardError": "true"
       }
@@ -107,90 +107,36 @@
       "timeoutInMinutes": 0,
       "task": {
         "id": "e213ff0f-5d5c-4791-802d-52ea3e7be1f1",
-        "versionSpec": "*",
+        "versionSpec": "1.*",
         "definitionType": "task"
       },
       "inputs": {
         "scriptType": "inlineScript",
         "scriptName": "",
-        "arguments": "",
-        "inlineScript": "#if ($env:UseLegacyBuildScripts -eq \"true\")\n#{\n  msbuild build.proj /t:CreateOrUpdateCurrentVersionFile /p:OfficialBuildId=$env:OfficialBuildId /p:BuildVersionFile=bin\\obj\\BuildVersion-$env:OfficialBuildId.props\n#}\n#else\n#{\n#  .\\build-managed.cmd -GenerateVersion \"-OfficialBuildId=$env:OfficialBuildId\"\n#}",
+        "arguments": "-OfficialBuildId $(OfficialBuildId)",
+        "inlineScript": "param($OfficialBuildId)\n  msbuild build.proj /t:CreateOrUpdateCurrentVersionFile /p:OfficialBuildId=$OfficialBuildId /p:BuildVersionFile=bin\\obj\\BuildVersion-$OfficialBuildId.props",
         "workingFolder": "$(Pipeline.SourcesDirectory)",
         "failOnStandardError": "true"
       }
     },
     {
       "enabled": true,
-      "continueOnError": true,
-      "alwaysRun": false,
-      "displayName": "Log Native Version Assets Files",
-      "timeoutInMinutes": 0,
-      "task": {
-        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
-        "versionSpec": "*",
-        "definitionType": "task"
-      },
-      "inputs": {
-        "filename": "dir",
-        "arguments": "$(Pipeline.SourcesDirectory)\\bin\\obj\\BuildVersion*",
-        "workingFolder": "",
-        "failOnStandardError": "false"
-      }
-    },
-    {
-      "enabled": false,
-      "continueOnError": false,
-      "alwaysRun": false,
-      "displayName": "packages -> dotnet.myget.org",
-      "timeoutInMinutes": 0,
-      "task": {
-        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
-        "versionSpec": "*",
-        "definitionType": "task"
-      },
-      "inputs": {
-        "filename": "$(CustomNuGetPath)",
-        "arguments": "push $(Pipeline.SourcesDirectory)\\packages\\AzureTransfer\\$(ConfigurationGroup)\\$(AzureContainerPackageGlob) $(MyGetApiKey) -Source $(MyGetFeedUrl) -Timeout 3600",
-        "workingFolder": "$(Build.SourcesDirectory)",
-        "failOnStandardError": "false"
-      }
-    },
-    {
-      "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "packages -> dotnet.myget.org",
       "timeoutInMinutes": 0,
       "task": {
         "id": "e213ff0f-5d5c-4791-802d-52ea3e7be1f1",
-        "versionSpec": "*",
+        "versionSpec": "1.*",
         "definitionType": "task"
       },
       "inputs": {
         "scriptType": "inlineScript",
         "scriptName": "",
-        "arguments": "$(MyGetApiKey)",
-        "inlineScript": "param($ApiKey)\nif ($env:ConfigurationGroup -ne \"Release\") { exit }\n& $env:CustomNuGetPath push $env:Pipeline_SourcesDirectory\\packages\\AzureTransfer\\$env:ConfigurationGroup\\$env:AzureContainerPackageGlob $ApiKey -Source $env:MyGetFeedUrl -Timeout 3600",
+        "arguments": "-ApiKey $(MyGetApiKey)  -PipelineSrcDir $(Pipeline.SourcesDirectory) -ConfigurationGroup $(PB_ConfigurationGroup) -AzureContainerPackageGlob $(PB_AzureContainerPackageGlob) -MyGetFeedUrl $(PB_MyGetFeedUrl)",
+        "inlineScript": "param($ApiKey, $PipelineSrcDir, $ConfigurationGroup, $AzureContainerPackageGlob, $MyGetFeedUrl)\nif ($ConfigurationGroup -ne \"Release\") { exit }\n& $env:CustomNuGetPath push $PipelineSrcDir\\packages\\AzureTransfer\\$ConfigurationGroup\\$AzureContainerPackageGlob $ApiKey -Source $MyGetFeedUrl -Timeout 3600",
         "workingFolder": "",
         "failOnStandardError": "true"
-      }
-    },
-    {
-      "enabled": false,
-      "continueOnError": false,
-      "alwaysRun": false,
-      "displayName": "symbol packages -> dotnet.myget.org",
-      "timeoutInMinutes": 0,
-      "task": {
-        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
-        "versionSpec": "*",
-        "definitionType": "task"
-      },
-      "inputs": {
-        "filename": "$(CustomNuGetPath)",
-        "arguments": "push $(Pipeline.SourcesDirectory)\\packages\\AzureTransfer\\$(ConfigurationGroup)\\$(AzureContainerSymbolPackageGlob) $(MyGetApiKey) -Source $(MyGetFeedUrl) -Timeout 3600",
-        "workingFolder": "",
-        "failOnStandardError": "false"
       }
     },
     {
@@ -201,72 +147,14 @@
       "timeoutInMinutes": 0,
       "task": {
         "id": "e213ff0f-5d5c-4791-802d-52ea3e7be1f1",
-        "versionSpec": "*",
+        "versionSpec": "1.*",
         "definitionType": "task"
       },
       "inputs": {
         "scriptType": "inlineScript",
         "scriptName": "",
-        "arguments": "$(MyGetApiKey)",
-        "inlineScript": "param($ApiKey)\nif ($env:ConfigurationGroup -ne \"Release\") { exit }\n& $env:CustomNuGetPath push $env:Build_StagingDirectory\\IndexedSymbolPackages\\*.nupkg $ApiKey -Source $env:MyGetFeedUrl -Timeout 3600",
-        "workingFolder": "",
-        "failOnStandardError": "true"
-      }
-    },
-    {
-      "enabled": false,
-      "continueOnError": false,
-      "alwaysRun": false,
-      "displayName": "Create VSTS auth NuGet.Config",
-      "timeoutInMinutes": 0,
-      "task": {
-        "id": "e213ff0f-5d5c-4791-802d-52ea3e7be1f1",
-        "versionSpec": "*",
-        "definitionType": "task"
-      },
-      "inputs": {
-        "scriptType": "inlineScript",
-        "scriptName": "",
-        "arguments": "$(VstsAuthedNuGetConfigPath) $(VstsFeedUrl) $(VstsPat)",
-        "inlineScript": "param($path, $url, $pat)\n\nSet-Content $path @\"\n<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<configuration>\n  <packageSources>\n    <add key=\"vsts-dotnet-core\" value=\"$url\" />\n  </packageSources>\n  <packageSourceCredentials>\n    <vsts-dotnet-core>\n      <add key=\"Username\" value=\"VssSessionToken\" />\n      <add key=\"ClearTextPassword\" value=\"$pat\" />\n    </vsts-dotnet-core>\n  </packageSourceCredentials>\n</configuration>\n\"@",
-        "workingFolder": "",
-        "failOnStandardError": "true"
-      }
-    },
-    {
-      "enabled": false,
-      "continueOnError": false,
-      "alwaysRun": false,
-      "displayName": "packages -> VSTS",
-      "timeoutInMinutes": 0,
-      "task": {
-        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
-        "versionSpec": "*",
-        "definitionType": "task"
-      },
-      "inputs": {
-        "filename": "$(CustomNuGetPath)",
-        "arguments": "push $(Pipeline.SourcesDirectory)\\packages\\AzureTransfer\\$(ConfigurationGroup)\\$(AzureContainerPackageGlob) placeholderapikey -Source vsts-dotnet-core -ConfigFile $(VstsAuthedNuGetConfigPath) -Timeout 3600",
-        "workingFolder": "",
-        "failOnStandardError": "false"
-      }
-    },
-    {
-      "enabled": false,
-      "continueOnError": false,
-      "alwaysRun": false,
-      "displayName": "packages -> VSTS",
-      "timeoutInMinutes": 0,
-      "task": {
-        "id": "e213ff0f-5d5c-4791-802d-52ea3e7be1f1",
-        "versionSpec": "*",
-        "definitionType": "task"
-      },
-      "inputs": {
-        "scriptType": "inlineScript",
-        "scriptName": "",
-        "arguments": "",
-        "inlineScript": "if ($env:ConfigurationGroup -ne \"Release\") { exit }\n& $env:CustomNuGetPath push $env:Pipeline.SourcesDirectory\\packages\\AzureTransfer\\$env:ConfigurationGroup\\$env:AzureContainerPackageGlob placeholderapikey -Source vsts-dotnet-core -ConfigFile $env:VstsAuthedNuGetConfigPath -Timeout 3600",
+        "arguments": "-ApiKey $(MyGetApiKey) -ConfigurationGroup $(PB_ConfigurationGroup) -MyGetFeedUrl $(PB_MyGetFeedUrl)",
+        "inlineScript": "param($ApiKey, $ConfigurationGroup, $CustomNuGetPath, $MyGetFeedUrl)\nif ($ConfigurationGroup -ne \"Release\") { exit }\n& $env:CustomNuGetPath push $env:Build_StagingDirectory\\IndexedSymbolPackages\\*.nupkg $ApiKey -Source $MyGetFeedUrl -Timeout 3600",
         "workingFolder": "",
         "failOnStandardError": "true"
       }
@@ -279,14 +167,14 @@
       "timeoutInMinutes": 0,
       "task": {
         "id": "e213ff0f-5d5c-4791-802d-52ea3e7be1f1",
-        "versionSpec": "*",
+        "versionSpec": "1.*",
         "definitionType": "task"
       },
       "inputs": {
         "scriptType": "inlineScript",
         "scriptName": "",
-        "arguments": "-gitHubAuthToken $(UpdatePublishedVersions.AuthToken) -root $(Pipeline.SourcesDirectory)",
-        "inlineScript": "param($gitHubAuthToken, $root)\nif ($env:ConfigurationGroup -ne \"Release\") { exit }\ncd $root\n. $root\\UpdatePublishedVersions.ps1 `\n  -gitHubUser dotnet-build-bot -gitHubEmail dotnet-build-bot@microsoft.com `\n  -gitHubAuthToken $gitHubAuthToken `\n  -versionsRepoOwner $env:VersionsRepoOwner -versionsRepo versions `\n  -versionsRepoPath build-info/dotnet/$env:GitHubRepositoryName/$env:SourceBranch `\n  -nupkgPath $root\\packages\\AzureTransfer\\$env:ConfigurationGroup\\$env:AzureContainerPackageGlob",
+        "arguments": "-ghAuthToken $(UpdatePublishedVersions.AuthToken) -root $(Pipeline.SourcesDirectory) -cg $(PB_ConfigurationGroup)",
+        "inlineScript": "param($ghAuthToken, $root, $cg)\nif ($cg -ne \"Release\") { exit }\ncd $root\n. $root\\UpdatePublishedVersions.ps1 `\n  -gitHubUser dotnet-helix-bot -gitHubEmail dotnet-helix-bot@microsoft.com `\n  -gitHubAuthToken $ghAuthToken`\n  -versionsRepoOwner $env:PB_VersionsRepoOwner -versionsRepo versions `\n  -versionsRepoPath build-info/dotnet/$env:PB_GitHubRepositoryName/$env:SourceBranch `\n  -nupkgPath $root\\packages\\AzureTransfer\\$cg\\$env:PB_AzureContainerPackageGlob",
         "workingFolder": "",
         "failOnStandardError": "true"
       }
@@ -299,7 +187,7 @@
       "timeoutInMinutes": 0,
       "task": {
         "id": "e213ff0f-5d5c-4791-802d-52ea3e7be1f1",
-        "versionSpec": "*",
+        "versionSpec": "1.*",
         "definitionType": "task"
       },
       "inputs": {
@@ -315,85 +203,22 @@
       "enabled": true,
       "continueOnError": true,
       "alwaysRun": false,
-      "displayName": "Publish to Artifact Services Drop (BuildNumber)",
+      "displayName": "Publish to Artifact Services Drop",
       "timeoutInMinutes": 0,
       "task": {
         "id": "f9d96d25-0c81-4e77-8282-1ad1f785cbb4",
-        "versionSpec": "*",
+        "versionSpec": "0.*",
         "definitionType": "task"
       },
       "inputs": {
         "dropServiceURI": "https://devdiv.artifacts.visualstudio.com/DefaultCollection",
-        "buildNumber": "dotnet/$(GitHubRepositoryName)/$(SourceBranch)/$(BuildNumber)/packages/$(ConfigurationGroup)",
-        "sourcePath": "$(Pipeline.SourcesDirectory)\\packages\\AzureTransfer\\$(ConfigurationGroup)",
+        "buildNumber": "dotnet/$(PB_GitHubRepositoryName)/$(SourceBranch)/$(BuildNumber)/packages/$(PB_ConfigurationGroup)",
+        "sourcePath": "$(Pipeline.SourcesDirectory)\\packages\\AzureTransfer\\$(PB_ConfigurationGroup)",
         "dropExePath": "",
         "toLowerCase": "true",
         "detailedLog": "false",
-        "usePat": "false"
-      }
-    },
-    {
-      "enabled": true,
-      "continueOnError": true,
-      "alwaysRun": false,
-      "displayName": "Publish to Artifact Services Drop (OfficialBuildId)",
-      "timeoutInMinutes": 0,
-      "task": {
-        "id": "f9d96d25-0c81-4e77-8282-1ad1f785cbb4",
-        "versionSpec": "*",
-        "definitionType": "task"
-      },
-      "inputs": {
-        "dropServiceURI": "https://devdiv.artifacts.visualstudio.com/DefaultCollection",
-        "buildNumber": "dotnet/$(GitHubRepositoryName)/$(SourceBranch)/$(OfficialBuildId)/packages/$(ConfigurationGroup)",
-        "sourcePath": "$(Pipeline.SourcesDirectory)\\packages\\AzureTransfer\\$(ConfigurationGroup)",
-        "dropExePath": "",
-        "toLowerCase": "true",
-        "detailedLog": "false",
-        "usePat": "false"
-      }
-    },
-    {
-      "enabled": false,
-      "continueOnError": false,
-      "alwaysRun": false,
-      "displayName": "Build solution src/StartRelease/StartRelease.sln",
-      "timeoutInMinutes": 0,
-      "task": {
-        "id": "71a9a2d3-a98a-4caa-96ab-affca411ecda",
-        "versionSpec": "*",
-        "definitionType": "task"
-      },
-      "inputs": {
-        "solution": "src/StartRelease/StartRelease.sln",
-        "msbuildArgs": "",
-        "platform": "$(BuildPlatform)",
-        "configuration": "$(BuildConfiguration)",
-        "clean": "false",
-        "vsVersion": "14.0",
-        "maximumCpuCount": "false",
-        "restoreNugetPackages": "true",
-        "msbuildArchitecture": "x86",
-        "logProjectEvents": "true",
-        "createLogFile": "false"
-      }
-    },
-    {
-      "enabled": false,
-      "continueOnError": false,
-      "alwaysRun": false,
-      "displayName": "Run StartRelease.exe",
-      "timeoutInMinutes": 0,
-      "task": {
-        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
-        "versionSpec": "*",
-        "definitionType": "task"
-      },
-      "inputs": {
-        "filename": "StartRelease.exe",
-        "arguments": "--vsts-token $(VstsReleaseAccessToken)",
-        "workingFolder": "src\\StartRelease\\StartRelease\\bin\\$(BuildConfiguration)",
-        "failOnStandardError": "false"
+        "usePat": "false",
+        "retentionDays": "30"
       }
     },
     {
@@ -404,7 +229,7 @@
       "timeoutInMinutes": 0,
       "task": {
         "id": "1d341bb0-2106-458c-8422-d00bcea6512a",
-        "versionSpec": "*",
+        "versionSpec": "1.*",
         "definitionType": "task"
       },
       "inputs": {
@@ -455,14 +280,14 @@
       "value": "false",
       "allowOverride": true
     },
-    "ConfigurationGroup": {
+    "PB_ConfigurationGroup": {
       "value": "Debug",
       "allowOverride": true
     },
     "TeamName": {
       "value": "DotNetCore"
     },
-    "CloudDropAccountName": {
+    "PB_CloudDropAccountName": {
       "value": "dotnetbuildoutput"
     },
     "CloudDropAccessToken": {
@@ -473,19 +298,19 @@
       "value": "$(Build.BuildNumber)",
       "allowOverride": true
     },
-    "Label": {
+    "PB_Label": {
       "value": "$(Build.BuildNumber)",
       "allowOverride": true
     },
-    "MyGetFeedUrl": {
-      "value": "https://dotnet.myget.org/F/dotnet-core-test/api/v2/package",
+    "PB_MyGetFeedUrl": {
+      "value": "https://devdiv.pkgs.visualstudio.com/_packaging/dotnet-core-dev-eng/nuget/v3/index.json",
       "allowOverride": true
     },
     "MyGetApiKey": {
       "value": null,
       "isSecret": true
     },
-    "VstsFeedUrl": {
+    "PB_VstsFeedUrl": {
       "value": "https://devdiv.pkgs.visualstudio.com/DefaultCollection/_packaging/dotnet-core-test/nuget/v3/index.json",
       "allowOverride": true
     },
@@ -493,48 +318,48 @@
       "value": null,
       "isSecret": true
     },
-    "VstsAuthedNuGetConfigPath": {
+    "PB_VstsAuthedNuGetConfigPath": {
       "value": "$(Build.StagingDirectory)\\VstsAuthed.NuGet.Config"
     },
     "UpdatePublishedVersions.AuthToken": {
       "value": null,
       "isSecret": true
     },
-    "VersionsRepoOwner": {
+    "PB_VersionsRepoOwner": {
       "value": "dagood",
       "allowOverride": true
     },
-    "BuildConfiguration": {
+    "PB_BuildConfiguration": {
       "value": "release"
     },
-    "BuildPlatform": {
+    "PB_BuildPlatform": {
       "value": "any cpu"
     },
-    "ReleaseBaseUrl": {
+    "PB_ReleaseBaseUrl": {
       "value": "https://devdiv.vsrm.visualstudio.com/DefaultCollection"
     },
-    "ReleaseProjectName": {
+    "PB_ReleaseProjectName": {
       "value": "DevDiv"
     },
-    "ReleaseDefinitionId": {
+    "PB_ReleaseDefinitionId": {
       "value": "40"
     },
-    "ManualReleaseName": {
+    "PB_ManualReleaseName": {
       "value": ""
     },
     "OfficialBuild": {
       "value": "fake-test"
     },
-    "BranchGroup": {
+    "PB_BranchGroup": {
       "value": ""
     },
-    "SymbolRoot": {
+    "PB_SymbolRoot": {
       "value": "\\\\fake\\symbol\\root"
     },
-    "DefinitionNames": {
+    "PB_DefinitionNames": {
       "value": "Fake-Windows Fake-Windows-Native"
     },
-    "CreateRequestContacts": {
+    "PB_CreateRequestContacts": {
       "value": "a b c"
     },
     "VstsReleaseAccessToken": {
@@ -544,15 +369,15 @@
     "Pipeline.SourcesDirectory": {
       "value": "$(Build.BinariesDirectory)\\pipelineRepository"
     },
-    "VstsAccountName": {
+    "PB_VstsAccountName": {
       "value": "dagood"
     },
-    "VstsRepositoryName": {
+    "PB_VstsRepositoryName": {
       "value": "DotNet-CoreFX-Trusted",
       "allowOverride": true
     },
-    "VstsRepoGitUrl": {
-      "value": "https://$(VstsAccountName):$(VstsRepoPat)@devdiv.visualstudio.com/DevDiv/_git/$(VstsRepositoryName)/"
+    "PB_VstsRepoGitUrl": {
+      "value": "https://$(PB_VstsAccountName):$(VstsRepoPat)@devdiv.visualstudio.com/DevDiv/_git/$(PB_VstsRepositoryName)/"
     },
     "VstsRepoPat": {
       "value": null,
@@ -566,21 +391,24 @@
       "value": "master",
       "allowOverride": true
     },
-    "AzureContainerPackageGlob": {
+    "PB_AzureContainerPackageGlob": {
       "value": "*.nupkg",
       "allowOverride": true
     },
-    "AzureContainerSymbolPackageGlob": {
+    "PB_AzureContainerSymbolPackageGlob": {
       "value": "symbols\\*.nupkg",
       "allowOverride": true
     },
-    "GitHubRepositoryName": {
+    "PB_GitHubRepositoryName": {
       "value": "corefx",
       "allowOverride": true
     },
-    "UseLegacyBuildScripts": {
+    "PB_UseLegacyBuildScripts": {
       "value": "false",
       "allowOverride": true
+    },
+    "PB_ToolPackageSource": {
+      "value": "https://www.myget.org/F/dagood-test-buildtools/api/v3/index.json"
     }
   },
   "retentionRules": [
@@ -605,7 +433,11 @@
   "repository": {
     "properties": {
       "labelSources": "0",
-      "reportBuildStatus": "false"
+      "reportBuildStatus": "false",
+      "fetchDepth": "0",
+      "gitLfsSupport": "false",
+      "skipSyncSource": "false",
+      "cleanOptions": "0"
     },
     "id": "0a2b2664-c1be-429c-9b40-8a24dee27a4a",
     "type": "TfsGit",
@@ -635,6 +467,6 @@
     "description": "Visual Studio and DevDiv team project for git source code repositories.  Work items will be added for Adams, Dev14 work items are tracked in vstfdevdiv.  ",
     "url": "https://devdiv.visualstudio.com/DefaultCollection/_apis/projects/0bdbc590-a062-4c3f-b0f6-9383f67865ee",
     "state": "wellFormed",
-    "revision": 418097399
+    "revision": 418097459
   }
 }
