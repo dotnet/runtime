@@ -18,18 +18,18 @@ then
 fi
 
 # Set up the environment to be used for building with clang.
-if which "clang-$2.$3" > /dev/null 2>&1
+if command -v "clang-$2.$3" > /dev/null
     then
-        export CC="$(which clang-$2.$3)"
-        export CXX="$(which clang++-$2.$3)"
-elif which "clang$2$3" > /dev/null 2>&1
+        export CC="$(command -v clang-$2.$3)"
+        export CXX="$(command -v clang++-$2.$3)"
+elif command -v "clang$2$3" > /dev/null
     then
-        export CC="$(which clang$2$3)"
-        export CXX="$(which clang++$2$3)"
-elif which clang > /dev/null 2>&1
+        export CC="$(command -v clang$2$3)"
+        export CXX="$(command -v clang++$2$3)"
+elif command -v clang > /dev/null
     then
-        export CC="$(which clang)"
-        export CXX="$(which clang++)"
+        export CC="$(command -v clang)"
+        export CXX="$(command -v clang++)"
 else
     echo "Unable to find Clang Compiler"
     exit 1
@@ -97,12 +97,12 @@ else
   desired_llvm_version="-$desired_llvm_major_version.$desired_llvm_minor_version"
 fi
 locate_llvm_exec() {
-  if which "$llvm_prefix$1$desired_llvm_version" > /dev/null 2>&1
+  if command -v "$llvm_prefix$1$desired_llvm_version" > /dev/null 2>&1
   then
-    echo "$(which $llvm_prefix$1$desired_llvm_version)"
-  elif which "$llvm_prefix$1" > /dev/null 2>&1
+    echo "$(command -v $llvm_prefix$1$desired_llvm_version)"
+  elif command -v "$llvm_prefix$1" > /dev/null 2>&1
   then
-    echo "$(which $llvm_prefix$1)"
+    echo "$(command -v $llvm_prefix$1)"
   else
     exit 1
   fi
