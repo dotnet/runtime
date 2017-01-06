@@ -107,7 +107,7 @@ if [ ! -e $__INIT_TOOLS_DONE_MARKER ]; then
             cp -r $DOTNET_TOOL_DIR/* $__DOTNET_PATH
         else
             echo "Installing dotnet cli..."
-            __DOTNET_LOCATION="https://dotnetcli.blob.core.windows.net/dotnet/Sdk/${__DOTNET_TOOLS_VERSION}/${__DOTNET_PKG}.${__DOTNET_TOOLS_VERSION}.tar.gz"
+            __DOTNET_LOCATION="https://dotnetcli.blob.core.windows.net/dotnet/preview/Binaries/${__DOTNET_TOOLS_VERSION}/${__DOTNET_PKG}.${__DOTNET_TOOLS_VERSION}.tar.gz"
             # curl has HTTPS CA trust-issues less often than wget, so lets try that first.
             echo "Installing '${__DOTNET_LOCATION}' to '$__DOTNET_PATH/dotnet.tar'" >> $__init_tools_log
             if command -v curl > /dev/null; then
