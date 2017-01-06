@@ -78,6 +78,7 @@
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Diagnostics.Tools" />
     <Reference Include="System.Threading" />
+    <Reference Include="System.Threading.Tasks" />
     <Reference Include="System.Linq" />
     <Reference Include="System.Diagnostics.Tools" />
   </ItemGroup>

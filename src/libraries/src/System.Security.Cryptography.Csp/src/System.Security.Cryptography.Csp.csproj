@@ -76,6 +76,8 @@
     <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.Security.Cryptography.Algorithms" />
     <Reference Include="System.Threading" />
+    <Reference Include="System.Threading.Thread" />
+    <Reference Include="System.Text.Encoding.Extensions" />
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Diagnostics.Contracts" />
     <Reference Include="System.Diagnostics.Tools" />
