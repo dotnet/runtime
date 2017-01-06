@@ -2,10 +2,10 @@
 
 # OS X names clang-format as clang-format; Ubuntu uses
 # clang-format-version so check for the right one
-if which "clang-format-3.6" > /dev/null 2>&1 ; then
-   export CF="$(which clang-format-3.6)"
-elif which "clang-format" > /dev/null 2>&1 ; then
-   export CF="$(which clang-format)"
+if command -v "clang-format-3.6" > /dev/null; then
+   export CF="$(command -v clang-format-3.6)"
+elif command -v "clang-format" > /dev/null; then
+   export CF="$(command -v clang-format)"
 else
    echo "Unable to find clang-format"
    exit 1
