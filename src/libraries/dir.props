@@ -248,6 +248,7 @@
     <!-- TODO: We need to compute this based on the TargetGroup of the BuildConfiguration -->
     <RefPath>$(RefRootPath)netcoreapp/</RefPath>
     <NetStandardRefPath>$(RefRootPath)netstandard/</NetStandardRefPath>
+    <NetFxRefPath>$(RefRootPath)netfx/</NetFxRefPath>
 
     <PackagesBasePath Condition="'$(PackagesBasePath)'==''">$(BinDir)$(OSPlatformConfig)</PackagesBasePath>
     <PackageOutputPath Condition="'$(PackageOutputPath)'==''">$(PackageOutputRoot)$(ConfigurationGroup)/</PackageOutputPath>
