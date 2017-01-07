@@ -5,6 +5,11 @@
 
 typedef struct _MonoCodeManager MonoCodeManager;
 
+typedef struct {
+	void (*chunk_new) (void *chunk, int size);
+	void (*chunk_destroy) (void *chunk);
+} MonoCodeManagerCallbacks;
+
 MONO_API MonoCodeManager* mono_code_manager_new     (void);
 MONO_API MonoCodeManager* mono_code_manager_new_dynamic (void);
 MONO_API void             mono_code_manager_destroy (MonoCodeManager *cman);
@@ -18,6 +23,7 @@ MONO_API void             mono_code_manager_commit  (MonoCodeManager *cman, void
 MONO_API int              mono_code_manager_size    (MonoCodeManager *cman, int *used_size);
 MONO_API void             mono_code_manager_init (void);
 MONO_API void             mono_code_manager_cleanup (void);
+MONO_API void             mono_code_manager_install_callbacks (MonoCodeManagerCallbacks* callbacks);
 
 /* find the extra block allocated to resolve branches close to code */
 typedef int    (*MonoCodeManagerFunc)      (void *data, int csize, int size, void *user_data);

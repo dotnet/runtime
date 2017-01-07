@@ -3409,6 +3409,22 @@ mini_free_jit_domain_info (MonoDomain *domain)
 	domain->runtime_info = NULL;
 }
 
+#ifdef MONO_ARCH_HAVE_CODE_CHUNK_TRACKING
+
+static void
+code_manager_chunk_new (void *chunk, int size)
+{
+	mono_arch_code_chunk_new (chunk, size);
+}
+
+static void
+code_manager_chunk_destroy (void *chunk)
+{
+	mono_arch_code_chunk_destroy (chunk);
+}
+
+#endif
+
 #ifdef ENABLE_LLVM
 static gboolean
 llvm_init_inner (void)
@@ -3453,6 +3469,7 @@ mini_init (const char *filename, const char *runtime_version)
 	MonoDomain *domain;
 	MonoRuntimeCallbacks callbacks;
 	MonoThreadInfoRuntimeCallbacks ticallbacks;
+	MonoCodeManagerCallbacks code_manager_callbacks;
 
 	MONO_VES_INIT_BEGIN ();
 
@@ -3535,6 +3552,13 @@ mini_init (const char *filename, const char *runtime_version)
 		mini_parse_debug_options ();
 
 	mono_code_manager_init ();
+
+	memset (&code_manager_callbacks, 0, sizeof (code_manager_callbacks));
+#ifdef MONO_ARCH_HAVE_CODE_CHUNK_TRACKING
+	code_manager_callbacks.chunk_new = code_manager_chunk_new;
+	code_manager_callbacks.chunk_destroy = code_manager_chunk_destroy;
+#endif
+	mono_code_manager_install_callbacks (&code_manager_callbacks);
 
 	mono_hwcap_init ();
 
