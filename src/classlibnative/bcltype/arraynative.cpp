@@ -961,7 +961,7 @@ void memmoveGCRefs(void *dest, const void *src, size_t len)
         }
     }
 
-    GCHeapUtilities::GetGCHeap()->SetCardsAfterBulkCopy((Object**)dest, len);
+    SetCardsAfterBulkCopy((Object**)dest, len);
 }
 
 void ArrayNative::ArrayCopyNoTypeCheck(BASEARRAYREF pSrc, unsigned int srcIndex, BASEARRAYREF pDest, unsigned int destIndex, unsigned int length)
