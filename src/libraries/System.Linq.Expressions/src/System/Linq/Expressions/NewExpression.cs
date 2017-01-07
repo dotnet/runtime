@@ -82,15 +82,12 @@ namespace System.Linq.Expressions
         /// <returns>This expression if no children changed, or an expression with the updated children.</returns>
         public NewExpression Update(IEnumerable<Expression> arguments)
         {
-            if (arguments == Arguments)
+            if (ExpressionUtils.SameElements(ref arguments, Arguments))
             {
                 return this;
             }
-            if (Members != null)
-            {
-                return Expression.New(Constructor, arguments, Members);
-            }
-            return Expression.New(Constructor, arguments);
+
+            return Members != null ? New(Constructor, arguments, Members) : New(Constructor, arguments);
         }
     }
 

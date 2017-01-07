@@ -56,12 +56,15 @@ namespace System.Linq.Expressions
         /// <returns>This expression if no children changed, or an expression with the updated children.</returns>
         public InvocationExpression Update(Expression expression, IEnumerable<Expression> arguments)
         {
-            if (expression == Expression && arguments == Arguments)
+            if (expression == Expression & arguments != null)
             {
-                return this;
+                if (ExpressionUtils.SameElements(ref arguments, Arguments))
+                {
+                    return this;
+                }
             }
 
-            return Expression.Invoke(expression, arguments);
+            return Invoke(expression, arguments);
         }
 
         [ExcludeFromCodeCoverage] // Unreachable
