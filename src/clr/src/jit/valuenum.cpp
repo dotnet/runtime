@@ -6592,10 +6592,10 @@ void Compiler::fgValueNumberTree(GenTreePtr tree, bool evalAsgLhsInd)
                 // A bounds check node has no value, but may throw exceptions.
                 ValueNumPair excSet = vnStore->VNPExcSetSingleton(
                     vnStore->VNPairForFunc(TYP_REF, VNF_IndexOutOfRangeExc,
-                                           vnStore->VNPNormVal(tree->AsBoundsChk()->gtArrLen->gtVNPair),
-                                           vnStore->VNPNormVal(tree->AsBoundsChk()->gtIndex->gtVNPair)));
-                excSet = vnStore->VNPExcSetUnion(excSet, vnStore->VNPExcVal(tree->AsBoundsChk()->gtArrLen->gtVNPair));
+                                           vnStore->VNPNormVal(tree->AsBoundsChk()->gtIndex->gtVNPair),
+                                           vnStore->VNPNormVal(tree->AsBoundsChk()->gtArrLen->gtVNPair)));
                 excSet = vnStore->VNPExcSetUnion(excSet, vnStore->VNPExcVal(tree->AsBoundsChk()->gtIndex->gtVNPair));
+                excSet = vnStore->VNPExcSetUnion(excSet, vnStore->VNPExcVal(tree->AsBoundsChk()->gtArrLen->gtVNPair));
 
                 tree->gtVNPair = vnStore->VNPWithExc(vnStore->VNPForVoid(), excSet);
             }

@@ -885,10 +885,13 @@ void CodeGen::genRangeCheck(GenTreePtr oper)
     noway_assert(oper->OperGet() == GT_ARR_BOUNDS_CHECK);
     GenTreeBoundsChk* bndsChk = oper->AsBoundsChk();
 
-    GenTreePtr arrLen    = bndsChk->gtArrLen->gtEffectiveVal();
     GenTreePtr arrIdx    = bndsChk->gtIndex->gtEffectiveVal();
+    GenTreePtr arrLen    = bndsChk->gtArrLen->gtEffectiveVal();
     GenTreePtr arrRef    = NULL;
     int        lenOffset = 0;
+
+    genConsumeIfReg(arrIdx);
+    genConsumeIfReg(arrLen);
 
     GenTree *    src1, *src2;
     emitJumpKind jmpKind;
@@ -907,9 +910,6 @@ void CodeGen::genRangeCheck(GenTreePtr oper)
         src2    = arrLen;
         jmpKind = genJumpKindForOper(GT_GE, CK_UNSIGNED);
     }
-
-    genConsumeIfReg(src1);
-    genConsumeIfReg(src2);
 
     getEmitter()->emitInsBinary(INS_cmp, emitAttr(TYP_INT), src1, src2);
     genJumpToThrowHlpBlk(jmpKind, SCK_RNGCHK_FAIL, bndsChk->gtIndRngFailBB);
