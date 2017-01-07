@@ -574,6 +574,8 @@ GenTree* DecomposeLongs::DecomposeCast(LIR::Use& use)
         srcType = genUnsignedType(srcType);
     }
 
+    bool skipDecomposition = false;
+
     if (varTypeIsLong(srcType))
     {
         if (cast->gtOverflow() && (varTypeIsUnsigned(srcType) != varTypeIsUnsigned(dstType)))
@@ -628,7 +630,20 @@ GenTree* DecomposeLongs::DecomposeCast(LIR::Use& use)
         }
         else
         {
-            if (varTypeIsUnsigned(srcType))
+            if (!use.IsDummyUse() && (use.User()->OperGet() == GT_MUL))
+            {
+                //
+                // This int->long cast is used by a GT_MUL that will be transformed by DecomposeMul into a
+                // GT_LONG_MUL and as a result the high operand produced by the cast will become dead.
+                // Skip cast decomposition so DecomposeMul doesn't need to bother with dead code removal,
+                // especially in the case of sign extending casts that also introduce new lclvars.
+                //
+
+                assert((use.User()->gtFlags & GTF_MUL_64RSLT) != 0);
+
+                skipDecomposition = true;
+            }
+            else if (varTypeIsUnsigned(srcType))
             {
                 loResult = cast->gtGetOp1();
                 hiResult = m_compiler->gtNewZeroConNode(TYP_INT);
@@ -656,6 +671,11 @@ GenTree* DecomposeLongs::DecomposeCast(LIR::Use& use)
     else
     {
         NYI("Unimplemented cast decomposition");
+    }
+
+    if (skipDecomposition)
+    {
+        return cast->gtNext;
     }
 
     return FinalizeDecomposition(use, loResult, hiResult, hiResult);
@@ -1480,19 +1500,16 @@ GenTree* DecomposeLongs::DecomposeMul(LIR::Use& use)
     GenTree* op1 = tree->gtGetOp1();
     GenTree* op2 = tree->gtGetOp2();
 
-    GenTree* loOp1 = op1->gtGetOp1();
-    GenTree* hiOp1 = op1->gtGetOp2();
-    GenTree* loOp2 = op2->gtGetOp1();
-    GenTree* hiOp2 = op2->gtGetOp2();
+    // We expect both operands to be int->long casts. DecomposeCast specifically
+    // ignores such casts when they are used by GT_MULs.
+    assert((op1->OperGet() == GT_CAST) && (op1->TypeGet() == TYP_LONG));
+    assert((op2->OperGet() == GT_CAST) && (op2->TypeGet() == TYP_LONG));
 
-    Range().Remove(hiOp1);
-    Range().Remove(hiOp2);
     Range().Remove(op1);
     Range().Remove(op2);
 
-    // Get rid of the hi ops. We don't need them.
-    tree->gtOp.gtOp1 = loOp1;
-    tree->gtOp.gtOp2 = loOp2;
+    tree->gtOp.gtOp1 = op1->gtGetOp1();
+    tree->gtOp.gtOp2 = op2->gtGetOp1();
     tree->SetOperRaw(GT_MUL_LONG);
 
     return StoreNodeToVar(use);
