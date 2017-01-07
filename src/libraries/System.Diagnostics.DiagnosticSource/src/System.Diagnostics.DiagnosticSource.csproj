@@ -13,10 +13,12 @@
          to work with older NuGet clients -->
     <PackageTargetFramework Condition="'$(TargetGroup)' == 'netstandard1.1'">netstandard1.1;portable-net45+win8+wpa81</PackageTargetFramework>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(TargetGroup)' == 'netstandard1.1'">
+  <PropertyGroup Condition="'$(TargetGroup)' == 'netstandard1.1' Or '$(TargetGroup)' == 'net45'">
     <DefineConstants>;NO_EVENTSOURCE_COMPLEX_TYPE_SUPPORT</DefineConstants>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='net45-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='net45-Windows_NT-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
@@ -31,12 +33,26 @@
     <Compile Include="System\Diagnostics\DiagnosticSourceEventSource.cs" />
     <None Include="DiagnosticSourceUsersGuide.md" />
   </ItemGroup>
+  <ItemGroup Condition=" '$(TargetGroup)' != 'netstandard1.1'">
+    <Compile Include="System\Diagnostics\Activity.cs" />
+    <Compile Include="System\Diagnostics\DiagnosticSourceActivity.cs" />    
+    <None Include="ActivityUserGuide.md" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(TargetGroup)' != 'net45' And '$(TargetGroup)' != 'netstandard1.1'">
+    <Compile Include="System\Diagnostics\Activity.net46.cs" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(TargetGroup)' == 'net45' ">
+    <Compile Include="System\Diagnostics\Activity.net45.cs" />
+    <TargetingPackReference Include="System" />
+    <TargetingPackReference Include="System.Runtime.Remoting" />
+  </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Collections" />
     <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.Diagnostics.Tracing" />
     <Reference Include="System.Reflection" />
     <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.Extensions" />    
     <Reference Include="System.Threading" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
