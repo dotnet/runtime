@@ -5683,7 +5683,7 @@ GenTreePtr Compiler::fgMorphArrayIndex(GenTreePtr tree)
         }
 
         GenTreeBoundsChk* arrBndsChk = new (this, GT_ARR_BOUNDS_CHECK)
-            GenTreeBoundsChk(GT_ARR_BOUNDS_CHECK, TYP_VOID, arrLen, index, SCK_RNGCHK_FAIL);
+            GenTreeBoundsChk(GT_ARR_BOUNDS_CHECK, TYP_VOID, index, arrLen, SCK_RNGCHK_FAIL);
 
         bndsChk = arrBndsChk;
 
@@ -14696,8 +14696,8 @@ GenTreePtr Compiler::fgMorphTree(GenTreePtr tree, MorphAddrContext* mac)
             fgSetRngChkTarget(tree);
 
             GenTreeBoundsChk* bndsChk = tree->AsBoundsChk();
-            bndsChk->gtArrLen         = fgMorphTree(bndsChk->gtArrLen);
             bndsChk->gtIndex          = fgMorphTree(bndsChk->gtIndex);
+            bndsChk->gtArrLen         = fgMorphTree(bndsChk->gtArrLen);
             // If the index is a comma(throw, x), just return that.
             if (!optValnumCSE_phase && fgIsCommaThrow(bndsChk->gtIndex))
             {
@@ -14705,8 +14705,8 @@ GenTreePtr Compiler::fgMorphTree(GenTreePtr tree, MorphAddrContext* mac)
             }
 
             // Propagate effects flags upwards
-            bndsChk->gtFlags |= (bndsChk->gtArrLen->gtFlags & GTF_ALL_EFFECT);
             bndsChk->gtFlags |= (bndsChk->gtIndex->gtFlags & GTF_ALL_EFFECT);
+            bndsChk->gtFlags |= (bndsChk->gtArrLen->gtFlags & GTF_ALL_EFFECT);
 
             // Otherwise, we don't change the tree.
         }
