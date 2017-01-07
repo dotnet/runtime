@@ -15,7 +15,7 @@
     },
     "netcoreapp1.1": {
       "dependencies": {
-        "Microsoft.TargetingPack.Private.CoreCLR": "1.2.0-beta-24907-02"
+        "Microsoft.TargetingPack.Private.CoreCLR": "1.2.0-beta-24907-03"
       }
     }
   }
