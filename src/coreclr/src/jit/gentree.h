@@ -3764,8 +3764,8 @@ public:
 
 struct GenTreeBoundsChk : public GenTree
 {
-    GenTreePtr gtArrLen; // An expression for the length of the array being indexed.
     GenTreePtr gtIndex;  // The index expression.
+    GenTreePtr gtArrLen; // An expression for the length of the array being indexed.
 
     GenTreePtr      gtIndRngFailBB; // Label to jump to for array-index-out-of-range
     SpecialCodeKind gtThrowKind;    // Kind of throw block to branch to on failure
@@ -3775,10 +3775,10 @@ struct GenTreeBoundsChk : public GenTree
        optimizer has a chance of eliminating some of the rng checks */
     unsigned gtStkDepth;
 
-    GenTreeBoundsChk(genTreeOps oper, var_types type, GenTreePtr arrLen, GenTreePtr index, SpecialCodeKind kind)
+    GenTreeBoundsChk(genTreeOps oper, var_types type, GenTreePtr index, GenTreePtr arrLen, SpecialCodeKind kind)
         : GenTree(oper, type)
-        , gtArrLen(arrLen)
         , gtIndex(index)
+        , gtArrLen(arrLen)
         , gtIndRngFailBB(nullptr)
         , gtThrowKind(kind)
         , gtStkDepth(0)

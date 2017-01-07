@@ -7662,11 +7662,11 @@ bool Compiler::optExtractArrIndex(GenTreePtr tree, ArrIndex* result, unsigned lh
         return false;
     }
     GenTreeBoundsChk* arrBndsChk = before->AsBoundsChk();
-    if (arrBndsChk->gtArrLen->gtGetOp1()->gtOper != GT_LCL_VAR)
+    if (arrBndsChk->gtIndex->gtOper != GT_LCL_VAR)
     {
         return false;
     }
-    if (arrBndsChk->gtIndex->gtOper != GT_LCL_VAR)
+    if (arrBndsChk->gtArrLen->gtGetOp1()->gtOper != GT_LCL_VAR)
     {
         return false;
     }
