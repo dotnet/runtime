@@ -6,6 +6,16 @@ using System;
 
 namespace JitTest
 {
+    public enum PlatformID
+    {
+        MacOSX = 6,
+        Unix = 4,
+        Win32NT = 2,
+        Win32S = 0,
+        Win32Windows = 1,
+        WinCE = 3,
+        Xbox = 5,
+    }
     internal enum Mood
     {
         good,
