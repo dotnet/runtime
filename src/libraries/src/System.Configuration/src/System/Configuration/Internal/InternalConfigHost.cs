@@ -191,7 +191,7 @@ namespace System.Configuration.Internal
             // machine.
 
             // don't allow relative paths for stream name
-            if (!Path.IsPathRooted(streamName)) throw ExceptionUtil.ParameterInvalid("streamName");
+            if (!Path.IsPathRooted(streamName)) throw ExceptionUtil.ParameterInvalid(nameof(streamName));
 
             // get the path part of the original stream
             streamName = Path.GetFullPath(streamName);

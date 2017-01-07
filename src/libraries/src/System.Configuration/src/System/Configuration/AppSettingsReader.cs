@@ -32,8 +32,8 @@ namespace System.Configuration
         /// </summary>
         public object GetValue(string key, Type type)
         {
-            if (key == null) throw new ArgumentNullException("key");
-            if (type == null) throw new ArgumentNullException("type");
+            if (key == null) throw new ArgumentNullException(nameof(key));
+            if (type == null) throw new ArgumentNullException(nameof(type));
 
             string val = _map[key];
 
