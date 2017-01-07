@@ -1,9 +1,9 @@
 {
   "dependencies": {
-    "Microsoft.Win32.Primitives": "4.4.0-beta-24906-03",
-    "System.Runtime": "4.4.0-beta-24906-03",
-    "System.Runtime.Handles": "4.4.0-beta-24906-03",
-    "System.Runtime.InteropServices": "4.4.0-beta-24906-03"
+    "Microsoft.Win32.Primitives": "4.4.0-beta-24907-02",
+    "System.Runtime": "4.4.0-beta-24907-02",
+    "System.Runtime.Handles": "4.4.0-beta-24907-02",
+    "System.Runtime.InteropServices": "4.4.0-beta-24907-02"
   },
   "frameworks": {
     "netstandard1.7": {},
