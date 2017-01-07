@@ -60,7 +60,7 @@ namespace System.Configuration
         {
             if (owner == null)
             {
-                throw new ArgumentNullException("owner");
+                throw new ArgumentNullException(nameof(owner));
             }
 
             _owner = owner;

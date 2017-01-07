@@ -51,7 +51,7 @@ namespace System.Configuration
                     break;
 
                 default:
-                    throw ExceptionUtil.ParameterInvalid("state");
+                    throw ExceptionUtil.ParameterInvalid(nameof(state));
             }
         }
 
@@ -69,7 +69,7 @@ namespace System.Configuration
         {
             if (target == null) return Copy();
 
-            if (target.GetType() != typeof(ConfigurationPermission)) throw ExceptionUtil.ParameterInvalid("target");
+            if (target.GetType() != typeof(ConfigurationPermission)) throw ExceptionUtil.ParameterInvalid(nameof(target));
 
             // Create an Unrestricted permission if either this or other is unrestricted
             if (_permissionState == PermissionState.Unrestricted)
@@ -82,7 +82,7 @@ namespace System.Configuration
         {
             if (target == null) return null;
 
-            if (target.GetType() != typeof(ConfigurationPermission)) throw ExceptionUtil.ParameterInvalid("target");
+            if (target.GetType() != typeof(ConfigurationPermission)) throw ExceptionUtil.ParameterInvalid(nameof(target));
 
             // Create an None permission if either this or other is None
             if (_permissionState == PermissionState.None) return new ConfigurationPermission(PermissionState.None);
@@ -94,7 +94,7 @@ namespace System.Configuration
         {
             if (target == null) return _permissionState == PermissionState.None;
 
-            if (target.GetType() != typeof(ConfigurationPermission)) throw ExceptionUtil.ParameterInvalid("target");
+            if (target.GetType() != typeof(ConfigurationPermission)) throw ExceptionUtil.ParameterInvalid(nameof(target));
 
             ConfigurationPermission other = (ConfigurationPermission)target;
             return (_permissionState == PermissionState.None) ||
@@ -104,17 +104,17 @@ namespace System.Configuration
         public override void FromXml(SecurityElement securityElement)
         {
             if (securityElement == null)
-                throw new ArgumentNullException(string.Format(SR.ConfigurationPermissionBadXml, "securityElement"));
+                throw new ArgumentNullException(nameof(securityElement), string.Format(SR.ConfigurationPermissionBadXml, nameof(securityElement)));
 
             if (!securityElement.Tag.Equals("IPermission"))
-                throw new ArgumentException(string.Format(SR.ConfigurationPermissionBadXml, "securityElement"));
+                throw new ArgumentException(string.Format(SR.ConfigurationPermissionBadXml, nameof(securityElement)));
 
             string className = securityElement.Attribute("class");
             if (className == null)
-                throw new ArgumentException(string.Format(SR.ConfigurationPermissionBadXml, "securityElement"));
+                throw new ArgumentException(string.Format(SR.ConfigurationPermissionBadXml, nameof(securityElement)));
 
             if (className.IndexOf(GetType().FullName, StringComparison.Ordinal) < 0)
-                throw new ArgumentException(string.Format(SR.ConfigurationPermissionBadXml, "securityElement"));
+                throw new ArgumentException(string.Format(SR.ConfigurationPermissionBadXml, nameof(securityElement)));
 
             string version = securityElement.Attribute("version");
             if (version != "1") throw new ArgumentException(string.Format(SR.ConfigurationPermissionBadXml, "version"));

@@ -93,7 +93,7 @@ namespace System.Configuration
 
             // validate name
             if (string.IsNullOrEmpty(name))
-                throw ExceptionUtil.ParameterNullOrEmpty("name");
+                throw ExceptionUtil.ParameterNullOrEmpty(nameof(name));
 
             // prevent GetConfig from returning config not in this collection
             if (name.IndexOf('/') >= 0)
