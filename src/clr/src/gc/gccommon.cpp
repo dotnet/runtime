@@ -41,8 +41,6 @@ uint8_t* g_shadow_lowest_address = NULL;
 uint32_t* g_gc_card_table;
 uint8_t* g_gc_lowest_address  = 0;
 uint8_t* g_gc_highest_address = 0;
-uint8_t* g_gc_ephemeral_low   = (uint8_t*)1;
-uint8_t* g_gc_ephemeral_high  = (uint8_t*)~0;
 
 VOLATILE(int32_t) m_GCLock = -1;
 
