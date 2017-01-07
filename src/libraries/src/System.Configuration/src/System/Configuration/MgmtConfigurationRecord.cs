@@ -823,7 +823,7 @@ namespace System.Configuration
             VerifySectionName(name, null, false);
 
             // Validate configSectionGroup argument.
-            if (configSectionGroup == null) throw ExceptionUtil.ParameterInvalid("name");
+            if (configSectionGroup == null) throw ExceptionUtil.ParameterInvalid(nameof(name));
 
             // A section group can only belong to one section group collection.
             if (configSectionGroup.Attached)

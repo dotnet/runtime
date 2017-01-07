@@ -216,7 +216,7 @@ namespace System.Configuration
                     TypeConverter converter = TypeDescriptor.GetConverter(type);
                     if (converter != null && converter.CanConvertTo(typeof(string)) && converter.CanConvertFrom(typeof(string)))
                         return converter.ConvertFromInvariantString(attValue);
-                    throw new ArgumentException(string.Format(SR.Unable_to_convert_type_from_string, type.ToString()), "type");
+                    throw new ArgumentException(string.Format(SR.Unable_to_convert_type_from_string, type.ToString()), nameof(type));
                 default:
                     return null;
             }
@@ -262,7 +262,7 @@ namespace System.Configuration
                         TypeConverter converter = TypeDescriptor.GetConverter(type);
                         if (converter != null && converter.CanConvertTo(typeof(string)) && converter.CanConvertFrom(typeof(string)))
                             return converter.ConvertToInvariantString(propValue);
-                        throw new ArgumentException(string.Format(SR.Unable_to_convert_type_to_string, type.ToString()), "type");
+                        throw new ArgumentException(string.Format(SR.Unable_to_convert_type_to_string, type.ToString()), nameof(type));
                     case SettingsSerializeAs.Binary:
                         MemoryStream ms = new System.IO.MemoryStream();
                         try
