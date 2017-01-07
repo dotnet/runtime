@@ -19,7 +19,7 @@ namespace System.Configuration
             {
                 if (_callbackMethod == null)
                 {
-                    if (_type == null) throw new ArgumentNullException("Type");
+                    if (_type == null) throw new ArgumentNullException(nameof(Type));
 
                     if (!string.IsNullOrEmpty(_callbackMethodName))
                     {

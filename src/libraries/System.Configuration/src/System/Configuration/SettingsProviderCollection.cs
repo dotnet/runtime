@@ -12,12 +12,12 @@ namespace System.Configuration
         {
             if (provider == null)
             {
-                throw new ArgumentNullException("provider");
+                throw new ArgumentNullException(nameof(provider));
             }
 
             if (!(provider is SettingsProvider))
             {
-                throw new ArgumentException(string.Format(SR.Config_provider_must_implement_type, typeof(SettingsProvider).ToString()), "provider");
+                throw new ArgumentException(string.Format(SR.Config_provider_must_implement_type, typeof(SettingsProvider).ToString()), nameof(provider));
             }
 
             base.Add(provider);
