@@ -170,7 +170,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// Gets the number of array in the collection.
+        /// Gets the number of elements in the array.
         /// </summary>
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         public int Length
