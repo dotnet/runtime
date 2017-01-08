@@ -147,7 +147,6 @@ namespace System.Threading.Tasks
         private static StackGuard t_stackGuard;  // The stack guard object for this thread
 
         internal static int s_taskIdCounter; //static counter used to generate unique task IDs
-        private readonly static TaskFactory s_factory = new TaskFactory();
 
         private volatile int m_taskId; // this task's unique ID. initialized only if it is ever requested
 
@@ -1615,23 +1614,10 @@ namespace System.Threading.Tasks
         /// of <see cref="System.Threading.Tasks.TaskFactory"/>, as would result from using
         /// the default constructor on TaskFactory.
         /// </remarks>
-        public static TaskFactory Factory { get { return s_factory; } }
-
-        /// <summary>A task that's already been completed successfully.</summary>
-        private static Task s_completedTask;
+        public static TaskFactory Factory { get; } = new TaskFactory();
 
         /// <summary>Gets a task that's already been completed successfully.</summary>
-        /// <remarks>May not always return the same instance.</remarks>        
-        public static Task CompletedTask
-        {
-            get
-            {
-                var completedTask = s_completedTask;
-                if (completedTask == null)
-                    s_completedTask = completedTask = new Task(false, (TaskCreationOptions)InternalTaskOptions.DoNotDispose, default(CancellationToken)); // benign initialization race condition
-                return completedTask;
-            }
-        }
+        public static Task CompletedTask { get; } = new Task(false, (TaskCreationOptions)InternalTaskOptions.DoNotDispose, default(CancellationToken));
 
         /// <summary>
         /// Provides an event that can be used to wait for completion.
