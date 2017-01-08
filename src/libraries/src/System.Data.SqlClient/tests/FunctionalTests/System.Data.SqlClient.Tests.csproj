@@ -12,10 +12,8 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'" />
-  <ItemGroup Condition=" '$(EnableManualTests)' == 'true' ">
-    <Compile Include="DiagnosticTest.cs" />
-  </ItemGroup>
   <ItemGroup>
+    <Compile Include="DiagnosticTest.cs" />
     <Compile Include="ExceptionTest.cs" />
     <Compile Include="FakeDiagnosticListenerObserver.cs" />
     <Compile Include="SqlBulkCopyColumnMappingCollectionTest.cs" />
@@ -23,6 +21,7 @@
     <Compile Include="SqlErrorCollectionTest.cs" />
     <Compile Include="TcpDefaultForAzureTest.cs" />
     <Compile Include="SqlConnectionTest.cs" />
+    <Compile Include="TestTdsServer.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\pkg\System.Data.SqlClient.pkgproj" />
