@@ -1,7 +1,7 @@
 {
   "dependencies": {
     "Microsoft.NETCore.Platforms": "1.2.0-beta-24907-02",
-    "Microsoft.TargetingPack.Private.CoreCLR": "1.2.0-beta-24907-03",
+    "Microsoft.TargetingPack.Private.CoreCLR": "1.2.0-beta-24908-01",
     "System.Linq.Expressions": "4.4.0-beta-24907-02",
     "System.ObjectModel": "4.4.0-beta-24907-02",
     "System.Text.RegularExpressions": "4.4.0-beta-24907-02",
