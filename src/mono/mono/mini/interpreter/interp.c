@@ -360,17 +360,16 @@ get_virtual_method (MonoDomain *domain, RuntimeMethod *runtime_method, MonoObjec
 		return ret;
 	}
 
+	int slot = mono_method_get_vtable_slot (m);
 	if (m->klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
-		// return ((RuntimeMethod **)obj->vtable->interface_offsets [m->klass->interface_id]) [m->slot];
-		g_error ("FIXME: interface method lookup");
-		return NULL;
-	} else {
-		int slot = mono_method_get_vtable_slot (m);
-		MonoMethod *virtual_method = obj->vtable->klass->vtable [slot]; // TODO: there's a helper function for that?
-		RuntimeMethod *virtual_runtime_method = mono_interp_get_runtime_method (domain, virtual_method, &error);
-		mono_error_cleanup (&error); /* FIXME: don't swallow the error */
-		return virtual_runtime_method;
+		g_assert (obj->vtable->klass != m->klass);
+		/* TODO: interface offset lookup is slow, go through IMT instead */
+		slot += mono_class_interface_offset (obj->vtable->klass, m->klass);
 	}
+	MonoMethod *virtual_method = obj->vtable->klass->vtable [slot];
+	RuntimeMethod *virtual_runtime_method = mono_interp_get_runtime_method (domain, virtual_method, &error);
+	mono_error_cleanup (&error); /* FIXME: don't swallow the error */
+	return virtual_runtime_method;
 }
 
 static void inline
