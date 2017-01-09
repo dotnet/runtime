@@ -1,14 +1,14 @@
 {
   "dependencies": {
-    "System.Collections.Specialized": "4.4.0-beta-24909-01",
-    "System.ComponentModel.TypeConverter": "4.4.0-beta-24909-01",
-    "System.Collections.NonGeneric": "4.4.0-beta-24909-01",
-    "System.IO": "4.4.0-beta-24909-01",
-    "System.Reflection": "4.4.0-beta-24909-01",
-    "System.Runtime": "4.4.0-beta-24909-01",
-    "System.Runtime.Extensions": "4.4.0-beta-24909-01",
-    "System.Security.Permissions": "4.4.0-beta-24909-01",
-    "System.Text.Encoding": "4.4.0-beta-24909-01"
+    "System.Collections.Specialized": "4.4.0-beta-24909-02",
+    "System.ComponentModel.TypeConverter": "4.4.0-beta-24909-02",
+    "System.Collections.NonGeneric": "4.4.0-beta-24909-02",
+    "System.IO": "4.4.0-beta-24909-02",
+    "System.Reflection": "4.4.0-beta-24909-02",
+    "System.Runtime": "4.4.0-beta-24909-02",
+    "System.Runtime.Extensions": "4.4.0-beta-24909-02",
+    "System.Security.Permissions": "4.4.0-beta-24909-02",
+    "System.Text.Encoding": "4.4.0-beta-24909-02"
   },
   "frameworks": {
     "netstandard1.7": {}
