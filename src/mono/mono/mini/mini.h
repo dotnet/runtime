@@ -2817,7 +2817,9 @@ void    mono_arch_notify_pending_exc            (MonoThreadInfo *info);
 guint8* mono_arch_get_call_target               (guint8 *code);
 guint32 mono_arch_get_plt_info_offset           (guint8 *plt_entry, mgreg_t *regs, guint8 *code);
 GSList *mono_arch_get_trampolines               (gboolean aot);
+#ifdef ENABLE_INTERPRETER
 gpointer mono_arch_get_enter_icall_trampoline (MonoTrampInfo **info);
+#endif
 
 /* Handle block guard */
 gpointer mono_arch_install_handler_block_guard (MonoJitInfo *ji, MonoJitExceptionInfo *clause, MonoContext *ctx, gpointer new_value);

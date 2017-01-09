@@ -970,6 +970,15 @@ mono_arch_create_sdb_trampoline (gboolean single_step, MonoTrampInfo **info, gbo
 	return buf;
 }
 
+
+#ifdef ENABLE_INTERPRETER
+/*
+ * mono_arch_get_enter_icall_trampoline:
+ *
+ *   A trampoline that handles the transition from interpreter into native world.
+ *   It requiers to set up a descriptor (MethodArguments) that describes the
+ *   required arguments passed to the callee.
+ */
 gpointer
 mono_arch_get_enter_icall_trampoline (MonoTrampInfo **info)
 {
@@ -1041,6 +1050,7 @@ mono_arch_get_enter_icall_trampoline (MonoTrampInfo **info)
 
 	return start;
 }
+#endif
 #endif /* !DISABLE_JIT */
 
 #ifdef DISABLE_JIT
@@ -1107,10 +1117,12 @@ mono_arch_create_sdb_trampoline (gboolean single_step, MonoTrampInfo **info, gbo
 	return NULL;
 }
 
+#ifdef ENABLE_INTERPRETER
 gpointer
 mono_arch_get_enter_icall_trampoline (MonoTrampInfo **info)
 {
 	g_assert_not_reached ();
 	return NULL;
 }
+#endif
 #endif /* DISABLE_JIT */
