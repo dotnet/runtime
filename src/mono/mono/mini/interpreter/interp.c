@@ -4672,6 +4672,8 @@ mono_interp_init(const char *file)
 	mono_os_mutex_init_recursive (&runtime_method_lookup_section);
 	mono_os_mutex_init_recursive (&create_method_pointer_mutex);
 
+	mono_tls_init_runtime_keys ();
+
 	// TODO: use callbacks?
 	mono_runtime_install_handlers ();
 	mono_interp_transform_init ();
