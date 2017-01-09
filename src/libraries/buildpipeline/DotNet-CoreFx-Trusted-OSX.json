@@ -250,7 +250,8 @@
       "value": "dotnetbuildoutput"
     },
     "CloudDropAccessToken": {
-      "value": "PassedViaPipeBuild"
+      "value": null,
+      "isSecret": true
     },
     "OfficialBuildId": {
       "value": "$(Build.BuildNumber)",
@@ -268,7 +269,8 @@
       "value": "dn-bot"
     },
     "VsoPassword": {
-      "value": "PassedViaPipeBuild"
+      "value": null,
+      "isSecret": true
     },
     "PB_VsoRepositoryName": {
       "value": "DotNet-CoreFX-Trusted",
