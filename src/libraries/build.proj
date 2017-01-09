@@ -39,12 +39,6 @@
     </Project>
     -->
   </ItemGroup>
-  
-  <ItemGroup Condition="$(BuildTests)=='true'">
-    <Project Include="src\tests.builds">
-      <InputOSGroup>$(InputOSGroup)</InputOSGroup>
-    </Project>
-  </ItemGroup>
 
   <Import Project="dir.targets" />
 
