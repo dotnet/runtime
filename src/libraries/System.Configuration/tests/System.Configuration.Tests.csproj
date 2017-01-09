@@ -45,6 +45,40 @@
     <Compile Include="..\src\System\Configuration\ValidatorUtils.cs">
       <Link>Source\ValidatorUtils.cs</Link>
     </Compile>
+    <Compile Include="Mono\CallbackValidatorTest.cs" />
+    <Compile Include="Mono\CommaDelimitedStringCollectionConverterTest.cs" />
+    <Compile Include="Mono\CommaDelimitedStringCollectionTest.cs" />
+    <Compile Include="Mono\ConfigurationElementTest.cs" />
+    <Compile Include="Mono\ConfigurationErrorsExceptionTest.cs" />
+    <Compile Include="Mono\ConfigurationLockCollectionTest.cs" />
+    <Compile Include="Mono\ConfigurationManagerTest.cs" />
+    <Compile Include="Mono\ConfigurationPropertyTest.cs" />
+    <Compile Include="Mono\ConfigurationSaveTest.cs" />
+    <Compile Include="Mono\ConfigurationSectionGroupTest.cs" />
+    <Compile Include="Mono\ConfigurationSectionTest.cs" />
+    <Compile Include="Mono\ConnectionStringSettingsTest.cs" />
+    <Compile Include="Mono\DefaultValidatorTest.cs" />
+    <Compile Include="Mono\ExeConfigurationFileMapTest.cs" />
+    <Compile Include="Mono\GenericEnumConverterTest.cs" />
+    <Compile Include="Mono\InfiniteIntConverterTest.cs" />
+    <Compile Include="Mono\InfiniteTimeSpanConverterTest.cs" />
+    <Compile Include="Mono\IntegerValidatorTest.cs" />
+    <Compile Include="Mono\KeyValueConfigurationCollectionTest.cs" />
+    <Compile Include="Mono\KeyValueConfigurationElementTest.cs" />
+    <Compile Include="Mono\LongValidatorTest.cs" />
+    <Compile Include="Mono\PositiveTimeSpanValidatorTest.cs" />
+    <Compile Include="Mono\RegexStringValidatorTest.cs" />
+    <Compile Include="Mono\StringValidatorTest.cs" />
+    <Compile Include="Mono\SubclassTypeValidatorTest.cs" />
+    <Compile Include="Mono\TestLabel.cs" />
+    <Compile Include="Mono\TestUtil.cs" />
+    <Compile Include="Mono\TimeSpanMinutesConverterTest.cs" />
+    <Compile Include="Mono\TimeSpanMinutesOrInfiniteConverterTest.cs" />
+    <Compile Include="Mono\TimeSpanSecondsConverterTest.cs" />
+    <Compile Include="Mono\TimeSpanSecondsOrInfiniteConverterTest.cs" />
+    <Compile Include="Mono\TimeSpanValidatorTest.cs" />
+    <Compile Include="Mono\TypeNameConverterTest.cs" />
+    <Compile Include="Mono\WhiteSpaceTrimStringConverterTest.cs" />
     <Compile Include="Resources\Strings.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
@@ -60,6 +94,7 @@
     <Compile Include="System\Configuration\BasicCustomSectionTests.cs" />
     <Compile Include="System\Configuration\ExceptionUtilTests.cs" />
     <Compile Include="System\Configuration\ImplicitMachineConfigTests.cs" />
+    <Compile Include="System\Configuration\KeyValueConfigurationCollectionTests.cs" />
     <Compile Include="System\Configuration\SmokeTest.cs" />
     <Compile Include="System\Configuration\StringUtilTests.cs" />
     <Compile Include="System\Configuration\TempConfig.cs" />

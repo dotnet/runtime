@@ -14,6 +14,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="System\Configuration\DictionarySectionHandler.cs" />
+    <Compile Include="System\Configuration\DpapiProtectedConfigurationProvider.cs" />
     <Compile Include="System\Configuration\IConfigurationSystem.cs" />
     <Compile Include="System\Configuration\IPersistComponentSettings.cs" />
     <Compile Include="System\Configuration\ApplicationSettingsBase.cs" />
@@ -174,6 +175,7 @@
     <Compile Include="System\Configuration\ReadOnlyNameValueCollection.cs" />
     <Compile Include="System\Configuration\RegexStringValidator.cs" />
     <Compile Include="System\Configuration\RegexStringValidatorAttribute.cs" />
+    <Compile Include="System\Configuration\RsaProtectedConfigurationProvider.cs" />
     <Compile Include="System\Configuration\RuntimeConfigurationRecord.cs" />
     <Compile Include="System\Configuration\SafeBitVector32.cs" />
     <Compile Include="System\Configuration\SchemeSettingElement.cs" />

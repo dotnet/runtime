@@ -18,6 +18,8 @@
         "System.Runtime.Extensions": "4.4.0-beta-24909-02",
         "System.Runtime.Serialization.Formatters": "4.4.0-beta-24909-02",
         "System.Security.Cryptography.Algorithms": "4.4.0-beta-24909-02",
+        "System.Security.Cryptography.Csp": "4.4.0-beta-24909-02",
+        "System.Security.Cryptography.ProtectedData": "4.4.0-beta-24909-02",
         "System.Text.Encoding": "4.4.0-beta-24909-02",
         "System.Text.Encoding.Extensions": "4.4.0-beta-24909-02",
         "System.Text.RegularExpressions": "4.4.0-beta-24909-02",

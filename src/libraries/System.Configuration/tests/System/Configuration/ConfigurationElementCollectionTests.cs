@@ -17,6 +17,8 @@ namespace System.ConfigurationTests
 
         private class SimpleCollection : ConfigurationElementCollection
         {
+            public static ConfigurationElement TestElement = new SimpleElement();
+
             public SimpleCollection()
                 : base()
             { }
@@ -25,28 +27,18 @@ namespace System.ConfigurationTests
                 : base(comparer)
             { }
 
-            protected override ConfigurationElement CreateNewElement()
-            {
-                throw new NotImplementedException();
-            }
-
-            protected override object GetElementKey(ConfigurationElement element)
-            {
-                return "FooKey";
-            }
+            // These two are abstract
+            protected override ConfigurationElement CreateNewElement() => TestElement;
+            protected override object GetElementKey(ConfigurationElement element) => element == null ? null : "FooKey";
 
             public bool TestThrowOnDuplicate => ThrowOnDuplicate;
             public string TestElementName => ElementName;
-
-            public void TestBaseAdd(ConfigurationElement element)
-            {
-                BaseAdd(element);
-            }
-
-            public void TestBaseAdd(int index, ConfigurationElement element)
-            {
-                BaseAdd(index, element);
-            }
+            public bool TestIsElementName(string elementName) => IsElementName(elementName);
+            public bool TestIsElementRemovable(ConfigurationElement element) => IsElementRemovable(element);
+            public void TestBaseAdd(ConfigurationElement element) => BaseAdd(element);
+            public void TestBaseAdd(int index, ConfigurationElement element) => BaseAdd(index, element);
+            public ConfigurationElement TestCreateNewElement(string elementName) => CreateNewElement(elementName);
+            public int TestBaseIndexOf(ConfigurationElement element) => BaseIndexOf(element);
         }
 
         private class ReadOnlySimpleCollection : SimpleCollection
@@ -61,7 +53,7 @@ namespace System.ConfigurationTests
         }
 
         [Fact]
-        public void ReadOnlyFalseByDefault()
+        public void ReadOnlyFalse()
         {
             Assert.False(new SimpleCollection().IsReadOnly());
         }
@@ -94,6 +86,44 @@ namespace System.ConfigurationTests
         public void SynchronizedIsFalse()
         {
             Assert.False(new SimpleCollection().IsSynchronized);
+        }
+
+        [Fact]
+        public void IsElementNameIsFalse()
+        {
+            Assert.False(new SimpleCollection().TestIsElementName("foo"));
+        }
+
+        [Fact]
+        public void IsElementRemovableIsTrue()
+        {
+            Assert.True(new SimpleCollection().TestIsElementRemovable(null));
+        }
+
+        [Fact]
+        public void CreateNewElementByNameCallsCreateNewElement()
+        {
+            Assert.Same(SimpleCollection.TestElement, new SimpleCollection().TestCreateNewElement("foo"));
+        }
+
+        [Fact]
+        public void BaseIndexOfThrowsForNull()
+        {
+            Assert.Throws<ConfigurationErrorsException>(() => new SimpleCollection().TestBaseIndexOf(null));
+        }
+
+        [Fact]
+        public void BaseIndexOfReturnsMinusOneForEmpty()
+        {
+            Assert.Equal(-1, new SimpleCollection().TestBaseIndexOf(SimpleCollection.TestElement));
+        }
+
+        [Fact]
+        public void BaseIndexReturnsZeroForOneItem()
+        {
+            var collection = new SimpleCollection();
+            collection.TestBaseAdd(SimpleCollection.TestElement);
+            Assert.Equal(0, collection.TestBaseIndexOf(SimpleCollection.TestElement));
         }
 
         [Fact]
@@ -147,7 +177,7 @@ namespace System.ConfigurationTests
         [Fact]
         public void BaseAddNullThrows()
         {
-            Assert.Throws<NullReferenceException>(() => new SimpleCollection().TestBaseAdd(null));
+            Assert.Throws<ConfigurationErrorsException>(() => new SimpleCollection().TestBaseAdd(null));
         }
 
         [Fact]
@@ -162,26 +192,113 @@ namespace System.ConfigurationTests
             Assert.True(new SimpleCollection().TestThrowOnDuplicate);
         }
 
-        public class BasicCollection : ConfigurationElementCollection
+        private class BasicCollection : SimpleCollection
         {
-            protected override ConfigurationElement CreateNewElement()
-            {
-                throw new NotImplementedException();
-            }
-
-            protected override object GetElementKey(ConfigurationElement element)
-            {
-                throw new NotImplementedException();
-            }
-
             public override ConfigurationElementCollectionType CollectionType => ConfigurationElementCollectionType.BasicMap;
-            public bool TestThrowOnDuplicate => ThrowOnDuplicate;
         }
 
         [Fact]
         public void BasicThrowOnDuplicateIsFalse()
         {
             Assert.False(new BasicCollection().TestThrowOnDuplicate);
+        }
+
+        [Fact]
+        public void EqualsNullIsFalse()
+        {
+            // Note: this null refs on desktop
+            Assert.False(new SimpleCollection().Equals(null));
+        }
+
+        [Fact]
+        public void EmptyEqualsEmpty()
+        {
+            Assert.True(new SimpleCollection().Equals(new SimpleCollection()));
+        }
+
+        [Fact]
+        public void DifferentSubclassesNotEqual()
+        {
+            Assert.False(new SimpleCollection().Equals(new BasicCollection()));
+        }
+
+        [Fact]
+        public void DifferentCountNotEqual()
+        {
+            var collection = new SimpleCollection();
+            collection.TestBaseAdd(SimpleCollection.TestElement);
+            Assert.False(new SimpleCollection().Equals(collection));
+        }
+
+        [Fact]
+        public void ICollectionCopyToCopiesItem()
+        {
+            var collection = new SimpleCollection();
+            collection.TestBaseAdd(SimpleCollection.TestElement);
+            Array array = new ConfigurationElement[1];
+            ((ICollection)collection).CopyTo(array, 0);
+            Assert.Equal(SimpleCollection.TestElement, array.GetValue(0));
+        }
+
+        [Fact]
+        public void CopyToCopiesItem()
+        {
+            var collection = new SimpleCollection();
+            collection.TestBaseAdd(SimpleCollection.TestElement);
+            ConfigurationElement[] array = new ConfigurationElement[1];
+            collection.CopyTo(array, 0);
+            Assert.Equal(SimpleCollection.TestElement, array.GetValue(0));
+        }
+
+        [Fact]
+        public void EnumerateEmptyCollection()
+        {
+            var collection = new SimpleCollection();
+            Assert.Empty(collection);
+            var enumerator = collection.GetEnumerator();
+            Assert.False(enumerator.MoveNext());
+        }
+
+        [Fact]
+        public void EnumerateNonEmptyCollection()
+        {
+            var collection = new SimpleCollection();
+            collection.TestBaseAdd(SimpleCollection.TestElement);
+            Assert.NotEmpty(collection);
+            var enumerator = collection.GetEnumerator();
+            Assert.True(enumerator.MoveNext());
+            Assert.Equal(SimpleCollection.TestElement, enumerator.Current);
+            Assert.False(enumerator.MoveNext());
+        }
+
+        [Fact]
+        public void ElementInformationIsCollection()
+        {
+            Assert.True(new SimpleCollection().ElementInformation.IsCollection);
+        }
+
+        [Fact]
+        public void ElementInformationIsNotLocked()
+        {
+            Assert.False(new SimpleCollection().ElementInformation.IsLocked);
+        }
+
+        [Fact]
+        public void ElementInformationIsNotPresent()
+        {
+            Assert.False(new SimpleCollection().ElementInformation.IsPresent);
+        }
+
+        [Fact]
+        public void ElementInformationPropertiesEmpty()
+        {
+            Assert.Empty(new SimpleCollection().ElementInformation.Properties);
+        }
+
+        [Fact]
+        public void CurrentConfigurationIsNull()
+        {
+            Assert.Null(new SimpleCollection().CurrentConfiguration);
         }
     }
 }
