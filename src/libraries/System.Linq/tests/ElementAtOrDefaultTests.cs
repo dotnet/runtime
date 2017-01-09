@@ -52,6 +52,13 @@ namespace System.Linq.Tests
             Assert.Equal(expected, source.ElementAtOrDefault(index));
         }
 
+        [Theory]
+        [MemberData(nameof(TestData))]
+        public void ElementAtOrDefaultRunOnce(IEnumerable<int> source, int index, int expected)
+        {
+            Assert.Equal(expected, source.RunOnce().ElementAtOrDefault(index));
+        }
+
         [Fact]
         public void NullableArray_NegativeIndex_ReturnsNull()
         {

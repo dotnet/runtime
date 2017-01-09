@@ -102,13 +102,17 @@
     <Compile Include="Dynamic\CallSiteBinderDefaultBehaviourTests.cs" />
     <Compile Include="Dynamic\CallSiteTests.cs" />
     <Compile Include="Dynamic\ConvertBinderTests.cs" />
+    <Compile Include="Dynamic\DynamicObjectTests.cs" />
     <Compile Include="Dynamic\DynamicObjectDefaultBehaviorTests.cs" />
     <Compile Include="Dynamic\ExpandoObjectProxyTests.cs" />
+    <Compile Include="Dynamic\ExpandoObjectTests.cs" />
     <Compile Include="Dynamic\GetIndexBinderTests.cs" />
     <Compile Include="Dynamic\GetMemberBinderTests.cs" />
     <Compile Include="Dynamic\InvokeBinderTests.cs" />
     <Compile Include="Dynamic\InvokeMemberBindingTests.cs" />
-    <Compile Include="Dynamic\UnaryOperationTests.cs .cs" />
+    <Compile Include="Dynamic\SetIndexBinderTests.cs" />
+    <Compile Include="Dynamic\SetMemberBinderTests.cs" />
+    <Compile Include="Dynamic\UnaryOperationTests.cs" />
     <Compile Include="ExceptionHandling\ExceptionHandlingExpressions.cs" />
     <Compile Include="ExpressionTests.cs" />
     <Compile Include="Goto\Break.cs" />
@@ -180,6 +184,7 @@
     <Compile Include="New\NewWithParameterTests.cs" />
     <Compile Include="New\NewWithTwoParametersTests.cs" />
     <Compile Include="New\TypeExtensions.cs" />
+    <Compile Include="ReadOnlyCollectionBuilderTests.cs" />
     <Compile Include="SequenceTests\SequenceTests.cs" />
     <Compile Include="StackSpillerTests.cs" />
     <Compile Include="Switch\SwitchTests.cs" />
@@ -199,6 +204,7 @@
     <Compile Include="Unary\IncDecAssign\PostIncrementAssignTests.cs" />
     <Compile Include="Unary\IncDecAssign\PreDecrementAssignTests.cs" />
     <Compile Include="Unary\IncDecAssign\PreIncrementAssignTests.cs" />
+    <Compile Include="Unary\IncrementDecrementTests.cs" />
     <Compile Include="Unary\UnaryArithmeticNegateNullableOneOffTests.cs" />
     <Compile Include="Unary\UnaryArithmeticNegateCheckedNullableTests.cs" />
     <Compile Include="Unary\UnaryArithmeticNegateNullableTests.cs" />

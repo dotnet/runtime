@@ -12,7 +12,7 @@ internal partial class Interop
     internal partial class Kernel32
     {
         [DllImport(Libraries.Kernel32, EntryPoint = "ReadDirectoryChangesW", CharSet = CharSet.Unicode, SetLastError = true)]
-        internal unsafe static extern bool ReadDirectoryChangesW(
+        internal static extern unsafe bool ReadDirectoryChangesW(
             SafeFileHandle hDirectory, 
             byte[] lpBuffer, 
             int nBufferLength, 

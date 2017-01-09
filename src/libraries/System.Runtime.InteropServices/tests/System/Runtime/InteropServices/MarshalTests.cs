@@ -428,7 +428,10 @@ namespace System.Runtime.InteropServices
             String monikerName = null;
             if(PlatformDetection.IsWindows)
             {
-                Assert.Throws<ArgumentException>(() => Marshal.BindToMoniker(monikerName));
+                if (PlatformDetection.IsNotWindowsNanoServer)
+                {
+                    Assert.Throws<ArgumentException>(() => Marshal.BindToMoniker(monikerName));
+                }
             }  
             else 
             {

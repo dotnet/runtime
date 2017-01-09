@@ -735,6 +735,21 @@
       ],
       "BaselineVersion": "4.4.0"
     },
+    "runtime.ubuntu.14.04-arm.runtime.native.System": {
+      "BaselineVersion": "4.4.0"
+    },
+    "runtime.ubuntu.14.04-arm.runtime.native.System.IO.Compression": {
+      "BaselineVersion": "4.4.0"
+    },
+    "runtime.ubuntu.14.04-arm.runtime.native.System.Net.Http": {
+      "BaselineVersion": "4.4.0"
+    },
+    "runtime.ubuntu.14.04-arm.runtime.native.System.Net.Security": {
+      "BaselineVersion": "4.4.0"
+    },
+    "runtime.ubuntu.14.04-arm.runtime.native.System.Security.Cryptography": {
+      "BaselineVersion": "4.4.0"
+    },
     "runtime.ubuntu.16.04-x64.runtime.native.System": {
       "StableVersions": [
         "1.0.1",
@@ -768,6 +783,21 @@
         "1.0.1",
         "4.3.0"
       ],
+      "BaselineVersion": "4.4.0"
+    },
+    "runtime.ubuntu.16.04-arm.runtime.native.System": {
+      "BaselineVersion": "4.4.0"
+    },
+    "runtime.ubuntu.16.04-arm.runtime.native.System.IO.Compression": {
+      "BaselineVersion": "4.4.0"
+    },
+    "runtime.ubuntu.16.04-arm.runtime.native.System.Net.Http": {
+      "BaselineVersion": "4.4.0"
+    },
+    "runtime.ubuntu.16.04-arm.runtime.native.System.Net.Security": {
+      "BaselineVersion": "4.4.0"
+    },
+    "runtime.ubuntu.16.04-arm.runtime.native.System.Security.Cryptography": {
       "BaselineVersion": "4.4.0"
     },
     "runtime.unix.Microsoft.Win32.Primitives": {
@@ -3069,10 +3099,16 @@
       ],
       "BaselineVersion": "4.4.0"
     },
+    "runtime.ubuntu.14.04-arm.runtime.native.System.Security.Cryptography.OpenSsl": {
+      "BaselineVersion": "4.4.0"
+    },
     "runtime.ubuntu.16.04-x64.runtime.native.System.Security.Cryptography.OpenSsl": {
       "StableVersions": [
         "4.3.0"
       ],
+      "BaselineVersion": "4.4.0"
+    },
+    "runtime.ubuntu.16.04-arm.runtime.native.System.Security.Cryptography.OpenSsl": {
       "BaselineVersion": "4.4.0"
     },
     "runtime.ubuntu.16.10-x64.runtime.native.System.IO.Compression": {
@@ -3154,6 +3190,11 @@
       }
     },
     "System.Net.WebProxy": {
+      "AssemblyVersionInPackageVersion": {
+        "4.0.0.0": "4.4.0"
+      }
+    },
+    "System.Configuration": {
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.4.0"
       }

@@ -525,4 +525,52 @@
   <data name="Argument_InvalidFlag" xml:space="preserve">
     <value>Value of flags is invalid.</value>
   </data>
+  <data name="ObjectDisposed_FileClosed" xml:space="preserve">
+    <value>Cannot access a closed file.</value>
+  </data>
+  <data name="IO_EOF_ReadBeyondEOF" xml:space="preserve">
+    <value>Unable to read beyond the end of the stream.</value>
+  </data>
+  <data name="IO_IO_SeekBeforeBegin" xml:space="preserve">
+    <value>An attempt was made to move the position before the beginning of the stream.</value>
+  </data>
+  <data name="ArgumentOutOfRange_StreamLength" xml:space="preserve">
+    <value>Stream length must be non-negative and less than 2^31 - 1 - origin.</value>
+  </data>
+  <data name="NotSupported_MemStreamNotExpandable" xml:space="preserve">
+    <value>Memory stream is not expandable.</value>
+  </data>
+  <data name="IO_IO_StreamTooLong" xml:space="preserve">
+    <value>Stream was too long.</value>
+  </data>
+  <data name="ArgumentOutOfRange_NegativeCapacity" xml:space="preserve">
+    <value>Capacity must be positive.</value>
+  </data>
+  <data name="ArgumentOutOfRange_BinaryReaderFillBuffer" xml:space="preserve">
+    <value>The number of bytes requested does not fit into BinaryReader's internal buffer.</value>
+  </data>
+  <data name="Format_Bad7BitInt32" xml:space="preserve">
+    <value>Too many bytes in what should have been a 7 bit encoded Int32.</value>
+  </data>
+  <data name="UnauthorizedAccess_MemStreamBuffer" xml:space="preserve">
+    <value>MemoryStream's internal buffer cannot be accessed.</value>
+  </data>
+  <data name="Argument_InvalidSeekOrigin" xml:space="preserve">
+    <value>Invalid seek origin.</value>
+  </data>
+  <data name="ArgumentNull_Stream" xml:space="preserve">
+    <value>Stream cannot be null.</value>
+  </data>
+  <data name="Arg_EndOfStreamException" xml:space="preserve">
+    <value>Attempted to read past the end of the stream.</value>
+  </data>
+  <data name="Arg_SurrogatesNotAllowedAsSingleChar" xml:space="preserve">
+    <value>Unicode surrogate characters must be written out as pairs together in the same call, not individually. Consider passing in a character array instead.</value>
+  </data>
+  <data name="Arg_DecBitCtor" xml:space="preserve">
+    <value>Decimal byte array constructor requires an array of length four containing valid decimal bytes.</value>
+  </data>
+  <data name="IO_IO_InvalidStringLen_Len" xml:space="preserve">
+    <value>BinaryReader encountered an invalid string length of {0} characters.</value>
+  </data>
 </root>

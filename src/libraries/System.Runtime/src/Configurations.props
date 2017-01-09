@@ -3,9 +3,9 @@
   <PropertyGroup>
     <BuildConfigurations>
       netstandard1.5;
-      net463-Windows_NT;
-      net462-Windows_NT;
+      net461-Windows_NT;
       uap101aot-Windows_NT;
+      netcoreapp1.2corert-Windows_NT;
       netstandard;
     </BuildConfigurations>
   </PropertyGroup>

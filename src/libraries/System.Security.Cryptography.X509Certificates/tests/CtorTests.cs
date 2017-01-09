@@ -217,6 +217,9 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 c1.Dispose();
                 rsa.Dispose();
 
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+
                 // Verify other cert and previous key do not affect cert
                 using (rsa = c2.GetRSAPrivateKey())
                 {
@@ -236,10 +239,16 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             TestPrivateKey(c2, true);
 
             c1.Dispose();
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+
             TestPrivateKey(c1, false);
             TestPrivateKey(c2, true);
 
             c2.Dispose();
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+
             TestPrivateKey(c2, false);
         }
 
@@ -252,10 +261,16 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             TestPrivateKey(c2, true);
 
             c2.Dispose();
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+
             TestPrivateKey(c1, true);
             TestPrivateKey(c2, false);
 
             c1.Dispose();
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+
             TestPrivateKey(c1, false);
         }
 

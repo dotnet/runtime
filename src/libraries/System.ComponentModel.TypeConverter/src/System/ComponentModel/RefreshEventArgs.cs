@@ -11,9 +11,6 @@ namespace System.ComponentModel
     /// </summary>
     public class RefreshEventArgs : EventArgs
     {
-        private readonly object _componentChanged;
-        private readonly Type _typeChanged;
-
         /// <summary>
         ///    <para>
         ///       Initializes a new instance of the <see cref='System.ComponentModel.RefreshEventArgs'/> class with
@@ -22,8 +19,8 @@ namespace System.ComponentModel
         /// </summary>
         public RefreshEventArgs(object componentChanged)
         {
-            _componentChanged = componentChanged;
-            _typeChanged = componentChanged.GetType();
+            ComponentChanged = componentChanged;
+            TypeChanged = componentChanged.GetType();
         }
 
         /// <summary>
@@ -34,7 +31,7 @@ namespace System.ComponentModel
         /// </summary>
         public RefreshEventArgs(Type typeChanged)
         {
-            _typeChanged = typeChanged;
+            TypeChanged = typeChanged;
         }
 
         /// <summary>
@@ -42,25 +39,13 @@ namespace System.ComponentModel
         ///       Gets the component that has changed its properties, events, or extenders.
         ///    </para>
         /// </summary>
-        public object ComponentChanged
-        {
-            get
-            {
-                return _componentChanged;
-            }
-        }
+        public object ComponentChanged { get; }
 
         /// <summary>
         ///    <para>
         ///       Gets the type that has changed its properties, or events.
         ///    </para>
         /// </summary>
-        public Type TypeChanged
-        {
-            get
-            {
-                return _typeChanged;
-            }
-        }
+        public Type TypeChanged { get; }
     }
 }

@@ -163,7 +163,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compoun
 
     public class Test
     {
-        static public dynamic count1 = 1;
+        public static dynamic count1 = 1;
         [Fact]
         public static void DynamicCSharpRunTest()
         {

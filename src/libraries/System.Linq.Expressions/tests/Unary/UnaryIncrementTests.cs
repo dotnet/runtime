@@ -2,11 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
+using System.Reflection;
 using Xunit;
 
 namespace System.Linq.Expressions.Tests
 {
-    public static class UnaryIncrementTests
+    public class UnaryIncrementTests : IncrementDecrementTests
     {
         #region Test methods
 
@@ -95,6 +97,52 @@ namespace System.Linq.Expressions.Tests
         {
             UnaryExpression e = Expression.Increment(Expression.Parameter(typeof(int), "x"));
             Assert.Equal("Increment(x)", e.ToString());
+        }
+
+        [Theory, MemberData(nameof(NonArithmeticObjects), true)]
+        public static void IncrementNonArithmetic(object value)
+        {
+            Expression ex = Expression.Constant(value);
+            Assert.Throws<InvalidOperationException>(() => Expression.Increment(ex));
+        }
+
+        [Theory, PerCompilationType(nameof(IncrementableValues), false)]
+        public static void CustomOpIncrement(Incrementable operand, Incrementable expected, bool useInterpreter)
+        {
+            Func<Incrementable> func = Expression.Lambda<Func<Incrementable>>(
+                Expression.Increment(Expression.Constant(operand))).Compile(useInterpreter);
+            Assert.Equal(expected.Value, func().Value);
+        }
+
+        [Theory, PerCompilationType(nameof(DoublyIncrementedIncrementableValues), false)]
+        public static void UserDefinedOpIncrement(Incrementable operand, Incrementable expected, bool useInterpreter)
+        {
+            MethodInfo method = typeof(IncrementDecrementTests).GetMethod(nameof(DoublyIncrement));
+            Func<Incrementable> func = Expression.Lambda<Func<Incrementable>>(
+                Expression.Increment(Expression.Constant(operand), method)).Compile(useInterpreter);
+            Assert.Equal(expected.Value, func().Value);
+        }
+
+        [Theory, PerCompilationType(nameof(DoublyIncrementedInt32s), false)]
+        public static void UserDefinedOpIncrementArithmeticType(int operand, int expected, bool useInterpreter)
+        {
+            MethodInfo method = typeof(IncrementDecrementTests).GetMethod(nameof(DoublyIncrementInt32));
+            Func<int> func = Expression.Lambda<Func<int>>(
+                Expression.Increment(Expression.Constant(operand), method)).Compile(useInterpreter);
+            Assert.Equal(expected, func());
+        }
+
+        [Fact]
+        public static void NullOperand()
+        {
+            Assert.Throws<ArgumentNullException>("expression", () => Expression.Decrement(null));
+        }
+
+        [Fact]
+        public static void UnreadableOperand()
+        {
+            Expression operand = Expression.Property(null, typeof(Unreadable<int>), nameof(Unreadable<int>.WriteOnly));
+            Assert.Throws<ArgumentException>("expression", () => Expression.Decrement(operand));
         }
 
         #endregion

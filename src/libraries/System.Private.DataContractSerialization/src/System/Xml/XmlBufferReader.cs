@@ -46,7 +46,7 @@ namespace System.Xml
             _buffer = buffer;
         }
 
-        static public XmlBufferReader Empty
+        public static XmlBufferReader Empty
         {
             get
             {
@@ -389,7 +389,7 @@ namespace System.Xml
             return (hi << 32) + lo;
         }
 
-        unsafe public float ReadSingle()
+        public unsafe float ReadSingle()
         {
             int offset;
             byte[] buffer = GetBuffer(ValueHandleLength.Single, out offset);
@@ -404,7 +404,7 @@ namespace System.Xml
             return value;
         }
 
-        unsafe public double ReadDouble()
+        public unsafe double ReadDouble()
         {
             int offset;
             byte[] buffer = GetBuffer(ValueHandleLength.Double, out offset);
@@ -423,7 +423,7 @@ namespace System.Xml
             return value;
         }
 
-        unsafe public decimal ReadDecimal()
+        public unsafe decimal ReadDecimal()
         {
             int offset;
             byte[] buffer = GetBuffer(ValueHandleLength.Decimal, out offset);
@@ -508,7 +508,7 @@ namespace System.Xml
             return value;
         }
 
-        unsafe public void UnsafeReadArray(byte* dst, byte* dstMax)
+        public unsafe void UnsafeReadArray(byte* dst, byte* dstMax)
         {
             UnsafeReadArray(dst, (int)(dstMax - dst));
         }
@@ -921,7 +921,7 @@ namespace System.Xml
             return true;
         }
 
-        unsafe public bool Equals2(int offset1, int length1, string s2)
+        public unsafe bool Equals2(int offset1, int length1, string s2)
         {
             int byteLength = length1;
             int charLength = s2.Length;
@@ -1039,7 +1039,7 @@ namespace System.Xml
             return (ulong)GetInt64(offset);
         }
 
-        unsafe public float GetSingle(int offset)
+        public unsafe float GetSingle(int offset)
         {
             byte[] buffer = _buffer;
             float value;
@@ -1052,7 +1052,7 @@ namespace System.Xml
             return value;
         }
 
-        unsafe public double GetDouble(int offset)
+        public unsafe double GetDouble(int offset)
         {
             byte[] buffer = _buffer;
             double value;

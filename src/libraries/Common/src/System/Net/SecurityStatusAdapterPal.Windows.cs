@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
+
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -63,7 +64,7 @@ namespace System.Net
 
         internal static SecurityStatusPal GetSecurityStatusPalFromNativeInt(int win32SecurityStatus)
         {
-            return GetSecurityStatusPalFromInterop((Interop.SECURITY_STATUS) win32SecurityStatus);
+            return GetSecurityStatusPalFromInterop((Interop.SECURITY_STATUS)win32SecurityStatus);
         }
 
         internal static SecurityStatusPal GetSecurityStatusPalFromInterop(Interop.SECURITY_STATUS win32SecurityStatus, bool attachException = false)

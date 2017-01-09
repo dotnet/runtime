@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.IO;
 using System.Xml.Schema;
 using Xunit;
@@ -212,7 +211,6 @@ namespace System.Xml.Tests
 
             schemaSet1.Add(schema1);
             schemaSet1.Add(schema2); // added two schemas
-            //schemaSet1.Compile ();
 
             XmlSchemaElement elem = new XmlSchemaElement();
             schema1.Items.Add(elem);  // make the first schema dirty

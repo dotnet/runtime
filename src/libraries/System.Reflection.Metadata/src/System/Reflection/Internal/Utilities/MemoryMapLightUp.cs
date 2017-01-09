@@ -228,7 +228,7 @@ namespace System.Reflection.Internal
             }
         }
 
-        internal unsafe static byte* AcquirePointer(object accessor, out SafeBuffer safeBuffer)
+        internal static unsafe byte* AcquirePointer(object accessor, out SafeBuffer safeBuffer)
         {
             Debug.Assert(s_lazyIsAvailable.GetValueOrDefault());
 

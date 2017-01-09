@@ -75,7 +75,7 @@ namespace System.Xml.XPath
             }
         }
 
-        static public XPathNavigatorReader Create(XPathNavigator navToRead)
+        public static XPathNavigatorReader Create(XPathNavigator navToRead)
         {
             XPathNavigator nav = navToRead.Clone();
             IXmlLineInfo xli = nav as IXmlLineInfo;

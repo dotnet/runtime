@@ -1,0 +1,23 @@
+Compat issues with assembly System.Xml.XDocument:
+MembersMustExist : Member 'System.Xml.Linq.XCData.WriteToAsync(System.Xml.XmlWriter, System.Threading.CancellationToken)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Xml.Linq.XComment.WriteToAsync(System.Xml.XmlWriter, System.Threading.CancellationToken)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Xml.Linq.XDocument.LoadAsync(System.IO.Stream, System.Xml.Linq.LoadOptions, System.Threading.CancellationToken)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Xml.Linq.XDocument.LoadAsync(System.IO.TextReader, System.Xml.Linq.LoadOptions, System.Threading.CancellationToken)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Xml.Linq.XDocument.LoadAsync(System.Xml.XmlReader, System.Xml.Linq.LoadOptions, System.Threading.CancellationToken)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Xml.Linq.XDocument.SaveAsync(System.IO.Stream, System.Xml.Linq.SaveOptions, System.Threading.CancellationToken)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Xml.Linq.XDocument.SaveAsync(System.IO.TextWriter, System.Xml.Linq.SaveOptions, System.Threading.CancellationToken)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Xml.Linq.XDocument.SaveAsync(System.Xml.XmlWriter, System.Threading.CancellationToken)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Xml.Linq.XDocument.WriteToAsync(System.Xml.XmlWriter, System.Threading.CancellationToken)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Xml.Linq.XDocumentType.WriteToAsync(System.Xml.XmlWriter, System.Threading.CancellationToken)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Xml.Linq.XElement.LoadAsync(System.IO.Stream, System.Xml.Linq.LoadOptions, System.Threading.CancellationToken)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Xml.Linq.XElement.LoadAsync(System.IO.TextReader, System.Xml.Linq.LoadOptions, System.Threading.CancellationToken)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Xml.Linq.XElement.LoadAsync(System.Xml.XmlReader, System.Xml.Linq.LoadOptions, System.Threading.CancellationToken)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Xml.Linq.XElement.SaveAsync(System.IO.Stream, System.Xml.Linq.SaveOptions, System.Threading.CancellationToken)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Xml.Linq.XElement.SaveAsync(System.IO.TextWriter, System.Xml.Linq.SaveOptions, System.Threading.CancellationToken)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Xml.Linq.XElement.SaveAsync(System.Xml.XmlWriter, System.Threading.CancellationToken)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Xml.Linq.XElement.WriteToAsync(System.Xml.XmlWriter, System.Threading.CancellationToken)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Xml.Linq.XNode.ReadFromAsync(System.Xml.XmlReader, System.Threading.CancellationToken)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Xml.Linq.XNode.WriteToAsync(System.Xml.XmlWriter, System.Threading.CancellationToken)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Xml.Linq.XProcessingInstruction.WriteToAsync(System.Xml.XmlWriter, System.Threading.CancellationToken)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Xml.Linq.XText.WriteToAsync(System.Xml.XmlWriter, System.Threading.CancellationToken)' does not exist in the implementation but it does exist in the contract.
+Total Issues: 21

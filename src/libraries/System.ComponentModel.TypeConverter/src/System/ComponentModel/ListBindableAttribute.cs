@@ -30,15 +30,14 @@ namespace System.ComponentModel
         /// </summary>
         public static readonly ListBindableAttribute Default = Yes;
 
-        private bool _listBindable = false;
-        private bool _isDefault = false;
+        private bool _isDefault;
 
         /// <summary>
         ///    <para>[To be supplied.]</para>
         /// </summary>
         public ListBindableAttribute(bool listBindable)
         {
-            _listBindable = listBindable;
+            ListBindable = listBindable;
         }
 
         /// <summary>
@@ -46,20 +45,14 @@ namespace System.ComponentModel
         /// </summary>
         public ListBindableAttribute(BindableSupport flags)
         {
-            _listBindable = (flags != BindableSupport.No);
+            ListBindable = (flags != BindableSupport.No);
             _isDefault = (flags == BindableSupport.Default);
         }
 
         /// <summary>
         ///    <para>[To be supplied.]</para>
         /// </summary>
-        public bool ListBindable
-        {
-            get
-            {
-                return _listBindable;
-            }
-        }
+        public bool ListBindable { get; }
 
         /// <summary>
         ///    <para>[To be supplied.]</para>
@@ -72,7 +65,7 @@ namespace System.ComponentModel
             }
 
             ListBindableAttribute other = obj as ListBindableAttribute;
-            return other != null && other.ListBindable == _listBindable;
+            return other != null && other.ListBindable == ListBindable;
         }
 
         /// <summary>

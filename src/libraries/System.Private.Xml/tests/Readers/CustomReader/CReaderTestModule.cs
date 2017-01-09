@@ -34,7 +34,7 @@ namespace System.Xml.Tests
 
         [Fact]
         [OuterLoop]
-        static public void RunTests()
+        public static void RunTests()
         {
             RunTest(() => new TCReadReader() { Attribute = new TestCase() { Name = "Read", Desc = "CustomInheritedReader" } });
         }

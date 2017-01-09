@@ -123,7 +123,6 @@ namespace System.Security.Cryptography
     public sealed partial class MD5CryptoServiceProvider : System.Security.Cryptography.MD5
     {
         public MD5CryptoServiceProvider() { }
-        public override int HashSize { get { throw null; } }
         protected sealed override void Dispose(bool disposing) { }
         protected override void HashCore(byte[] array, int ibStart, int cbSize) { }
         protected override byte[] HashFinal() { throw null; }
@@ -133,6 +132,28 @@ namespace System.Security.Cryptography
     {
         Exchange = 1,
         Signature = 2,
+    }
+    [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
+    public partial class PasswordDeriveBytes : System.Security.Cryptography.DeriveBytes
+    {
+        public PasswordDeriveBytes(byte[] password, byte[] salt) { }
+        public PasswordDeriveBytes(byte[] password, byte[] salt, System.Security.Cryptography.CspParameters cspParams) { }
+        public PasswordDeriveBytes(byte[] password, byte[] salt, string hashName, int iterations) { }
+        public PasswordDeriveBytes(byte[] password, byte[] salt, string hashName, int iterations, System.Security.Cryptography.CspParameters cspParams) { }
+        public PasswordDeriveBytes(string strPassword, byte[] rgbSalt) { }
+        public PasswordDeriveBytes(string strPassword, byte[] rgbSalt, System.Security.Cryptography.CspParameters cspParams) { }
+        public PasswordDeriveBytes(string strPassword, byte[] rgbSalt, string strHashName, int iterations) { }
+        public PasswordDeriveBytes(string strPassword, byte[] rgbSalt, string strHashName, int iterations, System.Security.Cryptography.CspParameters cspParams) { }
+        public string HashName { get { throw null; } set { } }
+        public int IterationCount { get { throw null; } set { } }
+        public byte[] Salt { get { throw null; } set { } }
+        public byte[] CryptDeriveKey(string algname, string alghashname, int keySize, byte[] rgbIV) { throw null; }
+        protected override void Dispose(bool disposing) { }
+        [System.ObsoleteAttribute("Rfc2898DeriveBytes replaces PasswordDeriveBytes for deriving key material from a password and is preferred in new applications.")]
+#pragma warning disable 0809
+        public override byte[] GetBytes(int cb) { throw null; }
+#pragma warning restore 0809
+        public override void Reset() { }
     }
     [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
     public sealed partial class RC2CryptoServiceProvider : System.Security.Cryptography.RC2
@@ -194,7 +215,6 @@ namespace System.Security.Cryptography
     public sealed partial class SHA1CryptoServiceProvider : System.Security.Cryptography.SHA1
     {
         public SHA1CryptoServiceProvider() { }
-        public override int HashSize { get { throw null; } }
         protected sealed override void Dispose(bool disposing) { }
         protected override void HashCore(byte[] array, int ibStart, int cbSize) { }
         protected override byte[] HashFinal() { throw null; }

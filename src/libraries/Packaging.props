@@ -61,5 +61,11 @@
           Include="$(SyncInfoFile)" >
         <SkipPackageFileCheck>true</SkipPackageFileCheck>
     </File>
+    
+    <!-- Add a marker to help the designer optimize & share .NET Core packages -->
+    <File Condition="'$(IncludeDesignerMarker)' != 'false'"
+          Include="$(ProjectDir)pkg/useSharedDesignerContext.txt">
+        <SkipPackageFileCheck>true</SkipPackageFileCheck>
+    </File>
   </ItemGroup>
 </Project>

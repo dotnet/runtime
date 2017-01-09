@@ -8,6 +8,11 @@
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net463'">true</IsPartialFacadeAssembly>
     <ResourcesSourceOutputDirectory Condition="'$(TargetGroup)' == 'net463'">None</ResourcesSourceOutputDirectory>
   </PropertyGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'net463'">
+    <ContractProject Include="..\ref\System.ObjectModel.csproj">
+      <TargetGroup>netstandard1.7</TargetGroup>
+    </ContractProject>
+  </ItemGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard_Release|AnyCPU'" />

@@ -368,13 +368,13 @@ namespace System.Runtime.Serialization
             return XmlObjectSerializer.CreateSerializationException(TryAddLineInfo(reader, SR.Format(SR.EncounteredWithNameNamespace, errorMessage, reader.NodeType, reader.LocalName, reader.NamespaceURI)));
         }
 
-        static internal SerializationException CreateSerializationException(string errorMessage)
+        internal static SerializationException CreateSerializationException(string errorMessage)
         {
             return XmlObjectSerializer.CreateSerializationException(errorMessage, null);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static internal SerializationException CreateSerializationException(string errorMessage, Exception innerException)
+        internal static SerializationException CreateSerializationException(string errorMessage, Exception innerException)
         {
             return new SerializationException(errorMessage, innerException);
         }

@@ -32,7 +32,7 @@ namespace System.Net.Sockets
                         0);
                     if (errorCode == SocketError.SocketError)
                     {
-                        errorCode = (SocketError)Marshal.GetLastWin32Error();
+                        errorCode = SocketPal.GetLastSocketError();
                     }
                 }
                 catch (ObjectDisposedException)

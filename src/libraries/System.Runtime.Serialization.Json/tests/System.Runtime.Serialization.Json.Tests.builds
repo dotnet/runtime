@@ -5,7 +5,7 @@
     <Project Include="System.Runtime.Serialization.Json.Tests.csproj" />
     <Project Include="System.Runtime.Serialization.Json.Tests.csproj">
       <OSGroup>Windows_NT</OSGroup>
-      <TestTFMs>netcore50;net46</TestTFMs>
+      <TestTFMs>net463</TestTFMs>
     </Project>
     <Project Include="Performance\System.Runtime.Serialization.Json.Performance.Tests.csproj" />
     <Project Include="ReflectionOnly\System.Runtime.Serialization.Json.ReflectionOnly.Tests.csproj" />

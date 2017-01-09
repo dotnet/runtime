@@ -15,6 +15,7 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU' " />
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU' " />
   <ItemGroup>
+    <Compile Include="NotifyReadVirtualNetworkStream.cs" />
     <Compile Include="DummyTcpServer.cs" />
     <Compile Include="TestConfiguration.cs" />
     <!-- SslStream Tests -->

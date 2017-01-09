@@ -58,6 +58,7 @@
     <Compile Include="SumTests.cs" />
     <Compile Include="TakeTests.cs" />
     <Compile Include="TakeWhileTests.cs" />
+    <Compile Include="TestExtensions.cs" />
     <Compile Include="ThenByDescendingTests.cs" />
     <Compile Include="ThenByTests.cs" />
     <Compile Include="ToArrayTests.cs" />

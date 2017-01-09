@@ -7,7 +7,6 @@ using System.Diagnostics.Contracts;
 
 namespace System.Reflection.Emit
 {
-    [System.Runtime.InteropServices.ComVisible(true)]
     public struct OpCode
     {
         //

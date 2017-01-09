@@ -101,7 +101,7 @@ namespace System.Runtime.Serialization
                 Add(typeof(ulong), "unsignedLong");
             }
 
-            static internal void Add(Type type, string localName)
+            internal static void Add(Type type, string localName)
             {
                 XmlQualifiedName stableName = CreateQualifiedName(localName, Globals.SchemaNamespace);
                 s_typeToName.Add(type, stableName);

@@ -6,9 +6,9 @@
     <AssemblyName>System.Linq</AssemblyName>
     <AssemblyVersion>4.2.0.0</AssemblyVersion>
     <RootNamespace>System.Linq</RootNamespace>
-    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net463'">true</IsPartialFacadeAssembly>
+    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net461'">true</IsPartialFacadeAssembly>
     <!-- The following line needs to be removed once we have a targeting pack for 4.6.3 -->
-    <TargetingPackNugetPackageId Condition="'$(TargetGroup)' == 'net463'">Microsoft.TargetingPack.NETFramework.v4.6.1</TargetingPackNugetPackageId>
+    <TargetingPackNugetPackageId Condition="'$(TargetGroup)' == 'net461'">Microsoft.TargetingPack.NETFramework.v4.6.1</TargetingPackNugetPackageId>
     <DefineConstants Condition="'$(TargetGroup)' == 'netstandard1.6'">$(DefineConstants);netcoreapp11</DefineConstants>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
@@ -80,7 +80,7 @@
     <Compile Include="System\Linq\Where.cs" />
     <Compile Include="System\Linq\Zip.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'net463'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'net461'">
     <TargetingPackReference Include="mscorlib" />
     <TargetingPackReference Include="System.Core" />
   </ItemGroup>

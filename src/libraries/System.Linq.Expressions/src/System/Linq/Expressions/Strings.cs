@@ -75,6 +75,11 @@ namespace System.Linq.Expressions
         internal static string SetterMustBeVoid => SR.SetterMustBeVoid;
 
         /// <summary>
+        /// A string like "Property type must match the value type of getter"
+        /// </summary>
+        internal static string PropertyTypeMustMatchGetter => SR.PropertyTypeMustMatchGetter;
+
+        /// <summary>
         /// A string like "Property type must match the value type of setter"
         /// </summary>
         internal static string PropertyTypeMustMatchSetter => SR.PropertyTypeMustMatchSetter;
@@ -360,7 +365,7 @@ namespace System.Linq.Expressions
         internal static string ArgumentMustBeArrayIndexType => SR.ArgumentMustBeArrayIndexType;
 
         /// <summary>
-        /// A string like "Argument must be single dimensional array type"
+        /// A string like "Argument must be single-dimensional, zero-based array type"
         /// </summary>
         internal static string ArgumentMustBeSingleDimensionalArrayType => SR.ArgumentMustBeSingleDimensionalArrayType;
 

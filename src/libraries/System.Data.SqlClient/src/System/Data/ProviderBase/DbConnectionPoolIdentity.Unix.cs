@@ -12,7 +12,7 @@ namespace System.Data.ProviderBase
 {
     partial class DbConnectionPoolIdentity
     {
-        static internal DbConnectionPoolIdentity GetCurrent()
+        internal static DbConnectionPoolIdentity GetCurrent()
         {
             throw new PlatformNotSupportedException();
         }

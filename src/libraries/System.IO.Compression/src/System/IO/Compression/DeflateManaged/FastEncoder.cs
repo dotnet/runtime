@@ -156,7 +156,7 @@ namespace System.IO.Compression
             output.WriteBits(code_len, code_info >> 5);
         }
 
-        static internal void WriteMatch(int matchLen, int matchPos, OutputBuffer output)
+        internal static void WriteMatch(int matchLen, int matchPos, OutputBuffer output)
         {
             Debug.Assert(matchLen >= FastEncoderWindow.MinMatch && matchLen <= FastEncoderWindow.MaxMatch, "Illegal currentMatch length!");
 
@@ -184,7 +184,7 @@ namespace System.IO.Compression
             }
         }
 
-        static internal void WriteChar(byte b, OutputBuffer output)
+        internal static void WriteChar(byte b, OutputBuffer output)
         {
             uint code = FastEncoderStatics.FastEncoderLiteralCodeInfo[b];
             output.WriteBits((int)code & 31, code >> 5);
@@ -197,7 +197,7 @@ namespace System.IO.Compression
         //  FastEncoderLiteralTreeLength
         //  FastEncoderDistanceTreeLength
         //
-        static internal void WriteDeflatePreamble(OutputBuffer output)
+        internal static void WriteDeflatePreamble(OutputBuffer output)
         {
             //Debug.Assert( bitCount == 0, "bitCount must be zero before writing tree bit!");
 

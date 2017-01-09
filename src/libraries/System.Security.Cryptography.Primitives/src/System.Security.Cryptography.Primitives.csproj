@@ -38,7 +38,6 @@
   <ItemGroup Condition="'$(TargetGroup)' == 'net463'">
     <TargetingPackReference Include="mscorlib" />
   </ItemGroup>
-
   <ItemGroup>
     <Reference Include="System.Runtime" />
     <Reference Include="System.Resources.ResourceManager" />

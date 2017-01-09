@@ -121,6 +121,9 @@ namespace System.Xml.Linq
         public XCData(System.Xml.Linq.XCData other) : base(default(string)) { }
         public override System.Xml.XmlNodeType NodeType { get { throw null; } }
         public override void WriteTo(System.Xml.XmlWriter writer) { }
+#if netcoreapp11
+        public override System.Threading.Tasks.Task WriteToAsync(System.Xml.XmlWriter writer, System.Threading.CancellationToken cancellationToken) { throw null; }
+#endif
     }
     public partial class XComment : System.Xml.Linq.XNode
     {
@@ -129,6 +132,9 @@ namespace System.Xml.Linq
         public override System.Xml.XmlNodeType NodeType { get { throw null; } }
         public string Value { get { throw null; } set { } }
         public override void WriteTo(System.Xml.XmlWriter writer) { }
+#if netcoreapp11
+        public override System.Threading.Tasks.Task WriteToAsync(System.Xml.XmlWriter writer, System.Threading.CancellationToken cancellationToken) { throw null; }
+#endif
     }
     public abstract partial class XContainer : System.Xml.Linq.XNode
     {
@@ -178,6 +184,11 @@ namespace System.Xml.Linq
         public static System.Xml.Linq.XDocument Load(string uri, System.Xml.Linq.LoadOptions options) { throw null; }
         public static System.Xml.Linq.XDocument Load(System.Xml.XmlReader reader) { throw null; }
         public static System.Xml.Linq.XDocument Load(System.Xml.XmlReader reader, System.Xml.Linq.LoadOptions options) { throw null; }
+#if netcoreapp11
+        public static System.Threading.Tasks.Task<System.Xml.Linq.XDocument> LoadAsync(System.IO.Stream stream, System.Xml.Linq.LoadOptions options, System.Threading.CancellationToken cancellationToken) { throw null; }
+        public static System.Threading.Tasks.Task<System.Xml.Linq.XDocument> LoadAsync(System.IO.TextReader textReader, System.Xml.Linq.LoadOptions options, System.Threading.CancellationToken cancellationToken) { throw null; }
+        public static System.Threading.Tasks.Task<System.Xml.Linq.XDocument> LoadAsync(System.Xml.XmlReader reader, System.Xml.Linq.LoadOptions options, System.Threading.CancellationToken cancellationToken) { throw null; }
+#endif
         public static System.Xml.Linq.XDocument Parse(string text) { throw null; }
         public static System.Xml.Linq.XDocument Parse(string text, System.Xml.Linq.LoadOptions options) { throw null; }
         public void Save(System.IO.Stream stream) { }
@@ -187,7 +198,15 @@ namespace System.Xml.Linq
         public void Save(System.Xml.XmlWriter writer) { }
         public void Save(System.String fileName) { }
         public void Save(System.String fileName, System.Xml.Linq.SaveOptions options) { }
+#if netcoreapp11
+        public System.Threading.Tasks.Task SaveAsync(System.IO.Stream stream, System.Xml.Linq.SaveOptions options, System.Threading.CancellationToken cancellationToken) { throw null; }
+        public System.Threading.Tasks.Task SaveAsync(System.IO.TextWriter textWriter, System.Xml.Linq.SaveOptions options, System.Threading.CancellationToken cancellationToken) { throw null; }
+        public System.Threading.Tasks.Task SaveAsync(System.Xml.XmlWriter writer, System.Threading.CancellationToken cancellationToken) { throw null; }
+#endif
         public override void WriteTo(System.Xml.XmlWriter writer) { }
+#if netcoreapp11
+        public override System.Threading.Tasks.Task WriteToAsync(System.Xml.XmlWriter writer, System.Threading.CancellationToken cancellationToken) { throw null; }
+#endif
     }
     public partial class XDocumentType : System.Xml.Linq.XNode
     {
@@ -199,6 +218,9 @@ namespace System.Xml.Linq
         public string PublicId { get { throw null; } set { } }
         public string SystemId { get { throw null; } set { } }
         public override void WriteTo(System.Xml.XmlWriter writer) { }
+#if netcoreapp11
+        public override System.Threading.Tasks.Task WriteToAsync(System.Xml.XmlWriter writer, System.Threading.CancellationToken cancellationToken) { throw null; }
+#endif
     }
     public partial class XElement : System.Xml.Linq.XContainer, System.Xml.Serialization.IXmlSerializable
     {
@@ -235,6 +257,11 @@ namespace System.Xml.Linq
         public static System.Xml.Linq.XElement Load(string uri, System.Xml.Linq.LoadOptions options) { throw null; }
         public static System.Xml.Linq.XElement Load(System.Xml.XmlReader reader) { throw null; }
         public static System.Xml.Linq.XElement Load(System.Xml.XmlReader reader, System.Xml.Linq.LoadOptions options) { throw null; }
+#if netcoreapp11
+        public static System.Threading.Tasks.Task<System.Xml.Linq.XElement> LoadAsync(System.IO.Stream stream, System.Xml.Linq.LoadOptions options, System.Threading.CancellationToken cancellationToken) { throw null; }
+        public static System.Threading.Tasks.Task<System.Xml.Linq.XElement> LoadAsync(System.IO.TextReader textReader, System.Xml.Linq.LoadOptions options, System.Threading.CancellationToken cancellationToken) { throw null; }
+        public static System.Threading.Tasks.Task<System.Xml.Linq.XElement> LoadAsync(System.Xml.XmlReader reader, System.Xml.Linq.LoadOptions options, System.Threading.CancellationToken cancellationToken) { throw null; }
+#endif
         [System.CLSCompliantAttribute(false)]
         public static explicit operator bool (System.Xml.Linq.XElement element) { throw null; }
         [System.CLSCompliantAttribute(false)]
@@ -300,6 +327,11 @@ namespace System.Xml.Linq
         public void Save(System.Xml.XmlWriter writer) { }
         public void Save(System.String fileName) { }
         public void Save(System.String fileName, System.Xml.Linq.SaveOptions options) { }
+#if netcoreapp11
+        public System.Threading.Tasks.Task SaveAsync(System.IO.Stream stream, System.Xml.Linq.SaveOptions options, System.Threading.CancellationToken cancellationToken) { throw null; }
+        public System.Threading.Tasks.Task SaveAsync(System.IO.TextWriter textWriter, System.Xml.Linq.SaveOptions options, System.Threading.CancellationToken cancellationToken) { throw null; }
+        public System.Threading.Tasks.Task SaveAsync(System.Xml.XmlWriter writer, System.Threading.CancellationToken cancellationToken) { throw null; }
+#endif
         public void SetAttributeValue(System.Xml.Linq.XName name, object value) { }
         public void SetElementValue(System.Xml.Linq.XName name, object value) { }
         public void SetValue(object value) { }
@@ -307,6 +339,9 @@ namespace System.Xml.Linq
         void System.Xml.Serialization.IXmlSerializable.ReadXml(System.Xml.XmlReader reader) { }
         void System.Xml.Serialization.IXmlSerializable.WriteXml(System.Xml.XmlWriter writer) { }
         public override void WriteTo(System.Xml.XmlWriter writer) { }
+#if netcoreapp11
+        public override System.Threading.Tasks.Task WriteToAsync(System.Xml.XmlWriter writer, System.Threading.CancellationToken cancellationToken) { throw null; }
+#endif
     }
     public sealed partial class XName : System.IEquatable<System.Xml.Linq.XName>, System.Runtime.Serialization.ISerializable
     {
@@ -370,12 +405,18 @@ namespace System.Xml.Linq
         public System.Collections.Generic.IEnumerable<System.Xml.Linq.XNode> NodesAfterSelf() { throw null; }
         public System.Collections.Generic.IEnumerable<System.Xml.Linq.XNode> NodesBeforeSelf() { throw null; }
         public static System.Xml.Linq.XNode ReadFrom(System.Xml.XmlReader reader) { throw null; }
+#if netcoreapp11
+        public static System.Threading.Tasks.Task<System.Xml.Linq.XNode> ReadFromAsync(System.Xml.XmlReader reader, System.Threading.CancellationToken cancellationToken) { throw null; }
+#endif
         public void Remove() { }
         public void ReplaceWith(object content) { }
         public void ReplaceWith(params object[] content) { }
         public override string ToString() { throw null; }
         public string ToString(System.Xml.Linq.SaveOptions options) { throw null; }
         public abstract void WriteTo(System.Xml.XmlWriter writer);
+#if netcoreapp11
+        public abstract System.Threading.Tasks.Task WriteToAsync(System.Xml.XmlWriter writer, System.Threading.CancellationToken cancellationToken);
+#endif
     }
     public sealed partial class XNodeDocumentOrderComparer : System.Collections.Generic.IComparer<System.Xml.Linq.XNode>, System.Collections.IComparer
     {
@@ -435,6 +476,9 @@ namespace System.Xml.Linq
         public override System.Xml.XmlNodeType NodeType { get { throw null; } }
         public string Target { get { throw null; } set { } }
         public override void WriteTo(System.Xml.XmlWriter writer) { }
+#if netcoreapp11
+        public override System.Threading.Tasks.Task WriteToAsync(System.Xml.XmlWriter writer, System.Threading.CancellationToken cancellationToken) { throw null; }
+#endif
     }
     public partial class XStreamingElement
     {
@@ -462,6 +506,9 @@ namespace System.Xml.Linq
         public override System.Xml.XmlNodeType NodeType { get { throw null; } }
         public string Value { get { throw null; } set { } }
         public override void WriteTo(System.Xml.XmlWriter writer) { }
+#if netcoreapp11
+        public override System.Threading.Tasks.Task WriteToAsync(System.Xml.XmlWriter writer, System.Threading.CancellationToken cancellationToken) { throw null; }
+#endif
     }
 }
 namespace System.Xml.Schema

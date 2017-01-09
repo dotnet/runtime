@@ -24,6 +24,24 @@
     <Compile Include="$(CommonTestPath)\System\EnumTypes.cs">
       <Link>Common\System\EnumTypes.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\tests\System\Collections\CollectionAsserts.cs">
+      <Link>Common\System\Collections\CollectionAsserts.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\tests\System\Collections\ICollection.Generic.Tests.cs">
+      <Link>Common\System\Collections\ICollection.Generic.Tests.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\tests\System\Collections\IEnumerable.Generic.Tests.cs">
+      <Link>Common\System\Collections\IEnumerable.Generic.Tests.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\tests\System\Collections\IList.Generic.Tests.cs">
+      <Link>Common\System\Collections\IList.Generic.Tests.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\tests\System\Collections\TestBase.Generic.cs">
+      <Link>Common\System\Collections\TestBase.Generic.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\tests\System\Collections\TestBase.NonGeneric.cs">
+      <Link>Common\System\Collections\TestBase.NonGeneric.cs</Link>
+    </Compile>
     <Compile Include="Helpers.cs" />
     <Compile Include="System\ActivatorTests.cs" />
     <Compile Include="System\ArrayTests.cs" />
@@ -111,12 +129,17 @@
     <Compile Include="System\IntPtrTests.netcoreapp1.1.cs" />
     <Compile Include="System\LazyTests.netcoreapp1.1.cs" />
     <Compile Include="System\Runtime\CompilerServices\RuntimeHelpersTests.netcoreapp1.1.cs" />
+    <Compile Include="System\Runtime\CompilerServices\ConditionalWeakTableTests.netcoreapp1.1.cs" />
     <Compile Include="System\UIntPtrTests.netcoreapp1.1.cs" />
+    <Compile Include="System\ComponentModel\DefaultValueAttributeTests.netcoreapp1.1.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' != 'netcoreapp1.1'">
     <Compile Include="System\StringSplitExtensions.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netstandard1.7'">
+    <Compile Include="..\..\Common\tests\System\Collections\IEnumerable.Generic.Serialization.Tests.cs">
+      <Link>Common\System\Collections\IEnumerable.Generic.Serialization.Tests.cs</Link>
+    </Compile>
     <Compile Include="ArrayTests.netstandard1.7.cs" />
     <Compile Include="System\DelegateTests.netstandard1.7.cs" />
     <Compile Include="System\AttributeTests.netstandard1.7.cs" />

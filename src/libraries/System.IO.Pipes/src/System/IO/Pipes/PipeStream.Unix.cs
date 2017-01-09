@@ -22,10 +22,10 @@ namespace System.IO.Pipes
         internal const bool CheckOperationsRequiresSetHandle = false;
 
         /// <summary>Characters that can't be used in a pipe's name.</summary>
-        private readonly static char[] s_invalidFileNameChars = Path.GetInvalidFileNameChars();
+        private static readonly char[] s_invalidFileNameChars = Path.GetInvalidFileNameChars();
 
         /// <summary>Prefix to prepend to all pipe names.</summary>
-        private readonly static string s_pipePrefix = Path.Combine(Path.GetTempPath(), "CoreFxPipe_");
+        private static readonly string s_pipePrefix = Path.Combine(Path.GetTempPath(), "CoreFxPipe_");
 
         internal static string GetPipePath(string serverName, string pipeName)
         {

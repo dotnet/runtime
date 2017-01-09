@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections;
+using System.Collections.Generic;
 using System.ComponentModel.Design;
 using System.Diagnostics;
 using System.Linq;
@@ -62,7 +63,6 @@ namespace System.ComponentModel
         // These are keys we stuff into our object cache.  We use this
         // cache data to store extender provider info for an object.
         //
-        private static readonly Guid s_extenderProviderKey = Guid.NewGuid();
         private static readonly Guid s_extenderPropertiesKey = Guid.NewGuid();
         private static readonly Guid s_extenderProviderPropertiesKey = Guid.NewGuid();
 
@@ -78,16 +78,10 @@ namespace System.ComponentModel
         };
 
 
-        internal static Guid ExtenderProviderKey
-        {
-            get
-            {
-                return s_extenderProviderKey;
-            }
-        }
+        internal static Guid ExtenderProviderKey { get; } = Guid.NewGuid();
 
 
-        private static object s_internalSyncObject = new object();
+        private static readonly object s_internalSyncObject = new object();
         /// <summary>
         ///     Creates a new ReflectTypeDescriptionProvider.  The type is the
         ///     type we will obtain type information for.
@@ -228,12 +222,7 @@ namespace System.ComponentModel
                 obj = objectType.GetTypeInfo().GetConstructor(argTypes)?.Invoke(args);
             }
 
-            if (obj == null)
-            {
-                obj = Activator.CreateInstance(objectType, args);
-            }
-
-            return obj;
+            return obj ?? Activator.CreateInstance(objectType, args);
         }
 
 
@@ -515,7 +504,7 @@ namespace System.ComponentModel
             // Unlike normal properties, it is fine for there to be properties with
             // duplicate names here.  
             //
-            ArrayList propertyList = null;
+            List<PropertyDescriptor> propertyList = null;
 
             for (int idx = 0; idx < extenders.Length; idx++)
             {
@@ -523,7 +512,7 @@ namespace System.ComponentModel
 
                 if (propertyList == null)
                 {
-                    propertyList = new ArrayList(propertyArray.Length * extenders.Length);
+                    propertyList = new List<PropertyDescriptor>(propertyArray.Length * extenders.Length);
                 }
 
                 for (int propIdx = 0; propIdx < propertyArray.Length; propIdx++)
@@ -531,7 +520,7 @@ namespace System.ComponentModel
                     PropertyDescriptor prop = propertyArray[propIdx];
                     ExtenderProvidedPropertyAttribute eppa = prop.Attributes[typeof(ExtenderProvidedPropertyAttribute)] as ExtenderProvidedPropertyAttribute;
 
-                    Debug.Assert(eppa != null, "Extender property " + prop.Name + " has no provider attribute.  We will skip it.");
+                    Debug.Assert(eppa != null, $"Extender property {prop.Name} has no provider attribute.  We will skip it.");
                     if (eppa != null)
                     {
                         Type receiverType = eppa.ReceiverType;
@@ -628,7 +617,7 @@ namespace System.ComponentModel
 
             if (cache != null)
             {
-                existingExtenders = cache[s_extenderProviderKey] as IExtenderProvider[];
+                existingExtenders = cache[ExtenderProviderKey] as IExtenderProvider[];
             }
 
             if (existingExtenders == null)
@@ -703,10 +692,9 @@ namespace System.ComponentModel
                     }
                     else if (extenderCount > 0)
                     {
-                        IEnumerator componentEnum = components.GetEnumerator();
-                        while (componentEnum.MoveNext())
+                        foreach (var component in components)
                         {
-                            IExtenderProvider p = componentEnum.Current as IExtenderProvider;
+                            IExtenderProvider p = component as IExtenderProvider;
 
                             if (p != null && ((curIdx < maxCanExtendResults && (canExtend & ((UInt64)1 << curIdx)) != 0) ||
                                                 (curIdx >= maxCanExtendResults && p.CanExtend(instance))))
@@ -723,7 +711,7 @@ namespace System.ComponentModel
 
                 if (cache != null)
                 {
-                    cache[s_extenderProviderKey] = currentExtenders;
+                    cache[ExtenderProviderKey] = currentExtenders;
                     cache.Remove(s_extenderPropertiesKey);
                 }
             }
@@ -765,13 +753,10 @@ namespace System.ComponentModel
         public override string GetFullComponentName(object component)
         {
             IComponent comp = component as IComponent;
-            if (comp != null)
+            INestedSite ns = comp?.Site as INestedSite;
+            if (ns != null)
             {
-                INestedSite ns = comp.Site as INestedSite;
-                if (ns != null)
-                {
-                    return ns.FullName;
-                }
+                return ns.FullName;
             }
 
             return TypeDescriptor.GetComponentName(component);
@@ -783,7 +768,7 @@ namespace System.ComponentModel
         /// </summary>
         internal Type[] GetPopulatedTypes(Module module)
         {
-            ArrayList typeList = new ArrayList(); ;
+            List<Type> typeList = new List<Type>(); 
 
             // Manual use of IDictionaryEnumerator instead of foreach to avoid DictionaryEntry box allocations.
             IDictionaryEnumerator e = _typeData.GetEnumerator();
@@ -799,7 +784,7 @@ namespace System.ComponentModel
                 }
             }
 
-            return (Type[])typeList.ToArray(typeof(Type));
+            return typeList.ToArray();
         }
 
         /// <summary>
@@ -1142,7 +1127,7 @@ namespace System.ComponentModel
                     if (extendedProperties == null)
                     {
                         AttributeCollection attributes = TypeDescriptor.GetAttributes(providerType);
-                        ArrayList extendedList = new ArrayList(attributes.Count);
+                        List<ReflectPropertyDescriptor> extendedList = new List<ReflectPropertyDescriptor>(attributes.Count);
 
                         foreach (Attribute attr in attributes)
                         {
@@ -1279,7 +1264,7 @@ namespace System.ComponentModel
                         properties = newProperties;
                     }
 
-                    Debug.Assert(!properties.Any(dbgProp => dbgProp == null), "Holes in property array for type " + type);
+                    Debug.Assert(!properties.Any(dbgProp => dbgProp == null), $"Holes in property array for type {type}");
 
                     s_propertyCache[type] = properties;
                 }
@@ -1296,10 +1281,7 @@ namespace System.ComponentModel
         internal void Refresh(Type type)
         {
             ReflectedTypeData td = GetTypeData(type, false);
-            if (td != null)
-            {
-                td.Refresh();
-            }
+            td?.Refresh();
         }
 
         /// <summary> 

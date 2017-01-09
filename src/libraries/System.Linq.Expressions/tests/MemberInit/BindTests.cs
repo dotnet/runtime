@@ -19,7 +19,7 @@ namespace System.Linq.Expressions.Tests
             public static string StaticStringProperty { get; set; }
             public static string StaticStringField;
             public static string StaticReadonlyStringProperty => "";
-            public readonly static string StaticReadonlyStringField = "";
+            public static readonly string StaticReadonlyStringField = "";
             public const string ConstantString = "Constant";
 #pragma warning restore 649
         }

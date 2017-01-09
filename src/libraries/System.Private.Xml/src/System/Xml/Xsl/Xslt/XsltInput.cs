@@ -710,7 +710,7 @@ namespace System.Xml.Xsl.Xslt
         // to there's numbers in actual stylesheet as they ordered in 'records' array
         private int[] _xsltAttributeNumber = new int[21];
 
-        static private XsltAttribute[] s_noAttributes = new XsltAttribute[] { };
+        private static XsltAttribute[] s_noAttributes = new XsltAttribute[] { };
         public ContextInfo GetAttributes()
         {
             return GetAttributes(s_noAttributes);

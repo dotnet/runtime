@@ -106,7 +106,7 @@ namespace System.Net
         public override System.IO.Stream GetRequestStream() { throw null; }
         public override System.Net.WebResponse GetResponse() { throw null; }
     }
-    public class FtpWebResponse : WebResponse
+    public class FtpWebResponse : WebResponse, IDisposable
     {
         internal FtpWebResponse() { }
         public override long ContentLength { get { throw null; } }
@@ -123,9 +123,11 @@ namespace System.Net
         public string StatusDescription { get { throw null; } }
         public DateTime LastModified { get { throw null; } }
     }
-    public partial class HttpWebRequest : System.Net.WebRequest
+    public partial class HttpWebRequest : System.Net.WebRequest, System.Runtime.Serialization.ISerializable
     {
         internal HttpWebRequest() { }
+        [System.ObsoleteAttribute("Serialization is obsoleted for this type.  http://go.microsoft.com/fwlink/?linkid=14202")]
+        protected HttpWebRequest(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }        
         public string Accept { get { throw null; } set { } }
         public virtual bool AllowReadStreamBuffering { get { throw null; } set { } }
         public override string ContentType { get { throw null; } set { } }
@@ -152,8 +154,7 @@ namespace System.Net
         public DateTime Date { get { throw null; } set { } }
         public static int DefaultMaximumResponseHeadersLength { get { throw null; } set { } }
         public static int DefaultMaximumErrorResponseLength { get { throw null; } set { } }
-        public System.Security.Cryptography.X509Certificates.X509CertificateCollection ClientCertificates {
-            get { throw null; } set { } }
+        public System.Security.Cryptography.X509Certificates.X509CertificateCollection ClientCertificates { get { throw null; } set { } }
         public string Expect { get { throw null; } set { } }
         public DateTime IfModifiedSince { get { throw null; } set { } }
         public bool KeepAlive { get { throw null; } set { } }
@@ -183,10 +184,24 @@ namespace System.Net
         public override string ConnectionGroupName { get { throw null; } set { } }
         public System.Net.Security.RemoteCertificateValidationCallback ServerCertificateValidationCallback { get; set; }
         public HttpContinueDelegate ContinueDelegate { get { throw null; } set { } }
+        public string Connection { get { throw null; } set { } }
+        public override System.Net.IWebProxy Proxy { get { throw null; } set { } }
+        public static new System.Net.Cache.RequestCachePolicy DefaultCachePolicy { get { throw null; } set { } }
+        public override bool PreAuthenticate { get { throw null; } set { } }
+        public override int Timeout { get { throw null; } set { } }
+        public override long ContentLength { get { throw null; } set { } }
+#pragma warning disable 0809 // Obsolete member overrides non-obsolete member
+        [ObsoleteAttribute("Serialization is obsoleted for this type.  http://go.microsoft.com/fwlink/?linkid=14202")]
+        void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { throw null; }
+        [ObsoleteAttribute("Serialization is obsoleted for this type.  http://go.microsoft.com/fwlink/?linkid=14202")]
+        protected override void GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { throw null; }
+#pragma warning restore 0809
     }
-    public partial class HttpWebResponse : System.Net.WebResponse
+    public partial class HttpWebResponse : System.Net.WebResponse, System.Runtime.Serialization.ISerializable
     {
         public HttpWebResponse() { }
+        [System.ObsoleteAttribute("Serialization is obsoleted for this type.  http://go.microsoft.com/fwlink/?linkid=14202")]
+        protected HttpWebResponse(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }        
         public override long ContentLength { get { throw null; } }
         public override string ContentType { get { throw null; } }
         public virtual System.Net.CookieCollection Cookies { get { throw null; } set { } }
@@ -205,6 +220,13 @@ namespace System.Net
         public string CharacterSet { get { throw null; } }
         public string Server { get { throw null; } }
         public override void Close() { throw null; }
+        public override bool IsMutuallyAuthenticated { get { throw null; } }
+#pragma warning disable 0809 // Obsolete member overrides non-obsolete member
+        [ObsoleteAttribute("Serialization is obsoleted for this type.  http://go.microsoft.com/fwlink/?linkid=14202")]
+        void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { throw null; }
+        [ObsoleteAttribute("Serialization is obsoleted for this type.  http://go.microsoft.com/fwlink/?linkid=14202")]
+        protected override void GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { throw null; }
+#pragma warning restore 0809
     }
     public interface IAuthenticationModule
     {

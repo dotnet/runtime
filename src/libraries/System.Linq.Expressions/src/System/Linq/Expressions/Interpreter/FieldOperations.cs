@@ -34,7 +34,7 @@ namespace System.Linq.Expressions.Interpreter
         public override int Run(InterpretedFrame frame)
         {
             frame.Push(_field.GetValue(obj: null));
-            return +1;
+            return 1;
         }
     }
 
@@ -55,7 +55,7 @@ namespace System.Linq.Expressions.Interpreter
 
             NullCheck(self);
             frame.Push(_field.GetValue(self));
-            return +1;
+            return 1;
         }
     }
 
@@ -78,7 +78,7 @@ namespace System.Linq.Expressions.Interpreter
 
             NullCheck(self);
             _field.SetValue(self, value);
-            return +1;
+            return 1;
         }
     }
 
@@ -98,7 +98,7 @@ namespace System.Linq.Expressions.Interpreter
         {
             object value = frame.Pop();
             _field.SetValue(null, value);
-            return +1;
+            return 1;
         }
     }
 }

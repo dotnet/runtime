@@ -4,8 +4,6 @@
   <PropertyGroup>
     <ProjectGuid>{845D2B72-D8A4-42E5-9BE9-17639EC4FC1A}</ProjectGuid>
     <AssemblyName>System.Runtime.Extensions</AssemblyName>
-    <AssemblyVersion Condition="'$(TargetGroup)'=='net462'">4.1.1.0</AssemblyVersion>
-    <ContractProject Condition="'$(AssemblyVersion)'=='4.1.1.0'">../ref/4.1.0/System.Runtime.Extensions.depproj</ContractProject>
     <OutputType>Library</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
@@ -20,26 +18,21 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net462_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net462_Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net461_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net461_Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_uap101aot_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_uap101aot_Release|AnyCPU'" />
   <PropertyGroup Condition="'$(TargetsWindowsUap)' == 'true'">
     <SkipCommonResourcesIncludes>true</SkipCommonResourcesIncludes>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ExcludeAssemblyInfoPartialFile>true</ExcludeAssemblyInfoPartialFile>
-    <StringResourcesPath>Resources\Strings.netcore50aot.resx</StringResourcesPath>
-    <DefineConstants>$(DefineConstants);uap101aot</DefineConstants>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'net463'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'net461'">
     <ContractProject Include="..\ref\System.Runtime.Extensions.csproj">
       <TargetGroup>netstandard</TargetGroup>
     </ContractProject>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard'">
-    <Compile Include="System\AppDomain.cs" />
+  <ItemGroup Condition="'$(TargetGroup)' != 'net461'">
+    <Compile Include="System\AppDomain.cs" Condition="'$(TargetGroup)' != 'uap101aot' and '$(TargetGroup)' != 'netcoreapp1.2corert'" />
     <Compile Include="System\Context.cs" />
     <Compile Include="System\AppDomainUnloadedException.cs" />
     <Compile Include="System\ApplicationId.cs" />
@@ -49,13 +42,11 @@
     <Compile Include="System\Environment.cs" />
     <Compile Include="System\Environment.SpecialFolder.cs" />
     <Compile Include="System\Environment.SpecialFolderOption.cs" />
-    <Compile Include="System\EnvironmentVariableTarget.cs" />
     <Compile Include="System\LoaderOptimization.cs" />
     <Compile Include="System\LoaderOptimizationAttribute.cs" />
     <Compile Include="System\OperatingSystem.cs" />
     <Compile Include="System\PlatformID.cs" />
     <Compile Include="System\CodeDom\Compiler\IndentedTextWriter.cs" />
-    <Compile Include="System\IO\Path.cs" />
     <Compile Include="System\IO\EncodingCache.cs" />
     <Compile Include="System\IO\StreamReader.cs" />
     <Compile Include="System\IO\StreamWriter.cs" />
@@ -130,15 +121,10 @@
     <Compile Include="System\IO\TextWriter.netstandard17.cs" />
   </ItemGroup>
   <!-- WINDOWS: Shared CoreCLR and .NET Native -->
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true' And '$(TargetGroup)' == 'netstandard'">
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true' And '$(TargetGroup)' != 'net461'">
     <Compile Include="System\Environment.Windows.cs" />
     <Compile Include="System\Runtime\Versioning\VersioningHelper.Windows.cs" />
     <Compile Include="System\Diagnostics\Stopwatch.Windows.cs" />
-    <Compile Include="System\IO\Path.Windows.cs" />
-    <Compile Include="System\IO\PathHelper.Windows.cs" />
-    <Compile Include="$(CommonPath)\System\IO\DriveInfoInternal.Win32.cs">
-      <Link>Common\System\IO\DriveInfoInternal.Win32.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\System\IO\Win32Marshal.cs">
       <Link>Common\System\IO\Win32Marshal.cs</Link>
     </Compile>
@@ -157,17 +143,8 @@
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetCurrentDirectory.cs">
       <Link>Common\Interop\Windows\kernel32\Interop.GetCurrentDirectory.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetFullPathNameW.cs">
-      <Link>Common\Interop\Windows\kernel32\Interop.GetFullPathNameW.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetLogicalDrive.cs">
-      <Link>Common\Interop\Windows\Interop.GetLogicalDrive.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetLongPathName.cs">
       <Link>Common\Interop\Windows\kernel32\Interop.GetLongPathName.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetLongPathNameW.cs">
-      <Link>Common\Interop\Windows\kernel32\Interop.GetLongPathNameW.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetSystemInfo.cs">
       <Link>Common\Interop\Windows\kernel32\Interop.GetSystemInfo.cs</Link>
@@ -177,9 +154,6 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetTempPathW.cs">
       <Link>Common\Interop\Windows\kernel32\Interop.GetTempPathW.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetVersionExW.cs">
-      <Link>Common\Interop\Windows\kernel32\Interop.GetVersionExW.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.MaxLengths.cs">
       <Link>Common\Interop\Windows\kernel32\Interop.MaxLengths.cs</Link>
@@ -199,20 +173,14 @@
     <Compile Include="$(CommonPath)\System\IO\PathInternal.Windows.cs">
       <Link>Common\System\IO\PathInternal.Windows.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\IO\PathInternal.Windows.StringBuffer.cs">
-      <Link>Common\System\IO\PathInternal.Windows.StringBuffer.cs</Link>
-    </Compile>
+  </ItemGroup>
+  <!-- Win32 or Unix -->
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true' or ('$(TargetsWindows)' == 'true' and '$(TargetGroup)' != 'net461' and '$(TargetsWindowsUap)' != 'true')">
+    <Compile Include="System\Environment.Win32.Unix.cs" />
   </ItemGroup>
   <!-- WINDOWS: Win32 -->
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true' And '$(TargetGroup)' == 'netstandard' and '$(TargetsWindowsUap)' != 'true'">
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true' and '$(TargetGroup)' != 'net461' and '$(TargetsWindowsUap)' != 'true'">
     <Compile Include="System\Environment.Win32.cs" />
-    <Compile Include="System\IO\Path.Win32.cs" />
-    <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\Interop.BCryptGenRandom.cs">
-      <Link>Common\Interop\Windows\BCrypt\Interop.BCryptGenRandom.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\Interop.NTSTATUS.cs">
-      <Link>Common\Interop\Windows\BCrypt\Interop.NTSTATUS.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.EnvironmentVariables.cs">
       <Link>Common\Interop\Windows\kernel32\Interop.EnvironmentVariables.cs</Link>
     </Compile>
@@ -221,6 +189,9 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetCurrentProcess_IntPtr.cs">
       <Link>Common\Interop\Windows\kernel32\Interop.GetCurrentProcess_IntPtr.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetLogicalDrive.cs">
+      <Link>Common\Interop\Windows\Interop.GetLogicalDrive.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetLogicalProcessorInformationEx.cs">
       <Link>Common\Interop\Windows\kernel32\Interop.GetLogicalProcessorInformationEx.cs</Link>
@@ -231,6 +202,9 @@
     <Compile Include="$(CommonPath)\Interop\Windows\sspicli\Interop.GetUserNameExW.cs">
       <Link>Common\Interop\Windows\sspicli\Interop.GetUserNameExW.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetVersionExW.cs">
+      <Link>Common\Interop\Windows\kernel32\Interop.GetVersionExW.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.IsWow64Process_IntPtr.cs">
       <Link>Common\Interop\Windows\kernel32\Interop.IsWow64Process_IntPtr.cs</Link>
     </Compile>
@@ -240,87 +214,8 @@
     <Compile Include="$(CommonPath)\Interop\Windows\shell32\Interop.SHGetKnownFolderPath.cs">
       <Link>Common\Interop\Windows\shell32\Interop.SHGetKnownFolderPath.cs</Link>
     </Compile>
-    <!-- Microsoft.Win32.Registry, needed for some Environment env var support -->
-    <Compile Include="..\..\Microsoft.Win32.Registry\src\Microsoft\Win32\Registry.cs">
-      <Link>Microsoft.Win32.Registry\src\Microsoft\Win32\Registry.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Microsoft.Win32.Registry\src\Microsoft\Win32\RegistryKey.cs">
-      <Link>Microsoft.Win32.Registry\src\Microsoft\Win32\RegistryKey.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Microsoft.Win32.Registry\src\Microsoft\Win32\RegistryHive.cs">
-      <Link>Microsoft.Win32.Registry\src\Microsoft\Win32\RegistryHive.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Microsoft.Win32.Registry\src\Microsoft\Win32\RegistryOptions.cs">
-      <Link>Microsoft.Win32.Registry\src\Microsoft\Win32\RegistryOptions.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Microsoft.Win32.Registry\src\Microsoft\Win32\RegistryValueKind.cs">
-      <Link>Microsoft.Win32.Registry\src\Microsoft\Win32\RegistryValueKind.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Microsoft.Win32.Registry\src\Microsoft\Win32\RegistryValueOptions.cs">
-      <Link>Microsoft.Win32.Registry\src\Microsoft\Win32\RegistryValueOptions.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Microsoft.Win32.Registry\src\Microsoft\Win32\RegistryView.cs">
-      <Link>Microsoft.Win32.Registry\src\Microsoft\Win32\RegistryView.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Microsoft.Win32.Registry\src\Microsoft\Win32\RegistryKey.Windows.cs">
-      <Link>Microsoft.Win32.Registry\src\Microsoft\Win32\Registry.Windows.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Microsoft.Win32.Registry\src\Microsoft\Win32\SafeHandles\SafeRegistryHandle.cs">
-      <Link>Microsoft.Win32.Registry\src\Microsoft\Win32\SafeHandles\SafeRegistryHandle.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Microsoft.Win32.Registry\src\Microsoft\Win32\SafeHandles\SafeRegistryHandle.Windows.cs">
-      <Link>Microsoft.Win32.Registry\src\Microsoft\Win32\SafeHandles\SafeRegistryHandle.Windows.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Microsoft.Win32.Registry\src\Microsoft\Win32\ThrowHelper.cs">
-      <Link>Microsoft.Win32.Registry\src\Microsoft\Win32\ThrowHelper.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Microsoft.Win32.Registry\src\System\Security\AccessControl\RegistryRights.cs">
-      <Link>Microsoft.Win32.Registry\src\Microsoft\Win32\RegistryRights.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.RegCloseKey.cs">
-      <Link>Common\Interop\Windows\advapi32\Interop.RegCloseKey.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.RegConnectRegistry.cs">
-      <Link>Common\Interop\Windows\advapi32\Interop.RegConnectRegistry.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.RegCreateKeyEx.cs">
-      <Link>Common\Interop\Windows\advapi32\Interop.RegCreateKeyEx.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.RegDeleteKeyEx.cs">
-      <Link>Common\Interop\Windows\advapi32\Interop.RegDeleteKeyEx.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.RegDeleteValue.cs">
-      <Link>Common\Interop\Windows\advapi32\Interop.RegDeleteValue.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.RegEnumKeyEx.cs">
-      <Link>Common\Interop\Windows\advapi32\Interop.RegEnumKeyEx.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.RegEnumValue.cs">
-      <Link>Common\Interop\Windows\advapi32\Interop.RegEnumValue.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.RegFlushKey.cs">
-      <Link>Common\Interop\Windows\advapi32\Interop.RegFlushKey.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.RegOpenKeyEx.cs">
-      <Link>Common\Interop\Windows\advapi32\Interop.RegOpenKeyEx.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.RegQueryInfoKey.cs">
-      <Link>Common\Interop\Windows\advapi32\Interop.RegQueryInfoKey.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.RegQueryValueEx.cs">
-      <Link>Common\Interop\Windows\advapi32\Interop.RegQueryValueEx.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.RegSetValueEx.cs">
-      <Link>Common\Interop\Windows\advapi32\Interop.RegSetValueEx.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.RegistryOptions.cs">
-      <Link>Common\Interop\Windows\advapi32\Interop.RegistryOptions.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Interop.BOOL.cs">
-      <Link>Common\Interop\Windows\mincore\Interop.BOOL.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.SECURITY_ATTRIBUTES.cs">
-      <Link>Common\Interop\Windows\kernel32\Interop.SECURITY_ATTRIBUTES.cs</Link>
+    <Compile Include="$(CommonPath)\System\IO\DriveInfoInternal.Win32.cs">
+      <Link>Common\System\IO\DriveInfoInternal.Win32.cs</Link>
     </Compile>
   </ItemGroup>
   <!-- UNIX -->
@@ -328,12 +223,8 @@
     <Compile Include="System\Environment.Unix.cs" />
     <Compile Include="System\Runtime\Versioning\VersioningHelper.Unix.cs" />
     <Compile Include="System\Diagnostics\Stopwatch.Unix.cs" />
-    <Compile Include="System\IO\Path.Unix.cs" />
     <Compile Include="$(CommonPath)\Interop\OSX\Interop.Libraries.cs">
       <Link>Common\Interop\OSX\Interop.Libraries.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\OSX\Interop.CommonCrypto.cs">
-      <Link>Common\Interop\OSX\Interop.CommonCrypto.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
       <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
@@ -358,9 +249,6 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetCwd.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.GetCwd.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetEnviron.cs">
-      <Link>Common\Interop\Unix\System.Native\Interop.GetEnviron.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetEUid.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.GetEUid.cs</Link>
@@ -392,11 +280,8 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.SysConf.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.SysConf.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.Initialization.cs">
-      <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Initialization.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.RAND.cs">
-      <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.RAND.cs</Link>
+    <Compile Include="$(CommonPath)\System\IO\DriveInfoInternal.Unix.cs">
+      <Link>Common\System\IO\DriveInfoInternal.Unix.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\IO\PathInternal.Unix.cs">
       <Link>Common\System\IO\PathInternal.Unix.cs</Link>
@@ -411,15 +296,28 @@
   <!-- WINDOWS: UAP -->
   <ItemGroup Condition="'$(TargetsWindowsUap)' == 'true'">
     <Compile Include="System\Environment.Uap.cs" />
+    <Compile Include="System\EnvironmentVariableTarget.cs" />
+    <Compile Include="System\IO\Path.cs" />
+    <Compile Include="System\IO\Path.Windows.cs" />
+    <Compile Include="System\IO\PathHelper.Windows.cs" />
     <Compile Include="System\IO\Path.Uap.cs" />
+    <Compile Include="$(CommonPath)\System\IO\PathInternal.Windows.StringBuffer.cs">
+      <Link>Common\System\IO\PathInternal.Windows.StringBuffer.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetFullPathNameW.cs">
+      <Link>Common\Interop\Windows\kernel32\Interop.GetFullPathNameW.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetLongPathNameW.cs">
+      <Link>Common\Interop\Windows\kernel32\Interop.GetLongPathNameW.cs</Link>
+    </Compile>
     <Compile Include="System\IO\BinaryReader.cs" />
     <Compile Include="System\IO\BinaryWriter.cs" />
+    <Compile Include="System\IO\FileStreamHelpers.Uap.cs" />
     <Compile Include="System\IO\EndOfStreamException.cs" />
     <Compile Include="System\IO\MemoryStream.cs" />
-    <Compile Include="$(CommonPath)\System\SystemException.cs" />
-    <Compile Include="System\Net\Configuration\UnicodeDecodingConformance.cs" />
-    <Compile Include="System\Net\Configuration\UnicodeEncodingConformance.cs" />
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetLastError.cs" Condition="'$(TargetsWindows)'=='true'" />
+    <Compile Include="$(CommonPath)\System\IO\DriveInfoInternal.Uap.cs">
+      <Link>Common\System\IO\DriveInfoInternal.Uap.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\SR.Core.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -434,7 +332,7 @@
     </ProjectReference>
     <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'net462' Or '$(TargetGroup)' == 'net463'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'net461'">
     <TargetingPackReference Include="mscorlib" />
     <TargetingPackReference Include="System" />
   </ItemGroup>
@@ -444,9 +342,8 @@
   <ItemGroup Condition="'$(TargetsWindowsUap)' == 'true'">
     <TargetingPackReference Include="System.Private.Interop" />
     <ProjectReference Include="$(SourceDir)/mscorlib.WinRT-Facade/mscorlib.WinRT-Facade.csproj" />
-    <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.depproj">
-      <TargetGroup>uap101aot</TargetGroup>
-    </ProjectReference>
+    <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj" />
+    <ProjectReference Include="..\..\System.Private.Uri\src\System.Private.Uri.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Private.CoreLib" />

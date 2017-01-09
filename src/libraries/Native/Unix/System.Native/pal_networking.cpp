@@ -34,6 +34,11 @@
 #include <unistd.h>
 #include <vector>
 #include <pwd.h>
+#if HAVE_SENDFILE_4
+#include <sys/sendfile.h>
+#elif HAVE_SENDFILE_6
+#include <sys/uio.h>
+#endif
 
 #if HAVE_KQUEUE
 #if KEVENT_HAS_VOID_UDATA
@@ -2752,4 +2757,55 @@ extern "C" void SystemNative_GetDomainSocketSizes(int32_t* pathOffset, int32_t* 
     *pathOffset = offsetof(struct sockaddr_un, sun_path);
     *pathSize = sizeof(domainSocket.sun_path);
     *addressSize = sizeof(domainSocket);
+}
+
+extern "C" Error SystemNative_SendFile(intptr_t out_fd, intptr_t in_fd, int64_t offset, int64_t count, int64_t* sent)
+{
+    assert(sent != nullptr);
+
+    int outfd = ToFileDescriptor(out_fd);
+    int infd = ToFileDescriptor(in_fd);
+
+#if HAVE_SENDFILE_4
+    off_t offtOffset = static_cast<off_t>(offset);
+
+    ssize_t res;
+    while (CheckInterrupted(res = sendfile(outfd, infd, &offtOffset, static_cast<size_t>(count))));
+    if (res != -1)
+    {
+        *sent = res;
+        return PAL_SUCCESS;
+    }
+
+    *sent = 0;
+    return SystemNative_ConvertErrorPlatformToPal(errno);
+#elif HAVE_SENDFILE_6
+    off_t len = count;
+    ssize_t res;
+    while (CheckInterrupted(res = sendfile(infd, outfd, static_cast<off_t>(offset), &len, nullptr, 0)));
+    if (res != -1)
+    {
+        if (len == 0)
+        {
+            // This indicates EOF
+            *sent = count;
+        }
+        else
+        {
+            *sent = len;
+        }
+        return PAL_SUCCESS;
+    }
+
+    *sent = 0;
+    return SystemNative_ConvertErrorPlatformToPal(errno);
+#else
+    (void)outfd;
+    (void)infd;
+    (void)offset;
+    (void)count;
+    *sent = 0;
+    errno = ENOTSUP;
+    return SystemNative_ConvertErrorPlatformToPal(errno);
+#endif
 }

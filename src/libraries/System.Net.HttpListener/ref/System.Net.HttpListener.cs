@@ -5,6 +5,9 @@
 // Changes to this file must follow the http://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
+using System.Runtime.Serialization;
+using System.Security.Authentication.ExtendedProtection;
+
 namespace System.Net
 {
     public delegate System.Net.AuthenticationSchemes AuthenticationSchemeSelector(System.Net.HttpListenerRequest httpRequest);
@@ -25,6 +28,11 @@ namespace System.Net
         public System.Net.HttpListenerContext EndGetContext(System.IAsyncResult asyncResult) { throw null; }
         public System.Net.HttpListenerContext GetContext() { throw null; }
         public System.Threading.Tasks.Task<System.Net.HttpListenerContext> GetContextAsync() { throw null; }
+        public ServiceNameCollection DefaultServiceNames { get { throw null; } }
+        public ExtendedProtectionPolicy ExtendedProtectionPolicy { get { throw null; } set { } }
+        public ExtendedProtectionSelector ExtendedProtectionSelectorDelegate { get { throw null; } set { } }
+        public HttpListenerTimeoutManager TimeoutManager { get { throw null; } }
+        public delegate ExtendedProtectionPolicy ExtendedProtectionSelector(HttpListenerRequest request);
         public void Start() { }
         public void Stop() { }
         void System.IDisposable.Dispose() { }
@@ -43,12 +51,15 @@ namespace System.Net
         public System.Threading.Tasks.Task<System.Net.WebSockets.HttpListenerWebSocketContext> AcceptWebSocketAsync(string subProtocol) { throw null; }
         public System.Threading.Tasks.Task<System.Net.WebSockets.HttpListenerWebSocketContext> AcceptWebSocketAsync(string subProtocol, int receiveBufferSize, System.TimeSpan keepAliveInterval) { throw null; }
         public System.Threading.Tasks.Task<System.Net.WebSockets.HttpListenerWebSocketContext> AcceptWebSocketAsync(string subProtocol, int receiveBufferSize, System.TimeSpan keepAliveInterval, System.ArraySegment<byte> internalBuffer) { throw null; }
+        public System.Threading.Tasks.Task<System.Net.WebSockets.HttpListenerWebSocketContext> AcceptWebSocketAsync(string subProtocol, TimeSpan keepAliveInterval) { throw null; }
     }
     public partial class HttpListenerException : System.ComponentModel.Win32Exception
     {
         public HttpListenerException() { }
         public HttpListenerException(int errorCode) { }
         public HttpListenerException(int errorCode, string message) { }
+        protected HttpListenerException(SerializationInfo serializationInfo, StreamingContext streamingContext) { }
+        public override int ErrorCode { get; }
     }
     public partial class HttpListenerPrefixCollection : System.Collections.Generic.ICollection<string>, System.Collections.Generic.IEnumerable<string>, System.Collections.IEnumerable
     {
@@ -127,6 +138,16 @@ namespace System.Net
         public void Redirect(string url) { }
         public void SetCookie(System.Net.Cookie cookie) { }
         void System.IDisposable.Dispose() { }
+    }
+    public partial class HttpListenerTimeoutManager
+    {
+        internal HttpListenerTimeoutManager() { }
+        public TimeSpan DrainEntityBody { get { throw null; } set { } }
+        public TimeSpan EntityBody { get { throw null; } set { } }
+        public TimeSpan HeaderWait { get { throw null; } set { } }
+        public TimeSpan IdleConnection { get { throw null; } set { } }
+        public long MinSendBytesPerSecond { get { throw null; } set { } }
+        public TimeSpan RequestQueue { get { throw null; } set { } }
     }
 }
 namespace System.Net.WebSockets

@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
@@ -69,6 +69,7 @@
     <Compile Include="BitArray\BitArray_CtorTests.cs" />
     <Compile Include="BitArray\BitArray_GetSetTests.cs" />
     <Compile Include="BitArray\BitArray_OperatorsTests.cs" />
+    <Compile Include="BitArray\BitArray_OperatorsTests.netcoreapp1.1.cs" Condition="'$(TargetGroup)'=='netcoreapp1.1'" />
     <Compile Include="Generic\Comparers\Comparer.Generic.Tests.cs" />
     <Compile Include="Generic\Comparers\Comparer.Tests.cs" />
     <Compile Include="Generic\Comparers\Comparers.Generic.cs" />
@@ -79,6 +80,7 @@
     <Compile Include="Generic\Dictionary\HashCollisionScenarios\OutOfBoundsRegression.cs" />
     <Compile Include="Generic\Dictionary\Dictionary.Generic.cs" />
     <Compile Include="Generic\Dictionary\Dictionary.Generic.Tests.cs" />
+    <Compile Include="Generic\Dictionary\Dictionary.Generic.Tests.netcoreapp1.1.cs" Condition="'$(TargetGroup)'=='netcoreapp1.1'" />
     <Compile Include="Generic\Dictionary\Dictionary.Generic.Tests.Keys.cs" />
     <Compile Include="Generic\Dictionary\Dictionary.Generic.Tests.Values.cs" />
     <Compile Include="Generic\HashSet\HashSet.Generic.cs" />

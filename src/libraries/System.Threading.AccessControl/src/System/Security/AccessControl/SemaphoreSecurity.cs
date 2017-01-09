@@ -25,7 +25,7 @@ namespace System.Security.AccessControl
 
     // Win32's interesting values are SEMAPHORE_MODIFY_STATE (0x2) and
     // SEMAPHORE_ALL_ACCESS (0x1F0003).  I don't know what 0x1 is.
-    [Flags, ComVisible(false)]
+    [Flags]
     public enum SemaphoreRights
     {
         Modify = 0x000002,

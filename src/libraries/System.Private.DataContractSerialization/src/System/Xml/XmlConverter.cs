@@ -36,7 +36,7 @@ namespace System.Xml
 
         private static Base64Encoding s_base64Encoding;
 
-        static public Base64Encoding Base64Encoding
+        public static Base64Encoding Base64Encoding
         {
             get
             {
@@ -66,7 +66,7 @@ namespace System.Xml
             }
         }
 
-        static public bool ToBoolean(string value)
+        public static bool ToBoolean(string value)
         {
             try
             {
@@ -82,7 +82,7 @@ namespace System.Xml
             }
         }
 
-        static public bool ToBoolean(byte[] buffer, int offset, int count)
+        public static bool ToBoolean(byte[] buffer, int offset, int count)
         {
             if (count == 1)
             {
@@ -95,7 +95,7 @@ namespace System.Xml
             return ToBoolean(ToString(buffer, offset, count));
         }
 
-        static public int ToInt32(string value)
+        public static int ToInt32(string value)
         {
             try
             {
@@ -115,7 +115,7 @@ namespace System.Xml
             }
         }
 
-        static public int ToInt32(byte[] buffer, int offset, int count)
+        public static int ToInt32(byte[] buffer, int offset, int count)
         {
             int value;
             if (TryParseInt32(buffer, offset, count, out value))
@@ -123,7 +123,7 @@ namespace System.Xml
             return ToInt32(ToString(buffer, offset, count));
         }
 
-        static public Int64 ToInt64(string value)
+        public static Int64 ToInt64(string value)
         {
             try
             {
@@ -143,7 +143,7 @@ namespace System.Xml
             }
         }
 
-        static public Int64 ToInt64(byte[] buffer, int offset, int count)
+        public static Int64 ToInt64(byte[] buffer, int offset, int count)
         {
             long value;
             if (TryParseInt64(buffer, offset, count, out value))
@@ -151,7 +151,7 @@ namespace System.Xml
             return ToInt64(ToString(buffer, offset, count));
         }
 
-        static public float ToSingle(string value)
+        public static float ToSingle(string value)
         {
             try
             {
@@ -171,7 +171,7 @@ namespace System.Xml
             }
         }
 
-        static public float ToSingle(byte[] buffer, int offset, int count)
+        public static float ToSingle(byte[] buffer, int offset, int count)
         {
             float value;
             if (TryParseSingle(buffer, offset, count, out value))
@@ -179,7 +179,7 @@ namespace System.Xml
             return ToSingle(ToString(buffer, offset, count));
         }
 
-        static public double ToDouble(string value)
+        public static double ToDouble(string value)
         {
             try
             {
@@ -199,7 +199,7 @@ namespace System.Xml
             }
         }
 
-        static public double ToDouble(byte[] buffer, int offset, int count)
+        public static double ToDouble(byte[] buffer, int offset, int count)
         {
             double value;
             if (TryParseDouble(buffer, offset, count, out value))
@@ -207,7 +207,7 @@ namespace System.Xml
             return ToDouble(ToString(buffer, offset, count));
         }
 
-        static public decimal ToDecimal(string value)
+        public static decimal ToDecimal(string value)
         {
             try
             {
@@ -227,12 +227,12 @@ namespace System.Xml
             }
         }
 
-        static public decimal ToDecimal(byte[] buffer, int offset, int count)
+        public static decimal ToDecimal(byte[] buffer, int offset, int count)
         {
             return ToDecimal(ToString(buffer, offset, count));
         }
 
-        static public DateTime ToDateTime(Int64 value)
+        public static DateTime ToDateTime(Int64 value)
         {
             try
             {
@@ -244,7 +244,7 @@ namespace System.Xml
             }
         }
 
-        static public DateTime ToDateTime(string value)
+        public static DateTime ToDateTime(string value)
         {
             try
             {
@@ -260,7 +260,7 @@ namespace System.Xml
             }
         }
 
-        static public DateTime ToDateTime(byte[] buffer, int offset, int count)
+        public static DateTime ToDateTime(byte[] buffer, int offset, int count)
         {
             DateTime value;
             if (TryParseDateTime(buffer, offset, count, out value))
@@ -268,7 +268,7 @@ namespace System.Xml
             return ToDateTime(ToString(buffer, offset, count));
         }
 
-        static public UniqueId ToUniqueId(string value)
+        public static UniqueId ToUniqueId(string value)
         {
             try
             {
@@ -284,12 +284,12 @@ namespace System.Xml
             }
         }
 
-        static public UniqueId ToUniqueId(byte[] buffer, int offset, int count)
+        public static UniqueId ToUniqueId(byte[] buffer, int offset, int count)
         {
             return ToUniqueId(ToString(buffer, offset, count));
         }
 
-        static public TimeSpan ToTimeSpan(string value)
+        public static TimeSpan ToTimeSpan(string value)
         {
             try
             {
@@ -309,12 +309,12 @@ namespace System.Xml
             }
         }
 
-        static public TimeSpan ToTimeSpan(byte[] buffer, int offset, int count)
+        public static TimeSpan ToTimeSpan(byte[] buffer, int offset, int count)
         {
             return ToTimeSpan(ToString(buffer, offset, count));
         }
 
-        static public Guid ToGuid(string value)
+        public static Guid ToGuid(string value)
         {
             try
             {
@@ -334,12 +334,12 @@ namespace System.Xml
             }
         }
 
-        static public Guid ToGuid(byte[] buffer, int offset, int count)
+        public static Guid ToGuid(byte[] buffer, int offset, int count)
         {
             return ToGuid(ToString(buffer, offset, count));
         }
 
-        static public UInt64 ToUInt64(string value)
+        public static UInt64 ToUInt64(string value)
         {
             try
             {
@@ -359,12 +359,12 @@ namespace System.Xml
             }
         }
 
-        static public UInt64 ToUInt64(byte[] buffer, int offset, int count)
+        public static UInt64 ToUInt64(byte[] buffer, int offset, int count)
         {
             return ToUInt64(ToString(buffer, offset, count));
         }
 
-        static public string ToString(byte[] buffer, int offset, int count)
+        public static string ToString(byte[] buffer, int offset, int count)
         {
             try
             {
@@ -376,7 +376,7 @@ namespace System.Xml
             }
         }
 
-        static public string ToStringUnicode(byte[] buffer, int offset, int count)
+        public static string ToStringUnicode(byte[] buffer, int offset, int count)
         {
             try
             {
@@ -389,7 +389,7 @@ namespace System.Xml
         }
 
 
-        static public byte[] ToBytes(string value)
+        public static byte[] ToBytes(string value)
         {
             try
             {
@@ -401,7 +401,7 @@ namespace System.Xml
             }
         }
 
-        static public int ToChars(byte[] buffer, int offset, int count, char[] chars, int charOffset)
+        public static int ToChars(byte[] buffer, int offset, int count, char[] chars, int charOffset)
         {
             try
             {
@@ -413,19 +413,19 @@ namespace System.Xml
             }
         }
 
-        static public string ToString(bool value) { return value ? "true" : "false"; }
-        static public string ToString(int value) { return XmlConvert.ToString(value); }
-        static public string ToString(Int64 value) { return XmlConvert.ToString(value); }
-        static public string ToString(float value) { return XmlConvert.ToString(value); }
-        static public string ToString(double value) { return XmlConvert.ToString(value); }
-        static public string ToString(decimal value) { return XmlConvert.ToString(value); }
-        static public string ToString(TimeSpan value) { return XmlConvert.ToString(value); }
+        public static string ToString(bool value) { return value ? "true" : "false"; }
+        public static string ToString(int value) { return XmlConvert.ToString(value); }
+        public static string ToString(Int64 value) { return XmlConvert.ToString(value); }
+        public static string ToString(float value) { return XmlConvert.ToString(value); }
+        public static string ToString(double value) { return XmlConvert.ToString(value); }
+        public static string ToString(decimal value) { return XmlConvert.ToString(value); }
+        public static string ToString(TimeSpan value) { return XmlConvert.ToString(value); }
 
-        static public string ToString(UniqueId value) { return value.ToString(); }
-        static public string ToString(Guid value) { return value.ToString(); }
-        static public string ToString(UInt64 value) { return value.ToString(NumberFormatInfo.InvariantInfo); }
+        public static string ToString(UniqueId value) { return value.ToString(); }
+        public static string ToString(Guid value) { return value.ToString(); }
+        public static string ToString(UInt64 value) { return value.ToString(NumberFormatInfo.InvariantInfo); }
 
-        static public string ToString(DateTime value)
+        public static string ToString(DateTime value)
         {
             byte[] dateChars = new byte[MaxDateTimeChars];
             int count = ToChars(value, dateChars, 0);
@@ -460,7 +460,7 @@ namespace System.Xml
                 return value.ToString();
         }
 
-        static public string ToString(object[] objects)
+        public static string ToString(object[] objects)
         {
             if (objects.Length == 0)
                 return string.Empty;
@@ -478,7 +478,7 @@ namespace System.Xml
             return value;
         }
 
-        static public void ToQualifiedName(string qname, out string prefix, out string localName)
+        public static void ToQualifiedName(string qname, out string prefix, out string localName)
         {
             int index = qname.IndexOf(':');
             if (index < 0)
@@ -699,21 +699,21 @@ namespace System.Xml
             return true;
         }
 
-        static public int ToChars(int value, byte[] chars, int offset)
+        public static int ToChars(int value, byte[] chars, int offset)
         {
             int count = ToCharsR(value, chars, offset + MaxInt32Chars);
             Buffer.BlockCopy(chars, offset + MaxInt32Chars - count, chars, offset, count);
             return count;
         }
 
-        static public int ToChars(long value, byte[] chars, int offset)
+        public static int ToChars(long value, byte[] chars, int offset)
         {
             int count = ToCharsR(value, chars, offset + MaxInt64Chars);
             Buffer.BlockCopy(chars, offset + MaxInt64Chars - count, chars, offset, count);
             return count;
         }
 
-        static public int ToCharsR(long value, byte[] chars, int offset)
+        public static int ToCharsR(long value, byte[] chars, int offset)
         {
             int count = 0;
             if (value >= 0)
@@ -788,7 +788,7 @@ namespace System.Xml
             }
         }
 
-        static public int ToChars(double value, byte[] buffer, int offset)
+        public static int ToChars(double value, byte[] buffer, int offset)
         {
             if (double.IsInfinity(value))
                 return ToInfinity(double.IsNegativeInfinity(value), buffer, offset);
@@ -797,7 +797,7 @@ namespace System.Xml
             return ToAsciiChars(value.ToString("R", NumberFormatInfo.InvariantInfo), buffer, offset);
         }
 
-        static public int ToChars(float value, byte[] buffer, int offset)
+        public static int ToChars(float value, byte[] buffer, int offset)
         {
             if (float.IsInfinity(value))
                 return ToInfinity(float.IsNegativeInfinity(value), buffer, offset);
@@ -806,12 +806,12 @@ namespace System.Xml
             return ToAsciiChars(value.ToString("R", NumberFormatInfo.InvariantInfo), buffer, offset);
         }
 
-        static public int ToChars(decimal value, byte[] buffer, int offset)
+        public static int ToChars(decimal value, byte[] buffer, int offset)
         {
             return ToAsciiChars(value.ToString(null, NumberFormatInfo.InvariantInfo), buffer, offset);
         }
 
-        static public int ToChars(UInt64 value, byte[] buffer, int offset)
+        public static int ToChars(UInt64 value, byte[] buffer, int offset)
         {
             return ToAsciiChars(value.ToString(null, NumberFormatInfo.InvariantInfo), buffer, offset);
         }
@@ -826,7 +826,7 @@ namespace System.Xml
             return s.Length;
         }
 
-        static public int ToChars(bool value, byte[] buffer, int offset)
+        public static int ToChars(bool value, byte[] buffer, int offset)
         {
             if (value)
             {
@@ -1002,7 +1002,7 @@ namespace System.Xml
 
 
         // Works left from offset
-        static public int ToCharsR(int value, byte[] chars, int offset)
+        public static int ToCharsR(int value, byte[] chars, int offset)
         {
             int count = 0;
             if (value >= 0)
@@ -1071,7 +1071,7 @@ namespace System.Xml
             return count;
         }
 
-        static public int ToChars(DateTime value, byte[] chars, int offset)
+        public static int ToChars(DateTime value, byte[] chars, int offset)
         {
             const long TicksPerMillisecond = 10000;
             const long TicksPerSecond = TicksPerMillisecond * 1000;
@@ -1119,7 +1119,7 @@ namespace System.Xml
             return offset - offsetMin;
         }
 
-        static public bool IsWhitespace(string s)
+        public static bool IsWhitespace(string s)
         {
             for (int i = 0; i < s.Length; i++)
             {
@@ -1129,12 +1129,12 @@ namespace System.Xml
             return true;
         }
 
-        static public bool IsWhitespace(char ch)
+        public static bool IsWhitespace(char ch)
         {
             return (ch <= ' ' && (ch == ' ' || ch == '\t' || ch == '\r' || ch == '\n'));
         }
 
-        static public string StripWhitespace(string s)
+        public static string StripWhitespace(string s)
         {
             int count = s.Length;
             for (int i = 0; i < s.Length; i++)

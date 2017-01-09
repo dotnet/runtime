@@ -106,7 +106,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        public readonly static object [][] SupportedSSLVersionServers =
+        public static readonly object [][] SupportedSSLVersionServers =
         {
             new object[] {"TLSv1.0", Configuration.Http.TLSv10RemoteServer},
             new object[] {"TLSv1.1", Configuration.Http.TLSv11RemoteServer},
@@ -128,7 +128,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        public readonly static object[][] NotSupportedSSLVersionServers =
+        public static readonly object[][] NotSupportedSSLVersionServers =
         {
             new object[] {"SSLv2", Configuration.Http.SSLv2RemoteServer},
             new object[] {"SSLv3", Configuration.Http.SSLv3RemoteServer},

@@ -10,16 +10,15 @@ using Xunit;
 // TODO: #13618
 namespace System.Net.Tests
 {
-    [PlatformSpecific(TestPlatforms.Windows)]
     public class SimpleHttpTest
     {
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
         public static void Supported_True()
         {
             Assert.True(HttpListener.IsSupported);
         }
 
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
         public static async Task SimpleRequest_Succeeds()
         {
             string url = UrlPrefix.CreateLocal();

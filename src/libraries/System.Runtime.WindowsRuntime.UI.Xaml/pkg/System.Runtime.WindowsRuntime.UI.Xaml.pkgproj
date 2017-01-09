@@ -16,7 +16,7 @@
   <ItemGroup>
     <!-- This package is only supported on win8 and later RIDs -->
     <ValidatePackageSuppression Include="PermitImplementation">
-      <Value>.NETCoreApp,Version=v1.1/win10-arm64</Value>
+      <Value>.NETCoreApp,Version=v1.1/win10-arm64;.NETCoreApp,Version=v2.0/win10-arm64</Value>
     </ValidatePackageSuppression>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

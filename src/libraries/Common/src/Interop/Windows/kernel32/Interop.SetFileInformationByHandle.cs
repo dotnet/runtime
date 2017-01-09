@@ -14,7 +14,7 @@ internal partial class Interop
         internal static extern bool SetFileInformationByHandle(SafeFileHandle hFile, FILE_INFO_BY_HANDLE_CLASS FileInformationClass, ref FILE_BASIC_INFO lpFileInformation, uint dwBufferSize);
 
         // Default values indicate "no change".  Use defaults so that we don't force callsites to be aware of the default values
-        internal unsafe static bool SetFileTime(
+        internal static unsafe bool SetFileTime(
             SafeFileHandle hFile,
             long creationTime = -1,
             long lastAccessTime = -1,

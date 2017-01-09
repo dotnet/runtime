@@ -575,6 +575,10 @@ namespace System.Reflection.Emit.Tests
             yield return new object[] { new int[0, 0] };
             yield return new object[] { Enum.GetValues(CreateEnum(typeof(char), 'a')).GetValue(0) };
             yield return new object[] { Enum.GetValues(CreateEnum(typeof(bool), true)).GetValue(0) };
+        }
+
+        public static IEnumerable<object[]> FloatEnum_DoubleEnum_TestData()
+        {
             yield return new object[] { Enum.GetValues(CreateEnum(typeof(float), 0.0f)).GetValue(0) };
             yield return new object[] { Enum.GetValues(CreateEnum(typeof(double), 0.0)).GetValue(0) };
         }
@@ -583,6 +587,14 @@ namespace System.Reflection.Emit.Tests
         {
             yield return new object[] { new Guid() };
             yield return new object[] { new int[5, 5] };
+        }
+
+        [Theory]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Netfx doesn't support Enum.GetEnumName for float or double enums.")]
+        [MemberData(nameof(FloatEnum_DoubleEnum_TestData))]
+        public void ConstructorArgsContainsFloatEnumOrDoubleEnum_ThrowsArgumentException(object value)
+        {
+            NotSupportedObjectInConstructorArgs_ThrowsArgumentException(value);
         }
 
         [Theory]
@@ -613,10 +625,14 @@ namespace System.Reflection.Emit.Tests
             Assert.Throws<ArgumentException>(null, () => new CustomAttributeBuilder(con, constructorArgs, new PropertyInfo[0], new object[0], new FieldInfo[0], new object[0]));
         }
 
-        public static IEnumerable<object[]> InvalidAttributeTypes_TestData()
+        public static IEnumerable<object[]> IntPtrAttributeTypes_TestData()
         {
             yield return new object[] { typeof(IntPtr), (IntPtr)1 };
             yield return new object[] { typeof(UIntPtr), (UIntPtr)1 };
+        }
+
+        public static IEnumerable<object[]> InvalidAttributeTypes_TestData()
+        {
             yield return new object[] { typeof(Guid), new Guid() };
             yield return new object[] { typeof(int[,]), new int[5, 5] };
             yield return new object[] { CreateEnum(typeof(char), 'a'), 'a' };
@@ -625,6 +641,14 @@ namespace System.Reflection.Emit.Tests
             yield return new object[] { CreateEnum(typeof(double), 1.0), 1.0 };
             yield return new object[] { CreateEnum(typeof(IntPtr)), (IntPtr)1 };
             yield return new object[] { CreateEnum(typeof(UIntPtr)), (UIntPtr)1 };
+        }
+
+        [Theory]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Coreclr fixed an issue where IntPtr/UIntPtr in constructorParameters causes a corrupt created binary.")]
+        [MemberData(nameof(IntPtrAttributeTypes_TestData))]
+        public void ConstructorParametersContainsIntPtrOrUIntPtrArgument_ThrowsArgumentException(Type type, object value)
+        {
+            ConstructorParametersNotSupportedInAttributes_ThrowsArgumentException(type, value);
         }
 
         [Theory]
@@ -642,9 +666,9 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Used to throw a NullReferenceException, see issue #11702.")]
         public void NullValueForPrimitiveTypeInConstructorArgs_ThrowsArgumentNullException()
         {
-        	// Used to throw a NullReferenceException, see issue #11702
             ConstructorInfo con = typeof(TestAttribute).GetConstructor(new Type[] { typeof(int) });
             object[] constructorArgs = new object[] { null };
 
@@ -661,6 +685,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Theory]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Coreclr fixed an issue where IntPtr/UIntPtr in constructorArgs causes a corrupt created binary.")]
         [MemberData(nameof(NotSupportedPrimitives_TestData))]
         public static void NotSupportedPrimitiveInConstructorArgs_ThrowsArgumentException(object value)
         {
@@ -806,6 +831,7 @@ namespace System.Reflection.Emit.Tests
 
         [Theory]
         [MemberData(nameof(NotSupportedPrimitives_TestData))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Coreclr fixed an issue where IntPtr/UIntPtr in fieldValues causes a corrupt created binary.")]
         public static void NotSupportedPrimitiveInFieldValues_ThrowsArgumentException(object value)
         {
         	// Used to assert in CustomAttributeBuilder.EmitType(), not writing any CustomAttributeEncoding.
@@ -893,6 +919,7 @@ namespace System.Reflection.Emit.Tests
 
         [Theory]
         [MemberData(nameof(InvalidAttributeTypes_TestData))]
+        [MemberData(nameof(IntPtrAttributeTypes_TestData))]
         public void NamedProperties_TypeNotSupportedInAttributes_ThrowsArgumentException(Type type, object value)
         {
             TypeBuilder typeBuilder = Helpers.DynamicType(TypeAttributes.Public);
@@ -966,6 +993,7 @@ namespace System.Reflection.Emit.Tests
 
         [Theory]
         [MemberData(nameof(NotSupportedPrimitives_TestData))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Coreclr fixed an issue where IntPtr/UIntPtr in propertValues causes a corrupt created binary.")]
         public static void NotSupportedPrimitiveInPropertyValues_ThrowsArgumentException(object value)
         {
             ConstructorInfo con = typeof(TestAttribute).GetConstructor(new Type[0]);

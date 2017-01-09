@@ -34,8 +34,6 @@ namespace System.ComponentModel
         /// </summary>
         public static readonly PasswordPropertyTextAttribute Default = No;
 
-        private bool _password;
-
         /// <summary>
         ///    Creates a default PasswordPropertyTextAttribute.
         /// </summary>
@@ -48,19 +46,13 @@ namespace System.ComponentModel
         /// </summary>
         public PasswordPropertyTextAttribute(bool password)
         {
-            _password = password;
+            Password = password;
         }
 
         /// <summary>
         ///     Gets a value indicating if the property this attribute is defined for should be shown as password text.
         /// </summary>
-        public bool Password
-        {
-            get
-            {
-                return _password;
-            }
-        }
+        public bool Password { get; }
 
         /// <summary>
         ///     Overload for object equality
@@ -69,7 +61,7 @@ namespace System.ComponentModel
         {
             if (o is PasswordPropertyTextAttribute)
             {
-                return ((PasswordPropertyTextAttribute)o).Password == _password;
+                return ((PasswordPropertyTextAttribute)o).Password == Password;
             }
             return false;
         }

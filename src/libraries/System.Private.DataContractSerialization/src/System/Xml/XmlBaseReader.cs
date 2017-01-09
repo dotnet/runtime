@@ -2573,7 +2573,7 @@ namespace System.Xml
                 _lang = string.Empty;
             }
 
-            static public Namespace XmlNamespace
+            public static Namespace XmlNamespace
             {
                 get
                 {
@@ -2597,7 +2597,7 @@ namespace System.Xml
                 }
             }
 
-            static public Namespace EmptyNamespace
+            public static Namespace EmptyNamespace
             {
                 get
                 {

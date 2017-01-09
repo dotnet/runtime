@@ -254,6 +254,8 @@ namespace System.Net.Sockets
         public IAsyncResult BeginSend(byte[] buffer, int offset, int size, SocketFlags socketFlags, out SocketError errorCode, AsyncCallback callback, object state) { throw null; }
         public IAsyncResult BeginSend(Collections.Generic.IList<ArraySegment<byte>> buffers, SocketFlags socketFlags, AsyncCallback callback, object state) { throw null; }
         public IAsyncResult BeginSend(Collections.Generic.IList<ArraySegment<byte>> buffers, SocketFlags socketFlags, out SocketError errorCode, AsyncCallback callback, object state) { throw null; }
+        public IAsyncResult BeginSendFile(string fileName, AsyncCallback callback, object state) { throw null; }
+        public IAsyncResult BeginSendFile(string fileName, byte[] preBuffer, byte[] postBuffer, TransmitFileOptions flags, AsyncCallback callback, object state) { throw null; }
         public IAsyncResult BeginSendTo(byte[] buffer, int offset, int size, SocketFlags socketFlags, EndPoint remoteEP, AsyncCallback callback, object state) { throw null; }
         public void Bind(System.Net.EndPoint localEP) { }
         public static void CancelConnectAsync(System.Net.Sockets.SocketAsyncEventArgs e) { }
@@ -272,6 +274,8 @@ namespace System.Net.Sockets
         public bool DisconnectAsync(SocketAsyncEventArgs e) { throw null; }
         public SocketInformation DuplicateAndClose(int targetProcessId) { throw null; }
         public Socket EndAccept(IAsyncResult asyncResult) { throw null; }
+        public Socket EndAccept(out byte[] buffer, IAsyncResult asyncResult) { throw null; }
+        public Socket EndAccept(out byte[] buffer, out int bytesTransferred, IAsyncResult asyncResult) { throw null; }
         public void EndConnect(IAsyncResult asyncResult) { }
         public void EndDisconnect(IAsyncResult asyncResult) { }
         public int EndReceive(IAsyncResult asyncResult) { throw null; }
@@ -280,6 +284,7 @@ namespace System.Net.Sockets
         public int EndReceiveMessageFrom(IAsyncResult asyncResult, ref SocketFlags socketFlags, ref EndPoint endPoint, out IPPacketInformation ipPacketInformation) { throw null; }
         public int EndSend(IAsyncResult asyncResult) { throw null; }
         public int EndSend(IAsyncResult asyncResult, out SocketError errorCode) { throw null; }
+        public void EndSendFile(IAsyncResult asyncResult) { } 
         public int EndSendTo(IAsyncResult asyncResult) { throw null; }
         public object GetSocketOption(System.Net.Sockets.SocketOptionLevel optionLevel, System.Net.Sockets.SocketOptionName optionName) { throw null; }
         public void GetSocketOption(System.Net.Sockets.SocketOptionLevel optionLevel, System.Net.Sockets.SocketOptionName optionName, byte[] optionValue) { }
@@ -315,6 +320,8 @@ namespace System.Net.Sockets
         public int Send(System.Collections.Generic.IList<System.ArraySegment<byte>> buffers, System.Net.Sockets.SocketFlags socketFlags, out System.Net.Sockets.SocketError errorCode) { throw null; }
         public bool SendAsync(System.Net.Sockets.SocketAsyncEventArgs e) { throw null; }
         public bool SendPacketsAsync(System.Net.Sockets.SocketAsyncEventArgs e) { throw null; }
+        public void SendFile(string fileName) { }
+        public void SendFile(string fileName, byte[] preBuffer, byte[] postBuffer, TransmitFileOptions flags) { }
         public int SendTo(byte[] buffer, int offset, int size, System.Net.Sockets.SocketFlags socketFlags, System.Net.EndPoint remoteEP) { throw null; }
         public int SendTo(byte[] buffer, int size, System.Net.Sockets.SocketFlags socketFlags, System.Net.EndPoint remoteEP) { throw null; }
         public int SendTo(byte[] buffer, System.Net.EndPoint remoteEP) { throw null; }
@@ -326,6 +333,7 @@ namespace System.Net.Sockets
         public void SetSocketOption(System.Net.Sockets.SocketOptionLevel optionLevel, System.Net.Sockets.SocketOptionName optionName, int optionValue) { }
         public void SetSocketOption(System.Net.Sockets.SocketOptionLevel optionLevel, System.Net.Sockets.SocketOptionName optionName, object optionValue) { }
         public void Shutdown(System.Net.Sockets.SocketShutdown how) { }
+
     }
     public partial class SocketAsyncEventArgs : System.EventArgs, System.IDisposable
     {
@@ -343,6 +351,7 @@ namespace System.Net.Sockets
         public System.Net.Sockets.IPPacketInformation ReceiveMessageFromPacketInfo { get { throw null; } }
         public System.Net.EndPoint RemoteEndPoint { get { throw null; } set { } }
         public System.Net.Sockets.SendPacketsElement[] SendPacketsElements { get { throw null; } set { } }
+        public System.Net.Sockets.TransmitFileOptions SendPacketsFlags { get { throw null; } set { } }
         public int SendPacketsSendSize { get { throw null; } set { } }
         public System.Net.Sockets.SocketError SocketError { get { throw null; } set { } }
         public System.Net.Sockets.SocketFlags SocketFlags { get { throw null; } set { } }
@@ -380,6 +389,7 @@ namespace System.Net.Sockets
         Peek = 2,
         Truncated = 256,
     }
+    [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
     public struct SocketInformation
     {
         public SocketInformationOptions Options { get { throw null; } set { } }

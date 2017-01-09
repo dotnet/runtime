@@ -28,7 +28,7 @@
 #include <limits.h>
 #if HAVE_FCOPYFILE
 #include <copyfile.h>
-#elif HAVE_SENDFILE
+#elif HAVE_SENDFILE_4
 #include <sys/sendfile.h>
 #endif
 #if HAVE_INOTIFY
@@ -1024,7 +1024,7 @@ extern "C" int32_t SystemNative_CopyFile(intptr_t sourceFd, intptr_t destination
     int ret;
     struct stat_ sourceStat;
     bool copied = false;
-#if HAVE_SENDFILE
+#if HAVE_SENDFILE_4
     // If sendfile is available (Linux), try to use it, as the whole copy
     // can be performed in the kernel, without lots of unnecessary copying.
     while (CheckInterrupted(ret = fstat_(inFd, &sourceStat)));
@@ -1069,7 +1069,7 @@ extern "C" int32_t SystemNative_CopyFile(intptr_t sourceFd, intptr_t destination
     // sendfile couldn't be used; fall back to a manual copy below. This could happen
     // if we're on an old kernel, for example, where sendfile could only be used
     // with sockets and not regular files.
-#endif // HAVE_SENDFILE
+#endif // HAVE_SENDFILE_4
 
     // Manually read all data from the source and write it to the destination.
     if (!copied && CopyFile_ReadWrite(inFd, outFd) != 0)

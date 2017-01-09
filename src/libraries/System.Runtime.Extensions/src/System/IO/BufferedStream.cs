@@ -274,10 +274,10 @@ namespace System.IO
                 // If the underlying stream is not seekable AND we have something in the read buffer, then FlushRead would throw.
                 // We can either throw away the buffer resulting in data loss (!) or ignore the Flush.
                 // (We cannot throw because it would be a breaking change.) We opt into ignoring the Flush in that situation.
-                if (!_stream.CanSeek)
-                    return;
-
-                FlushRead();
+                if (_stream.CanSeek)
+                {
+                    FlushRead();
+                }
 
                 // User streams may have opted to throw from Flush if CanWrite is false (although the abstract Stream does not do so).
                 // However, if we do not forward the Flush to the underlying stream, we may have problems when chaining several streams.
@@ -285,7 +285,8 @@ namespace System.IO
                 if (_stream.CanWrite)
                     _stream.Flush();
 
-                Debug.Assert(_writePos == 0 && _readPos == 0 && _readLen == 0);
+                // If the Stream was seekable, then we should have called FlushRead which resets _readPos & _readLen.
+                Debug.Assert(_writePos == 0 && (!_stream.CanSeek || (_readPos == 0 && _readLen == 0)));
                 return;
             }
 
@@ -326,18 +327,19 @@ namespace System.IO
                     // If the underlying stream is not seekable AND we have something in the read buffer, then FlushRead would throw.
                     // We can either throw away the buffer resulting in date loss (!) or ignore the Flush. (We cannot throw because it
                     // would be a breaking change.) We opt into ignoring the Flush in that situation.
-                    if (!_stream.CanSeek)
-                        return;
-
-                    FlushRead();  // not async; it uses Seek, but there's no SeekAsync
+                    if (_stream.CanSeek)
+                    {
+                        FlushRead();  // not async; it uses Seek, but there's no SeekAsync
+                    }
 
                     // User streams may have opted to throw from Flush if CanWrite is false (although the abstract Stream does not do so).
                     // However, if we do not forward the Flush to the underlying stream, we may have problems when chaining several streams.
                     // Let us make a best effort attempt:
-                    if (_stream.CanRead)
+                    if (_stream.CanWrite)
                         await _stream.FlushAsync(cancellationToken).ConfigureAwait(false);
 
-                    Debug.Assert(_writePos == 0 && _readPos == 0 && _readLen == 0);
+                    // If the Stream was seekable, then we should have called FlushRead which resets _readPos & _readLen.
+                    Debug.Assert(_writePos == 0 && (!_stream.CanSeek || (_readPos == 0 && _readLen == 0)));
                     return;
                 }
 

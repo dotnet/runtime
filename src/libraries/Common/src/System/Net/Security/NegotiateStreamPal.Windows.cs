@@ -28,7 +28,7 @@ namespace System.Net.Security
                 (isServer ? Interop.SspiCli.CredentialUse.SECPKG_CRED_INBOUND : Interop.SspiCli.CredentialUse.SECPKG_CRED_OUTBOUND));
         }
 
-        internal unsafe static SafeFreeCredentials AcquireCredentialsHandle(string package, bool isServer, NetworkCredential credential)
+        internal static unsafe SafeFreeCredentials AcquireCredentialsHandle(string package, bool isServer, NetworkCredential credential)
         {
             SafeSspiAuthDataHandle authData = null;
             try
@@ -53,6 +53,17 @@ namespace System.Net.Security
                     authData.Dispose();
                 }
             }
+        }
+
+        internal static string QueryContextClientSpecifiedSpn(SafeDeleteContext securityContext)
+        {
+            return SSPIWrapper.QueryContextAttributes(GlobalSSPI.SSPIAuth, securityContext, Interop.SspiCli.ContextAttribute.SECPKG_ATTR_CLIENT_SPECIFIED_TARGET) as string;
+        }
+
+        internal static string QueryContextAuthenticationPackage(SafeDeleteContext securityContext)
+        {
+            var negotiationInfoClass = SSPIWrapper.QueryContextAttributes(GlobalSSPI.SSPIAuth, securityContext, Interop.SspiCli.ContextAttribute.SECPKG_ATTR_NEGOTIATION_INFO) as NegotiationInfoClass;
+            return negotiationInfoClass?.AuthenticationPackage;
         }
 
         internal static SecurityStatusPal InitializeSecurityContext(

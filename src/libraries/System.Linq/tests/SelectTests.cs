@@ -55,6 +55,22 @@ namespace System.Linq.Tests
         }
 
         [Fact]
+        public void RunOnce()
+        {
+            var source = new[]{
+                new { name="Prakash", custID=98088 },
+                new { name="Bob", custID=29099 },
+                new { name="Chris", custID=39033 },
+                new { name=(string)null, custID=30349 },
+                new { name="Prakash", custID=39030 }
+            };
+            string[] expected = { "Prakash", "Bob", "Chris", null, "Prakash" };
+            Assert.Equal(expected, source.RunOnce().Select(e => e.name));
+            Assert.Equal(expected, source.ToArray().RunOnce().Select(e => e.name));
+            Assert.Equal(expected, source.ToList().RunOnce().Select(e => e.name));
+        }
+
+        [Fact]
         public void EmptyWithIndexedSelector()
         {
             Assert.Equal(Enumerable.Empty<int>(), Enumerable.Empty<string>().Select((s, i) => s.Length + i));
@@ -1151,6 +1167,66 @@ namespace System.Linq.Tests
             yield return new object[] { Array.Empty<int>() };
             yield return new object[] { new int[1] };
             yield return new object[] { Enumerable.Range(1, 30) };
+        }
+
+        [Theory]
+        [MemberData(nameof(RunSelectorDuringCountData))]
+        public void RunSelectorDuringCount(IEnumerable<int> source)
+        {
+            int timesRun = 0;
+            var selected = source.Select(i => timesRun++);
+            selected.Count();
+
+            Assert.Equal(source.Count(), timesRun);
+        }
+
+        // [Theory]
+        [MemberData(nameof(RunSelectorDuringCountData))]
+        public void RunSelectorDuringPartitionCount(IEnumerable<int> source)
+        {
+            int timesRun = 0;
+
+            var selected = source.Select(i => timesRun++);
+
+            if (source.Any())
+            {
+                selected.Skip(1).Count();
+                Assert.Equal(source.Count() - 1, timesRun);
+
+                selected.Take(source.Count() - 1).Count();
+                Assert.Equal(source.Count() * 2 - 2, timesRun);
+            }
+        }
+
+        public static IEnumerable<object[]> RunSelectorDuringCountData()
+        {
+            var transforms = new Func<IEnumerable<int>, IEnumerable<int>>[]
+            {
+                e => e,
+                e => ForceNotCollection(e),
+                e => ForceNotCollection(e).Skip(1),
+                e => ForceNotCollection(e).Where(i => true), 
+                e => e.ToArray().Where(i => true),
+                e => e.ToList().Where(i => true),
+                e => new LinkedList<int>(e).Where(i => true),
+                e => e.Select(i => i),
+                e => e.Take(e.Count()),
+                e => e.ToArray(),
+                e => e.ToList(),
+                e => new LinkedList<int>(e) // Implements IList<T>.
+            };
+
+            var r = new Random(unchecked((int)0x984bf1a3));
+
+            for (int i = 0; i <= 5; i++)
+            {
+                var enumerable = Enumerable.Range(1, i).Select(_ => r.Next());
+
+                foreach (var transform in transforms)
+                {
+                    yield return new object[] { transform(enumerable) };
+                }
+            }
         }
     }
 }

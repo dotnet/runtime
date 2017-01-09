@@ -30,7 +30,7 @@ namespace System.Security.AccessControl
             _privilegeName = privilege;
         }
 
-        internal PrivilegeNotHeldException(SerializationInfo info, StreamingContext context) : base(info, context)
+        private PrivilegeNotHeldException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
             _privilegeName = info.GetString(nameof(PrivilegeName));
         }

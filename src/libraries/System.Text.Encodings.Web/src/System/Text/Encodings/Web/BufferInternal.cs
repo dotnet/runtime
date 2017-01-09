@@ -15,7 +15,7 @@ namespace System {
     {       
         // This method has different signature for x64 and other platforms and is done for performance reasons.
         [System.Security.SecurityCritical]
-        private unsafe static void Memmove(byte* dest, byte* src, uint len)
+        private static unsafe void Memmove(byte* dest, byte* src, uint len)
         {
             if (AreOverlapping(dest, src, len))
             {

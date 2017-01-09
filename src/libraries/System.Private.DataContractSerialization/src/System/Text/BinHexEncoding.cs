@@ -45,7 +45,7 @@ namespace System.Text
             return GetMaxByteCount(count);
         }
 
-        unsafe public override int GetBytes(char[] chars, int charIndex, int charCount, byte[] bytes, int byteIndex)
+        public unsafe override int GetBytes(char[] chars, int charIndex, int charCount, byte[] bytes, int byteIndex)
         {
             if (chars == null)
                 throw new ArgumentNullException(nameof(chars));
@@ -115,7 +115,7 @@ namespace System.Text
             return GetMaxCharCount(count);
         }
 
-        unsafe public override int GetChars(byte[] bytes, int byteIndex, int byteCount, char[] chars, int charIndex)
+        public unsafe override int GetChars(byte[] bytes, int byteIndex, int byteCount, char[] chars, int charIndex)
         {
             if (bytes == null)
                 throw new ArgumentNullException(nameof(bytes));

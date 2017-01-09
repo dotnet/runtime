@@ -4,7 +4,7 @@
   <PropertyGroup>
     <ProjectGuid>{53D09AF4-0C13-4197-B8AD-9746F0374E88}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <IsPartialFacadeAssembly Condition="'$(TargetGroup)'=='net463'">true</IsPartialFacadeAssembly>
+    <IsPartialFacadeAssembly Condition="'$(TargetGroup)'=='net461'">true</IsPartialFacadeAssembly>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard_Debug|AnyCPU'" />
@@ -13,8 +13,8 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net461_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net461_Release|AnyCPU'" />
   <ItemGroup Condition="'$(TargetGroup)' == 'netstandard'">
     <Compile Include="System\Net\Base64Stream.cs" />
     <Compile Include="System\Net\Mime\MimePart.cs" />
@@ -147,8 +147,8 @@
     <Compile Include="$(CommonPath)\System\Net\NegotiationInfoClass.cs">
       <Link>Common\System\Net\NegotiationInfoClass.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\NTAuthentication.cs">
-      <Link>Common\System\Net\NTAuthentication.cs</Link>
+    <Compile Include="$(CommonPath)\System\Net\NTAuthentication.Common.cs">
+      <Link>Common\System\Net\NTAuthentication.Common.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\SecurityStatusPal.cs">
       <Link>Common\System\Net\SecurityStatusPal.cs</Link>
@@ -162,7 +162,9 @@
     <Compile Include="$(CommonPath)\System\Net\Security\SSPIHandleCache.cs">
       <Link>Common\System\Net\Security\SSPIHandleCache.cs</Link>
     </Compile>
-    <Compile Include="System\Net\Security\NetEventSource.Security.cs" />
+    <Compile Include="$(CommonPath)\System\Net\Security\NetEventSource.Security.cs">
+      <Link>Common\System\Net\Security\NetEventSource.Security.cs</Link>
+    </Compile>
   </ItemGroup>
   <!-- Unix specific files -->
   <ItemGroup Condition="'$(TargetsUnix)'=='true' And '$(TargetGroup)' == 'netstandard'">
@@ -220,7 +222,9 @@
     <Compile Include="$(CommonPath)\System\Net\Security\NegotiateStreamPal.Windows.cs">
       <Link>Common\System\Net\Security\NegotiateStreamPal.Windows.cs</Link>
     </Compile>
-    <Compile Include="System\Net\Security\NetEventSource.Security.Windows.cs" />
+    <Compile Include="$(CommonPath)\System\Net\Security\NetEventSource.Security.Windows.cs">
+      <Link>Common\System\Net\Security\NetEventSource.Security.Windows.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Crypt32\Interop.certificates_types.cs">
       <Link>Common\Interop\Windows\Crypt32\Interop.certificates_types.cs</Link>
     </Compile>
@@ -285,7 +289,7 @@
       <Link>Common\Interop\Windows\sspicli\SSPIWrapper.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'net463'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'net461'">
     <TargetingPackReference Include="System" />
   </ItemGroup>
   <ItemGroup>

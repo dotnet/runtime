@@ -2,6 +2,11 @@
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)*/src/System.DirectoryServices.AccountManagement.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)*/src/System.DirectoryServices.Protocols.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)*/src/System.Security.Cryptography.Xml.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)*/src/System.DirectoryServices.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)*/src/System.Configuration.csproj" />
     <Project Include="$(MSBuildThisFileDirectory)*/src/*.csproj" Exclude="@(ProjectExclusions)">
       <AdditionalMetadata>ConfigurationGroup=$(ConfigurationGroup)</AdditionalMetadata>
     </Project>
