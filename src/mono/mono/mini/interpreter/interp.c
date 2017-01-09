@@ -4714,6 +4714,8 @@ interp_regression_step (MonoImage *image, int verbose, int *total_run, int *tota
 	double elapsed, transform_time, start_time;
 	int i;
 	MonoObject *result_obj;
+	static gboolean filter_method_init = FALSE;
+	static gchar *filter_method = NULL;
 
 	g_print ("Test run: image=%s\n", mono_image_get_filename (image));
 	cfailed = failed = run = 0;
@@ -4737,7 +4739,26 @@ interp_regression_step (MonoImage *image, int verbose, int *total_run, int *tota
 			mono_error_cleanup (&error); /* FIXME don't swallow the error */
 			continue;
 		}
-		if (strncmp (method->name, "test_", 5) == 0) {
+
+		if (!filter_method_init) {
+			filter_method = g_getenv ("INTERP_FILTER_METHOD");
+			filter_method_init = TRUE;
+		}
+		gboolean filter = FALSE;
+		if (filter_method) {
+			const char *name = filter_method;
+
+			if ((strchr (name, '.') > name) || strchr (name, ':')) {
+				MonoMethodDesc *desc = mono_method_desc_new (name, TRUE);
+				filter = mono_method_desc_full_match (desc, method);
+				mono_method_desc_free (desc);
+			} else {
+				filter = strcmp (method->name, name) == 0;
+			}
+		} else { // no filter
+			filter = TRUE;
+		}
+		if (strncmp (method->name, "test_", 5) == 0 && filter) {
 			MonoError interp_error;
 			RuntimeMethod *runtime_method;
 			MonoInvocation frame;
