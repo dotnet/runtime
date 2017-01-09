@@ -2883,8 +2883,6 @@ mono_interp_transform_method (RuntimeMethod *runtime_method, ThreadContext *cont
 					nm = mono_marshal_get_delegate_begin_invoke (method);
 				} else if (*name == 'E' && (strcmp (name, "EndInvoke") == 0)) {
 					nm = mono_marshal_get_delegate_end_invoke (method);
-				} else {
-					g_assert_not_reached ();
 				}
 			} 
 			if (nm == NULL) {
