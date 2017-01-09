@@ -24,6 +24,9 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net461_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net461_Release|AnyCPU'" />
+  <ItemGroup>
+    <Compile Include="FxCopBaseline.cs" />
+  </ItemGroup>
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)'!='true'">
     <Compile Include="Microsoft\Win32\SafeHandles\SafeProcessHandle.cs" />
     <Compile Include="System\Diagnostics\AsyncStreamReader.cs" />
@@ -195,6 +198,9 @@
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetCurrentProcessId.cs">
       <Link>Common\Interop\Windows\Interop.GetCurrentProcessId.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.Encoding.Constants.cs">
+      <Link>Common\Interop\Windows\kernel32\Interop.Encoding.Constants.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetConsoleCP.cs">
       <Link>Common\Interop\Windows\Interop.GetConsoleCP.cs</Link>
     </Compile>
@@ -231,11 +237,29 @@
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.HandleOptions.cs">
       <Link>Common\Interop\Windows\Interop.ProcessOptions.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.MultiByteToWideChar.cs">
+      <Link>Common\Interop\Windows\Interop.MultiByteToWideChar.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.WideCharToMultiByte.cs">
+      <Link>Common\Interop\Windows\Interop.WideCharToMultiByte.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\Text\ConsoleEncoding.cs">
       <Link>Common\System\Text\ConsoleEncoding.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Text\EncodingHelper.cs">
-      <Link>Common\System\Text\EncodingHelper.cs</Link>
+    <Compile Include="$(CommonPath)\System\Text\EncodingHelper.Windows.cs">
+      <Link>Common\System\Text\EncodingHelper.Windows.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Text\OSEncoding.Windows.cs">
+      <Link>Common\System\Text\OSEncoding.Windows.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Text\OSEncoder.cs">
+      <Link>Common\System\Text\OSEncoder.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Text\DBCSDecoder.cs">
+      <Link>Common\System\Text\DBCSDecoder.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetCPInfoEx.cs">
+      <Link>Common\Interop\Windows\kernel32\Interop.GetCPInfoEx.cs</Link>
     </Compile>
     <Compile Include="Microsoft\Win32\SafeHandles\SafeProcessHandle.Windows.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\SafeThreadHandle.cs" />

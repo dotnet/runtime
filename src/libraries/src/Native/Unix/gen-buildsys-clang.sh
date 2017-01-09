@@ -66,7 +66,7 @@ if [[ -n "$CROSSCOMPILE" ]]; then
     cmake_extra_defines="$cmake_extra_defines -C $CONFIG_DIR/tryrun.cmake"
     cmake_extra_defines="$cmake_extra_defines -DCMAKE_TOOLCHAIN_FILE=$CONFIG_DIR/toolchain.cmake"
 fi
-if [ "$build_arch" == "arm-softfp" ]; then
+if [ "$build_arch" == "armel" ]; then
     cmake_extra_defines="$cmake_extra_defines -DARM_SOFTFP=1"
 fi
 

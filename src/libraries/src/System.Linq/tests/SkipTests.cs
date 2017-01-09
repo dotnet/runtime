@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Reflection;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -26,6 +27,13 @@ namespace System.Linq.Tests
         public void SkipSomeIList()
         {
             Assert.Equal(Enumerable.Range(10, 10), NumberRangeGuaranteedNotCollectionType(0, 20).ToList().Skip(10));
+        }
+
+        [Fact]
+        public void RunOnce()
+        {
+            Assert.Equal(Enumerable.Range(10, 10), Enumerable.Range(0, 20).RunOnce().Skip(10));
+            Assert.Equal(Enumerable.Range(10, 10), Enumerable.Range(0, 20).ToList().RunOnce().Skip(10));
         }
 
         [Fact]
@@ -455,6 +463,50 @@ namespace System.Linq.Tests
             var source = GuaranteeNotIList(new[] { 1, 2, 3, 4, 5 });
             var remaining = source.Skip(1);
             Assert.Equal(remaining, remaining);
+        }
+
+        [Fact]
+        public void LazySkipMoreThan32Bits()
+        {
+            var range = NumberRangeGuaranteedNotCollectionType(1, 100);
+            var skipped = range.Skip(50).Skip(int.MaxValue); // Could cause an integer overflow.
+            Assert.Empty(skipped);
+            Assert.Equal(0, skipped.Count());
+            Assert.Empty(skipped.ToArray());
+            Assert.Empty(skipped.ToList());
+        }
+
+        [Fact]
+        public void IteratorStateShouldNotChangeIfNumberOfElementsIsUnbounded()
+        {
+            // With https://github.com/dotnet/corefx/pull/13628, Skip and Take return
+            // the same type of iterator. For Take, there is a limit, or upper bound,
+            // on how many items can be returned from the iterator. An integer field,
+            // _state, is incremented to keep track of this and to stop enumerating once
+            // we pass that limit. However, for Skip, there is no such limit and the
+            // iterator can contain an unlimited number of items (including past int.MaxValue).
+            
+            // This test makes sure that, in Skip, _state is not incorrectly incremented,
+            // so that it does not overflow to a negative number and enumeration does not
+            // stop prematurely.
+            
+            var iterator = new FastInfiniteEnumerator<int>().Skip(1).GetEnumerator();
+            iterator.MoveNext(); // Make sure the underlying enumerator has been initialized.
+
+            FieldInfo state = iterator.GetType().GetTypeInfo()
+                .GetField("_state", BindingFlags.Instance | BindingFlags.NonPublic);
+
+            // On platforms that do not have this change, the optimization may not be present
+            // and the iterator may not have a field named _state. In that case, nop.
+            if (state != null)
+            {
+                state.SetValue(iterator, int.MaxValue);
+
+                for (int i = 0; i < 10; i++)
+                {
+                    Assert.True(iterator.MoveNext());
+                }
+            }
         }
     }
 }

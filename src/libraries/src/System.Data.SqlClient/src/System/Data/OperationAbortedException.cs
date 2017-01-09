@@ -23,7 +23,7 @@ namespace System.Data
         {
         }
 
-        static internal OperationAbortedException Aborted(Exception inner)
+        internal static OperationAbortedException Aborted(Exception inner)
         {
             OperationAbortedException e;
             if (inner == null)

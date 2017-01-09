@@ -11,7 +11,7 @@ namespace System.IO
     /// <summary>
     /// Wrapper to help with path normalization.
     /// </summary>
-    unsafe internal class PathHelper
+    internal unsafe class PathHelper
     {
         // Can't be over 8.3 and be a short name
         private const int MaxShortName = 12;

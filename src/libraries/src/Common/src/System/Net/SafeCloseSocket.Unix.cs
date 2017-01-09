@@ -85,19 +85,19 @@ namespace System.Net.Sockets
             }
         }
 
-        public unsafe static SafeCloseSocket CreateSocket(IntPtr fileDescriptor)
+        public static unsafe SafeCloseSocket CreateSocket(IntPtr fileDescriptor)
         {
             return CreateSocket(InnerSafeCloseSocket.CreateSocket(fileDescriptor));
         }
 
-        public unsafe static SocketError CreateSocket(AddressFamily addressFamily, SocketType socketType, ProtocolType protocolType, out SafeCloseSocket socket)
+        public static unsafe SocketError CreateSocket(AddressFamily addressFamily, SocketType socketType, ProtocolType protocolType, out SafeCloseSocket socket)
         {
             SocketError errorCode;
             socket = CreateSocket(InnerSafeCloseSocket.CreateSocket(addressFamily, socketType, protocolType, out errorCode));
             return errorCode;
         }
 
-        public unsafe static SocketError Accept(SafeCloseSocket socketHandle, byte[] socketAddress, ref int socketAddressSize, out SafeCloseSocket socket)
+        public static unsafe SocketError Accept(SafeCloseSocket socketHandle, byte[] socketAddress, ref int socketAddressSize, out SafeCloseSocket socket)
         {
             SocketError errorCode;
             socket = CreateSocket(InnerSafeCloseSocket.Accept(socketHandle, socketAddress, ref socketAddressSize, out errorCode));

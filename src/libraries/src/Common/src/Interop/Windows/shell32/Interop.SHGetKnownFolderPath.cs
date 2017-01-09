@@ -32,7 +32,7 @@ internal partial class Interop
 #pragma warning restore BCL0015
 
         internal static int SHGetKnownFolderPath(
-            [MarshalAs(UnmanagedType.LPStruct)] Guid rfid,
+            Guid rfid,
             uint dwFlags,
             IntPtr hToken,
             out string ppszPath)

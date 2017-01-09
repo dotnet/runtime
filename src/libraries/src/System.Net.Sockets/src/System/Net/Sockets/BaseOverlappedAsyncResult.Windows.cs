@@ -21,7 +21,7 @@ namespace System.Net.Sockets
         private SafeNativeOverlapped _nativeOverlapped;
 
         // The WinNT Completion Port callback.
-        private unsafe static readonly IOCompletionCallback s_ioCallback = new IOCompletionCallback(CompletionPortCallback);
+        private static unsafe readonly IOCompletionCallback s_ioCallback = new IOCompletionCallback(CompletionPortCallback);
 
         internal BaseOverlappedAsyncResult(Socket socket, Object asyncState, AsyncCallback asyncCallback)
             : base(socket, asyncState, asyncCallback)
@@ -69,7 +69,7 @@ namespace System.Net.Sockets
             }
         }
 
-        private unsafe static void CompletionPortCallback(uint errorCode, uint numBytes, NativeOverlapped* nativeOverlapped)
+        private static unsafe void CompletionPortCallback(uint errorCode, uint numBytes, NativeOverlapped* nativeOverlapped)
         {
 #if DEBUG
             DebugThreadTracking.SetThreadSource(ThreadKinds.CompletionPort);
@@ -111,7 +111,7 @@ namespace System.Net.Sockets
                         try
                         {
                             // The async IO completed with a failure.
-                            // Here we need to call WSAGetOverlappedResult() just so Marshal.GetLastWin32Error() will return the correct error.
+                            // Here we need to call WSAGetOverlappedResult() just so GetLastSocketError() will return the correct error.
                             SocketFlags ignore;
                             bool success = Interop.Winsock.WSAGetOverlappedResult(
                                 socket.SafeHandle,
@@ -121,11 +121,7 @@ namespace System.Net.Sockets
                                 out ignore);
                             if (!success)
                             {
-                                socketError = (SocketError)Marshal.GetLastWin32Error();
-                                if (socketError == 0)
-                                {
-                                    NetEventSource.Fail(asyncResult, $"socketError:0 numBytes:{numBytes}");
-                                }
+                                socketError = SocketPal.GetLastSocketError();
                             }
                             if (success)
                             {

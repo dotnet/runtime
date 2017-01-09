@@ -36,6 +36,8 @@ namespace System.Linq.Expressions
 
         internal abstract Type TypeCore { get; }
 
+        internal abstract Type PublicType { get; }
+
         /// <summary>
         /// Returns the node type of this <see cref="Expression"/>. (Inherited from <see cref="Expression"/>.)
         /// </summary>
@@ -167,6 +169,8 @@ namespace System.Linq.Expressions
         }
 
         internal sealed override Type TypeCore => typeof(TDelegate);
+
+        internal override Type PublicType => typeof(Expression<TDelegate>);
 
         /// <summary>
         /// Produces a delegate that represents the lambda expression.

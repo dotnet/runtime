@@ -19,51 +19,55 @@
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\src\Interop\Linux\procfs\Interop.ProcFsStat.cs">
+    <Compile Include="$(CommonPath)\Interop\Linux\procfs\Interop.ProcFsStat.cs">
       <Link>Common\Interop\Linux\procfs\Interop.ProcFsStat.cs</Link>
     </Compile>
-    <Compile Include="..\src\System\CharArrayHelpers.cs">
+    <Compile Include="$(CommonPath)\System\CharArrayHelpers.cs">
       <Link>Common\System\CharArrayHelpers.cs</Link>
     </Compile>
-    <Compile Include="..\src\System\StringExtensions.cs">
+    <Compile Include="$(CommonPath)\System\StringExtensions.cs">
       <Link>Common\System\StringExtensions.cs</Link>
     </Compile>
-    <Compile Include="..\src\System\Collections\Generic\ArrayBuilder.cs">
+    <Compile Include="$(CommonPath)\System\Collections\Generic\ArrayBuilder.cs">
       <Link>Common\System\Collections\Generic\ArrayBuilder.cs</Link>
     </Compile>
-    <Compile Include="..\src\System\Collections\Generic\LargeArrayBuilder.cs">
+    <Compile Include="$(CommonPath)\System\Collections\Generic\LargeArrayBuilder.cs">
       <Link>Common\System\Collections\Generic\LargeArrayBuilder.cs</Link>
     </Compile>
-    <Compile Include="..\src\System\IO\PathInternal.cs">
+    <Compile Include="$(CommonPath)\System\IO\PathInternal.cs">
       <Link>Common\System\IO\PathInternal.cs</Link>
     </Compile>
-    <Compile Include="..\src\System\IO\PathInternal.CaseSensitivity.cs">
+    <Compile Include="$(CommonPath)\System\IO\PathInternal.CaseSensitivity.cs">
       <Link>Common\System\IO\PathInternal.CaseSensitivity.cs</Link>
     </Compile>
-    <Compile Include="..\src\System\IO\RowConfigReader.cs">
+    <Compile Include="$(CommonPath)\System\IO\RowConfigReader.cs">
       <Link>Common\System\IO\RowConfigReader.cs</Link>
     </Compile>
-    <Compile Include="..\src\System\IO\StringBuilderCache.cs">
+    <Compile Include="$(CommonPath)\System\IO\StringBuilderCache.cs">
       <Link>Common\System\IO\StringBuilderCache.cs</Link>
     </Compile>
-    <Compile Include="..\src\System\IO\StringParser.cs">
+    <Compile Include="$(CommonPath)\System\IO\StringParser.cs">
       <Link>Common\System\IO\StringParser.cs</Link>
     </Compile>
-    <Compile Include="..\src\System\Net\HttpKnownHeaderNames.cs">
+    <Compile Include="$(CommonPath)\System\Net\HttpKnownHeaderNames.cs">
       <Link>Common\System\Net\HttpKnownHeaderNames.cs</Link>
     </Compile>
-    <Compile Include="..\src\System\Net\HttpKnownHeaderNames.TryGetHeaderName.cs">
+    <Compile Include="$(CommonPath)\System\Net\HttpKnownHeaderNames.TryGetHeaderName.cs">
       <Link>Common\System\Net\HttpKnownHeaderNames.TryGetHeaderName.cs</Link>
     </Compile>
-    <Compile Include="..\src\System\Text\ReusableTextReader.cs">
+    <Compile Include="$(CommonPath)\System\Text\ReusableTextReader.cs">
       <Link>Common\System\Text\ReusableTextReader.cs</Link>
     </Compile>
     <Compile Include="$(CommonTestPath)\System\AssertExtensions.cs">
       <Link>CommonTest\System\AssertExtensions.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Security\IdentityHelper.cs">
+      <Link>Common\System\Security\IdentityHelper.cs</Link>
+    </Compile>
     <Compile Include="Tests\Interop\procfsTests.cs" />
     <Compile Include="Tests\System\CharArrayHelpersTests.cs" />
     <Compile Include="Tests\System\IO\StringParserTests.cs" />
+    <Compile Include="Tests\System\Security\IdentityHelperTests.cs" />
     <Compile Include="Tests\System\StringExtensions.Tests.cs" />
     <Compile Include="Tests\System\Collections\Generic\ArrayBuilderTests.cs" />
     <Compile Include="Tests\System\Collections\Generic\LargeArrayBuilderTests.cs" />
@@ -135,6 +139,7 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
+    <Folder Include="CommonTest\System\" />
     <Folder Include="System\Net\Sockets\" />
     <Folder Include="System\Net\VirtualNetwork\" />
   </ItemGroup>

@@ -25,6 +25,7 @@
     <Compile Include="BinaryWriter\BinaryWriter.WriteByteCharTests.cs" />
     <Compile Include="BinaryWriter\BinaryWriter.WriteTests.cs" />
     <Compile Include="BinaryWriter\BinaryWriterTests.cs" />
+    <Compile Include="BufferedStream\BufferedStream.FlushTests.cs" />
     <Compile Include="BufferedStream\BufferedStream.InvalidParameters.cs" />
     <Compile Include="BufferedStream\BufferedStreamTests.cs" />
     <Compile Include="BufferedStream\BufferedStreamTests.netcoreapp1.1.cs" Condition="'$(TargetGroup)' == 'netcoreapp1.1'" />

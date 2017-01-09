@@ -14,21 +14,19 @@
   <!-- Default configurations to help VS understand the options -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net462_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net462_Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net461_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net461_Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap101aot_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap101aot_Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(TargetGroup)' == 'net462' or '$(TargetGroup)' == 'net463'">
+  <PropertyGroup Condition="'$(TargetGroup)' == 'net462' or '$(TargetGroup)' == 'net461'">
     <ResourcesSourceOutputDirectory>None</ResourcesSourceOutputDirectory>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'net463'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'net461'">
     <ContractProject Include="..\ref\System.IO.csproj">
       <TargetGroup>netstandard1.7</TargetGroup>
     </ContractProject>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'net462' or '$(TargetGroup)' == 'net463'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'net461'">
     <TargetingPackReference Include="mscorlib" />
     <TargetingPackReference Include="System" />
   </ItemGroup>

@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <!-- 
+    We should be using $(BuildToolsTaskDir) for this, however we are currently forcing that property to 
+    always be net45 (because we use Mono to run our tests and Mono needs to load the net45 version)
+  -->
+  <PropertyGroup>
+    <CodeAnalyzerDir Condition="'$(CodeAnalyzerDir)'=='' and '$(OSEnvironment)'=='Windows_NT'">$(ToolsDir)net45/analyzers/</CodeAnalyzerDir>
+    <CodeAnalyzerDir Condition="'$(CodeAnalyzerDir)'=='' and '$(OSEnvironment)'!='Windows_NT'">$(ToolsDir)analyzers/</CodeAnalyzerDir>
+  </PropertyGroup>
+
+  <!-- PInvokeChecker data files-->
+  <PropertyGroup Condition="'$(OSGroup)'=='Windows_NT' and '$(EnableDotnetAnalyzers)' == 'true'">
+    <!-- 
+       This file helps us choose the correct allowed pinvoke file.
+       1. In case we are building for windows and TargetGroup is Netcore50 or netcore50aot (Store profile) or SupportsUWP is set to true we use OneCoreUWPApis.txt
+       2. For all other windows configuration we use OneCoreAPIs.txt file.
+    -->
+    <UseWin32Apis Condition="'$(OSGroup)'=='Windows_NT'">true</UseWin32Apis>
+    <ValidPinvokeMappings>$(MSBuildThisFileDirectory)PinvokeAnalyzer_OneCoreApis.txt</ValidPinvokeMappings>
+    <ValidPinvokeMappings Condition="'$(UseWin32Apis)'=='true'">$(MSBuildThisFileDirectory)PinvokeAnalyzer_Win32Apis.txt</ValidPinvokeMappings>
+    <ValidPinvokeMappings Condition="'$(TargetGroup)'=='netcore50' or '$(TargetGroup)'=='netcore50aot' or '$(SupportsUWP)'=='true'">$(MSBuildThisFileDirectory)PinvokeAnalyzer_UWPApis.txt</ValidPinvokeMappings>
+    <ValidPinvokeMappings Condition="('$(TargetGroup)'=='netcore50' or '$(TargetGroup)'=='netcore50aot' or '$(SupportsUWP)'=='true') and '$(UseWin32Apis)'=='true'">$(MSBuildThisFileDirectory)PinvokeAnalyzer_Win32UWPApis.txt</ValidPinvokeMappings>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <!-- %24 = $ -->
+    <EnableFxCopAnalyzers Condition="$([System.Text.RegularExpressions.Regex]::IsMatch($(MSBuildProjectDirectory), 'src%24'))">true</EnableFxCopAnalyzers>
+    <EnableFxCopAnalyzers Condition="'$(EnableFxCopAnalyzers)' != 'true'">false</EnableFxCopAnalyzers>
+  </PropertyGroup>
+
+  <ItemGroup Condition="$(EnableFxCopAnalyzers)">
+    <Analyzer Include="$(CodeAnalyzerDir)*.dll" Exclude="$(CodeAnalyzerDir)Microsoft.DotNet.CodeAnalysis.dll"/>
+  </ItemGroup>
+  <PropertyGroup Condition="$(EnableFxCopAnalyzers)">
+    <CodeAnalysisRuleSet Condition="'$(CodeAnalysisRuleSet)' == ''">$(MSBuildThisFileDirectory)Default.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(EnableDotnetAnalyzers)' == 'true'">
+    <!-- Enable the Microsoft.Dotnet.CodeAnalysis.dll analyzer -->
+    <Analyzer Include="$(CodeAnalyzerDir)Microsoft.DotNet.CodeAnalysis.dll"/>
+
+    <AdditionalFiles Include="$(MSBuildProjectDirectory)/*.analyzerdata" />
+    <AdditionalFiles Include="$(MSBuildProjectDirectory)/*.analyzerdata.$(Platform)" />
+
+    <!-- Add the necessary valid Pinvoke mapping file -->
+    <AdditionalFiles Condition="'$(ValidPinvokeMappings)' != ''" Include="$(ValidPinvokeMappings)"/>
+
+    <!-- Disable any analyzers that should not run -->
+    <DisabledAnalyzers Condition="'$(IsTestProject)' == true or '$(TargetsUnix)' == 'true'" Include="PinvokeAnalyzer"/>
+    <DisabledAnalyzers Condition="'$(TargetsWindows)'=='true' and ($(TargetGroup.Contains('net46')) or $(TargetGroup.Contains('net45')))" Include="PinvokeAnalyzer" />
+  </ItemGroup>
+
+  <!-- If we have specified any analyzers that need to be disabled write them into the file -->
+  <Target Name="GenerateAnalyzerConfigFile" BeforeTargets="CoreCompile" Condition="'@(DisabledAnalyzers)'!='' and '$(EnableDotnetAnalyzers)' == 'true'" >
+    <WriteLinesToFile File="$(IntermediateOutputPath)/disabledAnalyzers.config" Lines="@(DisabledAnalyzers)" Overwrite="true" />
+
+    <ItemGroup>
+      <AdditionalFiles Include="$(IntermediateOutputPath)/disabledAnalyzers.config"/>
+      <FileWrites Include="$(IntermediateOutputPath)/disabledAnalyzers.config"/>
+    </ItemGroup>
+  </Target>
+
+</Project>

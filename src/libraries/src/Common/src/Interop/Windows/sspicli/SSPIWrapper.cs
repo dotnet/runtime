@@ -178,7 +178,7 @@ namespace System.Net
             int errorCode = secModule.InitializeSecurityContext(ref credential, ref context, targetName, inFlags, datarep, inputBuffer, outputBuffer, ref outFlags);
 
             if (NetEventSource.IsEnabled) NetEventSource.Log.SecurityContextInputBuffer(nameof(InitializeSecurityContext), inputBuffer?.size ?? 0, outputBuffer.size, (Interop.SECURITY_STATUS)errorCode);
-            
+
             return errorCode;
         }
 
@@ -266,7 +266,7 @@ namespace System.Net
             VerifySignature
         }
 
-        private unsafe static int EncryptDecryptHelper(OP op, SSPIInterface secModule, SafeDeleteContext context, SecurityBuffer[] input, uint sequenceNumber)
+        private static unsafe int EncryptDecryptHelper(OP op, SSPIInterface secModule, SafeDeleteContext context, SecurityBuffer[] input, uint sequenceNumber)
         {
             Interop.SspiCli.SecBufferDesc sdcInOut = new Interop.SspiCli.SecBufferDesc(input.Length);
             var unmanagedBuffer = new Interop.SspiCli.SecBuffer[input.Length];
@@ -378,7 +378,7 @@ namespace System.Net
                     }
 
                     if (NetEventSource.IsEnabled && errorCode != 0)
-                    {                         
+                    {
                         if (errorCode == Interop.SspiCli.SEC_I_RENEGOTIATE)
                         {
                             NetEventSource.Error(null, SR.Format(SR.event_OperationReturnedSomething, op, "SEC_I_RENEGOTIATE"));

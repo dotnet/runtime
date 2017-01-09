@@ -159,7 +159,7 @@
     "BuildArchitecture": {
       "description": "Sets the value of the build architecture.",
       "valueType": "passThrough",
-      "values": ["x86", "arm", "arm-softfp", "x64", "arm64"],
+      "values": ["x86", "arm", "armel", "x64", "arm64"],
       "defaultValue": "${CPUArch}"
     },
     "CmakeBuildType": {
@@ -180,6 +180,12 @@
       "values": ["Numeric values"],
       "defaultValue": "--numproc ${ProcessorCount}"
     },
+    "AdditionalArgs": {
+      "description": "Pass additional arguments to the native_build script",
+      "valueType": "passThrough",
+      "values": [],
+      "defaultValue": ""
+    },
     "Project": {
       "description": "Project where the commands are going to be applied.",
       "valueType": "passThrough",
@@ -197,6 +203,12 @@
       "valueType": "target",
       "values": [],
       "defaultValue": ""
+    },
+    "RestoreForTestsAgainstPackagesOnly": {
+      "description": "MsBuild target that restores the packages.",
+      "valueType": "property",
+      "values": ["true", "false"],
+      "defaultValue": "true"
     },
     "GenerateVersionHeader": {
       "description": "MsBuild target that generates the version header.",
@@ -227,7 +239,7 @@
       "valueType": "target",
       "values": [],
       "defaultValue": ""
-    }    
+    }
   },
   "commands": {
     "build-managed": {
@@ -246,6 +258,12 @@
             "Project": "src/packages.builds",
             "FilterToOSGroup":"default",
             "MsBuildLogging":"/flp:v=normal;LogFile=build-packages.log"
+          }
+        },
+        "portableLinux":{
+          "description": "Make the build-native script generate binaries that are portable over glibc based Linux distros.",
+          "settings": {
+            "FilterToOSGroup":"linux"
           }
         },
         "tests": {
@@ -316,6 +334,7 @@
         "toolName": "msbuild",
         "settings": {
           "TargetOS": "default",
+          "BuildTests": false,
           "ConfigurationGroup": "default",
           "MsBuildLogging":"default",
           "MsBuildWarning":"default",
@@ -348,6 +367,12 @@
           "settings": {
             "HostOs": "default"
           }
+        },
+        "portableLinux":{
+          "description": "Make the build-native script generate binaries that are portable over glibc based Linux distros.",
+          "settings": {
+            "AdditionalArgs": "portableLinux"
+          }
         }
       },
       "defaultValues": {
@@ -357,7 +382,8 @@
            "BuildArchitecture": "default", 
            "CmakeBuildType": "default",           
            "HostOs": "default",
-           "ProcessorCount": "default",
+          "ProcessorCount": "default",
+          "AdditionalArgs": "default",
            "ToolSetDir": "default"
          }
       }
@@ -384,7 +410,6 @@
         }
       },
       "defaultValues": {
-	    "defaultAlias": "b",
         "toolName": "msbuild",
         "settings": {
           "MsBuildLogging":"/flp:v=normal;LogFile=clean.log"
@@ -496,7 +521,7 @@
         }
       },
       "defaultValues": {
-	  	"defaultAlias": "p",
+        "defaultAlias": "p",
         "toolName": "msbuild",
         "settings": {
           "MsBuildLogging":"/flp:v=normal;LogFile=sync.log"

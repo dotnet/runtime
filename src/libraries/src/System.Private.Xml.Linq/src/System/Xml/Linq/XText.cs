@@ -3,6 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using StringBuilder = System.Text.StringBuilder;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.Xml.Linq
 {
@@ -88,6 +90,27 @@ namespace System.Xml.Linq
             {
                 writer.WriteString(text);
             }
+        }
+
+        /// <summary>
+        /// Write this <see cref="XText"/> to the given <see cref="XmlWriter"/>.
+        /// </summary>
+        /// <param name="writer">
+        /// The <see cref="XmlWriter"/> to write this <see cref="XText"/> to.
+        /// </param>
+        /// <param name="cancellationToken">
+        /// A cancellation token.
+        /// </param>
+        public override Task WriteToAsync(XmlWriter writer, CancellationToken cancellationToken)
+        {
+            if (writer == null)
+                throw new ArgumentNullException(nameof(writer));
+            if (cancellationToken.IsCancellationRequested)
+                return Task.FromCanceled(cancellationToken);
+
+            return parent is XDocument?
+                writer.WriteWhitespaceAsync(text) :
+                writer.WriteStringAsync(text);
         }
 
         internal override void AppendText(StringBuilder sb)

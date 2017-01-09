@@ -47,6 +47,7 @@
     <Compile Include="DSACryptoServiceProviderProvider.cs" />
     <Compile Include="DSACryptoServiceProviderTests.cs" />
     <Compile Include="MD5CryptoServiceProviderTests.cs" />
+    <Compile Include="PasswordDeriveBytesTests.cs" />
     <Compile Include="RC2CryptoServiceProviderProvider.cs" />
     <Compile Include="RC2CryptoServiceProviderTests.cs" />
     <Compile Include="RNGCryptoServiceProviderTests.cs" />

@@ -11,7 +11,7 @@ namespace System.Runtime.Serialization.Json
 {
     internal class ByteArrayHelperWithString : ArrayHelper<string, byte>
     {
-        static public readonly ByteArrayHelperWithString Instance = new ByteArrayHelperWithString();
+        public static readonly ByteArrayHelperWithString Instance = new ByteArrayHelperWithString();
 
         internal void WriteArray(XmlWriter writer, byte[] array, int offset, int count)
         {

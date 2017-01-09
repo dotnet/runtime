@@ -4,9 +4,7 @@
 
 using Xunit;
 using Xunit.Abstractions;
-using System;
 using System.IO;
-using System.Xml;
 using System.Xml.Schema;
 
 namespace System.Xml.Tests

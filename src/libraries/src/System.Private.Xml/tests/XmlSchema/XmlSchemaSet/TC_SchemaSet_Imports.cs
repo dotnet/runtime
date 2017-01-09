@@ -5,7 +5,6 @@
 using Xunit;
 using Xunit.Abstractions;
 using System.IO;
-using System.Xml;
 using System.Xml.Schema;
 
 namespace System.Xml.Tests
@@ -41,8 +40,8 @@ namespace System.Xml.Tests
             sc.Compile();
             CError.Compare(sc.IsCompiled, true, "IsCompiled");
             CError.Compare(sc.Count, param2, "Count");
-            // check that schema is present in parent.Includes and its NS correct.
 
+            // check that schema is present in parent.Includes and its NS correct.
             foreach (XmlSchemaImport imp in parent.Includes)
                 if (imp.SchemaLocation.Equals(param1.ToString()) && imp.Schema.TargetNamespace == (string)param3)
                     return;
@@ -104,6 +103,7 @@ namespace System.Xml.Tests
             CError.Compare(sc.IsCompiled, true, "Add2IsCompiled");
             CError.Compare(sc.Count, 2, "Add2Count");
             CError.Compare(orig.SourceUri.Contains("import_v4_b.xsd"), true, "Compare the schema object");
+
             // check that schema is present in parent.Includes and its NS correct.
             foreach (XmlSchemaImport imp in parent.Includes)
                 if (imp.SchemaLocation.Equals("import_v4_b.xsd") && imp.Schema.TargetNamespace == null)
@@ -197,6 +197,7 @@ namespace System.Xml.Tests
                 if (imp.SchemaLocation.Equals("import_v9_b.xsd") && imp.Schema.TargetNamespace.Equals("ns-b"))
                     found = true;
             if (!found) Assert.True(false);
+
             // check that schema C in sch_b.Includes and its NS correct.
             foreach (XmlSchemaImport imp in sch_B.Includes)
                 if (imp.SchemaLocation.Equals("import_v9_c.xsd") && imp.Schema.TargetNamespace.Equals("ns-c"))
@@ -1526,6 +1527,7 @@ namespace System.Xml.Tests
                 if (imp.SchemaLocation.Equals("import_v9_b.xsd") && imp.Schema.TargetNamespace.Equals("ns-b"))
                     found = true;
             if (!found) Assert.True(false);
+
             // check that schema C in sch_b.Includes and its NS correct.
             foreach (XmlSchemaImport imp in sch_B.Includes)
                 if (imp.SchemaLocation.Equals("import_v9_c.xsd") && imp.Schema.TargetNamespace.Equals("ns-c"))

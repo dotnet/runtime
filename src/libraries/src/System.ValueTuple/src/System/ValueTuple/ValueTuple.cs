@@ -246,40 +246,37 @@ namespace System
 
         internal static int CombineHashCodes(int h1, int h2)
         {
-            // Forward to helper class in Common for this
-            // We keep the actual hashing logic there, so
-            // other classes can use it for hashing
-            return HashHelpers.Combine(h1, h2);
+            return HashHelpers.Combine(HashHelpers.Combine(HashHelpers.RandomSeed, h1), h2);
         }
 
         internal static int CombineHashCodes(int h1, int h2, int h3)
         {
-            return CombineHashCodes(CombineHashCodes(h1, h2), h3);
+            return HashHelpers.Combine(CombineHashCodes(h1, h2), h3);
         }
 
         internal static int CombineHashCodes(int h1, int h2, int h3, int h4)
         {
-            return CombineHashCodes(CombineHashCodes(h1, h2, h3), h4);
+            return HashHelpers.Combine(CombineHashCodes(h1, h2, h3), h4);
         }
 
         internal static int CombineHashCodes(int h1, int h2, int h3, int h4, int h5)
         {
-            return CombineHashCodes(CombineHashCodes(h1, h2, h3, h4), h5);
+            return HashHelpers.Combine(CombineHashCodes(h1, h2, h3, h4), h5);
         }
 
         internal static int CombineHashCodes(int h1, int h2, int h3, int h4, int h5, int h6)
         {
-            return CombineHashCodes(CombineHashCodes(h1, h2, h3, h4, h5), h6);
+            return HashHelpers.Combine(CombineHashCodes(h1, h2, h3, h4, h5), h6);
         }
 
         internal static int CombineHashCodes(int h1, int h2, int h3, int h4, int h5, int h6, int h7)
         {
-            return CombineHashCodes(CombineHashCodes(h1, h2, h3, h4, h5, h6), h7);
+            return HashHelpers.Combine(CombineHashCodes(h1, h2, h3, h4, h5, h6), h7);
         }
 
         internal static int CombineHashCodes(int h1, int h2, int h3, int h4, int h5, int h6, int h7, int h8)
         {
-            return CombineHashCodes(CombineHashCodes(h1, h2, h3, h4, h5, h6, h7), h8);
+            return HashHelpers.Combine(CombineHashCodes(h1, h2, h3, h4, h5, h6, h7), h8);
         }
     }
 

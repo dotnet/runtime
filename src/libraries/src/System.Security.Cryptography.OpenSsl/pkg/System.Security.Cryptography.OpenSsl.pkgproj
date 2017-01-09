@@ -3,7 +3,7 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
     <ProjectReference Include="..\ref\System.Security.Cryptography.OpenSsl.csproj">
-      <SupportedFramework>net463;netcoreapp1.1;$(AllXamarinFrameworks)</SupportedFramework>
+      <SupportedFramework>net461;netcoreapp1.1;$(AllXamarinFrameworks)</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.Security.Cryptography.OpenSsl.builds" />
   </ItemGroup>

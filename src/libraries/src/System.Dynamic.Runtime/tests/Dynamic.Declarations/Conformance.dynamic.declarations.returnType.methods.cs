@@ -311,7 +311,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.returnType
            // <Code>
 public class MyClass
     {
-        static public dynamic Foo(this int x)
+        public static dynamic Foo(this int x)
         {
             dynamic d = x;
             return d;

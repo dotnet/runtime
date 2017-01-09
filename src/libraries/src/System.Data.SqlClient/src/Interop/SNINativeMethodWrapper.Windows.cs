@@ -268,10 +268,10 @@ namespace System.Data.SqlClient
         private static extern uint SNIPacketGetDataWrapper([In] IntPtr packet, [In, Out] byte[] readBuffer, uint readBufferLength, out uint dataSize);
 
         [DllImport(SNI, CallingConvention = CallingConvention.Cdecl)]
-        private static unsafe extern void SNIPacketSetData(SNIPacket pPacket, [In] byte* pbBuf, uint cbBuf);
+        private static extern unsafe void SNIPacketSetData(SNIPacket pPacket, [In] byte* pbBuf, uint cbBuf);
 
         [DllImport(SNI, CallingConvention = CallingConvention.Cdecl)]
-        private static unsafe extern uint SNISecGenClientContextWrapper(
+        private static extern unsafe uint SNISecGenClientContextWrapper(
             [In] SNIHandle pConn,
             [In, Out] byte[] pIn,
             uint cbIn,

@@ -48,7 +48,7 @@ namespace System.Text.Encodings.Web
     {
         private AllowedCharactersBitmap _allowedCharacters;
 
-        internal readonly static DefaultUrlEncoder Singleton = new DefaultUrlEncoder(new TextEncoderSettings(UnicodeRanges.BasicLatin));
+        internal static readonly DefaultUrlEncoder Singleton = new DefaultUrlEncoder(new TextEncoderSettings(UnicodeRanges.BasicLatin));
 
         // We perform UTF8 conversion of input, which means that the worst case is
         // 12 output chars per input surrogate char: [input] U+FFFF U+FFFF -> [output] "%XX%YY%ZZ%WW".

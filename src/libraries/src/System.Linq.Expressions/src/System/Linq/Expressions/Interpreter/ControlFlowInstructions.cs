@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Dynamic.Utils;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 
@@ -75,7 +76,7 @@ namespace System.Linq.Expressions.Interpreter
                 return _offset;
             }
 
-            return +1;
+            return 1;
         }
     }
 
@@ -109,7 +110,7 @@ namespace System.Linq.Expressions.Interpreter
                 return _offset;
             }
 
-            return +1;
+            return 1;
         }
     }
 
@@ -144,7 +145,7 @@ namespace System.Linq.Expressions.Interpreter
                 return _offset;
             }
 
-            return +1;
+            return 1;
         }
     }
 
@@ -523,7 +524,7 @@ namespace System.Linq.Expressions.Interpreter
     /// </summary>
     internal sealed class EnterFinallyInstruction : IndexedBranchInstruction
     {
-        private readonly static EnterFinallyInstruction[] s_cache = new EnterFinallyInstruction[CacheSize];
+        private static readonly EnterFinallyInstruction[] s_cache = new EnterFinallyInstruction[CacheSize];
 
         private EnterFinallyInstruction(int labelIndex)
             : base(labelIndex)
@@ -585,7 +586,7 @@ namespace System.Linq.Expressions.Interpreter
 
     internal sealed class EnterFaultInstruction : IndexedBranchInstruction
     {
-        private readonly static EnterFaultInstruction[] s_cache = new EnterFaultInstruction[CacheSize];
+        private static readonly EnterFaultInstruction[] s_cache = new EnterFaultInstruction[CacheSize];
 
         private EnterFaultInstruction(int labelIndex)
             : base(labelIndex)
@@ -787,7 +788,7 @@ namespace System.Linq.Expressions.Interpreter
             ConstructorInfo ctor = _runtimeWrappedExceptionCtor
                 ?? (_runtimeWrappedExceptionCtor = typeof(RuntimeWrappedException)
                 .GetConstructors(BindingFlags.Instance | BindingFlags.NonPublic)
-                .First(c => c.GetParameters().Length == 1));
+                .First(c => c.GetParametersCached().Length == 1));
             return (RuntimeWrappedException)ctor.Invoke(new [] {thrown});
         }
     }

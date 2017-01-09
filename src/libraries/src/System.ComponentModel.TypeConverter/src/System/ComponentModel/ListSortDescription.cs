@@ -12,45 +12,23 @@ namespace System.ComponentModel
     /// </summary>
     public class ListSortDescription
     {
-        private PropertyDescriptor _property;
-        private ListSortDirection _sortDirection;
         /// <summary>
         ///    <para>[To be supplied.]</para>
         /// </summary>
         public ListSortDescription(PropertyDescriptor property, ListSortDirection direction)
         {
-            _property = property;
-            _sortDirection = direction;
+            PropertyDescriptor = property;
+            SortDirection = direction;
         }
 
         /// <summary>
         ///    <para>[To be supplied.]</para>
         /// </summary>
-        public PropertyDescriptor PropertyDescriptor
-        {
-            get
-            {
-                return _property;
-            }
-            set
-            {
-                _property = value;
-            }
-        }
+        public PropertyDescriptor PropertyDescriptor { get; set; }
 
         /// <summary>
         ///    <para>[To be supplied.]</para>
         /// </summary>
-        public ListSortDirection SortDirection
-        {
-            get
-            {
-                return _sortDirection;
-            }
-            set
-            {
-                _sortDirection = value;
-            }
-        }
+        public ListSortDirection SortDirection { get; set; }
     }
 }

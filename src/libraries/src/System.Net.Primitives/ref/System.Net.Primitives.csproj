@@ -10,6 +10,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\Microsoft.Win32.Primitives\ref\Microsoft.Win32.Primitives.csproj" />
     <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" />
+    <ProjectReference Include="..\..\System.Runtime.InteropServices\ref\System.Runtime.InteropServices.csproj" />
     <ProjectReference Include="..\..\System.Runtime.Handles\ref\System.Runtime.Handles.csproj" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

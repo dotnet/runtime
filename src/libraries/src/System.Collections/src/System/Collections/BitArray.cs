@@ -9,7 +9,6 @@ namespace System.Collections
 {
     // A vector of bits.  Use this to store bits efficiently, without having to do bit 
     // shifting yourself.
-    [System.Runtime.InteropServices.ComVisible(true)]
     [Serializable]
     public sealed class BitArray : ICollection, ICloneable
     {
@@ -337,6 +336,126 @@ namespace System.Collections
                 m_array[i] = ~m_array[i];
             }
 
+            _version++;
+            return this;
+        }
+
+        /*=========================================================================
+        ** Shift all the bit values to right on count bits. The current instance is
+        ** updated and returned.
+        * 
+        ** Exceptions: ArgumentOutOfRangeException if count < 0
+        =========================================================================*/
+        public BitArray RightShift(int count)
+        {
+            if (count <= 0)
+            {
+                if (count < 0)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(count), count, SR.ArgumentOutOfRange_NeedNonNegNum);
+                }
+
+                _version++;
+                return this;
+            }
+
+            int toIndex = 0;
+            int ints = GetArrayLength(m_length, BitsPerInt32);
+            if (count < m_length)
+            {
+                int shiftCount;
+                // We can not use Math.DivRem without taking a dependency on System.Runtime.Extensions
+                int fromIndex = count / BitsPerInt32;
+                shiftCount = count - fromIndex * BitsPerInt32; // Optimized Rem
+
+                if (shiftCount == 0)
+                {
+                    unchecked
+                    {
+                        uint mask = uint.MaxValue >> (BitsPerInt32 - m_length % BitsPerInt32);
+                        m_array[ints - 1] &= (int)mask;
+                    }
+                    Array.Copy(m_array, fromIndex, m_array, 0, ints - fromIndex);
+                    toIndex = ints - fromIndex;
+                }
+                else
+                {
+                    int lastIndex = ints - 1;
+                    unchecked
+                    {
+                        while (fromIndex < lastIndex)
+                        {
+                            uint right = (uint)m_array[fromIndex] >> shiftCount;
+                            int left = m_array[++fromIndex] << (BitsPerInt32 - shiftCount);
+                            m_array[toIndex++] = left | (int)right;
+                        }
+                        uint mask = uint.MaxValue >> (BitsPerInt32 - m_length % BitsPerInt32);
+                        mask &= (uint)m_array[fromIndex];
+                        m_array[toIndex++] = (int)(mask >> shiftCount);
+                    }
+                }
+            }
+
+            Array.Clear(m_array, toIndex, ints - toIndex);
+            _version++;
+            return this;
+        }
+
+        /*=========================================================================
+        ** Shift all the bit values to left on count bits. The current instance is
+        ** updated and returned.
+        * 
+        ** Exceptions: ArgumentOutOfRangeException if count < 0
+        =========================================================================*/
+        public BitArray LeftShift(int count)
+        {
+            if (count <= 0)
+            {
+                if (count < 0)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(count), count, SR.ArgumentOutOfRange_NeedNonNegNum);
+                }
+
+                _version++;
+                return this;
+            }
+
+            int lengthToClear;
+            if (count < m_length)
+            {
+                int lastIndex = (m_length - 1) / BitsPerInt32;
+
+                int shiftCount;
+                // We can not use Math.DivRem without taking a dependency on System.Runtime.Extensions
+                lengthToClear = count / BitsPerInt32;
+                shiftCount = count - lengthToClear * BitsPerInt32; // Optimized Rem
+
+                if (shiftCount == 0)
+                {
+                    Array.Copy(m_array, 0, m_array, lengthToClear, lastIndex + 1 - lengthToClear);
+                }
+                else
+                {
+                    int fromindex = lastIndex - lengthToClear;
+                    unchecked
+                    {
+                        while (fromindex > 0)
+                        {
+                            int left = m_array[fromindex] << shiftCount;
+                            uint right = (uint)m_array[--fromindex] >> (BitsPerInt32 - shiftCount);
+                            m_array[lastIndex] = left | (int)right;
+                            lastIndex--;
+                        }
+                        m_array[lastIndex] = m_array[fromindex] << shiftCount;
+                    }
+                }
+            }
+            else
+            {
+                lengthToClear = GetArrayLength(m_length, BitsPerInt32); // Clear all
+            }
+
+            Array.Clear(m_array, 0, lengthToClear);
             _version++;
             return this;
         }

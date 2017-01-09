@@ -34,21 +34,21 @@ namespace System.Xml.Tests
 
         [Fact]
         [OuterLoop]
-        static public void TCUserNameTable()
+        public static void TCUserNameTable()
         {
             RunTest(() => new TCUserNameTable() { Attribute = new TestCase() { Name = "XmlNameTable user scenario inheritance", Desc = "XmlNameTable inheritance" } });
         }
 
         [Fact]
         [OuterLoop]
-        static public void NameTableVerifyWGetChar()
+        public static void NameTableVerifyWGetChar()
         {
             RunTest(() => new TCRecordNameTableGet() { Attribute = new TestCase() { Name = "NameTable(Get) VerifyWGetChar", Desc = "VerifyWGetChar" } });
         }
 
         [Fact]
         [OuterLoop]
-        static public void NameTableVerifyWAddChar()
+        public static void NameTableVerifyWAddChar()
         {
             RunTest(() => new TCRecordNameTableGet() { Attribute = new TestCase() { Name = "NameTable(Get) VerifyWAddChar", Desc = "VerifyWAddChar" } });
             RunTest(() => new TCRecordNameTableGet() { Attribute = new TestCase() { Name = "NameTable(Get) VerifyWAddString", Desc = "VerifyWAddString" } });
@@ -61,42 +61,42 @@ namespace System.Xml.Tests
 
         [Fact]
         [OuterLoop]
-        static public void NameTableVerifyWAddString()
+        public static void NameTableVerifyWAddString()
         {
             RunTest(() => new TCRecordNameTableGet() { Attribute = new TestCase() { Name = "NameTable(Get) VerifyWAddString", Desc = "VerifyWAddString" } });
         }
 
         [Fact]
         [OuterLoop]
-        static public void NameTableVerifyWGetString()
+        public static void NameTableVerifyWGetString()
         {
             RunTest(() => new TCRecordNameTableGet() { Attribute = new TestCase() { Name = "NameTable(Get) VerifyWGetString", Desc = "VerifyWGetString" } });
         }
 
         [Fact]
         [OuterLoop]
-        static public void TCRecordNameTableAddVerifyWAddChar()
+        public static void TCRecordNameTableAddVerifyWAddChar()
         {
             RunTest(() => new TCRecordNameTableAdd() { Attribute = new TestCase() { Name = "NameTable(Add) VerifyWAddChar", Desc = "VerifyWAddChar" } });
         }
 
         [Fact]
         [OuterLoop]
-        static public void TCRecordNameTableAddVerifyWGetChar()
+        public static void TCRecordNameTableAddVerifyWGetChar()
         {
             RunTest(() => new TCRecordNameTableAdd() { Attribute = new TestCase() { Name = "NameTable(Add) VerifyWGetChar", Desc = "VerifyWGetChar" } });
         }
 
         [Fact]
         [OuterLoop]
-        static public void TCRecordNameTableAddVerifyWAddString()
+        public static void TCRecordNameTableAddVerifyWAddString()
         {
             RunTest(() => new TCRecordNameTableAdd() { Attribute = new TestCase() { Name = "NameTable(Add) VerifyWAddString", Desc = "VerifyWAddString" } });
         }
 
         [Fact]
         [OuterLoop]
-        static public void TCRecordNameTableAddVerifyWGetString()
+        public static void TCRecordNameTableAddVerifyWGetString()
         {
             RunTest(() => new TCRecordNameTableAdd() { Attribute = new TestCase() { Name = "NameTable(Add) VerifyWGetString", Desc = "VerifyWGetString" } });
         }

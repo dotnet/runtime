@@ -18,13 +18,7 @@ namespace System.ComponentModel
         /// <summary>
         ///    <para>When overridden in a derived class, gets a value that specifies when a license can be used.</para>
         /// </summary>
-        public virtual LicenseUsageMode UsageMode
-        {
-            get
-            {
-                return LicenseUsageMode.Runtime;
-            }
-        }
+        public virtual LicenseUsageMode UsageMode => LicenseUsageMode.Runtime;
 
         /// <summary>
         ///    <para>When overridden in a derived class, gets a saved license 

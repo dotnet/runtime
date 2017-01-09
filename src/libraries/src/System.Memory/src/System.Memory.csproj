@@ -7,9 +7,9 @@
     <AssemblyVersion>4.0.0.0</AssemblyVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <CLSCompliant>false</CLSCompliant>
-    <NuGetTargetMoniker>.NETStandard,Version=v1.0</NuGetTargetMoniker>
+    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.0</NuGetTargetMoniker>
     <DocumentationFile>$(OutputPath)$(AssemblyName).xml</DocumentationFile>
-    <IsPartialFacadeAssembly>false</IsPartialFacadeAssembly>
+    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'netcoreapp1.1'">true</IsPartialFacadeAssembly>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />

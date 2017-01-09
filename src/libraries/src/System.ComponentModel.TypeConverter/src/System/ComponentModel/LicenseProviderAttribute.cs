@@ -21,8 +21,8 @@ namespace System.ComponentModel
         /// </summary>
         public static readonly LicenseProviderAttribute Default = new LicenseProviderAttribute();
 
-        private Type _licenseProviderType = null;
-        private string _licenseProviderName = null;
+        private Type _licenseProviderType;
+        private string _licenseProviderName;
 
         /// <summary>
         /// <para>Initializes a new instance of the <see cref='System.ComponentModel.LicenseProviderAttribute'/> class without a license

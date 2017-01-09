@@ -4206,7 +4206,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.conversions
             return 0;
         }
 
-        static public MyStack<object> SPropObj
+        public static MyStack<object> SPropObj
         {
             get
             {
@@ -4242,7 +4242,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.conversions
             return new MyStack<object>();
         }
 
-        static public MyStack<dynamic> M4DelDyn(int x = 1, int y = 1)
+        public static MyStack<dynamic> M4DelDyn(int x = 1, int y = 1)
         {
             return new MyStack<dynamic>();
         }

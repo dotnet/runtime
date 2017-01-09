@@ -23,9 +23,9 @@ namespace System.Linq.Expressions.Interpreter
         {
             object value = _type.GetTypeInfo().IsValueType ? Activator.CreateInstance(_type) : null;
             frame.Push(value);
-            return +1;
+            return 1;
         }
 
-        public override string ToString() => "New " + _type;
+        public override string ToString() => "DefaultValue " + _type;
     }
 }

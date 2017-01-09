@@ -5,8 +5,6 @@
 #include "pal_err.h"
 #include "pal_utilities.h"
 
-#include <openssl/err.h>
-
 extern "C" uint64_t CryptoNative_ErrGetError()
 {
     return ERR_get_error();

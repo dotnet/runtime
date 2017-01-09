@@ -17,6 +17,9 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Release|AnyCPU'" />
+  <ItemGroup>
+    <Compile Include="FxCopBaseline.cs" />
+  </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netstandard'">
     <Compile Include="System\Net\AuthenticationManager.cs" />
     <Compile Include="System\Net\Authorization.cs" />
@@ -123,6 +126,7 @@
     <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Diagnostics.Debug" />
+    <Reference Include="System.Diagnostics.Tools" />
     <Reference Include="System.Collections.Specialized" />
     <Reference Include="System.Collections.NonGeneric" />
     <Reference Include="System.Net.Primitives" />

@@ -30,4 +30,3 @@ fi
 
 "$__scriptpath/build-managed.sh" $*
 exit $?
-

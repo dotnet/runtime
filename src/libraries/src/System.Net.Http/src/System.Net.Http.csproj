@@ -341,12 +341,6 @@
     <Compile Include="netcore50\System\Net\HttpHandlerToFilter.cs" />
     <Compile Include="netcore50\System\Net\HttpClientHandler.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'uap101'">
-    <!-- ToDo: remove once we have new packages https://github.com/dotnet/corefx/issues/12838 -->
-    <ProjectReference Include="..\..\System.Security.Principal\ref\System.Security.Principal.csproj">
-      <UndefineProperties>TargetGroup;OSGroup</UndefineProperties>
-    </ProjectReference>
-  </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'net46'">
     <TargetingPackReference Include="mscorlib" />
     <TargetingPackReference Include="System" />

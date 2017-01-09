@@ -668,7 +668,7 @@ namespace System
             Interop.Kernel32.Beep(frequency, duration);
         }
 
-        public unsafe static void MoveBufferArea(int sourceLeft, int sourceTop,
+        public static unsafe void MoveBufferArea(int sourceLeft, int sourceTop,
             int sourceWidth, int sourceHeight, int targetLeft, int targetTop,
             char sourceChar, ConsoleColor sourceForeColor,
             ConsoleColor sourceBackColor)
@@ -1170,7 +1170,7 @@ namespace System
             // world working set and to avoid requiring a reference to the
             // System.IO.FileSystem contract.
 
-            private unsafe static int ReadFileNative(IntPtr hFile, byte[] bytes, int offset, int count, bool isPipe, out int bytesRead, bool useFileAPIs)
+            private static unsafe int ReadFileNative(IntPtr hFile, byte[] bytes, int offset, int count, bool isPipe, out int bytesRead, bool useFileAPIs)
             {
                 Debug.Assert(offset >= 0, "offset >= 0");
                 Debug.Assert(count >= 0, "count >= 0");

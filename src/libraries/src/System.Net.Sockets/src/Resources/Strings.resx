@@ -291,6 +291,9 @@
   <data name="net_sockets_disconnect_notsupported" xml:space="preserve">
     <value>This platform does not support disconnecting a Socket.  Instead, close the Socket and create a new one.</value>
   </data>
+  <data name="net_sockets_transmitfileoptions_notsupported" xml:space="preserve">
+    <value>This platform does not support TransmitFileOptions other than TransmitFileOptions.UseDefaultWorkerThread.</value>
+  </data>
   <data name="NotSupported_UnreadableStream" xml:space="preserve">
     <value>Stream does not support reading.</value>
   </data>

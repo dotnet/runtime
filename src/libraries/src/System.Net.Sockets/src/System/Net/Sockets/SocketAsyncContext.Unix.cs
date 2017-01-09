@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using Microsoft.Win32.SafeHandles;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -302,6 +303,32 @@ namespace System.Net.Sockets
             }
         }
 
+        private sealed class SendFileOperation : AsyncOperation
+        {
+            public SafeFileHandle FileHandle;
+            public long Offset;
+            public long Count;
+            public long BytesTransferred;
+
+            protected override void Abort() { }
+
+            public Action<long, SocketError> Callback
+            {
+                private get { return (Action<long, SocketError>)CallbackOrEvent; }
+                set { CallbackOrEvent = value; }
+            }
+
+            protected override void InvokeCallback()
+            {
+                Callback(BytesTransferred, ErrorCode);
+            }
+
+            protected override bool DoTryComplete(SocketAsyncContext context)
+            {
+                return SocketPal.TryCompleteSendFile(context._socket, FileHandle, ref Offset, ref Count, ref BytesTransferred, out ErrorCode);
+            }
+        }
+
         private enum QueueState
         {
             Clear = 0,
@@ -432,7 +459,7 @@ namespace System.Net.Sockets
 
         private SafeCloseSocket _socket;
         private OperationQueue<TransferOperation> _receiveQueue;
-        private OperationQueue<SendOperation> _sendQueue;
+        private OperationQueue<AsyncOperation> _sendQueue;      // Note, can be either SendOperation or SendFileOperation
         private OperationQueue<AcceptOrConnectOperation> _acceptOrConnectQueue;
         private SocketAsyncEngine.Token _asyncEngineToken;
         private Interop.Sys.SocketEvents _registeredEvents;
@@ -1407,6 +1434,114 @@ namespace System.Net.Sockets
                     Flags = flags,
                     SocketAddress = socketAddress,
                     SocketAddressLen = socketAddressLen,
+                };
+
+                bool isStopped;
+                while (!TryBeginOperation(ref _sendQueue, operation, Interop.Sys.SocketEvents.Write, maintainOrder: true, isStopped: out isStopped))
+                {
+                    if (isStopped)
+                    {
+                        return SocketError.OperationAborted;
+                    }
+
+                    if (operation.TryComplete(this))
+                    {
+                        operation.QueueCompletionCallback();
+                        break;
+                    }
+                }
+                return SocketError.IOPending;
+            }
+        }
+
+        public SocketError SendFile(SafeFileHandle fileHandle, long offset, long count, int timeout, out long bytesSent)
+        {
+            Debug.Assert(timeout == -1 || timeout > 0, $"Unexpected timeout: {timeout}");
+
+            ManualResetEventSlim @event = null;
+            try
+            {
+                SendFileOperation operation;
+
+                lock (_sendAcceptConnectLock)
+                {
+                    bytesSent = 0;
+                    SocketError errorCode;
+
+                    if (_sendQueue.IsEmpty &&
+                        SocketPal.TryCompleteSendFile(_socket, fileHandle, ref offset, ref count, ref bytesSent, out errorCode))
+                    {
+                        return errorCode;
+                    }
+
+                    @event = new ManualResetEventSlim(false, 0);
+
+                    operation = new SendFileOperation
+                    {
+                        Event = @event,
+                        FileHandle = fileHandle,
+                        Offset = offset,
+                        Count = count,
+                        BytesTransferred = bytesSent
+                    };
+
+                    bool isStopped;
+                    while (!TryBeginOperation(ref _sendQueue, operation, Interop.Sys.SocketEvents.Write, maintainOrder: true, isStopped: out isStopped))
+                    {
+                        if (isStopped)
+                        {
+                            bytesSent = operation.BytesTransferred;
+                            return SocketError.Interrupted;
+                        }
+
+                        if (operation.TryComplete(this))
+                        {
+                            bytesSent = operation.BytesTransferred;
+                            return operation.ErrorCode;
+                        }
+                    }
+                }
+
+                bool signaled = operation.Wait(timeout);
+                bytesSent = operation.BytesTransferred;
+                return signaled ? operation.ErrorCode : SocketError.TimedOut;
+            }
+            finally
+            {
+                if (@event != null) @event.Dispose();
+            }
+        }
+
+        public SocketError SendFileAsync(SafeFileHandle fileHandle, long offset, long count, Action<long, SocketError> callback)
+        {
+            SetNonBlocking();
+
+            lock (_sendAcceptConnectLock)
+            {
+                long bytesSent = 0;
+                SocketError errorCode;
+
+                if (_sendQueue.IsEmpty &&
+                    SocketPal.TryCompleteSendFile(_socket, fileHandle, ref offset, ref count, ref bytesSent, out errorCode))
+                {
+                    if (errorCode == SocketError.Success)
+                    {
+                        ThreadPool.QueueUserWorkItem(args =>
+                        {
+                            var c = (Action<long, SocketError>)args;
+                            c(bytesSent, SocketError.Success);
+                        }, callback);
+                    }
+                    return errorCode;
+                }
+
+                var operation = new SendFileOperation
+                {
+                    Callback = callback,
+                    FileHandle = fileHandle,
+                    Offset = offset,
+                    Count = count,
+                    BytesTransferred = bytesSent
                 };
 
                 bool isStopped;

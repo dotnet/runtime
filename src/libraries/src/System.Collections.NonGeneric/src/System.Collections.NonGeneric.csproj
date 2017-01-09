@@ -28,8 +28,6 @@
     <Compile Include="$(CommonPath)\System\Collections\CompatibleComparer.cs">
       <Link>Common\System\Collections\CompatibleComparer.cs</Link>
     </Compile>
-    <!-- ToDo: Remove this P2P reference once packages are updated -->
-    <ProjectReference Include="..\..\System.Runtime.Extensions\ref\System.Runtime.Extensions.csproj" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'net463'">
     <TargetingPackReference Include="System" />

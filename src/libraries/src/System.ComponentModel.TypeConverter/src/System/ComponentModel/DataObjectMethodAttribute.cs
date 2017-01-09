@@ -12,34 +12,19 @@ namespace System.ComponentModel
     [AttributeUsage(AttributeTargets.Method)]
     public sealed class DataObjectMethodAttribute : Attribute
     {
-        private bool _isDefault;
-        private DataObjectMethodType _methodType;
-
         public DataObjectMethodAttribute(DataObjectMethodType methodType) : this(methodType, false)
         {
         }
 
         public DataObjectMethodAttribute(DataObjectMethodType methodType, bool isDefault)
         {
-            _methodType = methodType;
-            _isDefault = isDefault;
+            MethodType = methodType;
+            IsDefault = isDefault;
         }
 
-        public bool IsDefault
-        {
-            get
-            {
-                return _isDefault;
-            }
-        }
+        public bool IsDefault { get; }
 
-        public DataObjectMethodType MethodType
-        {
-            get
-            {
-                return _methodType;
-            }
-        }
+        public DataObjectMethodType MethodType { get; }
 
         /// <internalonly/>
         public override bool Equals(object obj)
@@ -56,7 +41,7 @@ namespace System.ComponentModel
         /// <internalonly/>
         public override int GetHashCode()
         {
-            return ((int)_methodType).GetHashCode() ^ _isDefault.GetHashCode();
+            return ((int)MethodType).GetHashCode() ^ IsDefault.GetHashCode();
         }
 
         /// <internalonly/>

@@ -5,8 +5,6 @@
 using System;
 using System.Collections.Generic;
 
-[assembly: System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
-
 namespace Microsoft.Test.ModuleCore
 {
     ////////////////////////////////////////////////////////////////
@@ -15,7 +13,7 @@ namespace Microsoft.Test.ModuleCore
     ////////////////////////////////////////////////////////////////
     internal class StringEx
     {
-        static public string ToString(object value)
+        public static string ToString(object value)
         {
             if (value == null)
                 return null;
@@ -23,7 +21,7 @@ namespace Microsoft.Test.ModuleCore
             return value.ToString();
         }
 
-        static public string Format(object value)
+        public static string Format(object value)
         {
             if (value == null)
                 return "(null)";

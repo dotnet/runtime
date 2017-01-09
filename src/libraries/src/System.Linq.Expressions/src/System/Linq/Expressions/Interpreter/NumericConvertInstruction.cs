@@ -42,7 +42,7 @@ namespace System.Linq.Expressions.Interpreter
             }
 
             frame.Push(converted);
-            return +1;
+            return 1;
         }
 
         protected abstract object Convert(object obj);

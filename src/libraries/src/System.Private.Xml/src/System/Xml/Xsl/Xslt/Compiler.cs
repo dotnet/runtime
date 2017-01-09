@@ -70,12 +70,6 @@ namespace System.Xml.Xsl.Xslt
         {
             Debug.Assert(CompilerErrorColl == null, "Compiler cannot be reused");
 
-#if DEBUG
-            if (XmlILTrace.IsEnabled) {
-                tempFiles.KeepFiles = true;
-            }
-#endif
-
             Settings = settings;
             IsDebug = settings.IncludeDebugInformation | debug;
             ScriptAssemblyPath = scriptAssemblyPath;

@@ -26,7 +26,7 @@ namespace System.Net.NetworkInformation
             _ipProperties = new LinuxIPInterfaceProperties(this);
         }
 
-        public unsafe static NetworkInterface[] GetLinuxNetworkInterfaces()
+        public static unsafe NetworkInterface[] GetLinuxNetworkInterfaces()
         {
             Dictionary<string, LinuxNetworkInterface> interfacesByName = new Dictionary<string, LinuxNetworkInterface>();
             List<Exception> exceptions = null;

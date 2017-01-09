@@ -167,7 +167,7 @@ namespace System.IO.Compression
         internal const int BFinalNoCompressionHeaderBitCount = 3;
         internal const int MaxCodeLen = 16;
 
-        static private byte[] s_distLookup;
+        private static byte[] s_distLookup;
 
         static FastEncoderStatics()
         {
@@ -218,7 +218,7 @@ namespace System.IO.Compression
         }
 
         // Return the position slot (0...29) of a match offset (0...32767)
-        static internal int GetSlot(int pos)
+        internal static int GetSlot(int pos)
         {
             return s_distLookup[((pos) < 256) ? (pos) : (256 + ((pos) >> 7))];
         }

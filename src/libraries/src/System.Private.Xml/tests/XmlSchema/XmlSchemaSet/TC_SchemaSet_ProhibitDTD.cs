@@ -4,9 +4,7 @@
 
 using Xunit;
 using Xunit.Abstractions;
-using System;
 using System.IO;
-using System.Xml;
 using System.Xml.Schema;
 
 namespace System.Xml.Tests
@@ -184,7 +182,7 @@ namespace System.Xml.Tests
             }
             catch (XmlException)
             {
-                Assert.True(false); //exepect a validation warning for unresolvable schema location
+                Assert.True(false); //expect a validation warning for unresolvable schema location
             }
             CError.Compare(warningCount, 1, "Warning Count mismatch");
             return;
@@ -206,7 +204,7 @@ namespace System.Xml.Tests
             }
             catch (XmlException)
             {
-                Assert.True(false); //exepect a validation warning for unresolvable schema location
+                Assert.True(false); //expect a validation warning for unresolvable schema location
             }
             CError.Compare(warningCount, 1, "Warning Count mismatch");
             return;
@@ -232,7 +230,7 @@ namespace System.Xml.Tests
             }
             catch (XmlException)
             {
-                Assert.True(false); //exepect a validation warning for unresolvable schema location
+                Assert.True(false); //expect a validation warning for unresolvable schema location
             }
             CError.Compare(warningCount, (int)param1, "Warning Count mismatch");
             CError.Compare(errorCount, 0, "Error Count mismatch");
@@ -258,7 +256,7 @@ namespace System.Xml.Tests
 
             xss.Add(schema);
 
-            // exepect a validation warning for unresolvable schema location
+            // expect a validation warning for unresolvable schema location
             CError.Compare(warningCount, 0, "Warning Count mismatch");
             CError.Compare(errorCount, 0, "Error Count mismatch");
             return;
@@ -303,7 +301,7 @@ namespace System.Xml.Tests
             }
             catch (XmlException)
             {
-                Assert.True(false); //exepect a validation warning for unresolvable schema location
+                Assert.True(false); //expect a validation warning for unresolvable schema location
             }
 
             CError.Compare(warningCount, 0, "Warning Count mismatch");
@@ -405,7 +403,7 @@ namespace System.Xml.Tests
             }
             catch (XmlException)
             {
-                Assert.True(false); //exepect a validation warning for unresolvable schema location
+                Assert.True(false); //expect a validation warning for unresolvable schema location
             }
 
             _output.WriteLine("Count: " + xss.Count);

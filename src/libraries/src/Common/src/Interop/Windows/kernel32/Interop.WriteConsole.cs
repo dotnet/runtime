@@ -10,7 +10,7 @@ internal partial class Interop
     internal partial class Kernel32
     {
         [DllImport(Libraries.Kernel32, CharSet = CharSet.Unicode, SetLastError = true, EntryPoint = "WriteConsoleW")]
-        internal static unsafe extern bool WriteConsole(
+        internal static extern unsafe bool WriteConsole(
             IntPtr hConsoleOutput,
             Byte* lpBuffer,
             Int32 nNumberOfCharsToWrite,

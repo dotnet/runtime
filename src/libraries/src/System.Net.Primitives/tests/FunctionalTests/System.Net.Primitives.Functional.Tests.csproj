@@ -26,13 +26,14 @@
     <Compile Include="IPAddressMappingTest.cs" />
     <Compile Include="IPEndPointTest.cs" />
     <Compile Include="NetworkCredentialTest.cs" />
-    <Compile Include="RequestCachePolicyTest.cs" Condition="'$(TargetGroup)' == 'netstandard1.7'" />
     <Compile Include="SocketAddressTest.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netstandard1.7'">
     <Compile Include="LoggingTest.cs" />
     <Compile Include="SerializationTest.cs" />
+    <Compile Include="RequestCachePolicyTest.cs" />
     <Compile Include="CookieContainerAddTest.cs" />
+    <Compile Include="NetworkCredentialTest.netstandard1.7.cs" />
     <Compile Include="$(CommonTestPath)\System\Diagnostics\Tracing\TestEventListener.cs">
       <Link>Common\System\Diagnostics\Tracing\TestEventListener.cs</Link>
     </Compile>

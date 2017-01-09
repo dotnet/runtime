@@ -53,7 +53,7 @@ namespace System.Text
             return !(v3 == 64 && v4 != 64);
         }
 
-        unsafe public override int GetByteCount(char[] chars, int index, int count)
+        public unsafe override int GetByteCount(char[] chars, int index, int count)
         {
             if (chars == null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentNullException(nameof(chars)));
@@ -107,7 +107,7 @@ namespace System.Text
             }
         }
 
-        unsafe public override int GetBytes(char[] chars, int charIndex, int charCount, byte[] bytes, int byteIndex)
+        public unsafe override int GetBytes(char[] chars, int charIndex, int charCount, byte[] bytes, int byteIndex)
         {
             if (chars == null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentNullException(nameof(chars)));
@@ -186,7 +186,7 @@ namespace System.Text
             }
         }
 
-        unsafe public virtual int GetBytes(byte[] chars, int charIndex, int charCount, byte[] bytes, int byteIndex)
+        public unsafe virtual int GetBytes(byte[] chars, int charIndex, int charCount, byte[] bytes, int byteIndex)
         {
             if (chars == null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentNullException(nameof(chars)));
@@ -274,7 +274,7 @@ namespace System.Text
             return GetMaxCharCount(count);
         }
 
-        unsafe public override int GetChars(byte[] bytes, int byteIndex, int byteCount, char[] chars, int charIndex)
+        public unsafe override int GetChars(byte[] bytes, int byteIndex, int byteCount, char[] chars, int charIndex)
         {
             if (bytes == null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentNullException(nameof(bytes)));
@@ -363,7 +363,7 @@ namespace System.Text
             return charCount;
         }
 
-        unsafe public int GetChars(byte[] bytes, int byteIndex, int byteCount, byte[] chars, int charIndex)
+        public unsafe int GetChars(byte[] bytes, int byteIndex, int byteCount, byte[] chars, int charIndex)
         {
             if (bytes == null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentNullException(nameof(bytes)));

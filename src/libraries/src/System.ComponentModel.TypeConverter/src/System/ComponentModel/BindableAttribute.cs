@@ -41,9 +41,7 @@ namespace System.ComponentModel
         /// </summary>
         public static readonly BindableAttribute Default = No;
 
-        private bool _bindable = false;
-        private bool _isDefault = false;
-        private BindingDirection _direction;
+        private bool _isDefault;
 
         /// <summary>
         ///    <para>
@@ -61,8 +59,8 @@ namespace System.ComponentModel
         /// </summary>
         public BindableAttribute(bool bindable, BindingDirection direction)
         {
-            _bindable = bindable;
-            _direction = direction;
+            Bindable = bindable;
+            Direction = direction;
         }
 
         /// <summary>
@@ -81,9 +79,9 @@ namespace System.ComponentModel
         /// </summary>
         public BindableAttribute(BindableSupport flags, BindingDirection direction)
         {
-            _bindable = (flags != BindableSupport.No);
+            Bindable = (flags != BindableSupport.No);
             _isDefault = (flags == BindableSupport.Default);
-            _direction = direction;
+            Direction = direction;
         }
 
         /// <summary>
@@ -92,13 +90,7 @@ namespace System.ComponentModel
         ///       whether a property is appropriate to bind data to.
         ///    </para>
         /// </summary>
-        public bool Bindable
-        {
-            get
-            {
-                return _bindable;
-            }
-        }
+        public bool Bindable { get; }
 
         /// <summary>
         /// <para>
@@ -106,13 +98,7 @@ namespace System.ComponentModel
         /// the direction(s) this property be bound to data.
         /// </para>
         /// </summary>
-        public BindingDirection Direction
-        {
-            get
-            {
-                return _direction;
-            }
-        }
+        public BindingDirection Direction { get; }
 
         /// <internalonly/>
         /// <summary>
@@ -126,7 +112,7 @@ namespace System.ComponentModel
 
             if (obj != null && obj is BindableAttribute)
             {
-                return (((BindableAttribute)obj).Bindable == _bindable);
+                return (((BindableAttribute)obj).Bindable == Bindable);
             }
 
             return false;
@@ -137,7 +123,7 @@ namespace System.ComponentModel
         /// </summary>
         public override int GetHashCode()
         {
-            return _bindable.GetHashCode();
+            return Bindable.GetHashCode();
         }
 
         /// <summary>

@@ -16,7 +16,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.formalPara
            // <Code>
 public class MyClass
     {
-        static public dynamic Foo(this int x)
+        public static dynamic Foo(this int x)
         {
             return x;
         }
@@ -64,7 +64,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.formalPara
            // <Code>
 public class MyClass
     {
-        static public dynamic Foo(this int x, dynamic d)
+        public static dynamic Foo(this int x, dynamic d)
         {
             return d;
         }
@@ -113,7 +113,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.formalPara
            // <Code>
 public class MyClass
     {
-        static public string Foo(this object x, dynamic d)
+        public static string Foo(this object x, dynamic d)
         {
             return d.ToString();
         }

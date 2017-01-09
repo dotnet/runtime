@@ -28,6 +28,8 @@ msbuild.wrn
 
 # Cross building rootfs
 cross/rootfs/
+# add x86 as it is ignored in 'Build results'
+!cross/x86
 
 # Visual Studio 2015
 .vs/
@@ -173,6 +175,7 @@ ClientBin/
 node_modules/
 *.metaproj
 *.metaproj.tmp
+bin.localpkg/
 
 # RIA/Silverlight projects
 Generated_Code/

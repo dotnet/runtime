@@ -3,8 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 #include "pal_crypto_types.h"
-
-#include <openssl/x509.h>
+#include "opensslshim.h"
 
 /*
 These values should be kept in sync with System.Security.Cryptography.X509Certificates.X509RevocationFlag.

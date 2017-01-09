@@ -181,7 +181,7 @@ namespace System.Security.Cryptography.Dsa.Tests
             }
         }
 
-        static internal bool SupportsFips186_3
+        internal static bool SupportsFips186_3
         {
             get
             {

@@ -491,7 +491,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
 
     public class B
     {
-        static public int status = -1;
+        public static int status = -1;
         public void Foo(out int x)
         {
             status = 1;
@@ -538,7 +538,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
 
     public class B
     {
-        static public int status = -1;
+        public static int status = -1;
         public void Foo(out int x)
         {
             status = 1;

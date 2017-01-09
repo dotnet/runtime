@@ -355,7 +355,7 @@ namespace Microsoft.SqlServer.Server
         }
 
         // Method to map from Type to ExtendedTypeCode
-        static internal ExtendedClrTypeCode DetermineExtendedTypeCodeFromType(Type clrType)
+        internal static ExtendedClrTypeCode DetermineExtendedTypeCodeFromType(Type clrType)
         {
             ExtendedClrTypeCode resultCode;
             return s_typeToExtendedTypeCodeMap.TryGetValue(clrType, out resultCode) ?
@@ -364,7 +364,7 @@ namespace Microsoft.SqlServer.Server
         }
 
         // Returns the ExtendedClrTypeCode that describes the given value
-        static internal ExtendedClrTypeCode DetermineExtendedTypeCode(object value)
+        internal static ExtendedClrTypeCode DetermineExtendedTypeCode(object value)
         {
             return value != null ?
                 DetermineExtendedTypeCodeFromType(value.GetType()) :
@@ -372,7 +372,7 @@ namespace Microsoft.SqlServer.Server
         }
 
         // returns a sqldbtype for the given type code
-        static internal SqlDbType InferSqlDbTypeFromTypeCode(ExtendedClrTypeCode typeCode)
+        internal static SqlDbType InferSqlDbTypeFromTypeCode(ExtendedClrTypeCode typeCode)
         {
             Debug.Assert(typeCode >= ExtendedClrTypeCode.Invalid && typeCode <= ExtendedClrTypeCode.Last, "Someone added a typecode without adding support here!");
 
@@ -381,7 +381,7 @@ namespace Microsoft.SqlServer.Server
 
         // Infer SqlDbType from Type in the general case.  Katmai-only (or later) features that need to 
         //  infer types should use InferSqlDbTypeFromType_Katmai.
-        static internal SqlDbType InferSqlDbTypeFromType(Type type)
+        internal static SqlDbType InferSqlDbTypeFromType(Type type)
         {
             ExtendedClrTypeCode typeCode = DetermineExtendedTypeCodeFromType(type);
             SqlDbType returnType;
@@ -402,7 +402,7 @@ namespace Microsoft.SqlServer.Server
         //      example: TVP's are a new Katmai feature (no back compat issues) so can infer DATETIME2
         //          when mapping System.DateTime from DateTable or DbDataReader.  DATETIME2 is better because
         //          of greater range that can handle all DateTime values.
-        static internal SqlDbType InferSqlDbTypeFromType_Katmai(Type type)
+        internal static SqlDbType InferSqlDbTypeFromType_Katmai(Type type)
         {
             SqlDbType returnType = InferSqlDbTypeFromType(type);
             if (SqlDbType.DateTime == returnType)
@@ -413,7 +413,7 @@ namespace Microsoft.SqlServer.Server
         }
 
 
-        static internal SqlMetaData SmiExtendedMetaDataToSqlMetaData(SmiExtendedMetaData source)
+        internal static SqlMetaData SmiExtendedMetaDataToSqlMetaData(SmiExtendedMetaData source)
         {
             if (SqlDbType.Xml == source.SqlDbType)
             {
@@ -475,7 +475,7 @@ namespace Microsoft.SqlServer.Server
 
 
         // compare SmiMetaData to SqlMetaData and determine if they are compatible.
-        static internal bool IsCompatible(SmiMetaData firstMd, SqlMetaData secondMd)
+        internal static bool IsCompatible(SmiMetaData firstMd, SqlMetaData secondMd)
         {
             return firstMd.SqlDbType == secondMd.SqlDbType &&
                     firstMd.MaxLength == secondMd.MaxLength &&
@@ -489,7 +489,7 @@ namespace Microsoft.SqlServer.Server
 
         // This is a modified version of SmiMetaDataFromSchemaTableRow above
         // Since CoreCLR doesn't have GetSchema, we need to infer the MetaData from the CLR Type alone
-        static internal SmiExtendedMetaData SmiMetaDataFromType(string colName, Type colType)
+        internal static SmiExtendedMetaData SmiMetaDataFromType(string colName, Type colType)
         {
             // Determine correct SqlDbType.
             SqlDbType colDbType = InferSqlDbTypeFromType_Katmai(colType);

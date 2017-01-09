@@ -19,8 +19,6 @@ namespace System.ComponentModel
     [AttributeUsage(AttributeTargets.All)]
     public sealed class AmbientValueAttribute : Attribute
     {
-        private readonly object _value;
-
         /// <summary>
         /// <para>Initializes a new instance of the <see cref='System.ComponentModel.AmbientValueAttribute'/> class, converting the
         ///    specified value to the
@@ -34,11 +32,11 @@ namespace System.ComponentModel
             // load an otherwise normal class.
             try
             {
-                _value = TypeDescriptor.GetConverter(type).ConvertFromInvariantString(value);
+                Value = TypeDescriptor.GetConverter(type).ConvertFromInvariantString(value);
             }
             catch
             {
-                Debug.Fail("Ambient value attribute of type " + type.FullName + " threw converting from the string '" + value + "'.");
+                Debug.Fail($"Ambient value attribute of type {type.FullName} threw converting from the string '{value}'.");
             }
         }
 
@@ -48,7 +46,7 @@ namespace System.ComponentModel
         /// </summary>
         public AmbientValueAttribute(char value)
         {
-            _value = value;
+            Value = value;
         }
         /// <summary>
         /// <para>Initializes a new instance of the <see cref='System.ComponentModel.AmbientValueAttribute'/> class using an 8-bit unsigned
@@ -56,7 +54,7 @@ namespace System.ComponentModel
         /// </summary>
         public AmbientValueAttribute(byte value)
         {
-            _value = value;
+            Value = value;
         }
         /// <summary>
         /// <para>Initializes a new instance of the <see cref='System.ComponentModel.AmbientValueAttribute'/> class using a 16-bit signed
@@ -64,7 +62,7 @@ namespace System.ComponentModel
         /// </summary>
         public AmbientValueAttribute(short value)
         {
-            _value = value;
+            Value = value;
         }
         /// <summary>
         /// <para>Initializes a new instance of the <see cref='System.ComponentModel.AmbientValueAttribute'/> class using a 32-bit signed
@@ -72,7 +70,7 @@ namespace System.ComponentModel
         /// </summary>
         public AmbientValueAttribute(int value)
         {
-            _value = value;
+            Value = value;
         }
         /// <summary>
         /// <para>Initializes a new instance of the <see cref='System.ComponentModel.AmbientValueAttribute'/> class using a 64-bit signed
@@ -80,7 +78,7 @@ namespace System.ComponentModel
         /// </summary>
         public AmbientValueAttribute(long value)
         {
-            _value = value;
+            Value = value;
         }
         /// <summary>
         /// <para>Initializes a new instance of the <see cref='System.ComponentModel.AmbientValueAttribute'/> class using a
@@ -89,7 +87,7 @@ namespace System.ComponentModel
         /// </summary>
         public AmbientValueAttribute(float value)
         {
-            _value = value;
+            Value = value;
         }
         /// <summary>
         /// <para>Initializes a new instance of the <see cref='System.ComponentModel.AmbientValueAttribute'/> class using a
@@ -98,7 +96,7 @@ namespace System.ComponentModel
         /// </summary>
         public AmbientValueAttribute(double value)
         {
-            _value = value;
+            Value = value;
         }
         /// <summary>
         /// <para>Initializes a new instance of the <see cref='System.ComponentModel.AmbientValueAttribute'/> class using a <see cref='System.Boolean'/>
@@ -106,14 +104,14 @@ namespace System.ComponentModel
         /// </summary>
         public AmbientValueAttribute(bool value)
         {
-            _value = value;
+            Value = value;
         }
         /// <summary>
         /// <para>Initializes a new instance of the <see cref='System.ComponentModel.AmbientValueAttribute'/> class using a <see cref='System.String'/>.</para>
         /// </summary>
         public AmbientValueAttribute(string value)
         {
-            _value = value;
+            Value = value;
         }
 
         /// <summary>
@@ -122,7 +120,7 @@ namespace System.ComponentModel
         /// </summary>
         public AmbientValueAttribute(object value)
         {
-            _value = value;
+            Value = value;
         }
 
         /// <summary>
@@ -132,13 +130,7 @@ namespace System.ComponentModel
         ///       bound to.
         ///    </para>
         /// </summary>
-        public object Value
-        {
-            get
-            {
-                return _value;
-            }
-        }
+        public object Value { get; }
 
         public override bool Equals(object obj)
         {
@@ -151,9 +143,9 @@ namespace System.ComponentModel
 
             if (other != null)
             {
-                if (_value != null)
+                if (Value != null)
                 {
-                    return _value.Equals(other.Value);
+                    return Value.Equals(other.Value);
                 }
                 else
                 {

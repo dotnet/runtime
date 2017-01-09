@@ -4,15 +4,15 @@
   <PropertyGroup>
     <ProjectGuid>{BE28323E-327A-4E0F-B7F9-16AB7EAB59DD}</ProjectGuid>
     <AssemblyName>System.Text.RegularExpressions</AssemblyName>
-    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net463'">true</IsPartialFacadeAssembly>
-    <ResourcesSourceOutputDirectory Condition="'$(TargetGroup)' == 'net463'">None</ResourcesSourceOutputDirectory>
+    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net461'">true</IsPartialFacadeAssembly>
+    <ResourcesSourceOutputDirectory Condition="'$(TargetGroup)' == 'net461'">None</ResourcesSourceOutputDirectory>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'netstandard_Debug|AnyCPU' " />
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'netstandard_Release|AnyCPU' " />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Release|AnyCPU'" />
-  <ItemGroup Condition="'$(TargetGroup)' == 'net463'">
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net461_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net461_Release|AnyCPU'" />
+  <ItemGroup Condition="'$(TargetGroup)' == 'net461'">
     <ContractProject Include="..\ref\System.Text.RegularExpressions.csproj">
       <TargetGroup>netstandard</TargetGroup>
     </ContractProject>
@@ -49,7 +49,7 @@
       <Link>Common\System\IO\StringBuilderCache.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'net463'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'net461'">
     <TargetingPackReference Include="mscorlib" />
     <TargetingPackReference Include="System" />
   </ItemGroup>

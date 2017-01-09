@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 #include <stdint.h>
-#include <openssl/evp.h>
+#include "opensslshim.h"
 
 /*
 Creates and initializes an EVP_MD_CTX with the given args.

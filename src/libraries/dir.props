@@ -88,7 +88,6 @@
          /t:BatchRestorePackages /p:OverridePackageSource=C:\coreclr\bin\Product\Windows_NT.x64.Debug\.nuget\pkg
     -->
     <DnuSourceList Include="$(OverridePackageSource)" />
-    <!-- PackagesDrops is passed in via the commandline "/p:PackagesDrops=[drop location]" -->
     <DnuSourceList Condition="'$(BuildTestsAgainstPackages)' == 'true'" Include="$(PackagesDrops)" />
     <!-- Need to escape double forward slash (%2F) or MSBuild will normalize to one slash on Unix. -->
     <!-- Including buildtools to pull in TestSuite packages and repackaged xunit dependencies-->

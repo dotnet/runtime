@@ -26,7 +26,7 @@ namespace System.Xml
     /// </devdoc>
 
 #if XMLCHARTYPE_USE_RESOURCE
-    unsafe internal struct XmlCharType {
+    internal unsafe struct XmlCharType {
 #else
     internal struct XmlCharType
     {
@@ -681,7 +681,7 @@ namespace System.Xml
             return -1;
         }
 
-        static internal bool IsOnlyDigits(string str, int startPos, int len)
+        internal static bool IsOnlyDigits(string str, int startPos, int len)
         {
             Debug.Assert(str != null);
             Debug.Assert(startPos + len <= str.Length);

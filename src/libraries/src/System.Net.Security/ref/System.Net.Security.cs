@@ -75,11 +75,15 @@ namespace System.Net.Security
         public virtual IAsyncResult BeginAuthenticateAsServer(System.Net.NetworkCredential credential, System.Security.Authentication.ExtendedProtection.ExtendedProtectionPolicy policy, System.Net.Security.ProtectionLevel requiredProtectionLevel, System.Security.Principal.TokenImpersonationLevel requiredImpersonationLevel, System.AsyncCallback asyncCallback, object asyncState) { throw null; }
         public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback asyncCallback, object asyncState) { throw null; }
         public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback asyncCallback, object asyncState) { throw null; }
+        protected override void Dispose(bool disposing) { }
         public virtual void EndAuthenticateAsClient(System.IAsyncResult asyncResult) { }
         public virtual void EndAuthenticateAsServer(System.IAsyncResult asyncResult) { }
         public override int EndRead(IAsyncResult asyncResult) { throw null; }
         public override void EndWrite(IAsyncResult asyncResult) { }
         public override void Flush() { }
+#if netcoreapp11
+        public override System.Threading.Tasks.Task FlushAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
+#endif
         public override int Read(byte[] buffer, int offset, int count) { throw null; }
         public override long Seek(long offset, System.IO.SeekOrigin origin) { throw null; }
         public override void SetLength(long value) { }
@@ -155,11 +159,15 @@ namespace System.Net.Security
 #endif
         public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback asyncCallback, object asyncState) { throw null; }
         public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback asyncCallback, object asyncState) { throw null; }
+        protected override void Dispose(bool disposing) { }
         public virtual void EndAuthenticateAsClient(IAsyncResult asyncResult) { }
         public virtual void EndAuthenticateAsServer(IAsyncResult asyncResult) { }
         public override int EndRead(IAsyncResult asyncResult) { throw null; }
         public override void EndWrite(IAsyncResult asyncResult) { }
         public override void Flush() { }
+#if netcoreapp11
+        public override System.Threading.Tasks.Task FlushAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
+#endif
         public override int Read(byte[] buffer, int offset, int count) { throw null; }
         public override long Seek(long offset, System.IO.SeekOrigin origin) { throw null; }
         public override void SetLength(long value) { }

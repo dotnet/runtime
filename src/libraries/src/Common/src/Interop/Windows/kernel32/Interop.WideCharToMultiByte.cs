@@ -16,7 +16,5 @@ internal partial class Interop
             byte* lpMultiByteStr, int cbMultiByte, 
             IntPtr lpDefaultChar, IntPtr lpUsedDefaultChar);
 
-        internal const uint CP_ACP = 0;
-        internal const uint WC_NO_BEST_FIT_CHARS = 0x00000400;
     }
 }

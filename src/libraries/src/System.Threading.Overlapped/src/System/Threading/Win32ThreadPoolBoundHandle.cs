@@ -141,7 +141,7 @@ namespace System.Threading
         }
 
         [CLSCompliant(false)]
-        public unsafe static object GetNativeOverlappedState(NativeOverlapped* overlapped)
+        public static unsafe object GetNativeOverlappedState(NativeOverlapped* overlapped)
         {
             if (overlapped == null)
                 throw new ArgumentNullException(nameof(overlapped));

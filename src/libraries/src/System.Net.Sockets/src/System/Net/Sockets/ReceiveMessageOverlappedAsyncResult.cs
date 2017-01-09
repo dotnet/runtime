@@ -11,7 +11,7 @@ using System.Collections.Generic;
 
 namespace System.Net.Sockets
 {
-    unsafe internal sealed partial class ReceiveMessageOverlappedAsyncResult : BaseOverlappedAsyncResult
+    internal unsafe sealed partial class ReceiveMessageOverlappedAsyncResult : BaseOverlappedAsyncResult
     {
         private Internals.SocketAddress _socketAddressOriginal;
         private Internals.SocketAddress _socketAddress;

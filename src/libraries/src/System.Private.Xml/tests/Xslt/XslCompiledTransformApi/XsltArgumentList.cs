@@ -4,16 +4,11 @@
 
 using Xunit;
 using Xunit.Abstractions;
-using System;
 using System.Collections.Generic;
 using System.Dynamic;
-using System.Globalization;
 using System.IO;
-using System.Security;
-using System.Xml;
 using System.Xml.XPath;
 using System.Xml.Xsl;
-using XmlCoreTest.Common;
 
 namespace System.Xml.Tests
 {
@@ -635,9 +630,9 @@ namespace System.Xml.Tests
         }
 
         //[Variation(Desc = "Basic Verification Test", Pri = 1)]
-        [InlineData()]
+        [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
         [Theory]
-        public void GetExtObject1()
+        public void GetExtObject1(XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             MyObject obj = new MyObject(1, _output);
             m_xsltArg = new XsltArgumentList();
@@ -653,9 +648,11 @@ namespace System.Xml.Tests
             }
 
             string expXml = "<?xml version=\"1.0\" encoding=\"utf-8\"?><result xmlns:myObj=\"urn:my-object\"><func1>1.Test1</func1><func2>2.Test2</func2><func3>3.Test3</func3></result>";
-            if ((LoadXSL("myObjectDef.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1) &&
-                (CheckResult(expXml) == 1))
+            if ((LoadXSL("myObjectDef.xsl", xslInputType, readerType) == 1) && (Transform_ArgList("fruits.xml", outputType, navType) == 1))
+            {
+                VerifyResult(expXml);
                 return;
+            }
             else
                 Assert.True(false);
         }
@@ -680,9 +677,9 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Namespace URI is empty string", Param = "showParam.txt")]
-        [InlineData("showParam.txt")]
+        [InlineData("showParam.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
         [Theory]
-        public void GetExtObject3(object param)
+        public void GetExtObject3(object param, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             string Baseline = Path.Combine("baseline", (string)param);
             m_xsltArg = new XsltArgumentList();
@@ -697,7 +694,7 @@ namespace System.Xml.Tests
                 Assert.True(false);
             }
 
-            if ((LoadXSL("showParam.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1))
+            if ((LoadXSL("showParam.xsl", xslInputType, readerType) == 1) && (Transform_ArgList("fruits.xml", outputType, navType) == 1))
             {
                 VerifyResult(Baseline, _strOutFile);
                 return;
@@ -707,9 +704,9 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Namespace URI non-existent")]
-        [InlineData()]
+        [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
         [Theory]
-        public void GetExtObject4()
+        public void GetExtObject4(XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             m_xsltArg = new XsltArgumentList();
 
@@ -722,8 +719,8 @@ namespace System.Xml.Tests
             }
             try
             {
-                if ((LoadXSL("myObjectDef.xsl") == 1))
-                    Transform_ArgList("fruits.xml");
+                if ((LoadXSL("myObjectDef.xsl", xslInputType, readerType) == 1))
+                    Transform_ArgList("fruits.xml", outputType, navType);
             }
             catch (System.Xml.Xsl.XsltException)
             {
@@ -734,9 +731,9 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Very long namespace System.Xml.Tests")]
-        [InlineData()]
+        [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
         [Theory]
-        public void GetExtObject5()
+        public void GetExtObject5(XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             m_xsltArg = new XsltArgumentList();
             MyObject obj = new MyObject(5, _output);
@@ -751,9 +748,11 @@ namespace System.Xml.Tests
             }
 
             string expXml = "<?xml version=\"1.0\" encoding=\"utf-8\"?><result xmlns:myObj=\"http://www.microsoft.com/this/is/a/very/long/namespace/uri/to/do/the/api/testing/for/xslt/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/\"><func1>1.Test1</func1><func2>2.Test2</func2><func3>3.Test3</func3></result>";
-            if ((LoadXSL("myObjectLongNS.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1) &&
-                (CheckResult(expXml) == 1))
+            if ((LoadXSL("myObjectLongNS.xsl", xslInputType, readerType) == 1) && (Transform_ArgList("fruits.xml", outputType, navType) == 1))
+            {
+                VerifyResult(expXml);
                 return;
+            }
             else
                 Assert.True(false);
         }
@@ -834,9 +833,9 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Case sensitivity")]
-        [InlineData()]
+        [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
         [Theory]
-        public void GetExtObject8()
+        public void GetExtObject8(XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             MyObject obj = new MyObject(8, _output);
             m_xsltArg = new XsltArgumentList();
@@ -872,17 +871,19 @@ namespace System.Xml.Tests
             }
 
             string expXml = "<?xml version=\"1.0\" encoding=\"utf-8\"?><result xmlns:myObj=\"urn:my-object\"><func1>1.Test1</func1><func2>2.Test2</func2><func3>3.Test3</func3></result>";
-            if ((LoadXSL("myObjectDef.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1) &&
-                (CheckResult(expXml) == 1))
+            if ((LoadXSL("myObjectDef.xsl", xslInputType, readerType) == 1) && (Transform_ArgList("fruits.xml", outputType, navType) == 1))
+            {
+                VerifyResult(expXml);
                 return;
+            }
             else
                 Assert.True(false);
         }
 
         //[Variation("Whitespace")]
-        [InlineData()]
+        [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
         [Theory]
-        public void GetExtObject9()
+        public void GetExtObject9(XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             int i = 1;
             m_xsltArg = new XsltArgumentList();
@@ -903,8 +904,8 @@ namespace System.Xml.Tests
 
             try
             {
-                if ((LoadXSL("myObjectDef.xsl") == 1))
-                    Transform_ArgList("fruits.xml");
+                if ((LoadXSL("myObjectDef.xsl", xslInputType, readerType) == 1))
+                    Transform_ArgList("fruits.xml", outputType, navType);
             }
             catch (System.Xml.Xsl.XsltException)
             {
@@ -915,9 +916,9 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Call after object has been removed")]
-        [InlineData()]
+        [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
         [Theory]
-        public void GetExtObject10()
+        public void GetExtObject10(XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             MyObject obj = new MyObject(10, _output);
             m_xsltArg = new XsltArgumentList();
@@ -934,8 +935,8 @@ namespace System.Xml.Tests
 
             try
             {
-                if ((LoadXSL("myObjectDef.xsl") == 1))
-                    Transform_ArgList("fruits.xml");
+                if ((LoadXSL("myObjectDef.xsl", xslInputType, readerType) == 1))
+                    Transform_ArgList("fruits.xml", outputType, navType);
             }
             catch (System.Xml.Xsl.XsltException)
             {
@@ -946,9 +947,9 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Call multiple times")]
-        [InlineData()]
+        [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
         [Theory]
-        public void GetExtObject11()
+        public void GetExtObject11(XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             MyObject obj = new MyObject(11, _output);
             m_xsltArg = new XsltArgumentList();
@@ -965,9 +966,11 @@ namespace System.Xml.Tests
                 }
             }
             string expXml = "<?xml version=\"1.0\" encoding=\"utf-8\"?><result xmlns:myObj=\"urn:my-object\"><func1>1.Test1</func1><func2>2.Test2</func2><func3>3.Test3</func3></result>";
-            if ((LoadXSL("myObjectDef.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1) &&
-                (CheckResult(expXml) == 1))
+            if ((LoadXSL("myObjectDef.xsl", xslInputType, readerType) == 1) && (Transform_ArgList("fruits.xml", outputType, navType) == 1))
+            {
+                VerifyResult(expXml);
                 return;
+            }
             else
                 Assert.True(false);
         }
@@ -1014,9 +1017,17 @@ namespace System.Xml.Tests
         }
 
         //[Variation(Desc = "Basic Verification Test", Pri = 1, Param = "showParam1.txt")]
-        [InlineData("showParam1.txt")]
+        [InlineData("showParam1.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("showParam1.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("showParam1.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("showParam1.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("showParam1.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("showParam1.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("showParam1.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("showParam1.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("showParam1.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         [Theory]
-        public void AddParam1(object param)
+        public void AddParam1(object param, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             string Baseline = Path.Combine("baseline", (string)param);
             m_xsltArg = new XsltArgumentList();
@@ -1027,7 +1038,7 @@ namespace System.Xml.Tests
             if (retObj.ToString() != "Test1")
                 Assert.True(false);
 
-            if ((LoadXSL("showParam.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1))
+            if ((LoadXSL("showParam.xsl", xslInputType, readerType) == 1) && (Transform_ArgList("fruits.xml", outputType, navType) == 1))
             {
                 VerifyResult(Baseline, _strOutFile);
                 return;
@@ -1075,9 +1086,17 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Very Long Param Name", Param = "LongParam.txt")]
-        [InlineData("LongParam.txt")]
+        [InlineData("LongParam.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("LongParam.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("LongParam.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("LongParam.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("LongParam.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("LongParam.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("LongParam.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("LongParam.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("LongParam.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         [Theory]
-        public void AddParam4(object param)
+        public void AddParam4(object param, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             string Baseline = Path.Combine("baseline", (string)param);
             m_xsltArg = new XsltArgumentList();
@@ -1088,7 +1107,7 @@ namespace System.Xml.Tests
             if (retObj.ToString() != "Test1")
                 Assert.True(false);
 
-            if ((LoadXSL("showParamLongName.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1))
+            if ((LoadXSL("showParamLongName.xsl", xslInputType, readerType) == 1) && (Transform_ArgList("fruits.xml", outputType, navType) == 1))
             {
                 VerifyResult(Baseline, _strOutFile);
                 return;
@@ -1136,9 +1155,17 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Namespace URI is empty string", Param = "showParam7.txt")]
-        [InlineData("showParam7.txt")]
+        [InlineData("showParam7.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("showParam7.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("showParam7.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("showParam7.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("showParam7.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("showParam7.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("showParam7.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("showParam7.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("showParam7.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         [Theory]
-        public void AddParam7(object param)
+        public void AddParam7(object param, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             string Baseline = Path.Combine("baseline", (string)param);
             m_xsltArg = new XsltArgumentList();
@@ -1150,7 +1177,7 @@ namespace System.Xml.Tests
             if (retObj.ToString() != "Test7")
                 Assert.True(false);
 
-            if ((LoadXSL("showParam.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1))
+            if ((LoadXSL("showParam.xsl", xslInputType, readerType) == 1) && (Transform_ArgList("fruits.xml", outputType, navType) == 1))
             {
                 VerifyResult(Baseline, _strOutFile);
                 return;
@@ -1160,9 +1187,17 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Very long namespace System.Xml.Tests", Param = "showParam.txt")]
-        [InlineData("showParam.txt")]
+        [InlineData("showParam.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("showParam.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("showParam.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("showParam.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("showParam.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("showParam.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("showParam.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("showParam.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("showParam.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         [Theory]
-        public void AddParam8(object param)
+        public void AddParam8(object param, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             string Baseline = Path.Combine("baseline", (string)param);
             m_xsltArg = new XsltArgumentList();
@@ -1173,7 +1208,7 @@ namespace System.Xml.Tests
             if (retObj.ToString() != "Test8")
                 Assert.True(false);
 
-            if ((LoadXSL("showParam.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1))
+            if ((LoadXSL("showParam.xsl", xslInputType, readerType) == 1) && (Transform_ArgList("fruits.xml", outputType, navType) == 1))
             {
                 VerifyResult(Baseline, _strOutFile);
                 return;
@@ -1214,9 +1249,17 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Object with same name, different namespace System.Xml.Tests", Param = "AddParam12.txt")]
-        [InlineData("AddParam12.txt")]
+        [InlineData("AddParam12.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParam12.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParam12.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParam12.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParam12.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParam12.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParam12.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParam12.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParam12.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         [Theory]
-        public void AddParam12(object param)
+        public void AddParam12(object param, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             string Baseline = Path.Combine("baseline", (string)param);
 
@@ -1241,7 +1284,7 @@ namespace System.Xml.Tests
             if (retObj.ToString() != "Test1")
                 Assert.True(false);
 
-            if ((LoadXSL("showParam.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1))
+            if ((LoadXSL("showParam.xsl", xslInputType, readerType) == 1) && (Transform_ArgList("fruits.xml", outputType, navType) == 1))
             {
                 VerifyResult(Baseline, _strOutFile);
                 return;
@@ -1251,9 +1294,17 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Object with same namespace System.Xml.Tests, different name", Param = "AddParam13.txt")]
-        [InlineData("AddParam13.txt")]
+        [InlineData("AddParam13.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParam13.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParam13.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParam13.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParam13.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParam13.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParam13.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParam13.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParam13.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         [Theory]
-        public void AddParam13(object param)
+        public void AddParam13(object param, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             string Baseline = Path.Combine("baseline", (string)param);
             m_xsltArg = new XsltArgumentList();
@@ -1277,7 +1328,7 @@ namespace System.Xml.Tests
             if (retObj.ToString() != "Test1")
                 Assert.True(false);
 
-            if ((LoadXSL("showParam.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1))
+            if ((LoadXSL("showParam.xsl", xslInputType, readerType) == 1) && (Transform_ArgList("fruits.xml", outputType, navType) == 1))
             {
                 VerifyResult(Baseline, _strOutFile);
                 return;
@@ -1287,9 +1338,17 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Case Sensitivity", Param = "AddParam14.txt")]
-        [InlineData("AddParam14.txt")]
+        [InlineData("AddParam14.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParam14.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParam14.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParam14.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParam14.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParam14.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParam14.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParam14.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParam14.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         [Theory]
-        public void AddParam14(object param)
+        public void AddParam14(object param, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             string Baseline = Path.Combine("baseline", (string)param);
             m_xsltArg = new XsltArgumentList();
@@ -1318,7 +1377,7 @@ namespace System.Xml.Tests
             if (retObj.ToString() != "Test3")
                 Assert.True(false);
 
-            if ((LoadXSL("showParam.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1))
+            if ((LoadXSL("showParam.xsl", xslInputType, readerType) == 1) && (Transform_ArgList("fruits.xml", outputType, navType) == 1))
             {
                 VerifyResult(Baseline, _strOutFile);
                 return;
@@ -1347,9 +1406,17 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Add/remove object many times", Param = "AddParam16.txt")]
-        [InlineData("AddParam16.txt")]
+        [InlineData("AddParam16.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParam16.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParam16.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParam16.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParam16.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParam16.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParam16.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParam16.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParam16.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         [Theory]
-        public void AddParam16(object param)
+        public void AddParam16(object param, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             string Baseline = Path.Combine("baseline", (string)param);
             m_xsltArg = new XsltArgumentList();
@@ -1388,7 +1455,7 @@ namespace System.Xml.Tests
             retObj = m_xsltArg.GetParam("myArg2", szEmpty);
             if (retObj.ToString() != "Test2")
                 Assert.True(false);
-            if ((LoadXSL("showParam.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1))
+            if ((LoadXSL("showParam.xsl", xslInputType, readerType) == 1) && (Transform_ArgList("fruits.xml", outputType, navType) == 1))
             {
                 VerifyResult(Baseline, _strOutFile);
                 return;
@@ -1398,9 +1465,17 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Whitespace in URI and param", Param = "AddParam17.txt")]
-        [InlineData("AddParam17.txt")]
+        [InlineData("AddParam17.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParam17.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParam17.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParam17.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParam17.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParam17.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParam17.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParam17.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParam17.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         [Theory]
-        public void AddParam17(object param)
+        public void AddParam17(object param, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             string Baseline = Path.Combine("baseline", (string)param);
             int i = 1;
@@ -1443,7 +1518,7 @@ namespace System.Xml.Tests
                 Assert.True(false);
             }
 
-            if ((LoadXSL("showParam.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1))
+            if ((LoadXSL("showParam.xsl", xslInputType, readerType) == 1) && (Transform_ArgList("fruits.xml", outputType, navType) == 1))
             {
                 VerifyResult(Baseline, _strOutFile);
                 return;
@@ -1453,9 +1528,17 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Adding many objects", Param = "AddParam18.txt")]
-        [InlineData("AddParam18.txt")]
+        [InlineData("AddParam18.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParam18.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParam18.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParam18.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParam18.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParam18.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParam18.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParam18.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParam18.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         [Theory]
-        public void AddParam18(object param)
+        public void AddParam18(object param, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             string Baseline = Path.Combine("baseline", (string)param);
             m_xsltArg = new XsltArgumentList();
@@ -1469,7 +1552,7 @@ namespace System.Xml.Tests
                     Assert.True(false);
             }
 
-            if ((LoadXSL("showParam.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1))
+            if ((LoadXSL("showParam.xsl", xslInputType, readerType) == 1) && (Transform_ArgList("fruits.xml", outputType, navType) == 1))
             {
                 VerifyResult(Baseline, _strOutFile);
                 return;
@@ -1479,9 +1562,17 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Add same object many times", Param = "AddParam19.txt")]
-        [InlineData("AddParam19.txt")]
+        [InlineData("AddParam19.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParam19.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParam19.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParam19.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParam19.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParam19.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParam19.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParam19.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParam19.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         [Theory]
-        public void AddParam19(object param)
+        public void AddParam19(object param, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             string Baseline = Path.Combine("baseline", (string)param);
             m_xsltArg = new XsltArgumentList();
@@ -1503,7 +1594,7 @@ namespace System.Xml.Tests
             retObj = m_xsltArg.GetParam("myArg2", szEmpty);
             if (retObj.ToString() != ("Test2"))
                 Assert.True(false);
-            if ((LoadXSL("showParam.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1))
+            if ((LoadXSL("showParam.xsl", xslInputType, readerType) == 1) && (Transform_ArgList("fruits.xml", outputType, navType) == 1))
             {
                 VerifyResult(Baseline, _strOutFile);
                 return;
@@ -1513,9 +1604,17 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Using Different XSLT namespace", Param = "AddParam20.txt")]
-        [InlineData("AddParam20.txt")]
+        [InlineData("AddParam20.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParam20.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParam20.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParam20.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParam20.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParam20.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParam20.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParam20.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParam20.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         [Theory]
-        public void AddParam20(object param)
+        public void AddParam20(object param, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             string Baseline = Path.Combine("baseline", (string)param);
 
@@ -1545,7 +1644,7 @@ namespace System.Xml.Tests
             if (retObj.ToString() != "Test4")
                 Assert.True(false);
 
-            if ((LoadXSL("showParamNS.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1))
+            if ((LoadXSL("showParamNS.xsl", xslInputType, readerType) == 1) && (Transform_ArgList("fruits.xml", outputType, navType) == 1))
             {
                 VerifyResult(Baseline, _strOutFile);
                 return;
@@ -1567,24 +1666,39 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Parameters should not be cached")]
-        [InlineData()]
+        [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData(XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData(XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData(XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData(XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData(XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData(XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         [Theory]
-        public void AddExtObject32()
+        public void AddExtObject32(XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
-            if (LoadXSL("test_Param.xsl") == 1)
+            string expected1 = @"<?xml version=""1.0"" encoding=""utf-8""?><out>Param: first</out>";
+            string expected2 = @"<?xml version=""1.0"" encoding=""utf-8""?><out>Param: second</out>";
+
+            if (LoadXSL("test_Param.xsl", xslInputType, readerType) == 1)
             {
                 m_xsltArg = new XsltArgumentList();
                 m_xsltArg.AddParam("myParam1", szEmpty, "first");
 
                 // Transform once
-                if ((Transform_ArgList("foo.xml") == 1) && (CheckResult(383.6292620645) == 1))
+                if (Transform_ArgList("foo.xml", outputType, navType) == 1)
                 {
+                    VerifyResult(expected1);
                     m_xsltArg = new XsltArgumentList();
                     m_xsltArg.AddParam("myParam1", szEmpty, "second");
 
                     // Transform again to make sure that parameter from first transform are not cached
-                    if ((Transform_ArgList("foo.xml") == 1) && (CheckResult(384.9801823644) == 1))
+                    if (Transform_ArgList("foo.xml", outputType, navType) == 1)
+                    {
+                        VerifyResult(expected2);
                         return;
+                    }
                 }
             }
             Assert.True(false);
@@ -1618,75 +1732,299 @@ namespace System.Xml.Tests
 
         //global param is xsl:param local param is xsl:param
         //[Variation(id = 1, Pri = 2, Desc = "No param sent, global param used, local param exists with a default value", Params = new object[] { "AddParameterA1.xsl", "default local" })]
-        [InlineData("AddParameterA1.xsl", "default local")]
+        [InlineData("AddParameterA1.xsl", "default local", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterA1.xsl", "default local", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterA1.xsl", "default local", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterA1.xsl", "default local", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterA1.xsl", "default local", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterA1.xsl", "default local", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterA1.xsl", "default local", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterA1.xsl", "default local", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterA1.xsl", "default local", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         //[Variation(id = 2, Pri = 2, Desc = "No param sent, global param used, local param exists with no default value", Params = new object[] { "AddParameterA2.xsl", "" })]
-        [InlineData("AddParameterA2.xsl", "")]
+        [InlineData("AddParameterA2.xsl", "", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterA2.xsl", "", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterA2.xsl", "", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterA2.xsl", "", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterA2.xsl", "", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterA2.xsl", "", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterA2.xsl", "", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterA2.xsl", "", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterA2.xsl", "", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         //[Variation(id = 3, Pri = 2, Desc = "No param sent, global param used, local param doesn't exist but reference to param exists", Params = new object[] { "AddParameterA3.xsl", "default global" })]
-        [InlineData("AddParameterA3.xsl", "default global")]
+        [InlineData("AddParameterA3.xsl", "default global", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterA3.xsl", "default global", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterA3.xsl", "default global", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterA3.xsl", "default global", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterA3.xsl", "default global", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterA3.xsl", "default global", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterA3.xsl", "default global", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterA3.xsl", "default global", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterA3.xsl", "default global", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         //[Variation(id = 4, Pri = 2, Desc = "No param sent, global param used, local param exists with a default value and with-param sends a value", Params = new object[] { "AddParameterA4.xsl", "with-param" })]
-        [InlineData("AddParameterA4.xsl", "with-param")]
+        [InlineData("AddParameterA4.xsl", "with-param", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterA4.xsl", "with-param", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterA4.xsl", "with-param", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterA4.xsl", "with-param", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterA4.xsl", "with-param", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterA4.xsl", "with-param", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterA4.xsl", "with-param", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterA4.xsl", "with-param", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterA4.xsl", "with-param", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         //[Variation(id = 5, Pri = 2, Desc = "No param sent, global param used, local param exists with no default value and with-param doesn't send a value", Params = new object[] { "AddParameterA5.xsl", "" })]
-        [InlineData("AddParameterA5.xsl", "")]
+        [InlineData("AddParameterA5.xsl", "", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterA5.xsl", "", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterA5.xsl", "", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterA5.xsl", "", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterA5.xsl", "", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterA5.xsl", "", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterA5.xsl", "", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterA5.xsl", "", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterA5.xsl", "", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         //[Variation(id = 6, Pri = 2, Desc = "No param sent, global param used, local param doesn't exist, reference to param, with-param sends a value", Params = new object[] { "AddParameterA6.xsl", "default global" })]
-        [InlineData("AddParameterA6.xsl", "default global")]
+        [InlineData("AddParameterA6.xsl", "default global", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterA6.xsl", "default global", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterA6.xsl", "default global", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterA6.xsl", "default global", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterA6.xsl", "default global", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterA6.xsl", "default global", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterA6.xsl", "default global", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterA6.xsl", "default global", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterA6.xsl", "default global", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         //[Variation(id = 7, Pri = 2, Desc = "No param sent, global param used, local param doesn't exist, reference to param, with-param sends no value", Params = new object[] { "AddParameterA7.xsl", "default global" })]
-        [InlineData("AddParameterA7.xsl", "default global")]
+        [InlineData("AddParameterA7.xsl", "default global", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterA7.xsl", "default global", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterA7.xsl", "default global", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterA7.xsl", "default global", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterA7.xsl", "default global", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterA7.xsl", "default global", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterA7.xsl", "default global", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterA7.xsl", "default global", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterA7.xsl", "default global", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
 
         //global param is xsl:variable local param is xsl:param
         //[Variation(id = 8, Pri = 2, Desc = "No param sent, global variable used, local param exists with a default value", Params = new object[] { "AddParameterDA1.xsl", "default local" })]
-        [InlineData("AddParameterDA1.xsl", "default local")]
+        [InlineData("AddParameterDA1.xsl", "default local", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterDA1.xsl", "default local", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterDA1.xsl", "default local", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterDA1.xsl", "default local", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterDA1.xsl", "default local", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterDA1.xsl", "default local", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterDA1.xsl", "default local", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterDA1.xsl", "default local", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterDA1.xsl", "default local", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         //[Variation(id = 9, Pri = 2, Desc = "No param sent, global variable used, local param exists with no default value", Params = new object[] { "AddParameterDA2.xsl", "" })]
-        [InlineData("AddParameterDA2.xsl", "")]
+        [InlineData("AddParameterDA2.xsl", "", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterDA2.xsl", "", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterDA2.xsl", "", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterDA2.xsl", "", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterDA2.xsl", "", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterDA2.xsl", "", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterDA2.xsl", "", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterDA2.xsl", "", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterDA2.xsl", "", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         //[Variation(id = 10, Pri = 2, Desc = "No param sent, global variable used, local param doesn't exist but reference to param exists", Params = new object[] { "AddParameterDA3.xsl", "default global" })]
-        [InlineData("AddParameterDA3.xsl", "default global")]
+        [InlineData("AddParameterDA3.xsl", "default global", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterDA3.xsl", "default global", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterDA3.xsl", "default global", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterDA3.xsl", "default global", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterDA3.xsl", "default global", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterDA3.xsl", "default global", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterDA3.xsl", "default global", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterDA3.xsl", "default global", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterDA3.xsl", "default global", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         //[Variation(id = 11, Pri = 2, Desc = "No param sent, global variable used, local param exists with a default value and with-param sends a value", Params = new object[] { "AddParameterDA4.xsl", "with-param" })]
-        [InlineData("AddParameterDA4.xsl", "with-param")]
+        [InlineData("AddParameterDA4.xsl", "with-param", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterDA4.xsl", "with-param", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterDA4.xsl", "with-param", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterDA4.xsl", "with-param", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterDA4.xsl", "with-param", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterDA4.xsl", "with-param", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterDA4.xsl", "with-param", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterDA4.xsl", "with-param", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterDA4.xsl", "with-param", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         //[Variation(id = 12, Pri = 2, Desc = "No param sent, global variable used, local param exists with no default value and with-param doesn't send a value", Params = new object[] { "AddParameterDA5.xsl", "" })]
-        [InlineData("AddParameterDA5.xsl", "")]
+        [InlineData("AddParameterDA5.xsl", "", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterDA5.xsl", "", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterDA5.xsl", "", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterDA5.xsl", "", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterDA5.xsl", "", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterDA5.xsl", "", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterDA5.xsl", "", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterDA5.xsl", "", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterDA5.xsl", "", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         //[Variation(id = 13, Pri = 2, Desc = "No param sent, global variable used, local param doesn't exist, reference to param, with-param sends a value", Params = new object[] { "AddParameterDA6.xsl", "default global" })]
-        [InlineData("AddParameterDA6.xsl", "default global")]
+        [InlineData("AddParameterDA6.xsl", "default global", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterDA6.xsl", "default global", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterDA6.xsl", "default global", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterDA6.xsl", "default global", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterDA6.xsl", "default global", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterDA6.xsl", "default global", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterDA6.xsl", "default global", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterDA6.xsl", "default global", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterDA6.xsl", "default global", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         //[Variation(id = 14, Pri = 2, Desc = "No param sent, global variable used, local param doesn't exist, reference to param, with-param sends no value", Params = new object[] { "AddParameterDA7.xsl", "default global" })]
-        [InlineData("AddParameterDA7.xsl", "default global")]
+        [InlineData("AddParameterDA7.xsl", "default global", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterDA7.xsl", "default global", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterDA7.xsl", "default global", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterDA7.xsl", "default global", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterDA7.xsl", "default global", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterDA7.xsl", "default global", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterDA7.xsl", "default global", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterDA7.xsl", "default global", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterDA7.xsl", "default global", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
 
         //global param is xsl:param local param is xsl:variable
         //[Variation(id = 15, Pri = 2, Desc = "No param sent, global param used, local variable exists with a default value", Params = new object[] { "AddParameterEA1.xsl", "default local" })]
-        [InlineData("AddParameterEA1.xsl", "default local")]
+        [InlineData("AddParameterEA1.xsl", "default local", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterEA1.xsl", "default local", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterEA1.xsl", "default local", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterEA1.xsl", "default local", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterEA1.xsl", "default local", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterEA1.xsl", "default local", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterEA1.xsl", "default local", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterEA1.xsl", "default local", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterEA1.xsl", "default local", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         //[Variation(id = 16, Pri = 2, Desc = "No param sent, global param used, local variable exists with no default value", Params = new object[] { "AddParameterEA2.xsl", "" })]
-        [InlineData("AddParameterEA2.xsl", "")]
+        [InlineData("AddParameterEA2.xsl", "", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterEA2.xsl", "", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterEA2.xsl", "", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterEA2.xsl", "", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterEA2.xsl", "", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterEA2.xsl", "", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterEA2.xsl", "", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterEA2.xsl", "", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterEA2.xsl", "", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         //[Variation(id = 17, Pri = 2, Desc = "No param sent, global param used, local variable doesn't exist but reference to param exists", Params = new object[] { "AddParameterEA3.xsl", "default global" })]
-        [InlineData("AddParameterEA3.xsl", "default global")]
+        [InlineData("AddParameterEA3.xsl", "default global", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterEA3.xsl", "default global", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterEA3.xsl", "default global", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterEA3.xsl", "default global", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterEA3.xsl", "default global", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterEA3.xsl", "default global", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterEA3.xsl", "default global", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterEA3.xsl", "default global", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterEA3.xsl", "default global", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         //[Variation(id = 18, Pri = 2, Desc = "No param sent, global param used, local variable exists with a default value and with-param sends a value", Params = new object[] { "AddParameterEA4.xsl", "default local" })]
-        [InlineData("AddParameterEA4.xsl", "default local")]
+        [InlineData("AddParameterEA4.xsl", "default local", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterEA4.xsl", "default local", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterEA4.xsl", "default local", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterEA4.xsl", "default local", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterEA4.xsl", "default local", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterEA4.xsl", "default local", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterEA4.xsl", "default local", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterEA4.xsl", "default local", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterEA4.xsl", "default local", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         //[Variation(id = 19, Pri = 2, Desc = "No param sent, global param used, local variable exists with no default value and with-param doesn't send a value", Params = new object[] { "AddParameterEA5.xsl", "" })]
-        [InlineData("AddParameterEA5.xsl", "")]
+        [InlineData("AddParameterEA5.xsl", "", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterEA5.xsl", "", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterEA5.xsl", "", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterEA5.xsl", "", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterEA5.xsl", "", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterEA5.xsl", "", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterEA5.xsl", "", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterEA5.xsl", "", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterEA5.xsl", "", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         //[Variation(id = 20, Pri = 2, Desc = "No param sent, global param used, local variable doesn't exist, reference to param, with-param sends a value", Params = new object[] { "AddParameterEA6.xsl", "default global" })]
-        [InlineData("AddParameterEA6.xsl", "default global")]
+        [InlineData("AddParameterEA6.xsl", "default global", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterEA6.xsl", "default global", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterEA6.xsl", "default global", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterEA6.xsl", "default global", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterEA6.xsl", "default global", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterEA6.xsl", "default global", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterEA6.xsl", "default global", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterEA6.xsl", "default global", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterEA6.xsl", "default global", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         //[Variation(id = 21, Pri = 2, Desc = "No param sent, global param used, local variable doesn't exist, reference to param, with-param sends no value", Params = new object[] { "AddParameterEA7.xsl", "default global" })]
-        [InlineData("AddParameterEA7.xsl", "default global")]
+        [InlineData("AddParameterEA7.xsl", "default global", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterEA7.xsl", "default global", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterEA7.xsl", "default global", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterEA7.xsl", "default global", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterEA7.xsl", "default global", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterEA7.xsl", "default global", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterEA7.xsl", "default global", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterEA7.xsl", "default global", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterEA7.xsl", "default global", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
 
         //global param is xsl:variable local param is xsl:variable
         //[Variation(id = 22, Pri = 2, Desc = "No param sent, global variable used, local variable exists with a default value", Params = new object[] { "AddParameterFA1.xsl", "default local" })]
-        [InlineData("AddParameterFA1.xsl", "default local")]
+        [InlineData("AddParameterFA1.xsl", "default local", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterFA1.xsl", "default local", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterFA1.xsl", "default local", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterFA1.xsl", "default local", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterFA1.xsl", "default local", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterFA1.xsl", "default local", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterFA1.xsl", "default local", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterFA1.xsl", "default local", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterFA1.xsl", "default local", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         //[Variation(id = 23, Pri = 2, Desc = "No param sent, global variable used, local variable exists with no default value", Params = new object[] { "AddParameterFA2.xsl", "" })]
-        [InlineData("AddParameterFA2.xsl", "")]
+        [InlineData("AddParameterFA2.xsl", "", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterFA2.xsl", "", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterFA2.xsl", "", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterFA2.xsl", "", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterFA2.xsl", "", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterFA2.xsl", "", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterFA2.xsl", "", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterFA2.xsl", "", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterFA2.xsl", "", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         //[Variation(id = 24, Pri = 2, Desc = "No param sent, global variable used, local variable doesn't exist but reference to param exists", Params = new object[] { "AddParameterFA3.xsl", "default global" })]
-        [InlineData("AddParameterFA3.xsl", "default global")]
+        [InlineData("AddParameterFA3.xsl", "default global", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterFA3.xsl", "default global", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterFA3.xsl", "default global", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterFA3.xsl", "default global", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterFA3.xsl", "default global", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterFA3.xsl", "default global", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterFA3.xsl", "default global", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterFA3.xsl", "default global", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterFA3.xsl", "default global", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         //[Variation(id = 25, Pri = 2, Desc = "No param sent, global variable used, local variable exists with a default value and with-param sends a value", Params = new object[] { "AddParameterFA4.xsl", "default local" })]
-        [InlineData("AddParameterFA4.xsl", "default local")]
+        [InlineData("AddParameterFA4.xsl", "default local", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterFA4.xsl", "default local", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterFA4.xsl", "default local", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterFA4.xsl", "default local", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterFA4.xsl", "default local", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterFA4.xsl", "default local", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterFA4.xsl", "default local", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterFA4.xsl", "default local", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterFA4.xsl", "default local", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         //[Variation(id = 26, Pri = 2, Desc = "No param sent, global variable used, local variable exists with no default value and with-param doesn't send a value", Params = new object[] { "AddParameterFA5.xsl", "" })]
-        [InlineData("AddParameterFA5.xsl", "")]
+        [InlineData("AddParameterFA5.xsl", "", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterFA5.xsl", "", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterFA5.xsl", "", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterFA5.xsl", "", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterFA5.xsl", "", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterFA5.xsl", "", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterFA5.xsl", "", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterFA5.xsl", "", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterFA5.xsl", "", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         //[Variation(id = 27, Pri = 2, Desc = "No param sent, global variable used, local variable doesn't exist, reference to param, with-param sends a value", Params = new object[] { "AddParameterFA6.xsl", "default global" })]
-        [InlineData("AddParameterFA6.xsl", "default global")]
+        [InlineData("AddParameterFA6.xsl", "default global", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterFA6.xsl", "default global", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterFA6.xsl", "default global", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterFA6.xsl", "default global", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterFA6.xsl", "default global", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterFA6.xsl", "default global", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterFA6.xsl", "default global", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterFA6.xsl", "default global", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterFA6.xsl", "default global", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         //[Variation(id = 28, Pri = 2, Desc = "No param sent, global variable used, local variable doesn't exist, reference to param, with-param sends no value", Params = new object[] { "AddParameterFA7.xsl", "default global" })]
-        [InlineData("AddParameterFA7.xsl", "default global")]
+        [InlineData("AddParameterFA7.xsl", "default global", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterFA7.xsl", "default global", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterFA7.xsl", "default global", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterFA7.xsl", "default global", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterFA7.xsl", "default global", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterFA7.xsl", "default global", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterFA7.xsl", "default global", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterFA7.xsl", "default global", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterFA7.xsl", "default global", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         [Theory]
-        public void AddParam1(object param0, object param1)
+        public void AddParam1(object param0, object param1, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             m_xsltArg = new XsltArgumentList();
             string xslFile = param0.ToString();
             string expected = "<result>" + param1.ToString() + "</result>";
 
-            if ((LoadXSL(xslFile) == 1) && (Transform_ArgList("AddParameter.xml") == 1))
+            if ((LoadXSL(xslFile, xslInputType, readerType) == 1) && (Transform_ArgList("AddParameter.xml", outputType, navType) == 1))
             {
                 VerifyResult(expected);
                 return;
@@ -1699,69 +2037,293 @@ namespace System.Xml.Tests
 
         //global param is xsl:param local param is xsl:param
         //[Variation(id = 29, Pri = 2, Desc = "Param sent, global param used, local param exists with a default value", Params = new object[] { "AddParameterB1.xsl", "default local" })]
-        [InlineData("AddParameterB1.xsl", "default local")]
+        [InlineData("AddParameterB1.xsl", "default local", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterB1.xsl", "default local", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterB1.xsl", "default local", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterB1.xsl", "default local", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterB1.xsl", "default local", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterB1.xsl", "default local", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterB1.xsl", "default local", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterB1.xsl", "default local", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterB1.xsl", "default local", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         //[Variation(id = 30, Pri = 2, Desc = "Param sent, global param used, local param exists with no default value", Params = new object[] { "AddParameterB2.xsl", "" })]
-        [InlineData("AddParameterB2.xsl", "")]
+        [InlineData("AddParameterB2.xsl", "", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterB2.xsl", "", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterB2.xsl", "", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterB2.xsl", "", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterB2.xsl", "", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterB2.xsl", "", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterB2.xsl", "", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterB2.xsl", "", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterB2.xsl", "", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         //[Variation(id = 31, Pri = 2, Desc = "Param sent, global param used, local param doesn't exist but reference to param exists", Params = new object[] { "AddParameterB3.xsl", "outside param" })]
-        [InlineData("AddParameterB3.xsl", "outside param")]
+        [InlineData("AddParameterB3.xsl", "outside param", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterB3.xsl", "outside param", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterB3.xsl", "outside param", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterB3.xsl", "outside param", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterB3.xsl", "outside param", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterB3.xsl", "outside param", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterB3.xsl", "outside param", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterB3.xsl", "outside param", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterB3.xsl", "outside param", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         //[Variation(id = 32, Pri = 2, Desc = "Param sent, global param used, local param exists with a default value and with-param sends a value", Params = new object[] { "AddParameterB4.xsl", "with-param" })]
-        [InlineData("AddParameterB4.xsl", "with-param")]
+        [InlineData("AddParameterB4.xsl", "with-param", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterB4.xsl", "with-param", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterB4.xsl", "with-param", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterB4.xsl", "with-param", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterB4.xsl", "with-param", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterB4.xsl", "with-param", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterB4.xsl", "with-param", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterB4.xsl", "with-param", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterB4.xsl", "with-param", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         //[Variation(id = 33, Pri = 2, Desc = "Param sent, global param used, local param exists with no default value and with-param doesn't send a value", Params = new object[] { "AddParameterB5.xsl", "" })]
-        [InlineData("AddParameterB5.xsl", "")]
+        [InlineData("AddParameterB5.xsl", "", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterB5.xsl", "", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterB5.xsl", "", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterB5.xsl", "", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterB5.xsl", "", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterB5.xsl", "", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterB5.xsl", "", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterB5.xsl", "", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterB5.xsl", "", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         //[Variation(id = 34, Pri = 2, Desc = "Param sent, global param used, local param doesn't exist, reference to param, with-param sends a value", Params = new object[] { "AddParameterB6.xsl", "outside param" })]
-        [InlineData("AddParameterB6.xsl", "outside param")]
+        [InlineData("AddParameterB6.xsl", "outside param", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterB6.xsl", "outside param", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterB6.xsl", "outside param", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterB6.xsl", "outside param", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterB6.xsl", "outside param", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterB6.xsl", "outside param", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterB6.xsl", "outside param", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterB6.xsl", "outside param", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterB6.xsl", "outside param", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         //[Variation(id = 35, Pri = 2, Desc = "Param sent, global param used, local param doesn't exist, reference to param, with-param sends no value", Params = new object[] { "AddParameterB7.xsl", "outside param" })]
-        [InlineData("AddParameterB7.xsl", "outside param")]
+        [InlineData("AddParameterB7.xsl", "outside param", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterB7.xsl", "outside param", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterB7.xsl", "outside param", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterB7.xsl", "outside param", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterB7.xsl", "outside param", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterB7.xsl", "outside param", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterB7.xsl", "outside param", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterB7.xsl", "outside param", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterB7.xsl", "outside param", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
 
         //global param is xsl:variable local param is xsl:param
         //[Variation(id = 36, Pri = 2, Desc = "Param sent, global variable used, local param exists with a default value", Params = new object[] { "AddParameterDB1.xsl", "default local" })]
-        [InlineData("AddParameterDB1.xsl", "default local")]
+        [InlineData("AddParameterDB1.xsl", "default local", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterDB1.xsl", "default local", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterDB1.xsl", "default local", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterDB1.xsl", "default local", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterDB1.xsl", "default local", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterDB1.xsl", "default local", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterDB1.xsl", "default local", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterDB1.xsl", "default local", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterDB1.xsl", "default local", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         //[Variation(id = 37, Pri = 2, Desc = "Param sent, global variable used, local param exists with no default value", Params = new object[] { "AddParameterDB2.xsl", "" })]
-        [InlineData("AddParameterDB2.xsl", "")]
+        [InlineData("AddParameterDB2.xsl", "", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterDB2.xsl", "", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterDB2.xsl", "", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterDB2.xsl", "", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterDB2.xsl", "", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterDB2.xsl", "", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterDB2.xsl", "", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterDB2.xsl", "", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterDB2.xsl", "", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         //[Variation(id = 38, Pri = 2, Desc = "Param sent, global variable used, local param doesn't exist but reference to param exists", Params = new object[] { "AddParameterDB3.xsl", "default global" })]
-        [InlineData("AddParameterDB3.xsl", "default global")]
+        [InlineData("AddParameterDB3.xsl", "default global", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterDB3.xsl", "default global", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterDB3.xsl", "default global", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterDB3.xsl", "default global", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterDB3.xsl", "default global", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterDB3.xsl", "default global", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterDB3.xsl", "default global", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterDB3.xsl", "default global", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterDB3.xsl", "default global", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         //[Variation(id = 39, Pri = 2, Desc = "Param sent, global variable used, local param exists with a default value and with-param sends a value", Params = new object[] { "AddParameterDB4.xsl", "with-param" })]
-        [InlineData("AddParameterDB4.xsl", "with-param")]
+        [InlineData("AddParameterDB4.xsl", "with-param", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterDB4.xsl", "with-param", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterDB4.xsl", "with-param", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterDB4.xsl", "with-param", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterDB4.xsl", "with-param", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterDB4.xsl", "with-param", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterDB4.xsl", "with-param", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterDB4.xsl", "with-param", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterDB4.xsl", "with-param", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         //[Variation(id = 40, Pri = 2, Desc = "Param sent, global variable used, local param exists with no default value and with-param doesn't send a value", Params = new object[] { "AddParameterDB5.xsl", "" })]
-        [InlineData("AddParameterDB5.xsl", "")]
+        [InlineData("AddParameterDB5.xsl", "", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterDB5.xsl", "", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterDB5.xsl", "", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterDB5.xsl", "", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterDB5.xsl", "", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterDB5.xsl", "", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterDB5.xsl", "", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterDB5.xsl", "", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterDB5.xsl", "", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         //[Variation(id = 41, Pri = 2, Desc = "Param sent, global variable used, local param doesn't exist, reference to param, with-param sends a value", Params = new object[] { "AddParameterDB6.xsl", "default global" })]
-        [InlineData("AddParameterDB6.xsl", "default global")]
+        [InlineData("AddParameterDB6.xsl", "default global", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterDB6.xsl", "default global", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterDB6.xsl", "default global", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterDB6.xsl", "default global", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterDB6.xsl", "default global", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterDB6.xsl", "default global", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterDB6.xsl", "default global", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterDB6.xsl", "default global", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterDB6.xsl", "default global", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         //[Variation(id = 42, Pri = 2, Desc = "Param sent, global variable used, local param doesn't exist, reference to param, with-param sends no value", Params = new object[] { "AddParameterDB7.xsl", "default global" })]
-        [InlineData("AddParameterDB7.xsl", "default global")]
+        [InlineData("AddParameterDB7.xsl", "default global", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterDB7.xsl", "default global", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterDB7.xsl", "default global", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterDB7.xsl", "default global", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterDB7.xsl", "default global", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterDB7.xsl", "default global", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterDB7.xsl", "default global", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterDB7.xsl", "default global", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterDB7.xsl", "default global", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
 
         //global param is xsl:param local param is xsl:variable
         //[Variation(id = 43, Pri = 2, Desc = "Param sent, global param used, local variable exists with a default value", Params = new object[] { "AddParameterEB1.xsl", "default local" })]
-        [InlineData("AddParameterEB1.xsl", "default local")]
+        [InlineData("AddParameterEB1.xsl", "default local", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterEB1.xsl", "default local", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterEB1.xsl", "default local", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterEB1.xsl", "default local", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterEB1.xsl", "default local", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterEB1.xsl", "default local", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterEB1.xsl", "default local", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterEB1.xsl", "default local", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterEB1.xsl", "default local", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         //[Variation(id = 44, Pri = 2, Desc = "Param sent, global param used, local variable exists with no default value", Params = new object[] { "AddParameterEB2.xsl", "" })]
-        [InlineData("AddParameterEB2.xsl", "")]
+        [InlineData("AddParameterEB2.xsl", "", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterEB2.xsl", "", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterEB2.xsl", "", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterEB2.xsl", "", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterEB2.xsl", "", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterEB2.xsl", "", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterEB2.xsl", "", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterEB2.xsl", "", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterEB2.xsl", "", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         //[Variation(id = 45, Pri = 2, Desc = "Param sent, global param used, local variable doesn't exist but reference to param exists", Params = new object[] { "AddParameterEB3.xsl", "outside param" })]
-        [InlineData("AddParameterEB3.xsl", "outside param")]
+        [InlineData("AddParameterEB3.xsl", "outside param", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterEB3.xsl", "outside param", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterEB3.xsl", "outside param", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterEB3.xsl", "outside param", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterEB3.xsl", "outside param", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterEB3.xsl", "outside param", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterEB3.xsl", "outside param", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterEB3.xsl", "outside param", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterEB3.xsl", "outside param", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         //[Variation(id = 46, Pri = 2, Desc = "Param sent, global param used, local variable exists with a default value and with-param sends a value", Params = new object[] { "AddParameterEB4.xsl", "default local" })]
-        [InlineData("AddParameterEB4.xsl", "default local")]
+        [InlineData("AddParameterEB4.xsl", "default local", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterEB4.xsl", "default local", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterEB4.xsl", "default local", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterEB4.xsl", "default local", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterEB4.xsl", "default local", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterEB4.xsl", "default local", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterEB4.xsl", "default local", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterEB4.xsl", "default local", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterEB4.xsl", "default local", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         //[Variation(id = 47, Pri = 2, Desc = "Param sent, global param used, local variable exists with no default value and with-param doesn't send a value", Params = new object[] { "AddParameterEB5.xsl", "" })]
-        [InlineData("AddParameterEB5.xsl", "")]
+        [InlineData("AddParameterEB5.xsl", "", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterEB5.xsl", "", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterEB5.xsl", "", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterEB5.xsl", "", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterEB5.xsl", "", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterEB5.xsl", "", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterEB5.xsl", "", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterEB5.xsl", "", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterEB5.xsl", "", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         //[Variation(id = 48, Pri = 2, Desc = "Param sent, global param used, local variable doesn't exist, reference to param, with-param sends a value", Params = new object[] { "AddParameterEB6.xsl", "outside param" })]
-        [InlineData("AddParameterEB6.xsl", "outside param")]
+        [InlineData("AddParameterEB6.xsl", "outside param", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterEB6.xsl", "outside param", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterEB6.xsl", "outside param", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterEB6.xsl", "outside param", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterEB6.xsl", "outside param", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterEB6.xsl", "outside param", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterEB6.xsl", "outside param", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterEB6.xsl", "outside param", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterEB6.xsl", "outside param", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         //[Variation(id = 49, Pri = 2, Desc = "Param sent, global param used, local variable doesn't exist, reference to param, with-param sends no value", Params = new object[] { "AddParameterEB7.xsl", "outside param" })]
-        [InlineData("AddParameterEB7.xsl", "outside param")]
+        [InlineData("AddParameterEB7.xsl", "outside param", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterEB7.xsl", "outside param", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterEB7.xsl", "outside param", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterEB7.xsl", "outside param", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterEB7.xsl", "outside param", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterEB7.xsl", "outside param", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterEB7.xsl", "outside param", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterEB7.xsl", "outside param", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterEB7.xsl", "outside param", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
 
         //global param is xsl:variable local param is xsl:variable
         //[Variation(id = 50, Pri = 2, Desc = "Param sent, global variable used, local variable exists with a default value", Params = new object[] { "AddParameterFB1.xsl", "default local" })]
-        [InlineData("AddParameterFB1.xsl", "default local")]
+        [InlineData("AddParameterFB1.xsl", "default local", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterFB1.xsl", "default local", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterFB1.xsl", "default local", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterFB1.xsl", "default local", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterFB1.xsl", "default local", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterFB1.xsl", "default local", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterFB1.xsl", "default local", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterFB1.xsl", "default local", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterFB1.xsl", "default local", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         //[Variation(id = 51, Pri = 2, Desc = "Param sent, global variable used, local variable exists with no default value", Params = new object[] { "AddParameterFB2.xsl", "" })]
-        [InlineData("AddParameterFB2.xsl", "")]
+        [InlineData("AddParameterFB2.xsl", "", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterFB2.xsl", "", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterFB2.xsl", "", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterFB2.xsl", "", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterFB2.xsl", "", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterFB2.xsl", "", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterFB2.xsl", "", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterFB2.xsl", "", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterFB2.xsl", "", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         //[Variation(id = 52, Pri = 2, Desc = "Param sent, global variable used, local variable doesn't exist but reference to param exists", Params = new object[] { "AddParameterFB3.xsl", "default global" })]
-        [InlineData("AddParameterFB3.xsl", "default global")]
+        [InlineData("AddParameterFB3.xsl", "default global", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterFB3.xsl", "default global", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterFB3.xsl", "default global", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterFB3.xsl", "default global", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterFB3.xsl", "default global", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterFB3.xsl", "default global", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterFB3.xsl", "default global", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterFB3.xsl", "default global", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterFB3.xsl", "default global", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         //[Variation(id = 53, Pri = 2, Desc = "Param sent, global variable used, local variable exists with a default value and with-param sends a value", Params = new object[] { "AddParameterFB4.xsl", "default local" })]
-        [InlineData("AddParameterFB4.xsl", "default local")]
+        [InlineData("AddParameterFB4.xsl", "default local", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterFB4.xsl", "default local", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterFB4.xsl", "default local", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterFB4.xsl", "default local", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterFB4.xsl", "default local", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterFB4.xsl", "default local", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterFB4.xsl", "default local", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterFB4.xsl", "default local", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterFB4.xsl", "default local", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         //[Variation(id = 54, Pri = 2, Desc = "Param sent, global variable used, local variable exists with no default value and with-param doesn't send a value", Params = new object[] { "AddParameterFB5.xsl", "" })]
-        [InlineData("AddParameterFB5.xsl", "")]
+        [InlineData("AddParameterFB5.xsl", "", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterFB5.xsl", "", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterFB5.xsl", "", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterFB5.xsl", "", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterFB5.xsl", "", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterFB5.xsl", "", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterFB5.xsl", "", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterFB5.xsl", "", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterFB5.xsl", "", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         //[Variation(id = 55, Pri = 2, Desc = "Param sent, global variable used, local variable doesn't exist, reference to param, with-param sends a value", Params = new object[] { "AddParameterFB6.xsl", "default global" })]
-        [InlineData("AddParameterFB6.xsl", "default global")]
+        [InlineData("AddParameterFB6.xsl", "default global", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterFB6.xsl", "default global", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterFB6.xsl", "default global", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterFB6.xsl", "default global", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterFB6.xsl", "default global", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterFB6.xsl", "default global", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterFB6.xsl", "default global", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterFB6.xsl", "default global", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterFB6.xsl", "default global", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         //[Variation(id = 56, Pri = 2, Desc = "Param sent, global variable used, local variable doesn't exist, reference to param, with-param sends no value", Params = new object[] { "AddParameterFB7.xsl", "default global" })]
-        [InlineData("AddParameterFB7.xsl", "default global")]
+        [InlineData("AddParameterFB7.xsl", "default global", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterFB7.xsl", "default global", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterFB7.xsl", "default global", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterFB7.xsl", "default global", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterFB7.xsl", "default global", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterFB7.xsl", "default global", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterFB7.xsl", "default global", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterFB7.xsl", "default global", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterFB7.xsl", "default global", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         [Theory]
-        public void AddParam2(object param0, object param1)
+        public void AddParam2(object param0, object param1, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             string xslFile = param0.ToString();
             string expected = "<result>" + param1.ToString() + "</result>";
@@ -1769,7 +2331,7 @@ namespace System.Xml.Tests
             m_xsltArg = new XsltArgumentList();
             m_xsltArg.AddParam("param1", "", "outside param");
 
-            if ((LoadXSL(xslFile) == 1) && (Transform_ArgList("AddParameter.xml") == 1))
+            if ((LoadXSL(xslFile, xslInputType, readerType) == 1) && (Transform_ArgList("AddParameter.xml", outputType, navType) == 1))
             {
                 VerifyResult(expected);
                 return;
@@ -1781,21 +2343,77 @@ namespace System.Xml.Tests
         //All the below variations, empty param is sent from client code
         //global param is xsl:param local param is xsl:param
         //[Variation(id = 57, Pri = 2, Desc = "Param sent, global param used, local param exists with a default value", Params = new object[] { "AddParameterB1.xsl", "default local" })]
-        [InlineData("AddParameterB1.xsl", "default local")]
+        [InlineData("AddParameterB1.xsl", "default local", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterB1.xsl", "default local", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterB1.xsl", "default local", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterB1.xsl", "default local", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterB1.xsl", "default local", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterB1.xsl", "default local", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterB1.xsl", "default local", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterB1.xsl", "default local", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterB1.xsl", "default local", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         //[Variation(id = 58, Pri = 2, Desc = "Param sent, global param used, local param exists with no default value", Params = new object[] { "AddParameterB2.xsl", "" })]
-        [InlineData("AddParameterB2.xsl", "")]
+        [InlineData("AddParameterB2.xsl", "", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterB2.xsl", "", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterB2.xsl", "", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterB2.xsl", "", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterB2.xsl", "", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterB2.xsl", "", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterB2.xsl", "", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterB2.xsl", "", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterB2.xsl", "", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         //[Variation(id = 59, Pri = 2, Desc = "Param sent, global param used, local param doesn't exist but reference to param exists", Params = new object[] { "AddParameterB3.xsl", "" })]
-        [InlineData("AddParameterB3.xsl", "")]
+        [InlineData("AddParameterB3.xsl", "", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterB3.xsl", "", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterB3.xsl", "", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterB3.xsl", "", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterB3.xsl", "", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterB3.xsl", "", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterB3.xsl", "", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterB3.xsl", "", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterB3.xsl", "", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         //[Variation(id = 60, Pri = 2, Desc = "Param sent, global param used, local param exists with a default value and with-param sends a value", Params = new object[] { "AddParameterB4.xsl", "with-param" })]
-        [InlineData("AddParameterB4.xsl", "with-param")]
+        [InlineData("AddParameterB4.xsl", "with-param", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterB4.xsl", "with-param", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterB4.xsl", "with-param", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterB4.xsl", "with-param", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterB4.xsl", "with-param", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterB4.xsl", "with-param", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterB4.xsl", "with-param", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterB4.xsl", "with-param", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterB4.xsl", "with-param", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         //[Variation(id = 61, Pri = 2, Desc = "Param sent, global param used, local param exists with no default value and with-param doesn't send a value", Params = new object[] { "AddParameterB5.xsl", "" })]
-        [InlineData("AddParameterB5.xsl", "")]
+        [InlineData("AddParameterB5.xsl", "", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterB5.xsl", "", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterB5.xsl", "", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterB5.xsl", "", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterB5.xsl", "", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterB5.xsl", "", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterB5.xsl", "", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterB5.xsl", "", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterB5.xsl", "", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         //[Variation(id = 62, Pri = 2, Desc = "Param sent, global param used, local param doesn't exist, reference to param, with-param sends a value", Params = new object[] { "AddParameterB6.xsl", "" })]
-        [InlineData("AddParameterB6.xsl", "")]
+        [InlineData("AddParameterB6.xsl", "", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterB6.xsl", "", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterB6.xsl", "", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterB6.xsl", "", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterB6.xsl", "", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterB6.xsl", "", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterB6.xsl", "", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterB6.xsl", "", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterB6.xsl", "", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         //[Variation(id = 63, Pri = 2, Desc = "Param sent, global param used, local param doesn't exist, reference to param, with-param sends no value", Params = new object[] { "AddParameterB7.xsl", "" })]
-        [InlineData("AddParameterB7.xsl", "")]
+        [InlineData("AddParameterB7.xsl", "", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterB7.xsl", "", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterB7.xsl", "", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterB7.xsl", "", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterB7.xsl", "", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterB7.xsl", "", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("AddParameterB7.xsl", "", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("AddParameterB7.xsl", "", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("AddParameterB7.xsl", "", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         [Theory]
-        public void AddParam3(object param0, object param1)
+        public void AddParam3(object param0, object param1, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             string xslFile = param0.ToString();
             string expected = "<result>" + param1.ToString() + "</result>";
@@ -1803,7 +2421,7 @@ namespace System.Xml.Tests
             m_xsltArg = new XsltArgumentList();
             m_xsltArg.AddParam("param1", "", "");
 
-            if ((LoadXSL(xslFile) == 1) && (Transform_ArgList("AddParameter.xml") == 1))
+            if ((LoadXSL(xslFile, xslInputType, readerType) == 1) && (Transform_ArgList("AddParameter.xml", outputType, navType) == 1))
             {
                 VerifyResult(expected);
                 return;
@@ -1831,8 +2449,6 @@ namespace System.Xml.Tests
     //[TestCase(Name = "XsltArgumentList - AddExtensionObject : Navigator, TextWriter", Desc = "NAVIGATOR,TEXTWRITER")]
     public class CArgAddExtObj : XsltApiTestCaseBase2
     {
-        ///private PermissionSet nonePermSet = new PermissionSet(PermissionState.None);
-
         private ITestOutputHelper _output;
         public CArgAddExtObj(ITestOutputHelper output) : base(output)
         {
@@ -1840,17 +2456,25 @@ namespace System.Xml.Tests
         }
 
         //[Variation(Desc = "Basic Verification Test", Pri = 1, Param = "myObjectDef.txt")]
-        [InlineData("myObjectDef.txt")]
+        [InlineData("myObjectDef.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("myObjectDef.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("myObjectDef.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("myObjectDef.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("myObjectDef.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("myObjectDef.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("myObjectDef.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("myObjectDef.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("myObjectDef.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         [Theory]
-        public void AddExtObject1(object param)
+        public void AddExtObject1(object param, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             MyObject obj = new MyObject(1, _output);
             m_xsltArg = new XsltArgumentList();
             string Baseline = Path.Combine("baseline", (string)param);
-            ///nonePermSet.PermitOnly();
+
             m_xsltArg.AddExtensionObject(szDefaultNS, obj);
-            ///CodeAccessPermission.RevertPermitOnly();
-            if ((LoadXSL("myObjectDef.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1))
+
+            if ((LoadXSL("myObjectDef.xsl", xslInputType, readerType) == 1) && (Transform_ArgList("fruits.xml", outputType, navType) == 1))
             {
                 VerifyResult(Baseline, _strOutFile);
                 return;
@@ -1869,12 +2493,10 @@ namespace System.Xml.Tests
 
             try
             {
-                ///nonePermSet.PermitOnly(); ;
                 m_xsltArg.AddExtensionObject(null, obj);
             }
             catch (System.ArgumentNullException)
             {
-                ///CodeAccessPermission.RevertPermitOnly();
                 return;
             }
             _output.WriteLine("System.ArgumentNullException not generated for null namespace System.Xml.Tests");
@@ -1889,25 +2511,31 @@ namespace System.Xml.Tests
             MyObject obj = new MyObject(3, _output);
             m_xsltArg = new XsltArgumentList();
 
-            ///nonePermSet.PermitOnly(); ;
             m_xsltArg.AddExtensionObject(szEmpty, obj);
-            ///CodeAccessPermission.RevertPermitOnly();
+
             return;
         }
 
         //[Variation("Very long namespace System.Xml.Tests", Param = "myObjectLongNs.txt")]
-        [InlineData("myObjectLongNS.txt")]
+        [InlineData("myObjectLongNS.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("myObjectLongNS.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("myObjectLongNS.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("myObjectLongNS.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("myObjectLongNS.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("myObjectLongNS.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("myObjectLongNS.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("myObjectLongNS.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("myObjectLongNS.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         [Theory]
-        public void AddExtObject4(object param)
+        public void AddExtObject4(object param, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             m_xsltArg = new XsltArgumentList();
             MyObject obj = new MyObject(4, _output);
             string Baseline = Path.Combine("baseline", (string)param);
-            ///nonePermSet.PermitOnly(); ;
-            m_xsltArg.AddExtensionObject(szLongNS, obj);
-            ///CodeAccessPermission.RevertPermitOnly();
 
-            if ((LoadXSL("myObjectLongNS.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1))
+            m_xsltArg.AddExtensionObject(szLongNS, obj);
+
+            if ((LoadXSL("myObjectLongNS.xsl", xslInputType, readerType) == 1) && (Transform_ArgList("fruits.xml", outputType, navType) == 1))
             {
                 VerifyResult(Baseline, _strOutFile);
                 return;
@@ -1923,9 +2551,8 @@ namespace System.Xml.Tests
         {
             MyObject obj = new MyObject(5, _output);
             m_xsltArg = new XsltArgumentList();
-            ///nonePermSet.PermitOnly(); ;
+
             m_xsltArg.AddExtensionObject(szInvalid, obj);
-            ///CodeAccessPermission.RevertPermitOnly();
             return;
         }
 
@@ -1937,7 +2564,7 @@ namespace System.Xml.Tests
             MyObject obj1 = new MyObject(1, _output);
             MyObject obj2 = new MyObject(2, _output);
             m_xsltArg = new XsltArgumentList();
-            ///nonePermSet.PermitOnly(); ;
+
             m_xsltArg.AddExtensionObject(szDefaultNS, obj1);
             try
             {
@@ -1945,7 +2572,6 @@ namespace System.Xml.Tests
             }
             catch (System.ArgumentException)
             {
-                ///CodeAccessPermission.RevertPermitOnly();
                 return;
             }
             _output.WriteLine("Did not launch exception 'System.ArgumentException' for an item already added");
@@ -1953,14 +2579,22 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Case sensitivity", Param = "myObjectDef.txt")]
-        [InlineData("myObjectDef.txt")]
+        [InlineData("myObjectDef.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("myObjectDef.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("myObjectDef.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("myObjectDef.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("myObjectDef.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("myObjectDef.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("myObjectDef.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("myObjectDef.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("myObjectDef.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         [Theory]
-        public void AddExtObject8(object param)
+        public void AddExtObject8(object param, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             MyObject obj = new MyObject(1, _output);
             m_xsltArg = new XsltArgumentList();
             string Baseline = Path.Combine("baseline", (string)param);
-            ///nonePermSet.PermitOnly(); ;
+
             m_xsltArg.AddExtensionObject("urn:my-object", obj);
 
             retObj = m_xsltArg.GetExtensionObject("urn:my-object");
@@ -1972,8 +2606,8 @@ namespace System.Xml.Tests
             m_xsltArg.AddExtensionObject("URN:MY-OBJECT", obj);
             m_xsltArg.AddExtensionObject("urn:My-Object", obj);
             m_xsltArg.AddExtensionObject("urn-my:object", obj);
-            ///CodeAccessPermission.RevertPermitOnly();
-            if ((LoadXSL("myObjectDef.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1))
+
+            if ((LoadXSL("myObjectDef.xsl", xslInputType, readerType) == 1) && (Transform_ArgList("fruits.xml", outputType, navType) == 1))
             {
                 VerifyResult(Baseline, _strOutFile);
                 return;
@@ -1992,12 +2626,10 @@ namespace System.Xml.Tests
 
             try
             {
-                ///nonePermSet.PermitOnly(); ;
                 m_xsltArg.AddExtensionObject(szDefaultNS, null);
             }
             catch (System.ArgumentNullException)
             {
-                ///CodeAccessPermission.RevertPermitOnly();
                 return;
             }
             _output.WriteLine("Did not launch exception 'System.ArgumentNullException' for adding a null-valued item");
@@ -2005,32 +2637,55 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Unitialized and NULL return values from the methods in the extension object")]
-        [InlineData()]
+        [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData(XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData(XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData(XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData(XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData(XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData(XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         [Theory]
-        public void AddExtObject10()
+        public void AddExtObject10(XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
+            string expected = @"<?xml version=""1.0"" encoding=""utf-8""?><result xmlns:myObj=""urn:my-object"">
+
+		Test1
+		Test2: 0</result>";
+
             MyObject obj = new MyObject(10, _output);
             m_xsltArg = new XsltArgumentList();
-            ///nonePermSet.PermitOnly(); ;
+
             m_xsltArg.AddExtensionObject(szDefaultNS, obj);
-            ///CodeAccessPermission.RevertPermitOnly();
-            if ((LoadXSL("MyObject_Null.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1) &&
-                (CheckResult(424.8906559839) == 1 || CheckResult(425.0247531107) == 1 /* for writer */))
+
+            if ((LoadXSL("MyObject_Null.xsl", xslInputType, readerType) == 1) && (Transform_ArgList("fruits.xml", outputType, navType) == 1))
+            {
+                VerifyResult(expected);
                 return;
+            }
             else
                 Assert.True(false);
         }
 
         //[Variation("Add many objects", Param = "myObjectDef.txt")]
-        [InlineData("myObjectDef.txt")]
+        [InlineData("myObjectDef.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("myObjectDef.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("myObjectDef.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("myObjectDef.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("myObjectDef.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("myObjectDef.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("myObjectDef.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("myObjectDef.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("myObjectDef.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         [Theory]
-        public void AddExtObject11(object param)
+        public void AddExtObject11(object param, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             string Baseline = Path.Combine("baseline", (string)param);
             m_xsltArg = new XsltArgumentList();
 
             MyObject obj1 = new MyObject(100, _output);
-            ///nonePermSet.PermitOnly(); ;
+
             m_xsltArg.AddExtensionObject(szDefaultNS, obj1);
 
             for (int i = 1; i < 500; i++)
@@ -2039,8 +2694,7 @@ namespace System.Xml.Tests
                 m_xsltArg.AddExtensionObject(szDefaultNS + i, obj);
             }
 
-            ///CodeAccessPermission.RevertPermitOnly();
-            if ((LoadXSL("myObjectDef.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1))
+            if ((LoadXSL("myObjectDef.xsl", xslInputType, readerType) == 1) && (Transform_ArgList("fruits.xml", outputType, navType) == 1))
             {
                 VerifyResult(Baseline, _strOutFile);
                 return;
@@ -2050,26 +2704,32 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Whitespace")]
-        [InlineData()]
+        [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData(XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData(XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData(XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData(XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData(XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData(XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         [Theory]
-        public void AddExtObject12()
+        public void AddExtObject12(XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             int i = 1;
             m_xsltArg = new XsltArgumentList();
-
-            ///nonePermSet.PermitOnly(); ;
+            
             foreach (String str in szWhiteSpace)
             {
                 MyObject obj = new MyObject(i, _output);
                 m_xsltArg.AddExtensionObject(szDefaultNS + str, obj);
                 i++;
             }
-            ///CodeAccessPermission.RevertPermitOnly();
 
             try
             {
-                if ((LoadXSL("myObjectDef.xsl") == 1))
-                    Transform_ArgList("fruits.xml", true);
+                if ((LoadXSL("myObjectDef.xsl", xslInputType, readerType) == 1))
+                    Transform_ArgList("fruits.xml", outputType, navType, true);
             }
             catch (System.Xml.Xsl.XsltException)
             {
@@ -2086,7 +2746,7 @@ namespace System.Xml.Tests
         {
             MyObject obj = new MyObject(13, _output);
             m_xsltArg = new XsltArgumentList();
-            ///nonePermSet.PermitOnly(); ;
+
             m_xsltArg.AddExtensionObject(szDefaultNS, obj);
             try
             {
@@ -2094,7 +2754,6 @@ namespace System.Xml.Tests
             }
             catch (System.ArgumentException)
             {
-                ///CodeAccessPermission.RevertPermitOnly();
                 return;
             }
             _output.WriteLine("Did not exception for adding an extension object that already exists");
@@ -2102,22 +2761,30 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Add and Remove multiple times", Param = "myObjectDef.txt")]
-        [InlineData("myObjectDef.txt")]
+        [InlineData("myObjectDef.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("myObjectDef.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("myObjectDef.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("myObjectDef.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("myObjectDef.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("myObjectDef.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("myObjectDef.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("myObjectDef.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("myObjectDef.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         [Theory]
-        public void AddExtObject14(object param)
+        public void AddExtObject14(object param, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             string Baseline = Path.Combine("baseline", (string)param);
             MyObject obj = new MyObject(14, _output);
             m_xsltArg = new XsltArgumentList();
-            ///nonePermSet.PermitOnly(); ;
+
             for (int i = 0; i < 400; i++)
             {
                 m_xsltArg.AddExtensionObject(szDefaultNS, obj);
                 m_xsltArg.RemoveExtensionObject(szDefaultNS);
             }
             m_xsltArg.AddExtensionObject(szDefaultNS, obj);
-            ///CodeAccessPermission.RevertPermitOnly();
-            if ((LoadXSL("myObjectDef.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1))
+
+            if ((LoadXSL("myObjectDef.xsl", xslInputType, readerType) == 1) && (Transform_ArgList("fruits.xml", outputType, navType) == 1))
             {
                 VerifyResult(Baseline, _strOutFile);
                 return;
@@ -2127,19 +2794,27 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Namespace URI non-existent")]
-        [InlineData()]
+        [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData(XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData(XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData(XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData(XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData(XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData(XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         [Theory]
-        public void AddExtObject15()
+        public void AddExtObject15(XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             MyObject obj = new MyObject(15, _output);
             m_xsltArg = new XsltArgumentList();
-            ///nonePermSet.PermitOnly(); ;
+
             m_xsltArg.AddExtensionObject(szSimple, obj);
-            ///CodeAccessPermission.RevertPermitOnly();
+
             try
             {
-                if ((LoadXSL("myObjectDef.xsl") == 1))
-                    Transform_ArgList("fruits.xml", true);
+                if ((LoadXSL("myObjectDef.xsl", xslInputType, readerType) == 1))
+                    Transform_ArgList("fruits.xml", outputType, navType, true);
             }
             catch (System.Xml.Xsl.XsltException)
             {
@@ -2150,33 +2825,41 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Accessing Private and protected Items")]
-        [InlineData()]
+        [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData(XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData(XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData(XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData(XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData(XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData(XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         [Theory]
-        public void AddExtObject16()
+        public void AddExtObject16(XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             MyObject obj = new MyObject(1, _output);
             m_xsltArg = new XsltArgumentList();
-            ///nonePermSet.PermitOnly(); ;
+
             m_xsltArg.AddExtensionObject(szDefaultNS, obj);
-            ///CodeAccessPermission.RevertPermitOnly();
+
             try
             {
-                LoadXSL("MyObject_PrivateAccess.xsl");
-                Transform_ArgList("fruits.xml", true);
+                LoadXSL("MyObject_PrivateAccess.xsl", xslInputType, readerType);
+                Transform_ArgList("fruits.xml", outputType, navType, true);
             }
             catch (System.Xml.Xsl.XsltException)
             {
                 try
                 {
-                    LoadXSL("MyObject_ProtectedAccess.xsl");
-                    Transform_ArgList("fruits.xml", true);
+                    LoadXSL("MyObject_ProtectedAccess.xsl", xslInputType, readerType);
+                    Transform_ArgList("fruits.xml", outputType, navType, true);
                 }
                 catch (System.Xml.Xsl.XsltException)
                 {
                     try
                     {
-                        LoadXSL("MyObject_DefaultAccess.xsl");
-                        Transform_ArgList("fruits.xml", true);
+                        LoadXSL("MyObject_DefaultAccess.xsl", xslInputType, readerType);
+                        Transform_ArgList("fruits.xml", outputType, navType, true);
                     }
                     catch (System.Xml.Xsl.XsltException)
                     {
@@ -2188,34 +2871,56 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Writing To Output")]
-        [InlineData()]
+        [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData(XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData(XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData(XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData(XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData(XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData(XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         [Theory]
-        public void AddExtObject17()
+        public void AddExtObject17(XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
+            string expected = @"<?xml version=""1.0"" encoding=""utf-8""?><result xmlns:myObj=""urn:my-object"">
+		Here:End
+		</result>";
+
             MyObject obj = new MyObject(17, _output);
             m_xsltArg = new XsltArgumentList();
-            ///nonePermSet.PermitOnly(); ;
+
             m_xsltArg.AddExtensionObject(szDefaultNS, obj);
-            ///CodeAccessPermission.RevertPermitOnly();
-            if ((LoadXSL("MyObject_ConsoleWrite.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1) &&
-                (CheckResult(421.8660259804) == 1 || CheckResult(421.8527116762) == 1 /* for writer */))
+
+            if ((LoadXSL("MyObject_ConsoleWrite.xsl", xslInputType, readerType) == 1) && (Transform_ArgList("fruits.xml", outputType, navType) == 1))
+            {
+                VerifyResult(expected);
                 return;
+            }
             else
                 Assert.True(false);
         }
 
         //[Variation("Recursive Functions", Param = "myObject_Recursion.txt")]
-        [InlineData("MyObject_Recursion.txt")]
+        [InlineData("MyObject_Recursion.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("MyObject_Recursion.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("MyObject_Recursion.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("MyObject_Recursion.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("MyObject_Recursion.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("MyObject_Recursion.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("MyObject_Recursion.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("MyObject_Recursion.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("MyObject_Recursion.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         [Theory]
-        public void AddExtObject18(object param)
+        public void AddExtObject18(object param, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             MyObject obj = new MyObject(18, _output);
             m_xsltArg = new XsltArgumentList();
             string Baseline = Path.Combine("baseline", (string)param);
-            ///nonePermSet.PermitOnly(); ;
+
             m_xsltArg.AddExtensionObject(szDefaultNS, obj);
-            ///CodeAccessPermission.RevertPermitOnly();
-            if ((LoadXSL("MyObject_Recursion.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1))
+
+            if ((LoadXSL("MyObject_Recursion.xsl", xslInputType, readerType) == 1) && (Transform_ArgList("fruits.xml", outputType, navType) == 1))
             {
                 VerifyResult(Baseline, _strOutFile);
                 return;
@@ -2225,17 +2930,25 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Function-exists tests", Param = "MyObject_FnExists.txt")]
-        [InlineData("MyObject_FnExists.txt")]
+        [InlineData("MyObject_FnExists.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("MyObject_FnExists.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("MyObject_FnExists.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("MyObject_FnExists.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("MyObject_FnExists.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("MyObject_FnExists.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("MyObject_FnExists.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("MyObject_FnExists.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("MyObject_FnExists.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         [Theory]
-        public void AddExtObject20(object param)
+        public void AddExtObject20(object param, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             string Baseline = Path.Combine("baseline", (string)param);
             MyObject obj = new MyObject(20, _output);
             m_xsltArg = new XsltArgumentList();
-            ///nonePermSet.PermitOnly(); ;
+
             m_xsltArg.AddExtensionObject(szDefaultNS, obj);
-            ///CodeAccessPermission.RevertPermitOnly();
-            if ((LoadXSL("MyObject_FnExists.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1))
+
+            if ((LoadXSL("MyObject_FnExists.xsl", xslInputType, readerType) == 1) && (Transform_ArgList("fruits.xml", outputType, navType) == 1))
             {
                 VerifyResult(Baseline, _strOutFile);
                 return;
@@ -2245,17 +2958,25 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Argument Tests", Param = "MyObject_Arguments.txt")]
-        [InlineData("MyObject_Arguments.txt")]
+        [InlineData("MyObject_Arguments.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("MyObject_Arguments.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("MyObject_Arguments.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("MyObject_Arguments.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("MyObject_Arguments.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("MyObject_Arguments.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("MyObject_Arguments.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("MyObject_Arguments.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("MyObject_Arguments.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         [Theory]
-        public void AddExtObject21(object param)
+        public void AddExtObject21(object param, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             string Baseline = Path.Combine("baseline", (string)param);
             MyObject obj = new MyObject(1, _output);
             m_xsltArg = new XsltArgumentList();
-            ///nonePermSet.PermitOnly(); ;
+
             m_xsltArg.AddExtensionObject(szDefaultNS, obj);
-            ///CodeAccessPermission.RevertPermitOnly();
-            if ((LoadXSL("MyObject_Arguments.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1))
+
+            if ((LoadXSL("MyObject_Arguments.xsl", xslInputType, readerType) == 1) && (Transform_ArgList("fruits.xml", outputType, navType) == 1))
             {
                 VerifyResult(Baseline, _strOutFile);
                 return;
@@ -2273,7 +2994,7 @@ namespace System.Xml.Tests
 
             double d = 1;
             int i = 1;
-            ///nonePermSet.PermitOnly(); ;
+
             m_xsltArg.AddExtensionObject("urn:myspace", d);
             try
             {
@@ -2281,7 +3002,6 @@ namespace System.Xml.Tests
             }
             catch (System.ArgumentException)
             {
-                ///CodeAccessPermission.RevertPermitOnly();
                 return;
             }
             _output.WriteLine("Exception not thrown for URI namespace System.Xml.Tests in use");
@@ -2289,21 +3009,29 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Case Sensitivity")]
-        [InlineData()]
+        [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData(XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData(XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData(XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData(XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData(XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData(XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         [Theory]
-        public void AddExtObject25()
+        public void AddExtObject25(XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             MyObject obj = new MyObject(25, _output);
             m_xsltArg = new XsltArgumentList();
-            ///nonePermSet.PermitOnly(); ;
+
             m_xsltArg.AddExtensionObject(szDefaultNS, obj);
-            ///CodeAccessPermission.RevertPermitOnly();
-            if (LoadXSL("MyObject_CaseSensitive.xsl") == 1)
+
+            if (LoadXSL("MyObject_CaseSensitive.xsl", xslInputType, readerType) == 1)
             {
                 try
                 {
-                    Transform_ArgList("fruits.xml");
-                    CheckResult(419.3031944636);
+                    Transform_ArgList("fruits.xml", outputType, navType);
+                    CheckResult(419.3031944636, outputType);
                 }
                 catch (System.Xml.Xsl.XsltException)
                 {
@@ -2315,20 +3043,28 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Object namespace System.Xml.Tests found")]
-        [InlineData()]
+        [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData(XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData(XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData(XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData(XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData(XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData(XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         [Theory]
-        public void AddExtObject26()
+        public void AddExtObject26(XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             MyObject obj = new MyObject(26, _output);
             m_xsltArg = new XsltArgumentList();
-            ///nonePermSet.PermitOnly(); ;
+
             m_xsltArg.AddExtensionObject(szDefaultNS, obj);
-            ///CodeAccessPermission.RevertPermitOnly();
-            if ((LoadXSL("MyObject_NotFoundNS.xsl") == 1))
+
+            if ((LoadXSL("MyObject_NotFoundNS.xsl", xslInputType, readerType) == 1))
             {
                 try
                 {
-                    Transform_ArgList("fruits.xml", true);
+                    Transform_ArgList("fruits.xml", outputType, navType, true);
                 }
                 catch (System.Xml.Xsl.XsltException)
                 {
@@ -2340,17 +3076,25 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Maintaining State", Param = "MyObject_KeepingState.txt")]
-        [InlineData("MyObject_KeepingState.txt")]
+        [InlineData("MyObject_KeepingState.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("MyObject_KeepingState.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("MyObject_KeepingState.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("MyObject_KeepingState.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("MyObject_KeepingState.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("MyObject_KeepingState.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("MyObject_KeepingState.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("MyObject_KeepingState.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("MyObject_KeepingState.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         [Theory]
-        public void AddExtObject27(object param)
+        public void AddExtObject27(object param, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             MyObject obj = new MyObject(27, _output);
             m_xsltArg = new XsltArgumentList();
             string Baseline = Path.Combine("baseline", (string)param);
-            ///nonePermSet.PermitOnly(); ;
+
             m_xsltArg.AddExtensionObject(szDefaultNS, obj);
-            ///CodeAccessPermission.RevertPermitOnly();
-            if ((LoadXSL("MyObject_KeepingState.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1))
+
+            if ((LoadXSL("MyObject_KeepingState.xsl", xslInputType, readerType) == 1) && (Transform_ArgList("fruits.xml", outputType, navType) == 1))
             {
                 VerifyResult(Baseline, _strOutFile);
                 return;
@@ -2360,20 +3104,27 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Deliberately Messing Up the Stylesheet", Param = "MyObject_KillerStrings.txt")]
-        [ActiveIssue(9877)]
-        [InlineData("MyObject_KillerStrings.txt")]
+        [InlineData("MyObject_KillerStrings.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("MyObject_KillerStrings.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("MyObject_KillerStrings.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("MyObject_KillerStrings.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("MyObject_KillerStrings.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("MyObject_KillerStrings.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("MyObject_KillerStrings.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("MyObject_KillerStrings.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("MyObject_KillerStrings.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         [Theory]
-        public void AddExtObject28(object param)
+        public void AddExtObject28(object param, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             MyObject obj = new MyObject(28, _output);
             m_xsltArg = new XsltArgumentList();
             string Baseline = Path.Combine("baseline", (string)param);
-            ///nonePermSet.PermitOnly(); ;
+
             m_xsltArg.AddExtensionObject(szDefaultNS, obj);
-            ///CodeAccessPermission.RevertPermitOnly();
-            if ((LoadXSL("MyObject_KillerStrings.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1))
+
+            if ((LoadXSL("MyObject_KillerStrings.xsl", xslInputType, readerType) == 1) && (Transform_ArgList("fruits.xml", outputType, navType) == 1))
             {
-                if (MyOutputType() == OutputType.Writer)
+                if (outputType == OutputType.Writer)
                     /* writer output is slighlty different which causes a mismatch so we won't compare */
                     return;
                 VerifyResult(Baseline, _strOutFile);
@@ -2384,20 +3135,28 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Function not found in Object")]
-        [InlineData()]
+        [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData(XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData(XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData(XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData(XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData(XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData(XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         [Theory]
-        public void AddExtObject29()
+        public void AddExtObject29(XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             MyObject obj = new MyObject(29, _output);
             m_xsltArg = new XsltArgumentList();
-            ///nonePermSet.PermitOnly(); ;
+
             m_xsltArg.AddExtensionObject(szDefaultNS, obj);
-            ///CodeAccessPermission.RevertPermitOnly();
-            if ((LoadXSL("MyObject_NotFound.xsl") == 1))
+
+            if ((LoadXSL("MyObject_NotFound.xsl", xslInputType, readerType) == 1))
             {
                 try
                 {
-                    Transform_ArgList("fruits.xml", true);
+                    Transform_ArgList("fruits.xml", outputType, navType, true);
                 }
                 catch (System.Xml.Xsl.XsltException)
                 {
@@ -2415,30 +3174,37 @@ namespace System.Xml.Tests
         {
             MyObject obj = new MyObject(31, _output);
             m_xsltArg = new XsltArgumentList();
-            ///nonePermSet.PermitOnly(); ;
+
             m_xsltArg.AddExtensionObject(szXslNS, obj);
             retObj = m_xsltArg.GetExtensionObject(szXslNS);
-            ///CodeAccessPermission.RevertPermitOnly();
 
             Assert.Equal(retObj, obj);
         }
 
         //[Variation("Extension objects should not be cached during Transform()", Param = "Bug78587")]
-        [InlineData("Bug78587")]
+        [InlineData("Bug78587", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("Bug78587", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("Bug78587", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("Bug78587", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("Bug78587", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("Bug78587", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("Bug78587", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("Bug78587", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("Bug78587", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         [Theory]
-        public void AddExtObject32(object param)
+        public void AddExtObject32(object param, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             string Baseline1 = Path.Combine("baseline", (string)param) + "a.txt";
             string Baseline2 = Path.Combine("baseline", (string)param) + "b.txt";
 
-            if (LoadXSL("Bug78587.xsl") == 1)
+            if (LoadXSL("Bug78587.xsl", xslInputType, readerType) == 1)
             {
                 m_xsltArg = new XsltArgumentList();
                 m_xsltArg.AddExtensionObject("id", new Id("first"));
                 m_xsltArg.AddExtensionObject("capitalizer", new Capitalizer());
 
                 // Transform once
-                if (Transform_ArgList("Bug78587.xml") == 1)
+                if (Transform_ArgList("Bug78587.xml", outputType, navType) == 1)
                 {
                     VerifyResult(Baseline1, _strOutFile);
                     m_xsltArg = new XsltArgumentList();
@@ -2446,7 +3212,7 @@ namespace System.Xml.Tests
                     m_xsltArg.AddExtensionObject("capitalizer", new Capitalizer());
 
                     // Transform again to make sure that extension objects from first transform are not cached
-                    if (Transform_ArgList("Bug78587.xml") == 1)
+                    if (Transform_ArgList("Bug78587.xml", outputType, navType) == 1)
                     {
                         VerifyResult(Baseline2, _strOutFile);
                         return;
@@ -2456,39 +3222,98 @@ namespace System.Xml.Tests
             Assert.True(false);
         }
 
-        //[Variation(id = 36, Desc = "Calling extension object from select in xsl:sort", Params = new object[] { "sort.xsl", "sort.txt" })]
-        [InlineData("sort.xsl", "sort.txt")]
-        [Theory]
-        public void AddExtObject33_ActiveIssue9997(object param0, object param1)
-        {
-            AddExtObject33(param0, param1);
-        }
-
         //[Variation(id = 33, Desc = "Calling extension object from select in xsl:apply-templates", Params = new object[] { "apply-templates.xsl", "apply-templates.txt" })]
-        [InlineData("apply-templates.xsl", "apply-templates.txt")]
+        [InlineData("apply-templates.xsl", "apply-templates.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("apply-templates.xsl", "apply-templates.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("apply-templates.xsl", "apply-templates.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("apply-templates.xsl", "apply-templates.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("apply-templates.xsl", "apply-templates.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("apply-templates.xsl", "apply-templates.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("apply-templates.xsl", "apply-templates.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("apply-templates.xsl", "apply-templates.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("apply-templates.xsl", "apply-templates.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         //[Variation(id = 34, Desc = "Calling extension object from select in xsl:for-each", Params = new object[] { "for-each.xsl", "for-each.txt" })]
-        [InlineData("for-each.xsl", "for-each.txt")]
+        [InlineData("for-each.xsl", "for-each.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("for-each.xsl", "for-each.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("for-each.xsl", "for-each.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("for-each.xsl", "for-each.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("for-each.xsl", "for-each.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("for-each.xsl", "for-each.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("for-each.xsl", "for-each.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("for-each.xsl", "for-each.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("for-each.xsl", "for-each.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         //[Variation(id = 35, Desc = "Calling extension object from select in xsl:copy-of", Params = new object[] { "copy-of.xsl", "copy-of.txt" })]
-        [InlineData("copy-of.xsl", "copy-of.txt")]
+        [InlineData("copy-of.xsl", "copy-of.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("copy-of.xsl", "copy-of.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("copy-of.xsl", "copy-of.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("copy-of.xsl", "copy-of.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("copy-of.xsl", "copy-of.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("copy-of.xsl", "copy-of.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("copy-of.xsl", "copy-of.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("copy-of.xsl", "copy-of.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("copy-of.xsl", "copy-of.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         //[Variation(id = 37, Desc = "Calling extension object from select in xsl:variable", Params = new object[] { "variable.xsl", "variable.txt" })]
-        [InlineData("variable.xsl", "variable.txt")]
+        [InlineData("variable.xsl", "variable.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("variable.xsl", "variable.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("variable.xsl", "variable.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("variable.xsl", "variable.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("variable.xsl", "variable.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("variable.xsl", "variable.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("variable.xsl", "variable.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("variable.xsl", "variable.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("variable.xsl", "variable.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         //[Variation(id = 38, Desc = "Calling extension object from select in xsl:param", Params = new object[] { "param.xsl", "param.txt" })]
-        [InlineData("param.xsl", "param.txt")]
+        [InlineData("param.xsl", "param.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("param.xsl", "param.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("param.xsl", "param.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("param.xsl", "param.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("param.xsl", "param.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("param.xsl", "param.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("param.xsl", "param.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("param.xsl", "param.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("param.xsl", "param.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         //[Variation(id = 39, Desc = "Calling extension object from select in xsl:with-param", Params = new object[] { "with-param.xsl", "with-param.txt" })]
-        [InlineData("with-param.xsl", "with-param.txt")]
+        [InlineData("with-param.xsl", "with-param.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("with-param.xsl", "with-param.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("with-param.xsl", "with-param.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("with-param.xsl", "with-param.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("with-param.xsl", "with-param.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("with-param.xsl", "with-param.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("with-param.xsl", "with-param.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("with-param.xsl", "with-param.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("with-param.xsl", "with-param.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         //[Variation(id = 40, Desc = "Calling extension object from select in xsl:value-of", Params = new object[] { "value-of.xsl", "value-of.txt" })]
-        [InlineData("value-of.xsl", "value-of.txt")]
+        [InlineData("value-of.xsl", "value-of.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("value-of.xsl", "value-of.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("value-of.xsl", "value-of.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("value-of.xsl", "value-of.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("value-of.xsl", "value-of.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("value-of.xsl", "value-of.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("value-of.xsl", "value-of.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("value-of.xsl", "value-of.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("value-of.xsl", "value-of.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        //[Variation(id = 36, Desc = "Calling extension object from select in xsl:sort", Params = new object[] { "sort.xsl", "sort.txt" })]
+        [InlineData("sort.xsl", "sort.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("sort.xsl", "sort.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("sort.xsl", "sort.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("sort.xsl", "sort.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("sort.xsl", "sort.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("sort.xsl", "sort.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("sort.xsl", "sort.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("sort.xsl", "sort.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("sort.xsl", "sort.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+
         [Theory]
-        public void AddExtObject33(object param0, object param1)
+        public void AddExtObject33(object param0, object param1, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             ExObj obj = new ExObj(0, _output);
             m_xsltArg = new XsltArgumentList();
             string xslFile = param0.ToString();
             string Baseline = Path.Combine("baseline", param1.ToString());
-            ///nonePermSet.PermitOnly(); ;
+
             m_xsltArg.AddExtensionObject("urn-myobject", obj);
-            ///CodeAccessPermission.RevertPermitOnly();
-            if ((LoadXSL(xslFile) == 1) && (Transform_ArgList("ExtData.xml") == 1))
+
+            if ((LoadXSL(xslFile, xslInputType, readerType) == 1) && (Transform_ArgList("ExtData.xml", outputType, navType) == 1))
             {
                 VerifyResult(Baseline, _strOutFile);
                 return;
@@ -2498,19 +3323,67 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 41, Desc = "Calling extension function from select in xsl:variable and variable is used for incrementing an integer", Params = new object[] { "variable2.xsl", "variable2.txt" })]
-        [InlineData("variable2.xsl", "variable2.txt")]
+        [InlineData("variable2.xsl", "variable2.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("variable2.xsl", "variable2.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("variable2.xsl", "variable2.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("variable2.xsl", "variable2.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("variable2.xsl", "variable2.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("variable2.xsl", "variable2.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("variable2.xsl", "variable2.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("variable2.xsl", "variable2.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("variable2.xsl", "variable2.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         //[Variation(id = 42, Desc = "Calling extension function from select in xsl:variable but variable is never used", Params = new object[] { "variable3.xsl", "variable3.txt" })]
-        [InlineData("variable3.xsl", "variable3.txt")]
+        [InlineData("variable3.xsl", "variable3.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("variable3.xsl", "variable3.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("variable3.xsl", "variable3.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("variable3.xsl", "variable3.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("variable3.xsl", "variable3.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("variable3.xsl", "variable3.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("variable3.xsl", "variable3.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("variable3.xsl", "variable3.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("variable3.xsl", "variable3.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         //[Variation(id = 43, Desc = "Calling extension function from select in global xsl:variable but variable is never used", Params = new object[] { "variable4.xsl", "variable4.txt" })]
-        [InlineData("variable4.xsl", "variable4.txt")]
+        [InlineData("variable4.xsl", "variable4.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("variable4.xsl", "variable4.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("variable4.xsl", "variable4.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("variable4.xsl", "variable4.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("variable4.xsl", "variable4.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("variable4.xsl", "variable4.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("variable4.xsl", "variable4.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("variable4.xsl", "variable4.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("variable4.xsl", "variable4.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         //[Variation(id = 44, Desc = "Calling extension function from select in xsl:param and parameter is used for incrementing an integer", Params = new object[] { "param2.xsl", "param2.txt" })]
-        [InlineData("param2.xsl", "param2.txt")]
+        [InlineData("param2.xsl", "param2.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("param2.xsl", "param2.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("param2.xsl", "param2.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("param2.xsl", "param2.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("param2.xsl", "param2.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("param2.xsl", "param2.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("param2.xsl", "param2.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("param2.xsl", "param2.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("param2.xsl", "param2.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         //[Variation(id = 45, Desc = "Calling extension function from select in xsl:param but parameter is never used", Params = new object[] { "param3.xsl", "param3.txt" })]
-        [InlineData("param3.xsl", "param3.txt")]
+        [InlineData("param3.xsl", "param3.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("param3.xsl", "param3.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("param3.xsl", "param3.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("param3.xsl", "param3.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("param3.xsl", "param3.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("param3.xsl", "param3.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("param3.xsl", "param3.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("param3.xsl", "param3.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("param3.xsl", "param3.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         //[Variation(id = 46, Desc = "Calling extension function from select in global xsl:param but parameter is never used", Params = new object[] { "param4.xsl", "param4.txt" })]
-        [InlineData("param4.xsl", "param4.txt")]
+        [InlineData("param4.xsl", "param4.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("param4.xsl", "param4.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("param4.xsl", "param4.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("param4.xsl", "param4.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("param4.xsl", "param4.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("param4.xsl", "param4.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("param4.xsl", "param4.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("param4.xsl", "param4.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("param4.xsl", "param4.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         [Theory]
-        public void AddExtObject41(object param0, object param1)
+        public void AddExtObject41(object param0, object param1, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             /*
              * In these variations, the XSLT calls the extension function Increment from XSLT.
@@ -2521,10 +3394,10 @@ namespace System.Xml.Tests
             m_xsltArg = new XsltArgumentList();
             string xslFile = param0.ToString();
             string Baseline = "baseline" + Path.DirectorySeparatorChar + param1.ToString();
-            ///nonePermSet.PermitOnly(); ;
+
             m_xsltArg.AddExtensionObject("urn-myobject", obj);
-            ///CodeAccessPermission.RevertPermitOnly();
-            if ((LoadXSL(xslFile) == 1) && (Transform_ArgList("ExtData.xml") == 1))
+
+            if ((LoadXSL(xslFile, xslInputType, readerType) == 1) && (Transform_ArgList("ExtData.xml", outputType, navType) == 1))
             {
                 VerifyResult(Baseline, _strOutFile);
                 return;
@@ -2580,9 +3453,12 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 1, Desc = "Basic Verification Test", Pri = 1, Param = "RemoveParam1.txt")]
-        [InlineData("RemoveParam1.txt")]
+        [InlineData("RemoveParam1.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("RemoveParam1.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("RemoveParam1.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("RemoveParam1.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         [Theory]
-        public void RemoveParam1(object param)
+        public void RemoveParam1(object param, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             m_xsltArg = new XsltArgumentList();
 
@@ -2605,7 +3481,7 @@ namespace System.Xml.Tests
             }
 
             _baseline = Path.Combine("baseline", (string)param);
-            if ((LoadXSL("showParam.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1))
+            if ((LoadXSL("showParam.xsl", xslInputType, readerType) == 1) && (Transform_ArgList("fruits.xml", outputType, navType) == 1))
             {
                 VerifyResult(_baseline, "out.xml");
                 return;
@@ -2630,15 +3506,18 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Param name is empty string", Param = "showParam.txt")]
-        [InlineData("showParam.txt")]
+        [InlineData("showParam.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("showParam.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("showParam.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("showParam.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         [Theory]
-        public void RemoveParam3(object param)
+        public void RemoveParam3(object param, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             string Baseline = Path.Combine("baseline", (string)param);
             m_xsltArg = new XsltArgumentList();
             m_xsltArg.RemoveParam(szEmpty, szEmpty);
 
-            if ((LoadXSL("showParam.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1))
+            if ((LoadXSL("showParam.xsl", xslInputType, readerType) == 1) && (Transform_ArgList("fruits.xml", outputType, navType) == 1))
             {
                 VerifyResult(Baseline, _strOutFile);
                 return;
@@ -2648,15 +3527,18 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Param name is non-existent", Param = "showParam.txt")]
-        [InlineData("showParam.txt")]
+        [InlineData("showParam.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("showParam.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("showParam.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("showParam.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         [Theory]
-        public void RemoveParam4(object param)
+        public void RemoveParam4(object param, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             string Baseline = Path.Combine("baseline", (string)param);
             m_xsltArg = new XsltArgumentList();
             m_xsltArg.RemoveParam(szSimple, szEmpty);
 
-            if ((LoadXSL("showParam.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1))
+            if ((LoadXSL("showParam.xsl", xslInputType, readerType) == 1) && (Transform_ArgList("fruits.xml", outputType, navType) == 1))
             {
                 VerifyResult(Baseline, _strOutFile);
                 return;
@@ -2666,15 +3548,18 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Invalid Param name", Param = "showParam.txt")]
-        [InlineData("showParam.txt")]
+        [InlineData("showParam.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("showParam.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("showParam.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("showParam.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         [Theory]
-        public void RemoveParam5(object param)
+        public void RemoveParam5(object param, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             string Baseline = Path.Combine("baseline", (string)param);
             m_xsltArg = new XsltArgumentList();
             m_xsltArg.RemoveParam(szInvalid, szEmpty);
 
-            if ((LoadXSL("showParam.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1))
+            if ((LoadXSL("showParam.xsl", xslInputType, readerType) == 1) && (Transform_ArgList("fruits.xml", outputType, navType) == 1))
             {
                 VerifyResult(Baseline, _strOutFile);
                 return;
@@ -2684,9 +3569,12 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Very long param name", Param = "showParamLongName.txt")]
-        [InlineData("showParamLongName.txt")]
+        [InlineData("showParamLongName.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("showParamLongName.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("showParamLongName.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("showParamLongName.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         [Theory]
-        public void RemoveParam6(object param)
+        public void RemoveParam6(object param, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             string Baseline = Path.Combine("baseline", (string)param);
             m_xsltArg = new XsltArgumentList();
@@ -2694,7 +3582,7 @@ namespace System.Xml.Tests
             m_xsltArg.AddParam(szLongString, szEmpty, "Test1");
             m_xsltArg.RemoveParam(szLongString, szEmpty);
 
-            if ((LoadXSL("showParamLongName.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1))
+            if ((LoadXSL("showParamLongName.xsl", xslInputType, readerType) == 1) && (Transform_ArgList("fruits.xml", outputType, navType) == 1))
             {
                 VerifyResult(Baseline, _strOutFile);
                 return;
@@ -2720,9 +3608,12 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Namespace URI is empty string", Param = "showParam.txt")]
-        [InlineData("showParam.txt")]
+        [InlineData("showParam.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("showParam.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("showParam.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("showParam.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         [Theory]
-        public void RemoveParam8(object param)
+        public void RemoveParam8(object param, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             string Baseline = Path.Combine("baseline", (string)param);
             m_xsltArg = new XsltArgumentList();
@@ -2730,7 +3621,7 @@ namespace System.Xml.Tests
             m_xsltArg.AddParam("myArg1", szEmpty, "Test1");
             m_xsltArg.RemoveParam("myArg1", szEmpty);
 
-            if ((LoadXSL("showParam.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1))
+            if ((LoadXSL("showParam.xsl", xslInputType, readerType) == 1) && (Transform_ArgList("fruits.xml", outputType, navType) == 1))
             {
                 VerifyResult(Baseline, _strOutFile);
                 return;
@@ -2740,9 +3631,12 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Namespace URI is non-existent", Param = "RemoveParam9.txt")]
-        [InlineData("RemoveParam9.txt")]
+        [InlineData("RemoveParam9.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("RemoveParam9.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("RemoveParam9.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("RemoveParam9.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         [Theory]
-        public void RemoveParam9(object param)
+        public void RemoveParam9(object param, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             string Baseline = Path.Combine("baseline", (string)param);
             m_xsltArg = new XsltArgumentList();
@@ -2750,7 +3644,7 @@ namespace System.Xml.Tests
             m_xsltArg.AddParam("myArg1", szEmpty, "Test1");
             m_xsltArg.RemoveParam("myArg1", "http://www.xsltTest.com");
 
-            if ((LoadXSL("showParam.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1))
+            if ((LoadXSL("showParam.xsl", xslInputType, readerType) == 1) && (Transform_ArgList("fruits.xml", outputType, navType) == 1))
             {
                 VerifyResult(Baseline, _strOutFile);
                 return;
@@ -2760,9 +3654,12 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Very long namespace System.Xml.Tests", Param = "showParam.txt")]
-        [InlineData("showParam.txt")]
+        [InlineData("showParam.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("showParam.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("showParam.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("showParam.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         [Theory]
-        public void RemoveParam10(object param)
+        public void RemoveParam10(object param, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             string Baseline = Path.Combine("baseline", (string)param);
             m_xsltArg = new XsltArgumentList();
@@ -2770,7 +3667,7 @@ namespace System.Xml.Tests
             m_xsltArg.AddParam("myArg1", szLongString, "Test1");
             m_xsltArg.RemoveParam("myArg1", szLongString);
 
-            if ((LoadXSL("showParam.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1))
+            if ((LoadXSL("showParam.xsl", xslInputType, readerType) == 1) && (Transform_ArgList("fruits.xml", outputType, navType) == 1))
             {
                 VerifyResult(Baseline, _strOutFile);
                 return;
@@ -2780,9 +3677,12 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Different Data Types", Param = "showParam.txt")]
-        [InlineData("showParam.txt")]
+        [InlineData("showParam.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("showParam.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("showParam.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("showParam.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         [Theory]
-        public void RemoveParam11(object param)
+        public void RemoveParam11(object param, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             string Baseline = Path.Combine("baseline", (string)param);
 
@@ -2975,7 +3875,7 @@ namespace System.Xml.Tests
                 Assert.True(false);
             }
 
-            if ((LoadXSL("showParam.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1))
+            if ((LoadXSL("showParam.xsl", xslInputType, readerType) == 1) && (Transform_ArgList("fruits.xml", outputType, navType) == 1))
             {
                 VerifyResult(Baseline, _strOutFile);
                 return;
@@ -2985,9 +3885,12 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Case Sensitivity", Param = "RemoveParam12.txt")]
-        [InlineData("RemoveParam12.txt")]
+        [InlineData("RemoveParam12.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("RemoveParam12.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("RemoveParam12.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("RemoveParam12.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         [Theory]
-        public void RemoveParam12(object param)
+        public void RemoveParam12(object param, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             string Baseline = Path.Combine("baseline", (string)param);
             m_xsltArg = new XsltArgumentList();
@@ -2998,7 +3901,7 @@ namespace System.Xml.Tests
             m_xsltArg.RemoveParam("myArg1 ", szEmpty);
 
             // perform a transform for kicks and ensure all is ok.
-            if ((LoadXSL("showParam.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1))
+            if ((LoadXSL("showParam.xsl", xslInputType, readerType) == 1) && (Transform_ArgList("fruits.xml", outputType, navType) == 1))
             {
                 VerifyResult(Baseline, _strOutFile);
                 return;
@@ -3008,9 +3911,12 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Whitespace", Param = "RemoveParam13.txt")]
-        [InlineData("RemoveParam13.txt")]
+        [InlineData("RemoveParam13.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("RemoveParam13.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("RemoveParam13.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("RemoveParam13.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         [Theory]
-        public void RemoveParam13(object param)
+        public void RemoveParam13(object param, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             string Baseline = Path.Combine("baseline", (string)param);
             int i = 1;
@@ -3044,7 +3950,7 @@ namespace System.Xml.Tests
             }
 
             // perform a transform for kicks and ensure all is ok.
-            if ((LoadXSL("showParam.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1))
+            if ((LoadXSL("showParam.xsl", xslInputType, readerType) == 1) && (Transform_ArgList("fruits.xml", outputType, navType) == 1))
             {
                 VerifyResult(Baseline, _strOutFile);
                 return;
@@ -3054,9 +3960,12 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Call Multiple Times", Param = "showParam.txt")]
-        [InlineData("showParam.txt")]
+        [InlineData("showParam.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("showParam.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("showParam.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
+        [InlineData("showParam.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         [Theory]
-        public void RemoveParam14(object param)
+        public void RemoveParam14(object param, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             string Baseline = Path.Combine("baseline", (string)param);
             m_xsltArg = new XsltArgumentList();
@@ -3066,7 +3975,7 @@ namespace System.Xml.Tests
             for (int i = 0; i < 500; i++)
                 m_xsltArg.RemoveParam("myArg1", szEmpty);
 
-            if ((LoadXSL("showParam.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1))
+            if ((LoadXSL("showParam.xsl", xslInputType, readerType) == 1) && (Transform_ArgList("fruits.xml", outputType, navType) == 1))
             {
                 VerifyResult(Baseline, _strOutFile);
                 return;
@@ -3097,8 +4006,6 @@ namespace System.Xml.Tests
     //[TestCase(Name = "XsltArgumentList - RemoveExtensionObject : Navigator, Stream", Desc = "NAVIGATOR,STREAM")]
     public class CArgRemoveExtObj : XsltApiTestCaseBase2
     {
-        ///private PermissionSet nonePermSet = new PermissionSet(PermissionState.None);
-
         private ITestOutputHelper _output;
         public CArgRemoveExtObj(ITestOutputHelper output) : base(output)
         {
@@ -3106,21 +4013,23 @@ namespace System.Xml.Tests
         }
 
         //[Variation(Desc = "Basic Verification Test", Pri = 1)]
-        [InlineData()]
+        [InlineData(XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData(XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData(XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
         [Theory]
-        public void RemoveExtObj1()
+        public void RemoveExtObj1(XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             MyObject obj = new MyObject(1, _output);
             m_xsltArg = new XsltArgumentList();
-            ///nonePermSet.PermitOnly(); ;
+
             m_xsltArg.AddExtensionObject(szDefaultNS, obj);
             m_xsltArg.RemoveExtensionObject(szDefaultNS);
-            ///CodeAccessPermission.RevertPermitOnly();
 
             try
             {
-                if ((LoadXSL("myObjectDef.xsl") == 1))
-                    Transform_ArgList("fruits.xml", true);
+                if ((LoadXSL("myObjectDef.xsl", xslInputType, readerType) == 1))
+                    Transform_ArgList("fruits.xml", outputType, navType, true);
             }
             catch (System.Xml.Xsl.XsltException)
             {
@@ -3151,19 +4060,22 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Call Multiple Times", Param = "showParam.txt")]
-        [InlineData("showParam.txt")]
+        [InlineData("showParam.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("showParam.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("showParam.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("showParam.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
         [Theory]
-        public void RemoveExtObj3(object param)
+        public void RemoveExtObj3(object param, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             string Baseline = Path.Combine("baseline", (string)param);
             MyObject obj = new MyObject(10, _output);
             m_xsltArg = new XsltArgumentList();
-            ///nonePermSet.PermitOnly(); ;
+
             m_xsltArg.AddExtensionObject(szDefaultNS, obj);
             for (int i = 0; i < 500; i++)
                 m_xsltArg.RemoveExtensionObject(szDefaultNS);
-            ///CodeAccessPermission.RevertPermitOnly();
-            if ((LoadXSL("showParam.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1))
+
+            if ((LoadXSL("showParam.xsl", xslInputType, readerType) == 1) && (Transform_ArgList("fruits.xml", outputType, navType) == 1))
             {
                 VerifyResult(Baseline, _strOutFile);
                 return;
@@ -3173,18 +4085,21 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Namespace URI is non-existent", Param = "MyObjectDef.txt")]
-        [InlineData("myObjectDef.txt")]
+        [InlineData("myObjectDef.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("myObjectDef.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("myObjectDef.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("myObjectDef.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
         [Theory]
-        public void RemoveExtObj4(object param)
+        public void RemoveExtObj4(object param, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             string Baseline = Path.Combine("baseline", (string)param);
             MyObject obj = new MyObject(4, _output);
             m_xsltArg = new XsltArgumentList();
-            ///nonePermSet.PermitOnly(); ;
+
             m_xsltArg.AddExtensionObject(szDefaultNS, obj);
             m_xsltArg.RemoveExtensionObject(szSimple);
-            ///CodeAccessPermission.RevertPermitOnly();
-            if ((LoadXSL("myObjectDef.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1))
+
+            if ((LoadXSL("myObjectDef.xsl", xslInputType, readerType) == 1) && (Transform_ArgList("fruits.xml", outputType, navType) == 1))
             {
                 VerifyResult(Baseline, _strOutFile);
                 return;
@@ -3194,20 +4109,23 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Very long namespace System.Xml.Tests")]
-        [InlineData()]
+        [InlineData(XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData(XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData(XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
         [Theory]
-        public void RemoveExtObj5()
+        public void RemoveExtObj5(XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             m_xsltArg = new XsltArgumentList();
             MyObject obj = new MyObject(5, _output);
-            ///nonePermSet.PermitOnly(); ;
+
             m_xsltArg.AddExtensionObject("urn:" + szLongNS, obj);
             m_xsltArg.RemoveExtensionObject("urn:" + szLongNS);
-            ///CodeAccessPermission.RevertPermitOnly();
+
             try
             {
-                if ((LoadXSL("myObjectDef.xsl") == 1))
-                    Transform_ArgList("fruits.xml", true);
+                if ((LoadXSL("myObjectDef.xsl", xslInputType, readerType) == 1))
+                    Transform_ArgList("fruits.xml", outputType, navType, true);
             }
             catch (System.Xml.Xsl.XsltException)
             {
@@ -3218,14 +4136,17 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Different Data Types", Param = "showParam.txt")]
-        [InlineData("showParam.txt")]
+        [InlineData("showParam.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("showParam.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("showParam.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("showParam.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
         [Theory]
-        public void RemoveExtObj6(object param)
+        public void RemoveExtObj6(object param, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             string Baseline = Path.Combine("baseline", (string)param);
             MyObject obj = new MyObject(6, _output);
             m_xsltArg = new XsltArgumentList();
-            ///nonePermSet.PermitOnly(); ;
+
             m_xsltArg.AddExtensionObject("urn:my-object", obj);
             m_xsltArg.RemoveExtensionObject("urn:my-object");
 
@@ -3243,8 +4164,8 @@ namespace System.Xml.Tests
 
             m_xsltArg.AddExtensionObject("urn:my-object", false);
             m_xsltArg.RemoveExtensionObject("urn:my-object");
-            ///CodeAccessPermission.RevertPermitOnly();
-            if ((LoadXSL("showParam.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1))
+
+            if ((LoadXSL("showParam.xsl", xslInputType, readerType) == 1) && (Transform_ArgList("fruits.xml", outputType, navType) == 1))
             {
                 VerifyResult(Baseline, _strOutFile);
                 return;
@@ -3254,22 +4175,25 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Case Sensitivity", Param = "MyObjectDef.txt")]
-        [InlineData("myObjectDef.txt")]
+        [InlineData("myObjectDef.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("myObjectDef.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("myObjectDef.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("myObjectDef.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
         [Theory]
-        public void RemoveExtObj7(object param)
+        public void RemoveExtObj7(object param, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             MyObject obj = new MyObject(7, _output);
             m_xsltArg = new XsltArgumentList();
             string Baseline = Path.Combine("baseline", (string)param);
-            ///nonePermSet.PermitOnly(); ;
+
             m_xsltArg.AddExtensionObject("urn:my-object", obj);
 
             m_xsltArg.RemoveExtensionObject("URN:MY-OBJECT");
             m_xsltArg.RemoveExtensionObject("urn:My-Object");
             m_xsltArg.RemoveExtensionObject("urn-my:object");
             m_xsltArg.RemoveExtensionObject("urn:my-object ");
-            ///CodeAccessPermission.RevertPermitOnly();
-            if ((LoadXSL("myObjectDef.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1))
+
+            if ((LoadXSL("myObjectDef.xsl", xslInputType, readerType) == 1) && (Transform_ArgList("fruits.xml", outputType, navType) == 1))
             {
                 VerifyResult(Baseline, _strOutFile);
                 return;
@@ -3279,13 +4203,16 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Whitespace")]
-        [InlineData()]
+        [InlineData(XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData(XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData(XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
         [Theory]
-        public void RemoveExtObj8()
+        public void RemoveExtObj8(XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             int i = 1;
             m_xsltArg = new XsltArgumentList();
-            ///nonePermSet.PermitOnly(); ;
+
             foreach (String str in szWhiteSpace)
             {
                 MyObject obj = new MyObject(i, _output);
@@ -3300,12 +4227,11 @@ namespace System.Xml.Tests
                 }
                 i++;
             }
-            ///CodeAccessPermission.RevertPermitOnly();
 
             try
             {
-                if ((LoadXSL("myObjectDef.xsl") == 1))
-                    Transform_ArgList("fruits.xml", true);
+                if ((LoadXSL("myObjectDef.xsl", xslInputType, readerType) == 1))
+                    Transform_ArgList("fruits.xml", outputType, navType, true);
             }
             catch (System.Xml.Xsl.XsltException)
             {
@@ -3316,18 +4242,21 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Using default XSLT namespace", Param = "showParam.txt")]
-        [InlineData("showParam.txt")]
+        [InlineData("showParam.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("showParam.txt", XslInputType.Reader, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
+        [InlineData("showParam.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
+        [InlineData("showParam.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
         [Theory]
-        public void RemoveExtObj9(object param)
+        public void RemoveExtObj9(object param, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             string Baseline = Path.Combine("baseline", (string)param);
             MyObject obj = new MyObject(10, _output);
             m_xsltArg = new XsltArgumentList();
-            ///nonePermSet.PermitOnly(); ;
+
             m_xsltArg.RemoveExtensionObject(szDefaultNS);
-            ///CodeAccessPermission.RevertPermitOnly();
+
             // ensure we can still do a transform
-            if ((LoadXSL("showParam.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1))
+            if ((LoadXSL("showParam.xsl", xslInputType, readerType) == 1) && (Transform_ArgList("fruits.xml", outputType, navType) == 1))
             {
                 VerifyResult(Baseline, _strOutFile);
                 return;
@@ -3351,9 +4280,9 @@ namespace System.Xml.Tests
         }
 
         //[Variation(Desc = "Basic Verification Test", Pri = 1, Param = "showParam.txt")]
-        [InlineData("showParam.txt")]
+        [InlineData("showParam.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
         [Theory]
-        public void Clear1(object param)
+        public void Clear1(object param, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             string Baseline = Path.Combine("baseline", (string)param);
             m_xsltArg = new XsltArgumentList();
@@ -3368,7 +4297,7 @@ namespace System.Xml.Tests
             if (retObj != null)
                 Assert.True(false);
 
-            if ((LoadXSL("showParam.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1))
+            if ((LoadXSL("showParam.xsl", xslInputType, readerType) == 1) && (Transform_ArgList("fruits.xml", outputType, navType) == 1))
             {
                 VerifyResult(Baseline, _strOutFile);
                 return;
@@ -3378,15 +4307,15 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Clear with nothing loaded", Param = "showParam.txt")]
-        [InlineData("showParam.txt")]
+        [InlineData("showParam.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
         [Theory]
-        public void Clear2(object param)
+        public void Clear2(object param, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             string Baseline = Path.Combine("baseline", (string)param);
             m_xsltArg = new XsltArgumentList();
 
             m_xsltArg.Clear();
-            if ((LoadXSL("showParam.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1))
+            if ((LoadXSL("showParam.xsl", xslInputType, readerType) == 1) && (Transform_ArgList("fruits.xml", outputType, navType) == 1))
             {
                 VerifyResult(Baseline, _strOutFile);
                 return;
@@ -3396,9 +4325,9 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Clear Params", Param = "showParam.txt")]
-        [InlineData("showParam.txt")]
+        [InlineData("showParam.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
         [Theory]
-        public void Clear3(object param)
+        public void Clear3(object param, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             string Baseline = Path.Combine("baseline", (string)param);
             m_xsltArg = new XsltArgumentList();
@@ -3413,7 +4342,7 @@ namespace System.Xml.Tests
             if (retObj != null)
                 Assert.True(false);
 
-            if ((LoadXSL("showParam.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1))
+            if ((LoadXSL("showParam.xsl", xslInputType, readerType) == 1) && (Transform_ArgList("fruits.xml", outputType, navType) == 1))
             {
                 VerifyResult(Baseline, _strOutFile);
                 return;
@@ -3423,9 +4352,9 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Clear Extension Objects")]
-        [InlineData()]
+        [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
         [Theory]
-        public void Clear4()
+        public void Clear4(XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             MyObject obj = new MyObject(26, _output);
             m_xsltArg = new XsltArgumentList();
@@ -3439,11 +4368,11 @@ namespace System.Xml.Tests
                 Assert.True(false);
             }
 
-            if ((LoadXSL("myObjectDef.xsl") == 1))
+            if ((LoadXSL("myObjectDef.xsl", xslInputType, readerType) == 1))
             {
                 try
                 {
-                    Transform_ArgList("fruits.xml");
+                    Transform_ArgList("fruits.xml", outputType, navType);
                 }
                 catch (System.Xml.Xsl.XsltException)
                 {
@@ -3455,9 +4384,9 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Clear Many Objects", Param = "showParam.txt")]
-        [InlineData("showParam.txt")]
+        [InlineData("showParam.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
         [Theory]
-        public void Clear5(object param)
+        public void Clear5(object param, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             string Baseline = Path.Combine("baseline", (string)param);
             m_xsltArg = new XsltArgumentList();
@@ -3488,11 +4417,9 @@ namespace System.Xml.Tests
                 }
             }
 
-            //  _output.WriteLine(retObj.GetType());
-
             m_xsltArg.Clear();
 
-            if ((LoadXSL("showParam.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1))
+            if ((LoadXSL("showParam.xsl", xslInputType, readerType) == 1) && (Transform_ArgList("fruits.xml", outputType, navType) == 1))
             {
                 VerifyResult(Baseline, _strOutFile);
                 return;
@@ -3502,9 +4429,9 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Clear Multiple Times", Param = "showParam.txt")]
-        [InlineData("showParam.txt")]
+        [InlineData("showParam.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
         [Theory]
-        public void Clear6(object param)
+        public void Clear6(object param, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             string Baseline = Path.Combine("baseline", (string)param);
             m_xsltArg = new XsltArgumentList();
@@ -3520,7 +4447,7 @@ namespace System.Xml.Tests
             if (retObj != null)
                 Assert.True(false);
 
-            if ((LoadXSL("showParam.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1))
+            if ((LoadXSL("showParam.xsl", xslInputType, readerType) == 1) && (Transform_ArgList("fruits.xml", outputType, navType) == 1))
             {
                 VerifyResult(Baseline, _strOutFile);
                 return;
@@ -3530,9 +4457,9 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Loading one object, but clearing another", Param = "ClearParam7.txt")]
-        [InlineData("ClearParam7.txt")]
+        [InlineData("ClearParam7.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
         [Theory]
-        public void Clear7(object param)
+        public void Clear7(object param, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             string Baseline = Path.Combine("baseline", (string)param);
             m_xsltArg = new XsltArgumentList();
@@ -3545,7 +4472,7 @@ namespace System.Xml.Tests
 
             m_2.Clear();
 
-            if ((LoadXSL("showParam.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1))
+            if ((LoadXSL("showParam.xsl", xslInputType, readerType) == 1) && (Transform_ArgList("fruits.xml", outputType, navType) == 1))
             {
                 VerifyResult(Baseline, _strOutFile);
                 return;
@@ -3555,9 +4482,9 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Clear after objects have been \"Removed\"", Param = "showParam.txt")]
-        [InlineData("showParam.txt")]
+        [InlineData("showParam.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
         [Theory]
-        public void Clear8(object param)
+        public void Clear8(object param, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             string Baseline = Path.Combine("baseline", (string)param);
             m_xsltArg = new XsltArgumentList();
@@ -3569,7 +4496,7 @@ namespace System.Xml.Tests
             retObj = m_xsltArg.RemoveParam("myArg1", szEmpty);
             m_xsltArg.Clear();
 
-            if ((LoadXSL("showParam.xsl") != 1) || (Transform_ArgList("fruits.xml") != 1))
+            if ((LoadXSL("showParam.xsl", xslInputType, readerType) != 1) || (Transform_ArgList("fruits.xml", outputType, navType) != 1))
                 Assert.True(false);
 
             VerifyResult(Baseline, _strOutFile);
@@ -3580,11 +4507,11 @@ namespace System.Xml.Tests
             m_xsltArg.RemoveExtensionObject(szDefaultNS);
             m_xsltArg.Clear();
 
-            if ((LoadXSL("myObjectDef.xsl") == 1))
+            if ((LoadXSL("myObjectDef.xsl", xslInputType, readerType) == 1))
             {
                 try
                 {
-                    Transform_ArgList("fruits.xml");
+                    Transform_ArgList("fruits.xml", outputType, navType);
                 }
                 catch (System.Xml.Xsl.XsltException)
                 {
@@ -3730,62 +4657,63 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 1, Desc = "Call Current without MoveNext")]
-        [ActiveIssue(9873)]
         [InlineData()]
         [Theory]
         public void NodeIter1()
         {
-            if (_isInProc)
-                return; //TEST_SKIPPED;
-
-            XslCompiledTransform xslt = new XslCompiledTransform();
-
-            XsltArgumentList xslArg = new XsltArgumentList();
-            XmlUrlResolver ur = new XmlUrlResolver();
-            Uri uriSource = ur.ResolveUri(null, FullFilePath("sample.xsd"));
-            xslArg.AddParam("sourceUri", String.Empty, uriSource.ToString());
-
-            xslt.Load(FullFilePath("xsd2cs1.xsl"), new XsltSettings(true, true), new XmlUrlResolver());
-
-            XPathDocument doc = new XPathDocument(FullFilePath("sample.xsd"));
-            StringWriter sw = new StringWriter();
-            try
+            var e = Assert.ThrowsAny<XsltException>(() =>
             {
-                xslt.Transform(doc, xslArg, sw);
-                sw.Dispose();
-                _output.WriteLine("No exception is thrown when .Current is called before .MoveNext on XPathNodeIterator");
-                Assert.True(false);
-            }
-            catch (System.InvalidOperationException ex)
-            {
-                _output.WriteLine(ex.ToString());
-                return;
-            }
+                XslCompiledTransform xslt = new XslCompiledTransform();
+
+                XsltArgumentList xslArg = new XsltArgumentList();
+                XmlUrlResolver ur = new XmlUrlResolver();
+                Uri uriSource = ur.ResolveUri(null, FullFilePath("sample.xsd"));
+                xslArg.AddParam("sourceUri", String.Empty, uriSource.ToString());
+
+                xslt.Load(FullFilePath("xsd2cs1.xsl"), new XsltSettings(true, true), new XmlUrlResolver());
+                XPathDocument doc = new XPathDocument(FullFilePath("sample.xsd"));
+                StringWriter sw = new StringWriter();
+                try
+                {
+                    xslt.Transform(doc, xslArg, sw);
+                    sw.Dispose();
+                    _output.WriteLine("No exception is thrown when .Current is called before .MoveNext on XPathNodeIterator");
+                    Assert.True(false);
+                }
+                catch (System.InvalidOperationException ex)
+                {
+                    _output.WriteLine(ex.ToString());
+                    return;
+                }
+            });
+
+            Assert.Equal("Compiling JScript/CSharp scripts is not supported", e.InnerException.Message);
         }
 
         //[Variation(id = 2, Desc = "Call Current after MoveNext")]
-        [ActiveIssue(9873)]
         [InlineData()]
         [Theory]
         public void NodeIter2()
         {
-            if (_isInProc)
-                return; //TEST_SKIPPED;
+            var e = Assert.ThrowsAny<XsltException>(() =>
+            {
+                XslCompiledTransform xslt = new XslCompiledTransform();
 
-            XslCompiledTransform xslt = new XslCompiledTransform();
+                XsltArgumentList xslArg = new XsltArgumentList();
+                XmlUrlResolver ur = new XmlUrlResolver();
+                Uri uriSource = ur.ResolveUri(null, FullFilePath("sample.xsd"));
+                xslArg.AddParam("sourceUri", String.Empty, uriSource.ToString());
 
-            XsltArgumentList xslArg = new XsltArgumentList();
-            XmlUrlResolver ur = new XmlUrlResolver();
-            Uri uriSource = ur.ResolveUri(null, FullFilePath("sample.xsd"));
-            xslArg.AddParam("sourceUri", String.Empty, uriSource.ToString());
+                xslt.Load(FullFilePath("xsd2cs2.xsl"), new XsltSettings(true, true), new XmlUrlResolver());
 
-            xslt.Load(FullFilePath("xsd2cs2.xsl"), new XsltSettings(true, true), new XmlUrlResolver());
+                XPathDocument doc = new XPathDocument(FullFilePath("sample.xsd"));
+                StringWriter sw = new StringWriter();
+                xslt.Transform(doc, xslArg, sw);
+                sw.Dispose();
+                return;
+            });
 
-            XPathDocument doc = new XPathDocument(FullFilePath("sample.xsd"));
-            StringWriter sw = new StringWriter();
-            xslt.Transform(doc, xslArg, sw);
-            sw.Dispose();
-            return;
+            Assert.Equal("Compiling JScript/CSharp scripts is not supported", e.InnerException.Message);
         }
     }
 }

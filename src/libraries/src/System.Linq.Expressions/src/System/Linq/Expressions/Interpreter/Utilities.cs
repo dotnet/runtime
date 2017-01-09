@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Dynamic.Utils;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.ExceptionServices;
 using System.Threading;
 
 namespace System.Linq.Expressions.Interpreter
@@ -26,7 +27,7 @@ namespace System.Linq.Expressions.Interpreter
             // the arity is small enough to fit in Func<...> or Action<...>
             if (types.Length > MaximumArity || types.Any(t => t.IsByRef))
             {
-                throw Assert.Unreachable;
+                throw ContractUtils.Unreachable;
             }
 
             Type returnType = types[types.Length - 1];
@@ -78,7 +79,7 @@ namespace System.Linq.Expressions.Interpreter
                     case 17: return typeof(Func<,,,,,,,,,,,,,,,,>).MakeGenericType(types);
                 }
             }
-            throw Assert.Unreachable;
+            throw ContractUtils.Unreachable;
         }
     }
 #endif
@@ -114,40 +115,40 @@ namespace System.Linq.Expressions.Interpreter
                     result = Utils.BoxedFalse;
                     break;
                 case TypeCode.SByte:
-                    result = default(sbyte);
+                    result = Utils.BoxedDefaultSByte;
                     break;
                 case TypeCode.Byte:
-                    result = default(byte);
+                    result = Utils.BoxedDefaultByte;
                     break;
                 case TypeCode.Char:
-                    result = default(char);
+                    result = Utils.BoxedDefaultChar;
                     break;
                 case TypeCode.Int16:
-                    result = default(short);
+                    result = Utils.BoxedDefaultInt16;
                     break;
                 case TypeCode.Int32:
                     result = Utils.BoxedInt0;
                     break;
                 case TypeCode.Int64:
-                    result = default(long);
+                    result = Utils.BoxedDefaultInt64;
                     break;
                 case TypeCode.UInt16:
-                    result = default(ushort);
+                    result = Utils.BoxedDefaultUInt16;
                     break;
                 case TypeCode.UInt32:
-                    result = default(uint);
+                    result = Utils.BoxedDefaultUInt32;
                     break;
                 case TypeCode.UInt64:
-                    result = default(ulong);
+                    result = Utils.BoxedDefaultUInt64;
                     break;
                 case TypeCode.Single:
-                    return default(float);
+                    return Utils.BoxedDefaultSingle;
                 case TypeCode.Double:
-                    return default(double);
+                    return Utils.BoxedDefaultDouble;
                 case TypeCode.DateTime:
-                    return default(DateTime);
+                    return Utils.BoxedDefaultDateTime;
                 case TypeCode.Decimal:
-                    return default(decimal);
+                    return Utils.BoxedDefaultDecimal;
                 default:
                     // Also covers DBNull which is a class.
                     return null;
@@ -164,55 +165,14 @@ namespace System.Linq.Expressions.Interpreter
 
     internal static class ExceptionHelpers
     {
-#if FEATURE_STACK_TRACES
-        private const string prevStackTraces = "PreviousStackTraces";
-#endif
-
         /// <summary>
         /// Updates an exception before it's getting re-thrown so
         /// we can present a reasonable stack trace to the user.
         /// </summary>
-        public static Exception UpdateForRethrow(Exception rethrow)
+        public static void UnwrapAndRethrow(TargetInvocationException exception)
         {
-#if FEATURE_STACK_TRACES
-            List<StackTrace> prev;
-
-            // we don't have any dynamic stack trace data, capture the data we can
-            // from the raw exception object.
-            StackTrace st = new StackTrace(rethrow, true);
-
-            if (!TryGetAssociatedStackTraces(rethrow, out prev))
-            {
-                prev = new List<StackTrace>();
-                AssociateStackTraces(rethrow, prev);
-            }
-
-            prev.Add(st);
-
-#endif // FEATURE_STACK_TRACES
-            return rethrow;
+            ExceptionDispatchInfo.Capture(exception.InnerException).Throw();
         }
-#if FEATURE_STACK_TRACES
-        /// <summary>
-        /// Returns all the stack traces associates with an exception
-        /// </summary>
-        public static IList<StackTrace> GetExceptionStackTraces(Exception rethrow)
-        {
-            List<StackTrace> result;
-            return TryGetAssociatedStackTraces(rethrow, out result) ? result : null;
-        }
-
-        private static void AssociateStackTraces(Exception e, List<StackTrace> traces)
-        {
-            e.Data[prevStackTraces] = traces;
-        }
-
-        private static bool TryGetAssociatedStackTraces(Exception e, out List<StackTrace> traces)
-        {
-            traces = e.Data[prevStackTraces] as List<StackTrace>;
-            return traces != null;
-        }
-#endif // FEATURE_STACK_TRACES
     }
 
     /// <summary>

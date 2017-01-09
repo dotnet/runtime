@@ -23,6 +23,7 @@ namespace System.Dynamic.Utils
                     return method;
                 }
             }
+
             return null;
         }
 
@@ -41,7 +42,8 @@ namespace System.Dynamic.Utils
             {
                 return false;
             }
-            ParameterInfo[] ps = mi.GetParameters();
+
+            ParameterInfo[] ps = mi.GetParametersCached();
 
             if (ps.Length != argTypes.Length)
             {
@@ -55,6 +57,7 @@ namespace System.Dynamic.Utils
                     return false;
                 }
             }
+
             return true;
         }
 

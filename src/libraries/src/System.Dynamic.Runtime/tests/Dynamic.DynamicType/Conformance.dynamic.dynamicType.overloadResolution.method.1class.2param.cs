@@ -19,7 +19,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.overloadRes
             s_status = 1;
         }
 
-        internal protected void Method(long x, object o)
+        protected internal void Method(long x, object o)
         {
             s_status = 2;
         }
@@ -66,7 +66,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.overloadRes
             s_status = 1;
         }
 
-        internal protected void Method(long x, object o)
+        protected internal void Method(long x, object o)
         {
             s_status = 2;
         }
@@ -437,7 +437,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.overloadRes
             {
             }
 
-            internal protected void Method(long x, object o)
+            protected internal void Method(long x, object o)
             {
             }
 

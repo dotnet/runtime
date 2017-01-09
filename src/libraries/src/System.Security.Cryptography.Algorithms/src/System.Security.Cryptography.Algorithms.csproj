@@ -412,23 +412,11 @@
       <Link>Common\System\Security\Cryptography\RSAOpenSsl.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'net463' And '$(IsPartialFacadeAssembly)' != 'true'">
-    <Compile Include="$(CommonPath)\System\SerializableAttribute.cs">
-      <Link>Common\System\SerializableAttribute.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\NonSerializedAttribute.cs">
-      <Link>Common\System\NonSerializedAttribute.cs</Link>
-    </Compile>
-  </ItemGroup>
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)'=='true'">
     <TargetingPackReference Include="mscorlib" />
     <TargetingPackReference Include="System" />
     <TargetingPackReference Include="System.Core" />
     <Compile Include="System\Security\Cryptography\IncrementalHash.net46.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
-    <!-- TODO: Remove this after a package update -->
-    <ProjectReference Include="../../System.Security.Cryptography.Primitives/src/System.Security.Cryptography.Primitives.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Runtime" />

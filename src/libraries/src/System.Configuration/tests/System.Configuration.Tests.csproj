@@ -1,0 +1,65 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <Configuration Condition="'$(Configuration)'==''">Debug</Configuration>
+    <Platform Condition="'$(Platform)' == ''">AnyCPU</Platform>
+    <ProjectGuid>{7669C397-C21C-4C08-83F1-BE6691911E88}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AssemblyName>System.Configuration.Tests</AssemblyName>
+    <TestCategories>InnerLoop;OuterLoop</TestCategories>
+    <NugetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NugetTargetMoniker>
+  </PropertyGroup>
+  <!-- Default configurations to help VS understand the options -->
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
+  <ItemGroup>
+    <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\pkg\System.Configuration.pkgproj">
+      <Name>System.Configuration</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="$(CommonTestPath)\System\IO\TempDirectory.cs">
+      <Link>Common\System\IO\TempDirectory.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\IO\TempFile.cs">
+      <Link>Common\System\IO\TempFile.cs</Link>
+    </Compile>
+    <Compile Include="..\src\System\Configuration\ConfigPathUtility.cs">
+      <Link>Source\ConfigPathUtility.cs</Link>
+    </Compile>
+    <Compile Include="..\src\System\Configuration\ExceptionUtil.cs">
+      <Link>Source\ExceptionUtil.cs</Link>
+    </Compile>
+    <Compile Include="..\src\System\Configuration\StringUtil.cs">
+      <Link>Source\StringUtil.cs</Link>
+    </Compile>
+    <Compile Include="..\src\System\Configuration\TypeUtil.cs">
+      <Link>Source\TypeUtil.cs</Link>
+    </Compile>
+    <Compile Include="..\src\System\Configuration\UrlPath.cs">
+      <Link>Source\UrlPath.cs</Link>
+    </Compile>
+    <Compile Include="..\src\System\Configuration\ValidatorUtils.cs">
+      <Link>Source\ValidatorUtils.cs</Link>
+    </Compile>
+    <Compile Include="Resources\Strings.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Strings.resx</DependentUpon>
+    </Compile>
+    <Compile Include="System\Configuration\AppSettingsTests.cs" />
+    <Compile Include="System\Configuration\ConfigPathUtilityTests.cs" />
+    <Compile Include="System\Configuration\ExceptionUtilTests.cs" />
+    <Compile Include="System\Configuration\ImplicitMachineConfigTests.cs" />
+    <Compile Include="System\Configuration\SmokeTest.cs" />
+    <Compile Include="System\Configuration\StringUtilTests.cs" />
+    <Compile Include="System\Configuration\TempConfig.cs" />
+    <Compile Include="System\Configuration\TestData.cs" />
+    <Compile Include="System\Configuration\TypeUtilTests.cs" />
+    <Compile Include="System\Configuration\ValidatiorUtilsTests.cs" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>

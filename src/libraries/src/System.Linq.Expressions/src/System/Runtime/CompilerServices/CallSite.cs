@@ -364,44 +364,47 @@ namespace System.Runtime.CompilerServices
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
         private T CreateCustomUpdateDelegate(MethodInfo invoke)
         {
-            var body = new List<Expression>();
-            var vars = new List<ParameterExpression>();
+            Type returnType = invoke.GetReturnType();
+            bool isVoid = returnType == typeof(void);
 
-            ParameterExpression[] @params = invoke.GetParametersCached().Map(p => Expression.Parameter(p.ParameterType, p.Name));
-            LabelTarget @return = Expression.Label(invoke.GetReturnType());
+            var body = new ArrayBuilder<Expression>(13);
+            var vars = new ArrayBuilder<ParameterExpression>(8 + (isVoid ? 0 : 1));
+
+            ParameterExpression[] @params = Array.ConvertAll(invoke.GetParametersCached(), p => Expression.Parameter(p.ParameterType, p.Name));
+            LabelTarget @return = Expression.Label(returnType);
             Type[] typeArgs = new[] { typeof(T) };
 
             ParameterExpression site = @params[0];
             ParameterExpression[] arguments = @params.RemoveFirst();
 
             ParameterExpression @this = Expression.Variable(typeof(CallSite<T>), "this");
-            vars.Add(@this);
-            body.Add(Expression.Assign(@this, Expression.Convert(site, @this.Type)));
+            vars.UncheckedAdd(@this);
+            body.UncheckedAdd(Expression.Assign(@this, Expression.Convert(site, @this.Type)));
 
             ParameterExpression applicable = Expression.Variable(typeof(T[]), "applicable");
-            vars.Add(applicable);
+            vars.UncheckedAdd(applicable);
 
             ParameterExpression rule = Expression.Variable(typeof(T), "rule");
-            vars.Add(rule);
+            vars.UncheckedAdd(rule);
 
             ParameterExpression originalRule = Expression.Variable(typeof(T), "originalRule");
-            vars.Add(originalRule);
+            vars.UncheckedAdd(originalRule);
 
             Expression target = Expression.Field(@this, nameof(Target));
-            body.Add(Expression.Assign(originalRule, target));
+            body.UncheckedAdd(Expression.Assign(originalRule, target));
 
             ParameterExpression result = null;
-            if (@return.Type != typeof(void))
+            if (!isVoid)
             {
-                vars.Add(result = Expression.Variable(@return.Type, "result"));
+                vars.UncheckedAdd(result = Expression.Variable(@return.Type, "result"));
             }
 
             ParameterExpression count = Expression.Variable(typeof(int), "count");
-            vars.Add(count);
+            vars.UncheckedAdd(count);
             ParameterExpression index = Expression.Variable(typeof(int), "index");
-            vars.Add(index);
+            vars.UncheckedAdd(index);
 
-            body.Add(
+            body.UncheckedAdd(
                 Expression.Assign(
                     site,
                     Expression.Call(
@@ -411,11 +414,13 @@ namespace System.Runtime.CompilerServices
                 )
             );
 
-            Expression invokeRule;
+            Expression processRule;
 
             Expression getMatch = Expression.Call(CallSiteOps_GetMatch, site);
 
             Expression resetMatch = Expression.Call(CallSiteOps_ClearMatch, site);
+
+            Expression invokeRule = Expression.Invoke(rule, new TrueReadOnlyCollection<Expression>(@params));
 
             Expression onMatch = Expression.Call(
                 CallSiteOps_UpdateRules.MakeGenericMethod(typeArgs),
@@ -423,10 +428,10 @@ namespace System.Runtime.CompilerServices
                 index
             );
 
-            if (@return.Type == typeof(void))
+            if (isVoid)
             {
-                invokeRule = Expression.Block(
-                    Expression.Invoke(rule, new TrueReadOnlyCollection<Expression>(@params)),
+                processRule = Expression.Block(
+                    invokeRule,
                     Expression.IfThen(
                         getMatch,
                         Expression.Block(onMatch, Expression.Return(@return))
@@ -435,8 +440,8 @@ namespace System.Runtime.CompilerServices
             }
             else
             {
-                invokeRule = Expression.Block(
-                    Expression.Assign(result, Expression.Invoke(rule, new TrueReadOnlyCollection<Expression>(@params))),
+                processRule = Expression.Block(
+                    Expression.Assign(result, invokeRule),
                     Expression.IfThen(
                         getMatch,
                         Expression.Block(onMatch, Expression.Return(@return, result))
@@ -444,7 +449,8 @@ namespace System.Runtime.CompilerServices
                 );
             }
 
-            Expression getRule = Expression.Assign(rule, Expression.ArrayAccess(applicable, index));
+            Expression getApplicableRuleAtIndex = Expression.Assign(rule, Expression.ArrayAccess(applicable, new TrueReadOnlyCollection<Expression>(index)));
+            Expression getRule = getApplicableRuleAtIndex;
 
             LabelTarget @break = Expression.Label();
 
@@ -455,7 +461,7 @@ namespace System.Runtime.CompilerServices
 
             Expression incrementIndex = Expression.PreIncrementAssign(index);
 
-            body.Add(
+            body.UncheckedAdd(
                 Expression.IfThen(
                     Expression.NotEqual(
                         Expression.Assign(
@@ -484,7 +490,7 @@ namespace System.Runtime.CompilerServices
                                             target,
                                             rule
                                         ),
-                                        invokeRule,
+                                        processRule,
                                         resetMatch
                                     )
                                 ),
@@ -505,16 +511,16 @@ namespace System.Runtime.CompilerServices
             //// Any applicable rules in level 2 cache?
             ////
             ParameterExpression cache = Expression.Variable(typeof(RuleCache<T>), "cache");
-            vars.Add(cache);
+            vars.UncheckedAdd(cache);
 
-            body.Add(
+            body.UncheckedAdd(
                 Expression.Assign(
                     cache,
                     Expression.Call(CallSiteOps_GetRuleCache.MakeGenericMethod(typeArgs), @this)
                 )
             );
 
-            body.Add(
+            body.UncheckedAdd(
                 Expression.Assign(
                     applicable,
                     Expression.Call(CallSiteOps_GetCachedRules.MakeGenericMethod(typeArgs), cache)
@@ -522,10 +528,10 @@ namespace System.Runtime.CompilerServices
             );
 
             // L2 invokeRule is different (no onMatch)
-            if (@return.Type == typeof(void))
+            if (isVoid)
             {
-                invokeRule = Expression.Block(
-                    Expression.Invoke(rule, new TrueReadOnlyCollection<Expression>(@params)),
+                processRule = Expression.Block(
+                    invokeRule,
                     Expression.IfThen(
                         getMatch,
                         Expression.Return(@return)
@@ -534,8 +540,8 @@ namespace System.Runtime.CompilerServices
             }
             else
             {
-                invokeRule = Expression.Block(
-                    Expression.Assign(result, Expression.Invoke(rule, new TrueReadOnlyCollection<Expression>(@params))),
+                processRule = Expression.Block(
+                    Expression.Assign(result, invokeRule),
                     Expression.IfThen(
                         getMatch,
                         Expression.Return(@return, result)
@@ -544,7 +550,7 @@ namespace System.Runtime.CompilerServices
             }
 
             Expression tryRule = Expression.TryFinally(
-                invokeRule,
+                processRule,
                 Expression.IfThen(
                     getMatch,
                     Expression.Block(
@@ -556,12 +562,12 @@ namespace System.Runtime.CompilerServices
 
             getRule = Expression.Assign(
                 target,
-                Expression.Assign(rule, Expression.ArrayAccess(applicable, index))
+                getApplicableRuleAtIndex
             );
 
-            body.Add(Expression.Assign(index, Utils.Constant(0)));
-            body.Add(Expression.Assign(count, Expression.ArrayLength(applicable)));
-            body.Add(
+            body.UncheckedAdd(Expression.Assign(index, Utils.Constant(0)));
+            body.UncheckedAdd(Expression.Assign(count, Expression.ArrayLength(applicable)));
+            body.UncheckedAdd(
                 Expression.Loop(
                     Expression.Block(
                         breakIfDone,
@@ -578,12 +584,12 @@ namespace System.Runtime.CompilerServices
             ////
             //// Miss on Level 0, 1 and 2 caches. Create new rule
             ////
-            body.Add(Expression.Assign(rule, Expression.Constant(null, rule.Type)));
+            body.UncheckedAdd(Expression.Assign(rule, Expression.Constant(null, rule.Type)));
 
             ParameterExpression args = Expression.Variable(typeof(object[]), "args");
-            Expression[] argsElements = arguments.Map(p => Convert(p, typeof(object)));
-            vars.Add(args);
-            body.Add(
+            Expression[] argsElements = Array.ConvertAll(arguments, p => Convert(p, typeof(object)));
+            vars.UncheckedAdd(args);
+            body.UncheckedAdd(
                 Expression.Assign(
                     args,
                     Expression.NewArrayInit(typeof(object), new TrueReadOnlyCollection<Expression>(argsElements))
@@ -609,7 +615,7 @@ namespace System.Runtime.CompilerServices
             );
 
             tryRule = Expression.TryFinally(
-                invokeRule,
+                processRule,
                 Expression.IfThen(
                     getMatch,
                     Expression.Call(
@@ -620,7 +626,7 @@ namespace System.Runtime.CompilerServices
                 )
             );
 
-            body.Add(
+            body.UncheckedAdd(
                 Expression.Loop(
                     Expression.Block(setOldTarget, getRule, tryRule, resetMatch),
                     @break: null,
@@ -628,7 +634,7 @@ namespace System.Runtime.CompilerServices
                 )
             );
 
-            body.Add(Expression.Default(@return.Type));
+            body.UncheckedAdd(Expression.Default(@return.Type));
 
             Expression<T> lambda = Expression.Lambda<T>(
                 Expression.Label(
@@ -651,7 +657,7 @@ namespace System.Runtime.CompilerServices
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
         private T CreateCustomNoMatchDelegate(MethodInfo invoke)
         {
-            ParameterExpression[] @params = invoke.GetParametersCached().Map(p => Expression.Parameter(p.ParameterType, p.Name));
+            ParameterExpression[] @params = Array.ConvertAll(invoke.GetParametersCached(), p => Expression.Parameter(p.ParameterType, p.Name));
             return Expression.Lambda<T>(
                 Expression.Block(
                     Expression.Call(

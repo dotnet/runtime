@@ -21,6 +21,21 @@ namespace Internal.NativeCrypto
     /// </summary>
     internal static partial class CapiHelper
     {
+        private static readonly byte[] s_RgbPubKey =
+        {
+                0x06, 0x02, 0x00, 0x00, 0x00, 0xa4, 0x00, 0x00,
+                0x52, 0x53, 0x41, 0x31, 0x00, 0x02, 0x00, 0x00,
+                0x01, 0x00, 0x00, 0x00, 0xab, 0xef, 0xfa, 0xc6,
+                0x7d, 0xe8, 0xde, 0xfb, 0x68, 0x38, 0x09, 0x92,
+                0xd9, 0x42, 0x7e, 0x6b, 0x89, 0x9e, 0x21, 0xd7,
+                0x52, 0x1c, 0x99, 0x3c, 0x17, 0x48, 0x4e, 0x3a,
+                0x44, 0x02, 0xf2, 0xfa, 0x74, 0x57, 0xda, 0xe4,
+                0xd3, 0xc0, 0x35, 0x67, 0xfa, 0x6e, 0xdf, 0x78,
+                0x4c, 0x75, 0x35, 0x1c, 0xa0, 0x74, 0x49, 0xe3,
+                0x20, 0x13, 0x71, 0x35, 0x65, 0xdf, 0x12, 0x20,
+                0xf5, 0xf5, 0xf5, 0xc1
+        };
+
         /// <summary>
         /// Check to see if a better CSP than the one requested is available
         /// RSA providers are supersets of each other in the following order:
@@ -1223,16 +1238,17 @@ namespace Internal.NativeCrypto
         /// <summary>
         /// Helper for signing and verifications that accept a string to specify a hashing algorithm.
         /// </summary>
-        public static int NameOrOidToHashAlgId(String nameOrOid)
+        public static int NameOrOidToHashAlgId(string nameOrOid, OidGroup oidGroup)
         {
             // Default Algorithm Id is CALG_SHA1
             if (nameOrOid == null)
                 return CapiHelper.CALG_SHA1;
-            String oidValue = new Oid(nameOrOid).Value;
+
+            string oidValue = CryptoConfig.MapNameToOID(nameOrOid);
             if (oidValue == null)
                 oidValue = nameOrOid; // we were probably passed an OID value directly
 
-            int algId = GetAlgIdFromOid(oidValue, OidGroup.HashAlgorithm);
+            int algId = GetAlgIdFromOid(oidValue, oidGroup);
             if (algId == 0 || algId == -1)
                 throw new CryptographicException(SR.Cryptography_InvalidOID);
 
@@ -1250,7 +1266,7 @@ namespace Internal.NativeCrypto
             String hashAlgString = hashAlg as String;
             if (hashAlgString != null)
             {
-                int algId = NameOrOidToHashAlgId(hashAlgString);
+                int algId = NameOrOidToHashAlgId(hashAlgString, OidGroup.HashAlgorithm);
                 return algId;
             }
             else if (hashAlg is HashAlgorithm)
@@ -1346,7 +1362,7 @@ namespace Internal.NativeCrypto
             }
             else
             {
-                return global::Interop.Crypt32.FindOidInfo(CryptOidInfoKeyType.CRYPT_OID_INFO_OID_KEY, oid, OidGroup.HashAlgorithm, fallBackToAllGroups: false).AlgId;
+                return global::Interop.Crypt32.FindOidInfo(CryptOidInfoKeyType.CRYPT_OID_INFO_OID_KEY, oid, oidGroup, fallBackToAllGroups: false).AlgId;
             }
         }
 
@@ -1412,6 +1428,148 @@ namespace Internal.NativeCrypto
             {
                 bool verified = Interop.CryptVerifySignature(hHash, signature, signature.Length, hKey, null, CryptSignAndVerifyHashFlags.None);
                 return verified;
+            }
+        }
+
+        /// Helper method used by PasswordDeriveBytes.CryptDeriveKey to invoke CAPI CryptDeriveKey.
+        public static void DeriveKey(
+            SafeProvHandle hProv,
+            int algid,
+            int algidHash,
+            byte[] password,
+            int cbPassword,
+            int dwFlags,
+            byte[] IV_Out,
+            int cbIV_In,
+            ref byte[] pbKey)
+        {
+            VerifyValidHandle(hProv);
+
+            SafeHashHandle hHash = null;
+            SafeKeyHandle hKey = null;
+            try
+            {
+                if (!Interop.CryptCreateHash(hProv, algidHash, SafeKeyHandle.InvalidHandle, CryptCreateHashFlags.None, out hHash))
+                {
+                    int hr = Marshal.GetHRForLastWin32Error();
+                    throw hr.ToCryptographicException();
+                }
+
+                // Hash the password string
+                if (!Interop.CryptHashData(hHash, password, cbPassword, 0))
+                {
+                    int hr = Marshal.GetHRForLastWin32Error();
+                    throw hr.ToCryptographicException();
+                }
+
+                // Create a block cipher session key based on the hash of the password
+                if (!Interop.CryptDeriveKey(hProv, algid, hHash, dwFlags | (int)CryptGenKeyFlags.CRYPT_EXPORTABLE, out hKey))
+                {
+                    int hr = Marshal.GetHRForLastWin32Error();
+                    throw hr.ToCryptographicException();
+                }
+
+                // Get the key contents
+                byte[] rgbKey = null;
+                int cbKey = 0;
+                UnloadKey(hProv, hKey, ref rgbKey, ref cbKey);
+
+                // Get the length of the IV
+                int cbIV = 0;
+                if (!Interop.CryptGetKeyParam(hKey, (int)CryptGetKeyParamFlags.KP_IV, null, ref cbIV, 0))
+                {
+                    int hr = Marshal.GetHRForLastWin32Error();
+                    throw hr.ToCryptographicException();
+                }
+
+                // Now allocate space for the IV
+                byte[] pbIV = new byte[cbIV];
+                if (!Interop.CryptGetKeyParam(hKey, (int)CryptGetKeyParamFlags.KP_IV, pbIV, ref cbIV, 0))
+                {
+                    int hr = Marshal.GetHRForLastWin32Error();
+                    throw hr.ToCryptographicException();
+                }
+
+                if (cbIV != cbIV_In)
+                {
+                    throw new CryptographicException(SR.Cryptography_PasswordDerivedBytes_InvalidIV);
+                }
+
+                // Copy the IV
+                Buffer.BlockCopy(pbIV, 0, IV_Out, 0, cbIV);
+
+                pbKey = new byte[cbKey];
+                Buffer.BlockCopy(rgbKey, 0, pbKey, 0, cbKey);
+            }
+            finally
+            {
+                hKey?.Dispose();
+                hHash?.Dispose();
+            }
+        }
+
+        // Helper method used by DeriveKey (above) to return the key contents.
+        // WARNING: This function side-effects its first argument (hProv)
+        private static void UnloadKey(SafeProvHandle hProv, SafeKeyHandle hKey, ref byte[] key_out, ref int cb_out)
+        {
+            SafeKeyHandle hPubKey = null;
+            try
+            {
+                // Import the public key
+                if (!Interop.CryptImportKey(hProv, s_RgbPubKey, s_RgbPubKey.Length, SafeKeyHandle.InvalidHandle, 0, out hPubKey))
+                {
+                    int hr = Marshal.GetHRForLastWin32Error();
+                    throw hr.ToCryptographicException();
+                }
+
+                // Determine length of hKey
+                int cbOut = 0;
+                if (!Interop.CryptExportKey(hKey, hPubKey, SIMPLEBLOB, 0, null, ref cbOut))
+                {
+                    int hr = Marshal.GetHRForLastWin32Error();
+                    throw hr.ToCryptographicException();
+                }
+
+                // Export hKey
+                byte[] key_full = new byte[cbOut];
+                if (!Interop.CryptExportKey(hKey, hPubKey, SIMPLEBLOB, 0, key_full, ref cbOut))
+                {
+                    int hr = Marshal.GetHRForLastWin32Error();
+                    throw hr.ToCryptographicException();
+                }
+
+                // Get size of the key without the header parts
+                int sizeOfBlobHeader = sizeof(byte) + sizeof(byte) + sizeof(ushort) + sizeof(int);
+                // The format of BLOBHEADER:
+                //  BYTE   bType
+                //  BYTE   bVersion
+                //  WORD   reserved
+                //  ALG_ID aiKeyAlg
+                int offsetPastHeader = sizeOfBlobHeader + sizeof(int);
+                int i;
+                checked
+                {
+                    i = cbOut - sizeOfBlobHeader - sizeof(int) - 2;
+                }
+                while (i > 0)
+                {
+                    if (key_full[i + offsetPastHeader] == 0)
+                    {
+                        break;
+                    }
+
+                    i--;
+                }
+
+                // Allocate and initialize the return buffer
+                key_out = new byte[i];
+                Buffer.BlockCopy(key_full, offsetPastHeader, key_out, 0, i);
+                Array.Reverse(key_out);
+                cb_out = i;
+            }
+            finally
+            {
+                hPubKey?.Dispose();
             }
         }
 
@@ -1546,6 +1704,10 @@ namespace Internal.NativeCrypto
                                                     bool Final, int dwFlags, byte[] pbData, ref int pdwDataLen,
                                                     int dwBufLen);
 
+            [DllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, SetLastError = true, EntryPoint = "CryptDeriveKey")]
+            [return: MarshalAs(UnmanagedType.Bool)]
+            private static extern bool _CryptDeriveKey(SafeProvHandle safeProvHandle, int algId, SafeHashHandle phHash, int dwFlags, out SafeKeyHandle phKey);
+
             [DllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, SetLastError = true)]
             [return: MarshalAs(UnmanagedType.Bool)]
             public static extern bool CryptExportKey(SafeKeyHandle hKey, SafeKeyHandle hExpKey, int dwBlobType,
@@ -1558,6 +1720,10 @@ namespace Internal.NativeCrypto
             [DllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, SetLastError = true, EntryPoint = "CryptCreateHash")]
             [return: MarshalAs(UnmanagedType.Bool)]
             private static extern bool _CryptCreateHash(SafeProvHandle hProv, int algId, SafeKeyHandle hKey, CryptCreateHashFlags dwFlags, out SafeHashHandle phHash);
+
+            [DllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, SetLastError = true)]
+            [return: MarshalAs(UnmanagedType.Bool)]
+            public static extern bool CryptHashData(SafeHashHandle hHash, byte[] pbData, int dwDataLen, int dwFlags);
 
             [DllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, SetLastError = true)]
             [return: MarshalAs(UnmanagedType.Bool)]
@@ -1636,6 +1802,20 @@ namespace Internal.NativeCrypto
 
                 return response;
             }
+
+            public static bool CryptDeriveKey(
+                SafeProvHandle hProv,
+                int algId,
+                SafeHashHandle phHash,
+                int dwFlags,
+                out SafeKeyHandle phKey)
+            {
+                bool response = _CryptDeriveKey(hProv, algId, phHash, dwFlags, out phKey);
+
+                phKey.SetParent(hProv);
+
+                return response;
+            }
         }
     } //End CapiHelper : Pinvokes
 
@@ -1676,6 +1856,7 @@ namespace Internal.NativeCrypto
         internal const string OID_OIWSEC_SHA384 = "2.16.840.1.101.3.4.2.2";
         internal const string OID_OIWSEC_SHA512 = "2.16.840.1.101.3.4.2.3";
 
+        internal const int SIMPLEBLOB = 0x1;
         internal const int PUBLICKEYBLOB = 0x6;
         internal const int PRIVATEKEYBLOB = 0x7;
         internal const int PLAINTEXTKEYBLOB = 0x8;
@@ -1711,7 +1892,8 @@ namespace Internal.NativeCrypto
         internal enum CryptGetKeyParamFlags : int
         {
             CRYPT_EXPORT = 0x0004,
-            KP_PERMISSIONS = 6
+            KP_IV = 1,
+            KP_PERMISSIONS = 6,
         }
 
         internal enum CryptGetProvParam : int

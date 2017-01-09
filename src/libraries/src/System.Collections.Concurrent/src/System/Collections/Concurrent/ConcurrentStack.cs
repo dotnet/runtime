@@ -437,12 +437,10 @@ namespace System.Collections.Concurrent
             while (Interlocked.CompareExchange(
                 ref _head, head, tail._next) != tail._next);
 
-#if FEATURE_TRACING
             if (CDSCollectionETWBCLProvider.Log.IsEnabled())
             {
                 CDSCollectionETWBCLProvider.Log.ConcurrentStack_FastPushFailed(spin.Count);
             }
-#endif
         }
 
         /// <summary>
@@ -662,12 +660,11 @@ namespace System.Collections.Concurrent
                 // Is the stack empty?
                 if (head == null)
                 {
-#if FEATURE_TRACING
                     if (count == 1 && CDSCollectionETWBCLProvider.Log.IsEnabled())
                     {
                         CDSCollectionETWBCLProvider.Log.ConcurrentStack_FastPopFailed(spin.Count);
                     }
-#endif
+
                     poppedHead = null;
                     return 0;
                 }
@@ -681,12 +678,11 @@ namespace System.Collections.Concurrent
                 // Try to swap the new head.  If we succeed, break out of the loop.
                 if (Interlocked.CompareExchange(ref _head, next._next, head) == head)
                 {
-#if FEATURE_TRACING
                     if (count == 1 && CDSCollectionETWBCLProvider.Log.IsEnabled())
                     {
                         CDSCollectionETWBCLProvider.Log.ConcurrentStack_FastPopFailed(spin.Count);
                     }
-#endif
+
                     // Return the popped Node.
                     poppedHead = head;
                     return nodesCount;

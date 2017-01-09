@@ -15,6 +15,9 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Release|AnyCPU'" />
+  <ItemGroup>
+    <Compile Include="FxCopBaseline.cs"/>
+  </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netstandard'">
     <Compile Include="System\Console.cs" />
     <Compile Include="System\ConsoleCancelEventArgs.cs" />
@@ -30,9 +33,6 @@
     <Compile Include="$(CommonPath)\System\Text\ConsoleEncoding.cs">
       <Link>Common\System\Text\ConsoleEncoding.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Text\EncodingHelper.cs">
-      <Link>Common\System\IO\EncodingHelper.cs</Link>
-    </Compile>
   </ItemGroup>
   <!-- Windows : UAP 
   <ItemGroup Condition="'$(TargetsWindows)' == 'true' And '$(TargetGroup)' == 'uap101aot' ">
@@ -42,6 +42,21 @@
   <!-- Windows : Win32 -->
   <ItemGroup Condition="'$(TargetsWindows)' == 'true' And '$(TargetGroup)' == 'netstandard'">
     <Compile Include="System\ConsolePal.Windows.cs" />
+    <Compile Include="$(CommonPath)\System\Text\OSEncoding.Windows.cs">
+      <Link>Common\System\Text\OSEncoding.Windows.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Text\OSEncoder.cs">
+      <Link>Common\System\Text\OSEncoder.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Text\DBCSDecoder.cs">
+      <Link>Common\System\Text\DBCSDecoder.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.Encoding.Constants.cs">
+      <Link>Common\Interop\Windows\kernel32\Interop.Encoding.Constants.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetCPInfoEx.cs">
+      <Link>Common\Interop\Windows\kernel32\Interop.GetCPInfoEx.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
       <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
     </Compile>
@@ -99,6 +114,9 @@
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.HandleTypes.cs">
       <Link>Common\Interop\Windows\Interop.HandleTypes.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.MultiByteToWideChar.cs">
+      <Link>Common\Interop\Windows\Interop.MultiByteToWideChar.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.PeekConsoleInput.cs">
       <Link>Common\Interop\Windows\Interop.PeekConsoleInput.cs</Link>
     </Compile>
@@ -138,6 +156,9 @@
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.SetConsoleWindowInfo.cs">
       <Link>Common\Interop\Windows\Interop.SetConsoleWindowInfo.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.WideCharToMultiByte.cs">
+      <Link>Common\Interop\Windows\Interop.WideCharToMultiByte.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.WriteFile_IntPtr.cs">
       <Link>Common\Interop\Windows\Interop.WriteFile.cs</Link>
     </Compile>
@@ -146,6 +167,9 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.WriteConsoleOutput.cs">
       <Link>Common\Interop\Windows\Interop.WriteConsoleOutput.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Text\EncodingHelper.Windows.cs">
+      <Link>Common\System\IO\EncodingHelper.Windows.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\IO\Win32Marshal.cs">
       <Link>Common\System\IO\Win32Marshal.cs</Link>

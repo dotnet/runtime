@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Dynamic.Utils;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -15,7 +16,7 @@ namespace System.Dynamic
     public class DynamicMetaObject
     {
         /// <summary>
-        /// Represents an empty array of type <see cref="DynamicMetaObject"/>. This field is read only.
+        /// Represents an empty array of type <see cref="DynamicMetaObject"/>. This field is read-only.
         /// </summary>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2105:ArrayFieldsShouldNotBeReadOnly")]
         public static readonly DynamicMetaObject[] EmptyMetaObjects = Array.Empty<DynamicMetaObject>();
@@ -244,10 +245,7 @@ namespace System.Dynamic
         /// </summary>
         /// <returns>The list of dynamic member names.</returns>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]
-        public virtual IEnumerable<string> GetDynamicMemberNames()
-        {
-            return Array.Empty<string>();
-        }
+        public virtual IEnumerable<string> GetDynamicMemberNames() => Array.Empty<string>();
 
         /// <summary>
         /// Returns the list of expressions represented by the <see cref="DynamicMetaObject"/> instances.
@@ -264,7 +262,7 @@ namespace System.Dynamic
                 DynamicMetaObject mo = objects[i];
                 ContractUtils.RequiresNotNull(mo, nameof(objects));
                 Expression expr = mo.Expression;
-                ContractUtils.RequiresNotNull(expr, nameof(objects));
+                Debug.Assert(expr != null, "Unexpected null expression; ctor should have caught this.");
                 res[i] = expr;
             }
 

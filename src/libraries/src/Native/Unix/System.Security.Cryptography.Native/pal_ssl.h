@@ -3,10 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 #include "pal_crypto_types.h"
-
-#include <openssl/ssl.h>
-#include <openssl/md5.h>
-#include <openssl/sha.h>
+#include "opensslshim.h"
 
 /*
 These values should be kept in sync with System.Security.Authentication.SslProtocols.

@@ -16,6 +16,9 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Release|AnyCPU'" />
+  <ItemGroup>
+    <Compile Include="FxCopBaseline.cs" />
+  </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netstandard'">
     <Compile Include="System\Diagnostics\BooleanSwitch.cs" />
     <Compile Include="System\Diagnostics\CorrelationManager.cs" />

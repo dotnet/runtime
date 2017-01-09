@@ -10,7 +10,7 @@ using System.Reflection.Internal;
 
 namespace System.Reflection.Metadata.Tests
 {
-    internal unsafe static class LoaderUtilities
+    internal static unsafe class LoaderUtilities
     {
         public static void LoadPEAndValidate(byte[] peImage, Action<PEReader> validator, bool useStream = false)
         {

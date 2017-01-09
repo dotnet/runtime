@@ -482,10 +482,10 @@ namespace System
         public static byte GetByte(System.Array array, int index) { throw null; }
         [System.CLSCompliantAttribute(false)]
         [System.Security.SecurityCriticalAttribute]
-        public unsafe static void MemoryCopy(void* source, void* destination, long destinationSizeInBytes, long sourceBytesToCopy) { }
+        public static unsafe void MemoryCopy(void* source, void* destination, long destinationSizeInBytes, long sourceBytesToCopy) { }
         [System.CLSCompliantAttribute(false)]
         [System.Security.SecurityCriticalAttribute]
-        public unsafe static void MemoryCopy(void* source, void* destination, ulong destinationSizeInBytes, ulong sourceBytesToCopy) { }
+        public static unsafe void MemoryCopy(void* source, void* destination, ulong destinationSizeInBytes, ulong sourceBytesToCopy) { }
         public static void SetByte(System.Array array, int index, byte value) { }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
@@ -1513,10 +1513,10 @@ namespace System
         public static explicit operator int (System.IntPtr value) { throw null; }
         public static explicit operator long (System.IntPtr value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public unsafe static explicit operator void* (System.IntPtr value) { throw null; }
+        public static unsafe explicit operator void* (System.IntPtr value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         [System.Security.SecurityCriticalAttribute]
-        public unsafe static explicit operator System.IntPtr(void* value) { throw null; }
+        public static unsafe explicit operator System.IntPtr(void* value) { throw null; }
         public static bool operator !=(System.IntPtr value1, System.IntPtr value2) { throw null; }
         public static System.IntPtr operator -(System.IntPtr pointer, int offset) { throw null; }
         public static System.IntPtr Subtract(System.IntPtr pointer, int offset) { throw null; }
@@ -2846,10 +2846,10 @@ namespace System
         public static explicit operator ulong (System.UIntPtr value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         [System.Security.SecurityCriticalAttribute]
-        public unsafe static explicit operator void* (System.UIntPtr value) { throw null; }
+        public static unsafe explicit operator void* (System.UIntPtr value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         [System.Security.SecurityCriticalAttribute]
-        public unsafe static explicit operator System.UIntPtr(void* value) { throw null; }
+        public static unsafe explicit operator System.UIntPtr(void* value) { throw null; }
         public static bool operator !=(System.UIntPtr value1, System.UIntPtr value2) { throw null; }
         public static System.UIntPtr operator -(System.UIntPtr pointer, int offset) { throw null; }
         public static System.UIntPtr Subtract(System.UIntPtr pointer, int offset) { throw null; }
@@ -3564,6 +3564,16 @@ namespace System.ComponentModel
         public DefaultValueAttribute(object value) { }
         public DefaultValueAttribute(float value) { }
         public DefaultValueAttribute(string value) { }
+#if netcoreapp11
+        [System.CLSCompliantAttribute(false)]
+        public DefaultValueAttribute(sbyte value) { }
+        [System.CLSCompliantAttribute(false)]
+        public DefaultValueAttribute(ushort value) { }
+        [System.CLSCompliantAttribute(false)]
+        public DefaultValueAttribute(uint value) { }
+        [System.CLSCompliantAttribute(false)]
+        public DefaultValueAttribute(ulong value) { }
+#endif
         public DefaultValueAttribute(System.Type type, string value) { }
         public virtual object Value { get { throw null; } }
         public override bool Equals(object obj) { throw null; }
@@ -4908,7 +4918,7 @@ namespace System.Reflection
         public void SetPublicKey(byte[] publicKey) { }
         public void SetPublicKeyToken(byte[] publicKeyToken) { }
         public override string ToString() { throw null; }
-        static public bool ReferenceMatchesDefinition(System.Reflection.AssemblyName reference, System.Reflection.AssemblyName definition) { throw null; }
+        public static bool ReferenceMatchesDefinition(System.Reflection.AssemblyName reference, System.Reflection.AssemblyName definition) { throw null; }
         [System.Security.SecurityCriticalAttribute]
         public void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { throw null; }
         public void OnDeserialization(Object sender) { throw null; }
@@ -5929,6 +5939,9 @@ namespace System.Runtime.CompilerServices
     {
         public ConditionalWeakTable() { }
         public void Add(TKey key, TValue value) { }
+#if netcoreapp11
+        public void AddOrUpdate(TKey key, TValue value) { }
+#endif //netcoreapp11
         ~ConditionalWeakTable() { }
         public TValue GetOrCreateValue(TKey key) { throw null; }
         public TValue GetValue(TKey key, System.Runtime.CompilerServices.ConditionalWeakTable<TKey, TValue>.CreateValueCallback createValueCallback) { throw null; }
