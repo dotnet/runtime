@@ -155,9 +155,9 @@ db_match_method (gpointer data, gpointer user_data)
 		debug_indent_level++;	\
 		output_indent ();	\
 		mn = mono_method_full_name (method, FALSE); \
-		g_print ("(%u) Entering %s (", mono_thread_internal_current (), mn);	\
+		g_printerr ("(0x%08x) Entering %s (", mono_thread_internal_current (), mn);	\
 		g_free (mn); \
-		g_print ("%s)\n", args);	\
+		g_printerr  ("%s)\n", args);	\
 		g_free (args);	\
 	}	\
 	if (mono_profiler_events & MONO_PROFILE_ENTER_LEAVE)	\
@@ -169,9 +169,9 @@ db_match_method (gpointer data, gpointer user_data)
 		args = dump_retval (frame);	\
 		output_indent ();	\
 		mn = mono_method_full_name (frame->runtime_method->method, FALSE); \
-		g_print ("(%u) Leaving %s", mono_thread_internal_current (),  mn);	\
+		g_printerr  ("(0x%08x) Leaving %s", mono_thread_internal_current (),  mn);	\
 		g_free (mn); \
-		g_print (" => %s\n", args);	\
+		g_printerr  (" => %s\n", args);	\
 		g_free (args);	\
 		debug_indent_level--;	\
 		if (tracing == 3) global_tracing = 0; \
