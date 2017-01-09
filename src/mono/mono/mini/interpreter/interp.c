@@ -116,7 +116,9 @@ typedef void (*ICallMethod) (MonoInvocation *frame);
 static guint32 die_on_exception = 0;
 static MonoNativeTlsKey thread_context_id;
 
-#define DEBUG_INTERP 1
+static char* dump_args (MonoInvocation *inv);
+
+#define DEBUG_INTERP 0
 #define COUNT_OPS 0
 #if DEBUG_INTERP
 
@@ -143,25 +145,29 @@ db_match_method (gpointer data, gpointer user_data)
 		break_on_method = 1;
 }
 
-#define DEBUG_ENTER()	\
-	if (db_methods) { \
-		g_list_foreach (db_methods, db_match_method, (gpointer)frame->runtime_method->method);	\
-		if (break_on_method) tracing=nested_trace ? (global_tracing = 2, 3) : 2;	\
-		break_on_method = 0;	\
-	} \
-	if (tracing) {	\
-		MonoMethod *method = frame->runtime_method->method ;\
-		char *mn, *args = dump_args (frame);	\
-		debug_indent_level++;	\
-		output_indent ();	\
-		mn = mono_method_full_name (method, FALSE); \
-		g_printerr ("(0x%08x) Entering %s (", mono_thread_internal_current (), mn);	\
-		g_free (mn); \
-		g_printerr  ("%s)\n", args);	\
-		g_free (args);	\
-	}	\
-	if (mono_profiler_events & MONO_PROFILE_ENTER_LEAVE)	\
+static void debug_enter (MonoInvocation *frame, int *tracing)
+{
+	if (db_methods) {
+		g_list_foreach (db_methods, db_match_method, (gpointer)frame->runtime_method->method);
+		if (break_on_method)
+			*tracing = nested_trace ? (global_tracing = 2, 3) : 2;
+		break_on_method = 0;
+	}
+	if (*tracing) {
+		MonoMethod *method = frame->runtime_method->method;
+		char *mn, *args = dump_args (frame);
+		debug_indent_level++;
+		output_indent ();
+		mn = mono_method_full_name (method, FALSE);
+		g_printerr ("(0x%08x) Entering %s (", mono_thread_internal_current (), mn);
+		g_free (mn);
+		g_printerr  ("%s)\n", args);
+		g_free (args);
+	}
+	if (mono_profiler_events & MONO_PROFILE_ENTER_LEAVE)
 		mono_profiler_method_enter (frame->runtime_method->method);
+}
+
 
 #define DEBUG_LEAVE()	\
 	if (tracing) {	\
@@ -181,7 +187,9 @@ db_match_method (gpointer data, gpointer user_data)
 
 #else
 
-#define DEBUG_ENTER()
+static void debug_enter (MonoInvocation *frame, int *tracing)
+{
+}
 #define DEBUG_LEAVE()
 
 #endif
@@ -1479,7 +1487,9 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
 	frame->ip = NULL;
 	context->current_frame = frame;
 
-	DEBUG_ENTER ();
+#if DEBUG_INTERP
+	debug_enter (frame, &tracing);
+#endif
 
 	if (!frame->runtime_method->transformed) {
 		context->managed_code = 0;
@@ -1624,7 +1634,6 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_POP)
 			++ip;
-			fprintf (stderr, "POP: 0x%08x\n", (sp-1)->data.i);
 			--sp;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_JMP) {
@@ -4147,7 +4156,7 @@ ves_exec_method (MonoInvocation *frame)
 	frame->runtime_method = mono_interp_get_runtime_method (context->domain, frame->method, &error);
 	mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 	context->managed_code = 1;
-	ves_exec_method_with_context(frame, context);
+	ves_exec_method_with_context (frame, context);
 	context->managed_code = 0;
 	if (frame->ex) {
 		if (context != &context_struct && context->current_env) {
@@ -4203,6 +4212,7 @@ usage (void)
 		 "   --profile\n"
 		 "   --trace\n"
 		 "   --traceops\n"
+		 "   --regression\n"
 		 "\n"
 		 "Runtime:\n"
 		 "   --config filename  load the specified config file instead of the default\n"
@@ -4210,21 +4220,6 @@ usage (void)
 		);
 	exit (1);
 }
-
-#ifdef RUN_TEST
-static void
-test_load_class (MonoImage* image)
-{
-	MonoTableInfo  *t = &image->tables [MONO_TABLE_TYPEDEF];
-	MonoClass *klass;
-	int i;
-
-	for (i = 1; i <= t->rows; ++i) {
-		klass = mono_class_get (image, MONO_TOKEN_TYPE_DEF | i);
-		mono_class_init (klass);
-	}
-}
-#endif
 
 static void
 add_signal_handler (int signo, void (*handler)(int))
@@ -4432,12 +4427,7 @@ static void main_thread_handler (gpointer user_data)
 		exit (1);
 	}
 
-#ifdef RUN_TEST
-	test_load_class (assembly->image);
-#else
-
 	ves_exec (main_args->domain, assembly, main_args->argc, main_args->argv);
-#endif
 }
 
 static void
@@ -4480,6 +4470,13 @@ interp_get_imt_trampoline (MonoVTable *vtable, int imt_slot_index)
 	return NULL;
 }
 
+static gpointer
+interp_create_ftnptr (MonoDomain *domain, gpointer addr)
+{
+	// FIXME: true on all arch?
+	return addr;
+}
+
 MonoDomain *
 mono_interp_init(const char *file)
 {
@@ -4489,7 +4486,6 @@ mono_interp_init(const char *file)
 	MonoError error;
 
 	g_set_prgname (file);
-	mono_set_rootdir ();
 	
 	g_log_set_always_fatal (G_LOG_LEVEL_ERROR);
 	g_log_set_fatal_mask (G_LOG_DOMAIN, G_LOG_LEVEL_ERROR);
@@ -4508,6 +4504,7 @@ mono_interp_init(const char *file)
 	callbacks.compile_method = mono_create_method_pointer;
 	callbacks.runtime_invoke = interp_mono_runtime_invoke;
 	callbacks.get_imt_trampoline = interp_get_imt_trampoline;
+	callbacks.create_ftnptr = interp_create_ftnptr;
 #ifndef DISABLE_REMOTING
 	mono_install_remoting_trampoline (interp_create_remoting_trampoline);
 #endif
@@ -4547,6 +4544,133 @@ mono_interp_init(const char *file)
 	return domain;
 }
 
+typedef int (*TestMethod) (void);
+
+static void
+interp_regression_step (MonoImage *image, int verbose, int *total_run, int *total, GTimer *timer, MonoDomain *domain)
+{
+	int result, expected, failed, cfailed, run;
+	TestMethod func;
+	double elapsed, transform_time, start_time;
+	int i;
+	MonoObject *result_obj;
+
+	g_print ("Test run: image=%s\n", mono_image_get_filename (image));
+	cfailed = failed = run = 0;
+	transform_time = elapsed = 0.0;
+
+#if 0
+	/* fixme: ugly hack - delete all previously compiled methods */
+	if (domain_jit_info (domain)) {
+		g_hash_table_destroy (domain_jit_info (domain)->jit_trampoline_hash);
+		domain_jit_info (domain)->jit_trampoline_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
+		mono_internal_hash_table_destroy (&(domain->jit_code_hash));
+		mono_jit_code_hash_init (&(domain->jit_code_hash));
+	}
+#endif
+
+	g_timer_start (timer);
+	for (i = 0; i < mono_image_get_table_rows (image, MONO_TABLE_METHOD); ++i) {
+		MonoError error;
+		MonoMethod *method = mono_get_method_checked (image, MONO_TOKEN_METHOD_DEF | (i + 1), NULL, NULL, &error);
+		if (!method) {
+			mono_error_cleanup (&error); /* FIXME don't swallow the error */
+			continue;
+		}
+		if (strncmp (method->name, "test_", 5) == 0) {
+			MonoError interp_error;
+			RuntimeMethod *runtime_method;
+			MonoInvocation frame;
+			ThreadContext context;
+			stackval frame_result;
+
+			result_obj = interp_mono_runtime_invoke (method, NULL, NULL, NULL, &interp_error);
+			if (!mono_error_ok (&interp_error)) {
+				cfailed++;
+				g_print ("Test '%s' execution failed.\n", method->name);
+			} else {
+				result = *(gint32 *) mono_object_unbox (result_obj);
+				expected = atoi (method->name + 5);  // FIXME: oh no.
+
+				if (result != expected) {
+					failed++;
+					g_print ("Test '%s' failed result (got %d, expected %d).\n", method->name, result, expected);
+				}
+			}
+		}
+	}
+	g_timer_stop (timer);
+	elapsed = g_timer_elapsed (timer, NULL);
+	if (failed > 0 || cfailed > 0){
+		g_print ("Results: total tests: %d, failed: %d, cfailed: %d (pass: %.2f%%)\n",
+				run, failed, cfailed, 100.0*(run-failed-cfailed)/run);
+	} else {
+		g_print ("Results: total tests: %d, all pass \n",  run);
+	}
+
+	g_print ("Elapsed time: %f secs (%f, %f)\n\n", elapsed,
+			elapsed - transform_time, transform_time);
+	*total += failed + cfailed;
+	*total_run += run;
+}
+static int
+interp_regression (MonoImage *image, int verbose, int *total_run)
+{
+	MonoMethod *method;
+	char *n;
+	GTimer *timer = g_timer_new ();
+	MonoDomain *domain = mono_domain_get ();
+	guint32 i, exclude = 0;
+	int total;
+
+	/* load the metadata */
+	for (i = 0; i < mono_image_get_table_rows (image, MONO_TABLE_METHOD); ++i) {
+		MonoError error;
+		method = mono_get_method_checked (image, MONO_TOKEN_METHOD_DEF | (i + 1), NULL, NULL, &error);
+		if (!method) {
+			mono_error_cleanup (&error);
+			continue;
+		}
+		mono_class_init (method->klass);
+	}
+
+	total = 0;
+	*total_run = 0;
+	interp_regression_step (image, verbose, total_run, &total, timer, domain);
+
+	g_timer_destroy (timer);
+	return total;
+}
+
+static int
+interp_regression_list (int verbose, int count, char *images [])
+{
+	int i, total, total_run, run;
+	
+	total_run = total = 0;
+	for (i = 0; i < count; ++i) {
+		MonoAssembly *ass = mono_assembly_open (images [i], NULL);
+		if (!ass) {
+			g_warning ("failed to load assembly: %s", images [i]);
+			continue;
+		}
+		total += interp_regression (mono_assembly_get_image (ass), verbose, &run);
+		total_run += run;
+	}
+	if (total > 0) {
+		g_print ("Overall results: tests: %d, failed: %d (pass: %.2f%%)\n", total_run, total, 100.0*(total_run-total)/total_run);
+	} else {
+		g_print ("Overall results: tests: %d, 100%% pass\n", total_run);
+	}
+	
+	return total;
+}
+
+enum {
+	DO_EXEC,
+	DO_REGRESSION
+};
+
 int 
 mono_main (int argc, char *argv [])
 {
@@ -4556,6 +4680,7 @@ mono_main (int argc, char *argv [])
 	int enable_debugging = FALSE;
 	MainThreadArgs main_args;
 	const char *error;
+	int action = DO_EXEC;
 
 	setlocale (LC_ALL, "");
 	if (argc < 2)
@@ -4566,6 +4691,8 @@ mono_main (int argc, char *argv [])
 			global_tracing = 1;
 		if (strcmp (argv [i], "--noptr") == 0)
 			global_no_pointers = 1;
+		if (strcmp (argv [i], "--regression") == 0)
+			action = DO_REGRESSION;
 		if (strcmp (argv [i], "--traceops") == 0)
 			global_tracing = 2;
 		if (strcmp (argv [i], "--traceopt") == 0)
@@ -4599,6 +4726,7 @@ mono_main (int argc, char *argv [])
 	if (!file)
 		usage ();
 
+	mono_set_rootdir ();
 	domain = mono_interp_init (file);
 	mono_config_parse (config_file);
 
@@ -4614,10 +4742,19 @@ mono_main (int argc, char *argv [])
 	main_args.argc=argc-i;
 	main_args.argv=argv+i;
 	main_args.enable_debugging=enable_debugging;
+
+	switch (action) {
+	case DO_REGRESSION:
+		if (interp_regression_list (2, argc -i, argv + i)) {
+			g_print ("Regression ERRORS!\n");
+			// mini_cleanup (domain);
+			return 1;
+		}
+		// mini_cleanup (domain);
+		return 0;
+	}
 	
-	fprintf (stderr, "INTERPRETER: INIT DONE\n");
-	mono_runtime_exec_managed_code (domain, main_thread_handler,
-					&main_args);
+	mono_runtime_exec_managed_code (domain, main_thread_handler, &main_args);
 
 	quit_function (domain, NULL);
 

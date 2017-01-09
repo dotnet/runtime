@@ -2826,7 +2826,7 @@ mono_interp_transform_method (RuntimeMethod *runtime_method, ThreadContext *cont
 	int backwards;
 	MonoGenericContext *generic_context = NULL;
 
-	// fprintf (stderr, "TRANSFORM(0x%016lx): begin %s::%s\n", mono_thread_current (), method->klass->name, method->name);
+	// g_printerr ("TRANSFORM(0x%016lx): begin %s::%s\n", mono_thread_current (), method->klass->name, method->name);
 	method_class_vt = mono_class_vtable (domain, runtime_method->method->klass);
 	if (!method_class_vt->initialized) {
 		jmp_buf env;
@@ -3014,6 +3014,7 @@ mono_interp_transform_method (RuntimeMethod *runtime_method, ThreadContext *cont
 			g_assert_not_reached ();
 		}
 	}
+	// g_printerr ("TRANSFORM(0x%016lx): end %s::%s\n", mono_thread_current (), method->klass->name, method->name);
 
 	/* the rest needs to be locked so it is only done once */
 	mono_os_mutex_lock(&calc_section);
