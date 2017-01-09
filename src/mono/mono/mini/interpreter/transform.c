@@ -2747,14 +2747,15 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 				generating_code = 0;
 				break;
 			case CEE_SIZEOF: {
-				guint32 align;
 				gint32 size;
 				token = read32 (td.ip + 1);
 				td.ip += 5;
 				if (mono_metadata_token_table (token) == MONO_TABLE_TYPESPEC) {
+					int align;
 					MonoType *type = mono_type_create_from_typespec (image, token);
 					size = mono_type_size (type, &align);
 				} else {
+					guint32 align;
 					MonoClass *szclass = mono_class_get_full (image, token, generic_context);
 					mono_class_init (szclass);
 #if 0
@@ -3062,7 +3063,8 @@ mono_interp_transform_method (RuntimeMethod *runtime_method, ThreadContext *cont
 	runtime_method->arg_offsets = g_malloc(signature->param_count * sizeof(guint32));
 	for (i = 0; i < signature->param_count; ++i) {
 		if (signature->pinvoke) {
-			size = mono_type_native_stack_size (signature->params [i], &align);
+			guint32 dummy;
+			size = mono_type_native_stack_size (signature->params [i], &dummy);
 			align = 8;
 		}
 		else

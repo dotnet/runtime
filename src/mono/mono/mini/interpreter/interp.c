@@ -123,13 +123,7 @@ void mono_tramp_info_register (MonoTrampInfo *info, MonoDomain *domain);
 
 static gint *abort_requested;
 
-/* If true, then we output the opcodes as we interpret them */
-static int global_tracing = 1;
-static int global_no_pointers = 0;
-
 int mono_interp_traceopt = 0;
-
-static int debug_indent_level = 0;
 
 #define INIT_FRAME(frame,parent_frame,obj_this,method_args,method_retval,domain,mono_method,error)	\
 	do {	\
@@ -160,6 +154,10 @@ static char* dump_args (MonoInvocation *inv);
 #define DEBUG_INTERP 0
 #define COUNT_OPS 0
 #if DEBUG_INTERP
+/* If true, then we output the opcodes as we interpret them */
+static int global_tracing = 1;
+
+static int debug_indent_level = 0;
 
 static int break_on_method = 0;
 static int nested_trace = 0;
@@ -829,7 +827,6 @@ static MethodArguments* build_args_from_sig (MonoMethodSignature *sig, MonoInvoc
 
 
 	size_t int_i = 0;
-	size_t int_f = 0;
 
 	if (sig->hasthis) {
 		margs->iargs [0] = frame->obj;
@@ -855,7 +852,7 @@ static MethodArguments* build_args_from_sig (MonoMethodSignature *sig, MonoInvoc
 		case MONO_TYPE_OBJECT:
 		case MONO_TYPE_STRING:
 		case MONO_TYPE_I8:
-			margs->iargs [int_i] = frame->stack_args [i].data.l;
+			margs->iargs [int_i] = frame->stack_args [i].data.p;
 #if DEBUG_INTERP
 			g_printerr ("build_args_from_sig: margs->iargs[%d]: %p (frame @ %d)\n", int_i, margs->iargs[int_i], i);
 #endif
@@ -1518,7 +1515,7 @@ static mono_mutex_t create_method_pointer_mutex;
 
 static GHashTable *method_pointer_hash = NULL;
 
-gpointer
+static gpointer
 mono_create_method_pointer (MonoMethod *method, MonoError *error)
 {
 	gpointer addr;
@@ -4356,7 +4353,8 @@ ves_exec (MonoDomain *domain, MonoAssembly *assembly, int argc, char *argv[])
 		g_error ("No entry point method found in %s", mono_image_get_filename (image));
 
 	rval = mono_runtime_run_main_checked (method, argc, argv, &error);
-	return_val_and_set_pending_if_nok (&error, rval);
+	mono_error_cleanup (&error); /* FIXME: don't swallow the error */
+	return rval;
 }
 
 static void
@@ -4632,7 +4630,7 @@ mono_interp_exec(MonoDomain *domain, MonoAssembly *assembly, int argc, char *arg
 	return ves_exec (domain, assembly, argc, argv);
 }
 
-gpointer*
+static gpointer
 interp_get_imt_trampoline (MonoVTable *vtable, int imt_slot_index)
 {
 	// FIXME: implement me
@@ -4734,12 +4732,11 @@ static void
 interp_regression_step (MonoImage *image, int verbose, int *total_run, int *total, GTimer *timer, MonoDomain *domain)
 {
 	int result, expected, failed, cfailed, run;
-	TestMethod func;
-	double elapsed, transform_time, start_time;
+	double elapsed, transform_time;
 	int i;
 	MonoObject *result_obj;
 	static gboolean filter_method_init = FALSE;
-	static gchar *filter_method = NULL;
+	static const char *filter_method = NULL;
 
 	g_print ("Test run: image=%s\n", mono_image_get_filename (image));
 	cfailed = failed = run = 0;
@@ -4784,10 +4781,6 @@ interp_regression_step (MonoImage *image, int verbose, int *total_run, int *tota
 		}
 		if (strncmp (method->name, "test_", 5) == 0 && filter) {
 			MonoError interp_error;
-			RuntimeMethod *runtime_method;
-			MonoInvocation frame;
-			ThreadContext context;
-			stackval frame_result;
 			MonoObject *exc = NULL;
 
 			result_obj = interp_mono_runtime_invoke (method, NULL, NULL, &exc, &interp_error);
@@ -4829,10 +4822,9 @@ static int
 interp_regression (MonoImage *image, int verbose, int *total_run)
 {
 	MonoMethod *method;
-	char *n;
 	GTimer *timer = g_timer_new ();
 	MonoDomain *domain = mono_domain_get ();
-	guint32 i, exclude = 0;
+	guint32 i;
 	int total;
 
 	/* load the metadata */
