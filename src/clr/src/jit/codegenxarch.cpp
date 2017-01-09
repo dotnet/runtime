@@ -2645,16 +2645,14 @@ void CodeGen::genLclHeap(GenTreePtr tree)
         // Loop:
         genDefineTempLabel(loop);
 
-#if defined(_TARGET_AMD64_)
-        // Push two 8-byte zeros. This matches the 16-byte STACK_ALIGN value.
-        static_assert_no_msg(STACK_ALIGN == (REGSIZE_BYTES * 2));
-        inst_IV(INS_push_hide, 0); // --- push 8-byte 0
-        inst_IV(INS_push_hide, 0); // --- push 8-byte 0
-#elif defined(_TARGET_X86_)
-        // Push a single 4-byte zero. This matches the 4-byte STACK_ALIGN value.
-        static_assert_no_msg(STACK_ALIGN == REGSIZE_BYTES);
-        inst_IV(INS_push_hide, 0); // --- push 4-byte 0
-#endif // _TARGET_X86_
+        static_assert_no_msg((STACK_ALIGN % REGSIZE_BYTES) == 0);
+        unsigned const count = (STACK_ALIGN / REGSIZE_BYTES);
+
+        for (unsigned i = 0; i < count; i++)
+        {
+            inst_IV(INS_push_hide, 0); // --- push REG_SIZE bytes of 0
+        }
+        // Note that the stack must always be aligned to STACK_ALIGN bytes
 
         // Decrement the loop counter and loop if not done.
         inst_RV(INS_dec, regCnt, TYP_I_IMPL);
@@ -4894,9 +4892,9 @@ void CodeGen::genCallInstruction(GenTreePtr node)
                 stackArgBytes += argBytes;
             }
             else
-            {
 #endif // FEATURE_PUT_STRUCT_ARG_STK
 
+            {
                 stackArgBytes += genTypeSize(genActualType(arg->TypeGet()));
             }
         }
@@ -5134,6 +5132,15 @@ void CodeGen::genCallInstruction(GenTreePtr node)
         genEmitCall(emitter::EC_FUNC_TOKEN, methHnd, INDEBUG_LDISASM_COMMA(sigInfo) addr X86_ARG(argSizeForEmitter),
                     retSize MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize), ilOffset);
     }
+
+#if defined(UNIX_X86_ABI)
+    // Put back the stack pointer if there was any padding for stack alignment
+    unsigned padStackAlign = call->fgArgInfo->GetPadStackAlign();
+    if (padStackAlign != 0)
+    {
+        inst_RV_IV(INS_add, REG_SPBASE, padStackAlign * TARGET_POINTER_SIZE, EA_PTRSIZE);
+    }
+#endif // UNIX_X86_ABI
 
     // if it was a pinvoke we may have needed to get the address of a label
     if (genPendingCallLabel)
@@ -7753,6 +7760,16 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* putArgStk)
 
 #ifdef _TARGET_X86_
 
+#if defined(UNIX_X86_ABI)
+    // For each call, first stack argument has the padding for alignment
+    // if this value is not zero, use it to adjust the ESP
+    unsigned argPadding = putArgStk->getArgPadding();
+    if (argPadding != 0)
+    {
+        inst_RV_IV(INS_sub, REG_SPBASE, argPadding * TARGET_POINTER_SIZE, EA_PTRSIZE);
+    }
+#endif
+
     if (varTypeIsStruct(targetType))
     {
         (void)genAdjustStackForPutArgStk(putArgStk);
@@ -8070,7 +8087,7 @@ void CodeGen::genPutStructArgStk(GenTreePutArgStk* putArgStk)
                 slotAttr = EA_BYREF;
             }
 
-            const unsigned offset = i * 4;
+            const unsigned offset = i * TARGET_POINTER_SIZE;
             if (srcAddrInReg)
             {
                 getEmitter()->emitIns_AR_R(INS_push, slotAttr, REG_NA, srcRegNum, offset);
@@ -8079,7 +8096,7 @@ void CodeGen::genPutStructArgStk(GenTreePutArgStk* putArgStk)
             {
                 getEmitter()->emitIns_S(INS_push, slotAttr, srcLclNum, srcLclOffset + offset);
             }
-            genStackLevel += 4;
+            genStackLevel += TARGET_POINTER_SIZE;
         }
 #else // !defined(_TARGET_X86_)
 
