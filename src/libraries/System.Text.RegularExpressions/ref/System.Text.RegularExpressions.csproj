@@ -3,7 +3,7 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
     <Compile Include="System.Text.RegularExpressions.cs" />
-    <Compile Include="System.Text.RegularExpressions.netcoreapp1.1.cs" />
+    <Compile Include="System.Text.RegularExpressions.netcoreapp.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" />

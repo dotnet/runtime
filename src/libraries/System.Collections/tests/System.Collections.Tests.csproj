@@ -69,7 +69,7 @@
     <Compile Include="BitArray\BitArray_CtorTests.cs" />
     <Compile Include="BitArray\BitArray_GetSetTests.cs" />
     <Compile Include="BitArray\BitArray_OperatorsTests.cs" />
-    <Compile Include="BitArray\BitArray_OperatorsTests.netcoreapp1.1.cs" Condition="'$(TargetGroup)'=='netcoreapp'" />
+    <Compile Include="BitArray\BitArray_OperatorsTests.netcoreapp.cs" Condition="'$(TargetGroup)'=='netcoreapp'" />
     <Compile Include="Generic\Comparers\Comparer.Generic.Tests.cs" />
     <Compile Include="Generic\Comparers\Comparer.Tests.cs" />
     <Compile Include="Generic\Comparers\Comparers.Generic.cs" />
@@ -80,12 +80,12 @@
     <Compile Include="Generic\Dictionary\HashCollisionScenarios\OutOfBoundsRegression.cs" />
     <Compile Include="Generic\Dictionary\Dictionary.Generic.cs" />
     <Compile Include="Generic\Dictionary\Dictionary.Generic.Tests.cs" />
-    <Compile Include="Generic\Dictionary\Dictionary.Generic.Tests.netcoreapp1.1.cs" Condition="'$(TargetGroup)'=='netcoreapp'" />
+    <Compile Include="Generic\Dictionary\Dictionary.Generic.Tests.netcoreapp.cs" Condition="'$(TargetGroup)'=='netcoreapp'" />
     <Compile Include="Generic\Dictionary\Dictionary.Generic.Tests.Keys.cs" />
     <Compile Include="Generic\Dictionary\Dictionary.Generic.Tests.Values.cs" />
     <Compile Include="Generic\HashSet\HashSet.Generic.cs" />
     <Compile Include="Generic\HashSet\HashSet.Generic.Tests.cs" />
-    <Compile Include="Generic\HashSet\HashSet.Generic.Tests.netcoreapp1.1.cs" Condition="'$(TargetGroup)'=='netcoreapp'" />
+    <Compile Include="Generic\HashSet\HashSet.Generic.Tests.netcoreapp.cs" Condition="'$(TargetGroup)'=='netcoreapp'" />
     <Compile Include="Generic\HashSet\HashSet.Generic.Tests.AsNonGenericIEnumerable.cs" />
     <Compile Include="Generic\LinkedList\LinkedList.Generic.cs" />
     <Compile Include="Generic\LinkedList\LinkedList.Generic.Tests.AddAfter.cs" />
@@ -117,7 +117,7 @@
     <Compile Include="Generic\List\List.Generic.Tests.Sort.cs" />
     <Compile Include="Generic\Queue\Queue.Generic.cs" />
     <Compile Include="Generic\Queue\Queue.Generic.Tests.cs" />
-    <Compile Include="Generic\Queue\Queue.Generic.Tests.netcoreapp1.1.cs" Condition="'$(TargetGroup)'=='netcoreapp'" />
+    <Compile Include="Generic\Queue\Queue.Generic.Tests.netcoreapp.cs" Condition="'$(TargetGroup)'=='netcoreapp'" />
     <Compile Include="Generic\Queue\Queue.Tests.cs" />
     <Compile Include="Generic\SortedDictionary\SortedDictionary.Generic.cs" />
     <Compile Include="Generic\SortedDictionary\SortedDictionary.Generic.Tests.cs" />
@@ -135,7 +135,7 @@
     <Compile Include="Generic\Stack\Stack.Tests.cs" />
     <Compile Include="Generic\Stack\Stack.Generic.cs" />
     <Compile Include="Generic\Stack\Stack.Generic.Tests.cs" />
-    <Compile Include="Generic\Stack\Stack.Generic.Tests.netcoreapp1.1.cs" Condition="'$(TargetGroup)'=='netcoreapp'" />
+    <Compile Include="Generic\Stack\Stack.Generic.Tests.netcoreapp.cs" Condition="'$(TargetGroup)'=='netcoreapp'" />
     <Compile Include="$(CommonTestPath)\System\Diagnostics\DebuggerAttributes.cs">
       <Link>Common\System\Diagnostics\DebuggerAttributes.cs</Link>
     </Compile>

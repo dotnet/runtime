@@ -48,7 +48,7 @@
     <Compile Include="LoggingTest.cs" />
     <Compile Include="HttpRequestCachePolicyTest.cs" />
     <Compile Include="HttpWebRequestHeaderTest.cs" />
-    <Compile Include="HttpWebRequestTest.netstandard1.7.cs" />
+    <Compile Include="HttpWebRequestTest.netstandard.cs" />
     <Compile Include="HttpWebResponseHeaderTest.cs" />
     <Compile Include="HttpRequestResponseSerializationTest.cs" />
     <Compile Include="$(CommonTestPath)\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs">

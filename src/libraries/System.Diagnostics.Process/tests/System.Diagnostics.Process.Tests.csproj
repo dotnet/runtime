@@ -34,8 +34,8 @@
     <Compile Include="XunitAssemblyAttributes.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'=='netstandard'">
-    <Compile Include="ProcessTests.netstandard1.7.cs" />
-    <Compile Include="ProcessStartInfoTests.netstandard1.7.cs" />
+    <Compile Include="ProcessTests.netstandard.cs" />
+    <Compile Include="ProcessStartInfoTests.netstandard.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(CommonTestPath)\System\Diagnostics\RemoteExecutorConsoleApp\RemoteExecutorConsoleApp.csproj">

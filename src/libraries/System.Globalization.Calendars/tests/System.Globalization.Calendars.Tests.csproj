@@ -116,7 +116,7 @@
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netstandard'">
-    <Compile Include="Misc\Calendars.netstandard1.7.cs" />
+    <Compile Include="Misc\Calendars.netstandard.cs" />
   </ItemGroup>
   <PropertyGroup Condition="'$(TargetGroup)' == 'net46'">
     <DefineConstants>$(DefineConstants);net46</DefineConstants>

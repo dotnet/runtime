@@ -11,10 +11,10 @@
   <!-- Compiled Source Files -->
   <ItemGroup Condition="'$(TargetGroup)' == 'netstandard'">
     <Compile Include="NamedPipeTests\NamedPipeTest.RunAsClient.cs" />
-    <Compile Include="NamedPipeTests\NamedPipeTest.Read.netstandard17.cs" />
-    <Compile Include="NamedPipeTests\NamedPipeTest.netstandard17.cs" />
-    <Compile Include="PipeTest.netstandard17.cs" />
-    <Compile Include="PipeTest.Read.netstandard17.cs" />
+    <Compile Include="NamedPipeTests\NamedPipeTest.Read.netstandard.cs" />
+    <Compile Include="NamedPipeTests\NamedPipeTest.netstandard.cs" />
+    <Compile Include="PipeTest.netstandard.cs" />
+    <Compile Include="PipeTest.Read.netstandard.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AnonymousPipeTests\AnonymousPipeTest.CreateServer.cs" />

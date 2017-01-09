@@ -43,12 +43,12 @@
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'=='netstandard'">
-    <Compile Include="KeyedCollection\TestMethods.netcoreapp1.1.cs" />
-    <Compile Include="KeyedCollection\Serialization.netstandard1.7.cs" />
-    <Compile Include="ObservableCollection\ObservableCollection_ConstructorAndPropertyTests.netstandard1.7.cs" />
-    <Compile Include="ObservableCollection\ObservableCollection_Serialization.netstandard1.7.cs" />
-    <Compile Include="ReadOnlyDictionary\ReadOnlyDictionary_SerializationTests.netstandard1.7.cs" />
-    <Compile Include="ReadOnlyObservableCollection\ReadOnlyObservableCollection_SerializationTests.netstandard1.7.cs" />
+    <Compile Include="KeyedCollection\TestMethods.netcoreapp.cs" />
+    <Compile Include="KeyedCollection\Serialization.netstandard.cs" />
+    <Compile Include="ObservableCollection\ObservableCollection_ConstructorAndPropertyTests.netstandard.cs" />
+    <Compile Include="ObservableCollection\ObservableCollection_Serialization.netstandard.cs" />
+    <Compile Include="ReadOnlyDictionary\ReadOnlyDictionary_SerializationTests.netstandard.cs" />
+    <Compile Include="ReadOnlyObservableCollection\ReadOnlyObservableCollection_SerializationTests.netstandard.cs" />
     <Compile Include="$(CommonTestPath)\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs">
       <Link>Common\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs</Link>
     </Compile>

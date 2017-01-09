@@ -29,9 +29,9 @@
   <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
     <Compile Include="PrecompiledRegexScenarioTest.cs" />
     <Compile Include="RegexGroupNameTests.cs" />
-    <Compile Include="CaptureCollectionTests.netcoreapp1.1.cs" />
-    <Compile Include="GroupCollectionTests.netcoreapp1.1.cs" />
-    <Compile Include="MatchCollectionTests.netcoreapp1.1.cs" />
+    <Compile Include="CaptureCollectionTests.netcoreapp.cs" />
+    <Compile Include="GroupCollectionTests.netcoreapp.cs" />
+    <Compile Include="MatchCollectionTests.netcoreapp.cs" />
     <Compile Include="$(CommonTestPath)\System\Diagnostics\DebuggerAttributes.cs">
       <Link>Common\System\Diagnostics\DebuggerAttributes.cs</Link>
     </Compile>

@@ -94,7 +94,7 @@
       <Link>Common\System\Collections\IEnumerable.NonGeneric.Serialization.Tests.cs</Link>
     </Compile>
     <Compile Include="NameObjectCollectionBase\NameObjectCollectionBase.ConstructorTests.cs" />
-    <Compile Include="NameObjectCollectionBase\MyNameObjectCollection.netstandard1.7.cs" />
+    <Compile Include="NameObjectCollectionBase\MyNameObjectCollection.netstandard.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

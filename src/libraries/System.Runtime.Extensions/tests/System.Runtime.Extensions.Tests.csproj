@@ -26,15 +26,15 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'netcoreapp1.1_Release|AnyCPU' " />
   <ItemGroup Condition="'$(TargetGroup)'=='netstandard' or '$(TargetGroup)'=='netcoreapp'">
     <Compile Include="System\ApplicationIdTests.cs" />
-    <Compile Include="System\IO\PathTests.netstandard1.7.cs" />
-    <Compile Include="System\Convert.netstandard1.7.cs" />
+    <Compile Include="System\IO\PathTests.netstandard.cs" />
+    <Compile Include="System\Convert.netstandard.cs" />
     <Compile Include="System\EnvironmentTests.cs" />
-    <Compile Include="System\Math.netstandard1.7.cs" />
+    <Compile Include="System\Math.netstandard.cs" />
     <Compile Include="System\OperatingSystemTests.cs" />
-    <Compile Include="System\StringComparer.netstandard1.7.cs" />
+    <Compile Include="System\StringComparer.netstandard.cs" />
     <Compile Include="System\Runtime\Versioning\VersioningHelperTests.cs" />
     <Compile Include="System\AppDomainTests.cs" />
-    <Compile Include="System\Net\WebUtility.netstandard1.7.cs" />
+    <Compile Include="System\Net\WebUtility.netstandard.cs" />
     <Compile Include="$(CommonTestPath)\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs">
       <Link>Common\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs</Link>
     </Compile>
@@ -42,11 +42,11 @@
     <Compile Include="System\MarshalByRefObjectTest.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'=='netcoreapp'">
-    <Compile Include="System\BitConverter.netcoreapp1.1.cs" />
+    <Compile Include="System\BitConverter.netcoreapp.cs" />
     <Compile Include="System\IO\Path.GetRelativePath.cs" />
-    <Compile Include="System\MathTests.netcoreapp1.1.cs" />
-    <Compile Include="System\MathF.netcoreapp1.1.cs" />
-    <Compile Include="System\UnloadingAndProcessExitTests.netcoreapp1.1.cs" />
+    <Compile Include="System\MathTests.netcoreapp.cs" />
+    <Compile Include="System\MathF.netcoreapp.cs" />
+    <Compile Include="System\UnloadingAndProcessExitTests.netcoreapp.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="System\Diagnostics\Stopwatch.cs" />
