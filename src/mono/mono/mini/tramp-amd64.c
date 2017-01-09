@@ -969,6 +969,89 @@ mono_arch_create_sdb_trampoline (gboolean single_step, MonoTrampInfo **info, gbo
 
 	return buf;
 }
+
+gpointer
+mono_arch_get_enter_icall_trampoline (MonoTrampInfo **info)
+{
+	guint8 *start = NULL;
+	guint8 *code;
+	MonoJumpInfo *ji = NULL;
+	GSList *unwind_ops = NULL;
+	guint8 *exits[4];
+	int arg_regs[] = {AMD64_ARG_REG1, AMD64_ARG_REG2, AMD64_ARG_REG3, AMD64_ARG_REG4};
+	int i, gregs_offset;
+
+	start = code = (guint8 *) mono_global_codeman_reserve (256);
+
+	// amd64_breakpoint (code);
+
+	/* save target address on stack */
+	amd64_push_reg (code, AMD64_ARG_REG1);
+	amd64_push_reg (code, AMD64_RAX);
+
+	/* load pointer to MethodArguments* into R11 */
+	amd64_mov_reg_reg (code, AMD64_R11, AMD64_ARG_REG2, 8);
+	
+	/* TODO: do float stuff first */
+
+	/* move ilen into RAX */ // TODO: struct offset
+	amd64_mov_reg_membase (code, AMD64_RAX, AMD64_R11, 0, 8);
+	/* load pointer to iregs into R11 */ // TODO: struct offset
+	amd64_mov_reg_membase (code, AMD64_R11, AMD64_R11, 8, 8);
+
+	for (int i = 0; i < 4; i++) {
+		amd64_test_reg_reg (code, AMD64_RAX, AMD64_RAX);
+		exits [i] = code;
+		x86_branch8 (code, X86_CC_Z, 0, FALSE);
+
+		amd64_mov_reg_membase (code, arg_regs [i], AMD64_R11, i * sizeof (gpointer), 8);
+		amd64_dec_reg_size (code, AMD64_RAX, 1);
+	}
+
+	for (int i = 0; i < 4; i++) {
+		x86_patch (exits [i], code);
+	}
+
+
+	amd64_pop_reg (code, AMD64_RAX);
+	amd64_pop_reg (code, AMD64_R11);
+
+	/* tail call into native function */
+	amd64_jump_reg (code, AMD64_R11);
+
+#if 0
+	/* Restore all registers except %rip and %r11 */
+	gregs_offset = MONO_STRUCT_OFFSET (MonoContext, gregs);
+	for (i = 0; i < AMD64_NREG; ++i) {
+		if (i != AMD64_RIP && i != AMD64_RSP && i != AMD64_R8 && i != AMD64_R9 && i != AMD64_R10 && i != AMD64_R11)
+			amd64_mov_reg_membase (code, i, AMD64_R11, gregs_offset + (i * 8), 8);
+	}
+
+	/*
+	 * The context resides on the stack, in the stack frame of the
+	 * caller of this function.  The stack pointer that we need to
+	 * restore is potentially many stack frames higher up, so the
+	 * distance between them can easily be more than the red zone
+	 * size.  Hence the stack pointer can be restored only after
+	 * we have finished loading everything from the context.
+	 */
+	amd64_mov_reg_membase (code, AMD64_R8, AMD64_R11,  gregs_offset + (AMD64_RSP * 8), 8);
+	amd64_mov_reg_membase (code, AMD64_R11, AMD64_R11,  gregs_offset + (AMD64_RIP * 8), 8);
+	amd64_mov_reg_reg (code, AMD64_RSP, AMD64_R8, 8);
+
+	/* jump to the saved IP */
+	amd64_jump_reg (code, AMD64_R11);
+#endif
+
+
+	mono_arch_flush_icache (start, code - start);
+	mono_profiler_code_buffer_new (start, code - start, MONO_PROFILER_CODE_BUFFER_EXCEPTION_HANDLING, NULL);
+
+	if (info)
+		*info = mono_tramp_info_create ("enter_icall_trampoline", start, code - start, ji, unwind_ops);
+
+	return start;
+}
 #endif /* !DISABLE_JIT */
 
 #ifdef DISABLE_JIT
@@ -1030,6 +1113,13 @@ mono_arch_invalidate_method (MonoJitInfo *ji, void *func, gpointer func_arg)
 
 guint8*
 mono_arch_create_sdb_trampoline (gboolean single_step, MonoTrampInfo **info, gboolean aot)
+{
+	g_assert_not_reached ();
+	return NULL;
+}
+
+gpointer
+mono_arch_get_enter_icall_trampoline (MonoTrampInfo **info)
 {
 	g_assert_not_reached ();
 	return NULL;

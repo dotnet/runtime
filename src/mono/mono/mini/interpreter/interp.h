@@ -49,7 +49,7 @@ typedef struct {
 typedef struct _MonoInvocation MonoInvocation;
 
 typedef void (*MonoFuncV) (void);
-typedef void (*MonoPIFunc) (MonoFuncV callme, void *retval, void *obj_this, stackval *arguments);
+typedef void (*MonoPIFunc) (MonoFuncV callme, void *margs);
 
 /* 
  * Structure representing a method transformed for the interpreter 

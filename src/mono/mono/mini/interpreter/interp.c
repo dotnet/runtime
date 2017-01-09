@@ -71,6 +71,45 @@ enum {
 };
 #undef OPDEF
 
+// TODO: should come from mono/mini/mini.h
+#if 1
+ /* 
+  * Information about a trampoline function.
+  */
+ typedef struct
+ {
+	/* 
+	 * The native code of the trampoline. Not owned by this structure.
+	 */
+ 	guint8 *code;
+ 	guint32 code_size;
+	/*
+	 * The name of the trampoline which can be used in AOT/xdebug. Owned by this
+	 * structure.
+	 */
+ 	char *name;
+	/* 
+	 * Patches required by the trampoline when aot-ing. Owned by this structure.
+	 */
+	gpointer *ji;
+	/*
+	 * Unwind information. Owned by this structure.
+	 */
+	GSList *unwind_ops;
+
+	 /*
+	  * Encoded unwind info loaded from AOT images
+	  */
+	 guint8 *uw_info;
+	 guint32 uw_info_len;
+} MonoTrampInfo;
+gpointer mono_arch_get_enter_icall_trampoline (MonoTrampInfo **info);
+void mono_tramp_info_register (MonoTrampInfo *info, MonoDomain *domain);
+#else
+#include <mono/mini/mini.h>
+#endif
+
+
 /* Mingw 2.1 doesnt need this any more, but leave it in for now for older versions */
 #ifdef _WIN32
 #define isnan _isnan
@@ -724,6 +763,98 @@ interp_walk_stack (MonoStackWalk func, gboolean do_il_offset, gpointer user_data
 	}
 }
 
+static MonoPIFunc mono_interp_enter_icall_trampoline = NULL;
+
+struct _MethodArguments {
+	size_t ilen;
+	gpointer *iargs;
+	size_t flen;
+	gpointer *fargs;
+	// TODO: ret val?
+};
+
+typedef struct _MethodArguments MethodArguments;
+
+// TODO: this function is also arch dependent (register width).
+static MethodArguments* build_args_from_sig (MonoMethodSignature *sig, MonoInvocation *frame)
+{
+	// TODO: don't malloc this data structure.
+	MethodArguments *margs = g_malloc0 (sizeof (MethodArguments));
+
+	if (sig->hasthis)
+		margs->ilen++;
+
+	for (int i = 0; i < sig->param_count; i++) {
+		guint32 ptype = sig->params [i]->byref ? MONO_TYPE_PTR : sig->params [i]->type;
+		switch (ptype) {
+		case MONO_TYPE_BOOLEAN:
+		case MONO_TYPE_CHAR:
+		case MONO_TYPE_I1:
+		case MONO_TYPE_U1:
+		case MONO_TYPE_I2:
+		case MONO_TYPE_U2:
+		case MONO_TYPE_I4:
+		case MONO_TYPE_U4:
+		case MONO_TYPE_I:
+		case MONO_TYPE_U:
+		case MONO_TYPE_PTR:
+		case MONO_TYPE_SZARRAY:
+		case MONO_TYPE_CLASS:
+		case MONO_TYPE_OBJECT:
+		case MONO_TYPE_STRING:
+		case MONO_TYPE_I8:
+			margs->ilen++;
+			break;
+		default:
+			g_error ("build_args_from_sig: not implemented yet (1): 0x%x\n", ptype);
+		}
+	}
+
+	if (margs->ilen > 0)
+		margs->iargs = g_malloc0 (sizeof (gpointer) * margs->ilen);
+
+	if (margs->flen > 0)
+		g_error ("build_args_from_sig: TODO, allocate floats\n");
+
+	size_t int_i = 0;
+	size_t int_f = 0;
+
+	if (sig->hasthis) {
+		margs->iargs [0] = frame->obj;
+		int_i++;
+	}
+
+	for (int i = 0; i < sig->param_count; i++) {
+		guint32 ptype = sig->params [i]->byref ? MONO_TYPE_PTR : sig->params [i]->type;
+		switch (ptype) {
+		case MONO_TYPE_BOOLEAN:
+		case MONO_TYPE_CHAR:
+		case MONO_TYPE_I1:
+		case MONO_TYPE_U1:
+		case MONO_TYPE_I2:
+		case MONO_TYPE_U2:
+		case MONO_TYPE_I4:
+		case MONO_TYPE_U4:
+		case MONO_TYPE_I:
+		case MONO_TYPE_U:
+		case MONO_TYPE_PTR:
+		case MONO_TYPE_SZARRAY:
+		case MONO_TYPE_CLASS:
+		case MONO_TYPE_OBJECT:
+		case MONO_TYPE_STRING:
+		case MONO_TYPE_I8:
+			margs->iargs [int_i] = frame->stack_args [i].data.l;
+			g_printerr ("build_args_from_sig: margs->iargs[%d]: %p (frame @ %d)\n", int_i, margs->iargs[int_i], i);
+			int_i++;
+			break;
+		default:
+			g_error ("build_args_from_sig: not implemented yet (2): 0x%x\n", ptype);
+		}
+	}
+
+	return margs;
+}
+
 static void 
 ves_pinvoke_method (MonoInvocation *frame, MonoMethodSignature *sig, MonoFuncV addr, gboolean string_ctor, ThreadContext *context)
 {
@@ -745,19 +876,26 @@ ves_pinvoke_method (MonoInvocation *frame, MonoMethodSignature *sig, MonoFuncV a
 	context->env_frame = frame;
 	context->current_env = &env;
 
-	if (frame->runtime_method) {
-		func = frame->runtime_method->func;
-	} else {
-		g_error ("FIXME: not available?");
-#if 0
-		func = mono_arch_create_trampoline (sig, string_ctor);
-#endif
+	g_assert (frame->runtime_method);
+	func = frame->runtime_method->func;
+	if (!func) {
+		g_printerr ("ICALL(1): func = NULL, addr = %p\n", addr);
+		if (!mono_interp_enter_icall_trampoline) {
+			MonoTrampInfo *info;
+			mono_interp_enter_icall_trampoline = mono_arch_get_enter_icall_trampoline (&info);
+			// mono_tramp_info_register (info, NULL);
+		}
+		func = mono_interp_enter_icall_trampoline;
+		g_printerr ("ICALL(2): func = %p, addr = %p\n", func, addr);
 	}
+	
+	MethodArguments *margs = build_args_from_sig (sig, frame);
 
 	context->current_frame = frame;
 	context->managed_code = 0;
 
-	func (addr, &frame->retval->data.p, frame->obj, frame->stack_args);
+	g_assert (func);
+	func (addr, margs);
 
 	context->managed_code = 1;
 	/* domain can only be changed by native code */
@@ -766,14 +904,20 @@ ves_pinvoke_method (MonoInvocation *frame, MonoMethodSignature *sig, MonoFuncV a
 	if (*abort_requested)
 		mono_thread_interruption_checkpoint ();
 	
+#if 0
 	if (string_ctor) {
 		stackval_from_data (&mono_defaults.string_class->byval_arg, frame->retval, (char*)&frame->retval->data.p, sig->pinvoke);
  	} else if (!MONO_TYPE_ISSTRUCT (sig->ret))
 		stackval_from_data (sig->ret, frame->retval, (char*)&frame->retval->data.p, sig->pinvoke);
+#endif
 
 	context->current_frame = old_frame;
 	context->env_frame = old_env_frame;
 	context->current_env = old_env;
+
+	g_free (margs->iargs);
+	g_free (margs->fargs);
+	g_free (margs);
 }
 
 static void
