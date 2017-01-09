@@ -5390,29 +5390,23 @@ GenTreePtr Compiler::impTransformThis(GenTreePtr              thisPtr,
 }
 
 //------------------------------------------------------------------------
-// impCanPInvokeInline: examine information from a call to see if the call
-// qualifies as an inline pinvoke.
-//
-// Arguments:
-//    block      - block contaning the call, or for inlinees, block
-//                 containing the call being inlined
+// impCanPInvokeInline: check whether PInvoke inlining should enabled in current method.
 //
 // Return Value:
-//    true if this call qualifies as an inline pinvoke, false otherwise
+//    true if PInvoke inlining should be enabled in current method, false otherwise
 //
 // Notes:
-//    Checks basic legality and then a number of ambient conditions
-//    where we could pinvoke but choose not to
+//    Checks a number of ambient conditions where we could pinvoke but choose not to
 
-bool Compiler::impCanPInvokeInline(BasicBlock* block)
+bool Compiler::impCanPInvokeInline()
 {
-    return impCanPInvokeInlineCallSite(block) && getInlinePInvokeEnabled() && (!opts.compDbgCode) &&
-           (compCodeOpt() != SMALL_CODE) && (!opts.compNoPInvokeInlineCB) // profiler is preventing inline pinvoke
+    return getInlinePInvokeEnabled() && (!opts.compDbgCode) && (compCodeOpt() != SMALL_CODE) &&
+           (!opts.compNoPInvokeInlineCB) // profiler is preventing inline pinvoke
         ;
 }
 
 //------------------------------------------------------------------------
-// impCanPInvokeInlineSallSite: basic legality checks using information
+// impCanPInvokeInlineCallSite: basic legality checks using information
 // from a call to see if the call qualifies as an inline pinvoke.
 //
 // Arguments:
@@ -5441,6 +5435,17 @@ bool Compiler::impCanPInvokeInline(BasicBlock* block)
 
 bool Compiler::impCanPInvokeInlineCallSite(BasicBlock* block)
 {
+    if (block->hasHndIndex())
+    {
+        return false;
+    }
+
+    // The remaining limitations do not apply to CoreRT
+    if (IsTargetAbi(CORINFO_CORERT_ABI))
+    {
+        return true;
+    }
+
 #ifdef _TARGET_AMD64_
     // On x64, we disable pinvoke inlining inside of try regions.
     // Here is the comment from JIT64 explaining why:
@@ -5462,12 +5467,13 @@ bool Compiler::impCanPInvokeInlineCallSite(BasicBlock* block)
     //
     //   A desktop test case where this seems to matter is
     //   jit\jit64\ebvts\mcpp\sources2\ijw\__clrcall\vector_ctor_dtor.02\deldtor_clr.exe
-    const bool inX64Try = block->hasTryIndex();
-#else
-    const bool inX64Try = false;
+    if (block->hasTryIndex())
+    {
+        return false;
+    }
 #endif // _TARGET_AMD64_
 
-    return !inX64Try && !block->hasHndIndex();
+    return true;
 }
 
 //------------------------------------------------------------------------
@@ -5533,27 +5539,38 @@ void Compiler::impCheckForPInvokeCall(
     }
     optNativeCallCount++;
 
-    if (opts.compMustInlinePInvokeCalli && methHnd == nullptr)
+    if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB) && methHnd == nullptr)
     {
-        // Always inline pinvoke.
+        // PInvoke CALLI in IL stubs must be inlined
     }
     else
     {
-        // Check legality and profitability.
-        if (!impCanPInvokeInline(block))
+        // Check legality
+        if (!impCanPInvokeInlineCallSite(block))
         {
             return;
         }
 
+        // PInvoke CALL in IL stubs must be inlined on CoreRT. Skip the ambient conditions checks and
+        // profitability checks
+        if (!(opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB) && IsTargetAbi(CORINFO_CORERT_ABI)))
+        {
+            if (impCanPInvokeInline())
+            {
+                return;
+            }
+
+            // Size-speed tradeoff: don't use inline pinvoke at rarely
+            // executed call sites.  The non-inline version is more
+            // compact.
+            if (block->isRunRarely())
+            {
+                return;
+            }
+        }
+
+        // The expensive check should be last
         if (info.compCompHnd->pInvokeMarshalingRequired(methHnd, sig))
-        {
-            return;
-        }
-
-        // Size-speed tradeoff: don't use inline pinvoke at rarely
-        // executed call sites.  The non-inline version is more
-        // compact.
-        if (block->isRunRarely())
         {
             return;
         }
@@ -6220,7 +6237,7 @@ bool Compiler::impIsTailCallILPattern(bool        tailPrefixed,
              ((nextOpcode == CEE_NOP) || ((nextOpcode == CEE_POP) && (++cntPop == 1)))); // Next opcode = nop or exactly
                                                                                          // one pop seen so far.
 #else
-    nextOpcode          = (OPCODE)getU1LittleEndian(codeAddrOfNextOpcode);
+    nextOpcode = (OPCODE)getU1LittleEndian(codeAddrOfNextOpcode);
 #endif
 
     if (isCallPopAndRet)
