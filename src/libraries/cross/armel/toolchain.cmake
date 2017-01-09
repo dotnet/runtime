@@ -11,6 +11,16 @@ add_compile_options(-mthumb)
 add_compile_options(-mfpu=vfpv3)
 add_compile_options(-mfloat-abi=softfp)
 add_compile_options(--sysroot=${CROSS_ROOTFS})
+if("$ENV{__DistroRid}" MATCHES "tizen.*")
+    include_directories(SYSTEM ${CROSS_ROOTFS}/usr/lib/gcc/armv7l-tizen-linux-gnueabi/4.9.2/include/c++/ ${CROSS_ROOTFS}/usr/lib/gcc/armv7l-tizen-linux-gnueabi/4.9.2/include/c++/armv7l-tizen-linux-gnueabi)
+    add_compile_options(-Wno-deprecated-declarations) # compile-time option
+    add_compile_options(-D__extern_always_inline=inline) # compile-time option
+
+    set(CROSS_LINK_FLAGS "${CROSS_LINK_FLAGS} -B${CROSS_ROOTFS}/usr/lib/gcc/armv7l-tizen-linux-gnueabi/4.9.2")
+    set(CROSS_LINK_FLAGS "${CROSS_LINK_FLAGS} -L${CROSS_ROOTFS}/lib")
+    set(CROSS_LINK_FLAGS "${CROSS_LINK_FLAGS} -L${CROSS_ROOTFS}/usr/lib")
+    set(CROSS_LINK_FLAGS "${CROSS_LINK_FLAGS} -L${CROSS_ROOTFS}/usr/lib/gcc/armv7l-tizen-linux-gnueabi/4.9.2")
+endif()
 
 set(CROSS_LINK_FLAGS "${CROSS_LINK_FLAGS} -target ${TOOLCHAIN}")
 set(CROSS_LINK_FLAGS "${CROSS_LINK_FLAGS} -B${CROSS_ROOTFS}/usr/lib/gcc/${TOOLCHAIN}")
