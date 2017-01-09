@@ -1063,6 +1063,196 @@ VARSET_VALRET_TP Compiler::fgGetHandlerLiveVars(BasicBlock* block)
     return liveVars;
 }
 
+class LiveVarAnalysis
+{
+    Compiler* m_compiler;
+
+    bool m_changed;
+    bool m_hasPossibleBackEdge;
+
+    bool      m_heapLiveIn;
+    bool      m_heapLiveOut;
+    VARSET_TP m_liveIn;
+    VARSET_TP m_liveOut;
+
+    LiveVarAnalysis(Compiler* compiler)
+        : m_compiler(compiler)
+        , m_changed(false)
+        , m_hasPossibleBackEdge(false)
+        , m_heapLiveIn(false)
+        , m_heapLiveOut(false)
+        , m_liveIn(VarSetOps::MakeEmpty(compiler))
+        , m_liveOut(VarSetOps::MakeEmpty(compiler))
+    {
+    }
+
+    void PerBlockAnalysis(BasicBlock* block, bool updateInternalOnly, bool keepAliveThis)
+    {
+        /* Compute the 'liveOut' set */
+        VarSetOps::ClearD(m_compiler, m_liveOut);
+        m_heapLiveOut = false;
+        if (block->endsWithJmpMethod(m_compiler))
+        {
+            // A JMP uses all the arguments, so mark them all
+            // as live at the JMP instruction
+            //
+            const LclVarDsc* varDscEndParams = m_compiler->lvaTable + m_compiler->info.compArgsCount;
+            for (LclVarDsc* varDsc = m_compiler->lvaTable; varDsc < varDscEndParams; varDsc++)
+            {
+                noway_assert(!varDsc->lvPromoted);
+                if (varDsc->lvTracked)
+                {
+                    VarSetOps::AddElemD(m_compiler, m_liveOut, varDsc->lvVarIndex);
+                }
+            }
+        }
+
+        // Additionally, union in all the live-in tracked vars of successors.
+        AllSuccessorIter succsEnd = block->GetAllSuccs(m_compiler).end();
+        for (AllSuccessorIter succs = block->GetAllSuccs(m_compiler).begin(); succs != succsEnd; ++succs)
+        {
+            BasicBlock* succ = (*succs);
+            VarSetOps::UnionD(m_compiler, m_liveOut, succ->bbLiveIn);
+            m_heapLiveOut = m_heapLiveOut || (*succs)->bbHeapLiveIn;
+            if (succ->bbNum <= block->bbNum)
+            {
+                m_hasPossibleBackEdge = true;
+            }
+        }
+
+        /* For lvaKeepAliveAndReportThis methods, "this" has to be kept alive everywhere
+           Note that a function may end in a throw on an infinite loop (as opposed to a return).
+           "this" has to be alive everywhere even in such methods. */
+
+        if (keepAliveThis)
+        {
+            VarSetOps::AddElemD(m_compiler, m_liveOut, m_compiler->lvaTable[m_compiler->info.compThisArg].lvVarIndex);
+        }
+
+        /* Compute the 'm_liveIn'  set */
+        VarSetOps::Assign(m_compiler, m_liveIn, m_liveOut);
+        VarSetOps::DiffD(m_compiler, m_liveIn, block->bbVarDef);
+        VarSetOps::UnionD(m_compiler, m_liveIn, block->bbVarUse);
+
+        m_heapLiveIn = (m_heapLiveOut && !block->bbHeapDef) || block->bbHeapUse;
+
+        /* Can exceptions from this block be handled (in this function)? */
+
+        if (m_compiler->ehBlockHasExnFlowDsc(block))
+        {
+            VARSET_TP VARSET_INIT_NOCOPY(liveVars, m_compiler->fgGetHandlerLiveVars(block));
+
+            VarSetOps::UnionD(m_compiler, m_liveIn, liveVars);
+            VarSetOps::UnionD(m_compiler, m_liveOut, liveVars);
+        }
+
+        /* Has there been any change in either live set? */
+
+        if (!VarSetOps::Equal(m_compiler, block->bbLiveIn, m_liveIn) ||
+            !VarSetOps::Equal(m_compiler, block->bbLiveOut, m_liveOut))
+        {
+            if (updateInternalOnly)
+            {
+                // Only "extend" liveness over BBF_INTERNAL blocks
+
+                noway_assert(block->bbFlags & BBF_INTERNAL);
+
+                if (!VarSetOps::Equal(m_compiler, VarSetOps::Intersection(m_compiler, block->bbLiveIn, m_liveIn),
+                                      m_liveIn) ||
+                    !VarSetOps::Equal(m_compiler, VarSetOps::Intersection(m_compiler, block->bbLiveOut, m_liveOut),
+                                      m_liveOut))
+                {
+#ifdef DEBUG
+                    if (m_compiler->verbose)
+                    {
+                        printf("Scope info: block BB%02u LiveIn+ ", block->bbNum);
+                        dumpConvertedVarSet(m_compiler, VarSetOps::Diff(m_compiler, m_liveIn, block->bbLiveIn));
+                        printf(", LiveOut+ ");
+                        dumpConvertedVarSet(m_compiler, VarSetOps::Diff(m_compiler, m_liveOut, block->bbLiveOut));
+                        printf("\n");
+                    }
+#endif // DEBUG
+
+                    VarSetOps::UnionD(m_compiler, block->bbLiveIn, m_liveIn);
+                    VarSetOps::UnionD(m_compiler, block->bbLiveOut, m_liveOut);
+                    m_changed = true;
+                }
+            }
+            else
+            {
+                VarSetOps::Assign(m_compiler, block->bbLiveIn, m_liveIn);
+                VarSetOps::Assign(m_compiler, block->bbLiveOut, m_liveOut);
+                m_changed = true;
+            }
+        }
+
+        if ((block->bbHeapLiveIn == 1) != m_heapLiveIn || (block->bbHeapLiveOut == 1) != m_heapLiveOut)
+        {
+            block->bbHeapLiveIn  = m_heapLiveIn;
+            block->bbHeapLiveOut = m_heapLiveOut;
+            m_changed            = true;
+        }
+    }
+
+    void Run(bool updateInternalOnly)
+    {
+        const bool keepAliveThis =
+            m_compiler->lvaKeepAliveAndReportThis() && m_compiler->lvaTable[m_compiler->info.compThisArg].lvTracked;
+
+        /* Live Variable Analysis - Backward dataflow */
+        do
+        {
+            m_changed = false;
+
+            /* Visit all blocks and compute new data flow values */
+
+            VarSetOps::ClearD(m_compiler, m_liveIn);
+            VarSetOps::ClearD(m_compiler, m_liveOut);
+
+            m_heapLiveIn  = false;
+            m_heapLiveOut = false;
+
+            for (BasicBlock* block = m_compiler->fgLastBB; block; block = block->bbPrev)
+            {
+                // sometimes block numbers are not monotonically increasing which
+                // would cause us not to identify backedges
+                if (block->bbNext && block->bbNext->bbNum <= block->bbNum)
+                {
+                    m_hasPossibleBackEdge = true;
+                }
+
+                if (updateInternalOnly)
+                {
+                    /* Only update BBF_INTERNAL blocks as they may be
+                       syntactically out of sequence. */
+
+                    noway_assert(m_compiler->opts.compDbgCode && (m_compiler->info.compVarScopesCount > 0));
+
+                    if (!(block->bbFlags & BBF_INTERNAL))
+                    {
+                        continue;
+                    }
+                }
+
+                PerBlockAnalysis(block, updateInternalOnly, keepAliveThis);
+            }
+            // if there is no way we could have processed a block without seeing all of its predecessors
+            // then there is no need to iterate
+            if (!m_hasPossibleBackEdge)
+            {
+                break;
+            }
+        } while (m_changed);
+    }
+
+public:
+    static void Run(Compiler* compiler, bool updateInternalOnly)
+    {
+        LiveVarAnalysis analysis(compiler);
+        analysis.Run(updateInternalOnly);
+    }
+};
+
 /*****************************************************************************
  *
  *  This is the classic algorithm for Live Variable Analysis.
@@ -1071,173 +1261,14 @@ VARSET_VALRET_TP Compiler::fgGetHandlerLiveVars(BasicBlock* block)
 
 void Compiler::fgLiveVarAnalysis(bool updateInternalOnly)
 {
-    BasicBlock* block;
-    bool        change;
-#ifdef DEBUG
-    VARSET_TP VARSET_INIT_NOCOPY(extraLiveOutFromFinally, VarSetOps::MakeEmpty(this));
-#endif // DEBUG
-    bool keepAliveThis = lvaKeepAliveAndReportThis() && lvaTable[info.compThisArg].lvTracked;
-
-    /* Live Variable Analysis - Backward dataflow */
-
-    bool hasPossibleBackEdge = false;
-
-    do
-    {
-        change = false;
-
-        /* Visit all blocks and compute new data flow values */
-
-        VARSET_TP VARSET_INIT_NOCOPY(liveIn, VarSetOps::MakeEmpty(this));
-        VARSET_TP VARSET_INIT_NOCOPY(liveOut, VarSetOps::MakeEmpty(this));
-
-        bool heapLiveIn  = false;
-        bool heapLiveOut = false;
-
-        for (block = fgLastBB; block; block = block->bbPrev)
-        {
-            // sometimes block numbers are not monotonically increasing which
-            // would cause us not to identify backedges
-            if (block->bbNext && block->bbNext->bbNum <= block->bbNum)
-            {
-                hasPossibleBackEdge = true;
-            }
-
-            if (updateInternalOnly)
-            {
-                /* Only update BBF_INTERNAL blocks as they may be
-                   syntactically out of sequence. */
-
-                noway_assert(opts.compDbgCode && (info.compVarScopesCount > 0));
-
-                if (!(block->bbFlags & BBF_INTERNAL))
-                {
-                    continue;
-                }
-            }
-
-            /* Compute the 'liveOut' set */
-
-            VarSetOps::ClearD(this, liveOut);
-            heapLiveOut = false;
-            if (block->endsWithJmpMethod(this))
-            {
-                // A JMP uses all the arguments, so mark them all
-                // as live at the JMP instruction
-                //
-                const LclVarDsc* varDscEndParams = lvaTable + info.compArgsCount;
-                for (LclVarDsc* varDsc = lvaTable; varDsc < varDscEndParams; varDsc++)
-                {
-                    noway_assert(!varDsc->lvPromoted);
-                    if (varDsc->lvTracked)
-                    {
-                        VarSetOps::AddElemD(this, liveOut, varDsc->lvVarIndex);
-                    }
-                }
-            }
-
-            // Additionally, union in all the live-in tracked vars of successors.
-            AllSuccessorIter succsEnd = block->GetAllSuccs(this).end();
-            for (AllSuccessorIter succs = block->GetAllSuccs(this).begin(); succs != succsEnd; ++succs)
-            {
-                BasicBlock* succ = (*succs);
-                VarSetOps::UnionD(this, liveOut, succ->bbLiveIn);
-                heapLiveOut = heapLiveOut || (*succs)->bbHeapLiveIn;
-                if (succ->bbNum <= block->bbNum)
-                {
-                    hasPossibleBackEdge = true;
-                }
-            }
-
-            /* For lvaKeepAliveAndReportThis methods, "this" has to be kept alive everywhere
-               Note that a function may end in a throw on an infinite loop (as opposed to a return).
-               "this" has to be alive everywhere even in such methods. */
-
-            if (keepAliveThis)
-            {
-                VarSetOps::AddElemD(this, liveOut, lvaTable[info.compThisArg].lvVarIndex);
-            }
-
-            /* Compute the 'liveIn'  set */
-
-            VarSetOps::Assign(this, liveIn, liveOut);
-            VarSetOps::DiffD(this, liveIn, block->bbVarDef);
-            VarSetOps::UnionD(this, liveIn, block->bbVarUse);
-
-            heapLiveIn = (heapLiveOut && !block->bbHeapDef) || block->bbHeapUse;
-
-            /* Can exceptions from this block be handled (in this function)? */
-
-            if (ehBlockHasExnFlowDsc(block))
-            {
-                VARSET_TP VARSET_INIT_NOCOPY(liveVars, fgGetHandlerLiveVars(block));
-
-                VarSetOps::UnionD(this, liveIn, liveVars);
-                VarSetOps::UnionD(this, liveOut, liveVars);
-            }
-
-            /* Has there been any change in either live set? */
-
-            if (!VarSetOps::Equal(this, block->bbLiveIn, liveIn) || !VarSetOps::Equal(this, block->bbLiveOut, liveOut))
-            {
-                if (updateInternalOnly)
-                {
-                    // Only "extend" liveness over BBF_INTERNAL blocks
-
-                    noway_assert(block->bbFlags & BBF_INTERNAL);
-
-                    if (!VarSetOps::Equal(this, VarSetOps::Intersection(this, block->bbLiveIn, liveIn), liveIn) ||
-                        !VarSetOps::Equal(this, VarSetOps::Intersection(this, block->bbLiveOut, liveOut), liveOut))
-                    {
-#ifdef DEBUG
-                        if (verbose)
-                        {
-                            printf("Scope info: block BB%02u LiveIn+ ", block->bbNum);
-                            dumpConvertedVarSet(this, VarSetOps::Diff(this, liveIn, block->bbLiveIn));
-                            printf(", LiveOut+ ");
-                            dumpConvertedVarSet(this, VarSetOps::Diff(this, liveOut, block->bbLiveOut));
-                            printf("\n");
-                        }
-#endif // DEBUG
-
-                        VarSetOps::UnionD(this, block->bbLiveIn, liveIn);
-                        VarSetOps::UnionD(this, block->bbLiveOut, liveOut);
-                        change = true;
-                    }
-                }
-                else
-                {
-                    VarSetOps::Assign(this, block->bbLiveIn, liveIn);
-                    VarSetOps::Assign(this, block->bbLiveOut, liveOut);
-                    change = true;
-                }
-            }
-
-            if ((block->bbHeapLiveIn == 1) != heapLiveIn || (block->bbHeapLiveOut == 1) != heapLiveOut)
-            {
-                block->bbHeapLiveIn  = heapLiveIn;
-                block->bbHeapLiveOut = heapLiveOut;
-                change               = true;
-            }
-        }
-        // if there is no way we could have processed a block without seeing all of its predecessors
-        // then there is no need to iterate
-        if (!hasPossibleBackEdge)
-        {
-            break;
-        }
-    } while (change);
-
-//-------------------------------------------------------------------------
+    LiveVarAnalysis::Run(this, updateInternalOnly);
 
 #ifdef DEBUG
-
     if (verbose && !updateInternalOnly)
     {
         printf("\nBB liveness after fgLiveVarAnalysis():\n\n");
         fgDispBBLiveness();
     }
-
 #endif // DEBUG
 }
 
