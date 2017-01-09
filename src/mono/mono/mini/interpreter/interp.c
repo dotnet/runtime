@@ -904,12 +904,8 @@ ves_pinvoke_method (MonoInvocation *frame, MonoMethodSignature *sig, MonoFuncV a
 	if (*abort_requested)
 		mono_thread_interruption_checkpoint ();
 	
-#if 0
-	if (string_ctor) {
-		stackval_from_data (&mono_defaults.string_class->byval_arg, frame->retval, (char*)&frame->retval->data.p, sig->pinvoke);
- 	} else if (!MONO_TYPE_ISSTRUCT (sig->ret))
+ 	if (!MONO_TYPE_ISSTRUCT (sig->ret))
 		stackval_from_data (sig->ret, frame->retval, (char*)&frame->retval->data.p, sig->pinvoke);
-#endif
 
 	context->current_frame = old_frame;
 	context->env_frame = old_env_frame;
@@ -4736,11 +4732,17 @@ interp_regression_step (MonoImage *image, int verbose, int *total_run, int *tota
 			MonoInvocation frame;
 			ThreadContext context;
 			stackval frame_result;
+			MonoObject *exc = NULL;
 
-			result_obj = interp_mono_runtime_invoke (method, NULL, NULL, NULL, &interp_error);
+			result_obj = interp_mono_runtime_invoke (method, NULL, NULL, &exc, &interp_error);
 			if (!mono_error_ok (&interp_error)) {
 				cfailed++;
 				g_print ("Test '%s' execution failed.\n", method->name);
+			} else if (exc != NULL) {
+				g_print ("Exception in Test '%s' occured:\n", method->name);
+				mono_object_describe (exc);
+				run++;
+				failed++;
 			} else {
 				result = *(gint32 *) mono_object_unbox (result_obj);
 				expected = atoi (method->name + 5);  // FIXME: oh no.
