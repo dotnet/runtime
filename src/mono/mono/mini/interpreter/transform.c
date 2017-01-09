@@ -1781,6 +1781,7 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 			SET_SIMPLE_TYPE(td.sp - 1, STACK_TYPE_R8);
 			++td.ip;
 			break;
+		case CEE_UNBOX_ANY: /* let's play a dangerous game, TODO */
 		case CEE_UNBOX:
 			CHECK_STACK (&td, 1);
 			token = read32 (td.ip + 1);
@@ -2153,7 +2154,6 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 #if 0
 		case CEE_LDELEM: 
 		case CEE_STELEM: 
-		case CEE_UNBOX_ANY: 
 
 		case CEE_CONV_OVF_U1:
 
