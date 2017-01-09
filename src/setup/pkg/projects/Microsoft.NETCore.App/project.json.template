@@ -14,7 +14,7 @@
     "Libuv": "1.10.0-preview1-22033"
   },
   "frameworks": {
-    "netcoreapp1.1": { }
+    "netcoreapp2.0": { }
   },
   "runtimes": {
     "{RID}": { }

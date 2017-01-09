@@ -7,8 +7,8 @@
     <!-- we don't want any analyzers by ResolveNuGetPackageAssets 
          null-refs when this isn't set and an analyzer is in the packages -->
     <Language>unused</Language>
-    <NuGetTargetMoniker>.NETCoreApp,Version=v1.1</NuGetTargetMoniker>
-    <PackageTargetFramework>netcoreapp1.1</PackageTargetFramework>
+    <NuGetTargetMoniker>.NETCoreApp,Version=v2.0</NuGetTargetMoniker>
+    <PackageTargetFramework>netcoreapp2.0</PackageTargetFramework>
     <PrimaryPackage>Microsoft.Private.CoreFx.NETCoreApp</PrimaryPackage>
   </PropertyGroup>
   <ItemGroup>
