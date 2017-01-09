@@ -295,11 +295,6 @@ case "$host" in
 		target_mach=yes
 		CPPFLAGS="$CPPFLAGS -D_THREAD_SAFE -DGC_MACOSX_THREADS -DPLATFORM_MACOSX -DUSE_MMAP -DUSE_MUNMAP"
 		libmono_cflags="-D_THREAD_SAFE"
-
-		# avoid AR calling ranlib, libtool calls it anyway. suppress no symbols warning.
-		AR_FLAGS="Scru"
-		RANLIB="ranlib -no_warning_for_no_symbols"
-
 		need_link_unlink=yes
 		AC_DEFINE(PTHREAD_POINTER_ID)
 		AC_DEFINE(USE_MACH_SEMA, 1, [...])
