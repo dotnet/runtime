@@ -24,14 +24,12 @@
     typedef Elf32_Ehdr  Elf_Ehdr;
     typedef Elf32_Shdr  Elf_Shdr;
     typedef Elf32_Sym   Elf_Sym;
-    typedef uint32_t    pc_size_t;
     const uint16_t DW_FORM_size = DW_FORM_data4;
 #define ADDRESS_SIZE 4    
 #elif defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
     typedef Elf64_Ehdr  Elf_Ehdr;
     typedef Elf64_Shdr  Elf_Shdr;
     typedef Elf64_Sym   Elf_Sym;
-    typedef uint64_t    pc_size_t;
     const uint16_t DW_FORM_size = DW_FORM_data8;
 #define ADDRESS_SIZE 8
 #else
