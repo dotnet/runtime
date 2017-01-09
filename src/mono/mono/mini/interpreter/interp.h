@@ -117,12 +117,18 @@ mono_interp_transform_method (RuntimeMethod *runtime_method, ThreadContext *cont
 MonoDelegate*
 mono_interp_ftnptr_to_delegate (MonoClass *klass, gpointer ftn);
 
+int
+interp_regression_list (int verbose, int count, char *images []);
+
 void
 mono_interp_transform_init (void);
 
 static void inline stackval_from_data (MonoType *type, stackval *result, char *data, gboolean pinvoke);
 static void inline stackval_to_data (MonoType *type, stackval *val, char *data, gboolean pinvoke);
 void ves_exec_method (MonoInvocation *frame);
+
+MonoDomain *
+mono_interp_init(const char *file);
 
 /*
  * defined in an arch specific file.

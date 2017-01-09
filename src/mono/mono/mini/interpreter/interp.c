@@ -85,7 +85,7 @@ enum {
 static gint *abort_requested;
 
 /* If true, then we output the opcodes as we interpret them */
-static int global_tracing = 0;
+static int global_tracing = 1;
 static int global_no_pointers = 0;
 
 int mono_interp_traceopt = 0;
@@ -3612,6 +3612,7 @@ array_constructed:
 		MINT_IN_CASE(MINT_MONO_FREE)
 			++ip;
 			--sp;
+			g_error ("that doesn't seem right");
 			g_free (sp->data.p);
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_MONO_RETOBJ)
@@ -4490,8 +4491,6 @@ mono_interp_init(const char *file)
 	MonoRuntimeExceptionHandlingCallbacks ecallbacks;
 	MonoError error;
 
-	g_set_prgname (file);
-	
 	g_log_set_always_fatal (G_LOG_LEVEL_ERROR);
 	g_log_set_fatal_mask (G_LOG_DOMAIN, G_LOG_LEVEL_ERROR);
 
@@ -4545,7 +4544,6 @@ mono_interp_init(const char *file)
 	mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 
 	mono_thread_attach (domain);
-	fprintf (stderr, "INTERPRETER: INIT DONE\n");
 	return domain;
 }
 
@@ -4596,6 +4594,7 @@ interp_regression_step (MonoImage *image, int verbose, int *total_run, int *tota
 			} else {
 				result = *(gint32 *) mono_object_unbox (result_obj);
 				expected = atoi (method->name + 5);  // FIXME: oh no.
+				run++;
 
 				if (result != expected) {
 					failed++;
@@ -4647,7 +4646,7 @@ interp_regression (MonoImage *image, int verbose, int *total_run)
 	return total;
 }
 
-static int
+int
 interp_regression_list (int verbose, int count, char *images [])
 {
 	int i, total, total_run, run;
@@ -4671,105 +4670,3 @@ interp_regression_list (int verbose, int count, char *images [])
 	return total;
 }
 
-enum {
-	DO_EXEC,
-	DO_REGRESSION
-};
-
-int 
-mono_main (int argc, char *argv [])
-{
-	MonoDomain *domain;
-	int retval = 0, i;
-	char *file, *config_file = NULL;
-	int enable_debugging = FALSE;
-	MainThreadArgs main_args;
-	const char *error;
-	int action = DO_EXEC;
-
-	setlocale (LC_ALL, "");
-	if (argc < 2)
-		usage ();
-
-	for (i = 1; i < argc && argv [i][0] == '-'; i++){
-		if (strcmp (argv [i], "--trace") == 0)
-			global_tracing = 1;
-		if (strcmp (argv [i], "--noptr") == 0)
-			global_no_pointers = 1;
-		if (strcmp (argv [i], "--regression") == 0)
-			action = DO_REGRESSION;
-		if (strcmp (argv [i], "--traceops") == 0)
-			global_tracing = 2;
-		if (strcmp (argv [i], "--traceopt") == 0)
-			++mono_interp_traceopt;
-		if (strcmp (argv [i], "--dieonex") == 0) {
-			die_on_exception = 1;
-			enable_debugging = 1;
-		}
-		if (strcmp (argv [i], "--print-vtable") == 0)
-			mono_print_vtable = TRUE;
-		if (strcmp (argv [i], "--profile") == 0)
-			mono_profiler_load (NULL);
-		if (strcmp (argv [i], "--config") == 0)
-			config_file = argv [++i];
-		if (strcmp (argv [i], "--help") == 0)
-			usage ();
-#if DEBUG_INTERP
-		if (strcmp (argv [i], "--debug") == 0) {
-			MonoMethodDesc *desc = mono_method_desc_new (argv [++i], FALSE);
-			if (!desc)
-				g_error ("Invalid method name '%s'", argv [i]);
-			db_methods = g_list_append (db_methods, desc);
-		}
-		if (strcmp (argv [i], "--nested") == 0)
-			nested_trace = 1;
-#endif
-	}
-	
-	file = argv [i];
-
-	if (!file)
-		usage ();
-
-	mono_set_rootdir ();
-	domain = mono_interp_init (file);
-	mono_config_parse (config_file);
-
-	error = mono_check_corlib_version ();
-	if (error) {
-		fprintf (stderr, "Corlib not in sync with this runtime: %s\n", error);
-		fprintf (stderr, "Download a newer corlib at http://www.go-mono.com/daily.\n");
-		exit (1);
-	}
-
-	main_args.domain=domain;
-	main_args.file=file;
-	main_args.argc=argc-i;
-	main_args.argv=argv+i;
-	main_args.enable_debugging=enable_debugging;
-
-	switch (action) {
-	case DO_REGRESSION:
-		if (interp_regression_list (2, argc -i, argv + i)) {
-			g_print ("Regression ERRORS!\n");
-			// mini_cleanup (domain);
-			return 1;
-		}
-		// mini_cleanup (domain);
-		return 0;
-	}
-	
-	mono_runtime_exec_managed_code (domain, main_thread_handler, &main_args);
-
-	quit_function (domain, NULL);
-
-	/* Get the return value from System.Environment.ExitCode */
-	retval=mono_environment_exitcode_get ();
-
-#if COUNT_OPS
-	for (i = 0; i < 512; i++)
-		if (opcode_counts[i] != 0)
-			printf("%s %d\n", mono_interp_opname[i], opcode_counts[i]);
-#endif
-	return retval;
-}
