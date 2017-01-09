@@ -2537,6 +2537,12 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 			case CEE_MONO_NOT_TAKEN:
 				++td.ip;
 				break;
+			case CEE_MONO_LDPTR_INT_REQ_FLAG:
+				ADD_CODE (&td, MINT_MONO_LDPTR);
+				ADD_CODE (&td, get_data_item_index (&td, mono_thread_interruption_request_flag ()));
+				PUSH_TYPE (&td, STACK_TYPE_MP, NULL);
+				++td.ip;
+				break;
 			default:
 				g_error ("transform.c: Unimplemented opcode: 0xF0 %02x at 0x%x\n", *td.ip, td.ip-header->code);
 			}
