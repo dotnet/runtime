@@ -18,12 +18,10 @@
     <TargetingPackExclusions Include="System.Linq.Expressions" />
     <ReferenceFromRuntime Include="System.Linq.Expressions" />
   </ItemGroup>
-
   <ItemGroup>
     <!-- Remove this when TypeBuilder extends TypeInfo. See https://github.com/dotnet/corefx/issues/14334 -->
     <Compile Include="$(CommonTestPath)\System\TypeBuilderExtensions.cs" />
   </ItemGroup>
-
   <ItemGroup>
     <Compile Include="CompilerTests.cs" />
     <Compile Include="DebugViewTests.cs" />

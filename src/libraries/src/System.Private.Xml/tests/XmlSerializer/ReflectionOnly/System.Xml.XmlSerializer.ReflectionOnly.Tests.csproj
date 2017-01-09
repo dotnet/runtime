@@ -1,11 +1,12 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
-  <PropertyGroup>    
+  <PropertyGroup>
     <DefineConstants>$(DefineConstants);ReflectionOnly</DefineConstants>
     <RootNamespace>System.Xml.XmlSerializer.ReflectionOnly.Tests</RootNamespace>
     <AssemblyName>System.Xml.XmlSerializer.ReflectionOnly.Tests</AssemblyName>
-    <ProjectGuid>{4050F1D1-1DD2-4B48-A17B-E3F955518C4B}</ProjectGuid>    
+    <ProjectGuid>{4050F1D1-1DD2-4B48-A17B-E3F955518C4B}</ProjectGuid>
+    <NuGetTargetMoniker>.NETStandard,Version=v2.0</NuGetTargetMoniker>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(TestSourceFolder)..\..\..\System.Runtime.Serialization.Xml\tests\Utils.cs" />

@@ -5,7 +5,7 @@
     <AssemblyVersion>4.0.0.0</AssemblyVersion>
     <ProjectGuid>{2ADDB484-6F57-4D71-A3FE-A57EC6329A2B}</ProjectGuid>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
-    <PackageTargetFramework>netstandard1.7</PackageTargetFramework>
+    <PackageTargetFramework>netstandard</PackageTargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->

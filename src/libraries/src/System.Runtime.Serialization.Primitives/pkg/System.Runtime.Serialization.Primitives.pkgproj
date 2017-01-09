@@ -3,7 +3,7 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
     <ProjectReference Include="..\ref\System.Runtime.Serialization.Primitives.csproj">
-      <SupportedFramework>net463;netcoreapp1.1;uap10.1;$(AllXamarinFrameworks)</SupportedFramework>
+      <SupportedFramework>net463;netcoreapp2.0;uap10.1;$(AllXamarinFrameworks)</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.Runtime.Serialization.Primitives.builds" />
     <InboxOnTargetFramework Include="MonoAndroid10" />
