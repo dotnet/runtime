@@ -1,8 +1,8 @@
 {
   "dependencies": {
-    "System.Runtime": "4.4.0-beta-24907-02",
-    "System.Runtime.Serialization.Primitives": "4.4.0-beta-24907-02",
-    "System.Runtime.Serialization.Formatters": "4.4.0-beta-24907-02"
+    "System.Runtime": "4.4.0-beta-24909-01",
+    "System.Runtime.Serialization.Primitives": "4.4.0-beta-24909-01",
+    "System.Runtime.Serialization.Formatters": "4.4.0-beta-24909-01"
   },
   "frameworks": {
     "netstandard1.7": {}
