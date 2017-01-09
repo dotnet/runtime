@@ -1,10 +1,10 @@
 {
   "dependencies": {
-    "System.IO": "4.4.0-beta-24907-02",
-    "System.Runtime": "4.4.0-beta-24907-02",
-    "System.Runtime.Serialization.Xml": "4.4.0-beta-24907-02",
-    "System.Text.Encoding": "4.4.0-beta-24907-02",
-    "System.Xml.ReaderWriter": "4.4.0-beta-24907-02"
+    "System.IO": "4.4.0-beta-24909-01",
+    "System.Runtime": "4.4.0-beta-24909-01",
+    "System.Runtime.Serialization.Xml": "4.4.0-beta-24909-01",
+    "System.Text.Encoding": "4.4.0-beta-24909-01",
+    "System.Xml.ReaderWriter": "4.4.0-beta-24909-01"
   },
   "frameworks": {
     "netstandard1.7": {}
