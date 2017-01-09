@@ -973,17 +973,16 @@ mono_arch_create_sdb_trampoline (gboolean single_step, MonoTrampInfo **info, gbo
 gpointer
 mono_arch_get_enter_icall_trampoline (MonoTrampInfo **info)
 {
-	guint8 *start = NULL;
-	guint8 *code;
+	guint8 *start = NULL, *code, *exits[4], *leave_tramp;
 	MonoJumpInfo *ji = NULL;
 	GSList *unwind_ops = NULL;
-	guint8 *exits[4];
 	int arg_regs[] = {AMD64_ARG_REG1, AMD64_ARG_REG2, AMD64_ARG_REG3, AMD64_ARG_REG4};
 	int i, gregs_offset;
 
 	start = code = (guint8 *) mono_global_codeman_reserve (256);
 
-	// amd64_breakpoint (code);
+	/* save MethodArguments* onto stack */
+	amd64_push_reg (code, AMD64_ARG_REG2);
 
 	/* save target address on stack */
 	amd64_push_reg (code, AMD64_ARG_REG1);
@@ -1016,8 +1015,24 @@ mono_arch_get_enter_icall_trampoline (MonoTrampInfo **info)
 	amd64_pop_reg (code, AMD64_RAX);
 	amd64_pop_reg (code, AMD64_R11);
 
-	/* tail call into native function */
-	amd64_jump_reg (code, AMD64_R11);
+	/* call into native function */
+	amd64_call_reg (code, AMD64_R11);
+
+	/* load MethodArguments */
+	amd64_pop_reg (code, AMD64_R11);
+	/* load retval */ // TODO: struct offset
+	amd64_mov_reg_membase (code, AMD64_R11, AMD64_R11, 0x20, 8);
+
+	amd64_test_reg_reg (code, AMD64_R11, AMD64_R11);
+	leave_tramp = code;
+	x86_branch8 (code, X86_CC_Z, 0, FALSE);
+
+	amd64_mov_membase_reg (code, AMD64_R11, 0, AMD64_RAX, 8);
+
+	x86_patch (leave_tramp, code);
+	amd64_ret (code);
+
+
 
 #if 0
 	/* Restore all registers except %rip and %r11 */

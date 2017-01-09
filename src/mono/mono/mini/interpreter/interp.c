@@ -774,7 +774,7 @@ struct _MethodArguments {
 	gpointer *iargs;
 	size_t flen;
 	gpointer *fargs;
-	// TODO: ret val?
+	gpointer *retval;
 };
 
 typedef struct _MethodArguments MethodArguments;
@@ -817,8 +817,12 @@ static MethodArguments* build_args_from_sig (MonoMethodSignature *sig, MonoInvoc
 	if (margs->ilen > 0)
 		margs->iargs = g_malloc0 (sizeof (gpointer) * margs->ilen);
 
+	if (margs->ilen > 2)
+		g_error ("build_args_from_sig: TODO, more than two iregs\n");
+
 	if (margs->flen > 0)
 		g_error ("build_args_from_sig: TODO, allocate floats\n");
+
 
 	size_t int_i = 0;
 	size_t int_f = 0;
@@ -854,6 +858,12 @@ static MethodArguments* build_args_from_sig (MonoMethodSignature *sig, MonoInvoc
 		default:
 			g_error ("build_args_from_sig: not implemented yet (2): 0x%x\n", ptype);
 		}
+	}
+
+	if (sig->ret->type != MONO_TYPE_VOID) {
+		margs->retval = &(frame->retval->data.p);
+	} else {
+		margs->retval = NULL;
 	}
 
 	return margs;
@@ -894,6 +904,8 @@ ves_pinvoke_method (MonoInvocation *frame, MonoMethodSignature *sig, MonoFuncV a
 	}
 	
 	MethodArguments *margs = build_args_from_sig (sig, frame);
+
+	g_printerr ("margs(out): ilen=%d, flen=%d\n", margs->ilen, margs->flen);
 
 	context->current_frame = frame;
 	context->managed_code = 0;
