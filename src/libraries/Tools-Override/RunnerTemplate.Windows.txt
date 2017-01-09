@@ -1,0 +1,30 @@
+@ECHO OFF
+SETLOCAL
+
+SET RUNTIME_PATH=%1
+set RUNTIME_PATH=%RUNTIME_PATH:/=\%
+IF DEFINED RUNTIME_PATH ( echo Using %RUNTIME_PATH% as the test runtime folder.) ELSE (
+echo Please specify a test runtime folder using the RUNTIME_PATH parameter
+goto ShowUsage
+)
+set EXECUTION_DIR=%RUNTIME_PATH%
+echo Executing in %EXECUTION_DIR% 
+
+:: ========================= BEGIN Test Execution ============================= 
+echo Running tests... Start time: %TIME%
+echo Command(s):
+[[TestRunCommandsEcho]]
+[[TestRunCommands]]
+echo Finished running tests.  End time=%TIME%, Exit code = %ERRORLEVEL%
+EXIT /B %ERRORLEVEL%
+:: ========================= END Test Execution =================================
+
+:ShowUsage
+echo.
+echo Usage:
+echo.
+echo %0 {runtime path}
+echo.
+echo Parameters:
+echo runtime rath :        (Mandatory) Root path containing the full test runtime, containing CoreCLR and all of the framework assemblies.
+EXIT /B -1
