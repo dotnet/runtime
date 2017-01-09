@@ -62,52 +62,7 @@
 #include "embed.h"
 #include "hacks.h"
 
-#define OPDEF(a,b,c,d,e,f,g,h,i,j) \
-	a = i,
-
-enum {
-#include "mono/cil/opcode.def"
-	CEE_LASTOP
-};
-#undef OPDEF
-
-// TODO: should come from mono/mini/mini.h
-#if 1
- /* 
-  * Information about a trampoline function.
-  */
- typedef struct
- {
-	/* 
-	 * The native code of the trampoline. Not owned by this structure.
-	 */
- 	guint8 *code;
- 	guint32 code_size;
-	/*
-	 * The name of the trampoline which can be used in AOT/xdebug. Owned by this
-	 * structure.
-	 */
- 	char *name;
-	/* 
-	 * Patches required by the trampoline when aot-ing. Owned by this structure.
-	 */
-	gpointer *ji;
-	/*
-	 * Unwind information. Owned by this structure.
-	 */
-	GSList *unwind_ops;
-
-	 /*
-	  * Encoded unwind info loaded from AOT images
-	  */
-	 guint8 *uw_info;
-	 guint32 uw_info_len;
-} MonoTrampInfo;
-gpointer mono_arch_get_enter_icall_trampoline (MonoTrampInfo **info);
-void mono_tramp_info_register (MonoTrampInfo *info, MonoDomain *domain);
-#else
 #include <mono/mini/mini.h>
-#endif
 
 
 /* Mingw 2.1 doesnt need this any more, but leave it in for now for older versions */
@@ -4458,7 +4413,7 @@ thread_abort_handler (int signum)
 #endif
 
 static MonoBoolean
-ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info, 
+interp_ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info, 
 			  MonoReflectionMethod **method, 
 			  gint32 *iloffset, gint32 *native_offset,
 			  MonoString **file, gint32 *line, gint32 *column)
@@ -4497,7 +4452,7 @@ ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info,
 }
 
 static MonoArray *
-ves_icall_get_trace (MonoException *exc, gint32 skip, MonoBoolean need_file_info)
+interp_ves_icall_get_trace (MonoException *exc, gint32 skip, MonoBoolean need_file_info)
 {
 	MonoDomain *domain = mono_domain_get ();
 	MonoArray *res;
@@ -4598,7 +4553,7 @@ static void main_thread_handler (gpointer user_data)
 }
 
 static void
-mono_runtime_install_handlers (void)
+interp_mono_runtime_install_handlers (void)
 {
 	add_signal_handler (SIGSEGV, segv_handler);
 	add_signal_handler (SIGINT, quit_handler);
@@ -4677,7 +4632,7 @@ mono_interp_init(const char *file)
 	mono_tls_init_runtime_keys ();
 
 	// TODO: use callbacks?
-	mono_runtime_install_handlers ();
+	interp_mono_runtime_install_handlers ();
 	mono_interp_transform_init ();
 
 	memset (&callbacks, 0, sizeof (callbacks));
@@ -4712,9 +4667,11 @@ mono_interp_init(const char *file)
 	mono_threads_set_default_stacksize(32*1024*1024);
 #endif
 	mono_icall_init ();
-	mono_add_internal_call ("System.Diagnostics.StackFrame::get_frame_info", ves_icall_get_frame_info);
-	mono_add_internal_call ("System.Diagnostics.StackTrace::get_trace", ves_icall_get_trace);
-	mono_add_internal_call ("Mono.Runtime::mono_runtime_install_handlers", mono_runtime_install_handlers);
+	/* TODO: this should use ves_icall_get_frame from mini-exceptions.c? */
+	mono_add_internal_call ("System.Diagnostics.StackFrame::get_frame_info", interp_ves_icall_get_frame_info);
+	/* TODO: this should use ves_icall_get_trace from mini-exceptions.c? */
+	mono_add_internal_call ("System.Diagnostics.StackTrace::get_trace", interp_ves_icall_get_trace);
+	mono_add_internal_call ("Mono.Runtime::mono_runtime_install_handlers", interp_mono_runtime_install_handlers);
 	mono_add_internal_call ("System.Delegate::CreateDelegate_internal", ves_icall_System_Delegate_CreateDelegate_internal);
 
 	mono_register_jit_icall (mono_thread_interruption_checkpoint, "mono_thread_interruption_checkpoint", mono_create_icall_signature ("object"), FALSE);
