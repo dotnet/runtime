@@ -187,6 +187,15 @@ namespace System.Runtime.Serialization
     }
 
 #if NET_NATIVE
+    public class AsmxCharDataContract : CharDataContract
+#else
+    internal class AsmxCharDataContract : CharDataContract
+#endif
+    {
+        internal AsmxCharDataContract() : base(DictionaryGlobals.CharLocalName, DictionaryGlobals.AsmxTypesNamespace) { }
+    }
+
+#if NET_NATIVE
     public class BooleanDataContract : PrimitiveDataContract
 #else
     internal class BooleanDataContract : PrimitiveDataContract
@@ -470,6 +479,51 @@ namespace System.Runtime.Serialization
     }
 
 #if NET_NATIVE
+    public class IntegerDataContract : LongDataContract
+#else
+    internal class IntegerDataContract : LongDataContract
+#endif
+    {
+        internal IntegerDataContract() : base(DictionaryGlobals.integerLocalName, DictionaryGlobals.SchemaNamespace) { }
+    }
+
+#if NET_NATIVE
+    public class PositiveIntegerDataContract : LongDataContract
+#else
+    internal class PositiveIntegerDataContract : LongDataContract
+#endif
+    {
+        internal PositiveIntegerDataContract() : base(DictionaryGlobals.positiveIntegerLocalName, DictionaryGlobals.SchemaNamespace) { }
+    }
+
+#if NET_NATIVE
+    public class NegativeIntegerDataContract : LongDataContract
+#else
+    internal class NegativeIntegerDataContract : LongDataContract
+#endif
+    {
+        internal NegativeIntegerDataContract() : base(DictionaryGlobals.negativeIntegerLocalName, DictionaryGlobals.SchemaNamespace) { }
+    }
+
+#if NET_NATIVE
+    public class NonPositiveIntegerDataContract : LongDataContract
+#else
+    internal class NonPositiveIntegerDataContract : LongDataContract
+#endif
+    {
+        internal NonPositiveIntegerDataContract() : base(DictionaryGlobals.nonPositiveIntegerLocalName, DictionaryGlobals.SchemaNamespace) { }
+    }
+
+#if NET_NATIVE
+    public class NonNegativeIntegerDataContract : LongDataContract
+#else
+    internal class NonNegativeIntegerDataContract : LongDataContract
+#endif
+    {
+        internal NonNegativeIntegerDataContract() : base(DictionaryGlobals.nonNegativeIntegerLocalName, DictionaryGlobals.SchemaNamespace) { }
+    }
+
+#if NET_NATIVE
     public class UnsignedLongDataContract : PrimitiveDataContract
 #else
     internal class UnsignedLongDataContract : PrimitiveDataContract
@@ -658,9 +712,181 @@ namespace System.Runtime.Serialization
             context.WriteString(xmlWriter, (string)obj, name, ns);
         }
     }
+
+#if NET_NATIVE
+    public class TimeDataContract : StringDataContract
+#else
+    internal class TimeDataContract : StringDataContract
+#endif
+    {
+        internal TimeDataContract() : base(DictionaryGlobals.timeLocalName, DictionaryGlobals.SchemaNamespace) { }
+    }
+
+#if NET_NATIVE
+    public class DateDataContract : StringDataContract
+#else
+    internal class DateDataContract : StringDataContract
+#endif
+    {
+        internal DateDataContract() : base(DictionaryGlobals.dateLocalName, DictionaryGlobals.SchemaNamespace) { }
+    }
+
     internal class HexBinaryDataContract : StringDataContract
     {
         internal HexBinaryDataContract() : base(DictionaryGlobals.hexBinaryLocalName, DictionaryGlobals.SchemaNamespace) { }
+    }
+
+#if NET_NATIVE
+    public class GYearMonthDataContract : StringDataContract
+#else
+    internal class GYearMonthDataContract : StringDataContract
+#endif
+    {
+        internal GYearMonthDataContract() : base(DictionaryGlobals.gYearMonthLocalName, DictionaryGlobals.SchemaNamespace) { }
+    }
+
+#if NET_NATIVE
+    public class GYearDataContract : StringDataContract
+#else
+    internal class GYearDataContract : StringDataContract
+#endif
+    {
+        internal GYearDataContract() : base(DictionaryGlobals.gYearLocalName, DictionaryGlobals.SchemaNamespace) { }
+    }
+
+#if NET_NATIVE
+    public class GMonthDayDataContract : StringDataContract
+#else
+    internal class GMonthDayDataContract : StringDataContract
+#endif
+    {
+        internal GMonthDayDataContract() : base(DictionaryGlobals.gMonthDayLocalName, DictionaryGlobals.SchemaNamespace) { }
+    }
+
+#if NET_NATIVE
+    public class GDayDataContract : StringDataContract
+#else
+    internal class GDayDataContract : StringDataContract
+#endif
+    {
+        internal GDayDataContract() : base(DictionaryGlobals.gDayLocalName, DictionaryGlobals.SchemaNamespace) { }
+    }
+
+#if NET_NATIVE
+    public class GMonthDataContract : StringDataContract
+#else
+    internal class GMonthDataContract : StringDataContract
+#endif
+    {
+        internal GMonthDataContract() : base(DictionaryGlobals.gMonthLocalName, DictionaryGlobals.SchemaNamespace) { }
+    }
+
+#if NET_NATIVE
+    public class NormalizedStringDataContract : StringDataContract
+#else
+    internal class NormalizedStringDataContract : StringDataContract
+#endif
+    {
+        internal NormalizedStringDataContract() : base(DictionaryGlobals.normalizedStringLocalName, DictionaryGlobals.SchemaNamespace) { }
+    }
+
+#if NET_NATIVE
+    public class TokenDataContract : StringDataContract
+#else
+    internal class TokenDataContract : StringDataContract
+#endif
+    {
+        internal TokenDataContract() : base(DictionaryGlobals.tokenLocalName, DictionaryGlobals.SchemaNamespace) { }
+    }
+
+#if NET_NATIVE
+    public class LanguageDataContract : StringDataContract
+#else
+    internal class LanguageDataContract : StringDataContract
+#endif
+    {
+        internal LanguageDataContract() : base(DictionaryGlobals.languageLocalName, DictionaryGlobals.SchemaNamespace) { }
+    }
+
+#if NET_NATIVE
+    public class NameDataContract : StringDataContract
+#else
+    internal class NameDataContract : StringDataContract
+#endif
+    {
+        internal NameDataContract() : base(DictionaryGlobals.NameLocalName, DictionaryGlobals.SchemaNamespace) { }
+    }
+
+#if NET_NATIVE
+    public class NCNameDataContract : StringDataContract
+#else
+    internal class NCNameDataContract : StringDataContract
+#endif
+    {
+        internal NCNameDataContract() : base(DictionaryGlobals.NCNameLocalName, DictionaryGlobals.SchemaNamespace) { }
+    }
+
+#if NET_NATIVE
+    public class IDDataContract : StringDataContract
+#else
+    internal class IDDataContract : StringDataContract
+#endif
+    {
+        internal IDDataContract() : base(DictionaryGlobals.XSDIDLocalName, DictionaryGlobals.SchemaNamespace) { }
+    }
+
+#if NET_NATIVE
+    public class IDREFDataContract : StringDataContract
+#else
+    internal class IDREFDataContract : StringDataContract
+#endif
+    {
+        internal IDREFDataContract() : base(DictionaryGlobals.IDREFLocalName, DictionaryGlobals.SchemaNamespace) { }
+    }
+
+#if NET_NATIVE
+    public class IDREFSDataContract : StringDataContract
+#else
+    internal class IDREFSDataContract : StringDataContract
+#endif
+    {
+        internal IDREFSDataContract() : base(DictionaryGlobals.IDREFSLocalName, DictionaryGlobals.SchemaNamespace) { }
+    }
+
+#if NET_NATIVE
+    public class ENTITYDataContract : StringDataContract
+#else
+    internal class ENTITYDataContract : StringDataContract
+#endif
+    {
+        internal ENTITYDataContract() : base(DictionaryGlobals.ENTITYLocalName, DictionaryGlobals.SchemaNamespace) { }
+    }
+
+#if NET_NATIVE
+    public class ENTITIESDataContract : StringDataContract
+#else
+    internal class ENTITIESDataContract : StringDataContract
+#endif
+    {
+        internal ENTITIESDataContract() : base(DictionaryGlobals.ENTITIESLocalName, DictionaryGlobals.SchemaNamespace) { }
+    }
+
+#if NET_NATIVE
+    public class NMTOKENDataContract : StringDataContract
+#else
+    internal class NMTOKENDataContract : StringDataContract
+#endif
+    {
+        internal NMTOKENDataContract() : base(DictionaryGlobals.NMTOKENLocalName, DictionaryGlobals.SchemaNamespace) { }
+    }
+
+#if NET_NATIVE
+    public class NMTOKENSDataContract : StringDataContract
+#else
+    internal class NMTOKENSDataContract : StringDataContract
+#endif
+    {
+        internal NMTOKENSDataContract() : base(DictionaryGlobals.NMTOKENSLocalName, DictionaryGlobals.SchemaNamespace) { }
     }
 
 #if NET_NATIVE
@@ -791,6 +1017,15 @@ namespace System.Runtime.Serialization
     }
 
 #if NET_NATIVE
+    public class TimeSpanDataContract : PrimitiveDataContract
+#else
+    internal class XsDurationDataContract : TimeSpanDataContract
+#endif
+    {
+        internal XsDurationDataContract() : base(DictionaryGlobals.TimeSpanLocalName, DictionaryGlobals.SchemaNamespace) { }
+    }
+
+#if NET_NATIVE
     public class GuidDataContract : PrimitiveDataContract
 #else
     internal class GuidDataContract : PrimitiveDataContract
@@ -822,6 +1057,15 @@ namespace System.Runtime.Serialization
         {
             xmlWriter.WriteGuid((Guid)obj, name, ns);
         }
+    }
+
+#if NET_NATIVE
+    public class AsmxGuidDataContract : GuidDataContract
+#else
+    internal class AsmxGuidDataContract : GuidDataContract
+#endif
+    {
+        internal AsmxGuidDataContract() : base(DictionaryGlobals.GuidLocalName, DictionaryGlobals.AsmxTypesNamespace) { }
     }
 
 #if NET_NATIVE
