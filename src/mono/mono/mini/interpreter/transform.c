@@ -2979,7 +2979,7 @@ mono_interp_transform_method (RuntimeMethod *runtime_method, ThreadContext *cont
 					// return mono_get_exception_missing_method ();
 				}
 				mono_class_init (m->klass);
-				if (!(m->klass->flags & TYPE_ATTRIBUTE_INTERFACE))
+				if (!mono_class_is_interface (m->klass))
 					mono_class_vtable (domain, m->klass);
 			}
 			ip += 5;

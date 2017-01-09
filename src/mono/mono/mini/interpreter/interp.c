@@ -43,7 +43,7 @@
 #include <mono/metadata/tokentype.h>
 #include <mono/metadata/loader.h>
 #include <mono/metadata/threads.h>
-#include <mono/metadata/threadpool-ms.h>
+#include <mono/metadata/threadpool.h>
 #include <mono/metadata/profiler-private.h>
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/reflection.h>
@@ -363,7 +363,7 @@ get_virtual_method (MonoDomain *domain, RuntimeMethod *runtime_method, MonoObjec
 	}
 
 	int slot = mono_method_get_vtable_slot (m);
-	if (m->klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
+	if (mono_class_is_interface (m->klass)) {
 		g_assert (obj->vtable->klass != m->klass);
 		/* TODO: interface offset lookup is slow, go through IMT instead */
 		slot += mono_class_interface_offset (obj->vtable->klass, m->klass);
@@ -2898,7 +2898,7 @@ array_constructed:
 				} else {
 					MonoVTable *vt = o->vtable;
 					MonoClass *oklass = vt->klass;
-					if (c->flags & TYPE_ATTRIBUTE_INTERFACE) {
+					if (mono_class_is_interface (c)) {
 						g_error ("FIXME: interface method lookup");
 						if (c->interface_id > vt->max_interface_id /* || vt->interface_offsets [c->interface_id] == 0 */) {
 							THROW_EX (mono_get_exception_invalid_cast (), ip);
@@ -2926,7 +2926,7 @@ array_constructed:
 				} else {
 					MonoVTable *vt = o->vtable;
 					MonoClass *oklass = vt->klass;
-					if (c->flags & TYPE_ATTRIBUTE_INTERFACE) {
+					if (mono_class_is_interface (c)) {
 						g_error ("FIXME: interface method lookup");
 						if (c->interface_id > vt->max_interface_id /* || vt->interface_offsets [c->interface_id] == 0 */) {
 							sp [-1].data.p = NULL;
@@ -4658,8 +4658,16 @@ interp_create_ftnptr (MonoDomain *domain, gpointer addr)
 	return addr;
 }
 
+// FIXME
 static gboolean
 mono_current_thread_has_handle_block_guard (void)
+{
+	return FALSE;
+}
+
+// FIXME
+static gboolean
+mono_above_abort_threshold (void)
 {
 	return FALSE;
 }
@@ -4691,7 +4699,7 @@ mono_interp_init(const char *file)
 	callbacks.get_imt_trampoline = interp_get_imt_trampoline;
 	callbacks.create_ftnptr = interp_create_ftnptr;
 #ifndef DISABLE_REMOTING
-	mono_install_remoting_trampoline (interp_create_remoting_trampoline);
+	callbacks.create_remoting_trampoline = interp_create_remoting_trampoline;
 #endif
 	callbacks.create_jit_trampoline = interp_create_trampoline;
 	mono_install_callbacks (&callbacks);
@@ -4700,6 +4708,7 @@ mono_interp_init(const char *file)
 	memset (&ecallbacks, 0, sizeof (ecallbacks));
 	ecallbacks.mono_raise_exception = interp_ex_handler;
 	ecallbacks.mono_current_thread_has_handle_block_guard = mono_current_thread_has_handle_block_guard;
+	ecallbacks.mono_above_abort_threshold = mono_above_abort_threshold;
 #if 0
 	// FIXME: ...
 	mono_install_stack_walk (interp_walk_stack);
