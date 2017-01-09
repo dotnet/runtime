@@ -329,7 +329,7 @@ enum_type:
 		return MINT_TYPE_O;
 	case MONO_TYPE_VALUETYPE:
 		if (type->data.klass->enumtype) {
-			type = type->data.klass->enum_basetype;
+			type = mono_class_enum_basetype (type->data.klass);
 			goto enum_type;
 		} else
 			return MINT_TYPE_VT;
@@ -609,13 +609,14 @@ get_data_item_index (TransformData *td, void *ptr)
 }
 
 static void
-generate(MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
+generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 {
 	MonoMethodHeader *header = mono_method_get_header (method);
 	MonoMethodSignature *signature = mono_method_signature (method);
 	MonoImage *image = method->klass->image;
 	MonoDomain *domain = mono_domain_get ();
 	MonoGenericContext *generic_context = NULL;
+	MonoError error;
 	int offset, mt;
 	int i;
 	int i32;
@@ -630,7 +631,7 @@ generate(MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 	int generating_code = 1;
 
 	if (mono_method_signature (method)->is_inflated)
-		generic_context = ((MonoMethodInflated *) method)->context;
+		generic_context = &((MonoMethodInflated *) method)->context;
 
 	memset(&td, 0, sizeof(td));
 	td.method = method;
@@ -754,7 +755,7 @@ generate(MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 			continue;
 		}
 		if (mono_interp_traceopt > 1) {
-			printf("IL_%04x %s %-10s -> IL_%04x, sp %d, %s %-12s vt_sp %u (max %u)\n", 
+			printf("IL_%04lx %s %-10s -> IL_%04lx, sp %ld, %s %-12s vt_sp %u (max %u)\n", 
 				td.ip - td.il_code,
 				td.is_bb_start [td.ip - td.il_code] == 3 ? "<>" :
 				td.is_bb_start [td.ip - td.il_code] == 2 ? "< " :
@@ -937,8 +938,9 @@ generate(MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 				g_warning ("CEE_JMP: stack must be empty");
 			token = read32 (td.ip + 1);
 			m = mono_get_method_full (image, token, NULL, generic_context);
-			ADD_CODE(&td, MINT_JMP);
-			ADD_CODE(&td, get_data_item_index (&td, mono_interp_get_runtime_method (m)));
+			ADD_CODE (&td, MINT_JMP);
+			ADD_CODE (&td, get_data_item_index (&td, mono_interp_get_runtime_method (domain, m, &error)));
+			mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 			td.ip += 5;
 			break;
 		}
@@ -1031,7 +1033,7 @@ generate(MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 			}
 			if (method->wrapper_type == MONO_WRAPPER_NONE && m != NULL) {
 				if (m->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)
-					m = mono_marshal_get_native_wrapper (m);
+					m = mono_marshal_get_native_wrapper (m, FALSE, FALSE);
 				if (!virtual && m->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)
 					m = mono_marshal_get_synchronized_wrapper (m);
 			}
@@ -1079,7 +1081,8 @@ generate(MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 					ADD_CODE(&td, is_void ? MINT_VCALLVIRT : MINT_CALLVIRT);
 				else
 					ADD_CODE(&td, is_void ? MINT_VCALL : MINT_CALL);
-				ADD_CODE(&td, get_data_item_index (&td,  calli? (void *)csignature : (void *)mono_interp_get_runtime_method (m)));
+				ADD_CODE(&td, get_data_item_index (&td,  calli? (void *)csignature : (void *)mono_interp_get_runtime_method (domain, m, &error)));
+				mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 			}
 			td.ip += 5;
 			if (vt_stack_used != 0 || vt_res_size != 0) {
@@ -1722,7 +1725,8 @@ generate(MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 			klass = m->klass;
 			td.sp -= csignature->param_count;
 			ADD_CODE(&td, MINT_NEWOBJ);
-			ADD_CODE(&td, get_data_item_index (&td, mono_interp_get_runtime_method (m)));
+			ADD_CODE(&td, get_data_item_index (&td, mono_interp_get_runtime_method (domain, m, &error)));
+			mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 			if (klass->byval_arg.type == MONO_TYPE_VALUETYPE) {
 				vt_res_size = mono_class_value_size (klass, NULL);
 				PUSH_VT(&td, vt_res_size);
@@ -2433,8 +2437,11 @@ generate(MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 					default:
 						g_assert_not_reached ();
 					}
+					g_error ("FIXME: ftnptr to delegate");
+#if 0
 					if (func == mono_ftnptr_to_delegate)
 						func = mono_interp_ftnptr_to_delegate;
+#endif
 					ADD_CODE(&td, get_data_item_index (&td, func));
 					td.sp -= info->sig->param_count;
 
@@ -2600,7 +2607,8 @@ generate(MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 					m = mono_marshal_get_synchronized_wrapper (m);
 
 				ADD_CODE(&td, *td.ip == CEE_LDFTN ? MINT_LDFTN : MINT_LDVIRTFTN);
-				ADD_CODE(&td, get_data_item_index (&td, mono_interp_get_runtime_method (m)));
+				ADD_CODE(&td, get_data_item_index (&td, mono_interp_get_runtime_method (domain, m, &error)));
+				mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 				td.ip += 5;
 				PUSH_SIMPLE_TYPE (&td, STACK_TYPE_F);
 				break;
@@ -2796,7 +2804,7 @@ static mono_mutex_t calc_section;
 void 
 mono_interp_transform_init (void)
 {
-	mono_mutex_init_recursive(&calc_section);
+	mono_os_mutex_init_recursive(&calc_section);
 }
 
 MonoException *
@@ -2818,6 +2826,7 @@ mono_interp_transform_method (RuntimeMethod *runtime_method, ThreadContext *cont
 	int backwards;
 	MonoGenericContext *generic_context = NULL;
 
+	// fprintf (stderr, "TRANSFORM(0x%016lx): begin %s::%s\n", mono_thread_current (), method->klass->name, method->name);
 	method_class_vt = mono_class_vtable (domain, runtime_method->method->klass);
 	if (!method_class_vt->initialized) {
 		jmp_buf env;
@@ -2841,14 +2850,15 @@ mono_interp_transform_method (RuntimeMethod *runtime_method, ThreadContext *cont
 	mono_profiler_method_jit (method); /* sort of... */
 
 	if (mono_method_signature (method)->is_inflated)
-		generic_context = ((MonoMethodInflated *) method)->context;
+		generic_context = &((MonoMethodInflated *) method)->context;
 
 	if (method->iflags & (METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL | METHOD_IMPL_ATTRIBUTE_RUNTIME)) {
 		MonoMethod *nm = NULL;
-		mono_mutex_lock(&calc_section);
+		mono_os_mutex_lock(&calc_section);
 		if (runtime_method->transformed) {
-			mono_mutex_unlock(&calc_section);
-			mono_profiler_method_end_jit (method, MONO_PROFILE_OK);
+			mono_os_mutex_unlock(&calc_section);
+			g_error ("FIXME: no jit info?");
+			mono_profiler_method_end_jit (method, NULL, MONO_PROFILE_OK);
 			return NULL;
 		}
 
@@ -2859,12 +2869,16 @@ mono_interp_transform_method (RuntimeMethod *runtime_method, ThreadContext *cont
 			runtime_method->code[0] = MINT_CALLINT;
 			if (((MonoMethodPInvoke*) method)->addr == NULL)
 				((MonoMethodPInvoke*) method)->addr = mono_lookup_internal_call (method);
+			g_error ("FIXME: not available?");
+#if 0
 			runtime_method->func = mono_arch_create_trampoline (mono_method_signature (method), method->string_ctor);
+#endif
 		} else {
 			const char *name = method->name;
 			if (method->klass->parent == mono_defaults.multicastdelegate_class) {
 				if (*name == 'I' && (strcmp (name, "Invoke") == 0)) {
-					nm = mono_marshal_get_delegate_invoke (method);
+					g_error ("FIXME: no del?");
+					nm = mono_marshal_get_delegate_invoke (method, NULL);
 				} else if (*name == 'B' && (strcmp (name, "BeginInvoke") == 0)) {
 					nm = mono_marshal_get_delegate_begin_invoke (method);
 				} else if (*name == 'E' && (strcmp (name, "EndInvoke") == 0)) {
@@ -2880,13 +2894,14 @@ mono_interp_transform_method (RuntimeMethod *runtime_method, ThreadContext *cont
 			runtime_method->stack_size = sizeof (stackval); /* for tracing */
 			runtime_method->alloca_size = runtime_method->stack_size;
 			runtime_method->transformed = TRUE;
-			mono_mutex_unlock(&calc_section);
-			mono_profiler_method_end_jit (method, MONO_PROFILE_OK);
+			mono_os_mutex_unlock(&calc_section);
+			g_error ("FIXME: no jinfo?");
+			mono_profiler_method_end_jit (method, NULL, MONO_PROFILE_OK);
 			return NULL;
 		}
 		method = nm;
 		header = mono_method_get_header (nm);
-		mono_mutex_unlock(&calc_section);
+		mono_os_mutex_unlock(&calc_section);
 	}
 	g_assert ((signature->param_count + signature->hasthis) < 1000);
 	g_assert (header->max_stack < 10000);
@@ -2921,8 +2936,11 @@ mono_interp_transform_method (RuntimeMethod *runtime_method, ThreadContext *cont
 				class = mono_class_get_full (image, read32 (ip + 1), generic_context);
 				mono_class_init (class);
 				/* quick fix to not do this for the fake ptr classes - probably should not be getting the vtable at all here */
+#if 0
+				g_error ("FIXME: interface method lookup: %s (in method %s)", class->name, method->name);
 				if (!(class->flags & TYPE_ATTRIBUTE_INTERFACE) && class->interface_offsets != NULL)
 					mono_class_vtable (domain, class);
+#endif
 			}
 			ip += 5;
 			break;
@@ -2931,7 +2949,9 @@ mono_interp_transform_method (RuntimeMethod *runtime_method, ThreadContext *cont
 				m = mono_get_method_full (image, read32 (ip + 1), NULL, generic_context);
 				if (m == NULL) {
 					g_free (is_bb_start);
-					return mono_get_exception_missing_method ();
+					g_error ("FIXME: where to get method and class string?"); 
+					return NULL;
+					// return mono_get_exception_missing_method ();
 				}
 				mono_class_init (m->klass);
 				if (!(m->klass->flags & TYPE_ATTRIBUTE_INTERFACE))
@@ -2996,11 +3016,12 @@ mono_interp_transform_method (RuntimeMethod *runtime_method, ThreadContext *cont
 	}
 
 	/* the rest needs to be locked so it is only done once */
-	mono_mutex_lock(&calc_section);
+	mono_os_mutex_lock(&calc_section);
 	if (runtime_method->transformed) {
-		mono_mutex_unlock(&calc_section);
+		mono_os_mutex_unlock(&calc_section);
 		g_free (is_bb_start);
-		mono_profiler_method_end_jit (method, MONO_PROFILE_OK);
+		g_error ("FIXME: missing jinfo1");
+		mono_profiler_method_end_jit (method, NULL, MONO_PROFILE_OK);
 		return NULL;
 	}
 
@@ -3040,9 +3061,9 @@ mono_interp_transform_method (RuntimeMethod *runtime_method, ThreadContext *cont
 
 	g_free (is_bb_start);
 
-	mono_profiler_method_end_jit (method, MONO_PROFILE_OK);
+	mono_profiler_method_end_jit (method, NULL, MONO_PROFILE_OK);
 	runtime_method->transformed = TRUE;
-	mono_mutex_unlock(&calc_section);
+	mono_os_mutex_unlock(&calc_section);
 
 	return NULL;
 }

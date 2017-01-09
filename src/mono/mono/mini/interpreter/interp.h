@@ -48,8 +48,8 @@ typedef struct {
 
 typedef struct _MonoInvocation MonoInvocation;
 
-typedef void (*MonoFunc) (void);
-typedef void (*MonoPIFunc) (MonoFunc callme, void *retval, void *obj_this, stackval *arguments);
+typedef void (*MonoFuncV) (void);
+typedef void (*MonoPIFunc) (MonoFuncV callme, void *retval, void *obj_this, stackval *arguments);
 
 /* 
  * Structure representing a method transformed for the interpreter 
@@ -120,8 +120,8 @@ mono_interp_ftnptr_to_delegate (MonoClass *klass, gpointer ftn);
 void
 mono_interp_transform_init (void);
 
-void inline stackval_from_data (MonoType *type, stackval *result, char *data, gboolean pinvoke);
-void inline stackval_to_data (MonoType *type, stackval *val, char *data, gboolean pinvoke);
+static void inline stackval_from_data (MonoType *type, stackval *result, char *data, gboolean pinvoke);
+static void inline stackval_to_data (MonoType *type, stackval *val, char *data, gboolean pinvoke);
 void ves_exec_method (MonoInvocation *frame);
 
 /*
@@ -131,7 +131,7 @@ MonoPIFunc
 mono_arch_create_trampoline (MonoMethodSignature *sig, gboolean string_ctor);
 
 RuntimeMethod *
-mono_interp_get_runtime_method (MonoMethod *method);
+mono_interp_get_runtime_method (MonoDomain *domain, MonoMethod *method, MonoError *error);
 
 void *mono_arch_create_method_pointer (MonoMethod *method);
 

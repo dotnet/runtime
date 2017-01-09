@@ -43,10 +43,11 @@
 #include <mono/metadata/tokentype.h>
 #include <mono/metadata/loader.h>
 #include <mono/metadata/threads.h>
-#include <mono/metadata/threadpool.h>
+#include <mono/metadata/threadpool-ms.h>
 #include <mono/metadata/profiler-private.h>
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/reflection.h>
+#include <mono/metadata/reflection-internals.h>
 #include <mono/metadata/exception.h>
 #include <mono/metadata/verify.h>
 #include <mono/metadata/opcodes.h>
@@ -55,7 +56,6 @@
 #include <mono/metadata/marshal.h>
 #include <mono/metadata/environment.h>
 #include <mono/metadata/mono-debug.h>
-#include <mono/os/util.h>
 
 #include "interp.h"
 #include "mintops.h"
@@ -92,13 +92,13 @@ int mono_interp_traceopt = 0;
 
 static int debug_indent_level = 0;
 
-#define INIT_FRAME(frame,parent_frame,obj_this,method_args,method_retval,mono_method)	\
+#define INIT_FRAME(frame,parent_frame,obj_this,method_args,method_retval,domain,mono_method,error)	\
 	do {	\
 		(frame)->parent = (parent_frame);	\
 		(frame)->obj = (obj_this);	\
 		(frame)->stack_args = (method_args);	\
 		(frame)->retval = (method_retval);	\
-		(frame)->runtime_method = mono_interp_get_runtime_method (mono_method);	\
+		(frame)->runtime_method = mono_interp_get_runtime_method ((domain), (mono_method), (error));	\
 		(frame)->ex = NULL;	\
 		(frame)->ip = NULL;	\
 		(frame)->invoke_trap = 0;	\
@@ -114,7 +114,7 @@ static void ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *
 typedef void (*ICallMethod) (MonoInvocation *frame);
 
 static guint32 die_on_exception = 0;
-static guint32 thread_context_id = 0;
+static MonoNativeTlsKey thread_context_id;
 
 #define DEBUG_INTERP 1
 #define COUNT_OPS 0
@@ -155,7 +155,7 @@ db_match_method (gpointer data, gpointer user_data)
 		debug_indent_level++;	\
 		output_indent ();	\
 		mn = mono_method_full_name (method, FALSE); \
-		g_print ("(%u) Entering %s (", GetCurrentThreadId(), mn);	\
+		g_print ("(%u) Entering %s (", mono_thread_internal_current (), mn);	\
 		g_free (mn); \
 		g_print ("%s)\n", args);	\
 		g_free (args);	\
@@ -169,7 +169,7 @@ db_match_method (gpointer data, gpointer user_data)
 		args = dump_retval (frame);	\
 		output_indent ();	\
 		mn = mono_method_full_name (frame->runtime_method->method, FALSE); \
-		g_print ("(%u) Leaving %s", GetCurrentThreadId(),  mn);	\
+		g_print ("(%u) Leaving %s", mono_thread_internal_current (),  mn);	\
 		g_free (mn); \
 		g_print (" => %s\n", args);	\
 		g_free (args);	\
@@ -188,7 +188,8 @@ db_match_method (gpointer data, gpointer user_data)
 
 static void
 interp_ex_handler (MonoException *ex) {
-	ThreadContext *context = TlsGetValue (thread_context_id);
+	MonoError error;
+	ThreadContext *context = mono_native_tls_get_value (thread_context_id);
 	char *stack_trace;
 	if (context == NULL)
 		return;
@@ -196,32 +197,35 @@ interp_ex_handler (MonoException *ex) {
 	ex->stack_trace = mono_string_new (mono_domain_get(), stack_trace);
 	g_free (stack_trace);
 	if (context->current_env == NULL || strcmp(ex->object.vtable->klass->name, "ExecutionEngineException") == 0) {
-		char *strace = mono_string_to_utf8 (ex->stack_trace);
+		char *strace = mono_string_to_utf8_checked (ex->stack_trace, &error);
+		mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 		fprintf(stderr, "Nothing can catch this exception: ");
 		fprintf(stderr, "%s", ex->object.vtable->klass->name);
 		if (ex->message != NULL) {
-			char *m = mono_string_to_utf8 (ex->message);
+			char *m = mono_string_to_utf8_checked (ex->message, &error);
+			mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 			fprintf(stderr, ": %s", m);
 			g_free(m);
 		}
-		fprintf(stderr, "\n");
-		fprintf(stderr, "%s\n", strace);
+		fprintf(stderr, "\n%s\n", strace);
 		g_free (strace);
 		if (ex->inner_ex != NULL) {
 			ex = (MonoException *)ex->inner_ex;
 			fprintf(stderr, "Inner exception: %s", ex->object.vtable->klass->name);
 			if (ex->message != NULL) {
-				char *m = mono_string_to_utf8 (ex->message);
+				char *m = mono_string_to_utf8_checked (ex->message, &error);
+				mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 				fprintf(stderr, ": %s", m);
 				g_free(m);
 			}
-			strace = mono_string_to_utf8 (ex->stack_trace);
+			strace = mono_string_to_utf8_checked (ex->stack_trace, &error);
+			mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 			fprintf(stderr, "\n");
 			fprintf(stderr, "%s\n", strace);
 			g_free (strace);
 		}
 		/* wait for other threads to also collapse */
-		Sleep(1000);
+		// Sleep(1000); // TODO: proper sleep
 		exit(1);
 	}
 	context->env_frame->ex = ex;
@@ -233,13 +237,16 @@ static void
 ves_real_abort (int line, MonoMethod *mh,
 		const unsigned short *ip, stackval *stack, stackval *sp)
 {
+	MonoError error;
 	fprintf (stderr, "Execution aborted in method: %s::%s\n", mh->klass->name, mh->name);
-	fprintf (stderr, "Line=%d IP=0x%04x, Aborted execution\n", line,
-		 ip-(const unsigned short *)mono_method_get_header (mh)->code);
+	fprintf (stderr, "Line=%d IP=0x%04lx, Aborted execution\n", line,
+		 ip-(const unsigned short *)mono_method_get_header_checked (mh, &error)->code);
+		mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 	g_print ("0x%04x %02x\n",
-		 ip-(const unsigned short *)mono_method_get_header (mh)->code, *ip);
+		 ip-(const unsigned short *)mono_method_get_header_checked (mh, &error)->code, *ip);
+	mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 	if (sp > stack)
-		printf ("\t[%d] 0x%08x %0.5f\n", sp-stack, sp[-1].data.i, sp[-1].data.f);
+		printf ("\t[%ld] 0x%08x %0.5f\n", sp-stack, sp[-1].data.i, sp[-1].data.f);
 }
 
 #define ves_abort() \
@@ -249,22 +256,23 @@ ves_real_abort (int line, MonoMethod *mh,
 	} while (0);
 
 static gpointer
-interp_create_remoting_trampoline (MonoMethod *method, MonoRemotingTarget target)
+interp_create_remoting_trampoline (MonoDomain *domain, MonoMethod *method, MonoRemotingTarget target, MonoError *error)
 {
-	return mono_interp_get_runtime_method (mono_marshal_get_remoting_invoke_for_target (method, target));
+	g_error ("FIXME: use domain and error");
+	// return mono_interp_get_runtime_method (mono_marshal_get_remoting_invoke_for_target (method, target));
 }
 
 static mono_mutex_t runtime_method_lookup_section;
 
 RuntimeMethod*
-mono_interp_get_runtime_method (MonoMethod *method)
+mono_interp_get_runtime_method (MonoDomain *domain, MonoMethod *method, MonoError *error)
 {
-	MonoDomain *domain = mono_domain_get ();
 	RuntimeMethod *rtm;
+	mono_error_init (error);
 
-	mono_mutex_lock (&runtime_method_lookup_section);
+	mono_os_mutex_lock (&runtime_method_lookup_section);
 	if ((rtm = mono_internal_hash_table_lookup (&domain->jit_code_hash, method))) {
-		mono_mutex_unlock (&runtime_method_lookup_section);
+		mono_os_mutex_unlock (&runtime_method_lookup_section);
 		return rtm;
 	}
 	rtm = mono_mempool_alloc (domain->mp, sizeof (RuntimeMethod));
@@ -274,41 +282,47 @@ mono_interp_get_runtime_method (MonoMethod *method)
 	rtm->hasthis = mono_method_signature (method)->hasthis;
 	rtm->valuetype = method->klass->valuetype;
 	mono_internal_hash_table_insert (&domain->jit_code_hash, method, rtm);
-	mono_mutex_unlock (&runtime_method_lookup_section);
+	mono_os_mutex_unlock (&runtime_method_lookup_section);
 
 	return rtm;
 }
 
 static gpointer
-interp_create_trampoline (MonoMethod *method)
+interp_create_trampoline (MonoDomain *domain, MonoMethod *method, MonoError *error)
 {
 	if (method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)
 		method = mono_marshal_get_synchronized_wrapper (method);
-	return mono_interp_get_runtime_method (method);
+	return mono_interp_get_runtime_method (domain, method, error);
 }
 
 static inline RuntimeMethod*
-get_virtual_method (RuntimeMethod *runtime_method, MonoObject *obj)
+get_virtual_method (MonoDomain *domain, RuntimeMethod *runtime_method, MonoObject *obj)
 {
 	MonoMethod *m = runtime_method->method;
+	MonoError error;
 
 	if ((m->flags & METHOD_ATTRIBUTE_FINAL) || !(m->flags & METHOD_ATTRIBUTE_VIRTUAL)) {
+		RuntimeMethod *ret = NULL;
 		if (obj->vtable->klass == mono_defaults.transparent_proxy_class) 
-			return mono_interp_get_runtime_method (mono_marshal_get_remoting_invoke (m));
+			ret = mono_interp_get_runtime_method (domain, mono_marshal_get_remoting_invoke (m), &error);
 		else if (m->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)
-			return mono_interp_get_runtime_method (mono_marshal_get_synchronized_wrapper (m));
+			ret = mono_interp_get_runtime_method (domain, mono_marshal_get_synchronized_wrapper (m), &error);
 		else
-			return runtime_method;
+			ret = runtime_method;
+		mono_error_cleanup (&error); /* FIXME: don't swallow the error */
+		return ret;
 	}
 
 	if (m->klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
-		return ((RuntimeMethod **)obj->vtable->interface_offsets [m->klass->interface_id]) [m->slot];
+		// return ((RuntimeMethod **)obj->vtable->interface_offsets [m->klass->interface_id]) [m->slot];
+		g_error ("FIXME: interface method lookup");
+		return NULL;
 	} else {
 		return ((RuntimeMethod **)obj->vtable->vtable) [m->slot];
 	}
 }
 
-void inline
+static void inline
 stackval_from_data (MonoType *type, stackval *result, char *data, gboolean pinvoke)
 {
 	if (type->byref) {
@@ -374,7 +388,7 @@ stackval_from_data (MonoType *type, stackval *result, char *data, gboolean pinvo
 		return;
 	case MONO_TYPE_VALUETYPE:
 		if (type->data.klass->enumtype) {
-			stackval_from_data (type->data.klass->enum_basetype, result, data, pinvoke);
+			stackval_from_data (mono_class_enum_basetype (type->data.klass), result, data, pinvoke);
 			return;
 		} else {
 			int size;
@@ -392,7 +406,7 @@ stackval_from_data (MonoType *type, stackval *result, char *data, gboolean pinvo
 	}
 }
 
-void inline
+static void inline
 stackval_to_data (MonoType *type, stackval *val, char *data, gboolean pinvoke)
 {
 	if (type->byref) {
@@ -469,7 +483,7 @@ stackval_to_data (MonoType *type, stackval *val, char *data, gboolean pinvoke)
 	}
 	case MONO_TYPE_VALUETYPE:
 		if (type->data.klass->enumtype) {
-			stackval_to_data (type->data.klass->enum_basetype, val, data, pinvoke);
+			stackval_to_data (mono_class_enum_basetype (type->data.klass), val, data, pinvoke);
 			return;
 		} else {
 			int size;
@@ -511,11 +525,13 @@ fill_in_trace (MonoException *exception, MonoInvocation *frame)
 static MonoObject*
 ves_array_create (MonoDomain *domain, MonoClass *klass, MonoMethodSignature *sig, stackval *values)
 {
-	guint32 *lengths;
-	guint32 *lower_bounds;
+	uintptr_t *lengths;
+	intptr_t *lower_bounds;
+	MonoObject *obj;
+	MonoError error;
 	int i;
 
-	lengths = alloca (sizeof (guint32) * klass->rank * 2);
+	lengths = alloca (sizeof (uintptr_t) * klass->rank * 2);
 	for (i = 0; i < sig->param_count; ++i) {
 		lengths [i] = values->data.i;
 		values ++;
@@ -525,10 +541,12 @@ ves_array_create (MonoDomain *domain, MonoClass *klass, MonoMethodSignature *sig
 		lower_bounds = NULL;
 	} else {
 		/* lower bounds are first. */
-		lower_bounds = lengths;
+		lower_bounds = (intptr_t *) lengths;
 		lengths += klass->rank;
 	}
-	return (MonoObject*)mono_array_new_full (domain, klass, lengths, lower_bounds);
+	obj = (MonoObject*) mono_array_new_full_checked (domain, klass, lengths, lower_bounds, &error);
+	mono_error_cleanup (&error); /* FIXME: don't swallow the error */
+	return obj;
 }
 
 static void 
@@ -670,10 +688,11 @@ ves_array_element_address (MonoInvocation *frame)
 static void
 interp_walk_stack (MonoStackWalk func, gboolean do_il_offset, gpointer user_data)
 {
-	ThreadContext *context = TlsGetValue (thread_context_id);
+	ThreadContext *context = mono_native_tls_get_value (thread_context_id);
 	MonoInvocation *frame;
 	int il_offset;
 	MonoMethodHeader *hd;
+	MonoError error;
 
 	if (!context) return;
 		
@@ -682,11 +701,11 @@ interp_walk_stack (MonoStackWalk func, gboolean do_il_offset, gpointer user_data
 	while (frame) {
 		gboolean managed = FALSE;
 		MonoMethod *method = frame->runtime_method->method;
-		if (!method || (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) || 
-				(method->iflags & (METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL | METHOD_IMPL_ATTRIBUTE_RUNTIME)))
+		if (!method || (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) || (method->iflags & (METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL | METHOD_IMPL_ATTRIBUTE_RUNTIME)))
 			il_offset = -1;
 		else {
-			hd = mono_method_get_header (method);
+			hd = mono_method_get_header_checked (method, &error);
+			mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 			il_offset = frame->ip - (const unsigned short *)hd->code;
 			if (!method->wrapper_type)
 				managed = TRUE;
@@ -698,7 +717,7 @@ interp_walk_stack (MonoStackWalk func, gboolean do_il_offset, gpointer user_data
 }
 
 static void 
-ves_pinvoke_method (MonoInvocation *frame, MonoMethodSignature *sig, MonoFunc addr, gboolean string_ctor, ThreadContext *context)
+ves_pinvoke_method (MonoInvocation *frame, MonoMethodSignature *sig, MonoFuncV addr, gboolean string_ctor, ThreadContext *context)
 {
 	jmp_buf env;
 	MonoPIFunc func;
@@ -721,7 +740,10 @@ ves_pinvoke_method (MonoInvocation *frame, MonoMethodSignature *sig, MonoFunc ad
 	if (frame->runtime_method) {
 		func = frame->runtime_method->func;
 	} else {
+		g_error ("FIXME: not available?");
+#if 0
 		func = mono_arch_create_trampoline (sig, string_ctor);
+#endif
 	}
 
 	context->current_frame = frame;
@@ -737,8 +759,7 @@ ves_pinvoke_method (MonoInvocation *frame, MonoMethodSignature *sig, MonoFunc ad
 		mono_thread_interruption_checkpoint ();
 	
 	if (string_ctor) {
-		stackval_from_data (&mono_defaults.string_class->byval_arg, 
-				    frame->retval, (char*)&frame->retval->data.p, sig->pinvoke);
+		stackval_from_data (&mono_defaults.string_class->byval_arg, frame->retval, (char*)&frame->retval->data.p, sig->pinvoke);
  	} else if (!MONO_TYPE_ISSTRUCT (sig->ret))
 		stackval_from_data (sig->ret, frame->retval, (char*)&frame->retval->data.p, sig->pinvoke);
 
@@ -751,13 +772,16 @@ static void
 interp_delegate_ctor (MonoDomain *domain, MonoObject *this, MonoObject *target, RuntimeMethod *runtime_method)
 {
 	MonoDelegate *delegate = (MonoDelegate *)this;
+	MonoError error;
 
-	delegate->method_info = mono_method_get_object (domain, runtime_method->method, NULL);
+	delegate->method_info = mono_method_get_object_checked (domain, runtime_method->method, NULL, &error);
+	mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 	delegate->target = target;
 
 	if (target && target->vtable->klass == mono_defaults.transparent_proxy_class) {
 		MonoMethod *method = mono_marshal_get_remoting_invoke (runtime_method->method);
-		delegate->method_ptr = mono_interp_get_runtime_method (method);
+		delegate->method_ptr = mono_interp_get_runtime_method (domain, method, &error);
+		mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 	} else {
 		delegate->method_ptr = runtime_method;
 	}
@@ -769,15 +793,18 @@ mono_interp_ftnptr_to_delegate (MonoClass *klass, gpointer ftn)
 	MonoDelegate *d;
 	MonoJitInfo *ji;
 	MonoDomain *domain = mono_domain_get ();
+	MonoError error;
 
-	d = (MonoDelegate*)mono_object_new (domain, klass);
+	d = (MonoDelegate*)mono_object_new_checked (domain, klass, &error);
+	mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 
 	ji = mono_jit_info_table_find (domain, ftn);
 	if (ji == NULL)
 		mono_raise_exception (mono_get_exception_argument ("", "Function pointer was not created by a Delegate."));
 
 	/* FIXME: discard the wrapper and call the original method */
-	interp_delegate_ctor (domain, (MonoObject*)d, NULL, mono_interp_get_runtime_method (ji->method));
+	interp_delegate_ctor (domain, (MonoObject*)d, NULL, mono_interp_get_runtime_method (domain, ji->d.method, &error));
+	mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 
 	return d;
 }
@@ -793,17 +820,23 @@ ves_runtime_method (MonoInvocation *frame, ThreadContext *context)
 	MonoMethod *method = frame->runtime_method->method;
 	const char *name = method->name;
 	MonoObject *obj = (MonoObject*)frame->obj;
+	MonoObject *isinst_obj;
+	MonoError error;
 
 	mono_class_init (method->klass);
-	
-	if (obj && mono_object_isinst (obj, mono_defaults.multicastdelegate_class)) {
+
+	isinst_obj = mono_object_isinst_checked (obj, mono_defaults.multicastdelegate_class, &error);
+	mono_error_cleanup (&error); /* FIXME: don't swallow the error */
+	if (obj && isinst_obj) {
 		if (*name == '.' && (strcmp (name, ".ctor") == 0)) {
 			interp_delegate_ctor (context->domain, obj, frame->stack_args[0].data.p, frame->stack_args[1].data.p);
 			return;
 		}
 	}
 
-	if (obj && mono_object_isinst (obj, mono_defaults.array_class)) {
+	isinst_obj = mono_object_isinst_checked (obj, mono_defaults.array_class, &error);
+	mono_error_cleanup (&error); /* FIXME: don't swallow the error */
+	if (obj && isinst_obj) {
 		if (*name == 'S' && (strcmp (name, "Set") == 0)) {
 			ves_array_set (frame);
 			return;
@@ -918,6 +951,8 @@ dump_frame (MonoInvocation *inv)
 	GString *str = g_string_new ("");
 	int i;
 	char *args;
+	MonoError error;
+
 	for (i = 0; inv; inv = inv->parent) {
 		if (inv->runtime_method != NULL) {
 			MonoMethod *method = inv->runtime_method->method;
@@ -932,7 +967,8 @@ dump_frame (MonoInvocation *inv)
 
 			if ((method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) == 0 &&
 				(method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) == 0) {
-				MonoMethodHeader *hd = mono_method_get_header (method);
+				MonoMethodHeader *hd = mono_method_get_header_checked (method, &error);
+				mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 
 				if (hd != NULL) {
 					if (inv->ip) {
@@ -941,7 +977,8 @@ dump_frame (MonoInvocation *inv)
 					} else 
 						opname = "";
 	
-					source = mono_debug_source_location_from_il_offset (method, codep, NULL);
+					g_error ("FIXME: proper source location");
+					// source = mono_debug_source_location_from_il_offset (method, codep, NULL);
 				}
 			}
 			args = dump_args (inv);
@@ -967,12 +1004,14 @@ get_trace_ips (MonoDomain *domain, MonoInvocation *top)
 	int i;
 	MonoArray *res;
 	MonoInvocation *inv;
+	MonoError error;
 
 	for (i = 0, inv = top; inv; inv = inv->parent)
 		if (inv->runtime_method != NULL)
 			++i;
 
-	res = mono_array_new (domain, mono_defaults.int_class, 2 * i);
+	res = mono_array_new_checked (domain, mono_defaults.int_class, 2 * i, &error);
+	mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 
 	for (i = 0, inv = top; inv; inv = inv->parent)
 		if (inv->runtime_method != NULL) {
@@ -1066,10 +1105,10 @@ get_trace_ips (MonoDomain *domain, MonoInvocation *top)
 #endif
 
 static MonoObject*
-interp_mono_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject **exc)
+interp_mono_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject **exc, MonoError *error)
 {
 	MonoInvocation frame;
-	ThreadContext * volatile context = TlsGetValue (thread_context_id);
+	ThreadContext * volatile context = mono_native_tls_get_value (thread_context_id);
 	MonoObject *retval = NULL;
 	MonoMethodSignature *sig = mono_method_signature (method);
 	MonoClass *klass = mono_class_from_mono_type (sig->ret);
@@ -1081,6 +1120,8 @@ interp_mono_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoOb
 	MonoInvocation *old_frame = NULL;
 	jmp_buf env;
 
+	mono_error_init (error);
+
 	frame.ex = NULL;
 
 	if (setjmp(env)) {
@@ -1089,7 +1130,7 @@ interp_mono_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoOb
 			context->current_frame = old_frame;
 			context->managed_code = 0;
 		} else 
-			TlsSetValue (thread_context_id, NULL);
+			mono_native_tls_set_value (thread_context_id, NULL);
 		if (exc != NULL)
 			*exc = (MonoObject *)frame.ex;
 		return retval;
@@ -1103,7 +1144,7 @@ interp_mono_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoOb
 		context_struct.current_env = &env;
 		context_struct.search_for_handler = 0;
 		context_struct.managed_code = 0;
-		TlsSetValue (thread_context_id, context);
+		mono_native_tls_set_value (thread_context_id, context);
 	}
 	else
 		old_frame = context->current_frame;
@@ -1121,13 +1162,13 @@ interp_mono_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoOb
 		isobject = 1;
 		break;
 	case MONO_TYPE_VALUETYPE:
-		retval = mono_object_new (context->domain, klass);
+		retval = mono_object_new_checked (context->domain, klass, error);
 		ret = ((char*)retval) + sizeof (MonoObject);
 		if (!sig->ret->data.klass->enumtype)
 			result.data.vt = ret;
 		break;
 	default:
-		retval = mono_object_new (context->domain, klass);
+		retval = mono_object_new_checked (context->domain, klass, error);
 		ret = ((char*)retval) + sizeof (MonoObject);
 		break;
 	}
@@ -1168,7 +1209,7 @@ handle_enum:
 			break;
 		case MONO_TYPE_VALUETYPE:
 			if (sig->params [i]->data.klass->enumtype) {
-				type = sig->params [i]->data.klass->enum_basetype->type;
+				type = mono_class_enum_basetype (sig->params [i]->data.klass)->type;
 				goto handle_enum;
 			} else {
 				args [i].data.p = params [i];
@@ -1187,15 +1228,15 @@ handle_enum:
 	}
 
 	if (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) 
-		method = mono_marshal_get_native_wrapper (method);
-	INIT_FRAME(&frame,context->current_frame,obj,args,&result,method);
+		method = mono_marshal_get_native_wrapper (method, FALSE, FALSE);
+	INIT_FRAME(&frame,context->current_frame,obj,args,&result,mono_get_root_domain (),method,error);
 	if (exc)
 		frame.invoke_trap = 1;
 	context->managed_code = 1;
 	ves_exec_method_with_context (&frame, context);
 	context->managed_code = 0;
 	if (context == &context_struct)
-		TlsSetValue (thread_context_id, NULL);
+		mono_native_tls_set_value (thread_context_id, NULL);
 	else
 		context->current_frame = old_frame;
 	if (frame.ex != NULL) {
@@ -1303,22 +1344,24 @@ do_icall (ThreadContext *context, int op, stackval *sp, gpointer ptr)
 
 static mono_mutex_t create_method_pointer_mutex;
 
-static MonoGHashTable *method_pointer_hash = NULL;
+static GHashTable *method_pointer_hash = NULL;
 
-static void *
-mono_create_method_pointer (MonoMethod *method)
+gpointer
+mono_create_method_pointer (MonoMethod *method, MonoError *error)
 {
 	gpointer addr;
 	MonoJitInfo *ji;
+	mono_error_init (error);
 
-	mono_mutex_lock (&create_method_pointer_mutex);
+	mono_os_mutex_lock (&create_method_pointer_mutex);
 	if (!method_pointer_hash) {
-		MONO_GC_REGISTER_ROOT (method_pointer_hash);
-		method_pointer_hash = mono_g_hash_table_new (NULL, NULL);
+		// FIXME: is registering method table as GC root really necessary?
+		// MONO_GC_REGISTER_ROOT_FIXED (method_pointer_hash);
+		method_pointer_hash = g_hash_table_new (NULL, NULL);
 	}
-	addr = mono_g_hash_table_lookup (method_pointer_hash, method);
+	addr = g_hash_table_lookup (method_pointer_hash, method);
 	if (addr) {
-		mono_mutex_unlock (&create_method_pointer_mutex);
+		mono_os_mutex_unlock (&create_method_pointer_mutex);
 		return addr;
 	}
 
@@ -1328,17 +1371,21 @@ mono_create_method_pointer (MonoMethod *method)
 	 */
 	if (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL && ((MonoMethodPInvoke*) method)->addr) {
 		ji = g_new0 (MonoJitInfo, 1);
-		ji->method = method;
+		ji->d.method = method;
 		ji->code_size = 1;
 		ji->code_start = addr = ((MonoMethodPInvoke*) method)->addr;
 
 		mono_jit_info_table_add (mono_get_root_domain (), ji);
 	}		
-	else
+	else {
+		g_error ("FIXME: not available? figure out new API");
+#if 0
 		addr = mono_arch_create_method_pointer (method);
+#endif
+	}
 
-	mono_g_hash_table_insert (method_pointer_hash, method, addr);
-	mono_mutex_unlock (&create_method_pointer_mutex);
+	g_hash_table_insert (method_pointer_hash, method, addr);
+	mono_os_mutex_unlock (&create_method_pointer_mutex);
 
 	return addr;
 }
@@ -1362,7 +1409,7 @@ static int opcode_counts[512];
 		} \
 		sp->data.l = 0; \
 		output_indent (); \
-		g_print ("(%u) ", GetCurrentThreadId()); \
+		g_print ("(%u) ", mono_thread_internal_current ()); \
 		mono_interp_dis_mintop(rtm->code, ip); \
 		g_print ("\t%d:%s\n", vt_sp - vtalloc, ins); \
 		g_free (ins); \
@@ -1415,7 +1462,8 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
 #endif
 	int i32;
 	unsigned char *vt_sp;
-	char *locals;
+	unsigned char *locals;
+	MonoError error;
 	MonoObject *o = NULL;
 	MonoClass *c;
 #if USE_COMPUTED_GOTO
@@ -1451,11 +1499,11 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
 	if (tracing > 1)
 		memset(sp, 0, rtm->stack_size);
 #endif
-	vt_sp = (char *)sp + rtm->stack_size;
+	vt_sp = (unsigned char *) sp + rtm->stack_size;
 #if DEBUG_INTERP
 	vtalloc = vt_sp;
 #endif
-	locals = vt_sp + rtm->vt_stack_size;
+	locals = (unsigned char *) vt_sp + rtm->vt_stack_size;
 
 	child_frame.parent = frame;
 
@@ -1490,7 +1538,7 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_VTRESULT) {
 			int ret_size = * (guint16 *)(ip + 1);
-			char *ret_vt_sp = vt_sp;
+			unsigned char *ret_vt_sp = vt_sp;
 			vt_sp -= READ32(ip + 2);
 			if (ret_size > 0) {
 				memmove (vt_sp, ret_vt_sp, ret_size);
@@ -1576,6 +1624,7 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_POP)
 			++ip;
+			fprintf (stderr, "POP: 0x%08x\n", (sp-1)->data.i);
 			--sp;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_JMP) {
@@ -1590,7 +1639,7 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
 			if (new_method->alloca_size > rtm->alloca_size)
 				g_error ("MINT_JMP to method which needs more stack space (%d > %d)", new_method->alloca_size, rtm->alloca_size); 
 			rtm = frame->runtime_method = new_method;
-			vt_sp = (char *)sp + rtm->stack_size;
+			vt_sp = (unsigned char *) sp + rtm->stack_size;
 #if DEBUG_INTERP
 			vtalloc = vt_sp;
 #endif
@@ -1621,13 +1670,13 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
 			} else {
 				child_frame.obj = NULL;
 			}
-			if (csignature->hasthis &&
-					((MonoObject *)child_frame.obj)->vtable->klass == mono_defaults.transparent_proxy_class) {
-				child_frame.runtime_method = mono_interp_get_runtime_method (
-								mono_marshal_get_remoting_invoke (child_frame.runtime_method->method));
-			} else if (child_frame.runtime_method->method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) 
-				child_frame.runtime_method = mono_interp_get_runtime_method (
-								mono_marshal_get_native_wrapper (child_frame.runtime_method->method));
+			if (csignature->hasthis && ((MonoObject *)child_frame.obj)->vtable->klass == mono_defaults.transparent_proxy_class) {
+				child_frame.runtime_method = mono_interp_get_runtime_method (context->domain, mono_marshal_get_remoting_invoke (child_frame.runtime_method->method), &error);
+				mono_error_cleanup (&error); /* FIXME: don't swallow the error */
+			} else if (child_frame.runtime_method->method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) {
+				child_frame.runtime_method = mono_interp_get_runtime_method (context->domain, mono_marshal_get_native_wrapper (child_frame.runtime_method->method, FALSE, FALSE), &error);
+				mono_error_cleanup (&error); /* FIXME: don't swallow the error */
+			}
 
 			ves_exec_method_with_context (&child_frame, context);
 
@@ -1673,7 +1722,7 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
 			} else {
 				child_frame.obj = NULL;
 			}
-			ves_pinvoke_method (&child_frame, csignature, (MonoFunc) code, FALSE, context);
+			ves_pinvoke_method (&child_frame, csignature, (MonoFuncV) code, FALSE, context);
 
 			context->current_frame = frame;
 
@@ -1714,10 +1763,9 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
 			} else {
 				child_frame.obj = NULL;
 			}
-			if (child_frame.runtime_method->hasthis && !child_frame.runtime_method->valuetype &&
-					((MonoObject *)child_frame.obj)->vtable->klass == mono_defaults.transparent_proxy_class) {
-				child_frame.runtime_method = mono_interp_get_runtime_method (
-								mono_marshal_get_remoting_invoke (child_frame.runtime_method->method));
+			if (child_frame.runtime_method->hasthis && !child_frame.runtime_method->valuetype && ((MonoObject *)child_frame.obj)->vtable->klass == mono_defaults.transparent_proxy_class) {
+				child_frame.runtime_method = mono_interp_get_runtime_method (context->domain, mono_marshal_get_remoting_invoke (child_frame.runtime_method->method), &error);
+				mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 			}
 			ves_exec_method_with_context (&child_frame, context);
 
@@ -1754,10 +1802,9 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
 				child_frame.obj = NULL;
 			}
 
-			if (child_frame.runtime_method->hasthis && !child_frame.runtime_method->valuetype &&
-					((MonoObject *)child_frame.obj)->vtable->klass == mono_defaults.transparent_proxy_class) {
-				child_frame.runtime_method = mono_interp_get_runtime_method (
-								mono_marshal_get_remoting_invoke (child_frame.runtime_method->method));
+			if (child_frame.runtime_method->hasthis && !child_frame.runtime_method->valuetype && ((MonoObject *)child_frame.obj)->vtable->klass == mono_defaults.transparent_proxy_class) {
+				child_frame.runtime_method = mono_interp_get_runtime_method (context->domain, mono_marshal_get_remoting_invoke (child_frame.runtime_method->method), &error);
+				mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 			}
 
 			ves_exec_method_with_context (&child_frame, context);
@@ -1793,7 +1840,7 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
 			child_frame.obj = this_arg = sp->data.p;
 			if (!this_arg)
 				THROW_EX (mono_get_exception_null_reference(), ip - 2);
-			child_frame.runtime_method = get_virtual_method (child_frame.runtime_method, this_arg);
+			child_frame.runtime_method = get_virtual_method (context->domain, child_frame.runtime_method, this_arg);
 
 			if (this_arg->vtable->klass->valuetype && child_frame.runtime_method->valuetype) {
 				child_frame.obj = (char *)this_arg + sizeof(MonoObject);
@@ -1839,7 +1886,7 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
 			child_frame.obj = this_arg = sp->data.p;
 			if (!this_arg)
 				THROW_EX (mono_get_exception_null_reference(), ip - 2);
-			child_frame.runtime_method = get_virtual_method (child_frame.runtime_method, this_arg);
+			child_frame.runtime_method = get_virtual_method (context->domain, child_frame.runtime_method, this_arg);
 
 			if (this_arg->vtable->klass->valuetype && child_frame.runtime_method->valuetype) {
 				child_frame.obj = (char *)this_arg + sizeof(MonoObject);
@@ -2606,7 +2653,8 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
 			} else {
 				if (newobj_class != mono_defaults.string_class) {
 					context->managed_code = 0;
-					o = mono_object_new (context->domain, newobj_class);
+					o = mono_object_new_checked (context->domain, newobj_class, &error);
+					mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 					context->managed_code = 1;
 					if (*abort_requested)
 						mono_thread_interruption_checkpoint ();
@@ -2657,18 +2705,22 @@ array_constructed:
 			c = rtm->data_items [*(guint16 *)(ip + 1)];
 			if ((o = sp [-1].data.p)) {
 				if (c->marshalbyref) {
-					if (!mono_object_isinst_mbyref (o, c))
+					MonoObject *isinst_obj = mono_object_isinst_mbyref_checked (o, c, &error);
+					mono_error_cleanup (&error); /* FIXME: don't swallow the error */
+					if (!isinst_obj)
 						THROW_EX (mono_get_exception_invalid_cast (), ip);
 				} else {
 					MonoVTable *vt = o->vtable;
 					MonoClass *oklass = vt->klass;
 					if (c->flags & TYPE_ATTRIBUTE_INTERFACE) {
-						if (c->interface_id > vt->max_interface_id ||
-						    vt->interface_offsets [c->interface_id] == 0) {
+						g_error ("FIXME: interface method lookup");
+						if (c->interface_id > vt->max_interface_id /* || vt->interface_offsets [c->interface_id] == 0 */) {
 							THROW_EX (mono_get_exception_invalid_cast (), ip);
 						}
 					} else if (c->rank) {
-						if (!mono_object_isinst (o, c))
+						MonoObject *isinst_obj = mono_object_isinst_checked (o, c, &error);
+						mono_error_cleanup (&error); /* FIXME: don't swallow the error */
+						if (!isinst_obj)
 							THROW_EX (mono_get_exception_invalid_cast (), ip);
 					} else if (!mono_class_has_parent (oklass, c)) {
 						THROW_EX (mono_get_exception_invalid_cast (), ip);
@@ -2681,18 +2733,22 @@ array_constructed:
 			c = rtm->data_items [*(guint16 *)(ip + 1)];
 			if ((o = sp [-1].data.p)) {
 				if (c->marshalbyref) {
-					if (!mono_object_isinst_mbyref (o, c))
+					MonoObject *isinst_obj = mono_object_isinst_mbyref_checked (o, c, &error);
+					mono_error_cleanup (&error); /* FIXME: don't swallow the error */
+					if (!isinst_obj)
 						sp [-1].data.p = NULL;
 				} else {
 					MonoVTable *vt = o->vtable;
 					MonoClass *oklass = vt->klass;
 					if (c->flags & TYPE_ATTRIBUTE_INTERFACE) {
-						if (c->interface_id > vt->max_interface_id ||
-						    vt->interface_offsets [c->interface_id] == 0) {
+						g_error ("FIXME: interface method lookup");
+						if (c->interface_id > vt->max_interface_id /* || vt->interface_offsets [c->interface_id] == 0 */) {
 							sp [-1].data.p = NULL;
 						}
 					} else if (c->rank) {
-						if (!mono_object_isinst (o, c))
+						MonoObject *isinst_obj = mono_object_isinst_checked (o, c, &error);
+						mono_error_cleanup (&error); /* FIXME: don't swallow the error */
+						if (!isinst_obj)
 							sp [-1].data.p = NULL;
 					} else if (!mono_class_has_parent (oklass, c)) {
 						sp [-1].data.p = NULL;
@@ -2716,7 +2772,9 @@ array_constructed:
 			if (!o)
 				THROW_EX (mono_get_exception_null_reference(), ip);
 
-			if (!(mono_object_isinst (o, c) || 
+			MonoObject *isinst_obj = mono_object_isinst_checked (o, c, &error);
+			mono_error_cleanup (&error); /* FIXME: don't swallow the error */
+			if (!(isinst_obj ||
 				  ((o->vtable->klass->rank == 0) && 
 				   (o->vtable->klass->element_class == c->element_class))))
 				THROW_EX (mono_get_exception_invalid_cast (), ip);
@@ -2787,7 +2845,8 @@ array_constructed:
 			if (o->vtable->klass == mono_defaults.transparent_proxy_class) {
 				MonoClass *klass = ((MonoTransparentProxy*)o)->remote_class->proxy_class;
 
-				addr = mono_load_remote_field (o, klass, field, &tmp);
+				addr = mono_load_remote_field_checked (o, klass, field, &tmp, &error);
+				mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 			} else {
 				addr = (char*)o + field->offset;
 			}				
@@ -2809,7 +2868,8 @@ array_constructed:
 			ip += 4;
 			if (o->vtable->klass == mono_defaults.transparent_proxy_class) {
 				MonoClass *klass = ((MonoTransparentProxy*)o)->remote_class->proxy_class;
-				addr = mono_load_remote_field (o, klass, field, &tmp);
+				addr = mono_load_remote_field_checked (o, klass, field, &tmp, &error);
+				mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 			} else {
 				addr = (char*)o + field->offset;
 			}				
@@ -2863,7 +2923,8 @@ array_constructed:
 
 			if (o->vtable->klass == mono_defaults.transparent_proxy_class) {
 				MonoClass *klass = ((MonoTransparentProxy*)o)->remote_class->proxy_class;
-				mono_store_remote_field (o, klass, field, &sp [-1].data);
+				mono_store_remote_field_checked (o, klass, field, &sp [-1].data, &error);
+				mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 			} else
 				stackval_to_data (field->type, &sp [-1], (char*)o + field->offset, FALSE);
 
@@ -2882,7 +2943,8 @@ array_constructed:
 
 			if (o->vtable->klass == mono_defaults.transparent_proxy_class) {
 				MonoClass *klass = ((MonoTransparentProxy*)o)->remote_class->proxy_class;
-				mono_store_remote_field (o, klass, field, &sp [-1].data);
+				mono_store_remote_field_checked (o, klass, field, &sp [-1].data, &error);
+				mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 			} else
 				memcpy((char*)o + field->offset, sp [-1].data.p, i32);
 
@@ -2897,14 +2959,15 @@ array_constructed:
 
 			if (!vt->initialized) {
 				frame->ip = ip;
-				mono_runtime_class_init (vt);
+				mono_runtime_class_init_full (vt, &error);
+				mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 			}
 			ip += 2;
 
 			if (context->domain->special_static_fields && (addr = g_hash_table_lookup (context->domain->special_static_fields, field)))
 				sp->data.p = mono_get_special_static_data (GPOINTER_TO_UINT (addr));
 			else
-				sp->data.p = (char*)(vt->data) + field->offset;
+				sp->data.p = (char*)(vt->vtable) + field->offset;
 			++sp;
 			MINT_IN_BREAK;
 		}
@@ -2917,13 +2980,14 @@ array_constructed:
 			vt = rtm->data_items [*(guint16 *)(ip + 2)];
 			if (!vt->initialized) {
 				frame->ip = ip;
-				mono_runtime_class_init (vt);
+				mono_runtime_class_init_full (vt, &error);
+				mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 			}
 			ip += 3;
 			if (context->domain->special_static_fields && (addr = g_hash_table_lookup (context->domain->special_static_fields, field)))
 				addr = mono_get_special_static_data (GPOINTER_TO_UINT (addr));
 			else
-				addr = (char*)(vt->data) + field->offset;
+				addr = (char*)(vt->vtable) + field->offset;
 
 			stackval_from_data (field->type, sp, addr, FALSE);
 			++sp;
@@ -2934,10 +2998,11 @@ array_constructed:
 			MonoVTable *vt = rtm->data_items [*(guint16 *)(ip + 2)];
 			if (!vt->initialized) {
 				frame->ip = ip;
-				mono_runtime_class_init (vt);
+				mono_runtime_class_init_full (vt, &error);
+				mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 			}
 			ip += 3;
-			sp->data.i = * (gint32 *)((char*)(vt->data) + field->offset);
+			sp->data.i = * (gint32 *)((char*)(vt->vtable) + field->offset);
 			++sp;
 			MINT_IN_BREAK;
 		}
@@ -2946,10 +3011,11 @@ array_constructed:
 			MonoVTable *vt = rtm->data_items [*(guint16 *)(ip + 2)];
 			if (!vt->initialized) {
 				frame->ip = ip;
-				mono_runtime_class_init (vt);
+				mono_runtime_class_init_full (vt, &error);
+				mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 			}
 			ip += 3;
-			sp->data.p = * (gpointer *)((char*)(vt->data) + field->offset);
+			sp->data.p = * (gpointer *)((char*)(vt->vtable) + field->offset);
 			++sp;
 			MINT_IN_BREAK;
 		}
@@ -2968,13 +3034,14 @@ array_constructed:
 			vt = mono_class_vtable (context->domain, field->parent);
 			if (!vt->initialized) {
 				frame->ip = ip - 2;
-				mono_runtime_class_init (vt);
+				mono_runtime_class_init_full (vt, &error);
+				mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 			}
 			
 			if (context->domain->special_static_fields && (addr = g_hash_table_lookup (context->domain->special_static_fields, field)))
 				addr = mono_get_special_static_data (GPOINTER_TO_UINT (addr));
 			else
-				addr = (char*)(vt->data) + field->offset;
+				addr = (char*)(vt->vtable) + field->offset;
 
 			sp->data.p = vt_sp;
 			vt_sp += (size + 7) & ~7;
@@ -2996,13 +3063,14 @@ array_constructed:
 			vt = mono_class_vtable (context->domain, field->parent);
 			if (!vt->initialized) {
 				frame->ip = ip - 2;
-				mono_runtime_class_init (vt);
+				mono_runtime_class_init_full (vt, &error);
+				mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 			}
 			
 			if (context->domain->special_static_fields && (addr = g_hash_table_lookup (context->domain->special_static_fields, field)))
 				addr = mono_get_special_static_data (GPOINTER_TO_UINT (addr));
 			else
-				addr = (char*)(vt->data) + field->offset;
+				addr = (char*)(vt->vtable) + field->offset;
 
 			stackval_to_data (field->type, sp, addr, FALSE);
 			MINT_IN_BREAK;
@@ -3022,13 +3090,14 @@ array_constructed:
 			vt = mono_class_vtable (context->domain, field->parent);
 			if (!vt->initialized) {
 				frame->ip = ip - 2;
-				mono_runtime_class_init (vt);
+				mono_runtime_class_init_full (vt, &error);
+				mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 			}
 			
 			if (context->domain->special_static_fields && (addr = g_hash_table_lookup (context->domain->special_static_fields, field)))
 				addr = mono_get_special_static_data (GPOINTER_TO_UINT (addr));
 			else
-				addr = (char*)(vt->data) + field->offset;
+				addr = (char*)(vt->vtable) + field->offset;
 			--sp;
 			stackval_to_data (field->type, sp, addr, FALSE);
 			vt_sp -= (size + 7) & ~7;
@@ -3089,18 +3158,21 @@ array_constructed:
 
 			if (c->byval_arg.type == MONO_TYPE_VALUETYPE && !c->enumtype) {
 				int size = mono_class_value_size (c, NULL);
-				sp [-1].data.p = mono_value_box (context->domain, c, sp [-1].data.p);
+				sp [-1].data.p = mono_value_box_checked (context->domain, c, sp [-1].data.p, &error);
+				mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 				size = (size + 7) & ~7;
 				vt_sp -= size;
 			}				
 			else {
 				stackval_to_data (&c->byval_arg, &sp [-1], (char*)&sp [-1], FALSE);
-				sp [-1].data.p = mono_value_box (context->domain, c, &sp [-1]);
+				sp [-1].data.p = mono_value_box_checked (context->domain, c, &sp [-1], &error);
+				mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 			}
 			ip += 2;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_NEWARR)
-			sp [-1].data.p = (MonoObject*) mono_array_new (context->domain, rtm->data_items[*(guint16 *)(ip + 1)], sp [-1].data.i);
+			sp [-1].data.p = (MonoObject*) mono_array_new_checked (context->domain, rtm->data_items[*(guint16 *)(ip + 1)], sp [-1].data.i, &error);
+			mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 			ip += 2;
 			/*if (profiling_classes) {
 				guint count = GPOINTER_TO_UINT (g_hash_table_lookup (profiling_classes, o->vtable->klass));
@@ -3272,11 +3344,13 @@ array_constructed:
 			case MINT_STELEM_R8:
 				mono_array_set ((MonoArray *)o, double, aindex, sp [2].data.f);
 				break;
-			case MINT_STELEM_REF:
-				if (sp [2].data.p && !mono_object_isinst (sp [2].data.p, mono_object_class (o)->element_class))
+			case MINT_STELEM_REF: {
+				MonoObject *isinst_obj = mono_object_isinst_checked (sp [2].data.p, mono_object_class (o)->element_class, &error);
+				mono_error_cleanup (&error); /* FIXME: don't swallow the error */
+				if (sp [2].data.p && !isinst_obj)
 					THROW_EX (mono_get_exception_array_type_mismatch (), ip);
 				mono_array_set ((MonoArray *)o, gpointer, aindex, sp [2].data.p);
-				break;
+			} break;
 			default:
 				ves_abort();
 			}
@@ -3394,7 +3468,7 @@ array_constructed:
 		MINT_IN_CASE(MINT_REFANYVAL) ves_abort(); MINT_IN_BREAK;
 #endif
 		MINT_IN_CASE(MINT_CKFINITE)
-			if (!finite(sp [-1].data.f))
+			if (!isfinite(sp [-1].data.f))
 				THROW_EX (mono_get_exception_arithmetic (), ip);
 			++ip;
 			MINT_IN_BREAK;
@@ -3516,7 +3590,8 @@ array_constructed:
 			++sp;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_MONO_NEWOBJ)
-			sp->data.p = mono_object_new (context->domain, rtm->data_items [*(guint16 *)(ip + 1)]);
+			sp->data.p = mono_object_new_checked (context->domain, rtm->data_items [*(guint16 *)(ip + 1)], &error);
+			mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 			ip += 2;
 			sp++;
 			MINT_IN_BREAK;
@@ -3631,7 +3706,7 @@ array_constructed:
 			if (!sp->data.p)
 				THROW_EX (mono_get_exception_null_reference (), ip - 2);
 				
-			sp->data.p = get_virtual_method (m, sp->data.p);
+			sp->data.p = get_virtual_method (context->domain, m, sp->data.p);
 			++sp;
 			MINT_IN_BREAK;
 		}
@@ -3902,7 +3977,9 @@ array_constructed:
 				clause = &inv->runtime_method->clauses [i];
 				if (clause->flags <= 1 && MONO_OFFSET_IN_CLAUSE (clause, ip_offset)) {
 					if (!clause->flags) {
-						if (mono_object_isinst ((MonoObject*)frame->ex, clause->data.catch_class)) {
+						MonoObject *isinst_obj = mono_object_isinst_checked ((MonoObject*)frame->ex, clause->data.catch_class, &error);
+						mono_error_cleanup (&error); /* FIXME: don't swallow the error */
+						if (isinst_obj) {
 							/* 
 							 * OK, we found an handler, now we need to execute the finally
 							 * and fault blocks before branching to the handler code.
@@ -3940,7 +4017,8 @@ die_on_ex:
 		MonoExceptionClause *clause;
 		GSList *old_list = finally_ips;
 		MonoMethod *method = frame->runtime_method->method;
-		MonoMethodHeader *header = mono_method_get_header (method);
+		MonoMethodHeader *header = mono_method_get_header_checked (method, &error);
+		mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 		
 #if DEBUG_INTERP
 		if (tracing)
@@ -3994,7 +4072,9 @@ die_on_ex:
 		int i;
 		guint32 ip_offset;
 		MonoExceptionClause *clause;
-		MonoMethodHeader *header = mono_method_get_header (frame->runtime_method->method);
+		MonoMethod *method = frame->runtime_method->method;
+		MonoMethodHeader *header = mono_method_get_header_checked (method, &error);
+		mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 		
 #if DEBUG_INTERP
 		if (tracing)
@@ -4026,7 +4106,7 @@ die_on_ex:
 #endif
 			ip = rtm->code + frame->ex_handler->handler_offset;
 			sp = frame->stack;
-			vt_sp = (char *)sp + rtm->stack_size;
+			vt_sp = (unsigned char *) sp + rtm->stack_size;
 			sp->data.p = frame->ex;
 			++sp;
 			goto main_loop;
@@ -4040,8 +4120,9 @@ exit_frame:
 void
 ves_exec_method (MonoInvocation *frame)
 {
-	ThreadContext *context = TlsGetValue (thread_context_id);
+	ThreadContext *context = mono_native_tls_get_value (thread_context_id);
 	ThreadContext context_struct;
+	MonoError error;
 	jmp_buf env;
 
 	frame->ex = NULL;
@@ -4059,11 +4140,12 @@ ves_exec_method (MonoInvocation *frame)
 		context_struct.current_env = &env;
 		context_struct.search_for_handler = 0;
 		context_struct.managed_code = 0;
-		TlsSetValue (thread_context_id, context);
+		mono_native_tls_set_value (thread_context_id, context);
 	}
 	frame->ip = NULL;
 	frame->parent = context->current_frame;
-	frame->runtime_method = mono_interp_get_runtime_method (frame->method);
+	frame->runtime_method = mono_interp_get_runtime_method (context->domain, frame->method, &error);
+	mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 	context->managed_code = 1;
 	ves_exec_method_with_context(frame, context);
 	context->managed_code = 0;
@@ -4076,7 +4158,7 @@ ves_exec_method (MonoInvocation *frame)
 			mono_unhandled_exception ((MonoObject*)frame->ex);
 	}
 	if (context->base_frame == frame)
-		TlsSetValue (thread_context_id, NULL);
+		mono_native_tls_set_value (thread_context_id, NULL);
 	else
 		context->current_frame = frame->parent;
 }
@@ -4086,18 +4168,17 @@ ves_exec (MonoDomain *domain, MonoAssembly *assembly, int argc, char *argv[])
 {
 	MonoImage *image = mono_assembly_get_image (assembly);
 	MonoMethod *method;
-	MonoObject *exc = NULL;
+	MonoError error;
 	int rval;
 
-	method = mono_get_method (image, mono_image_get_entry_point (image), NULL);
+	method = mono_get_method_checked (image, mono_image_get_entry_point (image), NULL, NULL, &error);
+	mono_error_cleanup (&error); /* FIXME: don't swallow the error */
+
 	if (!method)
 		g_error ("No entry point method found in %s", mono_image_get_filename (image));
 
-	rval = mono_runtime_run_main (method, argc, argv, &exc);
-	if (exc != NULL)
-		mono_unhandled_exception (exc);
-
-	return rval;
+	rval = mono_runtime_run_main_checked (method, argc, argv, &error);
+	return_val_and_set_pending_if_nok (&error, rval);
 }
 
 static void
@@ -4164,7 +4245,7 @@ add_signal_handler (int signo, void (*handler)(int))
 static void
 segv_handler (int signum)
 {
-	ThreadContext *context = TlsGetValue (thread_context_id);
+	ThreadContext *context = mono_native_tls_get_value (thread_context_id);
 	MonoException *segv_exception;
 
 	if (context == NULL)
@@ -4178,7 +4259,7 @@ segv_handler (int signum)
 static void
 quit_handler (int signum)
 {
-	ThreadContext *context = TlsGetValue (thread_context_id);
+	ThreadContext *context = mono_native_tls_get_value (thread_context_id);
 	MonoException *quit_exception;
 
 	if (context == NULL)
@@ -4190,7 +4271,7 @@ quit_handler (int signum)
 static void
 abrt_handler (int signum)
 {
-	ThreadContext *context = TlsGetValue (thread_context_id);
+	ThreadContext *context = mono_native_tls_get_value (thread_context_id);
 	MonoException *abrt_exception;
 
 	if (context == NULL)
@@ -4199,10 +4280,11 @@ abrt_handler (int signum)
 	mono_raise_exception (abrt_exception);
 }
 
+#if 0
 static void
 thread_abort_handler (int signum)
 {
-	ThreadContext *context = TlsGetValue (thread_context_id);
+	ThreadContext *context = mono_native_tls_get_value (thread_context_id);
 	MonoException *exc;
 
 	if (context == NULL)
@@ -4211,6 +4293,7 @@ thread_abort_handler (int signum)
 	exc = mono_thread_request_interruption (context->managed_code); 
 	if (exc) mono_raise_exception (exc);
 }
+#endif
 
 static MonoBoolean
 ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info, 
@@ -4218,8 +4301,9 @@ ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info,
 			  gint32 *iloffset, gint32 *native_offset,
 			  MonoString **file, gint32 *line, gint32 *column)
 {
-	ThreadContext *context = TlsGetValue (thread_context_id);
+	ThreadContext *context = mono_native_tls_get_value (thread_context_id);
 	MonoInvocation *inv = context->current_frame;
+	MonoError error;
 	int i;
 
 	for (i = 0; inv && i < skip; inv = inv->parent)
@@ -4230,8 +4314,14 @@ ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info,
 		*iloffset = 0;
 	if (native_offset)
 		*native_offset = 0;
-	if (method)
-		*method = inv == NULL ? NULL : mono_method_get_object (context->domain, inv->runtime_method->method, NULL);
+	if (method) {
+		if (inv == NULL) {
+			*method = NULL;
+		} else {
+			*method = mono_method_get_object_checked (context->domain, inv->runtime_method->method, NULL, &error);
+			mono_error_cleanup (&error); /* FIXME: don't swallow the error */
+		}
+	}
 	if (line)
 		*line = 0;
 	if (need_file_info) {
@@ -4250,24 +4340,30 @@ ves_icall_get_trace (MonoException *exc, gint32 skip, MonoBoolean need_file_info
 	MonoDomain *domain = mono_domain_get ();
 	MonoArray *res;
 	MonoArray *ta = exc->trace_ips;
+	MonoError error;
 	int i, len;
 
 	if (ta == NULL) {
 		/* Exception is not thrown yet */
-		return mono_array_new (domain, mono_defaults.stack_frame_class, 0);
+		MonoArray *array = mono_array_new_checked (domain, mono_defaults.stack_frame_class, 0, &error);
+		mono_error_cleanup (&error); /* FIXME: don't swallow the error */
+		return array;
 	}
 	
 	len = mono_array_length (ta);
 
-	res = mono_array_new (domain, mono_defaults.stack_frame_class, len > skip ? len - skip : 0);
+	res = mono_array_new_checked (domain, mono_defaults.stack_frame_class, len > skip ? len - skip : 0, &error);
+	mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 
 	for (i = skip; i < len / 2; i++) {
-		MonoStackFrame *sf = (MonoStackFrame *)mono_object_new (domain, mono_defaults.stack_frame_class);
+		MonoStackFrame *sf = (MonoStackFrame *)mono_object_new_checked (domain, mono_defaults.stack_frame_class, &error);
+		mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 		gushort *ip = mono_array_get (ta, gpointer, 2 * i + 1);
 		RuntimeMethod *rtm = mono_array_get (ta, gpointer, 2 * i);
 
 		if (rtm != NULL) {
-			sf->method = mono_method_get_object (domain, rtm->method, NULL);
+			sf->method = mono_method_get_object_checked (domain, rtm->method, NULL, &error);
+			mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 			sf->native_offset = ip - rtm->code;
 		}
 
@@ -4293,17 +4389,19 @@ ves_icall_get_trace (MonoException *exc, gint32 skip, MonoBoolean need_file_info
 }
 
 static MonoObject *
-ves_icall_System_Delegate_CreateDelegate_internal (MonoReflectionType *type, MonoObject *target,
-						   MonoReflectionMethod *info)
+ves_icall_System_Delegate_CreateDelegate_internal (MonoReflectionType *type, MonoObject *target, MonoReflectionMethod *info)
 {
 	MonoClass *delegate_class = mono_class_from_mono_type (type->type);
 	MonoObject *delegate;
+	MonoError error;
 
-	mono_assert (delegate_class->parent == mono_defaults.multicastdelegate_class);
+	g_assert (delegate_class->parent == mono_defaults.multicastdelegate_class);
 
-	delegate = mono_object_new (mono_object_domain (type), delegate_class);
+	delegate = mono_object_new_checked (mono_object_domain (type), delegate_class, &error);
+	mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 
-	interp_delegate_ctor (mono_object_domain (type), delegate, target, mono_interp_get_runtime_method (info->method));
+	interp_delegate_ctor (mono_object_domain (type), delegate, target, mono_interp_get_runtime_method (mono_get_root_domain (), info->method, &error));
+	mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 
 	return delegate;
 }
@@ -4325,19 +4423,14 @@ static void main_thread_handler (gpointer user_data)
 
 	if (main_args->enable_debugging) {
 		mono_debug_init (MONO_DEBUG_FORMAT_MONO);
-		mono_debug_init_1 (main_args->domain);
 	}
 
-	assembly = mono_domain_assembly_open (main_args->domain,
-					      main_args->file);
+	assembly = mono_domain_assembly_open (main_args->domain, main_args->file);
 
 	if (!assembly){
 		fprintf (stderr, "Can not open image %s\n", main_args->file);
 		exit (1);
 	}
-
-	if (main_args->enable_debugging)
-		mono_debug_init_2 (assembly);
 
 #ifdef RUN_TEST
 	test_load_class (assembly->image);
@@ -4353,7 +4446,9 @@ mono_runtime_install_handlers (void)
 	add_signal_handler (SIGSEGV, segv_handler);
 	add_signal_handler (SIGINT, quit_handler);
 	add_signal_handler (SIGABRT, abrt_handler);
+#if 0
 	add_signal_handler (mono_thread_get_abort_signal (), thread_abort_handler);
+#endif
 }
 
 static void
@@ -4378,10 +4473,20 @@ mono_interp_exec(MonoDomain *domain, MonoAssembly *assembly, int argc, char *arg
 	return ves_exec (domain, assembly, argc, argv);
 }
 
+gpointer*
+interp_get_imt_trampoline (MonoVTable *vtable, int imt_slot_index)
+{
+	// FIXME: implement me
+	return NULL;
+}
+
 MonoDomain *
 mono_interp_init(const char *file)
 {
 	MonoDomain *domain;
+	MonoRuntimeCallbacks callbacks;
+	MonoRuntimeExceptionHandlingCallbacks ecallbacks;
+	MonoError error;
 
 	g_set_prgname (file);
 	mono_set_rootdir ();
@@ -4389,24 +4494,37 @@ mono_interp_init(const char *file)
 	g_log_set_always_fatal (G_LOG_LEVEL_ERROR);
 	g_log_set_fatal_mask (G_LOG_DOMAIN, G_LOG_LEVEL_ERROR);
 
-	if (!g_thread_supported ())
-		g_thread_init (NULL);
+	mono_native_tls_alloc (&thread_context_id, NULL);
+    mono_native_tls_set_value (thread_context_id, NULL);
+	mono_os_mutex_init_recursive (&runtime_method_lookup_section);
+	mono_os_mutex_init_recursive (&create_method_pointer_mutex);
 
-	thread_context_id = TlsAlloc ();
-	TlsSetValue (thread_context_id, NULL);
-	mono_mutex_init_recursive (&runtime_method_lookup_section);
-	mono_mutex_init_recursive (&create_method_pointer_mutex);
-
+	// TODO: use callbacks?
 	mono_runtime_install_handlers ();
 	mono_interp_transform_init ();
-	mono_install_compile_method (mono_create_method_pointer);
-	mono_install_runtime_invoke (interp_mono_runtime_invoke);
-	mono_install_remoting_trampoline (interp_create_remoting_trampoline);
-	mono_install_trampoline (interp_create_trampoline);
 
-	mono_install_handler (interp_ex_handler);
+	memset (&callbacks, 0, sizeof (callbacks));
+	// TODO: replace with `mono_install_callbacks`
+	callbacks.compile_method = mono_create_method_pointer;
+	callbacks.runtime_invoke = interp_mono_runtime_invoke;
+	callbacks.get_imt_trampoline = interp_get_imt_trampoline;
+#ifndef DISABLE_REMOTING
+	mono_install_remoting_trampoline (interp_create_remoting_trampoline);
+#endif
+	callbacks.create_jit_trampoline = interp_create_trampoline;
+	mono_install_callbacks (&callbacks);
+
+
+	memset (&ecallbacks, 0, sizeof (ecallbacks));
+	ecallbacks.mono_raise_exception = interp_ex_handler;
+#if 0
+	// FIXME: ...
 	mono_install_stack_walk (interp_walk_stack);
+#endif
+	mono_install_eh_callbacks (&ecallbacks);
+
 	mono_install_runtime_cleanup (quit_function);
+
 	abort_requested = mono_thread_interruption_request_flag ();
 
 	domain = mono_init_from_assembly (file, file);
@@ -4421,10 +4539,11 @@ mono_interp_init(const char *file)
 
  	mono_register_jit_icall (mono_thread_interruption_checkpoint, "mono_thread_interruption_checkpoint", mono_create_icall_signature ("void"), FALSE);
 
-	mono_runtime_init (domain, NULL, NULL);
-
+	mono_runtime_init_checked (domain, NULL, NULL, &error);
+	mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 
 	mono_thread_attach (domain);
+	fprintf (stderr, "INTERPRETER: INIT DONE\n");
 	return domain;
 }
 
@@ -4442,8 +4561,6 @@ mono_main (int argc, char *argv [])
 	if (argc < 2)
 		usage ();
 
-	MONO_GC_PRE_INIT ();
-	
 	for (i = 1; i < argc && argv [i][0] == '-'; i++){
 		if (strcmp (argv [i], "--trace") == 0)
 			global_tracing = 1;
@@ -4482,7 +4599,7 @@ mono_main (int argc, char *argv [])
 	if (!file)
 		usage ();
 
-	domain = mono_interp_init(file);
+	domain = mono_interp_init (file);
 	mono_config_parse (config_file);
 
 	error = mono_check_corlib_version ();
@@ -4498,6 +4615,7 @@ mono_main (int argc, char *argv [])
 	main_args.argv=argv+i;
 	main_args.enable_debugging=enable_debugging;
 	
+	fprintf (stderr, "INTERPRETER: INIT DONE\n");
 	mono_runtime_exec_managed_code (domain, main_thread_handler,
 					&main_args);
 
