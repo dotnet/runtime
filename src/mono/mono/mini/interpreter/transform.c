@@ -2863,14 +2863,14 @@ mono_interp_transform_method (RuntimeMethod *runtime_method, ThreadContext *cont
 		}
 
 		/* assumes all internal calls with an array this are built in... */
-		if (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL &&
-			(! mono_method_signature (method)->hasthis || method->klass->rank == 0)) {
-			runtime_method->code = g_malloc(sizeof(short));
+		if (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL && (! mono_method_signature (method)->hasthis || method->klass->rank == 0)) {
+			runtime_method->code = g_malloc (sizeof (short));
 			runtime_method->code[0] = MINT_CALLINT;
+			g_assert (((MonoMethodPInvoke *) method)->addr == NULL);
 			if (((MonoMethodPInvoke*) method)->addr == NULL)
 				((MonoMethodPInvoke*) method)->addr = mono_lookup_internal_call (method);
-			g_error ("FIXME: not available?");
 #if 0
+			g_error ("FIXME: arch_trampoline, not available?");
 			runtime_method->func = mono_arch_create_trampoline (mono_method_signature (method), method->string_ctor);
 #endif
 		} else {
@@ -2883,6 +2883,8 @@ mono_interp_transform_method (RuntimeMethod *runtime_method, ThreadContext *cont
 					nm = mono_marshal_get_delegate_begin_invoke (method);
 				} else if (*name == 'E' && (strcmp (name, "EndInvoke") == 0)) {
 					nm = mono_marshal_get_delegate_end_invoke (method);
+				} else {
+					g_assert_not_reached ();
 				}
 			} 
 			if (nm == NULL) {
@@ -2895,7 +2897,6 @@ mono_interp_transform_method (RuntimeMethod *runtime_method, ThreadContext *cont
 			runtime_method->alloca_size = runtime_method->stack_size;
 			runtime_method->transformed = TRUE;
 			mono_os_mutex_unlock(&calc_section);
-			g_error ("FIXME: no jinfo?");
 			mono_profiler_method_end_jit (method, NULL, MONO_PROFILE_OK);
 			return NULL;
 		}

@@ -1494,6 +1494,11 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
 
 	if (!frame->runtime_method->transformed) {
 		context->managed_code = 0;
+#if DEBUG_INTERP
+		char *mn = mono_method_full_name (frame->runtime_method->method, FALSE);
+		g_printerr ("(0x%08x) Transforming %s\n", mono_thread_internal_current (), mn);
+		g_free (mn);
+#endif
 		frame->ex = mono_interp_transform_method (frame->runtime_method, context);
 		context->managed_code = 1;
 		if (frame->ex) {
@@ -1920,6 +1925,7 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_CALLINT)
+			g_printerr ("doing MINT_CALLINT: %p\n", ((MonoMethodPInvoke*) frame->runtime_method->method)->addr);
 			ves_pinvoke_method (frame, mono_method_signature (frame->runtime_method->method), ((MonoMethodPInvoke*) frame->runtime_method->method)->addr, 
 				    frame->runtime_method->method->string_ctor, context);
 			if (frame->ex) {
