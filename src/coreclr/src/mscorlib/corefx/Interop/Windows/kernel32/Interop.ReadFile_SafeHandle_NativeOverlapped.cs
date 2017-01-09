@@ -3,14 +3,20 @@
 // See the LICENSE file in the project root for more information.
 
 using Microsoft.Win32.SafeHandles;
+using System;
 using System.Runtime.InteropServices;
 using System.Threading;
 
 internal partial class Interop
 {
-    internal partial class mincore
+    internal partial class Kernel32
     {
-        [DllImport(Libraries.IO, SetLastError = true)]
-        internal static unsafe extern bool CancelIoEx(SafeHandle handle, NativeOverlapped* lpOverlapped);
+        [DllImport(Libraries.Kernel32, SetLastError = true)]
+        internal static extern unsafe int ReadFile(
+            SafeHandle handle,
+            byte* bytes,
+            int numBytesToRead,
+            IntPtr numBytesRead_mustBeZero,
+            NativeOverlapped* overlapped);
     }
 }
