@@ -877,7 +877,6 @@ static void
 ves_pinvoke_method (MonoInvocation *frame, MonoMethodSignature *sig, MonoFuncV addr, gboolean string_ctor, ThreadContext *context)
 {
 	jmp_buf env;
-	MonoPIFunc func;
 	MonoInvocation *old_frame = context->current_frame;
 	MonoInvocation *old_env_frame = context->env_frame;
 	jmp_buf *old_env = context->current_env;
@@ -894,28 +893,22 @@ ves_pinvoke_method (MonoInvocation *frame, MonoMethodSignature *sig, MonoFuncV a
 	context->env_frame = frame;
 	context->current_env = &env;
 
-	g_assert (frame->runtime_method);
-	func = frame->runtime_method->func;
-	if (!func) {
-		g_printerr ("ICALL(1): func = NULL, addr = %p\n", addr);
-		if (!mono_interp_enter_icall_trampoline) {
-			MonoTrampInfo *info;
-			mono_interp_enter_icall_trampoline = mono_arch_get_enter_icall_trampoline (&info);
-			// mono_tramp_info_register (info, NULL);
-		}
-		func = mono_interp_enter_icall_trampoline;
-		g_printerr ("ICALL(2): func = %p, addr = %p\n", func, addr);
+	g_assert (!frame->runtime_method);
+	if (!mono_interp_enter_icall_trampoline) {
+		MonoTrampInfo *info;
+		mono_interp_enter_icall_trampoline = mono_arch_get_enter_icall_trampoline (&info);
+		// TODO:
+		// mono_tramp_info_register (info, NULL);
 	}
+	g_printerr ("ICALL: mono_interp_enter_icall_trampoline = %p, addr = %p\n", mono_interp_enter_icall_trampoline, addr);
 	
 	MethodArguments *margs = build_args_from_sig (sig, frame);
-
 	g_printerr ("margs(out): ilen=%d, flen=%d\n", margs->ilen, margs->flen);
 
 	context->current_frame = frame;
 	context->managed_code = 0;
 
-	g_assert (func);
-	func (addr, margs);
+	mono_interp_enter_icall_trampoline (addr, margs);
 
 	context->managed_code = 1;
 	/* domain can only be changed by native code */
@@ -1396,7 +1389,7 @@ handle_enum:
 		}
 	}
 
-	if (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) 
+	if (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)
 		method = mono_marshal_get_native_wrapper (method, FALSE, FALSE);
 	INIT_FRAME(&frame,context->current_frame,obj,args,&result,mono_get_root_domain (),method,error);
 	if (exc)
@@ -2090,15 +2083,6 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
 			}
 			MINT_IN_BREAK;
 		}
-		MINT_IN_CASE(MINT_CALLINT)
-			g_printerr ("doing MINT_CALLINT: %p\n", ((MonoMethodPInvoke*) frame->runtime_method->method)->addr);
-			ves_pinvoke_method (frame, mono_method_signature (frame->runtime_method->method), ((MonoMethodPInvoke*) frame->runtime_method->method)->addr, 
-				    frame->runtime_method->method->string_ctor, context);
-			if (frame->ex) {
-				rtm = NULL;
-				goto handle_exception;
-			}
-			goto exit_frame;
 		MINT_IN_CASE(MINT_CALLRUN)
 			ves_runtime_method (frame, context);
 			if (frame->ex) {

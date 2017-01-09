@@ -2893,15 +2893,7 @@ mono_interp_transform_method (RuntimeMethod *runtime_method, ThreadContext *cont
 
 		/* assumes all internal calls with an array this are built in... */
 		if (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL && (! mono_method_signature (method)->hasthis || method->klass->rank == 0)) {
-			runtime_method->code = g_malloc (sizeof (short));
-			runtime_method->code[0] = MINT_CALLINT;
-			g_assert (((MonoMethodPInvoke *) method)->addr == NULL);
-			if (((MonoMethodPInvoke*) method)->addr == NULL)
-				((MonoMethodPInvoke*) method)->addr = mono_lookup_internal_call (method);
-#if 0
-			g_error ("FIXME: arch_trampoline, not available?");
-			runtime_method->func = mono_arch_create_trampoline (mono_method_signature (method), method->string_ctor);
-#endif
+			nm = mono_marshal_get_native_wrapper (method, TRUE, FALSE);
 		} else {
 			const char *name = method->name;
 			if (method->klass->parent == mono_defaults.multicastdelegate_class) {
