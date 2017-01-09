@@ -1121,9 +1121,9 @@ class LiveVarAnalysis
             }
         }
 
-        /* For lvaKeepAliveAndReportThis methods, "m_compiler" has to be kept alive everywhere
+        /* For lvaKeepAliveAndReportThis methods, "this" has to be kept alive everywhere
            Note that a function may end in a throw on an infinite loop (as opposed to a return).
-           "m_compiler" has to be alive everywhere even in such methods. */
+           "this" has to be alive everywhere even in such methods. */
 
         if (keepAliveThis)
         {
@@ -1137,7 +1137,7 @@ class LiveVarAnalysis
 
         m_heapLiveIn = (m_heapLiveOut && !block->bbHeapDef) || block->bbHeapUse;
 
-        /* Can exceptions from m_compiler block be handled (in m_compiler function)? */
+        /* Can exceptions from this block be handled (in this function)? */
 
         if (m_compiler->ehBlockHasExnFlowDsc(block))
         {
