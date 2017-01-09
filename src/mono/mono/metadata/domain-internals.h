@@ -602,5 +602,7 @@ mono_context_init_checked (MonoDomain *domain, MonoError *error);
 gboolean
 mono_assembly_has_reference_assembly_attribute (MonoAssembly *assembly, MonoError *error);
 
+GPtrArray*
+mono_domain_get_assemblies (MonoDomain *domain, gboolean refonly);
 
 #endif /* __MONO_METADATA_DOMAIN_INTERNALS_H__ */

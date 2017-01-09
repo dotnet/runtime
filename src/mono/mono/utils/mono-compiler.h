@@ -80,6 +80,9 @@ typedef SSIZE_T ssize_t;
 #define MONO_LLVM_INTERNAL 
 #endif
 
+/* Used to mark internal functions used by the profiler modules */
+#define MONO_PROFILER_API MONO_API
+
 #ifdef __GNUC__
 #define MONO_ALWAYS_INLINE __attribute__((always_inline))
 #elif defined(_MSC_VER)

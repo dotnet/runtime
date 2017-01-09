@@ -2013,3 +2013,24 @@ mono_domain_unlock (MonoDomain *domain)
 {
 	mono_locks_coop_release (&domain->lock, DomainLock);
 }
+
+GPtrArray*
+mono_domain_get_assemblies (MonoDomain *domain, gboolean refonly)
+{
+	GSList *tmp;
+	GPtrArray *assemblies;
+	MonoAssembly *ass;
+
+	assemblies = g_ptr_array_new ();
+	mono_domain_assemblies_lock (domain);
+	for (tmp = domain->domain_assemblies; tmp; tmp = tmp->next) {
+		ass = (MonoAssembly *)tmp->data;
+		if (refonly != ass->ref_only)
+			continue;
+		if (ass->corlib_internal)
+			continue;
+		g_ptr_array_add (assemblies, ass);
+	}
+	mono_domain_assemblies_unlock (domain);
+	return assemblies;
+}
