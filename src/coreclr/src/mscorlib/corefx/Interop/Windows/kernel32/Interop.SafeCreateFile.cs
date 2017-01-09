@@ -9,7 +9,7 @@ using Microsoft.Win32.SafeHandles;
 
 internal partial class Interop
 {
-    internal partial class mincore
+    internal partial class Kernel32
     {
         internal static readonly IntPtr INVALID_HANDLE_VALUE = new IntPtr(-1);  // WinBase.h
 
@@ -22,7 +22,7 @@ internal partial class Interop
             String lpFileName,
             int dwDesiredAccess,
             System.IO.FileShare dwShareMode,
-            ref Interop.mincore.SECURITY_ATTRIBUTES securityAttrs,
+            ref Interop.Kernel32.SECURITY_ATTRIBUTES securityAttrs,
             FileMode dwCreationDisposition,
             int dwFlagsAndAttributes,
             IntPtr hTemplateFile)
@@ -31,8 +31,8 @@ internal partial class Interop
 
             if (!handle.IsInvalid)
             {
-                int fileType = Interop.mincore.GetFileType(handle);
-                if (fileType != Interop.mincore.FileTypes.FILE_TYPE_DISK)
+                int fileType = Interop.Kernel32.GetFileType(handle);
+                if (fileType != Interop.Kernel32.FileTypes.FILE_TYPE_DISK)
                 {
                     handle.Dispose();
                     throw new NotSupportedException(SR.NotSupported_FileStreamOnNonFiles);

@@ -1126,36 +1126,36 @@
   <ItemGroup Condition="'$(TargetsUnix)' != 'true'">
     <WindowsInteropSources Include="$(CoreFxSourcesRoot)\System\HResults.cs" />
     <WindowsInteropSources Include="$(CoreFxSourcesRoot)\Interop\Windows\Interop.BOOL.cs" />
+    <WindowsInteropSources Include="$(CoreFxSourcesRoot)\Interop\Windows\Interop.Errors.cs" />
     <WindowsInteropSources Include="$(CoreFxSourcesRoot)\Interop\Windows\Interop.Libraries.cs" />
     <WindowsInteropSources Include="$(CoreFxSourcesRoot)\Interop\Windows\BCrypt\Interop.BCryptGenRandom.cs" />
     <WindowsInteropSources Include="$(CoreFxSourcesRoot)\Interop\Windows\BCrypt\Interop.NTSTATUS.cs" />
-    <WindowsInteropSources Include="$(CoreFxSourcesRoot)\Interop\Windows\mincore\Interop.CancelIoEx.cs" />
-    <WindowsInteropSources Include="$(CoreFxSourcesRoot)\Interop\Windows\mincore\Interop.CloseHandle.cs" />
-    <WindowsInteropSources Include="$(CoreFxSourcesRoot)\Interop\Windows\mincore\Interop.CreateFile.cs" />
-    <WindowsInteropSources Include="$(CoreFxSourcesRoot)\Interop\Windows\mincore\Interop.Errors.cs" />
-    <WindowsInteropSources Include="$(CoreFxSourcesRoot)\Interop\Windows\mincore\Interop.FileTypes.cs" />
-    <WindowsInteropSources Include="$(CoreFxSourcesRoot)\Interop\Windows\mincore\Interop.FileOperations.cs" />
-    <WindowsInteropSources Include="$(CoreFxSourcesRoot)\Interop\Windows\mincore\Interop.FlushFileBuffers.cs" />
-    <WindowsInteropSources Include="$(CoreFxSourcesRoot)\Interop\Windows\mincore\Interop.FormatMessage.cs" />
-    <WindowsInteropSources Include="$(CoreFxSourcesRoot)\Interop\Windows\mincore\Interop.GetFileInformationByHandleEx.cs" />
-    <WindowsInteropSources Include="$(CoreFxSourcesRoot)\Interop\Windows\mincore\Interop.GetFileType_SafeHandle.cs" />
-    <WindowsInteropSources Include="$(CoreFxSourcesRoot)\Interop\Windows\mincore\Interop.GetFullPathNameW.cs" />
-    <WindowsInteropSources Include="$(CoreFxSourcesRoot)\Interop\Windows\mincore\Interop.GetLongPathNameW.cs" />
-    <WindowsInteropSources Include="$(CoreFxSourcesRoot)\Interop\Windows\mincore\Interop.GetTempFileNameW.cs" />
-    <WindowsInteropSources Include="$(CoreFxSourcesRoot)\Interop\Windows\mincore\Interop.GetTempPathW.cs" />
-    <WindowsInteropSources Include="$(CoreFxSourcesRoot)\Interop\Windows\mincore\Interop.LockFile.cs" />
-    <WindowsInteropSources Include="$(CoreFxSourcesRoot)\Interop\Windows\mincore\Interop.ReadFile_SafeHandle_IntPtr.cs" />
-    <WindowsInteropSources Include="$(CoreFxSourcesRoot)\Interop\Windows\mincore\Interop.ReadFile_SafeHandle_NativeOverlapped.cs" />
-    <WindowsInteropSources Include="$(CoreFxSourcesRoot)\Interop\Windows\mincore\Interop.SafeCreateFile.cs" />
-    <WindowsInteropSources Include="$(CoreFxSourcesRoot)\Interop\Windows\mincore\Interop.SECURITY_ATTRIBUTES.cs" />
-    <WindowsInteropSources Include="$(CoreFxSourcesRoot)\Interop\Windows\mincore\Interop.SecurityOptions.cs" />
-    <WindowsInteropSources Include="$(CoreFxSourcesRoot)\Interop\Windows\mincore\Interop.SetEndOfFile.cs" />
-    <WindowsInteropSources Include="$(CoreFxSourcesRoot)\Interop\Windows\mincore\Interop.SetErrorMode.cs" />
-    <WindowsInteropSources Include="$(CoreFxSourcesRoot)\Interop\Windows\mincore\Interop.SetFileInformationByHandle.cs" />
-    <WindowsInteropSources Include="$(CoreFxSourcesRoot)\Interop\Windows\mincore\Interop.SetFilePointerEx.cs" />
-    <WindowsInteropSources Include="$(CoreFxSourcesRoot)\Interop\Windows\mincore\Interop.UnsafeCreateFile.cs" />
-    <WindowsInteropSources Include="$(CoreFxSourcesRoot)\Interop\Windows\mincore\Interop.WriteFile_SafeHandle_IntPtr.cs" />
-    <WindowsInteropSources Include="$(CoreFxSourcesRoot)\Interop\Windows\mincore\Interop.WriteFile_SafeHandle_NativeOverlapped.cs" />
+    <WindowsInteropSources Include="$(CoreFxSourcesRoot)\Interop\Windows\kernel32\Interop.CancelIoEx.cs" />
+    <WindowsInteropSources Include="$(CoreFxSourcesRoot)\Interop\Windows\kernel32\Interop.CloseHandle.cs" />
+    <WindowsInteropSources Include="$(CoreFxSourcesRoot)\Interop\Windows\kernel32\Interop.CreateFile.cs" />
+    <WindowsInteropSources Include="$(CoreFxSourcesRoot)\Interop\Windows\kernel32\Interop.FileTypes.cs" />
+    <WindowsInteropSources Include="$(CoreFxSourcesRoot)\Interop\Windows\kernel32\Interop.FileOperations.cs" />
+    <WindowsInteropSources Include="$(CoreFxSourcesRoot)\Interop\Windows\kernel32\Interop.FlushFileBuffers.cs" />
+    <WindowsInteropSources Include="$(CoreFxSourcesRoot)\Interop\Windows\kernel32\Interop.FormatMessage.cs" />
+    <WindowsInteropSources Include="$(CoreFxSourcesRoot)\Interop\Windows\kernel32\Interop.GetFileInformationByHandleEx.cs" />
+    <WindowsInteropSources Include="$(CoreFxSourcesRoot)\Interop\Windows\kernel32\Interop.GetFileType_SafeHandle.cs" />
+    <WindowsInteropSources Include="$(CoreFxSourcesRoot)\Interop\Windows\kernel32\Interop.GetFullPathNameW.cs" />
+    <WindowsInteropSources Include="$(CoreFxSourcesRoot)\Interop\Windows\kernel32\Interop.GetLongPathNameW.cs" />
+    <WindowsInteropSources Include="$(CoreFxSourcesRoot)\Interop\Windows\kernel32\Interop.GetTempFileNameW.cs" />
+    <WindowsInteropSources Include="$(CoreFxSourcesRoot)\Interop\Windows\kernel32\Interop.GetTempPathW.cs" />
+    <WindowsInteropSources Include="$(CoreFxSourcesRoot)\Interop\Windows\kernel32\Interop.LockFile.cs" />
+    <WindowsInteropSources Include="$(CoreFxSourcesRoot)\Interop\Windows\kernel32\Interop.ReadFile_SafeHandle_IntPtr.cs" />
+    <WindowsInteropSources Include="$(CoreFxSourcesRoot)\Interop\Windows\kernel32\Interop.ReadFile_SafeHandle_NativeOverlapped.cs" />
+    <WindowsInteropSources Include="$(CoreFxSourcesRoot)\Interop\Windows\kernel32\Interop.SafeCreateFile.cs" />
+    <WindowsInteropSources Include="$(CoreFxSourcesRoot)\Interop\Windows\kernel32\Interop.SECURITY_ATTRIBUTES.cs" />
+    <WindowsInteropSources Include="$(CoreFxSourcesRoot)\Interop\Windows\kernel32\Interop.SecurityOptions.cs" />
+    <WindowsInteropSources Include="$(CoreFxSourcesRoot)\Interop\Windows\kernel32\Interop.SetEndOfFile.cs" />
+    <WindowsInteropSources Include="$(CoreFxSourcesRoot)\Interop\Windows\kernel32\Interop.SetErrorMode.cs" />
+    <WindowsInteropSources Include="$(CoreFxSourcesRoot)\Interop\Windows\kernel32\Interop.SetFileInformationByHandle.cs" />
+    <WindowsInteropSources Include="$(CoreFxSourcesRoot)\Interop\Windows\kernel32\Interop.SetFilePointerEx.cs" />
+    <WindowsInteropSources Include="$(CoreFxSourcesRoot)\Interop\Windows\kernel32\Interop.UnsafeCreateFile.cs" />
+    <WindowsInteropSources Include="$(CoreFxSourcesRoot)\Interop\Windows\kernel32\Interop.WriteFile_SafeHandle_IntPtr.cs" />
+    <WindowsInteropSources Include="$(CoreFxSourcesRoot)\Interop\Windows\kernel32\Interop.WriteFile_SafeHandle_NativeOverlapped.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -1168,7 +1168,7 @@
     <!-- Interop sources -->
     <SecuritySources Include="$(CoreFxSourcesRoot)\Interop\Windows\Crypt32\Interop.CryptProtectMemory.cs" />
     <SecuritySources Include="$(CoreFxSourcesRoot)\Interop\Windows\NtDll\Interop.ZeroMemory.cs" />
-    <SecuritySources Include="$(CoreFxSourcesRoot)\Interop\Windows\mincore\Interop.WideCharToMultiByte.cs" />
+    <SecuritySources Include="$(CoreFxSourcesRoot)\Interop\Windows\kernel32\Interop.WideCharToMultiByte.cs" />
     <SecuritySources Include="$(CoreFxSourcesRoot)\Interop\Windows\oleaut32\Interop.SysAllocStringLen.cs" />
     <SecuritySources Include="$(CoreFxSourcesRoot)\Interop\Windows\oleaut32\Interop.SysStringLen.cs" />
   </ItemGroup>

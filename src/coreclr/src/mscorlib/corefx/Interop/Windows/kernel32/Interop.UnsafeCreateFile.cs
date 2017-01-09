@@ -8,13 +8,13 @@ using Microsoft.Win32.SafeHandles;
 
 internal partial class Interop
 {
-    internal partial class mincore
+    internal partial class Kernel32
     {
         internal static SafeFileHandle UnsafeCreateFile(
             string lpFileName,
             int dwDesiredAccess,
             FileShare dwShareMode,
-            ref Interop.mincore.SECURITY_ATTRIBUTES securityAttrs,
+            ref Interop.Kernel32.SECURITY_ATTRIBUTES securityAttrs,
             FileMode dwCreationDisposition,
             int dwFlagsAndAttributes,
             IntPtr hTemplateFile)
