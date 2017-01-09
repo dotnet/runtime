@@ -501,6 +501,7 @@ test_sources = 			\
 
 
 regtests_UNIVERSAL=basic.exe basic-float.exe basic-long.exe basic-calls.exe objects.exe arrays.exe basic-math.exe exceptions.exe iltests.exe devirtualization.exe generics.exe basic-simd.exe basic-vectors.exe
+iregtests=basic.exe basic-float.exe basic-long.exe basic-calls.exe basic-simd.exe
 
 if INSTALL_TESTING_AOT_FULL
 regtests= \
@@ -726,8 +727,8 @@ rcheck-nunit: mono $(regtests)
 rcheck: mono $(regtests)
 	$(MINI_RUNTIME) --regression $(regtests)
 
-richeck: mono basic.exe
-	$(INTERPRETER_RUNTIME) --regression basic.exe
+richeck: mono $(iregtests)
+	$(INTERPRETER_RUNTIME) --regression $(iregtests)
 
 if ARM
 check-seq-points:
