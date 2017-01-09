@@ -10,58 +10,58 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' " />
   <ItemGroup>
     <!-- Common Collections tests -->
-    <Compile Include="$(CommonTestPath)\System\Collections\CollectionAsserts.cs" >
+    <Compile Include="$(CommonTestPath)\System\Collections\CollectionAsserts.cs">
       <Link>Common\System\Collections\CollectionAsserts.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System\Collections\ICollection.NonGeneric.Tests.cs" >
+    <Compile Include="$(CommonTestPath)\System\Collections\ICollection.NonGeneric.Tests.cs">
       <Link>Common\System\Collections\ICollection.NonGeneric.Tests.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System\Collections\ICollection.Generic.Tests.cs" >
+    <Compile Include="$(CommonTestPath)\System\Collections\ICollection.Generic.Tests.cs">
       <Link>Common\System\Collections\ICollection.Generic.Tests.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System\Collections\IDictionary.NonGeneric.Tests.cs" >
+    <Compile Include="$(CommonTestPath)\System\Collections\IDictionary.NonGeneric.Tests.cs">
       <Link>Common\System\Collections\IDictionary.NonGeneric.Tests.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System\Collections\IDictionary.Generic.Tests.cs" >
+    <Compile Include="$(CommonTestPath)\System\Collections\IDictionary.Generic.Tests.cs">
       <Link>Common\System\Collections\IDictionary.Generic.Tests.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System\Collections\IEnumerable.NonGeneric.Tests.cs" >
+    <Compile Include="$(CommonTestPath)\System\Collections\IEnumerable.NonGeneric.Tests.cs">
       <Link>Common\System\Collections\IEnumerable.NonGeneric.Tests.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System\Collections\IEnumerable.Generic.Tests.cs" >
+    <Compile Include="$(CommonTestPath)\System\Collections\IEnumerable.Generic.Tests.cs">
       <Link>Common\System\Collections\IEnumerable.Generic.Tests.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System\Collections\IList.NonGeneric.Tests.cs" >
+    <Compile Include="$(CommonTestPath)\System\Collections\IList.NonGeneric.Tests.cs">
       <Link>Common\System\Collections\IList.NonGeneric.Tests.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System\Collections\IList.Generic.Tests.cs" >
+    <Compile Include="$(CommonTestPath)\System\Collections\IList.Generic.Tests.cs">
       <Link>Common\System\Collections\IList.Generic.Tests.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System\Collections\IGenericSharedAPI.Tests.cs" >
+    <Compile Include="$(CommonTestPath)\System\Collections\IGenericSharedAPI.Tests.cs">
       <Link>Common\System\Collections\IGenericSharedAPI.Tests.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System\Collections\ISet.Generic.Tests.cs" >
+    <Compile Include="$(CommonTestPath)\System\Collections\ISet.Generic.Tests.cs">
       <Link>Common\System\Collections\ISet.Generic.Tests.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System\Collections\TestBase.NonGeneric.cs" >
+    <Compile Include="$(CommonTestPath)\System\Collections\TestBase.NonGeneric.cs">
       <Link>Common\System\Collections\TestBase.NonGeneric.Tests.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System\Collections\TestBase.Generic.cs" >
+    <Compile Include="$(CommonTestPath)\System\Collections\TestBase.Generic.cs">
       <Link>Common\System\Collections\TestBase.Generic.Tests.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System\Collections\DebugView.Tests.cs" >
+    <Compile Include="$(CommonTestPath)\System\Collections\DebugView.Tests.cs">
       <Link>Common\System\Collections\DebugView.Tests.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System\Collections\TestingTypes.cs" >
+    <Compile Include="$(CommonTestPath)\System\Collections\TestingTypes.cs">
       <Link>Common\System\Collections\TestingTypes.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System\EnumTypes.cs" >
+    <Compile Include="$(CommonTestPath)\System\EnumTypes.cs">
       <Link>Common\System\EnumTypes.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System\ObjectCloner.cs" >
+    <Compile Include="$(CommonTestPath)\System\ObjectCloner.cs">
       <Link>Common\System\ObjectCloner.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System\RuntimeDetection.cs" >
+    <Compile Include="$(CommonTestPath)\System\RuntimeDetection.cs">
       <Link>Common\System\RuntimeDetection.cs</Link>
     </Compile>
     <!-- Generic tests -->
@@ -146,10 +146,10 @@
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'=='netstandard'">
-    <Compile Include="$(CommonTestPath)\System\Collections\IEnumerable.NonGeneric.Serialization.Tests.cs" >
+    <Compile Include="$(CommonTestPath)\System\Collections\IEnumerable.NonGeneric.Serialization.Tests.cs">
       <Link>Common\System\Collections\IEnumerable.NonGeneric.Serialization.Tests.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System\Collections\IEnumerable.Generic.Serialization.Tests.cs" >
+    <Compile Include="$(CommonTestPath)\System\Collections\IEnumerable.Generic.Serialization.Tests.cs">
       <Link>Common\System\Collections\IEnumerable.Generic.Serialization.Tests.cs</Link>
     </Compile>
   </ItemGroup>

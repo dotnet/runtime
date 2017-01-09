@@ -1,4 +1,4 @@
-﻿{
+{
   "dependencies": {
     "Microsoft.DotNet.PlatformAbstractions": "1.2.0-beta-001090",
     "NETStandard.Library": "1.6.0"
@@ -15,7 +15,10 @@
           "exclude": "all"
         }
       },
-      "imports": [ "dnxcore50", "portable-net45+win8+wpa81" ]
+      "imports": [
+        "dnxcore50",
+        "portable-net45+win8+wpa81"
+      ]
     },
     "net45": {
       "dependencies": {
