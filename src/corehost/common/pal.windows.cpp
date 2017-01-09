@@ -239,7 +239,7 @@ bool pal::utf8_palstring(const std::string& str, pal::string_t* out)
     return wchar_convert_helper(CP_UTF8, &str[0], str.size(), out);
 }
 
-bool pal::pal_clrstring(const pal::string_t& str, std::vector<char>* out)
+bool pal::pal_utf8string(const pal::string_t& str, std::vector<char>* out)
 {
     out->clear();
 
@@ -251,6 +251,11 @@ bool pal::pal_clrstring(const pal::string_t& str, std::vector<char>* out)
     }
     out->resize(size, '\0');
     return ::WideCharToMultiByte(CP_UTF8, 0, str.c_str(), -1, out->data(), out->size(), nullptr, nullptr) != 0;
+}
+
+bool pal::pal_clrstring(const pal::string_t& str, std::vector<char>* out)
+{
+    return pal_utf8string(str, out);
 }
 
 bool pal::clr_palstring(const char* cstr, pal::string_t* out)
@@ -312,3 +317,4 @@ void pal::readdir(const string_t& path, std::vector<pal::string_t>* list)
 {
     pal::readdir(path, _X("*"), list);
 }
+

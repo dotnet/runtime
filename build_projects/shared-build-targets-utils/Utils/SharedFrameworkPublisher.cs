@@ -44,14 +44,15 @@ namespace Microsoft.DotNet.Cli.Build
             _corehostPackageSource = corehostPackageSource;
 
             string crossgenRID = null;
-
+            
             // If we are dealing with cross-targeting compilation, then specify the 
             // correct RID for crossgen to use when compiling SharedFramework.
             // TODO-ARM-Crossgen: Add ubuntu.14.04-arm and ubuntu.16.04-arm
-            if ((sharedFrameworkRid == "win8-arm") || (sharedFrameworkRid == "win10-arm64"))
+            if ((sharedFrameworkRid == "win8-arm") || (sharedFrameworkRid == "win10-arm64") || (sharedFrameworkRid.StartsWith("linux-")))
             {
                 crossgenRID = sharedFrameworkRid;
             }
+
             _crossgenUtil = new Crossgen(DependencyVersions.CoreCLRVersion, DependencyVersions.JitVersion, crossgenRID);
 
             _sharedFrameworkTemplateSourceRoot = Path.Combine(repoRoot, "src", "sharedframework", "framework");
@@ -125,7 +126,8 @@ namespace Microsoft.DotNet.Cli.Build
                 sharedFrameworkNameAndVersionRoot,
                 "framework",
                 deleteRuntimeConfigJson: true,
-                deleteDepsJson: false);
+                deleteDepsJson: false,
+                deleteAppHost: true);
 
             // Rename the .deps file
             var destinationDeps = Path.Combine(sharedFrameworkNameAndVersionRoot, $"{s_sharedFrameworkName}.deps.json");
@@ -165,8 +167,8 @@ namespace Microsoft.DotNet.Cli.Build
             if (!string.IsNullOrEmpty(runtimeGraphGeneratorRuntime))
             {
                 var runtimeGraphGeneratorName = "RuntimeGraphGenerator";
-                var runtimeGraphGeneratorProject = Path.Combine(Dirs.RepoRoot, "tools", "independent", runtimeGraphGeneratorName);
-                var runtimeGraphGeneratorOutput = Path.Combine(Dirs.Output, "tools", "independent", runtimeGraphGeneratorName);
+                var runtimeGraphGeneratorProject = Path.Combine(Dirs.RepoRoot, "setuptools", "independent", runtimeGraphGeneratorName);
+                var runtimeGraphGeneratorOutput = Path.Combine(Dirs.Output, "setuptools", "independent", runtimeGraphGeneratorName);
 
                 dotnetCli.Publish(
                     "--output", runtimeGraphGeneratorOutput,
