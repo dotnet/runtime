@@ -8,6 +8,7 @@
 /*.dll
 /*.mdb
 /*.lo
+/interpreter/*.lo
 /*.loT
 /*.la
 /.libs
