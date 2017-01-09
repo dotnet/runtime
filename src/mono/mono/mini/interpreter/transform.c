@@ -2904,7 +2904,6 @@ mono_interp_transform_method (RuntimeMethod *runtime_method, ThreadContext *cont
 			const char *name = method->name;
 			if (method->klass->parent == mono_defaults.multicastdelegate_class) {
 				if (*name == 'I' && (strcmp (name, "Invoke") == 0)) {
-					g_error ("FIXME: no del?");
 					nm = mono_marshal_get_delegate_invoke (method, NULL);
 				} else if (*name == 'B' && (strcmp (name, "BeginInvoke") == 0)) {
 					nm = mono_marshal_get_delegate_begin_invoke (method);
