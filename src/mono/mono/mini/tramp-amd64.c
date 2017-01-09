@@ -976,7 +976,7 @@ mono_arch_get_enter_icall_trampoline (MonoTrampInfo **info)
 	guint8 *start = NULL, *code, *exits[4], *leave_tramp;
 	MonoJumpInfo *ji = NULL;
 	GSList *unwind_ops = NULL;
-	int arg_regs[] = {AMD64_ARG_REG1, AMD64_ARG_REG2, AMD64_ARG_REG3, AMD64_ARG_REG4};
+	static int arg_regs[] = {AMD64_ARG_REG1, AMD64_ARG_REG2, AMD64_ARG_REG3, AMD64_ARG_REG4};
 	int i, gregs_offset;
 
 	start = code = (guint8 *) mono_global_codeman_reserve (256);

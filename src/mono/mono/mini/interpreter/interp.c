@@ -821,11 +821,11 @@ static MethodArguments* build_args_from_sig (MonoMethodSignature *sig, MonoInvoc
 	if (margs->ilen > 0)
 		margs->iargs = g_malloc0 (sizeof (gpointer) * margs->ilen);
 
-	if (margs->ilen > 2)
-		g_error ("build_args_from_sig: TODO, more than two iregs\n");
+	if (margs->ilen > 3)
+		g_error ("build_args_from_sig: TODO, more than two iregs: %d\n", margs->ilen);
 
 	if (margs->flen > 0)
-		g_error ("build_args_from_sig: TODO, allocate floats\n");
+		g_error ("build_args_from_sig: TODO, allocate floats: %d\n", margs->flen);
 
 
 	size_t int_i = 0;
