@@ -2934,16 +2934,18 @@ array_constructed:
 			
 			o = sp [-1].data.p;
 			if (!o)
-				THROW_EX (mono_get_exception_null_reference(), ip);
+				THROW_EX (mono_get_exception_null_reference (), ip);
 
 			MonoObject *isinst_obj = mono_object_isinst_checked (o, c, &error);
 			mono_error_cleanup (&error); /* FIXME: don't swallow the error */
-			if (!(isinst_obj ||
-				  ((o->vtable->klass->rank == 0) && 
-				   (o->vtable->klass->element_class == c->element_class))))
+			if (!(isinst_obj || ((o->vtable->klass->rank == 0) && (o->vtable->klass->element_class == c->element_class))))
 				THROW_EX (mono_get_exception_invalid_cast (), ip);
 
-			sp [-1].data.p = (char *)o + sizeof (MonoObject);
+			if (c->byval_arg.type == MONO_TYPE_VALUETYPE && !c->enumtype) {
+				g_error ("unbox: implement vt");
+			} else {
+				stackval_from_data (&c->byval_arg, &sp [-1], mono_object_unbox (o), FALSE);
+			}
 			ip += 2;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_THROW)
