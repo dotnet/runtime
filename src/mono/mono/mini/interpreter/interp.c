@@ -365,7 +365,11 @@ get_virtual_method (MonoDomain *domain, RuntimeMethod *runtime_method, MonoObjec
 		g_error ("FIXME: interface method lookup");
 		return NULL;
 	} else {
-		return ((RuntimeMethod **)obj->vtable->vtable) [m->slot];
+		int slot = mono_method_get_vtable_slot (m);
+		MonoMethod *virtual_method = obj->vtable->klass->vtable [slot]; // TODO: there's a helper function for that?
+		RuntimeMethod *virtual_runtime_method = mono_interp_get_runtime_method (domain, virtual_method, &error);
+		mono_error_cleanup (&error); /* FIXME: don't swallow the error */
+		return virtual_runtime_method;
 	}
 }
 
