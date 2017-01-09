@@ -764,7 +764,7 @@ struct __attribute__((packed)) DebugInfoCU
 struct __attribute__((packed)) DebugInfoTryCatchSub
 {
     uint8_t m_sub_abbrev;
-    pc_size_t m_sub_low_pc, m_sub_high_pc;
+    uintptr_t m_sub_low_pc, m_sub_high_pc;
 };
 
 struct __attribute__((packed)) DebugInfoSub
@@ -774,7 +774,7 @@ struct __attribute__((packed)) DebugInfoSub
     uint32_t m_linkage_name;
     uint8_t m_file, m_line;
     uint32_t m_sub_type;
-    pc_size_t m_sub_low_pc, m_sub_high_pc;
+    uintptr_t m_sub_low_pc, m_sub_high_pc;
     uint8_t m_sub_loc[2];
 };
 
