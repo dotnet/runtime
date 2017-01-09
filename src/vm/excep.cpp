@@ -8986,11 +8986,13 @@ LONG ReflectionInvocationExceptionFilter(
 #else // !(_WIN64 || _TARGET_X86_)
 #error Unsupported platform
 #endif // _WIN64
-        
+
+#ifdef FEATURE_CORRUPTING_EXCEPTIONS
         if (pEHTracker->GetCorruptionSeverity() == ProcessCorrupting)
         {
             EEPolicy::HandleFatalError(COR_E_FAILFAST, reinterpret_cast<UINT_PTR>(pExceptionInfo->ExceptionRecord->ExceptionAddress), NULL, pExceptionInfo);
         }
+#endif // FEATURE_CORRUPTING_EXCEPTIONS
     }
 
     return ret;

@@ -4662,6 +4662,7 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHar
         ThreadExceptionState * pCurTES = pCurThread->GetExceptionState();
         _ASSERTE(pCurTES != NULL);
 
+#ifdef FEATURE_CORRUPTING_EXCEPTIONS
         ExceptionTracker* pEHTracker = pCurTES->GetCurrentExceptionTracker();
         if (pEHTracker == NULL)
         {
@@ -4673,6 +4674,7 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHar
 
             pCurTES->SetLastActiveExceptionCorruptionSeverity(severity);
         }
+#endif // FEATURE_CORRUPTING_EXCEPTIONS
     }
 
     throw std::move(ex);
