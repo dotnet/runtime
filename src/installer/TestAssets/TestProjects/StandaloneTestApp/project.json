@@ -3,13 +3,13 @@
     "emitEntryPoint": true
   },
   "frameworks": {
-    "netcoreapp1.1": {
+    "netcoreapp2.0": {
       "imports": [
         "dotnet5.4",
         "portable-net451+win8"
       ],
       "dependencies": {
-        "Microsoft.NETCore.App": "1.2.0-beta-*",
+        "Microsoft.NETCore.App": "2.0.0-beta-*",
         "Newtonsoft.Json": "9.0.1-beta1",
         "xunit": "2.1.0",
         "xunit.netcore.extensions": "1.0.0-prerelease-00206",

@@ -3,9 +3,9 @@
     "emitEntryPoint": true
   },
   "frameworks": {
-    "netcoreapp1.1": {
+    "netcoreapp2.0": {
       "dependencies": {
-        "Microsoft.NETCore.App": "1.2.0-beta-*",
+        "Microsoft.NETCore.App": "2.0.0-beta-*",
         "Newtonsoft.Json": "9.0.1-beta1"
       }
     }
