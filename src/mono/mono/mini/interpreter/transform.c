@@ -612,6 +612,163 @@ get_data_item_index (TransformData *td, void *ptr)
 }
 
 static void
+interp_transform_call (TransformData *td, MonoMethod *method, MonoDomain *domain, MonoGenericContext *generic_context, unsigned char *is_bb_start, int body_start_offset)
+{
+	MonoImage *image = method->klass->image;
+	MonoMethod *m;
+	MonoMethodSignature *csignature;
+	MonoError error;
+	int virtual = *td->ip == CEE_CALLVIRT;
+	int calli = *td->ip == CEE_CALLI || *td->ip == CEE_MONO_CALLI_EXTRA_ARG;
+	int i;
+	guint32 vt_stack_used = 0;
+	guint32 vt_res_size = 0;
+	int op = -1;
+	int native = 0;
+	int is_void = 0;
+
+	guint32 token = read32 (td->ip + 1);
+
+	if (calli) {
+		CHECK_STACK(td, 1);
+		native = (method->wrapper_type != MONO_WRAPPER_DELEGATE_INVOKE && td->sp [-1].type == STACK_TYPE_I);
+		--td->sp;
+		if (method->wrapper_type != MONO_WRAPPER_NONE)
+			csignature = (MonoMethodSignature *)mono_method_get_wrapper_data (method, token);
+		else
+			csignature = mono_metadata_parse_signature (image, token);
+		m = NULL;
+	} else {
+		if (method->wrapper_type == MONO_WRAPPER_NONE)
+			m = mono_get_method_full (image, token, NULL, generic_context);
+		else
+			m = (MonoMethod *)mono_method_get_wrapper_data (method, token);
+		csignature = mono_method_signature (m);
+		if (m->klass == mono_defaults.string_class) {
+			if (m->name [0] == 'g') {
+				if (strcmp (m->name, "get_Chars") == 0)
+					op = MINT_GETCHR;
+				else if (strcmp (m->name, "get_Length") == 0)
+					op = MINT_STRLEN;
+			}
+		} else if (m->klass == mono_defaults.array_class) {
+			if (strcmp (m->name, "get_Rank") == 0)
+				op = MINT_ARRAY_RANK;
+			else if (strcmp (m->name, "get_Length") == 0)
+				op = MINT_LDLEN;
+		}
+	}
+	CHECK_STACK (td, csignature->param_count + csignature->hasthis);
+	if (!calli && (!virtual || (m->flags & METHOD_ATTRIBUTE_VIRTUAL) == 0) &&
+		(m->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) == 0 && 
+		(m->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) == 0) {
+		int called_inited = mono_class_vtable (domain, m->klass)->initialized;
+		MonoMethodHeader *mheader = mono_method_get_header (m);
+
+		if (/*mono_metadata_signature_equal (method->signature, m->signature) */ method == m && *(td->ip + 5) == CEE_RET) {
+			int offset;
+			if (mono_interp_traceopt)
+				g_print ("Optimize tail call of %s.%s\n", m->klass->name, m->name);
+			for (i = csignature->param_count - 1; i >= 0; --i)
+				store_arg (td, i + csignature->hasthis);
+
+			if (csignature->hasthis) {
+				ADD_CODE(td, MINT_STTHIS);
+				--td->sp;
+			}
+			ADD_CODE(td, MINT_BR_S);
+			offset = body_start_offset - ((td->new_ip - 1) - td->new_code);
+			ADD_CODE(td, offset);
+			if (!is_bb_start [td->ip + 5 - td->il_code])
+				++td->ip; /* gobble the CEE_RET if it isn't branched to */				
+			td->ip += 5;
+			return;
+		} else {
+			/* mheader might not exist if this is a delegate invoc, etc */
+			if (mheader && *mheader->code == CEE_RET && called_inited) {
+				if (mono_interp_traceopt)
+					g_print ("Inline (empty) call of %s.%s\n", m->klass->name, m->name);
+				for (i = 0; i < csignature->param_count; i++)
+					ADD_CODE(td, MINT_POP); /*FIX: vt */
+				if (csignature->hasthis) {
+					if (virtual)
+						ADD_CODE(td, MINT_CKNULL);
+					ADD_CODE(td, MINT_POP);
+				}
+				td->sp -= csignature->param_count + csignature->hasthis;
+				td->ip += 5;
+				return;
+			}
+		}
+	}
+	if (method->wrapper_type == MONO_WRAPPER_NONE && m != NULL) {
+		if (m->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)
+			m = mono_marshal_get_native_wrapper (m, FALSE, FALSE);
+		if (!virtual && m->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)
+			m = mono_marshal_get_synchronized_wrapper (m);
+	}
+	g_assert (csignature->call_convention == MONO_CALL_DEFAULT || csignature->call_convention == MONO_CALL_C);
+	td->sp -= csignature->param_count + csignature->hasthis;
+	for (i = 0; i < csignature->param_count; ++i) {
+		if (td->sp [i + csignature->hasthis].type == STACK_TYPE_VT) {
+			gint32 size;
+			if (csignature->pinvoke && method->wrapper_type != MONO_WRAPPER_NONE)
+				size = mono_class_native_size (csignature->params [i]->data.klass, NULL);
+			else
+				size = mono_class_value_size (csignature->params [i]->data.klass, NULL);
+			size = (size + 7) & ~7;
+			vt_stack_used += size;
+		}
+	}
+
+	/* need to handle typedbyref ... */
+	if (csignature->ret->type != MONO_TYPE_VOID) {
+		int mt = mint_type(csignature->ret);
+		MonoClass *klass = NULL;
+		if (mt == MINT_TYPE_VT) {
+			if (csignature->pinvoke && method->wrapper_type != MONO_WRAPPER_NONE)
+				vt_res_size = mono_class_native_size (csignature->ret->data.klass, NULL);
+			else
+				vt_res_size = mono_class_value_size (csignature->ret->data.klass, NULL);
+			PUSH_VT(td, vt_res_size);
+			klass = csignature->ret->data.klass;
+		} else if (mt == MINT_TYPE_O)
+			klass = mono_class_from_mono_type (csignature->ret);
+		PUSH_TYPE(td, stack_type[mt], klass);
+	} else
+		is_void = TRUE;
+
+	if (op >= 0) {
+		ADD_CODE(td, op);
+#if SIZEOF_VOID_P == 8
+		if (op == MINT_LDLEN)
+			ADD_CODE(td, MINT_CONV_I4_I8);
+#endif
+	} else {
+		if (calli)
+			ADD_CODE(td, native ? MINT_CALLI_NAT : MINT_CALLI);
+		else if (virtual)
+			ADD_CODE(td, is_void ? MINT_VCALLVIRT : MINT_CALLVIRT);
+		else
+			ADD_CODE(td, is_void ? MINT_VCALL : MINT_CALL);
+		
+		if (calli) {
+			ADD_CODE(td, get_data_item_index (td, (void *)csignature));
+		} else {
+			ADD_CODE(td, get_data_item_index (td, (void *)mono_interp_get_runtime_method (domain, m, &error)));
+			mono_error_cleanup (&error); /* FIXME: don't swallow the error */
+		}
+	}
+	td->ip += 5;
+	if (vt_stack_used != 0 || vt_res_size != 0) {
+		ADD_CODE(td, MINT_VTRESULT);
+		ADD_CODE(td, vt_res_size);
+		WRITE32(td, &vt_stack_used);
+		td->vt_sp -= vt_stack_used;
+	}
+}
+
+static void
 generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 {
 	MonoMethodHeader *header = mono_method_get_header (method);
@@ -950,150 +1107,7 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 		case CEE_CALLVIRT: /* Fall through */
 		case CEE_CALLI:    /* Fall through */
 		case CEE_CALL: {
-			MonoMethod *m;
-			MonoMethodSignature *csignature;
-			int virtual = *td.ip == CEE_CALLVIRT;
-			int calli = *td.ip == CEE_CALLI;
-			int i;
-			guint32 vt_stack_used = 0;
-			guint32 vt_res_size = 0;
-			int op = -1;
-			int native = 0;
-			int is_void = 0;
-
-			token = read32 (td.ip + 1);
-			if (calli) {
-				CHECK_STACK(&td, 1);
-				native = (method->wrapper_type != MONO_WRAPPER_DELEGATE_INVOKE && td.sp [-1].type == STACK_TYPE_I);
-				--td.sp;
-				if (method->wrapper_type != MONO_WRAPPER_NONE)
-					csignature = (MonoMethodSignature *)mono_method_get_wrapper_data (method, token);
-				else
-					csignature = mono_metadata_parse_signature (image, token);
-				m = NULL;
-			} else {
-				if (method->wrapper_type == MONO_WRAPPER_NONE)
-					m = mono_get_method_full (image, token, NULL, generic_context);
-				else
-					m = (MonoMethod *)mono_method_get_wrapper_data (method, token);
-				csignature = mono_method_signature (m);
-				if (m->klass == mono_defaults.string_class) {
-			 		if (m->name [0] == 'g') {
-				 		if (strcmp (m->name, "get_Chars") == 0)
-							op = MINT_GETCHR;
-				 		else if (strcmp (m->name, "get_Length") == 0)
-				 			op = MINT_STRLEN;
-					}
-				} else if (m->klass == mono_defaults.array_class) {
-					if (strcmp (m->name, "get_Rank") == 0)
-						op = MINT_ARRAY_RANK;
-					else if (strcmp (m->name, "get_Length") == 0)
-						op = MINT_LDLEN;
-				}
-			}
-			CHECK_STACK(&td, csignature->param_count + csignature->hasthis);
-			if (!calli && (!virtual || (m->flags & METHOD_ATTRIBUTE_VIRTUAL) == 0) &&
-				(m->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) == 0 && 
-				(m->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) == 0) {
-				int called_inited = mono_class_vtable (domain, m->klass)->initialized;
-				MonoMethodHeader *mheader = mono_method_get_header (m);
-
-				if (/*mono_metadata_signature_equal (method->signature, m->signature) */ method == m && *(td.ip + 5) == CEE_RET) {
-					int offset;
-					if (mono_interp_traceopt)
-						g_print ("Optimize tail call of %s.%s\n", m->klass->name, m->name);
-					for (i = csignature->param_count - 1; i >= 0; --i)
-						store_arg (&td, i + csignature->hasthis);
-
-					if (csignature->hasthis) {
-						ADD_CODE(&td, MINT_STTHIS);
-						--td.sp;
-					}
-					ADD_CODE(&td, MINT_BR_S);
-					offset = body_start_offset - ((td.new_ip - 1) - td.new_code);
-					ADD_CODE(&td, offset);
-					if (!is_bb_start [td.ip + 5 - td.il_code])
-						++td.ip; /* gobble the CEE_RET if it isn't branched to */				
-					td.ip += 5;
-					break;
-				} else {
-					/* mheader might not exist if this is a delegate invoc, etc */
-					if (mheader && *mheader->code == CEE_RET && called_inited) {
-						if (mono_interp_traceopt)
-							g_print ("Inline (empty) call of %s.%s\n", m->klass->name, m->name);
-						for (i = 0; i < csignature->param_count; i++)
-							ADD_CODE(&td, MINT_POP); /*FIX: vt */
-						if (csignature->hasthis) {
-							if (virtual)
-								ADD_CODE(&td, MINT_CKNULL);
-							ADD_CODE(&td, MINT_POP);
-						}
-						td.sp -= csignature->param_count + csignature->hasthis;
-						td.ip += 5;
-						break;
-					}
-				}
-			}
-			if (method->wrapper_type == MONO_WRAPPER_NONE && m != NULL) {
-				if (m->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)
-					m = mono_marshal_get_native_wrapper (m, FALSE, FALSE);
-				if (!virtual && m->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)
-					m = mono_marshal_get_synchronized_wrapper (m);
-			}
-			g_assert (csignature->call_convention == MONO_CALL_DEFAULT || csignature->call_convention == MONO_CALL_C);
-			td.sp -= csignature->param_count + csignature->hasthis;
-			for (i = 0; i < csignature->param_count; ++i) {
-				if (td.sp [i + csignature->hasthis].type == STACK_TYPE_VT) {
-					gint32 size;
-					if (csignature->pinvoke && method->wrapper_type != MONO_WRAPPER_NONE)
-						size = mono_class_native_size (csignature->params [i]->data.klass, NULL);
-					else
-						size = mono_class_value_size (csignature->params [i]->data.klass, NULL);
-					size = (size + 7) & ~7;
-					vt_stack_used += size;
-				}
-			}
-
-			/* need to handle typedbyref ... */
-			if (csignature->ret->type != MONO_TYPE_VOID) {
-				int mt = mint_type(csignature->ret);
-				MonoClass *klass = NULL;
-				if (mt == MINT_TYPE_VT) {
-					if (csignature->pinvoke && method->wrapper_type != MONO_WRAPPER_NONE)
-						vt_res_size = mono_class_native_size (csignature->ret->data.klass, NULL);
-					else
-						vt_res_size = mono_class_value_size (csignature->ret->data.klass, NULL);
-					PUSH_VT(&td, vt_res_size);
-					klass = csignature->ret->data.klass;
-				} else if (mt == MINT_TYPE_O)
-					klass = mono_class_from_mono_type (csignature->ret);
-				PUSH_TYPE(&td, stack_type[mt], klass);
-			} else
-				is_void = TRUE;
-
-			if (op >= 0) {
-				ADD_CODE(&td, op);
-#if SIZEOF_VOID_P == 8
-				if (op == MINT_LDLEN)
-					ADD_CODE(&td, MINT_CONV_I4_I8);
-#endif
-			} else {
-				if (calli)
-					ADD_CODE(&td, native ? MINT_CALLI_NAT : MINT_CALLI);
-				else if (virtual)
-					ADD_CODE(&td, is_void ? MINT_VCALLVIRT : MINT_CALLVIRT);
-				else
-					ADD_CODE(&td, is_void ? MINT_VCALL : MINT_CALL);
-				ADD_CODE(&td, get_data_item_index (&td,  calli? (void *)csignature : (void *)mono_interp_get_runtime_method (domain, m, &error)));
-				mono_error_cleanup (&error); /* FIXME: don't swallow the error */
-			}
-			td.ip += 5;
-			if (vt_stack_used != 0 || vt_res_size != 0) {
-				ADD_CODE(&td, MINT_VTRESULT);
-				ADD_CODE(&td, vt_res_size);
-				WRITE32(&td, &vt_stack_used);
-				td.vt_sp -= vt_stack_used;
-			}
+			interp_transform_call (&td, method, domain, generic_context, is_bb_start, body_start_offset);
 			break;
 		}
 		case CEE_RET: {
@@ -2392,6 +2406,10 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 		case CEE_UNUSED41:
 			++td.ip;
 		        switch (*td.ip) {
+				case CEE_MONO_CALLI_EXTRA_ARG:
+					/* Same as CEE_CALLI, llvm specific */
+					interp_transform_call (&td, method, domain, generic_context, is_bb_start, body_start_offset);
+					break;
 				case CEE_MONO_ICALL: {
 					guint32 token;
 					gpointer func;
