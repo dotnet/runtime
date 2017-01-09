@@ -856,7 +856,9 @@ static MethodArguments* build_args_from_sig (MonoMethodSignature *sig, MonoInvoc
 		case MONO_TYPE_STRING:
 		case MONO_TYPE_I8:
 			margs->iargs [int_i] = frame->stack_args [i].data.l;
+#if DEBUG_INTERP
 			g_printerr ("build_args_from_sig: margs->iargs[%d]: %p (frame @ %d)\n", int_i, margs->iargs[int_i], i);
+#endif
 			int_i++;
 			break;
 		default:
@@ -900,10 +902,12 @@ ves_pinvoke_method (MonoInvocation *frame, MonoMethodSignature *sig, MonoFuncV a
 		// TODO:
 		// mono_tramp_info_register (info, NULL);
 	}
-	g_printerr ("ICALL: mono_interp_enter_icall_trampoline = %p, addr = %p\n", mono_interp_enter_icall_trampoline, addr);
-	
+
 	MethodArguments *margs = build_args_from_sig (sig, frame);
+#if DEBUG_INTERP
+	g_printerr ("ICALL: mono_interp_enter_icall_trampoline = %p, addr = %p\n", mono_interp_enter_icall_trampoline, addr);
 	g_printerr ("margs(out): ilen=%d, flen=%d\n", margs->ilen, margs->flen);
+#endif
 
 	context->current_frame = frame;
 	context->managed_code = 0;
