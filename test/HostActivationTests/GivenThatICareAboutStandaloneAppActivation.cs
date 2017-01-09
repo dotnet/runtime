@@ -10,6 +10,8 @@ using Xunit;
 using FluentAssertions;
 using Microsoft.DotNet.CoreSetup.Test;
 using Microsoft.DotNet.Cli.Build.Framework;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.StandaloneApp
 {
@@ -64,6 +66,74 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.StandaloneApp
                 .Copy();
 
             var appExe = fixture.TestProject.AppExe;
+
+            Command.Create(appExe)
+                .CaptureStdErr()
+                .CaptureStdOut()
+                .Execute()
+                .Should()
+                .Pass()
+                .And
+                .HaveStdOutContaining("Hello World");
+        }
+
+        [Fact]
+        public void Running_Publish_Output_Standalone_EXE_with_Unbound_AppHost_Fails()
+        {
+            var fixture = PreviouslyPublishedAndRestoredStandaloneTestProjectFixture
+                .Copy();
+
+            var appExe = fixture.TestProject.AppExe;
+
+            string hostExeName = $"apphost{Constants.ExeSuffix}";
+            string builtAppHost = Path.Combine(RepoDirectories.HostArtifacts, hostExeName);
+            File.Copy(builtAppHost, appExe, true);
+
+            int exitCode = Command.Create(appExe)
+                .CaptureStdErr()
+                .CaptureStdOut()
+                .Execute()
+                .ExitCode;
+
+            if (CurrentPlatform.IsWindows)
+            {
+                exitCode.Should().Be(-2147450731);
+            }
+            else
+            {
+                // Some Unix flavors filter exit code to ubyte.
+                (exitCode & 0xFF).Should().Be(0x95);
+            }
+        }
+
+        [Fact]
+        public void Running_Publish_Output_Standalone_EXE_with_Bound_AppHost_Succeeds()
+        {
+            var fixture = PreviouslyPublishedAndRestoredStandaloneTestProjectFixture
+                .Copy();
+
+            var appExe = fixture.TestProject.AppExe;
+
+            string hostExeName = $"apphost{Constants.ExeSuffix}";
+            string builtAppHost = Path.Combine(RepoDirectories.HostArtifacts, hostExeName);
+            string appName = Path.GetFileNameWithoutExtension(appExe);
+            string appDll = $"{appName}.dll";
+            string appDir = Path.GetDirectoryName(appExe);
+            string appDirHostExe = Path.Combine(appDir, hostExeName);
+
+            // Make a copy of apphost first, replace hash and overwrite app.exe, rather than
+            // overwrite app.exe and edit in place, because the file is opened as "write" for
+            // the replacement -- the test fails with ETXTBSY (exit code: 26) in Linux when
+            // executing a file opened in "write" mode.
+            File.Copy(builtAppHost, appDirHostExe, true);
+            using (var sha256 = SHA256.Create())
+            {
+                // Replace the hash with the managed DLL name.
+                var hash = sha256.ComputeHash(Encoding.UTF8.GetBytes("foobar"));
+                var hashStr = BitConverter.ToString(hash).Replace("-", "").ToLower();  
+                AppHostExtensions.SearchAndReplace(appDirHostExe, Encoding.UTF8.GetBytes(hashStr), Encoding.UTF8.GetBytes(appDll), true);
+            }
+            File.Copy(appDirHostExe, appExe, true);
 
             Command.Create(appExe)
                 .CaptureStdErr()

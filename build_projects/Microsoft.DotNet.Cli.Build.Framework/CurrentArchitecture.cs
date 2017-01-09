@@ -31,9 +31,35 @@ namespace Microsoft.DotNet.Cli.Build.Framework
             }
         }
 
+        public static bool Isarm
+        {
+            get
+            {
+                var archName = Environment.GetEnvironmentVariable("TARGETPLATFORM");
+                return string.Equals(archName, "arm", StringComparison.OrdinalIgnoreCase);
+            }
+        }
+
+        public static bool Isarm64
+        {
+            get
+            {
+                var archName = Environment.GetEnvironmentVariable("TARGETPLATFORM");
+                return string.Equals(archName, "arm64", StringComparison.OrdinalIgnoreCase);
+            }
+        }
+
         private static BuildArchitecture DetermineCurrentArchitecture()
         {
-            if (Isx86)
+            if (Isarm)
+            {
+                return BuildArchitecture.arm;
+            }
+            else if (Isarm64)
+            {
+                return BuildArchitecture.arm64;
+            }
+            else if (Isx86)
             {
                 return BuildArchitecture.x86;
             }
