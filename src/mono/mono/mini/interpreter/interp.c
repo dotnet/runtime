@@ -636,13 +636,16 @@ ves_array_set (MonoInvocation *frame)
 		return;
 	}
 
-#if 0 /* FIX */
-	if (sp [ac->rank].data.p && !mono_object_isinst (sp [ac->rank].data.p, mono_object_class (o)->element_class)) {
-		frame->ex = mono_get_exception_array_type_mismatch ();
-		FILL_IN_TRACE (frame->ex, frame);
-		return;
+	if (sp [ac->rank].data.p && !mono_object_class (o)->element_class->valuetype) {
+		MonoError error;
+		MonoObject *isinst = mono_object_isinst_checked (sp [ac->rank].data.p, mono_object_class (o)->element_class, &error);
+		mono_error_cleanup (&error);
+		if (!isinst) {
+			frame->ex = mono_get_exception_array_type_mismatch ();
+			FILL_IN_TRACE (frame->ex, frame);
+			return;
+		}
 	}
-#endif
 
 	esize = mono_array_element_size (ac);
 	ea = mono_array_addr_with_size (ao, esize, pos);
