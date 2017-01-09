@@ -3022,7 +3022,6 @@ mono_interp_transform_method (RuntimeMethod *runtime_method, ThreadContext *cont
 	if (runtime_method->transformed) {
 		mono_os_mutex_unlock(&calc_section);
 		g_free (is_bb_start);
-		g_error ("FIXME: missing jinfo1");
 		mono_profiler_method_end_jit (method, NULL, MONO_PROFILE_OK);
 		return NULL;
 	}
