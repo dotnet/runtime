@@ -3,13 +3,6 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
 
   <ItemGroup>
-    <TestProjectExclusions Include="$(MSBuildThisFileDirectory)*\tests\**\System.Security.AccessControl.Tests.csproj" />
-    <TestProjectExclusions Include="$(MSBuildThisFileDirectory)*\tests\**\WebServer.csproj" />
-    <TestProjectExclusions Include="$(MSBuildThisFileDirectory)*\tests\**\System.Configuration.Tests.csproj" />
-    <TestProjectExclusions Include="$(MSBuildThisFileDirectory)*\tests\**\System.DirectoryServices.AccountManagement.Tests.csproj" />
-    <TestProjectExclusions Include="$(MSBuildThisFileDirectory)*\tests\**\System.Xml.XmlSerializer.ReflectionOnly.Tests.csproj" />
-    <TestProjectExclusions Include="$(MSBuildThisFileDirectory)*\tests\**\System.Security.Cryptography.Xml.Tests.csproj" />
-    <TestProjectExclusions Include="$(MSBuildThisFileDirectory)*\tests\**\System.Runtime.CompilerServices.Unsafe.Tests.csproj" Condition="'$(OS)' != 'Windows_NT'" />
     <Project Include="$(MSBuildThisFileDirectory)*\tests\**\*.csproj" Exclude="@(TestProjectExclusions)">
       <AdditionalMetadata>ConfigurationGroup=$(ConfigurationGroup)</AdditionalMetadata>
     </Project>

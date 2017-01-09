@@ -4,14 +4,13 @@
   <PropertyGroup>
     <ProjectGuid>{57E8F8D4-0766-4CC7-B3F9-B243B81DB6A5}</ProjectGuid>
     <UnsupportedPlatforms>Linux;NetBSD;OSX</UnsupportedPlatforms>
+    <!-- Skipping the tests for project in all platforms due to issue: https://github.com/dotnet/corefx/issues/15041 -->
+    <RunTestsForProject>false</RunTestsForProject>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU'">
-    <DebugSymbols>true</DebugSymbols>
-    <PlatformTarget>AnyCPU</PlatformTarget>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'">
-    <PlatformTarget>AnyCPU</PlatformTarget>
-  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard_Windows_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard_Windows_Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.3_Windows_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.3_Windows_Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="Ace\Ace.Common.Tests.cs" />
     <Compile Include="Ace\Ace.Compound.Tests.cs" />
