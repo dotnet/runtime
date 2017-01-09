@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  
+  <PropertyGroup>
+    <Version>$(AppHostVersion)</Version>
+    <SkipPackageFileCheck>true</SkipPackageFileCheck>
+    <MinOSForArch>win7</MinOSForArch>
+    <MinOSForArch Condition="$(PackagePlatform.StartsWith('arm'))">win8</MinOSForArch>
+    <MinOSForArch Condition="$(PackagePlatform.StartsWith('arm64'))">win10</MinOSForArch>
+    <PackageTargetRuntime>$(MinOSForArch)-$(PackagePlatform)</PackageTargetRuntime>
+    <Serviceable>true</Serviceable>
+  </PropertyGroup>
+  
+  <ItemGroup>
+    <ArchitectureSpecificNativeFile Include="$(DotNetHostBinDir)/apphost.exe" />
+    <ArchitectureSpecificNativeFile Include="$(DotNetHostBinDir)/apphost.pdb">
+      <IsSymbolFile>true</IsSymbolFile>
+    </ArchitectureSpecificNativeFile>
+
+    <File Include="@(ArchitectureSpecificNativeFile)">
+      <TargetPath>runtimes/$(PackageTargetRuntime)/native</TargetPath>
+    </File>
+    <File Include="$(ProjectDir)/version.txt" />
+  </ItemGroup>
+
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>

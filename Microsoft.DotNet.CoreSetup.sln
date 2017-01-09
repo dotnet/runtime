@@ -9,7 +9,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		NuGet.Config = NuGet.Config
 	EndProjectSection
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tools", "tools", "{0722D325-24C8-4E83-B5AF-0A083E7F0749}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "setuptools", "setuptools", "{0722D325-24C8-4E83-B5AF-0A083E7F0749}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "build_projects", "build_projects", "{88278B81-7649-45DC-8A6A-D3A645C5AFC3}"
 EndProject
@@ -19,7 +19,7 @@ Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "shared-build-targets-utils"
 EndProject
 Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "dotnet-host-build", "build_projects\dotnet-host-build\dotnet-host-build.xproj", "{1DBB7542-0345-4F4B-A84B-3B00B185D416}"
 EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "RuntimeGraphGenerator", "tools\independent\RuntimeGraphGenerator\RuntimeGraphGenerator.xproj", "{EFC4FE68-83EB-40E4-BFA8-61D0B4626F25}"
+Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "RuntimeGraphGenerator", "setuptools\independent\RuntimeGraphGenerator\RuntimeGraphGenerator.xproj", "{EFC4FE68-83EB-40E4-BFA8-61D0B4626F25}"
 EndProject
 Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "update-dependencies", "build_projects\update-dependencies\update-dependencies.xproj", "{A28BD8AC-DF15-4F58-8299-98A9AE2B8726}"
 EndProject
@@ -27,7 +27,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{5CE8410C
 EndProject
 Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "HostActivationTests", "test\HostActivationTests\HostActivationTests.xproj", "{386D412C-003C-47B1-8258-0E35865CB7C4}"
 EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "dotnet-deb-tool", "tools\dotnet-deb-tool\dotnet-deb-tool.xproj", "{F39F3D8B-B26F-4C77-B08C-D6CA753EE84E}"
+Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "dotnet-deb-tool", "setuptools\dotnet-deb-tool\dotnet-deb-tool.xproj", "{F39F3D8B-B26F-4C77-B08C-D6CA753EE84E}"
 EndProject
 Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "TestUtils", "test\TestUtils\TestUtils.xproj", "{42095367-4423-4157-BD31-D1A8E3B823B9}"
 EndProject

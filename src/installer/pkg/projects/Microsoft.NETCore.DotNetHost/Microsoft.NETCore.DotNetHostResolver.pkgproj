@@ -16,6 +16,9 @@
     <Dependency Include="Microsoft.NETCore.DotNetHost">
       <Version>$(HostFullVersion)</Version>
     </Dependency>
+    <Dependency Include="Microsoft.NETCore.DotNetAppHost">
+      <Version>$(AppHostFullVersion)</Version>
+    </Dependency>
     <ProjectReference Include="win\Microsoft.NETCore.DotNetHostResolver.pkgproj">
       <Platform>amd64</Platform>
     </ProjectReference>
@@ -27,6 +30,9 @@
     </ProjectReference>
     <ProjectReference Include="win\Microsoft.NETCore.DotNetHostResolver.pkgproj">
       <Platform>arm64</Platform>
+    </ProjectReference>
+    <ProjectReference Include="linux\Microsoft.NETCore.DotNetHostResolver.pkgproj">
+      <Platform>amd64</Platform>
     </ProjectReference>
     <ProjectReference Include="rhel\Microsoft.NETCore.DotNetHostResolver.pkgproj">
       <Platform>amd64</Platform>

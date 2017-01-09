@@ -16,6 +16,9 @@
     <Dependency Include="Microsoft.NETCore.DotNetHost">
       <Version>$(HostFullVersion)</Version>
     </Dependency>
+    <Dependency Include="Microsoft.NETCore.DotNetAppHost">
+      <Version>$(AppHostFullVersion)</Version>
+    </Dependency>
 
     <ArchitectureSpecificNativeFile Include="$(DotNetHostBinDir)/hostfxr.dll"/>
     <ArchitectureSpecificNativeFile Include="$(DotNetHostBinDir)/hostfxr.pdb">

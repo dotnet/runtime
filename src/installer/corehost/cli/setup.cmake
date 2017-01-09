@@ -120,6 +120,12 @@ else()
     add_definitions(-DHOST_PKG_VER="${CLI_CMAKE_HOST_VER}")
 endif()
 
+if("${CLI_CMAKE_APPHOST_VER}" STREQUAL "")
+    message(FATAL_ERROR "apphost version is not specified")
+else()
+    add_definitions(-DAPPHOST_PKG_VER="${CLI_CMAKE_APPHOST_VER}")
+endif()
+
 if("${CLI_CMAKE_PKG_RID}" STREQUAL "")
     message(FATAL_ERROR "A minimum supported package rid is not specified (ex: win7-x86 or ubuntu.14.04-x64, osx.10.10-x64, rhel.7-x64)")
 else()

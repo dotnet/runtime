@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.DotNet.Cli.Build.Framework;
 
 namespace Microsoft.DotNet.CoreSetup.Test
 {
@@ -11,6 +12,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
     {
         private string _repoRoot;
         private string _artifacts;
+        private string _hostArtifacts;
         private string _builtDotnet;
         private string _nugetPackages;
         private string _corehostPackages;
@@ -18,6 +20,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
         public string RepoRoot => _repoRoot;
         public string Artifacts => _artifacts;
+        public string HostArtifacts => _hostArtifacts;
         public string BuiltDotnet => _builtDotnet;
         public string NugetPackages => _nugetPackages;
         public string CorehostPackages => _corehostPackages;
@@ -33,18 +36,17 @@ namespace Microsoft.DotNet.CoreSetup.Test
         {
             _repoRoot = repoRoot ?? Path.Combine(Directory.GetCurrentDirectory(), "..", "..");
             
-            var currentRid = GetCurrentRid(_repoRoot);
+            string baseArtifactsFolder = artifacts ?? Path.Combine(_repoRoot, "artifacts");
 
-            _artifacts = artifacts ?? Path.Combine(_repoRoot, "artifacts", currentRid);
+            var targetRID = Environment.GetEnvironmentVariable("TEST_TARGETRID");
+
+            _artifacts = Path.Combine(baseArtifactsFolder, targetRID);
+
+            _hostArtifacts = artifacts ?? Path.Combine(_artifacts, "corehost");
             _nugetPackages = nugetPackages ?? Path.Combine(_repoRoot, ".nuget", "packages");
             _corehostPackages = corehostPackages ?? Path.Combine(_artifacts, "corehost");
             _corehostDummyPackages = corehostDummyPackages ?? Path.Combine(_artifacts, "corehostdummypackages");
             _builtDotnet = builtDotnet ?? Path.Combine(_artifacts, "intermediate", "sharedFrameworkPublish");
-        }
-
-        private string GetCurrentRid(string repoRoot)
-        {
-            return new DotNetCli(DotNetCli.GetStage0Path(repoRoot)).GetRuntimeId();
         }
     }
 }
