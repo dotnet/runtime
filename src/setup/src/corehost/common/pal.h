@@ -70,6 +70,8 @@
 #define LIBHOSTPOLICY_FILENAME (LIB_PREFIX _X("hostpolicy"))
 #define LIBHOSTPOLICY_NAME MAKE_LIBNAME("hostpolicy")
 
+#define LIBFXR_NAME MAKE_LIBNAME("hostfxr")
+
 #if !defined(PATH_MAX) && !defined(_WIN32)
 #define PATH_MAX    4096
 #endif
@@ -120,9 +122,11 @@ namespace pal
     inline void err_vprintf(const char_t* format, va_list vl) { ::vfwprintf(stderr, format, vl); ::fputws(_X("\r\n"), stderr); }
     inline void out_vprintf(const char_t* format, va_list vl) { ::vfwprintf(stdout, format, vl); ::fputws(_X("\r\n"), stdout); }
 
+    bool pal_utf8string(const pal::string_t& str, std::vector<char>* out);
     bool utf8_palstring(const std::string& str, pal::string_t* out);
     bool pal_clrstring(const pal::string_t& str, std::vector<char>* out);
     bool clr_palstring(const char* cstr, pal::string_t* out);
+
 #else
     #ifdef COREHOST_MAKE_DLL
         #define SHARED_API extern "C"
@@ -169,9 +173,11 @@ namespace pal
     inline size_t strlen(const char_t* str) { return ::strlen(str); }
     inline void err_vprintf(const char_t* format, va_list vl) { ::vfprintf(stderr, format, vl); ::fputc('\n', stderr); }
     inline void out_vprintf(const char_t* format, va_list vl) { ::vfprintf(stdout, format, vl); ::fputc('\n', stdout); }
+    inline bool pal_utf8string(const pal::string_t& str, std::vector<char>* out) { out->assign(str.begin(), str.end()); out->push_back('\0'); return true; }
     inline bool utf8_palstring(const std::string& str, pal::string_t* out) { out->assign(str); return true; }
-    inline bool pal_clrstring(const pal::string_t& str, std::vector<char>* out) { out->assign(str.begin(), str.end()); out->push_back('\0'); return true; }
+    inline bool pal_clrstring(const pal::string_t& str, std::vector<char>* out) { return pal_utf8string(str, out); }
     inline bool clr_palstring(const char* cstr, pal::string_t* out) { out->assign(cstr); return true; }
+
 #endif
 
 #if defined(__APPLE__)

@@ -30,8 +30,10 @@ namespace Microsoft.DotNet.Host.Build
         [Target(nameof(CheckUbuntuCoreclrAndCoreFxDependencies), nameof(CheckCentOSCoreclrAndCoreFxDependencies))]
         public static BuildTargetResult CheckCoreclrPlatformDependencies(BuildTargetContext c) => c.Success();
 
-        // All major targets will depend on this in order to ensure variables are set up right if they are run independently
+        // All major targets will depend on this in order to ensure variables are set up right if they are run independently.
+        // The targets listed below are executed before Init Target is invoked.
         [Target(
+            nameof(CommonInit),
             nameof(SetNuGetPackagesDir),
             nameof(GenerateVersions),
             nameof(CheckPrereqs),
@@ -42,16 +44,8 @@ namespace Microsoft.DotNet.Host.Build
         public static BuildTargetResult Init(BuildTargetContext c)
         {
             var configEnv = Environment.GetEnvironmentVariable("CONFIGURATION");
-            string platformEnv = Environment.GetEnvironmentVariable("TARGETPLATFORM") ?? RuntimeEnvironment.RuntimeArchitecture.ToString();
-            string targetRID = Environment.GetEnvironmentVariable("TARGETRID");
-            if (targetRID == null)
-            {
-                targetRID = RuntimeEnvironment.GetRuntimeIdentifier();
-                if (targetRID.StartsWith("win") && (targetRID.EndsWith("x86") || targetRID.EndsWith("x64")))
-                {
-                    targetRID = $"win7-{RuntimeEnvironment.RuntimeArchitecture}";
-                }
-            }
+            string platformEnv = c.BuildContext.Get<string>("Platform");
+            
             string targetFramework = Environment.GetEnvironmentVariable("TARGETFRAMEWORK") ?? "netcoreapp1.1";
 
             if (string.IsNullOrEmpty(configEnv))
@@ -72,16 +66,63 @@ namespace Microsoft.DotNet.Host.Build
 
             c.BuildContext["Configuration"] = configEnv;
             c.BuildContext["Channel"] = Environment.GetEnvironmentVariable("CHANNEL");
-            c.BuildContext["Platform"] = platformEnv;
-            c.BuildContext["TargetRID"] = targetRID;
+            
             c.BuildContext["TargetFramework"] = targetFramework;
             c.BuildContext["Cross"] = crossEnv;
+            
+            bool linkPortable = c.BuildContext.Get<bool>("LinkPortable");
+            string targetRID = c.BuildContext.Get<string>("TargetRID");
 
             c.Info($"Building {c.BuildContext["Configuration"]} to: {Dirs.Output}");
             c.Info("Build Environment:");
             c.Info($" Operating System: {RuntimeEnvironment.OperatingSystem} {RuntimeEnvironment.OperatingSystemVersion}");
             c.Info($" Platform: " + platformEnv);
             c.Info($" Cross Build: " + int.Parse(crossEnv));
+            c.Info($" Portable Linking: " + linkPortable);
+            c.Info($" TargetRID: " + targetRID);
+
+            return c.Success();
+        }
+
+        [Target]
+        public static BuildTargetResult CommonInit(BuildTargetContext c)
+        {
+            string platformEnv = Environment.GetEnvironmentVariable("TARGETPLATFORM") ?? RuntimeEnvironment.RuntimeArchitecture.ToString();
+            
+            string targetRID = Environment.GetEnvironmentVariable("TARGETRID");
+            string realTargetRID = targetRID;
+            if (targetRID == null)
+            {
+                targetRID = RuntimeEnvironment.GetRuntimeIdentifier();
+                realTargetRID = targetRID;
+
+                // Question: Why do we perform this translation? Utilities (e.g. Dirs.cs) do not account for this.
+                if (targetRID.StartsWith("win") && (targetRID.EndsWith("x86") || targetRID.EndsWith("x64")))
+                {
+                    targetRID = $"win7-{RuntimeEnvironment.RuntimeArchitecture}";
+                }
+            }
+            
+            string szLinkPortable = Environment.GetEnvironmentVariable("DOTNET_BUILD_LINK_PORTABLE")?? "0";
+            bool linkPortable = (int.Parse(szLinkPortable) == 1)?true:false;
+            if (linkPortable)
+            {
+                // Portable build only supports Linux RID
+                targetRID = $"linux-{platformEnv}";
+                realTargetRID = targetRID;
+
+                // Update/set the TARGETRID environment variable that will be used by various parts of the build
+                Environment.SetEnvironmentVariable("TARGETRID", targetRID);
+            }
+
+
+            c.BuildContext["TargetRID"] = targetRID;
+
+            // Save the RID that will be used to create the RID specific subfolder under artifacts folder.
+            // See Dirs.cs for details.
+            c.BuildContext["ArtifactsTargetRID"] = realTargetRID; 
+            c.BuildContext["LinkPortable"] = linkPortable;
+            c.BuildContext["Platform"] = platformEnv;
 
             return c.Success();
         }
@@ -102,7 +143,7 @@ namespace Microsoft.DotNet.Host.Build
             var versionSuffix = c.BuildContext.Get<BuildVersion>("BuildVersion").VersionSuffix;
 
             dotnet.Pack(
-                    Path.Combine(Dirs.RepoRoot, "tools", "dotnet-deb-tool", "project.json"),
+                    Path.Combine(Dirs.RepoRoot, "setuptools", "dotnet-deb-tool", "project.json"),
                     "--output", Dirs.PackagesIntermediate,
                     "--version-suffix", versionSuffix)
                     .Execute()
@@ -137,7 +178,6 @@ namespace Microsoft.DotNet.Host.Build
             int iPatch = int.Parse(branchInfo.Entries["PATCH_VERSION"]);
             string sReleaseSuffix = branchInfo.Entries["RELEASE_SUFFIX"];
             bool fStabilizePackageVersion = bool.Parse(branchInfo.Entries["STABILIZE_PACKAGE_VERSION"]);
-            bool fValidateHostPackages = bool.Parse(branchInfo.Entries["VALIDATE_HOST_PACKAGES"]);
             bool fLockHostVersion = bool.Parse(branchInfo.Entries["LOCK_HOST_VERSION"]);
 
             var hostVersion = new HostVersion()
@@ -160,7 +200,6 @@ namespace Microsoft.DotNet.Host.Build
                 CommitCount = commitCount
             };
 
-            c.BuildContext["ValidateHostPackages"] = fValidateHostPackages;
             c.BuildContext["BuildVersion"] = buildVersion;
             c.BuildContext["HostVersion"] = hostVersion;
             c.BuildContext["CommitHash"] = commitHash;
@@ -324,11 +363,11 @@ namespace Microsoft.DotNet.Host.Build
             var dotnet = DotNetCli.Stage0;
 
             dotnet.Restore("--verbosity", "verbose", "--disable-parallel")
-                .WorkingDirectory(Path.Combine(c.BuildContext.BuildDirectory, "tools", "dotnet-deb-tool"))
+                .WorkingDirectory(Path.Combine(c.BuildContext.BuildDirectory, "setuptools", "dotnet-deb-tool"))
                 .Execute()
                 .EnsureSuccessful();
             dotnet.Restore("--verbosity", "verbose", "--disable-parallel", "--infer-runtimes")
-                .WorkingDirectory(Path.Combine(c.BuildContext.BuildDirectory, "tools", "independent"))
+                .WorkingDirectory(Path.Combine(c.BuildContext.BuildDirectory, "setuptools", "independent"))
                 .Execute()
                 .EnsureSuccessful();
 
