@@ -13,7 +13,7 @@
     <Compile Include="CompressedStackTests.cs" />
     <Compile Include="ExceptionTests.cs" />
     <Compile Include="ThreadExceptionEventArgsTests.cs" />
-    <Compile Include="ThreadTests.netstandard1.7.cs" />
+    <Compile Include="ThreadTests.netstandard.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)\System\Threading\ThreadTestHelpers.cs">

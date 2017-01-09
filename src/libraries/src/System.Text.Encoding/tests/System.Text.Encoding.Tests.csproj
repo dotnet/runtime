@@ -74,10 +74,10 @@
     <Compile Include="$(CommonTestPath)\System\RandomDataGenerator.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netstandard'">
-    <Compile Include="Encoding\Encoding.netstandard1.7.cs" />
-    <Compile Include="UnicodeEncoding\UnicodeEncoding.netstandard1.7.cs" />
-    <Compile Include="Decoder\Decoder.netstandard1.7.cs" />
-    <Compile Include="Encoder\Encoder.netstandard1.7.cs" />
+    <Compile Include="Encoding\Encoding.netstandard.cs" />
+    <Compile Include="UnicodeEncoding\UnicodeEncoding.netstandard.cs" />
+    <Compile Include="Decoder\Decoder.netstandard.cs" />
+    <Compile Include="Encoder\Encoder.netstandard.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)\System\RuntimeDetection.cs">

@@ -16,8 +16,8 @@
     <Compile Include="SafeWaitHandleExtensions.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netstandard'">
-    <Compile Include="CriticalHandle.netstandard1.7.cs" />
-    <Compile Include="SafeHandle.netstandard1.7.cs" />
+    <Compile Include="CriticalHandle.netstandard.cs" />
+    <Compile Include="SafeHandle.netstandard.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

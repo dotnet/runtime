@@ -121,15 +121,15 @@
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
-    <Compile Include="System\ArrayTests.netcoreapp1.1.cs" />
-    <Compile Include="System\EnumTests.netcoreapp1.1.cs" />
-    <Compile Include="System\GCTests.netcoreapp1.1.cs" />
-    <Compile Include="System\IntPtrTests.netcoreapp1.1.cs" />
-    <Compile Include="System\LazyTests.netcoreapp1.1.cs" />
-    <Compile Include="System\Runtime\CompilerServices\RuntimeHelpersTests.netcoreapp1.1.cs" />
-    <Compile Include="System\Runtime\CompilerServices\ConditionalWeakTableTests.netcoreapp1.1.cs" />
-    <Compile Include="System\UIntPtrTests.netcoreapp1.1.cs" />
-    <Compile Include="System\ComponentModel\DefaultValueAttributeTests.netcoreapp1.1.cs" />
+    <Compile Include="System\ArrayTests.netcoreapp.cs" />
+    <Compile Include="System\EnumTests.netcoreapp.cs" />
+    <Compile Include="System\GCTests.netcoreapp.cs" />
+    <Compile Include="System\IntPtrTests.netcoreapp.cs" />
+    <Compile Include="System\LazyTests.netcoreapp.cs" />
+    <Compile Include="System\Runtime\CompilerServices\RuntimeHelpersTests.netcoreapp.cs" />
+    <Compile Include="System\Runtime\CompilerServices\ConditionalWeakTableTests.netcoreapp.cs" />
+    <Compile Include="System\UIntPtrTests.netcoreapp.cs" />
+    <Compile Include="System\ComponentModel\DefaultValueAttributeTests.netcoreapp.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' != 'netcoreapp'">
     <Compile Include="System\StringSplitExtensions.cs" />
@@ -138,40 +138,40 @@
     <Compile Include="$(CommonTestPath)\System\Collections\IEnumerable.Generic.Serialization.Tests.cs">
       <Link>Common\System\Collections\IEnumerable.Generic.Serialization.Tests.cs</Link>
     </Compile>
-    <Compile Include="ArrayTests.netstandard1.7.cs" />
-    <Compile Include="System\DelegateTests.netstandard1.7.cs" />
-    <Compile Include="System\AttributeTests.netstandard1.7.cs" />
+    <Compile Include="ArrayTests.netstandard.cs" />
+    <Compile Include="System\DelegateTests.netstandard.cs" />
+    <Compile Include="System\AttributeTests.netstandard.cs" />
     <Compile Include="CompareToTests.cs" />
-    <Compile Include="DBNullTests.netstandard1.7.cs" />
-    <Compile Include="DecimalTests.netstandard1.7.cs" />
-    <Compile Include="EnumTests.netstandard1.7.cs" />
+    <Compile Include="DBNullTests.netstandard.cs" />
+    <Compile Include="DecimalTests.netstandard.cs" />
+    <Compile Include="EnumTests.netstandard.cs" />
     <Compile Include="GetTypeCodeTests.cs" />
     <Compile Include="System\AccessViolationExceptionTests.cs" />
     <Compile Include="System\BadImageFormatExceptionTests.cs" />
-    <Compile Include="System\CharTests.netstandard1.7.cs" />
-    <Compile Include="System\DateTimeOffsetTests.netstandard1.7.cs" />
+    <Compile Include="System\CharTests.netstandard.cs" />
+    <Compile Include="System\DateTimeOffsetTests.netstandard.cs" />
     <Compile Include="System\DuplicateWaitObjectExceptionTests.cs" />
     <Compile Include="System\ExternalExceptionTests.cs" />
     <Compile Include="System\ApplicationExceptionTests.cs" />
     <Compile Include="System\EntryPointNotFoundExceptionTests.cs" />
     <Compile Include="System\ExceptionTests.cs" />
     <Compile Include="System\ExecutionEngineExceptionTests.cs" />
-    <Compile Include="System\GuidTests.netstandard1.7.cs" />
+    <Compile Include="System\GuidTests.netstandard.cs" />
     <Compile Include="System\MarshalByRefObjectTests.cs" />
     <Compile Include="System\MissingMemberExceptionTests.cs" />
     <Compile Include="System\NotFiniteNumberExceptionTests.cs" />
     <Compile Include="System\Security\SecurityAttributeTests.cs" />
     <Compile Include="System\StackOverflowExceptionTests.cs" />
     <Compile Include="System\SystemExceptionTests.cs" />
-    <Compile Include="System\StringTests.netstandard1.7.cs" />
-    <Compile Include="System\TimeSpanTests.netstandard1.7.cs" />
+    <Compile Include="System\StringTests.netstandard.cs" />
+    <Compile Include="System\TimeSpanTests.netstandard.cs" />
     <Compile Include="System\TypeUnloadedExceptionTests.cs" />
-    <Compile Include="TimeZoneTests.netstandard1.7.cs" />
-    <Compile Include="TimeZoneInfoTests.netstandard1.7.cs" />
-    <Compile Include="TimeZoneNotFoundExceptionTests.netstandard1.7.cs" />
-    <Compile Include="VersionTests.netstandard1.7.cs" />
-    <Compile Include="System\ComponentModel\DefaultValueAttributeTests.netstandard1.7.cs" />
-    <Compile Include="System\ComponentModel\EditorBrowsableAttributeTests.netstandard1.7.cs" />
+    <Compile Include="TimeZoneTests.netstandard.cs" />
+    <Compile Include="TimeZoneInfoTests.netstandard.cs" />
+    <Compile Include="TimeZoneNotFoundExceptionTests.netstandard.cs" />
+    <Compile Include="VersionTests.netstandard.cs" />
+    <Compile Include="System\ComponentModel\DefaultValueAttributeTests.netstandard.cs" />
+    <Compile Include="System\ComponentModel\EditorBrowsableAttributeTests.netstandard.cs" />
     <Compile Include="System\Reflection\AssemblyTests.cs" />
     <Compile Include="System\Reflection\AssemblyNameTests.cs" />
     <Compile Include="System\Reflection\ConstructorInfoTests.cs" />
@@ -195,9 +195,9 @@
     <EmbeddedResource Include="System\Reflection\EmbeddedTextFile.txt">
       <LogicalName>System.Reflection.Tests.EmbeddedTextFile.txt</LogicalName>
     </EmbeddedResource>
-    <Compile Include="System\Threading\WaitHandleTests.netstandard1.7.cs" />
-    <Compile Include="Microsoft\Win32\SafeHandles\CriticalHandleZeroOrMinusOneIsInvalid.netstandard1.7.cs" />
-    <Compile Include="Microsoft\Win32\SafeHandles\SafeHandleZeroOrMinusOneIsInvalid.netstandard1.7.cs" />
+    <Compile Include="System\Threading\WaitHandleTests.netstandard.cs" />
+    <Compile Include="Microsoft\Win32\SafeHandles\CriticalHandleZeroOrMinusOneIsInvalid.netstandard.cs" />
+    <Compile Include="Microsoft\Win32\SafeHandles\SafeHandleZeroOrMinusOneIsInvalid.netstandard.cs" />
     <Compile Include="System\Reflection\ModuleTests.cs" />
     <Compile Include="System\Reflection\PointerTests.cs" />
     <Compile Include="System\Reflection\RuntimeReflectionExtensionsTests.cs" />
@@ -206,18 +206,18 @@
     <Compile Include="$(CommonTestPath)\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs">
       <Link>System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs</Link>
     </Compile>
-    <Compile Include="System\Runtime\CompilerServices\RuntimeHelpersTests.netstandard1.7.cs" />
+    <Compile Include="System\Runtime\CompilerServices\RuntimeHelpersTests.netstandard.cs" />
     <Compile Include="System\Runtime\NgenServicingAttributesTests.cs" />
-    <Compile Include="System\Attributes.netstandard1.7.cs" />
-    <Compile Include="System\HandleTests.netstandard1.7.cs" />
+    <Compile Include="System\Attributes.netstandard.cs" />
+    <Compile Include="System\HandleTests.netstandard.cs" />
     <Compile Include="System\AppContext\AppContext.Switch.cs" />
     <Compile Include="System\AppContext\AppContext.Switch.Validation.cs" />
-    <Compile Include="System\Reflection\StrongNameKeyPairTests.netstandard1.7.cs" />
-    <Compile Include="System\ActivatorTest.netstandard1.7.cs" />
-    <Compile Include="System\ExceptionTests.netstandard1.7.cs" />
-    <Compile Include="System\TypeTests.netstandard1.7.cs" />
+    <Compile Include="System\Reflection\StrongNameKeyPairTests.netstandard.cs" />
+    <Compile Include="System\ActivatorTest.netstandard.cs" />
+    <Compile Include="System\ExceptionTests.netstandard.cs" />
+    <Compile Include="System\TypeTests.netstandard.cs" />
     <Compile Include="System\Runtime\Tests.netstandard.1.7.cs" />
-    <Compile Include="System\GCTests.netstandard1.7.cs" />
+    <Compile Include="System\GCTests.netstandard.cs" />
     <Compile Include="$(CommonTestPath)\System\Diagnostics\RemoteExecutorTestBase.cs">
       <Link>Common\System\Diagnostics\RemoteExecutorTestBase.cs</Link>
     </Compile>

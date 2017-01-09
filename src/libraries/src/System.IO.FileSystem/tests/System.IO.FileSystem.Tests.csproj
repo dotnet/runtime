@@ -20,7 +20,7 @@
     <Compile Include="FileStream\LockUnlock.cs" />
     <Compile Include="File\EncryptDecrypt.cs" />
     <Compile Include="File\Replace.cs" />
-    <Compile Include="File\ReadWriteAllLines.netstandard1.7.cs" />
+    <Compile Include="File\ReadWriteAllLines.netstandard.cs" />
     <Compile Include="$(CommonTestPath)\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs">
       <Link>Common\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs</Link>
     </Compile>

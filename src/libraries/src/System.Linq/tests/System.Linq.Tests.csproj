@@ -73,7 +73,7 @@
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
-    <Compile Include="ToHashSetTests.netcoreapp1.1.cs" />
+    <Compile Include="ToHashSetTests.netcoreapp.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

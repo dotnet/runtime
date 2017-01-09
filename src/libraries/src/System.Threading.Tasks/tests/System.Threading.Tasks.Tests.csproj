@@ -50,7 +50,7 @@
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netstandard'">
-    <Compile Include="Task\TaskDisposeTests.netstandard1.7.cs" />
+    <Compile Include="Task\TaskDisposeTests.netstandard.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

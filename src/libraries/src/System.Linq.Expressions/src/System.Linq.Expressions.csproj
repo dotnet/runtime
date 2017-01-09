@@ -159,11 +159,11 @@
   <ItemGroup Condition="'$(TargetGroup)'=='netstandard'">
     <Compile Include="System\Linq\Expressions\DynamicExpressionVisitor.cs" />
     <Compile Include="System\Linq\Expressions\DynamicExpression.cs" />
-    <Compile Include="System\Linq\Expressions\Expression.netstandard1.7.cs" />
-    <Compile Include="System\Linq\Expressions\LambdaExpression.netstandard1.7.cs" />
-    <Compile Include="System\Linq\Expressions\ExpressionVisitor.netstandard1.7.cs" />
+    <Compile Include="System\Linq\Expressions\Expression.netstandard.cs" />
+    <Compile Include="System\Linq\Expressions\LambdaExpression.netstandard.cs" />
+    <Compile Include="System\Linq\Expressions\ExpressionVisitor.netstandard.cs" />
     <Compile Include="System\Linq\Expressions\Compiler\TypeInfoExtensions.cs" />
-    <Compile Include="System\Linq\Expressions\Compiler\DelegateHelpers.netstandard1.7.cs" />
+    <Compile Include="System\Linq\Expressions\Compiler\DelegateHelpers.netstandard.cs" />
     <Compile Include="System\Runtime\CompilerServices\RuleCache.cs" />
     <Compile Include="System\Runtime\CompilerServices\CallSite.cs" />
     <Compile Include="System\Runtime\CompilerServices\CallSiteBinder.cs" />

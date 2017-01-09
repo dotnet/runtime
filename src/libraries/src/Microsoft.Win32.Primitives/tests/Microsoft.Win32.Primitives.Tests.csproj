@@ -10,7 +10,7 @@
     <Compile Include="Win32Exception.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netstandard'">
-    <Compile Include="Win32Exception.netstandard1.7.cs" />
+    <Compile Include="Win32Exception.netstandard.cs" />
     <Compile Include="$(CommonTestPath)\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs">
       <Link>Common\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs</Link>
     </Compile>
