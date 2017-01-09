@@ -16,7 +16,7 @@
     "Newtonsoft.Json": "9.0.1"
   },
   "frameworks": {
-    "netcoreapp1.1": {
+    "netcoreapp2.0": {
       "imports": [
         "dotnet5.4",
         "portable-net451+win8"

@@ -181,7 +181,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
         public TestProjectFixture BuildProject(
             DotNetCli dotnet = null,
             string runtime = null,
-            string framework = "netcoreapp1.1",
+            string framework = "netcoreapp2.0",
             string outputDirectory = null)
         {
             dotnet = dotnet ?? _sdkDotnet;
@@ -223,7 +223,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
         public TestProjectFixture PublishProject(
             DotNetCli dotnet = null,
             string runtime = null,
-            string framework = "netcoreapp1.1",
+            string framework = "netcoreapp2.0",
             string outputDirectory = null)
         {
             dotnet = dotnet ?? _sdkDotnet;
