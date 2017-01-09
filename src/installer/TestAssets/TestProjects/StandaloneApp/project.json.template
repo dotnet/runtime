@@ -1,0 +1,16 @@
+{
+  "buildOptions": {
+    "emitEntryPoint": true
+  },
+  "frameworks": {
+    "netcoreapp2.0": {
+      "dependencies": {
+        "Microsoft.NETCore.App": "2.0.0-beta-*",
+        "Newtonsoft.Json": "9.0.1-beta1",
+      }
+    }
+  },
+  "runtimes": {
+    "{RID}": {}
+  }
+}
