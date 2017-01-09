@@ -350,13 +350,15 @@ get_virtual_method (MonoDomain *domain, RuntimeMethod *runtime_method, MonoObjec
 
 	if ((m->flags & METHOD_ATTRIBUTE_FINAL) || !(m->flags & METHOD_ATTRIBUTE_VIRTUAL)) {
 		RuntimeMethod *ret = NULL;
-		if (obj->vtable->klass == mono_defaults.transparent_proxy_class) 
+		if (obj->vtable->klass == mono_defaults.transparent_proxy_class) {
 			ret = mono_interp_get_runtime_method (domain, mono_marshal_get_remoting_invoke (m), &error);
-		else if (m->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)
+			mono_error_cleanup (&error); /* FIXME: don't swallow the error */
+		} else if (m->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED) {
 			ret = mono_interp_get_runtime_method (domain, mono_marshal_get_synchronized_wrapper (m), &error);
-		else
+			mono_error_cleanup (&error); /* FIXME: don't swallow the error */
+		} else {
 			ret = runtime_method;
-		mono_error_cleanup (&error); /* FIXME: don't swallow the error */
+		}
 		return ret;
 	}
 
