@@ -139,12 +139,32 @@ namespace Microsoft.DotNet.CoreSetup.Test
                 sourceTestProject.ProjectName,
                 testArtifactDirectory);
 
+            EnsureGlobalJson(testArtifactDirectory);
+
             sourceTestProject.CopyProjectFiles(copiedTestProjectDirectory);
             return new TestProject(
                 copiedTestProjectDirectory,
                 exeExtension,
                 sharedLibraryExtension,
                 sharedLibraryPrefix);
+        }
+
+        private void EnsureGlobalJson(string testArtifactDirectory)
+        {
+            string globalJsonPath = Path.Combine(testArtifactDirectory, "global.json");
+            Directory.CreateDirectory(testArtifactDirectory);
+
+            for(int i = 0; i < 3 && !File.Exists(globalJsonPath); i++)
+            {
+                try
+                {
+                    // write an empty global.json to ensure that restore doesn't look elsewhere
+                    // for package dependencies to replace with projects.
+                    File.WriteAllText(globalJsonPath, "{}");
+                }
+                catch (IOException)
+                {}
+            }
         }
 
         private string CalculateTestProjectDirectory(string testProjectName, string testArtifactDirectory)
@@ -285,6 +305,22 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
         public TestProjectFixture EnsureRestored(params string[] fallbackSources)
         {
+            if ( ! _testProject.IsRestored())
+            {
+                RestoreProject(fallbackSources);
+            }
+
+            return this;
+        }
+
+        public TestProjectFixture EnsureRestoredForRid(string rid, params string[] fallbackSources)
+        {
+            var sourceProjectJson = Path.Combine(_testProject.ProjectDirectory, "project.json.template");
+            var targetProjectJson = Path.Combine(_testProject.ProjectDirectory, "project.json");
+
+            // apply RID to template
+            File.WriteAllText(targetProjectJson, File.ReadAllText(sourceProjectJson).Replace("{RID}", rid));
+
             if ( ! _testProject.IsRestored())
             {
                 RestoreProject(fallbackSources);
