@@ -21,7 +21,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
     internal static class UnsafeNativeMethods
     {
-        [DllImport("api-ms-win-core-winrt-error-l1-1-1.dll", PreserveSig = false)]
+        [DllImport("api-ms-win-core-winrt-error-l1-1-0.dll", PreserveSig = false)]
         [SuppressUnmanagedCodeSecurity]
         internal static extern IRestrictedErrorInfo GetRestrictedErrorInfo();
 
