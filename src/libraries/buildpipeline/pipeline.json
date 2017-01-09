@@ -366,14 +366,14 @@
         "TreatWarningsAsErrors": "false"
       },
       "BuildParameters": {
-        "ConfigurationGroup": "Release"
+        "PB_ConfigurationGroup": "Release"
       },
       "Definitions": [
         {
           "Name": "DotNet-Trusted-Publish",
           "Parameters": {
-            "VstsRepositoryName": "DotNet-CoreFX-Trusted",
-            "GitHubRepositoryName": "corefx"
+            "PB_VsoRepositoryName": "DotNet-CoreFX-Trusted",
+            "PB_Repo": "corefx"
           },
           "ReportingParameters": {
             "TaskName": "Package Publish",
@@ -392,14 +392,14 @@
         "TreatWarningsAsErrors": "false"
       },
       "BuildParameters": {
-        "ConfigurationGroup": "Debug"
+        "PB_ConfigurationGroup": "Debug"
       },
       "Definitions": [
         {
           "Name": "DotNet-Trusted-Publish",
           "Parameters": {
-            "VstsRepositoryName": "DotNet-CoreFX-Trusted",
-            "GitHubRepositoryName": "corefx"
+            "PB_VsoRepositoryName": "DotNet-CoreFX-Trusted",
+            "PB_Repo": "corefx"
           },
           "ReportingParameters": {
             "TaskName": "Package Publish",
