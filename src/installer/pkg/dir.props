@@ -35,7 +35,7 @@
   <PropertyGroup>
     <PackageOutputPath>$(PackagesOutDir)</PackageOutputPath>
     <SymbolPackageOutputPath>$(SymbolPackagesOutDir)</SymbolPackageOutputPath>
-    <RuntimeIdGraphDefinitionFile>$(ProjectDir)packages\Microsoft.NETCore.Platforms\1.2.0-beta-24822-03\runtime.json</RuntimeIdGraphDefinitionFile>
+    <RuntimeIdGraphDefinitionFile>$(ProjectDir)packages\Microsoft.NETCore.Platforms\1.2.0-beta-24909-02\runtime.json</RuntimeIdGraphDefinitionFile>
     <PackageLicenseFile>$(ProjectDir)projects/dotnet_library_license.txt</PackageLicenseFile>
     <PackageThirdPartyNoticesFile>$(ProjectDir)projects/ThirdPartyNotices.txt</PackageThirdPartyNoticesFile>
     <PackageDescriptionFile>$(ProjectDir)projects/descriptions.json</PackageDescriptionFile>
@@ -63,6 +63,7 @@
     <PreReleaseSuffix Condition="'$(EnsureStableVersion)'=='false'">-$(PreReleaseLabel)-$(BuildNumberMajor)-$(BuildNumberMinor)</PreReleaseSuffix>
     <HostPolicyFullVersion>$(HostPolicyVersion)$(PreReleaseSuffix)</HostPolicyFullVersion>
     <HostResolverFullVersion>$(HostResolverVersion)$(PreReleaseSuffix)</HostResolverFullVersion>
+    <AppHostFullVersion>$(AppHostVersion)$(PreReleaseSuffix)</AppHostFullVersion>
     <HostFullVersion>$(HostVersion)$(PreReleaseSuffix)</HostFullVersion>
   </PropertyGroup>
 

@@ -20,6 +20,46 @@ source "$REPOROOT/scripts/common/_prettyprint.sh"
 
 __BuildDriverOnly=0
 
+# Use uname to determine what the OS is.
+OSName=$(uname -s)
+case $OSName in
+    Linux)
+        __BuildOS=Linux
+        __HostOS=Linux
+        ;;
+
+    Darwin)
+        __BuildOS=OSX
+        __HostOS=OSX
+        ;;
+
+    FreeBSD)
+        __BuildOS=FreeBSD
+        __HostOS=FreeBSD
+        ;;
+
+    OpenBSD)
+        __BuildOS=OpenBSD
+        __HostOS=OpenBSD
+        ;;
+
+    NetBSD)
+        __BuildOS=NetBSD
+        __HostOS=NetBSD
+        ;;
+
+    SunOS)
+        __BuildOS=SunOS
+        __HostOS=SunOS
+        ;;
+
+    *)
+        echo "Unsupported OS $OSName detected, configuring as if for Linux"
+        __BuildOS=Linux
+        __HostOS=Linux
+        ;;
+esac
+
 while [[ $# > 0 ]]; do
     lowerI="$(echo $1 | awk '{print tolower($0)}')"
     case $lowerI in
@@ -41,6 +81,14 @@ while [[ $# > 0 ]]; do
         --nopackage)
             export DOTNET_BUILD_SKIP_PACKAGING=1
             ;;
+        --portablelinux)
+            if [ "$__BuildOS" == "Linux" ]; then
+                export DOTNET_BUILD_LINK_PORTABLE=1
+            else
+                echo "ERROR: portableLinux not supported for non-Linux platforms."
+                exit 1
+            fi
+            ;;
         --skip-prereqs)
             # Allow CI to disable prereqs check since the CI has the pre-reqs but not ldconfig it seems
             export DOTNET_INSTALL_SKIP_PREREQS=1
@@ -61,6 +109,7 @@ while [[ $# > 0 ]]; do
             echo "  --nopackage                          Skip packaging targets"
             echo "  --skip-prereqs                       Skip checks for pre-reqs in dotnet_install"
             echo "  --build-driver-only                  Just build dotnet-host-build binary"
+            echo "  --portableLinux                      Optional argument to build native libraries portable over GLIBC based Linux distros."
             echo "  --docker <IMAGENAME>                 Build in Docker using the Dockerfile located in scripts/docker/IMAGENAME"
             echo "  --help                               Display this help message"
             echo "  <TARGETS...>                         The build targets to run (Init, Compile, Publish, etc.; Default is a full build and publish)"

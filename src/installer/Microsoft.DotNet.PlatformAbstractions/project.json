@@ -3,7 +3,7 @@
   "version": "1.2.0-beta-*",
   "buildOptions": {
     "warningsAsErrors": true,
-    "keyFile": "../../tools/Key.snk",
+    "keyFile": "../../setuptools/Key.snk",
     "allowUnsafe": true
   },
   "frameworks": {
