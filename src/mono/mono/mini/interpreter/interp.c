@@ -1454,6 +1454,12 @@ do_icall (ThreadContext *context, int op, stackval *sp, gpointer ptr)
         	func ();
 		break;
 	}
+	case MINT_ICALL_V_P: {
+		gpointer (*func)() = ptr;
+		sp++;
+		sp [-1].data.p = func ();
+		break;
+	}
 	case MINT_ICALL_P_V: {
 		void (*func)(gpointer) = ptr;
         	func (sp [-1].data.p);
@@ -3753,6 +3759,7 @@ array_constructed:
 			goto handle_finally;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_ICALL_V_V) 
+		MINT_IN_CASE(MINT_ICALL_V_P)
 		MINT_IN_CASE(MINT_ICALL_P_V) 
 		MINT_IN_CASE(MINT_ICALL_P_P)
 		MINT_IN_CASE(MINT_ICALL_PP_V)
@@ -4713,7 +4720,7 @@ mono_interp_init(const char *file)
 	mono_add_internal_call ("Mono.Runtime::mono_runtime_install_handlers", mono_runtime_install_handlers);
 	mono_add_internal_call ("System.Delegate::CreateDelegate_internal", ves_icall_System_Delegate_CreateDelegate_internal);
 
- 	mono_register_jit_icall (mono_thread_interruption_checkpoint, "mono_thread_interruption_checkpoint", mono_create_icall_signature ("void"), FALSE);
+	mono_register_jit_icall (mono_thread_interruption_checkpoint, "mono_thread_interruption_checkpoint", mono_create_icall_signature ("object"), FALSE);
 
 	mono_runtime_init_checked (domain, NULL, NULL, &error);
 	mono_error_cleanup (&error); /* FIXME: don't swallow the error */

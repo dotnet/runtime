@@ -27,6 +27,9 @@ enum {
 #include "mintops.h"
 #include "interp.h"
 
+// TODO: export from marshal.c
+MonoDelegate* mono_ftnptr_to_delegate (MonoClass *klass, gpointer ftn);
+
 #define DEBUG 0
 
 typedef struct
@@ -2406,7 +2409,7 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 						if (MONO_TYPE_IS_VOID (info->sig->ret))
 							ADD_CODE (&td,MINT_ICALL_V_V);
 						else
-							g_assert_not_reached();
+							ADD_CODE (&td, MINT_ICALL_V_P);
 						break;
 					case 1:
 						if (MONO_TYPE_IS_VOID (info->sig->ret))
@@ -2437,11 +2440,11 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 					default:
 						g_assert_not_reached ();
 					}
-					g_error ("FIXME: ftnptr to delegate");
-#if 0
-					if (func == mono_ftnptr_to_delegate)
+
+					if (func == mono_ftnptr_to_delegate) {
+						g_error ("TODO: ?");
 						func = mono_interp_ftnptr_to_delegate;
-#endif
+					}
 					ADD_CODE(&td, get_data_item_index (&td, func));
 					td.sp -= info->sig->param_count;
 

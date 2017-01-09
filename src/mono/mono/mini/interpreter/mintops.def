@@ -494,6 +494,7 @@ OPDEF(MINT_STRLEN, "strlen", 1, MintOpNoArgs)
 OPDEF(MINT_ARRAY_RANK, "array_rank", 1, MintOpNoArgs)
 
 OPDEF(MINT_ICALL_V_V, "mono_icall_v_v", 2, MintOpClassToken) /* not really */
+OPDEF(MINT_ICALL_V_P, "mono_icall_v_p", 2, MintOpClassToken)
 OPDEF(MINT_ICALL_P_V, "mono_icall_p_v", 2, MintOpClassToken)
 OPDEF(MINT_ICALL_P_P, "mono_icall_p_p", 2, MintOpClassToken)
 OPDEF(MINT_ICALL_PP_V, "mono_icall_pp_v", 2, MintOpClassToken)
