@@ -9,6 +9,7 @@
     <BuildOSGroup Include="opensuse.42.1" />
     <BuildOSGroup Include="osx.10.10" />
     <BuildOSGroup Include="rhel.7" />
+    <BuildOSGroup Include="tizen.4.0.0" />
     <BuildOSGroup Include="ubuntu.14.04" />
     <BuildOSGroup Include="ubuntu.16.04" />
     <BuildOSGroup Include="ubuntu.16.10" />
