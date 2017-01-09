@@ -8381,6 +8381,14 @@ void CodeGen::genCreateAndStoreGCInfoX64(unsigned codeSize, unsigned prologSize 
         gcInfoEncoder->SetSizeOfEditAndContinuePreservedArea(preservedAreaSize);
     }
 
+    if (compiler->opts.IsReversePInvoke())
+    {
+        unsigned reversePInvokeFrameVarNumber = compiler->lvaReversePInvokeFrameVar;
+        assert(reversePInvokeFrameVarNumber != BAD_VAR_NUM && reversePInvokeFrameVarNumber < compiler->lvaRefCount);
+        LclVarDsc reversePInvokeFrameVar = compiler->lvaTable[reversePInvokeFrameVarNumber];
+        gcInfoEncoder->SetReversePInvokeFrameSlot(reversePInvokeFrameVar.lvStkOffs);
+    }
+
     gcInfoEncoder->Build();
 
     // GC Encoder automatically puts the GC info in the right spot using ICorJitInfo::allocGCInfo(size_t)
