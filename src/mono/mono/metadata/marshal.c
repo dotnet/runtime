@@ -7970,6 +7970,8 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 					ret->params [i] = csig->params [i];
 			}
 			ret->params [csig->param_count] = &mono_get_intptr_class ()->byval_arg;
+			ret->pinvoke = csig->pinvoke;
+
 			call_sig = ret;
 		}
 
