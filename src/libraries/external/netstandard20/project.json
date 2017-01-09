@@ -1,6 +1,6 @@
 ﻿{
   "frameworks": {
-    "netstandard1.7": {
+    "netstandard2.0": {
       "dependencies": {
         "NETStandard.Library2": "2.0.0-beta-24815-05"
       }

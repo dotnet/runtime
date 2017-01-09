@@ -3,20 +3,17 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <DefineConstants>$(DefineConstants);ReflectionOnly</DefineConstants>
-    <RootNamespace>System.Xml.XmlSerializer.ReflectionOnly.Tests</RootNamespace>
-    <AssemblyName>System.Xml.XmlSerializer.ReflectionOnly.Tests</AssemblyName>
-    <ProjectGuid>{4050F1D1-1DD2-4B48-A17B-E3F955518C4B}</ProjectGuid>
-    <NuGetTargetMoniker>.NETStandard,Version=v2.0</NuGetTargetMoniker>
+    <ProjectGuid>{4050F1D1-1DD2-4B48-A17B-E3F955518C4B}</ProjectGuid>    
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="$(TestSourceFolder)..\..\..\System.Runtime.Serialization.Xml\tests\Utils.cs" />
-    <Compile Include="$(TestSourceFolder)..\..\..\System.Runtime.Serialization.Xml\tests\SerializationTypes.cs" />
-    <Compile Include="$(TestSourceFolder)..\..\..\System.Runtime.Serialization.Xml\tests\Performance\PerformanceTestsCommon.cs" />
-    <Compile Include="$(TestSourceFolder)XmlSerializerTests.cs" />
-    <Compile Include="$(TestSourceFolder)Performance\XsPerformanceTest.cs" />
+    <Compile Include="$(TestSourceFolder)..\..\..\..\System.Runtime.Serialization.Xml\tests\Utils.cs" />
+    <Compile Include="$(TestSourceFolder)..\..\..\..\System.Runtime.Serialization.Xml\tests\SerializationTypes.cs" />
+    <Compile Include="$(TestSourceFolder)..\..\..\..\System.Runtime.Serialization.Xml\tests\Performance\PerformanceTestsCommon.cs" />
+    <Compile Include="$(TestSourceFolder)..\XmlSerializerTests.cs" />
+    <Compile Include="$(TestSourceFolder)..\Performance\XsPerformanceTest.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' != 'netcore50' AND '$(TargetGroup)' != 'netcore50aot'">
-    <Compile Include="$(TestSourceFolder)XmlSerializerTests.Internal.cs" Condition="'$(UseContractReferences)' == ''" />
+    <Compile Include="$(TestSourceFolder)..\XmlSerializerTests.Internal.cs" Condition="'$(UseContractReferences)' == ''" />
   </ItemGroup>
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), System.Xml.XmlSerializer.Tests.settings.targets))\System.Xml.XmlSerializer.Tests.settings.targets" />
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
