@@ -2785,7 +2785,7 @@ protected:
 
     void impImportNewObjArray(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_CALL_INFO* pCallInfo);
 
-    bool impCanPInvokeInline(BasicBlock* block);
+    bool impCanPInvokeInline();
     bool impCanPInvokeInlineCallSite(BasicBlock* block);
     void impCheckForPInvokeCall(
         GenTreePtr call, CORINFO_METHOD_HANDLE methHnd, CORINFO_SIG_INFO* sig, unsigned mflags, BasicBlock* block);
@@ -7624,8 +7624,6 @@ public:
 #else
         static const bool compNoPInvokeInlineCB;
 #endif
-
-        bool compMustInlinePInvokeCalli; // Unmanaged CALLI in IL stubs must be inlined
 
 #ifdef DEBUG
         bool compGcChecks;         // Check arguments and return values to ensure they are sane

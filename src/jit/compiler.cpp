@@ -3294,8 +3294,6 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     }
 #endif
 
-    opts.compMustInlinePInvokeCalli = jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB);
-
     opts.compScopeInfo = opts.compDbgInfo;
 
 #ifdef LATE_DISASM
