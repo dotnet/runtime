@@ -41,19 +41,6 @@
     <NETStandardVersion>1.7</NETStandardVersion>
   </PropertyGroup>
 
-  <ItemGroup>
-    <SuppressNETStandardMissingFile Include="mscorlib" />
-    <SuppressNETStandardMissingFile Include="netstandard" />
-    <SuppressNETStandardMissingFile Include="System.Core" />
-    <SuppressNETStandardMissingFile Include="System" />
-    <SuppressNETStandardMissingFile Include="System.Drawing" />
-    <SuppressNETStandardMissingFile Include="System.Numerics" />
-    <SuppressNETStandardMissingFile Include="System.Runtime.Serialization" />
-    <SuppressNETStandardMissingFile Include="System.Web" />
-    <SuppressNETStandardMissingFile Include="System.Xml" />
-    <SuppressNETStandardMissingFile Include="System.Xml.Linq" />
-  </ItemGroup>
-
   <ItemGroup Condition="'$(PackageTargetRuntime)' == ''">
     <ProjectReference Include="@(Project)" />
 
@@ -95,10 +82,29 @@
 
   <Target Name="VerifyClosure" AfterTargets="Build">
     <ItemGroup>
-      <_fileExisting Include="@(File)" Condition="Exists(%(FullPath))"/>
+      <!-- Exclude shims from the closure verification -->
+      <ExcludeFromClosure Include="mscorlib" />
+      <ExcludeFromClosure Include="netstandard" />
+      <ExcludeFromClosure Include="System.Core" />
+      <ExcludeFromClosure Include="System" />
+      <ExcludeFromClosure Include="System.Drawing" />
+      <ExcludeFromClosure Include="System.Numerics" />
+      <ExcludeFromClosure Include="System.Runtime.Serialization" />
+      <ExcludeFromClosure Include="System.Web" />
+      <ExcludeFromClosure Include="System.Xml" />
+      <ExcludeFromClosure Include="System.Xml.Linq" />
     </ItemGroup>
 
-    <VerifyClosure Sources="@(_fileExisting)"
+    <ItemGroup>
+      <_fileExisting Include="@(File)" Condition="Exists(%(FullPath))"/>
+
+      <_fileNames Include="@(_fileExisting -> '%(FileName)')" Exclude="@(ExcludeFromClosure)">
+        <Original>%(_fileExisting.Identity)</Original>
+      </_fileNames>
+      <_filesFiltered Include="@(_fileNames->'%(Original)')" />
+    </ItemGroup>
+
+    <VerifyClosure Sources="@(_filesFiltered)"
                    IgnoredReferences="@(IgnoredReference)" />
   </Target>
 
