@@ -2743,7 +2743,7 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 			case CEE_REFANYTYPE: ves_abort(); break;
 #endif
 			default:
-				g_error ("transform.c: Unimplemented opcode: 0xFE %02x at 0x%x\n", *td.ip, td.ip-header->code);
+				g_error ("transform.c: Unimplemented opcode: 0xFE %02x (%s) at 0x%x\n", *td.ip, mono_opcode_name (256 + *td.ip), td.ip-header->code);
 			}
 			break;
 		default:
