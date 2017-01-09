@@ -5959,11 +5959,11 @@ void Compiler::gtComputeFPlvls(GenTreePtr tree)
             noway_assert(!isflt);
             break;
 
-#ifdef DEBUG
         default:
+#ifdef DEBUG
             noway_assert(!"Unhandled special operator in gtComputeFPlvls()");
-            break;
 #endif
+            break;
     }
 
 DONE:
