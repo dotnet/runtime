@@ -1067,7 +1067,6 @@ class LiveVarAnalysis
 {
     Compiler* m_compiler;
 
-    bool m_changed;
     bool m_hasPossibleBackEdge;
 
     bool      m_heapLiveIn;
@@ -1077,7 +1076,6 @@ class LiveVarAnalysis
 
     LiveVarAnalysis(Compiler* compiler)
         : m_compiler(compiler)
-        , m_changed(false)
         , m_hasPossibleBackEdge(false)
         , m_heapLiveIn(false)
         , m_heapLiveOut(false)
@@ -1086,7 +1084,7 @@ class LiveVarAnalysis
     {
     }
 
-    void PerBlockAnalysis(BasicBlock* block, bool updateInternalOnly, bool keepAliveThis)
+    bool PerBlockAnalysis(BasicBlock* block, bool updateInternalOnly, bool keepAliveThis)
     {
         /* Compute the 'liveOut' set */
         VarSetOps::ClearD(m_compiler, m_liveOut);
@@ -1148,8 +1146,8 @@ class LiveVarAnalysis
 
         /* Has there been any change in either live set? */
 
-        if (!VarSetOps::Equal(m_compiler, block->bbLiveIn, m_liveIn) ||
-            !VarSetOps::Equal(m_compiler, block->bbLiveOut, m_liveOut))
+        bool liveInChanged = !VarSetOps::Equal(m_compiler, block->bbLiveIn, m_liveIn);
+        if (liveInChanged || !VarSetOps::Equal(m_compiler, block->bbLiveOut, m_liveOut))
         {
             if (updateInternalOnly)
             {
@@ -1157,10 +1155,9 @@ class LiveVarAnalysis
 
                 noway_assert(block->bbFlags & BBF_INTERNAL);
 
-                if (!VarSetOps::Equal(m_compiler, VarSetOps::Intersection(m_compiler, block->bbLiveIn, m_liveIn),
-                                      m_liveIn) ||
-                    !VarSetOps::Equal(m_compiler, VarSetOps::Intersection(m_compiler, block->bbLiveOut, m_liveOut),
-                                      m_liveOut))
+                liveInChanged = !VarSetOps::Equal(m_compiler, VarSetOps::Intersection(m_compiler, block->bbLiveIn, m_liveIn), m_liveIn);
+                if (liveInChanged ||
+                    !VarSetOps::Equal(m_compiler, VarSetOps::Intersection(m_compiler, block->bbLiveOut, m_liveOut), m_liveOut))
                 {
 #ifdef DEBUG
                     if (m_compiler->verbose)
@@ -1175,23 +1172,23 @@ class LiveVarAnalysis
 
                     VarSetOps::UnionD(m_compiler, block->bbLiveIn, m_liveIn);
                     VarSetOps::UnionD(m_compiler, block->bbLiveOut, m_liveOut);
-                    m_changed = true;
                 }
             }
             else
             {
                 VarSetOps::Assign(m_compiler, block->bbLiveIn, m_liveIn);
                 VarSetOps::Assign(m_compiler, block->bbLiveOut, m_liveOut);
-                m_changed = true;
             }
         }
 
-        if ((block->bbHeapLiveIn == 1) != m_heapLiveIn || (block->bbHeapLiveOut == 1) != m_heapLiveOut)
+        const bool heapLiveInChanged = (block->bbHeapLiveIn == 1) != m_heapLiveIn;
+        if (heapLiveInChanged || (block->bbHeapLiveOut == 1) != m_heapLiveOut)
         {
             block->bbHeapLiveIn  = m_heapLiveIn;
             block->bbHeapLiveOut = m_heapLiveOut;
-            m_changed            = true;
         }
+
+        return liveInChanged || heapLiveInChanged;
     }
 
     void Run(bool updateInternalOnly)
@@ -1200,9 +1197,10 @@ class LiveVarAnalysis
             m_compiler->lvaKeepAliveAndReportThis() && m_compiler->lvaTable[m_compiler->info.compThisArg].lvTracked;
 
         /* Live Variable Analysis - Backward dataflow */
+        bool changed;
         do
         {
-            m_changed = false;
+            changed = false;
 
             /* Visit all blocks and compute new data flow values */
 
@@ -1234,7 +1232,10 @@ class LiveVarAnalysis
                     }
                 }
 
-                PerBlockAnalysis(block, updateInternalOnly, keepAliveThis);
+                if (PerBlockAnalysis(block, updateInternalOnly, keepAliveThis))
+                {
+                    changed = true;
+                }
             }
             // if there is no way we could have processed a block without seeing all of its predecessors
             // then there is no need to iterate
@@ -1242,7 +1243,7 @@ class LiveVarAnalysis
             {
                 break;
             }
-        } while (m_changed);
+        } while (changed);
     }
 
 public:
