@@ -13,6 +13,9 @@
 #include <btls-ssl.h>
 #include <btls-x509.h>
 
+EVP_PKEY *
+mono_btls_key_new ();
+
 void
 mono_btls_key_free (EVP_PKEY *pkey);
 
