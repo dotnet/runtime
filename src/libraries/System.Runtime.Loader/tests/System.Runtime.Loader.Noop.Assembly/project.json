@@ -1,14 +1,14 @@
 {
   "dependencies": {
-    "System.Runtime": "4.4.0-beta-24909-02",
-    "System.Reflection": "4.4.0-beta-24909-02",
+    "System.Runtime": "4.4.0-beta-24910-02",
+    "System.Reflection": "4.4.0-beta-24910-02",
     "test-runtime": {
       "target": "project",
       "exclude": "compile"
     },
-    "System.Reflection.Emit": "4.4.0-beta-24909-02",
-    "System.Reflection.Primitives": "4.4.0-beta-24909-02",
-    "System.Reflection.TypeExtensions": "4.4.0-beta-24909-02"
+    "System.Reflection.Emit": "4.4.0-beta-24910-02",
+    "System.Reflection.Primitives": "4.4.0-beta-24910-02",
+    "System.Reflection.TypeExtensions": "4.4.0-beta-24910-02"
   },
   "frameworks": {
     "netstandard1.6": {}
