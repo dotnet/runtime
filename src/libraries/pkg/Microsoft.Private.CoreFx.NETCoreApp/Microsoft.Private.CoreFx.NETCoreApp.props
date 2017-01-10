@@ -1,11 +1,36 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   
-  <PropertyGroup Condition="'$(PackageRID)' == ''">
-    <PackageRID>$(RuntimeOS)-$(ArchGroup)</PackageRID>
-    <!-- On Windows x86/x64 use Win7 regardless of current RuntimeOS -->
-    <PackageRID Condition="$(RuntimeOS.StartsWith('win')) AND ('$(ArchGroup)' == 'x86' OR '$(ArchGroup)' == 'x64')">win7-$(ArchGroup)</PackageRID>
+  <PropertyGroup>
+    <_runtimeOSVersionIndex>$(RuntimeOS.IndexOfAny(".-0123456789"))</_runtimeOSVersionIndex>
+    <_runtimeOSFamily Condition="'$(_runtimeOSVersionIndex)' != '-1'">$(RuntimeOS.SubString(0, $(_runtimeOSVersionIndex)))</_runtimeOSFamily>
   </PropertyGroup>
+  
+  <Choose>
+    <When Condition="'$(PackageRID)' != ''" />
+    <When Condition="'$(_runtimeOSFamily)' == 'win'">
+      <PropertyGroup>
+        <PackageRID Condition="'$(ArchGroup)' == 'x86' OR '$(ArchGroup)' == 'x64'">win7-$(ArchGroup)</PackageRID>
+        <PackageRID Condition="'$(ArchGroup)' == 'arm'">win8-$(ArchGroup)</PackageRID>
+        <PackageRID Condition="'$(ArchGroup)' == 'arm64'">win10-$(ArchGroup)</PackageRID>
+      </PropertyGroup>
+    </When>
+    <When Condition="'$(_runtimeOSFamily)' == 'osx'">
+      <PropertyGroup>
+        <PackageRID>osx.10.10-$(ArchGroup)</PackageRID>
+      </PropertyGroup>
+    </When>
+    <When Condition="'$(_runtimeOSFamily)' == 'rhel'">
+      <PropertyGroup>
+        <PackageRID>rhel.7-$(ArchGroup)</PackageRID>
+      </PropertyGroup>
+    </When>
+    <Otherwise>
+      <PropertyGroup>
+        <PackageRID>$(RuntimeOS)-$(ArchGroup)</PackageRID>
+      </PropertyGroup>
+    </Otherwise>
+  </Choose>
 
   <ItemGroup>
     <OfficialBuildRID Include="alpine.3.4.3-x64" />
@@ -42,7 +67,7 @@
     <_project Include="@(BuildRID)">
       <Platform Condition="'%(Platform)' == ''">amd64</Platform>
       <PackageTargetRuntime>%(Identity)</PackageTargetRuntime>
-      <AdditionalProperties>PackageTargetRuntime=%(Identity);Platform=%(Platform);ConfigurationGroup=$(Input_ConfigurationGroup)</AdditionalProperties>
+      <AdditionalProperties>PackageTargetRuntime=%(Identity);Platform=%(Platform)</AdditionalProperties>
     </_project>
 
     <Project Include="@(_project->'$(MSBuildProjectName).pkgproj')" />
