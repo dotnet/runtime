@@ -9,12 +9,12 @@ using System.Runtime.InteropServices;
 
 internal partial class Interop
 {
-    internal partial class mincore
+    internal partial class Kernel32
     {
-        [DllImport(Libraries.CoreFile_L1, SetLastError = true)]
+        [DllImport(Libraries.Kernel32, SetLastError = true)]
         internal static extern bool LockFile(SafeFileHandle handle, int offsetLow, int offsetHigh, int countLow, int countHigh);
 
-        [DllImport(Libraries.CoreFile_L1, SetLastError = true)]
+        [DllImport(Libraries.Kernel32, SetLastError = true)]
         internal static extern bool UnlockFile(SafeFileHandle handle, int offsetLow, int offsetHigh, int countLow, int countHigh);
     }
 }

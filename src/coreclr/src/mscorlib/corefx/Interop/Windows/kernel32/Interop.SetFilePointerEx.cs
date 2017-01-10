@@ -7,9 +7,9 @@ using System.Runtime.InteropServices;
 
 internal partial class Interop
 {
-    internal partial class mincore
+    internal partial class Kernel32
     {
-        [DllImport(Libraries.CoreFile_L1, SetLastError = true)]
-        internal extern static int GetFileType(SafeHandle hFile);
+        [DllImport(Libraries.Kernel32, SetLastError = true)]
+        internal static extern bool SetFilePointerEx(SafeFileHandle hFile, long liDistanceToMove, out long lpNewFilePointer, uint dwMoveMethod);
     }
 }

@@ -3,13 +3,19 @@
 // See the LICENSE file in the project root for more information.
 
 using Microsoft.Win32.SafeHandles;
+using System;
 using System.Runtime.InteropServices;
 
 internal partial class Interop
 {
-    internal partial class mincore
+    internal partial class Kernel32
     {
-        [DllImport(Libraries.CoreFile_L1, SetLastError = true)]
-        internal static extern bool SetFilePointerEx(SafeFileHandle hFile, long liDistanceToMove, out long lpNewFilePointer, uint dwMoveMethod);
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct SECURITY_ATTRIBUTES
+        {
+            internal uint nLength;
+            internal IntPtr lpSecurityDescriptor;
+            internal BOOL bInheritHandle;
+        }
     }
 }

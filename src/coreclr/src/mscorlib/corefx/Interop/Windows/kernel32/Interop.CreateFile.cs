@@ -9,12 +9,12 @@ using System.Runtime.InteropServices;
 
 internal partial class Interop
 {
-    internal partial class mincore
+    internal partial class Kernel32
     {
         /// <summary>
         /// WARNING: This method does not implicitly handle long paths. Use CreateFile.
         /// </summary>
-        [DllImport(Libraries.CoreFile_L1, EntryPoint = "CreateFileW", SetLastError = true, CharSet = CharSet.Unicode, BestFitMapping = false)]
+        [DllImport(Libraries.Kernel32, EntryPoint = "CreateFileW", SetLastError = true, CharSet = CharSet.Unicode, BestFitMapping = false)]
         private static extern SafeFileHandle CreateFilePrivate(
             string lpFileName,
             int dwDesiredAccess,
