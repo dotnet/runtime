@@ -4,53 +4,48 @@ This document provides the steps necessary to consume a nightly build of CoreFX
 and CoreCLR.
 
 Please note that these steps aren't necessary for official builds -- these steps
-are specficic to consuming nightlies and thus unsupported builds. Also note that
+are specific to consuming nightlies and thus unsupported builds. Also note that
 these steps are likely to change as we're simplifying this experience. Make
 sure to consult this document often.
 
-## Update framework and CLI
+## Install prerequisites
 
-1. Add the CoreFX feed by editing
-   `C:\Users\XXX\AppData\Roaming\NuGet\NuGet.Config` to add this line:
-    ```
-    <add key="CoreFX" value="https://dotnet.myget.org/F/dotnet-core/api/v3/index.json" />
-    ```
-	or, if you have `nuget.exe` in your path, this will work too:
-    ```
-	nuget sources Add "foo" https://dotnet.myget.org/F/dotnet-core/api/v3/index.json
-    ```
+1. Install CLI preview 4 SDK
+    - [Win 64-bit Latest](https://dotnetcli.blob.core.windows.net/dotnet/Sdk/rel-1.0.0/dotnet-dev-win-x64.latest.exe)
+    - [macOS 64-bit Latest](https://dotnetcli.blob.core.windows.net/dotnet/Sdk/rel-1.0.0/dotnet-dev-osx-x64.latest.dmg)
+    - [Others](https://github.com/dotnet/cli)
+2. Install 1.0.3 SDK from here:
+    - [Win 64-bit](https://go.microsoft.com/fwlink/?LinkID=836281)
+    - [macOS 64-bit](https://go.microsoft.com/fwlink/?LinkID=836275)
+    - [Others](https://www.microsoft.com/net/download/core?v=lts)
+    - Currently necessary for the CLI itself to run.
+    - Eventually it will be chained-in by the SDK making this step
+      unncessary.
+    - The issue tracking this work is filed
+      [here](https://github.com/dotnet/cli/issues/5194).
 
-2. Pick a package version from
-   <https://dotnet.myget.org/feed/dotnet-core/package/nuget/Microsoft.NETCore.App>
-   feed. Presumably you want the latest version.
+## Setup the project
 
-3. Get CLI preview4+:
-    1. Install CLI preview 4 SDK from here:
-        - <https://github.com/dotnet/cli>
-        - <https://dotnetcli.blob.core.windows.net/dotnet/Sdk/rel-1.0.0/dotnet-dev-win-x64.latest.exe>
-    2. Install 1.0.3 SDK from here:
-       - <https://go.microsoft.com/fwlink/?LinkID=836281>
-       - Currently necessary for the CLI itself to run.
-       - Eventually it will be chained-in by the SDK making this step
-         unncessary.
-       - The issue tracking this work is filed
-         [here](https://github.com/dotnet/cli/issues/5194).
-
-4. Verify that it works
-    1. Create a new app with `dotnet new` - don't reuse an old one, it must
-       match the SDK
-    2. In your app, add a call to some recently added API, to prove this works.
-    3. For example, this won't compile before .NET Core 1.2:
-    ```
-    System.Net.WebUtility.HtmlDecode("&amp;", Console.Out);
-    ```
-    4. Edit your `csproj` as explained below
-    5. Run `dotnet restore`
-    6. Run `dotnet run`
-
-10. Optionally, `dotnet publish` to make a standalone exe
-
-## Consuming the build
+1. Create a new project
+    - Creat a new folder for your app
+    - Create projec file by running `dotnet new`
+2. Add the CoreFX MyGet feed to your NuGet configuration.
+    - You can do this globally but we recommend not doing this as this might
+      affect other projects on your machine and you probably don't want that.
+    - Instead, add a `nuget.config` that is local to your project. You can
+      just put it next to the `.csproj` file.
+      See the [NuGet docs](https://docs.nuget.org/ndocs/consume-packages/configuring-nuget-behavior)
+      for details.
+      ```xml
+      <configuration>
+        <packageSources>
+          <add key="CoreFX" value="https://dotnet.myget.org/F/dotnet-core/api/v3/index.json" />
+        </packageSources>
+      </configuration>
+      ```
+3. Select the nightly build from our feed
+    - <https://dotnet.myget.org/feed/dotnet-core/package/nuget/Microsoft.NETCore.App>
+    - Presumably you want the latest version.
 
 In order to consume the latest build, you'll need to update your `.csproj`
 as follows:
@@ -58,6 +53,9 @@ as follows:
 1. Update `TargetFramework`, add `RuntimeIdentifier` as below (ideally
    `dotnet.exe` would infer your current architecture but it currently doesn't)
 2. Update package reference to match version selected above, as below
+
+*Note:* We're currently still using `netcoreapp1.2`. Eventually this will be
+renamed to `netcoreapp2.0`.
 
 ```xml
 <Project Sdk="Microsoft.NET.Sdk" ToolsVersion="15.0">
@@ -75,3 +73,36 @@ as follows:
 
 </Project>
 ```
+
+Restore packages so that you're ready to play:
+
+```
+$ dotnet restore
+```
+
+## Consume the new build
+
+Edit your `Program.cs` to consume the new APIs, for exampe:
+
+```CSharp
+using System;
+using System.Net;
+
+class Program
+{
+    static void Main(string[] args)
+    {
+        WebUtility.HtmlDecode("&amp;", Console.Out);
+        Console.WriteLine();
+        Console.WriteLine("Hello World!");
+    }
+}
+```
+
+Run the bits:
+
+```
+$ dotnet run
+```
+
+Rinse and repeat!
