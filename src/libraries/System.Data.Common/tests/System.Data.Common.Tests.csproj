@@ -120,6 +120,8 @@
     <ProjectReference Include="..\pkg\System.Data.Common.pkgproj">
       <Name>System.Data.Common</Name>
     </ProjectReference>
+    <!-- ToDo: Remove this P2P reference once packages are updated -->
+    <ProjectReference Include="..\..\System.ComponentModel.Primitives\pkg\System.ComponentModel.Primitives.pkgproj"  Condition="'$(TargetGroup)'==''"/>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
