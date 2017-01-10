@@ -46,7 +46,7 @@ GTNODE(CNS_STR          , "sconst"       ,GenTreeStrCon      ,0,GTK_LEAF|GTK_CON
 //-----------------------------------------------------------------------------
 
 GTNODE(NOT              , "~"            ,GenTreeOp          ,0,GTK_UNOP)
-GTNODE(NOP              , "nop"          ,GenTree            ,0,GTK_UNOP)
+GTNODE(NOP              , "nop"          ,GenTree            ,0,GTK_UNOP|GTK_NOVALUE)
 GTNODE(NEG              , "unary -"      ,GenTreeOp          ,0,GTK_UNOP)
 GTNODE(COPY             , "copy"         ,GenTreeCopyOrReload,0,GTK_UNOP)               // Copies a variable from its current location to a register that satisfies
                                                                                         // code generation constraints.  The child is the actual lclVar node.
@@ -269,7 +269,7 @@ GTNODE(EMITNOP          , "emitnop"      ,GenTree            ,0,GTK_LEAF|GTK_NOV
 GTNODE(PINVOKE_PROLOG   ,"pinvoke_prolog",GenTree            ,0,GTK_LEAF|GTK_NOVALUE)   // pinvoke prolog seq
 GTNODE(PINVOKE_EPILOG   ,"pinvoke_epilog",GenTree            ,0,GTK_LEAF|GTK_NOVALUE)   // pinvoke epilog seq
 GTNODE(PUTARG_REG       , "putarg_reg"   ,GenTreeOp          ,0,GTK_UNOP)               // operator that places outgoing arg in register
-GTNODE(PUTARG_STK       , "putarg_stk"   ,GenTreePutArgStk   ,0,GTK_UNOP)               // operator that places outgoing arg in stack
+GTNODE(PUTARG_STK       , "putarg_stk"   ,GenTreePutArgStk   ,0,GTK_UNOP|GTK_NOVALUE)   // operator that places outgoing arg in stack
 GTNODE(RETURNTRAP       , "returnTrap"   ,GenTreeOp          ,0,GTK_UNOP|GTK_NOVALUE)   // a conditional call to wait on gc
 GTNODE(SWAP             , "swap"         ,GenTreeOp          ,0,GTK_BINOP|GTK_NOVALUE)  // op1 and op2 swap (registers)
 GTNODE(IL_OFFSET        , "il_offset"    ,GenTreeStmt        ,0,GTK_LEAF|GTK_NOVALUE)   // marks an IL offset for debugging purposes
