@@ -8,7 +8,7 @@ using System.Runtime.InteropServices;
 
 internal partial class Interop
 {
-    internal partial class mincore
+    internal partial class Kernel32
     {
         private const int FORMAT_MESSAGE_IGNORE_INSERTS = 0x00000200;
         private const int FORMAT_MESSAGE_FROM_HMODULE = 0x00000800;
@@ -18,7 +18,7 @@ internal partial class Interop
 
         private const int ERROR_INSUFFICIENT_BUFFER = 0x7A;
 
-        [DllImport(Libraries.Localization, CharSet = CharSet.Unicode, EntryPoint = "FormatMessageW", SetLastError = true, BestFitMapping = true)]
+        [DllImport(Libraries.Kernel32, CharSet = CharSet.Unicode, EntryPoint = "FormatMessageW", SetLastError = true, BestFitMapping = true)]
         private static extern int FormatMessage(
             int dwFlags,
             IntPtr lpSource,

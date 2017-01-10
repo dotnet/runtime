@@ -4,7 +4,7 @@
 
 internal partial class Interop
 {
-    internal partial class mincore
+    internal partial class Kernel32
     {
         internal partial class IOReparseOptions
         {
