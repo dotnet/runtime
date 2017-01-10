@@ -244,6 +244,7 @@
       CopySupplementalTestData;
       GenerateTestExecutionScripts;
       RunTestsForProject;
+      ArchiveTestBuild
     </TestDependsOn>
   </PropertyGroup>
 
