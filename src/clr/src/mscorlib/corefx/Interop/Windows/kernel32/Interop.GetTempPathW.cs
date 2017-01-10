@@ -8,9 +8,9 @@ using System.Runtime.InteropServices;
 
 partial class Interop
 {
-    partial class mincore
+    partial class Kernel32
     {
-        [DllImport(Libraries.CoreFile_L1_2, CharSet = CharSet.Unicode, BestFitMapping = false)]
+        [DllImport(Libraries.Kernel32, CharSet = CharSet.Unicode, BestFitMapping = false)]
         internal static extern uint GetTempPathW(int bufferLen, [Out]StringBuilder buffer);
     }
 }

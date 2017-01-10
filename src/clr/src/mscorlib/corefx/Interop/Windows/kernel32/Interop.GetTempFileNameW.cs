@@ -8,9 +8,9 @@ using System.Runtime.InteropServices;
 
 partial class Interop
 {
-    partial class mincore
+    partial class Kernel32
     {
-        [DllImport(Libraries.CoreFile_L1, CharSet = CharSet.Unicode, SetLastError = true, BestFitMapping = false)]
+        [DllImport(Libraries.Kernel32, CharSet = CharSet.Unicode, SetLastError = true, BestFitMapping = false)]
         internal static extern uint GetTempFileNameW(string tmpPath, string prefix, uint uniqueIdOrZero, [Out]StringBuilder tmpFileName);
     }
 }
