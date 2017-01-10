@@ -4,6 +4,7 @@
 
   <PropertyGroup>
     <IsLineupPackage Condition="'$(PackageTargetRuntime)' == ''">true</IsLineupPackage>
+    <PreventImplementationReference Condition="'$(PackageTargetRuntime)' != ''">true</PreventImplementationReference>
     <Version>$(NetCoreAppVersion)</Version>
     <PackagePlatform>AnyCPU</PackagePlatform>
     <SkipPackageFileCheck>true</SkipPackageFileCheck>
