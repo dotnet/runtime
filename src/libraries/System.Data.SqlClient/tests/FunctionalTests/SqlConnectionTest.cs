@@ -11,6 +11,7 @@ namespace System.Data.SqlClient.Tests
     {
 
         [Fact]
+        [ActiveIssue(14017)]
         public void ConnectionTest()
         {
             Exception e = null;
