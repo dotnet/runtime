@@ -73,9 +73,6 @@
     <Compile Include="$(CommonTestPath)\System\ObjectCloner.cs" >
       <Link>Common\System\ObjectCloner.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System\RuntimeDetection.cs" >
-      <Link>Common\System\RuntimeDetection.cs</Link>
-    </Compile>
     <!-- Generic tests -->
     <Compile Include="StructuralComparisonsTests.cs" />
     <Compile Include="BitArray\BitArray_CtorTests.cs" />
