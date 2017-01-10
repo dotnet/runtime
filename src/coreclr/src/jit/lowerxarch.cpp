@@ -1957,7 +1957,7 @@ void Lowering::TreeNodeInfoInitBlockStore(GenTreeBlk* blkNode)
                     // series of 16-byte loads and stores.
                     blkNode->gtLsraInfo.internalFloatCount = 1;
                     blkNode->gtLsraInfo.addInternalCandidates(l, l->internalFloatRegCandidates());
-                    // use XMM register for load and store, need set the flag for AVX instruction
+                    // Uses XMM reg for load and store and hence check to see whether AVX instructions are used for codegen
                     SetContainsAVXFlags();
                 }
 
@@ -4579,15 +4579,14 @@ void Lowering::SetMulOpCounts(GenTreePtr tree)
 }
 
 //------------------------------------------------------------------------------
-// SetContainsAVXFlags: default value of isFloatingType is true, we set the
-// ContainsAVX flag when floating type value is true, when SIMD vector size is
-// 32 bytes, it is 256bit AVX instruction and we set Contains256bitAVX flag too
+// SetContainsAVXFlags: Set ContainsAVX flag when it is floating type, set 
+// Contains256bitAVX flag when SIMD vector size is 32 bytes
 //
 // Arguments:
-//    isFloatingType    - is floating type
+//    isFloatingType    - true if it is floating type
 //    sizeOfSIMDVector  - SIMD Vector size
 //
-void Lowering::SetContainsAVXFlags(bool isFloatingType, unsigned sizeOfSIMDVector)
+void Lowering::SetContainsAVXFlags(bool isFloatingType /* = true */, unsigned sizeOfSIMDVector /* = 0*/)
 {
 #ifdef FEATURE_AVX_SUPPORT
     if (comp->getSIMDInstructionSet() == InstructionSet_AVX)

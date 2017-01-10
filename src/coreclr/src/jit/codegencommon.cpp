@@ -10583,7 +10583,7 @@ GenTreePtr CodeGen::genMakeConst(const void* cnsAddr, var_types cnsType, GenTree
 //             funclet frames: this will be FuncletInfo.fiSpDelta.
 void CodeGen::genPreserveCalleeSavedFltRegs(unsigned lclFrameSize)
 {
-    bool      bVzeroupperIssued = genVzeroupperIfNeeded(false);
+    genVzeroupperIfNeeded(false);
     regMaskTP regMask           = compiler->compCalleeFPRegsSavedMask;
 
     // Only callee saved floating point registers should be in regMask
@@ -10612,17 +10612,6 @@ void CodeGen::genPreserveCalleeSavedFltRegs(unsigned lclFrameSize)
         regMaskTP regBit = genRegMask(reg);
         if ((regBit & regMask) != 0)
         {
-#ifdef FEATURE_AVX_SUPPORT
-            // when we reach here, function does not contain AVX instruction so far, however, since copyIns can
-            // be an AVX instruction such as vmovupd, we should check and issue vzeroupper before the copyIns to
-            // avoid Legacy SSE code (from native code such as Reverse PInvoke) to AVX transition penalty
-            if (compiler->getFloatingPointInstructionSet() == InstructionSet_AVX && !bVzeroupperIssued &&
-                getEmitter()->IsAVXInstruction(copyIns))
-            {
-                instGen(INS_vzeroupper);
-                bVzeroupperIssued = true;
-            }
-#endif
             // ABI requires us to preserve lower 128-bits of YMM register.
             getEmitter()->emitIns_AR_R(copyIns,
                                        EA_8BYTE, // TODO-XArch-Cleanup: size specified here doesn't matter but should be
@@ -10706,15 +10695,11 @@ void CodeGen::genRestoreCalleeSavedFltRegs(unsigned lclFrameSize)
 // AVX/Legacy SSE transition penalties can be avoided
 //
 // Params
-//   check256bitOnly  - Flag to check if the function contains 256-bit AVX instruction and generate Vzeroupper
-//      instruction, otherwise check if the function contains AVX instruciton (either 128-bit or 256-bit).
+//   check256bitOnly  - true to check if the function contains 256-bit AVX instruction and generate Vzeroupper
+//      instruction, false to check if the function contains AVX instruciton (either 128-bit or 256-bit).
 //
-// Return Value:
-//     true if Vzeroupper instruction is issued, false otherwise.
-//
-bool CodeGen::genVzeroupperIfNeeded(bool check256bitOnly)
+void CodeGen::genVzeroupperIfNeeded(bool check256bitOnly /* = true*/)
 {
-    bool bVzeroupperIssued = false;
 #ifdef FEATURE_AVX_SUPPORT
     if (compiler->getFloatingPointInstructionSet() == InstructionSet_AVX)
     {
@@ -10723,7 +10708,6 @@ bool CodeGen::genVzeroupperIfNeeded(bool check256bitOnly)
             if (getEmitter()->Contains256bitAVX())
             {
                 instGen(INS_vzeroupper);
-                bVzeroupperIssued = true;
             }
         }
         else
@@ -10731,12 +10715,10 @@ bool CodeGen::genVzeroupperIfNeeded(bool check256bitOnly)
             if (getEmitter()->ContainsAVX())
             {
                 instGen(INS_vzeroupper);
-                bVzeroupperIssued = true;
             }
         }
     }
 #endif
-    return bVzeroupperIssued;
 }
 
 #endif // defined(_TARGET_XARCH_) && !FEATURE_STACK_FP_X87
