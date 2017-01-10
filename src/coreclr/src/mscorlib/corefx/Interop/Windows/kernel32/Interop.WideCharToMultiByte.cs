@@ -7,9 +7,9 @@ using System.Runtime.InteropServices;
 
 internal partial class Interop
 {
-    internal partial class mincore
+    internal partial class Kernel32
     {
-        [DllImport(Libraries.String_L1)]
+        [DllImport(Libraries.Kernel32)]
         internal static extern unsafe int WideCharToMultiByte(
             uint CodePage, uint dwFlags, 
             char* lpWideCharStr, int cchWideChar, 

@@ -55,7 +55,7 @@ namespace System.IO
 
         private SafeFileHandle OpenHandle(FileMode mode, FileShare share, FileOptions options)
         {
-            Interop.mincore.SECURITY_ATTRIBUTES secAttrs = GetSecAttrs(share);
+            Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = GetSecAttrs(share);
 
             int fAccess =
                 ((_access & FileAccess.Read) == FileAccess.Read ? GENERIC_READ : 0) |
@@ -74,13 +74,13 @@ namespace System.IO
             // For mitigating local elevation of privilege attack through named pipes
             // make sure we always call CreateFile with SECURITY_ANONYMOUS so that the
             // named pipe server can't impersonate a high privileged client security context
-            flagsAndAttributes |= (Interop.mincore.SecurityOptions.SECURITY_SQOS_PRESENT | Interop.mincore.SecurityOptions.SECURITY_ANONYMOUS);
+            flagsAndAttributes |= (Interop.Kernel32.SecurityOptions.SECURITY_SQOS_PRESENT | Interop.Kernel32.SecurityOptions.SECURITY_ANONYMOUS);
 
             // Don't pop up a dialog for reading from an empty floppy drive
-            uint oldMode = Interop.mincore.SetErrorMode(Interop.mincore.SEM_FAILCRITICALERRORS);
+            uint oldMode = Interop.Kernel32.SetErrorMode(Interop.Kernel32.SEM_FAILCRITICALERRORS);
             try
             {
-                SafeFileHandle fileHandle = Interop.mincore.SafeCreateFile(_path, fAccess, share, ref secAttrs, mode, flagsAndAttributes, IntPtr.Zero);
+                SafeFileHandle fileHandle = Interop.Kernel32.SafeCreateFile(_path, fAccess, share, ref secAttrs, mode, flagsAndAttributes, IntPtr.Zero);
                 fileHandle.IsAsync = _useAsyncIO;
 
                 if (fileHandle.IsInvalid)
@@ -92,8 +92,8 @@ namespace System.IO
                     // probably be consistent w/ every other directory.
                     int errorCode = Marshal.GetLastWin32Error();
 
-                    if (errorCode == Interop.mincore.Errors.ERROR_PATH_NOT_FOUND && _path.Equals(Directory.InternalGetDirectoryRoot(_path)))
-                        errorCode = Interop.mincore.Errors.ERROR_ACCESS_DENIED;
+                    if (errorCode == Interop.Errors.ERROR_PATH_NOT_FOUND && _path.Equals(Directory.InternalGetDirectoryRoot(_path)))
+                        errorCode = Interop.Errors.ERROR_ACCESS_DENIED;
 
                     throw Win32Marshal.GetExceptionForWin32Error(errorCode, _path);
                 }
@@ -102,7 +102,7 @@ namespace System.IO
             }
             finally
             {
-                Interop.mincore.SetErrorMode(oldMode);
+                Interop.Kernel32.SetErrorMode(oldMode);
             }
         }
 
@@ -112,8 +112,8 @@ namespace System.IO
             // constructors that take a String.  Everyone else can call 
             // CreateFile themselves then use the constructor that takes an 
             // IntPtr.  Disallows "con:", "com1:", "lpt1:", etc.
-            int fileType = Interop.mincore.GetFileType(_fileHandle);
-            if (fileType != Interop.mincore.FileTypes.FILE_TYPE_DISK)
+            int fileType = Interop.Kernel32.GetFileType(_fileHandle);
+            if (fileType != Interop.Kernel32.FileTypes.FILE_TYPE_DISK)
             {
                 _fileHandle.Dispose();
                 throw new NotSupportedException(SR.NotSupported_FileStreamOnNonFiles);
@@ -163,11 +163,11 @@ namespace System.IO
 
         private void InitFromHandle(SafeFileHandle handle)
         {
-            int handleType = Interop.mincore.GetFileType(_fileHandle);
-            Debug.Assert(handleType == Interop.mincore.FileTypes.FILE_TYPE_DISK || handleType == Interop.mincore.FileTypes.FILE_TYPE_PIPE || handleType == Interop.mincore.FileTypes.FILE_TYPE_CHAR, "FileStream was passed an unknown file type!");
+            int handleType = Interop.Kernel32.GetFileType(_fileHandle);
+            Debug.Assert(handleType == Interop.Kernel32.FileTypes.FILE_TYPE_DISK || handleType == Interop.Kernel32.FileTypes.FILE_TYPE_PIPE || handleType == Interop.Kernel32.FileTypes.FILE_TYPE_CHAR, "FileStream was passed an unknown file type!");
 
-            _canSeek = handleType == Interop.mincore.FileTypes.FILE_TYPE_DISK;
-            _isPipe = handleType == Interop.mincore.FileTypes.FILE_TYPE_PIPE;
+            _canSeek = handleType == Interop.Kernel32.FileTypes.FILE_TYPE_DISK;
+            _isPipe = handleType == Interop.Kernel32.FileTypes.FILE_TYPE_PIPE;
 
             // This is necessary for async IO using IO Completion ports via our 
             // managed Threadpool API's.  This calls the OS's 
@@ -196,7 +196,7 @@ namespace System.IO
             }
             else if (!_useAsyncIO)
             {
-                if (handleType != Interop.mincore.FileTypes.FILE_TYPE_PIPE)
+                if (handleType != Interop.Kernel32.FileTypes.FILE_TYPE_PIPE)
                     VerifyHandleIsSync();
             }
 
@@ -211,13 +211,13 @@ namespace System.IO
             return handle.IsAsync.HasValue ? handle.IsAsync.Value : false;
         }
 
-        private unsafe static Interop.mincore.SECURITY_ATTRIBUTES GetSecAttrs(FileShare share)
+        private unsafe static Interop.Kernel32.SECURITY_ATTRIBUTES GetSecAttrs(FileShare share)
         {
-            Interop.mincore.SECURITY_ATTRIBUTES secAttrs = default(Interop.mincore.SECURITY_ATTRIBUTES);
+            Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = default(Interop.Kernel32.SECURITY_ATTRIBUTES);
             if ((share & FileShare.Inheritable) != 0)
             {
-                secAttrs = new Interop.mincore.SECURITY_ATTRIBUTES();
-                secAttrs.nLength = (uint)sizeof(Interop.mincore.SECURITY_ATTRIBUTES);
+                secAttrs = new Interop.Kernel32.SECURITY_ATTRIBUTES();
+                secAttrs.nLength = (uint)sizeof(Interop.Kernel32.SECURITY_ATTRIBUTES);
 
                 secAttrs.bInheritHandle = Interop.BOOL.TRUE;
             }
@@ -234,7 +234,7 @@ namespace System.IO
             // cause an app to block incorrectly, introducing a deadlock (depending
             // on whether a write will wake up an already-blocked thread or this
             // Win32FileStream's thread).
-            Debug.Assert(Interop.mincore.GetFileType(_fileHandle) != Interop.mincore.FileTypes.FILE_TYPE_PIPE);
+            Debug.Assert(Interop.Kernel32.GetFileType(_fileHandle) != Interop.Kernel32.FileTypes.FILE_TYPE_PIPE);
 
             byte* bytes = stackalloc byte[1];
             int numBytesReadWritten;
@@ -246,11 +246,11 @@ namespace System.IO
             // accidentally read synchronously from an async pipe.
             if ((_access & FileAccess.Read) != 0) // don't use the virtual CanRead or CanWrite, as this may be used in the ctor
             {
-                r = Interop.mincore.ReadFile(_fileHandle, bytes, 0, out numBytesReadWritten, IntPtr.Zero);
+                r = Interop.Kernel32.ReadFile(_fileHandle, bytes, 0, out numBytesReadWritten, IntPtr.Zero);
             }
             else if ((_access & FileAccess.Write) != 0) // don't use the virtual CanRead or CanWrite, as this may be used in the ctor
             {
-                r = Interop.mincore.WriteFile(_fileHandle, bytes, 0, out numBytesReadWritten, IntPtr.Zero);
+                r = Interop.Kernel32.WriteFile(_fileHandle, bytes, 0, out numBytesReadWritten, IntPtr.Zero);
             }
 
             if (r == 0)
@@ -273,9 +273,9 @@ namespace System.IO
 
         private long GetLengthInternal()
         {
-            Interop.mincore.FILE_STANDARD_INFO info = new Interop.mincore.FILE_STANDARD_INFO();
+            Interop.Kernel32.FILE_STANDARD_INFO info = new Interop.Kernel32.FILE_STANDARD_INFO();
 
-            if (!Interop.mincore.GetFileInformationByHandleEx(_fileHandle, Interop.mincore.FILE_INFO_BY_HANDLE_CLASS.FileStandardInfo, out info, (uint)Marshal.SizeOf<Interop.mincore.FILE_STANDARD_INFO>()))
+            if (!Interop.Kernel32.GetFileInformationByHandleEx(_fileHandle, Interop.Kernel32.FILE_INFO_BY_HANDLE_CLASS.FileStandardInfo, out info, (uint)Marshal.SizeOf<Interop.Kernel32.FILE_STANDARD_INFO>()))
                 throw Win32Marshal.GetExceptionForLastWin32Error();
             long len = info.EndOfFile;
             // If we're writing near the end of the file, we must include our
@@ -334,7 +334,7 @@ namespace System.IO
 
         private void FlushOSBuffer()
         {
-            if (!Interop.mincore.FlushFileBuffers(_fileHandle))
+            if (!Interop.Kernel32.FlushFileBuffers(_fileHandle))
             {
                 throw Win32Marshal.GetExceptionForLastWin32Error();
             }
@@ -426,10 +426,10 @@ namespace System.IO
             VerifyOSHandlePosition();
             if (_filePosition != value)
                 SeekCore(value, SeekOrigin.Begin);
-            if (!Interop.mincore.SetEndOfFile(_fileHandle))
+            if (!Interop.Kernel32.SetEndOfFile(_fileHandle))
             {
                 int errorCode = Marshal.GetLastWin32Error();
-                if (errorCode == Interop.mincore.Errors.ERROR_INVALID_PARAMETER)
+                if (errorCode == Interop.Errors.ERROR_INVALID_PARAMETER)
                     throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_FileLengthTooBig);
                 throw Win32Marshal.GetExceptionForWin32Error(errorCode);
             }
@@ -658,7 +658,7 @@ namespace System.IO
             Debug.Assert(origin >= SeekOrigin.Begin && origin <= SeekOrigin.End, "origin>=SeekOrigin.Begin && origin<=SeekOrigin.End");
             long ret = 0;
 
-            if (!Interop.mincore.SetFilePointerEx(_fileHandle, offset, out ret, (uint)origin))
+            if (!Interop.Kernel32.SetFilePointerEx(_fileHandle, offset, out ret, (uint)origin))
             {
                 int errorCode = GetLastWin32ErrorAndDisposeHandleIfInvalid();
                 throw Win32Marshal.GetExceptionForWin32Error(errorCode);
@@ -1280,9 +1280,9 @@ namespace System.IO
             fixed (byte* p = bytes)
             {
                 if (_useAsyncIO)
-                    r = Interop.mincore.ReadFile(handle, p + offset, count, IntPtr.Zero, overlapped);
+                    r = Interop.Kernel32.ReadFile(handle, p + offset, count, IntPtr.Zero, overlapped);
                 else
-                    r = Interop.mincore.ReadFile(handle, p + offset, count, out numBytesRead, IntPtr.Zero);
+                    r = Interop.Kernel32.ReadFile(handle, p + offset, count, out numBytesRead, IntPtr.Zero);
             }
 
             if (r == 0)
@@ -1325,9 +1325,9 @@ namespace System.IO
             fixed (byte* p = bytes)
             {
                 if (_useAsyncIO)
-                    r = Interop.mincore.WriteFile(handle, p + offset, count, IntPtr.Zero, overlapped);
+                    r = Interop.Kernel32.WriteFile(handle, p + offset, count, IntPtr.Zero, overlapped);
                 else
-                    r = Interop.mincore.WriteFile(handle, p + offset, count, out numBytesWritten, IntPtr.Zero);
+                    r = Interop.Kernel32.WriteFile(handle, p + offset, count, out numBytesWritten, IntPtr.Zero);
             }
 
             if (r == 0)
@@ -1363,7 +1363,7 @@ namespace System.IO
             // Note that _parent.Dispose doesn't throw so we don't need to special case.
             // SetHandleAsInvalid only sets _closed field to true (without
             // actually closing handle) so we don't need to call that as well.
-            if (errorCode == Interop.mincore.Errors.ERROR_INVALID_HANDLE)
+            if (errorCode == Interop.Errors.ERROR_INVALID_HANDLE)
             {
                 _fileHandle.Dispose();
 
@@ -1473,7 +1473,7 @@ namespace System.IO
                                 {
                                     // Try to cancel the I/O.  We ignore the return value, as cancellation is opportunistic and we
                                     // don't want to fail the operation because we couldn't cancel it.
-                                    Interop.mincore.CancelIoEx(innerAwaitable._fileStream._fileHandle, innerAwaitable._nativeOverlapped);
+                                    Interop.Kernel32.CancelIoEx(innerAwaitable._fileStream._fileHandle, innerAwaitable._nativeOverlapped);
                                 }
                             }
                         }
@@ -1538,7 +1538,7 @@ namespace System.IO
                             case ERROR_HANDLE_EOF:  // logically success with 0 bytes read (read at end of file)
                                 Debug.Assert(readAwaitable._numBytes == 0, $"Expected 0 bytes read, got {readAwaitable._numBytes}");
                                 break;
-                            case Interop.mincore.Errors.ERROR_OPERATION_ABORTED: // canceled
+                            case Interop.Errors.ERROR_OPERATION_ABORTED: // canceled
                                 throw new OperationCanceledException(cancellationToken.IsCancellationRequested ? cancellationToken : new CancellationToken(true));
                             default: // error
                                 throw Win32Marshal.GetExceptionForWin32Error((int)readAwaitable._errorCode);
@@ -1748,7 +1748,7 @@ namespace System.IO
             int lengthLow = unchecked((int)(length));
             int lengthHigh = unchecked((int)(length >> 32));
 
-            if (!Interop.mincore.LockFile(_fileHandle, positionLow, positionHigh, lengthLow, lengthHigh))
+            if (!Interop.Kernel32.LockFile(_fileHandle, positionLow, positionHigh, lengthLow, lengthHigh))
             {
                 throw Win32Marshal.GetExceptionForLastWin32Error();
             }
@@ -1761,7 +1761,7 @@ namespace System.IO
             int lengthLow = unchecked((int)(length));
             int lengthHigh = unchecked((int)(length >> 32));
 
-            if (!Interop.mincore.UnlockFile(_fileHandle, positionLow, positionHigh, lengthLow, lengthHigh))
+            if (!Interop.Kernel32.UnlockFile(_fileHandle, positionLow, positionHigh, lengthLow, lengthHigh))
             {
                 throw Win32Marshal.GetExceptionForLastWin32Error();
             }

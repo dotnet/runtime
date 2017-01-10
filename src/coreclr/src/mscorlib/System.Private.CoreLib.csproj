@@ -205,7 +205,14 @@
     </EmbeddedResource>
   </ItemGroup>
 
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.Targets" />
+  <PropertyGroup Condition="'$(BuildOS)' == 'Windows_NT'">
+    <EnableDotnetAnalyzers Condition="'$(EnableDotnetAnalyzers)'==''">true</EnableDotnetAnalyzers>
+    <UseWin32Apis>true</UseWin32Apis>
+    <OSGroup>Windows_NT</OSGroup>
+  </PropertyGroup>
+  <Import Project="$(ToolsDir)\codeAnalysis.targets" />
+
+  <Import Project="$(ToolsDir)\Microsoft.CSharp.Targets" />
 
   <PropertyGroup>
     <StrongNameSig>Silverlight</StrongNameSig>
