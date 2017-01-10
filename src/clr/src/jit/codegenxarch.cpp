@@ -7779,7 +7779,7 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* putArgStk)
 
     // On a 32-bit target, all of the long arguments are handled with GT_FIELD_LIST,
     // and the type of the putArgStk is TYP_VOID.
-    noway_assert(targetType != TYP_LONG);
+    assert(targetType != TYP_LONG);
 
     const unsigned argSize = putArgStk->getArgSize();
     assert((argSize % TARGET_POINTER_SIZE) == 0);
