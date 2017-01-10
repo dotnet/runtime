@@ -4,6 +4,7 @@
 // Import the utility functionality.
 
 import jobs.generation.Utilities;
+import jobs.generation.ArchivalSettings;
 
 def project = GithubProject
 def branch = GithubBranchName
@@ -67,6 +68,14 @@ platformList.each { platform ->
     }
 
     Utilities.addGithubPRTriggerForBranch(newJob, branch, "${os} ${architecture} ${configuration} Build")
+
+    ArchivalSettings settings = new ArchivalSettings();
+    def archiveString = ["tar.gz", "zip", "deb", "msi", "pkg", "exe", "nupkg"].collect { "artifacts/*/packages/*.${it},artifacts/*/corehost/*.${it}" }.join(",")
+    settings.addFiles(archiveString)
+    settings.setArchiveOnSuccess()
+    settings.setFailIfNothingArchived()
+
+    Utilities.addArchival(newJob, settings)
 }
 
 // **************************
