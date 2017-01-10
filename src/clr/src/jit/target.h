@@ -13,6 +13,13 @@
 #endif
 #endif
 
+// If the UNIX_X86_ABI is defined make sure that _TARGET_X86_ is also defined.
+#if defined(UNIX_X86_ABI)
+#if !defined(_TARGET_X86_)
+#error When UNIX_X86_ABI is defined you must define _TARGET_X86_ defined as well.
+#endif
+#endif
+
 #if (defined(FEATURE_CORECLR) && defined(PLATFORM_UNIX))
 #define FEATURE_VARARG 0
 #else // !(defined(FEATURE_CORECLR) && defined(PLATFORM_UNIX))
