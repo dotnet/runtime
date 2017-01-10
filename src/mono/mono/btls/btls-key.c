@@ -54,6 +54,8 @@ mono_btls_key_get_bytes (EVP_PKEY *pkey, uint8_t **buffer, int *size, int includ
 	else
 		ret = RSA_public_key_to_bytes (buffer, &len, rsa);
 
+	RSA_free (rsa);
+
 	if (ret != 1)
 		return 0;
 
