@@ -391,7 +391,7 @@ protected:
     void genPreserveCalleeSavedFltRegs(unsigned lclFrameSize);
     void genRestoreCalleeSavedFltRegs(unsigned lclFrameSize);
     // Generate VZeroupper instruction to avoid AVX/SSE transition penalty
-    bool genVzeroupperIfNeeded(bool check256bitOnly = true);
+    void genVzeroupperIfNeeded(bool check256bitOnly = true);
 
 #endif // _TARGET_XARCH_ && FEATURE_STACK_FP_X87
 
