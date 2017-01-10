@@ -311,8 +311,8 @@ def buildArchConfiguration = ['Debug': 'x86',
                         else {
                             // Use Server GC for Ubuntu/OSX Debug PR build & test
                             def useServerGC = (configurationGroup == 'Release' && isPR) ? 'useServerGC' : ''
-                            shell("HOME=\$WORKSPACE/tempHome ./build.sh -${configurationGroup.toLowerCase()} -framework:${targetGroup} -os:${osGroup} -runtimeos:${osName}")
-                            shell("HOME=\$WORKSPACE/tempHome ./build-tests.sh -${configurationGroup.toLowerCase()} -framework:${targetGroup} -os:${osGroup} -runtimeos:${osName} -- ${useServerGC} /p:WithoutCategories=IgnoreForCI")
+                            shell("HOME=\$WORKSPACE/tempHome ./build.sh -${configurationGroup.toLowerCase()} -framework:${targetGroup} -os:${osGroup}")
+                            shell("HOME=\$WORKSPACE/tempHome ./build-tests.sh -${configurationGroup.toLowerCase()} -framework:${targetGroup} -os:${osGroup} -- ${useServerGC} /p:WithoutCategories=IgnoreForCI")
                             // Tar up the appropriate bits.  On OSX the tarring is a different syntax for exclusion.
                             if (osName == 'OSX') {
                                 // TODO: Re-enable package archival when the build refactoring work allows it.
