@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
@@ -47,18 +47,18 @@
     <Compile Include="System\Transactions\Configuration\MachineSettingsSection.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="System.Runtime" />
-    <Reference Include="System.Resources.ResourceManager" />
-    <Reference Include="System.Runtime.Extensions" />
-    <Reference Include="System.Threading" />
     <Reference Include="System.Diagnostics.Debug" />
+    <Reference Include="System.Diagnostics.Tools" />
+    <Reference Include="System.Diagnostics.Tracing" />
+    <Reference Include="System.Resources.ResourceManager" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Runtime.Serialization.Formatters" />
-    <Reference Include="System.Threading.Timer" />
+    <Reference Include="System.Threading" />
     <Reference Include="System.Threading.Thread" />
     <Reference Include="System.Threading.ThreadPool" />
-    <Reference Include="System.Diagnostics.Tracing" />
-    <Reference Include="System.Diagnostics.Tools" />
+    <Reference Include="System.Threading.Timer" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="System\Transactions\TransactionsEtwProvider.cs" />

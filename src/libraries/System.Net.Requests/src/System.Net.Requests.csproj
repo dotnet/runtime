@@ -1,6 +1,5 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <ProjectGuid>{5EE76DCC-9FD5-47FD-AB45-BD0F0857740F}</ProjectGuid>
@@ -122,30 +121,30 @@
     <TargetingPackReference Include="System" />
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="System.Runtime" />
-    <Reference Include="System.Resources.ResourceManager" />
-    <Reference Include="System.Runtime.Extensions" />
+    <Reference Include="Microsoft.Win32.Primitives" />
+    <Reference Include="System.Collections" />
+    <Reference Include="System.Collections.NonGeneric" />
+    <Reference Include="System.Collections.Specialized" />
     <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.Diagnostics.Tools" />
-    <Reference Include="System.Collections.Specialized" />
-    <Reference Include="System.Collections.NonGeneric" />
-    <Reference Include="System.Net.Primitives" />
-    <Reference Include="System.Net.WebHeaderCollection" />
-    <Reference Include="System.Threading" />
-    <Reference Include="System.Net.Http" />
-    <Reference Include="System.Net.ServicePoint" />
-    <Reference Include="System.Threading.Tasks" />
-    <Reference Include="System.Security.Cryptography.X509Certificates" />
-    <Reference Include="System.Net.Security" />
-    <Reference Include="System.Collections" />
-    <Reference Include="System.Security.Principal" />
-    <Reference Include="System.Net.Sockets" />
-    <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Diagnostics.Tracing" />
-    <Reference Include="System.Security.Principal.Windows" />
-    <Reference Include="System.Threading.Thread" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Net.Primitives" />
+    <Reference Include="System.Net.Security" />
+    <Reference Include="System.Net.ServicePoint" />
+    <Reference Include="System.Net.Sockets" />
+    <Reference Include="System.Net.WebHeaderCollection" />
+    <Reference Include="System.Resources.ResourceManager" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.Extensions" />
+    <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Security.Claims" />
-    <Reference Include="Microsoft.Win32.Primitives" />
+    <Reference Include="System.Security.Cryptography.X509Certificates" />
+    <Reference Include="System.Security.Principal" />
+    <Reference Include="System.Security.Principal.Windows" />
+    <Reference Include="System.Threading" />
+    <Reference Include="System.Threading.Tasks" />
+    <Reference Include="System.Threading.Thread" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

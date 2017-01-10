@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
@@ -141,23 +141,20 @@
     <Compile Include="System\Runtime\CompilerServices\RuntimeOps.RuntimeVariables.cs" />
     <Compile Include="System\Runtime\CompilerServices\RuntimeOps.MergedRuntimeVariables.cs" />
     <Compile Include="System\Runtime\CompilerServices\ReadOnlyCollectionBuilder.cs" />
-    <Reference Include="System.Runtime" />
-    <Reference Include="System.Resources.ResourceManager" />
-    <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.Collections" />
-    <Reference Include="System.Reflection.Emit.ILGeneration" />
-    <Reference Include="System.Runtime.Extensions" />
+    <Reference Include="System.Diagnostics.Contracts" />
+    <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.Diagnostics.Tools" />
-    <Reference Include="System.Reflection.Emit" />
-    <Reference Include="System.ObjectModel" />
-    <Reference Include="System.Reflection.Primitives" />
-    <Reference Include="System.Reflection.Emit.Lightweight" />
-    <Reference Include="System.Threading" />
     <Reference Include="System.Linq" />
-    <Reference Include="System.Diagnostics.Contracts" />
-    <Reference Include="System.Diagnostics.Tools" />
-    <Reference Include="System.Diagnostics.Contracts" />
-    <Reference Include="System.Diagnostics.Tools" />
+    <Reference Include="System.ObjectModel" />
+    <Reference Include="System.Reflection.Emit" />
+    <Reference Include="System.Reflection.Emit.ILGeneration" />
+    <Reference Include="System.Reflection.Emit.Lightweight" />
+    <Reference Include="System.Reflection.Primitives" />
+    <Reference Include="System.Resources.ResourceManager" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.Extensions" />
+    <Reference Include="System.Threading" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'=='netstandard'">
     <Compile Include="System\Linq\Expressions\DynamicExpressionVisitor.cs" />

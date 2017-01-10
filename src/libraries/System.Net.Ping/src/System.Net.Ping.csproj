@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
@@ -142,21 +142,21 @@
     <TargetingPackReference Include="System" />
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="System.Runtime" />
-    <Reference Include="System.Resources.ResourceManager" />
-    <Reference Include="System.Runtime.Extensions" />
-    <Reference Include="System.Net.Primitives" />
-    <Reference Include="System.Runtime.InteropServices" />
-    <Reference Include="System.Diagnostics.Tracing" />
-    <Reference Include="System.ComponentModel.Primitives" />
-    <Reference Include="System.Threading" />
-    <Reference Include="System.Diagnostics.Debug" />
-    <Reference Include="System.Threading.ThreadPool" />
-    <Reference Include="System.Threading.Tasks" />
-    <Reference Include="System.ComponentModel.EventBasedAsync" />
-    <Reference Include="System.Net.NameResolution" />
-    <Reference Include="System.Net.Sockets" />
     <Reference Include="Microsoft.Win32.Primitives" />
+    <Reference Include="System.ComponentModel.EventBasedAsync" />
+    <Reference Include="System.ComponentModel.Primitives" />
+    <Reference Include="System.Diagnostics.Debug" />
+    <Reference Include="System.Diagnostics.Tracing" />
+    <Reference Include="System.Net.NameResolution" />
+    <Reference Include="System.Net.Primitives" />
+    <Reference Include="System.Net.Sockets" />
+    <Reference Include="System.Resources.ResourceManager" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.Extensions" />
+    <Reference Include="System.Runtime.InteropServices" />
+    <Reference Include="System.Threading" />
+    <Reference Include="System.Threading.Tasks" />
+    <Reference Include="System.Threading.ThreadPool" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <Reference Include="System.Diagnostics.Process" />
