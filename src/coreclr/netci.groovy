@@ -2113,7 +2113,7 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                         --mountPath=${armrootfs_mountpath} \\
                         --buildConfig=${lowerConfiguration} \\
                         --testRootDir=./bin/tests/Windows_NT.x64.${configuration} \\
-                        --coreFxNativeBinDir=./bin/Linux.arm-softfp.${configuration} \\
+                        --coreFxNativeBinDir=./bin/Linux.armel.${configuration} \\
                         --coreFxBinDir=\"./bin/Linux.AnyCPU.${configuration};./bin/Unix.AnyCPU.${configuration};./bin/AnyOS.AnyCPU.${configuration}\" \\
                         --testDirFile=./tests/testsRunningInsideARM.txt"""
 
