@@ -46,7 +46,7 @@ GTNODE(CNS_STR          , "sconst"       ,GenTreeStrCon      ,0,GTK_LEAF|GTK_CON
 //-----------------------------------------------------------------------------
 
 GTNODE(NOT              , "~"            ,GenTreeOp          ,0,GTK_UNOP)
-GTNODE(NOP              , "nop"          ,GenTree            ,0,GTK_UNOP|GTK_NOVALUE)
+GTNODE(NOP              , "nop"          ,GenTree            ,0,GTK_UNOP)
 GTNODE(NEG              , "unary -"      ,GenTreeOp          ,0,GTK_UNOP)
 GTNODE(COPY             , "copy"         ,GenTreeCopyOrReload,0,GTK_UNOP)               // Copies a variable from its current location to a register that satisfies
                                                                                         // code generation constraints.  The child is the actual lclVar node.
