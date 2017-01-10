@@ -1155,9 +1155,12 @@ class LiveVarAnalysis
 
                 noway_assert(block->bbFlags & BBF_INTERNAL);
 
-                liveInChanged = !VarSetOps::Equal(m_compiler, VarSetOps::Intersection(m_compiler, block->bbLiveIn, m_liveIn), m_liveIn);
+                liveInChanged =
+                    !VarSetOps::Equal(m_compiler, VarSetOps::Intersection(m_compiler, block->bbLiveIn, m_liveIn),
+                                      m_liveIn);
                 if (liveInChanged ||
-                    !VarSetOps::Equal(m_compiler, VarSetOps::Intersection(m_compiler, block->bbLiveOut, m_liveOut), m_liveOut))
+                    !VarSetOps::Equal(m_compiler, VarSetOps::Intersection(m_compiler, block->bbLiveOut, m_liveOut),
+                                      m_liveOut))
                 {
 #ifdef DEBUG
                     if (m_compiler->verbose)
