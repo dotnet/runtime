@@ -176,7 +176,7 @@
       },
       "inputs": {
         "filename": "$(build.SourcesDirectory)/corefx/build-tests.cmd",
-        "arguments": "-BuildTestsAgainstPackages -$(ConfigurationGroup) -SkipTests -target-os=$(TargetOS) -OuterLoop  -- /p:\"PackagesDrops=$(PackagesTransferDirectory)\\$(ConfigurationGroup)\" /p:\"ArchiveTests=true\" /p:\"Performance=$(Performance)\" /p:\"FuncTestsDisabled=$(FuncTestsDisabled)\" /p:\"TestNugetRuntimeId=$(TestNugetRuntimeId)\" /p:XunitTraitOptions=\\\"-notrait category=requireselevation\\\" /flp:v=detailed",
+        "arguments": "-BuildTestsAgainstPackages -$(ConfigurationGroup) -SkipTests -target-os=$(TargetOS) -OuterLoop  -- /p:\"PackagesDrops=$(PackagesTransferDirectory)\\$(ConfigurationGroup)\" /p:\"ArchiveTests=true\" /p:\"Performance=$(Performance)\" /p:\"FuncTestsDisabled=$(FuncTestsDisabled)\" /p:\"TestNugetRuntimeId=$(TestNugetRuntimeId)\" /p:\"EnableDumpling=true\" /p:XunitTraitOptions=\\\"-notrait category=requireselevation\\\" /flp:v=detailed",
         "modifyEnvironment": "false",
         "workingFolder": "$(build.SourcesDirectory)/corefx",
         "failOnStandardError": "false"
