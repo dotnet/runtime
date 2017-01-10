@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
@@ -246,21 +246,21 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\System.Collections.Immutable\src\System.Collections.Immutable.csproj" />
-    <Reference Include="System.Runtime" />
-    <Reference Include="System.Resources.ResourceManager" />
-    <Reference Include="System.Reflection.Primitives" />
-    <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.Collections" />
+    <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.IO" />
     <Reference Include="System.IO.Compression" />
-    <Reference Include="System.Text.Encoding" />
-    <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Linq" />
     <Reference Include="System.Reflection" />
-    <Reference Include="System.Threading" />
-    <Reference Include="System.Runtime.Extensions" />
-    <Reference Include="System.Text.Encoding.Extensions" />
     <Reference Include="System.Reflection.Extensions" />
+    <Reference Include="System.Reflection.Primitives" />
+    <Reference Include="System.Resources.ResourceManager" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.Extensions" />
+    <Reference Include="System.Runtime.InteropServices" />
+    <Reference Include="System.Text.Encoding" />
+    <Reference Include="System.Text.Encoding.Extensions" />
+    <Reference Include="System.Threading" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

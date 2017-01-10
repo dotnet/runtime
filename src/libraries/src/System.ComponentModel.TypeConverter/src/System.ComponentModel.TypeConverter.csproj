@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
@@ -94,18 +94,17 @@
     <Compile Include="System\Drawing\RectangleConverter.cs" />
     <Compile Include="System\Drawing\SizeConverter.cs" />
     <Compile Include="System\Drawing\SizeFConverter.cs" />
-
     <!-- New code introduced for netstandard 2.0 -->
     <Compile Include="System\ComponentModel\AddingNewEventArgs.cs" />
     <Compile Include="System\ComponentModel\AddingNewEventHandler.cs" />
     <Compile Include="System\ComponentModel\AmbientValueAttribute.cs" />
     <Compile Include="System\ComponentModel\BindableAttribute.cs" />
     <Compile Include="System\ComponentModel\BindableSupport.cs" />
-    <Compile Include="System\ComponentModel\BindingDirection.cs" />  
-    <Compile Include="System\ComponentModel\BindingList.cs" />  
-    <Compile Include="System\ComponentModel\IBindingList.cs" />  
-    <Compile Include="System\ComponentModel\ICancelAddNew.cs" />  
-    <Compile Include="System\ComponentModel\IRaiseItemChangedEvents.cs" />  
+    <Compile Include="System\ComponentModel\BindingDirection.cs" />
+    <Compile Include="System\ComponentModel\BindingList.cs" />
+    <Compile Include="System\ComponentModel\IBindingList.cs" />
+    <Compile Include="System\ComponentModel\ICancelAddNew.cs" />
+    <Compile Include="System\ComponentModel\IRaiseItemChangedEvents.cs" />
     <Compile Include="System\ComponentModel\ListChangedEventArgs.cs" />
     <Compile Include="System\ComponentModel\ListChangedEventHandler.cs" />
     <Compile Include="System\ComponentModel\ListSortDirection.cs" />
@@ -124,7 +123,7 @@
     <Compile Include="System\ComponentModel\DataObjectAttribute.cs" />
     <Compile Include="System\ComponentModel\DataObjectFieldAttribute.cs" />
     <Compile Include="System\ComponentModel\DataObjectMethodAttribute.cs" />
-    <Compile Include="System\ComponentModel\DataObjectMethodType.cs" />    
+    <Compile Include="System\ComponentModel\DataObjectMethodType.cs" />
     <Compile Include="System\ComponentModel\DefaultBindingPropertyAttribute.cs" />
     <Compile Include="System\ComponentModel\DesignerAttribute.cs" />
     <Compile Include="System\ComponentModel\DesignTimeVisibleAttribute.cs" />
@@ -157,7 +156,7 @@
     <Compile Include="System\ComponentModel\LicenseManager.cs" />
     <Compile Include="System\ComponentModel\LicenseProvider.cs" />
     <Compile Include="System\ComponentModel\Design\DesigntimeLicenseContext.cs" />
-    <Compile Include="System\ComponentModel\LicenseProviderAttribute.cs" />    
+    <Compile Include="System\ComponentModel\LicenseProviderAttribute.cs" />
     <Compile Include="System\ComponentModel\Design\DesigntimeLicenseContextSerializer.cs" />
     <Compile Include="System\ComponentModel\LicFileLicenseProvider.cs" />
     <Compile Include="System\ComponentModel\Design\ITypeResolutionService.cs" />
@@ -241,11 +240,9 @@
     <Compile Include="System\ComponentModel\Design\Serialization\RootDesignerSerializerAttribute.cs" />
     <Compile Include="System\ComponentModel\ComponentResourceManager.cs" />
     <Compile Include="System\Security\Authentication\ExtendedProtection\ExtendedProtectionPolicyTypeConverter.cs" />
-
     <!-- Random pieces of code required to build  -->
     <Compile Include="System\misc.cs" />
   </ItemGroup>
-
   <ItemGroup>
     <EmbeddedResource Include="$(MsBuildThisFileDirectory)Resources\$(AssemblyName).rd.xml" />
   </ItemGroup>
@@ -255,32 +252,32 @@
     <TargetingPackReference Include="System.Drawing" />
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="System.Runtime" />
-    <Reference Include="System.Resources.ResourceManager" />
-    <Reference Include="System.ComponentModel.Primitives" />
     <Reference Include="System.Collections" />
-    <Reference Include="System.Drawing.Primitives" />
-    <Reference Include="System.Threading.Timer" />
-    <Reference Include="System.Runtime.Extensions" />
-    <Reference Include="System.ComponentModel" />
-    <Reference Include="System.Diagnostics.Debug" />
-    <Reference Include="System.ObjectModel" />
-    <Reference Include="System.Collections.Specialized" />
-    <Reference Include="System.Security.Permissions" />
-    <Reference Include="System.Diagnostics.TraceSource" />
     <Reference Include="System.Collections.NonGeneric" />
-    <Reference Include="System.Net.WebClient" />
-    <Reference Include="System.Net.Security" />
-    <Reference Include="System.Runtime.Serialization.Formatters" />
-    <Reference Include="System.Resources.Writer" />
-    <Reference Include="System.Threading" />
-    <Reference Include="System.Linq" />
-    <Reference Include="System.Runtime.InteropServices" />
-    <Reference Include="System.IO.FileSystem" />
-    <Reference Include="System.Text.RegularExpressions" />
-    <Reference Include="System.Net.Primitives" />
+    <Reference Include="System.Collections.Specialized" />
+    <Reference Include="System.ComponentModel" />
+    <Reference Include="System.ComponentModel.Primitives" />
     <Reference Include="System.Diagnostics.Contracts" />
+    <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.Diagnostics.Tools" />
+    <Reference Include="System.Diagnostics.TraceSource" />
+    <Reference Include="System.Drawing.Primitives" />
+    <Reference Include="System.IO.FileSystem" />
+    <Reference Include="System.Linq" />
+    <Reference Include="System.Net.Primitives" />
+    <Reference Include="System.Net.Security" />
+    <Reference Include="System.Net.WebClient" />
+    <Reference Include="System.ObjectModel" />
+    <Reference Include="System.Resources.ResourceManager" />
+    <Reference Include="System.Resources.Writer" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.Extensions" />
+    <Reference Include="System.Runtime.InteropServices" />
+    <Reference Include="System.Runtime.Serialization.Formatters" />
+    <Reference Include="System.Security.Permissions" />
+    <Reference Include="System.Text.RegularExpressions" />
+    <Reference Include="System.Threading" />
+    <Reference Include="System.Threading.Timer" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
