@@ -620,6 +620,7 @@ namespace System.Text.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public static void Append_CharArray_Invalid()
         {
             var builder = new StringBuilder(0, 5);
@@ -628,13 +629,29 @@ namespace System.Text.Tests
             Assert.Throws<ArgumentNullException>("value", () => builder.Append((char[])null, 1, 1)); // Value is null, startIndex > 0 and count > 0
 
             Assert.Throws<ArgumentOutOfRangeException>("startIndex", () => builder.Append(new char[0], -1, 0)); // Start index < 0
-            Assert.Throws<ArgumentOutOfRangeException>(
-                RuntimeDetection.IsNetFramework ? "count" : "charCount", () => builder.Append(new char[0], 0, -1)); // Count < 0
+            Assert.Throws<ArgumentOutOfRangeException>("charCount", () => builder.Append(new char[0], 0, -1)); // Count < 0
 
-            Assert.Throws<ArgumentOutOfRangeException>(
-                RuntimeDetection.IsNetFramework ? "count" : "charCount", () => builder.Append(new char[5], 6, 0)); // Start index + count > value.Length
-            Assert.Throws<ArgumentOutOfRangeException>(
-                RuntimeDetection.IsNetFramework ? "count" : "charCount", () => builder.Append(new char[5], 5, 1)); // Start index + count > value.Length
+            Assert.Throws<ArgumentOutOfRangeException>("charCount", () => builder.Append(new char[5], 6, 0)); // Start index + count > value.Length
+            Assert.Throws<ArgumentOutOfRangeException>("charCount", () => builder.Append(new char[5], 5, 1)); // Start index + count > value.Length
+
+            Assert.Throws<ArgumentOutOfRangeException>("valueCount", () => builder.Append(new char[] { 'a' })); // New length > builder.MaxCapacity
+            Assert.Throws<ArgumentOutOfRangeException>("valueCount", () => builder.Append(new char[] { 'a' }, 0, 1)); // New length > builder.MaxCapacity
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
+        public static void Append_CharArray_InvalidDesktop()
+        {
+            var builder = new StringBuilder(0, 5);
+            builder.Append("Hello");
+
+            Assert.Throws<ArgumentNullException>("value", () => builder.Append((char[])null, 1, 1)); // Value is null, startIndex > 0 and count > 0
+
+            Assert.Throws<ArgumentOutOfRangeException>("startIndex", () => builder.Append(new char[0], -1, 0)); // Start index < 0
+            Assert.Throws<ArgumentOutOfRangeException>("count", () => builder.Append(new char[0], 0, -1)); // Count < 0
+
+            Assert.Throws<ArgumentOutOfRangeException>("count", () => builder.Append(new char[5], 6, 0)); // Start index + count > value.Length
+            Assert.Throws<ArgumentOutOfRangeException>("count", () => builder.Append(new char[5], 5, 1)); // Start index + count > value.Length
 
             Assert.Throws<ArgumentOutOfRangeException>("valueCount", () => builder.Append(new char[] { 'a' })); // New length > builder.MaxCapacity
             Assert.Throws<ArgumentOutOfRangeException>("valueCount", () => builder.Append(new char[] { 'a' }, 0, 1)); // New length > builder.MaxCapacity
@@ -1395,8 +1412,6 @@ namespace System.Text.Tests
             Assert.Throws<ArgumentOutOfRangeException>("index", () => builder.Insert(builder.Length + 1, new char[0], 0, 0)); // Index > builder.Length
 
             Assert.Throws<ArgumentNullException>(() => builder.Insert(0, null, 1, 1)); // Value is null (startIndex and count are not zero)
-            Assert.Throws<ArgumentOutOfRangeException>(RuntimeDetection.IsNetFramework ? "count" : "charCount", () => builder.Insert(0, new char[0], 0, -1)); // Char count < 0
-
             Assert.Throws<ArgumentOutOfRangeException>("startIndex", () => builder.Insert(0, new char[0], -1, 0)); // Start index < 0
 
             Assert.Throws<ArgumentOutOfRangeException>("startIndex", () => builder.Insert(0, new char[3], 4, 0)); // Start index + char count > value.Length
@@ -1405,6 +1420,42 @@ namespace System.Text.Tests
 
             Assert.Throws<ArgumentOutOfRangeException>("requiredLength", () => builder.Insert(builder.Length, new char[1])); // New length > builder.MaxCapacity
             Assert.Throws<ArgumentOutOfRangeException>("requiredLength", () => builder.Insert(builder.Length, new char[] { 'a' }, 0, 1)); // New length > builder.MaxCapacity
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        public static void Insert_CharArray_InvalidCount()
+        {
+            var builder = new StringBuilder(0, 5);
+            builder.Append("Hello");
+            Assert.Throws<ArgumentOutOfRangeException>("charCount", () => builder.Insert(0, new char[0], 0, -1)); // Char count < 0
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
+        public static void Insert_CharArray_InvalidCount_Desktop()
+        {
+            var builder = new StringBuilder(0, 5);
+            builder.Append("Hello");
+            Assert.Throws<ArgumentOutOfRangeException>("count", () => builder.Insert(0, new char[0], 0, -1)); // Char count < 0
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        public static void Insert_CharArray_InvalidCharCount()
+        {
+            var builder = new StringBuilder(0, 5);
+            builder.Append("Hello");
+            Assert.Throws<ArgumentOutOfRangeException>("charCount", () => builder.Insert(0, new char[0], 0, -1)); // Char count < 0
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
+        public static void Insert_CharArray_InvalidCharCount_Desktop()
+        {
+            var builder = new StringBuilder(0, 5);
+            builder.Append("Hello");
+            Assert.Throws<ArgumentOutOfRangeException>("count", () => builder.Insert(0, new char[0], 0, -1)); // Char count < 0
         }
 
         [Theory]
@@ -1434,17 +1485,27 @@ namespace System.Text.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public static void Remove_Invalid()
         {
             var builder = new StringBuilder("Hello");
             Assert.Throws<ArgumentOutOfRangeException>("startIndex", () => builder.Remove(-1, 0)); // Start index < 0
             Assert.Throws<ArgumentOutOfRangeException>("length", () => builder.Remove(0, -1)); // Length < 0
-            Assert.Throws<ArgumentOutOfRangeException>(
-                RuntimeDetection.IsNetFramework ? "index" : "length", () => builder.Remove(6, 0)); // Start index + length > 0
-            Assert.Throws<ArgumentOutOfRangeException>(
-                RuntimeDetection.IsNetFramework ? "index" : "length", () => builder.Remove(5, 1)); // Start index + length > 0
-            Assert.Throws<ArgumentOutOfRangeException>(
-                RuntimeDetection.IsNetFramework ? "index" : "length", () => builder.Remove(4, 2)); // Start index + length > 0
+            Assert.Throws<ArgumentOutOfRangeException>("length", () => builder.Remove(6, 0)); // Start index + length > 0
+            Assert.Throws<ArgumentOutOfRangeException>("length", () => builder.Remove(5, 1)); // Start index + length > 0
+            Assert.Throws<ArgumentOutOfRangeException>("length", () => builder.Remove(4, 2)); // Start index + length > 0
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
+        public static void Remove_Invalid_Desktop()
+        {
+            var builder = new StringBuilder("Hello");
+            Assert.Throws<ArgumentOutOfRangeException>("startIndex", () => builder.Remove(-1, 0)); // Start index < 0
+            Assert.Throws<ArgumentOutOfRangeException>("length", () => builder.Remove(0, -1)); // Length < 0
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => builder.Remove(6, 0)); // Start index + length > 0
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => builder.Remove(5, 1)); // Start index + length > 0
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => builder.Remove(4, 2)); // Start index + length > 0
         }
 
         [Theory]
