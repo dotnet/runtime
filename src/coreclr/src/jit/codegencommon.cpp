@@ -10584,7 +10584,7 @@ GenTreePtr CodeGen::genMakeConst(const void* cnsAddr, var_types cnsType, GenTree
 void CodeGen::genPreserveCalleeSavedFltRegs(unsigned lclFrameSize)
 {
     genVzeroupperIfNeeded(false);
-    regMaskTP regMask           = compiler->compCalleeFPRegsSavedMask;
+    regMaskTP regMask = compiler->compCalleeFPRegsSavedMask;
 
     // Only callee saved floating point registers should be in regMask
     assert((regMask & RBM_FLT_CALLEE_SAVED) == regMask);
