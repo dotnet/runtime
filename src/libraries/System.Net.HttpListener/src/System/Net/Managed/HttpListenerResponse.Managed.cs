@@ -407,7 +407,7 @@ namespace System.Net
             ms.Position = preamble;
             _headersSent = true;
         }
-
+        
         private static string FormatHeaders(WebHeaderCollection headers)
         {
             var sb = new StringBuilder();

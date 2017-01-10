@@ -2,21 +2,18 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Security.Principal;
-using System.Runtime.InteropServices;
-using System.Security.Authentication.ExtendedProtection;
 using System.ComponentModel;
 using System.Net.WebSockets;
-using System.Threading.Tasks;
+using System.Runtime.InteropServices;
+using System.Security.Authentication.ExtendedProtection;
+using System.Security.Principal;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.Net
 {
     public sealed unsafe partial class HttpListenerContext
     {
-        private HttpListener _listener;
-        private HttpListenerResponse _response;
-        private IPrincipal _user;
         private string _mutualAuthentication;
 
         internal HttpListenerContext(HttpListener httpListener, RequestContextBase memoryBlob)
@@ -36,25 +33,6 @@ namespace System.Net
             _user = principal;
             if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"mutual: {(mutualAuthentication == null ? "<null>" : mutualAuthentication)}, Principal: {principal}");
         }
-
-        public HttpListenerRequest Request { get; }
-
-        public HttpListenerResponse Response
-        {
-            get
-            {
-                if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
-                if (_response == null)
-                {
-                    _response = new HttpListenerResponse(this);
-                    if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"HttpListener: {_listener}, HttpListenerRequest: {Request}, HttpListenerResponse: {_response}");
-                }
-                if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
-                return _response;
-            }
-        }
-
-        public IPrincipal User => _user;
 
         // This can be used to cache the results of HttpListener.AuthenticationSchemeSelectorDelegate.
         internal AuthenticationSchemes AuthenticationSchemes { get; set; }
