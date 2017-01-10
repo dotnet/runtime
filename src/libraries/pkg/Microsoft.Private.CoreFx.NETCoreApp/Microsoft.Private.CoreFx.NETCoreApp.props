@@ -42,8 +42,7 @@
     <_project Include="@(BuildRID)">
       <Platform Condition="'%(Platform)' == ''">amd64</Platform>
       <PackageTargetRuntime>%(Identity)</PackageTargetRuntime>
-      <ConfigurationGroup>$(Input_ConfigurationGroup)</ConfigurationGroup>
-      <AdditionalProperties>PackageTargetRuntime=%(Identity);Platform=%(Platform);ConfigurationGroup=%(ConfigurationGroup)</AdditionalProperties>
+      <AdditionalProperties>PackageTargetRuntime=%(Identity);Platform=%(Platform);ConfigurationGroup=$(Input_ConfigurationGroup)</AdditionalProperties>
     </_project>
 
     <Project Include="@(_project->'$(MSBuildProjectName).pkgproj')" />
