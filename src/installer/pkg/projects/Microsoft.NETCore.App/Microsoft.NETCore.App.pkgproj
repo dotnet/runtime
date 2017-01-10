@@ -51,9 +51,24 @@
     <Dependency Include="@(NETCoreApp10Dependency)">
       <TargetFramework>.NETCoreApp1.0</TargetFramework>
     </Dependency>
+    <Dependency Include="@(NETCoreApp11Dependency)">
+      <TargetFramework>.NETCoreApp1.1</TargetFramework>
+    </Dependency>
+
+    <!-- Add a placeholder to make sure NuGet understands we still support older versions,
+         even though they don't have ref-assets -->
+    <File Include="$(PlaceHolderFile)">
+      <TargetPath>.NETCoreApp</TargetPath>
+    </File>
+
+    <!-- Bring in Platforms for RID graph, NETStandard.Library for build-tools -->
     <Dependency Include="Microsoft.NETCore.Platforms">
       <Version>1.2.0-beta-24821-0</Version>
-      <TargetFramework>.NETCoreApp1.1</TargetFramework>
+      <TargetFramework>.NETCoreApp2.0</TargetFramework>
+    </Dependency>
+    <Dependency Include="NETStandard.Library">
+      <Version>2.0.0-beta-24909-0</Version>
+      <TargetFramework>.NETCoreApp2.0</TargetFramework>
     </Dependency>
   </ItemGroup>
 

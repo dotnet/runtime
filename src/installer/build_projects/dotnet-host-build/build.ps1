@@ -8,7 +8,7 @@ param(
     [string]$Architecture="x64",
     [string]$TargetArch="",
     [string]$ToolsetDir="",
-    [string]$Framework="netcoreapp1.1",
+    [string]$Framework="netcoreapp2.0",
     [string[]]$Targets=@("Default"),
     [string[]]$EnvVars=@(),
     [switch]$NoPackage,
