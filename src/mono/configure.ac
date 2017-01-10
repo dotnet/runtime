@@ -3858,6 +3858,20 @@ if test ${ACCESS_UNALIGNED} = no; then
 	CPPFLAGS="$CPPFLAGS -DNO_UNALIGNED_ACCESS"
 fi
 
+if test x$host_darwin = xyes; then
+	AC_MSG_CHECKING([for ranlib that supports -no_warning_for_no_symbols option])
+	AS_IF(
+		[$RANLIB -no_warning_for_no_symbols 2>&1 | grep -q "unknown option"],
+		[AC_MSG_RESULT([no])],
+		[
+			# avoid AR calling ranlib, libtool calls it anyway. suppress no symbols warning.
+			AR_FLAGS="Scru"
+			RANLIB="$RANLIB -no_warning_for_no_symbols"
+			AC_MSG_RESULT([yes])
+		]
+	)
+fi
+
 case "x$libgc" in
 	xincluded)
 		# Pass CPPFLAGS to libgc configure
