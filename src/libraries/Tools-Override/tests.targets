@@ -182,7 +182,6 @@
     <MakeDir Condition="'$(CoverageEnabledForProject)'=='true'" Directories="$(CoverageReportDir)" />
 
     <Exec Command="$(TestPath)/$(RunnerScriptName) $(RuntimePath)"
-          WorkingDirectory="$(OutDir)"
           CustomErrorRegularExpression="Failed: [^0]"
           ContinueOnError="true"
           IgnoreStandardErrorWarningFormat="true"
