@@ -63,7 +63,7 @@ namespace MonoTests.System.Configuration.Util
             scopes.Add(new Scope(prefix, style));
 
             this.delimiter = delimiter;
-            this.defaultStyle = style;
+            defaultStyle = style;
         }
 
         class Scope
@@ -74,9 +74,9 @@ namespace MonoTests.System.Configuration.Util
 
             public Scope(string text, Style style)
             {
-                this.Text = text;
-                this.Style = style;
-                this.id = 0;
+                Text = text;
+                Style = style;
+                id = 0;
             }
 
             public int GetID()

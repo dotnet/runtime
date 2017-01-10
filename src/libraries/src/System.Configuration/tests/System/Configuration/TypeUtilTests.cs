@@ -283,6 +283,21 @@ namespace System.ConfigurationTests
             {
                 throw new NotImplementedException();
             }
+
+            IDisposable IInternalConfigHost.Impersonate()
+            {
+                throw new NotImplementedException();
+            }
+
+            bool IInternalConfigHost.IsFullTrustSectionWithoutAptcaAllowed(IInternalConfigRecord configRecord)
+            {
+                throw new NotImplementedException();
+            }
+
+            bool IInternalConfigHost.IsTrustedConfigPath(string configPath)
+            {
+                throw new NotImplementedException();
+            }
         }
     }
 }
