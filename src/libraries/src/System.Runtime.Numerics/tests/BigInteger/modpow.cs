@@ -140,6 +140,7 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public static void ModPow1Large2SmallInt_Threshold()
         {
             // Again, with lower threshold
@@ -164,6 +165,7 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public static void ModPow2Large1SmallInt_Threshold()
         {
             // Again, with lower threshold

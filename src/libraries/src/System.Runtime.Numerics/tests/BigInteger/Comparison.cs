@@ -359,12 +359,25 @@ namespace System.Numerics.Tests
             Assert.Equal(false, BigInteger.Zero.Equals((Object)"0"));
         }
 
-        [Fact]
-        public static void IComparable_Invalid()
+        public static void IComparable_Invalid(string paramName)
         {
             IComparable comparable = new BigInteger();
             Assert.Equal(1, comparable.CompareTo(null));
-            Assert.Throws<ArgumentException>("obj", () => comparable.CompareTo(0)); // Obj is not a BigInteger
+            Assert.Throws<ArgumentException>(paramName, () => comparable.CompareTo(0)); // Obj is not a BigInteger
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Netcoreapp | TargetFrameworkMonikers.NetcoreUwp)]
+        public static void IComparable_Invalid_net46()
+        {
+            IComparable_Invalid(null);
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        public static void IComparable_Invalid_netcore()
+        {
+            IComparable_Invalid("obj");
         }
 
         private static void VerifyComparison(BigInteger x, BigInteger y, int expectedResult)
