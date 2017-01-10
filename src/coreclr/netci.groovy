@@ -1216,6 +1216,10 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                     if (configuration == 'Checked') {
                         Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} Build and Test")
                     }
+                    else if (configuration == 'Release') {
+                        Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} Build and Test",
+                            "(?i).*test\\W+${os}\\W+${architecture}\\W+${configuration}.*")
+                    }
                     break
                 case 'pri1':
                     if (configuration == 'Release') {
