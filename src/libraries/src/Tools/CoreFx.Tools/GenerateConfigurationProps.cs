@@ -162,12 +162,18 @@ namespace Microsoft.DotNet.Build.Tasks
             var buildConfigurationImportPath = $"{CurrentDirectoryIdentifier}{ConfigurationPropsPrefix}.{significantBuildConfiguration}{PropsFileExtension}";
             buildConfigurationsPropertyGroup.AddProperty(buildConfigurationImportName, buildConfigurationImportPath);
 
+            // if BuildConfigurations is not set, then default Configuration to BuildConfiguration
+            var defaultConfigurationToBuildConfiguration = buildConfigurationsPropertyGroup.AddProperty(ConfigurationProperty, $"$({BuildConfigurationProperty})");
+            defaultConfigurationToBuildConfiguration.Condition = $"'$({AvailableBuildConfigurationsProperty})' == ''";
+
+            var buildConfigurationsIsSet = $"'$({AvailableBuildConfigurationsProperty})' != ''";
+
             var missingImportError = buildConfigurationsPropertyGroup.AddProperty(ErrorMessageProperty, $"$({ErrorMessageProperty}){ConfigurationProperty} is not set and $({BuildConfigurationProperty}) is not a known value for {BuildConfigurationProperty}.");
-            missingImportError.Condition = $"!Exists('$({buildConfigurationImportName})')";
+            missingImportError.Condition = $"{buildConfigurationsIsSet} AND !Exists('$({buildConfigurationImportName})')";
 
             // import props to set ProjectConfiguration
             var buildConfigurationImport = buildConfigurationProps.CreateImportElement($"$({buildConfigurationImportName})");
-            buildConfigurationImport.Condition = $"Exists('$({buildConfigurationImportName})')";
+            buildConfigurationImport.Condition = $"{buildConfigurationsIsSet} AND Exists('$({buildConfigurationImportName})')";
             buildConfigurationProps.AppendChild(buildConfigurationImport);
 
             // iterate over all possible configuration strings
