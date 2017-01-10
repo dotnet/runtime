@@ -7,14 +7,16 @@ IF DEFINED RUNTIME_PATH ( echo Using %RUNTIME_PATH% as the test runtime folder.)
 echo Please specify a test runtime folder using the RUNTIME_PATH parameter
 goto ShowUsage
 )
-set EXECUTION_DIR=%RUNTIME_PATH%
+set EXECUTION_DIR=%~dp0
 echo Executing in %EXECUTION_DIR% 
 
 :: ========================= BEGIN Test Execution ============================= 
 echo Running tests... Start time: %TIME%
 echo Command(s):
 [[TestRunCommandsEcho]]
+pushd %EXECUTION_DIR%
 [[TestRunCommands]]
+popd
 echo Finished running tests.  End time=%TIME%, Exit code = %ERRORLEVEL%
 EXIT /B %ERRORLEVEL%
 :: ========================= END Test Execution =================================
