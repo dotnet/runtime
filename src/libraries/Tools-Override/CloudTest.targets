@@ -42,6 +42,8 @@
     <TestArchivesRoot>$(ArchivesRoot)tests/</TestArchivesRoot>
     <PackagesArchiveFilename>Packages.zip</PackagesArchiveFilename>
     <PackagesArchiveFile>$(ArchivesRoot)$(PackagesArchiveFilename)</PackagesArchiveFile>
+    <TestRuntimeArchiveFilename>test-runtime-$(BuildConfiguration).zip</TestRuntimeArchiveFilename>
+    <TestRuntimeArchiveFile>$(ArchivesRoot)$(TestRuntimeArchiveFilename)</TestRuntimeArchiveFile>
     <FuncTestListFile>$(TestWorkingDir)$(OSPlatformConfig)/$(FuncTestListFilename)</FuncTestListFile>
     <PerfTestListFile>$(TestWorkingDir)$(OSPlatformConfig)/$(PerfTestListFilename)</PerfTestListFile>
     <BuildStatsJsonFile>$(TestWorkingDir)$(OSPlatformConfig)/BuildStats.json</BuildStatsJsonFile>
@@ -404,8 +406,20 @@
     </ItemGroup>
   </Target>
 
+  <Target Name="CompressRuntimeDir" Condition="'$(SkipArchive)' != 'true'">
+    <ZipFileCreateFromDirectory
+        SourceDirectory="$(RuntimePath)"
+        DestinationArchive="$(TestRuntimeArchiveFile)"
+        OverwriteDestination="true" />
+    <ItemGroup>
+      <ForUpload Include="$(TestRuntimeArchiveFile)">
+        <RelativeBlobPath>$(Platform)$(ConfigurationGroup)/$(PackagesArchiveFilename)</RelativeBlobPath>
+      </ForUpload>
+    </ItemGroup>
+  </Target>
+
   <!-- upload content to Azure -->
-  <Target Name="UploadContent" DependsOnTargets="CompressPackagesDir" Condition="'$(SkipUpload)' != 'true'">
+  <Target Name="UploadContent" DependsOnTargets="CompressRuntimeDir" Condition="'$(SkipUpload)' != 'true'">
     <UploadToAzure
       AccountKey="$(CloudDropAccessToken)"
       AccountName="$(CloudDropAccountName)"
