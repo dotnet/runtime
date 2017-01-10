@@ -230,6 +230,20 @@
             "#import": [ "rhel.7.2", "rhel.7.1-x64" ]
         },
 
+        "rhel.7.3": {
+            "#import": [ "rhel.7.2" ]
+        },
+        "rhel.7.3-x64": {
+            "#import": [ "rhel.7.3", "rhel.7.2-x64" ]
+        },
+
+        "rhel.7.4": {
+            "#import": [ "rhel.7.3" ]
+        },
+        "rhel.7.4-x64": {
+            "#import": [ "rhel.7.4", "rhel.7.3-x64" ]
+        },
+
         "ol": {
             "#import": [ "rhel" ]
         },
