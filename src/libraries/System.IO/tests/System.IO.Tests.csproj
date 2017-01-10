@@ -66,6 +66,8 @@
   <ItemGroup>
     <ProjectReference Include="..\pkg\System.IO.pkgproj" />
     <ProjectReference Include="..\..\System.Diagnostics.Debug\pkg\System.Diagnostics.Debug.pkgproj" />
+    <!-- TODO: Remove when #14564 is in or rejected and packages updated -->
+    <ProjectReference Include="..\..\System.Runtime.Extensions\pkg\System.Runtime.Extensions.pkgproj" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

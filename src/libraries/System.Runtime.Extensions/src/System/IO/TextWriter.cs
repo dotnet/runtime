@@ -528,7 +528,7 @@ namespace System.IO
         {
             if (buffer == null)
             {
-                return Task.CompletedTask;
+                return WriteLineAsync();
             }
 
             return WriteLineAsync(buffer, 0, buffer.Length);
