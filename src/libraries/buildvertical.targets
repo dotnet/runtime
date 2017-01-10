@@ -47,8 +47,12 @@
                            BuildConfiguration="$(BuildConfiguration)" 
                            Condition="'$(BuildConfigurations)' != ''"
                            ContinueOnError="true">
-      <Output TaskParameter="BestConfiguration" ItemName="_Configuration" />                          
+      <Output TaskParameter="BestConfiguration" ItemName="_Configuration" />
     </FindBestConfiguration>  
+
+    <ItemGroup>
+      <_Configuration Condition="'$(BuildConfigurations)' == ''" Include="$(BuildConfiguration)" />
+    </ItemGroup>
 
     <PropertyGroup>
       <_BestConfiguration>%(_Configuration.Identity)</_BestConfiguration>
@@ -69,8 +73,12 @@
                            BuildConfiguration="$(BuildConfiguration)" 
                            Condition="'$(BuildConfigurations)' != ''"
                            ContinueOnError="true">
-      <Output TaskParameter="BestConfiguration" ItemName="_Configuration" />                          
+      <Output TaskParameter="BestConfiguration" ItemName="_Configuration" />
     </FindBestConfiguration>  
+    
+    <ItemGroup>
+      <_Configuration Condition="'$(BuildConfigurations)' == ''" Include="$(BuildConfiguration)" />
+    </ItemGroup>
   </Target>
 
   <Target Name="AnnotateProjectReference"
