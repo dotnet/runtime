@@ -2,13 +2,11 @@
 <Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <TargetGroups Include="netcore50">
-      <PackageTargetFramework>netcore50</PackageTargetFramework>
       <TargetingPackNugetPackageId>Microsoft.TargetingPack.Private.NetNative</TargetingPackNugetPackageId>
       <NuGetTargetMoniker>.NETCore,Version=v5.0</NuGetTargetMoniker>
       <CompatibleWith>netstandard1.4</CompatibleWith>
     </TargetGroups>
     <TargetGroups Include="netcore50aot">
-      <PackageTargetFramework>netcore50</PackageTargetFramework>
       <PackageTargetRuntime>aot</PackageTargetRuntime>
       <TargetingPackNugetPackageId>Microsoft.TargetingPack.Private.NetNative</TargetingPackNugetPackageId>
       <NuGetTargetMoniker>.NETCore,Version=v5.0</NuGetTargetMoniker>
@@ -16,145 +14,118 @@
       <CompatibleWith>netstandard1.7</CompatibleWith>
     </TargetGroups>
     <TargetGroups Include="netstandard1.0">
-      <PackageTargetFramework>netstandard1.0</PackageTargetFramework>
       <NuGetTargetMoniker>.NETStandard,Version=v1.0</NuGetTargetMoniker>
     </TargetGroups>
     <TargetGroups Include="netstandard1.1">
-      <PackageTargetFramework>netstandard1.1</PackageTargetFramework>
       <NuGetTargetMoniker>.NETStandard,Version=v1.1</NuGetTargetMoniker>
       <Imports>netstandard1.0</Imports>
     </TargetGroups>
     <TargetGroups Include="netstandard1.2">
-      <PackageTargetFramework>netstandard1.2</PackageTargetFramework>
       <NuGetTargetMoniker>.NETStandard,Version=v1.2</NuGetTargetMoniker>
       <Imports>netstandard1.1</Imports>
     </TargetGroups>
     <TargetGroups Include="netstandard1.3">
-      <PackageTargetFramework>netstandard1.3</PackageTargetFramework>
       <NuGetTargetMoniker>.NETStandard,Version=v1.3</NuGetTargetMoniker>
       <Imports>netstandard1.2</Imports>
     </TargetGroups>
     <TargetGroups Include="netstandard1.4">
-      <PackageTargetFramework>netstandard1.4</PackageTargetFramework>
       <NuGetTargetMoniker>.NETStandard,Version=v1.4</NuGetTargetMoniker>
       <Imports>netstandard1.3</Imports>
     </TargetGroups>
     <TargetGroups Include="netstandard1.5">
-      <PackageTargetFramework>netstandard1.5</PackageTargetFramework>
       <NuGetTargetMoniker>.NETStandard,Version=v1.5</NuGetTargetMoniker>
       <Imports>netstandard1.4</Imports>
     </TargetGroups>
     <TargetGroups Include="netstandard1.6">
-      <PackageTargetFramework>netstandard1.6</PackageTargetFramework>
       <NuGetTargetMoniker>.NETStandard,Version=v1.6</NuGetTargetMoniker>
       <Imports>netstandard1.5</Imports>
     </TargetGroups>
     <TargetGroups Include="netstandard1.7">
-      <PackageTargetFramework>netstandard1.7</PackageTargetFramework>
       <NuGetTargetMoniker>.NETStandard,Version=v1.7</NuGetTargetMoniker>
       <Imports>netstandard1.6</Imports>
     </TargetGroups>
     <TargetGroups Include="netstandard">
-      <PackageTargetFramework>netstandard1.7</PackageTargetFramework>
       <NuGetTargetMoniker>.NETStandard,Version=v1.7</NuGetTargetMoniker>
       <Imports>netstandard1.7</Imports>
     </TargetGroups>
     <TargetGroups Include="netcoreapp1.0">
-      <PackageTargetFramework>netcoreapp1.0</PackageTargetFramework>
       <NuGetTargetMoniker>.NETCoreApp,Version=v1.0</NuGetTargetMoniker>
       <CompatibleWith>netstandard1.6</CompatibleWith>
     </TargetGroups>
     <TargetGroups Include="netcoreapp1.1">
-      <PackageTargetFramework>netcoreapp1.1</PackageTargetFramework>
       <NuGetTargetMoniker>.NETCoreApp,Version=v1.1</NuGetTargetMoniker>
       <Imports>netcoreapp1.0</Imports>
       <CompatibleWith>netstandard1.7</CompatibleWith>
     </TargetGroups>
     <TargetGroups Include="netcoreapp">
-      <PackageTargetFramework>netcoreapp1.1</PackageTargetFramework>
       <NuGetTargetMoniker>.NETCoreApp,Version=v1.1</NuGetTargetMoniker>
       <Imports>netcoreapp1.1</Imports>
       <CompatibleWith>netstandard</CompatibleWith>
     </TargetGroups>
     <TargetGroups Include="netcoreapp1.2">
-      <PackageTargetFramework>netcoreapp1.2</PackageTargetFramework>
       <NuGetTargetMoniker>.NETCoreApp,Version=v1.2</NuGetTargetMoniker>
     </TargetGroups>
     <TargetGroups Include="netcoreapp1.2corert">
-      <PackageTargetFramework>netcoreapp1.2</PackageTargetFramework>
       <NuGetTargetMoniker>.NETCoreApp,Version=v1.2</NuGetTargetMoniker>
     </TargetGroups>
     <TargetGroups Include="net45">
-      <PackageTargetFramework>net45</PackageTargetFramework>
       <TargetingPackNugetPackageId>Microsoft.TargetingPack.NETFramework.v4.5</TargetingPackNugetPackageId>
       <NuGetTargetMoniker>.NETFramework,Version=v4.5</NuGetTargetMoniker>
       <CompatibleWith>netstandard1.1</CompatibleWith>
     </TargetGroups>
     <TargetGroups Include="net451">
-      <PackageTargetFramework>net451</PackageTargetFramework>
       <TargetingPackNugetPackageId>Microsoft.TargetingPack.NETFramework.v4.5.1</TargetingPackNugetPackageId>
       <NuGetTargetMoniker>.NETFramework,Version=v4.5.1</NuGetTargetMoniker>
       <Imports>net45</Imports>
       <CompatibleWith>netstandard1.2</CompatibleWith>
     </TargetGroups>
     <TargetGroups Include="net46">
-      <PackageTargetFramework>net46</PackageTargetFramework>
       <TargetingPackNugetPackageId>Microsoft.TargetingPack.NETFramework.v4.6</TargetingPackNugetPackageId>
       <NuGetTargetMoniker>.NETFramework,Version=v4.6</NuGetTargetMoniker>
       <Imports>net451</Imports>
       <CompatibleWith>netstandard1.3</CompatibleWith>
     </TargetGroups>
     <TargetGroups Include="net461">
-      <PackageTargetFramework>net461</PackageTargetFramework>
       <TargetingPackNugetPackageId>Microsoft.TargetingPack.NETFramework.v4.6.1</TargetingPackNugetPackageId>
       <NuGetTargetMoniker>.NETFramework,Version=v4.6.1</NuGetTargetMoniker>
       <Imports>net46</Imports>
       <CompatibleWith>netstandard1.4</CompatibleWith>
     </TargetGroups>
     <TargetGroups Include="net462">
-      <PackageTargetFramework>net462</PackageTargetFramework>
       <TargetingPackNugetPackageId>Microsoft.TargetingPack.NETFramework.v4.6.2</TargetingPackNugetPackageId>
       <NuGetTargetMoniker>.NETFramework,Version=v4.6.2</NuGetTargetMoniker>
       <Imports>net461</Imports>
       <CompatibleWith>netstandard1.5</CompatibleWith>
     </TargetGroups>
     <TargetGroups Include="net463">
-      <PackageTargetFramework>net463</PackageTargetFramework>
       <TargetingPackNugetPackageId>Microsoft.TargetingPack.NETFramework.v4.6.3</TargetingPackNugetPackageId>
       <NuGetTargetMoniker>.NETFramework,Version=v4.6.3</NuGetTargetMoniker>
       <Imports>net462</Imports>
       <CompatibleWith>netstandard1.7</CompatibleWith>
     </TargetGroups>
     <TargetGroups Include="netfx">
-      <PackageTargetFramework>net463</PackageTargetFramework>
       <TargetingPackNugetPackageId>Microsoft.TargetingPack.NETFramework.v4.6.3</TargetingPackNugetPackageId>
       <NuGetTargetMoniker>.NETFramework,Version=v4.6.3</NuGetTargetMoniker>
       <Imports>net463</Imports>
       <CompatibleWith>netstandard1.7</CompatibleWith>
     </TargetGroups>
     <TargetGroups Include="win8">
-      <PackageTargetFramework>win8</PackageTargetFramework>
       <NuGetTargetMoniker>Windows,Version=v8.0</NuGetTargetMoniker>
     </TargetGroups>
     <TargetGroups Include="wpa81">
-      <PackageTargetFramework>wpa81</PackageTargetFramework>
       <NuGetTargetMoniker>WindowsPhoneApp,Version=v8.1</NuGetTargetMoniker>
     </TargetGroups>
     <TargetGroups Include="uap101aot">
-      <PackageTargetFramework>uap10.1</PackageTargetFramework>
       <PackageTargetRuntime>aot</PackageTargetRuntime>
       <NuGetTargetMoniker>UAP,Version=v10.1</NuGetTargetMoniker>
     </TargetGroups>
     <TargetGroups Include="uap101">
-      <PackageTargetFramework>uap10.1</PackageTargetFramework>
       <NuGetTargetMoniker>UAP,Version=v10.1</NuGetTargetMoniker>
     </TargetGroups>
     <TargetGroups Include="portable_net45+win8+sl5">
-      <PackageTargetFramework>portable-net45+win8+sl5</PackageTargetFramework>
       <NuGetTargetMoniker>.NETPortable,Version=v0.0,Profile=Profile47</NuGetTargetMoniker>
     </TargetGroups>
     <TargetGroups Include="portable_net40+sl4+win8+wp8">
-      <PackageTargetFramework>portable-net40+sl4+win8+wp8</PackageTargetFramework>
       <NuGetTargetMoniker>.NETPortable,Version=v0.0,Profile=Profile36</NuGetTargetMoniker>
     </TargetGroups>
   </ItemGroup>
