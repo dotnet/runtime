@@ -174,7 +174,7 @@
         "scriptType": "inlineScript",
         "scriptName": "",
         "arguments": "-ghAuthToken $(UpdatePublishedVersions.AuthToken) -root $(Pipeline.SourcesDirectory) -cg $(PB_ConfigurationGroup)",
-        "inlineScript": "param($ghAuthToken, $root, $cg)\nif ($cg -ne \"Release\") { exit }\ncd $root\n. $root\\UpdatePublishedVersions.ps1 `\n  -gitHubUser dotnet-helix-bot -gitHubEmail dotnet-helix-bot@microsoft.com `\n  -gitHubAuthToken $ghAuthToken`\n  -versionsRepoOwner $env:PB_VersionsRepoOwner -versionsRepo versions `\n  -versionsRepoPath build-info/dotnet/$env:PB_GitHubRepositoryName/$env:SourceBranch `\n  -nupkgPath $root\\packages\\AzureTransfer\\$cg\\$env:PB_AzureContainerPackageGlob",
+        "inlineScript": "param($ghAuthToken, $root, $cg)\nif ($cg -ne \"Release\") { exit }\ncd $root\n. $root\\UpdatePublishedVersions.ps1 `\n  -gitHubUser dotnet-helix-bot -gitHubEmail dotnet-helix-bot@microsoft.com `\n  -gitHubAuthToken $ghAuthToken `\n  -versionsRepoOwner $env:PB_VersionsRepoOwner -versionsRepo versions `\n  -versionsRepoPath build-info/dotnet/$env:PB_GitHubRepositoryName/$env:SourceBranch `\n  -nupkgPath $root\\packages\\AzureTransfer\\$cg\\$env:PB_AzureContainerPackageGlob",
         "workingFolder": "",
         "failOnStandardError": "true"
       }
@@ -218,7 +218,8 @@
         "toLowerCase": "true",
         "detailedLog": "false",
         "usePat": "false",
-        "retentionDays": "30"
+        "retentionDays": "30",
+        "dropMetadataContainerName": "DropMetadata"
       }
     },
     {
