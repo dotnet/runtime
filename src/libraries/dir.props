@@ -159,7 +159,7 @@
     <NativeBinDir>$(BinDir)$(OSGroup).$(ArchGroup).$(ConfigurationGroup)/native</NativeBinDir>
   </PropertyGroup>
 
-  <Import Project="$(BuildConfigurationImportFile)" Condition="Exists('$(BuildConfigurationImportFile)')" />
+  <Import Project="$(BuildConfigurationImportFile)" Condition="'$(SkipBuildConfigurationImport)' != 'true' and Exists('$(BuildConfigurationImportFile)')" />
 
   <!-- Set up Default symbol and optimization for Configuration -->
   <Choose>
