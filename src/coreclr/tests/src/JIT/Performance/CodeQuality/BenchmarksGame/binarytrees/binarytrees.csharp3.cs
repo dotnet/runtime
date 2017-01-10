@@ -4,7 +4,8 @@
 /* The Computer Language Benchmarks Game
    http://benchmarksgame.alioth.debian.org/
 
-   contributed by Marek Safar
+   Based on code originally contributed by Marek Safar
+   and optimized by kasthack
 
    modified for use with xunit-performance
 */
@@ -20,7 +21,7 @@ using Xunit;
 
 namespace BenchmarksGame
 {
-public class BinaryTrees
+public class BinaryTrees3
 {
     private const int minDepth = 4;
     private const int Iterations = 1;
@@ -73,51 +74,37 @@ public class BinaryTrees
         return (t == -174785);
     }
 
-    private struct TreeNode
+    private class TreeNode
     {
-        private class Next
-        {
-            public TreeNode left, right;
-        }
-
-        private Next _next;
-        private int _item;
+        private TreeNode left, right;
+        private int item;
 
         private TreeNode(int item)
         {
-            _item = item;
-            _next = null;
+            this.item = item;
         }
 
         internal static TreeNode bottomUpTree(int item, int depth)
         {
-            if (depth > 0)
-            {
-                return new TreeNode(
-                     bottomUpTree(2 * item - 1, depth - 1)
-                   , bottomUpTree(2 * item, depth - 1)
-                   , item
-                   );
-            }
-            else
-            {
-                return new TreeNode(item);
-            }
+            TreeNode t;
+            ChildTreeNodes(out t, item, depth - 1);
+            return t;
         }
 
-        private TreeNode(TreeNode left, TreeNode right, int item)
+        static void ChildTreeNodes(out TreeNode node, int item, int depth)
         {
-            _next = new Next();
-            _next.left = left;
-            _next.right = right;
-            _item = item;
+            node = new TreeNode(item);
+            if ( depth > 0 )
+            {
+                ChildTreeNodes(out node.left, 2 * item - 1, depth - 1);
+                ChildTreeNodes(out node.right, 2 * item, depth - 1);
+            }
         }
 
         internal int itemCheck()
         {
-            // if necessary deallocate here
-            if (_next == null) return _item;
-            else return _item + _next.left.itemCheck() - _next.right.itemCheck();
+            if (right == null) return item;
+            else return item + left.itemCheck() - right.itemCheck();
         }
     }
 
