@@ -16,6 +16,8 @@
     <Compile Include="System\Configuration\DictionarySectionHandler.cs" />
     <Compile Include="System\Configuration\DpapiProtectedConfigurationProvider.cs" />
     <Compile Include="System\Configuration\IConfigurationSystem.cs" />
+    <Compile Include="System\Configuration\IdnElement.cs" />
+    <Compile Include="System\Configuration\Internal\DummyDisposable.cs" />
     <Compile Include="System\Configuration\IPersistComponentSettings.cs" />
     <Compile Include="System\Configuration\ApplicationSettingsBase.cs" />
     <Compile Include="System\Configuration\ApplicationScopedSettingAttribute.cs" />
@@ -234,6 +236,7 @@
     <Compile Include="System\Configuration\TypeUtil.cs" />
     <Compile Include="System\Configuration\Update.cs" />
     <Compile Include="System\Configuration\UpdateConfigHost.cs" />
+    <Compile Include="System\Configuration\UriSection.cs" />
     <Compile Include="System\Configuration\UrlPath.cs" />
     <Compile Include="System\Configuration\UserScopedSettingAttribute.cs" />
     <Compile Include="System\Configuration\UserSettingsGroup.cs" />
@@ -249,6 +252,7 @@
     <Compile Include="System\Configuration\SettingsPropertyValue.cs" />
     <Compile Include="System\Configuration\SettingsSerializeAs.cs" />
     <Compile Include="System\Configuration\NoSettingsVersionUpgradeAttribute.cs" />
+    <Compile Include="System\UriIdnScope.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

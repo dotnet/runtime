@@ -96,5 +96,11 @@ namespace System.Configuration.Internal
         Type GetConfigType(string typeName, bool throwOnError);
 
         string GetConfigTypeName(Type t);
+
+        bool IsTrustedConfigPath(string configPath);
+
+        bool IsFullTrustSectionWithoutAptcaAllowed(IInternalConfigRecord configRecord);
+
+        IDisposable Impersonate();
     }
 }

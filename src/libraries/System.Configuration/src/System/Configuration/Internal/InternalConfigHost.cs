@@ -297,5 +297,11 @@ namespace System.Configuration.Internal
         {
             return Path.IsPathRooted(streamName);
         }
+
+        public bool IsTrustedConfigPath(string configPath) => true;
+
+        public bool IsFullTrustSectionWithoutAptcaAllowed(IInternalConfigRecord configRecord) => true;
+
+        public IDisposable Impersonate() => new DummyDisposable();
     }
 }
