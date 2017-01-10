@@ -75,7 +75,9 @@ fi
 echo Running tests... Start time: $(date +"%T")
 echo Commands:
 [[TestRunCommandsEcho]]
+pushd $EXECUTION_DIR
 [[TestRunCommands]]
+popd
 test_exitcode=$?
 echo Finished running tests.  End time=$(date +"%T").  Return value was $test_exitcode
 # ========================= END Test Execution ===============================
