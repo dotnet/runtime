@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-
 using System;
 
 namespace System.ComponentModel
@@ -13,7 +12,6 @@ namespace System.ComponentModel
     ///       a simple,
     ///       transacted notification for batch initialization.</para>
     /// </summary>
-    [SRDescription("ISupportInitializeDescr")]
     public interface ISupportInitialize
     {
         /// <summary>
