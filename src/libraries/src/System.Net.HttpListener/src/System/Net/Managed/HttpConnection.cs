@@ -223,7 +223,7 @@ namespace System.Net
         {
             if (_responseStream == null)
             {
-                HttpListener listener = _context.Listener;
+                HttpListener listener = _context._listener;
 
                 if (listener == null)
                     return new HttpResponseStream(_stream, _context.Response, true);
@@ -291,7 +291,7 @@ namespace System.Net
                     Close(true);
                     return;
                 }
-                HttpListener listener = _context.Listener;
+                HttpListener listener = _context._listener;
                 if (_lastListener != listener)
                 {
                     RemoveConnection();
