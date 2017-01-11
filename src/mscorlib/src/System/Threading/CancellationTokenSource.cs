@@ -864,12 +864,19 @@ namespace System.Threading
         /// <param name="token2">The second <see cref="T:System.Threading.CancellationToken">CancellationToken</see> to observe.</param>
         /// <returns>A <see cref="T:System.Threading.CancellationTokenSource">CancellationTokenSource</see> that is linked 
         /// to the source tokens.</returns>
-        public static CancellationTokenSource CreateLinkedTokenSource(CancellationToken token1, CancellationToken token2)
-        {
-            return token1.CanBeCanceled || token2.CanBeCanceled ?
-                new LinkedCancellationTokenSource(token1, token2) :
-                new CancellationTokenSource();
-        }
+        public static CancellationTokenSource CreateLinkedTokenSource(CancellationToken token1, CancellationToken token2) =>
+            !token1.CanBeCanceled ? CreateLinkedTokenSource(token2) :
+            token2.CanBeCanceled ? new Linked2CancellationTokenSource(token1, token2) :
+            (CancellationTokenSource)new Linked1CancellationTokenSource(token1);
+
+        /// <summary>
+        /// Creates a <see cref="CancellationTokenSource"/> that will be in the canceled state
+        /// when any of the source tokens are in the canceled state.
+        /// </summary>
+        /// <param name="token">The first <see cref="T:System.Threading.CancellationToken">CancellationToken</see> to observe.</param>
+        /// <returns>A <see cref="CancellationTokenSource"/> that is linked to the source tokens.</returns>
+        internal static CancellationTokenSource CreateLinkedTokenSource(CancellationToken token) =>
+            token.CanBeCanceled ? new Linked1CancellationTokenSource(token) : new CancellationTokenSource();
 
         /// <summary>
         /// Creates a <see cref="T:System.Threading.CancellationTokenSource">CancellationTokenSource</see> that will be in the canceled state
@@ -884,14 +891,19 @@ namespace System.Threading
             if (tokens == null)
                 throw new ArgumentNullException(nameof(tokens));
 
-            if (tokens.Length == 0)
-                throw new ArgumentException(Environment.GetResourceString("CancellationToken_CreateLinkedToken_TokensIsEmpty"));
-
-            // a defensive copy is not required as the array has value-items that have only a single IntPtr field,
-            // hence each item cannot be null itself, and reads of the payloads cannot be torn.
-            Contract.EndContractBlock();
-
-            return new LinkedCancellationTokenSource(tokens);
+            switch (tokens.Length)
+            {
+                case 0:
+                    throw new ArgumentException(Environment.GetResourceString("CancellationToken_CreateLinkedToken_TokensIsEmpty"));
+                case 1:
+                    return CreateLinkedTokenSource(tokens[0]);
+                case 2:
+                    return CreateLinkedTokenSource(tokens[0], tokens[1]);
+                default:
+                    // a defensive copy is not required as the array has value-items that have only a single reference field,
+                    // hence each item cannot be null itself, and reads of the payloads cannot be torn.
+                    return new LinkedNCancellationTokenSource(tokens);
+            }
         }
 
 
@@ -907,35 +919,50 @@ namespace System.Threading
             }
         }
 
-        private sealed class LinkedCancellationTokenSource : CancellationTokenSource
+        private sealed class Linked1CancellationTokenSource : CancellationTokenSource
         {
-            private static readonly Action<object> s_linkedTokenCancelDelegate = 
+            private readonly CancellationTokenRegistration _reg1;
+
+            internal Linked1CancellationTokenSource(CancellationToken token1)
+            {
+                _reg1 = token1.InternalRegisterWithoutEC(LinkedNCancellationTokenSource.s_linkedTokenCancelDelegate, this);
+            }
+
+            protected override void Dispose(bool disposing)
+            {
+                if (!disposing || m_disposed) return;
+                _reg1.Dispose();
+                base.Dispose(disposing);
+            }
+        }
+
+        private sealed class Linked2CancellationTokenSource : CancellationTokenSource
+        {
+            private readonly CancellationTokenRegistration _reg1;
+            private readonly CancellationTokenRegistration _reg2;
+
+            internal Linked2CancellationTokenSource(CancellationToken token1, CancellationToken token2)
+            {
+                _reg1 = token1.InternalRegisterWithoutEC(LinkedNCancellationTokenSource.s_linkedTokenCancelDelegate, this);
+                _reg2 = token2.InternalRegisterWithoutEC(LinkedNCancellationTokenSource.s_linkedTokenCancelDelegate, this);
+            }
+
+            protected override void Dispose(bool disposing)
+            {
+                if (!disposing || m_disposed) return;
+                _reg1.Dispose();
+                _reg2.Dispose();
+                base.Dispose(disposing);
+            }
+        }
+
+        private sealed class LinkedNCancellationTokenSource : CancellationTokenSource
+        {
+            internal static readonly Action<object> s_linkedTokenCancelDelegate =
                 s => ((CancellationTokenSource)s).NotifyCancellation(throwOnFirstException: false); // skip ThrowIfDisposed() check in Cancel()
             private CancellationTokenRegistration[] m_linkingRegistrations;
 
-            internal LinkedCancellationTokenSource(CancellationToken token1, CancellationToken token2)
-            {
-                bool token2CanBeCanceled = token2.CanBeCanceled;
-
-                if (token1.CanBeCanceled)
-                {
-                    m_linkingRegistrations = new CancellationTokenRegistration[token2CanBeCanceled ? 2 : 1]; // there will be at least 1 and at most 2 linkings
-                    m_linkingRegistrations[0] = token1.InternalRegisterWithoutEC(s_linkedTokenCancelDelegate, this);
-                }
-
-                if (token2CanBeCanceled)
-                {
-                    int index = 1;
-                    if (m_linkingRegistrations == null)
-                    {
-                        m_linkingRegistrations = new CancellationTokenRegistration[1]; // this will be the only linking
-                        index = 0;
-                    }
-                    m_linkingRegistrations[index] = token2.InternalRegisterWithoutEC(s_linkedTokenCancelDelegate, this);
-                }
-            }
-
-            internal LinkedCancellationTokenSource(params CancellationToken[] tokens)
+            internal LinkedNCancellationTokenSource(params CancellationToken[] tokens)
             {
                 m_linkingRegistrations = new CancellationTokenRegistration[tokens.Length];
 
@@ -968,7 +995,6 @@ namespace System.Threading
 
                 base.Dispose(disposing);
             }
-
         }
     }
 
