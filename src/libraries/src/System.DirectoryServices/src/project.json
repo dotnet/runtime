@@ -13,7 +13,12 @@
         "System.Security.AccessControl": "4.4.0-beta-24911-02",
         "System.Security.Permissions": "4.4.0-beta-24911-02",
         "System.Security.Principal": "4.4.0-beta-24911-02",
-        "System.Security.Principal.Windows": "4.4.0-beta-24911-02"
+        "System.Security.Principal.Windows": "4.4.0-beta-24911-02",
+        "System.Threading.Thread": "4.4.0-beta-24911-02",
+        "System.Net.Primitives": "4.4.0-beta-24911-02",        
+        "System.Net.Security": "4.4.0-beta-24911-02",
+        "System.Net.NameResolution": "4.4.0-beta-24911-02",
+        "System.Xml.XmlDocument": "4.4.0-beta-24911-02"
       }
     },
     "net463": {

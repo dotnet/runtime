@@ -200,7 +200,7 @@ namespace System.DirectoryServices.Interop
                     return value;
 
                 case AdsType.ADSTYPE_INVALID:
-                    throw new InvalidOperationException(Res.GetString(Res.DSConvertTypeInvalid));
+                    throw new InvalidOperationException(SR.DSConvertTypeInvalid);
 
                 case AdsType.ADSTYPE_LARGE_INTEGER:
                     return LowInt64;
@@ -220,10 +220,10 @@ namespace System.DirectoryServices.Interop
                 case AdsType.ADSTYPE_TYPEDNAME:
                 case AdsType.ADSTYPE_REPLICAPOINTER:
                 case AdsType.ADSTYPE_UNKNOWN:
-                    return new NotImplementedException(Res.GetString(Res.DSAdsvalueTypeNYI, "0x" + Convert.ToString(adsvalue.dwType, 16)));
+                    return new NotImplementedException(String.Format(CultureInfo.CurrentCulture, SR.DSAdsvalueTypeNYI , "0x" + Convert.ToString(adsvalue.dwType, 16)));
 
                 default:
-                    return new ArgumentException(Res.GetString(Res.DSConvertFailed, "0x" + Convert.ToString(LowInt64, 16), "0x" + Convert.ToString(adsvalue.dwType, 16)));
+                    return new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.DSConvertFailed , "0x" + Convert.ToString(LowInt64, 16), "0x" + Convert.ToString(adsvalue.dwType, 16)));
             }
         }
 
@@ -279,7 +279,7 @@ namespace System.DirectoryServices.Interop
                     adsvalue.octetString.value = _pinnedHandle.AddrOfPinnedObject();
                     break;
                 default:
-                    throw new NotImplementedException(Res.GetString(Res.DSAdsvalueTypeNYI, "0x" + Convert.ToString((int)adsType, 16)));
+                    throw new NotImplementedException(String.Format(CultureInfo.CurrentCulture, SR.DSAdsvalueTypeNYI , "0x" + Convert.ToString((int)adsType, 16)));
             }
         }
     }

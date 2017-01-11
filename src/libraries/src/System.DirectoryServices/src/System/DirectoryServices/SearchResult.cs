@@ -16,7 +16,6 @@ namespace System.DirectoryServices
     ///    <para>Encapsulates a node in the Active Directory hierarchy 
     ///       that is returned during a search through <see cref='System.DirectoryServices.DirectorySearcher'/>.</para>
     /// </devdoc>
-    [DirectoryServicesPermission(SecurityAction.LinkDemand, Unrestricted = true)]
     public class SearchResult
     {
         private NetworkCredential _parentCredentials;

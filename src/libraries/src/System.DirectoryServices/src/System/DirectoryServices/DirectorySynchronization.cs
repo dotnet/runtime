@@ -70,7 +70,6 @@ namespace System.DirectoryServices
         /// </devdoc>
     	[
             DefaultValue(DirectorySynchronizationOptions.None),
-            DSDescriptionAttribute(Res.DSDirectorySynchronizationFlag)
         ]
         public DirectorySynchronizationOptions Option
         {

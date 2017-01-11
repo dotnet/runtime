@@ -31,7 +31,6 @@ namespace System.DirectoryServices.ActiveDirectory
         RedundantServerTopologyEnabled = 1024
     }
 
-    [DirectoryServicesPermission(SecurityAction.LinkDemand, Unrestricted = true)]
     public class ActiveDirectorySite : IDisposable
     {
         internal DirectoryContext context = null;
@@ -91,7 +90,7 @@ namespace System.DirectoryServices.ActiveDirectory
             catch (ActiveDirectoryObjectNotFoundException)
             {
                 // this is the case where the context is a config set and we could not find an ADAM instance in that config set
-                throw new ActiveDirectoryOperationException(Res.GetString(Res.ADAMInstanceNotFoundInConfigSet, context.Name));
+                throw new ActiveDirectoryOperationException(String.Format(CultureInfo.CurrentCulture, SR.ADAMInstanceNotFoundInConfigSet , context.Name));
             }
 
             try
@@ -106,7 +105,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 if (srchResult == null)
                 {
                     // no such site object
-                    throw new ActiveDirectoryObjectNotFoundException(Res.GetString(Res.DSNotFound), typeof(ActiveDirectorySite), siteName);
+                    throw new ActiveDirectoryObjectNotFoundException(SR.DSNotFound, typeof(ActiveDirectorySite), siteName);
                 }
                 // it is an existing site object
                 ActiveDirectorySite site = new ActiveDirectorySite(context, siteName, true);
@@ -117,7 +116,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 if (e.ErrorCode == unchecked((int)0x80072030))
                 {
                     // object is not found since we cannot even find the container in which to search
-                    throw new ActiveDirectoryObjectNotFoundException(Res.GetString(Res.DSNotFound), typeof(ActiveDirectorySite), siteName);
+                    throw new ActiveDirectoryObjectNotFoundException(SR.DSNotFound, typeof(ActiveDirectorySite), siteName);
                 }
                 else
                 {
@@ -162,7 +161,7 @@ namespace System.DirectoryServices.ActiveDirectory
             catch (ActiveDirectoryObjectNotFoundException)
             {
                 // this is the case where the context is a config set and we could not find an ADAM instance in that config set
-                throw new ActiveDirectoryOperationException(Res.GetString(Res.ADAMInstanceNotFoundInConfigSet, context.Name));
+                throw new ActiveDirectoryOperationException(String.Format(CultureInfo.CurrentCulture, SR.ADAMInstanceNotFoundInConfigSet , context.Name));
             }
             finally
             {
@@ -209,7 +208,7 @@ namespace System.DirectoryServices.ActiveDirectory
             {
                 // computer is not in a site
                 if (result == s_ERROR_NO_SITENAME)
-                    throw new ActiveDirectoryObjectNotFoundException(Res.GetString(Res.NoCurrentSite), typeof(ActiveDirectorySite), null);
+                    throw new ActiveDirectoryObjectNotFoundException(SR.NoCurrentSite, typeof(ActiveDirectorySite), null);
                 else
                     throw ExceptionHelper.GetExceptionFromErrorCode(result);
             }
@@ -706,7 +705,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     {
                         if (e.ErrorCode == unchecked((int)0x80072030))
                         {
-                            string message = Res.GetString(Res.NTDSSiteSetting, _name);
+                            string message = String.Format(CultureInfo.CurrentCulture, SR.NTDSSiteSetting , _name);
                             throw new ActiveDirectoryOperationException(message, e, 0x2030);
                         }
                         throw ExceptionHelper.GetExceptionFromCOMException(context, e);
@@ -758,7 +757,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     {
                         // SMTP transport is not supported on ADAM
                         if (IsADAM && (exception.ErrorCode == unchecked((int)0x8007202F)))
-                            throw new NotSupportedException(Res.GetString(Res.NotSupportTransportSMTP));
+                            throw new NotSupportedException(SR.NotSupportTransportSMTP);
 
                         // there is a bug in ADSI that when targeting ADAM, permissive modify control is not used.
                         if (exception.ErrorCode != unchecked((int)0x8007200A))
@@ -860,7 +859,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             if (!existing)
             {
-                throw new InvalidOperationException(Res.GetString(Res.CannotDelete));
+                throw new InvalidOperationException(SR.CannotDelete);
             }
             else
             {
@@ -1080,7 +1079,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             if (!existing)
             {
-                throw new InvalidOperationException(Res.GetString(Res.CannotGetObject));
+                throw new InvalidOperationException(SR.CannotGetObject);
             }
             else
             {
@@ -1120,21 +1119,21 @@ namespace System.DirectoryServices.ActiveDirectory
             // if target is not specified, then we determin the target from the logon credential, so if it is a local user context, it should fail
             if ((context.Name == null) && (!context.isRootDomain()))
             {
-                throw new ArgumentException(Res.GetString(Res.ContextNotAssociatedWithDomain), "context");
+                throw new ArgumentException(SR.ContextNotAssociatedWithDomain, "context");
             }
 
             // more validation for the context, if the target is not null, then it should be either forest name or server name
             if (context.Name != null)
             {
                 if (!(context.isRootDomain() || context.isServer() || context.isADAMConfigSet()))
-                    throw new ArgumentException(Res.GetString(Res.NotADOrADAM), "context");
+                    throw new ArgumentException(SR.NotADOrADAM, "context");
             }
 
             if (siteName == null)
                 throw new ArgumentNullException("siteName");
 
             if (siteName.Length == 0)
-                throw new ArgumentException(Res.GetString(Res.EmptyStringParameter), "siteName");
+                throw new ArgumentException(SR.EmptyStringParameter, "siteName");
         }
 
         private void GetSubnets()
@@ -1221,7 +1220,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     else
                     {
                         // should not happen
-                        string message = Res.GetString(Res.UnknownTransport, transportName);
+                        string message = String.Format(CultureInfo.CurrentCulture, SR.UnknownTransport , transportName);
                         throw new ActiveDirectoryOperationException(message);
                     }
 
@@ -1288,7 +1287,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     else
                     {
                         // should not happen
-                        string message = Res.GetString(Res.UnknownTransport, transport);
+                        string message = String.Format(CultureInfo.CurrentCulture, SR.UnknownTransport , transport);
                         throw new ActiveDirectoryOperationException(message);
                     }
 
