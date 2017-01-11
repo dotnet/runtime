@@ -367,8 +367,8 @@
     },
     {
       "enabled": true,
-      "continueOnError": false,
-      "alwaysRun": false,
+      "continueOnError": true,
+      "alwaysRun": true,
       "displayName": "Build solution corefx\\Tools\\scripts\\vstsagent\\cleanupagent.proj",
       "timeoutInMinutes": 0,
       "task": {
