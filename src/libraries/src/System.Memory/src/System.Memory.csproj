@@ -20,6 +20,7 @@
     <Compile Include="System\Span.cs" />
     <Compile Include="System\SpanExtensions.cs" />
     <Compile Include="System\SpanHelpers.cs" />
+    <Compile Include="System\SpanHelpers.T.cs" />
     <Compile Include="System\ThrowHelper.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' == 'true'">
