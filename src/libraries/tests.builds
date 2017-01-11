@@ -33,8 +33,8 @@
   </PropertyGroup>
 
   <!-- TODO: Can we move this archive test build to BuildTools -->
-  <UsingTask TaskName="ZipFileCreateFromDependencyLists" Condition="'$(ArchiveTests)' == 'true'" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll"/>
-  <Target Name="ArchiveTestBuild" Condition="'$(ArchiveTests)' == 'true'" AfterTargets="Build" >
+  <UsingTask TaskName="ZipFileCreateFromDependencyLists" Condition="'$(Platform)' == 'ARM64' and '$(ArchiveTests)' == 'true'" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll"/>
+  <Target Name="ArchiveTestBuild" Condition="'$(Platform)' == 'ARM64' and '$(ArchiveTests)' == 'true'" AfterTargets="Build" >
     <ItemGroup>
       <ExcludeFromArchive Include="nupkg$" />
       <ExcludeFromArchive Include="Microsoft.DotNet.BuildTools" />
@@ -42,14 +42,9 @@
       <TestDependencyListFile Include="$(BinDir)/TestDependencies/*.dependencylist.txt" />
     </ItemGroup>
 
-    <PropertyGroup>
-      <TestArchiveDir>$(TestWorkingDir)$(OSPlatformConfig)/archive/tests/</TestArchiveDir>
-      <TestArchiveDir Condition="'$(TestTFM)' != ''">$(TestArchiveDir)$(TestTFM)/</TestArchiveDir>
-    </PropertyGroup>
-
     <ZipFileCreateFromDependencyLists
       DependencyListFiles="@(TestDependencyListFile)"
-      DestinationArchive="$(TestArchiveDir)\Packages.zip"
+      DestinationArchive="$(TestWorkingDir)$(OSPlatformConfig)/archive/Packages.zip"
       RelativePathBaseDirectory="$(PackagesDir)"
       OverwriteDestination="true" />
   </Target>
