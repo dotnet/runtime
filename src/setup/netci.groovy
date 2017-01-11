@@ -70,7 +70,7 @@ platformList.each { platform ->
     Utilities.addGithubPRTriggerForBranch(newJob, branch, "${os} ${architecture} ${configuration} Build")
 
     ArchivalSettings settings = new ArchivalSettings();
-    def archiveString = ["tar.gz", "zip", "deb", "msi", "pkg", "exe", "nupkg"].collect { "artifacts/*/packages/*.${it},artifacts/*/corehost/*.${it},pkg/bin/packages/*.{it}" }.join(",")
+    def archiveString = ["tar.gz", "zip", "deb", "msi", "pkg", "exe", "nupkg"].collect { "artifacts/*/packages/*.${it},artifacts/*/corehost/*.${it},pkg/bin/packages/*.${it}" }.join(",")
     settings.addFiles(archiveString)
     settings.setArchiveOnSuccess()
     settings.setFailIfNothingArchived()
