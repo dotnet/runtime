@@ -217,6 +217,15 @@ namespace System.Runtime.Serialization.Formatters.Tests
         Purple
     }
 
+    [Serializable] public enum ByteEnum : byte { }
+    [Serializable] public enum SByteEnum : sbyte { }
+    [Serializable] public enum Int16Enum : short { }
+    [Serializable] public enum UInt16Enum : ushort { }
+    [Serializable] public enum Int32Enum : int { }
+    [Serializable] public enum UInt32Enum : uint { }
+    [Serializable] public enum Int64Enum : long { }
+    [Serializable] public enum UInt64Enum : ulong { }
+
     public struct NonSerializableStruct
     {
         public int Value;
