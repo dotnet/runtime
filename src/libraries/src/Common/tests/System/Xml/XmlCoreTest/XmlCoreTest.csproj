@@ -5,7 +5,6 @@
     <ProjectGuid>{89701565-F68B-46D9-BD78-95B0F052C50B}</ProjectGuid>
     <AssemblyName>XmlCoreTest</AssemblyName>
     <RootNamespace>XmlCoreTest.Common</RootNamespace>
-    <IsTestProject>true</IsTestProject>
     <NoWarn>0436</NoWarn>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">

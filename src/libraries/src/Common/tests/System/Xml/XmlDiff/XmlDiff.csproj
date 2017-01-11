@@ -5,7 +5,6 @@
     <ProjectGuid>{466D87DF-BDEC-4E6C-BACD-317D79B8EDBE}</ProjectGuid>
     <AssemblyName>XmlDiff</AssemblyName>
     <RootNamespace>System.Xml.XmlDiff</RootNamespace>
-    <IsTestProject>true</IsTestProject>
     <NoWarn>0436</NoWarn>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">

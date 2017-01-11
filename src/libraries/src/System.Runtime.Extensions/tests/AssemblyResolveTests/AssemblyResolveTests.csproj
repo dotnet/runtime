@@ -4,7 +4,6 @@
   <PropertyGroup>
     <ProjectGuid>ad83807c-8be5-4f27-85df-9793613233e1</ProjectGuid>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
-    <IsTestProject>true</IsTestProject>
     <NoWarn>0436</NoWarn>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
