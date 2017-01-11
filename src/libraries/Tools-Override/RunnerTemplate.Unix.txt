@@ -42,7 +42,7 @@ function copy_core_file_to_temp_location {
 
 if [ "$RUNTIME_PATH" == "" ]
 then
-echo error: RUNTIME_PATH is not defined.  Usage: $0 RUNTIME_PATH ExecutionDir
+echo error: RUNTIME_PATH is not defined.  Usage: $0 RUNTIME_PATH
 exit -1
 fi
 echo Using $RUNTIME_DIR as the test runtime folder.

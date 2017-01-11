@@ -119,7 +119,7 @@
         <UnixPlatformTestArchivesListFile>$(UnixTestArchivesRoot)/$(UnixPlatformConfig)-Test-Archive-List.txt</UnixPlatformTestArchivesListFile>
     </PropertyGroup>
 
-    <!-- This is where we craft our archive Listes. These will sit at the base of the uploaded package. -->
+    <!-- This is where we craft our archive Lists. These will sit at the base of the uploaded package. -->
     <WriteLinesToFile 
         File="$(OSPlatformTestArchivesListFile)"
         Lines="@(OSPlatformTestArchives -> '%(Filename)%(Extension)')"
@@ -500,6 +500,7 @@
         <RelativeBlobPath>Tracking/$(CorrelationFileName)</RelativeBlobPath>
       </CorrelationFile>
     </ItemGroup>
+    <MakeDir Directories="$(TestArchivesRoot)" />
     <WriteLinesToFile
         File="@(CorrelationFile)"
         Lines="$(GeneratedCorrelationId)"
