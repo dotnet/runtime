@@ -30,8 +30,8 @@
     <TestRuntimeDir>$(RuntimePath)</TestRuntimeDir>
     <TestRuntimeEnvVar Condition="'$(OS)' == 'Windows_NT'">%RUNTIME_PATH%\</TestRuntimeEnvVar>
     <TestRuntimeEnvVar Condition="'$(OS)' != 'Windows_NT'">$RUNTIME_PATH/</TestRuntimeEnvVar>
-    <TestHostExecutable Condition="'$(TestHostExecutable)' == '' And '$(OS)' == 'Windows_NT'">$(TestRuntimeEnvVar)corerun.exe</TestHostExecutable>
-    <TestHostExecutable Condition="'$(TestHostExecutable)' == '' And '$(OS)' != 'Windows_NT'">$(TestRuntimeEnvVar)corerun</TestHostExecutable>
+    <TestHostExecutablePath Condition="'$(TestHostExecutablePath)' == '' And '$(OS)' == 'Windows_NT'">$(TestRuntimeEnvVar)corerun.exe</TestHostExecutablePath>
+    <TestHostExecutablePath Condition="'$(TestHostExecutablePath)' == '' And '$(OS)' != 'Windows_NT'">$(TestRuntimeEnvVar)corerun</TestHostExecutablePath>
     <XunitExecutable Condition="'$(XunitExecutable)' == ''">$(TestRuntimeEnvVar)xunit.console.netcore.exe</XunitExecutable>
   </PropertyGroup>
 
@@ -51,11 +51,11 @@
     <XunitTestAssembly Condition="'$(XunitTestAssembly)' == ''">$(AssemblyName).dll</XunitTestAssembly>
     <XunitArguments>$(XunitTestAssembly) $(XunitOptions)</XunitArguments>
 
-    <TestProgram Condition="'$(TestHostExecutable)'!=''">$(TestHostExecutable)</TestProgram>
-    <TestArguments Condition="'$(TestHostExecutable)'!=''">$(XunitExecutable) $(XunitArguments)</TestArguments>
+    <TestProgram Condition="'$(TestHostExecutablePath)'!=''">$(TestHostExecutablePath)</TestProgram>
+    <TestArguments Condition="'$(TestHostExecutablePath)'!=''">$(XunitExecutable) $(XunitArguments)</TestArguments>
 
-    <TestProgram Condition="'$(TestHostExecutable)'==''">$(XunitExecutable)</TestProgram>
-    <TestArguments Condition="'$(TestHostExecutable)'==''">$(XunitArguments)</TestArguments>
+    <TestProgram Condition="'$(TestHostExecutablePath)'==''">$(XunitExecutable)</TestProgram>
+    <TestArguments Condition="'$(TestHostExecutablePath)'==''">$(XunitArguments)</TestArguments>
 
     <TestCommandLine Condition="'$(Performance)'!='true'">$(TestProgram) $(TestArguments) {XunitTraitOptions}</TestCommandLine>
   </PropertyGroup>
