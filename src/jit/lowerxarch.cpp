@@ -1957,7 +1957,7 @@ void Lowering::TreeNodeInfoInitBlockStore(GenTreeBlk* blkNode)
                     // series of 16-byte loads and stores.
                     blkNode->gtLsraInfo.internalFloatCount = 1;
                     blkNode->gtLsraInfo.addInternalCandidates(l, l->internalFloatRegCandidates());
-                    // Uses XMM reg for load and store and hence check to see whether AVX instructions 
+                    // Uses XMM reg for load and store and hence check to see whether AVX instructions
                     // are used for codegen, set ContainsAVX flag
                     SetContainsAVXFlags();
                 }
