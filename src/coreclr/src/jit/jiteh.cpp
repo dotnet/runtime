@@ -93,7 +93,7 @@ bool EHblkDsc::HasFinallyHandler()
 
 bool EHblkDsc::HasFaultHandler()
 {
-    return ebdHandlerType == EH_HANDLER_FAULT;
+    return (ebdHandlerType == EH_HANDLER_FAULT) || (ebdHandlerType == EH_HANDLER_FAULT_WAS_FINALLY);
 }
 
 bool EHblkDsc::HasFinallyOrFaultHandler()
