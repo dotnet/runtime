@@ -10701,7 +10701,7 @@ void CodeGen::genRestoreCalleeSavedFltRegs(unsigned lclFrameSize)
 void CodeGen::genVzeroupperIfNeeded(bool check256bitOnly /* = true*/)
 {
 #ifdef FEATURE_AVX_SUPPORT
-    if (compiler->getFloatingPointInstructionSet() == InstructionSet_AVX)
+    if (compiler->getSIMDInstructionSet() == InstructionSet_AVX)
     {
         if (check256bitOnly)
         {

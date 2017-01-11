@@ -4584,21 +4584,21 @@ void Lowering::SetMulOpCounts(GenTreePtr tree)
 // Contains256bitAVX flag when SIMD vector size is 32 bytes
 //
 // Arguments:
-//    isFloatingType    - true if it is floating type
-//    sizeOfSIMDVector  - SIMD Vector size
+//    isFloatingPointType   - true if it is floating point type
+//    sizeOfSIMDVector      - SIMD Vector size
 //
-void Lowering::SetContainsAVXFlags(bool isFloatingType /* = true */, unsigned sizeOfSIMDVector /* = 0*/)
+void Lowering::SetContainsAVXFlags(bool isFloatingPointType /* = true */, unsigned sizeOfSIMDVector /* = 0*/)
 {
 #ifdef FEATURE_AVX_SUPPORT
-    if (comp->getSIMDInstructionSet() == InstructionSet_AVX)
+    if (isFloatingPointType)
     {
-        if (isFloatingType)
+        if (comp->getFloatingPointInstructionSet() == InstructionSet_AVX)
         {
             comp->getEmitter()->SetContainsAVX(true);
-            if (sizeOfSIMDVector == 32)
-            {
-                comp->codeGen->getEmitter()->SetContains256bitAVX(true);
-            }
+        }
+        if (sizeOfSIMDVector == 32 && comp->getSIMDInstructionSet() == InstructionSet_AVX)
+        {
+            comp->getEmitter()->SetContains256bitAVX(true);
         }
     }
 #endif
