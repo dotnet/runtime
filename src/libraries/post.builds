@@ -7,7 +7,6 @@
 
   <Import Project="dir.props" />
   <Import Project="..\dir.targets" />
-  <Import Project="$(ToolsDir)Build.Post.targets" Condition="Exists('$(ToolsDir)Build.Post.targets')" />
 
   <!-- provides a hook for executing targets after the product and tests have been built -->
   <Target Name="Build" />

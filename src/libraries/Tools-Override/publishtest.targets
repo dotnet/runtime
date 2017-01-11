@@ -89,7 +89,9 @@
   </Target>
 
     <!-- archive the test binaries along with some supporting files -->
-  <Target Name="ArchiveTestBuild" Condition="'$(ArchiveTests)' == 'true'"  DependsOnTargets="RunTestsForProject">
+  <Target Name="ArchiveTestBuild"
+          Condition="'$(ArchiveTests)' == 'true'"
+          DependsOnTargets="GenerateTestExecutionScripts">
     <PropertyGroup>
       <TestArchiveDir>$(TestWorkingDir)$(OSPlatformConfig)/archive/tests/$(TargetOutputRelPath)</TestArchiveDir>
       <TestArchiveDir Condition="'$(TestTFM)' != ''">$(TestArchiveDir)$(TestTFM)/</TestArchiveDir>
