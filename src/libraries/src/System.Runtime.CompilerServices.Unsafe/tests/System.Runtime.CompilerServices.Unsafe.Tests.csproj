@@ -5,8 +5,8 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <UnsupportedPlatforms>Linux;NetBSD;OSX</UnsupportedPlatforms>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' " />
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'netstandard1.3_Windows_NT_Debug|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'netstandard1.3_Windows_NT_Release|AnyCPU' " />
   <ItemGroup>
     <Compile Include="UnsafeTests.cs" />
   </ItemGroup>
