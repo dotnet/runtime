@@ -234,7 +234,7 @@
     </CreateAzureContainer>
     <!-- now that we have a drop URI create the list of correlation payloads -->
     <ItemGroup>
-      <CorrelationPayloadUri Include="$(DropUri)$(Platform)$(ConfigurationGroup)/Packages.zip$(DropUriReadOnlyToken)" />
+      <CorrelationPayloadUri Include="$(DropUri)$(Platform)$(ConfigurationGroup)/$(TestRuntimeArchiveFilename)$(DropUriReadOnlyToken)" />
       <CorrelationPayloadUri Include="@(SupplementalPayload->'$(DropUri)%(RelativeBlobPath)$(DropUriReadOnlyToken)')" />
     </ItemGroup>
     <!-- flatten it into a property as msbuild chokes on @(CorrelationPayloadUri) in FunctionalTest.CorrelationPayloadUris :( -->
@@ -413,7 +413,7 @@
         OverwriteDestination="true" />
     <ItemGroup>
       <ForUpload Include="$(TestRuntimeArchiveFile)">
-        <RelativeBlobPath>$(Platform)$(ConfigurationGroup)/$(PackagesArchiveFilename)</RelativeBlobPath>
+        <RelativeBlobPath>$(Platform)$(ConfigurationGroup)/$(TestRuntimeArchiveFilename)</RelativeBlobPath>
       </ForUpload>
     </ItemGroup>
   </Target>
