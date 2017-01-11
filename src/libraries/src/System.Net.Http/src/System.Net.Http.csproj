@@ -30,6 +30,8 @@
   <ItemGroup>
     <Compile Include="Shims\Uri.cs" />
   </ItemGroup>
+
+  <!-- Common -->
   <ItemGroup>
     <Compile Include="System\Net\Http\ByteArrayContent.cs" />
     <Compile Include="System\Net\Http\ClientCertificateOption.cs" />
@@ -101,11 +103,24 @@
     <Compile Include="$(CommonPath)\System\Net\HttpVersionInternal.cs">
       <Link>Common\System\Net\HttpVersionInternal.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Mail\MailAddress.cs">
-      <Link>Common\System\Net\Mail\MailAddress.cs</Link>
+    <Compile Include="$(CommonPath)\System\IO\DelegatingStream.cs">
+      <Link>Common\System\IO\DelegatingStream.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Logging\NetEventSource.Common.cs">
+      <Link>Common\System\Net\Logging\NetEventSource.Common.cs</Link>
+    </Compile>
+  </ItemGroup>
+
+  <!-- Common, except for Windows net46 build -->
+  <ItemGroup Condition=" '$(TargetGroup)' != 'net46' ">
     <Compile Include="$(CommonPath)\System\Net\Mail\DomainLiteralReader.cs">
       <Link>Common\System\Net\Mail\DomainLiteralReader.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Mail\DotAtomReader.cs">
+      <Link>Common\System\Net\Mail\DotAtomReader.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Mail\MailAddress.cs">
+      <Link>Common\System\Net\Mail\MailAddress.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\Mail\MailAddressParser.cs">
       <Link>Common\System\Net\Mail\MailAddressParser.cs</Link>
@@ -119,28 +134,17 @@
     <Compile Include="$(CommonPath)\System\Net\Mail\QuotedStringFormatReader.cs">
       <Link>Common\System\Net\Mail\QuotedStringFormatReader.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Mail\DotAtomReader.cs">
-      <Link>Common\System\Net\Mail\DotAtomReader.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\System\Net\Mail\WhitespaceReader.cs">
       <Link>Common\System\Net\Mail\WhitespaceReader.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\IO\DelegatingStream.cs">
-      <Link>Common\System\IO\DelegatingStream.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Logging\NetEventSource.Common.cs">
-      <Link>Common\System\Net\Logging\NetEventSource.Common.cs</Link>
-    </Compile>
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' And '$(TargetGroup)' != 'uap101' ">
+
+  <!-- WinHTTP implementation -->
+  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' And '$(TargetGroup)' != 'uap101' And '$(TargetGroup)' != 'net46'">
     <Compile Include="System\Net\Http\HttpClientHandler.Windows.cs" />
   </ItemGroup>
-  <PropertyGroup Condition=" '$(TargetsWindows)' == 'true' And '$(TargetGroup)' == '' ">
+    <PropertyGroup Condition=" '$(TargetsWindows)' == 'true' And '$(TargetGroup)' == '' ">
     <DefineConstants>$(DefineConstants);HTTP_DLL</DefineConstants>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(TargetsWindows)' == 'true' And '$(TargetGroup)' == 'net46' ">
-    <DefineConstants>$(DefineConstants);HTTP_DLL;NET46</DefineConstants>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <!-- Compile the WinHttpHandler implementation into the System.Net.Http.dll binary.  This is a
          temporary solution to remove the cycle dependency between HttpClient and WinHttpHandler.
@@ -149,13 +153,30 @@
          HttpMessageHandler.cs. We also use the HTTP_DLL define to change public classes into
          internal ones to remove confusion if someone looks at the implementation dlls. They are
          public in the separate WinHttpHandler.dll binary.  -->
-  <Import Project="..\..\System.Net.Http.WinHttpHandler\src\System.Net.Http.WinHttpHandler.msbuild" Condition="'$(TargetsWindows)' == 'true' And '$(TargetGroup)' != 'uap101'" />
+  <Import Project="..\..\System.Net.Http.WinHttpHandler\src\System.Net.Http.WinHttpHandler.msbuild" Condition="'$(TargetsWindows)' == 'true' And '$(TargetGroup)' != 'uap101' And '$(TargetGroup)' != 'net46'" />
   <!--  For source files to be shown within the visual tree in Solution Explorer, the items must be
          included directly in the project file. We have the *.msbuild define the Compile items in a made
          up item called CompileItem and then just include it here. -->
-  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' And '$(TargetGroup)' != 'uap101' ">
+  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' And '$(TargetGroup)' != 'uap101' And '$(TargetGroup)' != 'net46' ">
     <Compile Include="@(CompileItem)" />
   </ItemGroup>
+
+  <!-- .Net Framework on Windows --> 
+  <PropertyGroup Condition=" '$(TargetsWindows)' == 'true' And '$(TargetGroup)' == 'net46' ">
+    <DefineConstants>$(DefineConstants);NET46</DefineConstants>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' And '$(TargetGroup)' == 'net46' ">
+    <Compile Include="AssemblyInfo.Net46.cs" />
+    <Compile Include="System\Net\Http\HttpClientHandler.Net46.cs" />
+    <TargetingPackReference Include="mscorlib" />
+    <TargetingPackReference Include="System" />
+    <TargetingPackReference Include="System.Core" />
+    <TargetingPackReference Include="System.Runtime" />
+  </ItemGroup>
+
+  <!-- Unix -->
   <PropertyGroup Condition=" '$(TargetsUnix)' == 'true' ">
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
@@ -346,12 +367,6 @@
     <Compile Include="netcore50\System\Net\CookieHelper.cs" />
     <Compile Include="netcore50\System\Net\HttpHandlerToFilter.cs" />
     <Compile Include="netcore50\System\Net\HttpClientHandler.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'net46'">
-    <TargetingPackReference Include="mscorlib" />
-    <TargetingPackReference Include="System" />
-    <TargetingPackReference Include="System.Core" />
-    <TargetingPackReference Include="System.Runtime" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
