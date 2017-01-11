@@ -150,7 +150,7 @@ void SetUseAVX(bool value)
     useAVXEncodings = value;
 }
 
-bool containsAVXInstruction;
+bool containsAVXInstruction = false;
 bool ContainsAVX()
 {
     return containsAVXInstruction;
@@ -160,7 +160,7 @@ void SetContainsAVX(bool value)
     containsAVXInstruction = value;
 }
 
-bool contains256bitAVXInstruction;
+bool contains256bitAVXInstruction = false;
 bool Contains256bitAVX()
 {
     return contains256bitAVXInstruction;
