@@ -4,7 +4,6 @@
   <PropertyGroup>
     <ProjectGuid>{8C19B991-41E9-4B38-9602-E19375397F1D}</ProjectGuid>
     <OutputType>Exe</OutputType>
-    <IsTestProject>true</IsTestProject>
     <NoWarn>0436</NoWarn>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->

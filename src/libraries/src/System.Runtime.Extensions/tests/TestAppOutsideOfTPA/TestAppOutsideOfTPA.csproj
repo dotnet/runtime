@@ -5,7 +5,6 @@
     <ProjectGuid>{C44B33E3-F89F-40B9-B353-D380C1524988}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
-    <IsTestProject>true</IsTestProject>
     <NoWarn>0436</NoWarn>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->

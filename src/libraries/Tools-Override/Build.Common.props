@@ -44,7 +44,7 @@
   
   <!-- Setting IsTestProject prior to Build.Common.targets -->
   <PropertyGroup>
-    <IsTestProject Condition="'$(IsTestProject)'=='' And $(MSBuildProjectName.EndsWith('.tests', StringComparison.OrdinalIgnoreCase))">true</IsTestProject>
+    <IsTestProject Condition="'$(IsTestProject)'=='' And ($(MSBuildProjectFullPath.Contains('\tests\')) OR $(MSBuildProjectFullPath.Contains('/tests/')))">true</IsTestProject>
   </PropertyGroup>
 
   <Import Project="$(MSBuildThisFileDirectory)Roslyn.Common.props" />

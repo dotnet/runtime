@@ -9,7 +9,6 @@
          Though this is an EXE it is built as netstandard and will be 
          published for a specific framework/runtime by a referencing project. -->
     <CopyNuGetImplementations>false</CopyNuGetImplementations>
-    <IsTestProject>true</IsTestProject>
     <NoWarn>3021</NoWarn>
   </PropertyGroup>
   <ItemGroup>
