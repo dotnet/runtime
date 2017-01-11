@@ -20743,39 +20743,39 @@ GenTreePtr Compiler::fgLegacyPerStatementLocalVarLiveness(GenTreePtr startNode, 
                 break;
 
             case GT_CLS_VAR:
-                // For Volatile indirection, first mutate GcHeap
+                // For Volatile indirection, first mutate GcHeap/ByrefExposed
                 // see comments in ValueNum.cpp (under case GT_CLS_VAR)
                 // This models Volatile reads as def-then-use of the heap.
                 // and allows for a CSE of a subsequent non-volatile read
                 if ((tree->gtFlags & GTF_FLD_VOLATILE) != 0)
                 {
                     // For any Volatile indirection, we must handle it as a
-                    // definition of GcHeap
-                    fgCurMemoryDef |= memoryKindSet(GcHeap);
+                    // definition of GcHeap/ByrefExposed
+                    fgCurMemoryDef |= memoryKindSet(GcHeap, ByrefExposed);
                 }
                 // If the GT_CLS_VAR is the lhs of an assignment, we'll handle it as a heap def, when we get to
                 // assignment.
                 // Otherwise, we treat it as a use here.
                 if ((tree->gtFlags & GTF_CLS_VAR_ASG_LHS) == 0)
                 {
-                    fgCurMemoryUse |= memoryKindSet(GcHeap);
+                    fgCurMemoryUse |= memoryKindSet(GcHeap, ByrefExposed);
                 }
                 break;
 
             case GT_IND:
-                // For Volatile indirection, first mutate GcHeap
+                // For Volatile indirection, first mutate GcHeap/ByrefExposed
                 // see comments in ValueNum.cpp (under case GT_CLS_VAR)
                 // This models Volatile reads as def-then-use of the heap.
                 // and allows for a CSE of a subsequent non-volatile read
                 if ((tree->gtFlags & GTF_IND_VOLATILE) != 0)
                 {
                     // For any Volatile indirection, we must handle it as a
-                    // definition of GcHeap
-                    fgCurMemoryDef |= memoryKindSet(GcHeap);
+                    // definition of GcHeap/ByrefExposed
+                    fgCurMemoryDef |= memoryKindSet(GcHeap, ByrefExposed);
                 }
 
                 // If the GT_IND is the lhs of an assignment, we'll handle it
-                // as a heap def, when we get to assignment.
+                // as a heap/byref def, when we get to assignment.
                 // Otherwise, we treat it as a use here.
                 if ((tree->gtFlags & GTF_IND_ASG_LHS) == 0)
                 {
@@ -20784,7 +20784,7 @@ GenTreePtr Compiler::fgLegacyPerStatementLocalVarLiveness(GenTreePtr startNode, 
                     GenTreePtr           addrArg         = tree->gtOp.gtOp1->gtEffectiveVal(/*commaOnly*/ true);
                     if (!addrArg->DefinesLocalAddr(this, /*width doesn't matter*/ 0, &dummyLclVarTree, &dummyIsEntire))
                     {
-                        fgCurMemoryUse |= memoryKindSet(GcHeap);
+                        fgCurMemoryUse |= memoryKindSet(GcHeap, ByrefExposed);
                     }
                     else
                     {
@@ -20801,22 +20801,23 @@ GenTreePtr Compiler::fgLegacyPerStatementLocalVarLiveness(GenTreePtr startNode, 
                 unreached();
                 break;
 
-            // We'll assume these are use-then-defs of GcHeap.
+            // We'll assume these are use-then-defs of GcHeap/ByrefExposed.
             case GT_LOCKADD:
             case GT_XADD:
             case GT_XCHG:
             case GT_CMPXCHG:
-                fgCurMemoryUse |= memoryKindSet(GcHeap);
-                fgCurMemoryDef |= memoryKindSet(GcHeap);
-                fgCurMemoryHavoc |= memoryKindSet(GcHeap);
+                fgCurMemoryUse |= memoryKindSet(GcHeap, ByrefExposed);
+                fgCurMemoryDef |= memoryKindSet(GcHeap, ByrefExposed);
+                fgCurMemoryHavoc |= memoryKindSet(GcHeap, ByrefExposed);
                 break;
 
             case GT_MEMORYBARRIER:
-                // Simliar to any Volatile indirection, we must handle this as a definition of GcHeap
-                fgCurMemoryDef |= memoryKindSet(GcHeap);
+                // Simliar to any Volatile indirection, we must handle this as a definition of GcHeap/ByrefExposed
+                fgCurMemoryDef |= memoryKindSet(GcHeap, ByrefExposed);
                 break;
 
-            // For now, all calls read/write GcHeap, the latter in its entirety.  Might tighten this case later.
+            // For now, all calls read/write GcHeap/ByrefExposed, writes in their entirety.  Might tighten this case
+            // later.
             case GT_CALL:
             {
                 GenTreeCall* call    = tree->AsCall();
@@ -20832,9 +20833,9 @@ GenTreePtr Compiler::fgLegacyPerStatementLocalVarLiveness(GenTreePtr startNode, 
                 }
                 if (modHeap)
                 {
-                    fgCurMemoryUse |= memoryKindSet(GcHeap);
-                    fgCurMemoryDef |= memoryKindSet(GcHeap);
-                    fgCurMemoryHavoc |= memoryKindSet(GcHeap);
+                    fgCurMemoryUse |= memoryKindSet(GcHeap, ByrefExposed);
+                    fgCurMemoryDef |= memoryKindSet(GcHeap, ByrefExposed);
+                    fgCurMemoryHavoc |= memoryKindSet(GcHeap, ByrefExposed);
                 }
             }
 
@@ -20866,14 +20867,26 @@ GenTreePtr Compiler::fgLegacyPerStatementLocalVarLiveness(GenTreePtr startNode, 
 
             default:
 
-                // Determine whether it defines a GC heap location.
+                // Determine what memory kinds it defines.
                 if (tree->OperIsAssignment() || tree->OperIsBlkOp())
                 {
                     GenTreeLclVarCommon* dummyLclVarTree = NULL;
-                    if (!tree->DefinesLocal(this, &dummyLclVarTree))
+                    if (tree->DefinesLocal(this, &dummyLclVarTree))
                     {
-                        // If it doesn't define a local, then it might update the GC heap.
-                        fgCurMemoryDef |= memoryKindSet(GcHeap);
+                        if (lvaVarAddrExposed(dummyLclVarTree->gtLclNum))
+                        {
+                            fgCurMemoryDef |= memoryKindSet(ByrefExposed);
+
+                            // We've found a store that modifies ByrefExposed
+                            // memory but not GcHeap memory, so track their
+                            // states separately.
+                            byrefStatesMatchGcHeapStates = false;
+                        }
+                    }
+                    else
+                    {
+                        // If it doesn't define a local, then it might update GcHeap/ByrefExposed.
+                        fgCurMemoryDef |= memoryKindSet(GcHeap, ByrefExposed);
                     }
                 }
 

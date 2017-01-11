@@ -147,11 +147,13 @@ struct EntryState
 // Enumeration of the kinds of memory whose state changes the compiler tracks
 enum MemoryKind
 {
-    GcHeap = 0,      // Includes actual GC heap, and also static fields
-    MemoryKindCount, // Number of MemoryKinds
+    ByrefExposed = 0, // Includes anything byrefs can read/write (everything in GcHeap, address-taken locals,
+                      //                                          unmanaged heap, callers' locals, etc.)
+    GcHeap,           // Includes actual GC heap, and also static fields
+    MemoryKindCount,  // Number of MemoryKinds
 };
 #ifdef DEBUG
-const char* const memoryKindNames[] = {"GcHeap"};
+const char* const memoryKindNames[] = {"ByrefExposed", "GcHeap"};
 #endif // DEBUG
 
 // Bitmask describing a set of memory kinds (usable in bitfields)

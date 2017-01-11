@@ -823,6 +823,20 @@ void SsaBuilder::InsertPhiFunctions(BasicBlock** postOrder, int count)
 
                 for (MemoryKind memoryKind : allMemoryKinds())
                 {
+                    if ((memoryKind == GcHeap) && m_pCompiler->byrefStatesMatchGcHeapStates)
+                    {
+                        // Share the PhiFunc with ByrefExposed.
+                        assert(memoryKind > ByrefExposed);
+                        bbInDomFront->bbMemorySsaPhiFunc[memoryKind] = bbInDomFront->bbMemorySsaPhiFunc[ByrefExposed];
+                        continue;
+                    }
+
+                    // Check if this memoryKind is defined in this block.
+                    if ((block->bbMemoryDef & memoryKindSet(memoryKind)) == 0)
+                    {
+                        continue;
+                    }
+
                     // Check if memoryKind is live into block "*iterBlk".
                     if ((bbInDomFront->bbMemoryLiveIn & memoryKindSet(memoryKind)) == 0)
                     {
@@ -964,23 +978,55 @@ void SsaBuilder::TreeRenameVariables(GenTree* tree, BasicBlock* block, SsaRename
             if (m_pCompiler->ehBlockHasExnFlowDsc(block))
             {
                 GenTreeLclVarCommon* lclVarNode;
-                if (!tree->DefinesLocal(m_pCompiler, &lclVarNode))
+
+                bool isLocal            = tree->DefinesLocal(m_pCompiler, &lclVarNode);
+                bool isAddrExposedLocal = isLocal && m_pCompiler->lvaVarAddrExposed(lclVarNode->gtLclNum);
+                bool hasByrefHavoc      = ((block->bbMemoryHavoc & memoryKindSet(ByrefExposed)) != 0);
+                if (!isLocal || (isAddrExposedLocal && !hasByrefHavoc))
                 {
-                    // It *may* define the GC heap in a non-havoc way.  Make a new SSA # -- associate with this node.
+                    // It *may* define byref memory in a non-havoc way.  Make a new SSA # -- associate with this node.
                     unsigned count = pRenameState->CountForMemoryDef();
-                    pRenameState->PushMemory(GcHeap, block, count);
-                    m_pCompiler->GetMemorySsaMap(GcHeap)->Set(tree, count);
-#ifdef DEBUG
-                    if (JitTls::GetCompiler()->verboseSsa)
+                    if (!hasByrefHavoc)
                     {
-                        printf("Node ");
-                        Compiler::printTreeID(tree);
-                        printf(" (in try block) may define GC heap; ssa # = %d.\n", count);
-                    }
+                        pRenameState->PushMemory(ByrefExposed, block, count);
+                        m_pCompiler->GetMemorySsaMap(ByrefExposed)->Set(tree, count);
+#ifdef DEBUG
+                        if (JitTls::GetCompiler()->verboseSsa)
+                        {
+                            printf("Node ");
+                            Compiler::printTreeID(tree);
+                            printf(" (in try block) may define memory; ssa # = %d.\n", count);
+                        }
 #endif // DEBUG
 
-                    // Now add this SSA # to all phis of the reachable catch blocks.
-                    AddMemoryDefToHandlerPhis(GcHeap, block, count);
+                        // Now add this SSA # to all phis of the reachable catch blocks.
+                        AddMemoryDefToHandlerPhis(ByrefExposed, block, count);
+                    }
+
+                    if (!isLocal)
+                    {
+                        // Add a new def for GcHeap as well
+                        if (m_pCompiler->byrefStatesMatchGcHeapStates)
+                        {
+                            // GcHeap and ByrefExposed share the same stacks, SsaMap, and phis
+                            assert(!hasByrefHavoc);
+                            assert(pRenameState->CountForMemoryUse(GcHeap) == count);
+                            assert(*m_pCompiler->GetMemorySsaMap(GcHeap)->LookupPointer(tree) == count);
+                            assert(block->bbMemorySsaPhiFunc[GcHeap] == block->bbMemorySsaPhiFunc[ByrefExposed]);
+                        }
+                        else
+                        {
+                            if (!hasByrefHavoc)
+                            {
+                                // Allocate a distinct defnum for the GC Heap
+                                count = pRenameState->CountForMemoryDef();
+                            }
+
+                            pRenameState->PushMemory(GcHeap, block, count);
+                            m_pCompiler->GetMemorySsaMap(GcHeap)->Set(tree, count);
+                            AddMemoryDefToHandlerPhis(GcHeap, block, count);
+                        }
+                    }
                 }
             }
         }
@@ -1191,6 +1237,21 @@ void SsaBuilder::AddMemoryDefToHandlerPhis(MemoryKind memoryKind, BasicBlock* bl
 
                 // Add "count" to the phi args of memoryKind.
                 BasicBlock::MemoryPhiArg*& handlerMemoryPhi = handler->bbMemorySsaPhiFunc[memoryKind];
+
+#if DEBUG
+                if (m_pCompiler->byrefStatesMatchGcHeapStates)
+                {
+                    // When sharing phis for GcHeap and ByrefExposed, callers should ask to add phis
+                    // for ByrefExposed only.
+                    assert(memoryKind != GcHeap);
+                    if (memoryKind == ByrefExposed)
+                    {
+                        // The GcHeap and ByrefExposed phi funcs should always be in sync.
+                        assert(handlerMemoryPhi == handler->bbMemorySsaPhiFunc[GcHeap]);
+                    }
+                }
+#endif
+
                 if (handlerMemoryPhi == BasicBlock::EmptyMemoryPhiDef)
                 {
                     handlerMemoryPhi = new (m_pCompiler) BasicBlock::MemoryPhiArg(count);
@@ -1210,6 +1271,12 @@ void SsaBuilder::AddMemoryDefToHandlerPhis(MemoryKind memoryKind, BasicBlock* bl
 
                 DBG_SSA_JITDUMP("   Added phi arg u:%d for %s to phi defn in handler block BB%02u.\n", count,
                                 memoryKindNames[memoryKind], memoryKind, handler->bbNum);
+
+                if ((memoryKind == ByrefExposed) && m_pCompiler->byrefStatesMatchGcHeapStates)
+                {
+                    // Share the phi between GcHeap and ByrefExposed.
+                    handler->bbMemorySsaPhiFunc[GcHeap] = handlerMemoryPhi;
+                }
             }
             unsigned tryInd = tryBlk->ebdEnclosingTryIndex;
             if (tryInd == EHblkDsc::NO_ENCLOSING_INDEX)
@@ -1236,14 +1303,25 @@ void SsaBuilder::BlockRenameVariables(BasicBlock* block, SsaRenameState* pRename
     // First handle the incoming memory states.
     for (MemoryKind memoryKind : allMemoryKinds())
     {
-        // Is there an Phi definition for memoryKind at the start of this block?
-        if (block->bbMemorySsaPhiFunc[memoryKind] != nullptr)
+        if ((memoryKind == GcHeap) && m_pCompiler->byrefStatesMatchGcHeapStates)
         {
-            unsigned count = pRenameState->CountForMemoryDef();
-            pRenameState->PushMemory(memoryKind, block, count);
+            // ByrefExposed and GcHeap share any phi this block may have,
+            assert(block->bbMemorySsaPhiFunc[memoryKind] == block->bbMemorySsaPhiFunc[ByrefExposed]);
+            // so we will have already allocated a defnum for it if needed.
+            assert(memoryKind > ByrefExposed);
+            assert(pRenameState->CountForMemoryUse(memoryKind) == pRenameState->CountForMemoryUse(ByrefExposed));
+        }
+        else
+        {
+            // Is there an Phi definition for memoryKind at the start of this block?
+            if (block->bbMemorySsaPhiFunc[memoryKind] != nullptr)
+            {
+                unsigned count = pRenameState->CountForMemoryDef();
+                pRenameState->PushMemory(memoryKind, block, count);
 
-            DBG_SSA_JITDUMP("Ssa # for %s phi on entry to BB%02u is %d.\n", memoryKindNames[memoryKind], block->bbNum,
-                            count);
+                DBG_SSA_JITDUMP("Ssa # for %s phi on entry to BB%02u is %d.\n", memoryKindNames[memoryKind],
+                                block->bbNum, count);
+            }
         }
 
         // Record the "in" Ssa # for memoryKind.
@@ -1275,11 +1353,23 @@ void SsaBuilder::BlockRenameVariables(BasicBlock* block, SsaRenameState* pRename
 
         // If the block defines memory, allocate an SSA variable for the final memory state in the block.
         // (This may be redundant with the last SSA var explicitly created, but there's no harm in that.)
-        if ((block->bbMemoryDef & memorySet) != 0)
+        if ((memoryKind == GcHeap) && m_pCompiler->byrefStatesMatchGcHeapStates)
         {
-            unsigned count = pRenameState->CountForMemoryDef();
-            pRenameState->PushMemory(memoryKind, block, count);
-            AddMemoryDefToHandlerPhis(memoryKind, block, count);
+            // We've already allocated the SSA num and propagated it to shared phis, if needed,
+            // when processing ByrefExposed.
+            assert(memoryKind > ByrefExposed);
+            assert(((block->bbMemoryDef & memorySet) != 0) ==
+                   ((block->bbMemoryDef & memoryKindSet(ByrefExposed)) != 0));
+            assert(pRenameState->CountForMemoryUse(memoryKind) == pRenameState->CountForMemoryUse(ByrefExposed));
+        }
+        else
+        {
+            if ((block->bbMemoryDef & memorySet) != 0)
+            {
+                unsigned count = pRenameState->CountForMemoryDef();
+                pRenameState->PushMemory(memoryKind, block, count);
+                AddMemoryDefToHandlerPhis(memoryKind, block, count);
+            }
         }
 
         // Record the "out" Ssa" # for memoryKind.
@@ -1353,6 +1443,20 @@ void SsaBuilder::AssignPhiNodeRhsVariables(BasicBlock* block, SsaRenameState* pR
             BasicBlock::MemoryPhiArg*& succMemoryPhi = succ->bbMemorySsaPhiFunc[memoryKind];
             if (succMemoryPhi != nullptr)
             {
+                if ((memoryKind == GcHeap) && m_pCompiler->byrefStatesMatchGcHeapStates)
+                {
+                    // We've already propagated the "out" number to the phi shared with ByrefExposed,
+                    // but still need to update bbMemorySsaPhiFunc to be in sync between GcHeap and ByrefExposed.
+                    assert(memoryKind > ByrefExposed);
+                    assert(block->bbMemorySsaNumOut[memoryKind] == block->bbMemorySsaNumOut[ByrefExposed]);
+                    assert((succ->bbMemorySsaPhiFunc[ByrefExposed] == succMemoryPhi) ||
+                           (succ->bbMemorySsaPhiFunc[ByrefExposed]->m_nextArg ==
+                            (succMemoryPhi == BasicBlock::EmptyMemoryPhiDef ? nullptr : succMemoryPhi)));
+                    succMemoryPhi = succ->bbMemorySsaPhiFunc[ByrefExposed];
+
+                    continue;
+                }
+
                 if (succMemoryPhi == BasicBlock::EmptyMemoryPhiDef)
                 {
                     succMemoryPhi = new (m_pCompiler) BasicBlock::MemoryPhiArg(block->bbMemorySsaNumOut[memoryKind]);
@@ -1492,6 +1596,19 @@ void SsaBuilder::AssignPhiNodeRhsVariables(BasicBlock* block, SsaRenameState* pR
                     BasicBlock::MemoryPhiArg*& handlerMemoryPhi = handlerStart->bbMemorySsaPhiFunc[memoryKind];
                     if (handlerMemoryPhi != nullptr)
                     {
+                        if ((memoryKind == GcHeap) && m_pCompiler->byrefStatesMatchGcHeapStates)
+                        {
+                            // We've already added the arg to the phi shared with ByrefExposed if needed,
+                            // but still need to update bbMemorySsaPhiFunc to stay in sync.
+                            assert(memoryKind > ByrefExposed);
+                            assert(block->bbMemorySsaNumOut[memoryKind] == block->bbMemorySsaNumOut[ByrefExposed]);
+                            assert(handlerStart->bbMemorySsaPhiFunc[ByrefExposed]->m_ssaNum ==
+                                   block->bbMemorySsaNumOut[memoryKind]);
+                            handlerMemoryPhi = handlerStart->bbMemorySsaPhiFunc[ByrefExposed];
+
+                            continue;
+                        }
+
                         if (handlerMemoryPhi == BasicBlock::EmptyMemoryPhiDef)
                         {
                             handlerMemoryPhi =
@@ -1534,6 +1651,12 @@ void SsaBuilder::BlockPopStacks(BasicBlock* block, SsaRenameState* pRenameState)
     // And for memory.
     for (MemoryKind memoryKind : allMemoryKinds())
     {
+        if ((memoryKind == GcHeap) && m_pCompiler->byrefStatesMatchGcHeapStates)
+        {
+            // GcHeap and ByrefExposed share a rename stack, so don't try
+            // to pop it a second time.
+            continue;
+        }
         pRenameState->PopBlockMemoryStack(memoryKind, block);
     }
 }
@@ -1591,6 +1714,11 @@ void SsaBuilder::RenameVariables(BlkToBlkSetMap* domTree, SsaRenameState* pRenam
     assert(initMemoryCount == SsaConfig::FIRST_SSA_NUM);
     for (MemoryKind memoryKind : allMemoryKinds())
     {
+        if ((memoryKind == GcHeap) && m_pCompiler->byrefStatesMatchGcHeapStates)
+        {
+            // GcHeap shares its stack with ByrefExposed; don't re-push.
+            continue;
+        }
         pRenameState->PushMemory(memoryKind, m_pCompiler->fgFirstBB, initMemoryCount);
     }
 
@@ -1771,7 +1899,7 @@ void SsaBuilder::Build()
 
     // Rename local variables and collect UD information for each ssa var.
     SsaRenameState* pRenameState = new (jitstd::utility::allocate<SsaRenameState>(m_allocator), jitstd::placement_t())
-        SsaRenameState(m_allocator, m_pCompiler->lvaCount);
+        SsaRenameState(m_allocator, m_pCompiler->lvaCount, m_pCompiler->byrefStatesMatchGcHeapStates);
     RenameVariables(domTree, pRenameState);
     EndPhase(PHASE_BUILD_SSA_RENAME);
 

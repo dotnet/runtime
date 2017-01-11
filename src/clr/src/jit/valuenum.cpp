@@ -4750,6 +4750,16 @@ ValueNum Compiler::fgMemoryVNForLoopSideEffects(MemoryKind  memoryKind,
             }
         }
     }
+    else
+    {
+        // If there were any fields/elements modified, this should have been recorded as havoc
+        // for ByrefExposed.
+        assert(memoryKind == ByrefExposed);
+        assert((optLoopTable[loopNum].lpFieldsModified == nullptr) ||
+               optLoopTable[loopNum].lpLoopHasMemoryHavoc[memoryKind]);
+        assert((optLoopTable[loopNum].lpArrayElemTypesModified == nullptr) ||
+               optLoopTable[loopNum].lpLoopHasMemoryHavoc[memoryKind]);
+    }
 
 #ifdef DEBUG
     if (verbose)
