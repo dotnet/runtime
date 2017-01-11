@@ -9,7 +9,7 @@ using System.Runtime.CompilerServices;
 
 namespace System
 {
-    internal static class SpanHelpers
+    internal static partial class SpanHelpers
     {
         /// <summary>
         /// Computes "start + index * sizeof(T)", using the unsigned IntPtr-sized multiplication for 32 and 64 bits.
