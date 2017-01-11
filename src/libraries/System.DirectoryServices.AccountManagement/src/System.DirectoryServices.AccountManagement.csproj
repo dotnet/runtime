@@ -93,8 +93,5 @@
     <Compile Include="System\DirectoryServices\AccountManagement\IdentityReference.cs" />
     <Compile Include="System\DirectoryServices\AccountManagement\UnknownPrincipal.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <None Include="project.json" />
-  </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
