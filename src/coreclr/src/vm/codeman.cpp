@@ -1339,7 +1339,7 @@ void EEJitManager::SetCpuInfo()
                         CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_AVX);
                         if (maxCpuId >= 0x07)
                         {
-                            (void) getcpuid(0x07, buffer);
+                            (void) getextcpuid(0, 0x07, buffer);
                             if ((buffer[4]  & 0x20) != 0)
                             {
                                 CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_AVX2);
