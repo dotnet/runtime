@@ -898,8 +898,8 @@ bool emitter::emitInsCanOnlyWriteSSE2OrAVXReg(instrDesc* id)
     // The following SSE2 instructions write to a general purpose integer register.
     if (!IsSSEOrAVXInstruction(ins) || ins == INS_mov_xmm2i || ins == INS_cvttsd2si
 #ifndef LEGACY_BACKEND
-        || ins == INS_cvttss2si || ins == INS_cvtsd2si || ins == INS_cvtss2si
-        || ins == INS_pmovmskb || ins == INS_pextrw
+        || ins == INS_cvttss2si || ins == INS_cvtsd2si || ins == INS_cvtss2si || ins == INS_pmovmskb ||
+        ins == INS_pextrw
 #endif // !LEGACY_BACKEND
         )
     {
