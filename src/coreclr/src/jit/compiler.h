@@ -4678,6 +4678,8 @@ private:
     MemoryKindSet fgCurMemoryDef;   // True iff the current basic block modifies memory.
     MemoryKindSet fgCurMemoryHavoc; // True if  the current basic block is known to set memory to a "havoc" value.
 
+    bool byrefStatesMatchGcHeapStates; // True iff GcHeap and ByrefExposed memory have all the same def points.
+
     void fgMarkUseDef(GenTreeLclVarCommon* tree);
 
     void fgBeginScopeLife(VARSET_TP* inScope, VarScopeDsc* var);
@@ -9036,6 +9038,12 @@ public:
     // state, all the possible memory states are possible initial states of the corresponding catch block(s).)
     NodeToUnsignedMap* GetMemorySsaMap(MemoryKind memoryKind)
     {
+        if (memoryKind == GcHeap && byrefStatesMatchGcHeapStates)
+        {
+            // Use the same map for GCHeap and ByrefExposed when their states match.
+            memoryKind = ByrefExposed;
+        }
+
         assert(memoryKind < MemoryKindCount);
         Compiler* compRoot = impInlineRoot();
         if (compRoot->m_memorySsaMap[memoryKind] == nullptr)

@@ -28,7 +28,9 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
  *
  * @params alloc The allocator class used to allocate jitstd data.
  */
-SsaRenameState::SsaRenameState(const jitstd::allocator<int>& alloc, unsigned lvaCount)
+SsaRenameState::SsaRenameState(const jitstd::allocator<int>& alloc,
+                               unsigned                      lvaCount,
+                               bool                          byrefStatesMatchGcHeapStates)
     : counts(nullptr)
     , stacks(nullptr)
     , definedLocs(alloc)
@@ -36,6 +38,7 @@ SsaRenameState::SsaRenameState(const jitstd::allocator<int>& alloc, unsigned lva
     , memoryCount(0)
     , lvaCount(lvaCount)
     , m_alloc(alloc)
+    , byrefStatesMatchGcHeapStates(byrefStatesMatchGcHeapStates)
 {
 }
 
