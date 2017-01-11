@@ -1114,17 +1114,19 @@ class FaultingExceptionFrame : public Frame
 {
     friend class CheckAsmOffsets;
 
-#if defined(_TARGET_X86_)
+#ifndef WIN64EXCEPTIONS
+#ifdef _TARGET_X86_
     DWORD                   m_Esp;
     CalleeSavedRegisters    m_regs;
     TADDR                   m_ReturnAddress;
-#endif
-
-#ifdef WIN64EXCEPTIONS
+#else  // _TARGET_X86_
+    #error "Unsupported architecture"
+#endif // _TARGET_X86_
+#else // WIN64EXCEPTIONS
     BOOL                    m_fFilterExecuted;  // Flag for FirstCallToHandler
     TADDR                   m_ReturnAddress;
     T_CONTEXT               m_ctx;
-#endif // WIN64EXCEPTIONS
+#endif // !WIN64EXCEPTIONS
 
     VPTR_VTABLE_CLASS(FaultingExceptionFrame, Frame)
 
@@ -1156,13 +1158,17 @@ public:
         return FRAME_ATTR_EXCEPTION | FRAME_ATTR_FAULTED;
     }
 
-#if defined(_TARGET_X86_)
+#ifndef WIN64EXCEPTIONS
     CalleeSavedRegisters *GetCalleeSavedRegisters()
     {
+#ifdef _TARGET_X86_
         LIMITED_METHOD_DAC_CONTRACT;
         return &m_regs;
+#else
+        PORTABILITY_ASSERT("GetCalleeSavedRegisters");
+#endif // _TARGET_X86_
     }
-#endif
+#endif // WIN64EXCEPTIONS
 
 #ifdef WIN64EXCEPTIONS
     T_CONTEXT *GetExceptionContext ()

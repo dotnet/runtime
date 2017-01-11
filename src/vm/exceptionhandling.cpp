@@ -1293,7 +1293,11 @@ void ExceptionTracker::InitializeCurrentContextForCrawlFrame(CrawlFrame* pcfThis
         *(pRD->pCallerContext)      = *(pDispatcherContext->ContextRecord);
         pRD->IsCallerContextValid   = TRUE;
 
+#ifndef _TARGET_X86_
         pRD->SP = sfEstablisherFrame.SP;
+#else
+        pRD->Esp = sfEstablisherFrame.SP;
+#endif
         pRD->ControlPC = pDispatcherContext->ControlPc;
 
 #if defined(_TARGET_ARM_) || defined(_TARGET_ARM64_)    
