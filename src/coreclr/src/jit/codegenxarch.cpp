@@ -5005,13 +5005,10 @@ void CodeGen::genCallInstruction(GenTreePtr node)
     // When it's a PInvoke call and the call type is USER function, we issue VZEROUPPER here
     // if the function contains 256bit AVX instructions, this is to avoid AVX-256 to Legacy SSE
     // transition penalty, assuming the user function contains legacy SSE instruction
-    if (call->IsPInvoke() && call->gtCallType == CT_USER_FUNC &&
-        compiler->getFloatingPointInstructionSet() == InstructionSet_AVX)
+    if (call->IsPInvoke() && (call->gtCallType == CT_USER_FUNC) && getEmitter()->Contains256bitAVX())
     {
-        if (getEmitter()->Contains256bitAVX())
-        {
-            instGen(INS_vzeroupper);
-        }
+        assert(compiler->getSIMDInstructionSet() == InstructionSet_AVX);
+        instGen(INS_vzeroupper);
     }
 #endif
 
