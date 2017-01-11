@@ -18,6 +18,7 @@
 #include <mono/utils/mono-threads-coop.h>
 
 #include "mini.h"
+#include "lldb.h"
 
 /*
  * Address of the trampoline code.  This is used by the debugger to check
@@ -1436,10 +1437,17 @@ mono_get_trampoline_code (MonoTrampolineType tramp_type)
 gpointer
 mono_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_type, MonoDomain *domain, guint32 *code_len)
 {
+	gpointer code;
+	guint32 len;
+
 	if (mono_aot_only)
-		return mono_aot_create_specific_trampoline (mono_defaults.corlib, arg1, tramp_type, domain, code_len);
+		code = mono_aot_create_specific_trampoline (mono_defaults.corlib, arg1, tramp_type, domain, &len);
 	else
-		return mono_arch_create_specific_trampoline (arg1, tramp_type, domain, code_len);
+		code = mono_arch_create_specific_trampoline (arg1, tramp_type, domain, &len);
+	mono_lldb_save_specific_trampoline_info (arg1, tramp_type, domain, code, len);
+	if (code_len)
+		*code_len = len;
+	return code;
 }
 
 gpointer

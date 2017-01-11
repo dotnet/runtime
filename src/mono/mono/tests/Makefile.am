@@ -1794,6 +1794,11 @@ test-process-stress: $(PROCESS_STRESS_TESTS) test-runner.exe
 coreclr-gcstress:
 	$(MAKE) -C $(mono_build_root)/acceptance-tests coreclr-gcstress
 
+# Tests for the Mono lldb plugin
+EXTRA_DIST += test_lldb.py test-lldb.cs
+test-lldb: test-lldb.exe
+	python test_lldb.py $(JITTEST_PROG)
+
 noinst_LTLIBRARIES = libtest.la
 
 AM_CPPFLAGS = $(GLIB_CFLAGS)

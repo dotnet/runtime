@@ -464,7 +464,9 @@ common_sources = \
 	mini-cross-helpers.c \
 	arch-stubs.c		\
 	llvm-runtime.h	\
-	type-checking.c
+	type-checking.c \
+	lldb.h			\
+	lldb.c
 
 test_sources = 			\
 	basic-calls.cs 		\

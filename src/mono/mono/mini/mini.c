@@ -77,6 +77,7 @@
 #include "debugger-agent.h"
 #include "llvm-runtime.h"
 #include "mini-llvm.h"
+#include "lldb.h"
 
 MonoTraceSpec *mono_jit_trace_calls;
 MonoMethodDesc *mono_inject_async_exc_method;
@@ -3880,12 +3881,13 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 	}
 #endif
 
-	if (!cfg->compile_aot)
-		mono_save_xdebug_info (cfg);
-
 	MONO_TIME_TRACK (mono_jit_stats.jit_gc_create_gc_map, mini_gc_create_gc_map (cfg));
- 
 	MONO_TIME_TRACK (mono_jit_stats.jit_save_seq_point_info, mono_save_seq_point_info (cfg));
+
+	if (!cfg->compile_aot) {
+		mono_save_xdebug_info (cfg);
+		mono_lldb_save_method_info (cfg);
+	}
 
 	if (cfg->verbose_level >= 2) {
 		char *id =  mono_method_full_name (cfg->method, FALSE);

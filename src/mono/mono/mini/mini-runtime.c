@@ -81,6 +81,7 @@
 #include "mini-gc.h"
 #include "mini-llvm.h"
 #include "debugger-agent.h"
+#include "lldb.h"
 
 #ifdef MONO_ARCH_LLVM_SUPPORTED
 #ifdef ENABLE_LLVM
@@ -353,6 +354,15 @@ void *mono_global_codeman_reserve (int size)
 	}
 }
 
+/* The callback shouldn't take any locks */
+void
+mono_global_codeman_foreach (MonoCodeManagerFunc func, void *user_data)
+{
+	mono_jit_lock ();
+	mono_code_manager_foreach (global_codeman, func, user_data);
+	mono_jit_unlock ();
+}
+
 #if defined(__native_client_codegen__) && defined(__native_client__)
 void
 mono_nacl_gc()
@@ -481,6 +491,7 @@ mono_tramp_info_register (MonoTrampInfo *info, MonoDomain *domain)
 	mono_jit_unlock ();
 
 	mono_save_trampoline_xdebug_info (info);
+	mono_lldb_save_trampoline_info (info);
 
 	/* Only register trampolines that have unwind infos */
 	if (mono_get_root_domain () && copy->uw_info)
@@ -1940,6 +1951,7 @@ mono_jit_free_method (MonoDomain *domain, MonoMethod *method)
 		return;
 
 	mono_debug_remove_method (method, domain);
+	mono_lldb_remove_method (domain, method, ji);
 
 	mono_domain_lock (domain);
 	g_hash_table_remove (domain_jit_info (domain)->dynamic_code_hash, method);
@@ -3121,6 +3133,8 @@ mini_parse_debug_option (const char *option)
 		debug_options.dyn_runtime_invoke = TRUE;
 	else if (!strcmp (option, "gdb"))
 		debug_options.gdb = TRUE;
+	else if (!strcmp (option, "lldb"))
+		debug_options.lldb = TRUE;
 	else if (!strcmp (option, "explicit-null-checks"))
 		debug_options.explicit_null_checks = TRUE;
 	else if (!strcmp (option, "gen-seq-points"))
@@ -3567,6 +3581,11 @@ mini_init (const char *filename, const char *runtime_version)
 	mono_arch_init ();
 
 	mono_unwind_init ();
+
+	if (mini_get_debug_options ()->lldb || g_getenv ("MONO_LLDB")) {
+		mono_lldb_init ("");
+		mono_dont_free_domains = TRUE;
+	}
 
 #ifdef XDEBUG_ENABLED
 	if (g_getenv ("MONO_XDEBUG")) {
