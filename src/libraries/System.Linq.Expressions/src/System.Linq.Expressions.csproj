@@ -11,7 +11,7 @@
     <RootNamespace>System.Linq.Expressions</RootNamespace>
     <AssemblyVersion Condition="'$(TargetGroup)'=='netstandard1.6' Or '$(TargetGroup)'=='netstandard1.6'">4.1.1.0</AssemblyVersion>
     <ContractProject Condition="'$(AssemblyVersion)'=='4.1.1.0'">../ref/4.1.0/System.Linq.Expressions.depproj</ContractProject>
-    <IsInterpreting Condition="'$(PackageTargetFramework)' == 'netcore50'">true</IsInterpreting>
+    <IsInterpreting Condition="'$(TargetGroup)' == 'netcore50'">true</IsInterpreting>
     <DefineConstants Condition=" '$(IsInterpreting)' != 'true' ">$(DefineConstants);FEATURE_COMPILE</DefineConstants>
     <DefineConstants Condition=" '$(FeatureInterpret)' == 'true' ">$(DefineConstants);FEATURE_INTERPRET</DefineConstants>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net461'">true</IsPartialFacadeAssembly>

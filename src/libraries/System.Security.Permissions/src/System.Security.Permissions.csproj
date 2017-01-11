@@ -5,7 +5,6 @@
     <ProjectGuid>{07390899-C8F6-4E83-A3A9-6867B8CB46A0}</ProjectGuid>
     <RootNamespace>System.Security.Permissions</RootNamespace>
     <AssemblyName>System.Security.Permissions</AssemblyName>
-    <PackageTargetFramework Condition="'$(TargetGroup)' == 'netstandard'">netstandard</PackageTargetFramework>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <PackageAsRefAndLib Condition="'$(TargetGroup)' == 'net461'">true</PackageAsRefAndLib>
   </PropertyGroup>

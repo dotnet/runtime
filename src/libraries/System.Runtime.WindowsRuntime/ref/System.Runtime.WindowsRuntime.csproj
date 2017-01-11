@@ -26,6 +26,4 @@
     <ProjectReference Include="..\..\System.Threading.Tasks\ref\System.Threading.Tasks.csproj" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
-  <!-- Temporarily disable TFM validation until its fixed to ignore windows.winmd -->
-  <Target Name="ValidatePackageTargetFramework" />
 </Project>
