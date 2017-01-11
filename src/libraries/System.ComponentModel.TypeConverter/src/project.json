@@ -29,7 +29,6 @@
         "System.Runtime.InteropServices": "4.4.0-beta-24910-02",
         "System.Runtime.Serialization.Formatters": "4.4.0-beta-24910-02",
         "System.Runtime.Serialization.Primitives": "4.4.0-beta-24910-02",
-        "System.Security.Permissions": "4.4.0-beta-24910-02",
         "System.Text.RegularExpressions": "4.4.0-beta-24910-02",
         "System.Threading.Tasks": "4.4.0-beta-24910-02",
         "System.Threading.Timer": "4.4.0-beta-24910-02"
