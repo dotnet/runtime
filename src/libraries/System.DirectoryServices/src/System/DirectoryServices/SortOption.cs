@@ -47,7 +47,6 @@ namespace System.DirectoryServices
         /// </devdoc>
         [
             DefaultValue(null),
-            DSDescriptionAttribute(Res.DSSortName)
         ]
         public string PropertyName
         {
@@ -70,7 +69,6 @@ namespace System.DirectoryServices
         /// </devdoc>
         [
             DefaultValue(SortDirection.Ascending),
-            DSDescriptionAttribute(Res.DSSortDirection)
         ]
         public SortDirection Direction
         {

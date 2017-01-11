@@ -95,9 +95,9 @@ namespace System.DirectoryServices.ActiveDirectory
                 {
                     // win2k client machine does not support this
                     if ((Environment.OSVersion.Version.Major == 5) && (Environment.OSVersion.Version.Minor == 0))
-                        throw new PlatformNotSupportedException(Res.GetString(Res.DSNotSupportOnClient));
+                        throw new PlatformNotSupportedException(SR.DSNotSupportOnClient);
                     else
-                        throw new PlatformNotSupportedException(Res.GetString(Res.DSNotSupportOnDC));
+                        throw new PlatformNotSupportedException(SR.DSNotSupportOnDC);
                 }
             }
         }

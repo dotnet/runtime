@@ -7,6 +7,7 @@ namespace System.DirectoryServices.ActiveDirectory
     using System;
     using System.Diagnostics;
     using System.Runtime.InteropServices;
+    using System.Globalization;
 
     internal class PropertyManager
     {
@@ -143,11 +144,11 @@ namespace System.DirectoryServices.ActiveDirectory
                 {
                     if (directoryEntry.Properties[PropertyManager.DistinguishedName].Count != 0)
                     {
-                        throw new ActiveDirectoryOperationException(Res.GetString(Res.PropertyNotFoundOnObject, propertyName, directoryEntry.Properties[PropertyManager.DistinguishedName].Value));
+                        throw new ActiveDirectoryOperationException(String.Format(CultureInfo.CurrentCulture, SR.PropertyNotFoundOnObject , propertyName, directoryEntry.Properties[PropertyManager.DistinguishedName].Value));
                     }
                     else
                     {
-                        throw new ActiveDirectoryOperationException(Res.GetString(Res.PropertyNotFound, propertyName));
+                        throw new ActiveDirectoryOperationException(String.Format(CultureInfo.CurrentCulture, SR.PropertyNotFound , propertyName));
                     }
                 }
             }
@@ -171,7 +172,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 propertyValues = res.Properties[propertyName];
                 if ((propertyValues == null) || (propertyValues.Count < 1))
                 {
-                    throw new ActiveDirectoryOperationException(Res.GetString(Res.PropertyNotFound, propertyName));
+                    throw new ActiveDirectoryOperationException(String.Format(CultureInfo.CurrentCulture, SR.PropertyNotFound , propertyName));
                 }
             }
             catch (COMException e)

@@ -4,6 +4,7 @@
 
 namespace System.DirectoryServices.ActiveDirectory
 {
+#pragma warning disable BCL0015 // CoreFxPort
     using System;
     using System.Security;
     using System.Collections;
@@ -638,7 +639,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
         }
 
-        [ComImport, Guid("D592AED4-F420-11D0-A36E-00C04FB950DC"), InterfaceTypeAttribute(ComInterfaceType.InterfaceIsDual)]
+        [ComImport, Guid("D592AED4-F420-11D0-A36E-00C04FB950DC")]
         internal interface IAdsPathname
         {
             // HRESULT Set([in] BSTR bstrADsPath,  [in] long lnSetType);
@@ -684,7 +685,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-        [ComImport, Guid("C8F93DD3-4AE0-11CF-9E73-00AA004A5691"), InterfaceTypeAttribute(ComInterfaceType.InterfaceIsDual)]
+        [ComImport, Guid("C8F93DD3-4AE0-11CF-9E73-00AA004A5691")]
         internal interface IAdsProperty
         {
             //
@@ -731,20 +732,18 @@ namespace System.DirectoryServices.ActiveDirectory
 
             void SetInfo();
 
-            [return: MarshalAs(UnmanagedType.Struct)]
             Object Get([In, MarshalAs(UnmanagedType.BStr)] string bstrName);
 
             void Put([In, MarshalAs(UnmanagedType.BStr)] string bstrName,
-                        [In, MarshalAs(UnmanagedType.Struct)] Object vProp);
+                        [In] Object vProp);
 
-            [return: MarshalAs(UnmanagedType.Struct)]
             Object GetEx([In, MarshalAs(UnmanagedType.BStr)] String bstrName);
 
             void PutEx([In, MarshalAs(UnmanagedType.U4)] int lnControlCode,
                         [In, MarshalAs(UnmanagedType.BStr)] string bstrName,
-                        [In, MarshalAs(UnmanagedType.Struct)] Object vProp);
+                        [In] Object vProp);
 
-            void GetInfoEx([In, MarshalAs(UnmanagedType.Struct)] Object vProperties,
+            void GetInfoEx([In] Object vProperties,
                         [In, MarshalAs(UnmanagedType.U4)] int lnReserved);
 
             //
@@ -788,16 +787,14 @@ namespace System.DirectoryServices.ActiveDirectory
 
             bool MultiValued
             {
-                [return: MarshalAs(UnmanagedType.VariantBool)]
                 [SuppressUnmanagedCodeSecurityAttribute()]
                 get;
-                [param: MarshalAs(UnmanagedType.VariantBool)]
                 set;
             }
             object Qualifiers();
         }
 
-        [ComImport, Guid("C8F93DD0-4AE0-11CF-9E73-00AA004A5691"), InterfaceTypeAttribute(ComInterfaceType.InterfaceIsDual)]
+        [ComImport, Guid("C8F93DD0-4AE0-11CF-9E73-00AA004A5691")]
         internal interface IAdsClass
         {
             //
@@ -844,20 +841,18 @@ namespace System.DirectoryServices.ActiveDirectory
 
             void SetInfo();
 
-            [return: MarshalAs(UnmanagedType.Struct)]
             Object Get([In, MarshalAs(UnmanagedType.BStr)] string bstrName);
 
             void Put([In, MarshalAs(UnmanagedType.BStr)] string bstrName,
-                        [In, MarshalAs(UnmanagedType.Struct)] Object vProp);
+                        [In] Object vProp);
 
-            [return: MarshalAs(UnmanagedType.Struct)]
             Object GetEx([In, MarshalAs(UnmanagedType.BStr)] String bstrName);
 
             void PutEx([In, MarshalAs(UnmanagedType.U4)] int lnControlCode,
                         [In, MarshalAs(UnmanagedType.BStr)] string bstrName,
-                        [In, MarshalAs(UnmanagedType.Struct)] Object vProp);
+                        [In] Object vProp);
 
-            void GetInfoEx([In, MarshalAs(UnmanagedType.Struct)] Object vProperties,
+            void GetInfoEx([In] Object vProperties,
                         [In, MarshalAs(UnmanagedType.U4)] int lnReserved);
 
             //
@@ -889,85 +884,65 @@ namespace System.DirectoryServices.ActiveDirectory
 
             bool Abstract
             {
-                [return: MarshalAs(UnmanagedType.VariantBool)]
                 get;
-                [param: MarshalAs(UnmanagedType.VariantBool)]
                 set;
             }
 
             bool Auxiliary
             {
-                [return: MarshalAs(UnmanagedType.VariantBool)]
                 get;
-                [param: MarshalAs(UnmanagedType.VariantBool)]
                 set;
             }
 
             object MandatoryProperties
             {
-                [return: MarshalAs(UnmanagedType.Struct)]
                 [SuppressUnmanagedCodeSecurityAttribute()]
                 get;
-                [param: MarshalAs(UnmanagedType.Struct)]
                 set;
             }
 
             object OptionalProperties
             {
-                [return: MarshalAs(UnmanagedType.Struct)]
                 [SuppressUnmanagedCodeSecurityAttribute()]
                 get;
-                [param: MarshalAs(UnmanagedType.Struct)]
                 set;
             }
 
             object NamingProperties
             {
-                [return: MarshalAs(UnmanagedType.Struct)]
                 get;
-                [param: MarshalAs(UnmanagedType.Struct)]
                 set;
             }
 
             object DerivedFrom
             {
-                [return: MarshalAs(UnmanagedType.Struct)]
                 get;
-                [param: MarshalAs(UnmanagedType.Struct)]
                 set;
             }
 
             object AuxDerivedFrom
             {
-                [return: MarshalAs(UnmanagedType.Struct)]
                 [SuppressUnmanagedCodeSecurityAttribute()]
                 get;
-                [param: MarshalAs(UnmanagedType.Struct)]
                 set;
             }
 
             object PossibleSuperiors
             {
-                [return: MarshalAs(UnmanagedType.Struct)]
                 [SuppressUnmanagedCodeSecurityAttribute()]
                 get;
-                [param: MarshalAs(UnmanagedType.Struct)]
                 set;
             }
 
             object Containment
             {
-                [return: MarshalAs(UnmanagedType.Struct)]
                 get;
-                [param: MarshalAs(UnmanagedType.Struct)]
                 set;
             }
 
             bool Container
             {
-                [return: MarshalAs(UnmanagedType.VariantBool)]
                 get;
-                [param: MarshalAs(UnmanagedType.VariantBool)]
                 set;
             }
 

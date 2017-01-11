@@ -16,9 +16,6 @@ namespace System.DirectoryServices
     /// <devdoc>
     /// <para>Contains the properties on a <see cref='System.DirectoryServices.DirectoryEntry'/>.</para>
     /// </devdoc>
-    [
-        DirectoryServicesPermission(SecurityAction.LinkDemand, Unrestricted = true)
-    ]
     public class PropertyCollection : IDictionary
     {
         private DirectoryEntry _entry;
@@ -63,7 +60,7 @@ namespace System.DirectoryServices
             get
             {
                 if (!(_entry.AdsObject is UnsafeNativeMethods.IAdsPropertyList))
-                    throw new NotSupportedException(Res.GetString(Res.DSCannotCount));
+                    throw new NotSupportedException(SR.DSCannotCount);
 
                 _entry.FillCache("");
 
@@ -138,7 +135,7 @@ namespace System.DirectoryServices
         public IDictionaryEnumerator GetEnumerator()
         {
             if (!(_entry.AdsObject is UnsafeNativeMethods.IAdsPropertyList))
-                throw new NotSupportedException(Res.GetString(Res.DSCannotEmunerate));
+                throw new NotSupportedException(SR.DSCannotEmunerate);
 
             // Once an object has been used for an enumerator once, it can't be used again, because it only
             // maintains a single cursor. Re-bind to the ADSI object to get a new instance.
@@ -163,7 +160,7 @@ namespace System.DirectoryServices
 
             set
             {
-                throw new NotSupportedException(Res.GetString(Res.DSPropertySetSupported));
+                throw new NotSupportedException(SR.DSPropertySetSupported);
             }
         }
 
@@ -201,14 +198,14 @@ namespace System.DirectoryServices
         ///<internalonly/>
         void IDictionary.Add(object key, object value)
         {
-            throw new NotSupportedException(Res.GetString(Res.DSAddNotSupported));
+            throw new NotSupportedException(SR.DSAddNotSupported);
         }
 
         /// <include file='doc\PropertyCollection.uex' path='docs/doc[@for="PropertyCollection.IDictionary.Clear"]/*' />
         ///<internalonly/>
         void IDictionary.Clear()
         {
-            throw new NotSupportedException(Res.GetString(Res.DSClearNotSupported));
+            throw new NotSupportedException(SR.DSClearNotSupported);
         }
 
         /// <include file='doc\PropertyCollection.uex' path='docs/doc[@for="PropertyCollection.IDictionary.Contains"]/*' />
@@ -222,7 +219,7 @@ namespace System.DirectoryServices
         ///<internalonly/>
         void IDictionary.Remove(object key)
         {
-            throw new NotSupportedException(Res.GetString(Res.DSRemoveNotSupported));
+            throw new NotSupportedException(SR.DSRemoveNotSupported);
         }
 
         /// <include file='doc\PropertyCollection.uex' path='docs/doc[@for="PropertyCollection.IEnumerable.GetEnumerator"]/*' />
@@ -260,13 +257,13 @@ namespace System.DirectoryServices
                 throw new ArgumentNullException("array");
 
             if (array.Rank != 1)
-                throw new ArgumentException(Res.GetString(Res.OnlyAllowSingleDimension), "array");
+                throw new ArgumentException(SR.OnlyAllowSingleDimension, "array");
 
             if (index < 0)
-                throw new ArgumentOutOfRangeException(Res.GetString(Res.LessThanZero), "index");
+                throw new ArgumentOutOfRangeException(SR.LessThanZero, "index");
 
             if (((index + Count) > array.Length) || ((index + Count) < index))
-                throw new ArgumentException(Res.GetString(Res.DestinationArrayNotLargeEnough));
+                throw new ArgumentException(SR.DestinationArrayNotLargeEnough);
 
             foreach (PropertyValueCollection value in this)
             {
@@ -333,7 +330,7 @@ namespace System.DirectoryServices
                 get
                 {
                     if (_currentPropName == null)
-                        throw new InvalidOperationException(Res.GetString(Res.DSNoCurrentProperty));
+                        throw new InvalidOperationException(SR.DSNoCurrentProperty);
 
                     return new DictionaryEntry(_currentPropName, new PropertyValueCollection(_parentEntry, _currentPropName));
                 }
@@ -509,7 +506,7 @@ namespace System.DirectoryServices
                 get
                 {
                     if (_currentIndex == -1)
-                        throw new InvalidOperationException(Res.GetString(Res.DSNoCurrentValue));
+                        throw new InvalidOperationException(SR.DSNoCurrentValue);
                     return _currentIndex;
                 }
             }
