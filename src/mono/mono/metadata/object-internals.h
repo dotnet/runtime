@@ -286,6 +286,9 @@ typedef struct {
 	MonoObject *stub_data;
 } MonoRealProxy;
 
+/* Safely access System.Runtime.Remoting.Proxies.RealProxy from native code */
+TYPED_HANDLE_DECL (MonoRealProxy);
+
 typedef struct {
 	MonoMarshalByRefObject object;
 	gpointer iunknown;
@@ -1490,14 +1493,17 @@ MonoArray*
 ves_icall_array_new_specific (MonoVTable *vtable, uintptr_t n);
 
 #ifndef DISABLE_REMOTING
+MonoRemoteClass*
+mono_remote_class (MonoDomain *domain, MonoStringHandle class_name, MonoClass *proxy_class, MonoError *error);
+
 MonoObject *
 mono_remoting_invoke (MonoObject *real_proxy, MonoMethodMessage *msg, MonoObject **exc, MonoArray **out_args, MonoError *error);
 
 gpointer
-mono_remote_class_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, MonoRealProxy *real_proxy, MonoError *error);
+mono_remote_class_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, MonoRealProxyHandle real_proxy, MonoError *error);
 
 gboolean
-mono_upgrade_remote_class (MonoDomain *domain, MonoObject *tproxy, MonoClass *klass, MonoError *error);
+mono_upgrade_remote_class (MonoDomain *domain, MonoObjectHandle tproxy, MonoClass *klass, MonoError *error);
 
 void*
 mono_load_remote_field_checked (MonoObject *this_obj, MonoClass *klass, MonoClassField *field, void **res, MonoError *error);
@@ -1650,6 +1656,9 @@ mono_field_static_get_value_checked (MonoVTable *vt, MonoClassField *field, void
 void
 mono_field_static_get_value_for_thread (MonoInternalThread *thread, MonoVTable *vt, MonoClassField *field, void *value, MonoError *error);
 
+MonoMethod*
+mono_object_handle_get_virtual_method (MonoObjectHandle obj, MonoMethod *method, MonoError *error);
+
 /* exported, used by the debugger */
 MONO_API void *
 mono_vtable_get_static_field_data (MonoVTable *vt);
@@ -1723,8 +1732,11 @@ mono_object_clone_checked (MonoObject *obj, MonoError *error);
 MonoObject *
 mono_object_isinst_checked (MonoObject *obj, MonoClass *klass, MonoError *error);
 
-MonoObject *
-mono_object_isinst_mbyref_checked   (MonoObject *obj, MonoClass *klass, MonoError *error);
+MonoObjectHandle
+mono_object_handle_isinst (MonoObjectHandle obj, MonoClass *klass, MonoError *error);
+
+MonoObjectHandle
+mono_object_handle_isinst_mbyref (MonoObjectHandle obj, MonoClass *klass, MonoError *error);
 
 MonoString *
 mono_string_new_size_checked (MonoDomain *domain, gint32 len, MonoError *error);

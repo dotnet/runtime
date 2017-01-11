@@ -1852,14 +1852,15 @@ mono_marshal_get_proxy_cancast (MonoClass *klass)
 }
 
 void
-mono_upgrade_remote_class_wrapper (MonoReflectionType *rtype, MonoTransparentProxy *tproxy)
+mono_upgrade_remote_class_wrapper (MonoReflectionType *rtype_raw, MonoTransparentProxy *tproxy_raw)
 {
-	MonoError error;
-	MonoClass *klass;
-	MonoDomain *domain = ((MonoObject*)tproxy)->vtable->domain;
-	klass = mono_class_from_mono_type (rtype->type);
-	mono_upgrade_remote_class (domain, (MonoObject*)tproxy, klass, &error);
-	mono_error_set_pending_exception (&error);
+	ICALL_ENTRY ();
+	MONO_HANDLE_DCL (MonoReflectionType, rtype);
+	MONO_HANDLE_DCL (MonoTransparentProxy, tproxy);
+	MonoDomain *domain = MONO_HANDLE_DOMAIN (tproxy);
+	MonoClass *klass = mono_class_from_mono_type (MONO_HANDLE_GETVAL (rtype, type));
+	mono_upgrade_remote_class (domain, MONO_HANDLE_CAST (MonoObject, tproxy), klass, &error);
+	ICALL_RETURN ();
 }
 
 #else /* DISABLE_REMOTING */

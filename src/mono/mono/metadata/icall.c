@@ -1647,18 +1647,16 @@ ves_icall_RuntimeTypeHandle_type_is_assignable_from (MonoReflectionTypeHandle re
 }
 
 ICALL_EXPORT guint32
-ves_icall_RuntimeTypeHandle_IsInstanceOfType (MonoReflectionType *type, MonoObject *obj)
+ves_icall_RuntimeTypeHandle_IsInstanceOfType (MonoReflectionTypeHandle ref_type, MonoObjectHandle obj, MonoError *error)
 {
-	MonoError error;
-	MonoClass *klass = mono_class_from_mono_type (type->type);
-	mono_class_init_checked (klass, &error);
-	if (!is_ok (&error)) {
-		mono_error_set_pending_exception (&error);
-		return FALSE;
-	}
-	guint32 result = (mono_object_isinst_checked (obj, klass, &error) != NULL);
-	mono_error_set_pending_exception (&error);
-	return result;
+	mono_error_init (error);
+	MonoType *type = MONO_HANDLE_GETVAL (ref_type, type);
+	MonoClass *klass = mono_class_from_mono_type (type);
+	mono_class_init_checked (klass, error);
+	return_val_if_nok (error, FALSE);
+	MonoObjectHandle inst = mono_object_handle_isinst (obj, klass, error);
+	return_val_if_nok (error, FALSE);
+	return !MONO_HANDLE_IS_NULL (inst);
 }
 
 ICALL_EXPORT guint32
@@ -6336,44 +6334,46 @@ ves_icall_System_Buffer_BlockCopyInternal (MonoArray *src, gint32 src_offset, Mo
 }
 
 #ifndef DISABLE_REMOTING
-ICALL_EXPORT MonoObject *
-ves_icall_Remoting_RealProxy_GetTransparentProxy (MonoObject *this_obj, MonoString *class_name)
+ICALL_EXPORT MonoObjectHandle
+ves_icall_Remoting_RealProxy_GetTransparentProxy (MonoObjectHandle this_obj, MonoStringHandle class_name, MonoError *error)
 {
-	MonoError error;
-	MonoDomain *domain = mono_object_domain (this_obj); 
-	MonoObject *res;
-	MonoRealProxy *rp = ((MonoRealProxy *)this_obj);
-	MonoTransparentProxy *tp;
-	MonoType *type;
-	MonoClass *klass;
+	mono_error_init (error);
+	MonoDomain *domain = MONO_HANDLE_DOMAIN (this_obj);
+	MonoRealProxyHandle rp = MONO_HANDLE_CAST (MonoRealProxy, this_obj);
 
-	res = mono_object_new_checked (domain, mono_defaults.transparent_proxy_class, &error);
-	if (mono_error_set_pending_exception (&error))
-		return NULL;
+	MonoObjectHandle res = MONO_HANDLE_NEW (MonoObject, mono_object_new_checked (domain, mono_defaults.transparent_proxy_class, error));
+	if (!is_ok (error))
+		return NULL_HANDLE;
 
-	tp = (MonoTransparentProxy*) res;
+	MonoTransparentProxyHandle tp = MONO_HANDLE_CAST (MonoTransparentProxy, res);
 	
-	MONO_OBJECT_SETREF (tp, rp, rp);
-	type = ((MonoReflectionType *)rp->class_to_proxy)->type;
-	klass = mono_class_from_mono_type (type);
+	MONO_HANDLE_SET (tp, rp, rp);
+
+	MonoReflectionTypeHandle reftype = MONO_HANDLE_NEW (MonoReflectionType, NULL);
+	MONO_HANDLE_GET (reftype, rp, class_to_proxy);
+	MonoType *type = MONO_HANDLE_GETVAL (reftype, type);
+	MonoClass *klass = mono_class_from_mono_type (type);
 
 	// mono_remote_class_vtable cannot handle errors well, so force any loading error to occur early
 	mono_class_setup_vtable (klass);
 	if (mono_class_has_failure (klass)) {
-		mono_set_pending_exception (mono_class_get_exception_for_failure (klass));
-		return NULL;
+		mono_error_set_for_class_failure (error, klass);
+		return NULL_HANDLE;
 	}
 
-	tp->custom_type_info = (mono_object_isinst_checked (this_obj, mono_defaults.iremotingtypeinfo_class, &error) != NULL);
-	if (mono_error_set_pending_exception (&error))
-		return NULL;
-	tp->remote_class = mono_remote_class (domain, class_name, klass, &error);
-	if (mono_error_set_pending_exception (&error))
-		return NULL;
+	MonoObjectHandle remoting_obj = mono_object_handle_isinst (this_obj, mono_defaults.iremotingtypeinfo_class, error);
+	if (!is_ok (error))
+		return NULL_HANDLE;
+	MONO_HANDLE_SETVAL (tp, custom_type_info, MonoBoolean, !MONO_HANDLE_IS_NULL (remoting_obj));
 
-	res->vtable = (MonoVTable *)mono_remote_class_vtable (domain, tp->remote_class, rp, &error);
-	if (mono_error_set_pending_exception (&error))
-		return NULL;
+	MonoRemoteClass *remote_class = mono_remote_class (domain, class_name, klass, error);
+	if (!is_ok (error))
+		return NULL_HANDLE;
+	MONO_HANDLE_SETVAL (tp, remote_class, MonoRemoteClass*, remote_class);
+
+	MONO_HANDLE_SETVAL (res, vtable, MonoVTable*, mono_remote_class_vtable (domain, remote_class, rp, error));
+	if (!is_ok (error))
+		return NULL_HANDLE;
 	return res;
 }
 

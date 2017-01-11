@@ -750,7 +750,7 @@ ICALL(ARES_1, "Invoke", ves_icall_System_Runtime_Remoting_Messaging_AsyncResult_
 #ifndef DISABLE_REMOTING
 ICALL_TYPE(REALP, "System.Runtime.Remoting.Proxies.RealProxy", REALP_1)
 ICALL(REALP_1, "InternalGetProxyType", ves_icall_Remoting_RealProxy_InternalGetProxyType)
-ICALL(REALP_2, "InternalGetTransparentProxy", ves_icall_Remoting_RealProxy_GetTransparentProxy)
+HANDLES(ICALL(REALP_2, "InternalGetTransparentProxy", ves_icall_Remoting_RealProxy_GetTransparentProxy))
 
 ICALL_TYPE(REMSER, "System.Runtime.Remoting.RemotingServices", REMSER_0)
 ICALL(REMSER_0, "GetVirtualMethod", ves_icall_Remoting_RemotingServices_GetVirtualMethod)
@@ -813,7 +813,7 @@ HANDLES(ICALL(RTH_11, "IsByRef", ves_icall_RuntimeTypeHandle_IsByRef))
 HANDLES(ICALL(RTH_12, "IsComObject", ves_icall_RuntimeTypeHandle_IsComObject))
 HANDLES(ICALL(RTH_13, "IsGenericTypeDefinition", ves_icall_RuntimeTypeHandle_IsGenericTypeDefinition))
 HANDLES(ICALL(RTH_14, "IsGenericVariable", ves_icall_RuntimeTypeHandle_IsGenericVariable))
-ICALL(RTH_15, "IsInstanceOfType", ves_icall_RuntimeTypeHandle_IsInstanceOfType)
+HANDLES(ICALL(RTH_15, "IsInstanceOfType", ves_icall_RuntimeTypeHandle_IsInstanceOfType))
 HANDLES(ICALL(RTH_16, "IsPointer", ves_icall_RuntimeTypeHandle_IsPointer))
 HANDLES(ICALL(RTH_17, "IsPrimitive", ves_icall_RuntimeTypeHandle_IsPrimitive))
 HANDLES(ICALL(RTH_18, "type_is_assignable_from", ves_icall_RuntimeTypeHandle_type_is_assignable_from))

@@ -64,6 +64,9 @@ free_main_args (void);
 static char *
 mono_string_to_utf8_internal (MonoMemPool *mp, MonoImage *image, MonoString *s, gboolean ignore_error, MonoError *error);
 
+static MonoMethod*
+class_get_virtual_method (MonoClass *klass, MonoMethod *method, gboolean is_proxy, MonoError *error);
+
 /* Class lazy loading functions */
 static GENERATE_GET_CLASS_WITH_CACHE (pointer, System.Reflection, Pointer)
 static GENERATE_GET_CLASS_WITH_CACHE (remoting_services, System.Runtime.Remoting, RemotingServices)
@@ -2485,7 +2488,7 @@ copy_remote_class_key (MonoDomain *domain, gpointer *key)
  * On failure returns NULL and sets @error
  */
 MonoRemoteClass*
-mono_remote_class (MonoDomain *domain, MonoString *class_name, MonoClass *proxy_class, MonoError *error)
+mono_remote_class (MonoDomain *domain, MonoStringHandle class_name, MonoClass *proxy_class, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
@@ -2506,7 +2509,7 @@ mono_remote_class (MonoDomain *domain, MonoString *class_name, MonoClass *proxy_
 		return rc;
 	}
 
-	name = mono_string_to_utf8_mp (domain->mp, class_name, error);
+	name = mono_string_to_utf8_mp (domain->mp, MONO_HANDLE_RAW (class_name), error);
 	if (!is_ok (error)) {
 		g_free (key);
 		mono_domain_unlock (domain);
@@ -2532,7 +2535,7 @@ mono_remote_class (MonoDomain *domain, MonoString *class_name, MonoClass *proxy_
 	rc->xdomain_vtable = NULL;
 	rc->proxy_class_name = name;
 #ifndef DISABLE_PERFCOUNTERS
-	mono_perfcounters->loader_bytes += mono_string_length (class_name) + 1;
+	mono_perfcounters->loader_bytes += mono_string_length (MONO_HANDLE_RAW (class_name)) + 1;
 #endif
 
 	g_hash_table_insert (domain->proxy_vtable_hash, key, rc);
@@ -2598,7 +2601,7 @@ clone_remote_class (MonoDomain *domain, MonoRemoteClass* remote_class, MonoClass
 }
 
 gpointer
-mono_remote_class_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, MonoRealProxy *rp, MonoError *error)
+mono_remote_class_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, MonoRealProxyHandle rp, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
@@ -2606,7 +2609,8 @@ mono_remote_class_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, Mon
 
 	mono_loader_lock (); /*FIXME mono_class_from_mono_type and mono_class_proxy_vtable take it*/
 	mono_domain_lock (domain);
-	if (rp->target_domain_id != -1) {
+	gint32 target_domain_id = MONO_HANDLE_GETVAL (rp, target_domain_id);
+	if (target_domain_id != -1) {
 		if (remote_class->xdomain_vtable == NULL)
 			remote_class->xdomain_vtable = mono_class_proxy_vtable (domain, remote_class, MONO_REMOTING_TARGET_APPDOMAIN, error);
 		mono_domain_unlock (domain);
@@ -2615,10 +2619,11 @@ mono_remote_class_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, Mon
 		return remote_class->xdomain_vtable;
 	}
 	if (remote_class->default_vtable == NULL) {
-		MonoType *type;
-		MonoClass *klass;
-		type = ((MonoReflectionType *)rp->class_to_proxy)->type;
-		klass = mono_class_from_mono_type (type);
+		MonoReflectionTypeHandle reftype = MONO_HANDLE_NEW (MonoReflectionType, NULL);
+		MONO_HANDLE_GET (reftype, rp, class_to_proxy);
+		
+		MonoType *type = MONO_HANDLE_GETVAL (reftype, type);
+		MonoClass *klass = mono_class_from_mono_type (type);
 #ifndef DISABLE_COM
 		if ((mono_class_is_com_object (klass) || (mono_class_get_com_object_class () && klass == mono_class_get_com_object_class ())) && !mono_vtable_is_remote (mono_class_vtable (mono_domain_get (), klass)))
 			remote_class->default_vtable = mono_class_proxy_vtable (domain, remote_class, MONO_REMOTING_TARGET_COMINTEROP, error);
@@ -2650,21 +2655,16 @@ mono_remote_class_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, Mon
  * class or an interface.  On success returns TRUE, on failure returns FALSE and sets @error.
  */
 gboolean
-mono_upgrade_remote_class (MonoDomain *domain, MonoObject *proxy_object, MonoClass *klass, MonoError *error)
+mono_upgrade_remote_class (MonoDomain *domain, MonoObjectHandle proxy_object, MonoClass *klass, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
-	MonoTransparentProxy *tproxy;
-	MonoRemoteClass *remote_class;
-	gboolean redo_vtable;
-
 	mono_error_init (error);
-	mono_loader_lock (); /*FIXME mono_remote_class_vtable requires it.*/
-	mono_domain_lock (domain);
 
-	tproxy = (MonoTransparentProxy*) proxy_object;
-	remote_class = tproxy->remote_class;
+	MonoTransparentProxyHandle tproxy = MONO_HANDLE_CAST (MonoTransparentProxy, proxy_object);
+	MonoRemoteClass *remote_class = MONO_HANDLE_GETVAL (tproxy, remote_class);
 	
+	gboolean redo_vtable;
 	if (mono_class_is_interface (klass)) {
 		int i;
 		redo_vtable = TRUE;
@@ -2676,9 +2676,14 @@ mono_upgrade_remote_class (MonoDomain *domain, MonoObject *proxy_object, MonoCla
 		redo_vtable = (remote_class->proxy_class != klass);
 	}
 
+	mono_loader_lock (); /*FIXME mono_remote_class_vtable requires it.*/
+	mono_domain_lock (domain);
 	if (redo_vtable) {
-		tproxy->remote_class = clone_remote_class (domain, remote_class, klass);
-		proxy_object->vtable = (MonoVTable *)mono_remote_class_vtable (domain, tproxy->remote_class, tproxy->rp, error);
+		MonoRemoteClass *fresh_remote_class = clone_remote_class (domain, remote_class, klass);
+		MONO_HANDLE_SETVAL (tproxy, remote_class, MonoRemoteClass*, fresh_remote_class);
+		MonoRealProxyHandle real_proxy = MONO_HANDLE_NEW (MonoRealProxy, NULL);
+		MONO_HANDLE_GET (real_proxy, tproxy, rp);
+		MONO_HANDLE_SETVAL (proxy_object, vtable, MonoVTable*, mono_remote_class_vtable (domain, fresh_remote_class, real_proxy, error));
 		if (!is_ok (error))
 			goto leave;
 	}
@@ -2700,28 +2705,53 @@ leave:
  * the instance of a callvirt of method.
  */
 MonoMethod*
-mono_object_get_virtual_method (MonoObject *obj, MonoMethod *method)
+mono_object_get_virtual_method (MonoObject *obj_raw, MonoMethod *method)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
+	HANDLE_FUNCTION_ENTER ();
+	MonoError error;
+	MONO_HANDLE_DCL (MonoObject, obj);
+	MonoMethod *result = mono_object_handle_get_virtual_method (obj, method, &error);
+	mono_error_assert_ok (&error);
+	HANDLE_FUNCTION_RETURN_VAL (result);
+}
 
-	MonoClass *klass;
-	MonoMethod **vtable;
+/**
+ * mono_object_get_virtual_method:
+ * @obj: object to operate on.
+ * @method: method 
+ *
+ * Retrieves the MonoMethod that would be called on obj if obj is passed as
+ * the instance of a callvirt of method.
+ */
+MonoMethod*
+mono_object_handle_get_virtual_method (MonoObjectHandle obj, MonoMethod *method, MonoError *error)
+{
+	mono_error_init (error);
+
 	gboolean is_proxy = FALSE;
-	MonoMethod *res = NULL;
-
-	klass = mono_object_class (obj);
+	MonoClass *klass = mono_handle_class (obj);
 #ifndef DISABLE_REMOTING
 	if (klass == mono_defaults.transparent_proxy_class) {
-		klass = ((MonoTransparentProxy *)obj)->remote_class->proxy_class;
+		MonoRemoteClass *remote_class = MONO_HANDLE_GETVAL (MONO_HANDLE_CAST (MonoTransparentProxy, obj), remote_class);
+		klass = remote_class->proxy_class;
 		is_proxy = TRUE;
 	}
 #endif
+	return class_get_virtual_method (klass, method, is_proxy, error);
+}
+
+static MonoMethod*
+class_get_virtual_method (MonoClass *klass, MonoMethod *method, gboolean is_proxy, MonoError *error)
+{
+	mono_error_init (error);
+
 
 	if (!is_proxy && ((method->flags & METHOD_ATTRIBUTE_FINAL) || !(method->flags & METHOD_ATTRIBUTE_VIRTUAL)))
 			return method;
 
 	mono_class_setup_vtable (klass);
-	vtable = klass->vtable;
+	MonoMethod **vtable = klass->vtable;
 
 	if (method->slot == -1) {
 		/* method->slot might not be set for instances of generic methods */
@@ -2734,6 +2764,7 @@ mono_object_get_virtual_method (MonoObject *obj, MonoMethod *method)
 		}
 	}
 
+	MonoMethod *res = NULL;
 	/* check method->slot is a valid index: perform isinstance? */
 	if (method->slot != -1) {
 		if (mono_class_is_interface (method->klass)) {
@@ -2769,15 +2800,11 @@ mono_object_get_virtual_method (MonoObject *obj, MonoMethod *method)
 #endif
 	{
 		if (method->is_inflated) {
-			MonoError error;
 			/* Have to inflate the result */
-			res = mono_class_inflate_generic_method_checked (res, &((MonoMethodInflated*)method)->context, &error);
-			g_assert (mono_error_ok (&error)); /* FIXME don't swallow the error */
+			res = mono_class_inflate_generic_method_checked (res, &((MonoMethodInflated*)method)->context, error);
 		}
 	}
 
-	g_assert (res);
-	
 	return res;
 }
 
@@ -6449,14 +6476,16 @@ mono_object_unbox (MonoObject *obj)
  * Returns: @obj if @obj is derived from @klass or NULL otherwise.
  */
 MonoObject *
-mono_object_isinst (MonoObject *obj, MonoClass *klass)
+mono_object_isinst (MonoObject *obj_raw, MonoClass *klass)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
+	HANDLE_FUNCTION_ENTER ();
+	MONO_HANDLE_DCL (MonoObject, obj);
 	MonoError error;
-	MonoObject *result = mono_object_isinst_checked (obj, klass, &error);
+	MonoObjectHandle result = mono_object_handle_isinst (obj, klass, &error);
 	mono_error_cleanup (&error);
-	return result;
+	HANDLE_FUNCTION_RETURN_OBJ (result);
 }
 	
 
@@ -6470,82 +6499,111 @@ mono_object_isinst (MonoObject *obj, MonoClass *klass)
  * On failure returns NULL and sets @error.
  */
 MonoObject *
-mono_object_isinst_checked (MonoObject *obj, MonoClass *klass, MonoError *error)
+mono_object_isinst_checked (MonoObject *obj_raw, MonoClass *klass, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
+	HANDLE_FUNCTION_ENTER ();
+	mono_error_init (error);
+	MONO_HANDLE_DCL (MonoObject, obj);
+	MonoObjectHandle result = mono_object_handle_isinst (obj, klass, error);
+	HANDLE_FUNCTION_RETURN_OBJ (result);
+}
+
+/**
+ * mono_object_handle_isinst:
+ * @obj: an object
+ * @klass: a pointer to a class 
+ * @error: set on error
+ *
+ * Returns: @obj if @obj is derived from @klass or NULL if it isn't.
+ * On failure returns NULL and sets @error.
+ */
+MonoObjectHandle
+mono_object_handle_isinst (MonoObjectHandle obj, MonoClass *klass, MonoError *error)
+{
 	mono_error_init (error);
 	
-	MonoObject *result = NULL;
-
 	if (!klass->inited)
 		mono_class_init (klass);
 
 	if (mono_class_is_marshalbyref (klass) || mono_class_is_interface (klass)) {
-		result = mono_object_isinst_mbyref_checked (obj, klass, error);
-		return result;
+		return mono_object_handle_isinst_mbyref (obj, klass, error);
 	}
 
-	if (!obj)
-		return NULL;
+	MonoObjectHandle result = MONO_HANDLE_NEW (MonoObject, NULL);
 
-	return mono_class_is_assignable_from (klass, obj->vtable->klass) ? obj : NULL;
-}
-
-MonoObject *
-mono_object_isinst_mbyref (MonoObject *obj, MonoClass *klass)
-{
-	MONO_REQ_GC_UNSAFE_MODE;
-
-	MonoError error;
-	MonoObject *result = mono_object_isinst_mbyref_checked (obj, klass, &error);
-	mono_error_cleanup (&error); /* FIXME better API that doesn't swallow the error */
+	if (!MONO_HANDLE_IS_NULL (obj) && mono_class_is_assignable_from (klass, mono_handle_class (obj)))
+		MONO_HANDLE_ASSIGN (result, obj);
 	return result;
 }
 
 MonoObject *
-mono_object_isinst_mbyref_checked (MonoObject *obj, MonoClass *klass, MonoError *error)
+mono_object_isinst_mbyref (MonoObject *obj_raw, MonoClass *klass)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
-	MonoVTable *vt;
+	HANDLE_FUNCTION_ENTER ();
+	MonoError error;
+	MONO_HANDLE_DCL (MonoObject, obj);
+	MonoObjectHandle result = mono_object_handle_isinst_mbyref (obj, klass, &error);
+	mono_error_cleanup (&error); /* FIXME better API that doesn't swallow the error */
+	HANDLE_FUNCTION_RETURN_OBJ (result);
+}
 
+MonoObjectHandle
+mono_object_handle_isinst_mbyref (MonoObjectHandle obj, MonoClass *klass, MonoError *error)
+{
 	mono_error_init (error);
 
-	if (!obj)
-		return NULL;
+	MonoObjectHandle result = MONO_HANDLE_NEW (MonoObject, NULL);
 
-	vt = obj->vtable;
+	if (MONO_HANDLE_IS_NULL (obj))
+		goto leave;
+
+	MonoVTable *vt = MONO_HANDLE_GETVAL (obj, vtable);
 	
 	if (mono_class_is_interface (klass)) {
 		if (MONO_VTABLE_IMPLEMENTS_INTERFACE (vt, klass->interface_id)) {
-			return obj;
+			MONO_HANDLE_ASSIGN (result, obj);
+			goto leave;
 		}
 
 		/* casting an array one of the invariant interfaces that must act as such */
 		if (klass->is_array_special_interface) {
-			if (mono_class_is_assignable_from (klass, vt->klass))
-				return obj;
+			if (mono_class_is_assignable_from (klass, vt->klass)) {
+				MONO_HANDLE_ASSIGN (result, obj);
+				goto leave;
+			}
 		}
 
 		/*If the above check fails we are in the slow path of possibly raising an exception. So it's ok to it this way.*/
-		else if (mono_class_has_variant_generic_params (klass) && mono_class_is_assignable_from (klass, obj->vtable->klass))
-			return obj;
+		else if (mono_class_has_variant_generic_params (klass) && mono_class_is_assignable_from (klass, mono_handle_class (obj))) {
+			MONO_HANDLE_ASSIGN (result, obj);
+			goto leave;
+		}
 	} else {
 		MonoClass *oklass = vt->klass;
-		if (mono_class_is_transparent_proxy (oklass))
-			oklass = ((MonoTransparentProxy *)obj)->remote_class->proxy_class;
+		if (mono_class_is_transparent_proxy (oklass)){
+			MonoRemoteClass *remote_class = MONO_HANDLE_GETVAL (MONO_HANDLE_CAST (MonoTransparentProxy, obj), remote_class);
+			oklass = remote_class->proxy_class;
+		}
 
 		mono_class_setup_supertypes (klass);	
-		if ((oklass->idepth >= klass->idepth) && (oklass->supertypes [klass->idepth - 1] == klass))
-			return obj;
+		if ((oklass->idepth >= klass->idepth) && (oklass->supertypes [klass->idepth - 1] == klass)) {
+			MONO_HANDLE_ASSIGN (result, obj);
+			goto leave;
+		}
 	}
 #ifndef DISABLE_REMOTING
-	if (vt->klass == mono_defaults.transparent_proxy_class && ((MonoTransparentProxy *)obj)->custom_type_info) 
+	if (vt->klass == mono_defaults.transparent_proxy_class) 
 	{
+		MonoBoolean custom_type_info =  MONO_HANDLE_GETVAL (MONO_HANDLE_CAST (MonoTransparentProxy, obj), custom_type_info);
+		if (!custom_type_info)
+			goto leave;
 		MonoDomain *domain = mono_domain_get ();
-		MonoObject *res;
-		MonoObject *rp = (MonoObject *)((MonoTransparentProxy *)obj)->rp;
+		MonoObjectHandle rp = MONO_HANDLE_NEW (MonoObject, NULL);
+		MONO_HANDLE_GET (rp, MONO_HANDLE_CAST (MonoTransparentProxy, obj), rp);
 		MonoClass *rpklass = mono_defaults.iremotingtypeinfo_class;
 		MonoMethod *im = NULL;
 		gpointer pa [2];
@@ -6553,27 +6611,34 @@ mono_object_isinst_mbyref_checked (MonoObject *obj, MonoClass *klass, MonoError 
 		im = mono_class_get_method_from_name (rpklass, "CanCastTo", -1);
 		if (!im) {
 			mono_error_set_not_supported (error, "Linked away.");
-			return NULL;
+			goto leave;
 		}
-		im = mono_object_get_virtual_method (rp, im);
+		im = mono_object_handle_get_virtual_method (rp, im, error);
+		if (!is_ok (error))
+			goto leave;
 		g_assert (im);
 	
-		pa [0] = mono_type_get_object_checked (domain, &klass->byval_arg, error);
-		return_val_if_nok (error, NULL);
-		pa [1] = obj;
+		MonoReflectionTypeHandle reftype = mono_type_get_object_handle (domain, &klass->byval_arg, error);
+		if (!is_ok (error))
+			goto leave;
 
-		res = mono_runtime_invoke_checked (im, rp, pa, error);
-		return_val_if_nok (error, NULL);
+		pa [0] = MONO_HANDLE_RAW (reftype);
+		pa [1] = MONO_HANDLE_RAW (obj);
+		MonoObject *res = mono_runtime_invoke_checked (im, rp, pa, error);
+		if (!is_ok (error))
+			goto leave;
 
 		if (*(MonoBoolean *) mono_object_unbox(res)) {
 			/* Update the vtable of the remote type, so it can safely cast to this new type */
 			mono_upgrade_remote_class (domain, obj, klass, error);
-			return_val_if_nok (error, NULL);
-			return obj;
+			if (!is_ok (error))
+				goto leave;
+			MONO_HANDLE_ASSIGN (result, obj);
 		}
 	}
 #endif /* DISABLE_REMOTING */
-	return NULL;
+leave:
+	return result;
 }
 
 /**
@@ -6584,15 +6649,19 @@ mono_object_isinst_mbyref_checked (MonoObject *obj, MonoClass *klass, MonoError 
  * Returns: @obj if @obj is derived from @klass, returns NULL otherwise.
  */
 MonoObject *
-mono_object_castclass_mbyref (MonoObject *obj, MonoClass *klass)
+mono_object_castclass_mbyref (MonoObject *obj_raw, MonoClass *klass)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
+	HANDLE_FUNCTION_ENTER ();
 	MonoError error;
-
-	if (!obj) return NULL;
-	if (mono_object_isinst_mbyref_checked (obj, klass, &error)) return obj;
+	MONO_HANDLE_DCL (MonoObject, obj);
+	MonoObjectHandle result = MONO_HANDLE_NEW (MonoObject, NULL);
+	if (MONO_HANDLE_IS_NULL (obj))
+		goto leave;
+	MONO_HANDLE_ASSIGN (result, mono_object_handle_isinst_mbyref (obj, klass, &error));
 	mono_error_cleanup (&error);
-	return NULL;
+leave:
+	HANDLE_FUNCTION_RETURN_OBJ (result);
 }
 
 typedef struct {
