@@ -89,22 +89,23 @@ namespace System.Net
 
         public Task<HttpListenerWebSocketContext> AcceptWebSocketAsync(string subProtocol)
         {
-            throw new NotImplementedException();
+            return AcceptWebSocketAsync(subProtocol, WebSocketValidate.DefaultReceiveBufferSize, WebSocket.DefaultKeepAliveInterval);
         }
 
         public Task<HttpListenerWebSocketContext> AcceptWebSocketAsync(string subProtocol, TimeSpan keepAliveInterval)
         {
-            throw new NotImplementedException();
+            return AcceptWebSocketAsync(subProtocol, WebSocketValidate.DefaultReceiveBufferSize, keepAliveInterval);
         }
 
         public Task<HttpListenerWebSocketContext> AcceptWebSocketAsync(string subProtocol, int receiveBufferSize, TimeSpan keepAliveInterval)
         {
-            throw new NotImplementedException();
+            return WebSocketValidate.AcceptWebSocketAsyncCore(this, subProtocol, receiveBufferSize, keepAliveInterval);
         }
 
         public Task<HttpListenerWebSocketContext> AcceptWebSocketAsync(string subProtocol, int receiveBufferSize, TimeSpan keepAliveInterval, ArraySegment<byte> internalBuffer)
         {
-            throw new NotImplementedException();
+            WebSocketValidate.ValidateArraySegment(internalBuffer, nameof(internalBuffer));
+            return WebSocketValidate.AcceptWebSocketAsyncCore(this, subProtocol, receiveBufferSize, keepAliveInterval, internalBuffer);
         }
     }
 }

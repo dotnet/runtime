@@ -118,7 +118,7 @@
     <Compile Include="System\Net\Windows\WebSockets\WebSocketBuffer.cs" />
     <Compile Include="System\Net\Windows\WebSockets\SafeWebSocketHandle.cs" />
     <Compile Include="System\Net\Windows\HttpRequestStream.Windows.cs" />
-    <Compile Include="System\Net\Windows\WebSockets\WebSocketHttpListenerDuplexStream.Windows.cs" />
+    <Compile Include="System\Net\Windows\WebSockets\WebSocketHttpListenerDuplexStream.cs" />
     <Compile Include="System\Net\Windows\WebSockets\WebSocketProtocolComponent.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
       <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
@@ -334,7 +334,6 @@
     <Compile Include="System\Net\Managed\ChunkStream.cs" />
     <Compile Include="System\Net\Managed\HttpResponseStream.Managed.cs" />
     <Compile Include="System\Net\Managed\WebSockets\WebSocketValidate.Http.Managed.cs" />
-    <Compile Include="System\Net\Managed\WebSockets\WebSocketHttpListenerDuplexStream.Managed.cs" />
     <Compile Include="$(CommonPath)\System\Net\WebSockets\ManagedWebSocket.cs">
       <Link>Common\System\Net\WebSockets\ManagedWebSocket.cs</Link>
     </Compile>
