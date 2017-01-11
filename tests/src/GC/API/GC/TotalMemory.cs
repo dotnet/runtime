@@ -23,6 +23,7 @@ public class Test {
         int[] array2 = new int[40000];
         int memnew = (int) GC.GetTotalMemory(false);
         Console.WriteLine("Total Memory: " + memnew);
+        GC.KeepAlive(array2);
 
         if(memnew >= memold) {
             Console.WriteLine("Test for GC.TotalMemory passed!");
