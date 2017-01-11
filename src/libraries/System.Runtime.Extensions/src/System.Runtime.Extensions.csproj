@@ -288,10 +288,8 @@
   <ItemGroup Condition="'$(TargetGroup)' == 'uap101aot'">
     <Compile Include="System\Environment.Uap.cs" />
     <Compile Include="System\IO\FileStreamHelpers.Uap.cs" />
-    <Compile Include="System\IO\Path.cs" />
-    <Compile Include="System\IO\Path.Windows.cs" />
-    <Compile Include="System\IO\PathHelper.Windows.cs" />
     <Compile Include="System\IO\Path.Uap.cs" />
+    <Compile Include="System\IO\PathHelper.Uap.cs" />
     <Compile Include="$(CommonPath)\System\IO\PathInternal.Windows.StringBuffer.cs">
       <Link>Common\System\IO\PathInternal.Windows.StringBuffer.cs</Link>
     </Compile>
