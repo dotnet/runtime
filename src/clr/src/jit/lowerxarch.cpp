@@ -1024,7 +1024,7 @@ void Lowering::TreeNodeInfoInitSimple(GenTree* tree)
 {
     TreeNodeInfo* info = &(tree->gtLsraInfo);
     unsigned      kind = tree->OperKind();
-    info->dstCount     = (tree->TypeGet() == TYP_VOID) ? 0 : 1;
+    info->dstCount     = tree->IsValue() ? 1 : 0;
     if (kind & (GTK_CONST | GTK_LEAF))
     {
         info->srcCount = 0;
@@ -1589,53 +1589,38 @@ void Lowering::TreeNodeInfoInitCall(GenTreeCall* call)
         if (!(args->gtFlags & GTF_LATE_ARG))
         {
             TreeNodeInfo* argInfo = &(arg->gtLsraInfo);
-#if !defined(_TARGET_64BIT_)
-            if (arg->TypeGet() == TYP_LONG)
+            if (argInfo->dstCount != 0)
             {
-                assert(arg->OperGet() == GT_LONG);
-                GenTreePtr loArg = arg->gtGetOp1();
-                GenTreePtr hiArg = arg->gtGetOp2();
-                assert((loArg->OperGet() == GT_PUTARG_STK) && (hiArg->OperGet() == GT_PUTARG_STK));
-                assert((loArg->gtLsraInfo.dstCount == 1) && (hiArg->gtLsraInfo.dstCount == 1));
-                loArg->gtLsraInfo.isLocalDefUse = true;
-                hiArg->gtLsraInfo.isLocalDefUse = true;
+                argInfo->isLocalDefUse = true;
             }
-            else
-#endif // !defined(_TARGET_64BIT_)
+
+            // If the child of GT_PUTARG_STK is a constant, we don't need a register to
+            // move it to memory (stack location).
+            //
+            // On AMD64, we don't want to make 0 contained, because we can generate smaller code
+            // by zeroing a register and then storing it. E.g.:
+            //      xor rdx, rdx
+            //      mov gword ptr [rsp+28H], rdx
+            // is 2 bytes smaller than:
+            //      mov gword ptr [rsp+28H], 0
+            //
+            // On x86, we push stack arguments; we don't use 'mov'. So:
+            //      push 0
+            // is 1 byte smaller than:
+            //      xor rdx, rdx
+            //      push rdx
+
+            argInfo->dstCount = 0;
+            if (arg->gtOper == GT_PUTARG_STK)
             {
-                if (argInfo->dstCount != 0)
-                {
-                    argInfo->isLocalDefUse = true;
-                }
-
-                // If the child of GT_PUTARG_STK is a constant, we don't need a register to
-                // move it to memory (stack location).
-                //
-                // On AMD64, we don't want to make 0 contained, because we can generate smaller code
-                // by zeroing a register and then storing it. E.g.:
-                //      xor rdx, rdx
-                //      mov gword ptr [rsp+28H], rdx
-                // is 2 bytes smaller than:
-                //      mov gword ptr [rsp+28H], 0
-                //
-                // On x86, we push stack arguments; we don't use 'mov'. So:
-                //      push 0
-                // is 1 byte smaller than:
-                //      xor rdx, rdx
-                //      push rdx
-
-                argInfo->dstCount = 0;
-                if (arg->gtOper == GT_PUTARG_STK)
-                {
-                    GenTree* op1 = arg->gtOp.gtOp1;
-                    if (IsContainableImmed(arg, op1)
+                GenTree* op1 = arg->gtOp.gtOp1;
+                if (IsContainableImmed(arg, op1)
 #if defined(_TARGET_AMD64_)
-                        && !op1->IsIntegralConst(0)
+                    && !op1->IsIntegralConst(0)
 #endif // _TARGET_AMD64_
-                            )
-                    {
-                        MakeSrcContained(arg, op1);
-                    }
+                        )
+                {
+                    MakeSrcContained(arg, op1);
                 }
             }
         }
@@ -2791,9 +2776,14 @@ void Lowering::TreeNodeInfoInitSIMD(GenTree* tree)
             break;
 
         case SIMDIntrinsicAbs:
-            // This gets implemented as bitwise-And operation with a mask
-            // and hence should never see it here.
-            unreached();
+            // float/double vectors: This gets implemented as bitwise-And operation
+            // with a mask and hence should never see  here.
+            //
+            // Must be a Vector<int> or Vector<short> Vector<sbyte>
+            assert(simdTree->gtSIMDBaseType == TYP_INT || simdTree->gtSIMDBaseType == TYP_SHORT ||
+                   simdTree->gtSIMDBaseType == TYP_BYTE);
+            assert(comp->getSIMDInstructionSet() >= InstructionSet_SSE3_4);
+            info->srcCount = 1;
             break;
 
         case SIMDIntrinsicSqrt:

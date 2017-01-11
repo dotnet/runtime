@@ -10998,6 +10998,9 @@ GenTreePtr Compiler::fgMorphSmpOp(GenTreePtr tree, MorphAddrContext* mac)
                 //
                 // a % b = a - (a / b) * b;
                 //
+                // NOTE: we should never need to perform this transformation when remorphing, since global morphing
+                //       should already have done so and we do not introduce new modulus nodes in later phases.
+                assert(!optValnumCSE_phase);
                 tree = fgMorphModToSubMulDiv(tree->AsOp());
                 op1  = tree->gtOp.gtOp1;
                 op2  = tree->gtOp.gtOp2;
@@ -11010,7 +11013,7 @@ GenTreePtr Compiler::fgMorphSmpOp(GenTreePtr tree, MorphAddrContext* mac)
                 // the redundant division. If there's no redundant division then
                 // nothing is lost, lowering would have done this transform anyway.
 
-                if ((tree->OperGet() == GT_MOD) && op2->IsIntegralConst())
+                if (!optValnumCSE_phase && ((tree->OperGet() == GT_MOD) && op2->IsIntegralConst()))
                 {
                     ssize_t divisorValue    = op2->AsIntCon()->IconValue();
                     size_t  absDivisorValue = (divisorValue == SSIZE_T_MIN) ? static_cast<size_t>(divisorValue)
@@ -14048,10 +14051,20 @@ GenTree* Compiler::fgMorphModToSubMulDiv(GenTreeOp* tree)
     {
         numerator = fgMakeMultiUse(&tree->gtOp1);
     }
+    else if (lvaLocalVarRefCounted && numerator->OperIsLocal())
+    {
+        // Morphing introduces new lclVar references. Increase ref counts
+        lvaIncRefCnts(numerator);
+    }
 
     if (!denominator->OperIsLeaf())
     {
         denominator = fgMakeMultiUse(&tree->gtOp2);
+    }
+    else if (lvaLocalVarRefCounted && denominator->OperIsLocal())
+    {
+        // Morphing introduces new lclVar references. Increase ref counts
+        lvaIncRefCnts(denominator);
     }
 
     // The numerator and denominator may have been assigned to temps, in which case
@@ -16896,6 +16909,14 @@ void Compiler::fgMorph()
     /* Inliner could add basic blocks. Check that the flowgraph data is up-to-date */
     fgDebugCheckBBlist(false, false);
 #endif // DEBUG
+
+    fgRemoveEmptyFinally();
+
+    EndPhase(PHASE_EMPTY_FINALLY);
+
+    fgCloneFinally();
+
+    EndPhase(PHASE_CLONE_FINALLY);
 
     /* For x64 and ARM64 we need to mark irregular parameters early so that they don't get promoted */
     fgMarkImplicitByRefArgs();

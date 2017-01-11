@@ -602,7 +602,7 @@ HRESULT FixContextForEnC(PCONTEXT        pCtx,
 
 #endif // #ifndef DACCESS_COMPILE
 
-#ifndef _TARGET_X86_
+#ifdef WIN64EXCEPTIONS
     static void EnsureCallerContextIsValid( PREGDISPLAY pRD, StackwalkCacheEntry* pCacheEntry, EECodeInfo * pCodeInfo = NULL );
     static size_t GetCallerSp( PREGDISPLAY  pRD );
 #endif

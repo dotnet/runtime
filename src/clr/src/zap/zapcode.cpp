@@ -1130,7 +1130,7 @@ void ZapUnwindInfo::Save(ZapWriter * pZapWriter)
     pZapWriter->Write(&runtimeFunction, sizeof(runtimeFunction));
 }
 
-#if defined(WIN64EXCEPTIONS) && !defined(_TARGET_X86_)
+#if defined(WIN64EXCEPTIONS)
 // Compare the unwind infos by their offset
 int __cdecl ZapUnwindInfo::CompareUnwindInfo(const void* a_, const void* b_)
 {

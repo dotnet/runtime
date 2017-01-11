@@ -14,13 +14,13 @@
 #define __VSPRINTF_H__
 
 /* These functions leaks memory like crazy. C'est la vie. */
-int testvsp(char* buf, const char* format, ...)
+int testvsp(char* buf, size_t buffSize, const char* format, ...)
 {
     int retVal;
     va_list arglist;
 
     va_start(arglist, format);
-    retVal = vsprintf(buf, format, arglist);
+    retVal = _vsnprintf_s(buf, buffSize, _TRUNCATE, format, arglist);
     va_end(arglist);
 
     return (retVal);
@@ -30,7 +30,7 @@ void DoStrTest(const char *formatstr, char* param, const char *checkstr)
 {
     char buf[256] = { 0 };
 
-    testvsp(buf, formatstr, param);
+    testvsp(buf, _countof(buf), formatstr, param);
     if (memcmp(buf, checkstr, strlen(buf) + 1) != 0)
     {
         Fail("ERROR: failed to insert string \"%s\" into \"%s\"\n"
@@ -43,7 +43,7 @@ void DoWStrTest(const char *formatstr, WCHAR* param, const char *checkstr)
 {
     char buf[256] = { 0 };
 
-    testvsp(buf, formatstr, param);
+    testvsp(buf, _countof(buf), formatstr, param);
     if (memcmp(buf, checkstr, strlen(buf) + 1) != 0)
     {
         Fail("ERROR: failed to insert wide string \"%s\" into \"%s\"\n"
@@ -57,7 +57,7 @@ void DoCharTest(const char *formatstr, char param, const char *checkstr)
 {
     char buf[256] = { 0 };
 
-    testvsp(buf, formatstr, param);
+    testvsp(buf, _countof(buf), formatstr, param);
     if (memcmp(buf, checkstr, strlen(buf) + 1) != 0)
     {
         Fail("ERROR: failed to insert char \'%c\' (%d) into \"%s\"\n"
@@ -70,7 +70,7 @@ void DoWCharTest(const char *formatstr, WCHAR param, const char *checkstr)
 {
     char buf[256] = { 0 };
 
-    testvsp(buf, formatstr, param);
+    testvsp(buf, _countof(buf), formatstr, param);
     if (memcmp(buf, checkstr, strlen(buf) + 1) != 0)
     {
         Fail("ERROR: failed to insert wide char \'%c\' (%d) into \"%s\"\n"
@@ -83,7 +83,7 @@ void DoNumTest(const char *formatstr, int value, const char *checkstr)
 {
     char buf[256] = { 0 };
 
-    testvsp(buf, formatstr, value);
+    testvsp(buf, _countof(buf), formatstr, value);
     if (memcmp(buf, checkstr, strlen(buf) + 1) != 0)
     {
         Fail("ERROR: failed to insert %#x into \"%s\"\n"
@@ -96,7 +96,7 @@ void DoI64Test(const char *formatstr, INT64 value, char *valuestr, const char *c
 {
     char buf[256] = { 0 };
 
-    testvsp(buf, formatstr, value);
+    testvsp(buf, _countof(buf), formatstr, value);
     if (memcmp(buf, checkstr, strlen(buf) + 1) != 0)
     {
         Fail("ERROR: failed to insert %s into \"%s\"\n"
@@ -109,7 +109,7 @@ void DoDoubleTest(const char *formatstr, double value, const char *checkstr1, ch
 {
     char buf[256] = { 0 };
 
-    testvsp(buf, formatstr, value);
+    testvsp(buf, _countof(buf), formatstr, value);
     if (memcmp(buf, checkstr1, strlen(checkstr1) + 1) != 0 &&
         memcmp(buf, checkstr2, strlen(checkstr2) + 1) != 0)
     {
@@ -124,7 +124,7 @@ void DoArgumentPrecTest(const char *formatstr, int precision, void *param,
 {
     char buf[256];
 
-    testvsp(buf, formatstr, precision, param);
+    testvsp(buf, _countof(buf), formatstr, precision, param);
     if (memcmp(buf, checkstr1, strlen(checkstr1) + 1) != 0 &&
         memcmp(buf, checkstr2, strlen(checkstr2) + 1) != 0)
     {
@@ -140,7 +140,7 @@ void DoArgumentPrecDoubleTest(const char *formatstr, int precision, double param
 {
     char buf[256];
 
-    testvsp(buf, formatstr, precision, param);
+    testvsp(buf, _countof(buf), formatstr, precision, param);
     if (memcmp(buf, checkstr1, strlen(checkstr1) + 1) != 0 &&
         memcmp(buf, checkstr2, strlen(checkstr2) + 1) != 0)
     {
@@ -155,7 +155,7 @@ void DoPointerTest(const char *formatstr, void* param, char* paramstr,
 {
     char buf[256] = { 0 };
 
-    testvsp(buf, formatstr, param);
+    testvsp(buf, _countof(buf), formatstr, param);
     if (memcmp(buf, checkstr1, strlen(checkstr1) + 1))
     {
         Fail("ERROR: failed to insert %s into \"%s\"\n"
@@ -169,7 +169,7 @@ void DoI64DoubleTest(const char *formatstr, INT64 value, char *valuestr,
 {
     char buf[256] = { 0 };
 
-    testvsp(buf, formatstr, value);
+    testvsp(buf, _countof(buf), formatstr, value);
     if (memcmp(buf, checkstr1, strlen(checkstr1) + 1) != 0)
     {
         Fail("ERROR: failed to insert %s into \"%s\"\n"
@@ -183,7 +183,7 @@ void DoTest(const char *formatstr, int param, const char *checkstr)
     char buf[256] = { 0 };
     int n = -1;
 
-    testvsp(buf, formatstr, &n);
+    testvsp(buf, _countof(buf), formatstr, &n);
 
     if (n != param)
     {
@@ -201,7 +201,7 @@ void DoShortTest(const char *formatstr, int param, const char *checkstr)
     char buf[256] = { 0 };
     short int n = -1;
 
-    testvsp(buf, formatstr, &n);
+    testvsp(buf, _countof(buf), formatstr, &n);
 
     if (n != param)
     {

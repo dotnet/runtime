@@ -11082,7 +11082,7 @@ void CEEJitInfo::allocUnwindInfo (
 
     RUNTIME_FUNCTION__SetBeginAddress(pRuntimeFunction, currentCodeOffset + startOffset);
 
-#if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
+#if defined(_TARGET_AMD64_)
     pRuntimeFunction->EndAddress        = currentCodeOffset + endOffset;
 #endif
 

@@ -502,7 +502,6 @@ function_name() to call the system's implementation
 #undef vfwprintf
 #undef vprintf
 #undef wprintf
-#undef swprintf
 #undef wcstod
 #undef wcstol
 #undef wcstoul
@@ -525,10 +524,6 @@ function_name() to call the system's implementation
 #undef iswspace
 #undef towlower
 #undef towupper
-#undef vsprintf
-#undef vswprintf
-#undef _vsnprintf
-#undef vsnprintf
 #undef wvsnprintf
 
 #ifdef _AMD64_ 

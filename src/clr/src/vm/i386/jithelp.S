@@ -727,6 +727,7 @@ LEAF_END JIT_PatchedCodeEnd, _TEXT
 // debugger may need additional support.
 // void __stdcall JIT_EndCatch();
 NESTED_ENTRY JIT_EndCatch, _TEXT, NoHandler
+#ifndef WIN64EXCEPTIONS
     // make temp storage for return address, and push the address of that
     // as the last arg to COMPlusEndCatch
     mov     ecx, [esp]
@@ -746,4 +747,7 @@ NESTED_ENTRY JIT_EndCatch, _TEXT, NoHandler
     pop     edx         // edx = new eip
     mov     esp, eax    // esp = new esp
     jmp     edx         // eip = new eip
+#else
+    int3
+#endif
 NESTED_END JIT_EndCatch, _TEXT

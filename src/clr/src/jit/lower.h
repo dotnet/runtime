@@ -210,6 +210,9 @@ private:
 #ifdef _TARGET_ARM64_
     void TreeNodeInfoInitPutArgStk(GenTreePutArgStk* argNode, fgArgTabEntryPtr info);
 #endif // _TARGET_ARM64_
+#ifdef _TARGET_ARM_
+    void TreeNodeInfoInitPutArgStk(GenTreePutArgStk* argNode, fgArgTabEntryPtr info);
+#endif // _TARGET_ARM64_
 #ifdef FEATURE_PUT_STRUCT_ARG_STK
     void TreeNodeInfoInitPutArgStk(GenTreePutArgStk* tree);
 #endif // FEATURE_PUT_STRUCT_ARG_STK

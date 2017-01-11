@@ -10,6 +10,7 @@
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <OutputType>Library</OutputType>
     <ExcludeMscorlibFacade>true</ExcludeMscorlibFacade>
+    <HighEntropyVA>true</HighEntropyVA>
 
     <!-- This prevents the default MsBuild targets from referencing System.Core.dll -->
     <AddAdditionalExplicitAssemblyReferences>false</AddAdditionalExplicitAssemblyReferences>
@@ -19,13 +20,13 @@
 
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
-    <AvailablePlatforms>amd64,x86,arm,arm-softfp,arm64</AvailablePlatforms>
+    <AvailablePlatforms>amd64,x86,arm,armel,arm64</AvailablePlatforms>
     <Configuration Condition=" '$(Configuration)' == '' ">$(BuildType)</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">$(BuildArch)</Platform>
     <!-- The CLR properties use amd64 as their platform string, we want to keep in sync with those, so set Platform appropriately,
          though still use the 'x64' output path (see use of BuildArch below) -->
     <Platform Condition=" '$(Platform)' == 'x64' ">amd64</Platform>
-    <Platform Condition=" '$(Platform)' == 'arm-softfp' ">arm</Platform>
+    <Platform Condition=" '$(Platform)' == 'armel' ">arm</Platform>
 
     <!-- We want to exclude the transitive closure of the packages pulled in via project.json as that introduces ambiguity -->
     <OmitTransitiveCompileReferences>true</OmitTransitiveCompileReferences>

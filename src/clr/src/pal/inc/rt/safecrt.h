@@ -3253,10 +3253,6 @@ int __cdecl vswprintf_s(WCHAR (&_Dst)[_SizeInWords], const WCHAR *_Format, va_li
  *      return -1 if the formatted string does not entirely fit into _Dst (we will not call _SAFECRT_INVALID_PARAMETER);
  * if _Count == 0, then (_Dst == nullptr && _SizeInBytes == 0) is allowed
  */
-_SAFECRT__EXTERN_C
-int __cdecl _snprintf_s(char *_Dst, size_t _SizeInBytes, size_t _Count, const char *_Format, ...);
-_SAFECRT__EXTERN_C
-int __cdecl _vsnprintf_s(char *_Dst, size_t _SizeInBytes, size_t _Count, const char *_Format, va_list _ArgList);
 
 #if defined(__cplusplus) && _SAFECRT_USE_CPP_OVERLOADS
 template <size_t _SizeInBytes>

@@ -25,7 +25,6 @@ using System.Threading;
 
 namespace System.IO
 {
-
     // Overview:
     // The key methods instantiate FileSystemEnumerableIterators. These compose the iterator with search result
     // handlers that instantiate the FileInfo, DirectoryInfo, String, etc. The handlers then perform any
@@ -41,37 +40,6 @@ namespace System.IO
 
             SearchResultHandler<String> handler = new StringResultHandler(includeFiles, includeDirs);
             return new FileSystemEnumerableIterator<String>(path, originalUserPath, searchPattern, searchOption, handler, checkHost);
-        }
-
-        internal static IEnumerable<FileInfo> CreateFileInfoIterator(String path, String originalUserPath, String searchPattern, SearchOption searchOption)
-        {
-            Contract.Requires(path != null);
-            Contract.Requires(originalUserPath != null);
-            Contract.Requires(searchPattern != null);
-
-            SearchResultHandler<FileInfo> handler = new FileInfoResultHandler();
-            return new FileSystemEnumerableIterator<FileInfo>(path, originalUserPath, searchPattern, searchOption, handler, true);
-        }
-
-        internal static IEnumerable<DirectoryInfo> CreateDirectoryInfoIterator(String path, String originalUserPath, String searchPattern, SearchOption searchOption)
-        {
-
-            Contract.Requires(path != null);
-            Contract.Requires(originalUserPath != null);
-            Contract.Requires(searchPattern != null);
-
-            SearchResultHandler<DirectoryInfo> handler = new DirectoryInfoResultHandler();
-            return new FileSystemEnumerableIterator<DirectoryInfo>(path, originalUserPath, searchPattern, searchOption, handler, true);
-        }
-
-        internal static IEnumerable<FileSystemInfo> CreateFileSystemInfoIterator(String path, String originalUserPath, String searchPattern, SearchOption searchOption)
-        {
-            Contract.Requires(path != null);
-            Contract.Requires(originalUserPath != null);
-            Contract.Requires(searchPattern != null);
-
-            SearchResultHandler<FileSystemInfo> handler = new FileSystemInfoResultHandler();
-            return new FileSystemEnumerableIterator<FileSystemInfo>(path, originalUserPath, searchPattern, searchOption, handler, true);
         }
     }
 
@@ -166,11 +134,11 @@ namespace System.IO
         private String searchCriteria;
         SafeFindHandle _hnd = null;
 
-        // empty means we know in advance that we won’t find any search results, which can happen if:
-        // 1. we don’t have a search pattern
-        // 2. we’re enumerating only the top directory and found no matches during the first call
-        // This flag allows us to return early for these cases. We can’t know this in advance for
-        // SearchOption.AllDirectories because we do a “*” search for subdirs and then use the
+        // empty means we know in advance that we won't find any search results, which can happen if:
+        // 1. we don't have a search pattern
+        // 2. we're enumerating only the top directory and found no matches during the first call
+        // This flag allows us to return early for these cases. We can't know this in advance for
+        // SearchOption.AllDirectories because we do a "*" search for subdirs and then use the
         // searchPattern at each directory level.
         bool empty;
 
@@ -601,71 +569,6 @@ namespace System.IO
         {
             return result.UserPath;
         }
-    }
-
-    internal class FileInfoResultHandler : SearchResultHandler<FileInfo>
-    {
-        internal override bool IsResultIncluded(SearchResult result)
-        {
-            return FileSystemEnumerableHelpers.IsFile(result.FindData);
-        }
-
-        internal override FileInfo CreateObject(SearchResult result)
-        {
-            String name = result.FullPath;
-            FileInfo fi = new FileInfo(name, false);
-            fi.InitializeFrom(result.FindData);
-            return fi;
-        }
-    }
-
-    internal class DirectoryInfoResultHandler : SearchResultHandler<DirectoryInfo>
-    {
-        internal override bool IsResultIncluded(SearchResult result)
-        {
-            return FileSystemEnumerableHelpers.IsDir(result.FindData);
-        }
-
-        internal override DirectoryInfo CreateObject(SearchResult result)
-        {
-            DirectoryInfo di = new DirectoryInfo(result.FullPath, false);
-            di.InitializeFrom(result.FindData);
-            return di;
-        }
-    }
-
-    internal class FileSystemInfoResultHandler : SearchResultHandler<FileSystemInfo>
-    {
-
-        internal override bool IsResultIncluded(SearchResult result)
-        {
-            bool includeFile = FileSystemEnumerableHelpers.IsFile(result.FindData);
-            bool includeDir = FileSystemEnumerableHelpers.IsDir(result.FindData);
-            Debug.Assert(!(includeFile && includeDir), result.FindData.cFileName + ": current item can't be both file and dir!");
-
-            return (includeDir || includeFile);
-        }
-
-        internal override FileSystemInfo CreateObject(SearchResult result)
-        {
-            bool isFile = FileSystemEnumerableHelpers.IsFile(result.FindData);
-            bool isDir = FileSystemEnumerableHelpers.IsDir(result.FindData);
-
-            if (isDir)
-            {
-                DirectoryInfo di = new DirectoryInfo(result.FullPath, false);
-                di.InitializeFrom(result.FindData);
-                return di;
-            }
-            else
-            {
-                Contract.Assert(isFile);
-                FileInfo fi = new FileInfo(result.FullPath, false);
-                fi.InitializeFrom(result.FindData);
-                return fi;
-            }
-        }
-
     }
 
     internal sealed class SearchResult

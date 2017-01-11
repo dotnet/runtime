@@ -57,6 +57,8 @@ if (CLR_CMAKE_PLATFORM_UNIX)
     add_definitions(-DUNIX_AMD64_ABI)
   elseif (CLR_CMAKE_PLATFORM_UNIX_ARM)
     add_definitions(-DUNIX_ARM_ABI)
+  elseif (CLR_CMAKE_PLATFORM_UNIX_X86)
+    add_definitions(-DUNIX_X86_ABI)
   endif()
 
 endif(CLR_CMAKE_PLATFORM_UNIX)

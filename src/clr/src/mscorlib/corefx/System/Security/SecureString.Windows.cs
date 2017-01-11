@@ -206,11 +206,11 @@ namespace System.Security
                 else
                 {
                     uint defaultChar = '?';
-                    int resultByteLength = 1 + Interop.mincore.WideCharToMultiByte(
-                        Interop.mincore.CP_ACP, Interop.mincore.WC_NO_BEST_FIT_CHARS, (char*)bufferPtr, length, null, 0, (IntPtr)(&defaultChar), IntPtr.Zero);
+                    int resultByteLength = 1 + Interop.Kernel32.WideCharToMultiByte(
+                        Interop.Kernel32.CP_ACP, Interop.Kernel32.WC_NO_BEST_FIT_CHARS, (char*)bufferPtr, length, null, 0, (IntPtr)(&defaultChar), IntPtr.Zero);
                     ptr = globalAlloc ? Marshal.AllocHGlobal(resultByteLength) : Marshal.AllocCoTaskMem(resultByteLength);
-                    Interop.mincore.WideCharToMultiByte(
-                        Interop.mincore.CP_ACP, Interop.mincore.WC_NO_BEST_FIT_CHARS, (char*)bufferPtr, length, (byte*)ptr, resultByteLength - 1, (IntPtr)(&defaultChar), IntPtr.Zero);
+                    Interop.Kernel32.WideCharToMultiByte(
+                        Interop.Kernel32.CP_ACP, Interop.Kernel32.WC_NO_BEST_FIT_CHARS, (char*)bufferPtr, length, (byte*)ptr, resultByteLength - 1, (IntPtr)(&defaultChar), IntPtr.Zero);
                     *(resultByteLength - 1 + (byte*)ptr) = 0;
                 }
                 result = ptr;

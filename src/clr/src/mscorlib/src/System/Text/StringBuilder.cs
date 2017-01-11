@@ -593,7 +593,7 @@ namespace System.Text {
                 throw new ArgumentOutOfRangeException(nameof(startIndex), Environment.GetResourceString("ArgumentOutOfRange_GenericPositive"));
             }
             if (charCount<0) {
-                throw new ArgumentOutOfRangeException("count", Environment.GetResourceString("ArgumentOutOfRange_GenericPositive"));
+                throw new ArgumentOutOfRangeException(nameof(charCount), Environment.GetResourceString("ArgumentOutOfRange_GenericPositive"));
             }
             Contract.Ensures(Contract.Result<StringBuilder>() != null);
             Contract.EndContractBlock();
@@ -605,7 +605,7 @@ namespace System.Text {
                 throw new ArgumentNullException(nameof(value));
             }
             if (charCount > value.Length - startIndex) {
-                throw new ArgumentOutOfRangeException("count", Environment.GetResourceString("ArgumentOutOfRange_Index"));
+                throw new ArgumentOutOfRangeException(nameof(charCount), Environment.GetResourceString("ArgumentOutOfRange_Index"));
             }
 
             if (charCount==0) {
@@ -848,7 +848,7 @@ namespace System.Text {
             }
 
             if (length > Length - startIndex) {
-                throw new ArgumentOutOfRangeException("index", Environment.GetResourceString("ArgumentOutOfRange_Index"));
+                throw new ArgumentOutOfRangeException(nameof(length), Environment.GetResourceString("ArgumentOutOfRange_Index"));
             }
             Contract.Ensures(Contract.Result<StringBuilder>() != null);
             Contract.EndContractBlock();
@@ -1205,7 +1205,7 @@ namespace System.Text {
             }
 
             if (charCount < 0) {
-                throw new ArgumentOutOfRangeException("count", Environment.GetResourceString("ArgumentOutOfRange_GenericPositive"));
+                throw new ArgumentOutOfRangeException(nameof(charCount), Environment.GetResourceString("ArgumentOutOfRange_GenericPositive"));
             }
 
             if (startIndex > value.Length - charCount) {

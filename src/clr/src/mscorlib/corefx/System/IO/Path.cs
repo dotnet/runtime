@@ -13,10 +13,12 @@ namespace System.IO
     // but they will handle most string operations.
     public static partial class Path
     {
-        // Platform specific alternate directory separator character.
-        // There is only one directory separator char on Unix, which is the same
-        // as the alternate separator on Windows, so same definition is used for both.
-        public static readonly char AltDirectorySeparatorChar = '/';
+        // Public static readonly variant of the separators. The Path implementation itself is using
+        // internal const variant of the separators for better performance.
+        public static readonly char DirectorySeparatorChar = PathInternal.DirectorySeparatorChar;
+        public static readonly char AltDirectorySeparatorChar = PathInternal.AltDirectorySeparatorChar;
+        public static readonly char VolumeSeparatorChar = PathInternal.VolumeSeparatorChar;
+        public static readonly char PathSeparator = PathInternal.PathSeparator;
 
         // For generating random file names
         // 8 random bytes provides 12 chars in our encoding for the 8.3 name.
@@ -88,11 +90,6 @@ namespace System.IO
                 }
             }
             return null;
-        }
-
-        public static char[] GetInvalidPathChars()
-        {
-            return PathInternal.GetInvalidPathChars();
         }
 
         // Returns the extension of the given path. The returned value includes the
@@ -290,7 +287,7 @@ namespace System.IO
                     char ch = finalPath[finalPath.Length - 1];
                     if (!PathInternal.IsDirectoryOrVolumeSeparator(ch))
                     {
-                        finalPath.Append(DirectorySeparatorChar);
+                        finalPath.Append(PathInternal.DirectorySeparatorChar);
                     }
 
                     finalPath.Append(paths[i]);
@@ -314,7 +311,7 @@ namespace System.IO
             char ch = path1[path1.Length - 1];
             return PathInternal.IsDirectoryOrVolumeSeparator(ch) ?
                 path1 + path2 :
-                path1 + DirectorySeparatorCharAsString + path2;
+                path1 + PathInternal.DirectorySeparatorCharAsString + path2;
         }
 
         private static string CombineNoChecks(string path1, string path2, string path3)
@@ -340,11 +337,11 @@ namespace System.IO
             }
             else if (hasSep1)
             {
-                return path1 + path2 + DirectorySeparatorCharAsString + path3;
+                return path1 + path2 + PathInternal.DirectorySeparatorCharAsString + path3;
             }
             else if (hasSep2)
             {
-                return path1 + DirectorySeparatorCharAsString + path2 + path3;
+                return path1 + PathInternal.DirectorySeparatorCharAsString + path2 + path3;
             }
             else
             {
@@ -352,9 +349,9 @@ namespace System.IO
                 // a params string[].  Instead, try to use a cached StringBuilder.
                 StringBuilder sb = StringBuilderCache.Acquire(path1.Length + path2.Length + path3.Length + 2);
                 sb.Append(path1)
-                  .Append(DirectorySeparatorChar)
+                  .Append(PathInternal.DirectorySeparatorChar)
                   .Append(path2)
-                  .Append(DirectorySeparatorChar)
+                  .Append(PathInternal.DirectorySeparatorChar)
                   .Append(path3);
                 return StringBuilderCache.GetStringAndRelease(sb);
             }
@@ -396,19 +393,19 @@ namespace System.IO
                 sb.Append(path1);
                 if (!hasSep1)
                 {
-                    sb.Append(DirectorySeparatorChar);
+                    sb.Append(PathInternal.DirectorySeparatorChar);
                 }
 
                 sb.Append(path2);
                 if (!hasSep2)
                 {
-                    sb.Append(DirectorySeparatorChar);
+                    sb.Append(PathInternal.DirectorySeparatorChar);
                 }
 
                 sb.Append(path3);
                 if (!hasSep3)
                 {
-                    sb.Append(DirectorySeparatorChar);
+                    sb.Append(PathInternal.DirectorySeparatorChar);
                 }
 
                 sb.Append(path4);
