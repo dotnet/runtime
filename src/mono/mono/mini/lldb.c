@@ -625,7 +625,7 @@ mono_lldb_save_specific_trampoline_info (gpointer arg1, MonoTrampolineType tramp
 	entry->code = (gsize)code;
 	entry->code_size = code_len;
 
-	GSList *unwind_ops = mono_arch_get_cie_program ();
+	GSList *unwind_ops = mono_unwind_get_cie_program ();
 	emit_unwind_info (unwind_ops, buf);
 
 	buffer_add_string (buf, "");
