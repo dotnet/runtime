@@ -10,7 +10,7 @@
     <!-- System.IO.Path conflicts between type in partial facade and in mscorlib -->
     <NoWarn>0436</NoWarn>
     <!-- copy to uap10.1 until nuget makes the change to map that to ns1.7 -->
-    <PackageTargetFramework Condition="'$(TargetGroup)' == 'netstandard'">netstandard1.7;uap10.1</PackageTargetFramework>
+    <PackageTargetFramework Condition="'$(TargetGroup)' == 'netstandard'">netstandard;uap10.1</PackageTargetFramework>
     <TargetsWindowsUap Condition="'$(TargetGroup)'=='uap101aot'">true</TargetsWindowsUap>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
@@ -117,8 +117,8 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netstandard'">
     <Compile Include="System\IO\FileStreamHelpers.CoreClr.cs" />
-    <Compile Include="System\IO\TextReader.netstandard17.cs" />
-    <Compile Include="System\IO\TextWriter.netstandard17.cs" />
+    <Compile Include="System\IO\TextReader.netstandard.cs" />
+    <Compile Include="System\IO\TextWriter.netstandard.cs" />
   </ItemGroup>
   <!-- WINDOWS: Shared CoreCLR and .NET Native -->
   <ItemGroup Condition="'$(TargetsWindows)' == 'true' And '$(TargetGroup)' != 'net461'">

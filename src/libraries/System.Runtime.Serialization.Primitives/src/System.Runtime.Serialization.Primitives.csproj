@@ -12,7 +12,7 @@
     <PlatformTarget>AnyCPU</PlatformTarget>
     <ProjectGuid>{CDF0ACB5-1361-4E48-8ECB-22E8022F5F01}</ProjectGuid>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)'=='net463'">true</IsPartialFacadeAssembly>
-    <PackageTargetFramework Condition="'$(TargetGroup)' == 'netstandard'">netstandard1.7;uap10.1</PackageTargetFramework>
+    <PackageTargetFramework Condition="'$(TargetGroup)' == 'netstandard'">netstandard;uap10.1</PackageTargetFramework>
     <PackageTargetFramework Condition="'$(TargetGroup)' == 'netstandard1.3'">netstandard1.3;netcore50</PackageTargetFramework>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->

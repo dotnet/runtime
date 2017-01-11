@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
@@ -97,7 +97,7 @@
       <TestTFMs>netcoreapp1.0;net46</TestTFMs>
     </Project>
     <Project Include="Xslt\XslCompiledTransformApi\System.Xml.Xsl.XslCompiledTransformApi.Tests.csproj">
-      <TestTFMs>netcoreapp1.1</TestTFMs>
+      <TestTFMs>netcoreapp</TestTFMs>
     </Project>
     <Project Include="Xslt\XsltCompiler\XsltCompiler.Tests.csproj" />
     <Project Include="Xslt\XslTransformApi\System.Xml.Xsl.XslTransformApi.Tests.csproj" />

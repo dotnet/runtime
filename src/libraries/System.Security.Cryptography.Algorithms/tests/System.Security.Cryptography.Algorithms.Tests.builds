@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
@@ -7,7 +7,7 @@
     </Project>
     <Project Include="System.Security.Cryptography.Algorithms.Tests.csproj">
       <OSGroup>Windows_NT</OSGroup>
-      <TestTFMs>netcoreapp1.1;net463</TestTFMs>
+      <TestTFMs>netcoreapp;net463</TestTFMs>
     </Project>
     <Project Include="System.Security.Cryptography.Algorithms.Tests.csproj">
       <TargetGroup>netstandard1.6</TargetGroup>

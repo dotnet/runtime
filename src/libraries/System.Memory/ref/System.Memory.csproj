@@ -1,10 +1,10 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <CLSCompliant>false</CLSCompliant>
-    <AssemblyVersion>4.0.0.0</AssemblyVersion>    
+    <AssemblyVersion>4.0.0.0</AssemblyVersion>
     <ProjectGuid>{0EF9D369-7097-44F9-BEBA-C32AF5EB4756}</ProjectGuid>
   </PropertyGroup>
   <ItemGroup>

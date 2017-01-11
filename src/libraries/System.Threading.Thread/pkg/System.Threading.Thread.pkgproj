@@ -3,25 +3,23 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
     <ProjectReference Include="..\ref\System.Threading.Thread.csproj">
-      <SupportedFramework>net461;netcoreapp1.1;uap10.1;$(AllXamarinFrameworks)</SupportedFramework>
+      <SupportedFramework>net461;netcoreapp2.0;uap10.1;$(AllXamarinFrameworks)</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.Threading.Thread.builds" />
   </ItemGroup>
   <ItemGroup>
     <!-- The implementation library is now runtime-specific and it was not before, so this allows package verification during
-         build to find the implementation library when looking it up just by netstandard1.7, instead of not finding it and
+         build to find the implementation library when looking it up just by netstandard2.0, instead of not finding it and
          falling back to the netstandard1.3 version. -->
     <File Include="$(PlaceholderFile)">
-      <TargetPath>lib/netstandard1.7</TargetPath>
+      <TargetPath>lib/netstandard2.0</TargetPath>
     </File>
-
     <InboxOnTargetFramework Include="MonoAndroid10" />
     <InboxOnTargetFramework Include="MonoTouch10" />
     <InboxOnTargetFramework Include="xamarinios10" />
     <InboxOnTargetFramework Include="xamarinmac20" />
     <InboxOnTargetFramework Include="xamarintvos10" />
     <InboxOnTargetFramework Include="xamarinwatchos10" />
-    
     <ValidatePackageSuppression Include="SuppressNETStandardInference">
       <!-- UAP 10.1 is currently incorrectly mapped by NuGet to ns1.4 -->
       <Value>UAP,Version=v10.1</Value>

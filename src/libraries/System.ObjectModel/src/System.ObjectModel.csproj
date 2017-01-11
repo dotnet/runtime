@@ -10,7 +10,7 @@
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'net463'">
     <ContractProject Include="..\ref\System.ObjectModel.csproj">
-      <TargetGroup>netstandard1.7</TargetGroup>
+      <TargetGroup>netstandard</TargetGroup>
     </ContractProject>
   </ItemGroup>
   <!-- Default configurations to help VS understand the configurations -->

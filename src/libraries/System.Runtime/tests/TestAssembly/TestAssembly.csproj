@@ -16,7 +16,7 @@
     <Compile Include="TestAssembly.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' != 'net46'">
-    <Compile Include="AssemblyAttributes.cs"/>
+    <Compile Include="AssemblyAttributes.cs" />
     <Compile Include="$(CommonPath)\System\Diagnostics\CodeAnalysis\ExcludeFromCodeCoverageAttribute.cs">
       <Link>Common\System\Diagnostics\CodeAnalysis\ExcludeFromCodeCoverageAttribute.cs</Link>
     </Compile>

@@ -52,7 +52,7 @@
     <Compile Include="SSPI\SecurityWrapper.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsWindows)' != 'true' ">
-      <Compile Include="SSPI\SSPIContext.Unix.cs" />
+    <Compile Include="SSPI\SSPIContext.Unix.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\TDS\TDS.csproj">

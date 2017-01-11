@@ -2,7 +2,7 @@
 <Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <NuGetTargetMoniker>.NETStandard,Version=v1.7</NuGetTargetMoniker>
+    <NuGetTargetMoniker>.NETStandard,Version=v2.0</NuGetTargetMoniker>
     <IsRuntimeAssembly>false</IsRuntimeAssembly>
     <!-- Given that xunit packages bring with them part of the framework, we need to specify a runtime in order to get the assets
          This RID value doesn't really matter, since the assets we are copying are not RID specific, so defaulting to Windows here

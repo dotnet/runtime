@@ -5,7 +5,7 @@
     <AssemblyName>System.Threading.Thread</AssemblyName>
     <OutputType>Library</OutputType>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
-    <PackageTargetFramework Condition="'$(TargetGroup)' == 'netstandard'">netstandard1.7;uap10.1</PackageTargetFramework>
+    <PackageTargetFramework Condition="'$(TargetGroup)' == 'netstandard'">netstandard;uap10.1</PackageTargetFramework>
     <!-- Don't allow project reference to package dependency conversion -->
     <KeepAllProjectReferences>true</KeepAllProjectReferences>
     <!-- Type being defined conflicts with imported type from dependency assembly -->

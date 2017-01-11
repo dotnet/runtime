@@ -3,7 +3,7 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
     <ProjectReference Include="..\ref\System.Runtime.Extensions.builds">
-      <SupportedFramework>netcoreapp1.1;uap10.1;net461;$(AllXamarinFrameworks)</SupportedFramework>
+      <SupportedFramework>netcoreapp2.0;uap10.1;net461;$(AllXamarinFrameworks)</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.Runtime.Extensions.csproj">
       <TargetGroup>net461</TargetGroup>

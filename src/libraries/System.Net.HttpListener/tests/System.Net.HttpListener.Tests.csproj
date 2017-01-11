@@ -11,7 +11,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'" />
   <ItemGroup>
-	<Compile Include="AuthenticationTests.cs" />
+    <Compile Include="AuthenticationTests.cs" />
     <Compile Include="SimpleHttpTest.cs" />
     <Compile Include="UrlPrefix.cs" />
     <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
