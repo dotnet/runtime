@@ -235,7 +235,7 @@ private:
 
 #if defined(_TARGET_XARCH_)
     void SetMulOpCounts(GenTreePtr tree);
-    void SetContainsAVXFlags(bool isFloatingType = true, unsigned sizeOfSIMDVector = 0);
+    void SetContainsAVXFlags(bool isFloatingPointType = true, unsigned sizeOfSIMDVector = 0);
 #endif // defined(_TARGET_XARCH_)
 
 #if !CPU_LOAD_STORE_ARCH
