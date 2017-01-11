@@ -69,19 +69,16 @@
 
   <Import Project="$(ToolsDir)Build.Common.props" Condition="Exists('$(ToolsDir)Build.Common.props')" />
 
-  <ItemGroup>
-    <NuGetSource Include="https:%2F%2Fdotnet.myget.org/F/dotnet-core-dev-eng/api/v3/index.json" />
-    <NuGetSource Include="https:%2F%2Fdotnet.myget.org/F/dotnet-core/api/v3/index.json" />
-    <!-- needed for Microsoft.DiaSymReader.Native, potentially find a better feed -->
-    <NuGetSource Include="https:%2F%2Fapi.nuget.org/v3/index.json" />
-  </ItemGroup>
+  <PropertyGroup>
+    <NuGetConfigFile Condition="'$(NuGetConfigFile)' == ''">$(ProjectDir)/../NuGet.Config</NuGetConfigFile>
+  </PropertyGroup>
 
   <PropertyGroup>
     <DotNetTool Condition="'$(DotNetTool)' == '' and '$(OsEnvironment)'!='Unix'">$(DotnetCliPath)dotnet.exe</DotNetTool>
     <DotNetTool Condition="'$(DotNetTool)' == '' and '$(OsEnvironment)'=='Unix'">$(DotnetCliPath)dotnet</DotNetTool>
     <DotNetRestoreCommand>"$(DotNetTool)" restore</DotNetRestoreCommand>
     <DotNetRestoreCommand>$(DotNetRestoreCommand) --packages "$(PackagesDir.TrimEnd('/\'.ToCharArray()))"</DotNetRestoreCommand>
-    <DotNetRestoreCommand>$(DotNetRestoreCommand) @(NuGetSource->'--source %(Identity)', ' ')</DotNetRestoreCommand>
+    <DotNetRestoreCommand>$(DotNetRestoreCommand) --configfile "$(NuGetConfigFile)"</DotNetRestoreCommand>
     <DnuRestoreCommand>$(DotNetRestoreCommand)</DnuRestoreCommand>
   </PropertyGroup>
 
