@@ -134,9 +134,18 @@ namespace System.Runtime.Serialization.Formatters.Tests
             arr.SetValue("hello", new[] { 3, 5 });
             yield return arr;
 
-            //// Various globalization types
-            //yield return CultureInfo.CurrentCulture;
-            //yield return CultureInfo.InvariantCulture;
+            // Various globalization types
+            yield return CultureInfo.CurrentCulture;
+            yield return CultureInfo.InvariantCulture;
+
+            // Internal specialized equality comparers
+            yield return EqualityComparer<byte>.Default;
+            yield return EqualityComparer<int>.Default;
+            yield return EqualityComparer<string>.Default;
+            yield return EqualityComparer<int?>.Default;
+            yield return EqualityComparer<double?>.Default;
+            yield return EqualityComparer<object>.Default;
+            yield return EqualityComparer<Int32Enum>.Default;
 
             // Custom object
             var sealedObjectWithIntStringFields = new SealedObjectWithIntStringFields();
@@ -247,18 +256,6 @@ namespace System.Runtime.Serialization.Formatters.Tests
             Assert.Equal(obj, result);
         }
 
-        public static IEnumerable<object[]> RoundtripWithHeaders_MemberData()
-        {
-            foreach (object obj in SerializableObjects())
-            {
-                // Fails with strings as the root of the graph, both in core and on desktop:
-                // "The object with ID 1 was referenced in a fixup but does not exist"
-                if (obj is string) continue;
-
-                yield return new[] { obj };
-            }
-        }
-
         [Fact]
         public void RoundtripManyObjectsInOneStream()
         {
@@ -294,6 +291,26 @@ namespace System.Runtime.Serialization.Formatters.Tests
             }
         }
 
+        public static IEnumerable<object[]> SerializeDeserialize_DeserializedTypeExpectedDifferentFromInput_MemberData()
+        {
+            yield return new object[] { EqualityComparer<Int16Enum>.Default };
+            yield return new object[] { EqualityComparer<Int64Enum>.Default };
+            yield return new object[] { EqualityComparer<UInt16Enum>.Default };
+            yield return new object[] { EqualityComparer<UInt32Enum>.Default };
+            yield return new object[] { EqualityComparer<UInt64Enum>.Default };
+            yield return new object[] { EqualityComparer<SByteEnum>.Default };
+            yield return new object[] { EqualityComparer<ByteEnum>.Default };
+        }
+
+        [Theory]
+        [MemberData(nameof(SerializeDeserialize_DeserializedTypeExpectedDifferentFromInput_MemberData))]
+        public void SerializeDeserialize_EqualityComparerThatDeserializesToADifferentType(object input)
+        {
+            Type expected = EqualityComparer<object>.Default.GetType().GetGenericTypeDefinition();
+            Assert.NotEqual(expected, input.GetType().GetGenericTypeDefinition());
+            Assert.Equal(expected, FormatterClone(input).GetType().GetGenericTypeDefinition());
+        }
+
         public static IEnumerable<object[]> SerializableExceptions()
         {
             yield return new object[] { new AbandonedMutexException() };
@@ -306,7 +323,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
             yield return new object[] { new ArrayTypeMismatchException("message") };
             yield return new object[] { new BadImageFormatException("message", "filename") };
             yield return new object[] { new COMException() };
-            //yield return new object[] { new CultureNotFoundException() };
+            yield return new object[] { new CultureNotFoundException() };
             yield return new object[] { new DataMisalignedException("message") };
             yield return new object[] { new DecoderFallbackException() };
             yield return new object[] { new DirectoryNotFoundException() };
@@ -648,7 +665,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
             var rand = new Random(42);
             foreach (object obj in SerializableObjects())
             {
-                const int FuzzingsPerObject = 20;
+                const int FuzzingsPerObject = 3;
                 for (int i = 0; i < FuzzingsPerObject; i++)
                 {
                     yield return new object[] { obj, rand, i };
