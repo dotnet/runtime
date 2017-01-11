@@ -1,7 +1,7 @@
 {
   "dependencies": {
-    "System.Runtime": "4.4.0-beta-24910-02",
-    "System.Runtime.Extensions": "4.4.0-beta-24910-02",
+    "System.Runtime": "4.4.0-beta-24911-02",
+    "System.Runtime.Extensions": "4.4.0-beta-24911-02",
     "test-runtime": {
       "target": "project",
       "exclude": "compile"
