@@ -757,16 +757,6 @@ GenTreePtr Lowering::NewPutArg(GenTreeCall* call, GenTreePtr arg, fgArgTabEntryP
     GenTreePtr putArg         = nullptr;
     bool       updateArgTable = true;
 
-#if !defined(_TARGET_64BIT_)
-    if (varTypeIsLong(type))
-    {
-        // For TYP_LONG, we leave the GT_LONG as the arg, and put the putArg below it.
-        // Therefore, we don't update the arg table entry.
-        updateArgTable = false;
-        type           = TYP_INT;
-    }
-#endif // !defined(_TARGET_64BIT_)
-
     bool isOnStack = true;
 #ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
     if (varTypeIsStruct(type))
@@ -1084,25 +1074,22 @@ void Lowering::LowerArg(GenTreeCall* call, GenTreePtr* ppArg)
             NYI("Lowering of long register argument");
         }
 
-        // For longs, we will create two PUTARG_STKs below the GT_LONG. The hi argument needs to
-        // be pushed first, so the hi PUTARG_STK will precede the lo PUTARG_STK in execution order.
+        // For longs, we will replace the GT_LONG with a GT_FIELD_LIST, and put that under a PUTARG_STK.
+        // Although the hi argument needs to be pushed first, that will be handled by the general case,
+        // in which the fields will be reversed.
         noway_assert(arg->OperGet() == GT_LONG);
-        GenTreePtr argLo = arg->gtGetOp1();
-        GenTreePtr argHi = arg->gtGetOp2();
+        assert(info->numSlots == 2);
+        GenTreePtr        argLo     = arg->gtGetOp1();
+        GenTreePtr        argHi     = arg->gtGetOp2();
+        GenTreeFieldList* fieldList = new (comp, GT_FIELD_LIST) GenTreeFieldList(argLo, 0, TYP_INT, nullptr);
+        // Only the first fieldList node (GTF_FIELD_LIST_HEAD) is in the instruction sequence.
+        (void)new (comp, GT_FIELD_LIST) GenTreeFieldList(argHi, 4, TYP_INT, fieldList);
+        putArg = NewPutArg(call, fieldList, info, TYP_VOID);
 
-        GenTreePtr putArgLo = NewPutArg(call, argLo, info, type);
-        GenTreePtr putArgHi = NewPutArg(call, argHi, info, type);
-
-        arg->gtOp.gtOp1 = putArgLo;
-        arg->gtOp.gtOp2 = putArgHi;
-
-        BlockRange().InsertBefore(arg, putArgHi, putArgLo);
-
-        // The execution order now looks like this:
-        // argLoPrev <-> argLoFirst ... argLo <-> argHiFirst ... argHi <-> putArgHi <-> putArgLo <-> arg(GT_LONG)
-
-        assert((arg->gtFlags & GTF_REVERSE_OPS) == 0);
-        arg->gtFlags |= GTF_REVERSE_OPS; // We consume the high arg (op2) first.
+        // We can't call ReplaceArgWithPutArgOrCopy here because it presumes that we are keeping the original arg.
+        BlockRange().InsertBefore(arg, fieldList, putArg);
+        BlockRange().Remove(arg);
+        *ppArg = putArg;
     }
     else
 #endif // !defined(_TARGET_64BIT_)

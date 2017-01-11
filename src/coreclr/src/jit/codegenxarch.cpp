@@ -4858,11 +4858,6 @@ void CodeGen::genCallInstruction(GenTreePtr node)
         if (arg->OperGet() != GT_ARGPLACE && !(arg->gtFlags & GTF_LATE_ARG))
         {
 #if defined(_TARGET_X86_)
-            assert((arg->OperGet() == GT_PUTARG_STK) || (arg->OperGet() == GT_LONG));
-            if (arg->OperGet() == GT_LONG)
-            {
-                assert((arg->gtGetOp1()->OperGet() == GT_PUTARG_STK) && (arg->gtGetOp2()->OperGet() == GT_PUTARG_STK));
-            }
             if ((arg->OperGet() == GT_PUTARG_STK) && (arg->gtGetOp1()->OperGet() == GT_FIELD_LIST))
             {
                 fgArgTabEntryPtr curArgTabEntry = compiler->gtArgEntryByNode(call, arg);
@@ -7782,9 +7777,9 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* putArgStk)
 
     GenTreePtr data = putArgStk->gtOp1;
 
-    // On a 32-bit target, all of the long arguments have been decomposed into
-    // a separate putarg_stk for each of the upper and lower halves.
-    noway_assert(targetType != TYP_LONG);
+    // On a 32-bit target, all of the long arguments are handled with GT_FIELD_LIST,
+    // and the type of the putArgStk is TYP_VOID.
+    assert(targetType != TYP_LONG);
 
     const unsigned argSize = putArgStk->getArgSize();
     assert((argSize % TARGET_POINTER_SIZE) == 0);

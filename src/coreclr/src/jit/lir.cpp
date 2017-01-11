@@ -1494,9 +1494,13 @@ bool LIR::Range::CheckLIR(Compiler* compiler, bool checkUnusedValues) const
             }
             else if (!def->IsValue())
             {
-                // Calls may contain "uses" of nodes that do not produce a value. This is an artifact of
-                // the HIR and should probably be fixed, but doing so is an unknown amount of work.
-                assert(node->OperGet() == GT_CALL);
+                // Stack arguments do not produce a value, but they are considered children of the call.
+                // It may be useful to remove these from being call operands, but that may also impact
+                // other code that relies on being able to reach all the operands from a call node.
+                // The GT_NOP case is because sometimes we eliminate stack argument stores as dead, but
+                // instead of removing them we replace with a NOP.
+                assert((node->OperGet() == GT_CALL) &&
+                       (def->OperIsStore() || (def->OperGet() == GT_PUTARG_STK) || (def->OperGet() == GT_NOP)));
                 continue;
             }
 
