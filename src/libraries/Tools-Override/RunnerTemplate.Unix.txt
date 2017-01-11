@@ -1,0 +1,107 @@
+﻿#!/usr/bin/env bash
+
+export RUNTIME_PATH=$1
+export EXECUTION_DIR=$(dirname "$0")
+
+function print_info_from_core_file {
+  local core_file_name=$1
+  local executable_name=$2
+
+  if ! [ -e $executable_name ]; then
+    echo "Unable to find executable $executable_name"
+    return
+  elif ! [ -e $core_file_name ]; then
+    echo "Unable to find core file $core_file_name"
+    return
+  fi
+
+  # Check for the existence of GDB on the path
+  hash gdb 2>/dev/null || { echo >&2 "GDB was not found. Unable to print core file."; return; }
+
+  echo "Printing info from core file $core_file_name"
+
+  # Open the dump in GDB and print the stack from each thread. We can add more
+  # commands here if desired.
+  gdb --batch -ex "thread apply all bt full" -ex "quit" $executable_name $core_file_name
+}
+
+function copy_core_file_to_temp_location {
+  local core_file_name=$1
+
+  local storage_location="/tmp/coredumps"
+
+  # Create the directory (this shouldn't fail even if it already exists).
+  mkdir -p $storage_location
+
+  # Only copy the file over if the directory is empty. Otherwise, do nothing.
+  if [ ! "$(ls -A $storage_location)" ]; then 
+    echo "Copying core file $core_file_name to $storage_location"
+    cp $core_file_name $storage_location
+  fi
+}
+
+if [ "$RUNTIME_PATH" == "" ]
+then
+echo error: RUNTIME_PATH is not defined.  Usage: $0 RUNTIME_PATH
+exit -1
+fi
+echo Using $RUNTIME_DIR as the test runtime folder.
+
+# ========================= BEGIN Core File Setup ============================
+if [ "$(uname -s)" == "Darwin" ]; then
+  # On OS X, we will enable core dump generation only if there are no core 
+  # files already in /cores/ at this point. This is being done to prevent
+  # inadvertently flooding the CI machines with dumps.
+  if [ ! "$(ls -A /cores)" ]; then 
+    ulimit -c unlimited
+  fi
+elif [ "$(uname -s)" == "Linux" ]; then
+  # On Linux, we'll enable core file generation unconditionally, and if a dump
+  # is generated, we will print some useful information from it and delete the
+  # dump immediately.
+
+  if [ -e /proc/self/coredump_filter ]; then
+      # Include memory in private and shared file-backed mappings in the dump.
+      # This ensures that we can see disassembly from our shared libraries when
+      # inspecting the contents of the dump. See 'man core' for details.
+      echo 0x3F > /proc/self/coredump_filter
+  fi
+
+  ulimit -c unlimited
+fi
+# ========================= END Core File Setup ==============================
+
+# ========================= BEGIN Test Execution =============================
+echo Running tests... Start time: $(date +"%T")
+echo Commands:
+[[TestRunCommandsEcho]]
+pushd $EXECUTION_DIR
+[[TestRunCommands]]
+popd
+test_exitcode=$?
+echo Finished running tests.  End time=$(date +"%T").  Return value was $test_exitcode
+# ========================= END Test Execution ===============================
+# ======================= BEGIN Core File Inspection =========================
+if [ "$(uname -s)" == "Linux" ]; then
+  # Depending on distro/configuration, the core files may either be named "core"
+  # or "core.<PID>" by default. We read /proc/sys/kernel/core_uses_pid to 
+  # determine which it is.
+  core_name_uses_pid=0
+  if [ -e /proc/sys/kernel/core_uses_pid ] && [ "1" == $(cat /proc/sys/kernel/core_uses_pid) ]; then
+    core_name_uses_pid=1
+  fi
+
+  if [ $core_name_uses_pid == "1" ]; then
+    # We don't know what the PID of the process was, so let's look at all core
+    # files whose name matches core.NUMBER
+    for f in core.*; do
+      [[ $f =~ core.[0-9]+ ]] && print_info_from_core_file "$f" "corerun" && copy_core_file_to_temp_location "$f" && rm "$f"
+    done
+  elif [ -f core ]; then
+    print_info_from_core_file "core" "corerun"
+    copy_core_file_to_temp_location "core"
+    rm "core"
+  fi
+fi
+# ======================== END Core File Inspection ==========================
+exit $test_exitcode
