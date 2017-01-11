@@ -89,7 +89,6 @@ namespace System
 
 namespace System.ComponentModel
 {
-    [HostProtection(SharedState = true)]
     internal static class CompModSwitches
     {
         private static volatile BooleanSwitch commonDesignerServices;
