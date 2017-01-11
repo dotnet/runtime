@@ -10701,22 +10701,20 @@ void CodeGen::genRestoreCalleeSavedFltRegs(unsigned lclFrameSize)
 void CodeGen::genVzeroupperIfNeeded(bool check256bitOnly /* = true*/)
 {
 #ifdef FEATURE_AVX_SUPPORT
-    if (compiler->getSIMDInstructionSet() == InstructionSet_AVX)
+    bool emitVzeroUpper = false;
+    if (check256bitOnly)
     {
-        if (check256bitOnly)
-        {
-            if (getEmitter()->Contains256bitAVX())
-            {
-                instGen(INS_vzeroupper);
-            }
-        }
-        else
-        {
-            if (getEmitter()->ContainsAVX())
-            {
-                instGen(INS_vzeroupper);
-            }
-        }
+        emitVzeroUpper = getEmitter()->Contains256bitAVX();
+    }
+    else
+    {
+        emitVzeroUpper = getEmitter()->ContainsAVX();
+    }
+
+    if (emitVzeroUpper)
+    {
+        assert(compiler->getSIMDInstructionSet() == InstructionSet_AVX);
+        instGen(INS_vzeroupper);
     }
 #endif
 }
