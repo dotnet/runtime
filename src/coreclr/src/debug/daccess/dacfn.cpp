@@ -219,7 +219,7 @@ DacWriteAll(TADDR addr, PVOID buffer, ULONG32 size, bool throwEx)
 
 #ifdef FEATURE_PAL
 HRESULT 
-DacVirtualUnwind(DWORD threadId, PCONTEXT context, PT_KNONVOLATILE_CONTEXT_POINTERS contextPointers)
+DacVirtualUnwind(DWORD threadId, PT_CONTEXT context, PT_KNONVOLATILE_CONTEXT_POINTERS contextPointers)
 {
     if (!g_dacImpl)
     {
