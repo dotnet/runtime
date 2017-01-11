@@ -536,6 +536,9 @@ mono_lldb_remove_method (MonoDomain *domain, MonoMethod *method, MonoJitDynamicM
 	Buffer tmpbuf;
 	Buffer *buf = &tmpbuf;
 
+	if (!enabled)
+		return;
+
 	g_assert (method->dynamic);
 
 	lldb_lock ();
