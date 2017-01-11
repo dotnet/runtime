@@ -296,10 +296,9 @@ void TransitionFrame::UpdateRegDisplayHelper(const PREGDISPLAY pRD, UINT cbStack
 
     pRD->pContext = NULL;
 
-    pRD->pEdi = (DWORD*) &regs->edi;
-    pRD->pEsi = (DWORD*) &regs->esi;
-    pRD->pEbx = (DWORD*) &regs->ebx;
-    pRD->pEbp = (DWORD*) &regs->ebp;
+#define CALLEE_SAVED_REGISTER(regname) pRD->p##regname = (DWORD*) &regs->regname;
+    ENUM_CALLEE_SAVED_REGISTERS();
+#undef CALLEE_SAVED_REGISTER
     pRD->PCTAddr = GetReturnAddressPtr();
     pRD->ControlPC = *PTR_PCODE(pRD->PCTAddr);
     pRD->Esp  = (DWORD)(pRD->PCTAddr + sizeof(TADDR) + cbStackPop);
@@ -515,10 +514,9 @@ void FaultingExceptionFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
     // reset pContext; it's only valid for active (top-most) frame
     pRD->pContext = NULL;
 
-    pRD->pEdi = (DWORD*) &regs->edi;
-    pRD->pEsi = (DWORD*) &regs->esi;
-    pRD->pEbx = (DWORD*) &regs->ebx;
-    pRD->pEbp = (DWORD*) &regs->ebp;
+#define CALLEE_SAVED_REGISTER(regname) pRD->p##regname = (DWORD*) &regs->regname;
+    ENUM_CALLEE_SAVED_REGISTERS();
+#undef CALLEE_SAVED_REGISTER
     pRD->Esp = m_Esp;
     pRD->PCTAddr = GetReturnAddressPtr();
     pRD->ControlPC = *PTR_PCODE(pRD->PCTAddr);
@@ -723,10 +721,9 @@ void TailCallFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
     // reset pContext; it's only valid for active (top-most) frame
     pRD->pContext = NULL;
 
-    pRD->pEdi = (DWORD*)&m_regs.edi;
-    pRD->pEsi = (DWORD*)&m_regs.esi;
-    pRD->pEbx = (DWORD*)&m_regs.ebx;
-    pRD->pEbp = (DWORD*)&m_regs.ebp;
+#define CALLEE_SAVED_REGISTER(regname) pRD->p##regname = (DWORD*) &m_regs.regname;
+    ENUM_CALLEE_SAVED_REGISTERS();
+#undef CALLEE_SAVED_REGISTER
 
     pRD->PCTAddr = GetReturnAddressPtr();
     pRD->ControlPC = *PTR_PCODE(pRD->PCTAddr);
@@ -1076,7 +1073,7 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         return offsetof(StubForHostStackFrame, m_calleeSavedRegisters) + 
-               offsetof(CalleeSavedRegisters, ebp); 
+               offsetof(CalleeSavedRegisters, Ebp);
     }
 
     static INT32 GetFPrelOffsOfArgumentRegisters() 
