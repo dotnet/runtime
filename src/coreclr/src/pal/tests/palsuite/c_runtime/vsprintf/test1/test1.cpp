@@ -29,7 +29,7 @@ int __cdecl main(int argc, char *argv[])
         return(FAIL);
     }
 
-    testvsp(buf, "hello world");
+    testvsp(buf, _countof(buf), "hello world");
 
     if (memcmp(checkstr, buf, strlen(checkstr)+1) != 0)
     {
@@ -37,8 +37,8 @@ int __cdecl main(int argc, char *argv[])
              checkstr, 256, buf);
     }
 
-    testvsp(buf, "xxxxxxxxxxxxxxxxx");
-    ret = testvsp(buf,  "hello world");
+    testvsp(buf, _countof(buf), "xxxxxxxxxxxxxxxxx");
+    ret = testvsp(buf, _countof(buf),  "hello world");
 
     if (ret != strlen(checkstr))
     {

@@ -1143,7 +1143,7 @@ if [ ! -z "$gcsimulator" ]; then
     export RunningGCSimulatorTests=1
 fi
 
-if [ ! -z "$jitdisasm" ]; then
+if [[ ! "$jitdisasm" -eq 0 ]]; then
     echo "Running jit disasm"
     export RunningJitDisasm=1
 fi

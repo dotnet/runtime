@@ -142,7 +142,13 @@ DEFINE_EXCEPTION(g_SystemNS,       BadImageFormatException,        true,
                  META_E_BAD_SIGNATURE,
                  COR_E_LOADING_WINMD_REFERENCE_ASSEMBLY)
 
+#ifdef FEATURE_CORECLR
+// CannotUnloadAppDomainException is removed in CoreCLR
+#define kCannotUnloadAppDomainException kException 
+#else
 DEFINE_EXCEPTION(g_SystemNS,           CannotUnloadAppDomainException, false,  COR_E_CANNOTUNLOADAPPDOMAIN)
+#endif // FEATURE_CORECLR
+
 DEFINE_EXCEPTION(g_CodeContractsNS,    ContractException,              false,  COR_E_CODECONTRACTFAILED)
 
 #ifdef FEATURE_REMOTING

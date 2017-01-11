@@ -278,7 +278,7 @@ PAL_atol(const char *szNumber)
 
     PERF_ENTRY(atol);
     ENTRY("atol (szNumber=%p (%s))\n", 
-        szNumber?szNumber:"NULL"
+        szNumber, szNumber?szNumber:"NULL"
         );
     
     lResult = atol(szNumber);

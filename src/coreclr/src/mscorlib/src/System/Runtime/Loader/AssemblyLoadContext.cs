@@ -75,7 +75,7 @@ namespace System.Runtime.Loader
             // Since unloading an AssemblyLoadContext is not yet implemented, this is a temporary solution to raise the
             // Unloading event on process exit. Register for the current AppDomain's ProcessExit event, and the handler will in
             // turn raise the Unloading event.
-            AppDomain.CurrentDomain.ProcessExit += OnProcessExit;
+            AppContext.Unloading += OnAppContextUnloading;
         }
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
@@ -446,7 +446,7 @@ namespace System.Runtime.Loader
 #endif // FEATURE_MULTICOREJI
         }
 
-        private void OnProcessExit(object sender, EventArgs e)
+        private void OnAppContextUnloading(object sender, EventArgs e)
         {
             var unloading = Unloading;
             if (unloading != null)

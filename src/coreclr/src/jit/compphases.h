@@ -11,9 +11,10 @@
 // corresponding array of string names of those phases.  This include file undefines CompPhaseNameMacro
 // after the last use.
 // The arguments are:
-//   CompPhaseNameMacro(enumName, stringName, hasChildren, parent)
+//   CompPhaseNameMacro(enumName, stringName, shortName, hasChildren, parent)
 //     "enumName" is an Enumeration-style all-caps name.
 //     "stringName" is a self-explanatory.
+//     "shortName" is an abbreviated form for stringName
 //     "hasChildren" is true if this phase is broken out into subphases.
 //         (We should never do EndPhase on a phase that has children, only on 'leaf phases.')
 //     "parent" is -1 for leaf phases, otherwise it is the "enumName" of the parent phase.
@@ -97,6 +98,9 @@ CompPhaseNameMacro(PHASE_EMIT_GCEH,              "Emit GC+EH tables",           
 // for calls through ICorJitInfo across all "real" phases.
 CompPhaseNameMacro(PHASE_CLR_API,                "CLR API calls",                  "CLR-API",  false, -1)
 #endif
+
+CompPhaseNameMacro(PHASE_EMPTY_FINALLY,          "Remove empty finally",           "EMPTYFIN",  false, -1)
+CompPhaseNameMacro(PHASE_CLONE_FINALLY,          "Clone finally",                  "CLONEFIN",  false, -1)
 // clang-format on
 
 #undef CompPhaseNameMacro

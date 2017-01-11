@@ -528,8 +528,8 @@ int DBG_printf_gcc(DBG_CHANNEL_ID channel, DBG_LEVEL_ID level, BOOL bHeader,
 
     va_start(args, format);
 
-    output_size+=Silent_PAL_vsnprintf(buffer_ptr, DBG_BUFFER_SIZE-output_size,
-                                      format, args);
+    output_size+=_vsnprintf_s(buffer_ptr, DBG_BUFFER_SIZE-output_size, _TRUNCATE,
+                              format, args);
     va_end(args);
 
     if( output_size > DBG_BUFFER_SIZE )
@@ -633,8 +633,8 @@ int DBG_printf_c99(DBG_CHANNEL_ID channel, DBG_LEVEL_ID level, BOOL bHeader,
     }
 
     va_start(args, format);
-    output_size+=Silent_PAL_vsnprintf(buffer_ptr, DBG_BUFFER_SIZE-output_size, 
-                                      format, args);
+    output_size+=_vsnprintf_s(buffer_ptr, DBG_BUFFER_SIZE-output_size, _TRUNCATE,
+                              format, args);
     va_end(args);
 
     if(output_size>DBG_BUFFER_SIZE)
@@ -960,7 +960,7 @@ void PAL_DisplayDialogFormatted(const char *szTitle, const char *szTextFormat, .
 
     const int cchBuffer = 4096;
     char *szBuffer = (char*)alloca(cchBuffer);
-    PAL__vsnprintf(szBuffer, cchBuffer, szTextFormat, args);
+    _vsnprintf_s(szBuffer, cchBuffer, _TRUNCATE, szTextFormat, args);
     PAL_DisplayDialog(szTitle, szBuffer);
 
     va_end(args);

@@ -33,14 +33,6 @@ int __cdecl main(int argc, char *argv[])
                        convert("ba"), convert("ba"));
     DoArgumentPrecTest(convert("%.*S"), 2, (void*)"bar", "bar", convert("ba"),
                        convert("ba"));
-    DoArgumentPrecTest(convert("%.*n"), 3, (void*)&n, "pointer to int", convert(""),
-                       convert(""));
-    if (n != 0)
-    {
-        Fail("ERROR: Expected count parameter to resolve to %d, got %X\n",
-             0, n);
-    }
-
     DoArgumentPrecTest(convert("%.*c"), 0, (void*)'a', "a", convert("a"),
                        convert("a"));
     DoArgumentPrecTest(convert("%.*c"), 4, (void*)'a', "a", convert("a"),

@@ -37,7 +37,7 @@
     #define LOGGING
 #endif
 
-#if !defined(_TARGET_X86_)
+#if !defined(_TARGET_X86_) || defined(FEATURE_PAL)
 #define WIN64EXCEPTIONS
 #endif
 

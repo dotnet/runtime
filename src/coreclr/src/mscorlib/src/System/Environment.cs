@@ -1144,6 +1144,49 @@ namespace System {
             get;
         }
 
+        // The upper bits of t_executionIdCache are the executionId. The lower bits of
+        // the t_executionIdCache are counting down to get it periodically refreshed.
+        // TODO: Consider flushing the executionIdCache on Wait operations or similar 
+        // actions that are likely to result in changing the executing core
+        [ThreadStatic]
+        static int t_executionIdCache;
+
+        const int ExecutionIdCacheShift = 16;
+        const int ExecutionIdCacheCountDownMask = (1 << ExecutionIdCacheShift) - 1;
+        const int ExecutionIdRefreshRate = 5000;
+
+        private static int RefreshExecutionId()
+        {
+            int executionId = CurrentProcessorNumber;
+
+            // On Unix, CurrentProcessorNumber is implemented in terms of sched_getcpu, which
+            // doesn't exist on all platforms.  On those it doesn't exist on, GetCurrentProcessorNumber
+            // returns -1.  As a fallback in that case and to spread the threads across the buckets
+            // by default, we use the current managed thread ID as a proxy.
+            if (executionId < 0) executionId = Environment.CurrentManagedThreadId;
+
+            Debug.Assert(ExecutionIdRefreshRate <= ExecutionIdCacheCountDownMask);
+
+            // Mask with Int32.MaxValue to ensure the execution Id is not negative
+            t_executionIdCache = ((executionId << ExecutionIdCacheShift) & Int32.MaxValue) | ExecutionIdRefreshRate;
+
+            return executionId;
+        }
+
+        // Cached processor number used as a hint for which per-core stack to access. It is periodically
+        // refreshed to trail the actual thread core affinity.
+        internal static int CurrentExecutionId
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                int executionIdCache = t_executionIdCache--;
+                if ((executionIdCache & ExecutionIdCacheCountDownMask) == 0)
+                    return RefreshExecutionId();
+                return (executionIdCache >> ExecutionIdCacheShift);
+            }
+        }
+
         public static string GetEnvironmentVariable(string variable)
         {
             if (variable == null)
