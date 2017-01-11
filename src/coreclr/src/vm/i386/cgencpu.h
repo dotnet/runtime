@@ -86,6 +86,10 @@ BOOL Runtime_Test_For_SSE2();
 #define JUMP_ALLOCATE_SIZE                      8   // # bytes to allocate for a jump instruction
 #define BACK_TO_BACK_JUMP_ALLOCATE_SIZE         8   // # bytes to allocate for a back to back jump instruction
 
+#ifdef WIN64EXCEPTIONS
+#define USE_INDIRECT_CODEHEADER
+#endif // WIN64EXCEPTIONS
+
 #define HAS_COMPACT_ENTRYPOINTS                 1
 
 // Needed for PInvoke inlining in ngened images

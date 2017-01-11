@@ -2190,7 +2190,7 @@ LRetry:
                               | TS_Detached
                               | TS_Unstarted)));
 
-#ifdef _TARGET_X86_
+#if defined(_TARGET_X86_) && !defined(WIN64EXCEPTIONS)
         // TODO WIN64: consider this if there is a way to detect of managed code on stack.
         if ((m_pFrame == FRAME_TOP)
             && (GetFirstCOMPlusSEHRecord(this) == EXCEPTION_CHAIN_END)
@@ -2213,7 +2213,7 @@ LRetry:
         if (!m_fPreemptiveGCDisabled)
         {
             if ((m_pFrame != FRAME_TOP) && m_pFrame->IsTransitionToNativeFrame()
-#ifdef _TARGET_X86_
+#if defined(_TARGET_X86_) && !defined(WIN64EXCEPTIONS)
                 && ((size_t) GetFirstCOMPlusSEHRecord(this) > ((size_t) m_pFrame) - 20)
 #endif // _TARGET_X86_
                 )

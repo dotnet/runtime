@@ -3020,7 +3020,7 @@ void * EEJitManager::allocCodeFragmentBlock(size_t blockSize, unsigned alignment
     {
         CrstHolder ch(&m_CodeHeapCritSec);
 
-        mem = (TADDR) allocCodeRaw(&requestInfo, sizeof(TADDR), blockSize, alignment, &pCodeHeap);
+        mem = (TADDR) allocCodeRaw(&requestInfo, sizeof(CodeHeader), blockSize, alignment, &pCodeHeap);
 
         // CodeHeader comes immediately before the block
         CodeHeader * pCodeHdr = (CodeHeader *) (mem - sizeof(CodeHeader));
