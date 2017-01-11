@@ -21,22 +21,6 @@
       }
     },
     {
-      "enabled": false,
-      "continueOnError": false,
-      "alwaysRun": false,
-      "displayName": "Delete files from $(build.SourcesDirectory)",
-      "timeoutInMinutes": 0,
-      "task": {
-        "id": "b7e8b412-0437-4065-9371-edc5881de25b",
-        "versionSpec": "1.*",
-        "definitionType": "task"
-      },
-      "inputs": {
-        "SourceFolder": "$(build.SourcesDirectory)",
-        "Contents": "**\n.gitignore"
-      }
-    },
-    {
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
@@ -219,42 +203,6 @@
     },
     {
       "enabled": true,
-      "continueOnError": true,
-      "alwaysRun": false,
-      "displayName": "Zip",
-      "timeoutInMinutes": 0,
-      "task": {
-        "id": "dc66d2f0-a7ba-11e5-ae62-3deab86d85e3",
-        "versionSpec": "0.*",
-        "definitionType": "task"
-      },
-      "inputs": {
-        "pathToZipFolder": "corefx\\bin",
-        "pathToZipFile": "bin.zip",
-        "overwrite": "false"
-      }
-    },
-    {
-      "enabled": false,
-      "continueOnError": true,
-      "alwaysRun": false,
-      "displayName": "Copy Publish Artifact: bin",
-      "timeoutInMinutes": 0,
-      "task": {
-        "id": "1d341bb0-2106-458c-8422-d00bcea6512a",
-        "versionSpec": "1.*",
-        "definitionType": "task"
-      },
-      "inputs": {
-        "CopyRoot": "",
-        "Contents": "bin.zip",
-        "ArtifactName": "bin",
-        "ArtifactType": "Container",
-        "TargetPath": "\\\\my\\share\\$(Build.DefinitionName)\\$(Build.BuildNumber)"
-      }
-    },
-    {
-      "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Publish symbols path: \\\\cpvsbuild\\drops\\DotNetCore\\$(Build.DefinitionName)\\$(Build.BuildNumber)\\symbols",
@@ -327,25 +275,6 @@
         "definitionType": "task"
       },
       "inputs": {}
-    },
-    {
-      "enabled": false,
-      "continueOnError": true,
-      "alwaysRun": false,
-      "displayName": "Copy Publish Artifact: symbols",
-      "timeoutInMinutes": 0,
-      "task": {
-        "id": "1d341bb0-2106-458c-8422-d00bcea6512a",
-        "versionSpec": "1.*",
-        "definitionType": "task"
-      },
-      "inputs": {
-        "CopyRoot": "",
-        "Contents": "bin\\*$(PB_Platform).$(PB_ConfigurationGroup)\\**\\*.dll\nbin\\*$(PB_Platform).$(PB_ConfigurationGroup)\\**\\*.pdb",
-        "ArtifactName": "symbols",
-        "ArtifactType": "FilePath",
-        "TargetPath": "\\\\cpvsbuild\\drops\\DotNetCore\\$(Build.DefinitionName)\\$(Build.BuildNumber)\\FullSymbols"
-      }
     },
     {
       "enabled": true,
