@@ -8,7 +8,6 @@
     <AssemblyName>System.Diagnostics.FileVersionInfo.TestAssembly</AssemblyName>
     <ProjectGuid>{28EB14BE-3BC9-4543-ABA6-A932424DFBD0}</ProjectGuid>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
-    <IsTestProject>true</IsTestProject>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU'" />

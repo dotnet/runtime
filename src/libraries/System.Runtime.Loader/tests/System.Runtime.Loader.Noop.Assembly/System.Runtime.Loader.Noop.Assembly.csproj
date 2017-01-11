@@ -5,7 +5,6 @@
     <ProjectGuid>{396D6EBF-60BD-4DAF-8783-FB403E070A57}</ProjectGuid>
     <!-- Test expects an un-signed assembly -->
     <SkipSigning>true</SkipSigning>
-    <IsTestProject>true</IsTestProject>
     <NoWarn>0436</NoWarn>
   </PropertyGroup>
   <ItemGroup>
