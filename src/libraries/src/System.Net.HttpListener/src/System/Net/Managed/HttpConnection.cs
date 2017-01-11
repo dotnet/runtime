@@ -135,6 +135,8 @@ namespace System.Net
             _context = new HttpListenerContext(this);
         }
 
+        public Stream ConnectedStream => _stream;
+
         public bool IsClosed
         {
             get { return (_socket == null); }

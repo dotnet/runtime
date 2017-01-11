@@ -10,11 +10,11 @@ namespace System.Net.WebSockets
 {
     internal static partial class WebSocketValidate
     {
-        private static async Task<HttpListenerWebSocketContext> AcceptWebSocketAsyncCore(HttpListenerContext context,
+        internal static Task<HttpListenerWebSocketContext> AcceptWebSocketAsyncCore(HttpListenerContext context,
             string subProtocol,
             int receiveBufferSize,
             TimeSpan keepAliveInterval,
-            ArraySegment<byte> internalBuffer)
+            ArraySegment<byte>? internalBuffer = null)
         {
             // get property will create a new response if one doesn't exist.
             HttpListenerResponse response = context.Response;
@@ -52,16 +52,12 @@ namespace System.Net.WebSockets
             response.StatusCode = (int)HttpStatusCode.SwitchingProtocols; // HTTP 101
             response.StatusDescription = HttpStatusDescription.Get(HttpStatusCode.SwitchingProtocols);
 
-            MemoryStream ms = new MemoryStream();
-            response.SendHeaders(false, ms);
-
-            await response.OutputStream.WriteAsync(ms.GetBuffer(), (int)ms.Position, (int)(ms.Length - ms.Position));
-            await response.OutputStream.FlushAsync();
-
             HttpResponseStream responseStream = response.OutputStream as HttpResponseStream;
-            HttpRequestStream requestStream = request.InputStream as HttpRequestStream;
-            WebSocketHttpListenerDuplexStream webSocketStream = new WebSocketHttpListenerDuplexStream(requestStream, responseStream);
-            WebSocket webSocket = ManagedWebSocket.CreateFromConnectedStream(webSocketStream, true, subProtocol, keepAliveInterval, receiveBufferSize);
+            
+            // Send websocket handshake headers
+            responseStream.WriteHeaders();
+
+            WebSocket webSocket = ManagedWebSocket.CreateFromConnectedStream(context.Connection.ConnectedStream, true, subProtocol, keepAliveInterval, receiveBufferSize, internalBuffer);
 
             HttpListenerWebSocketContext webSocketContext = new HttpListenerWebSocketContext(
                                                                 request.Url,
@@ -76,7 +72,8 @@ namespace System.Net.WebSockets
                                                                 secWebSocketVersion,
                                                                 secWebSocketKey,
                                                                 webSocket);
-            return webSocketContext;
+
+            return Task.FromResult(webSocketContext);
         }
 
         private static void ValidateWebSocketHeaders(HttpListenerContext context)
@@ -100,6 +97,8 @@ namespace System.Net.WebSockets
                     nameof(ValidateWebSocketHeaders),
                     HttpKnownHeaderNames.SecWebSocketVersion));
             }
+
+            // TODO: Figure out how to validate version.
 
             if (string.IsNullOrWhiteSpace(context.Request.Headers[HttpKnownHeaderNames.SecWebSocketKey]))
             {

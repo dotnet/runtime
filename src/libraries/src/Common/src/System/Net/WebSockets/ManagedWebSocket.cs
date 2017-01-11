@@ -277,7 +277,7 @@ namespace System.Net.WebSockets
 
             try
             {
-                ClientWebSocket.ThrowIfInvalidState(_state, _disposed, s_validSendStates);
+                ThrowIfInvalidState(_state, _disposed, s_validSendStates);
                 ThrowIfOperationInProgress(_lastSendAsync);
             }
             catch (Exception exc)
@@ -302,7 +302,7 @@ namespace System.Net.WebSockets
 
             try
             {
-                ClientWebSocket.ThrowIfInvalidState(_state, _disposed, s_validReceiveStates);
+                ThrowIfInvalidState(_state, _disposed, s_validReceiveStates);
 
                 Debug.Assert(!Monitor.IsEntered(StateUpdateLock), $"{nameof(StateUpdateLock)} must never be held when acquiring {nameof(ReceiveAsyncLock)}");
                 lock (ReceiveAsyncLock) // synchronize with receives in CloseAsync
@@ -325,7 +325,7 @@ namespace System.Net.WebSockets
 
             try
             {
-                ClientWebSocket.ThrowIfInvalidState(_state, _disposed, s_validCloseStates);
+                ThrowIfInvalidState(_state, _disposed, s_validCloseStates);
             }
             catch (Exception exc)
             {
@@ -341,7 +341,7 @@ namespace System.Net.WebSockets
 
             try
             {
-                ClientWebSocket.ThrowIfInvalidState(_state, _disposed, s_validCloseOutputStates);
+                ThrowIfInvalidState(_state, _disposed, s_validCloseOutputStates);
             }
             catch (Exception exc)
             {
@@ -1326,6 +1326,34 @@ namespace System.Net.WebSockets
                 return false;
             }
             return true;
+        }
+
+        internal static void ThrowIfInvalidState(WebSocketState currentState, bool isDisposed, WebSocketState[] validStates)
+        {
+            string validStatesText = string.Empty;
+
+            if (validStates != null && validStates.Length > 0)
+            {
+                foreach (WebSocketState validState in validStates)
+                {
+                    if (currentState == validState)
+                    {
+                        // Ordering is important to maintain .NET 4.5 WebSocket implementation exception behavior.
+                        if (isDisposed)
+                        {
+                            throw new ObjectDisposedException(nameof(ClientWebSocket));
+                        }
+
+                        return;
+                    }
+                }
+
+                validStatesText = string.Join(", ", validStates);
+            }
+
+            throw new WebSocketException(
+                WebSocketError.InvalidState,
+                SR.Format(SR.net_WebSockets_InvalidState, currentState, validStatesText));
         }
 
         private sealed class Utf8MessageState

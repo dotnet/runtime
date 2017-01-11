@@ -31,6 +31,7 @@
 using System.Globalization;
 using System.IO;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace System.Net
 {
@@ -297,101 +298,104 @@ namespace System.Net
 
             return false;
         }
-
-        internal void SendHeaders(bool closing, MemoryStream ms)
+        
+        internal void SendHeaders(bool closing, MemoryStream ms, bool isWebSocketHandshake = false)
         {
             Encoding encoding = _contentEncoding;
             if (encoding == null)
                 encoding = Encoding.Default;
 
-            if (_contentType != null)
+            if (!isWebSocketHandshake)
             {
-                if (_contentEncoding != null && _contentType.IndexOf(HttpHeaderStrings.Charset, StringComparison.Ordinal) == -1)
+                if (_contentType != null)
                 {
-                    string enc_name = _contentEncoding.WebName;
-                    _webHeaders.Set(HttpKnownHeaderNames.ContentType, _contentType + "; " + HttpHeaderStrings.Charset + enc_name);
-                }
-                else
-                {
-                    _webHeaders.Set(HttpKnownHeaderNames.ContentType, _contentType);
-                }
-            }
-
-            if (_webHeaders[HttpKnownHeaderNames.Server] == null)
-                _webHeaders.Set(HttpKnownHeaderNames.Server, HttpHeaderStrings.NetCoreServerName);
-
-            CultureInfo inv = CultureInfo.InvariantCulture;
-            if (_webHeaders[HttpKnownHeaderNames.Date] == null)
-                _webHeaders.Set(HttpKnownHeaderNames.Date, DateTime.UtcNow.ToString("r", inv));
-
-            if (!_chunked)
-            {
-                if (!_clSet && closing)
-                {
-                    _clSet = true;
-                    _contentLength = 0;
+                    if (_contentEncoding != null && _contentType.IndexOf(HttpHeaderStrings.Charset, StringComparison.Ordinal) == -1)
+                    {
+                        string enc_name = _contentEncoding.WebName;
+                        _webHeaders.Set(HttpKnownHeaderNames.ContentType, _contentType + "; " + HttpHeaderStrings.Charset + enc_name);
+                    }
+                    else
+                    {
+                        _webHeaders.Set(HttpKnownHeaderNames.ContentType, _contentType);
+                    }
                 }
 
-                if (_clSet)
-                    _webHeaders.Set(HttpKnownHeaderNames.ContentLength, _contentLength.ToString(inv));
-            }
+                if (_webHeaders[HttpKnownHeaderNames.Server] == null)
+                    _webHeaders.Set(HttpKnownHeaderNames.Server, HttpHeaderStrings.NetCoreServerName);
 
-            Version v = _context.Request.ProtocolVersion;
-            if (!_clSet && !_chunked && v >= HttpVersion.Version11)
-                _chunked = true;
+                CultureInfo inv = CultureInfo.InvariantCulture;
+                if (_webHeaders[HttpKnownHeaderNames.Date] == null)
+                    _webHeaders.Set(HttpKnownHeaderNames.Date, DateTime.UtcNow.ToString("r", inv));
 
-            /* Apache forces closing the connection for these status codes:
-			 *	HttpStatusCode.BadRequest 		        400
-			 *	HttpStatusCode.RequestTimeout 		    408
-			 *	HttpStatusCode.LengthRequired 		    411
-			 *	HttpStatusCode.RequestEntityTooLarge 	413
-			 *	HttpStatusCode.RequestUriTooLong 	    414
-			 *	HttpStatusCode.InternalServerError      500
-			 *	HttpStatusCode.ServiceUnavailable 	    503
-			 */
-            bool conn_close = (_statusCode == (int)HttpStatusCode.BadRequest || _statusCode == (int)HttpStatusCode.RequestTimeout
-                    || _statusCode == (int)HttpStatusCode.LengthRequired || _statusCode == (int)HttpStatusCode.RequestEntityTooLarge
-                    || _statusCode == (int)HttpStatusCode.RequestUriTooLong || _statusCode == (int)HttpStatusCode.InternalServerError
-                    || _statusCode == (int)HttpStatusCode.ServiceUnavailable);
+                if (!_chunked)
+                {
+                    if (!_clSet && closing)
+                    {
+                        _clSet = true;
+                        _contentLength = 0;
+                    }
 
-            if (conn_close == false)
-                conn_close = !_context.Request.KeepAlive;
+                    if (_clSet)
+                        _webHeaders.Set(HttpKnownHeaderNames.ContentLength, _contentLength.ToString(inv));
+                }
 
-            // They sent both KeepAlive: true and Connection: close
-            if (!_keepAlive || conn_close)
-            {
-                _webHeaders.Set(HttpKnownHeaderNames.Connection, HttpHeaderStrings.Close);
-                conn_close = true;
-            }
+                Version v = _context.Request.ProtocolVersion;
+                if (!_clSet && !_chunked && v >= HttpVersion.Version11)
+                    _chunked = true;
 
-            if (_chunked)
-                _webHeaders.Set(HttpKnownHeaderNames.TransferEncoding, HttpHeaderStrings.Chunked);
+                /* Apache forces closing the connection for these status codes:
+                 *	HttpStatusCode.BadRequest 		        400
+                 *	HttpStatusCode.RequestTimeout 		    408
+                 *	HttpStatusCode.LengthRequired 		    411
+                 *	HttpStatusCode.RequestEntityTooLarge 	413
+                 *	HttpStatusCode.RequestUriTooLong 	    414
+                 *	HttpStatusCode.InternalServerError      500
+                 *	HttpStatusCode.ServiceUnavailable 	    503
+                 */
+                bool conn_close = (_statusCode == (int)HttpStatusCode.BadRequest || _statusCode == (int)HttpStatusCode.RequestTimeout
+                        || _statusCode == (int)HttpStatusCode.LengthRequired || _statusCode == (int)HttpStatusCode.RequestEntityTooLarge
+                        || _statusCode == (int)HttpStatusCode.RequestUriTooLong || _statusCode == (int)HttpStatusCode.InternalServerError
+                        || _statusCode == (int)HttpStatusCode.ServiceUnavailable);
 
-            int reuses = _context.Connection.Reuses;
-            if (reuses >= 100)
-            {
-                _forceCloseChunked = true;
-                if (!conn_close)
+                if (conn_close == false)
+                    conn_close = !_context.Request.KeepAlive;
+
+                // They sent both KeepAlive: true and Connection: close
+                if (!_keepAlive || conn_close)
                 {
                     _webHeaders.Set(HttpKnownHeaderNames.Connection, HttpHeaderStrings.Close);
                     conn_close = true;
                 }
-            }
 
-            if (!conn_close)
-            {
-                _webHeaders.Set(HttpKnownHeaderNames.KeepAlive, String.Format("timeout=15,max={0}", 100 - reuses));
-                if (_context.Request.ProtocolVersion <= HttpVersion.Version10)
-                    _webHeaders.Set(HttpKnownHeaderNames.Connection, HttpHeaderStrings.KeepAlive);
-            }
+                if (_chunked)
+                    _webHeaders.Set(HttpKnownHeaderNames.TransferEncoding, HttpHeaderStrings.Chunked);
 
-            if (_location != null)
-                _webHeaders.Set(HttpKnownHeaderNames.Location, _location);
+                int reuses = _context.Connection.Reuses;
+                if (reuses >= 100)
+                {
+                    _forceCloseChunked = true;
+                    if (!conn_close)
+                    {
+                        _webHeaders.Set(HttpKnownHeaderNames.Connection, HttpHeaderStrings.Close);
+                        conn_close = true;
+                    }
+                }
 
-            if (_cookies != null)
-            {
-                foreach (Cookie cookie in _cookies)
-                    _webHeaders.Set(HttpKnownHeaderNames.SetCookie, CookieToClientString(cookie));
+                if (!conn_close)
+                {
+                    _webHeaders.Set(HttpKnownHeaderNames.KeepAlive, String.Format("timeout=15,max={0}", 100 - reuses));
+                    if (_context.Request.ProtocolVersion <= HttpVersion.Version10)
+                        _webHeaders.Set(HttpKnownHeaderNames.Connection, HttpHeaderStrings.KeepAlive);
+                }
+
+                if (_location != null)
+                    _webHeaders.Set(HttpKnownHeaderNames.Location, _location);
+
+                if (_cookies != null)
+                {
+                    foreach (Cookie cookie in _cookies)
+                        _webHeaders.Set(HttpKnownHeaderNames.SetCookie, CookieToClientString(cookie));
+                }
             }
 
             StreamWriter writer = new StreamWriter(ms, encoding, 256);
@@ -405,9 +409,9 @@ namespace System.Net
 
             /* Assumes that the ms was at position 0 */
             ms.Position = preamble;
-            _headersSent = true;
+            _headersSent = !isWebSocketHandshake;
         }
-        
+
         private static string FormatHeaders(WebHeaderCollection headers)
         {
             var sb = new StringBuilder();

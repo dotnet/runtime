@@ -32,6 +32,7 @@ using System.IO;
 using System.Net.Sockets;
 using System.Text;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 
 namespace System.Net
 {
@@ -107,7 +108,30 @@ namespace System.Net
             }
         }
 
-        private MemoryStream GetHeaders(bool closing)
+        internal void WriteHeaders()
+        {
+            if (_disposed)
+                throw new ObjectDisposedException(GetType().ToString());
+
+            byte[] bytes = null;
+            MemoryStream ms = GetHeaders(false, true);
+            bool chunked = _response.SendChunked;
+            if (_stream.CanWrite)
+            {
+                long start = ms.Position;
+                if (chunked)
+                {
+                    bytes = GetChunkSizeBytes(0, true);
+                    ms.Position = ms.Length;
+                    ms.Write(bytes, 0, bytes.Length);
+                }
+
+                InternalWrite(ms.GetBuffer(), (int)start, (int)(ms.Length - start));
+                _stream.Flush();
+            }
+        }
+
+        private MemoryStream GetHeaders(bool closing, bool isWebSocketHandshake = false)
         {
             // SendHeaders works on shared headers
             lock (_response._headersLock)
@@ -118,7 +142,7 @@ namespace System.Net
                 }
 
                 MemoryStream ms = new MemoryStream();
-                _response.SendHeaders(closing, ms);
+                _response.SendHeaders(closing, ms, isWebSocketHandshake);
                 return ms;
             }
         }
@@ -147,6 +171,22 @@ namespace System.Net
             else
             {
                 _stream.Write(buffer, offset, count);
+            }
+        }
+
+        internal async Task InternalWriteAsync(byte[] buffer, int offset, int count)
+        {
+            if (_ignore_errors)
+            {
+                try
+                {
+                    await _stream.WriteAsync(buffer, offset, count);
+                }
+                catch { }
+            }
+            else
+            {
+                await _stream.WriteAsync(buffer, offset, count);
             }
         }
 
@@ -190,8 +230,7 @@ namespace System.Net
                 InternalWrite(s_crlf, 0, 2);
         }
 
-        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count,
-                            AsyncCallback cback, object state)
+        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback cback, object state)
         {
             if (_disposed)
                 throw new ObjectDisposedException(GetType().ToString());
