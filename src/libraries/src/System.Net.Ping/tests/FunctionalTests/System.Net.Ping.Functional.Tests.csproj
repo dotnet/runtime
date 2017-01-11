@@ -8,7 +8,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
   <!-- Test APIs introduced after 1.0 -->
-  <ItemGroup Condition="'$(TargetGroup)'==''">
+  <ItemGroup Condition="'$(TargetGroup)'=='netstandard'">
     <Compile Include="PingTest.cs" />
     <Compile Include="LoggingTest.cs" />
   </ItemGroup>

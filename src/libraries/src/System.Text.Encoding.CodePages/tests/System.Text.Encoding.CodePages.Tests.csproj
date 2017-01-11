@@ -10,8 +10,8 @@
   <ItemGroup>
     <Compile Include="EncodingCodePages.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == ''">
-    <Compile Include="EncodingCodePages.netstandard17.cs" />
+  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard'">
+    <Compile Include="EncodingCodePages.netstandard.cs" />
     <Compile Include="$(CommonTestPath)\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs">
       <Link>Common\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs</Link>
     </Compile>

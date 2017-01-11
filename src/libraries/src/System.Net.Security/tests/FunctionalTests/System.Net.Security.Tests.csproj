@@ -82,12 +82,12 @@
       <Link>Common\System\Threading\Tasks\TaskTimeoutExtensions.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'=='netcoreapp1.1'">
+  <ItemGroup Condition="'$(TargetGroup)'=='netcoreapp'">
     <!-- TODO #13070: Add net463 to the condition after the TFM gets updated to the actual .Net 4.6.3.-->
     <Compile Include="SslStreamAlertsTest.cs" />
     <Compile Include="SslStreamSystemDefaultsTest.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'=='netstandard1.7'">
+  <ItemGroup Condition="'$(TargetGroup)'=='netstandard'">
     <Compile Include="LoggingTest.cs" />
     <Compile Include="$(CommonTestPath)\System\Diagnostics\Tracing\TestEventListener.cs">
       <Link>Common\System\Diagnostics\Tracing\TestEventListener.cs</Link>

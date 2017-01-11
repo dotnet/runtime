@@ -28,7 +28,7 @@
   <PropertyGroup>
     <IsLineupPackage Condition="'$(PackageTargetRuntime)' == ''">true</IsLineupPackage>
     <TargetFrameworkName>netcoreapp</TargetFrameworkName>
-    <TargetFrameworkVersion>1.1</TargetFrameworkVersion>
+    <TargetFrameworkVersion>2.0</TargetFrameworkVersion>
     <TargetFramework>$(TargetFrameworkName)$(TargetFrameworkVersion)</TargetFramework>
     <SkipPackageFileCheck>true</SkipPackageFileCheck>
     <SkipValidatePackage>true</SkipValidatePackage>
@@ -38,7 +38,7 @@
 
     <NETStandardLibraryPackage>NETStandard.Library2</NETStandardLibraryPackage>
     <NETStandardLibraryPackageVersion>2.0.0-beta-24709-0</NETStandardLibraryPackageVersion>
-    <NETStandardVersion>1.7</NETStandardVersion>
+    <NETStandardVersion>2.0</NETStandardVersion>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(PackageTargetRuntime)' == ''">

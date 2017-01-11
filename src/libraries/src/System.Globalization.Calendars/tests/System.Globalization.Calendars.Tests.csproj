@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
@@ -115,8 +115,8 @@
       <Link>Common\System\PlatformDetection.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == ''">
-    <Compile Include="Misc\Calendars.netstandard1.7.cs" />
+  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard'">
+    <Compile Include="Misc\Calendars.netstandard.cs" />
   </ItemGroup>
   <PropertyGroup Condition="'$(TargetGroup)' == 'net46'">
     <DefineConstants>$(DefineConstants);net46</DefineConstants>

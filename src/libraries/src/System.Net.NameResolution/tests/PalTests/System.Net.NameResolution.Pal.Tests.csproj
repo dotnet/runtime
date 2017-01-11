@@ -61,7 +61,7 @@
       <Link>Common\System\Net\DebugSafeHandle.cs</Link>
     </Compile>
     <!-- Common -->
-    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeHandleZeroOrMinusOneIsInvalid.cs" Condition="'$(TargetGroup)' != 'netstandard1.7'">
+    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeHandleZeroOrMinusOneIsInvalid.cs" Condition="'$(TargetGroup)' != 'netstandard'">
       <Link>Common\Microsoft\Win32\SafeHandles\SafeHandleZeroOrMinusOneIsInvalid.cs</Link>
     </Compile>
     <!-- System.Net.Internals -->

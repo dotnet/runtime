@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
@@ -9,12 +9,12 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
   <!-- Compiled Source Files -->
-  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard1.7'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard'">
     <Compile Include="NamedPipeTests\NamedPipeTest.RunAsClient.cs" />
-    <Compile Include="NamedPipeTests\NamedPipeTest.Read.netstandard17.cs" />
-    <Compile Include="NamedPipeTests\NamedPipeTest.netstandard17.cs" />
-    <Compile Include="PipeTest.netstandard17.cs" />
-    <Compile Include="PipeTest.Read.netstandard17.cs" />
+    <Compile Include="NamedPipeTests\NamedPipeTest.Read.netstandard.cs" />
+    <Compile Include="NamedPipeTests\NamedPipeTest.netstandard.cs" />
+    <Compile Include="PipeTest.netstandard.cs" />
+    <Compile Include="PipeTest.Read.netstandard.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AnonymousPipeTests\AnonymousPipeTest.CreateServer.cs" />

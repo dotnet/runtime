@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <Configuration Condition="'$(Configuration)'==''">Windows_Debug</Configuration>
@@ -30,10 +30,10 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="FileVersionInfoTest.cs" />
-    <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs" >
+    <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
       <Link>ProductionCode\Common\Interop\Windows\Interop.Libraries.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.VerLanguageName.cs" >
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.VerLanguageName.cs">
       <Link>ProductionCode\Common\Interop\Windows\kernel32\Interop.VerLanguageName.cs</Link>
     </Compile>
   </ItemGroup>

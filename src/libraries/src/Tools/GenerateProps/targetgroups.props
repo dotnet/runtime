@@ -11,7 +11,7 @@
       <TargetingPackNugetPackageId>Microsoft.TargetingPack.Private.NetNative</TargetingPackNugetPackageId>
       <NuGetTargetMoniker>.NETCore,Version=v5.0</NuGetTargetMoniker>
       <Imports>netcore50</Imports>
-      <CompatibleWith>netstandard1.7</CompatibleWith>
+      <CompatibleWith>netstandard1.4</CompatibleWith>
     </TargetGroups>
     <TargetGroups Include="netstandard1.0">
       <NuGetTargetMoniker>.NETStandard,Version=v1.0</NuGetTargetMoniker>
@@ -40,26 +40,26 @@
       <NuGetTargetMoniker>.NETStandard,Version=v1.6</NuGetTargetMoniker>
       <Imports>netstandard1.5</Imports>
     </TargetGroups>
-    <TargetGroups Include="netstandard1.7">
-      <NuGetTargetMoniker>.NETStandard,Version=v1.7</NuGetTargetMoniker>
+    <TargetGroups Include="netstandard2.0">
+      <NuGetTargetMoniker>.NETStandard,Version=v2.0</NuGetTargetMoniker>
       <Imports>netstandard1.6</Imports>
     </TargetGroups>
     <TargetGroups Include="netstandard">
-      <NuGetTargetMoniker>.NETStandard,Version=v1.7</NuGetTargetMoniker>
-      <Imports>netstandard1.7</Imports>
+      <NuGetTargetMoniker>.NETStandard,Version=v2.0</NuGetTargetMoniker>
+      <Imports>netstandard2.0</Imports>
     </TargetGroups>
     <TargetGroups Include="netcoreapp1.0">
       <NuGetTargetMoniker>.NETCoreApp,Version=v1.0</NuGetTargetMoniker>
       <CompatibleWith>netstandard1.6</CompatibleWith>
     </TargetGroups>
-    <TargetGroups Include="netcoreapp1.1">
-      <NuGetTargetMoniker>.NETCoreApp,Version=v1.1</NuGetTargetMoniker>
+    <TargetGroups Include="netcoreapp2.0">
+      <NuGetTargetMoniker>.NETCoreApp,Version=v2.0</NuGetTargetMoniker>
       <Imports>netcoreapp1.0</Imports>
-      <CompatibleWith>netstandard1.7</CompatibleWith>
+      <CompatibleWith>netstandard2.0</CompatibleWith>
     </TargetGroups>
     <TargetGroups Include="netcoreapp">
-      <NuGetTargetMoniker>.NETCoreApp,Version=v1.1</NuGetTargetMoniker>
-      <Imports>netcoreapp1.1</Imports>
+      <NuGetTargetMoniker>.NETCoreApp,Version=v2.0</NuGetTargetMoniker>
+      <Imports>netcoreapp2.0</Imports>
       <CompatibleWith>netstandard</CompatibleWith>
     </TargetGroups>
     <TargetGroups Include="netcoreapp1.2">
@@ -101,13 +101,13 @@
       <TargetingPackNugetPackageId>Microsoft.TargetingPack.NETFramework.v4.6.3</TargetingPackNugetPackageId>
       <NuGetTargetMoniker>.NETFramework,Version=v4.6.3</NuGetTargetMoniker>
       <Imports>net462</Imports>
-      <CompatibleWith>netstandard1.7</CompatibleWith>
+      <CompatibleWith>netstandard2.0</CompatibleWith>
     </TargetGroups>
     <TargetGroups Include="netfx">
       <TargetingPackNugetPackageId>Microsoft.TargetingPack.NETFramework.v4.6.3</TargetingPackNugetPackageId>
       <NuGetTargetMoniker>.NETFramework,Version=v4.6.3</NuGetTargetMoniker>
       <Imports>net463</Imports>
-      <CompatibleWith>netstandard1.7</CompatibleWith>
+      <CompatibleWith>netstandard2.0</CompatibleWith>
     </TargetGroups>
     <TargetGroups Include="win8">
       <NuGetTargetMoniker>Windows,Version=v8.0</NuGetTargetMoniker>

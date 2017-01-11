@@ -23,7 +23,7 @@
       <Link>CommonTest\System\Security\Cryptography\ByteUtils.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'==''">
+  <ItemGroup Condition="'$(TargetGroup)'=='netstandard'">
     <Compile Include="Base64TransformsTests.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

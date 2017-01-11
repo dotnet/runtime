@@ -8,7 +8,7 @@
     <ProjectGuid>{879C23DC-D828-4DFB-8E92-ABBC11B71035}</ProjectGuid>
     <AssemblyName>System.DirectoryServices</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
+    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v2.0</NuGetTargetMoniker>
     <NoWarn>$(NoWarn);0649</NoWarn>
     <GeneratePlatformNotSupportedAssembly Condition="'$(TargetsUnix)' == 'true'">true</GeneratePlatformNotSupportedAssembly>
   </PropertyGroup>
@@ -28,7 +28,7 @@
     <Compile Include="System\DirectoryServices\DirectoryEntry.cs" />
     <Compile Include="System\DirectoryServices\DirectoryEntryConfiguration.cs" />
     <Compile Include="System\DirectoryServices\DirectorySearcher.cs" />
-<!--     <Compile Include="System\DirectoryServices\DirectoryServicesPermission.cs" />
+    <!--     <Compile Include="System\DirectoryServices\DirectoryServicesPermission.cs" />
     <Compile Include="System\DirectoryServices\DirectoryServicesPermissionAccess.cs" />
     <Compile Include="System\DirectoryServices\DirectoryServicesPermissionAttribute.cs" />
     <Compile Include="System\DirectoryServices\DirectoryServicesPermissionEntry.cs" />

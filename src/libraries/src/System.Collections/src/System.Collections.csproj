@@ -8,7 +8,7 @@
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <!-- 436 is thrown because BitArray conflict with corelib -->
     <NoWarn>0436</NoWarn>
-    <PackageTargetFramework Condition="'$(TargetGroup)' == 'netstandard'">netstandard1.7;uap10.1</PackageTargetFramework>
+    <PackageTargetFramework Condition="'$(TargetGroup)' == 'netstandard'">netstandard;uap10.1</PackageTargetFramework>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />

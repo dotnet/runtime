@@ -9,7 +9,7 @@
   <ItemGroup>
     <Compile Include="ServicePointManagerTest.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'=='netcoreapp1.1'">
+  <ItemGroup Condition="'$(TargetGroup)'=='netcoreapp'">
     <!-- TODO #13070: Add net463 to the condition after the TFM gets updated to the actual .Net 4.6.3.-->
     <Compile Include="TlsSystemDefault.cs" />
   </ItemGroup>

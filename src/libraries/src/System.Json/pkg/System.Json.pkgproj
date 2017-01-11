@@ -5,7 +5,6 @@
     <ProjectReference Include="..\src\System.Json.builds">
       <SupportedFramework>net45;netcore45;netcoreapp1.0;wp8;wpa81;$(AllXamarinFrameworks)</SupportedFramework>
     </ProjectReference>
-    
     <!-- System.Json is a classic reference assembly on Xamarin platforms -->
     <InboxOnTargetFramework Include="monoandroid10">
       <AsFrameworkReference>true</AsFrameworkReference>

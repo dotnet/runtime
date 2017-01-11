@@ -15,7 +15,7 @@
     <ProjectReference Include="..\System.ServiceProcess.ServiceController.TestNativeService\System.ServiceProcess.ServiceController.TestNativeService.vcxproj">
       <Project>{ceb0775c-4273-4ac4-b50e-4492718051ae}</Project>
       <Name>System.ServiceProcess.ServiceController.TestNativeService</Name>
-      <UndefineProperties>OSGroup;TargetGroup</UndefineProperties>
+      <UndefineProperties>OSGroup;TargetGroup;Configuration</UndefineProperties>
       <SetConfiguration>Configuration=Release</SetConfiguration>
       <SetPlatform Condition="'$(Platform)'=='AnyCPU'">Platform=x64</SetPlatform>
     </ProjectReference>

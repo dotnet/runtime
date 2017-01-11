@@ -12,10 +12,10 @@
     <Compile Include="TimerChangeTests.cs" />
     <Compile Include="TimerFiringTests.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == ''">
-    <Compile Include="TimerConstructorTests.netstandard1.7.cs" />
-    <Compile Include="TimerChangeTests.netstandard1.7.cs" />
-    <Compile Include="TimerFiringTests.netstandard1.7.cs" />
+  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard'">
+    <Compile Include="TimerConstructorTests.netstandard.cs" />
+    <Compile Include="TimerChangeTests.netstandard.cs" />
+    <Compile Include="TimerFiringTests.netstandard.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

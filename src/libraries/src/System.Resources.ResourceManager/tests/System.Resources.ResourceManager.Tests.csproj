@@ -19,13 +19,13 @@
     </Compile>
     <Compile Include="SatelliteContractVersionAttributeTests.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetGroup)' == '' ">
+  <ItemGroup Condition=" '$(TargetGroup)' == 'netstandard' ">
     <Compile Include="$(CommonTestPath)/System/Runtime/Serialization/Formatters/BinaryFormatterHelpers.cs">
       <Link>System/Runtime/Serialization/Formatters/BinaryFormatterHelpers.cs</Link>
     </Compile>
-    <Compile Include="MissingManifestResourceExceptionTests.netstandard17.cs" />
+    <Compile Include="MissingManifestResourceExceptionTests.netstandard.cs" />
     <Compile Include="MissingSatelliteAssemblyException.cs" />
-    <Compile Include="ResourceManagerTests.netstandard17.cs" />
+    <Compile Include="ResourceManagerTests.netstandard.cs" />
     <Compile Include="ResourceSetTests.cs" />
     <EmbeddedResource Include="Resources\TestResx.netstandard17.resx">
       <Generator>ResXFileCodeGenerator</Generator>

@@ -4,7 +4,7 @@
   <PropertyGroup>
     <ProjectGuid>{4FE5ECEE-ACC5-4558-A946-573426599B73}</ProjectGuid>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(TargetGroup)' == 'netstandard1.7'">
+  <PropertyGroup Condition="'$(TargetGroup)' == 'netstandard'">
     <DefineConstants>NetStandard17</DefineConstants>
   </PropertyGroup>
   <!-- Help VS understand available configurations -->
@@ -28,12 +28,12 @@
     <Compile Include="NetworkCredentialTest.cs" />
     <Compile Include="SocketAddressTest.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard1.7'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard'">
     <Compile Include="LoggingTest.cs" />
     <Compile Include="SerializationTest.cs" />
     <Compile Include="RequestCachePolicyTest.cs" />
     <Compile Include="CookieContainerAddTest.cs" />
-    <Compile Include="NetworkCredentialTest.netstandard1.7.cs" />
+    <Compile Include="NetworkCredentialTest.netstandard.cs" />
     <Compile Include="$(CommonTestPath)\System\Diagnostics\Tracing\TestEventListener.cs">
       <Link>Common\System\Diagnostics\Tracing\TestEventListener.cs</Link>
     </Compile>

@@ -4,8 +4,8 @@
   <PropertyGroup>
     <ProjectGuid>{A28B0064-EFB2-4B77-B97C-DECF5DAB074E}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <DefineConstants Condition="'$(TargetGroup)'==''">$(DefineConstants);netstandard17</DefineConstants>
-    <DefineConstants Condition="'$(TargetGroup)'=='netcoreapp1.1'">$(DefineConstants);netstandard17;netcoreapp11</DefineConstants>
+    <DefineConstants Condition="'$(TargetGroup)'=='netstandard'">$(DefineConstants);netstandard17</DefineConstants>
+    <DefineConstants Condition="'$(TargetGroup)'=='netcoreapp'">$(DefineConstants);netstandard17;netcoreapp11</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Release|AnyCPU'" />
@@ -40,8 +40,8 @@
       <Link>CommonTest\System\PlatformDetection.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'=='' OR '$(TargetGroup)'=='netcoreapp1.1'">
-    <Compile Include="ChainTests.netstandard17.cs" />
+  <ItemGroup Condition="'$(TargetGroup)'=='netstandard' OR '$(TargetGroup)'=='netcoreapp'">
+    <Compile Include="ChainTests.netstandard.cs" />
     <Compile Include="ImportTests.cs" />
     <Compile Include="$(CommonTestPath)\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs">
       <Link>Common\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs</Link>

@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
@@ -9,17 +9,17 @@
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
-  <ItemGroup Condition="'$(TargetGroup)'==''" >
-    <Compile Include="IndentedTextWriter.cs"/>
+  <ItemGroup Condition="'$(TargetGroup)'=='netstandard'">
+    <Compile Include="IndentedTextWriter.cs" />
     <Compile Include="BinaryReader\BinaryReaderTests.cs" />
     <Compile Include="MemoryStream\MemoryStream.GetBufferTests.cs" />
-    <Compile Include="Stream\Stream.netstandard17.cs" />
-    <Compile Include="StreamReader\StreamReader.netstandard17.cs" />
+    <Compile Include="Stream\Stream.netstandard.cs" />
+    <Compile Include="StreamReader\StreamReader.netstandard.cs" />
     <Compile Include="StreamReader\StreamReader.StringCtorTests.cs" />
-    <Compile Include="StreamWriter\StreamWriter.netstandard17.cs" />
+    <Compile Include="StreamWriter\StreamWriter.netstandard.cs" />
     <Compile Include="StreamWriter\StreamWriter.StringCtorTests.cs" />
     <Compile Include="Stream\Stream.APMMethodsTests.cs" />
-    <Compile Include="BufferedStream\BufferedStreamTests.netstandard1.7.cs" />
+    <Compile Include="BufferedStream\BufferedStreamTests.netstandard.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BinaryWriter\BinaryWriter.WriteByteCharTests.cs" />
@@ -28,7 +28,7 @@
     <Compile Include="BufferedStream\BufferedStream.FlushTests.cs" />
     <Compile Include="BufferedStream\BufferedStream.InvalidParameters.cs" />
     <Compile Include="BufferedStream\BufferedStreamTests.cs" />
-    <Compile Include="BufferedStream\BufferedStreamTests.netcoreapp1.1.cs" Condition="'$(TargetGroup)' == 'netcoreapp1.1'" />
+    <Compile Include="BufferedStream\BufferedStreamTests.netcoreapp.cs" Condition="'$(TargetGroup)' == 'netcoreapp'" />
     <Compile Include="InvalidDataException\InvalidDataExceptionTests.cs" />
     <Compile Include="MemoryStream\MemoryStream.ConstructorTests.cs" />
     <Compile Include="MemoryStream\MemoryStream.TryGetBufferTests.cs" />

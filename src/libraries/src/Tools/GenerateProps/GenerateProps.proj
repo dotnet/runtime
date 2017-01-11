@@ -17,7 +17,7 @@
   
   <Target Name="FindBestConfiguration">
     <PropertyGroup>
-      <ProjectConfigurations>netcoreapp1.1;netstandard1.0-Windows_NT;netstandard1.6</ProjectConfigurations>
+      <ProjectConfigurations>netcoreapp2.0;netstandard1.0-Windows_NT;netstandard1.6</ProjectConfigurations>
     </PropertyGroup>
     
     <FindBestConfiguration Properties="@(Property)" 
