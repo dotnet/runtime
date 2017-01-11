@@ -69,6 +69,10 @@ Abstract:
 #include "pedecoder.h"
 #include "gcinfo.h"
 
+#if defined(WIN64EXCEPTIONS) && !defined(USE_INDIRECT_CODEHEADER)
+#error "WIN64EXCEPTIONS requires USE_INDIRECT_CODEHEADER"
+#endif // WIN64EXCEPTIONS && !USE_INDIRECT_CODEHEADER
+
 class MethodDesc;
 class ICorJitCompiler;
 class IJitManager;
