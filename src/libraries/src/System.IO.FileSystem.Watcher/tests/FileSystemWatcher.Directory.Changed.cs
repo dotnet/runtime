@@ -24,6 +24,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Desktop FSW disallows modification of the watched folder.")]
         public void FileSystemWatcher_Directory_Changed_WatchedFolder()
         {
             using (var testDirectory = new TempDirectory(GetTestFilePath()))
