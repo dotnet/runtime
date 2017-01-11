@@ -37,16 +37,6 @@ namespace System.Security {
         private PermissionSet       m_DeclarativeDenials;
         private PermissionSet       m_DeclarativeRestrictions;
 
-#if !FEATURE_PAL
-        // if this frame contains a call to any WindowsIdentity.Impersonate(), 
-        // we save the previous SafeTokenHandles here (in the next two fields)
-        // Used during exceptionstackwalks to revert impersonation before calling filters        
-        [NonSerialized]
-        private SafeAccessTokenHandle     m_callerToken; 
-        [NonSerialized]
-        private SafeAccessTokenHandle     m_impToken;                               
-#endif
-
         private bool                m_AssertFT;
         private bool                m_assertAllPossible;
 #pragma warning disable 169 
@@ -172,16 +162,7 @@ namespace System.Security {
             
             return (fDeclarative) ? m_DeclarativeRestrictions : m_restriction;
         }
-#if !FEATURE_PAL        
-        //-----------------------------------------------------------+
-        // SafeAccessTokenHandle (Impersonation + EH purposes)
-        //-----------------------------------------------------------+
-        internal void SetTokenHandles (SafeAccessTokenHandle callerToken, SafeAccessTokenHandle impToken)
-        {
-            m_callerToken = callerToken;
-            m_impToken = impToken;
-        }
-#endif
+
         //-----------------------------------------------------------+
         // R E V E R T
         //-----------------------------------------------------------+

@@ -509,6 +509,7 @@ void FaultingExceptionFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
     }
     CONTRACT_END;
 
+#ifndef WIN64EXCEPTIONS
     CalleeSavedRegisters* regs = GetCalleeSavedRegisters();
 
     // reset pContext; it's only valid for active (top-most) frame
@@ -518,9 +519,24 @@ void FaultingExceptionFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
     pRD->pEsi = (DWORD*) &regs->esi;
     pRD->pEbx = (DWORD*) &regs->ebx;
     pRD->pEbp = (DWORD*) &regs->ebp;
+    pRD->Esp = m_Esp;
     pRD->PCTAddr = GetReturnAddressPtr();
     pRD->ControlPC = *PTR_PCODE(pRD->PCTAddr);
-    pRD->Esp = m_Esp;
+#else
+    memcpy(pRD->pCurrentContext, &m_ctx, sizeof(CONTEXT));
+
+    pRD->ControlPC = m_ctx.Eip;
+
+    pRD->Esp = m_ctx.Esp;
+
+    pRD->pCurrentContextPointers->Ebx = &m_ctx.Ebx;
+    pRD->pCurrentContextPointers->Edi = &m_ctx.Edi;
+    pRD->pCurrentContextPointers->Esi = &m_ctx.Esi;
+    pRD->pCurrentContextPointers->Ebp = &m_ctx.Ebp;
+
+    pRD->IsCallerContextValid = FALSE;
+    pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
+#endif // WIN64EXCEPTIONS
     RETURN;
 }
 
@@ -606,6 +622,7 @@ void ResumableFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
 
     CONTEXT* pUnwoundContext = m_Regs;
 
+#ifndef WIN64EXCEPTIONS
 #if !defined(DACCESS_COMPILE)
     // "pContextForUnwind" field is only used on X86 since not only is it initialized just for it,
     // but its used only under the confines of STACKWALKER_MAY_POP_FRAMES preprocessor define,
@@ -625,6 +642,7 @@ void ResumableFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
         pUnwoundContext->Eip = m_Regs->Eip;
     }
 #endif // !defined(DACCESS_COMPILE)
+#endif // !WIN64EXCEPTIONS
 
     pRD->pEax = &pUnwoundContext->Eax;
     pRD->pEcx = &pUnwoundContext->Ecx;

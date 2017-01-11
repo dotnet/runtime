@@ -33,6 +33,22 @@
     <SkipImportILTargets>true</SkipImportILTargets>
   </PropertyGroup>
 
+  <!-- Common properties -->
+  <PropertyGroup>
+    <RootBinDir>$(__RootBinDir)\</RootBinDir>
+    <RootBinDir Condition="'$(__RootBinDir)'==''">$(ProjectDir)bin\</RootBinDir>
+  </PropertyGroup>
+
+  <!-- Output paths -->
+  <PropertyGroup>
+    <BaseIntermediateOutputPath Condition="'$(BaseIntermediateOutputPath)' == ''">$(RootBinDir)obj\</BaseIntermediateOutputPath>
+    <IntermediateOutputPath Condition="'$(IntermediateOutputPath)' == ''">$(BaseIntermediateOutputPath)\$(BuildOS).$(BuildArch).$(BuildType)</IntermediateOutputPath>
+    <OutputPath Condition="'$(OutputPath)' == ''">$(BaseIntermediateOutputPath)\$(BuildOS).$(BuildArch).$(BuildType)</OutputPath>
+    <FinalOutputPath Condition="'$(FinalOutputPath)' == ''">$(BinDir)</FinalOutputPath>
+  </PropertyGroup>
+
+  <Import Condition="Exists('$(ToolsDir)BuildVersion.targets')" Project="$(ToolsDir)BuildVersion.targets" />
+
   <!-- Provides properties for dependency versions and configures dependency verification/auto-upgrade. -->
   <Import Project="$(ProjectDir)..\dependencies.props" />
 

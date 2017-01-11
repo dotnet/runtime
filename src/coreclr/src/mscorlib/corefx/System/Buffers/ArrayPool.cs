@@ -29,26 +29,13 @@ namespace System.Buffers
         /// array than was requested. Renting a buffer from it with <see cref="Rent"/> will result in an 
         /// existing buffer being taken from the pool if an appropriate buffer is available or in a new 
         /// buffer being allocated if one is not available.
+        /// byte[] and char[] are the most commonly pooled array types. For these we use a special pool type
+        /// optimized for very fast access speeds, at the expense of more memory consumption.
+        /// The shared pool instance is created lazily on first access.
         /// </remarks>
-        public static ArrayPool<T> Shared => SharedPool.Value;
-
-        /// <summary>Stores a cached pool instance for T[].</summary>
-        /// <remarks>
-        /// Separated out into a nested class to enable lazy-initialization of the pool provided by
-        /// the runtime, only forced when Shared is used (and not when Create is called or when
-        /// other non-Shared accesses happen).
-        /// </remarks>
-        private static class SharedPool
-        {
-            /// <summary>Per-type cached pool.</summary>
-            /// <remarks>
-            /// byte[] and char[] are the most commonly pooled array types. For these we use a special pool type
-            /// optimized for very fast access speeds, at the expense of more memory consumption.
-            /// </remarks>
-            internal readonly static ArrayPool<T> Value =
-                typeof(T) == typeof(byte) || typeof(T) == typeof(char) ? new TlsOverPerCoreLockedStacksArrayPool<T>() :
-                Create();
-        }
+        public static ArrayPool<T> Shared { get; } =
+            typeof(T) == typeof(byte) || typeof(T) == typeof(char) ? new TlsOverPerCoreLockedStacksArrayPool<T>() :
+            Create();
 
         /// <summary>
         /// Creates a new <see cref="ArrayPool{T}"/> instance using default configuration options.

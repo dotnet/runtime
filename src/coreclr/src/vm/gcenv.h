@@ -51,8 +51,6 @@
 #include "gcenv.interlocked.h"
 #include "gcenv.interlocked.inl"
 
-#include "../gc/softwarewritewatch.h"
-
 namespace ETW
 {
     typedef  enum _GC_ROOT_KIND {

@@ -9,14 +9,8 @@ namespace System.IO
 {
     public static partial class Path
     {
-        public static readonly char DirectorySeparatorChar = '\\';
-        public static readonly char VolumeSeparatorChar = ':';
-        public static readonly char PathSeparator = ';';
-
-        private const string DirectorySeparatorCharAsString = "\\";
-
         public static char[] GetInvalidFileNameChars() => new char[]
-        { 
+        {
             '\"', '<', '>', '|', '\0', 
             (char)1, (char)2, (char)3, (char)4, (char)5, (char)6, (char)7, (char)8, (char)9, (char)10, 
             (char)11, (char)12, (char)13, (char)14, (char)15, (char)16, (char)17, (char)18, (char)19, (char)20, 
@@ -24,10 +18,18 @@ namespace System.IO
             (char)31, ':', '*', '?', '\\', '/' 
         };
 
+        public static char[] GetInvalidPathChars() => new char[]
+        {
+            '|', '\0',
+            (char)1, (char)2, (char)3, (char)4, (char)5, (char)6, (char)7, (char)8, (char)9, (char)10,
+            (char)11, (char)12, (char)13, (char)14, (char)15, (char)16, (char)17, (char)18, (char)19, (char)20,
+            (char)21, (char)22, (char)23, (char)24, (char)25, (char)26, (char)27, (char)28, (char)29, (char)30,
+            (char)31
+        };
+
         // The max total path is 260, and the max individual component length is 255. 
         // For example, D:\<256 char file name> isn't legal, even though it's under 260 chars.
-        internal static readonly int MaxPath = 260;
-        internal static readonly int MaxLongPath = short.MaxValue;
+        internal const int MaxPath = 260;
 
         // Expands the given path to a fully qualified path. 
         public static string GetFullPath(string path)
@@ -64,9 +66,9 @@ namespace System.IO
                 // Move past the colon
                 startIndex += 2;
 
-                if ((path.Length > 0 && path[0] == VolumeSeparatorChar)
-                    || (path.Length >= startIndex && path[startIndex - 1] == VolumeSeparatorChar && !PathInternal.IsValidDriveChar(path[startIndex - 2]))
-                    || (path.Length > startIndex && path.IndexOf(VolumeSeparatorChar, startIndex) != -1))
+                if ((path.Length > 0 && path[0] == PathInternal.VolumeSeparatorChar)
+                    || (path.Length >= startIndex && path[startIndex - 1] == PathInternal.VolumeSeparatorChar && !PathInternal.IsValidDriveChar(path[startIndex - 2]))
+                    || (path.Length > startIndex && path.IndexOf(PathInternal.VolumeSeparatorChar, startIndex) != -1))
                 {
                     throw new NotSupportedException(SR.Argument_PathFormatNotSupported);
                 }
@@ -92,7 +94,7 @@ namespace System.IO
         public static string GetTempPath()
         {
             StringBuilder sb = StringBuilderCache.Acquire(MaxPath);
-            uint r = Interop.mincore.GetTempPathW(MaxPath, sb);
+            uint r = Interop.Kernel32.GetTempPathW(MaxPath, sb);
             if (r == 0)
                 throw Win32Marshal.GetExceptionForLastWin32Error();
             return GetFullPath(StringBuilderCache.GetStringAndRelease(sb));
@@ -105,7 +107,7 @@ namespace System.IO
             string path = GetTempPath();
 
             StringBuilder sb = StringBuilderCache.Acquire(MaxPath);
-            uint r = Interop.mincore.GetTempFileNameW(path, "tmp", 0, sb);
+            uint r = Interop.Kernel32.GetTempFileNameW(path, "tmp", 0, sb);
             if (r == 0)
                 throw Win32Marshal.GetExceptionForLastWin32Error();
             return StringBuilderCache.GetStringAndRelease(sb);
@@ -121,7 +123,7 @@ namespace System.IO
 
                 int length = path.Length;
                 if ((length >= 1 && PathInternal.IsDirectorySeparator(path[0])) || 
-                    (length >= 2 && path[1] == VolumeSeparatorChar))
+                    (length >= 2 && path[1] == PathInternal.VolumeSeparatorChar))
                     return true;
             }
             return false;

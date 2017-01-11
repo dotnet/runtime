@@ -93,7 +93,7 @@ bool EHblkDsc::HasFinallyHandler()
 
 bool EHblkDsc::HasFaultHandler()
 {
-    return ebdHandlerType == EH_HANDLER_FAULT;
+    return (ebdHandlerType == EH_HANDLER_FAULT) || (ebdHandlerType == EH_HANDLER_FAULT_WAS_FINALLY);
 }
 
 bool EHblkDsc::HasFinallyOrFaultHandler()
@@ -2425,6 +2425,11 @@ bool Compiler::fgNormalizeEHCase2()
                                 // do nothing. Since cheap preds contains dups (for switch duplicates), we will call
                                 // this once per dup.
                                 fgReplaceJumpTarget(predBlock, newTryStart, insertBeforeBlk);
+
+                                // Need to adjust ref counts here since we're retargeting edges.
+                                newTryStart->bbRefs++;
+                                assert(insertBeforeBlk->countOfInEdges() > 0);
+                                insertBeforeBlk->bbRefs--;
 
 #ifdef DEBUG
                                 if (verbose)

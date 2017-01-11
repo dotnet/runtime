@@ -34,9 +34,7 @@
 #include "customattribute.h"
 #include "comdynamic.h"
 #include "commethodrental.h"
-#ifndef FEATURE_LEGACYSURFACEAREA
 #include "nlsinfo.h"
-#endif 
 #include "calendardata.h"
 #include "commodule.h"
 #include "marshalnative.h"

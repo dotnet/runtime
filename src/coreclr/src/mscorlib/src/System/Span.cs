@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
@@ -254,6 +255,7 @@ namespace System
         /// </exception>
         /// </summary>
         [Obsolete("Equals() on Span will always throw an exception. Use == instead.")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public override bool Equals(object obj)
         {
             ThrowHelper.ThrowNotSupportedException_CannotCallEqualsOnSpan();
@@ -268,6 +270,7 @@ namespace System
         /// </exception>
         /// </summary>
         [Obsolete("GetHashCode() on Span will always throw an exception.")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public override int GetHashCode()
         {
             ThrowHelper.ThrowNotSupportedException_CannotCallGetHashCodeOnSpan();

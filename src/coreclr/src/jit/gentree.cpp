@@ -5959,11 +5959,11 @@ void Compiler::gtComputeFPlvls(GenTreePtr tree)
             noway_assert(!isflt);
             break;
 
-#ifdef DEBUG
         default:
+#ifdef DEBUG
             noway_assert(!"Unhandled special operator in gtComputeFPlvls()");
-            break;
 #endif
+            break;
     }
 
 DONE:
@@ -6786,6 +6786,57 @@ GenTreePtr Compiler::gtNewOneConNode(var_types type)
             return nullptr;
     }
 }
+
+#ifdef FEATURE_SIMD
+//---------------------------------------------------------------------
+// gtNewSIMDVectorZero: create a GT_SIMD node for Vector<T>.Zero
+//
+// Arguments:
+//    simdType  -  simd vector type
+//    baseType  -  element type of vector
+//    size      -  size of vector in bytes
+GenTreePtr Compiler::gtNewSIMDVectorZero(var_types simdType, var_types baseType, unsigned size)
+{
+    baseType         = genActualType(baseType);
+    GenTree* initVal = gtNewZeroConNode(baseType);
+    initVal->gtType  = baseType;
+    return gtNewSIMDNode(simdType, initVal, nullptr, SIMDIntrinsicInit, baseType, size);
+}
+
+//---------------------------------------------------------------------
+// gtNewSIMDVectorOne: create a GT_SIMD node for Vector<T>.One
+//
+// Arguments:
+//    simdType  -  simd vector type
+//    baseType  -  element type of vector
+//    size      -  size of vector in bytes
+GenTreePtr Compiler::gtNewSIMDVectorOne(var_types simdType, var_types baseType, unsigned size)
+{
+    GenTree* initVal;
+    if (varTypeIsSmallInt(baseType))
+    {
+        unsigned baseSize = genTypeSize(baseType);
+        int      val;
+        if (baseSize == 1)
+        {
+            val = 0x01010101;
+        }
+        else
+        {
+            val = 0x00010001;
+        }
+        initVal = gtNewIconNode(val);
+    }
+    else
+    {
+        initVal = gtNewOneConNode(baseType);
+    }
+
+    baseType        = genActualType(baseType);
+    initVal->gtType = baseType;
+    return gtNewSIMDNode(simdType, initVal, nullptr, SIMDIntrinsicInit, baseType, size);
+}
+#endif // FEATURE_SIMD
 
 GenTreeCall* Compiler::gtNewIndCallNode(GenTreePtr addr, var_types type, GenTreeArgList* args, IL_OFFSETX ilOffset)
 {
@@ -14411,12 +14462,14 @@ GenTreePtr Compiler::gtBuildCommaList(GenTreePtr list, GenTreePtr expr)
         result->gtFlags |= (list->gtFlags & GTF_ALL_EFFECT);
         result->gtFlags |= (expr->gtFlags & GTF_ALL_EFFECT);
 
-        // 'list' and 'expr' should have valuenumbers defined for both or for neither one
-        noway_assert(list->gtVNPair.BothDefined() == expr->gtVNPair.BothDefined());
+        // 'list' and 'expr' should have valuenumbers defined for both or for neither one (unless we are remorphing,
+        // in which case a prior transform involving either node may have discarded or otherwise invalidated the value
+        // numbers).
+        assert((list->gtVNPair.BothDefined() == expr->gtVNPair.BothDefined()) || !fgGlobalMorph);
 
         // Set the ValueNumber 'gtVNPair' for the new GT_COMMA node
         //
-        if (expr->gtVNPair.BothDefined())
+        if (list->gtVNPair.BothDefined() && expr->gtVNPair.BothDefined())
         {
             // The result of a GT_COMMA node is op2, the normal value number is op2vnp
             // But we also need to include the union of side effects from op1 and op2.
@@ -15046,7 +15099,6 @@ BasicBlock* Compiler::bbNewBasicBlock(BBjumpKinds jumpKind)
     {
         VarSetOps::AssignNoCopy(this, block->bbVarUse, VarSetOps::MakeEmpty(this));
         VarSetOps::AssignNoCopy(this, block->bbVarDef, VarSetOps::MakeEmpty(this));
-        VarSetOps::AssignNoCopy(this, block->bbVarTmp, VarSetOps::MakeEmpty(this));
         VarSetOps::AssignNoCopy(this, block->bbLiveIn, VarSetOps::MakeEmpty(this));
         VarSetOps::AssignNoCopy(this, block->bbLiveOut, VarSetOps::MakeEmpty(this));
         VarSetOps::AssignNoCopy(this, block->bbScope, VarSetOps::MakeEmpty(this));
@@ -15055,7 +15107,6 @@ BasicBlock* Compiler::bbNewBasicBlock(BBjumpKinds jumpKind)
     {
         VarSetOps::AssignNoCopy(this, block->bbVarUse, VarSetOps::UninitVal());
         VarSetOps::AssignNoCopy(this, block->bbVarDef, VarSetOps::UninitVal());
-        VarSetOps::AssignNoCopy(this, block->bbVarTmp, VarSetOps::UninitVal());
         VarSetOps::AssignNoCopy(this, block->bbLiveIn, VarSetOps::UninitVal());
         VarSetOps::AssignNoCopy(this, block->bbLiveOut, VarSetOps::UninitVal());
         VarSetOps::AssignNoCopy(this, block->bbScope, VarSetOps::UninitVal());

@@ -115,9 +115,6 @@ namespace System
         public static System.Runtime.Remoting.ObjectHandle CreateComInstanceFrom(string assemblyName, string typeName) { throw null; }
         public static System.Runtime.Remoting.ObjectHandle CreateComInstanceFrom(string assemblyName, string typeName, byte[] hashValue, System.Configuration.Assemblies.AssemblyHashAlgorithm hashAlgorithm) { throw null; }
         [System.Security.SecurityCriticalAttribute]
-        public static System.Runtime.Remoting.ObjectHandle CreateInstance(System.AppDomain domain, string assemblyName, string typeName) { throw null; }
-        [System.Security.SecurityCriticalAttribute]
-        public static System.Runtime.Remoting.ObjectHandle CreateInstance(System.AppDomain domain, string assemblyName, string typeName, bool ignoreCase, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder binder, object[] args, System.Globalization.CultureInfo culture, object[] activationAttributes) { throw null; }
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
         [System.Security.SecuritySafeCriticalAttribute]
         public static System.Runtime.Remoting.ObjectHandle CreateInstance(string assemblyName, string typeName) { throw null; }
@@ -139,9 +136,6 @@ namespace System
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
         public static T CreateInstance<T>() { throw null; }
         [System.Security.SecurityCriticalAttribute]
-        public static System.Runtime.Remoting.ObjectHandle CreateInstanceFrom(System.AppDomain domain, string assemblyFile, string typeName) { throw null; }
-        [System.Security.SecurityCriticalAttribute]
-        public static System.Runtime.Remoting.ObjectHandle CreateInstanceFrom(System.AppDomain domain, string assemblyFile, string typeName, bool ignoreCase, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder binder, object[] args, System.Globalization.CultureInfo culture, object[] activationAttributes) { throw null; }
         public static System.Runtime.Remoting.ObjectHandle CreateInstanceFrom(string assemblyFile, string typeName) { throw null; }
         public static System.Runtime.Remoting.ObjectHandle CreateInstanceFrom(string assemblyFile, string typeName, bool ignoreCase, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder binder, object[] args, System.Globalization.CultureInfo culture, object[] activationAttributes) { throw null; }
         public static System.Runtime.Remoting.ObjectHandle CreateInstanceFrom(string assemblyFile, string typeName, object[] activationAttributes) { throw null; }
@@ -179,56 +173,6 @@ namespace System
         public static event UnhandledExceptionEventHandler UnhandledException { add { } remove { } }
         public static event System.EventHandler<System.Runtime.ExceptionServices.FirstChanceExceptionEventArgs> FirstChanceException { add { } remove { } }
         public static event System.EventHandler ProcessExit { add { } remove { } }
-    }
-    [System.Runtime.InteropServices.ClassInterfaceAttribute((System.Runtime.InteropServices.ClassInterfaceType)(0))]
-    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
-    public sealed partial class AppDomain
-    {
-        internal AppDomain() { }
-        public string BaseDirectory { [System.Security.SecurityCriticalAttribute]get { throw null; } }
-        public static System.AppDomain CurrentDomain { get { throw null; } }
-        public bool IsFullyTrusted { [System.Security.SecuritySafeCriticalAttribute]get { throw null; } }
-        [System.Security.SecurityCriticalAttribute]
-        public object GetData(string name) { throw null; }
-        [System.Security.SecuritySafeCriticalAttribute]
-        public override string ToString() { throw null; }
-    }
-    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
-    [System.Security.SecurityCriticalAttribute]
-    public partial class AppDomainManager
-    {
-        public AppDomainManager() { }
-        public virtual bool CheckSecuritySettings(System.Security.SecurityState state) { throw null; }
-        [System.Security.SecurityCriticalAttribute]
-        public virtual void InitializeNewDomain(System.AppDomainSetup appDomainInfo) { }
-    }
-    [System.Runtime.InteropServices.ClassInterfaceAttribute((System.Runtime.InteropServices.ClassInterfaceType)(0))]
-    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
-    public sealed partial class AppDomainSetup
-    {
-        internal AppDomainSetup() { }
-    }
-    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
-    public partial class AppDomainUnloadedException : System.SystemException
-    {
-        public AppDomainUnloadedException() { }
-        public AppDomainUnloadedException(string message) { }
-        public AppDomainUnloadedException(string message, System.Exception innerException) { }
-        protected AppDomainUnloadedException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
-    }
-    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
-    public sealed partial class ApplicationId
-    {
-        public ApplicationId(byte[] publicKeyToken, string name, System.Version version, string processorArchitecture, string culture) { }
-        public string Culture { get { throw null; } }
-        public string Name { get { throw null; } }
-        public string ProcessorArchitecture { get { throw null; } }
-        public byte[] PublicKeyToken { get { throw null; } }
-        public System.Version Version { get { throw null; } }
-        public System.ApplicationId Copy() { throw null; }
-        public override bool Equals(object o) { throw null; }
-        public override int GetHashCode() { throw null; }
-        public override string ToString() { throw null; }
     }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public partial class ApplicationException : System.Exception
@@ -729,14 +673,6 @@ namespace System
         public string ToString(string format, System.IFormatProvider provider) { throw null; }
         public static bool TryParse(string s, out System.Byte result) { result = default(byte); throw null; }
         public static bool TryParse(string s, System.Globalization.NumberStyles style, System.IFormatProvider provider, out System.Byte result) { result = default(byte); throw null; }
-    }
-    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
-    public partial class CannotUnloadAppDomainException : System.SystemException
-    {
-        public CannotUnloadAppDomainException() { }
-        public CannotUnloadAppDomainException(string message) { }
-        public CannotUnloadAppDomainException(string message, System.Exception innerException) { }
-        protected CannotUnloadAppDomainException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
@@ -1947,13 +1883,11 @@ namespace System
         public static bool HasShutdownStarted { [System.Security.SecuritySafeCriticalAttribute][System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)]get { throw null; } }
         public static string MachineName { [System.Security.SecuritySafeCriticalAttribute]get { throw null; } }
         public static string NewLine { get { throw null; } }
-        public static System.OperatingSystem OSVersion { [System.Security.SecuritySafeCriticalAttribute]get { throw null; } }
         public static int ProcessorCount { [System.Security.SecuritySafeCriticalAttribute]get { throw null; } }
         public static string StackTrace { [System.Security.SecuritySafeCriticalAttribute]get { throw null; } }
         public static int TickCount { [System.Security.SecuritySafeCriticalAttribute][System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)]get { throw null; } }
         public static System.Version Version { get { throw null; } }
         [System.Security.SecuritySafeCriticalAttribute]
-        [System.Security.Permissions.SecurityPermissionAttribute(System.Security.Permissions.SecurityAction.Demand, Flags=(System.Security.Permissions.SecurityPermissionFlag)(2))]
         public static void Exit(int exitCode) { }
         [System.Security.SecuritySafeCriticalAttribute]
         public static string ExpandEnvironmentVariables(string name) { throw null; }
@@ -2480,26 +2414,6 @@ namespace System
         public override string ToString() { throw null; }
     }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
-    public enum LoaderOptimization
-    {
-        [System.ObsoleteAttribute("This method has been deprecated. Please use Assembly.Load() instead. http://go.microsoft.com/fwlink/?linkid=14202")]
-        DisallowBindings = 4,
-        [System.ObsoleteAttribute("This method has been deprecated. Please use Assembly.Load() instead. http://go.microsoft.com/fwlink/?linkid=14202")]
-        DomainMask = 3,
-        MultiDomain = 2,
-        MultiDomainHost = 3,
-        NotSpecified = 0,
-        SingleDomain = 1,
-    }
-    [System.AttributeUsageAttribute((System.AttributeTargets)(64))]
-    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
-    public sealed partial class LoaderOptimizationAttribute : System.Attribute
-    {
-        public LoaderOptimizationAttribute(byte value) { }
-        public LoaderOptimizationAttribute(System.LoaderOptimization value) { }
-        public System.LoaderOptimization Value { get { throw null; } }
-    }
-    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public sealed partial class LocalDataStoreSlot
     {
         internal LocalDataStoreSlot() { }
@@ -2904,19 +2818,6 @@ namespace System
         public string Message { get { throw null; } }
     }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
-    public sealed partial class OperatingSystem : System.ICloneable, System.Runtime.Serialization.ISerializable
-    {
-        public OperatingSystem(System.PlatformID platform, System.Version version) { }
-        public System.PlatformID Platform { get { throw null; } }
-        public string ServicePack { get { throw null; } }
-        public System.Version Version { get { throw null; } }
-        public string VersionString { get { throw null; } }
-        public object Clone() { throw null; }
-        [System.Security.SecurityCriticalAttribute]
-        public void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
-        public override string ToString() { throw null; }
-    }
-    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public partial class OperationCanceledException : System.SystemException
     {
         public OperationCanceledException() { }
@@ -2949,17 +2850,6 @@ namespace System
     public sealed partial class ParamArrayAttribute : System.Attribute
     {
         public ParamArrayAttribute() { }
-    }
-    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
-    public enum PlatformID
-    {
-        MacOSX = 6,
-        Unix = 4,
-        Win32NT = 2,
-        Win32S = 0,
-        Win32Windows = 1,
-        WinCE = 3,
-        Xbox = 5,
     }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public partial class PlatformNotSupportedException : System.NotSupportedException
@@ -3419,7 +3309,9 @@ namespace System
         public System.String Trim() { throw null; }
         public System.String Trim(params char[] trimChars) { throw null; }
         public System.String TrimEnd(params char[] trimChars) { throw null; }
+        public System.String TrimEnd() { throw null; }
         public System.String TrimStart(params char[] trimChars) { throw null; }
+        public System.String TrimStart() { throw null; }
     }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public abstract partial class StringComparer : System.Collections.Generic.IComparer<string>, System.Collections.Generic.IEqualityComparer<string>, System.Collections.IComparer, System.Collections.IEqualityComparer
@@ -7177,7 +7069,6 @@ namespace System.IO
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
         [System.Security.SecuritySafeCriticalAttribute]
-        [System.Security.Permissions.SecurityPermissionAttribute(System.Security.Permissions.SecurityAction.Demand, Flags=(System.Security.Permissions.SecurityPermissionFlag)(2))]
         protected void Initialize(System.Runtime.InteropServices.SafeBuffer buffer, long offset, long capacity, System.IO.FileAccess access) { }
         [System.Security.SecurityCriticalAttribute]
         public void Read<T>(long position, out T structure) where T : struct { structure = default(T); throw null; }
@@ -10487,10 +10378,8 @@ namespace System.Runtime.InteropServices
     public sealed partial class BStrWrapper
     {
         [System.Security.SecuritySafeCriticalAttribute]
-        [System.Security.Permissions.SecurityPermissionAttribute(System.Security.Permissions.SecurityAction.Demand, Flags=(System.Security.Permissions.SecurityPermissionFlag)(2))]
         public BStrWrapper(object value) { }
         [System.Security.SecuritySafeCriticalAttribute]
-        [System.Security.Permissions.SecurityPermissionAttribute(System.Security.Permissions.SecurityAction.Demand, Flags=(System.Security.Permissions.SecurityPermissionFlag)(2))]
         public BStrWrapper(string value) { }
         public string WrappedObject { get { throw null; } }
     }
@@ -10695,7 +10584,6 @@ namespace System.Runtime.InteropServices
     public sealed partial class DispatchWrapper
     {
         [System.Security.SecuritySafeCriticalAttribute]
-        [System.Security.Permissions.SecurityPermissionAttribute(System.Security.Permissions.SecurityAction.Demand, Flags=(System.Security.Permissions.SecurityPermissionFlag)(2))]
         public DispatchWrapper(object obj) { }
         public object WrappedObject { get { throw null; } }
     }
@@ -10736,7 +10624,6 @@ namespace System.Runtime.InteropServices
     public sealed partial class ErrorWrapper
     {
         [System.Security.SecuritySafeCriticalAttribute]
-        [System.Security.Permissions.SecurityPermissionAttribute(System.Security.Permissions.SecurityAction.Demand, Flags=(System.Security.Permissions.SecurityPermissionFlag)(2))]
         public ErrorWrapper(System.Exception e) { }
         public ErrorWrapper(int errorCode) { }
         public ErrorWrapper(object errorCode) { }
@@ -12405,80 +12292,6 @@ namespace System.Security
         protected VerificationException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
 }
-namespace System.Security.Permissions
-{
-    [System.AttributeUsageAttribute((System.AttributeTargets)(109), AllowMultiple=true, Inherited=false)]
-    [System.ObsoleteAttribute("CodeAccessSecurityAttribute is no longer accessible to application code.")]
-    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
-    public abstract partial class CodeAccessSecurityAttribute : System.Security.Permissions.SecurityAttribute
-    {
-        protected CodeAccessSecurityAttribute(System.Security.Permissions.SecurityAction action) : base (default(System.Security.Permissions.SecurityAction)) { }
-    }
-    [System.ObsoleteAttribute("SecurityAction is no longer accessible to application code.")]
-    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
-    public enum SecurityAction
-    {
-        Assert = 3,
-        Demand = 2,
-        [System.ObsoleteAttribute("Deny is obsolete and will be removed in a future release of the .NET Framework. See http://go.microsoft.com/fwlink/?LinkID=155570 for more information.")]
-        Deny = 4,
-        InheritanceDemand = 7,
-        LinkDemand = 6,
-        PermitOnly = 5,
-        [System.ObsoleteAttribute("Assembly level declarative security is obsolete and is no longer enforced by the CLR by default. See http://go.microsoft.com/fwlink/?LinkID=155570 for more information.")]
-        RequestMinimum = 8,
-        [System.ObsoleteAttribute("Assembly level declarative security is obsolete and is no longer enforced by the CLR by default. See http://go.microsoft.com/fwlink/?LinkID=155570 for more information.")]
-        RequestOptional = 9,
-        [System.ObsoleteAttribute("Assembly level declarative security is obsolete and is no longer enforced by the CLR by default. See http://go.microsoft.com/fwlink/?LinkID=155570 for more information.")]
-        RequestRefuse = 10,
-    }
-    [System.AttributeUsageAttribute((System.AttributeTargets)(109), AllowMultiple=true, Inherited=false)]
-    [System.ObsoleteAttribute("SecurityAttribute is no longer accessible to application code.")]
-    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
-    public abstract partial class SecurityAttribute : System.Attribute
-    {
-        protected SecurityAttribute(System.Security.Permissions.SecurityAction action) { }
-        public System.Security.Permissions.SecurityAction Action { get { throw null; } set { } }
-        public bool Unrestricted { get { throw null; } set { } }
-    }
-    [System.AttributeUsageAttribute((System.AttributeTargets)(109), AllowMultiple=true, Inherited=false)]
-    [System.ObsoleteAttribute("SecurityPermissionAttribute is no longer accessible to application code.")]
-    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
-    public sealed partial class SecurityPermissionAttribute : System.Security.Permissions.CodeAccessSecurityAttribute
-    {
-        public SecurityPermissionAttribute(System.Security.Permissions.SecurityAction action) : base (default(System.Security.Permissions.SecurityAction)) { }
-        public bool ControlAppDomain { get { throw null; } set { } }
-        public bool ControlDomainPolicy { get { throw null; } set { } }
-        public bool ControlEvidence { get { throw null; } set { } }
-        public bool ControlPolicy { get { throw null; } set { } }
-        public bool ControlThread { get { throw null; } set { } }
-        public System.Security.Permissions.SecurityPermissionFlag Flags { get { throw null; } set { } }
-        public bool SkipVerification { get { throw null; } set { } }
-        public bool UnmanagedCode { get { throw null; } set { } }
-    }
-    [System.FlagsAttribute]
-    [System.ObsoleteAttribute("SecurityPermissionFlag is no longer accessible to application code.")]
-    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
-    public enum SecurityPermissionFlag
-    {
-        AllFlags = 16383,
-        Assertion = 1,
-        BindingRedirects = 8192,
-        ControlAppDomain = 1024,
-        ControlDomainPolicy = 256,
-        ControlEvidence = 32,
-        ControlPolicy = 64,
-        ControlPrincipal = 512,
-        ControlThread = 16,
-        Execution = 8,
-        Infrastructure = 4096,
-        NoFlags = 0,
-        RemotingConfiguration = 2048,
-        SerializationFormatter = 128,
-        SkipVerification = 4,
-        UnmanagedCode = 2,
-    }
-}
 namespace System.Security.Principal
 {
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
@@ -13535,7 +13348,6 @@ namespace System.Threading
         public new string Name { get { throw null; } [System.Security.SecuritySafeCriticalAttribute]set { } }
         ~Thread() { }
         [System.Security.SecuritySafeCriticalAttribute]
-        public static System.AppDomain GetDomain() { throw null; }
         [System.Runtime.InteropServices.ComVisibleAttribute(false)]
         public override int GetHashCode() { throw null; }
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)][System.Security.SecuritySafeCriticalAttribute]
@@ -13582,7 +13394,6 @@ namespace System.Threading
     public static partial class ThreadPool
     {
         [System.Security.SecurityCriticalAttribute]
-        [System.Security.Permissions.SecurityPermissionAttribute(System.Security.Permissions.SecurityAction.Demand, Flags=(System.Security.Permissions.SecurityPermissionFlag)(2))]
         public static bool BindHandle(System.Runtime.InteropServices.SafeHandle osHandle) { throw null; }
         [System.Security.SecuritySafeCriticalAttribute]
         public static void GetMaxThreads(out int workerThreads, out int completionPortThreads) { workerThreads = default(int); completionPortThreads = default(int); }
@@ -13602,10 +13413,8 @@ namespace System.Threading
         [System.Security.SecuritySafeCriticalAttribute]
         public static System.Threading.RegisteredWaitHandle RegisterWaitForSingleObject(System.Threading.WaitHandle waitObject, System.Threading.WaitOrTimerCallback callBack, object state, uint millisecondsTimeOutInterval, bool executeOnlyOnce) { throw null; }
         [System.Security.SecurityCriticalAttribute]
-        [System.Security.Permissions.SecurityPermissionAttribute(System.Security.Permissions.SecurityAction.Demand, ControlThread=true)]
         public static bool SetMaxThreads(int workerThreads, int completionPortThreads) { throw null; }
         [System.Security.SecurityCriticalAttribute]
-        [System.Security.Permissions.SecurityPermissionAttribute(System.Security.Permissions.SecurityAction.Demand, ControlThread=true)]
         public static bool SetMinThreads(int workerThreads, int completionPortThreads) { throw null; }
     }
     public enum ThreadPriority
