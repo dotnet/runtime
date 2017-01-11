@@ -6,7 +6,7 @@
 
 extern "C"
 {
-    void ThrowControlForThread()
+    void ThrowControlForThread(FaultingExceptionFrame *pfef)
     {
         PORTABILITY_ASSERT("Implement for PAL");
     }
@@ -45,19 +45,6 @@ extern "C"
     {
     }
 
-    _Unwind_Reason_Code
-    UnhandledExceptionHandlerUnix(
-                IN int version,
-                IN _Unwind_Action action,
-                IN uint64_t exceptionClass,
-                IN struct _Unwind_Exception *exception,
-                IN struct _Unwind_Context *context
-              )
-    {
-        PORTABILITY_ASSERT("UnhandledExceptionHandlerUnix");
-        return _URC_FATAL_PHASE1_ERROR;
-    }
-
     BOOL CallRtlUnwind()
     {
         PORTABILITY_ASSERT("CallRtlUnwind");
@@ -93,4 +80,45 @@ EXTERN_C VOID JIT_TailCallVSDLeave()
 EXTERN_C VOID JIT_TailCallLeave()
 {
   PORTABILITY_ASSERT("JIT_TailCallLeave");
+}
+
+PTR_CONTEXT GetCONTEXTFromRedirectedStubStackFrame(T_DISPATCHER_CONTEXT * pDispatcherContext)
+{
+    PORTABILITY_ASSERT("GetCONTEXTFromRedirectedStubStackFrame");
+    return NULL;
+}
+
+FaultingExceptionFrame *GetFrameFromRedirectedStubStackFrame(DISPATCHER_CONTEXT *pDispatcherContext)
+{
+    PORTABILITY_ASSERT("GetFrameFromRedirectedStubStackFrame");
+    return NULL;
+}
+
+EXTERN_C ULONG
+RtlpGetFunctionEndAddress (
+    __in PT_RUNTIME_FUNCTION FunctionEntry,
+    __in ULONG ImageBase
+    )
+{
+    PORTABILITY_ASSERT("RtlpGetFunctionEndAddress");
+    return 0;
+}
+
+EXTERN_C
+NTSYSAPI
+PEXCEPTION_ROUTINE
+NTAPI
+RtlVirtualUnwind (
+    __in DWORD HandlerType,
+    __in DWORD ImageBase,
+    __in DWORD ControlPc,
+    __in PRUNTIME_FUNCTION FunctionEntry,
+    __inout PT_CONTEXT ContextRecord,
+    __out PVOID *HandlerData,
+    __out PDWORD EstablisherFrame,
+    __inout_opt PT_KNONVOLATILE_CONTEXT_POINTERS ContextPointers
+    )
+{
+    PORTABILITY_ASSERT("RtlVirtualUnwind");
+    return NULL;
 }

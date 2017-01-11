@@ -204,6 +204,7 @@ bool FindFirstInterruptiblePointStateCB(
 // the end is exclusive). Return -1 if no such point exists.
 unsigned FindFirstInterruptiblePoint(CrawlFrame* pCF, unsigned offs, unsigned endOffs)
 {
+#ifdef USE_GC_INFO_DECODER
     GCInfoToken gcInfoToken = pCF->GetGCInfoToken();
     GcInfoDecoder gcInfoDecoder(gcInfoToken, DECODE_FOR_RANGES_CALLBACK);
 
@@ -215,6 +216,10 @@ unsigned FindFirstInterruptiblePoint(CrawlFrame* pCF, unsigned offs, unsigned en
     gcInfoDecoder.EnumerateInterruptibleRanges(&FindFirstInterruptiblePointStateCB, &state);
 
     return state.returnOffs;
+#else
+    PORTABILITY_ASSERT("FindFirstInterruptiblePoint");
+    return -1;
+#endif // USE_GC_INFO_DECODER
 }
 
 #endif // WIN64EXCEPTIONS
@@ -283,7 +288,7 @@ StackWalkAction GcStackCrawlCallBack(CrawlFrame* pCF, VOID* pData)
     #endif // _DEBUG
 
             DWORD relOffsetOverride = NO_OVERRIDE_OFFSET;
-#if defined(WIN64EXCEPTIONS)
+#if defined(WIN64EXCEPTIONS) && defined(USE_GC_INFO_DECODER)
             if (pCF->ShouldParentToFuncletUseUnwindTargetLocationForGCReporting())
             {
                 GCInfoToken gcInfoToken = pCF->GetGCInfoToken();
@@ -313,7 +318,7 @@ StackWalkAction GcStackCrawlCallBack(CrawlFrame* pCF, VOID* pData)
                 }
 
             }
-#endif // WIN64EXCEPTIONS
+#endif // WIN64EXCEPTIONS && USE_GC_INFO_DECODER
 
             pCM->EnumGcRefs(pCF->GetRegisterSet(),
                             pCF->GetCodeInfo(),
