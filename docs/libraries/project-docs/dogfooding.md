@@ -12,7 +12,7 @@ sure to consult this document often.
 
 1. Install CLI preview 4 SDK
     - [Win 64-bit Latest](https://dotnetcli.blob.core.windows.net/dotnet/Sdk/rel-1.0.0/dotnet-dev-win-x64.latest.exe)
-    - [macOS 64-bit Latest](https://dotnetcli.blob.core.windows.net/dotnet/Sdk/rel-1.0.0/dotnet-dev-osx-x64.latest.dmg)
+    - [macOS 64-bit Latest](https://dotnetcli.blob.core.windows.net/dotnet/Sdk/rel-1.0.0/dotnet-dev-osx-x64.latest.pkg)
     - [Others](https://github.com/dotnet/cli)
 2. Install 1.0.3 SDK from here:
     - [Win 64-bit](https://go.microsoft.com/fwlink/?LinkID=836281)
@@ -28,7 +28,8 @@ sure to consult this document often.
 
 1. Create a new project
     - Creat a new folder for your app
-    - Create projec file by running `dotnet new`
+    - Create project file by running `dotnet new`
+
 2. Add the CoreFX MyGet feed to your NuGet configuration.
     - You can do this globally but we recommend not doing this as this might
       affect other projects on your machine and you probably don't want that.
@@ -36,13 +37,15 @@ sure to consult this document often.
       just put it next to the `.csproj` file.
       See the [NuGet docs](https://docs.nuget.org/ndocs/consume-packages/configuring-nuget-behavior)
       for details.
-      ```xml
-      <configuration>
-        <packageSources>
-          <add key="CoreFX" value="https://dotnet.myget.org/F/dotnet-core/api/v3/index.json" />
-        </packageSources>
-      </configuration>
-      ```
+
+    ```xml
+    <configuration>
+      <packageSources>
+        <add key="CoreFX" value="https://dotnet.myget.org/F/dotnet-core/api/v3/index.json" />
+      </packageSources>
+    </configuration>
+    ```
+
 3. Select the nightly build from our feed
     - <https://dotnet.myget.org/feed/dotnet-core/package/nuget/Microsoft.NETCore.App>
     - Presumably you want the latest version.
@@ -55,7 +58,8 @@ as follows:
 2. Update package reference to match version selected above, as below
 
 *Note:* We're currently still using `netcoreapp1.2`. Eventually this will be
-renamed to `netcoreapp2.0`.
+renamed to `netcoreapp2.0`. So if `netcoreapp1.2` doesn't work, try
+`netcoreapp2.0`.
 
 ```xml
 <Project Sdk="Microsoft.NET.Sdk" ToolsVersion="15.0">
