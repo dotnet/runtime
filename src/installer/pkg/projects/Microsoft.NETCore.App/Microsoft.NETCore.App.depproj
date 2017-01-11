@@ -14,6 +14,12 @@
   <ItemGroup>
     <None Include="project.json" />
   </ItemGroup>
+  <ItemGroup Condition="'$(NuGetRuntimeIdentifier)' == ''">
+    <!-- Bring in Platforms for RID graph, NETStandard.Library for build-tools -->
+    <DependenciesToPackage Include="NETStandard.Library" />
+    <DependenciesToPackage Include="Microsoft.NETCore.Platforms" />
+  </ItemGroup>
+
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 
   <Target Name="GetFilesToPackage" DependsOnTargets="ResolveNuGetPackages" Returns="@(FilesToPackage)">
@@ -65,6 +71,32 @@
     <Message Importance="low" Text="%(FilesToPackage.PackagePath) -> @(FilesToPackage)" />
   </Target>
 
+  <Target Name="GetDependenciesToPackage" Condition="'@(DependenciesToPackage)' != ''" DependsOnTargets="ResolveNuGetPackages" Returns="@(_DependenciesToPackageWithVersion)">
+    <!-- hack because current nuget task doesn't return version for ReferencedNuGetPackages,
+         can be removed once we switch to msbuild-based nuget & use PackageReference-->
+    <ReadLinesFromFile File="$(ProjectJson)">
+      <Output TaskParameter="Lines" ItemName="ProjectJsonLines" />
+    </ReadLinesFromFile>
+
+    <ItemGroup>
+      <PackageMatch Include="@(ProjectJsonLines)">
+        <PackageId>$([System.Text.RegularExpressions.Regex]::Match('%(Identity)', '(\w[^:&quot;]*)'))</PackageId>
+        <PackageVersion>$([System.Text.RegularExpressions.Regex]::Match('%(Identity)', '(\d+\.\d+.\d+[^&quot;]*)'))</PackageVersion>
+      </PackageMatch>
+
+      <ReferencedPackage Include="@(PackageMatch -> '%(PackageId)')" Condition="'%(PackageMatch.PackageVersion)' != ''">
+        <Version>%(PackageMatch.PackageVersion)</Version>
+      </ReferencedPackage>
+      
+      <!-- intersect ReferencedPackage with DependenciesToPackage -->
+      <_DependenciesToPackageWithVersion Include="@(ReferencedPackage)" Condition="'@(ReferencedPackage)' == '@(DependenciesToPackage)' AND '%(Identity)' != ''">
+        <TargetFramework>$(PackageTargetFramework)</TargetFramework>
+      </_DependenciesToPackageWithVersion>
+    </ItemGroup>
+
+    <Message Importance="low" Text="%(_DependenciesToPackageWithVersion.Identity) : %(_DependenciesToPackageWithVersion.Version) : %(_DependenciesToPackageWithVersion.TargetFramework)" />
+  </Target>
+ 
   <!-- only calculate paths from this project, don't copy -->
   <Target Name="Build" DependsOnTargets="GetFilesToPackage" />
   

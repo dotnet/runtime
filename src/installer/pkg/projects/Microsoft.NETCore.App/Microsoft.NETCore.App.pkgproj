@@ -61,16 +61,6 @@
     <File Include="$(PlaceHolderFile)">
       <TargetPath>.NETCoreApp</TargetPath>
     </File>
-
-    <!-- Bring in Platforms for RID graph, NETStandard.Library for build-tools -->
-    <Dependency Include="Microsoft.NETCore.Platforms">
-      <Version>1.2.0-beta-24911-51</Version>
-      <TargetFramework>.NETCoreApp2.0</TargetFramework>
-    </Dependency>
-    <Dependency Include="NETStandard.Library">
-      <Version>2.0.0-beta-24909-0</Version>
-      <TargetFramework>.NETCoreApp2.0</TargetFramework>
-    </Dependency>
   </ItemGroup>
 
   <!-- Redistributed package content from other nuget packages-->
@@ -144,4 +134,15 @@
   </Target>
 
   <Target Name="GetPackageReport" />
+
+  <Target Name="GetDependenciesToPackage" AfterTargets="ExpandProjectReferences">
+    <!-- allow projects to provide dependencies -->
+    <MSBuild Targets="GetDependenciesToPackage"
+             BuildInParallel="$(BuildInParallel)"
+             Projects="@(_NonPkgProjProjectReference)"
+             Properties="$(ProjectProperties)">
+      <Output TaskParameter="TargetOutputs"
+              ItemName="Dependency" />
+    </MSBuild>
+  </Target>
 </Project>
