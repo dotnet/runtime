@@ -3309,7 +3309,9 @@ namespace System
         public System.String Trim() { throw null; }
         public System.String Trim(params char[] trimChars) { throw null; }
         public System.String TrimEnd(params char[] trimChars) { throw null; }
+        public System.String TrimEnd() { throw null; }
         public System.String TrimStart(params char[] trimChars) { throw null; }
+        public System.String TrimStart() { throw null; }
     }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public abstract partial class StringComparer : System.Collections.Generic.IComparer<string>, System.Collections.Generic.IEqualityComparer<string>, System.Collections.IComparer, System.Collections.IEqualityComparer
