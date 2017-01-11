@@ -829,7 +829,10 @@ int DumpMD_VWriteMarker(__in __in_z const char *str, va_list marker)
     {
         if (FAILED(hr = m_output.ReSizeNoThrow(STRING_BUFFER_LEN * i)))
             return 0;
-        count = _vsnprintf((char *)m_output.Ptr(), STRING_BUFFER_LEN * i, str, marker);
+        va_list markerCopy;
+        va_copy(markerCopy, marker);
+        count = _vsnprintf_s((char *)m_output.Ptr(), STRING_BUFFER_LEN * i, _TRUNCATE, str, markerCopy);
+        va_end(markerCopy);
         i *= 2;
     }
     OutputDebugStringA((LPCSTR)m_output.Ptr());

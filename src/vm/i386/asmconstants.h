@@ -467,6 +467,38 @@ ASMCONSTANTS_C_ASSERT(Thread__m_pDomain == offsetof(Thread, m_pDomain));
 
 #endif
 
+#ifdef FEATURE_STUBS_AS_IL
+// DelegateObject from src/vm/object.h
+#define DelegateObject___target             0x04    // offset 0 is m_pMethTab of base class Object
+#define DelegateObject___methodBase         0x08
+#define DelegateObject___methodPtr          0x0c
+#define DelegateObject___methodPtrAux       0x10
+#define DelegateObject___invocationList     0x14
+#define DelegateObject___invocationCount    0x18
+
+ASMCONSTANTS_C_ASSERT(DelegateObject___target           == offsetof(DelegateObject, _target));
+ASMCONSTANTS_C_ASSERT(DelegateObject___methodBase       == offsetof(DelegateObject, _methodBase));
+ASMCONSTANTS_C_ASSERT(DelegateObject___methodPtr        == offsetof(DelegateObject, _methodPtr));
+ASMCONSTANTS_C_ASSERT(DelegateObject___methodPtrAux     == offsetof(DelegateObject, _methodPtrAux));
+ASMCONSTANTS_C_ASSERT(DelegateObject___invocationList   == offsetof(DelegateObject, _invocationList));
+ASMCONSTANTS_C_ASSERT(DelegateObject___invocationCount  == offsetof(DelegateObject, _invocationCount));
+
+#endif
+
+#ifndef CROSSGEN_COMPILE
+// ResolveCacheElem from src/vm/virtualcallstub.h
+#define ResolveCacheElem__pMT               0x00
+#define ResolveCacheElem__token             0x04
+#define ResolveCacheElem__target            0x08
+#define ResolveCacheElem__pNext             0x0C
+
+ASMCONSTANTS_C_ASSERT(ResolveCacheElem__pMT     == offsetof(ResolveCacheElem, pMT));
+ASMCONSTANTS_C_ASSERT(ResolveCacheElem__token   == offsetof(ResolveCacheElem, token));
+ASMCONSTANTS_C_ASSERT(ResolveCacheElem__target  == offsetof(ResolveCacheElem, target));
+ASMCONSTANTS_C_ASSERT(ResolveCacheElem__pNext   == offsetof(ResolveCacheElem, pNext));
+
+#endif // !CROSSGEN_COMPILE
+
 #undef ASMCONSTANTS_C_ASSERT
 #undef ASMCONSTANTS_RUNTIME_ASSERT
 

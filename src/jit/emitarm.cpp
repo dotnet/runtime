@@ -7536,31 +7536,53 @@ void emitter::emitInsMov(instruction ins, emitAttr attr, GenTree* node)
     switch (node->OperGet())
     {
         case GT_IND:
-        {
-            GenTree* addr = node->gtGetOp1();
-            assert(!addr->isContained());
-            codeGen->genConsumeReg(addr);
-            emitIns_R_R(ins, attr, node->gtRegNum, addr->gtRegNum);
-        }
-        break;
-
         case GT_STOREIND:
         {
-            GenTree* addr = node->gtGetOp1();
-            GenTree* data = node->gtOp.gtOp2;
+            GenTreeIndir* indir = node->AsIndir();
+            GenTree*      addr  = indir->Addr();
+            GenTree*      data  = indir->gtOp.gtOp2;
 
-            assert(!addr->isContained());
-            assert(!data->isContained());
-            codeGen->genConsumeReg(addr);
-            codeGen->genConsumeReg(data);
+            regNumber reg = (node->OperGet() == GT_IND) ? node->gtRegNum : data->gtRegNum;
 
-            if (addr->OperGet() == GT_CLS_VAR_ADDR)
+            if (addr->isContained())
             {
-                emitIns_C_R(ins, attr, addr->gtClsVar.gtClsVarHnd, data->gtRegNum, 0);
+                assert(addr->OperGet() == GT_LCL_VAR_ADDR || addr->OperGet() == GT_LEA);
+
+                int   offset = 0;
+                DWORD lsl    = 0;
+
+                if (addr->OperGet() == GT_LEA)
+                {
+                    offset = (int)addr->AsAddrMode()->gtOffset;
+                    if (addr->AsAddrMode()->gtScale > 0)
+                    {
+                        assert(isPow2(addr->AsAddrMode()->gtScale));
+                        BitScanForward(&lsl, addr->AsAddrMode()->gtScale);
+                    }
+                }
+
+                GenTree* memBase = indir->Base();
+
+                if (indir->HasIndex())
+                {
+                    NYI_ARM("emitInsMov HasIndex");
+                }
+                else
+                {
+                    // TODO check offset is valid for encoding
+                    emitIns_R_R_I(ins, attr, reg, memBase->gtRegNum, offset);
+                }
             }
             else
             {
-                emitIns_R_R(ins, attr, addr->gtRegNum, data->gtRegNum);
+                if (addr->OperGet() == GT_CLS_VAR_ADDR)
+                {
+                    emitIns_C_R(ins, attr, addr->gtClsVar.gtClsVarHnd, data->gtRegNum, 0);
+                }
+                else
+                {
+                    emitIns_R_R(ins, attr, reg, addr->gtRegNum);
+                }
             }
         }
         break;
@@ -7581,7 +7603,6 @@ void emitter::emitInsMov(instruction ins, emitAttr attr, GenTree* node)
             else
             {
                 assert(!data->isContained());
-                codeGen->genConsumeReg(data);
                 emitIns_S_R(ins, attr, data->gtRegNum, varNode->GetLclNum(), 0);
                 codeGen->genUpdateLife(varNode);
             }

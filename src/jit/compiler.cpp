@@ -1635,8 +1635,6 @@ void Compiler::compDisplayStaticSizes(FILE* fout)
             sizeof(bbDummy->bbVarUse));
     fprintf(fout, "Offset / size of bbVarDef              = %3u / %3u\n", offsetof(BasicBlock, bbVarDef),
             sizeof(bbDummy->bbVarDef));
-    fprintf(fout, "Offset / size of bbVarTmp              = %3u / %3u\n", offsetof(BasicBlock, bbVarTmp),
-            sizeof(bbDummy->bbVarTmp));
     fprintf(fout, "Offset / size of bbLiveIn              = %3u / %3u\n", offsetof(BasicBlock, bbLiveIn),
             sizeof(bbDummy->bbLiveIn));
     fprintf(fout, "Offset / size of bbLiveOut             = %3u / %3u\n", offsetof(BasicBlock, bbLiveOut),
@@ -3296,8 +3294,6 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     }
 #endif
 
-    opts.compMustInlinePInvokeCalli = jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB);
-
     opts.compScopeInfo = opts.compDbgInfo;
 
 #ifdef LATE_DISASM
@@ -4598,6 +4594,10 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
         codeGen->regSet.rsMaskResvd |= RBM_OPT_RSVD;
         assert(REG_OPT_RSVD != REG_FP);
     }
+    // compRsvdRegCheck() has read out the FramePointerUsed property, but doLinearScan()
+    // tries to overwrite it later. This violates the PhasedVar rule and triggers an assertion.
+    // TODO-ARM-Bug?: What is the proper way to handle this situation?
+    codeGen->resetFramePointerUsedWritePhase();
 
 #ifdef DEBUG
     //
@@ -4718,21 +4718,6 @@ void Compiler::ResetOptAnnotations()
                 tree->ClearVN();
                 tree->ClearAssertion();
                 tree->gtCSEnum = NO_CSE;
-
-                // Clear any *_ASG_LHS flags -- these are set during SSA construction,
-                // and the heap live-in calculation depends on them being unset coming
-                // into SSA construction (without clearing them, a block that has a
-                // heap def via one of these before any heap use is treated as not having
-                // an upwards-exposed heap use, even though subsequent heap uses may not
-                // be killed by the store; this seems to be a bug, worked around here).
-                if (tree->OperIsIndir())
-                {
-                    tree->gtFlags &= ~GTF_IND_ASG_LHS;
-                }
-                else if (tree->OperGet() == GT_CLS_VAR)
-                {
-                    tree->gtFlags &= ~GTF_CLS_VAR_ASG_LHS;
-                }
             }
         }
     }

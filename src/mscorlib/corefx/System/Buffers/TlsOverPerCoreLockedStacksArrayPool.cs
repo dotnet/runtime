@@ -45,11 +45,6 @@ namespace System.Buffers
         /// <summary>A per-thread array of arrays, to cache one array per array size per thread.</summary>
         [ThreadStatic]
         private static T[][] t_tlsBuckets;
-        /// <summary>
-        /// Cached processor number used as a hint for which per-core stack to access.
-        /// </summary>
-        [ThreadStatic]
-        private static int? t_cachedProcessorNumber;
 
         /// <summary>Initialize the pool.</summary>
         public TlsOverPerCoreLockedStacksArrayPool()
@@ -72,22 +67,6 @@ namespace System.Buffers
         /// <summary>Gets an ID for the pool to use with events.</summary>
         private int Id => GetHashCode();
 
-        /// <summary>Gets the processor number associated with the current thread.</summary>
-        /// <remarks>Uses a cached value if one exists on the current thread.</remarks>
-        private static int CurrentProcessorNumber
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
-            {
-                int? num = t_cachedProcessorNumber;
-                if (!num.HasValue)
-                {
-                    t_cachedProcessorNumber = num = Environment.CurrentProcessorNumber;
-                }
-                return num.GetValueOrDefault();
-            }
-        }
-
         public override T[] Rent(int minimumLength)
         {
             // Arrays can't be smaller than zero.  We allow requesting zero-length arrays (even though
@@ -101,7 +80,7 @@ namespace System.Buffers
             {
                 // No need to log the empty array.  Our pool is effectively infinite
                 // and we'll never allocate for rents and never store for returns.
-                return EmptyArray<T>.Value;
+                return Array.Empty<T>();
             }
 
             ArrayPoolEventSource log = ArrayPoolEventSource.Log;
@@ -249,7 +228,7 @@ namespace System.Buffers
                 // Try to push on to the associated stack first.  If that fails,
                 // round-robin through the other stacks.
                 LockedStack[] stacks = _perCoreStacks;
-                int index = ExecutionId % stacks.Length;
+                int index = Environment.CurrentExecutionId % stacks.Length;
                 for (int i = 0; i < stacks.Length; i++)
                 {
                     if (stacks[index].TryPush(array)) return;
@@ -265,7 +244,7 @@ namespace System.Buffers
                 // round-robin through the other stacks.
                 T[] arr;
                 LockedStack[] stacks = _perCoreStacks;
-                int index = ExecutionId % stacks.Length;
+                int index = Environment.CurrentExecutionId % stacks.Length;
                 for (int i = 0; i < stacks.Length; i++)
                 {
                     if ((arr = stacks[index].TryPop()) != null) return arr;
@@ -285,7 +264,7 @@ namespace System.Buffers
             public bool TryPush(T[] array)
             {
                 bool enqueued = false;
-                MonitorEnterWithProcNumberFlush(this);
+                Monitor.Enter(this);
                 if (_count < MaxBuffersPerArraySizePerCore)
                 {
                     _arrays[_count++] = array;
@@ -299,7 +278,7 @@ namespace System.Buffers
             public T[] TryPop()
             {
                 T[] arr = null;
-                MonitorEnterWithProcNumberFlush(this);
+                Monitor.Enter(this);
                 if (_count > 0)
                 {
                     arr = _arrays[--_count];
@@ -307,21 +286,6 @@ namespace System.Buffers
                 }
                 Monitor.Exit(this);
                 return arr;
-            }
-
-            /// <summary>
-            /// Enters the monitor on the object.  If there is any contention while trying
-            /// to acquire the monitor, it flushes the cached processor number so that subsequent
-            /// attempts to access the per-core stacks will use an updated processor number.
-            /// </summary>
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            private static void MonitorEnterWithProcNumberFlush(object obj)
-            {
-                if (!Monitor.TryEnter(obj))
-                {
-                    t_cachedProcessorNumber = null;
-                    Monitor.Enter(obj);
-                }
             }
         }
     }

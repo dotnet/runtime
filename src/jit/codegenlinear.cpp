@@ -906,6 +906,13 @@ void CodeGen::genUnspillRegIfNeeded(GenTree* tree)
 
             // Load local variable from its home location.
             inst_RV_TT(ins, dstReg, unspillTree, 0, attr);
+#elif defined(_TARGET_ARM_)
+            var_types   targetType = unspillTree->gtType;
+            instruction ins        = ins_Load(targetType, compiler->isSIMDTypeLocalAligned(lcl->gtLclNum));
+            emitAttr    attr       = emitTypeSize(targetType);
+
+            // Load local variable from its home location.
+            inst_RV_TT(ins, dstReg, unspillTree, 0, attr);
 #else
             NYI("Unspilling not implemented for this target architecture.");
 #endif

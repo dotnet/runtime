@@ -33,21 +33,6 @@ void* CompressedStackObject::GetUnmanagedCompressedStack()
 }
 #endif // FEATURE_COMPRESSEDSTACK
 
-#ifndef FEATURE_PAL 
-LPVOID FrameSecurityDescriptorBaseObject::GetCallerToken()
-{
-    LIMITED_METHOD_CONTRACT;  
-    return ((m_callerToken!= NULL)?m_callerToken->GetHandle():NULL);
-
-}
-
-LPVOID FrameSecurityDescriptorBaseObject::GetImpersonationToken()
-{
-    LIMITED_METHOD_CONTRACT;  
-    return ((m_impToken != NULL)?m_impToken->GetHandle():NULL);
-}
-#endif
-
 SVAL_IMPL(INT32, ArrayBase, s_arrayBoundsZero);
 
 // follow the necessary rules to get a new valid hashcode for an object

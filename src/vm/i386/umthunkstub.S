@@ -10,18 +10,10 @@
 // eax = UMEntryThunk*
 //
 NESTED_ENTRY TheUMEntryPrestub, _TEXT, UnhandledExceptionHandlerUnix
-    // Preserve argument registers
-    push    ecx
-    push    edx
-
     push    eax  // UMEntryThunk*
     call    C_FUNC(TheUMEntryPrestubWorker)
-    pop     edx
+    add     esp, 4
     // eax = PCODE
-
-    // Restore argument registers
-    pop     edx
-    pop     ecx
 
     jmp     eax     // Tail Jmp
 NESTED_END TheUMEntryPrestub, _TEXT
@@ -33,11 +25,10 @@ NESTED_ENTRY UMThunkStub, _TEXT, UnhandledExceptionHandlerUnix
 
 #define UMThunkStub_SAVEDREG                (3*4)   // ebx, esi, edi
 #define UMThunkStub_LOCALVARS               (2*4)   // UMEntryThunk*, Thread*
-#define UMThunkStub_INT_ARG_SPILL           (2*4)   // for save ecx, edx
 #define UMThunkStub_UMENTRYTHUNK_OFFSET     (UMThunkStub_SAVEDREG+4)
 #define UMThunkStub_THREAD_OFFSET           (UMThunkStub_UMENTRYTHUNK_OFFSET+4)
 #define UMThunkStub_INT_ARG_OFFSET          (UMThunkStub_THREAD_OFFSET+4)
-#define UMThunkStub_FIXEDALLOCSIZE          (UMThunkStub_LOCALVARS+UMThunkStub_INT_ARG_SPILL)
+#define UMThunkStub_FIXEDALLOCSIZE          (UMThunkStub_LOCALVARS)
 
 // return address                           <-- entry ESP
 // saved ebp                                <-- EBP
@@ -46,8 +37,6 @@ NESTED_ENTRY UMThunkStub, _TEXT, UnhandledExceptionHandlerUnix
 // saved edi
 // UMEntryThunk*
 // Thread*
-// save ecx
-// save edx
 // {optional stack args passed to callee}   <-- new esp
 
     PROLOG_BEG
@@ -56,9 +45,6 @@ NESTED_ENTRY UMThunkStub, _TEXT, UnhandledExceptionHandlerUnix
     PROLOG_PUSH edi
     PROLOG_END
     sub     esp, UMThunkStub_FIXEDALLOCSIZE
-
-    mov     dword ptr [ebp - UMThunkStub_INT_ARG_OFFSET], ecx
-    mov     dword ptr [ebp - UMThunkStub_INT_ARG_OFFSET - 0x04], edx
 
     mov     dword ptr [ebp - UMThunkStub_UMENTRYTHUNK_OFFSET], eax
 
@@ -104,9 +90,6 @@ LOCAL_LABEL(InCooperativeMode):
 
 LOCAL_LABEL(UMThunkStub_ArgumentsSetup):
 
-    mov     ecx, dword ptr [ebp - UMThunkStub_INT_ARG_OFFSET]
-    mov     edx, dword ptr [ebp - UMThunkStub_INT_ARG_OFFSET - 0x04]
-
     mov     eax, dword ptr [ebp - UMThunkStub_UMENTRYTHUNK_OFFSET]
     mov     ebx, dword ptr [eax + UMEntryThunk__m_pUMThunkMarshInfo]
     mov     ebx, dword ptr [ebx + UMThunkMarshInfo__m_pILStub]
@@ -149,22 +132,32 @@ LOCAL_LABEL(DoTrapReturningThreadsTHROW):
 
 LOCAL_LABEL(UMThunkStub_CopyStackArgs):
 
-    // eax = m_cbActualArgSize
+    // eax = m_cbActualArgSize, in bytes
+    // esi = src
+    // edi = dest
+    // ebx = scratch
+    lea     esi, [ebp + 0x08]
+
+    // first [esi] goes to ecx, in LTR
+    add     eax, -4
+    mov     ecx, dword ptr [esi]
+    jz      LOCAL_LABEL(UMThunkStub_ArgumentsSetup)
+
+    // second [esi+04] goes to edx
+    add     eax, -4
+    mov     edx, dword ptr [esi + 0x04]
+    jz      LOCAL_LABEL(UMThunkStub_ArgumentsSetup)
+
     sub     esp, eax
     and     esp, -16    // align with 16 byte
-    lea     esi, [ebp + 0x08]
     lea     edi, [esp]
 
 LOCAL_LABEL(CopyLoop):
 
-    // eax = number of bytes
-    // esi = src
-    // edi = dest
-    // edx = sratch
-
+    // copy rest of the arguments to [esp+08+n], in RTL
     add     eax, -4
-    mov     edx, dword ptr [esi + eax]
-    mov     dword ptr [edi + eax], edx
+    mov     ebx, dword ptr [esi + 0x08 + eax]
+    mov     dword ptr [edi + eax], ebx
     jnz     LOCAL_LABEL(CopyLoop)
 
     jmp     LOCAL_LABEL(UMThunkStub_ArgumentsSetup)

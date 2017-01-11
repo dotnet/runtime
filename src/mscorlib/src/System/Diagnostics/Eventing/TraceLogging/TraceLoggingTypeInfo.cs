@@ -61,7 +61,7 @@ namespace System.Diagnostics.Tracing
 
             if (name == null)
             {
-                throw new ArgumentNullException("eventName");
+                throw new ArgumentNullException(nameof(name));
             }
 
             Contract.EndContractBlock();

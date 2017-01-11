@@ -1546,7 +1546,7 @@ namespace System
         {
             ValidateModulePointer(module);
             if (!ModuleHandle.GetMetadataImport(module).IsValidToken(typeToken))
-                throw new ArgumentOutOfRangeException("metadataToken",
+                throw new ArgumentOutOfRangeException(nameof(typeToken),
                     Environment.GetResourceString("Argument_InvalidToken", typeToken, new ModuleHandle(module)));
             
             int typeInstCount, methodInstCount;
@@ -1600,7 +1600,7 @@ namespace System
         {
             ValidateModulePointer(module);
             if (!ModuleHandle.GetMetadataImport(module.GetNativeHandle()).IsValidToken(methodToken))
-                throw new ArgumentOutOfRangeException("metadataToken",
+                throw new ArgumentOutOfRangeException(nameof(methodToken),
                     Environment.GetResourceString("Argument_InvalidToken", methodToken, new ModuleHandle(module)));
 
             fixed (IntPtr* typeInstArgs = typeInstantiationContext, methodInstArgs = methodInstantiationContext)
@@ -1628,7 +1628,7 @@ namespace System
         {
             ValidateModulePointer(module);
             if (!ModuleHandle.GetMetadataImport(module.GetNativeHandle()).IsValidToken(fieldToken))
-                throw new ArgumentOutOfRangeException("metadataToken",
+                throw new ArgumentOutOfRangeException(nameof(fieldToken),
                     Environment.GetResourceString("Argument_InvalidToken", fieldToken, new ModuleHandle(module)));
             
             // defensive copy to be sure array is not mutated from the outside during processing
