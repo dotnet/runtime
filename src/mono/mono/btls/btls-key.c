@@ -39,10 +39,9 @@ mono_btls_key_is_rsa (EVP_PKEY *pkey)
 }
 
 MONO_API int
-mono_btls_key_assign_rsa_private_key (EVP_PKEY *pkey, uint8_t **der_data, size_t der_length)
+mono_btls_key_assign_rsa_private_key (EVP_PKEY *pkey, uint8_t *der_data, int der_length)
 {
 	RSA *rsa;
-	int ret;
 
 	rsa = RSA_private_key_from_bytes (der_data, der_length);
 	if (!rsa)
