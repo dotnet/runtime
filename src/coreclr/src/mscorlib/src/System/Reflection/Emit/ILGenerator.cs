@@ -388,20 +388,17 @@ namespace System.Reflection.Emit
             // Just a cheap insertion sort.  We don't expect many exceptions (<10), where InsertionSort beats QuickSort.
             // If we have more exceptions than this in real life, we should consider moving to a QuickSort.
 
-            int least;
-            __ExceptionInfo temp;
-            int length = exceptions.Length;
-            for (int i =0; i < length; i++)
+            for (int i = 0; i < exceptions.Length; i++)
             {
-                least = i;
-                for (int j =i + 1; j < length; j++)
+                int least = i;
+                for (int j = i + 1; j < exceptions.Length; j++)
                 {
                     if (exceptions[least].IsInner(exceptions[j]))
                     {
                         least = j;
                     }
                 }
-                temp = exceptions[i];
+                __ExceptionInfo temp = exceptions[i];
                 exceptions[i] = exceptions[least];
                 exceptions[least] = temp;
             }
