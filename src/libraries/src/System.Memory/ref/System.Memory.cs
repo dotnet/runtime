@@ -83,9 +83,18 @@ namespace System
          public static System.ReadOnlySpan<byte> AsBytes<T>(this ReadOnlySpan<T> source) where T : struct { throw null; }
          public static System.Span<TTo> NonPortableCast<TFrom, TTo>(this System.Span<TFrom> source) where TFrom : struct where TTo : struct { throw null; }
          public static System.ReadOnlySpan<TTo> NonPortableCast<TFrom, TTo>(this System.ReadOnlySpan<TFrom> source) where TFrom : struct where TTo : struct { throw null; }
+
          public static int IndexOf<T>(this Span<T> span, T value) where T:struct, IEquatable<T> { throw null; }
+         public static int IndexOf(this Span<byte> span, byte value) { throw null; }
+         public static int IndexOf(this Span<char> span, char value) { throw null; }
+
          public static bool SequenceEqual<T>(this Span<T> first, ReadOnlySpan<T> second) where T:struct, IEquatable<T> { throw null; }
+         public static bool SequenceEqual(this Span<byte> first, ReadOnlySpan<byte> second) { throw null; }
+         public static bool SequenceEqual(this Span<char> first, ReadOnlySpan<char> second) { throw null; }
+
          public static int IndexOf<T>(this Span<T> span, ReadOnlySpan<T> value) where T : struct, IEquatable<T> { throw null; }
+         public static int IndexOf(this Span<byte> span, ReadOnlySpan<byte> value) { throw null; }
+         public static int IndexOf(this Span<char> span, ReadOnlySpan<char> value) { throw null; }
     }
 }
 

@@ -127,6 +127,28 @@ namespace System
         }
 
         /// <summary>
+        /// Searches for the specified value and returns the index of its first occurrence. If not found, returns -1. 
+        /// </summary>
+        /// <param name="span">The span to search.</param>
+        /// <param name="value">The value to search for.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int IndexOf(this Span<byte> span, byte value)
+        {
+            return SpanHelpers.IndexOf(ref span.DangerousGetPinnableReference(), value, span.Length);
+        }
+
+        /// <summary>
+        /// Searches for the specified value and returns the index of its first occurrence. If not found, returns -1. 
+        /// </summary>
+        /// <param name="span">The span to search.</param>
+        /// <param name="value">The value to search for.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int IndexOf(this Span<char> span, char value)
+        {
+            return SpanHelpers.IndexOf(ref span.DangerousGetPinnableReference(), value, span.Length);
+        }
+
+        /// <summary>
         /// Searches for the specified sequence and returns the index of its first occurrence. If not found, returns -1. Values are compared using IEquatable&lt;T&gt;.Equals(T). 
         /// </summary>
         /// <param name="span">The span to search.</param>
@@ -139,11 +161,53 @@ namespace System
         }
 
         /// <summary>
+        /// Searches for the specified sequence and returns the index of its first occurrence. If not found, returns -1.
+        /// </summary>
+        /// <param name="span">The span to search.</param>
+        /// <param name="value">The sequence to search for.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int IndexOf(this Span<byte> span, ReadOnlySpan<byte> value)
+        {
+            return SpanHelpers.IndexOf(ref span.DangerousGetPinnableReference(), span.Length, ref value.DangerousGetPinnableReference(), value.Length);
+        }
+
+        /// <summary>
+        /// Searches for the specified sequence and returns the index of its first occurrence. If not found, returns -1.
+        /// </summary>
+        /// <param name="span">The span to search.</param>
+        /// <param name="value">The sequence to search for.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int IndexOf(this Span<char> span, ReadOnlySpan<char> value)
+        {
+            return SpanHelpers.IndexOf(ref span.DangerousGetPinnableReference(), span.Length, ref value.DangerousGetPinnableReference(), value.Length);
+        }
+
+        /// <summary>
         /// Determines whether two sequences are equal by comparing the elements using IEquatable&lt;T&gt;.Equals(T). 
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool SequenceEqual<T>(this Span<T> first, ReadOnlySpan<T> second)
             where T:struct, IEquatable<T>
+        {
+            int length = first.Length;
+            return length == second.Length && SpanHelpers.SequenceEqual(ref first.DangerousGetPinnableReference(), ref second.DangerousGetPinnableReference(), length);
+        }
+
+        /// <summary>
+        /// Determines whether two sequences are equal by comparing the elements.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool SequenceEqual(this Span<byte> first, ReadOnlySpan<byte> second)
+        {
+            int length = first.Length;
+            return length == second.Length && SpanHelpers.SequenceEqual(ref first.DangerousGetPinnableReference(), ref second.DangerousGetPinnableReference(), length);
+        }
+
+        /// <summary>
+        /// Determines whether two sequences are equal by comparing the elements.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool SequenceEqual(this Span<char> first, ReadOnlySpan<char> second)
         {
             int length = first.Length;
             return length == second.Length && SpanHelpers.SequenceEqual(ref first.DangerousGetPinnableReference(), ref second.DangerousGetPinnableReference(), length);
