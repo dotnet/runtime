@@ -95,7 +95,7 @@ A full or individual project build is centered around BuildConfiguration and wil
 1. `$(BuildConfiguration)` can directly be passed to the build.
 2. `$(Configuration)` can be passed to the build and `$(BuildConfiguration)` will be set to `$(Configuration)-$(ArchGroup)`. This is a convinence mechanism primarily to help with VS support because VS uses the `Configuration` property for switching between various configurations in the UI. NOTE: this only works well for individual projects and not the root builds.
 3. `$(TargetGroup), $(OSGroup), $(ConfigurationGroup), $(ArchGroup)` can individually be passed in to change the default value for just part of the `BuildConfiguration`.
-4. If nothing is passed to the build then we will default `BuildConfiguration` from the environment. Example: `netcoreapp-[OSGroup Running On]-Debug-x64]`.
+4. If nothing is passed to the build then we will default `BuildConfiguration` from the environment. Example: `netcoreapp-[OSGroup Running On]-Debug-x64`.
 
 On top of the `BuildConfiguration` we also have `RuntimeOS` which can be passed to customize the specific OS and version needed for native package builds as well as package restoration. If not passed it will default based on the OS you are running on.
 

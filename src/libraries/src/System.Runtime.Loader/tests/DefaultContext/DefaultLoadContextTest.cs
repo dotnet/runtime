@@ -116,7 +116,7 @@ namespace System.Runtime.Loader.Tests
             File.Copy(targetRenamedPath, targetPath); 
         }
 
-        [Fact]
+        [Fact(Skip = "https://github.com/dotnet/corefx/issues/15101")]
         public static void LoadInDefaultContext()
         {
             Init();

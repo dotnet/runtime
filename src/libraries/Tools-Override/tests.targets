@@ -27,12 +27,10 @@
   </ItemGroup>
 
   <PropertyGroup>
-    <TestRuntimeDir>$(RuntimePath)</TestRuntimeDir>
-    <TestRuntimeEnvVar Condition="'$(OS)' == 'Windows_NT'">%RUNTIME_PATH%\</TestRuntimeEnvVar>
-    <TestRuntimeEnvVar Condition="'$(OS)' != 'Windows_NT'">$RUNTIME_PATH/</TestRuntimeEnvVar>
-    <TestHostExecutablePath Condition="'$(TestHostExecutablePath)' == '' And '$(OS)' == 'Windows_NT'">$(TestRuntimeEnvVar)corerun.exe</TestHostExecutablePath>
-    <TestHostExecutablePath Condition="'$(TestHostExecutablePath)' == '' And '$(OS)' != 'Windows_NT'">$(TestRuntimeEnvVar)corerun</TestHostExecutablePath>
-    <XunitExecutable Condition="'$(XunitExecutable)' == ''">$(TestRuntimeEnvVar)xunit.console.netcore.exe</XunitExecutable>
+    <XunitRuntimeConfig>$(ToolsDir)\xunit.console.netcore.runtimeconfig.json</XunitRuntimeConfig>
+    <TestHostExecutablePath Condition="'$(OS)'=='Windows_NT' AND '$(TestHostExecutablePath)' == ''">$(TestSharedFxDir)\dotnet.exe</TestHostExecutablePath>
+    <TestHostExecutablePath Condition="'$(OS)'!='Windows_NT' AND '$(TestHostExecutablePath)' == ''">$(TestSharedFxDir)\dotnet</TestHostExecutablePath>
+    <XunitExecutable Condition="'$(XunitExecutable)' == ''">$(TestPath)\xunit.console.netcore.exe</XunitExecutable>
   </PropertyGroup>
 
   <!-- General xunit options -->
@@ -48,7 +46,7 @@
 
     <XunitOptions Condition="'$(TestTFM)'!=''">$(XunitOptions) -notrait category=non$(TestTFM)tests</XunitOptions>
     <XunitOptions Condition="'$(XunitMaxThreads)'!=''">$(XunitOptions) -maxthreads $(XunitMaxThreads)</XunitOptions>
-    <XunitTestAssembly Condition="'$(XunitTestAssembly)' == ''">$(AssemblyName).dll</XunitTestAssembly>
+    <XunitTestAssembly Condition="'$(XunitTestAssembly)' == ''">$(TargetFileName)</XunitTestAssembly>
     <XunitArguments>$(XunitTestAssembly) $(XunitOptions)</XunitArguments>
 
     <TestProgram Condition="'$(TestHostExecutablePath)'!=''">$(TestHostExecutablePath)</TestProgram>
@@ -62,8 +60,15 @@
 
   <!-- The Code Coverage targets will override TestHost and TestCommandLine if coverage is enabled -->
   <Import Project="$(MSBuildThisFileDirectory)CodeCoverage.targets" />
+  
+  <Target Name="AddRuntimeConfig" >
+    <ItemGroup>
+       <SupplementalTestData Include="$(XunitRuntimeConfig)" />
+       <SupplementalTestData Include="$(RuntimePath)xunit.console.netcore.exe" />
+    </ItemGroup>
+  </Target>
 
-  <Target Name="DiscoverTestInputs" DependsOnTargets="ResolveReferences;GetCopyToOutputDirectoryItems">
+  <Target Name="DiscoverTestInputs" DependsOnTargets="ResolveReferences;GetCopyToOutputDirectoryItems;AddRuntimeConfig">
     <ItemGroup>
       <RunTestsForProjectInputs Include="@(ReferenceCopyLocalPaths)" />
       <RunTestsForProjectInputs Include="@(Content)" />
@@ -132,11 +137,6 @@
       Lines="@(IncludedFileForRunnerScript -> '%(PackageRelativePath)')"
       Overwrite="true"
       Encoding="Ascii" />
-
-    <ItemGroup>
-      <TestCommandLines Condition="'$(OS)' == 'Windows_NT'" Include="set CORE_LIBRARIES=%~dp0" />
-      <TestCommandLines Condition="'$(OS)' != 'Windows_NT'" Include="export CORE_LIBRARIES=%24(dirname &quot;%240&quot;)" />
-    </ItemGroup>
 
     <!-- For .NET Native compilation, we first need to generate a native executable if possible. -->
     <ItemGroup Condition="'$(UseDotNetNativeToolchain)' == 'true' AND '$(Performance)'!='true'" >
