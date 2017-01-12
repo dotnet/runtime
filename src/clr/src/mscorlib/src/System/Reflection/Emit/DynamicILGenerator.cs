@@ -520,22 +520,18 @@ namespace System.Reflection.Emit
                                                 Type[] parameterTypes,
                                                 Type[] optionalParameterTypes)
         {
-            int cParams;
-            int i;
-            SignatureHelper sig;
-            if (parameterTypes == null)
-                cParams = 0;
-            else
-                cParams = parameterTypes.Length;
-            sig = SignatureHelper.GetMethodSigHelper(call, returnType);
-            for (i = 0; i < cParams; i++)
-                sig.AddArgument(parameterTypes[i]);
+            SignatureHelper sig = SignatureHelper.GetMethodSigHelper(call, returnType);
+            if (parameterTypes != null)
+            {
+                foreach (Type t in parameterTypes)
+                    sig.AddArgument(t);
+            }
             if (optionalParameterTypes != null && optionalParameterTypes.Length != 0)
             {
                 // add the sentinel
                 sig.AddSentinel();
-                for (i = 0; i < optionalParameterTypes.Length; i++)
-                    sig.AddArgument(optionalParameterTypes[i]);
+                foreach (Type t in optionalParameterTypes)
+                    sig.AddArgument(t);
             }
             return sig;
         }
