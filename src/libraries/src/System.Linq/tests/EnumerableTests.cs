@@ -286,28 +286,47 @@ namespace System.Linq.Tests
             };
         }
 
-        protected class DelegateBasedEnumerator<T> : IEnumerator<T>
+        protected sealed class DelegateIterator<TSource> : IEnumerable<TSource>, IEnumerator<TSource>
         {
-            public Func<bool> MoveNextWorker { get; set; }
-            public Func<T> CurrentWorker { get; set; }
-            public Action DisposeWorker { get; set; }
-            public Func<object> NonGenericCurrentWorker { get; set; }
-            public Action ResetWorker { get; set; }
+            private readonly Func<IEnumerator<TSource>> _getEnumerator;
+            private readonly Func<bool> _moveNext;
+            private readonly Func<TSource> _current;
+            private readonly Func<IEnumerator> _explicitGetEnumerator;
+            private readonly Func<object> _explicitCurrent;
+            private readonly Action _reset;
+            private readonly Action _dispose;
 
-            public T Current => CurrentWorker();
-            public bool MoveNext() => MoveNextWorker();
-            public void Dispose() => DisposeWorker();
-            void IEnumerator.Reset() => ResetWorker();
-            object IEnumerator.Current => NonGenericCurrentWorker();
-        }
+            public DelegateIterator(
+                Func<IEnumerator<TSource>> getEnumerator = null,
+                Func<bool> moveNext = null,
+                Func<TSource> current = null,
+                Func<IEnumerator> explicitGetEnumerator = null,
+                Func<object> explicitCurrent = null,
+                Action reset = null,
+                Action dispose = null)
+            {
+                _getEnumerator = getEnumerator ?? (() => this);
+                _moveNext = moveNext ?? (() => { throw new NotImplementedException(); });
+                _current = current ?? (() => { throw new NotImplementedException(); });
+                _explicitGetEnumerator = explicitGetEnumerator ?? (() => { throw new NotImplementedException(); });
+                _explicitCurrent = explicitCurrent ?? (() => { throw new NotImplementedException(); });
+                _reset = reset ?? (() => { throw new NotImplementedException(); });
+                _dispose = dispose ?? (() => { throw new NotImplementedException(); });
+            }
 
-        protected class DelegateBasedEnumerable<T> : IEnumerable<T>
-        {
-            public Func<IEnumerator<T>> GetEnumeratorWorker { get; set; }
-            public Func<IEnumerator> NonGenericGetEnumeratorWorker { get; set; }
+            public IEnumerator<TSource> GetEnumerator() => _getEnumerator();
 
-            public IEnumerator<T> GetEnumerator() => GetEnumeratorWorker();
-            IEnumerator IEnumerable.GetEnumerator() => NonGenericGetEnumeratorWorker();
+            public bool MoveNext() => _moveNext();
+
+            public TSource Current => _current();
+
+            IEnumerator IEnumerable.GetEnumerator() => _explicitGetEnumerator();
+
+            object IEnumerator.Current => _explicitCurrent();
+
+            void IEnumerator.Reset() => _reset();
+
+            void IDisposable.Dispose() => _dispose();
         }
     }
 }
