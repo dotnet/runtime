@@ -415,6 +415,17 @@ namespace System.Linq
                 return new EnumerablePartition<TSource>(_source, _minIndexInclusive, _maxIndexInclusive);
             }
 
+            public override void Dispose()
+            {
+                if (_enumerator != null)
+                {
+                    _enumerator.Dispose();
+                    _enumerator = null;
+                }
+
+                base.Dispose();
+            }
+
             public int GetCount(bool onlyIfCheap)
             {
                 if (onlyIfCheap)

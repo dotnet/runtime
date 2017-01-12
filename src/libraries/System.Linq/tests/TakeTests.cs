@@ -534,5 +534,34 @@ namespace System.Linq.Tests
                 Assert.Equal(expectedValues[i], partition.ElementAtOrDefault(indices[i]));
             }
         }
+
+        [Theory]
+        [InlineData(0, -1)]
+        [InlineData(0, 0)]
+        [InlineData(1, 0)]
+        [InlineData(2, 1)]
+        [InlineData(2, 2)]
+        [InlineData(2, 3)]
+        public void DisposeSource(int sourceCount, int count)
+        {
+            int state = 0;
+
+            var source = new DelegateIterator<int>(
+                moveNext: () => ++state <= sourceCount,
+                current: () => 0,
+                dispose: () => state = -1);
+
+            IEnumerator<int> iterator = source.Take(count).GetEnumerator();
+            int iteratorCount = Math.Min(sourceCount, Math.Max(0, count));
+            Assert.All(Enumerable.Range(0, iteratorCount), _ => Assert.True(iterator.MoveNext()));
+
+            Assert.False(iterator.MoveNext());
+
+            // Unlike Skip, Take can tell straightaway that it can return a sequence with no elements if count <= 0.
+            // The enumerable it returns is a specialized empty iterator that has no connections to the source. Hence,
+            // after MoveNext returns false under those circumstances, it won't invoke Dispose on our enumerator.
+            int expected = count <= 0 ? 0 : -1;
+            Assert.Equal(expected, state);
+        }
     }
 }
