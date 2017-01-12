@@ -53,17 +53,14 @@ namespace System.IO.Tests
             });
         }
 
-        [Fact]
-        public void PathWithInvalidCharactersAsPath_ReturnsFalse()
+        [Theory, MemberData(nameof(PathsWithInvalidCharacters))]
+        public void PathWithInvalidCharactersAsPath_ReturnsFalse(string invalidPath)
         {
             // Checks that errors aren't thrown when calling Exists() on paths with impossible to create characters
             char[] trimmed = { (char)0x9, (char)0xA, (char)0xB, (char)0xC, (char)0xD, (char)0x20, (char)0x85, (char)0xA0 };
-            Assert.All((IOInputs.GetPathsWithInvalidCharacters()), (component) =>
-            {
-                Assert.False(Exists(component));
-                if (!trimmed.Contains(component.ToCharArray()[0]))
-                    Assert.False(Exists(TestDirectory + Path.DirectorySeparatorChar + component));
-            });
+            Assert.False(Exists(invalidPath));
+            if (!trimmed.Contains(invalidPath.ToCharArray()[0]))
+                Assert.False(Exists(TestDirectory + Path.DirectorySeparatorChar + invalidPath));
         }
 
         [Fact]
@@ -179,7 +176,8 @@ namespace System.IO.Tests
 
         #region PlatformSpecific
 
-        [Fact]
+        [ConditionalFact(nameof(UsingNewNormalization))]
+        [SkipOnTargetFramework(Tfm.BelowNet462 | Tfm.Core50, "long path support added in 4.6.2")]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void ValidExtendedPathExists_ReturnsTrue()
         {
@@ -191,7 +189,8 @@ namespace System.IO.Tests
             });
         }
 
-        [Fact]
+        [ConditionalFact(nameof(UsingNewNormalization))]
+        [SkipOnTargetFramework(Tfm.BelowNet462 | Tfm.Core50, "long path support added in 4.6.2")]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void ExtendedPathAlreadyExistsAsFile()
         {
@@ -203,7 +202,8 @@ namespace System.IO.Tests
             Assert.False(Exists(IOServices.RemoveTrailingSlash(IOServices.AddTrailingSlashIfNeeded(path))));
         }
 
-        [Fact]
+        [ConditionalFact(nameof(UsingNewNormalization))]
+        [SkipOnTargetFramework(Tfm.BelowNet462 | Tfm.Core50, "long path support added in 4.6.2")]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void ExtendedPathAlreadyExistsAsDirectory()
         {
@@ -215,7 +215,8 @@ namespace System.IO.Tests
             Assert.True(Exists(IOServices.RemoveTrailingSlash(IOServices.AddTrailingSlashIfNeeded(path))));
         }
 
-        [Fact]
+        [ConditionalFact(nameof(AreAllLongPathsAvailable))]
+        [SkipOnTargetFramework(Tfm.BelowNet462 | Tfm.Core50, "long path support added in 4.6.2")]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void DirectoryLongerThanMaxDirectoryAsPath_DoesntThrow()
         {
@@ -256,10 +257,13 @@ namespace System.IO.Tests
             Assert.False(Exists(testDir.FullName.ToLowerInvariant()));
         }
 
-        [Fact]
+        [ConditionalFact(nameof(UsingNewNormalization))]
+        [SkipOnTargetFramework(Tfm.BelowNet462 | Tfm.Core50, "long path support added in 4.6.2")]
         [PlatformSpecific(TestPlatforms.Windows)] // In Windows, trailing whitespace in a path is trimmed appropriately
         public void TrailingWhitespaceExistence()
         {
+            // This test relies on \\?\ support
+
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
             Assert.All(IOInputs.GetWhiteSpace(), (component) =>
             {
