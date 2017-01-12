@@ -1121,7 +1121,7 @@ mono_delegate_trampoline (mgreg_t *regs, guint8 *code, gpointer *arg, guint8* tr
 		 * delegate->method).
 		 */
 #ifndef DISABLE_REMOTING
-		if (delegate->target && delegate->target->vtable->klass == mono_defaults.transparent_proxy_class) {
+		if (delegate->target && mono_object_is_transparent_proxy (delegate->target)) {
 			is_remote = TRUE;
 #ifndef DISABLE_COM
 			if (((MonoTransparentProxy *)delegate->target)->remote_class->proxy_class != mono_class_get_com_object_class () &&

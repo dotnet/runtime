@@ -364,7 +364,7 @@ mono_remoting_wrapper (MonoMethod *method, gpointer *params)
 	this_obj = *((MonoTransparentProxy **)params [0]);
 
 	g_assert (this_obj);
-	g_assert (((MonoObject *)this_obj)->vtable->klass == mono_defaults.transparent_proxy_class);
+	g_assert (mono_object_is_transparent_proxy (this_obj));
 	
 	/* skip the this pointer */
 	params++;

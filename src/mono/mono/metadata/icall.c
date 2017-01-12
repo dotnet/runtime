@@ -1219,7 +1219,7 @@ ves_icall_System_Object_GetType (MonoObjectHandle obj, MonoError *error)
 	MonoDomain *domain = MONO_HANDLE_DOMAIN (obj);
 	MonoClass *klass = mono_handle_class (obj);
 #ifndef DISABLE_REMOTING
-	if (klass == mono_defaults.transparent_proxy_class) {
+	if (mono_class_is_transparent_proxy (klass)) {
 		MonoTransparentProxyHandle proxy_obj = MONO_HANDLE_CAST (MonoTransparentProxy, obj);
 		MonoRemoteClass *remote_class = MONO_HANDLE_GETVAL (proxy_obj, remote_class);
 		MonoType *proxy_type = &remote_class->proxy_class->byval_arg;
@@ -3289,16 +3289,16 @@ ves_icall_InternalExecute (MonoReflectionMethod *method, MonoObject *this_arg, M
 
 	if (m->klass == mono_defaults.object_class) {
 		if (!strcmp (m->name, "FieldGetter")) {
-			MonoClass *k = this_arg->vtable->klass;
+			MonoClass *k = mono_object_class (this_arg);
 			MonoString *name;
 			char *str;
 			
 			/* If this is a proxy, then it must be a CBO */
-			if (k == mono_defaults.transparent_proxy_class) {
+			if (mono_class_is_transparent_proxy (k)) {
 				MonoTransparentProxy *tp = (MonoTransparentProxy*) this_arg;
 				this_arg = tp->rp->unwrapped_server;
 				g_assert (this_arg);
-				k = this_arg->vtable->klass;
+				k = mono_object_class (this_arg);
 			}
 			
 			name = mono_array_get (params, MonoString *, 1);
@@ -3332,18 +3332,18 @@ ves_icall_InternalExecute (MonoReflectionMethod *method, MonoObject *this_arg, M
 			g_assert_not_reached ();
 
 		} else if (!strcmp (m->name, "FieldSetter")) {
-			MonoClass *k = this_arg->vtable->klass;
+			MonoClass *k = mono_object_class (this_arg);
 			MonoString *name;
 			guint32 size;
 			gint32 align;
 			char *str;
 			
 			/* If this is a proxy, then it must be a CBO */
-			if (k == mono_defaults.transparent_proxy_class) {
+			if (mono_class_is_transparent_proxy (k)) {
 				MonoTransparentProxy *tp = (MonoTransparentProxy*) this_arg;
 				this_arg = tp->rp->unwrapped_server;
 				g_assert (this_arg);
-				k = this_arg->vtable->klass;
+				k = mono_object_class (this_arg);
 			}
 			
 			name = mono_array_get (params, MonoString *, 1);
@@ -6876,7 +6876,7 @@ ves_icall_IsTransparentProxy (MonoObject *proxy)
 	if (!proxy)
 		return 0;
 
-	if (proxy->vtable->klass == mono_defaults.transparent_proxy_class)
+	if (mono_object_is_transparent_proxy (proxy))
 		return 1;
 
 	return 0;

@@ -303,7 +303,7 @@ get_virtual_method (MonoDomain *domain, RuntimeMethod *runtime_method, MonoObjec
 
 	if ((m->flags & METHOD_ATTRIBUTE_FINAL) || !(m->flags & METHOD_ATTRIBUTE_VIRTUAL)) {
 		RuntimeMethod *ret = NULL;
-		if (obj->vtable->klass == mono_defaults.transparent_proxy_class) {
+		if (mono_object_is_transparent_proxy (obj)) {
 			ret = mono_interp_get_runtime_method (domain, mono_marshal_get_remoting_invoke (m), &error);
 			mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 		} else if (m->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED) {
@@ -895,7 +895,7 @@ interp_delegate_ctor (MonoDomain *domain, MonoObject *this, MonoObject *target, 
 	mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 	delegate->target = target;
 
-	if (target && target->vtable->klass == mono_defaults.transparent_proxy_class) {
+	if (target && mono_object_is_transparent_proxy (target)) {
 		MonoMethod *method = mono_marshal_get_remoting_invoke (runtime_method->method);
 		delegate->method_ptr = mono_interp_get_runtime_method (domain, method, &error);
 		mono_error_cleanup (&error); /* FIXME: don't swallow the error */
@@ -1800,7 +1800,7 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
 			} else {
 				child_frame.obj = NULL;
 			}
-			if (csignature->hasthis && ((MonoObject *)child_frame.obj)->vtable->klass == mono_defaults.transparent_proxy_class) {
+			if (csignature->hasthis && mono_object_is_transparent_proxy (child_frame.obj)) {
 				child_frame.runtime_method = mono_interp_get_runtime_method (context->domain, mono_marshal_get_remoting_invoke (child_frame.runtime_method->method), &error);
 				mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 			} else if (child_frame.runtime_method->method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) {
@@ -1893,7 +1893,7 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
 			} else {
 				child_frame.obj = NULL;
 			}
-			if (child_frame.runtime_method->hasthis && !child_frame.runtime_method->valuetype && ((MonoObject *)child_frame.obj)->vtable->klass == mono_defaults.transparent_proxy_class) {
+			if (child_frame.runtime_method->hasthis && !child_frame.runtime_method->valuetype && mono_object_is_transparent_proxy (child_frame.obj)) {
 				child_frame.runtime_method = mono_interp_get_runtime_method (context->domain, mono_marshal_get_remoting_invoke (child_frame.runtime_method->method), &error);
 				mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 			}
@@ -1932,7 +1932,7 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
 				child_frame.obj = NULL;
 			}
 
-			if (child_frame.runtime_method->hasthis && !child_frame.runtime_method->valuetype && ((MonoObject *)child_frame.obj)->vtable->klass == mono_defaults.transparent_proxy_class) {
+			if (child_frame.runtime_method->hasthis && !child_frame.runtime_method->valuetype && mono_object_is_transparent_proxy (child_frame.obj)) {
 				child_frame.runtime_method = mono_interp_get_runtime_method (context->domain, mono_marshal_get_remoting_invoke (child_frame.runtime_method->method), &error);
 				mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 			}
@@ -2970,7 +2970,7 @@ array_constructed:
 				THROW_EX (mono_get_exception_null_reference (), ip);
 			field = rtm->data_items[* (guint16 *)(ip + 1)];
 			ip += 2;
-			if (o->vtable->klass == mono_defaults.transparent_proxy_class) {
+			if (mono_object_is_transparent_proxy (o)) {
 				MonoClass *klass = ((MonoTransparentProxy*)o)->remote_class->proxy_class;
 
 				addr = mono_load_remote_field_checked (o, klass, field, &tmp, &error);
@@ -2994,7 +2994,7 @@ array_constructed:
 			field = rtm->data_items[* (guint16 *)(ip + 1)];
 			i32 = READ32(ip + 2);
 			ip += 4;
-			if (o->vtable->klass == mono_defaults.transparent_proxy_class) {
+			if (mono_object_is_transparent_proxy (o)) {
 				MonoClass *klass = ((MonoTransparentProxy*)o)->remote_class->proxy_class;
 				addr = mono_load_remote_field_checked (o, klass, field, &tmp, &error);
 				mono_error_cleanup (&error); /* FIXME: don't swallow the error */
@@ -3049,7 +3049,7 @@ array_constructed:
 			field = rtm->data_items[* (guint16 *)(ip + 1)];
 			ip += 2;
 
-			if (o->vtable->klass == mono_defaults.transparent_proxy_class) {
+			if (mono_object_is_transparent_proxy (o)) {
 				MonoClass *klass = ((MonoTransparentProxy*)o)->remote_class->proxy_class;
 				mono_store_remote_field_checked (o, klass, field, &sp [-1].data, &error);
 				mono_error_cleanup (&error); /* FIXME: don't swallow the error */
@@ -3069,7 +3069,7 @@ array_constructed:
 			i32 = READ32(ip + 2);
 			ip += 4;
 
-			if (o->vtable->klass == mono_defaults.transparent_proxy_class) {
+			if (mono_object_is_transparent_proxy (o)) {
 				MonoClass *klass = ((MonoTransparentProxy*)o)->remote_class->proxy_class;
 				mono_store_remote_field_checked (o, klass, field, &sp [-1].data, &error);
 				mono_error_cleanup (&error); /* FIXME: don't swallow the error */

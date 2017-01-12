@@ -2731,13 +2731,11 @@ mono_object_handle_get_virtual_method (MonoObjectHandle obj, MonoMethod *method,
 
 	gboolean is_proxy = FALSE;
 	MonoClass *klass = mono_handle_class (obj);
-#ifndef DISABLE_REMOTING
-	if (klass == mono_defaults.transparent_proxy_class) {
+	if (mono_class_is_transparent_proxy (klass)) {
 		MonoRemoteClass *remote_class = MONO_HANDLE_GETVAL (MONO_HANDLE_CAST (MonoTransparentProxy, obj), remote_class);
 		klass = remote_class->proxy_class;
 		is_proxy = TRUE;
 	}
-#endif
 	return class_get_virtual_method (klass, method, is_proxy, error);
 }
 
@@ -5044,7 +5042,7 @@ mono_runtime_try_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 			mono_error_assert_ok (error);
 			g_assert (obj); /*maybe we should raise a TLE instead?*/
 #ifndef DISABLE_REMOTING
-			if (mono_object_class(obj) == mono_defaults.transparent_proxy_class) {
+			if (mono_object_is_transparent_proxy (obj)) {
 				method = mono_marshal_get_remoting_invoke (method->slot == -1 ? method : method->klass->vtable [method->slot]);
 			}
 #endif
@@ -6596,7 +6594,7 @@ mono_object_handle_isinst_mbyref (MonoObjectHandle obj, MonoClass *klass, MonoEr
 		}
 	}
 #ifndef DISABLE_REMOTING
-	if (vt->klass == mono_defaults.transparent_proxy_class) 
+	if (mono_class_is_transparent_proxy (vt->klass)) 
 	{
 		MonoBoolean custom_type_info =  MONO_HANDLE_GETVAL (MONO_HANDLE_CAST (MonoTransparentProxy, obj), custom_type_info);
 		if (!custom_type_info)
@@ -7880,7 +7878,7 @@ mono_delegate_ctor_with_method (MonoObject *this_obj, MonoObject *target, gpoint
 	mono_stats.delegate_creations++;
 
 #ifndef DISABLE_REMOTING
-	if (target && target->vtable->klass == mono_defaults.transparent_proxy_class) {
+	if (target && mono_object_is_transparent_proxy (target)) {
 		g_assert (method);
 		method = mono_marshal_get_remoting_invoke (method);
 		delegate->method_ptr = mono_compile_method_checked (method, error);
