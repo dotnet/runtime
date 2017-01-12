@@ -48,7 +48,7 @@
 
     <XunitOptions Condition="'$(TestTFM)'!=''">$(XunitOptions) -notrait category=non$(TestTFM)tests</XunitOptions>
     <XunitOptions Condition="'$(XunitMaxThreads)'!=''">$(XunitOptions) -maxthreads $(XunitMaxThreads)</XunitOptions>
-    <XunitTestAssembly Condition="'$(XunitTestAssembly)' == ''">$(AssemblyName).dll</XunitTestAssembly>
+    <XunitTestAssembly Condition="'$(XunitTestAssembly)' == ''">$(TargetFileName)</XunitTestAssembly>
     <XunitArguments>$(XunitTestAssembly) $(XunitOptions)</XunitArguments>
 
     <TestProgram Condition="'$(TestHostExecutablePath)'!=''">$(TestHostExecutablePath)</TestProgram>
