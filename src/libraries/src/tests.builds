@@ -5,7 +5,7 @@
   <Import Project="$(ToolsDir)ConstructSharedFx.targets" Condition="Exists('$(ToolsDir)ConstructSharedFx.targets')" />
 
   <ItemGroup>
-    <Project Include="$(MSBuildThisFileDirectory)*\tests\**\*.csproj" Exclude="@(TestProjectExclusions)">
+    <Project Include="$(MSBuildThisFileDirectory)*\tests\**\*.Tests.csproj" Exclude="@(TestProjectExclusions)">
       <AdditionalMetadata>ConfigurationGroup=$(ConfigurationGroup)</AdditionalMetadata>
     </Project>
   </ItemGroup>
