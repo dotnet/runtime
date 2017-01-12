@@ -25,7 +25,7 @@ Open a [Visual Studio Command Prompt](http://msdn.microsoft.com/en-us/library/ms
 
 For information on different configurations see [project-guidelines](../coding-guidelines/project-guidelines.md).
 
-**Note**: Before working on individual projects or test projects you **must** run `build.cmd` from the root once before beginning that work. It is also a good idea to run `build.cmd` whenever pull a large set of unknown changes into your branch.
+**Note**: Before working on individual projects or test projects you **must** run `build.cmd` from the root once before beginning that work. It is also a good idea to run `build.cmd` whenever you pull a large set of unknown changes into your branch.
 
 Visual Studio Solution (.sln) files exist for related groups of libraries. These can be loaded to build, debug and test inside
 the Visual Studio IDE.
