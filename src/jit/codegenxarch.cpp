@@ -3863,16 +3863,16 @@ void CodeGen::genRangeCheck(GenTreePtr oper)
 
     GenTreeBoundsChk* bndsChk = oper->AsBoundsChk();
 
-    GenTreePtr arrLen    = bndsChk->gtArrLen;
     GenTreePtr arrIndex  = bndsChk->gtIndex;
+    GenTreePtr arrLen    = bndsChk->gtArrLen;
     GenTreePtr arrRef    = nullptr;
     int        lenOffset = 0;
 
     GenTree *    src1, *src2;
     emitJumpKind jmpKind;
 
-    genConsumeRegs(arrLen);
     genConsumeRegs(arrIndex);
+    genConsumeRegs(arrLen);
 
     if (arrIndex->isContainedIntOrIImmed())
     {

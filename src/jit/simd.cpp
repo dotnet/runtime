@@ -1793,7 +1793,7 @@ GenTreePtr Compiler::createAddressNodeForSIMDInit(GenTreePtr tree, unsigned simd
         GenTreeArrLen* arrLen =
             new (this, GT_ARR_LENGTH) GenTreeArrLen(TYP_INT, arrayRef, (int)offsetof(CORINFO_Array, length));
         GenTreeBoundsChk* arrBndsChk = new (this, GT_ARR_BOUNDS_CHECK)
-            GenTreeBoundsChk(GT_ARR_BOUNDS_CHECK, TYP_VOID, arrLen, checkIndexExpr, SCK_RNGCHK_FAIL);
+            GenTreeBoundsChk(GT_ARR_BOUNDS_CHECK, TYP_VOID, checkIndexExpr, arrLen, SCK_RNGCHK_FAIL);
 
         offset += offsetof(CORINFO_Array, u1Elems);
         byrefNode = gtNewOperNode(GT_COMMA, arrayRef->TypeGet(), arrBndsChk, gtCloneExpr(arrayRef));
@@ -2247,7 +2247,7 @@ GenTreePtr Compiler::impSIMDIntrinsic(OPCODE                opcode,
                 GenTreeArrLen* arrLen = new (this, GT_ARR_LENGTH)
                     GenTreeArrLen(TYP_INT, arrayRefForArgRngChk, (int)offsetof(CORINFO_Array, length));
                 argRngChk = new (this, GT_ARR_BOUNDS_CHECK)
-                    GenTreeBoundsChk(GT_ARR_BOUNDS_CHECK, TYP_VOID, arrLen, index, op3CheckKind);
+                    GenTreeBoundsChk(GT_ARR_BOUNDS_CHECK, TYP_VOID, index, arrLen, op3CheckKind);
                 // Now, clone op3 to create another node for the argChk
                 GenTree* index2 = gtCloneExpr(op3);
                 assert(index != nullptr);
@@ -2268,7 +2268,7 @@ GenTreePtr Compiler::impSIMDIntrinsic(OPCODE                opcode,
             GenTreeArrLen* arrLen = new (this, GT_ARR_LENGTH)
                 GenTreeArrLen(TYP_INT, arrayRefForArgChk, (int)offsetof(CORINFO_Array, length));
             GenTreeBoundsChk* argChk = new (this, GT_ARR_BOUNDS_CHECK)
-                GenTreeBoundsChk(GT_ARR_BOUNDS_CHECK, TYP_VOID, arrLen, checkIndexExpr, op2CheckKind);
+                GenTreeBoundsChk(GT_ARR_BOUNDS_CHECK, TYP_VOID, checkIndexExpr, arrLen, op2CheckKind);
 
             // Create a GT_COMMA tree for the bounds check(s).
             op2 = gtNewOperNode(GT_COMMA, op2->TypeGet(), argChk, op2);
@@ -2500,7 +2500,7 @@ GenTreePtr Compiler::impSIMDIntrinsic(OPCODE                opcode,
 
                 GenTree*          lengthNode = new (this, GT_CNS_INT) GenTreeIntCon(TYP_INT, vectorLength);
                 GenTreeBoundsChk* simdChk =
-                    new (this, GT_SIMD_CHK) GenTreeBoundsChk(GT_SIMD_CHK, TYP_VOID, lengthNode, index, SCK_RNGCHK_FAIL);
+                    new (this, GT_SIMD_CHK) GenTreeBoundsChk(GT_SIMD_CHK, TYP_VOID, index, lengthNode, SCK_RNGCHK_FAIL);
 
                 // Create a GT_COMMA tree for the bounds check.
                 op2 = gtNewOperNode(GT_COMMA, op2->TypeGet(), simdChk, op2);
