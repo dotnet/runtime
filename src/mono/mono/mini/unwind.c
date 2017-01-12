@@ -80,13 +80,17 @@ static int map_hw_reg_to_dwarf_reg [] = { 0, 1, 2, 3, 5, 4, 6, 7, 8 };
 #define DWARF_PC_REG (mono_hw_reg_to_dwarf_reg (X86_NREG))
 #elif defined (TARGET_POWERPC)
 // http://refspecs.linuxfoundation.org/ELF/ppc64/PPC-elf64abi-1.9.html
-static int map_hw_reg_to_dwarf_reg [] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 
+static int map_hw_reg_to_dwarf_reg [ppc_lr + 1] = { 0, 1, 2, 3, 4, 5, 6, 7, 8,
 										  9, 10, 11, 12, 13, 14, 15, 16,
 										  17, 18, 19, 20, 21, 22, 23, 24,
 										  25, 26, 27, 28, 29, 30, 31 };
-#define NUM_DWARF_REGS 110
 #define DWARF_DATA_ALIGN (-(gint32)sizeof (mgreg_t))
+#if _CALL_ELF == 2
+#define DWARF_PC_REG 65
+#else
 #define DWARF_PC_REG 108
+#endif
+#define NUM_DWARF_REGS (DWARF_PC_REG + 1)
 #elif defined (TARGET_S390X)
 static int map_hw_reg_to_dwarf_reg [] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 };
 #define NUM_DWARF_REGS 16
@@ -117,8 +121,19 @@ static int map_hw_reg_to_dwarf_reg [16];
 #endif
 
 static gboolean dwarf_reg_to_hw_reg_inited;
+static gboolean hw_reg_to_dwarf_reg_inited;
 
 static int map_dwarf_reg_to_hw_reg [NUM_DWARF_REGS];
+
+static void
+init_hw_reg_map (void)
+{
+#ifdef TARGET_POWERPC
+	map_hw_reg_to_dwarf_reg [ppc_lr] = DWARF_PC_REG;
+#endif
+	mono_memory_barrier ();
+	hw_reg_to_dwarf_reg_inited = TRUE;
+}
 
 /*
  * mono_hw_reg_to_dwarf_reg:
@@ -128,12 +143,8 @@ static int map_dwarf_reg_to_hw_reg [NUM_DWARF_REGS];
 int
 mono_hw_reg_to_dwarf_reg (int reg)
 {
-#ifdef TARGET_POWERPC
-	if (reg == ppc_lr)
-		return 108;
-	else
-		g_assert (reg < NUM_HW_REGS);
-#endif
+	if (!hw_reg_to_dwarf_reg_inited)
+		init_hw_reg_map ();
 
 	if (NUM_HW_REGS == 0) {
 		g_assert_not_reached ();
@@ -144,7 +155,7 @@ mono_hw_reg_to_dwarf_reg (int reg)
 }
 
 static void
-init_reg_map (void)
+init_dwarf_reg_map (void)
 {
 	int i;
 
@@ -152,10 +163,6 @@ init_reg_map (void)
 	for (i = 0; i < NUM_HW_REGS; ++i) {
 		map_dwarf_reg_to_hw_reg [mono_hw_reg_to_dwarf_reg (i)] = i;
 	}
-
-#ifdef TARGET_POWERPC
-	map_dwarf_reg_to_hw_reg [DWARF_PC_REG] = ppc_lr;
-#endif
 
 	mono_memory_barrier ();
 	dwarf_reg_to_hw_reg_inited = TRUE;
@@ -165,7 +172,7 @@ int
 mono_dwarf_reg_to_hw_reg (int reg)
 {
 	if (!dwarf_reg_to_hw_reg_inited)
-		init_reg_map ();
+		init_dwarf_reg_map ();
 
 	return map_dwarf_reg_to_hw_reg [reg];
 }
