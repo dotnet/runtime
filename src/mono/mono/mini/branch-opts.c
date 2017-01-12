@@ -973,14 +973,11 @@ mono_merge_basic_blocks (MonoCompile *cfg, MonoBasicBlock *bb, MonoBasicBlock *b
 	MonoBasicBlock *prev_bb;
 	int i;
 
+	/* There may be only one control flow edge between two BBs that we merge, and it should connect these BBs together. */
+	g_assert (bb->out_count == 1 && bbn->in_count == 1 && bb->out_bb [0] == bbn && bbn->in_bb [0] == bb);
+
 	bb->has_array_access |= bbn->has_array_access;
 	bb->extended |= bbn->extended;
-
-	/* Compute prev_bb if possible to avoid the linear search below */
-	prev_bb = NULL;
-	for (i = 0; i < bbn->in_count; ++i)
-		if (bbn->in_bb [0]->next_bb == bbn)
-			prev_bb = bbn->in_bb [0];
 
 	mono_unlink_bblock (cfg, bb, bbn);
 	for (i = 0; i < bbn->out_count; ++i)
@@ -1034,10 +1031,14 @@ mono_merge_basic_blocks (MonoCompile *cfg, MonoBasicBlock *bb, MonoBasicBlock *b
 		bb->last_ins = bbn->last_ins;
 	}
 
-	if (!prev_bb) {
+
+	/* Check if the control flow predecessor is also the linear IL predecessor. */
+	if (bbn->in_bb [0]->next_bb == bbn)
+		prev_bb = bbn->in_bb [0];
+	else
+		/* If it isn't, look for one among all basic blocks. */
 		for (prev_bb = cfg->bb_entry; prev_bb && prev_bb->next_bb != bbn; prev_bb = prev_bb->next_bb)
 			;
-	}
 	if (prev_bb) {
 		prev_bb->next_bb = bbn->next_bb;
 	} else {
