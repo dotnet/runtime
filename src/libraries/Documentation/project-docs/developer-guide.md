@@ -46,9 +46,9 @@ The build configurations are generally defaulted based on where you are building
 
 These options are common for build, build-managed, build-native, and build-tests scripts.
 
-For more details on the build configurations see [project-guidelines](../coding-guidelines/project-guidelines.md).
+For more details on the build configurations see [project-guidelines](../coding-guidelines/project-guidelines.md#build-pivots).
 
-**Note**: Before working on individual projects or test projects you **must** run `build` from the root once before beginning that work. It is also a good idea to run `build` whenever pull a large set of unknown changes into your branch.
+**Note**: Before working on individual projects or test projects you **must** run `build` from the root once before beginning that work. It is also a good idea to run `build` whenever you pull a large set of unknown changes into your branch.
 
 **Common full clean build and test run**
 ```
@@ -134,7 +134,7 @@ build-tests -- /p:WithoutCategories=IgnoreForCI
 
 ### Building individual CoreFx DLLs
 
-**Note**: Before working on individual projects or test projects you **must** run `build` from the root once before beginning that work. It is also a good idea to run `build` whenever pull a large set of unknown changes into your branch.
+**Note**: Before working on individual projects or test projects you **must** run `build` from the root once before beginning that work. It is also a good idea to run `build` whenever you pull a large set of unknown changes into your branch.
 
 Under the src directory is a set of directories, each of which represents a particular assembly in CoreFX. See Libary Project Guidelines section under [project-guidelines](../coding-guidelines/project-guidelines.md) for more details about the structure.
 
