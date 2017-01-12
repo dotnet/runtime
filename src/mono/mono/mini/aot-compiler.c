@@ -191,6 +191,7 @@ typedef struct MonoAotOptions {
 	char *instances_logfile_path;
 	char *logfile;
 	gboolean dump_json;
+	gboolean profile_only;
 } MonoAotOptions;
 
 typedef enum {
@@ -312,6 +313,7 @@ typedef struct MonoAotCompile {
 	GPtrArray *objc_selectors;
 	GHashTable *objc_selector_to_index;
 	GList *profile_data;
+	GHashTable *profile_methods;
 	FILE *logfile;
 	FILE *instances_logfile;
 	FILE *data_outfile;
@@ -7224,6 +7226,8 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 			opts->data_outfile = g_strdup (arg + strlen ("data-outfile="));
 		} else if (str_begins_with (arg, "profile=")) {
 			opts->profile_files = g_list_append (opts->profile_files, g_strdup (arg + strlen ("profile=")));
+		} else if (!strcmp (arg, "profile-only")) {
+			opts->profile_only = TRUE;
 		} else if (!strcmp (arg, "verbose")) {
 			opts->verbose = TRUE;
 		} else if (str_begins_with (arg, "help") || str_begins_with (arg, "?")) {
@@ -7546,6 +7550,9 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 		return;
 
 	if (method->wrapper_type == MONO_WRAPPER_COMINTEROP)
+		return;
+
+	if (acfg->aot_opts.profile_only && !method->is_inflated && !g_hash_table_lookup (acfg->profile_methods, method))
 		return;
 
 	InterlockedIncrement (&acfg->stats.mcount);
@@ -10522,6 +10529,23 @@ add_profile_instances (MonoAotCompile *acfg, ProfileData *data)
 	if (!data)
 		return;
 
+	if (acfg->aot_opts.profile_only) {
+		/* Add methods referenced by the profile */
+		g_hash_table_iter_init (&iter, data->methods);
+		while (g_hash_table_iter_next (&iter, &key, &value)) {
+			MethodProfileData *mdata = (MethodProfileData*)value;
+			MonoMethod *m = mdata->method;
+
+			if (!m)
+				continue;
+			if (m->is_inflated)
+				continue;
+			add_extra_method (acfg, m);
+			g_hash_table_insert (acfg->profile_methods, m, m);
+			count ++;
+		}
+	}
+
 	/*
 	 * Add method instances 'related' to this assembly to the AOT image.
 	 */
@@ -10609,6 +10633,7 @@ acfg_create (MonoAssembly *ass, guint32 opts)
 	acfg->plt_entry_debug_sym_cache = g_hash_table_new (g_str_hash, g_str_equal);
 	acfg->gsharedvt_in_signatures = g_hash_table_new ((GHashFunc)mono_signature_hash, (GEqualFunc)mono_metadata_signature_equal);
 	acfg->gsharedvt_out_signatures = g_hash_table_new ((GHashFunc)mono_signature_hash, (GEqualFunc)mono_metadata_signature_equal);
+	acfg->profile_methods = g_hash_table_new (NULL, NULL);
 	mono_os_mutex_init_recursive (&acfg->mutex);
 
 	init_got_info (&acfg->got_info);
