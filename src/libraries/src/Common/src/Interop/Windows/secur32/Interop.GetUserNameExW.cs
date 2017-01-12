@@ -7,9 +7,9 @@ using System.Text;
 
 internal partial class Interop
 {
-    internal partial class SspiCli
+    internal partial class Secur32
     {
-        [DllImport(Libraries.SspiCli, CharSet = CharSet.Unicode, SetLastError = true)]
+        [DllImport(Libraries.Secur32, CharSet = CharSet.Unicode, SetLastError = true)]
         internal static extern byte GetUserNameExW(int NameFormat, [Out] StringBuilder lpNameBuffer, ref uint lpnSize);
 
         internal const int NameSamCompatible = 2;
