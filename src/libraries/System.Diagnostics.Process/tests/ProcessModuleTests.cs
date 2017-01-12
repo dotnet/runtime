@@ -30,10 +30,10 @@ namespace System.Diagnostics.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
-        public void TestModulesContainsCorerun()
+        public void TestModulesContainsDotnet()
         {
             ProcessModuleCollection modules = Process.GetCurrentProcess().Modules;
-            Assert.Contains(modules.Cast<ProcessModule>(), m => m.FileName.Contains("corerun"));
+            Assert.Contains(modules.Cast<ProcessModule>(), m => m.FileName.Contains("dotnet"));
         }
 
         [Fact]
