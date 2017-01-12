@@ -40,7 +40,7 @@
     "System.Threading.Thread": "4.4.0-beta-24911-08",
     "System.Threading.ThreadPool": "4.4.0-beta-24911-08",
     "Microsoft.DiaSymReader.Native": "1.4.0",
-    "Libuv": "1.10.0-preview1-22033"
+    "Libuv": "1.10.0-preview1-22036"
   },
   "frameworks": {
     "netstandard1.7": {}
