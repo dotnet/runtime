@@ -126,9 +126,15 @@ int valgrind_register;
 #endif
 GList* mono_aot_paths;
 
+static gboolean mini_enable_profiler = FALSE;
+static char* mini_profiler_options = NULL;
+
 static GSList *tramp_infos;
 
 static void register_icalls (void);
+
+static gboolean mini_profiler_enabled (void) { return mini_enable_profiler; }
+static const char* mini_profiler_get_options (void) {  return mini_profiler_options;  }
 
 gboolean
 mono_running_on_valgrind (void)
@@ -3478,6 +3484,13 @@ mini_llvm_init (void)
 #endif
 }
 
+void
+mini_profiler_enable_with_options (const char* profile_options)
+{
+	mini_enable_profiler = TRUE;
+	mini_profiler_options = g_strdup (profile_options);
+}
+
 MonoDomain *
 mini_init (const char *filename, const char *runtime_version)
 {
@@ -3639,6 +3652,11 @@ mini_init (const char *filename, const char *runtime_version)
 	mono_install_get_cached_class_info (mono_aot_get_cached_class_info);
 	mono_install_get_class_from_name (mono_aot_get_class_from_name);
 	mono_install_jit_info_find_in_aot (mono_aot_find_jit_info);
+
+	if (mini_profiler_enabled ()) {
+		mono_profiler_load (mini_profiler_get_options ());
+		mono_profiler_thread_name (MONO_NATIVE_THREAD_ID_TO_UINT (mono_native_thread_id_get ()), "Main");
+	}
 
 	if (debug_options.collect_pagefault_stats)
 		mono_aot_set_make_unreadable (TRUE);
