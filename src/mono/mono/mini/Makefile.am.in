@@ -47,6 +47,7 @@ RUNTIME_EXECUTABLE = $(if $(BOEHM),$(top_builddir)/mono/mini/mono-boehm,$(top_bu
 
 MINI_RUNTIME = MONO_PATH=$(CLASS) $(RUNTIME_EXECUTABLE)
 TOOLS_RUNTIME = MONO_PATH=$(mcs_topdir)/class/lib/build $(top_builddir)/runtime/mono-wrapper
+INTERPRETER_RUNTIME = $(MINI_RUNTIME) --interpreter
 RUNTIME_AOTCHECK = MONO_PATH="$(CLASS)$(PLATFORM_PATH_SEPARATOR)." $(RUNTIME_EXECUTABLE)
 
 MCS = CSC_SDK_PATH_DISABLED= $(TOOLS_RUNTIME) $(CSC) -unsafe -nowarn:0162 -nologo -noconfig -r:$(CLASS)/mscorlib.dll -r:$(CLASS)/System.dll -r:$(CLASS)/System.Core.dll
@@ -390,6 +391,17 @@ llvm_sources = \
 endif
 endif
 
+if ENABLE_INTERPRETER
+interpreter_sources =	\
+	interpreter/hacks.h		\
+	interpreter/interp.h	\
+	interpreter/interp.c	\
+	interpreter/mintops.h	\
+	interpreter/mintops.def	\
+	interpreter/mintops.c	\
+	interpreter/transform.c
+endif
+
 if ENABLE_LLVM
 llvm_runtime_sources = \
 	llvm-runtime.cpp
@@ -491,6 +503,7 @@ test_sources = 			\
 
 
 regtests_UNIVERSAL=basic.exe basic-float.exe basic-long.exe basic-calls.exe objects.exe arrays.exe basic-math.exe exceptions.exe iltests.exe devirtualization.exe generics.exe basic-simd.exe basic-vectors.exe
+iregtests=basic.exe basic-float.exe basic-long.exe basic-calls.exe
 
 if INSTALL_TESTING_AOT_FULL
 regtests= \
@@ -592,7 +605,7 @@ os_sources = $(darwin_sources) $(posix_sources)
 monobin_platform_ldflags=-framework CoreFoundation -framework Foundation
 endif
 
-libmini_la_SOURCES = $(common_sources) $(llvm_sources) $(llvm_runtime_sources) $(arch_sources) $(os_sources)
+libmini_la_SOURCES = $(common_sources) $(llvm_sources) $(llvm_runtime_sources) $(interpreter_sources) $(arch_sources) $(os_sources)
 libmini_la_CFLAGS = $(mono_CFLAGS)
 
 libmonoboehm_2_0_la_SOURCES =
@@ -715,6 +728,9 @@ rcheck-nunit: mono $(regtests)
 
 rcheck: mono $(regtests)
 	$(MINI_RUNTIME) --regression $(regtests)
+
+richeck: mono $(iregtests)
+	$(INTERPRETER_RUNTIME) --regression $(iregtests)
 
 if ARM
 check-seq-points:

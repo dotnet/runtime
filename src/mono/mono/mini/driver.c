@@ -58,6 +58,7 @@
 #include "mini.h"
 #include "jit.h"
 #include "aot-compiler.h"
+#include "interpreter/interp.h"
 
 #include <string.h>
 #include <ctype.h>
@@ -1919,6 +1920,11 @@ mono_main (int argc, char* argv[])
 #endif
 		} else if (strcmp (argv [i], "--nollvm") == 0){
 			mono_use_llvm = FALSE;
+#ifdef ENABLE_INTERPRETER
+		} else if (strcmp (argv [i], "--interpreter") == 0) {
+			mono_use_interpreter = TRUE;
+#endif
+
 #ifdef __native_client__
 		} else if (strcmp (argv [i], "--nacl-mono-path") == 0){
 			nacl_mono_path = g_strdup(argv[++i]);
@@ -2048,6 +2054,11 @@ mono_main (int argc, char* argv[])
 	}
 
 	mono_set_defaults (mini_verbose, opt);
+#if ENABLE_INTERPRETER
+	if (mono_use_interpreter)
+		domain = mono_interp_init (argv [i]);
+	else
+#endif
 	domain = mini_init (argv [i], forced_version);
 
 	mono_gc_set_stack_end (&domain);
@@ -2071,6 +2082,17 @@ mono_main (int argc, char* argv[])
 	case DO_SINGLE_METHOD_REGRESSION:
 		mono_do_single_method_regression = TRUE;
 	case DO_REGRESSION:
+#ifdef ENABLE_INTERPRETER
+		if (mono_use_interpreter) {
+			if (interp_regression_list (2, argc -i, argv + i)) {
+				g_print ("Regression ERRORS!\n");
+				// mini_cleanup (domain);
+				return 1;
+			}
+			// mini_cleanup (domain);
+			return 0;
+		}
+#endif
 		if (mini_regression_list (mini_verbose, argc -i, argv + i)) {
 			g_print ("Regression ERRORS!\n");
 			mini_cleanup (domain);
@@ -2103,6 +2125,10 @@ mono_main (int argc, char* argv[])
 		aname = argv [i];
 		break;
 	default:
+#ifdef ENABLE_INTERPRETER
+		if (mono_use_interpreter)
+			g_error ("not yet");
+#endif
 		if (argc - i < 1) {
 			mini_usage ();
 			mini_cleanup (domain);

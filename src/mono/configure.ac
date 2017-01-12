@@ -3528,6 +3528,15 @@ if test "x$have_deprecated" = "xyes"; then
    AC_DEFINE(HAVE_DEPRECATED, 1, [Support for the deprecated attribute])
 fi
 
+AC_ARG_WITH(interpreter, [  --with-interpreter=yes|no       Interpreter, default=no],[buildinterpreter=$with_interpreter],[buildinterpreter=no])
+if test "x$buildinterpreter" = "xyes"; then
+    AC_DEFINE(ENABLE_INTERPRETER, 1, [Enable interpreter in the runtime.])
+    AC_MSG_NOTICE([Enable interpreter in the runtime.])
+fi
+
+AM_CONDITIONAL([ENABLE_INTERPRETER], [test x$buildinterpreter != xno])
+
+
 dnl 
 dnl Simple Generational checks (sgen)
 dnl
@@ -4508,6 +4517,7 @@ echo "
 	BigArrays:     $enable_big_arrays
 	DTrace:        $enable_dtrace
 	LLVM Back End: $enable_llvm (dynamically loaded: $enable_loadedllvm)
+	Interpreter:   $buildinterpreter
 
    Libraries:
 	.NET 4.x:        $with_profile4_x

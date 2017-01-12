@@ -969,6 +969,88 @@ mono_arch_create_sdb_trampoline (gboolean single_step, MonoTrampInfo **info, gbo
 
 	return buf;
 }
+
+
+#ifdef ENABLE_INTERPRETER
+/*
+ * mono_arch_get_enter_icall_trampoline:
+ *
+ *   A trampoline that handles the transition from interpreter into native world.
+ *   It requiers to set up a descriptor (MethodArguments) that describes the
+ *   required arguments passed to the callee.
+ */
+gpointer
+mono_arch_get_enter_icall_trampoline (MonoTrampInfo **info)
+{
+	guint8 *start = NULL, *code, *exits[4], *leave_tramp;
+	MonoJumpInfo *ji = NULL;
+	GSList *unwind_ops = NULL;
+	static int arg_regs[] = {AMD64_ARG_REG1, AMD64_ARG_REG2, AMD64_ARG_REG3, AMD64_ARG_REG4};
+	int i;
+
+	start = code = (guint8 *) mono_global_codeman_reserve (256);
+
+	/* save MethodArguments* onto stack */
+	amd64_push_reg (code, AMD64_ARG_REG2);
+
+	/* save target address on stack */
+	amd64_push_reg (code, AMD64_ARG_REG1);
+	amd64_push_reg (code, AMD64_RAX);
+
+	/* load pointer to MethodArguments* into R11 */
+	amd64_mov_reg_reg (code, AMD64_R11, AMD64_ARG_REG2, 8);
+	
+	/* TODO: do float stuff first */
+
+	/* move ilen into RAX */ // TODO: struct offset
+	amd64_mov_reg_membase (code, AMD64_RAX, AMD64_R11, 0, 8);
+	/* load pointer to iregs into R11 */ // TODO: struct offset
+	amd64_mov_reg_membase (code, AMD64_R11, AMD64_R11, 8, 8);
+
+	for (i = 0; i < 4; i++) {
+		amd64_test_reg_reg (code, AMD64_RAX, AMD64_RAX);
+		exits [i] = code;
+		x86_branch8 (code, X86_CC_Z, 0, FALSE);
+
+		amd64_mov_reg_membase (code, arg_regs [i], AMD64_R11, i * sizeof (gpointer), 8);
+		amd64_dec_reg_size (code, AMD64_RAX, 1);
+	}
+
+	for (i = 0; i < 4; i++) {
+		x86_patch (exits [i], code);
+	}
+
+
+	amd64_pop_reg (code, AMD64_RAX);
+	amd64_pop_reg (code, AMD64_R11);
+
+	/* call into native function */
+	amd64_call_reg (code, AMD64_R11);
+
+	/* load MethodArguments */
+	amd64_pop_reg (code, AMD64_R11);
+	/* load retval */ // TODO: struct offset
+	amd64_mov_reg_membase (code, AMD64_R11, AMD64_R11, 0x20, 8);
+
+	amd64_test_reg_reg (code, AMD64_R11, AMD64_R11);
+	leave_tramp = code;
+	x86_branch8 (code, X86_CC_Z, 0, FALSE);
+
+	amd64_mov_membase_reg (code, AMD64_R11, 0, AMD64_RAX, 8);
+
+	x86_patch (leave_tramp, code);
+	amd64_ret (code);
+
+
+	mono_arch_flush_icache (start, code - start);
+	mono_profiler_code_buffer_new (start, code - start, MONO_PROFILER_CODE_BUFFER_EXCEPTION_HANDLING, NULL);
+
+	if (info)
+		*info = mono_tramp_info_create ("enter_icall_trampoline", start, code - start, ji, unwind_ops);
+
+	return start;
+}
+#endif
 #endif /* !DISABLE_JIT */
 
 #ifdef DISABLE_JIT
@@ -1034,4 +1116,13 @@ mono_arch_create_sdb_trampoline (gboolean single_step, MonoTrampInfo **info, gbo
 	g_assert_not_reached ();
 	return NULL;
 }
+
+#ifdef ENABLE_INTERPRETER
+gpointer
+mono_arch_get_enter_icall_trampoline (MonoTrampInfo **info)
+{
+	g_assert_not_reached ();
+	return NULL;
+}
+#endif
 #endif /* DISABLE_JIT */
