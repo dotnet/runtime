@@ -274,7 +274,7 @@ public class ReadAndWrite
             // Try setting the ConsoleEncoding to something else and see if it works.
             Console.OutputEncoding = Encoding.Unicode;
             // The primary purpose of ConsoleEncoding is to return an empty preamble.
-            Assert.Equal(Array.Empty<byte>(), encoding.GetPreamble());
+            Assert.Equal(Array.Empty<byte>(), Console.Out.Encoding.GetPreamble());
         }
         finally
         {
