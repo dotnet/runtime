@@ -19,7 +19,7 @@ namespace Internal.Cryptography
         {
             SafeAlgorithmHandle algorithm = DesBCryptModes.GetSharedHandle(cipherMode);
 
-            BasicSymmetricCipher cipher = new BasicSymmetricCipherBCrypt(algorithm, cipherMode, blockSize, key, 0, iv, encrypting);
+            BasicSymmetricCipher cipher = new BasicSymmetricCipherBCrypt(algorithm, cipherMode, blockSize, key, false, iv, encrypting);
             return UniversalCryptoTransform.Create(paddingMode, cipher, encrypting);
         }
     }
