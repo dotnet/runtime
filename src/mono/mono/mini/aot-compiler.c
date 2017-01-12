@@ -182,6 +182,7 @@ typedef struct MonoAotOptions {
 	int nrgctx_fetch_trampolines;
 	gboolean print_skipped_methods;
 	gboolean stats;
+	gboolean verbose;
 	char *tool_prefix;
 	char *ld_flags;
 	char *mtriple;
@@ -7223,6 +7224,8 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 			opts->data_outfile = g_strdup (arg + strlen ("data-outfile="));
 		} else if (str_begins_with (arg, "profile=")) {
 			opts->profile_files = g_list_append (opts->profile_files, g_strdup (arg + strlen ("profile=")));
+		} else if (!strcmp (arg, "verbose")) {
+			opts->verbose = TRUE;
 		} else if (str_begins_with (arg, "help") || str_begins_with (arg, "?")) {
 			printf ("Supported options for --aot:\n");
 			printf ("    outfile=\n");
@@ -7255,6 +7258,7 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 			printf ("    stats\n");
 			printf ("    dump\n");
 			printf ("    info\n");
+			printf ("    verbose\n");
 			printf ("    help/?\n");
 			exit (0);
 		} else {
@@ -10403,8 +10407,11 @@ resolve_profile_data (MonoAotCompile *acfg, ProfileData *data)
 	while (g_hash_table_iter_next (&iter, &key, &value)) {
 		ClassProfileData *cdata = (ClassProfileData*)value;
 
-		if (!cdata->image->image)
+		if (!cdata->image->image) {
+			if (acfg->aot_opts.verbose)
+				printf ("Unable to load class '%s.%s' because its image '%s' is not loaded.\n", cdata->ns, cdata->name, cdata->image->name);
 			continue;
+		}
 
 		resolve_class (cdata);
 		/*
@@ -10423,8 +10430,11 @@ resolve_profile_data (MonoAotCompile *acfg, ProfileData *data)
 
 		resolve_class (mdata->klass);
 		klass = mdata->klass->klass;
-		if (!klass)
+		if (!klass) {
+			if (acfg->aot_opts.verbose)
+				printf ("Unable to load method '%s' because its class '%s.%s' is not loaded.\n", mdata->name, mdata->klass->ns, mdata->klass->name);
 			continue;
+		}
 		miter = NULL;
 		while ((m = mono_class_get_methods (klass, &miter))) {
 			MonoError error;
@@ -10458,10 +10468,15 @@ resolve_profile_data (MonoAotCompile *acfg, ProfileData *data)
 			gboolean match = !strcmp (sig_str, mdata->signature);
 			g_free (sig_str);
 			if (!match)
+
 				continue;
 			//printf ("%s\n", mono_method_full_name (m, 1));
 			mdata->method = m;
 			break;
+		}
+		if (!mdata->method) {
+			if (acfg->aot_opts.verbose)
+				printf ("Unable to load method '%s' from class '%s', not found.\n", mdata->name, mono_class_full_name (klass));
 		}
 	}
 }
