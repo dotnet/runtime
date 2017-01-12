@@ -298,7 +298,7 @@ namespace System.Net
 
             return false;
         }
-        
+
         internal void SendHeaders(bool closing, MemoryStream ms, bool isWebSocketHandshake = false)
         {
             Encoding encoding = _contentEncoding;
@@ -322,7 +322,6 @@ namespace System.Net
 
                 if (_webHeaders[HttpKnownHeaderNames.Server] == null)
                     _webHeaders.Set(HttpKnownHeaderNames.Server, HttpHeaderStrings.NetCoreServerName);
-
                 CultureInfo inv = CultureInfo.InvariantCulture;
                 if (_webHeaders[HttpKnownHeaderNames.Date] == null)
                     _webHeaders.Set(HttpKnownHeaderNames.Date, DateTime.UtcNow.ToString("r", inv));

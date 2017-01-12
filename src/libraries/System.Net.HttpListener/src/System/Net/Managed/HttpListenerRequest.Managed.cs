@@ -413,12 +413,7 @@ namespace System.Net
                 }
             }
         }
-
-        internal bool Chunked
-        {
-            get { return _is_chunked; }
-        }
-
+        
         public string[] AcceptTypes
         {
             get { return _accept_types; }
