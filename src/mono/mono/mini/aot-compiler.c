@@ -149,7 +149,7 @@ typedef struct MonoAotOptions {
 	char *outfile;
 	char *llvm_outfile;
 	char *data_outfile;
-	char *profile_file;
+	GList *profile_files;
 	gboolean save_temps;
 	gboolean write_symbols;
 	gboolean metadata_only;
@@ -310,7 +310,7 @@ typedef struct MonoAotCompile {
 	int objc_selector_index, objc_selector_index_2;
 	GPtrArray *objc_selectors;
 	GHashTable *objc_selector_to_index;
-	ProfileData *profile_data;
+	GList *profile_data;
 	FILE *logfile;
 	FILE *instances_logfile;
 	FILE *data_outfile;
@@ -381,7 +381,7 @@ static void
 add_gsharedvt_wrappers (MonoAotCompile *acfg, MonoMethodSignature *sig, gboolean gsharedvt_in, gboolean gsharedvt_out);
 
 static void
-add_profile_instances (MonoAotCompile *acfg);
+add_profile_instances (MonoAotCompile *acfg, ProfileData *data);
 
 static void
 aot_printf (MonoAotCompile *acfg, const gchar *format, ...)
@@ -7222,7 +7222,7 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 		} else if (str_begins_with (arg, "data-outfile=")) {
 			opts->data_outfile = g_strdup (arg + strlen ("data-outfile="));
 		} else if (str_begins_with (arg, "profile=")) {
-			opts->profile_file = g_strdup (arg + strlen ("profile="));
+			opts->profile_files = g_list_append (opts->profile_files, g_strdup (arg + strlen ("profile=")));
 		} else if (str_begins_with (arg, "help") || str_begins_with (arg, "?")) {
 			printf ("Supported options for --aot:\n");
 			printf ("    outfile=\n");
@@ -10314,7 +10314,7 @@ load_profile_file (MonoAotCompile *acfg, char *filename)
 		}
 	}
 
-	acfg->profile_data = data;
+	acfg->profile_data = g_list_append (acfg->profile_data, data);
 }
 
 static void
@@ -10372,9 +10372,8 @@ resolve_class (ClassProfileData *cdata)
  * Resolve the profile data to the corresponding loaded classes/methods etc. if possible.
  */
 static void
-resolve_profile_data (MonoAotCompile *acfg)
+resolve_profile_data (MonoAotCompile *acfg, ProfileData *data)
 {
-	ProfileData *data = acfg->profile_data;
 	GHashTableIter iter;
 	gpointer key, value;
 	int i;
@@ -10499,9 +10498,8 @@ is_local_inst (MonoGenericInst *inst, MonoImage *image)
 }
 
 static void
-add_profile_instances (MonoAotCompile *acfg)
+add_profile_instances (MonoAotCompile *acfg, ProfileData *data)
 {
-	ProfileData *data = acfg->profile_data;
 	GHashTableIter iter;
 	gpointer key, value;
 	int count = 0;
@@ -11031,8 +11029,13 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 		}
 	}
 
-	if (acfg->aot_opts.profile_file)
-		load_profile_file (acfg, acfg->aot_opts.profile_file);
+	if (acfg->aot_opts.profile_files) {
+		GList *l;
+
+		for (l = acfg->aot_opts.profile_files; l; l = l->next) {
+			load_profile_file (acfg, (char*)l->data);
+		}
+	}
 
 	{
 		int method_index;
@@ -11101,9 +11104,14 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	if (!res)
 		return 1;
 
-	resolve_profile_data (acfg);
+	{
+		GList *l;
 
-	add_profile_instances (acfg);
+		for (l = acfg->profile_data; l; l = l->next)
+			resolve_profile_data (acfg, (ProfileData*)l->data);
+		for (l = acfg->profile_data; l; l = l->next)
+			add_profile_instances (acfg, (ProfileData*)l->data);
+	}
 
 	acfg->cfgs_size = acfg->methods->len + 32;
 	acfg->cfgs = g_new0 (MonoCompile*, acfg->cfgs_size);
