@@ -18014,8 +18014,8 @@ void Compiler::fgSetTreeSeqHelper(GenTreePtr tree, bool isLIR)
         case GT_SIMD_CHK:
 #endif // FEATURE_SIMD
             // Evaluate the trees left to right
-            fgSetTreeSeqHelper(tree->gtBoundsChk.gtArrLen, isLIR);
             fgSetTreeSeqHelper(tree->gtBoundsChk.gtIndex, isLIR);
+            fgSetTreeSeqHelper(tree->gtBoundsChk.gtArrLen, isLIR);
             break;
 
         case GT_STORE_DYN_BLK:
