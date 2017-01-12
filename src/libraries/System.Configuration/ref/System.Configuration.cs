@@ -143,7 +143,6 @@ namespace System.Configuration
     {
         object Create(object parent, object configContext, System.Xml.XmlNode section);
     }
-    [System.Runtime.InteropServices.ComVisibleAttribute(false)]
     public partial interface IConfigurationSystem
     {
         object GetConfig(string configKey);
@@ -767,12 +766,6 @@ namespace System.Configuration
         public static System.Configuration.Configuration OpenMappedExeConfiguration(System.Configuration.ExeConfigurationFileMap fileMap, System.Configuration.ConfigurationUserLevel userLevel, bool preLoad) { throw null; }
         public static System.Configuration.Configuration OpenMappedMachineConfiguration(System.Configuration.ConfigurationFileMap fileMap) { throw null; }
         public static void RefreshSection(string sectionName) { }
-    }
-    [System.AttributeUsageAttribute(System.AttributeTargets.All, AllowMultiple = true, Inherited = false)]
-    public sealed partial class ConfigurationPermissionAttribute : System.Security.Permissions.CodeAccessSecurityAttribute
-    {
-        public ConfigurationPermissionAttribute(System.Security.Permissions.SecurityAction action) : base(default(System.Security.Permissions.SecurityAction)) { }
-        public override System.Security.IPermission CreatePermission() { throw null; }
     }
     public sealed partial class ConfigurationProperty
     {
@@ -1454,12 +1447,10 @@ namespace System.Configuration.Internal
         System.Configuration.Internal.IInternalConfigRoot Root { get; }
         void Init(System.Type typeConfigHost, params object[] hostInitParams);
     }
-    [System.Runtime.InteropServices.ComVisibleAttribute(false)]
     public partial interface IConfigurationManagerHelper
     {
         void EnsureNetConfigLoaded();
     }
-    [System.Runtime.InteropServices.ComVisibleAttribute(false)]
     public partial interface IConfigurationManagerInternal
     {
         string ApplicationConfigUri { get; }
@@ -1474,7 +1465,6 @@ namespace System.Configuration.Internal
         bool SupportsUserConfig { get; }
         string UserConfigFilename { get; }
     }
-    [System.Runtime.InteropServices.ComVisibleAttribute(false)]
     public partial interface IInternalConfigClientHost
     {
         string GetExeConfigPath();
@@ -1484,13 +1474,11 @@ namespace System.Configuration.Internal
         bool IsLocalUserConfig(string configPath);
         bool IsRoamingUserConfig(string configPath);
     }
-    [System.Runtime.InteropServices.ComVisibleAttribute(false)]
     public partial interface IInternalConfigConfigurationFactory
     {
         System.Configuration.Configuration Create(System.Type typeConfigHost, params object[] hostInitConfigurationParams);
         string NormalizeLocationSubPath(string subPath, System.Configuration.Internal.IConfigErrorInfo errorInfo);
     }
-    [System.Runtime.InteropServices.ComVisibleAttribute(false)]
     public partial interface IInternalConfigHost
     {
         bool IsRemote { get; }
@@ -1534,7 +1522,6 @@ namespace System.Configuration.Internal
         void WriteCompleted(string streamName, bool success, object writeContext);
         void WriteCompleted(string streamName, bool success, object writeContext, bool assertPermissions);
     }
-    [System.Runtime.InteropServices.ComVisibleAttribute(false)]
     public partial interface IInternalConfigRecord
     {
         string ConfigPath { get; }
@@ -1546,7 +1533,6 @@ namespace System.Configuration.Internal
         void Remove();
         void ThrowIfInitErrors();
     }
-    [System.Runtime.InteropServices.ComVisibleAttribute(false)]
     public partial interface IInternalConfigRoot
     {
         bool IsDesignTime { get; }
@@ -1559,13 +1545,11 @@ namespace System.Configuration.Internal
         void Init(System.Configuration.Internal.IInternalConfigHost host, bool isDesignTime);
         void RemoveConfig(string configPath);
     }
-    [System.Runtime.InteropServices.ComVisibleAttribute(false)]
     public partial interface IInternalConfigSettingsFactory
     {
         void CompleteInit();
         void SetConfigurationSystem(System.Configuration.Internal.IInternalConfigSystem internalConfigSystem, bool initComplete);
     }
-    [System.Runtime.InteropServices.ComVisibleAttribute(false)]
     public partial interface IInternalConfigSystem
     {
         bool SupportsUserConfig { get; }
