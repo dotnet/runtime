@@ -543,20 +543,20 @@ ICALL(CATTRB_1, "GetBlob", ves_icall_CustomAttributeBuilder_GetBlob)
 #endif
 
 ICALL_TYPE(DYNM, "System.Reflection.Emit.DynamicMethod", DYNM_1)
-ICALL(DYNM_1, "create_dynamic_method", ves_icall_DynamicMethod_create_dynamic_method)
+HANDLES(ICALL(DYNM_1, "create_dynamic_method", ves_icall_DynamicMethod_create_dynamic_method))
 
 ICALL_TYPE(ENUMB, "System.Reflection.Emit.EnumBuilder", ENUMB_1)
 ICALL(ENUMB_1, "setup_enum_type", ves_icall_EnumBuilder_setup_enum_type)
 
 ICALL_TYPE(MODULEB, "System.Reflection.Emit.ModuleBuilder", MODULEB_10)
 ICALL(MODULEB_10, "GetRegisteredToken", ves_icall_ModuleBuilder_GetRegisteredToken)
-ICALL(MODULEB_8, "RegisterToken", ves_icall_ModuleBuilder_RegisterToken)
+HANDLES(ICALL(MODULEB_8, "RegisterToken", ves_icall_ModuleBuilder_RegisterToken))
 ICALL(MODULEB_1, "WriteToFile", ves_icall_ModuleBuilder_WriteToFile)
-ICALL(MODULEB_2, "basic_init", ves_icall_ModuleBuilder_basic_init)
+HANDLES(ICALL(MODULEB_2, "basic_init", ves_icall_ModuleBuilder_basic_init))
 ICALL(MODULEB_3, "build_metadata", ves_icall_ModuleBuilder_build_metadata)
-ICALL(MODULEB_5, "getMethodToken", ves_icall_ModuleBuilder_getMethodToken)
-ICALL(MODULEB_6, "getToken", ves_icall_ModuleBuilder_getToken)
-ICALL(MODULEB_7, "getUSIndex", ves_icall_ModuleBuilder_getUSIndex)
+HANDLES(ICALL(MODULEB_5, "getMethodToken", ves_icall_ModuleBuilder_getMethodToken))
+HANDLES(ICALL(MODULEB_6, "getToken", ves_icall_ModuleBuilder_getToken))
+HANDLES(ICALL(MODULEB_7, "getUSIndex", ves_icall_ModuleBuilder_getUSIndex))
 ICALL(MODULEB_9, "set_wrappers_type", ves_icall_ModuleBuilder_set_wrappers_type)
 
 ICALL_TYPE(SIGH, "System.Reflection.Emit.SignatureHelper", SIGH_1)
@@ -564,7 +564,7 @@ ICALL(SIGH_1, "get_signature_field", ves_icall_SignatureHelper_get_signature_fie
 ICALL(SIGH_2, "get_signature_local", ves_icall_SignatureHelper_get_signature_local)
 
 ICALL_TYPE(TYPEB, "System.Reflection.Emit.TypeBuilder", TYPEB_1)
-ICALL(TYPEB_1, "create_runtime_class", ves_icall_TypeBuilder_create_runtime_class)
+HANDLES(ICALL(TYPEB_1, "create_runtime_class", ves_icall_TypeBuilder_create_runtime_class))
 
 ICALL_TYPE(EVENTI, "System.Reflection.EventInfo", EVENTI_1)
 HANDLES(ICALL(EVENTI_1, "internal_from_handle_type", ves_icall_System_Reflection_EventInfo_internal_from_handle_type))
@@ -786,7 +786,7 @@ HANDLES(ICALL(RT_15, "GetPropertiesByName_native", ves_icall_RuntimeType_GetProp
 HANDLES(ICALL(RT_16, "GetTypeCodeImplInternal", ves_icall_type_GetTypeCodeInternal))
 HANDLES(ICALL(RT_28, "IsTypeExportedToWindowsRuntime", ves_icall_System_RuntimeType_IsTypeExportedToWindowsRuntime))
 HANDLES(ICALL(RT_29, "IsWindowsRuntimeObjectType", ves_icall_System_RuntimeType_IsWindowsRuntimeObjectType))
-ICALL(RT_17, "MakeGenericType", ves_icall_RuntimeType_MakeGenericType)
+HANDLES(ICALL(RT_17, "MakeGenericType", ves_icall_RuntimeType_MakeGenericType))
 HANDLES(ICALL(RT_18, "MakePointerType", ves_icall_RuntimeType_MakePointerType))
 HANDLES(ICALL(RT_19, "getFullName", ves_icall_System_RuntimeType_getFullName))
 HANDLES(ICALL(RT_21, "get_DeclaringMethod", ves_icall_RuntimeType_get_DeclaringMethod))

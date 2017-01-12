@@ -311,6 +311,8 @@ This is why we evaluate index and value before any call to MONO_HANDLE_RAW or ot
 		mono_gc_wbarrier_generic_store (&__dest->__obj,  (MonoObject*)(MONO_HANDLE_RAW(HANDLE)->FIELD)); \
 	} while (0)
 
+#define MONO_HANDLE_NEW_GET(TYPE,HANDLE,FIELD) (MONO_HANDLE_NEW(TYPE,MONO_HANDLE_RAW(HANDLE)->FIELD))
+
 #define MONO_HANDLE_GETVAL(HANDLE, FIELD) (MONO_HANDLE_RAW(HANDLE)->FIELD)
 
 /* VS doesn't support typeof :( :( :( */

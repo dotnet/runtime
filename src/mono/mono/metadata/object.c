@@ -7285,11 +7285,11 @@ mono_string_to_utf8_internal (MonoMemPool *mp, MonoImage *image, MonoString *s, 
  * Same as mono_string_to_utf8, but allocate the string from the image mempool.
  */
 char *
-mono_string_to_utf8_image (MonoImage *image, MonoString *s, MonoError *error)
+mono_string_to_utf8_image (MonoImage *image, MonoStringHandle s, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
-	return mono_string_to_utf8_internal (NULL, image, s, FALSE, error);
+	return mono_string_to_utf8_internal (NULL, image, MONO_HANDLE_RAW (s), FALSE, error); /* FIXME pin the string */
 }
 
 /**

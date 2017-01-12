@@ -7,6 +7,7 @@
 
 #include <mono/metadata/object.h>
 #include <mono/metadata/metadata-internals.h>
+#include <mono/metadata/object-internals.h>
 
 typedef struct {
 	guint32 import_lookup_table;
@@ -26,7 +27,7 @@ void
 mono_dynamic_images_init (void);
 
 void
-mono_dynamic_image_register_token (MonoDynamicImage *assembly, guint32 token, MonoObject *obj);
+mono_dynamic_image_register_token (MonoDynamicImage *assembly, guint32 token, MonoObjectHandle obj);
 
 gboolean
 mono_dynamic_image_is_valid_token (MonoDynamicImage *image, guint32 token);

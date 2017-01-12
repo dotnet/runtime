@@ -2811,47 +2811,42 @@ leave:
 	return ret;
 }
 
-ICALL_EXPORT MonoReflectionType*
-ves_icall_RuntimeType_MakeGenericType (MonoReflectionType *type, MonoArray *type_array)
+ICALL_EXPORT MonoReflectionTypeHandle
+ves_icall_RuntimeType_MakeGenericType (MonoReflectionTypeHandle reftype, MonoArrayHandle type_array, MonoError *error)
 {
-	MonoError error;
-	MonoReflectionType *ret;
-	MonoClass *klass;
-	MonoType *geninst, **types;
-	int i, count;
+	mono_error_init (error);
+	MonoDomain *domain = MONO_HANDLE_DOMAIN (reftype);
 
-	g_assert (IS_MONOTYPE (type));
-	mono_class_init_checked (mono_class_from_mono_type (type->type), &error);
-	if (mono_error_set_pending_exception (&error))
-		return NULL;
+	g_assert (IS_MONOTYPE_HANDLE (reftype));
+	MonoType *type = MONO_HANDLE_GETVAL (reftype, type);
+	mono_class_init_checked (mono_class_from_mono_type (type), error);
+	if (!is_ok (error))
+		return MONO_HANDLE_CAST (MonoReflectionType, NULL_HANDLE);
 
-	count = mono_array_length (type_array);
-	types = g_new0 (MonoType *, count);
+	int count = mono_array_handle_length (type_array);
+	MonoType **types = g_new0 (MonoType *, count);
 
-	for (i = 0; i < count; i++) {
-		MonoReflectionType *t = (MonoReflectionType *)mono_array_get (type_array, gpointer, i);
-		types [i] = t->type;
+	MonoReflectionTypeHandle t = MONO_HANDLE_NEW (MonoReflectionType, NULL);
+	for (int i = 0; i < count; i++) {
+		MONO_HANDLE_ARRAY_GETREF (t, type_array, i);
+		types [i] = MONO_HANDLE_GETVAL (t, type);
 	}
 
-	geninst = mono_reflection_bind_generic_parameters (type, count, types, &error);
+	MonoType *geninst = mono_reflection_bind_generic_parameters (reftype, count, types, error);
 	g_free (types);
 	if (!geninst) {
-		mono_error_set_pending_exception (&error);
-		return NULL;
+		return MONO_HANDLE_CAST (MonoReflectionType, NULL_HANDLE);
 	}
 
-	klass = mono_class_from_mono_type (geninst);
+	MonoClass *klass = mono_class_from_mono_type (geninst);
 
 	/*we might inflate to the GTD*/
 	if (mono_class_is_ginst (klass) && !mono_verifier_class_is_valid_generic_instantiation (klass)) {
-		mono_set_pending_exception (mono_get_exception_argument ("typeArguments", "Invalid generic arguments"));
-		return NULL;
+		mono_error_set_argument (error, "typeArguments", "Invalid generic arguments");
+		return MONO_HANDLE_CAST (MonoReflectionType, NULL_HANDLE);
 	}
 
-	ret = mono_type_get_object_checked (mono_object_domain (type), geninst, &error);
-	mono_error_set_pending_exception (&error);
-
-	return ret;
+	return mono_type_get_object_handle (domain, geninst, error);
 }
 
 ICALL_EXPORT gboolean

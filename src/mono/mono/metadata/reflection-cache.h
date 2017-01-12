@@ -87,6 +87,7 @@ cache_object_handle (MonoDomain *domain, MonoClass *klass, gpointer item, MonoOb
 }
 
 #define CACHE_OBJECT(t,p,o,k) ((t) (cache_object (domain, (k), (p), (o))))
+#define CACHE_OBJECT_HANDLE(t,p,o,k) ((t) (cache_object_handle (domain, (k), (p), (o))))
 
 static inline MonoObjectHandle
 check_object_handle (MonoDomain* domain, MonoClass *klass, gpointer item)

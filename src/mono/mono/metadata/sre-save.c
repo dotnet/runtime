@@ -175,6 +175,17 @@ add_mono_string_to_blob_cached (MonoDynamicImage *assembly, MonoString *str)
 	return idx;
 }
 
+static guint32
+image_create_token_raw  (MonoDynamicImage *assembly, MonoObject* obj_raw, gboolean create_methodspec, gboolean register_token, MonoError *error)
+{
+	HANDLE_FUNCTION_ENTER (); /* FIXME callers of image_create_token_raw should use handles */
+	mono_error_init (error);
+	MONO_HANDLE_DCL (MonoObject, obj);
+	guint32 result = mono_image_create_token (assembly, obj, create_methodspec, register_token, error);
+	HANDLE_FUNCTION_RETURN_VAL (result);
+}
+
+
 /*
  * idx is the table index of the object
  * type is one of MONO_CUSTOM_ATTR_*
@@ -206,7 +217,7 @@ mono_image_add_cattrs (MonoDynamicImage *assembly, guint32 idx, guint32 type, Mo
 	for (i = 0; i < count; ++i) {
 		cattr = (MonoReflectionCustomAttr*)mono_array_get (cattrs, gpointer, i);
 		values [MONO_CUSTOM_ATTR_PARENT] = idx;
-		token = mono_image_create_token (assembly, (MonoObject*)cattr->ctor, FALSE, FALSE, error);
+		token = image_create_token_raw (assembly, (MonoObject*)cattr->ctor, FALSE, FALSE, error); /* FIXME use handles */
 		if (!mono_error_ok (error)) goto fail;
 		type = mono_metadata_token_index (token);
 		type <<= MONO_CUSTOM_ATTR_TYPE_BITS;
@@ -582,7 +593,7 @@ mono_image_add_methodimpl (MonoDynamicImage *assembly, MonoReflectionMethodBuild
 		values [MONO_METHODIMPL_CLASS] = tb->table_idx;
 		values [MONO_METHODIMPL_BODY] = MONO_METHODDEFORREF_METHODDEF | (mb->table_idx << MONO_METHODDEFORREF_BITS);
 
-		tok = mono_image_create_token (assembly, (MonoObject*)m, FALSE, FALSE, error);
+		tok = image_create_token_raw (assembly, (MonoObject*)m, FALSE, FALSE, error); /* FIXME use handles */
 		return_val_if_nok (error, FALSE);
 
 		switch (mono_metadata_token_table (tok)) {
@@ -1727,9 +1738,9 @@ fixup_method (MonoReflectionILGen *ilgen, gpointer value, MonoDynamicImage *asse
 				g_assert_not_reached ();
 			} else if (!strcmp (iltoken->member->vtable->klass->name, "RuntimeType")) {
 				MonoClass *k = mono_class_from_mono_type (((MonoReflectionType*)iltoken->member)->type);
-				MonoObject *obj = mono_class_get_ref_info (k);
+				MonoObject *obj = mono_class_get_ref_info_raw (k); /* FIXME use handles */
 				g_assert (obj);
-				g_assert (!strcmp (obj->vtable->klass->name, "TypeBuilder"));
+				g_assert (!strcmp (mono_object_class (obj)->name, "TypeBuilder"));
 				tb = (MonoReflectionTypeBuilder*)obj;
 				idx = tb->table_idx;
 			} else {
