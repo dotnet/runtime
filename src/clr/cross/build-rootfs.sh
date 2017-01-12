@@ -2,10 +2,11 @@
 
 usage()
 {
-    echo "Usage: $0 [BuildArch] [UbuntuCodeName] [lldbx.y]"
+    echo "Usage: $0 [BuildArch] [UbuntuCodeName] [lldbx.y] [--skipunmount]"
     echo "BuildArch can be: arm(default), armel, arm64, x86"
     echo "UbuntuCodeName - optional, Code name for Ubuntu, can be: trusty(default), vivid, wily, xenial. If BuildArch is armel, UbuntuCodeName is jessie(default) or tizen."
     echo "lldbx.y - optional, LLDB version, can be: lldb3.6(default), lldb3.8"
+    echo "--skipunmount - optional, will skip the unmount of rootfs folder."
 
     exit 1
 }
@@ -20,6 +21,7 @@ __UbuntuRepo="http://ports.ubuntu.com/"
 __UbuntuPackagesBase="build-essential libunwind8-dev gettext symlinks liblttng-ust-dev libicu-dev"
 __LLDB_Package="lldb-3.6-dev"
 __UnprocessedBuildArgs=
+__SkipUnmount=0
 
 for i in "$@"
     do
@@ -83,6 +85,9 @@ for i in "$@"
             __UbuntuRepo=
             __Tizen=tizen
             ;;
+        --skipunmount)
+            __SkipUnmount=1
+            ;;
         *)
             __UnprocessedBuildArgs="$__UnprocessedBuildArgs $i"
             ;;
@@ -101,7 +106,9 @@ if [[ -n "$ROOTFS_DIR" ]]; then
 fi
 
 if [ -d "$__RootfsDir" ]; then
-    umount $__RootfsDir/*
+    if [ $__SkipUnmount == 0 ]; then
+        umount $__RootfsDir/*
+    fi
     rm -rf $__RootfsDir
 fi
 
@@ -112,7 +119,10 @@ if [[ -n $__UbuntuCodeName ]]; then
     chroot $__RootfsDir apt-get -f -y install
     chroot $__RootfsDir apt-get -y install $__UbuntuPackages
     chroot $__RootfsDir symlinks -cr /usr
-    umount $__RootfsDir/*
+
+    if [ $__SkipUnmount == 0 ]; then
+        umount $__RootfsDir/*
+    fi
 elif [ "$__Tizen" == "tizen" ]; then
     ROOTFS_DIR=$__RootfsDir $__CrossDir/$__BuildArch/tizen-build-rootfs.sh
 else
