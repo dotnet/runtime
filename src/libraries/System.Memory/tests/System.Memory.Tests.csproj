@@ -47,8 +47,17 @@
     <Compile Include="ReadOnlySpan\DangerousGetPinnableReference.cs" />
     <Compile Include="ReadOnlySpan\Empty.cs" />
     <Compile Include="ReadOnlySpan\Equality.cs" />
+    <Compile Include="ReadOnlySpan\IndexOf.T.cs" />
+    <Compile Include="ReadOnlySpan\IndexOf.byte.cs" />
+    <Compile Include="ReadOnlySpan\IndexOf.char.cs" />
+    <Compile Include="ReadOnlySpan\IndexOfSequence.T.cs" />
+    <Compile Include="ReadOnlySpan\IndexOfSequence.byte.cs" />
+    <Compile Include="ReadOnlySpan\IndexOfSequence.char.cs" />
     <Compile Include="ReadOnlySpan\NonPortableCast.cs" />
     <Compile Include="ReadOnlySpan\Overflow.cs" />
+    <Compile Include="ReadOnlySpan\SequenceEqual.T.cs" />
+    <Compile Include="ReadOnlySpan\SequenceEqual.byte.cs" />
+    <Compile Include="ReadOnlySpan\SequenceEqual.char.cs" />
     <Compile Include="ReadOnlySpan\Slice.cs" />
     <Compile Include="ReadOnlySpan\StringSlice.cs" />
     <Compile Include="ReadOnlySpan\TestHelpers.cs" />
