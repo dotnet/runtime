@@ -52,7 +52,7 @@
     <ItemGroup>
       <BuildToolsProject Include="src\Tools\CoreFx.Tools\CoreFx.Tools.csproj" />
       <BuildToolsProject Include="src\Tools\CoreFx.Tools\CoreFx.Tools.csproj">
-        <TargetGroup>net45</TargetGroup>
+        <TargetGroup>net46</TargetGroup>
       </BuildToolsProject>
       <BuildToolsProject Include="src\Tools\GenerateProps\GenerateProps.proj" />
     </ItemGroup>

@@ -1,0 +1,64 @@
+<Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <UsingTask TaskName="GenerateDepsJson" AssemblyFile="$(BuildToolsTaskDir)CoreFx.Tools.dll"/>
+
+  <PropertyGroup>
+    <NewSharedFxVersion>9.9.9</NewSharedFxVersion>
+    <OldSharedFxVersion>1.0.0</OldSharedFxVersion>
+    <TestSharedFxPath>$(TestSharedFxDir)\shared\Microsoft.NETCore.App\$(NewSharedFxVersion)</TestSharedFxPath>
+    <TestSharedFxPathHostFxr>$(TestSharedFxDir)\host\fxr\$(NewSharedFxVersion)</TestSharedFxPathHostFxr>
+    <ToolsDotNetCliSharedFxPath>$(ToolsDir)dotnetcli\shared\Microsoft.NETCore.App\$(OldSharedFxVersion)</ToolsDotNetCliSharedFxPath>
+    <ConstructSharedFxSem>$(ObjDir)constructsharedfxcomplete.sem</ConstructSharedFxSem>
+  </PropertyGroup>
+  
+  <!-- This will generate a version of the dotnet cli that runs with the live
+       build of corefx using the other components gathered from the stable 
+       version consumed from the Tools directory
+       To debug any issues set COREHOST_TRACE=1 and rerun dotnet
+  -->  
+  <Target Name="ConstructTestingHost"
+          BeforeTargets="Build;BuildAllProjects"
+          Condition="!Exists('$(ConstructSharedFxSem)') OR '$(ReconstructSharedFx)' == 'true'" >
+          
+    <ItemGroup>
+      <!-- This will only copy over the related file -->
+      <HostFxrFile Condition="'$(OS)'=='Windows_NT'" Include="$(RuntimePath)hostfxr.dll" />
+      <HostFxrFile Condition="'$(OS)'=='Unix'" Include="$(RuntimePath)libhostfxr.so" />
+      <HostFxrFile Condition="'$(OS)'=='Unix'" Include="$(RuntimePath)libhostfxr.dylib" />
+      <DotnetExe Condition="'$(OS)'=='Windows_NT'" Include="$(RuntimePath)dotnet.exe" />
+      <DotnetExe Condition="'$(OS)'!='Windows_NT'" Include="$(RuntimePath)dotnet" />
+    </ItemGroup>
+    <MakeDir Directories="$(TestSharedFxPathHostFxr)" />
+    <Copy SourceFiles="@(HostFxrFile)" 
+          DestinationFolder="$(TestSharedFxPathHostFxr)" 
+          Condition="Exists('%(RootDir)%(Directory)%(Filename)%(Extension)')" />
+    <Copy SourceFiles="@(DotnetExe)" 
+          DestinationFolder="$(TestSharedFxDir)" 
+          Condition="Exists('%(RootDir)%(Directory)%(Filename)%(Extension)')" />
+    <ItemGroup>
+      <LiveDotNetCliComponents Include="$(RuntimePath)\*.*" Exclude="$(RuntimePath)\xunit.console.netcore.exe" />
+    </ItemGroup>
+    <Copy SourceFiles="@(LiveDotNetCliComponents)" 
+          DestinationFiles="@(LiveDotNetCliComponents -> '$(TestSharedFxPath)\%(Filename)%(Extension)')" 
+          UseHardlinksIfPossible="true" />
+    <PropertyGroup>
+      <OriginalDepsJsonPath>$(ToolsDotNetCliSharedFxPath)\Microsoft.NETCore.App.deps.json</OriginalDepsJsonPath>
+    </PropertyGroup>
+    <ItemGroup>
+    <!-- This is for HostPolicy, CoreCLR and Jit dependencies to continue to remain inside of the dep.json -->
+          <ExceptionForDepsJson Include="Microsoft.NETCore.DotNetHostPolicy" />
+          <ExceptionForDepsJson Include="Microsoft.NETCore.DotNetHostResolver" />
+          <ExceptionForDepsJson Include="Microsoft.NETCore.Runtime.CoreCLR" />
+          <ExceptionForDepsJson Include="Microsoft.NETCore.Jit" />
+    </ItemGroup>
+    <GenerateDepsJson DepsJsonPath="$(OriginalDepsJsonPath)" 
+                      RuntimeDirectory="$(RuntimePath)"
+                      DepsExceptions="@(ExceptionForDepsJson)"
+                      OutputPath="$(TestSharedFxPath)\Microsoft.NETCore.App.deps.json"/>
+    <WriteLinesToFile
+      File="$(ConstructSharedFxSem)"
+      Lines="$([System.DateTime]::Now.ToString(yyyyMMdd-mmss))"
+      Overwrite="true" />
+  </Target>
+
+</Project>

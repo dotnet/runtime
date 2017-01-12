@@ -4,14 +4,14 @@
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <NuGetTargetMoniker>.NETStandard,Version=v1.5</NuGetTargetMoniker>
-    <NuGetTargetMoniker Condition="'$(TargetGroup)' == 'net45'">.NETFramework,Version=v4.5</NuGetTargetMoniker>
+    <NuGetTargetMoniker Condition="'$(TargetGroup)' == 'net46'">.NETFramework,Version=v4.6</NuGetTargetMoniker>
     <CLSCompliant>false</CLSCompliant>
     <ProjectGuid>{360F25FA-3CD9-4338-B961-A4F3122B88B2}</ProjectGuid>
-    <OutputPath Condition="'$(TargetGroup)' != 'net45'">$(CoreFxToolsDir)</OutputPath>
-    <OutputPath Condition="'$(TargetGroup)' == 'net45'">$(CoreFxDesktopToolsDir)</OutputPath>
+    <OutputPath Condition="'$(TargetGroup)' != 'net46'">$(CoreFxToolsDir)</OutputPath>
+    <OutputPath Condition="'$(TargetGroup)' == 'net46'">$(CoreFxDesktopToolsDir)</OutputPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)' == 'netstandard1.5_Debug'" />
-  <PropertyGroup Condition="'$(Configuration)' == 'net45_Debug'" />
+  <PropertyGroup Condition="'$(Configuration)' == 'net46_Debug'" />
   <ItemGroup>
     <Compile Include="ConfigurationTask.cs" />
     <Compile Include="BuildTask.cs" />
@@ -21,8 +21,10 @@
     <Compile Include="Configuration\PropertyInfo.cs" />
     <Compile Include="GenerateConfigurationProps.cs" />
     <Compile Include="FindBestConfiguration.cs" />
+    <Compile Include="GenerateDepsJson.cs" />
+    <Compile Include="TryGetManagedAssemblyName.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'net45'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'net46'">
     <Compile Include="BuildTask.net45.cs" />
     <Compile Include="AssemblyResolver.cs" />
     <TargetingPackReference Include="System" />
@@ -30,6 +32,9 @@
     <TargetingPackReference Include="Microsoft.Build" />
     <TargetingPackReference Include="Microsoft.Build.Framework" />
     <TargetingPackReference Include="Microsoft.Build.Utilities.v4.0" />
+    <TargetingPackReference Include="System.Runtime" />
+    <TargetingPackReference Include="System.Collections" />
+    <TargetingPackReference Include="System.IO" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
