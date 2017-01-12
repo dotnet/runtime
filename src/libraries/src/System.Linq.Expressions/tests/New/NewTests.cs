@@ -460,6 +460,13 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal("new Bar(Foo = foo, Qux = qux)", e4.ToString());
         }
 
+        [Fact]
+        public static void NullUpdateValidForEmptyParameters()
+        {
+            NewExpression newExp = Expression.New(typeof(Bar).GetConstructor(Type.EmptyTypes));
+            Assert.Same(newExp, newExp.Update(null));
+        }
+
         public static IEnumerable<object[]> Type_InvalidType_TestData()
         {
             yield return new object[] { typeof(void) };

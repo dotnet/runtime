@@ -42,7 +42,6 @@ namespace System.DirectoryServices.ActiveDirectory
     public delegate bool SyncUpdateCallback(SyncFromAllServersEvent eventType, string targetServer, string sourceServer, SyncFromAllServersOperationException exception);
     internal delegate bool SyncReplicaFromAllServersCallback(IntPtr data, IntPtr update);
 
-    [DirectoryServicesPermission(SecurityAction.LinkDemand, Unrestricted = true)]
     public class DomainController : DirectoryServer
     {
         private IntPtr _dsHandle = IntPtr.Zero;
@@ -140,13 +139,13 @@ namespace System.DirectoryServices.ActiveDirectory
             // target should be DC
             if (context.ContextType != DirectoryContextType.DirectoryServer)
             {
-                throw new ArgumentException(Res.GetString(Res.TargetShouldBeDC), "context");
+                throw new ArgumentException(SR.TargetShouldBeDC, "context");
             }
 
             // target should be a server
             if (!(context.isServer()))
             {
-                throw new ActiveDirectoryObjectNotFoundException(Res.GetString(Res.DCNotFound, context.Name), typeof(DomainController), context.Name);
+                throw new ActiveDirectoryObjectNotFoundException(String.Format(CultureInfo.CurrentCulture, SR.DCNotFound , context.Name), typeof(DomainController), context.Name);
             }
 
             //  work with copy of the context
@@ -160,7 +159,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 DirectoryEntry rootDSE = directoryEntryMgr.GetCachedDirectoryEntry(WellKnownDN.RootDSE);
                 if (!Utils.CheckCapability(rootDSE, Capability.ActiveDirectory))
                 {
-                    throw new ActiveDirectoryObjectNotFoundException(Res.GetString(Res.DCNotFound, context.Name), typeof(DomainController), context.Name);
+                    throw new ActiveDirectoryObjectNotFoundException(String.Format(CultureInfo.CurrentCulture, SR.DCNotFound , context.Name), typeof(DomainController), context.Name);
                 }
                 dcDnsName = (string)PropertyManager.GetPropertyValue(context, rootDSE, PropertyManager.DnsHostName);
             }
@@ -170,7 +169,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                 if (errorCode == unchecked((int)0x8007203a))
                 {
-                    throw new ActiveDirectoryObjectNotFoundException(Res.GetString(Res.DCNotFound, context.Name), typeof(DomainController), context.Name);
+                    throw new ActiveDirectoryObjectNotFoundException(String.Format(CultureInfo.CurrentCulture, SR.DCNotFound , context.Name), typeof(DomainController), context.Name);
                 }
                 else
                 {
@@ -190,7 +189,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             if (context.ContextType != DirectoryContextType.Domain)
             {
-                throw new ArgumentException(Res.GetString(Res.TargetShouldBeDomain), "context");
+                throw new ArgumentException(SR.TargetShouldBeDomain, "context");
             }
 
             return FindOneWithCredentialValidation(context, null, 0);
@@ -205,7 +204,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             if (context.ContextType != DirectoryContextType.Domain)
             {
-                throw new ArgumentException(Res.GetString(Res.TargetShouldBeDomain), "context");
+                throw new ArgumentException(SR.TargetShouldBeDomain, "context");
             }
 
             if (siteName == null)
@@ -225,7 +224,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             if (context.ContextType != DirectoryContextType.Domain)
             {
-                throw new ArgumentException(Res.GetString(Res.TargetShouldBeDomain), "context");
+                throw new ArgumentException(SR.TargetShouldBeDomain, "context");
             }
 
             return FindOneWithCredentialValidation(context, null, flag);
@@ -240,7 +239,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             if (context.ContextType != DirectoryContextType.Domain)
             {
-                throw new ArgumentException(Res.GetString(Res.TargetShouldBeDomain), "context");
+                throw new ArgumentException(SR.TargetShouldBeDomain, "context");
             }
 
             if (siteName == null)
@@ -260,7 +259,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             if (context.ContextType != DirectoryContextType.Domain)
             {
-                throw new ArgumentException(Res.GetString(Res.TargetShouldBeDomain), "context");
+                throw new ArgumentException(SR.TargetShouldBeDomain, "context");
             }
 
             //  work with copy of the context
@@ -278,7 +277,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             if (context.ContextType != DirectoryContextType.Domain)
             {
-                throw new ArgumentException(Res.GetString(Res.TargetShouldBeDomain), "context");
+                throw new ArgumentException(SR.TargetShouldBeDomain, "context");
             }
 
             if (siteName == null)
@@ -292,10 +291,6 @@ namespace System.DirectoryServices.ActiveDirectory
             return FindAllInternal(context, context.Name, false /* isDnsDomainName */, siteName);
         }
 
-        [
-            DirectoryServicesPermission(SecurityAction.LinkDemand, Unrestricted = true),
-            DirectoryServicesPermission(SecurityAction.InheritanceDemand, Unrestricted = true)
-        ]
         public virtual GlobalCatalog EnableGlobalCatalog()
         {
             CheckIfDisposed();
@@ -321,10 +316,6 @@ namespace System.DirectoryServices.ActiveDirectory
             return new GlobalCatalog(context, Name);
         }
 
-        [
-            DirectoryServicesPermission(SecurityAction.LinkDemand, Unrestricted = true),
-            DirectoryServicesPermission(SecurityAction.InheritanceDemand, Unrestricted = true)
-        ]
         public virtual bool IsGlobalCatalog()
         {
             CheckIfDisposed();
@@ -433,7 +424,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     // check the overflow of the low part
                     if (ridPool.LowPart + UpdateRidPoolSeizureValue < ridPool.LowPart)
                     {
-                        throw new InvalidOperationException(Res.GetString(Res.UpdateAvailableRIDPoolOverflowFailure));
+                        throw new InvalidOperationException(SR.UpdateAvailableRIDPoolOverflowFailure);
                     }
                     ridPool.LowPart += UpdateRidPoolSeizureValue;
                     roleObjectEntry.Properties[PropertyManager.RIDAvailablePool].Value = ridPool;
@@ -457,10 +448,6 @@ namespace System.DirectoryServices.ActiveDirectory
             _cachedRoles = null;
         }
 
-        [
-            DirectoryServicesPermission(SecurityAction.LinkDemand, Unrestricted = true),
-            DirectoryServicesPermission(SecurityAction.InheritanceDemand, Unrestricted = true)
-        ]
         public virtual DirectorySearcher GetDirectorySearcher()
         {
             CheckIfDisposed();
@@ -468,10 +455,6 @@ namespace System.DirectoryServices.ActiveDirectory
             return InternalGetDirectorySearcher();
         }
 
-        [
-            DirectoryServicesPermission(SecurityAction.LinkDemand, Unrestricted = true),
-            DirectoryServicesPermission(SecurityAction.InheritanceDemand, Unrestricted = true)
-        ]
         public override void CheckReplicationConsistency()
         {
             if (_disposed)
@@ -484,10 +467,6 @@ namespace System.DirectoryServices.ActiveDirectory
             CheckConsistencyHelper(_dsHandle, DirectoryContext.ADHandle);
         }
 
-        [
-            DirectoryServicesPermission(SecurityAction.LinkDemand, Unrestricted = true),
-            DirectoryServicesPermission(SecurityAction.InheritanceDemand, Unrestricted = true)
-        ]
         public override ReplicationCursorCollection GetReplicationCursors(string partition)
         {
             IntPtr info = (IntPtr)0;
@@ -501,7 +480,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new ArgumentNullException("partition");
 
             if (partition.Length == 0)
-                throw new ArgumentException(Res.GetString(Res.EmptyStringParameter), "partition");
+                throw new ArgumentException(SR.EmptyStringParameter, "partition");
 
             // get the handle
             GetDSHandle();
@@ -509,10 +488,6 @@ namespace System.DirectoryServices.ActiveDirectory
             return ConstructReplicationCursors(_dsHandle, advanced, info, partition, this, DirectoryContext.ADHandle);
         }
 
-        [
-            DirectoryServicesPermission(SecurityAction.LinkDemand, Unrestricted = true),
-            DirectoryServicesPermission(SecurityAction.InheritanceDemand, Unrestricted = true)
-        ]
         public override ReplicationOperationInformation GetReplicationOperationInformation()
         {
             IntPtr info = (IntPtr)0;
@@ -527,10 +502,6 @@ namespace System.DirectoryServices.ActiveDirectory
             return ConstructPendingOperations(info, this, DirectoryContext.ADHandle);
         }
 
-        [
-            DirectoryServicesPermission(SecurityAction.LinkDemand, Unrestricted = true),
-            DirectoryServicesPermission(SecurityAction.InheritanceDemand, Unrestricted = true)
-        ]
         public override ReplicationNeighborCollection GetReplicationNeighbors(string partition)
         {
             IntPtr info = (IntPtr)0;
@@ -543,7 +514,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new ArgumentNullException("partition");
 
             if (partition.Length == 0)
-                throw new ArgumentException(Res.GetString(Res.EmptyStringParameter), "partition");
+                throw new ArgumentException(SR.EmptyStringParameter, "partition");
 
             // get the handle
             GetDSHandle();
@@ -551,10 +522,6 @@ namespace System.DirectoryServices.ActiveDirectory
             return ConstructNeighbors(info, this, DirectoryContext.ADHandle);
         }
 
-        [
-            DirectoryServicesPermission(SecurityAction.LinkDemand, Unrestricted = true),
-            DirectoryServicesPermission(SecurityAction.InheritanceDemand, Unrestricted = true)
-        ]
         public override ReplicationNeighborCollection GetAllReplicationNeighbors()
         {
             IntPtr info = (IntPtr)0;
@@ -569,19 +536,11 @@ namespace System.DirectoryServices.ActiveDirectory
             return ConstructNeighbors(info, this, DirectoryContext.ADHandle);
         }
 
-        [
-            DirectoryServicesPermission(SecurityAction.LinkDemand, Unrestricted = true),
-            DirectoryServicesPermission(SecurityAction.InheritanceDemand, Unrestricted = true)
-        ]
         public override ReplicationFailureCollection GetReplicationConnectionFailures()
         {
             return GetReplicationFailures(DS_REPL_INFO_TYPE.DS_REPL_INFO_KCC_DSA_CONNECT_FAILURES);
         }
 
-        [
-            DirectoryServicesPermission(SecurityAction.LinkDemand, Unrestricted = true),
-            DirectoryServicesPermission(SecurityAction.InheritanceDemand, Unrestricted = true)
-        ]
         public override ActiveDirectoryReplicationMetadata GetReplicationMetadata(string objectPath)
         {
             IntPtr info = (IntPtr)0;
@@ -594,7 +553,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new ArgumentNullException("objectPath");
 
             if (objectPath.Length == 0)
-                throw new ArgumentException(Res.GetString(Res.EmptyStringParameter), "objectPath");
+                throw new ArgumentException(SR.EmptyStringParameter, "objectPath");
 
             // get the handle
             GetDSHandle();
@@ -602,10 +561,6 @@ namespace System.DirectoryServices.ActiveDirectory
             return ConstructMetaData(advanced, info, this, DirectoryContext.ADHandle);
         }
 
-        [
-            DirectoryServicesPermission(SecurityAction.LinkDemand, Unrestricted = true),
-            DirectoryServicesPermission(SecurityAction.InheritanceDemand, Unrestricted = true)
-        ]
         public override void SyncReplicaFromServer(string partition, string sourceServer)
         {
             if (_disposed)
@@ -615,23 +570,19 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new ArgumentNullException("partition");
 
             if (partition.Length == 0)
-                throw new ArgumentException(Res.GetString(Res.EmptyStringParameter), "partition");
+                throw new ArgumentException(SR.EmptyStringParameter, "partition");
 
             if (sourceServer == null)
                 throw new ArgumentNullException("sourceServer");
 
             if (sourceServer.Length == 0)
-                throw new ArgumentException(Res.GetString(Res.EmptyStringParameter), "sourceServer");
+                throw new ArgumentException(SR.EmptyStringParameter, "sourceServer");
 
             // get the dsHandle
             GetDSHandle();
             SyncReplicaHelper(_dsHandle, false, partition, sourceServer, 0, DirectoryContext.ADHandle);
         }
 
-        [
-            DirectoryServicesPermission(SecurityAction.LinkDemand, Unrestricted = true),
-            DirectoryServicesPermission(SecurityAction.InheritanceDemand, Unrestricted = true)
-        ]
         public override void TriggerSyncReplicaFromNeighbors(string partition)
         {
             if (_disposed)
@@ -641,17 +592,13 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new ArgumentNullException("partition");
 
             if (partition.Length == 0)
-                throw new ArgumentException(Res.GetString(Res.EmptyStringParameter), "partition");
+                throw new ArgumentException(SR.EmptyStringParameter, "partition");
 
             // get the dsHandle
             GetDSHandle();
             SyncReplicaHelper(_dsHandle, false, partition, null, DS_REPSYNC_ASYNCHRONOUS_OPERATION | DS_REPSYNC_ALL_SOURCES, DirectoryContext.ADHandle);
         }
 
-        [
-            DirectoryServicesPermission(SecurityAction.LinkDemand, Unrestricted = true),
-            DirectoryServicesPermission(SecurityAction.InheritanceDemand, Unrestricted = true)
-        ]
         public override void SyncReplicaFromAllServers(string partition, SyncFromAllServersOptions options)
         {
             if (_disposed)
@@ -661,7 +608,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new ArgumentNullException("partition");
 
             if (partition.Length == 0)
-                throw new ArgumentException(Res.GetString(Res.EmptyStringParameter), "partition");
+                throw new ArgumentException(SR.EmptyStringParameter, "partition");
 
             // get the dsHandle
             GetDSHandle();
@@ -811,14 +758,10 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public override string IPAddress
         {
-            [
-               DirectoryServicesPermission(SecurityAction.LinkDemand, Unrestricted = true),
-               DirectoryServicesPermission(SecurityAction.InheritanceDemand, Unrestricted = true),
-               DnsPermission(SecurityAction.Assert, Unrestricted = true)
-            ]
             get
             {
                 CheckIfDisposed();
+
                 IPHostEntry hostEntry = Dns.GetHostEntry(Name);
                 if (hostEntry.AddressList.GetLength(0) > 0)
                 {
@@ -833,10 +776,6 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public override String SiteName
         {
-            [
-               DirectoryServicesPermission(SecurityAction.LinkDemand, Unrestricted = true),
-               DirectoryServicesPermission(SecurityAction.InheritanceDemand, Unrestricted = true)
-            ]
             get
             {
                 CheckIfDisposed();
@@ -846,7 +785,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
                 if (cachedSiteName == null)
                 {
-                    throw new ActiveDirectoryOperationException(Res.GetString(Res.SiteNameNotFound, Name));
+                    throw new ActiveDirectoryOperationException(String.Format(CultureInfo.CurrentCulture, SR.SiteNameNotFound , Name));
                 }
 
                 return cachedSiteName;
@@ -864,7 +803,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
                 if (cachedSiteObjectName == null)
                 {
-                    throw new ActiveDirectoryOperationException(Res.GetString(Res.SiteObjectNameNotFound, Name));
+                    throw new ActiveDirectoryOperationException(String.Format(CultureInfo.CurrentCulture, SR.SiteObjectNameNotFound , Name));
                 }
                 return cachedSiteObjectName;
             }
@@ -881,7 +820,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
                 if (_cachedComputerObjectName == null)
                 {
-                    throw new ActiveDirectoryOperationException(Res.GetString(Res.ComputerObjectNameNotFound, Name));
+                    throw new ActiveDirectoryOperationException(String.Format(CultureInfo.CurrentCulture, SR.ComputerObjectNameNotFound , Name));
                 }
                 return _cachedComputerObjectName;
             }
@@ -898,7 +837,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
                 if (cachedServerObjectName == null)
                 {
-                    throw new ActiveDirectoryOperationException(Res.GetString(Res.ServerObjectNameNotFound, Name));
+                    throw new ActiveDirectoryOperationException(String.Format(CultureInfo.CurrentCulture, SR.ServerObjectNameNotFound , Name));
                 }
                 return cachedServerObjectName;
             }
@@ -915,7 +854,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
                 if (cachedNtdsaObjectName == null)
                 {
-                    throw new ActiveDirectoryOperationException(Res.GetString(Res.NtdsaObjectNameNotFound, Name));
+                    throw new ActiveDirectoryOperationException(String.Format(CultureInfo.CurrentCulture, SR.NtdsaObjectNameNotFound , Name));
                 }
                 return cachedNtdsaObjectName;
             }
@@ -932,7 +871,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
                 if (cachedNtdsaObjectGuid.Equals(Guid.Empty))
                 {
-                    throw new ActiveDirectoryOperationException(Res.GetString(Res.NtdsaObjectGuidNotFound, Name));
+                    throw new ActiveDirectoryOperationException(String.Format(CultureInfo.CurrentCulture, SR.NtdsaObjectGuidNotFound , Name));
                 }
                 return cachedNtdsaObjectGuid;
             }
@@ -940,10 +879,6 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public override SyncUpdateCallback SyncFromAllServersCallback
         {
-            [
-               DirectoryServicesPermission(SecurityAction.LinkDemand, Unrestricted = true),
-               DirectoryServicesPermission(SecurityAction.InheritanceDemand, Unrestricted = true)
-            ]
             get
             {
                 if (_disposed)
@@ -952,10 +887,6 @@ namespace System.DirectoryServices.ActiveDirectory
                 return userDelegate;
             }
 
-            [
-               DirectoryServicesPermission(SecurityAction.LinkDemand, Unrestricted = true),
-               DirectoryServicesPermission(SecurityAction.InheritanceDemand, Unrestricted = true)
-            ]
             set
             {
                 if (_disposed)
@@ -967,10 +898,6 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public override ReplicationConnectionCollection InboundConnections
         {
-            [
-               DirectoryServicesPermission(SecurityAction.LinkDemand, Unrestricted = true),
-               DirectoryServicesPermission(SecurityAction.InheritanceDemand, Unrestricted = true)
-            ]
             get
             {
                 return GetInboundConnectionsHelper();
@@ -979,10 +906,6 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public override ReplicationConnectionCollection OutboundConnections
         {
-            [
-               DirectoryServicesPermission(SecurityAction.LinkDemand, Unrestricted = true),
-               DirectoryServicesPermission(SecurityAction.InheritanceDemand, Unrestricted = true)
-            ]
             get
             {
                 return GetOutboundConnectionsHelper();
@@ -1002,7 +925,6 @@ namespace System.DirectoryServices.ActiveDirectory
 
         #region private methods
 
-        [DirectoryServicesPermission(SecurityAction.Assert, Unrestricted = true)]
         internal static void ValidateCredential(DomainController dc, DirectoryContext context)
         {
             DirectoryEntry de;
@@ -1046,7 +968,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     }
                     else
                     {
-                        throw new ActiveDirectoryObjectNotFoundException(Res.GetString(Res.DCNotFoundInDomain, context.Name), typeof(DomainController), null);
+                        throw new ActiveDirectoryObjectNotFoundException(String.Format(CultureInfo.CurrentCulture, SR.DCNotFoundInDomain , context.Name), typeof(DomainController), null);
                     }
                 }
                 else
@@ -1076,7 +998,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     if (e.ErrorCode == unchecked((int)0x8007203a))
                     {
                         // server is down
-                        throw new ActiveDirectoryObjectNotFoundException(Res.GetString(Res.DCNotFoundInDomain, context.Name), typeof(DomainController), null);
+                        throw new ActiveDirectoryObjectNotFoundException(String.Format(CultureInfo.CurrentCulture, SR.DCNotFoundInDomain , context.Name), typeof(DomainController), null);
                     }
                     else
                     {
@@ -1102,13 +1024,13 @@ namespace System.DirectoryServices.ActiveDirectory
 
             if (siteName != null && siteName.Length == 0)
             {
-                throw new ArgumentException(Res.GetString(Res.EmptyStringParameter), "siteName");
+                throw new ArgumentException(SR.EmptyStringParameter, "siteName");
             }
 
             // check that the flags passed have only the valid bits set
             if (((long)flag & (~((long)LocatorOptions.AvoidSelf | (long)LocatorOptions.ForceRediscovery | (long)LocatorOptions.KdcRequired | (long)LocatorOptions.TimeServerRequired | (long)LocatorOptions.WriteableRequired))) != 0)
             {
-                throw new ArgumentException(Res.GetString(Res.InvalidFlags), "flag");
+                throw new ArgumentException(SR.InvalidFlags, "flag");
             }
 
             if (domainName == null)
@@ -1121,12 +1043,12 @@ namespace System.DirectoryServices.ActiveDirectory
 
             if (errorCode == NativeMethods.ERROR_NO_SUCH_DOMAIN)
             {
-                throw new ActiveDirectoryObjectNotFoundException(Res.GetString(Res.DCNotFoundInDomain, domainName), typeof(DomainController), null);
+                throw new ActiveDirectoryObjectNotFoundException(String.Format(CultureInfo.CurrentCulture, SR.DCNotFoundInDomain , domainName), typeof(DomainController), null);
             }
             // this can only occur when flag is being explicitly passed (since the flags that we pass internally are valid)
             if (errorCode == NativeMethods.ERROR_INVALID_FLAGS)
             {
-                throw new ArgumentException(Res.GetString(Res.InvalidFlags), "flag");
+                throw new ArgumentException(SR.InvalidFlags, "flag");
             }
             else if (errorCode != 0)
             {
@@ -1149,7 +1071,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             if (siteName != null && siteName.Length == 0)
             {
-                throw new ArgumentException(Res.GetString(Res.EmptyStringParameter), "siteName");
+                throw new ArgumentException(SR.EmptyStringParameter, "siteName");
             }
 
             if (domainName == null || !isDnsDomainName)
@@ -1283,7 +1205,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 // if we couldn't get this DC's info, throw an exception
                 if (!initialized)
                 {
-                    throw new ActiveDirectoryOperationException(Res.GetString(Res.DCInfoNotFound));
+                    throw new ActiveDirectoryOperationException(SR.DCInfoNotFound);
                 }
 
                 _dcInfoInitialized = true;
@@ -1425,7 +1347,6 @@ namespace System.DirectoryServices.ActiveDirectory
             return new DateTime(year, month, day, hour, min, sec, 0);
         }
 
-        [DirectoryServicesPermission(SecurityAction.Assert, Unrestricted = true)]
         private DirectorySearcher InternalGetDirectorySearcher()
         {
             DirectoryEntry de = new DirectoryEntry("LDAP://" + Name);

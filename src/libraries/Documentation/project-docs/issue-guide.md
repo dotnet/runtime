@@ -49,7 +49,7 @@ Areas are tracked by labels area-&#42; (e.g. area-System.Collections). Each area
 | [System.AppContext](https://github.com/dotnet/corefx/labels/area-System.AppContext)           | [@AlexGhiondea](https://github.com/AlexGhiondea) |  |  |
 | [System.Buffers](https://github.com/dotnet/corefx/labels/area-System.Buffers)                 | [@alexperovich](https://github.com/alexperovich),  [@safern](https://github.com/safern) |  |
 | [System.CodeDom](https://github.com/dotnet/corefx/labels/area-System.CodeDom)                 | [@Priya91](https://github.com/Priya91) |  |
-| [System.Collections](https://github.com/dotnet/corefx/labels/area-System.Collections)         | [@Priya91](https://github.com/Priya91), [@ianhays](https://github.com/ianhays) |  |
+| [System.Collections](https://github.com/dotnet/corefx/labels/area-System.Collections)         | [@ianhays](https://github.com/ianhays) |  |
 | [System.ComponentModel](https://github.com/dotnet/corefx/labels/area-System.ComponentModel)   |  [@safern](https://github.com/safern), [@AlexGhiondea](https://github.com/AlexGhiondea) |  |
 | [System.ComponentModel.DataAnnotations](https://github.com/dotnet/corefx/labels/area-System.ComponentModel.DataAnnotations) | [@lajones](https://github.com/lajones), [@divega](https://github.com/divega) | **Pending triage** |
 | [System.Composition](https://github.com/dotnet/corefx/labels/area-System.Composition)         | [@AlexGhiondea](https://github.com/AlexGhiondea) |  |
@@ -69,7 +69,10 @@ Areas are tracked by labels area-&#42; (e.g. area-System.Collections). Each area
 | [System.Linq](https://github.com/dotnet/corefx/labels/area-System.Linq)                       | [@VSadov](https://github.com/VSadov), [@OmarTawfik](https://github.com/OmarTawfik) |  |
 | [System.Linq.Expressions](https://github.com/dotnet/corefx/labels/area-System.Linq.Expressions)   | [@VSadov](https://github.com/VSadov), [@OmarTawfik](https://github.com/OmarTawfik) |  |
 | [System.Linq.Parallel](https://github.com/dotnet/corefx/labels/area-System.Linq.Parallel)     | [@alexperovich](https://github.com/alexperovich), [@kouvel](https://github.com/kouvel) |  |
-| [System.Net](https://github.com/dotnet/corefx/labels/area-System.Net)                         |  | **Triage in progress** |
+| [System.Net](https://github.com/dotnet/corefx/labels/area-System.Net)                         | [@davidsh](https://github.com/davidsh), [@CIPop](https://github.com/CIPop), [@Priya91](https://github.com/Priya91) | **Triage in progress** |
+| [System.Net.Http](https://github.com/dotnet/corefx/labels/area-System.Net.Http)               | [@davidsh](https://github.com/davidsh), [@CIPop](https://github.com/CIPop), [@Priya91](https://github.com/Priya91) | |
+| [System.Net.Security](https://github.com/dotnet/corefx/labels/area-System.Net.Security)       | [@davidsh](https://github.com/davidsh), [@CIPop](https://github.com/CIPop), [@Priya91](https://github.com/Priya91) | |
+| [System.Net.Sockets](https://github.com/dotnet/corefx/labels/area-System.Net.Sockets)         | [@davidsh](https://github.com/davidsh), [@CIPop](https://github.com/CIPop), [@Priya91](https://github.com/Priya91) | |
 | [System.Numerics](https://github.com/dotnet/corefx/labels/area-System.Numerics)               | [@mellinoe](https://github.com/mellinoe) |  |
 | [System.Reflection](https://github.com/dotnet/corefx/labels/area-System.Reflection)           | [@dnlharvey](https://github.com/dnlharvey), [@AtsushiKan](https://github.com/AtsushiKan) | **Pending triage** |
 | [System.Reflection.Emit](https://github.com/dotnet/corefx/labels/area-System.Reflection.Emit) | [@dnlharvey](https://github.com/dnlharvey), [@AtsushiKan](https://github.com/AtsushiKan) | **Pending triage** |

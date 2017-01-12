@@ -100,9 +100,9 @@ namespace System.DirectoryServices.ActiveDirectory
                         if (win32Error == s_STATUS_OBJECT_NAME_NOT_FOUND)
                         {
                             if (isForest)
-                                throw new ActiveDirectoryObjectNotFoundException(Res.GetString(Res.ForestTrustDoesNotExist, sourceName, targetName), typeof(ForestTrustRelationshipInformation), null);
+                                throw new ActiveDirectoryObjectNotFoundException(String.Format(CultureInfo.CurrentCulture, SR.ForestTrustDoesNotExist , sourceName, targetName), typeof(ForestTrustRelationshipInformation), null);
                             else
-                                throw new ActiveDirectoryObjectNotFoundException(Res.GetString(Res.DomainTrustDoesNotExist, sourceName, targetName), typeof(TrustRelationshipInformation), null);
+                                throw new ActiveDirectoryObjectNotFoundException(String.Format(CultureInfo.CurrentCulture, SR.DomainTrustDoesNotExist , sourceName, targetName), typeof(TrustRelationshipInformation), null);
                         }
                         else
                             throw ExceptionHelper.GetExceptionFromErrorCode(win32Error, serverName);
@@ -198,9 +198,9 @@ namespace System.DirectoryServices.ActiveDirectory
                         if (win32Error == s_STATUS_OBJECT_NAME_NOT_FOUND)
                         {
                             if (isForest)
-                                throw new ActiveDirectoryObjectNotFoundException(Res.GetString(Res.ForestTrustDoesNotExist, sourceName, targetName), typeof(ForestTrustRelationshipInformation), null);
+                                throw new ActiveDirectoryObjectNotFoundException(String.Format(CultureInfo.CurrentCulture, SR.ForestTrustDoesNotExist , sourceName, targetName), typeof(ForestTrustRelationshipInformation), null);
                             else
-                                throw new ActiveDirectoryObjectNotFoundException(Res.GetString(Res.DomainTrustDoesNotExist, sourceName, targetName), typeof(TrustRelationshipInformation), null);
+                                throw new ActiveDirectoryObjectNotFoundException(String.Format(CultureInfo.CurrentCulture, SR.DomainTrustDoesNotExist , sourceName, targetName), typeof(TrustRelationshipInformation), null);
                         }
                         else
                             throw ExceptionHelper.GetExceptionFromErrorCode(win32Error, serverName);
@@ -328,9 +328,9 @@ namespace System.DirectoryServices.ActiveDirectory
                         if (win32Error == s_STATUS_OBJECT_NAME_NOT_FOUND)
                         {
                             if (isForest)
-                                throw new ActiveDirectoryObjectNotFoundException(Res.GetString(Res.ForestTrustDoesNotExist, sourceName, targetName), typeof(ForestTrustRelationshipInformation), null);
+                                throw new ActiveDirectoryObjectNotFoundException(String.Format(CultureInfo.CurrentCulture, SR.ForestTrustDoesNotExist , sourceName, targetName), typeof(ForestTrustRelationshipInformation), null);
                             else
-                                throw new ActiveDirectoryObjectNotFoundException(Res.GetString(Res.DomainTrustDoesNotExist, sourceName, targetName), typeof(TrustRelationshipInformation), null);
+                                throw new ActiveDirectoryObjectNotFoundException(String.Format(CultureInfo.CurrentCulture, SR.DomainTrustDoesNotExist , sourceName, targetName), typeof(TrustRelationshipInformation), null);
                         }
                         else
                             throw ExceptionHelper.GetExceptionFromErrorCode(win32Error, serverName);
@@ -446,7 +446,7 @@ namespace System.DirectoryServices.ActiveDirectory
                             if (win32Error == s_ERROR_INVALID_LEVEL)
                             {
                                 // it is pre-win2k SP3 dc that does not support NETLOGON_CONTROL_TC_VERIFY
-                                throw new NotSupportedException(Res.GetString(Res.TrustVerificationNotSupport));
+                                throw new NotSupportedException(SR.TrustVerificationNotSupport);
                             }
                             else
                             {
@@ -574,9 +574,9 @@ namespace System.DirectoryServices.ActiveDirectory
                         if (result == s_ERROR_ALREADY_EXISTS)
                         {
                             if (isForest)
-                                throw new ActiveDirectoryObjectExistsException(Res.GetString(Res.AlreadyExistingForestTrust, sourceName, targetName));
+                                throw new ActiveDirectoryObjectExistsException(String.Format(CultureInfo.CurrentCulture, SR.AlreadyExistingForestTrust , sourceName, targetName));
                             else
-                                throw new ActiveDirectoryObjectExistsException(Res.GetString(Res.AlreadyExistingDomainTrust, sourceName, targetName));
+                                throw new ActiveDirectoryObjectExistsException(String.Format(CultureInfo.CurrentCulture, SR.AlreadyExistingDomainTrust , sourceName, targetName));
                         }
                         else
                             throw ExceptionHelper.GetExceptionFromErrorCode(result, serverName);
@@ -647,9 +647,9 @@ namespace System.DirectoryServices.ActiveDirectory
                         if (win32Error == s_STATUS_OBJECT_NAME_NOT_FOUND)
                         {
                             if (isForest)
-                                throw new ActiveDirectoryObjectNotFoundException(Res.GetString(Res.ForestTrustDoesNotExist, sourceName, targetName), typeof(ForestTrustRelationshipInformation), null);
+                                throw new ActiveDirectoryObjectNotFoundException(String.Format(CultureInfo.CurrentCulture, SR.ForestTrustDoesNotExist , sourceName, targetName), typeof(ForestTrustRelationshipInformation), null);
                             else
-                                throw new ActiveDirectoryObjectNotFoundException(Res.GetString(Res.DomainTrustDoesNotExist, sourceName, targetName), typeof(TrustRelationshipInformation), null);
+                                throw new ActiveDirectoryObjectNotFoundException(String.Format(CultureInfo.CurrentCulture, SR.DomainTrustDoesNotExist , sourceName, targetName), typeof(TrustRelationshipInformation), null);
                         }
                         else
                             throw ExceptionHelper.GetExceptionFromErrorCode(win32Error, serverName);
@@ -780,9 +780,9 @@ namespace System.DirectoryServices.ActiveDirectory
                         if (win32Error == s_STATUS_OBJECT_NAME_NOT_FOUND)
                         {
                             if (isForest)
-                                throw new ActiveDirectoryObjectNotFoundException(Res.GetString(Res.ForestTrustDoesNotExist, sourceName, targetName), typeof(ForestTrustRelationshipInformation), null);
+                                throw new ActiveDirectoryObjectNotFoundException(String.Format(CultureInfo.CurrentCulture, SR.ForestTrustDoesNotExist , sourceName, targetName), typeof(ForestTrustRelationshipInformation), null);
                             else
-                                throw new ActiveDirectoryObjectNotFoundException(Res.GetString(Res.DomainTrustDoesNotExist, sourceName, targetName), typeof(TrustRelationshipInformation), null);
+                                throw new ActiveDirectoryObjectNotFoundException(String.Format(CultureInfo.CurrentCulture, SR.DomainTrustDoesNotExist , sourceName, targetName), typeof(TrustRelationshipInformation), null);
                         }
                         else
                             throw ExceptionHelper.GetExceptionFromErrorCode(win32Error, serverName);
@@ -898,9 +898,9 @@ namespace System.DirectoryServices.ActiveDirectory
                 if (win32Error == s_STATUS_OBJECT_NAME_NOT_FOUND)
                 {
                     if (isForest)
-                        throw new ActiveDirectoryObjectNotFoundException(Res.GetString(Res.ForestTrustDoesNotExist, sourceName, targetName), typeof(ForestTrustRelationshipInformation), null);
+                        throw new ActiveDirectoryObjectNotFoundException(String.Format(CultureInfo.CurrentCulture, SR.ForestTrustDoesNotExist , sourceName, targetName), typeof(ForestTrustRelationshipInformation), null);
                     else
-                        throw new ActiveDirectoryObjectNotFoundException(Res.GetString(Res.DomainTrustDoesNotExist, sourceName, targetName), typeof(TrustRelationshipInformation), null);
+                        throw new ActiveDirectoryObjectNotFoundException(String.Format(CultureInfo.CurrentCulture, SR.DomainTrustDoesNotExist , sourceName, targetName), typeof(TrustRelationshipInformation), null);
                 }
                 else
                     throw ExceptionHelper.GetExceptionFromErrorCode(win32Error, serverName);
@@ -922,9 +922,9 @@ namespace System.DirectoryServices.ActiveDirectory
                     if ((direction & domainInfo.TrustDirection) == 0)
                     {
                         if (isForest)
-                            throw new ActiveDirectoryObjectNotFoundException(Res.GetString(Res.WrongTrustDirection, sourceName, targetName, (TrustDirection)direction), typeof(ForestTrustRelationshipInformation), null);
+                            throw new ActiveDirectoryObjectNotFoundException(String.Format(CultureInfo.CurrentCulture, SR.WrongTrustDirection , sourceName, targetName, (TrustDirection)direction), typeof(ForestTrustRelationshipInformation), null);
                         else
-                            throw new ActiveDirectoryObjectNotFoundException(Res.GetString(Res.WrongTrustDirection, sourceName, targetName, (TrustDirection)direction), typeof(TrustRelationshipInformation), null);
+                            throw new ActiveDirectoryObjectNotFoundException(String.Format(CultureInfo.CurrentCulture, SR.WrongTrustDirection , sourceName, targetName, (TrustDirection)direction), typeof(TrustRelationshipInformation), null);
                     }
                 }
             }
@@ -942,7 +942,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 // it should be a forest trust, make sure that TRUST_ATTRIBUTE_FOREST_TRANSITIVE bit is set
                 if ((domainInfo.TrustAttributes & TRUST_ATTRIBUTE.TRUST_ATTRIBUTE_FOREST_TRANSITIVE) == 0)
                 {
-                    throw new ActiveDirectoryObjectNotFoundException(Res.GetString(Res.ForestTrustDoesNotExist, sourceName, targetName), typeof(ForestTrustRelationshipInformation), null);
+                    throw new ActiveDirectoryObjectNotFoundException(String.Format(CultureInfo.CurrentCulture, SR.ForestTrustDoesNotExist , sourceName, targetName), typeof(ForestTrustRelationshipInformation), null);
                 }
             }
             else
@@ -950,40 +950,43 @@ namespace System.DirectoryServices.ActiveDirectory
                 // it should not be a forest trust, make sure that TRUST_ATTRIBUTE_FOREST_TRANSITIVE bit is not set
                 if ((domainInfo.TrustAttributes & TRUST_ATTRIBUTE.TRUST_ATTRIBUTE_FOREST_TRANSITIVE) != 0)
                 {
-                    throw new ActiveDirectoryObjectNotFoundException(Res.GetString(Res.WrongForestTrust, sourceName, targetName), typeof(TrustRelationshipInformation), null);
+                    throw new ActiveDirectoryObjectNotFoundException(String.Format(CultureInfo.CurrentCulture, SR.WrongForestTrust , sourceName, targetName), typeof(TrustRelationshipInformation), null);
                 }
 
                 // we don't deal with NT4 trust also
                 if (domainInfo.TrustType == TRUST_TYPE_DOWNLEVEL)
-                    throw new InvalidOperationException(Res.GetString(Res.NT4NotSupported));
+                    throw new InvalidOperationException(SR.NT4NotSupported);
 
                 // we don't perform any operation on kerberos trust also
                 if (domainInfo.TrustType == TRUST_TYPE_MIT)
-                    throw new InvalidOperationException(Res.GetString(Res.KerberosNotSupported));
+                    throw new InvalidOperationException(SR.KerberosNotSupported);
             }
         }
 
         internal static string CreateTrustPassword()
         {
-            string password;
+            string password = string.Empty;
             byte[] buf;
             char[] cBuf;
 
             buf = new byte[s_PASSWORD_LENGTH];
             cBuf = new char[s_PASSWORD_LENGTH];
 
-            (new RNGCryptoServiceProvider()).GetBytes(buf);
-            for (int iter = 0; iter < s_PASSWORD_LENGTH; iter++)
+            using (RandomNumberGenerator RNG = RandomNumberGenerator.Create())
             {
-                int i = (int)(buf[iter] % 87);
-                if (i < 10)
-                    cBuf[iter] = (char)('0' + i);
-                else if (i < 36)
-                    cBuf[iter] = (char)('A' + i - 10);
-                else if (i < 62)
-                    cBuf[iter] = (char)('a' + i - 36);
-                else
-                    cBuf[iter] = s_punctuations[i - 62];
+                RNG.GetBytes(buf);
+                for (int iter = 0; iter < s_PASSWORD_LENGTH; iter++)
+                {
+                    int i = (int)(buf[iter] % 87);
+                    if (i < 10)
+                        cBuf[iter] = (char)('0' + i);
+                    else if (i < 36)
+                        cBuf[iter] = (char)('A' + i - 10);
+                    else if (i < 62)
+                        cBuf[iter] = (char)('a' + i - 36);
+                    else
+                        cBuf[iter] = s_punctuations[i - 62];
+                }
             }
 
             password = new string(cBuf);

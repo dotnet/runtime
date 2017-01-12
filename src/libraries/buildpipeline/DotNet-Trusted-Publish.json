@@ -452,11 +452,11 @@
   "defaultBranch": "refs/heads/master",
   "queue": {
     "pool": {
-      "id": 39,
-      "name": "DotNet-Build"
+      "id": 83,
+      "name": "DotNetCore-Test"
     },
-    "id": 36,
-    "name": "DotNet-Build"
+    "id": 159,
+    "name": "DotNetCore-Test"
   },
   "path": "\\",
   "type": "build",

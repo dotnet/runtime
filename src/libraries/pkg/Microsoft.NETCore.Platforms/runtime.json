@@ -147,6 +147,9 @@
         "unix-arm": {
             "#import": [ "unix" ]
         },
+        "unix-armel": {
+            "#import": [ "unix" ]
+        },
         "unix-arm64": {
             "#import": [ "unix" ]
         },
@@ -191,6 +194,9 @@
         "linux-arm": {
             "#import": [ "linux", "unix-arm" ]
         },
+        "linux-armel": {
+            "#import": [ "linux", "unix-armel" ]
+        },
         "linux-arm64": {
             "#import": [ "linux", "unix-arm64" ]
         },
@@ -228,6 +234,20 @@
         },
         "rhel.7.2-x64": {
             "#import": [ "rhel.7.2", "rhel.7.1-x64" ]
+        },
+
+        "rhel.7.3": {
+            "#import": [ "rhel.7.2" ]
+        },
+        "rhel.7.3-x64": {
+            "#import": [ "rhel.7.3", "rhel.7.2-x64" ]
+        },
+
+        "rhel.7.4": {
+            "#import": [ "rhel.7.3" ]
+        },
+        "rhel.7.4-x64": {
+            "#import": [ "rhel.7.4", "rhel.7.3-x64" ]
         },
 
         "ol": {
@@ -291,6 +311,9 @@
         "debian-arm": {
             "#import": [ "debian", "linux-arm" ]
         },
+        "debian-armel": {
+            "#import": [ "debian", "linux-armel" ]
+        },
         "debian-arm64": {
             "#import": [ "debian", "linux-arm64" ]
         },
@@ -307,8 +330,21 @@
         "debian.8-arm": {
             "#import": [ "debian.8", "debian-arm" ]
         },
+        "debian.8-armel": {
+            "#import": [ "debian.8", "debian-armel" ]
+        },
         "debian.8-arm64": {
             "#import": [ "debian.8", "debian-arm64" ]
+        },
+
+        "tizen": {
+            "#import": [ "linux" ]
+        },
+        "tizen-armel": {
+            "#import": [ "tizen", "linux-armel" ]
+        },
+        "tizen.4.0.0-armel": {
+            "#import": [ "tizen.4.0.0", "tizen-armel" ]
         },
 
         "ubuntu": {

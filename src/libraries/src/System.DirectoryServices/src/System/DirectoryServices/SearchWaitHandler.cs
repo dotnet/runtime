@@ -15,34 +15,34 @@ namespace System.DirectoryServices
     using System.Reflection;
     using System.Security.Permissions;
     using System.Globalization;
+    // https://support.microsoft.com/en-us/kb/833789
+    //internal class SearchWaitHandler : IConfigurationSectionHandler
+    //{
+    //    public virtual object Create(object parent, object configContext, XmlNode section)
+    //    {
+    //        bool foundWaitStatus = false;
+    //        bool waitForSearchResult = false;
 
-    internal class SearchWaitHandler : IConfigurationSectionHandler
-    {
-        public virtual object Create(object parent, object configContext, XmlNode section)
-        {
-            bool foundWaitStatus = false;
-            bool waitForSearchResult = false;
+    //        foreach (XmlNode child in section.ChildNodes)
+    //        {
+    //            switch (child.Name)
+    //            {
+    //                case "DirectorySearcher":
+    //                    if (foundWaitStatus)
+    //                        throw new ConfigurationErrorsException(String.Format(CultureInfo.CurrentCulture, SR.ConfigSectionsUnique , "DirectorySearcher"));
+    //                    HandlerBase.RemoveBooleanAttribute(child, "waitForPagedSearchData", ref waitForSearchResult);
+    //                    foundWaitStatus = true;
+    //                    break;
 
-            foreach (XmlNode child in section.ChildNodes)
-            {
-                switch (child.Name)
-                {
-                    case "DirectorySearcher":
-                        if (foundWaitStatus)
-                            throw new ConfigurationErrorsException(Res.GetString(Res.ConfigSectionsUnique, "DirectorySearcher"));
-                        HandlerBase.RemoveBooleanAttribute(child, "waitForPagedSearchData", ref waitForSearchResult);
-                        foundWaitStatus = true;
-                        break;
+    //                default:
+    //                    break;
+    //            } // switch(child.Name)
+    //        }
 
-                    default:
-                        break;
-                } // switch(child.Name)
-            }
-
-            object o = waitForSearchResult;
-            return o;
-        }
-    }
+    //        object o = waitForSearchResult;
+    //        return o;
+    //    }
+    //}
 
     internal class HandlerBase
     {
@@ -52,19 +52,19 @@ namespace System.DirectoryServices
 
         static internal void RemoveBooleanAttribute(XmlNode node, string name, ref bool value)
         {
-            value = false;
-            XmlNode attribute = node.Attributes.RemoveNamedItem(name);
-            if (null != attribute)
-            {
-                try
-                {
-                    value = bool.Parse(attribute.Value);
-                }
-                catch (FormatException)
-                {
-                    throw new ConfigurationErrorsException(Res.GetString(Res.Invalid_boolean_attribute, name));
-                }
-            }
+            //value = false;
+            //XmlNode attribute = node.Attributes.RemoveNamedItem(name);
+            //if (null != attribute)
+            //{
+            //    try
+            //    {
+            //        value = bool.Parse(attribute.Value);
+            //    }
+            //    catch (FormatException)
+            //    {
+            //        throw new ConfigurationErrorsException(String.Format(CultureInfo.CurrentCulture, SR.Invalid, _boolean_attribute, name));
+            //    }
+            //}
         }
     }
 }

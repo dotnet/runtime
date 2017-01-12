@@ -27,7 +27,6 @@ namespace System.DirectoryServices.ActiveDirectory
         Windows2012R2Domain = 7,             //Windows Server 2012 R2
     }
 
-    [DirectoryServicesPermission(SecurityAction.LinkDemand, Unrestricted = true)]
     public class Domain : ActiveDirectoryPartition
     {
         /// Private Variables
@@ -72,12 +71,12 @@ namespace System.DirectoryServices.ActiveDirectory
             if ((context.ContextType != DirectoryContextType.Domain) &&
                 (context.ContextType != DirectoryContextType.DirectoryServer))
             {
-                throw new ArgumentException(Res.GetString(Res.TargetShouldBeServerORDomain), "context");
+                throw new ArgumentException(SR.TargetShouldBeServerORDomain, "context");
             }
 
             if ((context.Name == null) && (!context.isDomain()))
             {
-                throw new ActiveDirectoryObjectNotFoundException(Res.GetString(Res.ContextNotAssociatedWithDomain), typeof(Domain), null);
+                throw new ActiveDirectoryObjectNotFoundException(SR.ContextNotAssociatedWithDomain, typeof(Domain), null);
             }
 
             if (context.Name != null)
@@ -87,11 +86,11 @@ namespace System.DirectoryServices.ActiveDirectory
                 {
                     if (context.ContextType == DirectoryContextType.Domain)
                     {
-                        throw new ActiveDirectoryObjectNotFoundException(Res.GetString(Res.DomainNotFound), typeof(Domain), context.Name);
+                        throw new ActiveDirectoryObjectNotFoundException(SR.DomainNotFound, typeof(Domain), context.Name);
                     }
                     else
                     {
-                        throw new ActiveDirectoryObjectNotFoundException(Res.GetString(Res.DCNotFound, context.Name), typeof(Domain), null);
+                        throw new ActiveDirectoryObjectNotFoundException(String.Format(CultureInfo.CurrentCulture, SR.DCNotFound , context.Name), typeof(Domain), null);
                     }
                 }
             }
@@ -109,7 +108,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 rootDSE = directoryEntryMgr.GetCachedDirectoryEntry(WellKnownDN.RootDSE);
                 if ((context.isServer()) && (!Utils.CheckCapability(rootDSE, Capability.ActiveDirectory)))
                 {
-                    throw new ActiveDirectoryObjectNotFoundException(Res.GetString(Res.DCNotFound, context.Name), typeof(Domain), null);
+                    throw new ActiveDirectoryObjectNotFoundException(String.Format(CultureInfo.CurrentCulture, SR.DCNotFound , context.Name), typeof(Domain), null);
                 }
                 defaultDomainNC = (string)PropertyManager.GetPropertyValue(context, rootDSE, PropertyManager.DefaultNamingContext);
             }
@@ -121,11 +120,11 @@ namespace System.DirectoryServices.ActiveDirectory
                 {
                     if (context.ContextType == DirectoryContextType.Domain)
                     {
-                        throw new ActiveDirectoryObjectNotFoundException(Res.GetString(Res.DomainNotFound), typeof(Domain), context.Name);
+                        throw new ActiveDirectoryObjectNotFoundException(SR.DomainNotFound, typeof(Domain), context.Name);
                     }
                     else
                     {
-                        throw new ActiveDirectoryObjectNotFoundException(Res.GetString(Res.DCNotFound, context.Name), typeof(Domain), null);
+                        throw new ActiveDirectoryObjectNotFoundException(String.Format(CultureInfo.CurrentCulture, SR.DCNotFound , context.Name), typeof(Domain), null);
                     }
                 }
                 else
@@ -143,7 +142,7 @@ namespace System.DirectoryServices.ActiveDirectory
             string computerDomainName = DirectoryContext.GetDnsDomainName(null);
             if (computerDomainName == null)
             {
-                throw new ActiveDirectoryObjectNotFoundException(Res.GetString(Res.ComputerNotJoinedToDomain), typeof(Domain), null);
+                throw new ActiveDirectoryObjectNotFoundException(SR.ComputerNotJoinedToDomain, typeof(Domain), null);
             }
 
             return Domain.GetDomain(new DirectoryContext(DirectoryContextType.Domain, computerDomainName));
@@ -157,7 +156,7 @@ namespace System.DirectoryServices.ActiveDirectory
             // check if domainMode is within the valid range
             if (domainMode < 0)
             {
-                throw new ArgumentException(Res.GetString(Res.InvalidMode), "domainMode");
+                throw new ArgumentException(SR.InvalidMode, "domainMode");
             }
 
             // get the current domain mode
@@ -165,7 +164,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             if (existingDomainModeLevel >= domainMode)
             {
-                throw new ArgumentException(Res.GetString(Res.InvalidMode), "domainMode");
+                throw new ArgumentException(SR.InvalidMode, "domainMode");
             }
 
             DomainMode existingDomainMode = DomainMode;
@@ -174,7 +173,7 @@ namespace System.DirectoryServices.ActiveDirectory
             DirectoryEntry domainEntry = null;
 
             // CurrentDomain          Valid domainMode      Action
-            -----------------
+            // -----------------
             // Windows2000Mixed        0                      ntMixedDomain = 0  msDS-Behavior-Version = 0
             // Windows2000Mixed        1                                         msDS-Behavior-Version = 1
             // Windows2000Mixed        2                      ntMixedDomain = 0, msDS-Behavior-Version = 2
@@ -199,7 +198,7 @@ namespace System.DirectoryServices.ActiveDirectory
                             }
                             else if (domainMode > 2) // new level should be less than or equal to Windows2003
                             {
-                                throw new ArgumentException(Res.GetString(Res.InvalidMode), "domainMode");
+                                throw new ArgumentException(SR.InvalidMode, "domainMode");
                             }
                             break;
                         }
@@ -212,7 +211,7 @@ namespace System.DirectoryServices.ActiveDirectory
                             }
                             else
                             {
-                                throw new ArgumentException(Res.GetString(Res.InvalidMode), "domainMode");
+                                throw new ArgumentException(SR.InvalidMode, "domainMode");
                             }
 
                             break;
@@ -238,7 +237,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 {
                     // attribute does not exist which means this is not a W2K3 DC
                     // cannot raise domain functionality
-                    throw new ArgumentException(Res.GetString(Res.NoW2K3DCs), "domainMode");
+                    throw new ArgumentException(SR.NoW2K3DCs, "domainMode");
                 }
                 else
                 {
@@ -277,7 +276,7 @@ namespace System.DirectoryServices.ActiveDirectory
             DirectoryEntry domainEntry = null;
 
             // CurrentDomain          Valid RequestedDomain      Action
-            -----------------
+            // -----------------
             // Windows2000Mixed        Windows2000Native         ntMixedDomain = 0
             // Windows2000Mixed        Windows2003Interim        msDS-Behavior-Version = 1
             // Windows2000Mixed        Windows2003               ntMixedDomain = 0, msDS-Behavior-Version = 2
@@ -314,7 +313,7 @@ namespace System.DirectoryServices.ActiveDirectory
                             }
                             else
                             {
-                                throw new ArgumentException(Res.GetString(Res.InvalidMode), "domainMode");
+                                throw new ArgumentException(SR.InvalidMode, "domainMode");
                             }
 
                             break;
@@ -329,7 +328,7 @@ namespace System.DirectoryServices.ActiveDirectory
                             }
                             else
                             {
-                                throw new ArgumentException(Res.GetString(Res.InvalidMode), "domainMode");
+                                throw new ArgumentException(SR.InvalidMode, "domainMode");
                             }
 
                             break;
@@ -344,7 +343,7 @@ namespace System.DirectoryServices.ActiveDirectory
                         {
                             if (existingDomainMode >= domainMode)
                             {
-                                throw new ArgumentException(Res.GetString(Res.InvalidMode), "domainMode");
+                                throw new ArgumentException(SR.InvalidMode, "domainMode");
                             }
 
                             if (domainMode == DomainMode.Windows2003Domain)
@@ -369,7 +368,7 @@ namespace System.DirectoryServices.ActiveDirectory
                             }
                             else
                             {
-                                throw new ArgumentException(Res.GetString(Res.InvalidMode), "domainMode");
+                                throw new ArgumentException(SR.InvalidMode, "domainMode");
                             }
                         }
                         break;
@@ -396,7 +395,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 {
                     // attribute does not exist which means this is not a W2K3 DC
                     // cannot raise domain functionality
-                    throw new ArgumentException(Res.GetString(Res.NoW2K3DCs), "domainMode");
+                    throw new ArgumentException(SR.NoW2K3DCs, "domainMode");
                 }
                 else
                 {
@@ -495,16 +494,12 @@ namespace System.DirectoryServices.ActiveDirectory
 
             if (siteName.Length == 0)
             {
-                throw new ArgumentException(Res.GetString(Res.EmptyStringParameter), "siteName");
+                throw new ArgumentException(SR.EmptyStringParameter, "siteName");
             }
 
             return new DomainControllerCollection(Locator.EnumerateDomainControllers(context, Name, siteName, (long)flag));
         }
 
-        [
-            DirectoryServicesPermission(SecurityAction.LinkDemand, Unrestricted = true),
-            DirectoryServicesPermission(SecurityAction.InheritanceDemand, Unrestricted = true)
-        ]
         public override DirectoryEntry GetDirectoryEntry()
         {
             CheckIfDisposed();
@@ -528,14 +523,14 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new ArgumentNullException("targetDomainName");
 
             if (targetDomainName.Length == 0)
-                throw new ArgumentException(Res.GetString(Res.EmptyStringParameter), "targetDomainName");
+                throw new ArgumentException(SR.EmptyStringParameter, "targetDomainName");
 
             ArrayList trusts = GetTrustsHelper(targetDomainName);
             TrustRelationshipInformationCollection collection = new TrustRelationshipInformationCollection(context, Name, trusts);
             if (collection.Count == 0)
             {
                 // trust relationship does not exist
-                throw new ActiveDirectoryObjectNotFoundException(Res.GetString(Res.DomainTrustDoesNotExist, Name, targetDomainName), typeof(TrustRelationshipInformation), null);
+                throw new ActiveDirectoryObjectNotFoundException(String.Format(CultureInfo.CurrentCulture, SR.DomainTrustDoesNotExist , Name, targetDomainName), typeof(TrustRelationshipInformation), null);
             }
             else
             {
@@ -552,7 +547,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new ArgumentNullException("targetDomainName");
 
             if (targetDomainName.Length == 0)
-                throw new ArgumentException(Res.GetString(Res.EmptyStringParameter), "targetDomainName");
+                throw new ArgumentException(SR.EmptyStringParameter, "targetDomainName");
 
             return TrustHelper.GetTrustedDomainInfoStatus(context, Name, targetDomainName, TRUST_ATTRIBUTE.TRUST_ATTRIBUTE_CROSS_ORGANIZATION, false);
         }
@@ -565,7 +560,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new ArgumentNullException("targetDomainName");
 
             if (targetDomainName.Length == 0)
-                throw new ArgumentException(Res.GetString(Res.EmptyStringParameter), "targetDomainName");
+                throw new ArgumentException(SR.EmptyStringParameter, "targetDomainName");
 
             TrustHelper.SetTrustedDomainInfoStatus(context, Name, targetDomainName, TRUST_ATTRIBUTE.TRUST_ATTRIBUTE_CROSS_ORGANIZATION, enable, false);
         }
@@ -578,7 +573,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new ArgumentNullException("targetDomainName");
 
             if (targetDomainName.Length == 0)
-                throw new ArgumentException(Res.GetString(Res.EmptyStringParameter), "targetDomainName");
+                throw new ArgumentException(SR.EmptyStringParameter, "targetDomainName");
 
             return TrustHelper.GetTrustedDomainInfoStatus(context, Name, targetDomainName, TRUST_ATTRIBUTE.TRUST_ATTRIBUTE_QUARANTINED_DOMAIN, false);
         }
@@ -591,7 +586,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new ArgumentNullException("targetDomainName");
 
             if (targetDomainName.Length == 0)
-                throw new ArgumentException(Res.GetString(Res.EmptyStringParameter), "targetDomainName");
+                throw new ArgumentException(SR.EmptyStringParameter, "targetDomainName");
 
             TrustHelper.SetTrustedDomainInfoStatus(context, Name, targetDomainName, TRUST_ATTRIBUTE.TRUST_ATTRIBUTE_QUARANTINED_DOMAIN, enable, false);
         }
@@ -604,7 +599,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new ArgumentNullException("targetDomainName");
 
             if (targetDomainName.Length == 0)
-                throw new ArgumentException(Res.GetString(Res.EmptyStringParameter), "targetDomainName");
+                throw new ArgumentException(SR.EmptyStringParameter, "targetDomainName");
 
             // delete local side of trust only
             TrustHelper.DeleteTrust(context, Name, targetDomainName, false);
@@ -632,7 +627,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new ArgumentNullException("targetDomainName");
 
             if (targetDomainName.Length == 0)
-                throw new ArgumentException(Res.GetString(Res.EmptyStringParameter), "targetDomainName");
+                throw new ArgumentException(SR.EmptyStringParameter, "targetDomainName");
 
             TrustHelper.VerifyTrust(context, Name, targetDomainName, false/*not forest*/, TrustDirection.Outbound, false/*just TC verification*/, null /* no need to go to specific server*/);
         }
@@ -656,7 +651,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
                 catch (ActiveDirectoryObjectNotFoundException)
                 {
-                    throw new ActiveDirectoryObjectNotFoundException(Res.GetString(Res.WrongTrustDirection, Name, targetDomain.Name, direction), typeof(TrustRelationshipInformation), null);
+                    throw new ActiveDirectoryObjectNotFoundException(String.Format(CultureInfo.CurrentCulture, SR.WrongTrustDirection , Name, targetDomain.Name, direction), typeof(TrustRelationshipInformation), null);
                 }
             }
 
@@ -669,7 +664,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
                 catch (ActiveDirectoryObjectNotFoundException)
                 {
-                    throw new ActiveDirectoryObjectNotFoundException(Res.GetString(Res.WrongTrustDirection, Name, targetDomain.Name, direction), typeof(TrustRelationshipInformation), null);
+                    throw new ActiveDirectoryObjectNotFoundException(String.Format(CultureInfo.CurrentCulture, SR.WrongTrustDirection , Name, targetDomain.Name, direction), typeof(TrustRelationshipInformation), null);
                 }
             }
         }
@@ -682,7 +677,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new ArgumentNullException("targetDomainName");
 
             if (targetDomainName.Length == 0)
-                throw new ArgumentException(Res.GetString(Res.EmptyStringParameter), "targetDomainName");
+                throw new ArgumentException(SR.EmptyStringParameter, "targetDomainName");
 
             if (direction < TrustDirection.Inbound || direction > TrustDirection.Bidirectional)
                 throw new InvalidEnumArgumentException("direction", (int)direction, typeof(TrustDirection));
@@ -691,7 +686,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new ArgumentNullException("trustPassword");
 
             if (trustPassword.Length == 0)
-                throw new ArgumentException(Res.GetString(Res.EmptyStringParameter), "trustPassword");
+                throw new ArgumentException(SR.EmptyStringParameter, "trustPassword");
 
             // verify first that the target domain name is valid
             Locator.GetDomainControllerInfo(null, targetDomainName, null, (long)PrivateLocatorFlags.DirectoryServicesRequired);
@@ -734,13 +729,13 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new ArgumentNullException("targetDomainName");
 
             if (targetDomainName.Length == 0)
-                throw new ArgumentException(Res.GetString(Res.EmptyStringParameter), "targetDomainName");
+                throw new ArgumentException(SR.EmptyStringParameter, "targetDomainName");
 
             if (newTrustPassword == null)
                 throw new ArgumentNullException("newTrustPassword");
 
             if (newTrustPassword.Length == 0)
-                throw new ArgumentException(Res.GetString(Res.EmptyStringParameter), "newTrustPassword");
+                throw new ArgumentException(SR.EmptyStringParameter, "newTrustPassword");
 
             TrustHelper.UpdateTrust(context, Name, targetDomainName, newTrustPassword, false);
         }
@@ -753,7 +748,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new ArgumentNullException("targetDomainName");
 
             if (targetDomainName.Length == 0)
-                throw new ArgumentException(Res.GetString(Res.EmptyStringParameter), "targetDomainName");
+                throw new ArgumentException(SR.EmptyStringParameter, "targetDomainName");
 
             if (newTrustDirection < TrustDirection.Inbound || newTrustDirection > TrustDirection.Bidirectional)
                 throw new InvalidEnumArgumentException("newTrustDirection", (int)newTrustDirection, typeof(TrustDirection));
@@ -762,7 +757,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new ArgumentNullException("newTrustPassword");
 
             if (newTrustPassword.Length == 0)
-                throw new ArgumentException(Res.GetString(Res.EmptyStringParameter), "newTrustPassword");
+                throw new ArgumentException(SR.EmptyStringParameter, "newTrustPassword");
 
             TrustHelper.UpdateTrustDirection(context, Name, targetDomainName, newTrustPassword, false /*not a forest*/, newTrustDirection);
         }
@@ -830,7 +825,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             catch (ActiveDirectoryObjectNotFoundException)
             {
-                throw new ActiveDirectoryObjectNotFoundException(Res.GetString(Res.WrongTrustDirection, Name, targetDomain.Name, direction), typeof(TrustRelationshipInformation), null);
+                throw new ActiveDirectoryObjectNotFoundException(String.Format(CultureInfo.CurrentCulture, SR.WrongTrustDirection , Name, targetDomain.Name, direction), typeof(TrustRelationshipInformation), null);
             }
         }
 
@@ -1515,7 +1510,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
                 catch (ActiveDirectoryObjectNotFoundException)
                 {
-                    throw new ActiveDirectoryObjectNotFoundException(Res.GetString(Res.WrongTrustDirection, Name, targetDomain.Name, direction), typeof(TrustRelationshipInformation), null);
+                    throw new ActiveDirectoryObjectNotFoundException(String.Format(CultureInfo.CurrentCulture, SR.WrongTrustDirection , Name, targetDomain.Name, direction), typeof(TrustRelationshipInformation), null);
                 }
             }
 
@@ -1528,7 +1523,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
                 catch (ActiveDirectoryObjectNotFoundException)
                 {
-                    throw new ActiveDirectoryObjectNotFoundException(Res.GetString(Res.WrongTrustDirection, Name, targetDomain.Name, direction), typeof(TrustRelationshipInformation), null);
+                    throw new ActiveDirectoryObjectNotFoundException(String.Format(CultureInfo.CurrentCulture, SR.WrongTrustDirection , Name, targetDomain.Name, direction), typeof(TrustRelationshipInformation), null);
                 }
             }
         }

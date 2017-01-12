@@ -9,7 +9,6 @@ namespace System.DirectoryServices
     using System.ComponentModel;
     using System.Security.Permissions;
 
-    [DirectoryServicesPermission(SecurityAction.LinkDemand, Unrestricted = true)]
     public class DirectoryEntryConfiguration
     {
         private DirectoryEntry _entry;
@@ -62,7 +61,7 @@ namespace System.DirectoryServices
             set
             {
                 if (value < 0)
-                    throw new ArgumentException(Res.GetString(Res.DSBadPageSize));
+                    throw new ArgumentException(SR.DSBadPageSize);
 
                 ((UnsafeNativeMethods.IAdsObjectOptions)_entry.AdsObject).SetOption((int)AdsOptions.ADS_OPTION_PAGE_SIZE, value);
             }

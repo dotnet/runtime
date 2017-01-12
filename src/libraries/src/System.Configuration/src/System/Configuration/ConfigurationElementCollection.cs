@@ -206,10 +206,12 @@ namespace System.Configuration
 
         public override bool Equals(object compareTo)
         {
-            if (compareTo.GetType() != GetType()) return false;
+            if (compareTo == null || compareTo.GetType() != GetType())
+                return false;
 
             ConfigurationElementCollection compareToElem = (ConfigurationElementCollection)compareTo;
-            if (Count != compareToElem.Count) return false;
+            if (Count != compareToElem.Count)
+                return false;
 
             foreach (Entry thisEntry in Items)
             {
@@ -254,7 +256,7 @@ namespace System.Configuration
             Hashtable inheritance = new Hashtable();
             _lockedAllExceptAttributesList = sourceElement._lockedAllExceptAttributesList;
             _lockedAllExceptElementsList = sourceElement._lockedAllExceptElementsList;
-            _fItemLocked = sourceElement._fItemLocked;
+            _itemLockedFlag = sourceElement._itemLockedFlag;
             _lockedAttributesList = sourceElement._lockedAttributesList;
             _lockedElementsList = sourceElement._lockedElementsList;
 
@@ -661,11 +663,12 @@ namespace System.Configuration
                 Items.Insert(index, new Entry(entryType, key, element));
             }
             else
+            {
                 Items.Add(new Entry(entryType, key, element));
+            }
 
             _modified = true;
         }
-
 
         protected virtual void BaseAdd(int index, ConfigurationElement element)
         {
@@ -1021,7 +1024,6 @@ namespace System.Configuration
             }
             _modified = true;
         }
-
 
         protected internal override bool SerializeElement(XmlWriter writer, bool serializeCollectionKey)
         {

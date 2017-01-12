@@ -25,7 +25,6 @@ namespace System.DirectoryServices.ActiveDirectory
         InterSite = 1
     }
 
-    [DirectoryServicesPermission(SecurityAction.LinkDemand, Unrestricted = true)]
     public class ReplicationConnection : IDisposable
     {
         internal DirectoryContext context = null;
@@ -74,7 +73,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     if (e.ErrorCode == unchecked((int)0x80072030))
                     {
                         // object is not found since we cannot even find the container in which to search
-                        throw new ActiveDirectoryObjectNotFoundException(Res.GetString(Res.DSNotFound), typeof(ReplicationConnection), name);
+                        throw new ActiveDirectoryObjectNotFoundException(SR.DSNotFound, typeof(ReplicationConnection), name);
                     }
                     else
                     {
@@ -85,7 +84,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 if (srchResult == null)
                 {
                     // no such connection object
-                    Exception e = new ActiveDirectoryObjectNotFoundException(Res.GetString(Res.DSNotFound), typeof(ReplicationConnection), name);
+                    Exception e = new ActiveDirectoryObjectNotFoundException(SR.DSNotFound, typeof(ReplicationConnection), name);
                     throw e;
                 }
                 else
@@ -182,7 +181,7 @@ namespace System.DirectoryServices.ActiveDirectory
                         DirectoryEntry tmpDE = DirectoryEntryManager.GetDirectoryEntry(context, WellKnownDN.RootDSE);
                         if (Utils.CheckCapability(tmpDE, Capability.ActiveDirectoryApplicationMode) && transport == ActiveDirectoryTransportType.Smtp)
                         {
-                            throw new NotSupportedException(Res.GetString(Res.NotSupportTransportSMTP));
+                            throw new NotSupportedException(SR.NotSupportTransportSMTP);
                         }
                     }
 
@@ -857,7 +856,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             if (!existingConnection)
             {
-                throw new InvalidOperationException(Res.GetString(Res.CannotDelete));
+                throw new InvalidOperationException(SR.CannotDelete);
             }
             else
             {
@@ -907,7 +906,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             if (!existingConnection)
             {
-                throw new InvalidOperationException(Res.GetString(Res.CannotGetObject));
+                throw new InvalidOperationException(SR.CannotGetObject);
             }
             else
             {
@@ -922,13 +921,13 @@ namespace System.DirectoryServices.ActiveDirectory
 
             // the target of the scope must be server
             if (context.Name == null || !context.isServer())
-                throw new ArgumentException(Res.GetString(Res.DirectoryContextNeedHost));
+                throw new ArgumentException(SR.DirectoryContextNeedHost);
 
             if (name == null)
                 throw new ArgumentNullException("name");
 
             if (name.Length == 0)
-                throw new ArgumentException(Res.GetString(Res.EmptyStringParameter), "name");
+                throw new ArgumentException(SR.EmptyStringParameter, "name");
         }
 
         private void ValidateTargetAndSourceServer(DirectoryContext context, DirectoryServer sourceServer)
@@ -948,18 +947,18 @@ namespace System.DirectoryServices.ActiveDirectory
                 else if (!Utils.CheckCapability(targetDE, Capability.ActiveDirectoryApplicationMode))
                 {
                     // if it is also not an ADAM instance, it is invalid then
-                    throw new ArgumentException(Res.GetString(Res.DirectoryContextNeedHost), "context");
+                    throw new ArgumentException(SR.DirectoryContextNeedHost, "context");
                 }
 
                 if (targetIsDC && !(sourceServer is DomainController))
                 {
                     // target and sourceServer are not of the same type
-                    throw new ArgumentException(Res.GetString(Res.ConnectionSourcServerShouldBeDC), "sourceServer");
+                    throw new ArgumentException(SR.ConnectionSourcServerShouldBeDC, "sourceServer");
                 }
                 else if (!targetIsDC && (sourceServer is DomainController))
                 {
                     // target and sourceServer are not of the same type
-                    throw new ArgumentException(Res.GetString(Res.ConnectionSourcServerShouldBeADAM), "sourceServer");
+                    throw new ArgumentException(SR.ConnectionSourcServerShouldBeADAM, "sourceServer");
                 }
 
                 sourceDE = DirectoryEntryManager.GetDirectoryEntry(sourceServer.Context, WellKnownDN.RootDSE);
@@ -971,7 +970,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     string sourceRoot = (string)PropertyManager.GetPropertyValue(sourceServer.Context, sourceDE, PropertyManager.RootDomainNamingContext);
                     if (Utils.Compare(targetRoot, sourceRoot) != 0)
                     {
-                        throw new ArgumentException(Res.GetString(Res.ConnectionSourcServerSameForest), "sourceServer");
+                        throw new ArgumentException(SR.ConnectionSourcServerSameForest, "sourceServer");
                     }
                 }
                 else
@@ -980,7 +979,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     string sourceRoot = (string)PropertyManager.GetPropertyValue(sourceServer.Context, sourceDE, PropertyManager.ConfigurationNamingContext);
                     if (Utils.Compare(targetRoot, sourceRoot) != 0)
                     {
-                        throw new ArgumentException(Res.GetString(Res.ConnectionSourcServerSameConfigSet), "sourceServer");
+                        throw new ArgumentException(SR.ConnectionSourcServerSameConfigSet, "sourceServer");
                     }
                 }
             }

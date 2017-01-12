@@ -4,10 +4,6 @@
 
 
 using Xunit;
-using Microsoft.SqlServer.TDS;
-using Microsoft.SqlServer.TDS.Servers;
-using Microsoft.SqlServer.TDS.EndPoint;
-using System.Net;
 
 namespace System.Data.SqlClient.Tests
 {
@@ -15,6 +11,7 @@ namespace System.Data.SqlClient.Tests
     {
 
         [Fact]
+        [ActiveIssue(14017)]
         public void ConnectionTest()
         {
             Exception e = null;
@@ -36,38 +33,4 @@ namespace System.Data.SqlClient.Tests
 
     }
 
-    internal class TestTdsServer : GenericTDSServer, IDisposable
-    {
-        private TDSServerEndPoint _endpoint = null;
-
-        private SqlConnectionStringBuilder connectionStringBuilder;
-
-        public TestTdsServer(TDSServerArguments args) : base(args) { }
-
-        public static TestTdsServer StartTestServer(bool enableFedAuth = false)
-        {
-            TDSServerArguments args = new TDSServerArguments()
-            {
-                Log = Console.Out,
-            };
-
-            if (enableFedAuth)
-            {
-                args.FedAuthRequiredPreLoginOption = Microsoft.SqlServer.TDS.PreLogin.TdsPreLoginFedAuthRequiredOption.FedAuthRequired;
-            }
-
-            TestTdsServer server = new TestTdsServer(args);
-            server._endpoint = new TDSServerEndPoint(server) { ServerEndPoint = new IPEndPoint(IPAddress.Any, 0) };
-            server._endpoint.Start();
-            int port = server._endpoint.ServerEndPoint.Port;
-            server.connectionStringBuilder = new SqlConnectionStringBuilder() { DataSource = "localhost,"+port, ConnectTimeout = 30, Encrypt = false };
-            server.ConnectionString = server.connectionStringBuilder.ConnectionString;
-            return server;
-        }
-
-        public void Dispose() => _endpoint?.Stop();
-
-        public string ConnectionString { get; private set; }
-
-    }
 }

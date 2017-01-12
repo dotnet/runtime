@@ -204,7 +204,7 @@ namespace System.Configuration
 
         public void SaveAs(string filename, ConfigurationSaveMode saveMode, bool forceSaveAll)
         {
-            if (string.IsNullOrEmpty(filename)) throw ExceptionUtil.ParameterNullOrEmpty("filename");
+            if (string.IsNullOrEmpty(filename)) throw ExceptionUtil.ParameterNullOrEmpty(nameof(filename));
 
             SaveAsImpl(filename, saveMode, forceSaveAll);
         }

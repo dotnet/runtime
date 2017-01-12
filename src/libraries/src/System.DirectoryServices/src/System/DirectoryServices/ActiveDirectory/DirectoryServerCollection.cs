@@ -61,7 +61,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 if (!Contains(server))
                     List[index] = server;
                 else
-                    throw new ArgumentException(Res.GetString(Res.AlreadyExistingInCollection, server), "value");
+                    throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.AlreadyExistingInCollection , server), "value");
             }
         }
 
@@ -76,13 +76,13 @@ namespace System.DirectoryServices.ActiveDirectory
                 if ((!_isADAM))
                 {
                     if (!(server is DomainController))
-                        throw new ArgumentException(Res.GetString(Res.ServerShouldBeDC), "server");
+                        throw new ArgumentException(SR.ServerShouldBeDC, "server");
 
                     // verify that the version >= 5.2
                     // DC should be Win 2003 or higher
                     if (((DomainController)server).NumericOSVersion < 5.2)
                     {
-                        throw new ArgumentException(Res.GetString(Res.ServerShouldBeW2K3), "server");
+                        throw new ArgumentException(SR.ServerShouldBeW2K3, "server");
                     }
                 }
 
@@ -92,7 +92,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
                 else
                 {
-                    throw new ArgumentException(Res.GetString(Res.AlreadyExistingInCollection, server), "server");
+                    throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.AlreadyExistingInCollection , server), "server");
                 }
             }
             else
@@ -101,13 +101,13 @@ namespace System.DirectoryServices.ActiveDirectory
                 Debug.Assert(siteName != null);
                 if (Utils.Compare(siteDN, siteName) != 0)
                 {
-                    throw new ArgumentException(Res.GetString(Res.NotWithinSite));
+                    throw new ArgumentException(SR.NotWithinSite);
                 }
 
                 if (!Contains(server))
                     return List.Add(server);
                 else
-                    throw new ArgumentException(Res.GetString(Res.AlreadyExistingInCollection, server), "server");
+                    throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.AlreadyExistingInCollection , server), "server");
             }
         }
 
@@ -177,13 +177,13 @@ namespace System.DirectoryServices.ActiveDirectory
                 if ((!_isADAM))
                 {
                     if (!(server is DomainController))
-                        throw new ArgumentException(Res.GetString(Res.ServerShouldBeDC), "server");
+                        throw new ArgumentException(SR.ServerShouldBeDC, "server");
 
                     // verify that the version >= 5.2
                     // DC should be Win 2003 or higher
                     if (((DomainController)server).NumericOSVersion < 5.2)
                     {
-                        throw new ArgumentException(Res.GetString(Res.ServerShouldBeW2K3), "server");
+                        throw new ArgumentException(SR.ServerShouldBeW2K3, "server");
                     }
                 }
 
@@ -193,7 +193,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
                 else
                 {
-                    throw new ArgumentException(Res.GetString(Res.AlreadyExistingInCollection, server), "server");
+                    throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.AlreadyExistingInCollection , server), "server");
                 }
             }
             else
@@ -203,13 +203,13 @@ namespace System.DirectoryServices.ActiveDirectory
                 Debug.Assert(siteName != null);
                 if (Utils.Compare(siteDN, siteName) != 0)
                 {
-                    throw new ArgumentException(Res.GetString(Res.NotWithinSite), "server");
+                    throw new ArgumentException(SR.NotWithinSite, "server");
                 }
 
                 if (!Contains(server))
                     List.Insert(index, server);
                 else
-                    throw new ArgumentException(Res.GetString(Res.AlreadyExistingInCollection, server));
+                    throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.AlreadyExistingInCollection , server));
             }
         }
 
@@ -230,7 +230,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
 
             // something that does not exist in the collection
-            throw new ArgumentException(Res.GetString(Res.NotFoundInCollection, server), "server");
+            throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.NotFoundInCollection , server), "server");
         }
 
         protected override void OnClear()
@@ -379,13 +379,13 @@ namespace System.DirectoryServices.ActiveDirectory
                 {
                     // for adam this should be an ADAMInstance
                     if (!(value is AdamInstance))
-                        throw new ArgumentException(Res.GetString(Res.ServerShouldBeAI), "value");
+                        throw new ArgumentException(SR.ServerShouldBeAI, "value");
                 }
                 else
                 {
                     // for AD this should be a DomainController
                     if (!(value is DomainController))
-                        throw new ArgumentException(Res.GetString(Res.ServerShouldBeDC), "value");
+                        throw new ArgumentException(SR.ServerShouldBeDC, "value");
                 }
             }
             else

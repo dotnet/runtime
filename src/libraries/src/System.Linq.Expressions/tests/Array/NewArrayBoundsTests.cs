@@ -247,5 +247,43 @@ namespace System.Linq.Expressions.Tests
             Assert.Throws<ArgumentException>("type", () => Expression.NewArrayBounds(typeof(List<>.Enumerator), Expression.Constant(2)));
             Assert.Throws<ArgumentException>("type", () => Expression.NewArrayBounds(typeof(List<>).MakeGenericType(typeof(List<>)), Expression.Constant(2)));
         }
+
+        [Fact]
+        public static void UpdateSameReturnsSame()
+        {
+            Expression bound0 = Expression.Constant(2);
+            Expression bound1 = Expression.Constant(3);
+            NewArrayExpression newArrayExpression = Expression.NewArrayBounds(typeof(string), bound0, bound1);
+            Assert.Same(newArrayExpression, newArrayExpression.Update(new [] {bound0, bound1}));
+        }
+
+        [Fact]
+        public static void UpdateDifferentReturnsDifferent()
+        {
+            Expression bound0 = Expression.Constant(2);
+            Expression bound1 = Expression.Constant(3);
+            NewArrayExpression newArrayExpression = Expression.NewArrayBounds(typeof(string), bound0, bound1);
+            Assert.NotSame(newArrayExpression, newArrayExpression.Update(new[] { bound0 }));
+            Assert.NotSame(newArrayExpression, newArrayExpression.Update(new[] { bound0, bound1, bound0, bound1 }));
+            Assert.NotSame(newArrayExpression, newArrayExpression.Update(newArrayExpression.Expressions.Reverse()));
+        }
+
+        [Fact]
+        public static void UpdateDoesntRepeatEnumeration()
+        {
+            Expression bound0 = Expression.Constant(2);
+            Expression bound1 = Expression.Constant(3);
+            NewArrayExpression newArrayExpression = Expression.NewArrayBounds(typeof(string), bound0, bound1);
+            Assert.NotSame(newArrayExpression, newArrayExpression.Update(new RunOnceEnumerable<Expression>(new[] { bound0 })));
+        }
+
+        [Fact]
+        public static void UpdateNullThrows()
+        {
+            Expression bound0 = Expression.Constant(2);
+            Expression bound1 = Expression.Constant(3);
+            NewArrayExpression newArrayExpression = Expression.NewArrayBounds(typeof(string), bound0, bound1);
+            Assert.Throws<ArgumentNullException>("expressions", () => newArrayExpression.Update(null));
+        }
     }
 }

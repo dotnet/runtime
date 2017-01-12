@@ -41,12 +41,12 @@ namespace System.DirectoryServices.ActiveDirectory
                     throw new ArgumentNullException("value");
 
                 if (!subnet.existing)
-                    throw new InvalidOperationException(Res.GetString(Res.SubnetNotCommitted, subnet.Name));
+                    throw new InvalidOperationException(String.Format(CultureInfo.CurrentCulture, SR.SubnetNotCommitted , subnet.Name));
 
                 if (!Contains(subnet))
                     List[index] = subnet;
                 else
-                    throw new ArgumentException(Res.GetString(Res.AlreadyExistingInCollection, subnet), "value");
+                    throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.AlreadyExistingInCollection , subnet), "value");
             }
         }
 
@@ -56,12 +56,12 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new ArgumentNullException("subnet");
 
             if (!subnet.existing)
-                throw new InvalidOperationException(Res.GetString(Res.SubnetNotCommitted, subnet.Name));
+                throw new InvalidOperationException(String.Format(CultureInfo.CurrentCulture, SR.SubnetNotCommitted , subnet.Name));
 
             if (!Contains(subnet))
                 return List.Add(subnet);
             else
-                throw new ArgumentException(Res.GetString(Res.AlreadyExistingInCollection, subnet), "subnet");
+                throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.AlreadyExistingInCollection , subnet), "subnet");
         }
 
         public void AddRange(ActiveDirectorySubnet[] subnets)
@@ -97,7 +97,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new ArgumentNullException("subnet");
 
             if (!subnet.existing)
-                throw new InvalidOperationException(Res.GetString(Res.SubnetNotCommitted, subnet.Name));
+                throw new InvalidOperationException(String.Format(CultureInfo.CurrentCulture, SR.SubnetNotCommitted , subnet.Name));
 
             string dn = (string)PropertyManager.GetPropertyValue(subnet.context, subnet.cachedEntry, PropertyManager.DistinguishedName);
 
@@ -125,7 +125,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new ArgumentNullException("subnet");
 
             if (!subnet.existing)
-                throw new InvalidOperationException(Res.GetString(Res.SubnetNotCommitted, subnet.Name));
+                throw new InvalidOperationException(String.Format(CultureInfo.CurrentCulture, SR.SubnetNotCommitted , subnet.Name));
 
             string dn = (string)PropertyManager.GetPropertyValue(subnet.context, subnet.cachedEntry, PropertyManager.DistinguishedName);
 
@@ -148,12 +148,12 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new ArgumentNullException("subnet");
 
             if (!subnet.existing)
-                throw new InvalidOperationException(Res.GetString(Res.SubnetNotCommitted, subnet.Name));
+                throw new InvalidOperationException(String.Format(CultureInfo.CurrentCulture, SR.SubnetNotCommitted , subnet.Name));
 
             if (!Contains(subnet))
                 List.Insert(index, subnet);
             else
-                throw new ArgumentException(Res.GetString(Res.AlreadyExistingInCollection, subnet), "subnet");
+                throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.AlreadyExistingInCollection , subnet), "subnet");
         }
 
         public void Remove(ActiveDirectorySubnet subnet)
@@ -162,7 +162,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new ArgumentNullException("subnet");
 
             if (!subnet.existing)
-                throw new InvalidOperationException(Res.GetString(Res.SubnetNotCommitted, subnet.Name));
+                throw new InvalidOperationException(String.Format(CultureInfo.CurrentCulture, SR.SubnetNotCommitted , subnet.Name));
 
             string dn = (string)PropertyManager.GetPropertyValue(subnet.context, subnet.cachedEntry, PropertyManager.DistinguishedName);
 
@@ -179,7 +179,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
 
             // something that does not exist in the collectio
-            throw new ArgumentException(Res.GetString(Res.NotFoundInCollection, subnet), "subnet");
+            throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.NotFoundInCollection , subnet), "subnet");
         }
 
         protected override void OnClear()
@@ -271,7 +271,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new ArgumentException("value");
 
             if (!((ActiveDirectorySubnet)value).existing)
-                throw new InvalidOperationException(Res.GetString(Res.SubnetNotCommitted, ((ActiveDirectorySubnet)value).Name));
+                throw new InvalidOperationException(String.Format(CultureInfo.CurrentCulture, SR.SubnetNotCommitted , ((ActiveDirectorySubnet)value).Name));
         }
 
         private string MakePath(string subnetDN)

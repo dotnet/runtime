@@ -388,7 +388,7 @@ def buildArchConfiguration = ['Debug': 'x86',
                         // Call the arm32_ci_script.sh script to perform the cross build of native corefx
                         def script = "./scripts/arm32_ci_script.sh --emulatorPath=${armemul_path} --mountPath=${armrootfs_mountpath} --buildConfig=${configurationGroup.toLowerCase()} --verbose"
                         if (abi == "SoftFP") {
-                            script += " --softfp"
+                            script += " --armel"
                         }
                         shell(script)
 

@@ -877,6 +877,16 @@ namespace System.Runtime.Serialization
                         dataContract = new UnsignedIntDataContract();
                     else if (DictionaryGlobals.LongLocalName.Value == name)
                         dataContract = new LongDataContract();
+                    else if (DictionaryGlobals.integerLocalName.Value == name)
+                        dataContract = new IntegerDataContract();
+                    else if (DictionaryGlobals.positiveIntegerLocalName.Value == name)
+                        dataContract = new PositiveIntegerDataContract();
+                    else if (DictionaryGlobals.negativeIntegerLocalName.Value == name)
+                        dataContract = new NegativeIntegerDataContract();
+                    else if (DictionaryGlobals.nonPositiveIntegerLocalName.Value == name)
+                        dataContract = new NonPositiveIntegerDataContract();
+                    else if (DictionaryGlobals.nonNegativeIntegerLocalName.Value == name)
+                        dataContract = new NonNegativeIntegerDataContract();
                     else if (DictionaryGlobals.UnsignedLongLocalName.Value == name)
                         dataContract = new UnsignedLongDataContract();
                     else if (DictionaryGlobals.FloatLocalName.Value == name)
@@ -889,12 +899,52 @@ namespace System.Runtime.Serialization
                         dataContract = new DateTimeDataContract();
                     else if (DictionaryGlobals.StringLocalName.Value == name)
                         dataContract = new StringDataContract();
+                    else if (DictionaryGlobals.timeLocalName.Value == name)
+                        dataContract = new TimeDataContract();
+                    else if (DictionaryGlobals.dateLocalName.Value == name)
+                        dataContract = new DateDataContract();
                     else if (DictionaryGlobals.hexBinaryLocalName.Value == name)
                         dataContract = new HexBinaryDataContract();
+                    else if (DictionaryGlobals.gYearMonthLocalName.Value == name)
+                        dataContract = new GYearMonthDataContract();
+                    else if (DictionaryGlobals.gYearLocalName.Value == name)
+                        dataContract = new GYearDataContract();
+                    else if (DictionaryGlobals.gMonthDayLocalName.Value == name)
+                        dataContract = new GMonthDayDataContract();
+                    else if (DictionaryGlobals.gDayLocalName.Value == name)
+                        dataContract = new GDayDataContract();
+                    else if (DictionaryGlobals.gMonthLocalName.Value == name)
+                        dataContract = new GMonthDataContract();
+                    else if (DictionaryGlobals.normalizedStringLocalName.Value == name)
+                        dataContract = new NormalizedStringDataContract();
+                    else if (DictionaryGlobals.tokenLocalName.Value == name)
+                        dataContract = new TokenDataContract();
+                    else if (DictionaryGlobals.languageLocalName.Value == name)
+                        dataContract = new LanguageDataContract();
+                    else if (DictionaryGlobals.NameLocalName.Value == name)
+                        dataContract = new NameDataContract();
+                    else if (DictionaryGlobals.NCNameLocalName.Value == name)
+                        dataContract = new NCNameDataContract();
+                    else if (DictionaryGlobals.XSDIDLocalName.Value == name)
+                        dataContract = new IDDataContract();
+                    else if (DictionaryGlobals.IDREFLocalName.Value == name)
+                        dataContract = new IDREFDataContract();
+                    else if (DictionaryGlobals.IDREFSLocalName.Value == name)
+                        dataContract = new IDREFSDataContract();
+                    else if (DictionaryGlobals.ENTITYLocalName.Value == name)
+                        dataContract = new ENTITYDataContract();
+                    else if (DictionaryGlobals.ENTITIESLocalName.Value == name)
+                        dataContract = new ENTITIESDataContract();
+                    else if (DictionaryGlobals.NMTOKENLocalName.Value == name)
+                        dataContract = new NMTOKENDataContract();
+                    else if (DictionaryGlobals.NMTOKENSLocalName.Value == name)
+                        dataContract = new NMTOKENDataContract();
                     else if (DictionaryGlobals.ByteArrayLocalName.Value == name)
                         dataContract = new ByteArrayDataContract();
                     else if (DictionaryGlobals.ObjectLocalName.Value == name)
                         dataContract = new ObjectDataContract();
+                    else if (DictionaryGlobals.TimeSpanLocalName.Value == name)
+                        dataContract = new XsDurationDataContract();
                     else if (DictionaryGlobals.UriLocalName.Value == name)
                         dataContract = new UriDataContract();
                     else if (DictionaryGlobals.QNameLocalName.Value == name)
@@ -910,6 +960,13 @@ namespace System.Runtime.Serialization
                         dataContract = new CharDataContract();
                     else if ("ArrayOfanyType" == name)
                         dataContract = new CollectionDataContract(typeof(Array));
+                }
+                else if (ns == DictionaryGlobals.AsmxTypesNamespace.Value)
+                {
+                    if (DictionaryGlobals.CharLocalName.Value == name)
+                        dataContract = new AsmxCharDataContract();
+                    else if (DictionaryGlobals.GuidLocalName.Value == name)
+                        dataContract = new AsmxGuidDataContract();
                 }
                 else if (ns == Globals.DataContractXmlNamespace)
                 {

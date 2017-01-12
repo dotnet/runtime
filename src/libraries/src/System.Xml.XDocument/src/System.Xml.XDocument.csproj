@@ -13,6 +13,11 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Release|AnyCPU'" />
+  <ItemGroup Condition="'$(TargetGroup)' == 'net463'">
+    <ContractProject Include="..\ref\System.Xml.XDocument.csproj">
+      <TargetGroup>netstandard1.7</TargetGroup>
+    </ContractProject>
+  </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netstandard'">
     <ProjectReference Include="..\..\System.Private.Xml.Linq\src\System.Private.Xml.Linq.csproj" />
     <ProjectReference Include="..\..\System.Private.Xml\src\System.Private.Xml.csproj" />

@@ -41,6 +41,37 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal("new X() {XS = {Void Add(Int32)(a), Void Add(Int32)(b)}}", e6.ToString());
         }
 
+        [Fact]
+        public static void UpdateSameReturnsSame()
+        {
+            MemberAssignment bind0 = Expression.Bind(typeof(Y).GetProperty(nameof(Y.Z)), Expression.Parameter(typeof(int), "z"));
+            MemberAssignment bind1 = Expression.Bind(typeof(Y).GetProperty(nameof(Y.A)), Expression.Parameter(typeof(int), "a"));
+            NewExpression newExp = Expression.New(typeof(Y));
+            MemberInitExpression init = Expression.MemberInit(newExp, bind0, bind1);
+            Assert.Same(init, init.Update(newExp, new [] {bind0, bind1}));
+        }
+
+        [Fact]
+        public static void UpdateDifferentBindingsReturnsDifferent()
+        {
+            MemberAssignment bind0 = Expression.Bind(typeof(Y).GetProperty(nameof(Y.Z)), Expression.Parameter(typeof(int), "z"));
+            MemberAssignment bind1 = Expression.Bind(typeof(Y).GetProperty(nameof(Y.A)), Expression.Parameter(typeof(int), "a"));
+            NewExpression newExp = Expression.New(typeof(Y));
+            MemberInitExpression init = Expression.MemberInit(newExp, bind0, bind1);
+            Assert.NotSame(init, init.Update(newExp, new[] { bind0, bind1, bind0 }));
+            Assert.NotSame(init, init.Update(newExp, new[] { bind1, bind0 }));
+        }
+
+        [Fact]
+        public static void UpdateDifferentNewReturnsDifferent()
+        {
+            MemberAssignment bind0 = Expression.Bind(typeof(Y).GetProperty(nameof(Y.Z)), Expression.Parameter(typeof(int), "z"));
+            MemberAssignment bind1 = Expression.Bind(typeof(Y).GetProperty(nameof(Y.A)), Expression.Parameter(typeof(int), "a"));
+            NewExpression newExp = Expression.New(typeof(Y));
+            MemberInitExpression init = Expression.MemberInit(newExp, bind0, bind1);
+            Assert.NotSame(init, init.Update(Expression.New(typeof(Y)), new[] { bind0, bind1 }));
+        }
+
         #endregion
 
         #region Test verifiers

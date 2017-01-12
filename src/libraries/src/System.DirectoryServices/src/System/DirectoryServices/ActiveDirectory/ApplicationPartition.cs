@@ -26,7 +26,6 @@ namespace System.DirectoryServices.ActiveDirectory
         ADAMApplicationPartition = 1
     }
 
-    [DirectoryServicesPermission(SecurityAction.LinkDemand, Unrestricted = true)]
     public class ApplicationPartition : ActiveDirectoryPartition
     {
         private bool _disposed = false;
@@ -120,13 +119,13 @@ namespace System.DirectoryServices.ActiveDirectory
             // contexttype should be ApplicationPartiton
             if (context.ContextType != DirectoryContextType.ApplicationPartition)
             {
-                throw new ArgumentException(Res.GetString(Res.TargetShouldBeAppNCDnsName), "context");
+                throw new ArgumentException(SR.TargetShouldBeAppNCDnsName, "context");
             }
 
             // target must be ndnc dns name
             if (!context.isNdnc())
             {
-                throw new ActiveDirectoryObjectNotFoundException(Res.GetString(Res.NDNCNotFound), typeof(ApplicationPartition), context.Name);
+                throw new ActiveDirectoryObjectNotFoundException(SR.NDNCNotFound, typeof(ApplicationPartition), context.Name);
             }
 
             //  work with copy of the context
@@ -149,7 +148,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                 if (errorCode == unchecked((int)0x8007203a))
                 {
-                    throw new ActiveDirectoryObjectNotFoundException(Res.GetString(Res.NDNCNotFound), typeof(ApplicationPartition), context.Name);
+                    throw new ActiveDirectoryObjectNotFoundException(SR.NDNCNotFound, typeof(ApplicationPartition), context.Name);
                 }
                 else
                 {
@@ -172,7 +171,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             if ((context.Name == null) && (!context.isRootDomain()))
             {
-                throw new ArgumentException(Res.GetString(Res.ContextNotAssociatedWithDomain), "context");
+                throw new ArgumentException(SR.ContextNotAssociatedWithDomain, "context");
             }
 
             if (context.Name != null)
@@ -180,7 +179,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 // the target should be a valid forest name, configset name or a server
                 if (!((context.isRootDomain()) || (context.isADAMConfigSet()) || context.isServer()))
                 {
-                    throw new ArgumentException(Res.GetString(Res.NotADOrADAM), "context");
+                    throw new ArgumentException(SR.NotADOrADAM, "context");
                 }
             }
 
@@ -189,10 +188,10 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new ArgumentNullException("distinguishedName");
 
             if (distinguishedName.Length == 0)
-                throw new ArgumentException(Res.GetString(Res.EmptyStringParameter), "distinguishedName");
+                throw new ArgumentException(SR.EmptyStringParameter, "distinguishedName");
 
             if (!Utils.IsValidDNFormat(distinguishedName))
-                throw new ArgumentException(Res.GetString(Res.InvalidDNFormat), "distinguishedName");
+                throw new ArgumentException(SR.InvalidDNFormat, "distinguishedName");
 
             //  work with copy of the context
             context = new DirectoryContext(context);
@@ -213,7 +212,7 @@ namespace System.DirectoryServices.ActiveDirectory
             catch (ActiveDirectoryObjectNotFoundException)
             {
                 // this is the case where the context is a config set and we could not find an ADAM instance in that config set
-                throw new ActiveDirectoryOperationException(Res.GetString(Res.ADAMInstanceNotFoundInConfigSet, context.Name));
+                throw new ActiveDirectoryOperationException(String.Format(CultureInfo.CurrentCulture, SR.ADAMInstanceNotFoundInConfigSet , context.Name));
             }
 
             // build the filter
@@ -252,7 +251,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 if (e.ErrorCode == unchecked((int)0x80072030))
                 {
                     // object is not found since we cannot even find the container in which to search
-                    throw new ActiveDirectoryObjectNotFoundException(Res.GetString(Res.AppNCNotFound), typeof(ApplicationPartition), distinguishedName);
+                    throw new ActiveDirectoryObjectNotFoundException(SR.AppNCNotFound, typeof(ApplicationPartition), distinguishedName);
                 }
                 else
                 {
@@ -267,7 +266,7 @@ namespace System.DirectoryServices.ActiveDirectory
             if (res == null)
             {
                 // the specified application partition could not be found in the given forest
-                throw new ActiveDirectoryObjectNotFoundException(Res.GetString(Res.AppNCNotFound), typeof(ApplicationPartition), distinguishedName);
+                throw new ActiveDirectoryObjectNotFoundException(SR.AppNCNotFound, typeof(ApplicationPartition), distinguishedName);
             }
 
             string appNCDnsName = null;
@@ -312,7 +311,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                 if (!hostsCurrentPartition)
                 {
-                    throw new ActiveDirectoryObjectNotFoundException(Res.GetString(Res.AppNCNotFound), typeof(ApplicationPartition), distinguishedName);
+                    throw new ActiveDirectoryObjectNotFoundException(SR.AppNCNotFound, typeof(ApplicationPartition), distinguishedName);
                 }
 
                 appNCContext = context;
@@ -329,7 +328,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                     if (errorCode == NativeMethods.ERROR_NO_SUCH_DOMAIN)
                     {
-                        throw new ActiveDirectoryObjectNotFoundException(Res.GetString(Res.AppNCNotFound), typeof(ApplicationPartition), distinguishedName);
+                        throw new ActiveDirectoryObjectNotFoundException(SR.AppNCNotFound, typeof(ApplicationPartition), distinguishedName);
                     }
                     else if (errorCode != 0)
                     {
@@ -368,7 +367,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 // Check that the application partition has been committed
                 if (!_committed)
                 {
-                    throw new InvalidOperationException(Res.GetString(Res.CannotPerformOperationOnUncommittedObject));
+                    throw new InvalidOperationException(SR.CannotPerformOperationOnUncommittedObject);
                 }
                 directoryServer = ConfigurationSet.FindOneAdamInstance(context, Name, null);
             }
@@ -396,7 +395,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 // Check that the application partition has been committed
                 if (!_committed)
                 {
-                    throw new InvalidOperationException(Res.GetString(Res.CannotPerformOperationOnUncommittedObject));
+                    throw new InvalidOperationException(SR.CannotPerformOperationOnUncommittedObject);
                 }
 
                 directoryServer = ConfigurationSet.FindOneAdamInstance(context, Name, siteName);
@@ -420,7 +419,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 // Check that the application partition has been committed
                 if (!_committed)
                 {
-                    throw new InvalidOperationException(Res.GetString(Res.CannotPerformOperationOnUncommittedObject));
+                    throw new InvalidOperationException(SR.CannotPerformOperationOnUncommittedObject);
                 }
 
                 // forceRediscovery is ignored for ADAM Application partition
@@ -450,7 +449,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 // Check that the application partition has been committed
                 if (!_committed)
                 {
-                    throw new InvalidOperationException(Res.GetString(Res.CannotPerformOperationOnUncommittedObject));
+                    throw new InvalidOperationException(SR.CannotPerformOperationOnUncommittedObject);
                 }
 
                 // forceRediscovery is ignored for ADAM Application partition
@@ -473,7 +472,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 // Check that the application partition has been committed
                 if (!_committed)
                 {
-                    throw new InvalidOperationException(Res.GetString(Res.CannotPerformOperationOnUncommittedObject));
+                    throw new InvalidOperationException(SR.CannotPerformOperationOnUncommittedObject);
                 }
 
                 ReadOnlyDirectoryServerCollection directoryServers = new ReadOnlyDirectoryServerCollection();
@@ -501,7 +500,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 // Check that the application partition has been committed
                 if (!_committed)
                 {
-                    throw new InvalidOperationException(Res.GetString(Res.CannotPerformOperationOnUncommittedObject));
+                    throw new InvalidOperationException(SR.CannotPerformOperationOnUncommittedObject);
                 }
 
                 ReadOnlyDirectoryServerCollection directoryServers = new ReadOnlyDirectoryServerCollection();
@@ -524,7 +523,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 //
                 // throw exception for ADAM
                 //
-                throw new NotSupportedException(Res.GetString(Res.OperationInvalidForADAM));
+                throw new NotSupportedException(SR.OperationInvalidForADAM);
             }
         }
 
@@ -547,7 +546,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 //
                 // throw exception for ADAM
                 //
-                throw new NotSupportedException(Res.GetString(Res.OperationInvalidForADAM));
+                throw new NotSupportedException(SR.OperationInvalidForADAM);
             }
         }
 
@@ -558,7 +557,7 @@ namespace System.DirectoryServices.ActiveDirectory
             // Check that the application partition has been committed
             if (!_committed)
             {
-                throw new InvalidOperationException(Res.GetString(Res.CannotPerformOperationOnUncommittedObject));
+                throw new InvalidOperationException(SR.CannotPerformOperationOnUncommittedObject);
             }
 
             // Get the partitions container and delete the crossRef entry for this 
@@ -746,17 +745,13 @@ namespace System.DirectoryServices.ActiveDirectory
             _securityRefDomainModified = false;
         }
 
-        [
-            DirectoryServicesPermission(SecurityAction.LinkDemand, Unrestricted = true),
-            DirectoryServicesPermission(SecurityAction.InheritanceDemand, Unrestricted = true)
-        ]
         public override DirectoryEntry GetDirectoryEntry()
         {
             CheckIfDisposed();
 
             if (!_committed)
             {
-                throw new InvalidOperationException(Res.GetString(Res.CannotGetObject));
+                throw new InvalidOperationException(SR.CannotGetObject);
             }
 
             return DirectoryEntryManager.GetDirectoryEntry(context, Name);
@@ -801,7 +796,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                 if (_appType == ApplicationPartitionType.ADAMApplicationPartition)
                 {
-                    throw new NotSupportedException(Res.GetString(Res.PropertyInvalidForADAM));
+                    throw new NotSupportedException(SR.PropertyInvalidForADAM);
                 }
 
                 if (_committed)
@@ -835,7 +830,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                 if (_appType == ApplicationPartitionType.ADAMApplicationPartition)
                 {
-                    throw new NotSupportedException(Res.GetString(Res.PropertyInvalidForADAM));
+                    throw new NotSupportedException(SR.PropertyInvalidForADAM);
                 }
 
                 if (_committed)
@@ -881,7 +876,7 @@ namespace System.DirectoryServices.ActiveDirectory
             // contexttype should be DirectoryServer
             if ((context.Name == null) || (!context.isServer()))
             {
-                throw new ArgumentException(Res.GetString(Res.TargetShouldBeServer), "context");
+                throw new ArgumentException(SR.TargetShouldBeServer, "context");
             }
 
             // check that the distinguished name is not null or empty
@@ -892,7 +887,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             if (distinguishedName.Length == 0)
             {
-                throw new ArgumentException(Res.GetString(Res.EmptyStringParameter), "distinguishedName");
+                throw new ArgumentException(SR.EmptyStringParameter, "distinguishedName");
             }
 
             // initialize private variables
@@ -910,14 +905,14 @@ namespace System.DirectoryServices.ActiveDirectory
             Component[] components = Utils.GetDNComponents(distinguishedName);
             if (components.Length == 1)
             {
-                throw new NotSupportedException(Res.GetString(Res.OneLevelPartitionNotSupported));
+                throw new NotSupportedException(SR.OneLevelPartitionNotSupported);
             }
 
             // check if the object class can be specified
             _appType = GetApplicationPartitionType(this.context);
             if ((_appType == ApplicationPartitionType.ADApplicationPartition) && (objectClassSpecified))
             {
-                throw new InvalidOperationException(Res.GetString(Res.NoObjectClassForADPartition));
+                throw new InvalidOperationException(SR.NoObjectClassForADPartition);
             }
             else if (objectClassSpecified)
             {
@@ -930,7 +925,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                 if (objectClass.Length == 0)
                 {
-                    throw new ArgumentException(Res.GetString(Res.EmptyStringParameter), "objectClass");
+                    throw new ArgumentException(SR.EmptyStringParameter, "objectClass");
                 }
             }
 
@@ -956,7 +951,6 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-        [DirectoryServicesPermission(SecurityAction.Assert, Unrestricted = true)]
         private void CreateApplicationPartition(string distinguishedName, string objectClass)
         {
             if (_appType == ApplicationPartitionType.ADApplicationPartition)
@@ -1140,7 +1134,7 @@ namespace System.DirectoryServices.ActiveDirectory
             // should not happen
             if (type == ApplicationPartitionType.Unknown)
             {
-                throw new ActiveDirectoryOperationException(Res.GetString(Res.ApplicationPartitionTypeUnknown));
+                throw new ActiveDirectoryOperationException(SR.ApplicationPartitionTypeUnknown);
             }
             return type;
         }
@@ -1197,13 +1191,13 @@ namespace System.DirectoryServices.ActiveDirectory
 
             if (siteName != null && siteName.Length == 0)
             {
-                throw new ArgumentException(Res.GetString(Res.EmptyStringParameter), "siteName");
+                throw new ArgumentException(SR.EmptyStringParameter, "siteName");
             }
 
             // Check that the application partition has been committed
             if (!_committed)
             {
-                throw new InvalidOperationException(Res.GetString(Res.CannotPerformOperationOnUncommittedObject));
+                throw new InvalidOperationException(SR.CannotPerformOperationOnUncommittedObject);
             }
 
             // set the force rediscovery flag if required
@@ -1217,7 +1211,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             if (errorCode == NativeMethods.ERROR_NO_SUCH_DOMAIN)
             {
-                throw new ActiveDirectoryObjectNotFoundException(Res.GetString(Res.ReplicaNotFound), typeof(DirectoryServer), null);
+                throw new ActiveDirectoryObjectNotFoundException(SR.ReplicaNotFound, typeof(DirectoryServer), null);
             }
             else if (errorCode != 0)
             {
@@ -1239,13 +1233,13 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             if (siteName != null && siteName.Length == 0)
             {
-                throw new ArgumentException(Res.GetString(Res.EmptyStringParameter), "siteName");
+                throw new ArgumentException(SR.EmptyStringParameter, "siteName");
             }
 
             // Check that the application partition has been committed
             if (!_committed)
             {
-                throw new InvalidOperationException(Res.GetString(Res.CannotPerformOperationOnUncommittedObject));
+                throw new InvalidOperationException(SR.CannotPerformOperationOnUncommittedObject);
             }
 
             ArrayList dcList = new ArrayList();
@@ -1262,13 +1256,13 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             if (siteName != null && siteName.Length == 0)
             {
-                throw new ArgumentException(Res.GetString(Res.EmptyStringParameter), "siteName");
+                throw new ArgumentException(SR.EmptyStringParameter, "siteName");
             }
 
             // Check that the application partition has been committed
             if (!_committed)
             {
-                throw new InvalidOperationException(Res.GetString(Res.CannotPerformOperationOnUncommittedObject));
+                throw new InvalidOperationException(SR.CannotPerformOperationOnUncommittedObject);
             }
 
             long flag = (long)PrivateLocatorFlags.OnlyLDAPNeeded;

@@ -278,7 +278,7 @@ namespace System.Data.SqlClient.Tests
         }
 
         [Fact]
-        public void RetrieveStatistics_GetEnumerator_Success()
+        public void RetrieveStatistics_IDictionary_GetEnumerator_Success()
         {
             IDictionary d = new SqlConnection().RetrieveStatistics();
 
@@ -296,12 +296,63 @@ namespace System.Data.SqlClient.Tests
                     Assert.True(e.MoveNext());
 
                     Assert.NotNull(e.Current);
+                    Assert.IsType<DictionaryEntry>(e.Current);
+
                     Assert.NotNull(e.Entry.Key);
+                    Assert.IsType<string>(e.Entry.Key);
                     Assert.NotNull(e.Entry.Value);
+                    Assert.IsType<long>(e.Entry.Value);
 
                     Assert.Equal(e.Current, e.Entry);
                     Assert.Same(e.Key, e.Entry.Key);
                     Assert.Same(e.Value, e.Entry.Value);
+
+                    Assert.True(s_retrieveStatisticsKeys.Contains(e.Entry.Key));
+                }
+
+                Assert.False(e.MoveNext());
+                Assert.False(e.MoveNext());
+                Assert.False(e.MoveNext());
+
+                Assert.Throws<InvalidOperationException>(() => e.Current);
+
+                e.Reset();
+            }
+        }
+
+        [Fact]
+        public void RetrieveStatistics_IEnumerable_GetEnumerator_Success()
+        {
+            // Treat the result as IEnumerable instead of IDictionary.
+            IEnumerable d = new SqlConnection().RetrieveStatistics();
+
+            IEnumerator e = d.GetEnumerator();
+
+            Assert.NotNull(e);
+            Assert.NotSame(e, d.GetEnumerator());
+
+            for (int i = 0; i < 2; i++)
+            {
+                Assert.Throws<InvalidOperationException>(() => e.Current);
+
+                foreach (string ignored in s_retrieveStatisticsKeys)
+                {
+                    Assert.True(e.MoveNext());
+
+                    Assert.NotNull(e.Current);
+
+                    // Verify the IEnumerable.GetEnumerator enumerator is yielding DictionaryEntry entries,
+                    // not KeyValuePair entries.
+                    Assert.IsType<DictionaryEntry>(e.Current);
+
+                    DictionaryEntry entry = (DictionaryEntry)e.Current;
+
+                    Assert.NotNull(entry.Key);
+                    Assert.IsType<string>(entry.Key);
+                    Assert.NotNull(entry.Value);
+                    Assert.IsType<long>(entry.Value);
+
+                    Assert.True(s_retrieveStatisticsKeys.Contains(entry.Key));
                 }
 
                 Assert.False(e.MoveNext());

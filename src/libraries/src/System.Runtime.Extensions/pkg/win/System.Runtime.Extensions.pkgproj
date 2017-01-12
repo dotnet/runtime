@@ -9,6 +9,10 @@
     <ProjectReference Include="..\..\src\System.Runtime.Extensions.csproj">
       <OSGroup>Windows_NT</OSGroup>
     </ProjectReference>
+    <ProjectReference Include="..\..\src\System.Runtime.Extensions.csproj">
+      <OSGroup>Windows_NT</OSGroup>
+      <TargetGroup>netcoreapp1.2corert</TargetGroup>
+    </ProjectReference>
     <!-- AOT implementation comes from AOT package -->
     <File Include="$(PlaceholderFile)">
       <TargetPath>runtimes/aot/lib/uap10.1</TargetPath>

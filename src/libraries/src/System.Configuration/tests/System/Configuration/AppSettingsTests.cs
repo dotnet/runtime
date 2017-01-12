@@ -83,5 +83,26 @@ namespace System.ConfigurationTests
                 Assert.Equal("NewValue", config.AppSettings.Settings["NewKey"].Value);
             }
         }
+
+        [Fact]
+        public void AppSettingsCannotLoadFromUser()
+        {
+            // By default you can't load a section from a user config file- validating that appSettings falls in this bucket
+            using (var machine = new TempConfig(TestData.ImplicitMachineConfig))
+            using (var exe = new TempConfig(TestData.EmptyConfig))
+            using (var user = new TempConfig(TestData.SimpleConfig))
+            {
+                ExeConfigurationFileMap map = new ExeConfigurationFileMap
+                {
+                    MachineConfigFilename = machine.ConfigPath,
+                    ExeConfigFilename = exe.ConfigPath,
+                    RoamingUserConfigFilename = user.ConfigPath
+                };
+
+                var config = ConfigurationManager.OpenMappedExeConfiguration(map, ConfigurationUserLevel.PerUserRoaming);
+
+                Assert.Throws<ConfigurationErrorsException>(() => config.AppSettings);
+            }
+        }
     }
 }

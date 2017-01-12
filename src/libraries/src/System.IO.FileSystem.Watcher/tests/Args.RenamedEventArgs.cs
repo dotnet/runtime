@@ -16,18 +16,22 @@ namespace System.IO.Tests
         public static void RenamedEventArgs_ctor(WatcherChangeTypes changeType, string directory, string name, string oldName)
         {
             RenamedEventArgs args = new RenamedEventArgs(changeType, directory, name, oldName);
-
-            if (!directory.EndsWith(Path.DirectorySeparatorChar.ToString(), StringComparison.Ordinal))
-            {
-                directory += Path.DirectorySeparatorChar;
-            }
-
             Assert.Equal(changeType, args.ChangeType);
-            Assert.Equal(directory + name, args.FullPath);
+            Assert.Equal(directory + Path.DirectorySeparatorChar + name, args.FullPath);
             Assert.Equal(name, args.Name);
-
-            Assert.Equal(directory + oldName, args.OldFullPath);
             Assert.Equal(oldName, args.OldName);
+        }
+
+        [Theory]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "OldFullPath on Desktop demands FileIOPermissions which causes failures for invalid paths.")]
+        [InlineData(WatcherChangeTypes.Changed, "C:", "foo.txt", "bar.txt")]
+        [InlineData(WatcherChangeTypes.All, "C:", "foo.txt", "bar.txt")]
+        [InlineData(0, "", "", "")]
+        [InlineData(0, "", null, null)]
+        public static void RenamedEventArgs_ctor_OldFullPath(WatcherChangeTypes changeType, string directory, string name, string oldName)
+        {
+            RenamedEventArgs args = new RenamedEventArgs(changeType, directory, name, oldName);
+            Assert.Equal(directory + Path.DirectorySeparatorChar + oldName, args.OldFullPath);
         }
 
         [Fact]

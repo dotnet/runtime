@@ -10,4 +10,3 @@ namespace System.IO.Compression
         Compress = 1
     }
 }
-

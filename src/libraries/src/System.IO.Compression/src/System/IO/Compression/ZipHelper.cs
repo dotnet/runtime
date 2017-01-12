@@ -25,7 +25,7 @@ namespace System.IO.Compression
             foreach (char c in test)
             {
                 // The Zip Format uses code page 437 when the Unicode bit is not set. This format
-                // is the same as ASCII for characters 32-126 but differs otherwise. If we can fit 
+                // is the same as ASCII for characters 32-126 but differs otherwise. If we can fit
                 // the string into CP437 then we treat ASCII as acceptable.
                 if (c > 126 || c < 32)
                     return true;
@@ -34,7 +34,9 @@ namespace System.IO.Compression
             return false;
         }
 
-        //reads exactly bytesToRead out of stream, unless it is out of bytes
+        /// <summary>
+        /// Reads exactly bytesToRead out of stream, unless it is out of bytes
+        /// </summary>
         internal static void ReadBytes(Stream stream, byte[] buffer, int bytesToRead)
         {
             int bytesLeftToRead = bytesToRead;
@@ -51,18 +53,17 @@ namespace System.IO.Compression
             }
         }
 
-        /*DosTime format 32 bits
-        //Year: 7 bits, 0 is ValidZipDate_YearMin, unsigned (ValidZipDate_YearMin = 1980)
-        //Month: 4 bits
-        //Day: 5 bits
-        //Hour: 5
-        //Minute: 6 bits
-        //Second: 5 bits
-        */
-
-        //will silently return InvalidDateIndicator if the uint is not a valid Dos DateTime
+        // will silently return InvalidDateIndicator if the uint is not a valid Dos DateTime
         internal static DateTime DosTimeToDateTime(uint dateTime)
         {
+            // DosTime format 32 bits
+            // Year: 7 bits, 0 is ValidZipDate_YearMin, unsigned (ValidZipDate_YearMin = 1980)
+            // Month: 4 bits
+            // Day: 5 bits
+            // Hour: 5
+            // Minute: 6 bits
+            // Second: 5 bits
+
             // do the bit shift as unsigned because the fields are unsigned, but
             // we can safely convert to int, because they won't be too big
             int year = (int)(ValidZipDate_YearMin + (dateTime >> 25));
@@ -70,11 +71,11 @@ namespace System.IO.Compression
             int day = (int)((dateTime >> 16) & 0x1F);
             int hour = (int)((dateTime >> 11) & 0x1F);
             int minute = (int)((dateTime >> 5) & 0x3F);
-            int second = (int)((dateTime & 0x001F) * 2);       // only 5 bits for second, so we only have a granularity of 2 sec. 
+            int second = (int)((dateTime & 0x001F) * 2); // only 5 bits for second, so we only have a granularity of 2 sec.
 
             try
             {
-                return new System.DateTime(year, month, day, hour, minute, second, 0);
+                return new DateTime(year, month, day, hour, minute, second, 0);
             }
             catch (ArgumentOutOfRangeException)
             {
@@ -86,8 +87,7 @@ namespace System.IO.Compression
             }
         }
 
-
-        //assume date time has passed IsConvertibleToDosTime
+        // assume date time has passed IsConvertibleToDosTime
         internal static uint DateTimeToDosTime(DateTime dateTime)
         {
             // DateTime must be Convertible to DosTime:
@@ -98,14 +98,13 @@ namespace System.IO.Compression
             ret = (ret << 5) + dateTime.Day;
             ret = (ret << 5) + dateTime.Hour;
             ret = (ret << 6) + dateTime.Minute;
-            ret = (ret << 5) + (dateTime.Second / 2);   // only 5 bits for second, so we only have a granularity of 2 sec. 
+            ret = (ret << 5) + (dateTime.Second / 2); // only 5 bits for second, so we only have a granularity of 2 sec.
             return (uint)ret;
         }
 
-
-        //assumes all bytes of signatureToFind are non zero, looks backwards from current position in stream,
-        //if the signature is found then returns true and positions stream at first byte of signature
-        //if the signature is not found, returns false
+        // assumes all bytes of signatureToFind are non zero, looks backwards from current position in stream,
+        // if the signature is found then returns true and positions stream at first byte of signature
+        // if the signature is not found, returns false
         internal static bool SeekBackwardsToSignature(Stream stream, uint signatureToFind)
         {
             int bufferPointer = 0;
@@ -146,7 +145,7 @@ namespace System.IO.Compression
             }
         }
 
-        //Skip to a further position downstream (without relying on the stream being seekable)
+        // Skip to a further position downstream (without relying on the stream being seekable)
         internal static void AdvanceToPosition(this Stream stream, long position)
         {
             long numBytesLeft = position - stream.Position;
@@ -162,13 +161,13 @@ namespace System.IO.Compression
             }
         }
 
-        //Returns true if we are out of bytes
+        // Returns true if we are out of bytes
         private static bool SeekBackwardsAndRead(Stream stream, byte[] buffer, out int bufferPointer)
         {
             if (stream.Position >= buffer.Length)
             {
                 stream.Seek(-buffer.Length, SeekOrigin.Current);
-                ZipHelper.ReadBytes(stream, buffer, buffer.Length);
+                ReadBytes(stream, buffer, buffer.Length);
                 stream.Seek(-buffer.Length, SeekOrigin.Current);
                 bufferPointer = buffer.Length - 1;
                 return false;
@@ -177,7 +176,7 @@ namespace System.IO.Compression
             {
                 int bytesToRead = (int)stream.Position;
                 stream.Seek(0, SeekOrigin.Begin);
-                ZipHelper.ReadBytes(stream, buffer, bytesToRead);
+                ReadBytes(stream, buffer, bytesToRead);
                 stream.Seek(0, SeekOrigin.Begin);
                 bufferPointer = bytesToRead - 1;
                 return true;

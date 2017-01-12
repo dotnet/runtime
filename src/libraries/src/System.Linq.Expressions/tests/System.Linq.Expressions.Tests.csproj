@@ -93,6 +93,7 @@
     <Compile Include="DelegateType\DelegateCreationTests.cs" />
     <Compile Include="DelegateType\FuncTypeTests.cs" />
     <Compile Include="DelegateType\GetDelegateTypeTests.cs" />
+    <Compile Include="DynamicExpression\DynamicExpressionTests.cs" />
     <Compile Include="Dynamic\BinaryOperationTests.cs" />
     <Compile Include="Dynamic\BindingRestrictionsProxyTests.cs" />
     <Compile Include="Dynamic\BindingRestrictionsTests.cs" />

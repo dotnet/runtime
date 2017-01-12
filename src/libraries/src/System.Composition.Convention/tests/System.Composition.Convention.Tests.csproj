@@ -5,6 +5,7 @@
     <ProjectGuid>{853BB14F-8A5B-42B4-A053-21DE1AEBB335}</ProjectGuid>
     <RootNamespace>ConventionsUnitTests</RootNamespace>
     <AssemblyName>System.Composition.Convention.Tests</AssemblyName>
+    <NugetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.3</NugetTargetMoniker>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />

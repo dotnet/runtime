@@ -4,6 +4,7 @@
     <BuildConfigurations>
       portable_net40+sl4+win8+wp8-Windows_NT;
       netstandard1.0;
+      netcoreapp;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>
