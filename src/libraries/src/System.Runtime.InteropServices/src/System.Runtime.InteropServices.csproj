@@ -6,7 +6,7 @@
     <AssemblyName>System.Runtime.InteropServices</AssemblyName>
     <OutputType>Library</OutputType>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
-    <GenFacadesArgs Condition="'$(TargetGroup)' == 'uap101aot'">$(GenFacadesArgs) -ignoreMissingTypes</GenFacadesArgs>
+    <GenFacadesArgs Condition="'$(TargetGroup)' == 'uap101aot' or '$(TargetGroup)' == 'netcoreapp1.2corert'">$(GenFacadesArgs) -ignoreMissingTypes</GenFacadesArgs>
     <!-- Force string resources to be excluded for full facades. -->
     <ResourcesSourceOutputDirectory Condition="'$(TargetGroup)' != ''">None</ResourcesSourceOutputDirectory>
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
@@ -44,7 +44,7 @@
     <Compile Include="System\Runtime\InteropServices\RegistrationClassContext.cs" />
     <Compile Include="System\Runtime\InteropServices\RegistrationConnectionType.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'!='uap101aot'">
+  <ItemGroup Condition="'$(TargetGroup)'!='uap101aot' and '$(TargetGroup)' != 'netcoreapp1.2corert'">
     <Compile Include="System\Security\SecureStringMarshal.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' != 'net461'">
@@ -62,7 +62,7 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' != 'net461'">
     <TargetingPackReference Include="System.Private.CoreLib" />
-    <TargetingPackReference Include="System.Private.Interop" Condition="'$(TargetGroup)' == 'uap101aot'" />
+    <TargetingPackReference Include="System.Private.Interop" Condition="'$(TargetGroup)' == 'uap101aot' or '$(TargetGroup)' == 'netcoreapp1.2corert'" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
