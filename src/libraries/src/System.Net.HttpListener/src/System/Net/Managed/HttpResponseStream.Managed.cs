@@ -108,7 +108,7 @@ namespace System.Net
             }
         }
 
-        internal void WriteHeaders()
+        internal async Task WriteWebSocketHandshakeHeadersAsync()
         {
             if (_disposed)
                 throw new ObjectDisposedException(GetType().ToString());
@@ -126,7 +126,7 @@ namespace System.Net
                     ms.Write(bytes, 0, bytes.Length);
                 }
 
-                InternalWrite(ms.GetBuffer(), (int)start, (int)(ms.Length - start));
+                await InternalWriteAsync(ms.GetBuffer(), (int)start, (int)(ms.Length - start));
                 _stream.Flush();
             }
         }

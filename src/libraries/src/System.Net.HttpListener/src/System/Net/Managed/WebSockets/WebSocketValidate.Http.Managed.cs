@@ -10,7 +10,7 @@ namespace System.Net.WebSockets
 {
     internal static partial class WebSocketValidate
     {
-        internal static Task<HttpListenerWebSocketContext> AcceptWebSocketAsyncCore(HttpListenerContext context,
+        internal static async Task<HttpListenerWebSocketContext> AcceptWebSocketAsyncCore(HttpListenerContext context,
             string subProtocol,
             int receiveBufferSize,
             TimeSpan keepAliveInterval,
@@ -55,7 +55,7 @@ namespace System.Net.WebSockets
             HttpResponseStream responseStream = response.OutputStream as HttpResponseStream;
             
             // Send websocket handshake headers
-            responseStream.WriteHeaders();
+            await responseStream.WriteWebSocketHandshakeHeadersAsync();
 
             WebSocket webSocket = ManagedWebSocket.CreateFromConnectedStream(context.Connection.ConnectedStream, true, subProtocol, keepAliveInterval, receiveBufferSize, internalBuffer);
 
@@ -73,7 +73,7 @@ namespace System.Net.WebSockets
                                                                 secWebSocketKey,
                                                                 webSocket);
 
-            return Task.FromResult(webSocketContext);
+            return webSocketContext;
         }
 
         private static void ValidateWebSocketHeaders(HttpListenerContext context)
