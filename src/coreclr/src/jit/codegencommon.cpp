@@ -10692,12 +10692,12 @@ void CodeGen::genRestoreCalleeSavedFltRegs(unsigned lclFrameSize)
 }
 
 // Generate Vzeroupper instruction as needed to zero out upper 128b-bit of all YMM registers so that the
-// AVX/Legacy SSE transition penalties can be avoided. This function is been used in genPreserveCalleeSavedFltRegs 
-// (prolog) and genRestoreCalleeSavedFltRegs (epilog). Issue VZEROUPPER in Prolog if the method contains 
+// AVX/Legacy SSE transition penalties can be avoided. This function is been used in genPreserveCalleeSavedFltRegs
+// (prolog) and genRestoreCalleeSavedFltRegs (epilog). Issue VZEROUPPER in Prolog if the method contains
 // 128-bit or 256-bit AVX code, to avoid legacy SSE to AVX transition penalty, which could happen when native
 // code contains legacy SSE code calling into JIT AVX code (e.g. reverse pinvoke). Issue VZEROUPPER in Epilog
 // if the method contains 256-bit AVX code, to avoid AVX to legacy SSE transition penalty.
-// 
+//
 // Params
 //   check256bitOnly  - true to check if the function contains 256-bit AVX instruction and generate Vzeroupper
 //      instruction, false to check if the function contains AVX instruciton (either 128-bit or 256-bit).
