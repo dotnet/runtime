@@ -4616,8 +4616,7 @@ void CodeGen::genStoreInd(GenTreePtr node)
                     assert(rmwSrc == data->gtGetOp2());
                     genCodeForShiftRMW(storeInd);
                 }
-                else if (!compiler->opts.compDbgCode && data->OperGet() == GT_ADD &&
-                         (rmwSrc->IsIntegralConst(1) || rmwSrc->IsIntegralConst(-1)))
+                else if (data->OperGet() == GT_ADD && (rmwSrc->IsIntegralConst(1) || rmwSrc->IsIntegralConst(-1)))
                 {
                     // Generate "inc/dec [mem]" instead of "add/sub [mem], 1".
                     //
