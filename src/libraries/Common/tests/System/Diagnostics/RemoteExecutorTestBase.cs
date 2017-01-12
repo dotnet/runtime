@@ -16,9 +16,9 @@ namespace System.Diagnostics
         /// <summary>The name of the test console app.</summary>
         protected const string TestConsoleApp = "RemoteExecutorConsoleApp.exe";
         /// <summary>The name of the CoreCLR host used to host the test console app.</summary>
-        protected static readonly string HostRunnerName = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "CoreRun.exe" : "corerun";
+        protected static readonly string HostRunnerName = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "dotnet.exe" : "dotnet";
         /// <summary>The absolute path to the host runner executable.</summary>
-        protected static string HostRunner => Path.Combine(AppContext.BaseDirectory, HostRunnerName);
+        protected static string HostRunner => Process.GetCurrentProcess().MainModule.FileName;
 
         /// <summary>A timeout (milliseconds) after which a wait on a remote operation should be considered a failure.</summary>
         public const int FailWaitTimeoutMilliseconds = 30 * 1000;
@@ -132,17 +132,10 @@ namespace System.Diagnostics
 
             // If we need the host (if it exists), use it, otherwise target the console app directly.
             string testConsoleAppArgs = "\"" + a.FullName + "\" " + t.FullName + " " + method.Name + " " + string.Join(" ", args);
-            if (File.Exists(HostRunner))
-            {
-                psi.FileName = HostRunner;
-                psi.Arguments = TestConsoleApp + " " + testConsoleAppArgs;
-            }
-            else
-            {
-                psi.FileName = TestConsoleApp;
-                psi.Arguments = testConsoleAppArgs;
-            }
-
+            
+            psi.FileName = HostRunner;
+            psi.Arguments = TestConsoleApp + " " + testConsoleAppArgs;
+            
             // Return the handle to the process, which may or not be started
             return new RemoteInvokeHandle(options.Start ?
                 Process.Start(psi) :

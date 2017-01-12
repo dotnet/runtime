@@ -77,8 +77,8 @@ echo Commands:
 [[TestRunCommandsEcho]]
 pushd $EXECUTION_DIR
 [[TestRunCommands]]
-popd
 test_exitcode=$?
+popd
 echo Finished running tests.  End time=$(date +"%T").  Return value was $test_exitcode
 # ========================= END Test Execution ===============================
 # ======================= BEGIN Core File Inspection =========================

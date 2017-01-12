@@ -254,37 +254,37 @@
           }
         },
         "debug": {
-          "description": "Sets optimization level to debug for managed build configuration.",
+          "description": "Sets optimization level to debug for managed build configuration. (/p:ConfigurationGroup=Debug)",
           "settings": {
             "ConfigurationGroup": "Debug"
           }
         },
         "release": {
-          "description": "Sets optimization level to release for managed build configuration.",
+          "description": "Sets optimization level to release for managed build configuration. (/p:ConfigurationGroup=Release)",
           "settings": {
             "ConfigurationGroup": "Release"
           }
         },
         "framework": {
-          "description": "Sets target framework for managed build configuration and only builds the libraries applicable for that framework.",
+          "description": "Sets target framework for managed build configuration and only builds the libraries applicable for that framework. (/p:TargetGroup=[value])",
           "settings": {
             "TargetGroup": "default"
           }
         },
         "os": {
-          "description": "Sets OS for the managed build configuration and only builds the libraries applicable for that OS.",
+          "description": "Sets OS for the managed build configuration and only builds the libraries applicable for that OS. (/p:OSGroup=[value])",
           "settings": {
             "OSGroup": "default"
           }
         },
         "buildArch": {
-          "description": "Sets the architecture for the managed build confiuguration.",
+          "description": "Sets the architecture for the managed build confiuguration. (/p:ArchGroup=[value])",
           "settings": {
             "ArchGroup": "default"
           }
         },
         "runtimeos": {
-          "description": "Sets runtime OS for the managed build configuration, which is used for building and restoring native OS dependent assets (i.e. RID specific binaries)",
+          "description": "Sets runtime OS for the managed build configuration, which is used for building and restoring native OS dependent assets (i.e. RID specific binaries). (/p:RuntimeOS=[value]",
           "settings": {
             "RuntimeOS": "default"
           }

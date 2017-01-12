@@ -54,42 +54,6 @@
     <Error Condition="'$(MSBuildLastTaskResult)'=='false'" />
   </Target>
 
-  <!-- FilterProjectsToTest will filter the project list according to the FilterToTestTFM value -->
-  <Target Name="FilterProjectsToTest"
-          BeforeTargets="TestAllProjects"
-          Condition="$(MSBuildProjectName.EndsWith('tests'))">
-
-    <ItemGroup>
-      <Project>
-        <!-- default to DefaultTestTFM defined in root dir.props if TestTFMs aren't set on the project -->
-        <TestTFMs Condition="'%(Project.TestTFMs)'==''">$(DefaultTestTFM)</TestTFMs>
-      </Project>
-      <Project>
-        <!-- make sure every defined TestTFM value are surrounded by semicolons for easier search, e.g. ";net46;"" -->
-        <TestTFMs>;%(Project.TestTFMs);</TestTFMs>
-      </Project>
-
-      <!-- Include all projects which have TestTFM from the supported set -->
-      <ProjectsToTest Include="@(Project)" Condition="'%(Project.Extension)'=='.csproj' And $([System.String]::new('%(Project.Identity)').Contains('.Tests'))">
-        <TestTFM>$(FilterToTestTFM)</TestTFM>
-      </ProjectsToTest>
-
-      <ProjectsToTest>
-       <AdditionalProperties Condition="'%(ProjectsToTest.TestTFM)'!=''">TestTFM=%(ProjectsToTest.TestTFM);%(ProjectsToTest.AdditionalProperties)</AdditionalProperties>
-      </ProjectsToTest>
-      <ProjectsToTest>
-        <AdditionalProperties Condition="'%(ProjectsToTest.FilterToTestTFM)'!=''">FilterToTestTFM=%(ProjectsToTest.FilterToTestTFM);%(ProjectsToTest.AdditionalProperties)</AdditionalProperties>
-      </ProjectsToTest>
-      <ProjectsToTest>
-        <FilterToTestTFM>$(FilterToTestTFM)</FilterToTestTFM>
-      </ProjectsToTest>
-      <ProjectsToTest>
-        <AdditionalProperties Condition="'%(ProjectsToTest.FilterToTestTFM)'!=''">FilterToTestTFM=%(ProjectsToTest.FilterToTestTFM);%(ProjectsToTest.AdditionalProperties)</AdditionalProperties>
-      </ProjectsToTest>
-    </ItemGroup>
-  </Target>
-
-  <!-- TestAllProjects will run all tests according to TestTFM value we are filtering with -->
   <Target Name="TestAllProjects"
           AfterTargets="BuildAllProjects"
           Condition="$(MSBuildProjectName.EndsWith('tests'))">
@@ -97,13 +61,13 @@
          however since the project names are unique it will essentially force each to run in its own batch -->
 
     <MSBuild Targets="Test"
-             Projects="@(ProjectsToTest)"
+             Projects="@(Project)"
              Condition="'$(SerializeProjects)'=='true' AND '%(Identity)' != ''"
              Properties="DefaultBuildAllTarget=$(DefaultBuildAllTarget);BuildAllProjects=true"
              ContinueOnError="ErrorAndContinue" />
 
     <MSBuild Targets="Test"
-             Projects="@(ProjectsToTest)"
+             Projects="@(Project)"
              Condition="'$(SerializeProjects)'!='true'"
              Properties="DefaultBuildAllTarget=$(DefaultBuildAllTarget);BuildAllProjects=true"
              BuildInParallel="true"
