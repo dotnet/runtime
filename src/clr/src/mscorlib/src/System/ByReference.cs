@@ -15,16 +15,20 @@ namespace System
 
         public ByReference(ref T value)
         {
-            // TODO-SPAN: This has GC hole. It needs to be JIT intrinsic instead
-            unsafe { _value = (IntPtr)Unsafe.AsPointer(ref value); }
+            // Implemented as a JIT intrinsic - This default implementation is for 
+            // completeness and to provide a concrete error if called via reflection
+            // or if intrinsic is missed.
+            throw new System.PlatformNotSupportedException();
         }
 
         public ref T Value
         {
             get
             {
-                // TODO-SPAN: This has GC hole. It needs to be JIT intrinsic instead
-                unsafe { return ref Unsafe.As<IntPtr, T>(ref *(IntPtr*)_value); }
+                // Implemented as a JIT intrinsic - This default implementation is for 
+                // completeness and to provide a concrete error if called via reflection
+                // or if the intrinsic is missed.
+                throw new System.PlatformNotSupportedException();
             }
         }
     }
