@@ -14,9 +14,6 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU' " />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU' " />
   <ItemGroup>
-    <Compile Include="$(CommonPath)\System\ValueTuple.cs">
-      <Link>Common\System\ValueTuple.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\System\IO\StringBuilderCache.cs">
       <Link>System\StringBuilderCache.cs</Link>
     </Compile>
