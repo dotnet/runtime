@@ -22,10 +22,16 @@
     <Compile Include="Span\Empty.cs" />
     <Compile Include="Span\Equality.cs" />
     <Compile Include="Span\IndexOf.T.cs" />
+    <Compile Include="Span\IndexOf.byte.cs" />
+    <Compile Include="Span\IndexOf.char.cs" />
     <Compile Include="Span\IndexOfSequence.T.cs" />
+    <Compile Include="Span\IndexOfSequence.byte.cs" />
+    <Compile Include="Span\IndexOfSequence.char.cs" />
     <Compile Include="Span\NonPortableCast.cs" />
     <Compile Include="Span\Overflow.cs" />
     <Compile Include="Span\SequenceEqual.T.cs" />
+    <Compile Include="Span\SequenceEqual.byte.cs" />
+    <Compile Include="Span\SequenceEqual.char.cs" />
     <Compile Include="Span\Slice.cs" />
     <Compile Include="Span\TestHelpers.cs" />
     <Compile Include="Span\ToArray.cs" />
