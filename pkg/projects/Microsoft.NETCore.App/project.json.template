@@ -8,12 +8,12 @@
       "version": "1.3.0",
       "exclude": "compile"
     },
-    "Microsoft.Private.CoreFx.NETCoreApp": "4.4.0-beta-24911-51",
+    "Microsoft.Private.CoreFx.NETCoreApp": "4.4.0-beta-24912-52",
     "Microsoft.NETCore.Runtime.CoreCLR": "1.2.0-beta-24909-02",
     "Microsoft.DiaSymReader.Native": "1.4.0",
     "Libuv": "1.10.0-preview1-22033",
 
-    "Microsoft.NETCore.Platforms": "1.2.0-beta-24911-51",
+    "Microsoft.NETCore.Platforms": "1.2.0-beta-24912-52",
     "NETStandard.Library": "2.0.0-beta-24909-0"
   },
   "frameworks": {
