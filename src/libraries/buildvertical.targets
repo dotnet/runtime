@@ -5,106 +5,82 @@
     <ImportedBuildVerticalTargets>true</ImportedBuildVerticalTargets>
   </PropertyGroup>
 
- <!-- Required for FindBestConfiguration task -->
- <Import Project="$(MSBuildThisFileDirectory)src/Tools/GenerateProps/properties.props" />
+  <!-- Import configuration data model -->
+  <Import Project="$(MSBuildThisFileDirectory)src/Tools/GenerateProps/properties.props" />
 
- <Target Name="AnnotateProjects"
-         BeforeTargets="BuildAllProjects"
-         Condition="!$(MSBuildProjectFullPath.EndsWith('.proj'))">
-   <!-- Clear ProjectWithConfiguration to prevent circular dependency -->
-   <ItemGroup><ProjectWithConfiguration Remove="@(ProjectWithConfiguration)" /></ItemGroup>
-   <MSBuild Targets="AnnotateProjectsWithConfiguration" 
-            Projects="@(Project)"> 
-     <Output TaskParameter="TargetOutputs" 
-             ItemName="ProjectWithConfiguration" /> 
-   </MSBuild> 
-   <ItemGroup>
-     <Project Remove="@(Project)" />
-     <Project Include="@(ProjectWithConfiguration)" />
-   </ItemGroup>
- </Target>
+  <!-- Runs during traversal to select which projects and configurations of those projects to build -->
+  <Target Name="AnnotateAndFilterProjects"
+          BeforeTargets="BuildAllProjects;TestAllProjects"
+          Condition="!$(MSBuildProjectFullPath.EndsWith('.proj'))">
 
- <Target Name="AnnotateProjectsWithConfiguration" 
-         Returns="@(ProjectWithConfiguration)"> 
-    <ItemGroup> 
-       <ProjectWithConfiguration Include="$(MSBuildProjectFullPath)"> 
-         <AdditionalProperties Condition="'$(_BestConfiguration)' != ''">Configuration=$(_BestConfiguration);%(ProjectWithConfiguration.AdditionalProperties)</AdditionalProperties>
-         <UndefineProperties Condition="'$(_BestConfiguration)' == ''">Configuration;%(ProjectWithConfiguration.UndefineProperties)</UndefineProperties>
-       </ProjectWithConfiguration>
-       <ProjectWithConfiguration Remove="@(OmitProject)" />
-     </ItemGroup>
-  </Target>
-
-  <!-- The initial shaking target for trimming down applicable projects for specified vertical -->
-  <Target Name="DetermineProjectsConfiguration"
-          Returns="@(OmitProject)"
-          BeforeTargets="AnnotateProjectsWithConfiguration">
-    <!-- Clear the _Configuration item -->
-    <ItemGroup><_Configuration Remove="@(_Configuration)" /></ItemGroup>
-    <FindBestConfiguration Properties="@(Property)"
-                           PropertyValues="@(PropertyValue)"
-                           BuildConfigurations="$(BuildConfigurations)"
-                           BuildConfiguration="$(BuildConfiguration)" 
-                           Condition="'$(BuildConfigurations)' != ''"
-                           ContinueOnError="true">
-      <Output TaskParameter="BestConfiguration" ItemName="_Configuration" />
-    </FindBestConfiguration>  
-
-    <ItemGroup>
-      <_Configuration Condition="'$(BuildConfigurations)' == ''" Include="$(BuildConfiguration)" />
-    </ItemGroup>
-
-    <PropertyGroup>
-      <_BestConfiguration>%(_Configuration.Identity)</_BestConfiguration>
-    </PropertyGroup>
- 
-    <ItemGroup>
-      <OmitProject Include="$(MSBuildProjectFullPath)" Condition="'$(BuildConfigurations)' != '' and '$(_BestConfiguration)' == ''" />
-    </ItemGroup>
-  </Target>
-
-  <Target Name="FindBestConfiguration"
-          Returns="@(_Configuration)">
-     <!-- Clear the _Configuration item -->
-    <ItemGroup><_Configuration Remove="@(_Configuration)" /></ItemGroup>
-    <FindBestConfiguration Properties="@(Property)"
-                           PropertyValues="@(PropertyValue)"
-                           BuildConfigurations="$(BuildConfigurations)"
-                           BuildConfiguration="$(BuildConfiguration)" 
-                           Condition="'$(BuildConfigurations)' != ''"
-                           ContinueOnError="true">
-      <Output TaskParameter="BestConfiguration" ItemName="_Configuration" />
-    </FindBestConfiguration>  
-    
-    <ItemGroup>
-      <_Configuration Condition="'$(BuildConfigurations)' == ''" Include="$(BuildConfiguration)" />
-    </ItemGroup>
-  </Target>
-
-  <Target Name="AnnotateProjectReference"
-          Inputs="%(ProjectReference.Identity)"
-          Outputs="fake"
-          BeforeTargets="BeforeResolveReferences">
-    <PropertyGroup>
-      <_ProjectReferenceToAnnotate>%(ProjectReference.Identity)</_ProjectReferenceToAnnotate>
-    </PropertyGroup>
-
-    <ItemGroup><_Configuration Remove="@(_Configuration)" /></ItemGroup>
+    <!-- find the best configuration for each project, projects that shouldn't build for this configuration
+         return an empty item.  -->
     <MSBuild Targets="FindBestConfiguration"
-             Projects="$(_ProjectReferenceToAnnotate)">
-      <Output TaskParameter="TargetOutputs" ItemName="_Configuration" />
+             Projects="@(Project)">
+      <Output TaskParameter="TargetOutputs"
+              ItemName="_ProjectBestConfigurations" />
     </MSBuild>
 
-    <PropertyGroup>
-      <_BestConfiguration>%(_Configuration.Identity)</_BestConfiguration>
-      <_AdditionalProperties />
-      <_AdditionalProperties Condition="'$(_BestConfiguration)' != ''">Configuration=$(_BestConfiguration)</_AdditionalProperties>
-    </PropertyGroup>
     <ItemGroup>
-      <ProjectReference>
-        <AdditionalProperties Condition="'$(_AdditionalProperties)' != ''">$(_AdditionalProperties);%(ProjectReference.AdditionalProperties)</AdditionalProperties>
-        <UndefineProperties Condition="'$(_AdditionalProperties)' == ''">Configuration;%(ProjectReference.Configuration)</UndefineProperties>
-      </ProjectReference>
+      <!-- transform back to project -->
+      <ProjectWithConfiguration Include="@(_ProjectBestConfigurations->'%(OriginalItemSpec)')">
+        <AdditionalProperties>Configuration=%(Identity);%(_ProjectBestConfigurations.AdditionalProperties)</AdditionalProperties>
+      </ProjectWithConfiguration>
+    </ItemGroup>
+
+    <ItemGroup>
+      <Project Remove="@(Project)" />
+      <Project Include="@(ProjectWithConfiguration)" />
+    </ItemGroup>
+  </Target>
+
+  <!-- Runs in a leaf project (eg: csproj) to determine best configuration if one exists for purposes of filtering -->
+  <Target Name="FindBestConfiguration"
+          Returns="$(_BestConfiguration)">
+
+    <!-- if BuildConfigurations is defined, find the best one -->
+    <FindBestConfiguration Condition="'$(BuildConfigurations)' != ''"
+                           Properties="@(Property)"
+                           PropertyValues="@(PropertyValue)"
+                           BuildConfigurations="$(BuildConfigurations)"
+                           BuildConfiguration="$(BuildConfiguration)">
+      <Output TaskParameter="BestConfiguration" PropertyName="_BestConfiguration" />
+    </FindBestConfiguration>
+
+    <!-- if BuildConfigurations is not defined, use BuildConfiguration -->
+    <PropertyGroup>
+      <_BestConfiguration Condition="'$(BuildConfigurations)' == ''">$(BuildConfiguration)</_BestConfiguration>
+    </PropertyGroup>
+  </Target>
+
+  <!-- Runs in a leaf project (eg: csproj) to determine best configuration if one exists for purposes of project references -->
+  <Target Name="FindBestConfigurationForProjectReference"
+          DependsOnTargets="FindBestConfiguration"
+          Returns="$(_BestConfiguration)">
+    <Error Condition="'$(_BestConfiguration)' == ''" Text="Could not find a configuration for $(BuildConfiguration) from $(BuildConfigurations)" />
+  </Target>
+
+  <!-- Runs in a leaf project (csproj) to determine best configuration for ProjectReferences -->
+  <Target Name="AnnotateProjectReference"
+          BeforeTargets="BeforeResolveReferences">
+
+    <!-- find the best configuration for each project, projects that do not have an 
+        applicable configuration will fail the build.  -->
+    <MSBuild Targets="FindBestConfigurationForProjectReference"
+             Projects="@(ProjectReference)">
+      <Output TaskParameter="TargetOutputs" ItemName="_ProjectReferenceBestConfigurations" />
+    </MSBuild>
+
+    <ItemGroup>
+      <!-- transform back to ProjectReference -->
+      <ProjectReferenceWithConfiguration Include="@(_ProjectReferenceBestConfigurations->'%(OriginalItemSpec)')">
+        <AdditionalProperties>Configuration=%(Identity);%(_ProjectReferenceBestConfigurations.AdditionalProperties)</AdditionalProperties>
+      </ProjectReferenceWithConfiguration>
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Remove="@(ProjectReference)" />
+      <ProjectReference Include="@(ProjectReferenceWithConfiguration)" />
     </ItemGroup>
   </Target>
 </Project>
