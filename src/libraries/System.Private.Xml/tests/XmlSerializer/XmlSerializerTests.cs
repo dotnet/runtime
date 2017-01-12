@@ -2365,9 +2365,6 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         Assert.Equal(originalmapping.XsdTypeNamespace, newmapping.XsdTypeNamespace);
     }
 
-#if ReflectionOnly
-    [ActiveIssue(11919)]
-#endif
     [Fact]
     public static void XmlSerializerFactoryTest()
     {

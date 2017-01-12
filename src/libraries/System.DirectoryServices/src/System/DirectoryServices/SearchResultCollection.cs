@@ -16,13 +16,13 @@ namespace System.DirectoryServices
     using System.Text;
     using System.Configuration;
     using System.Security.Permissions;
+    using System.Globalization;
 
     /// <include file='doc\SearchResultCollection.uex' path='docs/doc[@for="SearchResultCollection"]/*' />
     /// <devdoc>
     /// <para>Contains the instances of <see cref='System.DirectoryServices.SearchResult'/> returned during a 
     ///    query to the Active Directory hierarchy through <see cref='System.DirectoryServices.DirectorySearcher'/>.</para>
     /// </devdoc>    
-    [DirectoryServicesPermission(SecurityAction.LinkDemand, Unrestricted = true)]
     public class SearchResultCollection : MarshalByRefObject, ICollection, IEnumerable, IDisposable
     {
         private IntPtr _handle;
@@ -358,11 +358,11 @@ namespace System.DirectoryServices
                 _initialized = false;
 
                 // get the app configuration information
-                object o = PrivilegedConfigurationManager.GetSection("system.directoryservices");
-                if (o != null && o is bool)
-                {
-                    _waitForResult = (bool)o;
-                }
+                //object o = PrivilegedConfigurationManager.GetSection("system.directoryservices");
+                //if (o != null && o is bool)
+                //{
+                //    _waitForResult = (bool)o;
+                //}
             }
 
             /// <devdoc>
@@ -373,7 +373,7 @@ namespace System.DirectoryServices
                 get
                 {
                     if (!_initialized || _eof)
-                        throw new InvalidOperationException(Res.GetString(Res.DSNoCurrentEntry));
+                        throw new InvalidOperationException(SR.DSNoCurrentEntry);
 
                     if (_currentResult == null)
                         _currentResult = GetCurrentResult();
@@ -452,7 +452,7 @@ namespace System.DirectoryServices
                     {
                         //throw a clearer exception if the filter was invalid
                         if (hr == UnsafeNativeMethods.INVALID_FILTER)
-                            throw new ArgumentException(Res.GetString(Res.DSInvalidSearchFilter, _results.Filter));
+                            throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.DSInvalidSearchFilter , _results.Filter));
                         if (hr != 0)
                             throw COMExceptionHelper.CreateFormattedComException(hr);
 
@@ -517,7 +517,7 @@ namespace System.DirectoryServices
                     }
                     //throw a clearer exception if the filter was invalid
                     if (hr == UnsafeNativeMethods.INVALID_FILTER)
-                        throw new ArgumentException(Res.GetString(Res.DSInvalidSearchFilter, _results.Filter));
+                        throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.DSInvalidSearchFilter , _results.Filter));
                     if (hr != 0)
                         throw COMExceptionHelper.CreateFormattedComException(hr);
 

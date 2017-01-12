@@ -83,7 +83,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     {
                         int errorCode = NativeMethods.GetLastError();
                         Debug.Fail(string.Format(CultureInfo.InvariantCulture, "NativeMethods.GetVersionEx (with OSVERSIONINFOEX) failed with error code {0}.", errorCode));
-                        throw new SystemException(Res.GetString(Res.VersionFailure, errorCode)); ;
+                        throw new SystemException(String.Format(CultureInfo.CurrentCulture, SR.VersionFailure , errorCode)); ;
                     }
 
                     if (osviex.servicePackMajor < 3)
@@ -133,7 +133,7 @@ namespace System.DirectoryServices.ActiveDirectory
             //
             if (!s_platformSupported)
             {
-                throw new PlatformNotSupportedException(Res.GetString(Res.SupportedPlatforms));
+                throw new PlatformNotSupportedException(SR.SupportedPlatforms);
             }
 
             _name = name;
@@ -189,9 +189,6 @@ namespace System.DirectoryServices.ActiveDirectory
 
         #region public constructors
 
-        [
-            DirectoryServicesPermission(SecurityAction.Demand, Unrestricted = true)
-        ]
         public DirectoryContext(DirectoryContextType contextType)
         {
             //
@@ -200,15 +197,12 @@ namespace System.DirectoryServices.ActiveDirectory
             //
             if (contextType != DirectoryContextType.Domain && contextType != DirectoryContextType.Forest)
             {
-                throw new ArgumentException(Res.GetString(Res.OnlyDomainOrForest), "contextType");
+                throw new ArgumentException(SR.OnlyDomainOrForest, "contextType");
             }
 
             InitializeDirectoryContext(contextType, null, null, null);
         }
 
-        [
-           DirectoryServicesPermission(SecurityAction.Demand, Unrestricted = true)
-        ]
         public DirectoryContext(DirectoryContextType contextType, string name)
         {
             if (contextType < DirectoryContextType.Domain || contextType > DirectoryContextType.ApplicationPartition)
@@ -223,15 +217,12 @@ namespace System.DirectoryServices.ActiveDirectory
 
             if (name.Length == 0)
             {
-                throw new ArgumentException(Res.GetString(Res.EmptyStringParameter), "name");
+                throw new ArgumentException(SR.EmptyStringParameter, "name");
             }
 
             InitializeDirectoryContext(contextType, name, null, null);
         }
 
-        [
-            DirectoryServicesPermission(SecurityAction.Demand, Unrestricted = true)
-        ]
         public DirectoryContext(DirectoryContextType contextType, string username, string password)
         {
             //
@@ -240,15 +231,12 @@ namespace System.DirectoryServices.ActiveDirectory
             //
             if (contextType != DirectoryContextType.Domain && contextType != DirectoryContextType.Forest)
             {
-                throw new ArgumentException(Res.GetString(Res.OnlyDomainOrForest), "contextType");
+                throw new ArgumentException(SR.OnlyDomainOrForest, "contextType");
             }
 
             InitializeDirectoryContext(contextType, null, username, password);
         }
 
-        [
-            DirectoryServicesPermission(SecurityAction.Demand, Unrestricted = true)
-        ]
         public DirectoryContext(DirectoryContextType contextType, string name, string username, string password)
         {
             if (contextType < DirectoryContextType.Domain || contextType > DirectoryContextType.ApplicationPartition)
@@ -263,7 +251,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             if (name.Length == 0)
             {
-                throw new ArgumentException(Res.GetString(Res.EmptyStringParameter), "name");
+                throw new ArgumentException(SR.EmptyStringParameter, "name");
             }
 
             InitializeDirectoryContext(contextType, name, username, password);
@@ -331,7 +319,6 @@ namespace System.DirectoryServices.ActiveDirectory
         #endregion public properties
 
         #region private methods
-        [DirectoryServicesPermission(SecurityAction.Assert, Unrestricted = true)]
         internal static bool IsContextValid(DirectoryContext context, DirectoryContextType contextType)
         {
             bool contextIsValid = false;
@@ -800,7 +787,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 // we should never get to this point here since we should have already verified that the context is valid 
                 // by the time we get to this point
                 //
-                throw new ActiveDirectoryOperationException(Res.GetString(Res.ContextNotAssociatedWithDomain));
+                throw new ActiveDirectoryOperationException(SR.ContextNotAssociatedWithDomain);
             }
 
             return domainName;
@@ -839,7 +826,6 @@ namespace System.DirectoryServices.ActiveDirectory
             return domainControllerInfo.DomainName;
         }
 
-        [FileIOPermission(SecurityAction.Assert, AllFiles = FileIOPermissionAccess.PathDiscovery)]
         [EnvironmentPermission(SecurityAction.Assert, Unrestricted = true)]
         private static void GetLibraryHandle()
         {

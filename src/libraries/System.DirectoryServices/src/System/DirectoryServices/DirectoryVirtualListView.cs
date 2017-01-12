@@ -89,7 +89,6 @@ namespace System.DirectoryServices
         /// </devdoc>
         [
             DefaultValue(0),
-            DSDescriptionAttribute(Res.DSBeforeCount)
         ]
         public int BeforeCount
         {
@@ -100,7 +99,7 @@ namespace System.DirectoryServices
             set
             {
                 if (value < 0)
-                    throw new ArgumentException(Res.GetString(Res.DSBadBeforeCount));
+                    throw new ArgumentException(SR.DSBadBeforeCount);
 
                 _beforeCount = value;
             }
@@ -112,7 +111,6 @@ namespace System.DirectoryServices
         /// </devdoc>
         [
             DefaultValue(0),
-            DSDescriptionAttribute(Res.DSAfterCount)
         ]
         public int AfterCount
         {
@@ -123,7 +121,7 @@ namespace System.DirectoryServices
             set
             {
                 if (value < 0)
-                    throw new ArgumentException(Res.GetString(Res.DSBadAfterCount));
+                    throw new ArgumentException(SR.DSBadAfterCount);
 
                 _afterCount = value;
             }
@@ -135,7 +133,6 @@ namespace System.DirectoryServices
         /// </devdoc>
         [
             DefaultValue(0),
-            DSDescriptionAttribute(Res.DSOffset)
         ]
         public int Offset
         {
@@ -146,7 +143,7 @@ namespace System.DirectoryServices
             set
             {
                 if (value < 0)
-                    throw new ArgumentException(Res.GetString(Res.DSBadOffset));
+                    throw new ArgumentException(SR.DSBadOffset);
 
                 _offset = value;
                 if (_approximateTotal != 0)
@@ -162,7 +159,6 @@ namespace System.DirectoryServices
         /// </devdoc>
         [
             DefaultValue(0),
-            DSDescriptionAttribute(Res.DSTargetPercentage)
         ]
         public int TargetPercentage
         {
@@ -173,7 +169,7 @@ namespace System.DirectoryServices
             set
             {
                 if (value > 100 || value < 0)
-                    throw new ArgumentException(Res.GetString(Res.DSBadTargetPercentage));
+                    throw new ArgumentException(SR.DSBadTargetPercentage);
 
                 _targetPercentage = value;
                 _offset = _approximateTotal * _targetPercentage / 100;
@@ -186,8 +182,8 @@ namespace System.DirectoryServices
         /// </devdoc>
         [
             DefaultValue(""),
-            DSDescriptionAttribute(Res.DSTarget),
-            TypeConverter("System.Diagnostics.Design.StringValueConverter, " + AssemblyRef.SystemDesign)
+            // CoreFXPort - Remove design support
+            // TypeConverter("System.Diagnostics.Design.StringValueConverter, " + AssemblyRef.SystemDesign)
         ]
         public string Target
         {
@@ -210,7 +206,6 @@ namespace System.DirectoryServices
         /// </devdoc>
         [
             DefaultValue(0),
-            DSDescriptionAttribute(Res.DSApproximateTotal)
         ]
         public int ApproximateTotal
         {
@@ -221,7 +216,7 @@ namespace System.DirectoryServices
             set
             {
                 if (value < 0)
-                    throw new ArgumentException(Res.GetString(Res.DSBadApproximateTotal));
+                    throw new ArgumentException(SR.DSBadApproximateTotal);
 
                 _approximateTotal = value;
             }
@@ -233,7 +228,6 @@ namespace System.DirectoryServices
         /// </devdoc>
         [
             DefaultValue(null),
-            DSDescriptionAttribute(Res.DSDirectoryVirtualListViewContext)
         ]
         public DirectoryVirtualListViewContext DirectoryVirtualListViewContext
         {

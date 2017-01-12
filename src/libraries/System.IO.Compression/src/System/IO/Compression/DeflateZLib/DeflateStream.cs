@@ -23,9 +23,7 @@ namespace System.IO.Compression
         private int _activeAsyncOperation; // 1 == true, 0 == false
         private bool _wroteBytes;
 
-        #region Public Constructors
-
-        public DeflateStream(Stream stream, CompressionMode mode): this(stream, mode, false)
+        public DeflateStream(Stream stream, CompressionMode mode): this(stream, mode, leaveOpen: false)
         {
         }
 
@@ -34,7 +32,7 @@ namespace System.IO.Compression
         }
 
         // Implies mode = Compress
-        public DeflateStream(Stream stream, CompressionLevel compressionLevel) : this(stream, compressionLevel, false)
+        public DeflateStream(Stream stream, CompressionLevel compressionLevel) : this(stream, compressionLevel, leaveOpen: false)
         {
         }
 
@@ -42,10 +40,6 @@ namespace System.IO.Compression
         public DeflateStream(Stream stream, CompressionLevel compressionLevel, bool leaveOpen) : this(stream, compressionLevel, leaveOpen, ZLibNative.Deflate_DefaultWindowBits)
         {
         }
-
-        #endregion
-
-        #region Private Constructors and Initializers
 
         /// <summary>
         /// Internal constructor to check stream validity and call the correct initialization function depending on
@@ -129,15 +123,7 @@ namespace System.IO.Compression
             }
         }
 
-        #endregion
-
-        public Stream BaseStream
-        {
-            get
-            {
-                return _stream;
-            }
-        }
+        public Stream BaseStream => _stream;
 
         public override bool CanRead
         {
@@ -165,33 +151,17 @@ namespace System.IO.Compression
             }
         }
 
-        public override bool CanSeek
-        {
-            get
-            {
-                return false;
-            }
-        }
+        public override bool CanSeek => false;
 
         public override long Length
         {
-            get
-            {
-                throw new NotSupportedException(SR.NotSupported);
-            }
+            get { throw new NotSupportedException(SR.NotSupported); }
         }
 
         public override long Position
         {
-            get
-            {
-                throw new NotSupportedException(SR.NotSupported);
-            }
-
-            set
-            {
-                throw new NotSupportedException(SR.NotSupported);
-            }
+            get { throw new NotSupportedException(SR.NotSupported); }
+            set { throw new NotSupportedException(SR.NotSupported); }
         }
 
         public override void Flush()
@@ -399,7 +369,7 @@ namespace System.IO.Compression
                     return Task.FromResult(0);
                 }
 
-                // If there is no data on the output buffer and we are not at 
+                // If there is no data on the output buffer and we are not at
                 // the end of the stream, we need to get more data from the base stream
                 readTask = _stream.ReadAsync(_buffer, 0, _buffer.Length, cancellationToken);
                 if (readTask == null)
@@ -449,7 +419,7 @@ namespace System.IO.Compression
                     if (bytesRead == 0 && !_inflater.Finished())
                     {
                         // We could have read in head information and didn't get any data.
-                        // Read from the base stream again.   
+                        // Read from the base stream again.
                         readTask = _stream.ReadAsync(_buffer, 0, _buffer.Length, cancellationToken);
                         if (readTask == null)
                         {
@@ -531,7 +501,7 @@ namespace System.IO.Compression
 
             if (_mode != CompressionMode.Compress)
                 return;
-            
+
             // Some deflaters (e.g. ZLib) write more than zero bytes for zero byte inputs.
             // This round-trips and we should be ok with this, but our legacy managed deflater
             // always wrote zero output for zero input and upstack code (e.g. ZipArchiveEntry)
@@ -555,10 +525,10 @@ namespace System.IO.Compression
             }
             else
             {
-                // In case of zero length buffer, we still need to clean up the native created stream before 
-                // the object get disposed because eventually ZLibNative.ReleaseHandle will get called during 
-                // the dispose operation and although it frees the stream but it return error code because the 
-                // stream state was still marked as in use. The symptoms of this problem will not be seen except 
+                // In case of zero length buffer, we still need to clean up the native created stream before
+                // the object get disposed because eventually ZLibNative.ReleaseHandle will get called during
+                // the dispose operation and although it frees the stream but it return error code because the
+                // stream state was still marked as in use. The symptoms of this problem will not be seen except
                 // if running any diagnostic tools which check for disposing safe handle objects
                 bool finished;
                 do

@@ -715,4 +715,82 @@
   <data name="ObjectDisposed_StreamClosed" xml:space="preserve">
     <value>Cannot access a closed Stream.</value>
   </data>
+  <data name="Unable_to_convert_type_from_string" xml:space="preserve">
+    <value>Could not find a type-converter to convert object if type '{0}' from string.</value>
+  </data>
+  <data name="Unable_to_convert_type_to_string" xml:space="preserve">
+    <value>Could not find a type-converter to convert object if type '{0}' to string.</value>
+  </data>
+  <data name="Could_not_create_from_default_value" xml:space="preserve">
+    <value>The property '{0}' could not be created from it's default value. Error message: {1}</value>
+  </data>
+  <data name="Could_not_create_from_default_value_2" xml:space="preserve">
+    <value>The property '{0}' could not be created from it's default value because the default value is of a different type.</value>
+  </data>
+  <data name="UserSettingsNotSupported" xml:space="preserve">
+    <value>The current configuration system does not support user-scoped settings.</value>
+  </data>
+  <data name="SettingsSaveFailed" xml:space="preserve">
+    <value>Failed to save settings: {0}</value>
+  </data>
+  <data name="SettingsSaveFailedNoSection" xml:space="preserve">
+    <value>Failed to save settings: unable to access the configuration section.</value>
+  </data>
+  <data name="UnknownUserLevel" xml:space="preserve">
+    <value>Unknown ConfigurationUserLevel specified.</value>
+  </data>
+  <data name="PositionOutOfRange" xml:space="preserve">
+    <value>Position cannot be less than zero.</value>
+  </data>
+  <data name="UnknownSeekOrigin" xml:space="preserve">
+    <value>Unknown SeekOrigin specified.</value>
+  </data>
+  <data name="BothScopeAttributes" xml:space="preserve">
+    <value>The setting {0} has both an ApplicationScopedSettingAttribute and a UserScopedSettingAttribute.</value>
+  </data>
+  <data name="NoScopeAttributes" xml:space="preserve">
+    <value>The setting {0} does not have either an ApplicationScopedSettingAttribute or UserScopedSettingAttribute.</value>
+  </data>
+  <data name="SettingsPropertyNotFound" xml:space="preserve">
+    <value>The settings property '{0}' was not found.</value>
+  </data>
+  <data name="SettingsPropertyReadOnly" xml:space="preserve">
+    <value>The settings property '{0}' is read-only.</value>
+  </data>
+  <data name="SettingsPropertyWrongType" xml:space="preserve">
+    <value>The settings property '{0}' is of a non-compatible type.</value>
+  </data>
+  <data name="ProviderInstantiationFailed" xml:space="preserve">
+    <value>Failed to instantiate provider: {0}.</value>
+  </data>
+  <data name="ProviderTypeLoadFailed" xml:space="preserve">
+    <value>Failed to load provider type: {0}.</value>
+  </data>
+  <data name="AppSettingsReaderNoKey" xml:space="preserve">
+    <value>The key '{0}' does not exist in the appSettings configuration section.</value>
+  </data>
+  <data name="AppSettingsReaderNoParser" xml:space="preserve">
+    <value>Type '{0}' does not have a Parse method.</value>
+  </data>
+  <data name="AppSettingsReaderCantParse" xml:space="preserve">
+    <value>The value '{0}' was found in the appSettings configuration section for key '{1}', and this value is not a valid {2}.</value>
+  </data>
+  <data name="AppSettingsReaderEmptyString" xml:space="preserve">
+    <value>(empty string)</value>
+  </data>
+  <data name="Config_invalid_integer_attribute" xml:space="preserve">
+    <value>The '{0}' attribute must be set to an integer value.</value>
+  </data>
+  <data name="Config_base_required_attribute_empty" xml:space="preserve">
+    <value>Required attribute '{0}' cannot be empty.</value>
+  </data>
+  <data name="Config_base_elements_only" xml:space="preserve">
+    <value>Only elements allowed.</value>
+  </data>
+  <data name="Config_base_no_child_nodes" xml:space="preserve">
+    <value>Child nodes not allowed.</value>
+  </data>
+  <data name="Config_base_unrecognized_element" xml:space="preserve">
+    <value>Unrecognized element.</value>
+  </data>
 </root>

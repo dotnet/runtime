@@ -3,6 +3,7 @@
   <PropertyGroup>
     <BuildConfigurations>
       netstandard1.3;
+      netcoreapp;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>

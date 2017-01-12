@@ -4,8 +4,10 @@
 
 namespace System.Configuration
 {
-    // This attribute is expected on section properties of type derivied from ConfigurationElementCollection
-    // or on the itself
+    /// <summary>
+    /// Used on classes derived from ConfigurationElementCollection. Specifies the collection item type and
+    /// verbs used for add/remove/clear.
+    /// </summary>
     [AttributeUsage(AttributeTargets.Property | AttributeTargets.Class)]
     public sealed class ConfigurationCollectionAttribute : Attribute
     {

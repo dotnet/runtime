@@ -47,7 +47,7 @@ namespace System.Configuration
         protected internal override ConfigurationPropertyCollection Properties => s_properties;
 
         [ConfigurationProperty("name",
-         Options = ConfigurationPropertyOptions.IsRequired | ConfigurationPropertyOptions.IsKey, DefaultValue = "")]
+            Options = ConfigurationPropertyOptions.IsRequired | ConfigurationPropertyOptions.IsKey, DefaultValue = "")]
         public string Name
         {
             get { return (string)base[s_propName]; }

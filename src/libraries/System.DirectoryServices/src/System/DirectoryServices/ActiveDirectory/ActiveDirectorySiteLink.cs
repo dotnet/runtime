@@ -13,7 +13,6 @@ namespace System.DirectoryServices.ActiveDirectory
     using System.Diagnostics;
     using System.Security.Permissions;
 
-    [DirectoryServicesPermission(SecurityAction.LinkDemand, Unrestricted = true)]
     public class ActiveDirectorySiteLink : IDisposable
     {
         internal DirectoryContext context = null;
@@ -72,7 +71,7 @@ namespace System.DirectoryServices.ActiveDirectory
             catch (ActiveDirectoryObjectNotFoundException)
             {
                 // this is the case where the context is a config set and we could not find an ADAM instance in that config set
-                throw new ActiveDirectoryOperationException(Res.GetString(Res.ADAMInstanceNotFoundInConfigSet, context.Name));
+                throw new ActiveDirectoryOperationException(String.Format(CultureInfo.CurrentCulture, SR.ADAMInstanceNotFoundInConfigSet , context.Name));
             }
 
             try
@@ -93,7 +92,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     DirectoryEntry tmpDE = DirectoryEntryManager.GetDirectoryEntry(context, WellKnownDN.RootDSE);
                     if (Utils.CheckCapability(tmpDE, Capability.ActiveDirectoryApplicationMode) && transport == ActiveDirectoryTransportType.Smtp)
                     {
-                        throw new NotSupportedException(Res.GetString(Res.NotSupportTransportSMTP));
+                        throw new NotSupportedException(SR.NotSupportTransportSMTP);
                     }
                 }
 
@@ -147,7 +146,7 @@ namespace System.DirectoryServices.ActiveDirectory
             catch (ActiveDirectoryObjectNotFoundException)
             {
                 // this is the case where the context is a config set and we could not find an ADAM instance in that config set
-                throw new ActiveDirectoryOperationException(Res.GetString(Res.ADAMInstanceNotFoundInConfigSet, context.Name));
+                throw new ActiveDirectoryOperationException(String.Format(CultureInfo.CurrentCulture, SR.ADAMInstanceNotFoundInConfigSet , context.Name));
             }
 
             try
@@ -163,7 +162,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 if (srchResult == null)
                 {
                     // no such sitelink object
-                    Exception e = new ActiveDirectoryObjectNotFoundException(Res.GetString(Res.DSNotFound), typeof(ActiveDirectorySiteLink), siteLinkName);
+                    Exception e = new ActiveDirectoryObjectNotFoundException(SR.DSNotFound, typeof(ActiveDirectorySiteLink), siteLinkName);
                     throw e;
                 }
                 else
@@ -182,12 +181,12 @@ namespace System.DirectoryServices.ActiveDirectory
                     DirectoryEntry tmpDE = DirectoryEntryManager.GetDirectoryEntry(context, WellKnownDN.RootDSE);
                     if (Utils.CheckCapability(tmpDE, Capability.ActiveDirectoryApplicationMode) && transport == ActiveDirectoryTransportType.Smtp)
                     {
-                        throw new NotSupportedException(Res.GetString(Res.NotSupportTransportSMTP));
+                        throw new NotSupportedException(SR.NotSupportTransportSMTP);
                     }
                     else
                     {
                         // object is not found since we cannot even find the container in which to search
-                        throw new ActiveDirectoryObjectNotFoundException(Res.GetString(Res.DSNotFound), typeof(ActiveDirectorySiteLink), siteLinkName);
+                        throw new ActiveDirectoryObjectNotFoundException(SR.DSNotFound, typeof(ActiveDirectorySiteLink), siteLinkName);
                     }
                 }
 
@@ -313,15 +312,15 @@ namespace System.DirectoryServices.ActiveDirectory
                     throw new ObjectDisposedException(GetType().Name);
 
                 if (value < TimeSpan.Zero)
-                    throw new ArgumentException(Res.GetString(Res.NoNegativeTime), "value");
+                    throw new ArgumentException(SR.NoNegativeTime, "value");
 
                 double tmpVal = value.TotalMinutes;
                 if (tmpVal > Int32.MaxValue)
-                    throw new ArgumentException(Res.GetString(Res.ReplicationIntervalExceedMax), "value");
+                    throw new ArgumentException(SR.ReplicationIntervalExceedMax, "value");
 
                 int totalMinutes = (int)tmpVal;
                 if (totalMinutes < tmpVal)
-                    throw new ArgumentException(Res.GetString(Res.ReplicationIntervalInMinutes), "value");
+                    throw new ArgumentException(SR.ReplicationIntervalInMinutes, "value");
 
                 try
                 {
@@ -610,7 +609,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             if (!existing)
             {
-                throw new InvalidOperationException(Res.GetString(Res.CannotDelete));
+                throw new InvalidOperationException(SR.CannotDelete);
             }
             else
             {
@@ -640,7 +639,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             if (!existing)
             {
-                throw new InvalidOperationException(Res.GetString(Res.CannotGetObject));
+                throw new InvalidOperationException(SR.CannotGetObject);
             }
             else
             {
@@ -677,21 +676,21 @@ namespace System.DirectoryServices.ActiveDirectory
             // if target is not specified, then we determin the target from the logon credential, so if it is a local user context, it should fail
             if ((context.Name == null) && (!context.isRootDomain()))
             {
-                throw new ArgumentException(Res.GetString(Res.ContextNotAssociatedWithDomain), "context");
+                throw new ArgumentException(SR.ContextNotAssociatedWithDomain, "context");
             }
 
             // more validation for the context, if the target is not null, then it should be either forest name or server name
             if (context.Name != null)
             {
                 if (!(context.isRootDomain() || context.isServer() || context.isADAMConfigSet()))
-                    throw new ArgumentException(Res.GetString(Res.NotADOrADAM), "context");
+                    throw new ArgumentException(SR.NotADOrADAM, "context");
             }
 
             if (siteLinkName == null)
                 throw new ArgumentNullException("siteLinkName");
 
             if (siteLinkName.Length == 0)
-                throw new ArgumentException(Res.GetString(Res.EmptyStringParameter), "siteLinkName");
+                throw new ArgumentException(SR.EmptyStringParameter, "siteLinkName");
 
             if (transport < ActiveDirectoryTransportType.Rpc || transport > ActiveDirectoryTransportType.Smtp)
                 throw new InvalidEnumArgumentException("value", (int)transport, typeof(ActiveDirectoryTransportType));

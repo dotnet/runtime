@@ -62,9 +62,6 @@ namespace System.DirectoryServices.ActiveDirectory
             return Name;
         }
 
-        [
-            DirectoryServicesPermission(SecurityAction.LinkDemand, Unrestricted = true)
-        ]
         public abstract DirectoryEntry GetDirectoryEntry();
 
         #endregion public methods

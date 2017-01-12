@@ -9,6 +9,10 @@
     <ProjectReference Include="..\..\src\System.Runtime.Extensions.csproj">
       <OSGroup>Unix</OSGroup>
     </ProjectReference>
+    <ProjectReference Include="..\..\src\System.Runtime.Extensions.csproj">
+      <OSGroup>Unix</OSGroup>
+      <TargetGroup>netcoreapp1.2corert</TargetGroup>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

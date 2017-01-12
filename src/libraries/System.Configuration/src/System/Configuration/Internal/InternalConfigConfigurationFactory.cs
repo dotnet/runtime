@@ -8,7 +8,8 @@ namespace System.Configuration.Internal
     {
         private InternalConfigConfigurationFactory() { }
 
-        Configuration IInternalConfigConfigurationFactory.Create(Type typeConfigHost,
+        Configuration IInternalConfigConfigurationFactory.Create(
+            Type typeConfigHost,
             params object[] hostInitConfigurationParams)
         {
             return new Configuration(null, typeConfigHost, hostInitConfigurationParams);

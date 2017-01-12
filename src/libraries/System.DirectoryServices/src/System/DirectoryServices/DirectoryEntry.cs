@@ -23,11 +23,9 @@ namespace System.DirectoryServices
     ///    <para> Encapsulates a node or an object in the Active Directory hierarchy.</para>
     /// </devdoc>
     [
-    DirectoryServicesPermission(SecurityAction.LinkDemand, Unrestricted = true),
     TypeConverterAttribute(typeof(DirectoryEntryConverter)),
     EnvironmentPermission(SecurityAction.Assert, Unrestricted = true),
     SecurityPermission(SecurityAction.Assert, Flags = SecurityPermissionFlag.UnmanagedCode),
-    DSDescriptionAttribute(Res.DirectoryEntryDesc)
     ]
     public class DirectoryEntry : Component
     {
@@ -60,9 +58,6 @@ namespace System.DirectoryServices
         ///       Initializes a new instance of the <see cref='System.DirectoryServices.DirectoryEntry'/>class.
         ///    </para>
         /// </devdoc>
-        [
-            DirectoryServicesPermission(SecurityAction.Demand, Unrestricted = true)
-        ]
         public DirectoryEntry()
         {
             _options = new DirectoryEntryConfiguration(this);
@@ -75,9 +70,6 @@ namespace System.DirectoryServices
         ///       to the directory entry at <paramref name="path"/>.
         ///    </para>
         /// </devdoc>
-        [
-            DirectoryServicesPermission(SecurityAction.Demand, Unrestricted = true)
-        ]
         public DirectoryEntry(string path) : this()
         {
             Path = path;
@@ -89,9 +81,6 @@ namespace System.DirectoryServices
         ///       Initializes a new instance of the <see cref='System.DirectoryServices.DirectoryEntry'/> class.
         ///    </para>
         /// </devdoc>        
-        [
-            DirectoryServicesPermission(SecurityAction.Demand, Unrestricted = true)
-        ]
         public DirectoryEntry(string path, string username, string password) : this(path, username, password, AuthenticationTypes.Secure)
         {
         }
@@ -102,9 +91,6 @@ namespace System.DirectoryServices
         ///       Initializes a new instance of the <see cref='System.DirectoryServices.DirectoryEntry'/> class.
         ///    </para>
         /// </devdoc>
-        [
-            DirectoryServicesPermission(SecurityAction.Demand, Unrestricted = true)
-        ]
         public DirectoryEntry(string path, string username, string password, AuthenticationTypes authenticationType) : this(path)
         {
             _credentials = new NetworkCredential(username, password);
@@ -140,9 +126,6 @@ namespace System.DirectoryServices
         ///       to the native Active Directory object which is passed in.
         ///    </para>
         /// </devdoc>
-        [
-            DirectoryServicesPermission(SecurityAction.Demand, Unrestricted = true)
-        ]
         public DirectoryEntry(object adsObject)
             : this(adsObject, true, null, null, AuthenticationTypes.Secure, true)
         {
@@ -157,7 +140,7 @@ namespace System.DirectoryServices
         {
             _adsObject = adsObject as UnsafeNativeMethods.IAds;
             if (_adsObject == null)
-                throw new ArgumentException(Res.GetString(Res.DSDoesNotImplementIADs));
+                throw new ArgumentException(SR.DSDoesNotImplementIADs);
 
             // GetInfo is not needed here. ADSI executes an implicit GetInfo when GetEx 
             // is called on the PropertyValueCollection. 0x800704BC error might be returned 
@@ -200,7 +183,6 @@ namespace System.DirectoryServices
         /// <include file='doc\DirectoryEntry.uex' path='docs/doc[@for="DirectoryEntry.AuthenticationType"]/*' />
         [
             DefaultValue(AuthenticationTypes.Secure),
-            DSDescriptionAttribute(Res.DSAuthenticationType)
         ]
         public AuthenticationTypes AuthenticationType
         {
@@ -232,11 +214,6 @@ namespace System.DirectoryServices
         /// containing the child entries of this node in the Active
         /// Directory hierarchy.</para>
         /// </devdoc>
-        [
-            Browsable(false),
-            DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden),
-            DSDescriptionAttribute(Res.DSChildren)
-        ]
         public DirectoryEntries Children
         {
             get
@@ -260,11 +237,6 @@ namespace System.DirectoryServices
         ///       Gets the globally unique identifier of the <see cref='System.DirectoryServices.DirectoryEntry'/>.
         ///    </para>
         /// </devdoc>
-        [
-            Browsable(false),
-            DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden),
-            DSDescriptionAttribute(Res.DSGuid)
-        ]
         public Guid Guid
         {
             get
@@ -286,11 +258,6 @@ namespace System.DirectoryServices
             }
         }
 
-        [
-            Browsable(false),
-            DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden),
-            DSDescriptionAttribute(Res.DSObjectSecurity)
-        ]
         public ActiveDirectorySecurity ObjectSecurity
         {
             get
@@ -346,11 +313,6 @@ namespace System.DirectoryServices
         ///       underlying directory service.
         ///    </para>
         /// </devdoc>
-        [
-            Browsable(false),
-            DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden),
-            DSDescriptionAttribute(Res.DSName)
-        ]
         public string Name
         {
             get
@@ -366,11 +328,6 @@ namespace System.DirectoryServices
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        [
-            Browsable(false),
-            DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden),
-            DSDescriptionAttribute(Res.DSNativeGuid)
-        ]
         public string NativeGuid
         {
             get
@@ -388,11 +345,6 @@ namespace System.DirectoryServices
         ///       Gets the native Active Directory Services Interface (ADSI) object.
         ///    </para>
         /// </devdoc>
-        [
-            Browsable(false),
-            DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden),
-            DSDescriptionAttribute(Res.DSNativeObject)
-        ]
         public object NativeObject
         {
             get
@@ -409,11 +361,6 @@ namespace System.DirectoryServices
         ///       entry's parent entry in the Active Directory hierarchy.
         ///    </para>
         /// </devdoc>
-        [
-            Browsable(false),
-            DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden),
-            DSDescriptionAttribute(Res.DSParent)
-        ]
         public DirectoryEntry Parent
         {
             get
@@ -428,9 +375,7 @@ namespace System.DirectoryServices
         ///    <para>Gets or sets the password to use when authenticating the client.</para>
         /// </devdoc>
         [
-            DSDescriptionAttribute(Res.DSPassword),
             DefaultValue(null),
-            Browsable(false)
         ]
         public string Password
         {
@@ -463,9 +408,8 @@ namespace System.DirectoryServices
         /// </devdoc>
         [
             DefaultValue(""),
-            DSDescriptionAttribute(Res.DSPath),
-            TypeConverter("System.Diagnostics.Design.StringValueConverter, " + AssemblyRef.SystemDesign),
-            SettingsBindable(true)
+            // CoreFXPort - Remove design support
+            // TypeConverter("System.Diagnostics.Design.StringValueConverter, " + AssemblyRef.SystemDesign)
         ]
         public string Path
         {
@@ -493,11 +437,6 @@ namespace System.DirectoryServices
         ///       of properties set on this object.
         ///    </para>
         /// </devdoc>
-        [
-            Browsable(false),
-            DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden),
-            DSDescriptionAttribute(Res.DSProperties)
-        ]
         public PropertyCollection Properties
         {
             get
@@ -515,11 +454,6 @@ namespace System.DirectoryServices
         /// <devdoc>
         /// <para>Gets the name of the schema used for this <see cref='System.DirectoryServices.DirectoryEntry'/>.</para>
         /// </devdoc>
-        [
-            Browsable(false),
-            DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden),
-            DSDescriptionAttribute(Res.DSSchemaClassName)
-        ]
         public string SchemaClassName
         {
             get
@@ -537,11 +471,6 @@ namespace System.DirectoryServices
         ///    entry. An entry's <see cref='System.DirectoryServices.DirectoryEntry.SchemaClassName'/>
         ///    determines what properties are valid for it.</para>
         /// </devdoc>
-        [
-            Browsable(false),
-            DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden),
-            DSDescriptionAttribute(Res.DSSchemaEntry)
-        ]
         public DirectoryEntry SchemaEntry
         {
             get
@@ -565,7 +494,6 @@ namespace System.DirectoryServices
         /// </devdoc>
         [
             DefaultValue(true),
-            DSDescriptionAttribute(Res.DSUsePropertyCache)
         ]
         public bool UsePropertyCache
         {
@@ -592,10 +520,9 @@ namespace System.DirectoryServices
         ///    <para>Gets or sets the username to use when authenticating the client.</para>
         /// </devdoc>
         [
-            DSDescriptionAttribute(Res.DSUsername),
-            TypeConverter("System.Diagnostics.Design.StringValueConverter, " + AssemblyRef.SystemDesign),
             DefaultValue(null),
-            Browsable(false)
+            // CoreFXPort - Remove design support
+            // TypeConverter("System.Diagnostics.Design.StringValueConverter, " + AssemblyRef.SystemDesign)
         ]
         public string Username
         {
@@ -628,11 +555,6 @@ namespace System.DirectoryServices
             }
         }
 
-        [
-            Browsable(false),
-            DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden),
-            DSDescriptionAttribute(Res.DSOptions)
-        ]
         public DirectoryEntryConfiguration Options
         {
             get
@@ -830,9 +752,6 @@ namespace System.DirectoryServices
             if (!Bound)
                 return;
 
-            // do full demand before we commit changes back to the server
-            new DirectoryServicesPermission(PermissionState.Unrestricted).Demand();
-
             try
             {
                 //
@@ -871,7 +790,7 @@ namespace System.DirectoryServices
         public DirectoryEntry CopyTo(DirectoryEntry newParent, string newName)
         {
             if (!newParent.IsContainer)
-                throw new InvalidOperationException(Res.GetString(Res.DSNotAContainer, newParent.Path));
+                throw new InvalidOperationException(String.Format(CultureInfo.CurrentCulture, SR.DSNotAContainer , newParent.Path));
 
             object copy = null;
             try
@@ -893,7 +812,7 @@ namespace System.DirectoryServices
         public void DeleteTree()
         {
             if (!(AdsObject is UnsafeNativeMethods.IAdsDeleteOps))
-                throw new InvalidOperationException(Res.GetString(Res.DSCannotDelete));
+                throw new InvalidOperationException(SR.DSCannotDelete);
 
             UnsafeNativeMethods.IAdsDeleteOps entry = (UnsafeNativeMethods.IAdsDeleteOps)AdsObject;
             try
@@ -1112,7 +1031,7 @@ namespace System.DirectoryServices
         {
             object newEntry = null;
             if (!(newParent.AdsObject is UnsafeNativeMethods.IAdsContainer))
-                throw new InvalidOperationException(Res.GetString(Res.DSNotAContainer, newParent.Path));
+                throw new InvalidOperationException(String.Format(CultureInfo.CurrentCulture, SR.DSNotAContainer , newParent.Path));
             try
             {
                 if (AdsObject.ADsPath.StartsWith("WinNT:", StringComparison.Ordinal))
@@ -1335,7 +1254,7 @@ namespace System.DirectoryServices
                     // (Check that the IAdsPropertyList interface is supported)
                     //
                     if (!(NativeObject is UnsafeNativeMethods.IAdsPropertyList))
-                        throw new NotSupportedException(Res.GetString(Res.DSPropertyListUnsupported));
+                        throw new NotSupportedException(SR.DSPropertyListUnsupported);
 
                     UnsafeNativeMethods.IAdsPropertyList list = (UnsafeNativeMethods.IAdsPropertyList)NativeObject;
 
@@ -1354,7 +1273,7 @@ namespace System.DirectoryServices
                     if (values.Length < 1)
                     {
                         Debug.Fail("ntSecurityDescriptor property exists in cache but has no values.");
-                        throw new InvalidOperationException(Res.GetString(Res.DSSDNoValues));
+                        throw new InvalidOperationException(SR.DSSDNoValues);
                     }
 
                     //
@@ -1362,7 +1281,7 @@ namespace System.DirectoryServices
                     //
                     if (values.Length > 1)
                     {
-                        throw new NotSupportedException(Res.GetString(Res.DSMultipleSDNotSupported));
+                        throw new NotSupportedException(SR.DSMultipleSDNotSupported);
                     }
 
                     UnsafeNativeMethods.IAdsPropertyValue propertyValue = (UnsafeNativeMethods.IAdsPropertyValue)values[0];

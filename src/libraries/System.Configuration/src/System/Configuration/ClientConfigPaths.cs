@@ -15,9 +15,6 @@ namespace System.Configuration
 
         private const string ConfigExtension = ".config";
         private const int MaxLengthToUse = 25;
-        private const string FileUriLocal = "file:///";
-        private const string FileUriUnc = "file://";
-        private const string FileUri = "file:";
         private const string HttpUri = "http://";
 
         private const string StrongNameDesc = "StrongName";
@@ -35,67 +32,47 @@ namespace System.Configuration
             _includesUserConfig = includeUserConfig;
 
             Assembly exeAssembly = null;
-            string applicationUri;
             string applicationFilename = null;
 
-            // get the assembly and applicationUri for the file
-            if (exePath == null)
+            if (exePath != null)
             {
-                // Now figure out the application path.
+                // Exe path was specified, use it
+                ApplicationUri = Path.GetFullPath(exePath);
+                if (!File.Exists(ApplicationUri))
+                {
+                    throw ExceptionUtil.ParameterInvalid(nameof(exePath));
+                }
+
+                applicationFilename = ApplicationUri;
+            }
+            else
+            {
+                // Exe path wasn't specified, get it from the entry assembly
                 exeAssembly = Assembly.GetEntryAssembly();
 
                 if (exeAssembly == null)
                     throw new PlatformNotSupportedException();
 
                 HasEntryAssembly = true;
-                applicationUri = exeAssembly.CodeBase;
 
-                bool isFile = false;
-
-                if (StringUtil.StartsWithOrdinalIgnoreCase(applicationUri, FileUriLocal))
+                // The original NetFX (desktop) code tried to get the local path without using Uri.
+                // If we ever find a need to do this again be careful with the logic. "file:///" is
+                // used for local paths and "file://" for UNCs. Simply removing the prefix will make
+                // local paths relative on Unix (e.g. "file:///home" will become "home" instead of
+                // "/home").
+                Uri uri = new Uri(exeAssembly.CodeBase);
+                if (uri.IsFile)
                 {
-                    // If it is a local file URI, convert it to its filename, without invoking Uri class.
-                    // example: "file:///C:/WINNT/Microsoft.NET/Framework/v2.0.x86fre/csc.exe"
-                    isFile = true;
-                    applicationUri = applicationUri.Substring(FileUriLocal.Length);
+                    ApplicationUri = uri.LocalPath;
+                    applicationFilename = uri.LocalPath;
                 }
                 else
                 {
-                    // If it is a UNC file URI, convert it to its filename, without invoking Uri class.
-                    // example: "file://server/share/csc.exe"
-                    if (StringUtil.StartsWithOrdinalIgnoreCase(applicationUri, FileUriUnc))
-                    {
-                        isFile = true;
-                        applicationUri = applicationUri.Substring(FileUri.Length);
-                    }
-                }
-
-                if (isFile)
-                {
-                    applicationUri = applicationUri.Replace('/', '\\');
-                    applicationFilename = applicationUri;
-                }
-                else
-                {
-                    applicationUri = exeAssembly.EscapedCodeBase;
+                    ApplicationUri = exeAssembly.EscapedCodeBase;
                 }
             }
-            else
-            {
-                applicationUri = Path.GetFullPath(exePath);
-                if (!File.Exists(applicationUri))
-                {
-                    throw ExceptionUtil.ParameterInvalid(nameof(exePath));
-                }
 
-                applicationFilename = applicationUri;
-            }
-
-            // Fallback if we haven't set the app config file path yet.
-            if (ApplicationConfigUri == null) ApplicationConfigUri = applicationUri + ConfigExtension;
-
-            // Set application path
-            ApplicationUri = applicationUri;
+            ApplicationConfigUri = ApplicationUri + ConfigExtension;
 
             // In the case when exePath was explicitly supplied, we will not be able to 
             // construct user.config paths, so quit here.
@@ -108,20 +85,24 @@ namespace System.Configuration
             SetNamesAndVersion(applicationFilename, exeAssembly, isHttp);
             if (isHttp) return;
 
+            // Create a directory suffix for local and roaming config of three parts:
+
+            // (1) Company name
             string part1 = Validate(_companyName, limitSize: true);
-            string validAppDomainName = Validate(AppDomain.CurrentDomain.FriendlyName, limitSize: true);
+
+            // (2) Domain or product name & a application urit hash
+            string namePrefix = Validate(AppDomain.CurrentDomain.FriendlyName, limitSize: true);
+            if (string.IsNullOrEmpty(namePrefix))
+                namePrefix = Validate(ProductName, limitSize: true);
             string applicationUriLower = !string.IsNullOrEmpty(ApplicationUri)
                 ? ApplicationUri.ToLower(CultureInfo.InvariantCulture)
                 : null;
-            string namePrefix = !string.IsNullOrEmpty(validAppDomainName)
-                ? validAppDomainName
-                : Validate(ProductName, limitSize: true);
             string hashSuffix = GetTypeAndHashSuffix(applicationUriLower);
-
             string part2 = !string.IsNullOrEmpty(namePrefix) && !string.IsNullOrEmpty(hashSuffix)
                 ? namePrefix + hashSuffix
                 : null;
 
+            // (3) The product version
             string part3 = Validate(ProductVersion, limitSize: false);
 
             string dirSuffix = CombineIfValid(CombineIfValid(part1, part2), part3);
@@ -255,19 +236,16 @@ namespace System.Configuration
                 object[] attrs = exeAssembly.GetCustomAttributes(typeof(AssemblyCompanyAttribute), false);
                 if ((attrs != null) && (attrs.Length > 0))
                 {
-                    _companyName = ((AssemblyCompanyAttribute)attrs[0]).Company;
-                    _companyName = _companyName?.Trim();
+                    _companyName = ((AssemblyCompanyAttribute)attrs[0]).Company?.Trim();
                 }
 
                 attrs = exeAssembly.GetCustomAttributes(typeof(AssemblyProductAttribute), false);
                 if ((attrs != null) && (attrs.Length > 0))
                 {
-                    ProductName = ((AssemblyProductAttribute)attrs[0]).Product;
-                    ProductName = ProductName?.Trim();
+                    ProductName = ((AssemblyProductAttribute)attrs[0]).Product?.Trim();
                 }
 
-                ProductVersion = exeAssembly.GetName().Version.ToString();
-                ProductVersion = ProductVersion?.Trim();
+                ProductVersion = exeAssembly.GetName().Version.ToString().Trim();
             }
 
             // If we couldn't get custom attributes, fall back on the entry type namespace

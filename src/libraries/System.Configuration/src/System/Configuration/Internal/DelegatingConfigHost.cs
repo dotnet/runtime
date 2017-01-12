@@ -224,5 +224,11 @@ namespace System.Configuration.Internal
         public virtual bool HasRoamingConfig => HostPaths.HasRoamingConfig;
 
         public virtual bool IsAppConfigHttp => HostPaths.IsAppConfigHttp;
+
+        public virtual bool IsTrustedConfigPath(string configPath) => true;
+
+        public virtual bool IsFullTrustSectionWithoutAptcaAllowed(IInternalConfigRecord configRecord) => true;
+
+        public virtual IDisposable Impersonate() => new DummyDisposable();
     }
 }

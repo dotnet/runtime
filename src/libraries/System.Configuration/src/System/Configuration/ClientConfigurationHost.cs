@@ -443,7 +443,7 @@ namespace System.Configuration
             if (fileMap != null)
             {
                 if (string.IsNullOrEmpty(fileMap.MachineConfigFilename))
-                    throw ExceptionUtil.ParameterNullOrEmpty("fileMap.MachineConfigFilename");
+                    throw ExceptionUtil.ParameterNullOrEmpty(nameof(fileMap) + "." + nameof(fileMap.MachineConfigFilename));
 
                 ExeConfigurationFileMap exeFileMap = fileMap as ExeConfigurationFileMap;
                 if (exeFileMap != null)
@@ -452,15 +452,15 @@ namespace System.Configuration
                     {
                         case ConfigurationUserLevel.None:
                             if (string.IsNullOrEmpty(exeFileMap.ExeConfigFilename))
-                                throw ExceptionUtil.ParameterNullOrEmpty("fileMap.ExeConfigFilename");
+                                throw ExceptionUtil.ParameterNullOrEmpty(nameof(fileMap) + "." + nameof(exeFileMap.ExeConfigFilename));
                             break;
                         case ConfigurationUserLevel.PerUserRoaming:
                             if (string.IsNullOrEmpty(exeFileMap.RoamingUserConfigFilename))
-                                throw ExceptionUtil.ParameterNullOrEmpty("fileMap.RoamingUserConfigFilename");
+                                throw ExceptionUtil.ParameterNullOrEmpty(nameof(fileMap) + "." + nameof(exeFileMap.RoamingUserConfigFilename));
                             goto case ConfigurationUserLevel.None;
                         case ConfigurationUserLevel.PerUserRoamingAndLocal:
                             if (string.IsNullOrEmpty(exeFileMap.LocalUserConfigFilename))
-                                throw ExceptionUtil.ParameterNullOrEmpty("fileMap.LocalUserConfigFilename");
+                                throw ExceptionUtil.ParameterNullOrEmpty(nameof(fileMap) + "." + nameof(exeFileMap.LocalUserConfigFilename));
                             goto case ConfigurationUserLevel.PerUserRoaming;
                     }
                 }

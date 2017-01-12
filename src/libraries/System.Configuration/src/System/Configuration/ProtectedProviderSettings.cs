@@ -7,8 +7,11 @@ namespace System.Configuration
     public class ProtectedProviderSettings : ConfigurationElement
     {
         private readonly ConfigurationProperty _propProviders =
-            new ConfigurationProperty(null, typeof(ProviderSettingsCollection), null,
-                ConfigurationPropertyOptions.IsDefaultCollection);
+            new ConfigurationProperty(
+                name: null,
+                type: typeof(ProviderSettingsCollection),
+                defaultValue: null,
+                options: ConfigurationPropertyOptions.IsDefaultCollection);
 
         private readonly ConfigurationPropertyCollection _properties;
 
@@ -20,9 +23,7 @@ namespace System.Configuration
 
         protected internal override ConfigurationPropertyCollection Properties => _properties;
 
-
-        [ConfigurationProperty("", IsDefaultCollection = true,
-         Options = ConfigurationPropertyOptions.IsDefaultCollection)]
+        [ConfigurationProperty("", IsDefaultCollection = true, Options = ConfigurationPropertyOptions.IsDefaultCollection)]
         public ProviderSettingsCollection Providers => (ProviderSettingsCollection)base[_propProviders];
     }
 }

@@ -82,7 +82,7 @@ namespace System.DirectoryServices
         {
             if (!DaclRetrieved())
             {
-                throw new InvalidOperationException(Res.GetString(Res.CannotModifyDacl));
+                throw new InvalidOperationException(SR.CannotModifyDacl);
             }
 
             base.AddAccessRule(rule);
@@ -92,7 +92,7 @@ namespace System.DirectoryServices
         {
             if (!DaclRetrieved())
             {
-                throw new InvalidOperationException(Res.GetString(Res.CannotModifyDacl));
+                throw new InvalidOperationException(SR.CannotModifyDacl);
             }
 
             base.SetAccessRule(rule);
@@ -102,7 +102,7 @@ namespace System.DirectoryServices
         {
             if (!DaclRetrieved())
             {
-                throw new InvalidOperationException(Res.GetString(Res.CannotModifyDacl));
+                throw new InvalidOperationException(SR.CannotModifyDacl);
             }
 
             base.ResetAccessRule(rule);
@@ -112,7 +112,7 @@ namespace System.DirectoryServices
         {
             if (!DaclRetrieved())
             {
-                throw new InvalidOperationException(Res.GetString(Res.CannotModifyDacl));
+                throw new InvalidOperationException(SR.CannotModifyDacl);
             }
 
             //
@@ -131,7 +131,7 @@ namespace System.DirectoryServices
         {
             if (!DaclRetrieved())
             {
-                throw new InvalidOperationException(Res.GetString(Res.CannotModifyDacl));
+                throw new InvalidOperationException(SR.CannotModifyDacl);
             }
 
             return base.RemoveAccessRule(rule);
@@ -141,7 +141,7 @@ namespace System.DirectoryServices
         {
             if (!DaclRetrieved())
             {
-                throw new InvalidOperationException(Res.GetString(Res.CannotModifyDacl));
+                throw new InvalidOperationException(SR.CannotModifyDacl);
             }
 
             base.RemoveAccessRuleSpecific(rule);
@@ -151,7 +151,7 @@ namespace System.DirectoryServices
         {
             if (!DaclRetrieved())
             {
-                throw new InvalidOperationException(Res.GetString(Res.CannotModifyDacl));
+                throw new InvalidOperationException(SR.CannotModifyDacl);
             }
 
             return base.ModifyAccessRule(modification, rule, out modified);
@@ -161,7 +161,7 @@ namespace System.DirectoryServices
         {
             if (!DaclRetrieved())
             {
-                throw new InvalidOperationException(Res.GetString(Res.CannotModifyDacl));
+                throw new InvalidOperationException(SR.CannotModifyDacl);
             }
 
             base.PurgeAccessRules(identity);
@@ -174,7 +174,7 @@ namespace System.DirectoryServices
         {
             if (!SaclRetrieved())
             {
-                throw new InvalidOperationException(Res.GetString(Res.CannotModifySacl));
+                throw new InvalidOperationException(SR.CannotModifySacl);
             }
 
             base.AddAuditRule(rule);
@@ -184,7 +184,7 @@ namespace System.DirectoryServices
         {
             if (!SaclRetrieved())
             {
-                throw new InvalidOperationException(Res.GetString(Res.CannotModifySacl));
+                throw new InvalidOperationException(SR.CannotModifySacl);
             }
 
             base.SetAuditRule(rule);
@@ -194,7 +194,7 @@ namespace System.DirectoryServices
         {
             if (!SaclRetrieved())
             {
-                throw new InvalidOperationException(Res.GetString(Res.CannotModifySacl));
+                throw new InvalidOperationException(SR.CannotModifySacl);
             }
 
             //
@@ -213,7 +213,7 @@ namespace System.DirectoryServices
         {
             if (!SaclRetrieved())
             {
-                throw new InvalidOperationException(Res.GetString(Res.CannotModifySacl));
+                throw new InvalidOperationException(SR.CannotModifySacl);
             }
 
             return base.RemoveAuditRule(rule);
@@ -223,7 +223,7 @@ namespace System.DirectoryServices
         {
             if (!SaclRetrieved())
             {
-                throw new InvalidOperationException(Res.GetString(Res.CannotModifySacl));
+                throw new InvalidOperationException(SR.CannotModifySacl);
             }
 
             base.RemoveAuditRuleSpecific(rule);
@@ -233,7 +233,7 @@ namespace System.DirectoryServices
         {
             if (!SaclRetrieved())
             {
-                throw new InvalidOperationException(Res.GetString(Res.CannotModifySacl));
+                throw new InvalidOperationException(SR.CannotModifySacl);
             }
 
             return base.ModifyAuditRule(modification, rule, out modified);
@@ -243,7 +243,7 @@ namespace System.DirectoryServices
         {
             if (!SaclRetrieved())
             {
-                throw new InvalidOperationException(Res.GetString(Res.CannotModifySacl));
+                throw new InvalidOperationException(SR.CannotModifySacl);
             }
 
             base.PurgeAuditRules(identity);

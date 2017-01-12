@@ -279,9 +279,10 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         }
 
         [Fact]
+        // On the desktop, this throws up a UI for the user to select a recipient. We don't support that.
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public static void EnvelopedCmsEncryptWithZeroRecipients()
         {
-            // On the desktop, this throws up a UI for the user to select a recipient. We don't support that.
             EnvelopedCms ecms = new EnvelopedCms(new ContentInfo(new byte[3]));
             Assert.Throws<PlatformNotSupportedException>(() => ecms.Encrypt(new CmsRecipientCollection()));
         }

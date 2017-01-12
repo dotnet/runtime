@@ -231,14 +231,46 @@ namespace System.Linq.Expressions.Tests
         public void UpdateDifferentReturnsDifferent()
         {
             MemberListBinding binding = Expression.ListBind(typeof(ListWrapper<int>).GetProperty(nameof(ListWrapper<int>.ListProperty)), Enumerable.Range(0, 3).Select(i => Expression.ElementInit(typeof(List<int>).GetMethod("Add"), Expression.Constant(i))));
-            Assert.NotSame(binding, binding.Update(new[] {Expression.ElementInit(typeof(List<int>).GetMethod(nameof(List<int>.Add)), Expression.Constant(1))}));
+            Assert.NotSame(binding, binding.Update(new[] { Expression.ElementInit(typeof(List<int>).GetMethod(nameof(List<int>.Add)), Expression.Constant(1)) }));
+        }
+
+        [Fact]
+        public void UpdateDoesntRepeatEnumeration()
+        {
+            MemberListBinding binding = Expression.ListBind(
+                typeof(ListWrapper<int>).GetProperty(nameof(ListWrapper<int>.ListProperty)),
+                Enumerable.Range(0, 3)
+                    .Select(i => Expression.ElementInit(typeof(List<int>).GetMethod("Add"), Expression.Constant(i))));
+            Assert.NotSame(
+                binding,
+                binding.Update(
+                    new RunOnceEnumerable<ElementInit>(
+                        new[]
+                        {
+                            Expression.ElementInit(
+                                typeof(List<int>).GetMethod(nameof(List<int>.Add)), Expression.Constant(1))
+                        })));
+        }
+
+        [Fact]
+        public void UpdateNullThrows()
+        {
+            MemberListBinding binding = Expression.ListBind(
+                typeof(ListWrapper<int>).GetProperty(nameof(ListWrapper<int>.ListProperty)),
+                Enumerable.Range(0, 3)
+                    .Select(i => Expression.ElementInit(typeof(List<int>).GetMethod("Add"), Expression.Constant(i))));
+            Assert.Throws<ArgumentNullException>("initializers", () => binding.Update(null));
         }
 
         [Fact]
         public void UpdateSameReturnsSame()
         {
-            MemberListBinding binding = Expression.ListBind(typeof(ListWrapper<int>).GetProperty(nameof(ListWrapper<int>.ListProperty)), Enumerable.Range(0, 3).Select(i => Expression.ElementInit(typeof(List<int>).GetMethod("Add"), Expression.Constant(i))));
-            Assert.Same(binding, binding.Update(binding.Initializers));
+            ElementInit[] initializers = Enumerable.Range(0, 3)
+                .Select(i => Expression.ElementInit(typeof(List<int>).GetMethod("Add"), Expression.Constant(i)))
+                .ToArray();
+            MemberListBinding binding = Expression.ListBind(
+                typeof(ListWrapper<int>).GetProperty(nameof(ListWrapper<int>.ListProperty)), initializers);
+            Assert.Same(binding, binding.Update(initializers));
         }
     }
 }

@@ -11,7 +11,6 @@ namespace System.DirectoryServices.ActiveDirectory
     using System.Diagnostics;
     using System.Security.Permissions;
 
-    [DirectoryServicesPermission(SecurityAction.LinkDemand, Unrestricted = true)]
     public class ForestTrustRelationshipInformation : TrustRelationshipInformation
     {
         private TopLevelNameCollection _topLevelNames = new TopLevelNameCollection();

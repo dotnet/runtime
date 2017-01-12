@@ -345,7 +345,7 @@ namespace System.Tests
             }
         }
 
-        [DllImport("api-ms-win-core-file-l1-1-0.dll", SetLastError = true)]
+        [DllImport("kernel32.dll", SetLastError = true)]
         internal static extern int GetLogicalDrives();
 
         [DllImport("shell32.dll", SetLastError = false, BestFitMapping = false, ExactSpelling = true)]

@@ -12,18 +12,12 @@ namespace System.IO.Compression.Tests
 {
     public partial class ZipFileTestBase : FileCleanupTestBase
     {
-        #region filename helpers
-
-        public static string bad(string filename) { return Path.Combine("ZipTestData", "badzipfiles", filename); }
-        public static string compat(string filename) { return Path.Combine("ZipTestData", "compat", filename); }
-        public static string strange(string filename) { return Path.Combine("ZipTestData", "StrangeZipFiles", filename); }
-        public static string zfile(string filename) { return Path.Combine("ZipTestData", "refzipfiles", filename); }
-        public static string zfolder(string filename) { return Path.Combine("ZipTestData", "refzipfolders", filename); }
-        public static string zmodified(string filename) { return Path.Combine("ZipTestData", "modified", filename); }
-
-        #endregion
-
-        #region helpers
+        public static string bad(string filename) => Path.Combine("ZipTestData", "badzipfiles", filename);
+        public static string compat(string filename) => Path.Combine("ZipTestData", "compat", filename);
+        public static string strange(string filename) => Path.Combine("ZipTestData", "StrangeZipFiles", filename);
+        public static string zfile(string filename) => Path.Combine("ZipTestData", "refzipfiles", filename);
+        public static string zfolder(string filename) => Path.Combine("ZipTestData", "refzipfolders", filename);
+        public static string zmodified(string filename) => Path.Combine("ZipTestData", "modified", filename);
 
         protected TempFile CreateTempCopyFile(string path, string newPath)
         {
@@ -48,7 +42,7 @@ namespace System.IO.Compression.Tests
             return totalBytes;
         }
 
-        //reads exactly bytesToRead out of stream, unless it is out of bytes
+        // reads exactly bytesToRead out of stream, unless it is out of bytes
         public static void ReadBytes(Stream stream, byte[] buffer, long bytesToRead)
         {
             int bytesLeftToRead;
@@ -128,13 +122,9 @@ namespace System.IO.Compression.Tests
             } while (ac == 4096);
         }
 
-        #endregion
-
-        #region "Validation"
-
         public static async Task IsZipSameAsDirAsync(string archiveFile, string directory, ZipArchiveMode mode)
         {
-            await IsZipSameAsDirAsync(archiveFile, directory, mode, false, false);
+            await IsZipSameAsDirAsync(archiveFile, directory, mode, requireExplicit: false, checkTimes: false);
         }
 
         public static async Task IsZipSameAsDirAsync(string archiveFile, string directory, ZipArchiveMode mode, bool requireExplicit, bool checkTimes)
@@ -250,8 +240,8 @@ namespace System.IO.Compression.Tests
             var actualCount = actualList.Length + actualFolders.Length;
             Assert.Equal(expectedList.Count, actualCount);
 
-            ItemEqual(actualList, expectedList, true);
-            ItemEqual(actualFolders, expectedList, false);
+            ItemEqual(actualList, expectedList, isFile: true);
+            ItemEqual(actualFolders, expectedList, isFile: false);
         }
 
         public static void DirFileNamesEqual(string actual, string expected)
@@ -336,7 +326,5 @@ namespace System.IO.Compression.Tests
                 w.WriteLine(contents);
             }
         }
-
-        #endregion
     }
 }

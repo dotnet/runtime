@@ -8,6 +8,7 @@
 using System.Runtime.Serialization;
 
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.ComponentModel.Component))]
+[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.ComponentModel.ISupportInitialize))]
 
 namespace System
 {
@@ -305,11 +306,6 @@ namespace System.ComponentModel
         public InvalidAsynchronousStateException(string message) { }
         public InvalidAsynchronousStateException(string message, System.Exception innerException) { }
         protected InvalidAsynchronousStateException(SerializationInfo info, StreamingContext context) { }
-    }
-    public partial interface ISupportInitialize
-    {
-        void BeginInit();
-        void EndInit();
     }
     public partial interface ITypeDescriptorContext : System.IServiceProvider
     {

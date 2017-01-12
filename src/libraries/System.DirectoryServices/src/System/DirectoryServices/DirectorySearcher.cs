@@ -23,10 +23,6 @@ namespace System.DirectoryServices
     /// <devdoc>
     ///    <para> Performs queries against the Active Directory hierarchy.</para>
     /// </devdoc>
-    [
-    DirectoryServicesPermission(SecurityAction.LinkDemand, Unrestricted = true),
-    DSDescriptionAttribute(Res.DirectorySearcherDesc)
-    ]
     public class DirectorySearcher : Component
     {
         private DirectoryEntry _searchRoot;
@@ -71,9 +67,6 @@ namespace System.DirectoryServices
         /// <para>Initializes a new instance of the <see cref='System.DirectoryServices.DirectorySearcher'/> class with <see cref='System.DirectoryServices.DirectorySearcher.SearchRoot'/>, 
         /// <see cref='System.DirectoryServices.DirectorySearcher.Filter'/>, <see cref='System.DirectoryServices.DirectorySearcher.PropertiesToLoad'/>, and <see cref='System.DirectoryServices.DirectorySearcher.SearchScope'/> set to their default values.</para>
         /// </devdoc>
-        [
-            DirectoryServicesPermission(SecurityAction.Demand, Unrestricted = true)
-        ]
         public DirectorySearcher() : this(null, defaultFilter, null, System.DirectoryServices.SearchScope.Subtree)
         {
             _scopeSpecified = false;
@@ -85,9 +78,6 @@ namespace System.DirectoryServices
         /// <see cref='System.DirectoryServices.DirectorySearcher.Filter'/>, <see cref='System.DirectoryServices.DirectorySearcher.PropertiesToLoad'/>, and <see cref='System.DirectoryServices.DirectorySearcher.SearchScope'/> set to their default 
         ///    values, and <see cref='System.DirectoryServices.DirectorySearcher.SearchRoot'/> set to the given value.</para>
         /// </devdoc>
-        [
-            DirectoryServicesPermission(SecurityAction.Demand, Unrestricted = true)
-        ]
         public DirectorySearcher(DirectoryEntry searchRoot) : this(searchRoot, defaultFilter, null, System.DirectoryServices.SearchScope.Subtree)
         {
             _scopeSpecified = false;
@@ -99,9 +89,6 @@ namespace System.DirectoryServices
         /// <see cref='System.DirectoryServices.DirectorySearcher.PropertiesToLoad'/> and <see cref='System.DirectoryServices.DirectorySearcher.SearchScope'/> set to their default 
         ///    values, and <see cref='System.DirectoryServices.DirectorySearcher.SearchRoot'/> and <see cref='System.DirectoryServices.DirectorySearcher.Filter'/> set to the respective given values.</para>
         /// </devdoc>
-        [
-            DirectoryServicesPermission(SecurityAction.Demand, Unrestricted = true)
-        ]
         public DirectorySearcher(DirectoryEntry searchRoot, string filter) : this(searchRoot, filter, null, System.DirectoryServices.SearchScope.Subtree)
         {
             _scopeSpecified = false;
@@ -113,9 +100,6 @@ namespace System.DirectoryServices
         /// <see cref='System.DirectoryServices.DirectorySearcher.SearchScope'/> set to its default 
         ///    value, and <see cref='System.DirectoryServices.DirectorySearcher.SearchRoot'/>, <see cref='System.DirectoryServices.DirectorySearcher.Filter'/>, and <see cref='System.DirectoryServices.DirectorySearcher.PropertiesToLoad'/> set to the respective given values.</para>
         /// </devdoc>
-        [
-            DirectoryServicesPermission(SecurityAction.Demand, Unrestricted = true)
-        ]
         public DirectorySearcher(DirectoryEntry searchRoot, string filter, string[] propertiesToLoad) : this(searchRoot, filter, propertiesToLoad, System.DirectoryServices.SearchScope.Subtree)
         {
             _scopeSpecified = false;
@@ -127,9 +111,6 @@ namespace System.DirectoryServices
         /// <see cref='System.DirectoryServices.DirectorySearcher.PropertiesToLoad'/>, and <see cref='System.DirectoryServices.DirectorySearcher.SearchScope'/> set to their default 
         ///    values, and <see cref='System.DirectoryServices.DirectorySearcher.Filter'/> set to the given value.</para>
         /// </devdoc>
-        [
-            DirectoryServicesPermission(SecurityAction.Demand, Unrestricted = true)
-        ]
         public DirectorySearcher(string filter) : this(null, filter, null, System.DirectoryServices.SearchScope.Subtree)
         {
             _scopeSpecified = false;
@@ -141,9 +122,6 @@ namespace System.DirectoryServices
         /// and <see cref='System.DirectoryServices.DirectorySearcher.SearchScope'/> set to their default
         /// values, and <see cref='System.DirectoryServices.DirectorySearcher.Filter'/> and <see cref='System.DirectoryServices.DirectorySearcher.PropertiesToLoad'/> set to the respective given values.</para>
         /// </devdoc>
-        [
-            DirectoryServicesPermission(SecurityAction.Demand, Unrestricted = true)
-        ]
         public DirectorySearcher(string filter, string[] propertiesToLoad) : this(null, filter, propertiesToLoad, System.DirectoryServices.SearchScope.Subtree)
         {
             _scopeSpecified = false;
@@ -154,9 +132,6 @@ namespace System.DirectoryServices
         /// <para>Initializes a new instance of the <see cref='System.DirectoryServices.DirectorySearcher'/> class with <see cref='System.DirectoryServices.DirectorySearcher.SearchRoot'/> set to its default 
         ///    value, and <see cref='System.DirectoryServices.DirectorySearcher.Filter'/>, <see cref='System.DirectoryServices.DirectorySearcher.PropertiesToLoad'/>, and <see cref='System.DirectoryServices.DirectorySearcher.SearchScope'/> set to the respective given values.</para>
         /// </devdoc>
-        [
-            DirectoryServicesPermission(SecurityAction.Demand, Unrestricted = true)
-        ]
         public DirectorySearcher(string filter, string[] propertiesToLoad, SearchScope scope) : this(null, filter, propertiesToLoad, scope)
         {
         }
@@ -166,9 +141,6 @@ namespace System.DirectoryServices
         /// <para>Initializes a new instance of the <see cref='System.DirectoryServices.DirectorySearcher'/> class with the <see cref='System.DirectoryServices.DirectorySearcher.SearchRoot'/>, <see cref='System.DirectoryServices.DirectorySearcher.Filter'/>, <see cref='System.DirectoryServices.DirectorySearcher.PropertiesToLoad'/>, and <see cref='System.DirectoryServices.DirectorySearcher.SearchScope'/> properties set to the given 
         ///    values.</para>
         /// </devdoc>
-        [
-            DirectoryServicesPermission(SecurityAction.Demand, Unrestricted = true)
-        ]
         public DirectorySearcher(DirectoryEntry searchRoot, string filter, string[] propertiesToLoad, SearchScope scope)
         {
             _searchRoot = searchRoot;
@@ -204,7 +176,6 @@ namespace System.DirectoryServices
         /// </devdoc>
         [
             DefaultValue(true),
-            DSDescriptionAttribute(Res.DSCacheResults)
         ]
         public bool CacheResults
         {
@@ -216,7 +187,7 @@ namespace System.DirectoryServices
             {
                 // user explicitly set CacheResults to true and also want VLV
                 if (directoryVirtualListViewSpecified == true && value == true)
-                    throw new ArgumentException(Res.GetString(Res.DSBadCacheResultsVLV));
+                    throw new ArgumentException(SR.DSBadCacheResultsVLV);
 
                 _cacheResults = value;
 
@@ -230,9 +201,6 @@ namespace System.DirectoryServices
         ///       the server to return results. If the server does not respond within this time,
         ///       the search is aborted, and no results are returned.</para>
         /// </devdoc>
-        [
-            DSDescriptionAttribute(Res.DSClientTimeout)
-        ]
         public TimeSpan ClientTimeout
         {
             get
@@ -244,7 +212,7 @@ namespace System.DirectoryServices
                 // prevent integer overflow
                 if (value.TotalSeconds > Int32.MaxValue)
                 {
-                    throw new ArgumentException(Res.GetString(Res.TimespanExceedMax), "value");
+                    throw new ArgumentException(SR.TimespanExceedMax, "value");
                 }
 
                 _clientTimeout = value;
@@ -258,7 +226,6 @@ namespace System.DirectoryServices
         /// </devdoc>        
         [
             DefaultValue(false),
-            DSDescriptionAttribute(Res.DSPropertyNamesOnly)
         ]
         public bool PropertyNamesOnly
         {
@@ -280,9 +247,8 @@ namespace System.DirectoryServices
         ///    </devdoc>
         [
             DefaultValue(defaultFilter),
-            DSDescriptionAttribute(Res.DSFilter),
-            TypeConverter("System.Diagnostics.Design.StringValueConverter, " + AssemblyRef.SystemDesign),
-            SettingsBindable(true)
+            // CoreFXPort - Remove design support      
+            // TypeConverter("System.Diagnostics.Design.StringValueConverter, " + AssemblyRef.SystemDesign)
         ]
         public string Filter
         {
@@ -304,7 +270,6 @@ namespace System.DirectoryServices
         /// </devdoc>
         [
             DefaultValue(0),
-            DSDescriptionAttribute(Res.DSPageSize)
         ]
         public int PageSize
         {
@@ -315,11 +280,11 @@ namespace System.DirectoryServices
             set
             {
                 if (value < 0)
-                    throw new ArgumentException(Res.GetString(Res.DSBadPageSize));
+                    throw new ArgumentException(SR.DSBadPageSize);
 
                 // specify non-zero pagesize explicitly and also want dirsync
                 if (directorySynchronizationSpecified == true && value != 0)
-                    throw new ArgumentException(Res.GetString(Res.DSBadPageSizeDirsync));
+                    throw new ArgumentException(SR.DSBadPageSizeDirsync);
 
                 _pageSize = value;
             }
@@ -330,11 +295,6 @@ namespace System.DirectoryServices
         /// <para>Gets the set of properties retrieved during the search. By default, the <see cref='System.DirectoryServices.DirectoryEntry.Path'/>
         /// and <see cref='System.DirectoryServices.DirectoryEntry.Name'/> properties are retrieved.</para>
         /// </devdoc>
-        [
-            DSDescriptionAttribute(Res.DSPropertiesToLoad),
-            DesignerSerializationVisibility(DesignerSerializationVisibility.Content),
-            Editor("System.Windows.Forms.Design.StringCollectionEditor, " + AssemblyRef.SystemDesign, "System.Drawing.Design.UITypeEditor, " + AssemblyRef.SystemDrawing)
-        ]
         public StringCollection PropertiesToLoad
         {
             get
@@ -353,7 +313,6 @@ namespace System.DirectoryServices
         /// </devdoc>
         [
             DefaultValue(ReferralChasingOption.External),
-            DSDescriptionAttribute(Res.DSReferralChasing)
         ]
         public ReferralChasingOption ReferralChasing
         {
@@ -379,8 +338,6 @@ namespace System.DirectoryServices
         /// </devdoc>
         [
             DefaultValue(SearchScope.Subtree),
-            DSDescriptionAttribute(Res.DSSearchScope),
-            SettingsBindable(true)
         ]
         public SearchScope SearchScope
         {
@@ -396,7 +353,7 @@ namespace System.DirectoryServices
                 // user explicitly set SearchScope to something other than Base and also want to do ASQ, it is not supported
                 if (_attributeScopeQuerySpecified == true && value != SearchScope.Base)
                 {
-                    throw new ArgumentException(Res.GetString(Res.DSBadASQSearchScope));
+                    throw new ArgumentException(SR.DSBadASQSearchScope);
                 }
 
                 _scope = value;
@@ -411,9 +368,6 @@ namespace System.DirectoryServices
         ///       observe to search a page of results (as opposed to
         ///       the time limit for the entire search).</para>
         /// </devdoc>
-        [
-            DSDescriptionAttribute(Res.DSServerPageTimeLimit)
-        ]
         public TimeSpan ServerPageTimeLimit
         {
             get
@@ -425,7 +379,7 @@ namespace System.DirectoryServices
                 // prevent integer overflow
                 if (value.TotalSeconds > Int32.MaxValue)
                 {
-                    throw new ArgumentException(Res.GetString(Res.TimespanExceedMax), "value");
+                    throw new ArgumentException(SR.TimespanExceedMax, "value");
                 }
 
                 _serverPageTimeLimit = value;
@@ -437,9 +391,6 @@ namespace System.DirectoryServices
         ///    <para>Gets or sets the maximum amount of time the server spends searching. If the
         ///       time limit is reached, only entries found up to that point will be returned.</para>
         /// </devdoc>
-        [
-             DSDescriptionAttribute(Res.DSServerTimeLimit)
-        ]
         public TimeSpan ServerTimeLimit
         {
             get
@@ -451,7 +402,7 @@ namespace System.DirectoryServices
                 // prevent integer overflow
                 if (value.TotalSeconds > Int32.MaxValue)
                 {
-                    throw new ArgumentException(Res.GetString(Res.TimespanExceedMax), "value");
+                    throw new ArgumentException(SR.TimespanExceedMax, "value");
                 }
 
                 _serverTimeLimit = value;
@@ -465,7 +416,6 @@ namespace System.DirectoryServices
         /// </devdoc>
         [
             DefaultValue(0),
-            DSDescriptionAttribute(Res.DSSizeLimit)
         ]
         public int SizeLimit
         {
@@ -476,7 +426,7 @@ namespace System.DirectoryServices
             set
             {
                 if (value < 0)
-                    throw new ArgumentException(Res.GetString(Res.DSBadSizeLimit));
+                    throw new ArgumentException(SR.DSBadSizeLimit);
                 _sizeLimit = value;
             }
         }
@@ -487,7 +437,6 @@ namespace System.DirectoryServices
         ///       at which the search will start.</para>
         /// </devdoc>
         [
-            DSDescriptionAttribute(Res.DSSearchRoot),
             DefaultValueAttribute(null)
         ]
         public DirectoryEntry SearchRoot
@@ -527,9 +476,7 @@ namespace System.DirectoryServices
         ///       sorted.</para>
         /// </devdoc>
         [
-            DSDescriptionAttribute(Res.DSSort),
-            TypeConverterAttribute(typeof(ExpandableObjectConverter)),
-            DesignerSerializationVisibility(DesignerSerializationVisibility.Content)
+            TypeConverterAttribute(typeof(ExpandableObjectConverter))
         ]
         public SortOption Sort
         {
@@ -554,7 +501,6 @@ namespace System.DirectoryServices
         /// </devdoc>
         [
             DefaultValue(false),
-            DSDescriptionAttribute(Res.DSAsynchronous)
         ]
         public bool Asynchronous
         {
@@ -575,7 +521,6 @@ namespace System.DirectoryServices
         /// </devdoc>
         [
             DefaultValue(false),
-            DSDescriptionAttribute(Res.DSTombstone)
         ]
         public bool Tombstone
         {
@@ -596,8 +541,8 @@ namespace System.DirectoryServices
         /// </devdoc>
         [
             DefaultValue(""),
-            DSDescriptionAttribute(Res.DSAttributeQuery),
-            TypeConverter("System.Diagnostics.Design.StringValueConverter, " + AssemblyRef.SystemDesign)
+           // CoreFXPort - Remove design support
+           // TypeConverter("System.Diagnostics.Design.StringValueConverter, " + AssemblyRef.SystemDesign)
         ]
         public string AttributeScopeQuery
         {
@@ -615,7 +560,7 @@ namespace System.DirectoryServices
                 {
                     if (_scopeSpecified == true && SearchScope != SearchScope.Base)
                     {
-                        throw new ArgumentException(Res.GetString(Res.DSBadASQSearchScope));
+                        throw new ArgumentException(SR.DSBadASQSearchScope);
                     }
 
                     // if user did not explicitly set search scope
@@ -640,7 +585,6 @@ namespace System.DirectoryServices
         /// </devdoc>
         [
             DefaultValue(DereferenceAlias.Never),
-            DSDescriptionAttribute(Res.DSDerefAlias)
         ]
         public DereferenceAlias DerefAlias
         {
@@ -665,7 +609,6 @@ namespace System.DirectoryServices
         /// </devdoc>
         [
             DefaultValue(SecurityMasks.None),
-            DSDescriptionAttribute(Res.DSSecurityMasks)
         ]
         public SecurityMasks SecurityMasks
         {
@@ -690,7 +633,6 @@ namespace System.DirectoryServices
         /// </devdoc>
         [
             DefaultValue(ExtendedDN.None),
-            DSDescriptionAttribute(Res.DSExtendedDn)
         ]
         public ExtendedDN ExtendedDN
         {
@@ -714,8 +656,6 @@ namespace System.DirectoryServices
         /// </devdoc>
         [
             DefaultValue(null),
-            DSDescriptionAttribute(Res.DSDirectorySynchronization),
-            Browsable(false)
         ]
         public DirectorySynchronization DirectorySynchronization
         {
@@ -735,7 +675,7 @@ namespace System.DirectoryServices
                 if (value != null)
                 {
                     if (PageSize != 0)
-                        throw new ArgumentException(Res.GetString(Res.DSBadPageSizeDirsync));
+                        throw new ArgumentException(SR.DSBadPageSizeDirsync);
 
                     directorySynchronizationSpecified = true;
                 }
@@ -756,8 +696,6 @@ namespace System.DirectoryServices
         /// </devdoc>
         [
             DefaultValue(null),
-            DSDescriptionAttribute(Res.DSVirtualListView),
-            Browsable(false)
         ]
         public DirectoryVirtualListView VirtualListView
         {
@@ -783,7 +721,7 @@ namespace System.DirectoryServices
                 if (value != null)
                 {
                     if (_cacheResultsSpecified == true && CacheResults == true)
-                        throw new ArgumentException(Res.GetString(Res.DSBadCacheResultsVLV));
+                        throw new ArgumentException(SR.DSBadCacheResultsVLV);
 
                     directoryVirtualListViewSpecified = true;
                     // if user does not explicit specify cache results to true and also do vlv, then cache results is default to false
@@ -863,7 +801,7 @@ namespace System.DirectoryServices
 
             UnsafeNativeMethods.IAds adsObject = clonedRoot.AdsObject;
             if (!(adsObject is UnsafeNativeMethods.IDirectorySearch))
-                throw new NotSupportedException(Res.GetString(Res.DSSearchUnsupported, SearchRoot.Path));
+                throw new NotSupportedException(String.Format(CultureInfo.CurrentCulture, SR.DSSearchUnsupported , SearchRoot.Path));
 
             // this is a little bit hacky, but we need to perform a bind here, so we make sure the LDAP connection that we hold has more than
             // one reference count, one by SearchResultCollection object, one by DirectorySearcher object. In this way, when user calls
@@ -1225,7 +1163,7 @@ namespace System.DirectoryServices
                                 property = "VirtualListView";
                                 break;
                         }
-                        throw new InvalidOperationException(Res.GetString(Res.DSSearchPreferencesNotAccepted, property));
+                        throw new InvalidOperationException(String.Format(CultureInfo.CurrentCulture, SR.DSSearchPreferencesNotAccepted , property));
                     }
 
                     tempPtr = IntPtr.Add(tempPtr, structSize);

@@ -56,5 +56,45 @@ namespace System.Net.Sockets.Tests
                 }
             }
         }
+
+        [OuterLoop] // TODO: Issue #11345
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/987
+        public void Success_IPv6()
+        {
+            ManualResetEvent completed = new ManualResetEvent(false);
+
+            if (Socket.OSSupportsIPv6)
+            {
+                using (Socket receiver = new Socket(AddressFamily.InterNetworkV6, SocketType.Dgram, ProtocolType.Udp))
+                {
+                    int port = receiver.BindToAnonymousPort(IPAddress.IPv6Loopback);
+                    receiver.SetSocketOption(SocketOptionLevel.IPv6, SocketOptionName.PacketInformation, true);
+
+                    Socket sender = new Socket(AddressFamily.InterNetworkV6, SocketType.Dgram, ProtocolType.Udp);
+                    sender.Bind(new IPEndPoint(IPAddress.IPv6Loopback, 0));
+
+                    for (int i = 0; i < TestSettings.UDPRedundancy; i++)
+                    {
+                        sender.SendTo(new byte[1024], new IPEndPoint(IPAddress.IPv6Loopback, port));
+                    }
+
+                    SocketAsyncEventArgs args = new SocketAsyncEventArgs();
+                    args.RemoteEndPoint = new IPEndPoint(IPAddress.IPv6Any, 0);
+                    args.SetBuffer(new byte[1024], 0, 1024);
+                    args.Completed += OnCompleted;
+                    args.UserToken = completed;
+
+                    Assert.True(receiver.ReceiveMessageFromAsync(args));
+
+                    Assert.True(completed.WaitOne(TestSettings.PassingTestTimeout), "Timeout while waiting for connection");
+
+                    Assert.Equal(1024, args.BytesTransferred);
+                    Assert.Equal(sender.LocalEndPoint, args.RemoteEndPoint);
+                    Assert.Equal(((IPEndPoint)sender.LocalEndPoint).Address, args.ReceiveMessageFromPacketInfo.Address);
+
+                    sender.Dispose();
+                }
+            }
+        }
     }
 }

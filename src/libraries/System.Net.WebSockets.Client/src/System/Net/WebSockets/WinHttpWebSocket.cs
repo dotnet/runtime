@@ -2,14 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Net.Http;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using System.ComponentModel;
-using System.Runtime.InteropServices;
-using System.Diagnostics;
-using System.Globalization;
 
 namespace System.Net.WebSockets
 {
@@ -590,23 +589,29 @@ namespace System.Net.WebSockets
             // Manually add cookies.
             if (options.Cookies != null)
             {
-                string cookieHeader = GetCookieHeader(uri, options.Cookies);
-                if (!string.IsNullOrEmpty(cookieHeader))
-                {
-                    requestHeadersBuffer.AppendLine(cookieHeader);
-                }
+                AppendCookieHeaderLine(uri, options.Cookies, requestHeadersBuffer);
             }
 
             // Serialize general request headers.
             requestHeadersBuffer.AppendLine(options.RequestHeaders.ToString());
 
-            var subProtocols = options.RequestedSubProtocols;
-            if (subProtocols.Count > 0)
+            using (List<string>.Enumerator e = options.RequestedSubProtocols.GetEnumerator())
             {
-                requestHeadersBuffer.AppendLine(string.Format("{0}: {1}", HeaderNameWebSocketProtocol,
-                    string.Join(", ", subProtocols)));
+                if (e.MoveNext())
+                {
+                    requestHeadersBuffer.Append(HeaderNameWebSocketProtocol + ": ");
+                    requestHeadersBuffer.Append(e.Current);
+
+                    while (e.MoveNext())
+                    {
+                        requestHeadersBuffer.Append(", ");
+                        requestHeadersBuffer.Append(e.Current);
+                    }
+
+                    requestHeadersBuffer.AppendLine();
+                }
             }
-            
+
             // Add request headers to WinHTTP request handle.
             if (!Interop.WinHttp.WinHttpAddRequestHeaders(
                 _operation.RequestHandle,
@@ -618,19 +623,17 @@ namespace System.Net.WebSockets
             }
         }
 
-        private static string GetCookieHeader(Uri uri, CookieContainer cookies)
+        private static void AppendCookieHeaderLine(Uri uri, CookieContainer cookies, StringBuilder requestHeadersBuffer)
         {
-            string cookieHeader = null;
-
             Debug.Assert(cookies != null);
+            Debug.Assert(requestHeadersBuffer != null);
 
             string cookieValues = cookies.GetCookieHeader(uri);
             if (!string.IsNullOrEmpty(cookieValues))
             {
-                cookieHeader = string.Format(CultureInfo.InvariantCulture, "{0}: {1}", HeaderNameCookie, cookieValues);
+                requestHeadersBuffer.Append(HeaderNameCookie + ": ");
+                requestHeadersBuffer.AppendLine(cookieValues);
             }
-
-            return cookieHeader;
         }
 
         private HttpStatusCode GetHttpStatusCode()

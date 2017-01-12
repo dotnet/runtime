@@ -11,8 +11,8 @@ namespace System.DirectoryServices.ActiveDirectory
     using System.Runtime.InteropServices;
     using System.Threading;
     using System.Security.Permissions;
+    using System.Globalization;
 
-    [DirectoryServicesPermission(SecurityAction.LinkDemand, Unrestricted = true)]
     public class AdamInstance : DirectoryServer
     {
         private string[] _becomeRoleOwnerAttrs = null;
@@ -126,13 +126,13 @@ namespace System.DirectoryServices.ActiveDirectory
             // contexttype should be DirectoryServer
             if (context.ContextType != DirectoryContextType.DirectoryServer)
             {
-                throw new ArgumentException(Res.GetString(Res.TargetShouldBeADAMServer), "context");
+                throw new ArgumentException(SR.TargetShouldBeADAMServer, "context");
             }
 
             // target must be a server
             if ((!context.isServer()))
             {
-                throw new ActiveDirectoryObjectNotFoundException(Res.GetString(Res.AINotFound, context.Name), typeof(AdamInstance), context.Name);
+                throw new ActiveDirectoryObjectNotFoundException(String.Format(CultureInfo.CurrentCulture, SR.AINotFound , context.Name), typeof(AdamInstance), context.Name);
             }
 
             //  work with copy of the context
@@ -147,7 +147,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 // This will ensure that we are talking to ADAM instance only
                 if (!Utils.CheckCapability(rootDSE, Capability.ActiveDirectoryApplicationMode))
                 {
-                    throw new ActiveDirectoryObjectNotFoundException(Res.GetString(Res.AINotFound, context.Name), typeof(AdamInstance), context.Name);
+                    throw new ActiveDirectoryObjectNotFoundException(String.Format(CultureInfo.CurrentCulture, SR.AINotFound , context.Name), typeof(AdamInstance), context.Name);
                 }
                 dnsHostName = (string)PropertyManager.GetPropertyValue(context, rootDSE, PropertyManager.DnsHostName);
             }
@@ -157,7 +157,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                 if (errorCode == unchecked((int)0x8007203a))
                 {
-                    throw new ActiveDirectoryObjectNotFoundException(Res.GetString(Res.AINotFound, context.Name), typeof(AdamInstance), context.Name);
+                    throw new ActiveDirectoryObjectNotFoundException(String.Format(CultureInfo.CurrentCulture, SR.AINotFound , context.Name), typeof(AdamInstance), context.Name);
                 }
                 else
                 {
@@ -179,7 +179,7 @@ namespace System.DirectoryServices.ActiveDirectory
             // contexttype should be ConfigurationSet
             if (context.ContextType != DirectoryContextType.ConfigurationSet)
             {
-                throw new ArgumentException(Res.GetString(Res.TargetShouldBeConfigSet), "context");
+                throw new ArgumentException(SR.TargetShouldBeConfigSet, "context");
             }
 
             if (partitionName == null)
@@ -189,7 +189,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             if (partitionName.Length == 0)
             {
-                throw new ArgumentException(Res.GetString(Res.EmptyStringParameter), "partitionName");
+                throw new ArgumentException(SR.EmptyStringParameter, "partitionName");
             }
 
             //  work with copy of the context
@@ -211,7 +211,7 @@ namespace System.DirectoryServices.ActiveDirectory
             // contexttype should be ConfigurationSet
             if (context.ContextType != DirectoryContextType.ConfigurationSet)
             {
-                throw new ArgumentException(Res.GetString(Res.TargetShouldBeConfigSet), "context");
+                throw new ArgumentException(SR.TargetShouldBeConfigSet, "context");
             }
 
             if (partitionName == null)
@@ -221,7 +221,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             if (partitionName.Length == 0)
             {
-                throw new ArgumentException(Res.GetString(Res.EmptyStringParameter), "partitionName");
+                throw new ArgumentException(SR.EmptyStringParameter, "partitionName");
             }
 
             //  work with copy of the context
@@ -314,10 +314,6 @@ namespace System.DirectoryServices.ActiveDirectory
             _cachedRoles = null;
         }
 
-        [
-            DirectoryServicesPermission(SecurityAction.LinkDemand, Unrestricted = true),
-            DirectoryServicesPermission(SecurityAction.InheritanceDemand, Unrestricted = true)
-        ]
         public override void CheckReplicationConsistency()
         {
             if (_disposed)
@@ -330,10 +326,6 @@ namespace System.DirectoryServices.ActiveDirectory
             CheckConsistencyHelper(_ADAMHandle, DirectoryContext.ADAMHandle);
         }
 
-        [
-            DirectoryServicesPermission(SecurityAction.LinkDemand, Unrestricted = true),
-            DirectoryServicesPermission(SecurityAction.InheritanceDemand, Unrestricted = true)
-        ]
         public override ReplicationCursorCollection GetReplicationCursors(string partition)
         {
             IntPtr info = (IntPtr)0;
@@ -347,7 +339,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new ArgumentNullException("partition");
 
             if (partition.Length == 0)
-                throw new ArgumentException(Res.GetString(Res.EmptyStringParameter), "partition");
+                throw new ArgumentException(SR.EmptyStringParameter, "partition");
 
             // get the handle
             GetADAMHandle();
@@ -355,10 +347,6 @@ namespace System.DirectoryServices.ActiveDirectory
             return ConstructReplicationCursors(_ADAMHandle, advanced, info, partition, this, DirectoryContext.ADAMHandle);
         }
 
-        [
-            DirectoryServicesPermission(SecurityAction.LinkDemand, Unrestricted = true),
-            DirectoryServicesPermission(SecurityAction.InheritanceDemand, Unrestricted = true)
-        ]
         public override ReplicationOperationInformation GetReplicationOperationInformation()
         {
             IntPtr info = (IntPtr)0;
@@ -373,10 +361,6 @@ namespace System.DirectoryServices.ActiveDirectory
             return ConstructPendingOperations(info, this, DirectoryContext.ADAMHandle);
         }
 
-        [
-            DirectoryServicesPermission(SecurityAction.LinkDemand, Unrestricted = true),
-            DirectoryServicesPermission(SecurityAction.InheritanceDemand, Unrestricted = true)
-        ]
         public override ReplicationNeighborCollection GetReplicationNeighbors(string partition)
         {
             IntPtr info = (IntPtr)0;
@@ -389,7 +373,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new ArgumentNullException("partition");
 
             if (partition.Length == 0)
-                throw new ArgumentException(Res.GetString(Res.EmptyStringParameter), "partition");
+                throw new ArgumentException(SR.EmptyStringParameter, "partition");
 
             // get the handle
             GetADAMHandle();
@@ -397,10 +381,6 @@ namespace System.DirectoryServices.ActiveDirectory
             return ConstructNeighbors(info, this, DirectoryContext.ADAMHandle);
         }
 
-        [
-            DirectoryServicesPermission(SecurityAction.LinkDemand, Unrestricted = true),
-            DirectoryServicesPermission(SecurityAction.InheritanceDemand, Unrestricted = true)
-        ]
         public override ReplicationNeighborCollection GetAllReplicationNeighbors()
         {
             IntPtr info = (IntPtr)0;
@@ -415,19 +395,11 @@ namespace System.DirectoryServices.ActiveDirectory
             return ConstructNeighbors(info, this, DirectoryContext.ADAMHandle);
         }
 
-        [
-            DirectoryServicesPermission(SecurityAction.LinkDemand, Unrestricted = true),
-            DirectoryServicesPermission(SecurityAction.InheritanceDemand, Unrestricted = true)
-        ]
         public override ReplicationFailureCollection GetReplicationConnectionFailures()
         {
             return GetReplicationFailures(DS_REPL_INFO_TYPE.DS_REPL_INFO_KCC_DSA_CONNECT_FAILURES);
         }
 
-        [
-            DirectoryServicesPermission(SecurityAction.LinkDemand, Unrestricted = true),
-            DirectoryServicesPermission(SecurityAction.InheritanceDemand, Unrestricted = true)
-        ]
         public override ActiveDirectoryReplicationMetadata GetReplicationMetadata(string objectPath)
         {
             IntPtr info = (IntPtr)0;
@@ -440,7 +412,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new ArgumentNullException("objectPath");
 
             if (objectPath.Length == 0)
-                throw new ArgumentException(Res.GetString(Res.EmptyStringParameter), "objectPath");
+                throw new ArgumentException(SR.EmptyStringParameter, "objectPath");
 
             // get the handle
             GetADAMHandle();
@@ -448,10 +420,6 @@ namespace System.DirectoryServices.ActiveDirectory
             return ConstructMetaData(advanced, info, this, DirectoryContext.ADAMHandle);
         }
 
-        [
-            DirectoryServicesPermission(SecurityAction.LinkDemand, Unrestricted = true),
-            DirectoryServicesPermission(SecurityAction.InheritanceDemand, Unrestricted = true)
-        ]
         public override void SyncReplicaFromServer(string partition, string sourceServer)
         {
             if (_disposed)
@@ -461,23 +429,19 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new ArgumentNullException("partition");
 
             if (partition.Length == 0)
-                throw new ArgumentException(Res.GetString(Res.EmptyStringParameter), "partition");
+                throw new ArgumentException(SR.EmptyStringParameter, "partition");
 
             if (sourceServer == null)
                 throw new ArgumentNullException("sourceServer");
 
             if (sourceServer.Length == 0)
-                throw new ArgumentException(Res.GetString(Res.EmptyStringParameter), "sourceServer");
+                throw new ArgumentException(SR.EmptyStringParameter, "sourceServer");
 
             // get the dsHandle
             GetADAMHandle();
             SyncReplicaHelper(_ADAMHandle, true, partition, sourceServer, 0, DirectoryContext.ADAMHandle);
         }
 
-        [
-            DirectoryServicesPermission(SecurityAction.LinkDemand, Unrestricted = true),
-            DirectoryServicesPermission(SecurityAction.InheritanceDemand, Unrestricted = true)
-        ]
         public override void TriggerSyncReplicaFromNeighbors(string partition)
         {
             if (_disposed)
@@ -487,17 +451,13 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new ArgumentNullException("partition");
 
             if (partition.Length == 0)
-                throw new ArgumentException(Res.GetString(Res.EmptyStringParameter), "partition");
+                throw new ArgumentException(SR.EmptyStringParameter, "partition");
 
             // get the dsHandle
             GetADAMHandle();
             SyncReplicaHelper(_ADAMHandle, true, partition, null, DS_REPSYNC_ASYNCHRONOUS_OPERATION | DS_REPSYNC_ALL_SOURCES, DirectoryContext.ADAMHandle);
         }
 
-        [
-            DirectoryServicesPermission(SecurityAction.LinkDemand, Unrestricted = true),
-            DirectoryServicesPermission(SecurityAction.InheritanceDemand, Unrestricted = true)
-        ]
         public override void SyncReplicaFromAllServers(string partition, SyncFromAllServersOptions options)
         {
             if (_disposed)
@@ -507,7 +467,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new ArgumentNullException("partition");
 
             if (partition.Length == 0)
-                throw new ArgumentException(Res.GetString(Res.EmptyStringParameter), "partition");
+                throw new ArgumentException(SR.EmptyStringParameter, "partition");
 
             // get the dsHandle
             GetADAMHandle();
@@ -697,14 +657,14 @@ namespace System.DirectoryServices.ActiveDirectory
                     //
                     if (!Utils.IsValidDNFormat(value))
                     {
-                        throw new ArgumentException(Res.GetString(Res.InvalidDNFormat), "value");
+                        throw new ArgumentException(SR.InvalidDNFormat, "value");
                     }
 
                     // this value should be one of partitions currently being hosted by
                     // this adam instance
                     if (!Partitions.Contains(value))
                     {
-                        throw new ArgumentException(Res.GetString(Res.ServerNotAReplica, value), "value");
+                        throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.ServerNotAReplica , value), "value");
                     }
                     ntdsaEntry.Properties[PropertyManager.MsDSDefaultNamingContext].Value = value;
                 }
@@ -714,14 +674,10 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public override string IPAddress
         {
-            [
-                DirectoryServicesPermission(SecurityAction.LinkDemand, Unrestricted = true),
-                DirectoryServicesPermission(SecurityAction.InheritanceDemand, Unrestricted = true),
-                DnsPermission(SecurityAction.Assert, Unrestricted = true)
-            ]
             get
             {
                 CheckIfDisposed();
+
                 IPHostEntry hostEntry = Dns.GetHostEntry(HostName);
                 if (hostEntry.AddressList.GetLength(0) > 0)
                 {
@@ -736,10 +692,6 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public override String SiteName
         {
-            [
-                DirectoryServicesPermission(SecurityAction.LinkDemand, Unrestricted = true),
-                DirectoryServicesPermission(SecurityAction.InheritanceDemand, Unrestricted = true)
-            ]
             get
             {
                 CheckIfDisposed();
@@ -773,7 +725,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     if (components.GetLength(0) < 3)
                     {
                         // should not happen
-                        throw new ActiveDirectoryOperationException(Res.GetString(Res.InvalidServerNameFormat));
+                        throw new ActiveDirectoryOperationException(SR.InvalidServerNameFormat);
                     }
                     cachedSiteObjectName = components[2];
                     for (int i = 3; i < components.GetLength(0); i++)
@@ -852,10 +804,6 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public override SyncUpdateCallback SyncFromAllServersCallback
         {
-            [
-                DirectoryServicesPermission(SecurityAction.LinkDemand, Unrestricted = true),
-                DirectoryServicesPermission(SecurityAction.InheritanceDemand, Unrestricted = true)
-            ]
             get
             {
                 if (_disposed)
@@ -864,10 +812,6 @@ namespace System.DirectoryServices.ActiveDirectory
                 return _userDelegate;
             }
 
-            [
-                DirectoryServicesPermission(SecurityAction.LinkDemand, Unrestricted = true),
-                DirectoryServicesPermission(SecurityAction.InheritanceDemand, Unrestricted = true)
-            ]
             set
             {
                 if (_disposed)
@@ -879,10 +823,6 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public override ReplicationConnectionCollection InboundConnections
         {
-            [
-                DirectoryServicesPermission(SecurityAction.LinkDemand, Unrestricted = true),
-                DirectoryServicesPermission(SecurityAction.InheritanceDemand, Unrestricted = true)
-            ]
             get
             {
                 return GetInboundConnectionsHelper();
@@ -891,10 +831,6 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public override ReplicationConnectionCollection OutboundConnections
         {
-            [
-                DirectoryServicesPermission(SecurityAction.LinkDemand, Unrestricted = true),
-                DirectoryServicesPermission(SecurityAction.InheritanceDemand, Unrestricted = true)
-            ]
             get
             {
                 return GetOutboundConnectionsHelper();

@@ -10,6 +10,7 @@ namespace System.DirectoryServices
     using System.Runtime.Serialization;
     using System.DirectoryServices.Interop;
     using System.Security.Permissions;
+    using System.Globalization;
 
     [Serializable]
     public class DirectoryServicesCOMException : COMException, ISerializable
@@ -67,7 +68,7 @@ namespace System.DirectoryServices
             }
             else
             {
-                errorMsg = Res.GetString(Res.DSUnknown, Convert.ToString(hr, 16));
+                errorMsg = String.Format(CultureInfo.CurrentCulture, SR.DSUnknown , Convert.ToString(hr, 16));
             }
 
             return CreateFormattedComException(new COMException(errorMsg, hr));
