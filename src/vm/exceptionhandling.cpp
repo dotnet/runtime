@@ -1614,7 +1614,7 @@ CLRUnwindStatus ExceptionTracker::ProcessOSExceptionNotification(
 
     ExceptionTracker::InitializeCrawlFrame(&cfThisFrame, pThread, sf, &regdisp, pDispatcherContext, ControlPc, &uMethodStartPC, this);
 
-#ifdef _TARGET_AMD64_
+#if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
     uCallerSP = EECodeManager::GetCallerSp(cfThisFrame.pRD);
 #elif defined(_TARGET_ARM_) || defined(_TARGET_ARM64_)
     // On ARM & ARM64, the EstablisherFrame is the value of SP at the time a function was called and before it's prolog
