@@ -142,7 +142,8 @@ mono_arch_get_gsharedvt_arg_trampoline (MonoDomain *domain, gpointer arg, gpoint
 	mono_arch_flush_icache (start, code - start);
 	mono_profiler_code_buffer_new (start, code - start, MONO_PROFILER_CODE_BUFFER_GENERICS_TRAMPOLINE, NULL);
 
-	g_assert (0);
+	mono_tramp_info_register (mono_tramp_info_create (NULL, start, code - start, NULL, NULL), domain);
+
 	return start;
 }
 
@@ -281,7 +282,7 @@ mono_arch_get_gsharedvt_trampoline (MonoTrampInfo **info, gboolean aot)
 			amd64_call_reg (code, AMD64_R11);
 		#endif
 	} else {
-		g_error ("no aot");
+		amd64_call_code (code, mono_amd64_start_gsharedvt_call);
 	}
 
 	/* Method to call is now on RAX. Restore regs and jump */
