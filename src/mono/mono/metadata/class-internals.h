@@ -1117,12 +1117,12 @@ typedef struct {
 #ifdef DISABLE_REMOTING
 #define mono_class_is_transparent_proxy(klass) (FALSE)
 #define mono_class_is_real_proxy(klass) (FALSE)
-#define mono_object_is_transparent_proxy(object) (FALSE)
 #else
 #define mono_class_is_transparent_proxy(klass) ((klass) == mono_defaults.transparent_proxy_class)
 #define mono_class_is_real_proxy(klass) ((klass) == mono_defaults.real_proxy_class)
-#define mono_object_is_transparent_proxy(object) (((MonoObject*)object)->vtable->klass == mono_defaults.transparent_proxy_class)
 #endif
+
+#define mono_object_is_transparent_proxy(object) (mono_class_is_transparent_proxy (mono_object_class (object)))
 
 
 #define GENERATE_GET_CLASS_WITH_CACHE_DECL(shortname) \

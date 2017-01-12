@@ -1816,7 +1816,7 @@ mono_domain_from_appdomain (MonoAppDomain *appdomain)
 	if (appdomain == NULL)
 		return NULL;
 
-	if (appdomain->mbr.obj.vtable->klass == mono_defaults.transparent_proxy_class) {
+	if (mono_object_is_transparent_proxy (&appdomain->mbr.obj)) {
 		MonoTransparentProxy *tp = (MonoTransparentProxy*)appdomain;
 		return mono_domain_get_by_id (tp->rp->target_domain_id);
 	}
