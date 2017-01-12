@@ -10583,6 +10583,7 @@ GenTreePtr CodeGen::genMakeConst(const void* cnsAddr, var_types cnsType, GenTree
 //             funclet frames: this will be FuncletInfo.fiSpDelta.
 void CodeGen::genPreserveCalleeSavedFltRegs(unsigned lclFrameSize)
 {
+    genVzeroupperIfNeeded(false);
     regMaskTP regMask = compiler->compCalleeFPRegsSavedMask;
 
     // Only callee saved floating point registers should be in regMask
@@ -10621,16 +10622,6 @@ void CodeGen::genPreserveCalleeSavedFltRegs(unsigned lclFrameSize)
             offset -= XMM_REGSIZE_BYTES;
         }
     }
-
-#ifdef FEATURE_AVX_SUPPORT
-    // Just before restoring float registers issue a Vzeroupper to zero out upper 128-bits of all YMM regs.
-    // This is to avoid penalty if this routine is using AVX-256 and now returning to a routine that is
-    // using SSE2.
-    if (compiler->getFloatingPointInstructionSet() == InstructionSet_AVX)
-    {
-        instGen(INS_vzeroupper);
-    }
-#endif
 }
 
 // Save/Restore compCalleeFPRegsPushed with the smallest register number saved at [RSP+offset], working
@@ -10651,6 +10642,7 @@ void CodeGen::genRestoreCalleeSavedFltRegs(unsigned lclFrameSize)
     // fast path return
     if (regMask == RBM_NONE)
     {
+        genVzeroupperIfNeeded();
         return;
     }
 
@@ -10682,16 +10674,6 @@ void CodeGen::genRestoreCalleeSavedFltRegs(unsigned lclFrameSize)
     assert((offset % 16) == 0);
 #endif // _TARGET_AMD64_
 
-#ifdef FEATURE_AVX_SUPPORT
-    // Just before restoring float registers issue a Vzeroupper to zero out upper 128-bits of all YMM regs.
-    // This is to avoid penalty if this routine is using AVX-256 and now returning to a routine that is
-    // using SSE2.
-    if (compiler->getFloatingPointInstructionSet() == InstructionSet_AVX)
-    {
-        instGen(INS_vzeroupper);
-    }
-#endif
-
     for (regNumber reg = REG_FLT_CALLEE_SAVED_FIRST; regMask != RBM_NONE; reg = REG_NEXT(reg))
     {
         regMaskTP regBit = genRegMask(reg);
@@ -10706,7 +10688,41 @@ void CodeGen::genRestoreCalleeSavedFltRegs(unsigned lclFrameSize)
             offset -= XMM_REGSIZE_BYTES;
         }
     }
+    genVzeroupperIfNeeded();
 }
+
+// Generate Vzeroupper instruction as needed to zero out upper 128b-bit of all YMM registers so that the
+// AVX/Legacy SSE transition penalties can be avoided. This function is been used in genPreserveCalleeSavedFltRegs
+// (prolog) and genRestoreCalleeSavedFltRegs (epilog). Issue VZEROUPPER in Prolog if the method contains
+// 128-bit or 256-bit AVX code, to avoid legacy SSE to AVX transition penalty, which could happen when native
+// code contains legacy SSE code calling into JIT AVX code (e.g. reverse pinvoke). Issue VZEROUPPER in Epilog
+// if the method contains 256-bit AVX code, to avoid AVX to legacy SSE transition penalty.
+//
+// Params
+//   check256bitOnly  - true to check if the function contains 256-bit AVX instruction and generate Vzeroupper
+//      instruction, false to check if the function contains AVX instruciton (either 128-bit or 256-bit).
+//
+void CodeGen::genVzeroupperIfNeeded(bool check256bitOnly /* = true*/)
+{
+#ifdef FEATURE_AVX_SUPPORT
+    bool emitVzeroUpper = false;
+    if (check256bitOnly)
+    {
+        emitVzeroUpper = getEmitter()->Contains256bitAVX();
+    }
+    else
+    {
+        emitVzeroUpper = getEmitter()->ContainsAVX();
+    }
+
+    if (emitVzeroUpper)
+    {
+        assert(compiler->getSIMDInstructionSet() == InstructionSet_AVX);
+        instGen(INS_vzeroupper);
+    }
+#endif
+}
+
 #endif // defined(_TARGET_XARCH_) && !FEATURE_STACK_FP_X87
 
 //-----------------------------------------------------------------------------------

@@ -4995,6 +4995,20 @@ void CodeGen::genCallInstruction(GenTreePtr node)
 
 #endif // defined(_TARGET_X86_)
 
+#ifdef FEATURE_AVX_SUPPORT
+    // When it's a PInvoke call and the call type is USER function, we issue VZEROUPPER here
+    // if the function contains 256bit AVX instructions, this is to avoid AVX-256 to Legacy SSE
+    // transition penalty, assuming the user function contains legacy SSE instruction.
+    // To limit code size increase impact: we only issue VZEROUPPER before PInvoke call, not issue
+    // VZEROUPPER after PInvoke call because transition penalty from legacy SSE to AVX only happens
+    // when there's preceding 256-bit AVX to legacy SSE transition penalty.
+    if (call->IsPInvoke() && (call->gtCallType == CT_USER_FUNC) && getEmitter()->Contains256bitAVX())
+    {
+        assert(compiler->getSIMDInstructionSet() == InstructionSet_AVX);
+        instGen(INS_vzeroupper);
+    }
+#endif
+
     if (target != nullptr)
     {
 #ifdef _TARGET_X86_
