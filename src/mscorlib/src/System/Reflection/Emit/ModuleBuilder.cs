@@ -404,12 +404,11 @@ namespace System.Reflection.Emit
                 if (parameters == null)
                     throw new ArgumentException(Environment.GetResourceString("Argument_InvalidConstructorInfo"));
 
-                int count = parameters.Length;
-                Type[] parameterTypes = new Type[count];
-                Type[][] requiredCustomModifiers = new Type[count][];
-                Type[][] optionalCustomModifiers = new Type[count][];
+                Type[] parameterTypes = new Type[parameters.Length];
+                Type[][] requiredCustomModifiers = new Type[parameters.Length][];
+                Type[][] optionalCustomModifiers = new Type[parameters.Length][];
 
-                for (int i = 0; i < count; i++)
+                for (int i = 0; i < parameters.Length; i++)
                 {
                     if (parameters[i] == null)
                         throw new ArgumentException(Environment.GetResourceString("Argument_InvalidConstructorInfo"));
@@ -603,12 +602,14 @@ namespace System.Reflection.Emit
         internal SignatureHelper GetMemberRefSignature(CallingConventions call, Type returnType,
             Type[] parameterTypes, IEnumerable<Type> optionalParameterTypes, int cGenericParameters) 
         {
-            int cParams = (parameterTypes == null) ? 0 : parameterTypes.Length;
             SignatureHelper sig = SignatureHelper.GetMethodSigHelper(this, call, returnType, cGenericParameters);
 
-            for (int i = 0; i < cParams; i++)
+            if (parameterTypes != null)
             {
-                sig.AddArgument(parameterTypes[i]);
+                foreach (Type t in parameterTypes)
+                {
+                    sig.AddArgument(t);
+                }
             }
 
             if (optionalParameterTypes != null) {
