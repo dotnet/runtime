@@ -19,6 +19,7 @@ internal static partial class Interop
         internal const string NtDll = "ntdll.dll";
         internal const string OleAut32 = "oleaut32.dll";
         internal const string RoBuffer = "api-ms-win-core-winrt-robuffer-l1-1-0.dll";
+        internal const string Secur32 = "secur32.dll";
         internal const string Shell32 = "shell32.dll";
         internal const string SspiCli = "sspicli.dll";
         internal const string User32 = "user32.dll";
