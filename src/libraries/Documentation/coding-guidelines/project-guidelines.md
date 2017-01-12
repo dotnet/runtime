@@ -180,7 +180,7 @@ The output for the ref project build will be a flat targeting pack folder in the
 ##src
 In the src directory for a library there should be only **one** `.csproj` file that contains any information necessary to build the library in various configurations. All supported configurations should be listed in the `BuildConfigurations` property.
 
-All libraries should use '&lt;Reference Include="..." /&gt;' for all their project references. That will cause them to be resolved against a targeting pack (i.e. `bin\ref\netcoreapp` or `\bin\ref\netstanard`) based on the project configuration. There should not be any direct project references to other libraries. The only exception to that rule right now is for partial facades which directly reference System.Private.CoreLib and thus need to directly reference other partial facades to avoid type conflicts.
+All libraries should use `<Reference Include="..." />` for all their project references. That will cause them to be resolved against a targeting pack (i.e. `bin\ref\netcoreapp` or `\bin\ref\netstanard`) based on the project configuration. There should not be any direct project references to other libraries. The only exception to that rule right now is for partial facades which directly reference System.Private.CoreLib and thus need to directly reference other partial facades to avoid type conflicts.
 <BR>//**CONSIDER**: just using Reference and use a reference to System.Private.CoreLib as a trigger to turn the other References into a ProjectReference automatically. That will allow us to have consistency where all projects just use Reference.
 
 ###src output
