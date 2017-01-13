@@ -172,8 +172,7 @@ def buildArchConfiguration = ['Debug': 'x86',
             // Set up standard options.
             Utilities.addStandardOptions(newTestJob, isPR)
             // Add the unit test results
-            // TODO: Re-enable test analysis when the build refactoring work allows it.
-            //Utilities.addXUnitDotNETResults(newTestJob, 'bin/tests/**/testResults.xml')
+            Utilities.addXUnitDotNETResults(newTestJob, 'bin/**/testResults.xml')
 
             def fullCoreFXTestJobName = projectFolder + '/' + newTestJob.name
             def newJob = buildFlowJob(Utilities.getFullJobName(project, newJobName, isPR)) {
@@ -242,8 +241,7 @@ def buildArchConfiguration = ['Debug': 'x86',
             // Set up standard options.
             Utilities.standardJobSetup(newJob, project, isPR, "*/${branch}")
             // Add the unit test results
-            // TODO: Re-enable test analysis when the build refactoring work allows it.
-            // Utilities.addXUnitDotNETResults(newJob, 'bin/tests/**/testResults.xml')
+            Utilities.addXUnitDotNETResults(newJob, 'bin/**/testResults.xml')
             // Add archival for the built data.
             Utilities.addArchival(newJob, "msbuild.log", '', doNotFailIfNothingArchived=true, archiveOnlyIfSuccessful=false)
             // Set up appropriate triggers.  PR on demand, otherwise nightly
@@ -315,13 +313,9 @@ def buildArchConfiguration = ['Debug': 'x86',
                             shell("HOME=\$WORKSPACE/tempHome ./build-tests.sh -${configurationGroup.toLowerCase()} -framework:${targetGroup} -os:${osGroup} -- ${useServerGC} /p:WithoutCategories=IgnoreForCI")
                             // Tar up the appropriate bits.  On OSX the tarring is a different syntax for exclusion.
                             if (osName == 'OSX') {
-                                // TODO: Re-enable package archival when the build refactoring work allows it.
-                                // shell("tar -czf bin/build.tar.gz --exclude *.Tests bin/*.${configurationGroup} bin/ref bin/packages")
                                 shell("tar -czf bin/build.tar.gz --exclude *.Tests bin/*.${configurationGroup} bin/ref")
                             }
                             else {
-                                // TODO: Re-enable package archival when the build refactoring work allows it.
-                                // shell("tar -czf bin/build.tar.gz bin/*.${configurationGroup} bin/ref bin/packages --exclude=*.Tests")
                                 shell("tar -czf bin/build.tar.gz bin/*.${configurationGroup} bin/ref --exclude=*.Tests")
                             }
                         }
@@ -333,8 +327,7 @@ def buildArchConfiguration = ['Debug': 'x86',
                 // Set up standard options.
                 Utilities.standardJobSetup(newJob, project, isPR, "*/${branch}")
                 // Add the unit test results
-                // TODO: Re-enable test analysis when the build refactoring work allows it.
-                // Utilities.addXUnitDotNETResults(newJob, 'bin/tests/**/testResults.xml')
+                Utilities.addXUnitDotNETResults(newJob, 'bin/**/testResults.xml')
                 def archiveContents = "msbuild.log"
                 if (osName.contains('Windows')) {
                     // Packer.exe is a .NET Framework application. When we can use it from the tool-runtime, we can archive the ".pack" file here.
@@ -393,8 +386,6 @@ def buildArchConfiguration = ['Debug': 'x86',
                         shell(script)
 
                         // Archive the native and managed binaries
-                        // TODO: Re-enable package archival when the build refactoring work allows it.
-                        // shell("tar -czf bin/build.tar.gz bin/*.${configurationGroup} bin/ref bin/packages --exclude=*.Tests")
                         shell("tar -czf bin/build.tar.gz bin/*.${configurationGroup} bin/ref --exclude=*.Tests")
                     }
                 }
