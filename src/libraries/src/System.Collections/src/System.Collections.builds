@@ -9,6 +9,9 @@
     <Project Include="System.Collections.csproj">
       <TargetGroup>uap101aot</TargetGroup>
     </Project>
+    <Project Include="System.Collections.csproj">
+      <TargetGroup>netcoreapp1.2corert</TargetGroup>
+    </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
 </Project>
