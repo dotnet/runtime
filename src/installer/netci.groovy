@@ -4,6 +4,7 @@
 // Import the utility functionality.
 
 import jobs.generation.Utilities;
+import jobs.generation.ArchivalSettings;
 
 def project = GithubProject
 def branch = GithubBranchName
@@ -32,7 +33,7 @@ platformList.each { platform ->
         else {
             buildCommand = ".\\build.cmd -Configuration ${configuration} -Architecture ${architecture} -Targets Default"
         }
-        
+
     }
     else if (os == 'Windows_2016') {
         buildCommand = ".\\build.cmd -Configuration ${configuration} -Architecture ${architecture} -RunInstallerTestsInDocker -Targets Default"
@@ -61,12 +62,20 @@ platformList.each { platform ->
 
     Utilities.setMachineAffinity(newJob, os, 'latest-or-auto')
     Utilities.standardJobSetup(newJob, project, isPR, "*/${branch}")
-    
+
     if (!(os == 'Windows_NT' && architecture == 'arm')) {
         Utilities.addXUnitDotNETResults(newJob, '**/*-testResults.xml')
     }
-    
+
     Utilities.addGithubPRTriggerForBranch(newJob, branch, "${os} ${architecture} ${configuration} Build")
+
+    ArchivalSettings settings = new ArchivalSettings();
+    def archiveString = ["tar.gz", "zip", "deb", "msi", "pkg", "exe", "nupkg"].collect { "artifacts/*/packages/*.${it},artifacts/*/corehost/*.${it},pkg/bin/packages/*.${it}" }.join(",")
+    settings.addFiles(archiveString)
+    settings.setArchiveOnSuccess()
+    settings.setFailIfNothingArchived()
+
+    Utilities.addArchival(newJob, settings)
 }
 
 // **************************
@@ -82,7 +91,7 @@ platformList.each { platform ->
                 batchFile("build.cmd -Configuration ${configurationGroup} -Targets Init,Compile,Package,Publish -Architecure x64 -TargetArch arm64 -ToolsetDir C:\\ats2 -Framework netcoreapp1.1")
             }
             label("arm64")
-            
+
             // Kick off the test run
             publishers {
                 archiveArtifacts {
@@ -96,10 +105,10 @@ platformList.each { platform ->
 
         // Set up standard options.
         Utilities.standardJobSetup(newJob, project, /* isPR */ false, "*/${branch}")
-        
+
         // Set a daily trigger
         Utilities.addPeriodicTrigger(newJob, '@daily')
-        
+
         // Set up a PR trigger that is only triggerable by certain members
         Utilities.addPrivateGithubPRTriggerForBranch(newJob, branch, "Windows_NT ARM64 ${configurationGroup} Build", "(?i).*test\\W+ARM64\\W+${os}\\W+${configurationGroup}", null, arm64Users)
 

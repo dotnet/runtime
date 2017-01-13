@@ -46,7 +46,7 @@ namespace Microsoft.DotNet.Host.Build
             var configEnv = Environment.GetEnvironmentVariable("CONFIGURATION");
             string platformEnv = c.BuildContext.Get<string>("Platform");
             
-            string targetFramework = Environment.GetEnvironmentVariable("TARGETFRAMEWORK") ?? "netcoreapp1.1";
+            string targetFramework = Environment.GetEnvironmentVariable("TARGETFRAMEWORK") ?? "netcoreapp2.0";
 
             if (string.IsNullOrEmpty(configEnv))
             {

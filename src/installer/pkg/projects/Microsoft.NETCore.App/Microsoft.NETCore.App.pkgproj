@@ -3,186 +3,146 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
 
   <PropertyGroup>
+    <IsLineupPackage Condition="'$(PackageTargetRuntime)' == ''">true</IsLineupPackage>
+    <PreventImplementationReference Condition="'$(PackageTargetRuntime)' != ''">true</PreventImplementationReference>
     <Version>$(NetCoreAppVersion)</Version>
     <PackagePlatform>AnyCPU</PackagePlatform>
+    <SkipPackageFileCheck>true</SkipPackageFileCheck>
+    <OmitDependencies>true</OmitDependencies>
+    <SkipValidatePackage>true</SkipValidatePackage>
+    <ShouldCreateLayout>false</ShouldCreateLayout>
   </PropertyGroup>
+  
+  <Choose>
+    <When Condition="$(PackageTargetRuntime.StartsWith('win'))">
+      <PropertyGroup>
+        <ApplicationFileExtension>.exe</ApplicationFileExtension>
+        <LibraryFilePrefix></LibraryFilePrefix>
+        <LibraryFileExtension>.dll</LibraryFileExtension>
+        <SymbolFileExtension>.pdb</SymbolFileExtension>
+      </PropertyGroup>
+    </When>
+    <When Condition="$(PackageTargetRuntime.StartsWith('osx'))">
+      <PropertyGroup>
+        <ApplicationFileExtension></ApplicationFileExtension>
+        <LibraryFilePrefix>lib</LibraryFilePrefix>
+        <LibraryFileExtension>.dylib</LibraryFileExtension>
+        <SymbolFileExtension>.dwarf</SymbolFileExtension>
+      </PropertyGroup>
+    </When>
+    <Otherwise>
+      <PropertyGroup>
+        <ApplicationFileExtension></ApplicationFileExtension>
+        <LibraryFilePrefix>lib</LibraryFilePrefix>
+        <LibraryFileExtension>.so</LibraryFileExtension>
+        <SymbolFileExtension>.dbg</SymbolFileExtension>
+      </PropertyGroup>
+    </Otherwise>
+  </Choose>
+  
+  <Import Project="$(MSBuildProjectName).props" />
+  <Import Project="netcoreapp1.0.props" />
 
-  <ItemGroup>
-    <ProjectReference Include="..\Microsoft.NETCore.DotNetHost\Microsoft.NETCore.DotNetHostPolicy.pkgproj">
-      <TargetFramework>.NETCoreApp1.1</TargetFramework>
-    </ProjectReference>
-  </ItemGroup>
+  <!-- Identity / Reference package content -->
+  <ItemGroup Condition="'$(PackageTargetRuntime)' == ''">
+    <!-- reference RID specific packages to generate lineup -->
+    <ProjectReference Include="@(Project)" />
 
-  <Target Name="ReadDependenciesFromProjectJsonFile" BeforeTargets="GetPackageDependencies">
-    <ReadLinesFromFile File="$(MSBuildThisFileDirectory)project.json">
-      <Output TaskParameter="Lines" ItemName="ProjectJsonLines" />
-    </ReadLinesFromFile>
-
-    <ItemGroup>
-      <PackageMatch Include="@(ProjectJsonLines)">
-        <PackageId>$([System.Text.RegularExpressions.Regex]::Match('%(Identity)', '(\w[^:&quot;]*)'))</PackageId>
-        <PackageVersion>$([System.Text.RegularExpressions.Regex]::Match('%(Identity)', '(\d+\.\d+.\d+[^&quot;]*)'))</PackageVersion>
-      </PackageMatch>
-
-      <Dependency Include="@(PackageMatch -> '%(PackageId)')" Condition="'%(PackageMatch.PackageVersion)' != ''">
-        <Version>%(PackageMatch.PackageVersion)</Version>
-        <TargetFramework>.NETCoreApp1.1</TargetFramework>
-      </Dependency>
-
-      <!-- List of dependencies to mark as exclude=compile -->
-      <Dependency Condition="'%(Dependency.Identity)' == 'Microsoft.CodeAnalysis.CSharp'">
-        <Exclude>Compile</Exclude>
-      </Dependency>
-      <Dependency Condition="'%(Dependency.Identity)' == 'Microsoft.CodeAnalysis.VisualBasic'">
-        <Exclude>Compile</Exclude>
-      </Dependency>
-      <Dependency Condition="'%(Dependency.Identity)' == 'System.Runtime.Loader'">
-        <Exclude>Compile</Exclude>
-      </Dependency>
-
-      <File Include="$(PlaceholderFile)" >
-        <SkipPackageFileCheck>true</SkipPackageFileCheck>
-        <TargetPath>lib/netcoreapp1.1</TargetPath>
-      </File>
-    </ItemGroup>
-  </Target>
-
-  <ItemGroup>
-    <NETCoreApp10Dependency Include="Microsoft.CodeAnalysis.CSharp">
-      <Version>1.3.0</Version>
-      <Exclude>Compile</Exclude>
-    </NETCoreApp10Dependency>
-    <NETCoreApp10Dependency Include="Microsoft.CodeAnalysis.VisualBasic">
-      <Version>1.3.0</Version>
-      <Exclude>Compile</Exclude>
-    </NETCoreApp10Dependency>
-    <NETCoreApp10Dependency Include="Microsoft.CSharp">
-      <Version>4.0.1</Version>
-    </NETCoreApp10Dependency>
-    <NETCoreApp10Dependency Include="Microsoft.NETCore.DotNetHostPolicy">
-      <Version>1.0.1</Version>
-    </NETCoreApp10Dependency>
-    <NETCoreApp10Dependency Include="Microsoft.NETCore.Runtime.CoreCLR">
-      <Version>1.0.4</Version>
-    </NETCoreApp10Dependency>
-    <NETCoreApp10Dependency Include="Microsoft.VisualBasic">
-      <Version>10.0.1</Version>
-    </NETCoreApp10Dependency>
-    <NETCoreApp10Dependency Include="NETStandard.Library">
-      <Version>1.6.0</Version>
-    </NETCoreApp10Dependency>
-    <NETCoreApp10Dependency Include="System.Buffers">
-      <Version>4.0.0</Version>
-    </NETCoreApp10Dependency>
-    <NETCoreApp10Dependency Include="System.Collections.Immutable">
-      <Version>1.2.0</Version>
-    </NETCoreApp10Dependency>
-    <NETCoreApp10Dependency Include="System.ComponentModel">
-      <Version>4.0.1</Version>
-    </NETCoreApp10Dependency>
-    <NETCoreApp10Dependency Include="System.ComponentModel.Annotations">
-      <Version>4.1.0</Version>
-    </NETCoreApp10Dependency>
-    <NETCoreApp10Dependency Include="System.Diagnostics.DiagnosticSource">
-      <Version>4.0.0</Version>
-    </NETCoreApp10Dependency>
-    <NETCoreApp10Dependency Include="System.Diagnostics.Process">
-      <Version>4.1.0</Version>
-    </NETCoreApp10Dependency>
-    <NETCoreApp10Dependency Include="System.Dynamic.Runtime">
-      <Version>4.0.11</Version>
-    </NETCoreApp10Dependency>
-    <NETCoreApp10Dependency Include="System.Globalization.Extensions">
-      <Version>4.0.1</Version>
-    </NETCoreApp10Dependency>
-    <NETCoreApp10Dependency Include="System.IO.FileSystem.Watcher">
-      <Version>4.0.0</Version>
-    </NETCoreApp10Dependency>
-    <NETCoreApp10Dependency Include="System.IO.MemoryMappedFiles">
-      <Version>4.0.0</Version>
-    </NETCoreApp10Dependency>
-    <NETCoreApp10Dependency Include="System.IO.UnmanagedMemoryStream">
-      <Version>4.0.1</Version>
-    </NETCoreApp10Dependency>
-    <NETCoreApp10Dependency Include="System.Linq.Expressions">
-      <Version>4.1.0</Version>
-    </NETCoreApp10Dependency>
-    <NETCoreApp10Dependency Include="System.Linq.Parallel">
-      <Version>4.0.1</Version>
-    </NETCoreApp10Dependency>
-    <NETCoreApp10Dependency Include="System.Linq.Queryable">
-      <Version>4.0.1</Version>
-    </NETCoreApp10Dependency>
-    <NETCoreApp10Dependency Include="System.Net.NameResolution">
-      <Version>4.0.0</Version>
-    </NETCoreApp10Dependency>
-    <NETCoreApp10Dependency Include="System.Net.Requests">
-      <Version>4.0.11</Version>
-    </NETCoreApp10Dependency>
-    <NETCoreApp10Dependency Include="System.Net.Security">
-      <Version>4.0.0</Version>
-    </NETCoreApp10Dependency>
-    <NETCoreApp10Dependency Include="System.Net.WebHeaderCollection">
-      <Version>4.0.1</Version>
-    </NETCoreApp10Dependency>
-    <NETCoreApp10Dependency Include="System.Numerics.Vectors">
-      <Version>4.1.1</Version>
-    </NETCoreApp10Dependency>
-    <NETCoreApp10Dependency Include="System.Reflection.DispatchProxy">
-      <Version>4.0.1</Version>
-    </NETCoreApp10Dependency>
-    <NETCoreApp10Dependency Include="System.Reflection.Metadata">
-      <Version>1.3.0</Version>
-    </NETCoreApp10Dependency>
-    <NETCoreApp10Dependency Include="System.Reflection.TypeExtensions">
-      <Version>4.1.0</Version>
-    </NETCoreApp10Dependency>
-    <NETCoreApp10Dependency Include="System.Resources.Reader">
-      <Version>4.0.0</Version>
-    </NETCoreApp10Dependency>
-    <NETCoreApp10Dependency Include="System.Runtime.Loader">
-      <Version>4.0.0</Version>
-      <Exclude>Compile</Exclude>
-    </NETCoreApp10Dependency>
-    <NETCoreApp10Dependency Include="System.Security.Cryptography.Algorithms">
-      <Version>4.2.0</Version>
-    </NETCoreApp10Dependency>
-    <NETCoreApp10Dependency Include="System.Security.Cryptography.Encoding">
-      <Version>4.0.0</Version>
-    </NETCoreApp10Dependency>
-    <NETCoreApp10Dependency Include="System.Security.Cryptography.Primitives">
-      <Version>4.0.0</Version>
-    </NETCoreApp10Dependency>
-    <NETCoreApp10Dependency Include="System.Security.Cryptography.X509Certificates">
-      <Version>4.1.0</Version>
-    </NETCoreApp10Dependency>
-    <NETCoreApp10Dependency Include="System.Threading.Tasks.Dataflow">
-      <Version>4.6.0</Version>
-    </NETCoreApp10Dependency>
-    <NETCoreApp10Dependency Include="System.Threading.Tasks.Extensions">
-      <Version>4.0.0</Version>
-    </NETCoreApp10Dependency>
-    <NETCoreApp10Dependency Include="System.Threading.Tasks.Parallel">
-      <Version>4.0.1</Version>
-    </NETCoreApp10Dependency>
-    <NETCoreApp10Dependency Include="System.Threading.Thread">
-      <Version>4.0.0</Version>
-    </NETCoreApp10Dependency>
-    <NETCoreApp10Dependency Include="System.Threading.ThreadPool">
-      <Version>4.0.10</Version>
-    </NETCoreApp10Dependency>
-    <NETCoreApp10Dependency Include="Libuv">
-      <Version>1.9.1</Version>
-    </NETCoreApp10Dependency>
-
+    <!-- reference dependencies from previous versions -->
     <Dependency Include="@(NETCoreApp10Dependency)">
       <TargetFramework>.NETCoreApp1.0</TargetFramework>
     </Dependency>
-    <File Include="$(PlaceholderFile)" >
-      <SkipPackageFileCheck>true</SkipPackageFileCheck>
-      <TargetPath>lib/netcoreapp1.0</TargetPath>
+    <Dependency Include="@(NETCoreApp11Dependency)">
+      <TargetFramework>.NETCoreApp1.1</TargetFramework>
+    </Dependency>
+
+    <!-- Add a placeholder to make sure NuGet understands we still support older versions,
+         even though they don't have ref-assets -->
+    <File Include="$(PlaceHolderFile)">
+      <TargetPath>.NETCoreApp</TargetPath>
+    </File>
+  </ItemGroup>
+
+  <!-- Redistributed package content from other nuget packages-->
+  <ItemGroup>
+    <ProjectReference Include="Microsoft.NETCore.App.depproj">
+      <AdditionalProperties Condition="'$(PackageTargetRuntime)' != ''">NuGetRuntimeIdentifier=$(PackageTargetRuntime)</AdditionalProperties>
+    </ProjectReference>
+  </ItemGroup>
+  
+  <ItemGroup Condition="'$(PackageTargetRuntime)' != ''">
+    <ArchitectureSpecificNativeFile Include="$(DotNetHostBinDir)/dotnet$(ApplicationFileExtension)" />
+    <ArchitectureSpecificNativeFile Include="$(DotNetHostBinDir)/dotnet$(SymbolFileExtension)"
+                                    Condition="Exists('$(DotNetHostBinDir)/dotnet$(SymbolFileExtension)')">
+      <IsSymbolFile>true</IsSymbolFile>
+    </ArchitectureSpecificNativeFile>
+    <ArchitectureSpecificNativeFile Include="$(DotNetHostBinDir)/$(LibraryFilePrefix)hostfxr$(LibraryFileExtension)"/>
+    <ArchitectureSpecificNativeFile Include="$(DotNetHostBinDir)/$(LibraryFilePrefix)hostfxr$(SymbolFileExtension)"
+                                    Condition="Exists('$(DotNetHostBinDir)/$(LibraryFilePrefix)hostfxr$(SymbolFileExtension)')">
+      <IsSymbolFile>true</IsSymbolFile>
+    </ArchitectureSpecificNativeFile>
+    <ArchitectureSpecificNativeFile Include="$(DotNetHostBinDir)/$(LibraryFilePrefix)hostpolicy$(LibraryFileExtension)"/>
+    <ArchitectureSpecificNativeFile Include="$(DotNetHostBinDir)/$(LibraryFilePrefix)hostpolicy$(SymbolFileExtension)"
+                                    Condition="Exists('$(DotNetHostBinDir)/$(LibraryFilePrefix)hostpolicy$(SymbolFileExtension)')">
+      <IsSymbolFile>true</IsSymbolFile>
+    </ArchitectureSpecificNativeFile>
+
+    <File Include="@(ArchitectureSpecificNativeFile)">
+      <TargetPath>runtimes/$(PackageTargetRuntime)/native</TargetPath>
     </File>
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+  
+  <!-- override GetPackageIdentity so that it doesn't attempt to gather 
+       files from runtime depdencies,  this prevents folks from needing
+       packages that don't apply to their local OS.
+       https://github.com/dotnet/buildtools/issues/1273 -->
+  <Target Name="GetPackageIdentity" Returns="@(_PackageIdentity)" DependsOnTargets="CalculatePackageVersion">
+    <ItemGroup>
+      <_PackageIdentity Include="$(Id)">
+        <Version>$(PackageVersion)</Version>
+        <TargetRuntime Condition="'$(PackageTargetRuntime)' != ''">$(PackageTargetRuntime)</TargetRuntime>
+      </_PackageIdentity>
+    </ItemGroup>
+  </Target>
+
+  <!-- override AssignPkgProjPackageDependenciesTargetFramework so that
+       it doesn't attempt to resolve all files in order to get dependency
+       TargetFrameworks.  
+       https://github.com/dotnet/buildtools/issues/1273 -->
+  <Target Name="AssignPkgProjPackageDependenciesTargetFramework" DependsOnTargets="GetPkgProjPackageDependencies">
+    <SplitDependenciesBySupport Condition="'$(SplitDependenciesBySupport)' == 'true'" OriginalDependencies="@(PkgProjDependency)">
+      <Output TaskParameter="SplitDependencies" ItemName="_SplitPkgProjDependency" />
+    </SplitDependenciesBySupport>
+    <ItemGroup Condition="'@(_SplitPkgProjDependency)' != ''">
+      <PkgProjDependency Remove="@(PkgProjDependency)" />
+      <PkgProjDependency Include="@(_SplitPkgProjDependency)" />
+    </ItemGroup>
+    <ItemGroup>
+      <!-- ensure that unconstrained dependencies are also expanded in constrained TFM groups -->
+      <_PkgProjDependencyWithoutTFM Include="@(PkgProjDependency)" Condition="'%(PkgProjDependency.TargetFramework)' == '' AND '%(PkgProjDependency.TargetRuntime)' == '' AND '%(PkgProjDependency.DoNotExpand)' != 'true'" />
+      <_AllPkgProjTFMs Include="%(PkgProjDependency.TargetFramework)" Condition="'%(PkgProjDependency.DependencyKind)' == 'Direct'" />
+      <!-- Remove dependencies without a TFM so they can be replaced -->
+      <PkgProjDependency Remove="@(_PkgProjDependencyWithoutTFM)" />
+      <!-- operate on pkgproj dependencies and file dependencies -->
+      <PkgProjDependency Include="@(_PkgProjDependencyWithoutTFM)">
+        <TargetFramework>%(_AllPkgProjTFMs.Identity)</TargetFramework>
+      </PkgProjDependency>
+      <Dependency Include="@(PkgProjDependency)" Condition="'%(PkgProjDependency.DependencyKind)' == 'Direct'" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="GetPackageReport" />
+
+  <Target Name="GetDependenciesToPackage" AfterTargets="ExpandProjectReferences">
+    <!-- allow projects to provide dependencies -->
+    <MSBuild Targets="GetDependenciesToPackage"
+             BuildInParallel="$(BuildInParallel)"
+             Projects="@(_NonPkgProjProjectReference)"
+             Properties="$(ProjectProperties)">
+      <Output TaskParameter="TargetOutputs"
+              ItemName="Dependency" />
+    </MSBuild>
+  </Target>
 </Project>
