@@ -594,7 +594,7 @@ namespace System.Runtime.CompilerServices
                 // Reallocate both buckets and entries and rebuild the bucket and entries from scratch.
                 // This serves both to scrub entries with expired keys and to put the new entries in the proper bucket.
                 int[] newBuckets = new int[newSize];
-                for (int bucketIndex = 0; bucketIndex < newSize; bucketIndex++)
+                for (int bucketIndex = 0; bucketIndex < newBuckets.Length; bucketIndex++)
                 {
                     newBuckets[bucketIndex] = -1;
                 }

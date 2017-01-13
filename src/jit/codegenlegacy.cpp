@@ -1837,6 +1837,15 @@ void CodeGen::genRangeCheck(GenTreePtr oper)
     GenTreePtr arrRef    = NULL;
     int        lenOffset = 0;
 
+    /* Is the array index a constant value? */
+    GenTreePtr index = bndsChk->gtIndex;
+    if (!index->IsCnsIntOrI())
+    {
+        // No, it's not a constant.
+        genCodeForTree(index, RBM_ALLINT);
+        regSet.rsMarkRegUsed(index);
+    }
+
     // If "arrLen" is a ARR_LENGTH operation, get the array whose length that takes in a register.
     // Otherwise, if the length is not a constant, get it (the length, not the arr reference) in
     // a register.
@@ -1884,14 +1893,8 @@ void CodeGen::genRangeCheck(GenTreePtr oper)
         }
     }
 
-    /* Is the array index a constant value? */
-    GenTreePtr index = bndsChk->gtIndex;
     if (!index->IsCnsIntOrI())
     {
-        // No, it's not a constant.
-        genCodeForTree(index, RBM_ALLINT);
-        regSet.rsMarkRegUsed(index);
-
         // If we need "arrRef" or "arrLen", and evaluating "index" displaced whichever of them we're using
         // from its register, get it back in a register.
         if (arrRef != NULL)
@@ -1983,6 +1986,11 @@ void CodeGen::genRangeCheck(GenTreePtr oper)
     }
 
     // Free the registers that were used.
+    if (!index->IsCnsIntOrI())
+    {
+        regSet.rsMarkRegFree(index->gtRegNum, index);
+    }
+
     if (arrRef != NULL)
     {
         regSet.rsMarkRegFree(arrRef->gtRegNum, arrRef);
@@ -1990,11 +1998,6 @@ void CodeGen::genRangeCheck(GenTreePtr oper)
     else if (!arrLen->IsCnsIntOrI())
     {
         regSet.rsMarkRegFree(arrLen->gtRegNum, arrLen);
-    }
-
-    if (!index->IsCnsIntOrI())
-    {
-        regSet.rsMarkRegFree(index->gtRegNum, index);
     }
 }
 

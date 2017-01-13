@@ -898,7 +898,8 @@ bool emitter::emitInsCanOnlyWriteSSE2OrAVXReg(instrDesc* id)
     // The following SSE2 instructions write to a general purpose integer register.
     if (!IsSSEOrAVXInstruction(ins) || ins == INS_mov_xmm2i || ins == INS_cvttsd2si
 #ifndef LEGACY_BACKEND
-        || ins == INS_cvttss2si || ins == INS_cvtsd2si || ins == INS_cvtss2si
+        || ins == INS_cvttss2si || ins == INS_cvtsd2si || ins == INS_cvtss2si || ins == INS_pmovmskb ||
+        ins == INS_pextrw
 #endif // !LEGACY_BACKEND
         )
     {
@@ -8055,10 +8056,7 @@ DONE:
     }
     else
     {
-        if (emitInsCanOnlyWriteSSE2OrAVXReg(id))
-        {
-        }
-        else
+        if (!emitInsCanOnlyWriteSSE2OrAVXReg(id))
         {
             switch (id->idInsFmt())
             {
@@ -8450,10 +8448,7 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
     }
     else
     {
-        if (emitInsCanOnlyWriteSSE2OrAVXReg(id))
-        {
-        }
-        else
+        if (!emitInsCanOnlyWriteSSE2OrAVXReg(id))
         {
             switch (id->idInsFmt())
             {
@@ -8883,10 +8878,7 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
     }
     else
     {
-        if (emitInsCanOnlyWriteSSE2OrAVXReg(id))
-        {
-        }
-        else
+        if (!emitInsCanOnlyWriteSSE2OrAVXReg(id))
         {
             switch (id->idInsFmt())
             {
@@ -9428,10 +9420,7 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
     }
     else
     {
-        if (emitInsCanOnlyWriteSSE2OrAVXReg(id))
-        {
-        }
-        else
+        if (!emitInsCanOnlyWriteSSE2OrAVXReg(id))
         {
             switch (id->idInsFmt())
             {
@@ -10832,6 +10821,12 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
             dst += emitOutputByte(dst, emitGetInsSC(id));
             sz = emitSizeOfInsDsc(id);
+
+            // Kill any GC ref in the destination register if necessary.
+            if (!emitInsCanOnlyWriteSSE2OrAVXReg(id))
+            {
+                emitGCregDeadUpd(id->idReg1(), dst);
+            }
             break;
 
         /********************************************************************/
