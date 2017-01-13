@@ -1902,6 +1902,7 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                             if (enableCorefxTesting) {
                                 def workspaceRelativeFxRoot = "_/fx"
                                 def absoluteFxRoot = "%WORKSPACE%\\_\\fx"
+
                                 buildCommands += "python %WORKSPACE%\\tests\\scripts\\run-corefx-tests.py -arch ${arch} -build_type ${configuration} -fx_root ${absoluteFxRoot} -fx_branch ${branch} -env_script ${stepScriptLocation}"
 
                                 setTestJobTimeOut(newJob, scenario)
@@ -2067,6 +2068,7 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                         // Build and text corefx
                         def workspaceRelativeFxRoot = "_/fx"
                         def absoluteFxRoot = "\$WORKSPACE/${workspaceRelativeFxRoot}"
+
                         buildCommands += "python \$WORKSPACE/tests/scripts/run-corefx-tests.py -arch ${arch} -build_type ${configuration} -fx_root ${absoluteFxRoot} -fx_branch ${branch} -env_script ${scriptFileName}"
 
                         setTestJobTimeOut(newJob, scenario)
@@ -2450,7 +2452,7 @@ combinedScenarios.each { scenario ->
                                     copyArtifacts("${corefxFolder}/linuxarmemulator_softfp_cross_${lowerConfiguration}") {
                                         includePatterns('bin/build.tar.gz')
                                         buildSelector {
-                                            latestSuccessful(true)
+                                            latestSaved()
                                         }
                                     }
                                 }
@@ -2770,6 +2772,9 @@ combinedScenarios.each { scenario ->
                                 // Get corefx
                                 shell("git clone https://github.com/dotnet/corefx fx")
 
+                                // CoreFX is changing their output format and scripts, pick a stable version until all that work has landed.
+                                shell("git -C ./fx checkout 551fe49174378adcbf785c0ab12fc69355cef6e8")
+
                                 // Build Linux corefx
                                 shell("./fx/build-native.sh -release -buildArch=x64 -os=Linux")
                                 shell("./fx/build-managed.sh -release -buildArch=x64 -osgroup=Linux -skiptests")
@@ -2835,7 +2840,7 @@ combinedScenarios.each { scenario ->
                                 copyArtifacts("${corefxFolder}/${osJobName}_release") {
                                     includePatterns('bin/build.tar.gz')
                                     buildSelector {
-                                        latestSuccessful(true)
+                                        latestSaved()
                                     }
                                 }
                         
