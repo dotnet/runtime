@@ -21,7 +21,7 @@
         "1.0.2",
         "1.1.0"
       ],
-      "BaselineVersion": "1.2.0"
+      "BaselineVersion": "2.0.0"
     },
     "Microsoft.NETCore.Targets": {
       "StableVersions": [
@@ -30,7 +30,7 @@
         "1.0.2",
         "1.1.0"
       ],
-      "BaselineVersion": "1.2.0"
+      "BaselineVersion": "2.0.0"
     },
     "Microsoft.VisualBasic": {
       "StableVersions": [
@@ -2875,7 +2875,7 @@
       }
     },
     "Microsoft.Private.PackageBaseline": {
-      "BaselineVersion": "1.2.0"
+      "BaselineVersion": "2.0.0"
     },
     "runtime.win10-arm-aot.runtime.native.System.IO.Compression": {
       "StableVersions": [

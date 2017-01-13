@@ -617,7 +617,7 @@ namespace System.Linq.Expressions.Compiler
 
         internal static bool ShouldLdtoken(Type t)
         {
-            return t.GetTypeInfo() is TypeBuilder || t.IsGenericParameter || t.GetTypeInfo().IsVisible;
+            return t is TypeBuilder || t.IsGenericParameter || t.GetTypeInfo().IsVisible;
         }
 
         internal static bool ShouldLdtoken(MethodBase mb)

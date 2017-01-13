@@ -1,0 +1,29 @@
+{
+   "dependencies": {
+      "xunit.console.netcore": "1.0.3-prerelease-00921-01",
+      "Microsoft.DotNet.BuildTools.TestSuite": "1.0.1-prerelease-01001-04",
+      "Microsoft.xunit.netcore.extensions": "1.0.1-prerelease-01001-04",
+      "Microsoft.DotNet.xunit.performance.analysis": "1.0.0-alpha-build0040",
+      "Microsoft.DotNet.xunit.performance.analysis.cli": "1.0.0-alpha-build0040",
+      "Microsoft.DotNet.xunit.performance.runner.cli": "1.0.0-alpha-build0040",
+      "Microsoft.DotNet.xunit.performance.runner.Windows": "1.0.0-alpha-build0040",
+      "Microsoft.NETCore.Runtime.CoreCLR": "1.2.0-beta-24728-02",
+      "Microsoft.NETCore.TestHost": "1.2.0-beta-24728-02",
+      "Newtonsoft.Json": "9.0.1",
+      "coveralls.io": "1.4",
+      "OpenCover": "4.6.519",
+      "ReportGenerator": "2.5.0",
+
+      // Supplemental test data
+      "System.IO.Compression.TestData": "1.0.4-prerelease",
+      "System.IO.Packaging.TestData": "1.0.0-prerelease",
+      "System.Security.Cryptography.X509Certificates.TestData": "1.0.2-prerelease",
+      "System.Net.TestData": "1.0.0-prerelease",
+   },
+   "frameworks": {
+      "netstandard2.0": {}
+   },
+   "runtimes": {
+      "win7-x64": {}
+   }
+}

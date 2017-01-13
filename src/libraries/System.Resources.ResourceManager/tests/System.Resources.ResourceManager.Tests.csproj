@@ -2,11 +2,8 @@
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <OutputType>Library</OutputType>
-    <AssemblyName>System.Resources.ResourceManager.Tests</AssemblyName>
-    <RootNamespace>System.Resources.Tests</RootNamespace>
     <ProjectGuid>{1D51A16C-B6D8-4E8F-98DE-21AD9A7062A1}</ProjectGuid>
-    <NugetTargetMoniker Condition=" '$(TargetGroup)' == '' ">.NETStandard,Version=v1.7</NugetTargetMoniker>
+    <RootNamespace>System.Resources.Tests</RootNamespace>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
@@ -22,13 +19,13 @@
     </Compile>
     <Compile Include="SatelliteContractVersionAttributeTests.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetGroup)' == '' ">
+  <ItemGroup Condition=" '$(TargetGroup)' == 'netstandard' ">
     <Compile Include="$(CommonTestPath)/System/Runtime/Serialization/Formatters/BinaryFormatterHelpers.cs">
       <Link>System/Runtime/Serialization/Formatters/BinaryFormatterHelpers.cs</Link>
     </Compile>
-    <Compile Include="MissingManifestResourceExceptionTests.netstandard17.cs"/>
-    <Compile Include="MissingSatelliteAssemblyException.cs"/>
-    <Compile Include="ResourceManagerTests.netstandard17.cs" />
+    <Compile Include="MissingManifestResourceExceptionTests.netstandard.cs" />
+    <Compile Include="MissingSatelliteAssemblyException.cs" />
+    <Compile Include="ResourceManagerTests.netstandard.cs" />
     <Compile Include="ResourceSetTests.cs" />
     <EmbeddedResource Include="Resources\TestResx.netstandard17.resx">
       <Generator>ResXFileCodeGenerator</Generator>
@@ -39,9 +36,6 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>TestResx.netstandard17.resx</DependentUpon>
     </Compile>
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="../pkg/System.Resources.ResourceManager.pkgproj"/>
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Resources\TestResx.resx">

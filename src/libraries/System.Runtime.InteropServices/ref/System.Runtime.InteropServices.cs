@@ -1670,9 +1670,9 @@ namespace System.Runtime.InteropServices.ComTypes
 
 namespace System.Security
 {
-    [System.CLSCompliant(false)]
     public sealed class SecureString : IDisposable {
         public SecureString() { }
+        [System.CLSCompliant(false)]
         public unsafe SecureString(char* value, int length) { }
         public int Length { get { throw null; } }
         public void AppendChar(char c) { }

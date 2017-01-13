@@ -1,14 +1,10 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{2194D6A2-1A35-46B5-8233-AEEBCBD31EF9}</ProjectGuid>
-    <OutputType>Library</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <StringResourcesPath>../../src/Resources/Strings.resx</StringResourcesPath>
-    <NugetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NugetTargetMoniker>
   </PropertyGroup>
   <!-- Help VS understand available configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
@@ -21,8 +17,10 @@
     <Compile Include="Fakes\FakeNetwork.cs" />
     <Compile Include="Fakes\FakeWinRT.cs" />
   </ItemGroup>
+  <!-- Do not reference these assemblies from the TargetingPack since we are building part of the source code for tests. -->
   <ItemGroup>
-    <None Include="project.json" />
+    <TargetingPackExclusions Include="System.Net.NetworkInformation" />
+    <TargetingPackExclusions Include="Windows" />
   </ItemGroup>
   <ItemGroup>
     <!-- Production code references -->
@@ -47,12 +45,10 @@
     <Compile Include="..\..\src\System\Net\NetworkInformation\NetNativeNetworkInterface.cs">
       <Link>ProductionCode\System\Net\NetworkInformation\NetNativeNetworkInterface.cs</Link>
     </Compile>
-    
     <!-- Common -->
     <Compile Include="$(CommonPath)\System\NotImplemented.cs">
       <Link>ProductionCode\Common\System\NotImplemented.cs</Link>
     </Compile>
-    
     <!-- Logging -->
     <Compile Include="$(CommonPath)\System\Net\Shims\TraceSource.cs">
       <Link>ProductionCode\Common\System\Net\Shims\TraceSource.cs</Link>

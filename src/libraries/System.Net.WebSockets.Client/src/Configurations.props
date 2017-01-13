@@ -1,0 +1,11 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <BuildConfigurations>
+      netcore50-Windows_NT;
+      netstandard1.3-Unix;
+      netstandard1.3-Windows_NT;
+      net46-Windows_NT;
+    </BuildConfigurations>
+  </PropertyGroup>
+</Project>

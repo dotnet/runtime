@@ -19,8 +19,13 @@ We also require that [Visual Studio 2015 Update 1](https://www.visualstudio.com/
 ## Building From the Command Line
 
 Open a [Visual Studio Command Prompt](http://msdn.microsoft.com/en-us/library/ms229859(v=vs.110).aspx).
-From the root of the repository, type `build.cmd`. This will build everything and run
-the core tests for the project. 
+
+- `build.cmd` - Will cause basic tool initialization and build the default configuration for refs, libs, and packages.
+- `build-tests.cmd` - Will build and run tests for the default configuration.
+
+For information on different configurations see [project-guidelines](../coding-guidelines/project-guidelines.md).
+
+**Note**: Before working on individual projects or test projects you **must** run `build.cmd` from the root once before beginning that work. It is also a good idea to run `build.cmd` whenever you pull a large set of unknown changes into your branch.
 
 Visual Studio Solution (.sln) files exist for related groups of libraries. These can be loaded to build, debug and test inside
 the Visual Studio IDE.

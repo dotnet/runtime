@@ -6,19 +6,16 @@
     <PackageTargetRuntime>any</PackageTargetRuntime>
     <PreventImplementationReference>true</PreventImplementationReference>
   </PropertyGroup>
-
   <ItemGroup>
     <ProjectReference Include="..\..\src\System.Collections.csproj" />
     <ProjectReference Include="..\..\src\System.Collections.csproj" >
       <TargetGroup>netcoreapp1.2corert</TargetGroup>
     </ProjectReference>
-
     <!-- AOT implementation comes from AOT package -->
     <File Include="$(PlaceholderFile)">
       <TargetPath>runtimes/aot/lib/netcore50</TargetPath>
       <TargetFramework>aot</TargetFramework>
     </File>
-
     <InboxOnTargetFramework Include="MonoAndroid10" />
     <InboxOnTargetFramework Include="MonoTouch10" />
     <InboxOnTargetFramework Include="net45" />

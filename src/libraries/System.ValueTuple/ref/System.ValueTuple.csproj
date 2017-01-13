@@ -2,18 +2,18 @@
 <Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <OutputType>Library</OutputType>
-    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETCoreApp,Version=v1.1</NuGetTargetMoniker>
     <ProjectGuid>{11AE73F7-3532-47B9-8FF6-B4F22D76456D}</ProjectGuid>
     <UseOpenKey Condition="'$(UseOpenKey)'==''">true</UseOpenKey>
-  </PropertyGroup>
-  <!-- Default configurations to help VS understand the options -->
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
-  <PropertyGroup>
     <RootNamespace>System</RootNamespace>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetGroup)' != ''">
+  <!-- Default configurations to help VS understand the options -->
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp_Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.0_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.0_Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'portable-net40+sl4+win8+wp8_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'portable-net40+sl4+win8+wp8_Release|AnyCPU'" />
+  <ItemGroup Condition="'$(TargetGroup)' != 'netcoreapp'">
     <Compile Include="System.ValueTuple.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'portable-net40+sl4+win8+wp8'">
@@ -21,7 +21,7 @@
     <Compile Include="System.Security.AllowPartiallyTrustedCallersAttribute.cs" />
     <Compile Include="System.Runtime.CompilerServices.ReferenceAssemblyAttribute.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == ''">
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
     <Compile Include="System.ValueTuple.TypeForwards.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'portable-net40+sl4+win8+wp8'">
@@ -29,13 +29,8 @@
     <TargetingPackReference Include="System" />
     <TargetingPackReference Include="System.Core" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == ''">
-    <!-- Temporary till we publish System.Runtime updated package -->
-    <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj">
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="project.json" />
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
+    <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
