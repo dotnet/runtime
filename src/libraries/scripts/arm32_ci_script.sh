@@ -12,7 +12,7 @@ function usage {
     echo '    --emulatorPath=/opt/linux-arm-emulator'
     echo '    --mountPath=/opt/linux-arm-emulator-root'
     echo '    --buildConfig=Release'
-    echo '    --softfp'
+    echo '    --armel'
     echo '    --verbose'
     echo ''
     echo 'Required Arguments:'
@@ -23,7 +23,7 @@ function usage {
     echo '    --buildConfig=<config>             : The value of config should be either Debug or Release'
     echo '                                         Any other value is not accepted'
     echo 'Optional Arguments:'
-    echo '    --softfp                           : Build as arm-softfp'
+    echo '    --armel                            : Build as armel'
     echo '    -v --verbose                       : Build made verbose'
     echo '    -h --help                          : Prints this usage message and exits'
     echo ''
@@ -165,24 +165,17 @@ function mount_emulator {
 
 #Cross builds corefx
 function cross_build_corefx {
-    #Apply fixes for softfp 
-    if [ "$__buildArch" == "arm-softfp" ]; then
+    #Apply fixes for armel 
+    if [ "$__buildArch" == "armel" ]; then
         #Export the needed environment variables
         (set +x; echo 'Exporting LINUX_ARM_* environment variable')
         source "$__ARMRootfsMountPath"/dotnet/setenv/setenv_incpath.sh "$__ARMRootfsMountPath"
-
-        #Apply the changes needed to build for the emulator rootfs
-        (set +x; echo 'Applying cross build patch to suit Linux ARM emulator rootfs')
-        git am < "$__ARMRootfsMountPath"/dotnet/setenv/corefx_cross.patch
     fi
 
     #Cross building for emulator rootfs
     ROOTFS_DIR="$__ARMRootfsMountPath" CPLUS_INCLUDE_PATH=$LINUX_ARM_INCPATH CXXFLAGS=$LINUX_ARM_CXXFLAGS ./build-native.sh -buildArch=$__buildArch -$__buildConfig -- cross $__verboseFlag
     ROOTFS_DIR="$__ARMRootfsMountPath" CPLUS_INCLUDE_PATH=$LINUX_ARM_INCPATH CXXFLAGS=$LINUX_ARM_CXXFLAGS ./build-managed.sh -$__buildConfig -skipTests
 
-    #Reset the code to the upstream version
-    (set +x; echo 'Rewinding HEAD to master code')
-    git reset --hard HEAD^
 }
 
 #Define script variables
@@ -210,9 +203,9 @@ do
             exit_with_error "--buildConfig can be only Debug or Release" true
         fi
         ;;
-    --softfp)
+    --armel)
         __ARMRootfsImageBase="rootfs-t30.ext4"
-        __buildArch="arm-softfp"
+        __buildArch="armel"
         ;;
     -v|--verbose)
         __verboseFlag="verbose"

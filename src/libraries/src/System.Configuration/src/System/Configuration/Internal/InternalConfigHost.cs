@@ -191,7 +191,7 @@ namespace System.Configuration.Internal
             // machine.
 
             // don't allow relative paths for stream name
-            if (!Path.IsPathRooted(streamName)) throw ExceptionUtil.ParameterInvalid("streamName");
+            if (!Path.IsPathRooted(streamName)) throw ExceptionUtil.ParameterInvalid(nameof(streamName));
 
             // get the path part of the original stream
             streamName = Path.GetFullPath(streamName);
@@ -297,5 +297,11 @@ namespace System.Configuration.Internal
         {
             return Path.IsPathRooted(streamName);
         }
+
+        public bool IsTrustedConfigPath(string configPath) => true;
+
+        public bool IsFullTrustSectionWithoutAptcaAllowed(IInternalConfigRecord configRecord) => true;
+
+        public IDisposable Impersonate() => new DummyDisposable();
     }
 }

@@ -26,7 +26,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new ArgumentNullException("connection");
 
             if (!connection.existingConnection)
-                throw new InvalidOperationException(Res.GetString(Res.ConnectionNotCommitted, connection.Name));
+                throw new InvalidOperationException(String.Format(CultureInfo.CurrentCulture, SR.ConnectionNotCommitted , connection.Name));
 
             string dn = (string)PropertyManager.GetPropertyValue(connection.context, connection.cachedDirectoryEntry, PropertyManager.DistinguishedName);
 
@@ -49,7 +49,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new ArgumentNullException("connection");
 
             if (!connection.existingConnection)
-                throw new InvalidOperationException(Res.GetString(Res.ConnectionNotCommitted, connection.Name));
+                throw new InvalidOperationException(String.Format(CultureInfo.CurrentCulture, SR.ConnectionNotCommitted , connection.Name));
 
             string dn = (string)PropertyManager.GetPropertyValue(connection.context, connection.cachedDirectoryEntry, PropertyManager.DistinguishedName);
 

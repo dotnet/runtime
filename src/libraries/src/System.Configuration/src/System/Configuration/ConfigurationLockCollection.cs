@@ -83,6 +83,7 @@ namespace System.Configuration
             {
                 // return true if there is at least one element that was defined in the parent
                 bool result = false;
+
                 // Check to see if the exception list is empty as a result of a merge from config
                 // If so the there were some parent elements because empty string is invalid in config.
                 // and the only way to get an empty list is for the merged config to have no elements
@@ -211,6 +212,7 @@ namespace System.Configuration
         {
             if (name == null)
                 return false;
+
             if (!ExceptionList)
             {
                 return _internalDictionary.Contains(name) &&

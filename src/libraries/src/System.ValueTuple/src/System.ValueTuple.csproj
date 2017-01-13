@@ -6,6 +6,8 @@
     <ProjectGuid>{4C2655DB-BD9E-4C86-83A6-744ECDDBDF29}</ProjectGuid>
     <DocumentationFile>$(OutputPath)$(AssemblyName).xml</DocumentationFile>
     <UseOpenKey Condition="'$(UseOpenKey)'==''">true</UseOpenKey>
+    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'netcoreapp'">true</IsPartialFacadeAssembly>
+    <RunApiCompat Condition="'$(TargetGroup)' != 'netcoreapp'">false</RunApiCompat> 
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
@@ -13,12 +15,10 @@
   <PropertyGroup>
     <RootNamespace>System</RootNamespace>
   </PropertyGroup>
-  <ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' != 'netcoreapp'">
     <Compile Include="System\Runtime\CompilerServices\TupleElementNamesAttribute.cs" />
     <Compile Include="System\ValueTuple\TupleExtensions.cs" />
     <Compile Include="System\ValueTuple\ValueTuple.cs" />
-  </ItemGroup>
-  <ItemGroup>
     <Compile Include="$(CommonPath)\System\Numerics\Hashing\HashHelpers.cs">
       <Link>Common\System\Numerics\Hashing\HashHelpers.cs</Link>
     </Compile>
@@ -27,6 +27,9 @@
     <TargetingPackReference Include="mscorlib" />
     <TargetingPackReference Include="System" />
     <TargetingPackReference Include="System.Core" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
+    <TargetingPackReference Include="System.Private.CoreLib" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Collections" />

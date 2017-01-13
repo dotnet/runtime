@@ -48,7 +48,7 @@ namespace System.Tests
         [DllImport("libc")]
         private static extern long sysconf(int name);
 
-        [DllImport("api-ms-win-core-sysinfo-l1-1-0.dll", SetLastError = true)]
+        [DllImport("kernel32.dll", SetLastError = true)]
         internal static extern void GetSystemInfo(ref SYSTEM_INFO lpSystemInfo);
 
         [StructLayout(LayoutKind.Sequential)]

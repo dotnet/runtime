@@ -13,8 +13,6 @@ namespace System.ComponentModel
     using System.Collections.Generic;
     using System.ComponentModel;
     using System.Diagnostics;
-    using System.Security.Permissions;
-    using CodeAccessPermission = System.Security.CodeAccessPermission;
 
     /// <summary>
     /// </summary>

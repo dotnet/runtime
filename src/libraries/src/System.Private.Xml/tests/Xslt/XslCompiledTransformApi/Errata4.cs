@@ -183,6 +183,7 @@ namespace System.Xml.Tests
             return;
         }
 
+        [ActiveIssue(14772)]
         //[Variation(Priority = 1, Desc = "Crate elment/attribute (Inline) :: Invalid start name char", Params = new object[] { false, CharType.NameStartChar })]
         [InlineData(false, CharType.NameStartChar)]
         //[Variation(Priority = 1, Desc = "Crate elment/attribute (Inline) :: Invalid name char", Params = new object[] { false, CharType.NameChar })]
@@ -266,6 +267,7 @@ namespace System.Xml.Tests
             }
         }
 
+        [ActiveIssue(14775)]
         //[Variation(Priority = 1, Desc = "Invalid start name char", Params = new object[] { false, CharType.NameStartChar })]
         [InlineData(false, CharType.NameStartChar)]
         //[Variation(Priority = 1, Desc = "Invalid name char", Params = new object[] { false, CharType.NameChar })]

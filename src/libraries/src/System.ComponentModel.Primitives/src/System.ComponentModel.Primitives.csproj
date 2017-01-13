@@ -29,6 +29,7 @@
     <Compile Include="System\ComponentModel\ImmutableObjectAttribute.cs" />
     <Compile Include="System\ComponentModel\InitializationEventAttribute.cs" />
     <Compile Include="System\ComponentModel\ISite.cs" />
+    <Compile Include="System\ComponentModel\ISupportInitialize.cs" />
     <Compile Include="System\ComponentModel\LocalizableAttribute.cs" />
     <Compile Include="System\ComponentModel\MergablePropertyAttribute.cs" />
     <Compile Include="System\ComponentModel\NotifyParentPropertyAttribute.cs" />

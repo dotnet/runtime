@@ -21,6 +21,9 @@
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'net46'">
+    <ContractProject Include="..\ref\System.IO.Compression.ZipFile.csproj">
+      <TargetGroup>netstandard1.3</TargetGroup>
+    </ContractProject>
     <TargetingPackReference Include="mscorlib" />
     <TargetingPackReference Include="System.IO.Compression.FileSystem" />
   </ItemGroup>

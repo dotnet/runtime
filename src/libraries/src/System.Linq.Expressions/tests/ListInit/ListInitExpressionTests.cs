@@ -189,7 +189,19 @@ namespace System.Linq.Expressions.Tests
                 Expression.Constant(1),
                 Expression.Constant(2),
                 Expression.Constant(3));
-            Assert.Same(init, init.Update(init.NewExpression, init.Initializers));
+            Assert.Same(init, init.Update(init.NewExpression, init.Initializers.ToArray()));
+        }
+
+        [Fact]
+        public void UpdateNullThrows()
+        {
+            ListInitExpression init = Expression.ListInit(
+                Expression.New(typeof(List<int>)),
+                Expression.Constant(1),
+                Expression.Constant(2),
+                Expression.Constant(3));
+            Assert.Throws<ArgumentNullException>("newExpression", () => init.Update(null, init.Initializers));
+            Assert.Throws<ArgumentNullException>("initializers", () => init.Update(init.NewExpression, null));
         }
 
         [Fact]
@@ -214,7 +226,34 @@ namespace System.Linq.Expressions.Tests
                 Expression.ElementInit(meth, Expression.Constant(3))
             };
             ListInitExpression init = Expression.ListInit(Expression.New(typeof(List<int>)), inits);
-            Assert.NotSame(init, init.Update(Expression.New(typeof(List<int>)), inits));
+            inits = new[]
+            {
+                Expression.ElementInit(meth, Expression.Constant(1)),
+                Expression.ElementInit(meth, Expression.Constant(2)),
+                Expression.ElementInit(meth, Expression.Constant(3))
+            };
+            Assert.NotSame(init, init.Update(init.NewExpression, inits));
+        }
+
+        [Fact]
+        public void UpdateDoesntRepeatEnumeration()
+        {
+            MethodInfo meth = typeof(List<int>).GetMethod("Add");
+            ElementInit[] inits = new[]
+            {
+                Expression.ElementInit(meth, Expression.Constant(1)),
+                Expression.ElementInit(meth, Expression.Constant(2)),
+                Expression.ElementInit(meth, Expression.Constant(3))
+            };
+            ListInitExpression init = Expression.ListInit(Expression.New(typeof(List<int>)), inits);
+            IEnumerable<ElementInit> newInits = new RunOnceEnumerable<ElementInit>(
+                new[]
+                {
+                    Expression.ElementInit(meth, Expression.Constant(1)),
+                    Expression.ElementInit(meth, Expression.Constant(2)),
+                    Expression.ElementInit(meth, Expression.Constant(3))
+                });
+            Assert.NotSame(init, init.Update(init.NewExpression, newInits));
         }
 
         [Fact]

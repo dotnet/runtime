@@ -156,7 +156,17 @@ namespace System.Net.Primitives.Functional.Tests
             enumerator.MoveNext();
 
             cc.Add(new Cookie("name5", "value"));
-            Assert.NotNull(enumerator.Current);
+
+            object current = null;
+            var exception = Record.Exception(() => current = enumerator.Current);
+
+            // On full framework, enumerator.Current throws an exception because the collection has been modified after 
+            // creating the enumerator.
+            if (exception == null)
+            {
+                Assert.NotNull(current);
+            }
+
             Assert.Throws<InvalidOperationException>(() => enumerator.MoveNext()); // Enumerator out of sync
         }
     }

@@ -4,7 +4,7 @@
 
   <PropertyGroup>
     <NewSharedFxVersion>9.9.9</NewSharedFxVersion>
-    <OldSharedFxVersion>1.0.0</OldSharedFxVersion>
+    <OldSharedFxVersion>1.1.0</OldSharedFxVersion>
     <TestSharedFxPath>$(TestSharedFxDir)\shared\Microsoft.NETCore.App\$(NewSharedFxVersion)</TestSharedFxPath>
     <TestSharedFxPathHostFxr>$(TestSharedFxDir)\host\fxr\$(NewSharedFxVersion)</TestSharedFxPathHostFxr>
     <ToolsDotNetCliSharedFxPath>$(ToolsDir)dotnetcli\shared\Microsoft.NETCore.App\$(OldSharedFxVersion)</ToolsDotNetCliSharedFxPath>

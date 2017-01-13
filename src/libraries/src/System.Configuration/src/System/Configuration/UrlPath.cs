@@ -128,7 +128,7 @@ namespace System.Configuration
                     // We should never get here, but if we do we are likely to have
                     // serious security problems, so throw an exception rather than simply 
                     // asserting.
-                    throw ExceptionUtil.ParameterInvalid("filename");
+                    throw ExceptionUtil.ParameterInvalid(nameof(fileName));
                 }
             }
 

@@ -7,6 +7,9 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' " />
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' " />
   <ItemGroup>
+    <Compile Include="TInt.cs" />
+  </ItemGroup>
+  <ItemGroup>
     <Compile Include="Span\AsBytes.cs" />
     <Compile Include="Span\CopyTo.cs" />
     <Compile Include="Span\CtorArray.cs" />
@@ -17,8 +20,11 @@
     <Compile Include="Span\DangerousGetPinnableReference.cs" />
     <Compile Include="Span\Empty.cs" />
     <Compile Include="Span\Equality.cs" />
+    <Compile Include="Span\IndexOf.T.cs" />
+    <Compile Include="Span\IndexOfSequence.T.cs" />
     <Compile Include="Span\NonPortableCast.cs" />
     <Compile Include="Span\Overflow.cs" />
+    <Compile Include="Span\SequenceEqual.T.cs" />
     <Compile Include="Span\Slice.cs" />
     <Compile Include="Span\TestHelpers.cs" />
     <Compile Include="Span\ToArray.cs" />

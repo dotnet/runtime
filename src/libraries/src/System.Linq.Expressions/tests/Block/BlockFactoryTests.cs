@@ -143,7 +143,7 @@ namespace System.Linq.Expressions.Tests
 
             BlockExpression res = node.Update(node.Variables, node.Expressions.ToArray());
 
-            Assert.NotSame(node, res);
+            Assert.Same(node, res);
 
             return res;
         }

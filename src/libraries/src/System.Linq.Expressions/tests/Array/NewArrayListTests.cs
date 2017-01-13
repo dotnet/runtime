@@ -1733,5 +1733,42 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal(1, arr.Length);
             Assert.Equal(26, arr[0](13));
         }
+
+        [Fact]
+        public static void UpdateSameReturnsSame()
+        {
+            Expression element0 = Expression.Constant(2);
+            Expression element1 = Expression.Constant(3);
+            NewArrayExpression newArrayExpression = Expression.NewArrayInit(typeof(int), element0, element1);
+            Assert.Same(newArrayExpression, newArrayExpression.Update(new[] { element0, element1 }));
+        }
+
+        [Fact]
+        public static void UpdateDifferentReturnsDifferent()
+        {
+            Expression element0 = Expression.Constant(2);
+            Expression element1 = Expression.Constant(3);
+            NewArrayExpression newArrayExpression = Expression.NewArrayInit(typeof(int), element0, element1);
+            Assert.NotSame(newArrayExpression, newArrayExpression.Update(new[] { element0 }));
+            Assert.NotSame(newArrayExpression, newArrayExpression.Update(newArrayExpression.Expressions.Reverse()));
+        }
+
+        [Fact]
+        public static void UpdateDoesntRepeatEnumeration()
+        {
+            Expression element0 = Expression.Constant(2);
+            Expression element1 = Expression.Constant(3);
+            NewArrayExpression newArrayExpression = Expression.NewArrayInit(typeof(int), element0, element1);
+            Assert.NotSame(newArrayExpression, newArrayExpression.Update(new RunOnceEnumerable<Expression>(new[] { element0 })));
+        }
+
+        [Fact]
+        public static void UpdateNullThrows()
+        {
+            Expression element0 = Expression.Constant(2);
+            Expression element1 = Expression.Constant(3);
+            NewArrayExpression newArrayExpression = Expression.NewArrayInit(typeof(int), element0, element1);
+            Assert.Throws<ArgumentNullException>("expressions", () => newArrayExpression.Update(null));
+        }
     }
 }

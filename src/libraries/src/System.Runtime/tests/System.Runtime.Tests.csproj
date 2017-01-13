@@ -116,9 +116,6 @@
     <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
       <Link>Common\System\PlatformDetection.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System\RuntimeDetection.cs">
-      <Link>Common\System\RuntimeDetection.cs</Link>
-    </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
     <Compile Include="System\ArrayTests.netcoreapp.cs" />

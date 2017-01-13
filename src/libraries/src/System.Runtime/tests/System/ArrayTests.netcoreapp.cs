@@ -3,12 +3,82 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Linq;
+using System.Runtime.CompilerServices;
 using Xunit;
 
 namespace System.Tests
 {
     public static partial class ArrayTests
     {
+        public static IEnumerable<object[]> Fill_Generic_TestData()
+        {
+            var data = Enumerable.Empty<object[]>();
+
+            var r = new Random(0x051778f7);
+            int[] lengths = { 0, 1, 2, 3, 5, 8, 13 };
+            
+            foreach (int length in lengths)
+            {
+                IEnumerable<int> source = Enumerable.Range(1, length).Select(_ => r.Next());
+                
+                data = data.Concat(GenerateFillData(source, r.Next(), i => i))
+                    .Concat(GenerateFillData(source, r.Next(), i => (byte)i))
+                    .Concat(GenerateFillData(source, r.Next(), i => (short)i))
+                    .Concat(GenerateFillData(source, r.Next(), i => (long)i))
+                    .Concat(GenerateFillData(source, r.Next(), i => new StrongBox<int>(i)))
+                    .Concat(GenerateFillData(source, r.Next(), i => i.ToString()))
+                    .Concat(GenerateFillData(source, r.Next(), i => (ByteEnum)i))
+                    .Concat(GenerateFillData(source, r.Next(), i => (Int16Enum)i))
+                    .Concat(GenerateFillData(source, r.Next(), i => (Int32Enum)i))
+                    .Concat(GenerateFillData(source, r.Next(), i => (Int64Enum)i))
+                    .Concat(GenerateFillData(source, r.Next(), i => new object()));
+            }
+
+            return data;
+        }
+
+        private static IEnumerable<object[]> GenerateFillData<TSource, TResult>(IEnumerable<TSource> source, TSource seed, Func<TSource, TResult> transform)
+        {
+            int count = source.Count();
+            TResult repeatedValue = transform(seed);
+            // Force evaluation so neither `source` or `transform` are re-run if the sequence is enumerated more than once.
+            IEnumerable<TResult> transformed = source.Select(transform).ToList();
+
+            yield return new object[] { transformed, repeatedValue, 0, count }; // Fill the entire array.
+            yield return new object[] { transformed, repeatedValue, 0, count / 2 }; // Fill the beginning of the array.
+            yield return new object[] { transformed, repeatedValue, count / 2, count / 2 }; // Fill the end of the array, assuming `length` is even.
+            yield return new object[] { transformed, repeatedValue, count / 4, count / 2 }; // Fill the middle of the array.
+        }
+
+        [Theory]
+        [MemberData(nameof(Fill_Generic_TestData))]
+        public static void Fill_Generic<T>(IEnumerable<T> source, T value, int startIndex, int count)
+        {
+            if (startIndex == 0 && count == source.Count())
+            {
+                T[] array = source.ToArray();
+                Array.Fill(array, value);
+                Assert.Equal(Enumerable.Repeat(value, count), array);
+            }
+
+            {
+                T[] array = source.ToArray();
+
+                // Before calling Fill, we want to capture the segments before/after the filled region.
+                // We want to ensure that in addition to filling in what it's supposed to, Fill does
+                // not touch the adjacent segments.
+                T[] before = source.Take(startIndex).ToArray();
+                T[] after = source.Skip(startIndex + count).ToArray();
+
+                Array.Fill(array, value, startIndex, count);
+
+                Assert.Equal(before, array.Take(startIndex));
+                Assert.Equal(Enumerable.Repeat(value, count), array.Skip(startIndex).Take(count));
+                Assert.Equal(after, array.Skip(startIndex + count));
+            }
+        }
+
         public static IEnumerable<object[]> Reverse_Generic_Int_TestData()
         {
             // TODO: use (or merge this data into) Reverse_TestData if/when xunit/xunit#965 is merged

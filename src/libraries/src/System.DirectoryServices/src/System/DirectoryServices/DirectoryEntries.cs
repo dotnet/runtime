@@ -10,12 +10,12 @@ namespace System.DirectoryServices
     using System.Diagnostics;
     using System.DirectoryServices.Interop;
     using System.Security.Permissions;
+    using System.Globalization;
 
     /// <include file='doc\DirectoryEntries.uex' path='docs/doc[@for="DirectoryEntries"]/*' />
     /// <devdoc>
     ///    <para>Contains the children (child entries) of an entry in the Active Directory.</para>
     /// </devdoc>    
-    [DirectoryServicesPermission(SecurityAction.LinkDemand, Unrestricted = true)]
     public class DirectoryEntries : IEnumerable
     {
         // the parent of the children in this collection
@@ -43,7 +43,7 @@ namespace System.DirectoryServices
         private void CheckIsContainer()
         {
             if (!_container.IsContainer)
-                throw new InvalidOperationException(Res.GetString(Res.DSNotAContainer, _container.Path));
+                throw new InvalidOperationException(String.Format(CultureInfo.CurrentCulture, SR.DSNotAContainer , _container.Path));
         }
 
         /// <include file='doc\DirectoryEntries.uex' path='docs/doc[@for="DirectoryEntries.Add"]/*' />
@@ -146,7 +146,7 @@ namespace System.DirectoryServices
                 get
                 {
                     if (_enumVariant == null)
-                        throw new InvalidOperationException(Res.GetString(Res.DSNoCurrentChild));
+                        throw new InvalidOperationException(SR.DSNoCurrentChild);
 
                     if (_currentEntry == null)
                         _currentEntry = new DirectoryEntry(_enumVariant.GetValue(), _container.UsePropertyCache, _container.GetUsername(), _container.GetPassword(), _container.AuthenticationType);

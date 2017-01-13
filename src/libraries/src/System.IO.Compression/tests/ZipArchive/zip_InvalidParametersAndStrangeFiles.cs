@@ -191,7 +191,7 @@ namespace System.IO.Compression.Tests
                 {
                     //"should throw on bad date"
                     entry.LastWriteTime = new DateTimeOffset(1979, 12, 3, 5, 6, 2, new TimeSpan());
-                }); 
+                });
                 Assert.Throws<ArgumentOutOfRangeException>(() =>
                 {
                     //"Should throw on bad date"
@@ -213,7 +213,7 @@ namespace System.IO.Compression.Tests
 
         /// <summary>
         /// This test tiptoes the buffer boundaries to ensure that the size of a read buffer doesn't
-        /// cause any bytes to be left in ZLib's buffer. 
+        /// cause any bytes to be left in ZLib's buffer.
         /// </summary>
         [Fact]
         public static void ZipWithLargeSparseFile()

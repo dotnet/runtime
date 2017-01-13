@@ -362,7 +362,7 @@ namespace System.Configuration
             get { return _typeName; }
             set
             {
-                if (string.IsNullOrEmpty(value)) throw ExceptionUtil.PropertyNullOrEmpty("Type");
+                if (string.IsNullOrEmpty(value)) throw ExceptionUtil.PropertyNullOrEmpty(nameof(Type));
 
                 VerifyIsEditable();
                 VerifyIsEditableFactory();

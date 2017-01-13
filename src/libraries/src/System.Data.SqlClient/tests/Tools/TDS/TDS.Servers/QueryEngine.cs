@@ -55,6 +55,17 @@ namespace Microsoft.SqlServer.TDS.Servers
             }
 
             // Prepare response message
+            return CreateQueryResponse(session, batchRequest);
+        }
+
+        /// <summary>
+        /// Create a response for the query
+        /// </summary>
+        /// <param name="session"></param>
+        /// <param name="batchRequest"></param>
+        /// <returns></returns>
+        protected virtual TDSMessageCollection CreateQueryResponse(ITDSServerSession session, TDSSQLBatchToken batchRequest)
+        {
             TDSMessage responseMessage = new TDSMessage(TDSMessageType.Response);
 
             // Prepare query text
@@ -348,6 +359,7 @@ namespace Microsoft.SqlServer.TDS.Servers
             // Response collection will contain only one message
             return new TDSMessageCollection(responseMessage);
         }
+
 
         /// <summary>
         /// Handle attention from the client

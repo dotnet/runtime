@@ -4,6 +4,7 @@
 
 namespace System.DirectoryServices.Interop
 {
+#pragma warning disable BCL0015 // CoreFXPort
     using System.Runtime.InteropServices;
     using System;
     using System.Security.Permissions;

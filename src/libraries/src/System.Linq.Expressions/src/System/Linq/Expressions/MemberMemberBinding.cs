@@ -40,10 +40,14 @@ namespace System.Linq.Expressions
         /// <returns>This expression if no children changed, or an expression with the updated children.</returns>
         public MemberMemberBinding Update(IEnumerable<MemberBinding> bindings)
         {
-            if (bindings == Bindings)
+            if (bindings != null)
             {
-                return this;
+                if (ExpressionUtils.SameElements(ref bindings, Bindings))
+                {
+                    return this;
+                }
             }
+
             return Expression.MemberBind(Member, bindings);
         }
     }

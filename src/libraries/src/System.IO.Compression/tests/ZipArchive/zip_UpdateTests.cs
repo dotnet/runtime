@@ -254,7 +254,7 @@ namespace System.IO.Compression.Tests
         {
             using (LocalMemoryStream ms = await LocalMemoryStream.readAppFileAsync(zfile("normal.zip")))
             {
-                ZipArchive target = new ZipArchive(ms, ZipArchiveMode.Update, true);
+                ZipArchive target = new ZipArchive(ms, ZipArchiveMode.Update, leaveOpen: true);
 
                 ZipArchiveEntry edeleted = target.GetEntry("first.txt");
 

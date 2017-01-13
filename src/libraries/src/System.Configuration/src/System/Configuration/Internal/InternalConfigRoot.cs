@@ -94,7 +94,7 @@ namespace System.Configuration.Internal
         // If the record does not exist, create it if it is needed.
         public IInternalConfigRecord GetConfigRecord(string configPath)
         {
-            if (!ConfigPathUtility.IsValid(configPath)) throw ExceptionUtil.ParameterInvalid("configPath");
+            if (!ConfigPathUtility.IsValid(configPath)) throw ExceptionUtil.ParameterInvalid(nameof(configPath));
 
             string[] parts = ConfigPathUtility.GetParts(configPath);
 
@@ -233,7 +233,7 @@ namespace System.Configuration.Internal
         // Optionally ensure the config record matches a desired config record.
         private void RemoveConfigImpl(string configPath, BaseConfigurationRecord configRecord)
         {
-            if (!ConfigPathUtility.IsValid(configPath)) throw ExceptionUtil.ParameterInvalid("configPath");
+            if (!ConfigPathUtility.IsValid(configPath)) throw ExceptionUtil.ParameterInvalid(nameof(configPath));
 
             string[] parts = ConfigPathUtility.GetParts(configPath);
 

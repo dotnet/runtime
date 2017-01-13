@@ -17,7 +17,7 @@ namespace System.Linq.Expressions.Tests
             SampleClassWithProperties instance = new SampleClassWithProperties { DefaultProperty = new List<int> { 100, 101 } };
             IndexExpression expr = instance.DefaultIndexExpression;
 
-            IndexExpression exprUpdated = expr.Update(expr.Object, expr.Arguments);
+            IndexExpression exprUpdated = expr.Update(expr.Object, instance.DefaultArguments);
 
             // Has to be the same, because everything is the same.
             Assert.Same(expr, exprUpdated);
@@ -25,6 +25,33 @@ namespace System.Linq.Expressions.Tests
             // Invoke to check expression.
             IndexExpressionHelpers.AssertInvokeCorrect(100, expr);
             IndexExpressionHelpers.AssertInvokeCorrect(100, exprUpdated);
+        }
+
+        [Fact]
+        public void UpdateDoesntRepeatEnumeration()
+        {
+            SampleClassWithProperties instance = new SampleClassWithProperties { DefaultProperty = new List<int> { 100, 101 } };
+            IndexExpression expr = instance.DefaultIndexExpression;
+
+            Assert.Same(expr, expr.Update(expr.Object, new RunOnceEnumerable<Expression>(instance.DefaultArguments)));
+        }
+
+        [Fact]
+        public void UpdateDifferentObjectTest()
+        {
+            SampleClassWithProperties instance = new SampleClassWithProperties { DefaultProperty = new List<int> { 100, 101 } };
+            IndexExpression expr = instance.DefaultIndexExpression;
+
+            Assert.NotSame(expr, expr.Update(instance.DefaultPropertyExpression, instance.DefaultArguments));
+        }
+
+        [Fact]
+        public void UpdateDifferentArgumentsTest()
+        {
+            SampleClassWithProperties instance = new SampleClassWithProperties { DefaultProperty = new List<int> { 100, 101 } };
+            IndexExpression expr = instance.DefaultIndexExpression;
+
+            Assert.NotSame(expr, expr.Update(expr.Object, new [] { Expression.Constant(0)}));
         }
 
         [Fact]

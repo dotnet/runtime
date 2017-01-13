@@ -211,11 +211,37 @@ namespace System.Linq.Expressions
         /// <returns>This expression if no children changed, or an expression with the updated children.</returns>
         public Expression<TDelegate> Update(Expression body, IEnumerable<ParameterExpression> parameters)
         {
-            if (body == Body && parameters == Parameters)
+            if (body == Body)
             {
-                return this;
+                // Ensure parameters is safe to enumerate twice.
+                // (If this means a second call to ToReadOnly it will return quickly).
+                ICollection<ParameterExpression> pars;
+                if (parameters == null)
+                {
+                    pars = null;
+                }
+                else
+                {
+                    pars = parameters as ICollection<ParameterExpression>;
+                    if (pars == null)
+                    {
+                        parameters = pars = parameters.ToReadOnly();
+                    }
+                }
+
+                if (SameParameters(pars))
+                {
+                    return this;
+                }
             }
-            return Expression.Lambda<TDelegate>(body, Name, TailCall, parameters);
+
+            return Lambda<TDelegate>(body, Name, TailCall, parameters);
+        }
+
+        [ExcludeFromCodeCoverage] // Unreachable
+        internal virtual bool SameParameters(ICollection<ParameterExpression> parameters)
+        {
+            throw ContractUtils.Unreachable;
         }
 
         [ExcludeFromCodeCoverage] // Unreachable
@@ -289,6 +315,9 @@ namespace System.Linq.Expressions
 
         internal override int ParameterCount => 0;
 
+        internal override bool SameParameters(ICollection<ParameterExpression> parameters) =>
+            parameters == null || parameters.Count == 0;
+
         internal override ParameterExpression GetParameter(int index)
         {
             throw Error.ArgumentOutOfRange(nameof(index));
@@ -324,6 +353,20 @@ namespace System.Linq.Expressions
                 case 0: return ReturnObject<ParameterExpression>(_par0);
                 default: throw Error.ArgumentOutOfRange(nameof(index));
             }
+        }
+
+        internal override bool SameParameters(ICollection<ParameterExpression> parameters)
+        {
+            if (parameters != null && parameters.Count == 1)
+            {
+                using (IEnumerator<ParameterExpression> en = parameters.GetEnumerator())
+                {
+                    en.MoveNext();
+                    return en.Current == ReturnObject<ParameterExpression>(_par0);
+                }
+            }
+
+            return false;
         }
 
         internal override ReadOnlyCollection<ParameterExpression> GetOrMakeParameters() => ReturnReadOnly(this, ref _par0);
@@ -365,6 +408,31 @@ namespace System.Linq.Expressions
                 default: throw Error.ArgumentOutOfRange(nameof(index));
             }
         }
+
+        internal override bool SameParameters(ICollection<ParameterExpression> parameters)
+        {
+            if (parameters != null && parameters.Count == 2)
+            {
+                ReadOnlyCollection<ParameterExpression> alreadyCollection = _par0 as ReadOnlyCollection<ParameterExpression>;
+                if (alreadyCollection != null)
+                {
+                    return ExpressionUtils.SameElements(parameters, alreadyCollection);
+                }
+
+                using (IEnumerator<ParameterExpression> en = parameters.GetEnumerator())
+                {
+                    en.MoveNext();
+                    if (en.Current == _par0)
+                    {
+                        en.MoveNext();
+                        return en.Current == _par1;
+                    }
+                }
+            }
+
+            return false;
+        }
+
 
         internal override ReadOnlyCollection<ParameterExpression> GetOrMakeParameters() => ReturnReadOnly(this, ref _par0);
 
@@ -409,6 +477,34 @@ namespace System.Linq.Expressions
             }
         }
 
+        internal override bool SameParameters(ICollection<ParameterExpression> parameters)
+        {
+            if (parameters != null && parameters.Count == 3)
+            {
+                ReadOnlyCollection<ParameterExpression> alreadyCollection = _par0 as ReadOnlyCollection<ParameterExpression>;
+                if (alreadyCollection != null)
+                {
+                    return ExpressionUtils.SameElements(parameters, alreadyCollection);
+                }
+
+                using (IEnumerator<ParameterExpression> en = parameters.GetEnumerator())
+                {
+                    en.MoveNext();
+                    if (en.Current == _par0)
+                    {
+                        en.MoveNext();
+                        if (en.Current == _par1)
+                        {
+                            en.MoveNext();
+                            return en.Current == _par2;
+                        }
+                    }
+                }
+            }
+
+            return false;
+        }
+
         internal override ReadOnlyCollection<ParameterExpression> GetOrMakeParameters() => ReturnReadOnly(this, ref _par0);
 
         internal override Expression<TDelegate> Rewrite(Expression body, ParameterExpression[] parameters)
@@ -438,6 +534,9 @@ namespace System.Linq.Expressions
         internal override int ParameterCount => _parameters.Count;
 
         internal override ParameterExpression GetParameter(int index) => _parameters[index];
+
+        internal override bool SameParameters(ICollection<ParameterExpression> parameters) =>
+            ExpressionUtils.SameElements(parameters, _parameters);
 
         internal override ReadOnlyCollection<ParameterExpression> GetOrMakeParameters() => ReturnReadOnly(ref _parameters);
 

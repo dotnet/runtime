@@ -12,7 +12,7 @@ namespace System.IO.Compression.Tests
 {
     public class DeflateStreamTests
     {
-        static string gzTestFile(string fileName) { return Path.Combine("GZTestData", fileName); }
+        static string gzTestFile(string fileName) => Path.Combine("GZTestData", fileName);
 
         [Fact]
         public void BaseStream1()
@@ -87,7 +87,7 @@ namespace System.IO.Compression.Tests
             var zip = new DeflateStream(ms, CompressionMode.Compress);
             zip.Dispose();
 
-            // Base Stream should be null after dispose 
+            // Base Stream should be null after dispose
             Assert.Null(zip.BaseStream);
 
             zip.Dispose(); // Should be a no-op
@@ -99,7 +99,7 @@ namespace System.IO.Compression.Tests
             var ms = await LocalMemoryStream.readAppFileAsync(gzTestFile("GZTestDocument.txt.gz"));
             var newMs = StripHeaderAndFooter.Strip(ms);
 
-            var zip = new DeflateStream(newMs, CompressionMode.Decompress, true);
+            var zip = new DeflateStream(newMs, CompressionMode.Decompress, leaveOpen: true);
             var baseStream = zip.BaseStream;
             zip.Dispose();
 
@@ -205,7 +205,7 @@ namespace System.IO.Compression.Tests
             //Create the DeflateStream
             int _bufferSize = 1024;
             var bytes = new byte[_bufferSize];
-            var baseStream = new MemoryStream(bytes, true);
+            var baseStream = new MemoryStream(bytes, writable: true);
             DeflateStream ds;
 
             if (leaveOpen == null)
@@ -233,7 +233,7 @@ namespace System.IO.Compression.Tests
 
             //Read the data
             byte[] data2 = new byte[_bufferSize];
-            baseStream = new MemoryStream(bytes, false);
+            baseStream = new MemoryStream(bytes, writable: false);
             ds = new DeflateStream(baseStream, CompressionMode.Decompress);
             int size = ds.Read(data2, 0, _bufferSize - 5);
 
@@ -799,7 +799,7 @@ namespace System.IO.Compression.Tests
     public class ManualSyncMemoryStream : MemoryStream
     {
         private bool isSync;
-        public ManualResetEventSlim manualResetEvent = new ManualResetEventSlim(false);
+        public ManualResetEventSlim manualResetEvent = new ManualResetEventSlim(initialState: false);
 
         public bool ReadHit = false;  // For validation of the async methods we want to ensure they correctly delegate the async
         public bool WriteHit = false; // methods of the underlying stream. This bool acts as a toggle to check that they're being used.

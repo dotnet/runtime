@@ -3,7 +3,11 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
     <ProjectReference Include="..\ref\System.IO.Compression.ZipFile.csproj">
+      <SupportedFramework>netcoreapp1.1</SupportedFramework>
+    </ProjectReference>
+    <ProjectReference Include="..\ref\System.IO.Compression.ZipFile.csproj">
       <SupportedFramework>net46;netcore50;netcoreapp1.0;$(AllXamarinFrameworks)</SupportedFramework>
+      <TargetGroup>netstandard1.3</TargetGroup>
     </ProjectReference>
     <ProjectReference Include="..\src\System.IO.Compression.ZipFile.builds" />
   </ItemGroup>
@@ -14,6 +18,10 @@
     <InboxOnTargetFramework Include="xamarinmac20" />
     <InboxOnTargetFramework Include="xamarintvos10" />
     <InboxOnTargetFramework Include="xamarinwatchos10" />
+    <!-- We are adding new API on netcoreapp1.1 only -->
+    <ValidatePackageSuppression Include="SuppressNETStandardInference">
+      <Value>.NETCoreApp,Version=v1.1;.NETCoreApp,Version=v2.0</Value>
+    </ValidatePackageSuppression>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

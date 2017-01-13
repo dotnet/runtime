@@ -58,11 +58,15 @@ namespace System.Linq.Expressions
         /// <returns>This expression if no children changed, or an expression with the updated children.</returns>
         public RuntimeVariablesExpression Update(IEnumerable<ParameterExpression> variables)
         {
-            if (variables == Variables)
+            if (variables != null)
             {
-                return this;
+                if (ExpressionUtils.SameElements(ref variables, Variables))
+                {
+                    return this;
+                }
             }
-            return Expression.RuntimeVariables(variables);
+
+            return RuntimeVariables(variables);
         }
     }
 

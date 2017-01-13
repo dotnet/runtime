@@ -9,7 +9,7 @@ using System.Security;
 namespace System.IO.Compression
 {
     /// <summary>
-    /// Provides a wrapper around the ZLib decompression API
+    /// Provides a wrapper around the ZLib decompression API.
     /// </summary>
     internal sealed class Inflater : IDisposable
     {
@@ -21,9 +21,7 @@ namespace System.IO.Compression
         private ZLibNative.ZLibStreamHandle _zlibStream;    // The handle to the primary underlying zlib stream
         private GCHandle _inputBufferHandle;                // The handle to the buffer that provides input to _zlibStream
 
-        private object SyncLock => this;                   // Used to make writing to unmanaged structures atomic 
-
-        #region Exposed Members
+        private object SyncLock => this;                    // Used to make writing to unmanaged structures atomic
 
         /// <summary>
         /// Initialized the Inflater with the given windowBits size
@@ -36,21 +34,12 @@ namespace System.IO.Compression
             InflateInit(windowBits);
         }
 
-        public int AvailableOutput
-        {
-            get
-            {
-                return (int)_zlibStream.AvailOut;
-            }
-        }
+        public int AvailableOutput => (int)_zlibStream.AvailOut;
 
         /// <summary>
         /// Returns true if the end of the stream has been reached.
         /// </summary>
-        public bool Finished()
-        {
-            return _finished && _zlibStream.AvailIn == 0 && _zlibStream.AvailOut == 0;
-        }
+        public bool Finished() => _finished && _zlibStream.AvailIn == 0 && _zlibStream.AvailOut == 0;
 
         public unsafe bool Inflate(out byte b)
         {
@@ -97,10 +86,7 @@ namespace System.IO.Compression
             }
         }
 
-        public bool NeedsInput()
-        {
-            return _zlibStream.AvailIn == 0;
-        }
+        public bool NeedsInput() => _zlibStream.AvailIn == 0;
 
         public void SetInput(byte[] inputBuffer, int startIndex, int count)
         {
@@ -147,12 +133,8 @@ namespace System.IO.Compression
             Dispose(false);
         }
 
-        #endregion
-
-        #region Helper Methods
-
         /// <summary>
-        /// Creates the ZStream that will handle inflation
+        /// Creates the ZStream that will handle inflation.
         /// </summary>
         [SecuritySafeCritical]
         private void InflateInit(int windowBits)
@@ -255,7 +237,5 @@ namespace System.IO.Compression
                 _inputBufferHandle.Free();
             }
         }
-
-        #endregion
     }
 }

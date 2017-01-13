@@ -59,7 +59,7 @@ public class ConsoleEncoding
             string inString = new String(Console.InputEncoding.GetChars(inputBytesNoBom));
 
             string outString;
-            using (MemoryStream ms = new MemoryStream(inputBytes, false))
+            using (MemoryStream ms = new MemoryStream(inputBytesNoBom, false))
             {
                 using (StreamReader sr = new StreamReader(ms, Console.InputEncoding))
                 {
@@ -68,7 +68,7 @@ public class ConsoleEncoding
                 }
             }
 
-            Assert.Equal(inString, outString);
+            Assert.True(inString.Equals(outString), $"Encoding: {Console.InputEncoding}, Codepage: {Console.InputEncoding.CodePage}, Expected: {inString}, Actual: {outString} ");
         }
         finally
         {
