@@ -150,7 +150,7 @@ LOCAL_LABEL(JIT_MemSet_0xd0):
     strb        w9,[x0]
 LOCAL_LABEL(JIT_MemSet_0xd8):
     ret         lr
-LEAF_END JIT_MemSet, _TEXT
+LEAF_END_MARKED JIT_MemSet, _TEXT
 
 // See comments above for JIT_MemSet
 
@@ -288,4 +288,4 @@ LOCAL_LABEL(JIT_MemCpy_0xdc):
     strb        w8,[x0]
 LOCAL_LABEL(JIT_MemCpy_0xe8):
     ret         lr
-LEAF_END JIT_MemCpy, _TEXT
+LEAF_END_MARKED JIT_MemCpy, _TEXT

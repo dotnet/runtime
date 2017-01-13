@@ -165,11 +165,13 @@ CrstStatic          BaseDomain::m_SpecialStaticsCrst;
 int                 BaseDomain::m_iNumberOfProcessors = 0;
 
 // Shared Domain Statics
+DECLSPEC_ALIGN(16) 
 static BYTE         g_pSharedDomainMemory[sizeof(SharedDomain)];
 
 // System Domain Statics
 GlobalStringLiteralMap* SystemDomain::m_pGlobalStringLiteralMap = NULL;
 
+DECLSPEC_ALIGN(16) 
 static BYTE         g_pSystemDomainMemory[sizeof(SystemDomain)];
 
 #ifdef FEATURE_APPDOMAIN_RESOURCE_MONITORING

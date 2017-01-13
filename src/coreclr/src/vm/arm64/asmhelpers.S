@@ -142,7 +142,15 @@ NESTED_END NDirectImportThunk, _TEXT
 // ------------------------------------------------------------------
 // ARM64TODO: Implement PrecodeFixupThunk when PreCode is Enabled
 NESTED_ENTRY PrecodeFixupThunk, _TEXT, NoHandler
-     brk #0
+    ldrb    w13, [x12, #Offset_PrecodeChunkIndex]    //m_PrecodeChunkIndex
+    ldrb    w14, [x12, #Offset_MethodDescChunkIndex] // m_MethodDescChunkIndex
+
+    add     x12, x12, w13, uxtw #FixupPrecode_ALIGNMENT_SHIFT_1
+    add     x13, x12, w13, uxtw #FixupPrecode_ALIGNMENT_SHIFT_2
+    ldr     x13, [x13, #SIZEOF__FixupPrecode]
+    add     x12, x13, w14, uxtw #MethodDesc_ALIGNMENT_SHIFT
+
+    b ThePreStub
 NESTED_END PrecodeFixupThunk, _TEXT
 // ------------------------------------------------------------------
 
@@ -251,14 +259,12 @@ WRITE_BARRIER_END JIT_ByRefWriteBarrier
 //   x15  : trashed
 //
 WRITE_BARRIER_ENTRY JIT_CheckedWriteBarrier
-    // ARM64TODO: Temporary indirect access till support for :lo12:symbol is added
-    ldr  x12,  =g_lowest_address
+    PREPARE_EXTERNAL_VAR g_lowest_address, x12
     ldr  x12,  [x12]
     cmp  x14,  x12
     blt  LOCAL_LABEL(NotInHeap)
 
-    // ARM64TODO: Temporary indirect access till support for :lo12:symbol is added
-    ldr  x12, =g_highest_address 
+    PREPARE_EXTERNAL_VAR g_highest_address, x12
     ldr  x12, [x12] 
     cmp  x14, x12
     blt  C_FUNC(JIT_WriteBarrier)
@@ -284,21 +290,18 @@ WRITE_BARRIER_ENTRY JIT_WriteBarrier
 
     // Branch to Exit if the reference is not in the Gen0 heap
     //
-    // ARM64TODO: Temporary indirect access till support for :lo12:symbol is added
-    ldr  x12,  =g_ephemeral_low
+    PREPARE_EXTERNAL_VAR g_ephemeral_low, x12
     ldr  x12,  [x12]
     cmp  x15,  x12
     blt  LOCAL_LABEL(Exit)
 
-    // ARM64TODO: Temporary indirect access till support for :lo12:symbol is added
-    ldr  x12, =g_ephemeral_high 
+    PREPARE_EXTERNAL_VAR g_ephemeral_high, x12
     ldr  x12, [x12]
     cmp  x15,  x12
     bgt  LOCAL_LABEL(Exit)
 
     // Check if we need to update the card table
-    // ARM64TODO: Temporary indirect access till support for :lo12:symbol is added
-    ldr  x12, =g_card_table
+    PREPARE_EXTERNAL_VAR g_card_table, x12
     ldr  x12, [x12]
     add  x15,  x12, x14, lsr #11
     ldrb w12, [x15]
@@ -476,7 +479,7 @@ LOCAL_LABEL(UMThunkStub_HaveThread):
     // m_fPreemptiveGCDisabled is 4 byte field so using 32-bit variant
     str w9, [x19, #Thread__m_fPreemptiveGCDisabled]
 
-    ldr x2, =g_TrapReturningThreads
+    PREPARE_EXTERNAL_VAR g_TrapReturningThreads, x2
     ldr x3, [x2]
     // assuming x0 contains Thread* before jumping to UMThunkStub_DoTrapReturningThreads
     cbnz x3, LOCAL_LABEL(UMThunkStub_DoTrapReturningThreads)
@@ -667,6 +670,45 @@ LOCAL_LABEL(UM2MThunk_WrapperHelper_RegArgumentsSetup):
 NESTED_END UM2MThunk_WrapperHelper, _TEXT
 
 
+#ifdef FEATURE_HIJACK
+// ------------------------------------------------------------------
+// Hijack function for functions which return a scalar type or a struct (value type)
+NESTED_ENTRY OnHijackTripThread, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR   fp, lr, #-144
+    // Spill callee saved registers 
+    PROLOG_SAVE_REG_PAIR   x19, x20, #16
+    PROLOG_SAVE_REG_PAIR   x21, x22, #32
+    PROLOG_SAVE_REG_PAIR   x23, x24, #48
+    PROLOG_SAVE_REG_PAIR   x25, x26, #64
+    PROLOG_SAVE_REG_PAIR   x27, x28, #80
+
+    // save any integral return value(s)
+    stp x0, x1, [sp, #96]
+
+    // save any FP/HFA return value(s)
+    stp d0, d1, [sp, #112]
+    stp d2, d3, [sp, #128]
+
+    mov x0, sp
+    bl OnHijackWorker
+	
+    // restore any integral return value(s)
+    ldp x0, x1, [sp, #96]
+
+    // restore any FP/HFA return value(s)
+    ldp d0, d1, [sp, #112]
+    ldp d2, d3, [sp, #128]
+
+    EPILOG_RESTORE_REG_PAIR   x19, x20, #16
+    EPILOG_RESTORE_REG_PAIR   x21, x22, #32
+    EPILOG_RESTORE_REG_PAIR   x23, x24, #48
+    EPILOG_RESTORE_REG_PAIR   x25, x26, #64
+    EPILOG_RESTORE_REG_PAIR   x27, x28, #80
+    EPILOG_RESTORE_REG_PAIR   fp, lr,   #144
+    EPILOG_RETURN
+NESTED_END OnHijackTripThread, _TEXT
+
+#endif // FEATURE_HIJACK
 
 // ------------------------------------------------------------------
 // Redirection Stub for GC in fully interruptible method
@@ -833,4 +875,27 @@ DynamicHelper DynamicHelperFrameFlags_Default
 DynamicHelper DynamicHelperFrameFlags_ObjectArg, _Obj
 DynamicHelper DynamicHelperFrameFlags_ObjectArg | DynamicHelperFrameFlags_ObjectArg2, _ObjObj
 
+#endif
+
+#ifdef FEATURE_PREJIT
+// ------------------------------------------------------------------
+// void StubDispatchFixupStub(args in regs x0-x7 & stack and possibly retbuff arg in x8, x11:IndirectionCellAndFlags, x12:DispatchToken)
+//
+// The stub dispatch thunk which transfers control to StubDispatchFixupWorker.
+NESTED_ENTRY StubDispatchFixupStub, _TEXT, NoHandler
+
+    PROLOG_WITH_TRANSITION_BLOCK
+
+    add x0, sp, #__PWTB_TransitionBlock // pTransitionBlock
+    and x1, x11, #-4 // Indirection cell
+    mov x2, #0 // sectionIndex
+    mov x3, #0 // pModule
+    bl StubDispatchFixupWorker
+    mov x9, x0
+
+    EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
+    PATCH_LABEL StubDispatchFixupPatchLabel
+    EPILOG_BRANCH_REG  x9
+
+NESTED_END StubDispatchFixupStub, _TEXT
 #endif
