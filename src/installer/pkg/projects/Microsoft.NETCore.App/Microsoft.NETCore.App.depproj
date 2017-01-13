@@ -66,7 +66,13 @@
 
     <!-- simple check to make sure we don't accidentally pull an old 
          package that should have been merged to the primary package -->
-    <Error Text="Unexpected System package %(_secondaryFilesByPackagePath.NuGetPackageId)" Condition="$([System.String]::new('%(_secondaryFilesByPackagePath.NuGetPackageId)').Contains('System.'))" />
+    <ItemGroup>
+      <PermittedSystemPackages Include="System.ValueTuple" />
+      <_secondarySystemPackages Include="@(_secondaryFilesByPackagePath->'%(NuGetPackageId)')"
+                                Condition="$([System.String]::new('%(NuGetPackageId)').Contains('System.'))" />
+      <_secondarySystemPackages Remove="@(PermittedSystemPackages)" />
+    </ItemGroup>
+    <Error Text="Unexpected System package(s) @(_secondarySystemPackages)" Condition="'@(_secondarySystemPackages)' != ''" />
 
     <Message Importance="low" Text="%(FilesToPackage.PackagePath) -> @(FilesToPackage)" />
   </Target>
