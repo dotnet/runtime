@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  
+  <PropertyGroup>
+    <_runtimeOSVersionIndex>$(RuntimeOS.IndexOfAny(".-0123456789"))</_runtimeOSVersionIndex>
+    <_runtimeOSFamily Condition="'$(_runtimeOSVersionIndex)' != '-1'">$(RuntimeOS.SubString(0, $(_runtimeOSVersionIndex)))</_runtimeOSFamily>
+  </PropertyGroup>
+  
+  <Choose>
+    <When Condition="'$(PackageRID)' != ''" />
+    <When Condition="'$(_runtimeOSFamily)' == 'win'">
+      <PropertyGroup>
+        <PackageRID Condition="'$(ArchGroup)' == 'x86' OR '$(ArchGroup)' == 'x64'">win7-$(ArchGroup)</PackageRID>
+        <PackageRID Condition="'$(ArchGroup)' == 'arm'">win8-$(ArchGroup)</PackageRID>
+        <PackageRID Condition="'$(ArchGroup)' == 'arm64'">win10-$(ArchGroup)</PackageRID>
+      </PropertyGroup>
+    </When>
+    <When Condition="'$(_runtimeOSFamily)' == 'osx'">
+      <PropertyGroup>
+        <PackageRID>osx.10.10-$(ArchGroup)</PackageRID>
+      </PropertyGroup>
+    </When>
+    <When Condition="'$(_runtimeOSFamily)' == 'rhel'">
+      <PropertyGroup>
+        <PackageRID>rhel.7-$(ArchGroup)</PackageRID>
+      </PropertyGroup>
+    </When>
+    <Otherwise>
+      <PropertyGroup>
+        <PackageRID>$(RuntimeOS)-$(ArchGroup)</PackageRID>
+      </PropertyGroup>
+    </Otherwise>
+  </Choose>
+
+  <ItemGroup>
+    <OfficialBuildRID Include="alpine.3.4.3-x64" />
+    <OfficialBuildRID Include="debian.8-x64" />
+    <OfficialBuildRID Include="fedora.23-x64" />
+    <OfficialBuildRID Include="fedora.24-x64" />
+    <OfficialBuildRID Include="opensuse.13.2-x64" />
+    <OfficialBuildRID Include="opensuse.42.1-x64" />
+    <OfficialBuildRID Include="osx.10.10-x64" />
+    <OfficialBuildRID Include="rhel.7-x64" />
+    <OfficialBuildRID Include="ubuntu.14.04-x64" />
+    <OfficialBuildRID Include="ubuntu.16.04-x64" />
+    <OfficialBuildRID Include="ubuntu.16.10-x64" />
+    <OfficialBuildRID Include="win7-x86">
+      <Platform>x86</Platform>
+    </OfficialBuildRID>
+    <OfficialBuildRID Include="win7-x64" />
+    <OfficialBuildRID Include="win8-arm">
+      <Platform>arm</Platform>
+    </OfficialBuildRID>
+    <OfficialBuildRID Include="win10-arm64">
+      <Platform>arm64</Platform>
+    </OfficialBuildRID>
+
+    <!-- Ensure we have a RID-specific package for the current build, even if it isn't in our official set -->
+    <BuildRID Include="@(OfficialBuildRID)" Exclude="$(PackageRID)"/>
+    <BuildRID Include="$(PackageRID)">
+      <Platform Condition="'$(ArchGroup)' == 'x64'">amd64</Platform>
+      <Platform Condition="'$(ArchGroup)' != 'x64'">$(ArchGroup)</Platform>
+    </BuildRID>
+  </ItemGroup>
+
+  <ItemGroup>
+    <_project Include="@(BuildRID)">
+      <Platform Condition="'%(Platform)' == ''">amd64</Platform>
+      <PackageTargetRuntime>%(Identity)</PackageTargetRuntime>
+      <AdditionalProperties>PackageTargetRuntime=%(Identity);Platform=%(Platform)</AdditionalProperties>
+    </_project>
+
+    <Project Include="@(_project->'$(MSBuildProjectName).pkgproj')" />
+  </ItemGroup>
+</Project>

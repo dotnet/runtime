@@ -1,8 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <PropertyGroup>
-    <Configuration Condition="'$(Configuration)'==''">Windows_Debug</Configuration>
-  </PropertyGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <ProjectGuid>{4AC5343E-6E31-4BA5-A795-0493AE7E9008}</ProjectGuid>
@@ -11,9 +8,7 @@
     <!-- Suppress warnings for type conflicts between SafeFileHandle in partial facade and mscorlib -->
     <NoWarn>0436</NoWarn>
     <SkipCommonResourcesIncludes Condition="'$(TargetGroup)'=='uap101aot' or '$(TargetGroup)' == 'netcoreapp1.2corert'">true</SkipCommonResourcesIncludes>
-    <DefineConstants Condition="'$(TargetGroup)'==''">$(DefineConstants);netstandard10</DefineConstants>
-    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.0</NuGetTargetMoniker>
-    <PackageTargetFramework Condition="'$(TargetGroup)'==''">netstandard1.0;uap10.1</PackageTargetFramework>
+    <DefineConstants Condition="'$(TargetGroup)'=='netstandard1.0'">$(DefineConstants);netstandard10</DefineConstants>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Debug|AnyCPU'" />
@@ -55,7 +50,7 @@
     <Compile Include="System\UriScheme.cs" />
     <Compile Include="System\UriSyntax.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true' and '$(TargetGroup)'==''">
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true' and '$(TargetGroup)'=='netstandard1.0'">
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
       <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
     </Compile>
@@ -66,7 +61,7 @@
       <Link>Common\System\Diagnostics\Debug.Windows.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsUnix)' == 'true' and '$(TargetGroup)' == ''">
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true' and '$(TargetGroup)' == 'netstandard1.0'">
     <Compile Include="$(CommonPath)\System\Diagnostics\Debug.Unix.cs">
       <Link>Common\System\Diagnostics\Debug.Unix.cs</Link>
     </Compile>
@@ -121,9 +116,10 @@
   </ItemGroup>
   <ItemGroup>
     <TargetingPackReference Include="System.Private.CoreLib" />
+    <Reference Include="System.Private.CoreLib" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="project.json" />
+    <Reference Include="System.Private.CoreLib" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

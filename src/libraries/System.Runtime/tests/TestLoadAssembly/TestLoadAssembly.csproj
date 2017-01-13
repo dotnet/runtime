@@ -3,12 +3,9 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <ProjectGuid>{9F312D76-9AF1-4E90-B3B0-815A1EC6C346}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <RootNamespace>TestLoadAssembly</RootNamespace>
-    <AssemblyName>TestLoadAssembly</AssemblyName>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
-    <CopyNuGetImplementations>false</CopyNuGetImplementations>
     <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <NoWarn>0436</NoWarn>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />

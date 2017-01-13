@@ -1,9 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
-  <PropertyGroup>
-    <Configuration Condition="'$(Configuration)'=='' and '$(TargetGroup)' == ''">
-    </Configuration>
-  </PropertyGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <AssemblyName>System.IO.IsolatedStorage</AssemblyName>
@@ -11,8 +7,7 @@
     <EnableWinRT Condition="'$(TargetGroup)' == 'uap101'">true</EnableWinRT>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net461'">true</IsPartialFacadeAssembly>
     <ResourcesSourceOutputDirectory Condition="'$(TargetGroup)' == 'net461'">None</ResourcesSourceOutputDirectory>
-    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
-    <PackageTargetFramework Condition="'$(TargetGroup)'==''">netstandard1.7;uap10.1</PackageTargetFramework>
+    <PackageTargetFramework Condition="'$(TargetGroup)'=='netstandard'">netstandard;uap10.1</PackageTargetFramework>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
@@ -25,7 +20,7 @@
     <ProjectReference Include="$(SourceDir)mscorlib.WinRT-Facade\mscorlib.WinRT-Facade.csproj" />
     <TargetingPackReference Include="Windows" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' != 'net461'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard'">
     <Compile Include="System\IO\IsolatedStorage\IsolatedStorageException.cs" />
     <Compile Include="System\IO\IsolatedStorage\IsolatedStorageFile.cs" />
     <Compile Include="System\IO\IsolatedStorage\IsolatedStorageFileStream.cs" />
@@ -37,21 +32,34 @@
       <Link>Common\System\Security\IdentityHelper.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == ''">
+  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard'">
     <Compile Include="System\IO\IsolatedStorage\IsolatedStorageException.Serialization.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' != 'net461' and '$(EnableWinRT)' != 'true'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard' and '$(EnableWinRT)' != 'true'">
     <Compile Include="System\IO\IsolatedStorage\Helper.Win32.Unix.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' != 'net461' and '$(EnableWinRT)' == 'true'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard' and '$(EnableWinRT)' == 'true'">
     <Compile Include="System\IO\IsolatedStorage\Helper.WinRT.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'net461'">
     <TargetingPackReference Include="mscorlib" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="project.json" />
     <None Include="System.IO.IsolatedStorage.builds" />
+    <Reference Include="System.Diagnostics.Debug" />
+    <Reference Include="System.Diagnostics.Tools" />
+    <Reference Include="System.IO.FileSystem" />
+    <Reference Include="System.IO.FileSystem.AccessControl" />
+    <Reference Include="System.Linq" />
+    <Reference Include="System.Resources.ResourceManager" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.Extensions" />
+    <Reference Include="System.Runtime.InteropServices.RuntimeInformation" />
+    <Reference Include="System.Security.AccessControl" />
+    <Reference Include="System.Security.Cryptography.Algorithms" />
+    <Reference Include="System.Security.Cryptography.Primitives" />
+    <Reference Include="System.Security.Principal.Windows" />
+    <Reference Include="System.Threading" />
   </ItemGroup>
   <ItemGroup>
     <None Include="ApiCompatBaseline.txt" />

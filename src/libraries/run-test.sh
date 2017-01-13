@@ -392,7 +392,7 @@ fi
 
 if [ "$CoreFxNativeBins" == "" ]
 then
-    CoreFxNativeBins="$ProjectRoot/bin/$OS.x64.$ConfigurationGroup/Native"
+    CoreFxNativeBins="$ProjectRoot/bin/$OS.x64.$ConfigurationGroup/native"
 fi
 
 if [ "$CoreFxPackages" == "" ]

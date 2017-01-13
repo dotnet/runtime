@@ -1,8 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
-  <PropertyGroup>
-    <Configuration Condition="'$(Configuration)'==''">Windows_Debug</Configuration>
-  </PropertyGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <AssemblyName>System.IO.Compression</AssemblyName>
@@ -12,10 +9,9 @@
     <ProjectGuid>{5471BFE8-8071-466F-838E-5ADAA779E742}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <UseECMAKey>true</UseECMAKey>
-    <DefineConstants Condition="'$(TargetGroup)' != 'net46' And '$(TargetGroup)' != 'net463'">$(DefineConstants);FEATURE_ZLIB</DefineConstants>
+    <DefineConstants Condition="'$(TargetGroup)' == 'netstandard'">$(DefineConstants);FEATURE_ZLIB</DefineConstants>
     <DefineConstants Condition="'$(AssemblyVersion)'!='4.1.2.0'">$(DefineConstants);netstandard17</DefineConstants>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net46' Or '$(TargetGroup)' == 'net463'">true</IsPartialFacadeAssembly>
-    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Debug|AnyCPU'" />
@@ -66,7 +62,7 @@
     <Compile Include="System\IO\Compression\PositionPreservingWriteOnlyStreamWrapper.cs" />
   </ItemGroup>
   <!-- Files exclusive to Core -->
-  <ItemGroup Condition="'$(TargetGroup)' != 'net46' And '$(TargetGroup)' != 'net463'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard'">
     <Compile Include="System\IO\Compression\CompressionLevel.cs" />
     <Compile Include="System\IO\Compression\CompressionMode.cs" />
     <Compile Include="System\IO\Compression\GZipStream.cs" />
@@ -79,7 +75,7 @@
       <Link>Common\System\IO\StreamHelpers.CopyValidation.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == '' ">
+  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard' ">
     <Compile Include="System\IO\Compression\ZLibException.Serialization.cs" />
   </ItemGroup>
   <!-- Windows specific files common to both net46 and Core -->
@@ -90,7 +86,7 @@
     </Compile>
   </ItemGroup>
   <!-- Windows specific files exclusive to Core -->
-  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' And '$(TargetGroup)' != 'net46' And '$(TargetGroup)' != 'net463'">
+  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' And '$(TargetGroup)' == 'netstandard'">
     <Compile Include="System\IO\Compression\DeflateZLib\ZLibNative.Windows.cs" />
     <Compile Include="Interop\Interop.zlib.Windows.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
@@ -120,7 +116,17 @@
     <TargetingPackReference Include="System.Runtime" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="project.json" />
+    <Reference Include="System.Buffers" />
+    <Reference Include="System.Collections" />
+    <Reference Include="System.Diagnostics.Contracts" />
+    <Reference Include="System.Diagnostics.Debug" />
+    <Reference Include="System.Diagnostics.Tools" />
+    <Reference Include="System.Resources.ResourceManager" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.Extensions" />
+    <Reference Include="System.Runtime.InteropServices" />
+    <Reference Include="System.Threading" />
+    <Reference Include="System.Threading.Tasks" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

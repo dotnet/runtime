@@ -3,12 +3,7 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <Import Project="$(CommonTestPath)\Tests.props" />
   <PropertyGroup>
-    <Configuration Condition="'$(Configuration)' == ''">Debug</Configuration>
-    <Platform Condition="'$(Platform)' == ''">AnyCPU</Platform>
     <ProjectGuid>{7B57D5F1-4E6C-4280-AD5B-C71C73B66B11}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <AssemblyName>System.Xml.XPath.XmlDocument.Tests</AssemblyName>
-    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
     <DefineConstants>$(DefineConstants);FEATURE_XML_XPATH_ID</DefineConstants>
     <RootNamespace>System.Xml.XPath.XmlDocument.Tests</RootNamespace>
   </PropertyGroup>
@@ -19,10 +14,6 @@
   <PropertyGroup>
     <CommonPathXPath>$(CommonPath)\System\Xml\XPath</CommonPathXPath>
   </PropertyGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\..\..\System.Private.Xml\pkg\System.Private.Xml.pkgproj" />
-    <ProjectReference Include="..\..\..\..\System.Xml.ReaderWriter\pkg\System.Xml.ReaderWriter.pkgproj" />
-  </ItemGroup>
   <ItemGroup>
     <!-- XPath.XmlDocument navigator -->
     <Compile Include="$(CommonPathXPath)\XmlDocument\CreateNavigatorFromXmlDocument.cs" />
@@ -208,9 +199,6 @@
     <EmbeddedResource Include="$(CommonPathXPath)\TestData\xpC001.xml">
       <Link>TestData\xpC001.xml</Link>
     </EmbeddedResource>
-  </ItemGroup>
-  <ItemGroup>
-    <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

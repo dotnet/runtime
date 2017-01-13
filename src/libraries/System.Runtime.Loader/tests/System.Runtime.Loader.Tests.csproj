@@ -2,14 +2,9 @@
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>System.Runtime.Loader.Tests</RootNamespace>
-    <AssemblyName>System.Runtime.Loader.Tests</AssemblyName>
     <ProjectGuid>{701CB3BC-00DC-435D-BDE4-C5FC29A708A7}</ProjectGuid>
-    <NugetTargetMoniker>.NETStandard,Version=v1.6</NugetTargetMoniker>
+    <RootNamespace>System.Runtime.Loader.Tests</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AssemblyLoadContextTest.cs" />
@@ -23,4 +18,4 @@
     <EmbeddedResource Include="System.Runtime.Loader.Test.Assembly.dll" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
-  </Project>
+</Project>

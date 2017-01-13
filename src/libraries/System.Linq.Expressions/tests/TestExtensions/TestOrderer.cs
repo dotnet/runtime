@@ -16,7 +16,7 @@ namespace System.Linq.Expressions.Tests
             Dictionary<int, List<TTestCase>> queue = new Dictionary<int, List<TTestCase>>();
             foreach (TTestCase testCase in testCases)
             {
-                Xunit.Abstractions.IAttributeInfo orderAttribute = testCase.TestMethod.Method.GetCustomAttributes(typeof(TestOrderAttribute)).FirstOrDefault();
+                Xunit.Abstractions.IAttributeInfo orderAttribute = ReflectionAbstractionExtensions.GetCustomAttributes(testCase.TestMethod.Method, typeof(TestOrderAttribute)).FirstOrDefault();
                 int order;
                 if (orderAttribute == null || (order = orderAttribute.GetConstructorArguments().Cast<int>().First()) == 0)
                 {

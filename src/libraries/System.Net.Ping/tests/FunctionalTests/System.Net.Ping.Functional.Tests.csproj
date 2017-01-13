@@ -1,26 +1,17 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
-  <PropertyGroup>
-    <Configuration Condition="'$(Configuration)'==''">Windows_Debug</Configuration>
-  </PropertyGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{43CE20B7-389B-41BB-8390-447521DF3BD4}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <NugetTargetMoniker Condition="'$(TargetGroup)'==''">.NETStandard,Version=v1.7</NugetTargetMoniker>
   </PropertyGroup>
   <!-- Help VS understand available configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
-
-  <!-- Test APIs introduced after 1.0 -->  
-  <ItemGroup Condition="'$(TargetGroup)'==''">
-     <Compile Include="PingTest.cs" />
-     <Compile Include="LoggingTest.cs" />
+  <!-- Test APIs introduced after 1.0 -->
+  <ItemGroup Condition="'$(TargetGroup)'=='netstandard'">
+    <Compile Include="PingTest.cs" />
+    <Compile Include="LoggingTest.cs" />
   </ItemGroup>
-
   <ItemGroup>
     <Compile Include="PingExceptionTest.cs" />
     <Compile Include="PingOptionsTest.cs" />
@@ -39,12 +30,6 @@
     <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
       <Link>Common\tests\System\PlatformDetection.cs</Link>
     </Compile>
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'==''">
-    <ProjectReference Include="..\..\pkg\System.Net.Ping.pkgproj">
-      <Project>{85FD05E8-A4B1-4B89-ABED-33AFD200CABD}</Project>
-      <Name>System.Net.Ping</Name>
-    </ProjectReference>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

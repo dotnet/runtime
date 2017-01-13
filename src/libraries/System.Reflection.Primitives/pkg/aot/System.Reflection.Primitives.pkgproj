@@ -5,12 +5,10 @@
     <PackageTargetRuntime>aot</PackageTargetRuntime>
     <PreventImplementationReference>true</PreventImplementationReference>
   </PropertyGroup>
-
   <ItemGroup>
     <ProjectReference Include="..\..\src\System.Reflection.Primitives.csproj">
       <TargetGroup>uap101aot</TargetGroup>
     </ProjectReference>
-
     <InboxOnTargetFramework Include="MonoAndroid10" />
     <InboxOnTargetFramework Include="MonoTouch10" />
     <InboxOnTargetFramework Include="net45" />
