@@ -16,8 +16,10 @@ popd
 :: Clean up existing nupkgs
 if exist "%__ProjectDir%\bin" (rmdir /s /q "%__ProjectDir%\bin")
 
-:: Package the assets using Tools
+"%__DotNet%" "%__MSBuild%" "%__ProjectDir%\tasks\core-setup.tasks.builds" /verbosity:minimal /flp:logfile=tools.log;v=diag
+if not ERRORLEVEL 0 goto :Error
 
+:: Package the assets using Tools
 "%__DotNet%" "%__MSBuild%" "%__ProjectDir%\projects\packages.builds" /p:TargetsWindows=true /verbosity:minimal
 
 if not ERRORLEVEL 0 goto :Error

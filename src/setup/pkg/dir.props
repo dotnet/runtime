@@ -12,6 +12,9 @@
 
     <!-- Output directories -->
     <BinDir Condition="'$(BinDir)'==''">$(ProjectDir)bin/</BinDir>
+    <ObjDir Condition="'$(ObjDir)'==''">$(BinDir)obj/</ObjDir>
+    <BaseIntermediateOutputPath Condition="'$(BaseIntermediateOutputPath)'==''">$(ObjDir)</BaseIntermediateOutputPath>
+
     <TestWorkingDir Condition="'$(TestWorkingDir)'==''">$(BinDir)tests/</TestWorkingDir>
     <PackagesOutDir Condition="'$(PackagesOutDir)'==''">$(BinDir)packages/</PackagesOutDir>
     <SymbolPackagesOutDir Condition="'$(SymbolPackagesOutDir)'==''">$(PackagesOutDir)</SymbolPackagesOutDir>
@@ -24,6 +27,8 @@
     <BuildToolsTaskDir Condition="'$(BuildToolsTargets45)' == 'true' OR '$(MSBuildRuntimeType)' != 'Core'">$(ToolsDir)net45/</BuildToolsTaskDir>
     <PackagingTaskDir Condition="'$(BuildToolsTaskDir)' != ''">$(BuildToolsTaskDir)</PackagingTaskDir>
     <UseRoslynCompilers Condition="'$(UseRoslynCompilers)'=='' and '$(OSEnvironment)'!='Windows_NT'">false</UseRoslynCompilers>
+    <!-- core-setup does its own versioning -->
+    <SkipVersionGeneration>true</SkipVersionGeneration>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -76,6 +81,7 @@
   <PropertyGroup>
     <DotNetTool Condition="'$(DotNetTool)' == '' and '$(OsEnvironment)'!='Unix'">$(DotnetCliPath)dotnet.exe</DotNetTool>
     <DotNetTool Condition="'$(DotNetTool)' == '' and '$(OsEnvironment)'=='Unix'">$(DotnetCliPath)dotnet</DotNetTool>
+    <OverrideToolHost Condition="'$(MSBuildRuntimeType)' == 'Core'">$(DotNetTool)</OverrideToolHost>
     <DotNetRestoreCommand>"$(DotNetTool)" restore</DotNetRestoreCommand>
     <DotNetRestoreCommand>$(DotNetRestoreCommand) --packages "$(PackagesDir.TrimEnd('/\'.ToCharArray()))"</DotNetRestoreCommand>
     <DotNetRestoreCommand>$(DotNetRestoreCommand) --configfile "$(NuGetConfigFile)"</DotNetRestoreCommand>
