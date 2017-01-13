@@ -840,36 +840,6 @@ namespace System.Runtime.CompilerServices
 
         // This method is copy&pasted into the public Start methods to avoid size overhead of valuetype generic instantiations.
         // Ideally, we would build intrinsics to get the raw ref address and raw code address of MoveNext, and just use the shared implementation.
-#if false
-        /// <summary>Initiates the builder's execution with the associated state machine.</summary>
-        /// <typeparam name="TStateMachine">Specifies the type of the state machine.</typeparam>
-        /// <param name="stateMachine">The state machine instance, passed by reference.</param>
-        /// <exception cref="System.ArgumentNullException">The <paramref name="stateMachine"/> argument is null (Nothing in Visual Basic).</exception>
-        [DebuggerStepThrough]
-        internal static void Start<TStateMachine>(ref TStateMachine stateMachine)
-            where TStateMachine : IAsyncStateMachine
-        {
-            if (stateMachine == null) throw new ArgumentNullException(nameof(stateMachine));
-            Contract.EndContractBlock();
-
-            // Run the MoveNext method within a copy-on-write ExecutionContext scope.
-            // This allows us to undo any ExecutionContext changes made in MoveNext,
-            // so that they won't "leak" out of the first await.
-
-            Thread currentThread = Thread.CurrentThread;
-            ExecutionContextSwitcher ecs = default(ExecutionContextSwitcher);
-            RuntimeHelpers.PrepareConstrainedRegions();
-            try
-            {
-                ExecutionContext.EstablishCopyOnWriteScope(currentThread, ref ecs);
-                stateMachine.MoveNext();
-            }
-            finally
-            {
-                ecs.Undo(currentThread);
-            }
-        }
-#endif
 
         /// <summary>Associates the builder with the state machine it represents.</summary>
         /// <param name="stateMachine">The heap-allocated state machine object.</param>
