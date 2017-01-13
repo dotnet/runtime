@@ -135,6 +135,12 @@
     <RunApiCompat>true</RunApiCompat>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(BuildingInsideVisualStudio)' == 'true' and '$(Configuration)' != ''">
+    <!-- When building in VS setup the ConfigurationGroup based on the given Configuration -->
+    <ConfigurationGroup Condition="$(Configuration.EndsWith('Debug'))">Debug</ConfigurationGroup>
+    <ConfigurationGroup Condition="$(Configuration.EndsWith('Release'))">Release</ConfigurationGroup>
+  </PropertyGroup>
+
   <PropertyGroup>
     <!--
       These *Group properties are only intended to enable passing them individually at the command line to initialize
@@ -147,9 +153,6 @@
     <OSGroup Condition="'$(OSGroup)' == ''">$(OSEnvironment)</OSGroup>
     <ConfigurationGroup Condition="'$(ConfigurationGroup)' == ''">Debug</ConfigurationGroup>
     <ArchGroup Condition="'$(ArchGroup)' == ''">x64</ArchGroup>
-
-    <!-- For VS support if Configuration is set we default BuildConfiguration based on that property -->
-    <BuildConfiguration Condition="'$(BuildConfiguration)' == '' and '$(Configuration)' != ''">$(Configuration)-$(ArchGroup)</BuildConfiguration>
 
     <!-- Initialize BuildConfiguration from the individual properties if it wasn't already explicitly set -->
     <BuildConfiguration Condition="'$(BuildConfiguration)' == ''">$(TargetGroup)-$(OSGroup)-$(ConfigurationGroup)-$(ArchGroup)</BuildConfiguration>
@@ -249,7 +252,7 @@
     <RefPath>$(RefRootPath)netcoreapp/</RefPath>
     <NetStandardRefPath>$(RefRootPath)netstandard/</NetStandardRefPath>
     <NetFxRefPath>$(RefRootPath)netfx/</NetFxRefPath>
-    
+
     <!-- Constructed shared fx path for testing -->
     <TestSharedFxDir>$(ToolsDir)testdotnetcli</TestSharedFxDir>
 

@@ -31,6 +31,7 @@
     <TestHostExecutablePath Condition="'$(OS)'=='Windows_NT' AND '$(TestHostExecutablePath)' == ''">$(TestSharedFxDir)\dotnet.exe</TestHostExecutablePath>
     <TestHostExecutablePath Condition="'$(OS)'!='Windows_NT' AND '$(TestHostExecutablePath)' == ''">$(TestSharedFxDir)\dotnet</TestHostExecutablePath>
     <XunitExecutable Condition="'$(XunitExecutable)' == ''">$(TestPath)\xunit.console.netcore.exe</XunitExecutable>
+    <DebugEngines>{2E36F1D4-B23C-435D-AB41-18E608940038}</DebugEngines>
   </PropertyGroup>
 
   <!-- General xunit options -->
@@ -60,21 +61,26 @@
 
   <!-- The Code Coverage targets will override TestHost and TestCommandLine if coverage is enabled -->
   <Import Project="$(MSBuildThisFileDirectory)CodeCoverage.targets" />
-  
-  <Target Name="AddRuntimeConfig" >
-    <ItemGroup>
-       <SupplementalTestData Include="$(XunitRuntimeConfig)" />
-       <SupplementalTestData Include="$(RuntimePath)xunit.console.netcore.exe" />
-    </ItemGroup>
-  </Target>
 
-  <Target Name="DiscoverTestInputs" DependsOnTargets="ResolveReferences;GetCopyToOutputDirectoryItems;AddRuntimeConfig">
+  <!-- In VS (2015 Preview or later currently required): Debug to run unit tests on CoreCLR. -->
+  <PropertyGroup Condition="'$(IsTestProject)'=='true'">
+    <StartWorkingDirectory Condition="'$(StartWorkingDirectory)'==''">$(TestPath)</StartWorkingDirectory>
+    <StartAction Condition="'$(StartAction)'==''">Program</StartAction>
+    <StartProgram Condition="'$(StartProgram)'==''">$(TestProgram)</StartProgram>
+    <StartArguments Condition="'$(StartArguments)'==''">$(TestArguments) -wait -parallel none</StartArguments>
+  </PropertyGroup>
+
+  <Target Name="DiscoverTestInputs" DependsOnTargets="ResolveReferences;GetCopyToOutputDirectoryItems">
     <ItemGroup>
       <RunTestsForProjectInputs Include="@(ReferenceCopyLocalPaths)" />
       <RunTestsForProjectInputs Include="@(Content)" />
       <RunTestsForProjectInputs Include="@(IntermediateAssembly)" />
       <RunTestsForProjectInputs Include="@(_DebugSymbolsIntermediatePath)" />
       <RunTestsForProjectInputs Include="@(AllItemsFullPathWithTargetPath)" />
+    </ItemGroup>
+    <ItemGroup>
+      <SupplementalTestData Include="$(XunitRuntimeConfig)" />
+      <SupplementalTestData Include="$(RuntimePath)xunit.console.netcore.exe" />
     </ItemGroup>
   </Target>
 
@@ -84,7 +90,7 @@
            directory.
        2.  Runs the tests. -->
   <Target Name="GenerateTestExecutionScripts"
-          DependsOnTargets="DiscoverTestInputs;CheckTestCategories">
+          DependsOnTargets="DiscoverTestInputs;SetupTestProperties">
     <PropertyGroup>
       <TargetOSTrait Condition="'$(TargetOS)'=='Windows_NT'">nonwindowstests</TargetOSTrait>
       <TargetOSTrait Condition="'$(TargetOS)'=='Linux'">nonlinuxtests</TargetOSTrait>
@@ -239,8 +245,6 @@
   <PropertyGroup>
     <TestDependsOn>
       $(TestDependsOn);
-      DiscoverTestInputs;
-      SetupTestProperties;
       CopySupplementalTestData;
       GenerateTestExecutionScripts;
       RunTestsForProject;
