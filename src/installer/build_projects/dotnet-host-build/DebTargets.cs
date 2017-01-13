@@ -30,7 +30,7 @@ namespace Microsoft.DotNet.Host.Build
             // Ubuntu 16.04 Jenkins Machines don't have docker or debian package build tools
             // So we need to skip this target if the tools aren't present.
             // https://github.com/dotnet/core-setup/issues/167
-            if (DebuildNotPresent())
+            if (ShouldSkipBuildDebPackages() || DebuildNotPresent())
             {
                 c.Info("Debuild not present, skipping target: {nameof(GenerateSharedHostDeb)}");
                 return c.Success();
@@ -72,7 +72,7 @@ namespace Microsoft.DotNet.Host.Build
             // Ubuntu 16.04 Jenkins Machines don't have docker or debian package build tools
             // So we need to skip this target if the tools aren't present.
             // https://github.com/dotnet/core-setup/issues/167
-            if (DebuildNotPresent())
+            if (ShouldSkipBuildDebPackages() || DebuildNotPresent())
             {
                 c.Info("Debuild not present, skipping target: {nameof(GenerateHostFxrDeb)}");
                 return c.Success();
@@ -116,7 +116,7 @@ namespace Microsoft.DotNet.Host.Build
             // Ubuntu 16.04 Jenkins Machines don't have docker or debian package build tools
             // So we need to skip this target if the tools aren't present.
             // https://github.com/dotnet/core-setup/issues/167
-            if (DebuildNotPresent())
+            if (ShouldSkipBuildDebPackages() || DebuildNotPresent())
             {
                 c.Info("Debuild not present, skipping target: {nameof(GenerateSharedFrameworkDeb)}");
                 return c.Success();
@@ -174,7 +174,7 @@ namespace Microsoft.DotNet.Host.Build
             // Ubuntu 16.04 Jenkins Machines don't have docker or debian package build tools
             // So we need to skip this target if the tools aren't present.
             // https://github.com/dotnet/core-setup/issues/167
-            if (DebuildNotPresent())
+            if (ShouldSkipBuildDebPackages() || DebuildNotPresent())
             {
                 c.Info("Debuild not present, skipping target: {nameof(InstallSharedHost)}");
                 return c.Success();
@@ -191,7 +191,7 @@ namespace Microsoft.DotNet.Host.Build
             // Ubuntu 16.04 Jenkins Machines don't have docker or debian package build tools
             // So we need to skip this target if the tools aren't present.
             // https://github.com/dotnet/core-setup/issues/167
-            if (DebuildNotPresent())
+            if (ShouldSkipBuildDebPackages() || DebuildNotPresent())
             {
                 c.Info("Debuild not present, skipping target: {nameof(InstallHostFxr)}");
                 return c.Success();
@@ -208,7 +208,7 @@ namespace Microsoft.DotNet.Host.Build
             // Ubuntu 16.04 Jenkins Machines don't have docker or debian package build tools
             // So we need to skip this target if the tools aren't present.
             // https://github.com/dotnet/core-setup/issues/167
-            if (DebuildNotPresent())
+            if (ShouldSkipBuildDebPackages() || DebuildNotPresent())
             {
                 c.Info("Debuild not present, skipping target: {nameof(InstallSharedFramework)}");
                 return c.Success();
@@ -225,7 +225,7 @@ namespace Microsoft.DotNet.Host.Build
             // Ubuntu 16.04 Jenkins Machines don't have docker or debian package build tools
             // So we need to skip this target if the tools aren't present.
             // https://github.com/dotnet/core-setup/issues/167
-            if (DebuildNotPresent())
+            if (ShouldSkipBuildDebPackages() || DebuildNotPresent())
             {
                 c.Info("Debuild not present, skipping target: {nameof(RemovePackages)}");
                 return c.Success();
@@ -266,6 +266,11 @@ namespace Microsoft.DotNet.Host.Build
         private static bool DebuildNotPresent()
         {
             return Cmd("/usr/bin/env", "debuild", "-h").Execute().ExitCode != 0;
+        }
+
+        private static bool ShouldSkipBuildDebPackages()
+        {
+            return Environment.GetEnvironmentVariable("DOTNET_BUILD_SKIP_DEB_PACKAGING") == "1";
         }
     }
 }

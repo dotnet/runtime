@@ -93,6 +93,9 @@ while [[ $# > 0 ]]; do
             # Allow CI to disable prereqs check since the CI has the pre-reqs but not ldconfig it seems
             export DOTNET_INSTALL_SKIP_PREREQS=1
             ;;
+        --skip-deb-package-build)
+            export DOTNET_BUILD_SKIP_DEB_PACKAGING=1
+            ;;
         --build-driver-only)
             __BuildDriverOnly=1
             ;;
