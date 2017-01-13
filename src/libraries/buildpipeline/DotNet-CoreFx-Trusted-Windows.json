@@ -179,7 +179,7 @@
         "solution": "src\\tests.builds",
         "platform": "",
         "configuration": "",
-        "msbuildArguments": "/t:CloudBuild /p:ArchGroup=$(PB_Platform) /p:ConfigurationGroup=$(PB_ConfigurationGroup) /p:\"EnableCloudTest=$(PB_EnableCloudTest)\" /p:\"BuildMoniker=$(PB_BuildMoniker)\" /p:\"TargetQueue=$(PB_TargetQueue)\" /p:\"TestProduct=corefx\" /p:\"Branch=master\" /p:\"CloudDropAccountName=dotnetbuilddrops\" /p:\"CloudResultsAccountName=dotnetjobresults\" /p:\"CloudDropAccessToken=$(CloudDropAccessToken)\" /p:\"CloudResultsAccessToken=$(PB_CloudResultsAccessToken)\" /p:\"TimeoutInSeconds=1200\" /p:\"TargetOS=Windows_NT\" /p:\"HelixApiAccessKey=$(PB_HelixApiAccessKey)\" /p:HelixApiEndpoint=$(PB_HelixApiEndPoint)",
+        "msbuildArguments": "/t:CloudBuild /p:ArchGroup=$(PB_Platform) /p:ConfigurationGroup=$(PB_ConfigurationGroup) /p:\"EnableCloudTest=$(PB_EnableCloudTest)\" /p:\"BuildMoniker=$(PB_BuildMoniker)\" /p:\"TargetQueue=$(PB_TargetQueue)\" /p:\"TestProduct=corefx\" /p:\"Branch=master\" /p:\"CloudDropAccountName=dotnetbuilddrops\" /p:\"CloudResultsAccountName=dotnetjobresults\" /p:\"CloudDropAccessToken=$(CloudDropAccessToken)\" /p:\"CloudResultsAccessToken=$(OutputCloudResultsAccessToken)\" /p:\"TimeoutInSeconds=1200\" /p:\"TargetOS=Windows_NT\" /p:\"HelixApiAccessKey=$(HelixApiAccessKey)\" /p:HelixApiEndpoint=$(PB_HelixApiEndPoint)",
         "clean": "false",
         "maximumCpuCount": "false",
         "restoreNugetPackages": "false",
