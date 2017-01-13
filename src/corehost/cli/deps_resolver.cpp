@@ -527,8 +527,7 @@ bool deps_resolver_t::resolve_probe_dirs(
         {
             // For standalone apps, apphost.exe will be renamed. Do not use the full package name
             // because of rid-fallback could happen (ex: CentOS falling back to RHEL)
-            if ((ends_with(entry.library_name, _X(".Microsoft.NETCore.DotNetHost"), false) && entry.asset_name == _X("dotnet")) ||
-                (ends_with(entry.library_name, _X(".Microsoft.NETCore.DotNetAppHost"), false) && entry.asset_name == _X("apphost")))
+            if (ends_with(entry.library_name, _X(".Microsoft.NETCore.App"), false) && (entry.asset_name == _X("dotnet") || entry.asset_name == _X("apphost")))
             {
                 trace::warning(_X("Warning: assembly specified in the dependencies manifest was not found -- package: '%s', version: '%s', path: '%s'"), 
                     entry.library_name.c_str(), entry.library_version.c_str(), entry.relative_path.c_str());
@@ -540,7 +539,7 @@ bool deps_resolver_t::resolve_probe_dirs(
         }
 
         if (m_api_set_paths.empty() && pal::need_api_sets() &&
-                ends_with(entry.library_name, _X("Microsoft.NETCore.Windows.ApiSets"), false))
+                ends_with(entry.library_name, _X("Microsoft.NETCore.App"), false))
         {
             m_api_set_paths.insert(action(candidate));
         }

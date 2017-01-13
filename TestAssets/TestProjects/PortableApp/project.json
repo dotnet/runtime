@@ -5,13 +5,397 @@
   },
   "dependencies": {},
   "frameworks": {
-    "netcoreapp1.1": {
+    "netcoreapp2.0": {
       "dependencies": {
         "Microsoft.NETCore.App": {
           "type": "platform",
-          "version": "1.2.0-beta-*"
+          "version": "2.0.0-beta-*"
         },
-        "Newtonsoft.Json": "9.0.1-beta1"
+        "Newtonsoft.Json": "9.0.1-beta1",
+        "Libuv": {
+          "version": "1.9.1",
+          "exclude": "all"
+        },
+        "Microsoft.CodeAnalysis.Analyzers": {
+          "version": "1.1.0",
+          "exclude": "all"
+        },
+        "Microsoft.CodeAnalysis.Common": {
+          "version": "1.3.0",
+          "exclude": "all"
+        },
+        "Microsoft.CodeAnalysis.CSharp": {
+          "version": "1.3.0",
+          "exclude": "all"
+        },
+        "Microsoft.CodeAnalysis.VisualBasic": {
+          "version": "1.3.0",
+          "exclude": "all"
+        },
+        "Microsoft.CSharp": {
+          "version": "4.3.0",
+          "exclude": "all"
+        },
+        "Microsoft.DiaSymReader.Native": {
+          "version": "1.4.0",
+          "exclude": "all"
+        },
+        "Microsoft.VisualBasic": {
+          "version": "10.1.0",
+          "exclude": "all"
+        },
+        "Microsoft.Win32.Primitives": {
+          "version": "4.3.0",
+          "exclude": "all"
+        },
+        "Microsoft.Win32.Registry": {
+          "version": "4.3.0",
+          "exclude": "all"
+        },
+        "System.AppContext": {
+          "version": "4.3.0",
+          "exclude": "all"
+        },
+        "System.Buffers": {
+          "version": "4.3.0",
+          "exclude": "all"
+        },
+        "System.Collections": {
+          "version": "4.3.0",
+          "exclude": "all"
+        },
+        "System.Collections.Concurrent": {
+          "version": "4.3.0",
+          "exclude": "all"
+        },
+        "System.Collections.Immutable": {
+          "version": "1.3.0",
+          "exclude": "all"
+        },
+        "System.ComponentModel": {
+          "version": "4.3.0",
+          "exclude": "all"
+        },
+        "System.ComponentModel.Annotations": {
+          "version": "4.3.0",
+          "exclude": "all"
+        },
+        "System.Console": {
+          "version": "4.3.0",
+          "exclude": "all"
+        },
+        "System.Diagnostics.Debug": {
+          "version": "4.3.0",
+          "exclude": "all"
+        },
+        "System.Diagnostics.DiagnosticSource": {
+          "version": "4.3.0",
+          "exclude": "all"
+        },
+        "System.Diagnostics.FileVersionInfo": {
+          "version": "4.0.0",
+          "exclude": "all"
+        },
+        "System.Diagnostics.Process": {
+          "version": "4.3.0",
+          "exclude": "all"
+        },
+        "System.Diagnostics.StackTrace": {
+          "version": "4.0.1",
+          "exclude": "all"
+        },
+        "System.Diagnostics.Tools": {
+          "version": "4.3.0",
+          "exclude": "all"
+        },
+        "System.Diagnostics.Tracing": {
+          "version": "4.3.0",
+          "exclude": "all"
+        },
+        "System.Dynamic.Runtime": {
+          "version": "4.3.0",
+          "exclude": "all"
+        },
+        "System.Globalization": {
+          "version": "4.3.0",
+          "exclude": "all"
+        },
+        "System.Globalization.Calendars": {
+          "version": "4.3.0",
+          "exclude": "all"
+        },
+        "System.Globalization.Extensions": {
+          "version": "4.3.0",
+          "exclude": "all"
+        },
+        "System.IO": {
+          "version": "4.3.0",
+          "exclude": "all"
+        },
+        "System.IO.Compression": {
+          "version": "4.3.0",
+          "exclude": "all"
+        },
+        "System.IO.Compression.ZipFile": {
+          "version": "4.3.0",
+          "exclude": "all"
+        },
+        "System.IO.FileSystem": {
+          "version": "4.3.0",
+          "exclude": "all"
+        },
+        "System.IO.FileSystem.Primitives": {
+          "version": "4.3.0",
+          "exclude": "all"
+        },
+        "System.IO.FileSystem.Watcher": {
+          "version": "4.3.0",
+          "exclude": "all"
+        },
+        "System.IO.MemoryMappedFiles": {
+          "version": "4.3.0",
+          "exclude": "all"
+        },
+        "System.IO.UnmanagedMemoryStream": {
+          "version": "4.3.0",
+          "exclude": "all"
+        },
+        "System.Linq": {
+          "version": "4.3.0",
+          "exclude": "all"
+        },
+        "System.Linq.Expressions": {
+          "version": "4.3.0",
+          "exclude": "all"
+        },
+        "System.Linq.Parallel": {
+          "version": "4.3.0",
+          "exclude": "all"
+        },
+        "System.Linq.Queryable": {
+          "version": "4.3.0",
+          "exclude": "all"
+        },
+        "System.Net.Http": {
+          "version": "4.3.0",
+          "exclude": "all"
+        },
+        "System.Net.NameResolution": {
+          "version": "4.3.0",
+          "exclude": "all"
+        },
+        "System.Net.Primitives": {
+          "version": "4.3.0",
+          "exclude": "all"
+        },
+        "System.Net.Requests": {
+          "version": "4.3.0",
+          "exclude": "all"
+        },
+        "System.Net.Security": {
+          "version": "4.3.0",
+          "exclude": "all"
+        },
+        "System.Net.Sockets": {
+          "version": "4.3.0",
+          "exclude": "all"
+        },
+        "System.Net.WebHeaderCollection": {
+          "version": "4.3.0",
+          "exclude": "all"
+        },
+        "System.Numerics.Vectors": {
+          "version": "4.3.0",
+          "exclude": "all"
+        },
+        "System.ObjectModel": {
+          "version": "4.3.0",
+          "exclude": "all"
+        },
+        "System.Reflection": {
+          "version": "4.3.0",
+          "exclude": "all"
+        },
+        "System.Reflection.DispatchProxy": {
+          "version": "4.3.0",
+          "exclude": "all"
+        },
+        "System.Reflection.Emit": {
+          "version": "4.3.0",
+          "exclude": "all"
+        },
+        "System.Reflection.Emit.ILGeneration": {
+          "version": "4.3.0",
+          "exclude": "all"
+        },
+        "System.Reflection.Emit.Lightweight": {
+          "version": "4.3.0",
+          "exclude": "all"
+        },
+        "System.Reflection.Extensions": {
+          "version": "4.3.0",
+          "exclude": "all"
+        },
+        "System.Reflection.Metadata": {
+          "version": "1.4.1",
+          "exclude": "all"
+        },
+        "System.Reflection.Primitives": {
+          "version": "4.3.0",
+          "exclude": "all"
+        },
+        "System.Reflection.TypeExtensions": {
+          "version": "4.3.0",
+          "exclude": "all"
+        },
+        "System.Resources.Reader": {
+          "version": "4.3.0",
+          "exclude": "all"
+        },
+        "System.Resources.ResourceManager": {
+          "version": "4.3.0",
+          "exclude": "all"
+        },
+        "System.Runtime": {
+          "version": "4.3.0",
+          "exclude": "all"
+        },
+        "System.Runtime.Extensions": {
+          "version": "4.3.0",
+          "exclude": "all"
+        },
+        "System.Runtime.Handles": {
+          "version": "4.3.0",
+          "exclude": "all"
+        },
+        "System.Runtime.InteropServices": {
+          "version": "4.3.0",
+          "exclude": "all"
+        },
+        "System.Runtime.InteropServices.RuntimeInformation": {
+          "version": "4.3.0",
+          "exclude": "all"
+        },
+        "System.Runtime.Loader": {
+          "version": "4.3.0",
+          "exclude": "all"
+        },
+        "System.Runtime.Numerics": {
+          "version": "4.3.0",
+          "exclude": "all"
+        },
+        "System.Security.Claims": {
+          "version": "4.3.0",
+          "exclude": "all"
+        },
+        "System.Security.Cryptography.Algorithms": {
+          "version": "4.3.0",
+          "exclude": "all"
+        },
+        "System.Security.Cryptography.Cng": {
+          "version": "4.3.0",
+          "exclude": "all"
+        },
+        "System.Security.Cryptography.Csp": {
+          "version": "4.3.0",
+          "exclude": "all"
+        },
+        "System.Security.Cryptography.Encoding": {
+          "version": "4.3.0",
+          "exclude": "all"
+        },
+        "System.Security.Cryptography.OpenSsl": {
+          "version": "4.3.0",
+          "exclude": "all"
+        },
+        "System.Security.Cryptography.Primitives": {
+          "version": "4.3.0",
+          "exclude": "all"
+        },
+        "System.Security.Cryptography.X509Certificates": {
+          "version": "4.3.0",
+          "exclude": "all"
+        },
+        "System.Security.Principal": {
+          "version": "4.3.0",
+          "exclude": "all"
+        },
+        "System.Security.Principal.Windows": {
+          "version": "4.3.0",
+          "exclude": "all"
+        },
+        "System.Text.Encoding": {
+          "version": "4.3.0",
+          "exclude": "all"
+        },
+        "System.Text.Encoding.CodePages": {
+          "version": "4.0.1",
+          "exclude": "all"
+        },
+        "System.Text.Encoding.Extensions": {
+          "version": "4.3.0",
+          "exclude": "all"
+        },
+        "System.Text.RegularExpressions": {
+          "version": "4.3.0",
+          "exclude": "all"
+        },
+        "System.Threading": {
+          "version": "4.3.0",
+          "exclude": "all"
+        },
+        "System.Threading.Overlapped": {
+          "version": "4.3.0",
+          "exclude": "all"
+        },
+        "System.Threading.Tasks": {
+          "version": "4.3.0",
+          "exclude": "all"
+        },
+        "System.Threading.Tasks.Dataflow": {
+          "version": "4.7.0",
+          "exclude": "all"
+        },
+        "System.Threading.Tasks.Extensions": {
+          "version": "4.3.0",
+          "exclude": "all"
+        },
+        "System.Threading.Tasks.Parallel": {
+          "version": "4.3.0",
+          "exclude": "all"
+        },
+        "System.Threading.Thread": {
+          "version": "4.3.0",
+          "exclude": "all"
+        },
+        "System.Threading.ThreadPool": {
+          "version": "4.3.0",
+          "exclude": "all"
+        },
+        "System.Threading.Timer": {
+          "version": "4.3.0",
+          "exclude": "all"
+        },
+        "System.Xml.ReaderWriter": {
+          "version": "4.3.0",
+          "exclude": "all"
+        },
+        "System.Xml.XDocument": {
+          "version": "4.3.0",
+          "exclude": "all"
+        },
+        "System.Xml.XmlDocument": {
+          "version": "4.0.1",
+          "exclude": "all"
+        },
+        "System.Xml.XPath": {
+          "version": "4.0.1",
+          "exclude": "all"
+        },
+        "System.Xml.XPath.XDocument": {
+          "version": "4.0.1",
+          "exclude": "all"
+        }
       }
     }
   }
