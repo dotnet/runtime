@@ -236,7 +236,7 @@
         "definitionType": "task"
       },
       "inputs": {
-        "symbolStore": "\\\\cpvsbuild\\drops\\DotNetCore\\$(Build.DefinitionName)\\$(Build.BuildNumber)\\symbols",
+        "symbolStore": "\\\\cpvsbuild\\drops\\DotNetCore\\$(PB_SymbolsBuildId)\\$(Build.BuildNumber)\\symbols",
         "contacts": "jhendrix;mawilkie",
         "project": "DDE"
       }
@@ -424,6 +424,9 @@
     },
     "PB_CleanAgent": {
       "value": "true"
+    },
+    "PB_SymbolsBuildId": {
+      "value": "DotNet-CoreFx-Windows"
     }
   },
   "demands": [
@@ -465,7 +468,6 @@
     "checkoutSubmodules": false
   },
   "quality": "definition",
-  "defaultBranch": "refs/heads/master",
   "queue": {
     "pool": {
       "id": 39,
