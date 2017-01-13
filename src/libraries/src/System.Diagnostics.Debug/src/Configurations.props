@@ -4,6 +4,8 @@
     <BuildConfigurations>
       netstandard-Unix;
       netstandard-Windows_NT;
+      netcoreapp1.2corert-Unix;
+      netcoreapp1.2corert-Windows_NT;
       net463-Windows_NT;
     </BuildConfigurations>
   </PropertyGroup>

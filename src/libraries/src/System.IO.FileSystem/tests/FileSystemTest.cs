@@ -14,6 +14,16 @@ namespace System.IO.Tests
         protected const TestPlatforms CaseInsensitivePlatforms = TestPlatforms.Windows | TestPlatforms.OSX;
         protected const TestPlatforms CaseSensitivePlatforms = TestPlatforms.AnyUnix & ~TestPlatforms.OSX;
 
+        public static bool AreAllLongPathsAvailable => PathFeatures.AreAllLongPathsAvailable();
+
+        public static bool LongPathsAreNotBlocked => !PathFeatures.AreLongPathsBlocked();
+
+        public static bool UsingNewNormalization => !PathFeatures.IsUsingLegacyPathNormalization();
+
+        public static TheoryData<string> PathsWithInvalidColons => TestData.PathsWithInvalidColons;
+
+        public static TheoryData<string> PathsWithInvalidCharacters => TestData.PathsWithInvalidCharacters;
+
         /// <summary>
         /// In some cases (such as when running without elevated privileges),
         /// the symbolic link may fail to create. Only run this test if it creates
