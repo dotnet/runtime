@@ -1,0 +1,19 @@
+Compat issues with assembly System.Diagnostics.Debug:
+MembersMustExist : Member 'System.Diagnostics.Debug.AutoFlush.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Diagnostics.Debug.AutoFlush.set(System.Boolean)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Diagnostics.Debug.Close()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Diagnostics.Debug.Flush()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Diagnostics.Debug.Indent()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Diagnostics.Debug.IndentLevel.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Diagnostics.Debug.IndentLevel.set(System.Int32)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Diagnostics.Debug.IndentSize.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Diagnostics.Debug.IndentSize.set(System.Int32)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Diagnostics.Debug.Print(System.String)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Diagnostics.Debug.Print(System.String, System.Object[])' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Diagnostics.Debug.Unindent()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.String System.Diagnostics.Debugger.DefaultCategory' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Diagnostics.Debugger.IsLogging()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Diagnostics.Debugger.Log(System.Int32, System.String, System.String)' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Diagnostics.DebuggerStepperBoundaryAttribute' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Diagnostics.DebuggerVisualizerAttribute' does not exist in the implementation but it does exist in the contract.
+Total Issues: 17

@@ -11,6 +11,14 @@
     <Project Include="System.Diagnostics.Debug.csproj">
       <TargetGroup>net463</TargetGroup>
     </Project>
+    <Project Include="System.Diagnostics.Debug.csproj">
+      <TargetGroup>netcoreapp1.2corert</TargetGroup>
+      <OSGroup>Unix</OSGroup>
+    </Project>
+    <Project Include="System.Diagnostics.Debug.csproj">
+      <TargetGroup>netcoreapp1.2corert</TargetGroup>
+      <OSGroup>Windows_NT</OSGroup>
+    </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
 </Project>
