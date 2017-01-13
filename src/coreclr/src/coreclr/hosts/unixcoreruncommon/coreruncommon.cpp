@@ -447,7 +447,7 @@ int ExecuteManagedAssembly(
     }
     else
     {
-        char* error = dlerror();
+        const char* error = dlerror();
         fprintf(stderr, "dlopen failed to open the libcoreclr.so with error %s\n", error);
     }
 
