@@ -5,13 +5,11 @@
     <PackageTargetRuntime>any</PackageTargetRuntime>
     <PreventImplementationReference>true</PreventImplementationReference>
   </PropertyGroup>
-
   <ItemGroup>
     <ProjectReference Include="..\..\src\System.Reflection.Primitives.csproj" />
     <ProjectReference Include="..\..\src\System.Reflection.Primitives.csproj" >
       <TargetGroup>netcoreapp1.2corert</TargetGroup>
     </ProjectReference>
-
     <InboxOnTargetFramework Include="MonoAndroid10" />
     <InboxOnTargetFramework Include="MonoTouch10" />
     <InboxOnTargetFramework Include="net45" />

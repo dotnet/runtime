@@ -3,12 +3,9 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <OutputType>Library</OutputType>
     <IsCoreAssembly>true</IsCoreAssembly>
-    <NuGetTargetMoniker Condition="'$(TargetGroup)'==''">.NETCoreApp,Version=v1.1</NuGetTargetMoniker>
-    <PackageTargetFramework Condition="'$(TargetGroup)'=='netstandard1.7'">netstandard1.7;uap10.1</PackageTargetFramework>
     <ProjectGuid>{ADBCF120-3454-4A3C-9D1D-AC4293E795D6}</ProjectGuid>
-    <DefineConstants Condition="'$(TargetGroup)' == ''">$(DefineConstants);netcoreapp11</DefineConstants>
+    <DefineConstants Condition="'$(TargetGroup)' == 'netcoreapp'">$(DefineConstants);netcoreapp11</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Runtime.cs" />

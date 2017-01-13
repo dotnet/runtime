@@ -1,0 +1,515 @@
+<Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <UsingTask TaskName="CreateAzureContainer" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.CloudTestTasks.dll"/>
+  <UsingTask TaskName="CreateAzureFileShare" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.CloudTestTasks.dll"/>
+  <UsingTask TaskName="GetPerfTestAssemblies" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.CloudTestTasks.dll"/>
+  <UsingTask TaskName="SendJsonToDocumentDb" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.CloudTestTasks.dll"/>
+  <UsingTask TaskName="SendToHelix" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.CloudTestTasks.dll"/>
+  <UsingTask TaskName="UploadToAzure" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.CloudTestTasks.dll"/>
+  <UsingTask TaskName="WriteItemsToJson" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.CloudTestTasks.dll"/>
+  <UsingTask TaskName="WriteTestBuildStatsJson" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.CloudTestTasks.dll"/>
+  <UsingTask TaskName="ZipFileCreateFromDirectory" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll"/>
+  <UsingTask TaskName="ZipFileCreateFromDependencyLists" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll"/>
+  <UsingTask TaskName="FilterForUpload" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.CloudTestTasks.dll"/>
+
+  <!-- set Helix environment vars based on target platform -->
+  <PropertyGroup Condition="'$(TargetsWindows)' == 'true'">
+    <HelixPythonPath>%HELIX_PYTHONPATH%</HelixPythonPath>
+    <HelixScriptRoot>%HELIX_SCRIPT_ROOT%\</HelixScriptRoot>
+    <TestRunnerScript>%HELIX_CORRELATION_PAYLOAD%\RunnerScripts\scriptrunner\scriptrunner.py</TestRunnerScript>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetsWindows)' != 'true'">
+    <HelixPythonPath>$HELIX_PYTHONPATH</HelixPythonPath>
+    <HelixScriptRoot>$HELIX_SCRIPT_ROOT/</HelixScriptRoot>
+    <TestRunnerScript>$HELIX_CORRELATION_PAYLOAD/RunnerScripts/scriptrunner/scriptrunner.py</TestRunnerScript>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <ContainerName>build-$([System.Guid]::NewGuid().ToString("N"))</ContainerName>
+    <ContainerName>$(ContainerName.ToLower())</ContainerName>
+    <FuncTestListFilename>FuncTests.$(BuildConfiguration).json</FuncTestListFilename>
+    <PerfTestListFilename>PerfTests.$(BuildConfiguration).json</PerfTestListFilename>
+    <!-- Test builds consist of the tests that are platform specific in one root, plus others in AnyOS. -->
+    <AnyOSPlatformConfig>AnyOS.AnyCPU.$(ConfigurationGroup)</AnyOSPlatformConfig>
+    <AnyOsArchivesRoot>$(TestWorkingDir)$(AnyOSPlatformConfig)/archive/</AnyOsArchivesRoot>
+    <AnyOSTestArchivesRoot>$(AnyOsArchivesRoot)tests/</AnyOSTestArchivesRoot>
+    <!-- Additionally, *NIX variations may need to include their own root folders -->
+    <UnixPlatformConfig>Unix.$(Platform).$(ConfigurationGroup)</UnixPlatformConfig>
+    <UnixArchivesRoot>$(TestWorkingDir)$(UnixPlatformConfig)/archive/</UnixArchivesRoot>
+    <UnixTestArchivesRoot>$(UnixArchivesRoot)tests/</UnixTestArchivesRoot>
+    <!-- Finally, these archives represent the zips of tests that are OSPlatform specific -->
+    <ArchivesRoot>$(TestWorkingDir)$(OSPlatformConfig)/archive/</ArchivesRoot>
+    <TestArchivesRoot>$(ArchivesRoot)tests/</TestArchivesRoot>
+    <PackagesArchiveFilename>Packages.zip</PackagesArchiveFilename>
+    <PackagesArchiveFile>$(ArchivesRoot)$(PackagesArchiveFilename)</PackagesArchiveFile>
+    <TestRuntimeArchiveFilename>test-runtime-$(BuildConfiguration).zip</TestRuntimeArchiveFilename>
+    <TestRuntimeArchiveFile>$(ArchivesRoot)$(TestRuntimeArchiveFilename)</TestRuntimeArchiveFile>
+    <FuncTestListFile>$(TestWorkingDir)$(OSPlatformConfig)/$(FuncTestListFilename)</FuncTestListFile>
+    <PerfTestListFile>$(TestWorkingDir)$(OSPlatformConfig)/$(PerfTestListFilename)</PerfTestListFile>
+    <BuildStatsJsonFile>$(TestWorkingDir)$(OSPlatformConfig)/BuildStats.json</BuildStatsJsonFile>
+    <RunnerScript Condition="'$(RunnerScript)' == ''">$(TestRunnerScript)</RunnerScript>
+    <SupplementalPayloadDir Condition="'$(SupplementalPayloadDir)' == ''">$(TestWorkingDir)SupplementalPayload/</SupplementalPayloadDir>
+    <SupplementalPayloadFilename>SupplementalPayload.zip</SupplementalPayloadFilename>
+    <SupplementalPayloadFile>$(ArchivesRoot)$(SupplementalPayloadFilename)</SupplementalPayloadFile>
+
+    <!-- Workaround to bring the whole Test ILC folder if required  -->
+    <TestILCVersion>1.4.24208-prerelease</TestILCVersion>
+    <TestILCFolder>$(PackagesDir)Microsoft.DotNet.TestILC\$(TestILCVersion)\contentFiles\any\any\TestILC</TestILCFolder>
+
+    <TestILCZipFileName>TestILC.zip</TestILCZipFileName>
+    <TestILCZipFile>$(ArchivesRoot)$(TestILCZipFileName)</TestILCZipFile>
+    <OverwriteOnUpload Condition="'$(OverwriteOnUpload)' == ''">false</OverwriteOnUpload>
+    <TimeoutInSeconds Condition="'$(TimeoutInSeconds)' == ''">600</TimeoutInSeconds>
+    
+    <IsOfficial Condition="'$(OfficialBuildId)'!=''">true</IsOfficial>
+    <CurrentDate>$([System.DateTime]::Now.ToString(yyyyMMdd.mmss))</CurrentDate>
+    <HelixJobType Condition="'$(FilterToTestTFM)'=='netcore50' and !$(TestNugetRuntimeId.Contains('aot'))">test/functional/uwp/</HelixJobType>
+    <HelixJobType Condition="'$(FilterToTestTFM)'=='netcore50' and $(TestNugetRuntimeId.Contains('aot'))">test/functional/ilc/</HelixJobType>
+    <HelixJobType Condition="$(FilterToTestTFM.Contains('net46'))">test/functional/desktop/cli/</HelixJobType>
+    <HelixJobType Condition="'$(HelixJobType)'=='' And '$(Performance)'=='true'">test/functional/perf/cli/</HelixJobType>
+    <HelixJobType Condition="'$(HelixJobType)'==''">test/functional/cli/</HelixJobType>    
+    <HelixSource Condition="'$(HelixSource)'=='' And '$(IsOfficial)'!='' And '$(TestProduct)'!='' And '$(Branch)'!=''">official/$(TestProduct)/$(Branch)/</HelixSource>
+    <HelixSource Condition="'$(HelixSource)'=='' And '$(IsOfficial)'=='' And '$(TestProduct)'!='' And '$(Branch)'!=''">pr/$(TestProduct)/$(Branch)/</HelixSource>
+    <HelixSource Condition="'$(HelixSource)'==''">pr/unknown/</HelixSource>
+    <_UseUpdatedHelixApi Condition="'$(HelixJobType)'!=''">true</_UseUpdatedHelixApi>
+    <HelixApiEndpoint Condition="'$(_UseUpdatedHelixApi)'=='true'">https://helix.dot.net/api/2016-06-28/jobs</HelixApiEndpoint>
+    <HelixApiEndpoint Condition="'$(HelixApiEndpoint)'==''">https://helix.dot.net/api/jobs</HelixApiEndpoint>
+  </PropertyGroup>
+
+  <Import Project="$(MSBuildThisFileDirectory)CloudTest.Perf.targets" Condition="'$(Performance)' == 'true'" />
+
+  <!-- main entrypoint -->
+  <Target Name="CloudBuild"
+          AfterTargets="Build"
+          DependsOnTargets="VerifyInputs;PreCloudBuild;CreateTestListJson;UploadContent" />
+
+  <Target Name="VerifyInputs">
+    <!-- verify all required properties have been specified -->
+    <Error Condition="'$(Creator)' == '' and '$(HelixApiAccessKey)' == ''" Text="Missing required property Creator." />
+    <Error Condition="'$(TargetQueue)' == ''" Text="Missing required property TargetQueue." />
+    <Error Condition="'$(TestProduct)' == ''" Text="Missing required property TestProduct." />
+    <Error Condition="'$(BuildMoniker)' == ''" Text="Missing required property BuildMoniker." />
+    <Error Condition="'$(Branch)' == ''" Text="Missing required property Branch." />
+
+    <Error Condition="'$(CloudDropAccountName)' == ''" Text="Missing required property CloudDropAccountName." />
+    <Error Condition="'$(CloudResultsAccountName)' == ''" Text="Missing required property CloudResultsAccountName." />
+    <Error Condition="'$(CloudDropAccessToken)' == ''" Text="Missing required property CloudDropAccessToken." />
+    <Error Condition="'$(CloudResultsAccessToken)' == ''" Text="Missing required property CloudResultsAccessToken." />
+
+    <Warning Condition="'$(EventHubPath)' != '' or '$(EventHubSharedAccessKey)' != '' or '$(EventHubSharedAccessKeyName)' != ''" Text="EventHubPath and EventHubAccessKeys are ignored, use HelixApiAccessKey instead" />
+    <Error Condition="'$(SkipNotifyEvent)' != 'true' and '$(HelixApiAccessKey)' == ''" Text="HelixApiAccessKey must be set to start Helix jobs" />
+
+    <!-- gather the test archives for this build -->
+    <ItemGroup>
+      <OSPlatformTestArchives Include="$(TestArchivesRoot)**/*.zip" >
+        <OSPlatformConfig>$(OSPlatformConfig)</OSPlatformConfig>
+      </OSPlatformTestArchives>
+      <AnyOSPlatformTestArchives Include="$(AnyOSTestArchivesRoot)**/*.zip" >
+        <OSPlatformConfig>$(AnyOSPlatformConfig)</OSPlatformConfig>
+      </AnyOSPlatformTestArchives>
+      <!-- Only include Unix folders if supported by the current target OS -->
+      <UnixPlatformTestArchives Condition="'$(TargetsUnix)' == 'true'" Include="$(UnixTestArchivesRoot)**/*.zip" >
+        <OSPlatformConfig>$(UnixPlatformConfig)</OSPlatformConfig>
+      </UnixPlatformTestArchives>
+    </ItemGroup>
+
+    <PropertyGroup>
+        <OSPlatformTestArchivesListFile>$(TestArchivesRoot)/$(OSPlatformConfig)-Test-Archive-List.txt</OSPlatformTestArchivesListFile>
+        <AnyOSPlatformTestArchivesListFile>$(AnyOSTestArchivesRoot)/$(AnyOSPlatformConfig)-Test-Archive-List.txt</AnyOSPlatformTestArchivesListFile>
+        <UnixPlatformTestArchivesListFile>$(UnixTestArchivesRoot)/$(UnixPlatformConfig)-Test-Archive-List.txt</UnixPlatformTestArchivesListFile>
+    </PropertyGroup>
+
+    <!-- This is where we craft our archive Lists. These will sit at the base of the uploaded package. -->
+    <WriteLinesToFile 
+        File="$(OSPlatformTestArchivesListFile)"
+        Lines="@(OSPlatformTestArchives -> '%(Filename)%(Extension)')"
+        Overwrite="true"
+        Condition="Exists('$(TestArchivesRoot)')"
+        Encoding="Unicode" />
+    
+    <WriteLinesToFile 
+        File="$(AnyOSPlatformTestArchivesListFile)"
+        Lines="@(AnyOSPlatformTestArchives -> '%(Filename)%(Extension)')"
+        Overwrite="true"
+        Condition="Exists('$(AnyOSTestArchivesRoot)')"
+        Encoding="Unicode" />
+
+    <WriteLinesToFile 
+        File="$(UnixPlatformTestArchivesListFile)"
+        Lines="@(UnixPlatformTestArchives -> '%(Filename)%(Extension)')"
+        Overwrite="true"
+        Condition="Exists('$(UnixTestArchivesRoot)')"
+        Encoding="Unicode" />
+   
+    <ItemGroup>
+      <ForUpload Include="$(OSPlatformTestArchivesListFile)" Condition="Exists('$(OSPlatformTestArchivesListFile)')"/>
+      <ForUpload Include="$(AnyOSPlatformTestArchivesListFile)" Condition="Exists('$(AnyOSPlatformTestArchivesListFile)')"/>
+      <ForUpload Include="$(UnixPlatformTestArchivesListFile)" Condition="Exists('$(UnixPlatformTestArchivesListFile)')" />
+    </ItemGroup>
+
+   <!-- The unfiltered tests is the union of all of the tests archives we've selected -->
+    <ItemGroup>   
+      <UnfilteredTestArchives Include="@(OSPlatformTestArchives);@(AnyOSPlatformTestArchives);@(UnixPlatformTestArchives)" />
+    </ItemGroup>
+
+    <Message Text="Full, Unfiltered Test Archive Collection :: @(UnfilteredTestArchives)" Importance="Low" />
+
+    <!-- If we wish to filter tests that we upload, then altering the FilterToTestTFM and FilterToOSGroup is where to do it at. -->
+    <FilterForUpload UnfilteredUploadItems="@(UnfilteredTestArchives)"
+             FilterToTestTFM="$(FilterToTestTFM)"
+             FilterToOSGroup="$(FilterToOSGroup)" 
+             BinDir="$(BinDir)">
+        <Output TaskParameter="FilteredUploadItems" PropertyName="ForUploadList" />
+    </FilterForUpload>
+
+    <CreateItem Include="$(ForUploadList)">
+      <Output TaskParameter="Include" ItemName="ForUpload"/>
+    </CreateItem>
+
+    <Message Condition="'$(FilterToTestTFM)' != ''" Text="Using test archives for TFM: $(FilterToTestTFM)" />
+    <Message Text="Using OS-Specific test archives from: $(TestArchivesRoot)" />
+    <Message Text="Using AnyOS test archives from: $(AnyOSTestArchivesRoot)" />
+    <Message Condition="'$(TargetsUnix)' == 'true'"  Text="Using Unix test archives from: $(UnixTestArchivesRoot)" />
+
+    <PropertyGroup>
+      <RelativeBlobPathFolderContainingTests Condition="'$(FilterToTestTFM)' != ''" >Tests/$(FilterToTestTFM)</RelativeBlobPathFolderContainingTests>
+      <RelativeBlobPathFolderContainingTests Condition="'$(FilterToTestTFM)' == ''" >Tests</RelativeBlobPathFolderContainingTests>
+    </PropertyGroup>
+
+    <!-- verify the test archives were created -->
+    <Warning Condition="'@(ForUpload->Count())' == '0'" Text="Didn't find any test archives in supplied folders!!! Review logs to see where test archive(s) were placed and fix." />
+    <!-- add relative blob path metadata -->
+    <ItemGroup>
+      <ForUpload>
+        <RelativeBlobPath>$(Platform)$(ConfigurationGroup)/Tests/$([System.String]::Copy('%(RecursiveDir)').Replace('\', '/'))%(Filename)%(Extension)</RelativeBlobPath>
+      </ForUpload>
+    </ItemGroup>
+  </Target>
+
+  <!-- provided as an extensibility point for targets to run before the real work begins -->
+  <Target Name="PreCloudBuild">
+    <!-- copy runner scripts so they can be uploaded as supplemental payload -->
+    <ItemGroup>
+      <RunnerScripts Include="$(ToolsDir)RunnerScripts/**/*.py" />
+      <RunnerScripts Include="$(ToolsDir)RunnerScripts/**/*.sh" />
+      <RunnerScripts Include="$(ToolsDir)RunnerScripts/**/*.txt" />
+    </ItemGroup>
+    
+    <Copy SourceFiles="@(RunnerScripts)"
+          DestinationFiles="@(RunnerScripts->'$(SupplementalPayloadDir)RunnerScripts/%(RecursiveDir)%(Filename)%(Extension)')"
+          SkipUnchangedFiles="true" />
+    <!-- compress the supplemental payload directory for upload -->
+    <ZipFileCreateFromDirectory
+        SourceDirectory="$(SupplementalPayloadDir)"
+        DestinationArchive="$(SupplementalPayloadFile)"
+        OverwriteDestination="true" />
+    <ItemGroup>
+      <SupplementalPayload Include="$(SupplementalPayloadFile)">
+        <RelativeBlobPath>$(SupplementalPayloadFilename)</RelativeBlobPath>
+      </SupplementalPayload>
+    </ItemGroup>
+
+    <ZipFileCreateFromDirectory
+      Condition="'$(UseDotNetNativeToolchain)' == 'true'"
+      SourceDirectory="$(TestILCFolder)"
+      DestinationArchive="$(TestILCZipFile)"
+      IncludeBaseDirectory="true"
+      OverwriteDestination="true" />
+    <ItemGroup Condition="'$(UseDotNetNativeToolchain)' == 'true'" >
+      <SupplementalPayload Include="$(TestILCZipFile)">
+        <RelativeBlobPath>$([System.IO.Path]::GetFileName('$(TestILCZipFile)'))</RelativeBlobPath>
+      </SupplementalPayload>
+    </ItemGroup>
+  </Target>
+
+  <!-- create Azure containers and file shares -->
+  <Target Name="CreateAzureStorage">
+    <CreateAzureContainer
+      AccountKey="$(CloudDropAccessToken)"
+      AccountName="$(CloudDropAccountName)"
+      ContainerName="$(ContainerName)"
+      ReadOnlyTokenDaysValid="30">
+      <Output TaskParameter="StorageUri" PropertyName="DropUri" />
+      <Output TaskParameter="ReadOnlyToken" PropertyName="DropUriReadOnlyToken" />
+    </CreateAzureContainer>
+    <!-- now that we have a drop URI create the list of correlation payloads -->
+    <ItemGroup>
+      <CorrelationPayloadUri Include="$(DropUri)$(Platform)$(ConfigurationGroup)/$(TestRuntimeArchiveFilename)$(DropUriReadOnlyToken)" />
+      <CorrelationPayloadUri Include="@(SupplementalPayload->'$(DropUri)%(RelativeBlobPath)$(DropUriReadOnlyToken)')" />
+    </ItemGroup>
+    <!-- flatten it into a property as msbuild chokes on @(CorrelationPayloadUri) in FunctionalTest.CorrelationPayloadUris :( -->
+    <PropertyGroup>
+      <CorrelationPayloadUris>@(CorrelationPayloadUri)</CorrelationPayloadUris>
+      <CloudResultsReadTokenValidDays Condition="'$(CloudResultsReadTokenValidDays)' == ''">30</CloudResultsReadTokenValidDays>
+      <CloudResultsWriteTokenValidDays Condition="'$(CloudResultsWriteTokenValidDays)' == ''">4</CloudResultsWriteTokenValidDays>
+    </PropertyGroup>
+    <CreateAzureContainer
+      AccountKey="$(CloudResultsAccessToken)"
+      AccountName="$(CloudResultsAccountName)"
+      ContainerName="$(ContainerName)"
+      ReadOnlyTokenDaysValid="$(CloudResultsReadTokenValidDays)"
+      WriteOnlyTokenDaysValid="$(CloudResultsWriteTokenValidDays)">
+      <Output TaskParameter="StorageUri" PropertyName="ResultsUri" />
+      <Output TaskParameter="ReadOnlyToken" PropertyName="ResultsReadOnlyToken" />
+      <Output TaskParameter="WriteOnlyToken" PropertyName="ResultsWriteOnlyToken" />
+    </CreateAzureContainer>
+  </Target>
+
+  <Target Name="CreateTestListJson"
+          DependsOnTargets="CreateFuncTestListJson;CreatePerfTestListJson" />
+
+  <!-- allow skipping this target if perf testing is enabled -->
+  <Target Name="CreateFuncTestListJson"
+          DependsOnTargets="CreateAzureStorage"
+          Condition="'$(Performance)' != 'true' or '$(FuncTestsDisabled)' != 'true'">
+    <!-- create item group of functional tests -->
+    <CreateItem Include="$(ForUploadList)">
+      <Output TaskParameter="Include" ItemName="FunctionalTest"/>
+    </CreateItem>
+
+    <PropertyGroup>
+      <OtherRunnerScriptArgs Condition="'$(FilterToTargetGroup)' == 'net46'">$(OtherRunnerScriptArgs) --xunit-test-type=desktop </OtherRunnerScriptArgs>
+      <XunitArgs Condition="'$(FilterToTargetGroup)' == 'net46'"> -noshadow $(XunitArgs)</XunitArgs>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <FunctionalTest>
+        <Command Condition="'$(TargetsWindows)' == 'true'">$(HelixPythonPath) $(RunnerScript) --script RunTests.cmd %HELIX_CORRELATION_PAYLOAD%</Command>
+        <Command Condition="'$(TargetsWindows)' != 'true'"> chmod +x $HELIX_WORKITEM_PAYLOAD/RunTests.sh &amp;&amp; $(HelixPythonPath) $(RunnerScript) --script RunTests.sh $HELIX_CORRELATION_PAYLOAD</Command>
+        <CorrelationPayloadUris>[$(CorrelationPayloadUris)]</CorrelationPayloadUris>
+        <PayloadUri>$(DropUri)$(Platform)$(ConfigurationGroup)/Tests/$([System.String]::Copy('%(RecursiveDir)').Replace('\', '/'))%(Filename)%(Extension)$(DropUriReadOnlyToken)</PayloadUri>
+        <WorkItemId>%(Filename)</WorkItemId>
+        <TimeoutInSeconds>$(TimeoutInSeconds)</TimeoutInSeconds>
+      </FunctionalTest>
+    </ItemGroup>
+    <WriteItemsToJson JsonFileName="$(FuncTestListFile)" Items="@(FunctionalTest)" />
+    <!-- add test lists to the list of items for upload -->
+    <ItemGroup>
+      <ForUpload Include="$(FuncTestListFile)">
+        <RelativeBlobPath>$(FuncTestListFilename)</RelativeBlobPath>
+      </ForUpload>
+    </ItemGroup>
+    <!-- for completion event -->
+    <ItemGroup>
+      <TestListFile Include="$(FuncTestListFile)">
+        <CorrelationId>$([System.Guid]::NewGuid())</CorrelationId>
+        <BuildCompleteJson>$(TestWorkingDir)$(OSPlatformConfig)/FuncBuildComplete.json</BuildCompleteJson>
+        <OfficialBuildJson>$(TestWorkingDir)$(OSPlatformConfig)/FuncOfficialBuild.json</OfficialBuildJson>
+        <HelixJobUploadCompletePath>$(TestWorkingDir)$(OSPlatformConfig)/helixjobuploadcomplete.sem</HelixJobUploadCompletePath>
+      </TestListFile>
+    </ItemGroup>
+  </Target>
+
+  <Target Name="CreatePerfTestListJson" DependsOnTargets="CreateAzureStorage" Condition="'$(Performance)' == 'true'">
+    <PropertyGroup Condition="'$(TargetsWindows)' == 'true' AND '$(UseLegacyXunitPerfRunner)'!='true'">
+      <OtherRunnerScriptArgs>--script RunTests.cmd %HELIX_CORRELATION_PAYLOAD%</OtherRunnerScriptArgs>
+    </PropertyGroup>
+    
+    <PropertyGroup Condition="'$(TargetsWindows)' != 'true' AND '$(UseLegacyXunitPerfRunner)'!='true'">
+      <OtherRunnerScriptArgs>--script RunTests.sh $HELIX_CORRELATION_PAYLOAD</OtherRunnerScriptArgs>
+    </PropertyGroup>
+
+    <!-- now gather the perf tests -->
+    <ItemGroup>
+      <TestBinary Include="$(BinDir)$(OSPlatformConfig)/**/*.dll" />
+      <TestBinary Include="$(BinDir)$(OSPlatformConfig)/**/*.exe" />
+      <TestBinary Include="$(BinDir)$(AnyOSPlatformConfig)/**/*.dll" />
+      <TestBinary Include="$(BinDir)$(AnyOSPlatformConfig)/**/*.exe" />
+    </ItemGroup>
+    <ItemGroup Condition="'$(TargetsUnix)' == 'true'" >
+      <TestBinary Include="$(BinDir)$(UnixPlatformConfig)/**/*.dll" />
+      <TestBinary Include="$(BinDir)$(UnixPlatformConfig)/**/*.exe" />
+    </ItemGroup>
+    <GetPerfTestAssemblies TestBinaries="@(TestBinary)" GetFullPaths="false">
+      <Output TaskParameter="PerfTestAssemblies" ItemName="PerfTestAssembly" />
+    </GetPerfTestAssemblies>
+
+    <!-- don't add any items to the group if no perf tests were found -->
+    <ItemGroup Condition="'@(PerfTestAssembly->Count())' != '0'">
+      <PerfTest Condition="Exists('$(TestArchivesRoot)$(FilterToTestTFM)/%(PerfTestAssembly.Identity).zip')" Include="$(TestArchivesRoot)$(FilterToTestTFM)/%(PerfTestAssembly.Identity).zip" />
+      <PerfTest Condition="Exists('$(AnyOSTestArchivesRoot)$(FilterToTestTFM)/%(PerfTestAssembly.Identity).zip')" Include="$(AnyOSTestArchivesRoot)$(FilterToTestTFM)/%(PerfTestAssembly.Identity).zip" />
+      <PerfTest Condition="'$(TargetsUnix)' == 'true' And Exists('$(UnixTestArchivesRoot)$(FilterToTestTFM)/%(PerfTestAssembly.Identity).zip')" Include="$(UnixTestArchivesRoot)$(FilterToTestTFM)/%(PerfTestAssembly.Identity).zip" />
+    </ItemGroup>
+
+    <PropertyGroup Condition="'$(TargetsUnix)' == 'true' AND '$(UseLegacyXunitPerfRunner)'!='true'">
+      <PrefixPerfCommand>chmod +x $HELIX_WORKITEM_PAYLOAD/RunTests.sh &amp;&amp;</PrefixPerfCommand>
+    </PropertyGroup>
+
+    <!-- This is to temporarily support execution through legacy xunit perf runner -->
+    <PropertyGroup Condition="'$(UseLegacyXunitPerfRunner)'=='true' AND '$(TargetsWindows)' == 'true'">
+      <PerfRunner>Microsoft.DotNet.xunit.performance.runner.Windows</PerfRunner>
+      <UseDotNetCli>false</UseDotNetCli>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(UseLegacyXunitPerfRunner)'=='true' AND '$(TargetsWindows)' != 'true'">
+      <PerfRunner>Microsoft.DotNet.xunit.performance.runner.cli</PerfRunner>
+      <UseDotNetCli>true</UseDotNetCli>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(UseLegacyXunitPerfRunner)'=='true'">
+      <OtherRunnerScriptArgs>--perf-runner $(PerfRunner) --use-dotnetcli $(UseDotNetCli) $(OtherRunnerScriptArgs)</OtherRunnerScriptArgs>
+    </PropertyGroup>
+
+
+    <ItemGroup Condition="'@(PerfTestAssembly->Count())' != '0'">
+      <PerfTest>
+        <Command Condition="'$(UseLegacyXunitPerfRunner)'!='true'">$(PrefixPerfCommand) $(HelixPythonPath) $(RunnerScript) $(OtherRunnerScriptArgs)</Command>
+        <Command Condition="'$(UseLegacyXunitPerfRunner)'=='true'">$(HelixPythonPath) $(RunnerScript) --dll %(Filename).dll $(OtherRunnerScriptArgs) -- $(XunitArgs)</Command>
+        <CorrelationPayloadUris>[$(CorrelationPayloadUris)]</CorrelationPayloadUris>
+        <PayloadUri>$(DropUri)$(Platform)$(ConfigurationGroup)/$(RelativeBlobPathFolderContainingTests)/%(Filename)%(Extension)$(DropUriReadOnlyToken)</PayloadUri>
+        <WorkItemId>PerfTest.%(Filename)</WorkItemId>
+        <TimeoutInSeconds>$(TimeoutInSeconds)</TimeoutInSeconds>
+      </PerfTest>
+    </ItemGroup>
+    <WriteItemsToJson JsonFileName="$(PerfTestListFile)" Items="@(PerfTest)" />
+    <!-- add test lists to the list of items for upload depending on whether FilterToTestTFM was specified or not-->
+    <ItemGroup>
+      <!-- Removing all zips and allowing only perf test assemblies to be uploaded -->
+      <ForUpload Condition="'$(Performance)' == 'true'" Remove="@(ForUpload)"/>
+      <ForUpload Condition="'$(Performance)' == 'true'" Include="@(PerfTest)">
+        <RelativeBlobPath>$(Platform)$(ConfigurationGroup)/$(RelativeBlobPathFolderContainingTests)/$([System.String]::Copy('%(RecursiveDir)').Replace('\', '/'))%(Filename)%(Extension)</RelativeBlobPath>
+      </ForUpload>
+    </ItemGroup>
+    <!-- add test lists to the list of items for upload -->
+    <ItemGroup>
+      <ForUpload Include="$(PerfTestListFile)">
+        <RelativeBlobPath>$(PerfTestListFilename)</RelativeBlobPath>
+      </ForUpload>
+    </ItemGroup>
+    <!-- for completion event -->
+    <ItemGroup>
+      <TestListFile Include="$(PerfTestListFile)">
+        <CorrelationId>$([System.Guid]::NewGuid())</CorrelationId>
+        <BuildCompleteJson>$(TestWorkingDir)$(OSPlatformConfig)/PerfBuildComplete.json</BuildCompleteJson>
+        <OfficialBuildJson>$(TestWorkingDir)$(OSPlatformConfig)/PerfOfficialBuild.json</OfficialBuildJson>
+        <HelixJobUploadCompletePath>$(TestWorkingDir)$(OSPlatformConfig)/helixjobuploadcomplete.sem</HelixJobUploadCompletePath>
+      </TestListFile>
+    </ItemGroup>
+  </Target>
+
+  <!-- compress the required files from the packages dir in preparation for uploading -->
+  <Target Name="CompressPackagesDir" Condition="'$(SkipArchive)' != 'true'">
+    <ItemGroup>
+      <ExcludeFromArchive Include="nupkg$" />
+      <ExcludeFromArchive Include="Microsoft.DotNet.BuildTools" />
+      <ExcludeFromArchive Include="TestData" />
+      <TestDependencyListFile Include="$(BinDir)/TestDependencies/*.dependencylist.txt" />
+    </ItemGroup>
+
+    <ZipFileCreateFromDependencyLists
+      DependencyListFiles="@(TestDependencyListFile)"
+      DestinationArchive="$(PackagesArchiveFile)"
+      RelativePathBaseDirectory="$(PackagesDir)"
+      OverwriteDestination="true" />
+    <ItemGroup>
+      <ForUpload Include="$(PackagesArchiveFile)">
+        <RelativeBlobPath>$(Platform)$(ConfigurationGroup)/$(PackagesArchiveFilename)</RelativeBlobPath>
+      </ForUpload>
+    </ItemGroup>
+  </Target>
+
+  <Target Name="CompressRuntimeDir" Condition="'$(SkipArchive)' != 'true'">
+    <ZipFileCreateFromDirectory
+        SourceDirectory="$(RuntimePath)"
+        DestinationArchive="$(TestRuntimeArchiveFile)"
+        OverwriteDestination="true" />
+    <ItemGroup>
+      <ForUpload Include="$(TestRuntimeArchiveFile)">
+        <RelativeBlobPath>$(Platform)$(ConfigurationGroup)/$(TestRuntimeArchiveFilename)</RelativeBlobPath>
+      </ForUpload>
+    </ItemGroup>
+  </Target>
+
+  <!-- upload content to Azure -->
+  <Target Name="UploadContent" DependsOnTargets="CompressRuntimeDir" Condition="'$(SkipUpload)' != 'true'">
+    <UploadToAzure
+      AccountKey="$(CloudDropAccessToken)"
+      AccountName="$(CloudDropAccountName)"
+      ContainerName="$(ContainerName)"
+      Items="@(ForUpload)"
+      Overwrite="$(OverwriteOnUpload)" />
+    <UploadToAzure
+      AccountKey="$(CloudDropAccessToken)"
+      AccountName="$(CloudDropAccountName)"
+      ContainerName="$(ContainerName)"
+      Items="@(SupplementalPayload)"
+      Overwrite="$(OverwriteOnUpload)"
+      Condition="'@(SupplementalPayload)' != ''" />
+  </Target>
+
+  <!-- write event hub notification JSON files -->
+  <Target Name="WriteCompletionEvent"
+          AfterTargets="UploadContent"
+          Inputs="%(TestListFile.Identity)"
+          Outputs="%(TestListFile.BuildCompleteJson)">
+    <!-- signal that the build is ready for testing -->
+    <ItemGroup>
+      <BuildCompleteTemplate Include="%(TestListFile.BuildCompleteJson)">
+        <CorrelationId Condition=" '$(HelixApiAccessKey)' == '' ">%(TestListFile.CorrelationId)</CorrelationId>
+        <Creator Condition=" '$(HelixApiAccessKey)' == '' ">$(Creator)</Creator>
+        <DropContainerSAS>$(DropUriReadOnlyToken)</DropContainerSAS>
+        <ListUri>$(DropUri)%(TestListFile.Filename)%(TestListFile.Extension)$(DropUriReadOnlyToken)</ListUri>
+        <QueueId>$(TargetQueue)</QueueId>
+        <ResultsUri>$(ResultsUri)/%(TestListFile.CorrelationId)</ResultsUri>
+        <ResultsUriRSAS>$(ResultsReadOnlyToken)</ResultsUriRSAS>
+        <ResultsUriWSAS>$(ResultsWriteOnlyToken)</ResultsUriWSAS>
+        <Product>$(TestProduct)</Product>
+        <Architecture>$(Platform)</Architecture>
+        <Configuration>$(ConfigurationGroup)$(ConfigurationSuffix)</Configuration>
+        <BuildNumber>$(BuildMoniker)</BuildNumber>
+        <Branch>$(Branch)</Branch>
+      </BuildCompleteTemplate>
+      <BuildCompleteTemplateV2 Include="%(TestListFile.BuildCompleteJson)">
+        <DropContainerSAS>$(DropUriReadOnlyToken)</DropContainerSAS>
+        <ListUri>$(DropUri)%(TestListFile.Filename)%(TestListFile.Extension)$(DropUriReadOnlyToken)</ListUri>
+        <QueueId>$(TargetQueue)</QueueId>
+        <ResultsUri>$(ResultsUri)/%(TestListFile.CorrelationId)</ResultsUri>
+        <ResultsUriRSAS>$(ResultsReadOnlyToken)</ResultsUriRSAS>
+        <ResultsUriWSAS>$(ResultsWriteOnlyToken)</ResultsUriWSAS>
+        <Build>$(CurrentDate)</Build>
+        <Build Condition="'$(IsOfficial)'=='true'">$(OfficialBuildId)</Build>
+        <Type>$(HelixJobType)</Type>
+        <Source>$(HelixSource)</Source>
+        <Properties>{ &quot;architecture&quot; : &quot;$(Platform)&quot;, &quot;configuration&quot;: &quot;$(ConfigurationGroup)&quot;, &quot;operatingSystem&quot; : &quot;$(TargetQueue)&quot; }</Properties>
+      </BuildCompleteTemplateV2>
+      <BuildComplete Condition="'$(_UseUpdatedHelixApi)'=='true'" Include="@(BuildCompleteTemplateV2)"/>
+      <BuildComplete Condition="'@(BuildComplete)'==''" Include="@(BuildCompleteTemplate)"/>
+    </ItemGroup>
+    <WriteItemsToJson JsonFileName="%(TestListFile.BuildCompleteJson)" Items="@(BuildComplete)" />
+  </Target>
+
+  <!-- Send completion event.  All start messages are now sent to Helix API; Event Hub direct sending is now deprecated. -->
+  <Target Name="SendCompletionEvent"
+          AfterTargets="WriteCompletionEvent"
+          Inputs="%(TestListFile.BuildCompleteJson)"
+          Outputs="%(TestListFile.HelixJobUploadCompletePath)"
+          Condition="'$(SkipNotifyEvent)' != 'true'">
+    <SendToHelix Condition=" '$(HelixApiAccessKey)' != '' "
+      AccessToken="$(HelixApiAccessKey)"
+      ApiEndpoint="$(HelixApiEndpoint)"
+      EventDataPath="%(TestListFile.BuildCompleteJson)">
+      <Output TaskParameter="JobId" PropertyName="GeneratedCorrelationId" />
+    </SendToHelix>
+    <WriteLinesToFile File="%(TestListFile.HelixJobUploadCompletePath)" Overwrite="true" Lines="Correlation Id : $(GeneratedCorrelationId)"/>
+    <Message Condition="'$(HelixApiAccessKey)' == ''" Importance="High" Text="Started Helix job: CorrelationId = $(GeneratedCorrelationId)"/>
+    
+    <!-- Upload the Correlation Id to the test drop container for tracking purposes-->
+    <PropertyGroup>
+      <CorrelationFileName>correlation_id-$(ConfigurationGroup)-$(TestNugetRuntimeId).txt</CorrelationFileName>
+    </PropertyGroup>
+    <ItemGroup>
+      <CorrelationFile Include="$(TestArchivesRoot)$(CorrelationFileName)">
+        <RelativeBlobPath>Tracking/$(CorrelationFileName)</RelativeBlobPath>
+      </CorrelationFile>
+    </ItemGroup>
+    <MakeDir Directories="$(TestArchivesRoot)" />
+    <WriteLinesToFile
+        File="@(CorrelationFile)"
+        Lines="$(GeneratedCorrelationId)"
+        Overwrite="true" />
+    <UploadToAzure Condition=" '$(HelixApiAccessKey)' != '' "
+        AccountKey="$(CloudDropAccessToken)"
+        AccountName="$(CloudDropAccountName)"
+        ContainerName="$(ContainerName)"
+        Items="@(CorrelationFile)"
+        Overwrite="true" />
+  </Target>
+</Project>

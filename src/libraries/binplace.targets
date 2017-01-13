@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" InitialTargets="CheckForBuildTools" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <PropertyGroup>
+    <IsRuntimeAssembly Condition="'$(IsRuntimeAssembly)'=='' AND '$(IsReferenceAssembly)' != 'true' AND '$(IsTestProject)' != 'true'">true</IsRuntimeAssembly>
+    <!-- Try to determine if this is a simple library without a ref project.
+         https://github.com/dotnet/corefx/issues/14291 is tracking cleaning this up -->
+    <IsRuntimeAndReferenceAssembly Condition="'$(IsRuntimeAndReferenceAssembly)' == '' and '$(IsRuntimeAssembly)' == 'true' and Exists('$(SourceDir)/$(AssemblyName)') and !Exists('$(SourceDir)/$(AssemblyName)/ref') and !$(AssemblyName.StartsWith('System.Private'))">true</IsRuntimeAndReferenceAssembly>
+    <IsNETCoreAppRef Condition="'$(IsNETCoreAppRef)' == ''">$(IsNETCoreApp)</IsNETCoreAppRef>
+    <BinPlaceStuffDependsOn Condition="'$(IsReferenceAssembly)' == 'true' OR '$(IsRuntimeAndReferenceAssembly)' == 'true'">$(BinPlaceStuffDependsOn);BinPlaceReferenceAssembly</BinPlaceStuffDependsOn>
+    <BinPlaceStuffDependsOn Condition="'$(IsRuntimeAssembly)' == 'true' OR '$(IsRuntimeAndReferenceAssembly)' == 'true'">$(BinPlaceStuffDependsOn);BinPlaceRuntimeAssembly</BinPlaceStuffDependsOn>
+  </PropertyGroup>
+
+  <Target Name="BinPlaceStuff" DependsOnTargets="$(BinPlaceStuffDependsOn)" AfterTargets="CopyFilesToOutputDirectory">
+    <Message Importance="low" Text="IsRuntimeAssembly: $(IsRuntimeAssembly)" />
+    <Message Importance="low" Text="IsReferenceAssembly: $(IsReferenceAssembly)" />
+    <Message Importance="low" Text="IsRuntimeAndReferenceAssembly: $(IsRuntimeAndReferenceAssembly)" />
+  </Target>
+
+  <Target Name="BinPlaceReferenceAssembly" DependsOnTargets="GetTargetingPackDir">
+    <Message Importance="low" Text="TargetingPackDir: @(TargetingPackDir)" />
+    <Copy Condition="'@(TargetingPackDir)' != ''" SourceFiles="$(TargetPath)" DestinationFolder="%(TargetingPackDir.Identity)" >
+      <Output TaskParameter="DestinationFiles" ItemName="FileWrites" />
+    </Copy>
+  </Target>
+
+  <Target Name="BinPlaceRuntimeAssembly" DependsOnTargets="GetRuntimeDir">
+    <Copy Condition="'@(RuntimeDir)' != ''" SourceFiles="$(TargetPath)" DestinationFolder="%(RuntimeDir.Identity)">
+      <Output TaskParameter="DestinationFiles" ItemName="FileWrites" />
+    </Copy>
+  </Target>
+
+  <Target Name="GetTargetingPackDir">
+    <ItemGroup Condition="'$(NuGetTargetMoniker)' == '' Or $(NuGetTargetMoniker.Contains('NETCoreApp')) Or $(NuGetTargetMoniker.Contains('NETStandard'))">
+      <TargetingPackDir Include="$(RefPath)" />
+      <TargetingPackDir Condition="'$(IsNETCoreAppRef)' == 'true'" Include="$(BinDir)netcoreapp\pkg\ref" />
+    </ItemGroup>
+    <Error Condition="'@(TargetingPackDir)' == ''" Text="No targeting pack directory could be determined for NuGetTargetMoniker:$(NuGetTargetMoniker)" />
+    <Message Text="Got TargetingPackDir:@(TargetingPackDir) from NuGetTargetMoniker:$(NuGetTargetMoniker)" Importance="Low" />
+  </Target>
+
+  <Target Name="GetRuntimeDir">
+    <ItemGroup Condition="'$(NuGetTargetMoniker)' == '' Or $(NuGetTargetMoniker.Contains('NETCoreApp')) Or $(NuGetTargetMoniker.Contains('NETStandard'))">
+      <RuntimeDir Include="$(RuntimePath)" />
+      <RuntimeDir Condition="'$(IsNETCoreApp)' == 'true'" Include="$(BinDir)netcoreapp\pkg\lib" />
+    </ItemGroup>
+    <Error Condition="'@(RuntimeDir)' == ''" Text="No Runtime directory could be determined for NuGetTargetMoniker:$(NuGetTargetMoniker)" />
+    <Message Text="Got RuntimeDir:@(RuntimeDir) from NuGetTargetMoniker:$(NuGetTargetMoniker)" Importance="Low" />
+  </Target>
+
+  <ItemGroup>
+    <AdditionalCleanDirectories Include="$(BinDir)netcoreapp" />
+  </ItemGroup>
+
+  <!-- Incremental clean only cleans paths under Intermediate or OutDir, handle additional paths -->
+  <Target Name="_CleanGetCurrentAdditionalFileWrites" BeforeTargets="_CleanGetCurrentAndPriorFileWrites">
+    <!-- find files under paths we care about and add them to _CleanCurrentFileWrites to ensure they are written to the file list -->
+    <FindUnderPath Path="%(AdditionalCleanDirectories.Identity)" Files="@(FileWrites)" UpdateToAbsolutePaths="true">
+      <Output TaskParameter="InPath" ItemName="_CleanCurrentFileWrites" />
+    </FindUnderPath>
+  </Target>
+
+  <Target Name="IncrementalCleanAdditionalDirectories" BeforeTargets="IncrementalClean">
+    <ItemGroup>
+      <_CleanOrphanAdditionalFileWrites Include="@(_CleanPriorFileWrites)" Exclude="@(_CleanCurrentFileWrites)" />
+    </ItemGroup>
+    <FindUnderPath Path="%(AdditionalCleanDirectories.Identity)" Files="@(_CleanOrphanAdditionalFileWrites)">
+      <Output TaskParameter="InPath" ItemName="_CleanOrphanFileWritesInAdditionalDirectories" />
+    </FindUnderPath>
+
+    <!-- Delete the orphaned files.  IncrementalClean will remove these from the file list -->
+    <Delete Files="@(_CleanOrphanFileWritesInAdditionalDirectories)" TreatErrorsAsWarnings="true">
+      <Output TaskParameter="DeletedFiles" ItemName="_CleanOrphanFilesDeleted" />
+    </Delete>
+  </Target>
+</Project>

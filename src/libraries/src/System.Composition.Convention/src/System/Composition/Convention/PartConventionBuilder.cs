@@ -541,7 +541,7 @@ namespace System.Composition.Convention
             foreach (var ci in constructors)
             {
                 // We have a constructor configuration we must log a warning then not bother with ConstructorAttributes
-                IEnumerable<Attribute> attributes = ci.GetCustomAttributes(typeof(ImportingConstructorAttribute), false);
+                IEnumerable<Attribute> attributes = Attribute.GetCustomAttributes(ci, typeof(ImportingConstructorAttribute), false);
                 if (attributes.Count() != 0)
                 {
                     CompositionTrace.Registration_ConstructorConventionOverridden(type);

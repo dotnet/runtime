@@ -1,8 +1,8 @@
 Cross Compilation for ARM on Linux
 ==================================
 
-Through cross compilation, on Linux it is possible to build CoreFX for arm, arm-softfp or arm64.
-It is very similar to the cross compilation procedure of CoreCLR. 
+It is possible to build CoreFx on Linux for arm, arm-softft, or arm64 by cross compiling.
+It is very similar to the cross compilation procedure of CoreCLR.
 
 Requirements
 ------------
@@ -54,9 +54,9 @@ And with:
 
     lgs@ubuntu ~/git/corefx/ $ ROOTFS_DIR=/home/lgs/corefx-cross/arm ./build-native.sh -debug -buildArch=arm -- verbose cross
 
-As usual the generated binaries will be found in `bin/BuildOS.BuildArch.BuildType/Native` as following:
+As usual the generated binaries will be found in `bin/BuildOS.BuildArch.BuildType/native` as following:
 
-    lgs@ubuntu ~/git/corefx/ ls -al ./bin/Linux.arm.Debug/Native
+    lgs@ubuntu ~/git/corefx/ ls -al ./bin/Linux.arm.Debug/native
     total 988
     drwxrwxr-x 2 lgs lgs   4096  3  6 18:33 .
     drwxrwxr-x 3 lgs lgs   4096  3  6 18:33 ..
@@ -65,9 +65,9 @@ As usual the generated binaries will be found in `bin/BuildOS.BuildArch.BuildTyp
     -rw-r--r-- 1 lgs lgs 228279  3  6 18:33 System.Native.so
     -rw-r--r-- 1 lgs lgs  53089  3  6 18:33 System.Net.Http.Native.so
     -rw-r--r-- 1 lgs lgs 266720  3  6 18:33 System.Security.Cryptography.Native.so
-    lgs@ubuntu ~/git/corefx/ file ./bin/Linux.arm.Debug/Native/System.Native.so 
-    ./bin/Linux.arm.Debug/Native/System.Native.so: 
-    ELF 32-bit LSB  shared object, ARM, EABI5 version 1 (SYSV), 
+    lgs@ubuntu ~/git/corefx/ file ./bin/Linux.arm.Debug/native/System.Native.so
+    ./bin/Linux.arm.Debug/native/System.Native.so:
+    ELF 32-bit LSB  shared object, ARM, EABI5 version 1 (SYSV),
     dynamically linked, BuildID[sha1]=fac50f1bd657c1759f0ad6cf5951511ddf252e67, not stripped
 
 
@@ -77,19 +77,9 @@ The managed components of CoreFX are architecture-independent and thus do not re
 
 Many of the managed binaries are also OS-independent, e.g. System.Linq.dll, while some are OS-specific, e.g. System.IO.FileSystem.dll, with different builds for Windows and Linux.
 
-    lgs@ubuntu ~/git/corefx/ $ ./build-managed.sh -debug -verbose 
+    lgs@ubuntu ~/git/corefx/ $ ./build-managed.sh -debug -verbose
 
-The output is at bin/<BuildOS>.AnyCPU.Debug.
-
-    lgs@ubuntu ~/git/corefx/ $ ls -al ./bin
-    drwxrwxr-x  17 lgs lgs  4096  3  6 21:00 .
-    drwxrwxr-x  10 lgs lgs  4096  3 12 15:04 ..
-    drwx------  98 lgs lgs  4096  3  6 21:36 AnyOS.AnyCPU.Debug
-    drwx------  98 lgs lgs  4096  3  6 19:40 AnyOS.AnyCPU.Release
-    drwx------ 284 lgs lgs 20480  3  6 22:30 Linux.AnyCPU.Debug
-    drwx------ 284 lgs lgs 20480  3  6 20:45 Linux.AnyCPU.Release
-    drwx------  33 lgs lgs  4096  3  6 21:33 Windows_NT.AnyCPU.Debug
-    drwx------  33 lgs lgs  4096  3  6 19:36 Windows_NT.AnyCPU.Release
+The output is at `bin/[BuildConfiguration]` where `BuildConfiguration` looks something like `netcoreapp-<OSGroup>-Debug-<Architecture>`. Ex: `bin/netcoreapp-Linux-Debug-x64`. For more details on the build configurations see [project-guidelines](../coding-guidelines/project-guidelines.md)
 
 Building corefx for Linux ARM Emulator
 =======================================

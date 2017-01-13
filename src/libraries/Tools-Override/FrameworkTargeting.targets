@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <ItemGroup>
+    <TargetingPackDirs Include="$(RefPath)" />
+    <AdditionalReferencePaths Include="@(TargetingPackDirs)" />
+  </ItemGroup>
+
+  <PropertyGroup >
+    <!-- TODO: This will begin depending on a target once we start computing RefPath -->
+    <ContractOutputPath>$(RefPath)</ContractOutputPath>
+    <FrameworkPathOverride>$(ContractOutputPath)</FrameworkPathOverride>
+    <AssemblySearchPaths>$(AssemblySearchPaths);$(ContractOutputPath);{RawFileName}</AssemblySearchPaths>
+  </PropertyGroup>
+
+  <PropertyGroup Condition=" '$(TargetFrameworkIdentifier)' == ''
+                         and '$(TargetFrameworkVersion)'    == ''
+                         and '$(TargetFrameworkProfile)'    == '' ">
+    <TargetingDefaultPlatform>true</TargetingDefaultPlatform>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TargetFrameworkIdentifier)' == ''">
+     <TargetFrameworkIdentifier>.NETPortable</TargetFrameworkIdentifier>
+  </PropertyGroup>
+
+  <!--
+    Limit the assembly resolution to just explicit locations.
+    Don't search anything machine-wide or build-order dependent.
+  <PropertyGroup>
+    <AssemblySearchPaths>{HintPathFromItem};{RawFileName}</AssemblySearchPaths>
+  </PropertyGroup>
+   -->
+
+  <!--
+    When targeting an explicit platform other than the default,
+    also allow the target framework directory.
+  -->
+  <PropertyGroup Condition="'$(TargetingDefaultPlatform)' != 'true'">
+    <AssemblySearchPaths>$(AssemblySearchPaths);{TargetFrameworkDirectory}</AssemblySearchPaths>
+  </PropertyGroup>
+
+  <!-- Setup the default target for projects not already explicitly targeting another platform -->
+  <PropertyGroup Condition="'$(TargetingDefaultPlatform)' == 'true'">
+    <!-- Setting a default portable profile, although nothing should resolve from there as we want to use the pacakge refs -->
+    <TargetPlatformIdentifier>Portable</TargetPlatformIdentifier>
+    <TargetFrameworkIdentifier>.NETPortable</TargetFrameworkIdentifier>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <TargetFrameworkProfile>Profile7</TargetFrameworkProfile>
+    <TargetFrameworkMonikerDisplayName>.NET Portable Subset</TargetFrameworkMonikerDisplayName>
+    <ImplicitlyExpandTargetFramework>false</ImplicitlyExpandTargetFramework>
+    <!-- Disable RAR complaining about us referencing higher .NET Portable libraries as we aren't a traditional portable library -->
+    <ResolveAssemblyReferenceIgnoreTargetFrameworkAttributeVersionMismatch>true</ResolveAssemblyReferenceIgnoreTargetFrameworkAttributeVersionMismatch>
+    <NuGetTargetMoniker Condition="'$(NuGetTargetMoniker)' == ''">.NETCoreApp,Version=v1.0</NuGetTargetMoniker>
+  </PropertyGroup>
+
+  <!-- Need to add references to the mscorlib design-time facade for some old-style portable dependencies like xunit -->
+  <Target Name="AddDesignTimeFacadeReferences"
+      Condition="'$(TargetingDefaultPlatform)' == 'true' AND '$(IsReferenceAssembly)' != 'true' AND '$(ExcludeMscorlibFacade)' != 'true'"
+      BeforeTargets="ResolveReferences"
+      DependsOnTargets="GetReferenceAssemblyPaths"
+  >
+    <PropertyGroup>
+      <_resolvedMscorlib Condition="'%(ReferencePath.FileName)' == 'mscorlib'">true</_resolvedMscorlib>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <PossibleTargetFrameworks Include="$(_TargetFrameworkDirectories)" />
+      <ReferencePath Include="%(PossibleTargetFrameworks.Identity)mscorlib.dll"
+                     Condition="'$(_resolvedMscorlib)' != 'true' and '%(PossibleTargetFrameworks.Identity)' != '' and Exists('%(PossibleTargetFrameworks.Identity)mscorlib.dll')" />
+    </ItemGroup>
+  </Target>
+
+  <Import Project="depProj.targets"
+          Condition="'$(MSBuildProjectExtension)' == '.depproj'" />
+
+  <Import Project="IL.targets"
+           Condition="'$(MSBuildProjectExtension)' == '.ilproj' AND '$(SkipImportILTargets)'!='true'" />
+
+  <Import Project="$(MSBuildExtensionsPath32)\Microsoft\Portable\$(TargetFrameworkVersion)\Microsoft.Portable.CSharp.targets"
+          Condition="'$(TargetFrameworkIdentifier)' == '.NETPortable' and '$(MSBuildProjectExtension)' == '.csproj'" />
+
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets"
+          Condition="'$(TargetFrameworkIdentifier)' != '.NETPortable' and '$(MSBuildProjectExtension)' == '.csproj'" />
+
+  <Import Project="$(MSBuildExtensionsPath32)\Microsoft\Portable\$(TargetFrameworkVersion)\Microsoft.Portable.VisualBasic.targets"
+          Condition="'$(TargetFrameworkIdentifier)' == '.NETPortable' and '$(MSBuildProjectExtension)' == '.vbproj'" />
+
+  <Import Project="$(MSBuildToolsPath)\Microsoft.VisualBasic.targets"
+          Condition="'$(TargetFrameworkIdentifier)' != '.NETPortable' and '$(MSBuildProjectExtension)' == '.vbproj'" />
+
+  <PropertyGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETFramework' and '$(OutputType)' == 'exe'">
+    <!-- RAR thinks all EXEs require binding redirects.  That's not the case for CoreCLR -->
+    <AutoUnifyAssemblyReferences>true</AutoUnifyAssemblyReferences>
+    <GenerateBindingRedirectsOutputType>false</GenerateBindingRedirectsOutputType>
+  </PropertyGroup>
+
+  <!-- We need to point $(FrameworkPathOverride) to the directory that contains explicitly referenced System.Runtime.dll, if any.
+       Otherwise, if $(FrameworkPathOverride)\System.Runtime.dll is not the same file as the one referenced explicitly,
+       VS2013 VB compiler would load it and then it would complain about ambiguous type declarations.
+  -->
+  <PropertyGroup Condition="'$(MSBuildProjectExtension)' == '.vbproj'">
+    <CoreCompileDependsOn>$(CoreCompileDependsOn);OverrideFrameworkPathForVisualBasic</CoreCompileDependsOn>
+  </PropertyGroup>
+
+  <Target Name="OverrideFrameworkPathForVisualBasic" AfterTargets="ResolveAssemblyReferences" Condition="'$(MSBuildProjectExtension)' == '.vbproj'">
+    <ItemGroup>
+      <FrameworkPathOverrideCandidate Include="%(ReferencePath.RootDir)%(ReferencePath.Directory)"
+            Condition="'%(ReferencePath.Filename)%(ReferencePath.Extension)' == 'System.Runtime.dll'">
+      </FrameworkPathOverrideCandidate>
+    </ItemGroup>
+
+    <PropertyGroup Condition="'@(FrameworkPathOverrideCandidate->Count())' == '1'">
+      <FrameworkPathOverride>@(FrameworkPathOverrideCandidate)</FrameworkPathOverride>
+    </PropertyGroup>
+  </Target>
+
+  <!--
+    Cross Platform MSBuild has some logic to replace \ with / when invoking commands to fix up path differences between Windows and
+    *NIX. The define command line argument syntax for VB requires that we both surround some items with quotes and escape the quotes with
+    backslashes. However, due to the above MSBuild logic, this causes an invalid command line to be generated when running on *NIX.
+
+    Microsoft/msbuild#422 tracks an actual fix in MSBuild, but for now we work around the issue by using a custom task that
+    transforms the set of defines we are going to use into a response file we can pass along to the Vbc task along with an
+    empty set of defines.
+  -->
+  <UsingTask TaskName="WriteVisualBasicDefineResponseFile"  AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll" />
+
+  <Target Name="ConvertDefinesToResonseFile" BeforeTargets="CoreCompile" Condition="'$(MSBuildProjectExtension)' == '.vbproj'">
+    <WriteVisualBasicDefineResponseFile DefineConstants="$(FinalDefineConstants)"
+                                        File="$(IntermediateOutputPath)/defines.rsp" />
+    <PropertyGroup>
+      <CompilerResponseFile>$(IntermediateOutputPath)/defines.rsp;$(CompilerResponseFile)</CompilerResponseFile>
+      <FinalDefineConstants></FinalDefineConstants>
+    </PropertyGroup>
+  </Target>
+
+  <Target Name="ConvertCommonMetadataToAdditionalProperties" BeforeTargets="AssignProjectConfiguration">
+    <!-- list each append as a seperate item to force re-evaluation of AdditionalProperties metadata -->
+    <ItemGroup>
+
+     <!-- Configuration property shortcuts --> 
+     <ProjectReference>
+       <AdditionalProperties Condition="'%(ProjectReference.Configuration)' != ''">Configuration=%(ProjectReference.Configuration);%(ProjectReference.AdditionalProperties)</AdditionalProperties>
+     </ProjectReference>
+      <!-- Packaging property shortcuts -->
+      <ProjectReference>
+        <AdditionalProperties Condition="'%(ProjectReference.PackageTargetFramework)' != ''">PackageTargetFramework=%(ProjectReference.PackageTargetFramework);%(ProjectReference.AdditionalProperties)</AdditionalProperties>
+      </ProjectReference>
+      <ProjectReference>
+        <AdditionalProperties Condition="'%(ProjectReference.PackageTargetPath)' != ''">PackageTargetPath=%(ProjectReference.PackageTargetPath);%(ProjectReference.AdditionalProperties)</AdditionalProperties>
+      </ProjectReference>
+      <ProjectReference>
+        <AdditionalProperties Condition="'%(ProjectReference.PackageTargetRuntime)' != ''">PackageTargetRuntime=%(ProjectReference.PackageTargetRuntime);%(ProjectReference.AdditionalProperties)</AdditionalProperties>
+      </ProjectReference>
+      <ProjectReference>
+        <AdditionalProperties Condition="'%(ProjectReference.Platform)' != ''">Platform=%(ProjectReference.Platform);%(ProjectReference.AdditionalProperties)</AdditionalProperties>
+      </ProjectReference>
+    </ItemGroup>
+  </Target>
+
+</Project>

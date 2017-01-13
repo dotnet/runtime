@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
@@ -7,7 +7,7 @@
     </Project>
     <Project Include="FunctionalTests\System.Net.Primitives.Functional.Tests.csproj">
       <OSGroup>Windows_NT</OSGroup>
-      <TestTFMs>netcoreapp1.1;net463</TestTFMs>
+      <TestTFMs>netcoreapp;net463</TestTFMs>
     </Project>
     <Project Include="FunctionalTests\System.Net.Primitives.Functional.Tests.csproj">
       <TargetGroup>netstandard1.3</TargetGroup>
@@ -19,7 +19,7 @@
     </Project>
     <Project Include="PalTests\System.Net.Primitives.Pal.Tests.csproj">
       <OSGroup>Windows_NT</OSGroup>
-      <TestTFMs>netcoreapp1.1;net463</TestTFMs>
+      <TestTFMs>netcoreapp;net463</TestTFMs>
     </Project>
     <Project Include="PalTests\System.Net.Primitives.Pal.Tests.csproj">
       <TargetGroup>netstandard1.3</TargetGroup>
@@ -31,7 +31,7 @@
     </Project>
     <Project Include="PerformanceTests\System.Net.Primitives.Performance.Tests.csproj">
       <OSGroup>Windows_NT</OSGroup>
-      <TestTFMs>netcoreapp1.1;net463</TestTFMs>
+      <TestTFMs>netcoreapp;net463</TestTFMs>
     </Project>
     <Project Include="PerformanceTests\System.Net.Primitives.Performance.Tests.csproj">
       <TargetGroup>netstandard1.3</TargetGroup>
@@ -43,7 +43,7 @@
     </Project>
     <Project Include="UnitTests\System.Net.Primitives.UnitTests.Tests.csproj">
       <OSGroup>Windows_NT</OSGroup>
-      <TestTFMs>netcoreapp1.1;net463</TestTFMs>
+      <TestTFMs>netcoreapp;net463</TestTFMs>
     </Project>
     <Project Include="UnitTests\System.Net.Primitives.UnitTests.Tests.csproj">
       <TargetGroup>netstandard1.3</TargetGroup>

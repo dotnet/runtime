@@ -4,11 +4,8 @@
   <PropertyGroup>
     <ProjectGuid>{C44B33E3-F89F-40B9-B353-D380C1524988}</ProjectGuid>
     <OutputType>Exe</OutputType>
-    <RootNamespace>TestAppOutsideOfTPA</RootNamespace>
-    <AssemblyName>TestAppOutsideOfTPA</AssemblyName>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
-    <CopyNuGetImplementations>false</CopyNuGetImplementations>
-    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.3</NuGetTargetMoniker>
+    <NoWarn>0436</NoWarn>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
@@ -28,9 +25,6 @@
     <TargetingPackReference Include="System" />
     <TargetingPackReference Include="System.Core" />
     <TargetingPackReference Include="System.Runtime" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="project.json" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\AssemblyResolveTests\AssemblyResolveTests.csproj">

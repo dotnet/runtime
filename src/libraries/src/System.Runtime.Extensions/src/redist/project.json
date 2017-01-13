@@ -1,9 +1,0 @@
-{
-  "dependencies": {
-    "Microsoft.NETCore.Targets": "1.1.0",
-    "System.Runtime.Extensions": "4.3.0"
-  },
-  "frameworks": {
-    "netcore50": {}
-  }
-}

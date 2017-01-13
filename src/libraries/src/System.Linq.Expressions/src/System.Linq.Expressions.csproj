@@ -16,7 +16,6 @@
     <DefineConstants Condition=" '$(FeatureInterpret)' == 'true' ">$(DefineConstants);FEATURE_INTERPRET</DefineConstants>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net461'">true</IsPartialFacadeAssembly>
     <ResourcesSourceOutputDirectory Condition="'$(TargetGroup)' == 'net461'">None</ResourcesSourceOutputDirectory>
-    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
@@ -49,7 +48,7 @@
     <Compile Include="$(CommonPath)\System\Collections\Generic\LargeArrayBuilder.cs">
       <Link>Common\System\Collections\Generic\LargeArrayBuilder.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Diagnostics\CodeAnalysis\ExcludeFromCodeCoverageAttribute.cs" Condition="'$(TargetGroup)'!=''">
+    <Compile Include="$(CommonPath)\System\Diagnostics\CodeAnalysis\ExcludeFromCodeCoverageAttribute.cs" Condition="'$(TargetGroup)'=='net463' or '$(TargetGroup)' == 'netcore50' or '$(TargetGroup)' == 'netcore50aot'">
       <Link>Common\System\Diagnostics\CodeAnalysis\ExcludeFromCodeCoverageAttribute.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Dynamic\Utils\CacheDict.cs">
@@ -142,16 +141,29 @@
     <Compile Include="System\Runtime\CompilerServices\RuntimeOps.RuntimeVariables.cs" />
     <Compile Include="System\Runtime\CompilerServices\RuntimeOps.MergedRuntimeVariables.cs" />
     <Compile Include="System\Runtime\CompilerServices\ReadOnlyCollectionBuilder.cs" />
-    <None Include="project.json" />
+    <Reference Include="System.Collections" />
+    <Reference Include="System.Diagnostics.Contracts" />
+    <Reference Include="System.Diagnostics.Debug" />
+    <Reference Include="System.Diagnostics.Tools" />
+    <Reference Include="System.Linq" />
+    <Reference Include="System.ObjectModel" />
+    <Reference Include="System.Reflection.Emit" />
+    <Reference Include="System.Reflection.Emit.ILGeneration" />
+    <Reference Include="System.Reflection.Emit.Lightweight" />
+    <Reference Include="System.Reflection.Primitives" />
+    <Reference Include="System.Resources.ResourceManager" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.Extensions" />
+    <Reference Include="System.Threading" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'==''">
+  <ItemGroup Condition="'$(TargetGroup)'=='netstandard'">
     <Compile Include="System\Linq\Expressions\DynamicExpressionVisitor.cs" />
     <Compile Include="System\Linq\Expressions\DynamicExpression.cs" />
-    <Compile Include="System\Linq\Expressions\Expression.netstandard1.7.cs" />
-    <Compile Include="System\Linq\Expressions\LambdaExpression.netstandard1.7.cs" />
-    <Compile Include="System\Linq\Expressions\ExpressionVisitor.netstandard1.7.cs" />
+    <Compile Include="System\Linq\Expressions\Expression.netstandard.cs" />
+    <Compile Include="System\Linq\Expressions\LambdaExpression.netstandard.cs" />
+    <Compile Include="System\Linq\Expressions\ExpressionVisitor.netstandard.cs" />
     <Compile Include="System\Linq\Expressions\Compiler\TypeInfoExtensions.cs" />
-    <Compile Include="System\Linq\Expressions\Compiler\DelegateHelpers.netstandard1.7.cs" />
+    <Compile Include="System\Linq\Expressions\Compiler\DelegateHelpers.netstandard.cs" />
     <Compile Include="System\Runtime\CompilerServices\RuleCache.cs" />
     <Compile Include="System\Runtime\CompilerServices\CallSite.cs" />
     <Compile Include="System\Runtime\CompilerServices\CallSiteBinder.cs" />
