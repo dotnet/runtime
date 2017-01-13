@@ -24,8 +24,11 @@ RUN dnf install -y libicu \
         libcurl \ 
         openssl-libs \ 
         libunwind \ 
-        lttng-ust && \ 
-    dnf clean all 
+        lttng-ust
+
+RUN dnf upgrade -y nss
+
+RUN dnf clean all 
  
 # Setup User to match Host User, and give superuser permissions 
 ARG USER_ID=0 
