@@ -1,0 +1,11 @@
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="..\dir.props" />
+  <PropertyGroup>
+    <Configuration Condition="'$(Configuration)' == ''">Debug</Configuration>
+    <IntermediateOutputPath Condition="'$(IntermediateOutputPath)' == ''">obj/$(Configuration)/</IntermediateOutputPath>
+    <IntermediateOutputPath Condition="'$(NuGetRuntimeIdentifier)' != ''">$(IntermediateOutputPath)$(NuGetRuntimeIdentifier)/</IntermediateOutputPath>
+    <ProjectJsonTemplate>$(MSBuildThisProjectDirectory)project.json.template</ProjectJsonTemplate>
+    <ProjectJson Condition="Exists('$(ProjectJsonTemplate)')">$(IntermediateOutputPath)project.json</ProjectJson>
+    <ProjectLockJson Condition="Exists('$(ProjectJsonTemplate)')">$(IntermediateOutputPath)project.lock.json</ProjectLockJson>
+  </PropertyGroup>
+</Project>

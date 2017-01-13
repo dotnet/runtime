@@ -1,4 +1,12 @@
 ﻿<Project ToolsVersion="12.0" DefaultTargets="Build" InitialTargets="ValidateArgs" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <!--
+    $(OS) is set to Unix/Windows_NT. This comes from an environment variable on Windows and MSBuild on Unix.
+  -->
+  <PropertyGroup>
+    <!-- Temp change to make OS X build behave as a Linux build -->
+    <OsEnvironment Condition="'$(OsEnvironment)'=='' AND '$(OS)'=='OSX'">Unix</OsEnvironment>
+    <OsEnvironment Condition="'$(OsEnvironment)'==''">$(OS)</OsEnvironment>
+  </PropertyGroup>
   <PropertyGroup>
     <ProjectDir>$(MSBuildThisFileDirectory)</ProjectDir>
 
@@ -13,8 +21,8 @@
     <ToolRuntimePath Condition="'$(ToolRuntimePath)'==''">$(ProjectDir)Tools/</ToolRuntimePath>
     <ToolsDir Condition="'$(UseToolRuntimeForToolsDir)'=='true'">$(ToolRuntimePath)</ToolsDir>
     <ToolsDir Condition="'$(ToolsDir)'==''">$(ProjectDir)Tools/</ToolsDir>
-    <DotnetCliPath Condition="'$(DotnetCliPath)'==''">$(ToolRuntimePath)dotnetcli/bin/</DotnetCliPath>
-    <BuildToolsTaskDir Condition="'$(BuildToolsTargets45)' == 'true'">$(ToolsDir)net45/</BuildToolsTaskDir>
+    <BuildToolsTaskDir Condition="'$(BuildToolsTargets45)' == 'true' OR '$(MSBuildRuntimeType)' != 'Core'">$(ToolsDir)net45/</BuildToolsTaskDir>
+    <PackagingTaskDir Condition="'$(BuildToolsTaskDir)' != ''">$(BuildToolsTaskDir)</PackagingTaskDir>
     <UseRoslynCompilers Condition="'$(UseRoslynCompilers)'=='' and '$(OSEnvironment)'!='Windows_NT'">false</UseRoslynCompilers>
   </PropertyGroup>
 
@@ -59,6 +67,21 @@
     <HostFullVersion>$(HostVersion)$(PreReleaseSuffix)</HostFullVersion>
   </PropertyGroup>
 
+  <Import Project="$(ToolsDir)Build.Common.props" Condition="Exists('$(ToolsDir)Build.Common.props')" />
+
+  <PropertyGroup>
+    <NuGetConfigFile Condition="'$(NuGetConfigFile)' == ''">$(ProjectDir)/../NuGet.Config</NuGetConfigFile>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <DotNetTool Condition="'$(DotNetTool)' == '' and '$(OsEnvironment)'!='Unix'">$(DotnetCliPath)dotnet.exe</DotNetTool>
+    <DotNetTool Condition="'$(DotNetTool)' == '' and '$(OsEnvironment)'=='Unix'">$(DotnetCliPath)dotnet</DotNetTool>
+    <DotNetRestoreCommand>"$(DotNetTool)" restore</DotNetRestoreCommand>
+    <DotNetRestoreCommand>$(DotNetRestoreCommand) --packages "$(PackagesDir.TrimEnd('/\'.ToCharArray()))"</DotNetRestoreCommand>
+    <DotNetRestoreCommand>$(DotNetRestoreCommand) --configfile "$(NuGetConfigFile)"</DotNetRestoreCommand>
+    <DnuRestoreCommand>$(DotNetRestoreCommand)</DnuRestoreCommand>
+  </PropertyGroup>
+
   <Target Name="ValidateArgs" Condition="'$(CLIBuildVersion)'==''">
     <Error Condition="'$(EnsureStableVersion)'==''" Text="EnsureStableVersion is undefined" />
     <Error Condition="'$(HostPolicyVersion)'==''" Text="HostPolicyVersion is undefined" />
@@ -71,4 +94,5 @@
     <Error Condition="'$(BuildNumberMajor)'==''" Text="BuildNumberMajor is undefined" />
     <Error Condition="'$(BuildNumberMinor)'==''" Text="BuildNumberMinor is undefined" />
   </Target>
+
 </Project>

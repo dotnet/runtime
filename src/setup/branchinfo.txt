@@ -1,11 +1,11 @@
 # This is a file containing environment variables specific to this branch.
 # Any line that is not blank and does not start with '#' is interpreted as a variable to set.
 # Each line is expected to be in the format "[Name]=[Value]".
-MAJOR_VERSION=1
-MINOR_VERSION=2
+MAJOR_VERSION=2
+MINOR_VERSION=0
 PATCH_VERSION=0
 STABILIZE_PACKAGE_VERSION=false
 LOCK_HOST_VERSION=false
-RELEASE_SUFFIX=beta
+RELEASE_SUFFIX=dev-eng
 CHANNEL=master
 BRANCH_NAME=master
