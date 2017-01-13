@@ -976,8 +976,9 @@ namespace System.Collections.Generic {
             }
             Contract.EndContractBlock();
 
-            if( _size > 0) {
+            if (_size > 0) {
                 ArraySortHelper<T>.Sort(_items, 0, _size, comparison);
+                _version++;
             }
         }
 
