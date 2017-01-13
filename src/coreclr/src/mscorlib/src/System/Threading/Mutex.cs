@@ -324,7 +324,7 @@ namespace System.Threading
             }
             else
             {
-                throw new Exception(Environment.GetResourceString("Arg_SynchronizationLockException"));
+                throw new ApplicationException(Environment.GetResourceString("Arg_SynchronizationLockException"));
             }
         }
 
