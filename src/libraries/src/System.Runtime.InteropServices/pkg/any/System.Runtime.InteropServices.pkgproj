@@ -7,6 +7,9 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\System.Runtime.InteropServices.csproj" />
+    <ProjectReference Include="..\..\src\System.Runtime.InteropServices.csproj" >
+      <TargetGroup>netcoreapp1.2corert</TargetGroup>
+    </ProjectReference>
     <InboxOnTargetFramework Include="MonoAndroid10" />
     <InboxOnTargetFramework Include="MonoTouch10" />
     <InboxOnTargetFramework Include="net45" />

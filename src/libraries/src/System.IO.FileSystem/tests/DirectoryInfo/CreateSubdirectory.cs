@@ -204,7 +204,8 @@ namespace System.IO.Tests
             });
         }
 
-        [Fact]
+        [ConditionalFact(nameof(UsingNewNormalization))]
+        [SkipOnTargetFramework(Tfm.BelowNet462 | Tfm.Core50, "long path support added in 4.6.2")]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void ExtendedPathSubdirectory()
         {

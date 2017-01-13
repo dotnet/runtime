@@ -577,6 +577,7 @@ namespace System.Numerics.Tests
 
         [Fact]
         [OuterLoop]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public static void RunDoubleExplicitCastFromLargeBigIntegerTests()
         {
             DoubleExplicitCastFromLargeBigIntegerTests(0, 4, 32, 3);
@@ -727,7 +728,6 @@ namespace System.Numerics.Tests
                     VerifyDoubleExplicitCastFromBigInteger(Double.PositiveInfinity, temp);
                     VerifyDoubleExplicitCastFromBigInteger(Double.NegativeInfinity, -temp);
                 }
-
             }
         }
 

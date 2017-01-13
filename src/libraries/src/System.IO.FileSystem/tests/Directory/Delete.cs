@@ -112,7 +112,8 @@ namespace System.IO.Tests
 
         #region PlatformSpecific
 
-        [Fact]
+        [ConditionalFact(nameof(UsingNewNormalization))]
+        [SkipOnTargetFramework(Tfm.BelowNet462 | Tfm.Core50, "long path support added in 4.6.2")]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void WindowsExtendedDirectoryWithSubdirectories()
         {
@@ -122,7 +123,8 @@ namespace System.IO.Tests
             Assert.True(testDir.Exists);
         }
 
-        [Fact]
+        [ConditionalFact(nameof(LongPathsAreNotBlocked), nameof(UsingNewNormalization))]
+        [SkipOnTargetFramework(Tfm.BelowNet462 | Tfm.Core50, "long path support added in 4.6.2")]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void WindowsLongPathExtendedDirectory()
         {
@@ -142,7 +144,8 @@ namespace System.IO.Tests
             testDir.Attributes = FileAttributes.Normal;
         }
 
-        [Fact]
+        [ConditionalFact(nameof(UsingNewNormalization))]
+        [SkipOnTargetFramework(Tfm.BelowNet462 | Tfm.Core50, "long path support added in 4.6.2")]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void WindowsDeleteExtendedReadOnlyDirectory()
         {
@@ -173,7 +176,8 @@ namespace System.IO.Tests
             Assert.False(testDir.Exists);
         }
 
-        [Fact]
+        [ConditionalFact(nameof(UsingNewNormalization))]
+        [SkipOnTargetFramework(Tfm.BelowNet462 | Tfm.Core50, "long path support added in 4.6.2")]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void WindowsShouldBeAbleToDeleteExtendedHiddenDirectory()
         {
