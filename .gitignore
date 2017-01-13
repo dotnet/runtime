@@ -24,7 +24,6 @@ build/
 bld/
 [Bb]in/
 [Oo]bj/
-localpkg/
 msbuild.log
 
 # add back architecture directories ignored in 'Build results'
