@@ -42,7 +42,6 @@
     <CompileItem Include="$(MSBuildThisFileDirectory)\System\Net\Http\WinInetProxyHelper.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' != 'net46'">
-    <CompileItem Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeHandleZeroOrMinusOneIsInvalid.cs" />
     <CompileItem Include="$(CommonPath)\System\Net\HttpStatusDescription.cs" />
   </ItemGroup>
 </Project>

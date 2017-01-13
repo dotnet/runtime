@@ -10,8 +10,8 @@
     <TargetFrameworkMonikers Include="netstandard1.4" />
     <TargetFrameworkMonikers Include="netstandard1.5" />
     <TargetFrameworkMonikers Include="netstandard1.6" />
-    <TargetFrameworkMonikers Include="netstandard1.7" />
-    <TargetFrameworkMonikers Include="netcoreapp1.1">
+    <TargetFrameworkMonikers Include="netstandard2.0" />
+    <TargetFrameworkMonikers Include="netcoreapp2.0">
       <RID>win7-x64</RID>
       <AdditionalBinaryPath>
         $(PackagesDir)/runtime.win7-x64.Microsoft.NETCore.Runtime.CoreCLR/1.2.0-$(CoreClrExpectedPrerelease)/runtimes/win7-x64/lib/netstandard1.0;

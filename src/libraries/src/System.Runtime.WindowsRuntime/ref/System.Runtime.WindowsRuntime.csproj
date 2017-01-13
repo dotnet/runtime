@@ -3,25 +3,27 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <UseECMAKey>true</UseECMAKey>
-    <!-- 
+    <!--
          NOTE: Suppress false positive warning for the special case where we're building System.Runtime.WindowsRuntime itself
                at a version other than 4.0.0.0, which is referenced indirectly via the mscorlib.dll design-time facade, which
                in turn is a required compile-time-only reference when building anything with a reference to a WinMD.
-      
-         error CS1698: Warning as Error: Circular assembly reference 'System.Runtime.WindowsRuntime, 
-                       Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089' does not 
-                       match the output assembly name 'System.Runtime.WindowsRuntime, Version=4.0.10.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'. 
+
+         error CS1698: Warning as Error: Circular assembly reference 'System.Runtime.WindowsRuntime,
+                       Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089' does not
+                       match the output assembly name 'System.Runtime.WindowsRuntime, Version=4.0.10.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'.
      -->
     <NoWarn>1698</NoWarn>
-    <OutputType>Library</OutputType>
-    <NuGetTargetMoniker>.NETStandard,Version=v1.2</NuGetTargetMoniker>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Runtime.WindowsRuntime.cs" />
     <Compile Include="System.Runtime.WindowsRuntime.Manual.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="project.json" />
+    <ProjectReference Include="..\..\Microsoft.TargetingPack.Private.WinRT\ref\Microsoft.TargetingPack.Private.WinRT.depproj" />
+    <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" />
+    <ProjectReference Include="..\..\System.Runtime.Extensions\ref\System.Runtime.Extensions.csproj" />
+    <ProjectReference Include="..\..\System.IO\ref\System.IO.csproj" />
+    <ProjectReference Include="..\..\System.Threading.Tasks\ref\System.Threading.Tasks.csproj" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
   <!-- Temporarily disable TFM validation until its fixed to ignore windows.winmd -->

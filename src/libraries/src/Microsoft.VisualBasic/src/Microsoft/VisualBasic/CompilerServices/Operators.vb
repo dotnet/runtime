@@ -2772,7 +2772,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
 
                 Case TypeCode.DateTime * s_TCMAX + TypeCode.Empty
-                    Return AddString(CStr(Convert.ToDateTime(Nothing)), CStr(CDate(left)))
+                    Return AddString(CStr(CDate(Nothing)), CStr(CDate(left)))
 
                 Case TypeCode.DateTime * s_TCMAX + TypeCode.DateTime
                     Return AddString(CStr(Convert.ToDateTime(left)), CStr(Convert.ToDateTime(right)))

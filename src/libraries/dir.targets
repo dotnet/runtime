@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" InitialTargets="CheckForBuildTools" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  
+
   <Target Name="CheckForBuildTools">
     <Error Condition="!Exists('$(ToolsDir)') and '$(OverrideToolsDir)'=='true'"
            Text="The tools directory [$(ToolsDir)] does not exist. Please run sync in your enlistment to ensure the tools are installed before attempting to build an individual project." />
@@ -12,44 +12,29 @@
   <Target Name="BuildAndTest" DependsOnTargets="Build;Test" />
   <Target Name="RebuildAndTest" DependsOnTargets="Rebuild;Test" />
   <Target Name="Test" />
-  
-  <!-- Targets will be always be imported from buildagainstpackages.targets unless $(SkipBuildAgainstPackages) is specified-->
-  <Target Name="GenerateTestProjectJson" />
-  <Target Name="GenerateAllTestProjectJsons" />
 
-  <Target Name="UndefineTestTFM" BeforeTargets="AssignProjectConfiguration">
+ <!-- build vertical requires the FindBestConfiguration task which is currently in CoreFx.Tools.dll --> 
+ <Import Project="buildvertical.targets" Condition="Exists('$(CoreFxToolsTaskDir)CoreFx.Tools.dll')" /> 
+
+  <Target Name="UndefineTestTFM" 
+          BeforeTargets="AssignProjectConfiguration">
     <ItemGroup>
-      <ProjectReference>
-        <!-- 
+        <!--
         Always undefine TestTFM and FilterToTestTFM for all project reference as not needed for compilation and
         avoid bin clash tool to fail
         -->
+      <ProjectReference>
         <UndefineProperties>%(ProjectReference.UndefineProperties);TestTFM;FilterToTestTFM</UndefineProperties>
       </ProjectReference>
     </ItemGroup>
   </Target>
-  
-  <PropertyGroup>
-    <CommonTestProjectJson>$(MSBuildThisFileDirectory)src/Common/test-runtime/project.json</CommonTestProjectJson>
-    <CommonTestProjectLockJson>$(MSBuildThisFileDirectory)src/Common/test-runtime/project.lock.json</CommonTestProjectLockJson>
-    <CommonOutputTestProjectJson>$(GeneratedProjectJsonDir)/project.json</CommonOutputTestProjectJson>
-    <CommonOutputTestProjectLockJson>$(GeneratedProjectJsonDir)/project.lock.json</CommonOutputTestProjectLockJson>
-  </PropertyGroup>
-  
-  <PropertyGroup Condition="'$(IsTestProject)' == 'true'">
-    <CommonTestProjectJson Condition="'$(BuildTestsAgainstPackages)'=='true'">$(CommonOutputTestProjectJson)</CommonTestProjectJson>
-    <CommonTestProjectLockJson Condition="'$(BuildTestsAgainstPackages)'=='true'">$(CommonOutputTestProjectLockJson)</CommonTestProjectLockJson>
-    <ProjectJson Condition="'$(ProjectJson)'=='' and Exists('$(MSBuildProjectDirectory)/project.json')">$(MSBuildProjectDirectory)/project.json</ProjectJson>
-    <!-- If project specific project.json exists then don't skip generating test project.json files -->
-    <SkipGenerateTestProjectJson Condition="'$(ProjectJson)'==''" >true</SkipGenerateTestProjectJson>
-    <ProjectJson Condition="'$(ProjectJson)'==''">$(CommonTestProjectJson)</ProjectJson>
-    <ProjectLockJson Condition="'$(ProjectJson)'=='$(CommonTestProjectJson)'">$(CommonTestProjectLockJson)</ProjectLockJson>
-  </PropertyGroup>
 
   <Import Project="$(ToolsDir)/Build.Common.targets" Condition="Exists('$(ToolsDir)/Build.Common.targets')" />
 
   <!-- permit a wrapping build system to contribute targets to this build -->
   <Import Condition="Exists('$(MSBuildThisFileDirectory)..\open.targets')" Project="$(MSBuildThisFileDirectory)..\open.targets" />
+
+  <Import Project="$(MSBuildThisFileDirectory)binplace.targets" />
 
   <PropertyGroup>
     <!-- We don't use any of MSBuild's resolution logic for resolving the framework, so just set these two properties to any folder that exists to skip
@@ -65,16 +50,6 @@
     <PackageTargetFramework Condition="'$(IsTestProject)' == 'true'"></PackageTargetFramework>
   </PropertyGroup>
 
-  <!--
-    add the test-runtime project.json to the list of supplemental test data so it will get included
-    in the test archive; the stress test build system depends on it when building test mixes.
-  -->
-  <ItemGroup Condition="'$(IsTestProject)'=='true'">
-    <SupplementalTestData Include="$(SourceDir)Common/test-runtime/project.json">
-      <DestinationDir>test-runtime/</DestinationDir>
-    </SupplementalTestData>
-  </ItemGroup>
-
   <ItemGroup Condition="'$(NuGetTargetMoniker)'=='.NETStandard,Version=v1.7'">
     <!-- Temporarily suppress the message until we get a nuget version that knows about the mapping between netstandard1.7 and uap10.1 -->
     <SuppressPackageTargetFrameworkCompatibility Include="uap10.1" />
@@ -85,6 +60,13 @@
     <ItemGroup>
       <PackageIds Include="$(Id)" />
     </ItemGroup>
+  </Target>
+
+  <Target Name="ReportConfigurationErrorMessage"
+          BeforeTargets="AssignProjectConfiguration"
+           Condition="'$(BuildConfigurations)' != ''" >
+    <Message Importance="Low" Text="$(MSBuildProjectFullPath), C: $(Configuration) BC: $(BuildConfiguration) BCs: $(BuildConfigurations)" />
+    <Message Importance="High" Condition="'$(ConfigurationErrorMsg)' != ''" Text="$(MSBuildProjectFullPath) ConfigurationErrorMessage: $(ConfigurationErrorMsg)" />
   </Target>
 
 </Project>

@@ -2,6 +2,5 @@
   <Import Project="..\dir.props" />
   <PropertyGroup>
     <LayoutBasePath>$(BaseOutputPath)/layout/</LayoutBasePath>
-    <RestoredRefRootPath>$(ObjDir)CompatShims/ref/</RestoredRefRootPath>
   </PropertyGroup>
 </Project>
