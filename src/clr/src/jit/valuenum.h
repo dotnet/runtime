@@ -217,7 +217,7 @@ private:
 
 #ifdef DEBUG
     // This helps test some performance pathologies related to "evaluation" of VNF_MapSelect terms,
-    // especially relating to the GcHeap.  We count the number of applications of such terms we consider,
+    // especially relating to GcHeap/ByrefExposed.  We count the number of applications of such terms we consider,
     // and if this exceeds a limit, indicated by a COMPlus_ variable, we assert.
     unsigned m_numMapSels;
 #endif

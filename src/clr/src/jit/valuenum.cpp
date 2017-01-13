@@ -2922,6 +2922,17 @@ ValueNum Compiler::fgValueNumberArrIndexVal(GenTreePtr           tree,
     return selectedElem;
 }
 
+ValueNum Compiler::fgValueNumberByrefExposedLoad(var_types type, ValueNum pointerVN)
+{
+    ValueNum memoryVN = fgCurMemoryVN[ByrefExposed];
+    // The memoization for VNFunc applications does not factor in the result type, so
+    // VNF_ByrefExposedLoad takes the loaded type as an explicit parameter.
+    ValueNum typeVN = vnStore->VNForIntCon(type);
+    ValueNum loadVN = vnStore->VNForFunc(type, VNF_ByrefExposedLoad, typeVN, vnStore->VNNormVal(pointerVN), memoryVN);
+
+    return loadVN;
+}
+
 var_types ValueNumStore::TypeOfVN(ValueNum vn)
 {
     if (vn == NoVN)
@@ -4487,75 +4498,93 @@ void Compiler::fgValueNumberBlock(BasicBlock* blk)
         }
     }
 
-    // Now do the same for "GcHeap".
-    // Is there a phi for this block?
-    if (blk->bbMemorySsaPhiFunc[GcHeap] == nullptr)
+    // Now do the same for each MemoryKind.
+    for (MemoryKind memoryKind : allMemoryKinds())
     {
-        fgCurMemoryVN[GcHeap] = GetMemoryPerSsaData(blk->bbMemorySsaNumIn[GcHeap])->m_vnPair.GetLiberal();
-        assert(fgCurMemoryVN[GcHeap] != ValueNumStore::NoVN);
-    }
-    else
-    {
-        unsigned loopNum;
-        ValueNum newGcHeapVN;
-        if (optBlockIsLoopEntry(blk, &loopNum))
+        // Is there a phi for this block?
+        if (blk->bbMemorySsaPhiFunc[memoryKind] == nullptr)
         {
-            newGcHeapVN = fgMemoryVNForLoopSideEffects(GcHeap, blk, loopNum);
+            fgCurMemoryVN[memoryKind] = GetMemoryPerSsaData(blk->bbMemorySsaNumIn[memoryKind])->m_vnPair.GetLiberal();
+            assert(fgCurMemoryVN[memoryKind] != ValueNumStore::NoVN);
         }
         else
         {
-            // Are all the VN's the same?
-            BasicBlock::MemoryPhiArg* phiArgs = blk->bbMemorySsaPhiFunc[GcHeap];
-            assert(phiArgs != BasicBlock::EmptyMemoryPhiDef);
-            // There should be > 1 args to a phi.
-            assert(phiArgs->m_nextArg != nullptr);
-            ValueNum phiAppVN = vnStore->VNForIntCon(phiArgs->GetSsaNum());
-            JITDUMP("  Building phi application: $%x = SSA# %d.\n", phiAppVN, phiArgs->GetSsaNum());
-            bool     allSame = true;
-            ValueNum sameVN  = GetMemoryPerSsaData(phiArgs->GetSsaNum())->m_vnPair.GetLiberal();
-            if (sameVN == ValueNumStore::NoVN)
+            if ((memoryKind == ByrefExposed) && byrefStatesMatchGcHeapStates)
             {
-                allSame = false;
+                // The update for GcHeap will copy its result to ByrefExposed.
+                assert(memoryKind < GcHeap);
+                assert(blk->bbMemorySsaPhiFunc[memoryKind] == blk->bbMemorySsaPhiFunc[GcHeap]);
+                continue;
             }
-            phiArgs = phiArgs->m_nextArg;
-            while (phiArgs != nullptr)
+
+            unsigned loopNum;
+            ValueNum newMemoryVN;
+            if (optBlockIsLoopEntry(blk, &loopNum))
             {
-                ValueNum phiArgVN = GetMemoryPerSsaData(phiArgs->GetSsaNum())->m_vnPair.GetLiberal();
-                if (phiArgVN == ValueNumStore::NoVN || phiArgVN != sameVN)
-                {
-                    allSame = false;
-                }
-#ifdef DEBUG
-                ValueNum oldPhiAppVN = phiAppVN;
-#endif
-                unsigned phiArgSSANum   = phiArgs->GetSsaNum();
-                ValueNum phiArgSSANumVN = vnStore->VNForIntCon(phiArgSSANum);
-                JITDUMP("  Building phi application: $%x = SSA# %d.\n", phiArgSSANumVN, phiArgSSANum);
-                phiAppVN = vnStore->VNForFunc(TYP_REF, VNF_Phi, phiArgSSANumVN, phiAppVN);
-                JITDUMP("  Building phi application: $%x = phi($%x, $%x).\n", phiAppVN, phiArgSSANumVN, oldPhiAppVN);
-                phiArgs = phiArgs->m_nextArg;
-            }
-            if (allSame)
-            {
-                newGcHeapVN = sameVN;
+                newMemoryVN = fgMemoryVNForLoopSideEffects(memoryKind, blk, loopNum);
             }
             else
             {
-                newGcHeapVN =
-                    vnStore->VNForFunc(TYP_REF, VNF_PhiMemoryDef, vnStore->VNForHandle(ssize_t(blk), 0), phiAppVN);
+                // Are all the VN's the same?
+                BasicBlock::MemoryPhiArg* phiArgs = blk->bbMemorySsaPhiFunc[memoryKind];
+                assert(phiArgs != BasicBlock::EmptyMemoryPhiDef);
+                // There should be > 1 args to a phi.
+                assert(phiArgs->m_nextArg != nullptr);
+                ValueNum phiAppVN = vnStore->VNForIntCon(phiArgs->GetSsaNum());
+                JITDUMP("  Building phi application: $%x = SSA# %d.\n", phiAppVN, phiArgs->GetSsaNum());
+                bool     allSame = true;
+                ValueNum sameVN  = GetMemoryPerSsaData(phiArgs->GetSsaNum())->m_vnPair.GetLiberal();
+                if (sameVN == ValueNumStore::NoVN)
+                {
+                    allSame = false;
+                }
+                phiArgs = phiArgs->m_nextArg;
+                while (phiArgs != nullptr)
+                {
+                    ValueNum phiArgVN = GetMemoryPerSsaData(phiArgs->GetSsaNum())->m_vnPair.GetLiberal();
+                    if (phiArgVN == ValueNumStore::NoVN || phiArgVN != sameVN)
+                    {
+                        allSame = false;
+                    }
+#ifdef DEBUG
+                    ValueNum oldPhiAppVN = phiAppVN;
+#endif
+                    unsigned phiArgSSANum   = phiArgs->GetSsaNum();
+                    ValueNum phiArgSSANumVN = vnStore->VNForIntCon(phiArgSSANum);
+                    JITDUMP("  Building phi application: $%x = SSA# %d.\n", phiArgSSANumVN, phiArgSSANum);
+                    phiAppVN = vnStore->VNForFunc(TYP_REF, VNF_Phi, phiArgSSANumVN, phiAppVN);
+                    JITDUMP("  Building phi application: $%x = phi($%x, $%x).\n", phiAppVN, phiArgSSANumVN,
+                            oldPhiAppVN);
+                    phiArgs = phiArgs->m_nextArg;
+                }
+                if (allSame)
+                {
+                    newMemoryVN = sameVN;
+                }
+                else
+                {
+                    newMemoryVN =
+                        vnStore->VNForFunc(TYP_REF, VNF_PhiMemoryDef, vnStore->VNForHandle(ssize_t(blk), 0), phiAppVN);
+                }
+            }
+            GetMemoryPerSsaData(blk->bbMemorySsaNumIn[memoryKind])->m_vnPair.SetLiberal(newMemoryVN);
+            fgCurMemoryVN[memoryKind] = newMemoryVN;
+            if ((memoryKind == GcHeap) && byrefStatesMatchGcHeapStates)
+            {
+                // Keep the CurMemoryVNs in sync
+                fgCurMemoryVN[ByrefExposed] = newMemoryVN;
             }
         }
-        GetMemoryPerSsaData(blk->bbMemorySsaNumIn[GcHeap])->m_vnPair.SetLiberal(newGcHeapVN);
-        fgCurMemoryVN[GcHeap] = newGcHeapVN;
-    }
 #ifdef DEBUG
-    if (verbose)
-    {
-        printf("The SSA definition for GcHeap (#%d) at start of BB%02u is ", blk->bbMemorySsaNumIn[GcHeap], blk->bbNum);
-        vnPrint(fgCurMemoryVN[GcHeap], 1);
-        printf("\n");
-    }
+        if (verbose)
+        {
+            printf("The SSA definition for %s (#%d) at start of BB%02u is ", memoryKindNames[memoryKind],
+                   blk->bbMemorySsaNumIn[memoryKind], blk->bbNum);
+            vnPrint(fgCurMemoryVN[memoryKind], 1);
+            printf("\n");
+        }
 #endif // DEBUG
+    }
 
     // Now iterate over the remaining statements, and their trees.
     for (GenTreePtr stmt = firstNonPhi; stmt != nullptr; stmt = stmt->gtNext)
@@ -4591,9 +4620,22 @@ void Compiler::fgValueNumberBlock(BasicBlock* blk)
 #endif
     }
 
-    if (blk->bbMemorySsaNumOut[GcHeap] != blk->bbMemorySsaNumIn[GcHeap])
+    for (MemoryKind memoryKind : allMemoryKinds())
     {
-        GetMemoryPerSsaData(blk->bbMemorySsaNumOut[GcHeap])->m_vnPair.SetLiberal(fgCurMemoryVN[GcHeap]);
+        if ((memoryKind == GcHeap) && byrefStatesMatchGcHeapStates)
+        {
+            // The update to the shared SSA data will have already happened for ByrefExposed.
+            assert(memoryKind > ByrefExposed);
+            assert(blk->bbMemorySsaNumOut[memoryKind] == blk->bbMemorySsaNumOut[ByrefExposed]);
+            assert(GetMemoryPerSsaData(blk->bbMemorySsaNumOut[memoryKind])->m_vnPair.GetLiberal() ==
+                   fgCurMemoryVN[memoryKind]);
+            continue;
+        }
+
+        if (blk->bbMemorySsaNumOut[memoryKind] != blk->bbMemorySsaNumIn[memoryKind])
+        {
+            GetMemoryPerSsaData(blk->bbMemorySsaNumOut[memoryKind])->m_vnPair.SetLiberal(fgCurMemoryVN[memoryKind]);
+        }
     }
 
     compCurBB = nullptr;
@@ -4776,11 +4818,33 @@ void Compiler::fgMutateGcHeap(GenTreePtr tree DEBUGARG(const char* msg))
     recordGcHeapStore(tree, vnStore->VNForExpr(compCurBB, TYP_REF) DEBUGARG(msg));
 }
 
+void Compiler::fgMutateAddressExposedLocal(GenTreePtr tree DEBUGARG(const char* msg))
+{
+    // Update the current ByrefExposed VN, and if we're tracking the heap SSA # caused by this node, record it.
+    recordAddressExposedLocalStore(tree, vnStore->VNForExpr(compCurBB) DEBUGARG(msg));
+}
+
 void Compiler::recordGcHeapStore(GenTreePtr curTree, ValueNum gcHeapVN DEBUGARG(const char* msg))
 {
     // bbMemoryDef must include GcHeap for any block that mutates the GC Heap
-    assert((compCurBB->bbMemoryDef & memoryKindSet(GcHeap)) != 0);
+    // and GC Heap mutations are also ByrefExposed mutations
+    assert((compCurBB->bbMemoryDef & memoryKindSet(GcHeap, ByrefExposed)) == memoryKindSet(GcHeap, ByrefExposed));
     fgCurMemoryVN[GcHeap] = gcHeapVN;
+
+    if (byrefStatesMatchGcHeapStates)
+    {
+        // Since GcHeap and ByrefExposed share SSA nodes, they need to share
+        // value numbers too.
+        fgCurMemoryVN[ByrefExposed] = gcHeapVN;
+    }
+    else
+    {
+        // GcHeap and ByrefExposed have different defnums and VNs.  We conservatively
+        // assume that this GcHeap store may alias any byref load/store, so don't
+        // bother trying to record the map/select stuff, and instead just an opaque VN
+        // for ByrefExposed
+        fgCurMemoryVN[ByrefExposed] = vnStore->VNForExpr(compCurBB);
+    }
 
 #ifdef DEBUG
     if (verbose)
@@ -4791,7 +4855,31 @@ void Compiler::recordGcHeapStore(GenTreePtr curTree, ValueNum gcHeapVN DEBUGARG(
     }
 #endif // DEBUG
 
+    // If byrefStatesMatchGcHeapStates is true, then since GcHeap and ByrefExposed share
+    // their SSA map entries, the below will effectively update both.
     fgValueNumberRecordMemorySsa(GcHeap, curTree);
+}
+
+void Compiler::recordAddressExposedLocalStore(GenTreePtr curTree, ValueNum memoryVN DEBUGARG(const char* msg))
+{
+    // This should only happen if GcHeap and ByrefExposed are being tracked separately;
+    // otherwise we'd go through recordGcHeapStore.
+    assert(!byrefStatesMatchGcHeapStates);
+
+    // bbMemoryDef must include ByrefExposed for any block that mutates an address-exposed local
+    assert((compCurBB->bbMemoryDef & memoryKindSet(ByrefExposed)) != 0);
+    fgCurMemoryVN[ByrefExposed] = memoryVN;
+
+#ifdef DEBUG
+    if (verbose)
+    {
+        printf("  fgCurMemoryVN[ByrefExposed] assigned by %s at ", msg);
+        Compiler::printTreeID(curTree);
+        printf(" to VN: " STR_VN "%x.\n", memoryVN);
+    }
+#endif // DEBUG
+
+    fgValueNumberRecordMemorySsa(ByrefExposed, curTree);
 }
 
 void Compiler::fgValueNumberRecordMemorySsa(MemoryKind memoryKind, GenTreePtr tree)
@@ -4931,6 +5019,9 @@ void Compiler::fgValueNumberBlockAssignment(GenTreePtr tree, bool evalAsgLhsInd)
             // SSA names in which to store VN's on defs.  We'll yield unique VN's when we read from them.
             if (!fgExcludeFromSsa(lclNum))
             {
+                // Should not have been recorded as updating ByrefExposed.
+                assert(!GetMemorySsaMap(ByrefExposed)->Lookup(tree, &memorySsaNum));
+
                 unsigned lclDefSsaNum = GetSsaNumForLocalVarDef(lclVarTree);
 
                 ValueNum   initBlkVN = ValueNumStore::NoVN;
@@ -4961,10 +5052,14 @@ void Compiler::fgValueNumberBlockAssignment(GenTreePtr tree, bool evalAsgLhsInd)
                 }
 #endif // DEBUG
             }
+            else if (lvaVarAddrExposed(lclVarTree->gtLclNum))
+            {
+                fgMutateAddressExposedLocal(tree DEBUGARG("INITBLK - address-exposed local"));
+            }
         }
         else
         {
-            // For now, arbitrary side effect on GcHeap.
+            // For now, arbitrary side effect on GcHeap/ByrefExposed.
             // TODO-CQ: Why not be complete, and get this case right?
             fgMutateGcHeap(tree DEBUGARG("INITBLK - non local"));
         }
@@ -4992,6 +5087,9 @@ void Compiler::fgValueNumberBlockAssignment(GenTreePtr tree, bool evalAsgLhsInd)
             // If it's excluded from SSA, don't need to do anything.
             if (!fgExcludeFromSsa(lhsLclNum))
             {
+                // Should not have been recorded as updating ByrefExposed.
+                assert(!GetMemorySsaMap(ByrefExposed)->Lookup(tree, &memorySsaNum));
+
                 unsigned lclDefSsaNum = GetSsaNumForLocalVarDef(lclVarTree);
 
                 if (lhs->IsLocalExpr(this, &lclVarTree, &lhsFldSeq) ||
@@ -5102,7 +5200,7 @@ void Compiler::fgValueNumberBlockAssignment(GenTreePtr tree, bool evalAsgLhsInd)
 
                             if (fldSeqForStaticVar != FieldSeqStore::NotAField())
                             {
-                                // We model statics as indices into the GcHeap.
+                                // We model statics as indices into GcHeap (which is a subset of ByrefExposed).
                                 ValueNum selectedStaticVar;
                                 size_t   structSize = 0;
                                 selectedStaticVar   = vnStore->VNApplySelectors(VNK_Liberal, fgCurMemoryVN[GcHeap],
@@ -5182,10 +5280,14 @@ void Compiler::fgValueNumberBlockAssignment(GenTreePtr tree, bool evalAsgLhsInd)
                 }
 #endif // DEBUG
             }
+            else if (lvaVarAddrExposed(lhsLclNum))
+            {
+                fgMutateAddressExposedLocal(tree DEBUGARG("COPYBLK - address-exposed local"));
+            }
         }
         else
         {
-            // For now, arbitrary side effect on GcHeap.
+            // For now, arbitrary side effect on GcHeap/ByrefExposed.
             // TODO-CQ: Why not be complete, and get this case right?
             fgMutateGcHeap(tree DEBUGARG("COPYBLK - non local"));
         }
@@ -5243,8 +5345,22 @@ void Compiler::fgValueNumberTree(GenTreePtr tree, bool evalAsgLhsInd)
 
                     if (lcl->gtSsaNum == SsaConfig::RESERVED_SSA_NUM)
                     {
-                        // Not an SSA variable.  Assign each occurrence a new, unique, VN.
-                        lcl->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, lcl->TypeGet()));
+                        // Not an SSA variable.
+
+                        if (lvaVarAddrExposed(lclNum))
+                        {
+                            // Address-exposed locals are part of ByrefExposed.
+                            ValueNum addrVN = vnStore->VNForFunc(TYP_BYREF, VNF_PtrToLoc, vnStore->VNForIntCon(lclNum),
+                                                                 vnStore->VNForFieldSeq(nullptr));
+                            ValueNum loadVN = fgValueNumberByrefExposedLoad(typ, addrVN);
+
+                            lcl->gtVNPair.SetBoth(loadVN);
+                        }
+                        else
+                        {
+                            // Assign odd cases a new, unique, VN.
+                            lcl->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, lcl->TypeGet()));
+                        }
                     }
                     else
                     {
@@ -5386,11 +5502,11 @@ void Compiler::fgValueNumberTree(GenTreePtr tree, bool evalAsgLhsInd)
 
                     if (isVolatile)
                     {
-                        // For Volatile indirection, first mutate GcHeap
+                        // For Volatile indirection, first mutate GcHeap/ByrefExposed
                         fgMutateGcHeap(tree DEBUGARG("GTF_FLD_VOLATILE - read"));
                     }
 
-                    // We just mutate GcHeap if isVolatile is true, and then do the read as normal.
+                    // We just mutate GcHeap/ByrefExposed if isVolatile is true, and then do the read as normal.
                     //
                     // This allows:
                     //   1: read s;
@@ -5419,7 +5535,7 @@ void Compiler::fgValueNumberTree(GenTreePtr tree, bool evalAsgLhsInd)
                     else
                     {
                         // This is a reference to heap memory.
-                        // We model statics as indices into the GC heap variable.
+                        // We model statics as indices into GcHeap (which is a subset of ByrefExposed).
 
                         FieldSeqNode* fldSeqForStaticVar =
                             GetFieldSeqStore()->CreateSingleton(tree->gtClsVar.gtClsVarHnd);
@@ -5449,7 +5565,7 @@ void Compiler::fgValueNumberTree(GenTreePtr tree, bool evalAsgLhsInd)
                 break;
 
             case GT_MEMORYBARRIER: // Leaf
-                // For MEMORYBARRIER add an arbitrary side effect on GcHeap.
+                // For MEMORYBARRIER add an arbitrary side effect on GcHeap/ByrefExposed.
                 fgMutateGcHeap(tree DEBUGARG("MEMORYBARRIER"));
                 break;
 
@@ -5592,6 +5708,9 @@ void Compiler::fgValueNumberTree(GenTreePtr tree, bool evalAsgLhsInd)
 
                     if (lclDefSsaNum != SsaConfig::RESERVED_SSA_NUM)
                     {
+                        // Should not have been recorded as updating ByrefExposed mem.
+                        assert(!GetMemorySsaMap(ByrefExposed)->Lookup(tree, &memorySsaNum));
+
                         assert(rhsVNPair.GetLiberal() != ValueNumStore::NoVN);
 
                         lhs->gtVNPair                                                 = rhsVNPair;
@@ -5611,6 +5730,16 @@ void Compiler::fgValueNumberTree(GenTreePtr tree, bool evalAsgLhsInd)
                         }
 #endif // DEBUG
                     }
+                    else if (lvaVarAddrExposed(lcl->gtLclNum))
+                    {
+                        // We could use MapStore here and MapSelect on reads of address-exposed locals
+                        // (using the local nums as selectors) to get e.g. propagation of values
+                        // through address-taken locals in regions of code with no calls or byref
+                        // writes.
+                        // For now, just use a new opaque VN.
+                        ValueNum heapVN = vnStore->VNForExpr(compCurBB);
+                        recordAddressExposedLocalStore(tree, heapVN DEBUGARG("local assign"));
+                    }
 #ifdef DEBUG
                     else
                     {
@@ -5618,7 +5747,8 @@ void Compiler::fgValueNumberTree(GenTreePtr tree, bool evalAsgLhsInd)
                         {
                             JITDUMP("Tree ");
                             Compiler::printTreeID(tree);
-                            printf(" assigns to local var V%02u; excluded from SSA, so value not tracked.\n",
+                            printf(" assigns to non-address-taken local var V%02u; excluded from SSA, so value not "
+                                   "tracked.\n",
                                    lcl->GetLclNum());
                         }
                     }
@@ -5684,6 +5814,15 @@ void Compiler::fgValueNumberTree(GenTreePtr tree, bool evalAsgLhsInd)
                         }
 #endif // DEBUG
                     }
+                    else if (lvaVarAddrExposed(lclFld->gtLclNum))
+                    {
+                        // This side-effects ByrefExposed.  Just use a new opaque VN.
+                        // As with GT_LCL_VAR, we could probably use MapStore here and MapSelect at corresponding
+                        // loads, but to do so would have to identify the subset of address-exposed locals
+                        // whose fields can be disambiguated.
+                        ValueNum heapVN = vnStore->VNForExpr(compCurBB);
+                        recordAddressExposedLocalStore(tree, heapVN DEBUGARG("local field assign"));
+                    }
                 }
                 break;
 
@@ -5698,7 +5837,7 @@ void Compiler::fgValueNumberTree(GenTreePtr tree, bool evalAsgLhsInd)
 
                     if (isVolatile)
                     {
-                        // For Volatile store indirection, first mutate GcHeap
+                        // For Volatile store indirection, first mutate GcHeap/ByrefExposed
                         fgMutateGcHeap(lhs DEBUGARG("GTF_IND_VOLATILE - store"));
                         tree->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, lhs->TypeGet()));
                     }
@@ -5816,6 +5955,17 @@ void Compiler::fgValueNumberTree(GenTreePtr tree, bool evalAsgLhsInd)
                                     printf("\n");
                                 }
 #endif // DEBUG
+                            }
+                            else if (lvaVarAddrExposed(lclNum))
+                            {
+                                // Need to record the effect on ByrefExposed.
+                                // We could use MapStore here and MapSelect on reads of address-exposed locals
+                                // (using the local nums as selectors) to get e.g. propagation of values
+                                // through address-taken locals in regions of code with no calls or byref
+                                // writes.
+                                // For now, just use a new opaque VN.
+                                ValueNum heapVN = vnStore->VNForExpr(compCurBB);
+                                recordAddressExposedLocalStore(tree, heapVN DEBUGARG("PtrToLoc indir"));
                             }
                         }
                     }
@@ -6010,10 +6160,30 @@ void Compiler::fgValueNumberTree(GenTreePtr tree, bool evalAsgLhsInd)
                         }
                         else
                         {
-                            GenTreeLclVarCommon* dummyLclVarTree = nullptr;
-                            if (!tree->DefinesLocal(this, &dummyLclVarTree))
+                            GenTreeLclVarCommon* lclVarTree = nullptr;
+                            bool                 isLocal    = tree->DefinesLocal(this, &lclVarTree);
+
+                            if (isLocal && lvaVarAddrExposed(lclVarTree->gtLclNum))
                             {
-                                // If it doesn't define a local, then it might update GcHeap.
+                                // Store to address-exposed local; need to record the effect on ByrefExposed.
+                                // We could use MapStore here and MapSelect on reads of address-exposed locals
+                                // (using the local nums as selectors) to get e.g. propagation of values
+                                // through address-taken locals in regions of code with no calls or byref
+                                // writes.
+                                // For now, just use a new opaque VN.
+                                ValueNum memoryVN = vnStore->VNForExpr(compCurBB);
+                                recordAddressExposedLocalStore(tree, memoryVN DEBUGARG("PtrToLoc indir"));
+                            }
+                            else if (!isLocal)
+                            {
+                                // If it doesn't define a local, then it might update GcHeap/ByrefExposed.
+                                // For the new ByrefExposed VN, we could use an operator here like
+                                // VNF_ByrefExposedStore that carries the VNs of the pointer and RHS, then
+                                // at byref loads if the current ByrefExposed VN happens to be
+                                // VNF_ByrefExposedStore with the same pointer VN, we could propagate the
+                                // VN from the RHS to the VN for the load.  This would e.g. allow tracking
+                                // values through assignments to out params.  For now, just model this
+                                // as an opaque GcHeap/ByrefExposed mutation.
                                 fgMutateGcHeap(tree DEBUGARG("assign-of-IND"));
                             }
                         }
@@ -6030,11 +6200,11 @@ void Compiler::fgValueNumberTree(GenTreePtr tree, bool evalAsgLhsInd)
 
                     if (isVolatile)
                     {
-                        // For Volatile store indirection, first mutate GcHeap
+                        // For Volatile store indirection, first mutate GcHeap/ByrefExposed
                         fgMutateGcHeap(lhs DEBUGARG("GTF_CLS_VAR - store")); // always change fgCurMemoryVN
                     }
 
-                    // We model statics as indices into the GC heap variable.
+                    // We model statics as indices into GcHeap (which is a subset of ByrefExposed).
                     FieldSeqNode* fldSeqForStaticVar = GetFieldSeqStore()->CreateSingleton(lhs->gtClsVar.gtClsVarHnd);
                     assert(fldSeqForStaticVar != FieldSeqStore::NotAField());
 
@@ -6062,7 +6232,7 @@ void Compiler::fgValueNumberTree(GenTreePtr tree, bool evalAsgLhsInd)
                 default:
                     assert(!"Unknown node for lhs of assignment!");
 
-                    // For Unknown stores, mutate GcHeap
+                    // For Unknown stores, mutate GcHeap/ByrefExposed
                     fgMutateGcHeap(lhs DEBUGARG("Unkwown Assignment - store")); // always change fgCurMemoryVN
                     break;
             }
@@ -6144,7 +6314,9 @@ void Compiler::fgValueNumberTree(GenTreePtr tree, bool evalAsgLhsInd)
         else if ((oper == GT_IND) || GenTree::OperIsBlk(oper))
         {
             // So far, we handle cases in which the address is a ptr-to-local, or if it's
-            // a pointer to an object field.
+            // a pointer to an object field or array alement.  Other cases become uses of
+            // the current ByrefExposed value and the pointer value, so that at least we
+            // can recognize redundant loads with no stores between them.
             GenTreePtr           addr         = tree->AsIndir()->Addr();
             GenTreeLclVarCommon* lclVarTree   = nullptr;
             FieldSeqNode*        fldSeq1      = nullptr;
@@ -6171,7 +6343,7 @@ void Compiler::fgValueNumberTree(GenTreePtr tree, bool evalAsgLhsInd)
             }
             else if (isVolatile)
             {
-                // For Volatile indirection, mutate GcHeap
+                // For Volatile indirection, mutate GcHeap/ByrefExposed
                 fgMutateGcHeap(tree DEBUGARG("GTF_IND_VOLATILE - read"));
 
                 // The value read by the GT_IND can immediately change
@@ -6320,7 +6492,7 @@ void Compiler::fgValueNumberTree(GenTreePtr tree, bool evalAsgLhsInd)
                     if (fldSeqForStaticVar != FieldSeqStore::NotAField())
                     {
                         ValueNum selectedStaticVar;
-                        // We model statics as indices into the GC heap variable.
+                        // We model statics as indices into the GcHeap (which is a subset of ByrefExposed).
                         size_t structSize = 0;
                         selectedStaticVar = vnStore->VNApplySelectors(VNK_Liberal, fgCurMemoryVN[GcHeap],
                                                                       fldSeqForStaticVar, &structSize);
@@ -6411,9 +6583,12 @@ void Compiler::fgValueNumberTree(GenTreePtr tree, bool evalAsgLhsInd)
                         tree->gtVNPair = vnStore->VNPWithExc(tree->gtVNPair, addrXvnp);
                     }
                 }
-                else // We don't know where the address points.
+                else // We don't know where the address points, so it is an ByrefExposed load.
                 {
-                    tree->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, tree->TypeGet()));
+                    ValueNum addrVN = addr->gtVNPair.GetLiberal();
+                    ValueNum loadVN = fgValueNumberByrefExposedLoad(typ, addrVN);
+                    tree->gtVNPair.SetLiberal(loadVN);
+                    tree->gtVNPair.SetConservative(vnStore->VNForExpr(compCurBB, tree->TypeGet()));
                     tree->gtVNPair = vnStore->VNPWithExc(tree->gtVNPair, addrXvnp);
                 }
             }
@@ -6563,7 +6738,7 @@ void Compiler::fgValueNumberTree(GenTreePtr tree, bool evalAsgLhsInd)
                 case GT_LOCKADD: // Binop
                 case GT_XADD:    // Binop
                 case GT_XCHG:    // Binop
-                    // For CMPXCHG and other intrinsics add an arbitrary side effect on GcHeap.
+                    // For CMPXCHG and other intrinsics add an arbitrary side effect on GcHeap/ByrefExposed.
                     fgMutateGcHeap(tree DEBUGARG("Interlocked intrinsic"));
                     tree->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, tree->TypeGet()));
                     break;
@@ -6610,7 +6785,7 @@ void Compiler::fgValueNumberTree(GenTreePtr tree, bool evalAsgLhsInd)
             break;
 
             case GT_CMPXCHG: // Specialop
-                // For CMPXCHG and other intrinsics add an arbitrary side effect on GcHeap.
+                // For CMPXCHG and other intrinsics add an arbitrary side effect on GcHeap/ByrefExposed.
                 fgMutateGcHeap(tree DEBUGARG("Interlocked intrinsic"));
                 tree->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, tree->TypeGet()));
                 break;
@@ -7045,7 +7220,7 @@ void Compiler::fgValueNumberCall(GenTreeCall* call)
 
         if (modHeap)
         {
-            // For now, arbitrary side effect on GcHeap.
+            // For now, arbitrary side effect on GcHeap/ByrefExposed.
             fgMutateGcHeap(call DEBUGARG("HELPER - modifies heap"));
         }
     }
@@ -7060,7 +7235,7 @@ void Compiler::fgValueNumberCall(GenTreeCall* call)
             call->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, call->TypeGet()));
         }
 
-        // For now, arbitrary side effect on GcHeap.
+        // For now, arbitrary side effect on GcHeap/ByrefExposed.
         fgMutateGcHeap(call DEBUGARG("CALL"));
     }
 }
