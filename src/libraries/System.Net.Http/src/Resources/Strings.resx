@@ -276,6 +276,9 @@
   <data name="net_http_invalid_proxy" xml:space="preserve">
     <value>When using WindowsProxyUsePolicy.UseCustomProxy, the Proxy property must not be null.</value>
   </data>
+  <data name="net_http_handler_nocontentlength" xml:space="preserve">
+    <value>The content length of the request content can't be determined. Either set TransferEncodingChunked to true, load content into buffer, or set AllowRequestContentBuffering to true.</value>
+  </data>
   <data name="net_http_value_must_be_greater_than" xml:space="preserve">
     <value>The specified value must be greater than {0}.</value>
   </data>

@@ -41,7 +41,7 @@ namespace System.DirectoryServices.Design
                 if (text.Length == 0)
                     return null;
 
-                if (text.CompareTo(Res.GetString(Res.DSNotSet)) != 0)
+                if (text.CompareTo(SR.DSNotSet) != 0)
                 {
                     DirectoryEntry newEntry = GetFromCache(text);
                     if (newEntry == null)
@@ -68,7 +68,7 @@ namespace System.DirectoryServices.Design
                 if (value != null)
                     return ((DirectoryEntry)value).Path;
                 else
-                    return Res.GetString(Res.DSNotSet);
+                    return SR.DSNotSet;
             }
 
             return base.ConvertTo(context, culture, value, destinationType);

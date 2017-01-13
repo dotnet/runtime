@@ -11,7 +11,6 @@ namespace System.DirectoryServices.ActiveDirectory
     using System.Diagnostics;
     using System.Security.Permissions;
 
-    [DirectoryServicesPermission(SecurityAction.LinkDemand, Unrestricted = true)]
     public abstract class DirectoryServer : IDisposable
     {
         private bool _disposed = false;
@@ -101,7 +100,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             if (siteName.Length == 0)
             {
-                throw new ArgumentException(Res.GetString(Res.EmptyStringParameter), "siteName");
+                throw new ArgumentException(SR.EmptyStringParameter, "siteName");
             }
 
             // the dc is really being moved to a different site 
@@ -173,64 +172,24 @@ namespace System.DirectoryServices.ActiveDirectory
 
         #region abstract public methods
 
-        [
-            DirectoryServicesPermission(SecurityAction.LinkDemand, Unrestricted = true),
-            DirectoryServicesPermission(SecurityAction.InheritanceDemand, Unrestricted = true)
-        ]
         public abstract void CheckReplicationConsistency();
 
-        [
-            DirectoryServicesPermission(SecurityAction.LinkDemand, Unrestricted = true),
-            DirectoryServicesPermission(SecurityAction.InheritanceDemand, Unrestricted = true)
-        ]
         public abstract ReplicationCursorCollection GetReplicationCursors(string partition);
 
-        [
-            DirectoryServicesPermission(SecurityAction.LinkDemand, Unrestricted = true),
-            DirectoryServicesPermission(SecurityAction.InheritanceDemand, Unrestricted = true)
-        ]
         public abstract ReplicationOperationInformation GetReplicationOperationInformation();
 
-        [
-            DirectoryServicesPermission(SecurityAction.LinkDemand, Unrestricted = true),
-            DirectoryServicesPermission(SecurityAction.InheritanceDemand, Unrestricted = true)
-        ]
         public abstract ReplicationNeighborCollection GetReplicationNeighbors(string partition);
 
-        [
-            DirectoryServicesPermission(SecurityAction.LinkDemand, Unrestricted = true),
-            DirectoryServicesPermission(SecurityAction.InheritanceDemand, Unrestricted = true)
-        ]
         public abstract ReplicationNeighborCollection GetAllReplicationNeighbors();
 
-        [
-            DirectoryServicesPermission(SecurityAction.LinkDemand, Unrestricted = true),
-            DirectoryServicesPermission(SecurityAction.InheritanceDemand, Unrestricted = true)
-        ]
         public abstract ReplicationFailureCollection GetReplicationConnectionFailures();
 
-        [
-            DirectoryServicesPermission(SecurityAction.LinkDemand, Unrestricted = true),
-            DirectoryServicesPermission(SecurityAction.InheritanceDemand, Unrestricted = true)
-        ]
         public abstract ActiveDirectoryReplicationMetadata GetReplicationMetadata(string objectPath);
 
-        [
-            DirectoryServicesPermission(SecurityAction.LinkDemand, Unrestricted = true),
-            DirectoryServicesPermission(SecurityAction.InheritanceDemand, Unrestricted = true)
-        ]
         public abstract void SyncReplicaFromServer(string partition, string sourceServer);
 
-        [
-            DirectoryServicesPermission(SecurityAction.LinkDemand, Unrestricted = true),
-            DirectoryServicesPermission(SecurityAction.InheritanceDemand, Unrestricted = true)
-        ]
         public abstract void TriggerSyncReplicaFromNeighbors(string partition);
 
-        [
-            DirectoryServicesPermission(SecurityAction.LinkDemand, Unrestricted = true),
-            DirectoryServicesPermission(SecurityAction.InheritanceDemand, Unrestricted = true)
-        ]
         public abstract void SyncReplicaFromAllServers(string partition, SyncFromAllServersOptions options);
 
         #endregion abstract public methods
@@ -264,50 +223,26 @@ namespace System.DirectoryServices.ActiveDirectory
         #region abstract public properties
         public abstract string IPAddress
         {
-            [
-                  DirectoryServicesPermission(SecurityAction.LinkDemand, Unrestricted = true),
-                  DirectoryServicesPermission(SecurityAction.InheritanceDemand, Unrestricted = true)
-              ]
             get;
         }
         public abstract String SiteName
         {
-            [
-                DirectoryServicesPermission(SecurityAction.LinkDemand, Unrestricted = true),
-                DirectoryServicesPermission(SecurityAction.InheritanceDemand, Unrestricted = true)
-            ]
             get;
         }
 
         public abstract SyncUpdateCallback SyncFromAllServersCallback
         {
-            [
-                DirectoryServicesPermission(SecurityAction.LinkDemand, Unrestricted = true),
-                DirectoryServicesPermission(SecurityAction.InheritanceDemand, Unrestricted = true)
-            ]
             get;
 
-            [
-                DirectoryServicesPermission(SecurityAction.LinkDemand, Unrestricted = true),
-                DirectoryServicesPermission(SecurityAction.InheritanceDemand, Unrestricted = true)
-            ]
             set;
         }
         public abstract ReplicationConnectionCollection InboundConnections
         {
-            [
-                DirectoryServicesPermission(SecurityAction.LinkDemand, Unrestricted = true),
-                DirectoryServicesPermission(SecurityAction.InheritanceDemand, Unrestricted = true)
-            ]
             get;
         }
 
         public abstract ReplicationConnectionCollection OutboundConnections
         {
-            [
-                DirectoryServicesPermission(SecurityAction.LinkDemand, Unrestricted = true),
-                DirectoryServicesPermission(SecurityAction.InheritanceDemand, Unrestricted = true)
-            ]
             get;
         }
 
@@ -471,16 +406,16 @@ namespace System.DirectoryServices.ActiveDirectory
                         {
                             if (e.ErrorCode == unchecked((int)0x80072020) |          // dir_error on server side                                            
                                    e.ErrorCode == unchecked((int)0x80072030))           // object not exists
-                                throw new ArgumentException(Res.GetString(Res.DSNoObject), "objectPath");
+                                throw new ArgumentException(SR.DSNoObject, "objectPath");
                             else if (e.ErrorCode == unchecked((int)0x80005000) |          // bad path name
                                    e.ErrorCode == unchecked((int)0x80072032)) // ERROR_DS_INVALID_DN_SYNTAX
-                                throw new ArgumentException(Res.GetString(Res.DSInvalidPath), "objectPath");
+                                throw new ArgumentException(SR.DSInvalidPath, "objectPath");
                         }
                     }
                     else
                     {
                         if (!Partitions.Contains(partition))
-                            throw new ArgumentException(Res.GetString(Res.ServerNotAReplica), "partition");
+                            throw new ArgumentException(SR.ServerNotAReplica, "partition");
                     }
                 }
 
@@ -738,7 +673,7 @@ namespace System.DirectoryServices.ActiveDirectory
             IntPtr errorInfo = (IntPtr)0;
 
             if (!Partitions.Contains(partition))
-                throw new ArgumentException(Res.GetString(Res.ServerNotAReplica), "partition");
+                throw new ArgumentException(SR.ServerNotAReplica, "partition");
 
             // we want to return the dn instead of DNS guid
             // call DsReplicaSyncAllW
@@ -835,7 +770,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 if (result != 0)
                 {
                     if (!Partitions.Contains(partition))
-                        throw new ArgumentException(Res.GetString(Res.ServerNotAReplica), "partition");
+                        throw new ArgumentException(SR.ServerNotAReplica, "partition");
 
                     string serverDownName = null;
                     // this is the error returned when the server that we want to sync from is down

@@ -182,8 +182,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         // State 3: Called Decode()
         //
 
-        [Fact]
-        public static void PostDecode_Encode()
+        public static void PostDecode_Encode(bool isRunningOnDesktop)
         {
             byte[] encodedMessage =
                 ("3082010c06092a864886f70d010703a081fe3081fb0201003181c83081c5020100302e301a311830160603550403130f5253"
@@ -197,13 +196,27 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
             ecms.Decode(encodedMessage);
 
             // This should really have thrown an InvalidOperationException. Instead, you get... something back.
-            byte[] expectedGarbage = "35edc437e31d0b70".HexToByteArray();
+            string expectedString = isRunningOnDesktop ? "35edc437e31d0b70000000000000" : "35edc437e31d0b70";
+            byte[] expectedGarbage = expectedString.HexToByteArray();
             byte[] garbage = ecms.Encode();
-            AssertEncryptedContentEqual(expectedGarbage, garbage);
+            Assert.Equal(expectedGarbage, garbage);
         }
 
         [Fact]
-        public static void PostDecode_ContentInfo()
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Netcoreapp | TargetFrameworkMonikers.NetcoreUwp)]
+        public static void PostDecode_Encode_net46()
+        {
+            PostDecode_Encode(isRunningOnDesktop: true);
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        public static void PostDecode_Encode_netcore()
+        {
+            PostDecode_Encode(isRunningOnDesktop: false);
+        }
+
+        public static void PostDecode_ContentInfo(bool isRunningOnDesktop)
         {
             byte[] encodedMessage =
                 ("3082010c06092a864886f70d010703a081fe3081fb0201003181c83081c5020100302e301a311830160603550403130f5253"
@@ -219,8 +232,23 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
             // This gets you the encrypted inner content.
             ContentInfo contentInfo = ecms.ContentInfo;
             Assert.Equal(Oids.Pkcs7Data, contentInfo.ContentType.Value);
-            byte[] expectedGarbage = "35edc437e31d0b70".HexToByteArray();
-            AssertEncryptedContentEqual(expectedGarbage, contentInfo.Content);
+            string expectedString = isRunningOnDesktop ? "35edc437e31d0b70000000000000" : "35edc437e31d0b70";
+            byte[] expectedGarbage = expectedString.HexToByteArray();
+            Assert.Equal(expectedGarbage, contentInfo.Content);
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Netcoreapp | TargetFrameworkMonikers.NetcoreUwp)]
+        public static void PostDecode_ContentInfo_net46()
+        {
+            PostDecode_ContentInfo(isRunningOnDesktop: true);
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        public static void PostDecode_ContentInfo_netcore()
+        {
+            PostDecode_ContentInfo(isRunningOnDesktop: false);
         }
 
         //
@@ -342,17 +370,6 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
                 // after a successful Decrypt() throws a CryptographicException saying "Already decrypted."
                 Assert.ThrowsAny<CryptographicException>(() => ecms.Decrypt(r[1], extraStore));
             }
-        }
-
-        private static void AssertEncryptedContentEqual(byte[] expected, byte[] actual)
-        {
-            if (expected.SequenceEqual(actual))
-                return;
-
-            if (actual.Length > expected.Length && actual.Take(expected.Length).SequenceEqual(expected))
-                throw new Exception("Returned content had extra bytes padded. If you're running this test on the desktop framework, this is a known bug.");
-
-            Assert.Equal<byte>(expected, actual);
         }
     }
 }

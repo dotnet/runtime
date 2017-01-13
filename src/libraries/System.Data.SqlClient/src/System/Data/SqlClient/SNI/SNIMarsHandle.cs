@@ -310,7 +310,7 @@ namespace System.Data.SqlClient.SNI
         /// <summary>
         /// Handle receive error
         /// </summary>
-        public void HandleReceiveError()
+        public void HandleReceiveError(SNIPacket packet)
         {
             lock (_receivedPacketQueue)
             {
@@ -318,7 +318,7 @@ namespace System.Data.SqlClient.SNI
                 _packetEvent.Set();
             }
 
-            ((TdsParserStateObject)_callbackObject).ReadAsyncCallback(null, 1);
+            ((TdsParserStateObject)_callbackObject).ReadAsyncCallback(packet, 1);
         }
 
         /// <summary>

@@ -4,6 +4,7 @@
 
 namespace System.DirectoryServices.Interop
 {
+#pragma warning disable BCL0015 // CoreFxPort
     using System.Runtime.InteropServices;
     using System;
     using System.Security;
@@ -46,7 +47,7 @@ namespace System.DirectoryServices.Interop
             }
             catch (EntryPointNotFoundException)
             {
-                throw new InvalidOperationException(Res.GetString(Res.DSAdsiNotInstalled));
+                throw new InvalidOperationException(SR.DSAdsiNotInstalled);
             }
         }
 

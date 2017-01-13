@@ -11,7 +11,6 @@ namespace System.DirectoryServices.ActiveDirectory
     using System.Diagnostics;
     using System.Security.Permissions;
 
-    [DirectoryServicesPermission(SecurityAction.LinkDemand, Unrestricted = true)]
     public class ActiveDirectorySubnet : IDisposable
     {
         private ActiveDirectorySite _site = null;
@@ -46,7 +45,7 @@ namespace System.DirectoryServices.ActiveDirectory
             catch (ActiveDirectoryObjectNotFoundException)
             {
                 // this is the case where the context is a config set and we could not find an ADAM instance in that config set
-                throw new ActiveDirectoryOperationException(Res.GetString(Res.ADAMInstanceNotFoundInConfigSet, context.Name));
+                throw new ActiveDirectoryOperationException(String.Format(CultureInfo.CurrentCulture, SR.ADAMInstanceNotFoundInConfigSet , context.Name));
             }
 
             try
@@ -61,7 +60,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 if (srchResult == null)
                 {
                     // no such subnet object
-                    Exception e = new ActiveDirectoryObjectNotFoundException(Res.GetString(Res.DSNotFound), typeof(ActiveDirectorySubnet), subnetName);
+                    Exception e = new ActiveDirectoryObjectNotFoundException(SR.DSNotFound, typeof(ActiveDirectorySubnet), subnetName);
                     throw e;
                 }
                 else
@@ -99,7 +98,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 if (e.ErrorCode == unchecked((int)0x80072030))
                 {
                     // object is not found since we cannot even find the container in which to search
-                    throw new ActiveDirectoryObjectNotFoundException(Res.GetString(Res.DSNotFound), typeof(ActiveDirectorySubnet), subnetName);
+                    throw new ActiveDirectoryObjectNotFoundException(SR.DSNotFound, typeof(ActiveDirectorySubnet), subnetName);
                 }
                 else
                 {
@@ -145,7 +144,7 @@ namespace System.DirectoryServices.ActiveDirectory
             catch (ActiveDirectoryObjectNotFoundException)
             {
                 // this is the case where the context is a config set and we could not find an ADAM instance in that config set
-                throw new ActiveDirectoryOperationException(Res.GetString(Res.ADAMInstanceNotFoundInConfigSet, context.Name));
+                throw new ActiveDirectoryOperationException(String.Format(CultureInfo.CurrentCulture, SR.ADAMInstanceNotFoundInConfigSet , context.Name));
             }
             finally
             {
@@ -160,7 +159,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new ArgumentNullException("siteName");
 
             if (siteName.Length == 0)
-                throw new ArgumentException(Res.GetString(Res.EmptyStringParameter), "siteName");
+                throw new ArgumentException(SR.EmptyStringParameter, "siteName");
 
             // validate that siteName is valid
             try
@@ -169,7 +168,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             catch (ActiveDirectoryObjectNotFoundException)
             {
-                throw new ArgumentException(Res.GetString(Res.SiteNotExist, siteName), "siteName");
+                throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.SiteNotExist , siteName), "siteName");
             }
         }
 
@@ -188,7 +187,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
                 catch (ActiveDirectoryObjectNotFoundException)
                 {
-                    throw new ArgumentException(Res.GetString(Res.SiteNotExist, siteName), "siteName");
+                    throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.SiteNotExist , siteName), "siteName");
                 }
             }
 
@@ -224,7 +223,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 {
                     // check whether the site exists or not, you can not create a new site and set it to a subnet object with commit change to site object first
                     if (!value.existing)
-                        throw new InvalidOperationException(Res.GetString(Res.SiteNotCommitted, value));
+                        throw new InvalidOperationException(String.Format(CultureInfo.CurrentCulture, SR.SiteNotCommitted , value));
                 }
 
                 _site = value;
@@ -322,7 +321,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             if (!existing)
             {
-                throw new InvalidOperationException(Res.GetString(Res.CannotDelete));
+                throw new InvalidOperationException(SR.CannotDelete);
             }
             else
             {
@@ -352,7 +351,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             if (!existing)
             {
-                throw new InvalidOperationException(Res.GetString(Res.CannotGetObject));
+                throw new InvalidOperationException(SR.CannotGetObject);
             }
             else
             {
@@ -389,7 +388,7 @@ namespace System.DirectoryServices.ActiveDirectory
             // if target is not specified, then we determin the target from the logon credential, so if it is a local user context, it should fail
             if ((context.Name == null) && (!context.isRootDomain()))
             {
-                throw new ArgumentException(Res.GetString(Res.ContextNotAssociatedWithDomain), "context");
+                throw new ArgumentException(SR.ContextNotAssociatedWithDomain, "context");
             }
 
             // more validation for the context, if the target is not null, then it should be either forest name or server name
@@ -397,14 +396,14 @@ namespace System.DirectoryServices.ActiveDirectory
             {
                 // we only allow target to be forest, server name or ADAM config set
                 if (!(context.isRootDomain() || context.isServer() || context.isADAMConfigSet()))
-                    throw new ArgumentException(Res.GetString(Res.NotADOrADAM), "context");
+                    throw new ArgumentException(SR.NotADOrADAM, "context");
             }
 
             if (subnetName == null)
                 throw new ArgumentNullException("subnetName");
 
             if (subnetName.Length == 0)
-                throw new ArgumentException(Res.GetString(Res.EmptyStringParameter), "subnetName");
+                throw new ArgumentException(SR.EmptyStringParameter, "subnetName");
         }
     }
 }

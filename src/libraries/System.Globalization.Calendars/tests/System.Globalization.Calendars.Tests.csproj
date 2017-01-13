@@ -7,8 +7,6 @@
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="CalendarHelpers.cs" />
     <Compile Include="GregorianCalendar\GregorianCalendarCtor.cs" />
@@ -117,15 +115,6 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netstandard'">
     <Compile Include="Misc\Calendars.netstandard.cs" />
-  </ItemGroup>
-  <PropertyGroup Condition="'$(TargetGroup)' == 'net46'">
-    <DefineConstants>$(DefineConstants);net46</DefineConstants>
-  </PropertyGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'net46'">
-    <TargetingPackReference Include="System" />
-    <TargetingPackReference Include="System.Threading.Tasks" />
-    <TargetingPackReference Include="System.Core" />
-    <TargetingPackReference Include="System.Runtime" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

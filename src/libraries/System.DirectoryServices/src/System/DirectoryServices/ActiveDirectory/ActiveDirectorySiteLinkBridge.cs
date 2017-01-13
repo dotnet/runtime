@@ -13,7 +13,6 @@ namespace System.DirectoryServices.ActiveDirectory
     using System.Diagnostics;
     using System.Security.Permissions;
 
-    [DirectoryServicesPermission(SecurityAction.LinkDemand, Unrestricted = true)]
     public class ActiveDirectorySiteLinkBridge : IDisposable
     {
         internal DirectoryContext context = null;
@@ -63,7 +62,7 @@ namespace System.DirectoryServices.ActiveDirectory
             catch (ActiveDirectoryObjectNotFoundException)
             {
                 // this is the case where the context is a config set and we could not find an ADAM instance in that config set
-                throw new ActiveDirectoryOperationException(Res.GetString(Res.ADAMInstanceNotFoundInConfigSet, context.Name));
+                throw new ActiveDirectoryOperationException(String.Format(CultureInfo.CurrentCulture, SR.ADAMInstanceNotFoundInConfigSet , context.Name));
             }
 
             try
@@ -80,7 +79,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     DirectoryEntry tmpDE = DirectoryEntryManager.GetDirectoryEntry(context, WellKnownDN.RootDSE);
                     if (Utils.CheckCapability(tmpDE, Capability.ActiveDirectoryApplicationMode) && transport == ActiveDirectoryTransportType.Smtp)
                     {
-                        throw new NotSupportedException(Res.GetString(Res.NotSupportTransportSMTP));
+                        throw new NotSupportedException(SR.NotSupportTransportSMTP);
                     }
                 }
 
@@ -134,7 +133,7 @@ namespace System.DirectoryServices.ActiveDirectory
             catch (ActiveDirectoryObjectNotFoundException)
             {
                 // this is the case where the context is a config set and we could not find an ADAM instance in that config set
-                throw new ActiveDirectoryOperationException(Res.GetString(Res.ADAMInstanceNotFoundInConfigSet, context.Name));
+                throw new ActiveDirectoryOperationException(String.Format(CultureInfo.CurrentCulture, SR.ADAMInstanceNotFoundInConfigSet , context.Name));
             }
 
             try
@@ -150,7 +149,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 if (srchResult == null)
                 {
                     // no such site link bridge object
-                    Exception e = new ActiveDirectoryObjectNotFoundException(Res.GetString(Res.DSNotFound), typeof(ActiveDirectorySiteLinkBridge), bridgeName);
+                    Exception e = new ActiveDirectoryObjectNotFoundException(SR.DSNotFound, typeof(ActiveDirectorySiteLinkBridge), bridgeName);
                     throw e;
                 }
                 else
@@ -170,12 +169,12 @@ namespace System.DirectoryServices.ActiveDirectory
                     DirectoryEntry tmpDE = DirectoryEntryManager.GetDirectoryEntry(context, WellKnownDN.RootDSE);
                     if (Utils.CheckCapability(tmpDE, Capability.ActiveDirectoryApplicationMode) && transport == ActiveDirectoryTransportType.Smtp)
                     {
-                        throw new NotSupportedException(Res.GetString(Res.NotSupportTransportSMTP));
+                        throw new NotSupportedException(SR.NotSupportTransportSMTP);
                     }
                     else
                     {
                         // object is not found since we cannot even find the container in which to search
-                        throw new ActiveDirectoryObjectNotFoundException(Res.GetString(Res.DSNotFound), typeof(ActiveDirectorySiteLinkBridge), bridgeName);
+                        throw new ActiveDirectoryObjectNotFoundException(SR.DSNotFound, typeof(ActiveDirectorySiteLinkBridge), bridgeName);
                     }
                 }
 
@@ -266,7 +265,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             if (!_existing)
             {
-                throw new InvalidOperationException(Res.GetString(Res.CannotDelete));
+                throw new InvalidOperationException(SR.CannotDelete);
             }
             else
             {
@@ -296,7 +295,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             if (!_existing)
             {
-                throw new InvalidOperationException(Res.GetString(Res.CannotGetObject));
+                throw new InvalidOperationException(SR.CannotGetObject);
             }
             else
             {
@@ -333,21 +332,21 @@ namespace System.DirectoryServices.ActiveDirectory
             // if target is not specified, then we determin the target from the logon credential, so if it is a local user context, it should fail
             if ((context.Name == null) && (!context.isRootDomain()))
             {
-                throw new ArgumentException(Res.GetString(Res.ContextNotAssociatedWithDomain), "context");
+                throw new ArgumentException(SR.ContextNotAssociatedWithDomain, "context");
             }
 
             // more validation for the context, if the target is not null, then it should be either forest name or server name
             if (context.Name != null)
             {
                 if (!(context.isRootDomain() || context.isServer() || context.isADAMConfigSet()))
-                    throw new ArgumentException(Res.GetString(Res.NotADOrADAM), "context");
+                    throw new ArgumentException(SR.NotADOrADAM, "context");
             }
 
             if (bridgeName == null)
                 throw new ArgumentNullException("bridgeName");
 
             if (bridgeName.Length == 0)
-                throw new ArgumentException(Res.GetString(Res.EmptyStringParameter), "bridgeName");
+                throw new ArgumentException(SR.EmptyStringParameter, "bridgeName");
 
             if (transport < ActiveDirectoryTransportType.Rpc || transport > ActiveDirectoryTransportType.Smtp)
                 throw new InvalidEnumArgumentException("value", (int)transport, typeof(ActiveDirectoryTransportType));

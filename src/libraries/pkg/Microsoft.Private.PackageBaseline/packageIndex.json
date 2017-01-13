@@ -518,6 +518,36 @@
       ],
       "BaselineVersion": "4.4.0"
     },
+    "runtime.debian.8-armel.runtime.native.System": {
+      "BaselineVersion": "4.4.0"
+    },
+    "runtime.debian.8-armel.runtime.native.System.IO.Compression": {
+      "BaselineVersion": "4.4.0"
+    },
+    "runtime.debian.8-armel.runtime.native.System.Net.Http": {
+      "BaselineVersion": "4.4.0"
+    },
+    "runtime.debian.8-armel.runtime.native.System.Net.Security": {
+      "BaselineVersion": "4.4.0"
+    },
+    "runtime.debian.8-armel.runtime.native.System.Security.Cryptography": {
+      "BaselineVersion": "4.4.0"
+    },
+    "runtime.tizen.4.0.0-armel.runtime.native.System": {
+      "BaselineVersion": "4.4.0"
+    },
+    "runtime.tizen.4.0.0-armel.runtime.native.System.IO.Compression": {
+      "BaselineVersion": "4.4.0"
+    },
+    "runtime.tizen.4.0.0-armel.runtime.native.System.Net.Http": {
+      "BaselineVersion": "4.4.0"
+    },
+    "runtime.tizen.4.0.0-armel.runtime.native.System.Net.Security": {
+      "BaselineVersion": "4.4.0"
+    },
+    "runtime.tizen.4.0.0-armel.runtime.native.System.Security.Cryptography": {
+      "BaselineVersion": "4.4.0"
+    },
     "runtime.fedora.23-x64.runtime.native.System": {
       "StableVersions": [
         "1.0.1",
@@ -2989,6 +3019,12 @@
       "StableVersions": [
         "4.3.0"
       ],
+      "BaselineVersion": "4.4.0"
+    },
+    "runtime.debian.8-armel.runtime.native.System.Security.Cryptography.OpenSsl": {
+      "BaselineVersion": "4.4.0"
+    },
+    "runtime.tizen.4.0.0-armel.runtime.native.System.Security.Cryptography.OpenSsl": {
       "BaselineVersion": "4.4.0"
     },
     "runtime.fedora.23-x64.runtime.native.System.Security.Cryptography.OpenSsl": {

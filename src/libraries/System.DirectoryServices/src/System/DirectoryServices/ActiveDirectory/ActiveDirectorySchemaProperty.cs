@@ -22,7 +22,6 @@ namespace System.DirectoryServices.ActiveDirectory
         IsTupleIndexed = 32
     }
 
-    [DirectoryServicesPermission(SecurityAction.LinkDemand, Unrestricted = true)]
     public class ActiveDirectorySchemaProperty : IDisposable
     {
         // private variables
@@ -115,7 +114,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             if ((context.Name == null) && (!context.isRootDomain()))
             {
-                throw new ArgumentException(Res.GetString(Res.ContextNotAssociatedWithDomain), "context");
+                throw new ArgumentException(SR.ContextNotAssociatedWithDomain, "context");
             }
 
             if (context.Name != null)
@@ -123,7 +122,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 // the target should be a valid forest name or a server
                 if (!((context.isRootDomain()) || (context.isADAMConfigSet()) || (context.isServer())))
                 {
-                    throw new ArgumentException(Res.GetString(Res.NotADOrADAM), "context");
+                    throw new ArgumentException(SR.NotADOrADAM, "context");
                 }
             }
 
@@ -134,7 +133,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             if (ldapDisplayName.Length == 0)
             {
-                throw new ArgumentException(Res.GetString(Res.EmptyStringParameter), "ldapDisplayName");
+                throw new ArgumentException(SR.EmptyStringParameter, "ldapDisplayName");
             }
 
             _context = new DirectoryContext(context);
@@ -172,7 +171,7 @@ namespace System.DirectoryServices.ActiveDirectory
             {
                 if (e.ErrorCode == unchecked((int)0x80005000))
                 {
-                    throw new ActiveDirectoryObjectNotFoundException(Res.GetString(Res.DSNotFound), typeof(ActiveDirectorySchemaProperty), ldapDisplayName);
+                    throw new ActiveDirectoryObjectNotFoundException(SR.DSNotFound, typeof(ActiveDirectorySchemaProperty), ldapDisplayName);
                 }
                 else
                 {
@@ -182,12 +181,12 @@ namespace System.DirectoryServices.ActiveDirectory
             catch (InvalidCastException)
             {
                 // this means that we found an object but it is not a schema class
-                throw new ActiveDirectoryObjectNotFoundException(Res.GetString(Res.DSNotFound), typeof(ActiveDirectorySchemaProperty), ldapDisplayName);
+                throw new ActiveDirectoryObjectNotFoundException(SR.DSNotFound, typeof(ActiveDirectorySchemaProperty), ldapDisplayName);
             }
             catch (ActiveDirectoryObjectNotFoundException)
             {
                 // this is the case where the context is a config set and we could not find an ADAM instance in that config set
-                throw new ActiveDirectoryOperationException(Res.GetString(Res.ADAMInstanceNotFoundInConfigSet, context.Name));
+                throw new ActiveDirectoryOperationException(String.Format(CultureInfo.CurrentCulture, SR.ADAMInstanceNotFoundInConfigSet , context.Name));
             }
 
             // set the bind flag
@@ -295,7 +294,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             if ((context.Name == null) && (!context.isRootDomain()))
             {
-                throw new ArgumentException(Res.GetString(Res.ContextNotAssociatedWithDomain), "context");
+                throw new ArgumentException(SR.ContextNotAssociatedWithDomain, "context");
             }
 
             if (context.Name != null)
@@ -303,7 +302,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 // the target should be a valid forest name or a server
                 if (!((context.isRootDomain()) || (context.isADAMConfigSet()) || (context.isServer())))
                 {
-                    throw new ArgumentException(Res.GetString(Res.NotADOrADAM), "context");
+                    throw new ArgumentException(SR.NotADOrADAM, "context");
                 }
             }
 
@@ -314,7 +313,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             if (ldapDisplayName.Length == 0)
             {
-                throw new ArgumentException(Res.GetString(Res.EmptyStringParameter), "ldapDisplayName");
+                throw new ArgumentException(SR.EmptyStringParameter, "ldapDisplayName");
             }
 
             //  work with copy of the context
@@ -352,7 +351,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 catch (ActiveDirectoryObjectNotFoundException)
                 {
                     // this is the case where the context is a config set and we could not find an ADAM instance in that config set
-                    throw new ActiveDirectoryOperationException(Res.GetString(Res.ADAMInstanceNotFoundInConfigSet, _context.Name));
+                    throw new ActiveDirectoryOperationException(String.Format(CultureInfo.CurrentCulture, SR.ADAMInstanceNotFoundInConfigSet , _context.Name));
                 }
 
                 // set the ldap display name property
@@ -492,7 +491,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             if (!isBound)
             {
-                throw new InvalidOperationException(Res.GetString(Res.CannotGetObject));
+                throw new InvalidOperationException(SR.CannotGetObject);
             }
 
             GetSchemaPropertyDirectoryEntry();
@@ -534,7 +533,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 CheckIfDisposed();
 
                 if (value != null && value.Length == 0)
-                    throw new ArgumentException(Res.GetString(Res.EmptyStringParameter), "value");
+                    throw new ArgumentException(SR.EmptyStringParameter, "value");
 
                 if (isBound)
                 {
@@ -581,7 +580,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 CheckIfDisposed();
 
                 if (value != null && value.Length == 0)
-                    throw new ArgumentException(Res.GetString(Res.EmptyStringParameter), "value");
+                    throw new ArgumentException(SR.EmptyStringParameter, "value");
 
                 if (isBound)
                 {
@@ -653,7 +652,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 CheckIfDisposed();
 
                 if (value != null && value.Length == 0)
-                    throw new ArgumentException(Res.GetString(Res.EmptyStringParameter), "value");
+                    throw new ArgumentException(SR.EmptyStringParameter, "value");
 
                 if (isBound)
                 {
@@ -1019,7 +1018,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                                 if (linkedProperties.Count != 1)
                                 {
-                                    throw new ActiveDirectoryObjectNotFoundException(Res.GetString(Res.LinkedPropertyNotFound, linkIdToSearch), typeof(ActiveDirectorySchemaProperty), null);
+                                    throw new ActiveDirectoryObjectNotFoundException(String.Format(CultureInfo.CurrentCulture, SR.LinkedPropertyNotFound , linkIdToSearch), typeof(ActiveDirectorySchemaProperty), null);
                                 }
 
                                 _linkedProperty = linkedProperties[0];
@@ -1156,7 +1155,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 {
                     if (mustExist)
                     {
-                        throw new ActiveDirectoryOperationException(Res.GetString(Res.PropertyNotFound, propertyName));
+                        throw new ActiveDirectoryOperationException(String.Format(CultureInfo.CurrentCulture, SR.PropertyNotFound , propertyName));
                     }
                 }
                 else
@@ -1308,7 +1307,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 if (e.ErrorCode == unchecked((int)0x80072030))
                 {
                     // object is not found since we cannot even find the container in which to search
-                    throw new ActiveDirectoryObjectNotFoundException(Res.GetString(Res.DSNotFound), typeof(ActiveDirectorySchemaProperty), name);
+                    throw new ActiveDirectoryObjectNotFoundException(SR.DSNotFound, typeof(ActiveDirectorySchemaProperty), name);
                 }
                 else
                 {
@@ -1318,7 +1317,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             if (propertyValuesFromServer == null)
             {
-                throw new ActiveDirectoryObjectNotFoundException(Res.GetString(Res.DSNotFound), typeof(ActiveDirectorySchemaProperty), name);
+                throw new ActiveDirectoryObjectNotFoundException(SR.DSNotFound, typeof(ActiveDirectorySchemaProperty), name);
             }
 
             return propertyValuesFromServer;
@@ -1424,7 +1423,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     return (ActiveDirectorySyntax)i;
                 }
             }
-            throw new ActiveDirectoryOperationException(Res.GetString(Res.UnknownSyntax, _ldapDisplayName));
+            throw new ActiveDirectoryOperationException(String.Format(CultureInfo.CurrentCulture, SR.UnknownSyntax , _ldapDisplayName));
         }
 
         private void SetSyntax(ActiveDirectorySyntax syntax)

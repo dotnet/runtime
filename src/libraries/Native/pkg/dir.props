@@ -18,6 +18,7 @@
     <Ubuntu1604NativePath Condition="'$(Ubuntu1604NativePath)' == ''">$(LinuxNativePath)</Ubuntu1604NativePath>
     <Ubuntu1610NativePath Condition="'$(Ubuntu1610NativePath)' == ''">$(LinuxNativePath)</Ubuntu1610NativePath>
     <Alpine343NativePath Condition="'$(Alpine343NativePath)' == ''">$(LinuxNativePath)</Alpine343NativePath>
+    <Tizen400NativePath Condition="'$(Tizen400NativePath)' == ''">$(LinuxNativePath)</Tizen400NativePath>
     <SkipPackageFileCheck>true</SkipPackageFileCheck>
   </PropertyGroup>
 </Project>

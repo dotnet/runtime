@@ -36,15 +36,8 @@ namespace System.Globalization.Tests
             new ChineseLunisolarCalendar(),
             new KoreanLunisolarCalendar(),
             new PersianCalendar(),
-#if !net46
-            // desktop has a bug in JapaneseLunisolarCalendar which is fixed in .Net Core.
-            // in case of a new era starts in the middle of a month which means part of the month will belong to one
-            // era and the rest will belong to the new era. When calculating the calendar year number for dates which 
-            // in the rest of the month and exist in the new started era, we should still use the old era info instead 
-            // of the new era info because the rest of the month still belong to the year of last era.
-            // https://github.com/dotnet/coreclr/pull/3662
+
             new JapaneseLunisolarCalendar(),
-#endif // net46             
             new UmAlQuraCalendar()
         };
 
@@ -103,12 +96,22 @@ namespace System.Globalization.Tests
             }
         }
 
-        public static IEnumerable<object[]> Year_Month_Day_Era_TestData(DataType type)
+        public static IEnumerable<object[]> Year_Month_Day_Era_TestData(DataType type, bool ignoreJapaneseLunisolarCalendar)
         {
             int month = 1;
             int day = 1;
             foreach (Calendar calendar in s_calendars)
             {
+                if (ignoreJapaneseLunisolarCalendar && calendar is JapaneseLunisolarCalendar)
+                {
+                    // desktop has a bug in JapaneseLunisolarCalendar which is fixed in .Net Core.
+                    // in case of a new era starts in the middle of a month which means part of the month will belong to one
+                    // era and the rest will belong to the new era. When calculating the calendar year number for dates which 
+                    // in the rest of the month and exist in the new started era, we should still use the old era info instead 
+                    // of the new era info because the rest of the month still belong to the year of last era.
+                    // https://github.com/dotnet/coreclr/pull/3662
+                    continue;
+                }
                 foreach (int era in calendar.Eras)
                 {
                     int year = MaxCalendarYearInEra(calendar, era) - 2;
@@ -161,49 +164,76 @@ namespace System.Globalization.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Year_Month_Day_Era_TestData), DataType.Year)]
+        [MemberData(nameof(Year_Month_Day_Era_TestData), DataType.Year, false)]
         public static void GetDaysInYear_Invalid(Calendar calendar, int year, int month, int day, int era, string exceptionParamName)
         {
             Assert.Throws<ArgumentOutOfRangeException>(exceptionParamName, () => calendar.GetDaysInYear(year, era));
         }
 
         [Theory]
-        [MemberData(nameof(Year_Month_Day_Era_TestData), DataType.Year)]
+        [MemberData(nameof(Year_Month_Day_Era_TestData), DataType.Year, false)]
         public static void GetMonthsInYear_Invalid(Calendar calendar, int year, int month, int day, int era, string exceptionParamName)
         {
             Assert.Throws<ArgumentOutOfRangeException>(exceptionParamName, () => calendar.GetMonthsInYear(year, era));
         }
 
         [Theory]
-        [MemberData(nameof(Year_Month_Day_Era_TestData), DataType.Year | DataType.Month)]
-        public static void GetDaysInMonth_Invalid(Calendar calendar, int year, int month, int day, int era, string exceptionParamName)
+        [MemberData(nameof(Year_Month_Day_Era_TestData), DataType.Year | DataType.Month, true)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Netcoreapp | TargetFrameworkMonikers.NetcoreUwp)]
+        public static void GetDaysInMonth_Invalid_net46(Calendar calendar, int year, int month, int day, int era, string exceptionParamName)
         {
             Assert.Throws<ArgumentOutOfRangeException>(exceptionParamName, () => calendar.GetDaysInMonth(year, month, era));
         }
 
         [Theory]
-        [MemberData(nameof(Year_Month_Day_Era_TestData), DataType.Year | DataType.Month | DataType.Day)]
-        public static void IsLeapDay_Invalid(Calendar calendar, int year, int month, int day, int era, string exceptionParamName)
+        [MemberData(nameof(Year_Month_Day_Era_TestData), DataType.Year | DataType.Month, false)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        public static void GetDaysInMonth_Invalid_netcore(Calendar calendar, int year, int month, int day, int era, string exceptionParamName)
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(exceptionParamName, () => calendar.GetDaysInMonth(year, month, era));
+        }
+
+        [Theory]
+        [MemberData(nameof(Year_Month_Day_Era_TestData), DataType.Year | DataType.Month | DataType.Day, false)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        public static void IsLeapDay_Invalid_netcore(Calendar calendar, int year, int month, int day, int era, string exceptionParamName)
         {
             Assert.Throws<ArgumentOutOfRangeException>(exceptionParamName, () => calendar.IsLeapDay(year, month, day, era));
         }
 
         [Theory]
-        [MemberData(nameof(Year_Month_Day_Era_TestData), DataType.Year | DataType.Month)]
-        public static void IsLeapMonth_Invalid(Calendar calendar, int year, int month, int day, int era, string exceptionParamName)
+        [MemberData(nameof(Year_Month_Day_Era_TestData), DataType.Year | DataType.Month | DataType.Day, true)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Netcoreapp | TargetFrameworkMonikers.NetcoreUwp)]
+        public static void IsLeapDay_Invalid_net46(Calendar calendar, int year, int month, int day, int era, string exceptionParamName)
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(exceptionParamName, () => calendar.IsLeapDay(year, month, day, era));
+        }
+
+        [Theory]
+        [MemberData(nameof(Year_Month_Day_Era_TestData), DataType.Year | DataType.Month, false)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        public static void IsLeapMonth_Invalid_netcore(Calendar calendar, int year, int month, int day, int era, string exceptionParamName)
         {
             Assert.Throws<ArgumentOutOfRangeException>(exceptionParamName, () => calendar.IsLeapMonth(year, month, era));
         }
 
         [Theory]
-        [MemberData(nameof(Year_Month_Day_Era_TestData), DataType.Year)]
+        [MemberData(nameof(Year_Month_Day_Era_TestData), DataType.Year | DataType.Month, true)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Netcoreapp | TargetFrameworkMonikers.NetcoreUwp)]
+        public static void IsLeapMonth_Invalid_net46(Calendar calendar, int year, int month, int day, int era, string exceptionParamName)
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(exceptionParamName, () => calendar.IsLeapMonth(year, month, era));
+        }
+
+        [Theory]
+        [MemberData(nameof(Year_Month_Day_Era_TestData), DataType.Year, false)]
         public static void IsLeapYear_Invalid(Calendar calendar, int year, int month, int day, int era, string exceptionParamName)
         {
             Assert.Throws<ArgumentOutOfRangeException>(exceptionParamName, () => calendar.IsLeapYear(year, era));
         }
 
         [Theory]
-        [MemberData(nameof(Year_Month_Day_Era_TestData), DataType.Year)]
+        [MemberData(nameof(Year_Month_Day_Era_TestData), DataType.Year, false)]
         public static void GetLeapMonth_Invalid(Calendar calendar, int year, int month, int day, int era, string expectedParamName)
         {
             Assert.Throws<ArgumentOutOfRangeException>(expectedParamName, () => calendar.GetLeapMonth(year, era));

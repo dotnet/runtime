@@ -20,7 +20,7 @@ namespace System.IO.Tests
         // to keep the timeout short, as in a successful run we'll end up waiting for
         // the entire timeout specified.
         public const int WaitForExpectedEventTimeout = 500;         // ms to wait for an event to happen
-        public const int LongWaitTimeout = 10000;                   // ms to wait for an event that takes a longer time than the average operation
+        public const int LongWaitTimeout = 50000;                   // ms to wait for an event that takes a longer time than the average operation
         public const int SubsequentExpectedWait = 10;               // ms to wait for checks that occur after the first.
         public const int WaitForExpectedEventTimeout_NoRetry = 3000;// ms to wait for an event that isn't surrounded by a retry.
         public const int DefaultAttemptsForExpectedEvent = 3;       // Number of times an expected event should be retried if failing.
@@ -196,7 +196,7 @@ namespace System.IO.Tests
         /// <param name="assertExpected">True if results should be asserted. Used if there is no retry.</param>
         /// <param name="expectedPath"> Adds path verification to all expected events.</param>
         /// <returns>True if the events raised correctly; else, false.</returns>
-        private static bool ExecuteAndVerifyEvents(FileSystemWatcher watcher, WatcherChangeTypes expectedEvents, Action action, bool assertExpected, string[] expectedPaths, int timeout)
+        public static bool ExecuteAndVerifyEvents(FileSystemWatcher watcher, WatcherChangeTypes expectedEvents, Action action, bool assertExpected, string[] expectedPaths, int timeout)
         {
             bool result = true, verifyChanged = true, verifyCreated = true, verifyDeleted = true, verifyRenamed = true;
             AutoResetEvent changed = null, created = null, deleted = null, renamed = null;

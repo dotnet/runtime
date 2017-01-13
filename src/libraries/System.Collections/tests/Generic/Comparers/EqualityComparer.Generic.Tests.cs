@@ -28,24 +28,23 @@ namespace System.Collections.Generic.Tests
             Assert.False(comparer.Equals(3));
             Assert.False(comparer.Equals("foo"));
             Assert.False(comparer.Equals(EqualityComparer<Task<T>>.Default));
+        }
 
-            // If we are running on full framework/CoreCLR, EqualityComparer<T> additionally
-            // overrides the Equals(object) and GetHashCode() methods for itself,
-            // presumably to support serialization, so test that behavior as well.
-            // This is not done in .NET Native yet: dotnet/corert#1736
-            if (!RuntimeDetection.IsNetNative)
-            {
-                var cloned = ObjectCloner.MemberwiseClone(comparer); // calls MemberwiseClone() on the comparer via reflection, which returns a different instance
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetcoreUwp, "See dotnet/corert#1736")]
+        public void EqualityComparer_EqualsShouldBeOverriddenAndWorkForDifferentInstances_cloned()
+        {
+            var comparer = EqualityComparer<T>.Default;
+            var cloned = ObjectCloner.MemberwiseClone(comparer); // calls MemberwiseClone() on the comparer via reflection, which returns a different instance
 
-                // Whatever the type of the comparer, it should have overridden Equals(object) so
-                // it can return true as long as the other object is the same type (not nec. the same instance)
-                Assert.True(cloned.Equals(comparer));
-                Assert.True(comparer.Equals(cloned));
+            // Whatever the type of the comparer, it should have overridden Equals(object) so
+            // it can return true as long as the other object is the same type (not nec. the same instance)
+            Assert.True(cloned.Equals(comparer));
+            Assert.True(comparer.Equals(cloned));
 
-                // Equals() should not return true for null
-                // Prevent a faulty implementation like Equals(obj) => obj is FooEqualityComparer<T>, which will be true for null
-                Assert.False(cloned.Equals(null));
-            }
+            // Equals() should not return true for null
+            // Prevent a faulty implementation like Equals(obj) => obj is FooEqualityComparer<T>, which will be true for null
+            Assert.False(cloned.Equals(null));
         }
 
         [Fact]
@@ -56,19 +55,18 @@ namespace System.Collections.Generic.Tests
             // Multiple invocations should return the same result,
             // whether GetHashCode() was overridden or not
             Assert.Equal(comparer.GetHashCode(), comparer.GetHashCode());
+        }
 
-            // If we are running on full framework/CoreCLR, EqualityComparer<T> additionally
-            // overrides the Equals(object) and GetHashCode() methods for itself,
-            // presumably to support serialization, so test that behavior as well.
-            // This is not done in .NET Native yet: dotnet/corert#1736
-            if (!RuntimeDetection.IsNetNative)
-            {
-                var cloned = ObjectCloner.MemberwiseClone(comparer);
-                Assert.Equal(cloned.GetHashCode(), cloned.GetHashCode());
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetcoreUwp, "See dotnet/corert#1736")]
+        public void EqualityComparer_GetHashCodeShouldBeOverriddenAndBeTheSameAsLongAsTheTypeIsTheSame_cloned()
+        {
+            var comparer = EqualityComparer<T>.Default;
+            var cloned = ObjectCloner.MemberwiseClone(comparer);
+            Assert.Equal(cloned.GetHashCode(), cloned.GetHashCode());
 
-                // Since comparer and cloned should have the same type, they should have the same hash
-                Assert.Equal(comparer.GetHashCode(), cloned.GetHashCode());
-            }
+            // Since comparer and cloned should have the same type, they should have the same hash
+            Assert.Equal(comparer.GetHashCode(), cloned.GetHashCode());
         }
 
         [Fact]

@@ -1005,8 +1005,11 @@ TypesMustExist : Type 'Microsoft.Win32.UserPreferenceChangedEventHandler' does n
 TypesMustExist : Type 'Microsoft.Win32.UserPreferenceChangingEventArgs' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'Microsoft.Win32.UserPreferenceChangingEventHandler' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.UriFormatException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
-TypesMustExist : Type 'System.UriIdnScope' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.CodeDom.Compiler.CodeDomProvider' does not inherit from base type 'System.ComponentModel.Component' in the implementation but it does in the contract.
+MembersMustExist : Member 'System.CodeDom.Compiler.CompilerParameters.Evidence.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.CodeDom.Compiler.CompilerParameters.Evidence.set(System.Security.Policy.Evidence)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.CodeDom.Compiler.CompilerResults.Evidence.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.CodeDom.Compiler.CompilerResults.Evidence.set(System.Security.Policy.Evidence)' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.CodeDom.Compiler.GeneratedCodeAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
 MembersMustExist : Member 'System.CodeDom.Compiler.TempFileCollection.Delete()' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.ComponentModel.AmbientValueAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
@@ -1066,65 +1069,22 @@ CannotRemoveBaseTypeOrInterface : Type 'System.ComponentModel.Design.HelpKeyword
 CannotRemoveBaseTypeOrInterface : Type 'System.ComponentModel.Design.Serialization.DefaultSerializationProviderAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.ComponentModel.Design.Serialization.DesignerSerializerAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.ComponentModel.Design.Serialization.RootDesignerSerializerAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
-TypesMustExist : Type 'System.Configuration.ApplicationScopedSettingAttribute' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Configuration.ApplicationSettingsBase' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Configuration.ApplicationSettingsGroup' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Configuration.AppSettingsReader' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Configuration.ClientSettingsSection' does not exist in the implementation but it does exist in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Configuration.ApplicationScopedSettingAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Configuration.ConfigurationException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
-TypesMustExist : Type 'System.Configuration.ConfigurationSettings' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Configuration.ConfigXmlDocument' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Configuration.DefaultSettingValueAttribute' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Configuration.DictionarySectionHandler' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Configuration.IApplicationSettingsProvider' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Configuration.IConfigurationSectionHandler' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Configuration.IConfigurationSystem' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Configuration.IdnElement' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Configuration.IgnoreSectionHandler' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Configuration.IPersistComponentSettings' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Configuration.IriParsingElement' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Configuration.ISettingsProviderService' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Configuration.LocalFileSettingsProvider' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Configuration.NameValueFileSectionHandler' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Configuration.NameValueSectionHandler' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Configuration.NoSettingsVersionUpgradeAttribute' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Configuration.SchemeSettingElement' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Configuration.SchemeSettingElementCollection' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Configuration.SettingAttribute' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Configuration.SettingChangingEventArgs' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Configuration.SettingChangingEventHandler' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Configuration.SettingElement' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Configuration.SettingElementCollection' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Configuration.SettingsAttributeDictionary' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Configuration.SettingsBase' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Configuration.SettingsContext' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Configuration.SettingsDescriptionAttribute' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Configuration.SettingsGroupDescriptionAttribute' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Configuration.SettingsGroupNameAttribute' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Configuration.SettingsLoadedEventArgs' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Configuration.SettingsLoadedEventHandler' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Configuration.SettingsManageability' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Configuration.SettingsManageabilityAttribute' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Configuration.SettingsProperty' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Configuration.SettingsPropertyCollection' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Configuration.SettingsPropertyIsReadOnlyException' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Configuration.SettingsPropertyNotFoundException' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Configuration.SettingsPropertyValue' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Configuration.SettingsPropertyValueCollection' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Configuration.SettingsPropertyWrongTypeException' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Configuration.SettingsProvider' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Configuration.SettingsProviderAttribute' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Configuration.SettingsProviderCollection' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Configuration.SettingsSavingEventHandler' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Configuration.SettingsSerializeAs' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Configuration.SettingsSerializeAsAttribute' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Configuration.SettingValueElement' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Configuration.SingleTagSectionHandler' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Configuration.SpecialSetting' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Configuration.SpecialSettingAttribute' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Configuration.UriSection' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Configuration.UserScopedSettingAttribute' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Configuration.UserSettingsGroup' does not exist in the implementation but it does exist in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Configuration.DefaultSettingValueAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Configuration.NoSettingsVersionUpgradeAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Configuration.SettingAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Configuration.SettingsDescriptionAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Configuration.SettingsGroupDescriptionAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Configuration.SettingsGroupNameAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Configuration.SettingsManageabilityAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Configuration.SettingsPropertyIsReadOnlyException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Configuration.SettingsPropertyNotFoundException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Configuration.SettingsPropertyWrongTypeException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Configuration.SettingsProviderAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Configuration.SettingsSerializeAsAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Configuration.SpecialSettingAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Configuration.UserScopedSettingAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
 TypesMustExist : Type 'System.Diagnostics.ConsoleTraceListener' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Diagnostics.CounterCreationData' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Diagnostics.CounterCreationDataCollection' does not exist in the implementation but it does exist in the contract.
@@ -3071,4 +3031,4 @@ CannotRemoveBaseTypeOrInterface : Type 'System.Xml.Xsl.XsltException' does not i
 MembersMustExist : Member 'System.Xml.Xsl.XslTransform.Load(System.Xml.XmlReader, System.Xml.XmlResolver, System.Security.Policy.Evidence)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Xml.Xsl.XslTransform.Load(System.Xml.XPath.IXPathNavigable, System.Xml.XmlResolver, System.Security.Policy.Evidence)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Xml.Xsl.XslTransform.Load(System.Xml.XPath.XPathNavigator, System.Xml.XmlResolver, System.Security.Policy.Evidence)' does not exist in the implementation but it does exist in the contract.
-Total Issues: 3062
+Total Issues: 3022

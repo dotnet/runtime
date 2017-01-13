@@ -1306,7 +1306,6 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Fact]
-        [ActiveIssue(3958)]
         public void UpdateTrySameChildrenDifferentCollectionsSameNode()
         {
             TryExpression tryExp = Expression.TryCatchFinally(Expression.Empty(), Expression.Empty(), Expression.Catch(typeof(Exception), Expression.Empty()));
@@ -1329,6 +1328,15 @@ namespace System.Linq.Expressions.Tests
         {
             TryExpression tryExp = Expression.TryCatchFinally(Expression.Empty(), Expression.Empty(), Expression.Catch(typeof(Exception), Expression.Empty()));
             Assert.NotSame(tryExp, tryExp.Update(tryExp.Body, new[] { Expression.Catch(typeof(Exception), Expression.Empty()) }, tryExp.Finally, null));
+        }
+
+        [Fact]
+        public void UpdateDoesntRepeatEnumeration()
+        {
+            TryExpression tryExp = Expression.TryCatchFinally(Expression.Empty(), Expression.Empty(), Expression.Catch(typeof(Exception), Expression.Empty()));
+            IEnumerable<CatchBlock> newHandlers =
+                new RunOnceEnumerable<CatchBlock>(new[] {Expression.Catch(typeof(Exception), Expression.Empty())});
+            Assert.NotSame(tryExp, tryExp.Update(tryExp.Body, newHandlers, tryExp.Finally, null));
         }
 
         [Fact]

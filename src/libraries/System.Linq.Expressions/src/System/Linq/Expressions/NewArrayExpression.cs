@@ -63,15 +63,17 @@ namespace System.Linq.Expressions
         /// <returns>This expression if no children changed, or an expression with the updated children.</returns>
         public NewArrayExpression Update(IEnumerable<Expression> expressions)
         {
-            if (expressions == Expressions)
+            // Explicit null check here as otherwise wrong parameter name will be used.
+            ContractUtils.RequiresNotNull(expressions, nameof(expressions));
+
+            if (ExpressionUtils.SameElements(ref expressions, Expressions))
             {
                 return this;
             }
-            if (NodeType == ExpressionType.NewArrayInit)
-            {
-                return Expression.NewArrayInit(Type.GetElementType(), expressions);
-            }
-            return Expression.NewArrayBounds(Type.GetElementType(), expressions);
+
+            return NodeType == ExpressionType.NewArrayInit
+                ? NewArrayInit(Type.GetElementType(), expressions)
+                : NewArrayBounds(Type.GetElementType(), expressions);
         }
     }
 

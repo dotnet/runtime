@@ -83,11 +83,15 @@ namespace System.Linq.Expressions
         /// <returns>This expression if no children changed, or an expression with the updated children.</returns>
         public TryExpression Update(Expression body, IEnumerable<CatchBlock> handlers, Expression @finally, Expression fault)
         {
-            if (body == Body && handlers == Handlers && @finally == Finally && fault == Fault)
+            if (body == Body & @finally == Finally & fault == Fault)
             {
-                return this;
+                if (ExpressionUtils.SameElements(ref handlers, Handlers))
+                {
+                    return this;
+                }
             }
-            return Expression.MakeTry(Type, body, @finally, fault, handlers);
+
+            return MakeTry(Type, body, @finally, fault, handlers);
         }
     }
 

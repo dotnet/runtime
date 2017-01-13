@@ -27,7 +27,6 @@ namespace System.DirectoryServices.ActiveDirectory
         Windows2012R2Forest = 6,
     }
 
-    [DirectoryServicesPermission(SecurityAction.LinkDemand, Unrestricted = true)]
     public class Forest : IDisposable
     {
         // Private Variables
@@ -106,12 +105,12 @@ namespace System.DirectoryServices.ActiveDirectory
             if ((context.ContextType != DirectoryContextType.Forest) &&
                 (context.ContextType != DirectoryContextType.DirectoryServer))
             {
-                throw new ArgumentException(Res.GetString(Res.TargetShouldBeServerORForest), "context");
+                throw new ArgumentException(SR.TargetShouldBeServerORForest, "context");
             }
 
             if ((context.Name == null) && (!context.isRootDomain()))
             {
-                throw new ActiveDirectoryObjectNotFoundException(Res.GetString(Res.ContextNotAssociatedWithDomain), typeof(Forest), null);
+                throw new ActiveDirectoryObjectNotFoundException(SR.ContextNotAssociatedWithDomain, typeof(Forest), null);
             }
 
             if (context.Name != null)
@@ -121,11 +120,11 @@ namespace System.DirectoryServices.ActiveDirectory
                 {
                     if (context.ContextType == DirectoryContextType.Forest)
                     {
-                        throw new ActiveDirectoryObjectNotFoundException(Res.GetString(Res.ForestNotFound), typeof(Forest), context.Name);
+                        throw new ActiveDirectoryObjectNotFoundException(SR.ForestNotFound, typeof(Forest), context.Name);
                     }
                     else
                     {
-                        throw new ActiveDirectoryObjectNotFoundException(Res.GetString(Res.DCNotFound, context.Name), typeof(Forest), null);
+                        throw new ActiveDirectoryObjectNotFoundException(String.Format(CultureInfo.CurrentCulture, SR.DCNotFound , context.Name), typeof(Forest), null);
                     }
                 }
             }
@@ -142,7 +141,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 rootDSE = directoryEntryMgr.GetCachedDirectoryEntry(WellKnownDN.RootDSE);
                 if ((context.isServer()) && (!Utils.CheckCapability(rootDSE, Capability.ActiveDirectory)))
                 {
-                    throw new ActiveDirectoryObjectNotFoundException(Res.GetString(Res.DCNotFound, context.Name), typeof(Forest), null);
+                    throw new ActiveDirectoryObjectNotFoundException(String.Format(CultureInfo.CurrentCulture, SR.DCNotFound , context.Name), typeof(Forest), null);
                 }
                 rootDomainNC = (string)PropertyManager.GetPropertyValue(context, rootDSE, PropertyManager.RootDomainNamingContext);
             }
@@ -154,11 +153,11 @@ namespace System.DirectoryServices.ActiveDirectory
                 {
                     if (context.ContextType == DirectoryContextType.Forest)
                     {
-                        throw new ActiveDirectoryObjectNotFoundException(Res.GetString(Res.ForestNotFound), typeof(Forest), context.Name);
+                        throw new ActiveDirectoryObjectNotFoundException(SR.ForestNotFound, typeof(Forest), context.Name);
                     }
                     else
                     {
-                        throw new ActiveDirectoryObjectNotFoundException(Res.GetString(Res.DCNotFound, context.Name), typeof(Forest), null);
+                        throw new ActiveDirectoryObjectNotFoundException(String.Format(CultureInfo.CurrentCulture, SR.DCNotFound , context.Name), typeof(Forest), null);
                     }
                 }
                 else
@@ -179,13 +178,13 @@ namespace System.DirectoryServices.ActiveDirectory
             // check new functional level is valid or not
             if (forestMode < 0)
             {
-                throw new ArgumentException(Res.GetString(Res.InvalidMode), "forestMode");
+                throw new ArgumentException(SR.InvalidMode, "forestMode");
             }
 
             // new functional level should be higher than the old one
             if (forestMode <= ForestModeLevel)
             {
-                throw new ArgumentException(Res.GetString(Res.InvalidMode), "forestMode");
+                throw new ArgumentException(SR.InvalidMode, "forestMode");
             }
 
             // set the forest mode on AD 
@@ -202,7 +201,7 @@ namespace System.DirectoryServices.ActiveDirectory
             {
                 if (e.ErrorCode == unchecked((int)0x8007200A))
                 {
-                    throw new ArgumentException(Res.GetString(Res.NoW2K3DCsInForest), "forestMode");
+                    throw new ArgumentException(SR.NoW2K3DCsInForest, "forestMode");
                 }
                 else
                 {
@@ -231,7 +230,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             if (forestMode <= ForestMode)
             {
-                throw new ArgumentException(Res.GetString(Res.InvalidMode), "forestMode");
+                throw new ArgumentException(SR.InvalidMode, "forestMode");
             }
 
             RaiseForestFunctionalityLevel((int)forestMode);
@@ -320,7 +319,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             if (siteName.Length == 0)
             {
-                throw new ArgumentException(Res.GetString(Res.EmptyStringParameter), "siteName");
+                throw new ArgumentException(SR.EmptyStringParameter, "siteName");
             }
 
             return new GlobalCatalogCollection(Locator.EnumerateDomainControllers(_context, Name, siteName, flag));
@@ -341,7 +340,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new ArgumentNullException("targetForestName");
 
             if (targetForestName.Length == 0)
-                throw new ArgumentException(Res.GetString(Res.EmptyStringParameter), "targetForestName");
+                throw new ArgumentException(SR.EmptyStringParameter, "targetForestName");
 
             TrustRelationshipInformationCollection collection = GetTrustsHelper(targetForestName);
             if (collection.Count != 0)
@@ -352,7 +351,7 @@ namespace System.DirectoryServices.ActiveDirectory
             else
             {
                 // trust relationship does not exist
-                throw new ActiveDirectoryObjectNotFoundException(Res.GetString(Res.ForestTrustDoesNotExist, Name, targetForestName), typeof(TrustRelationshipInformation), null);
+                throw new ActiveDirectoryObjectNotFoundException(String.Format(CultureInfo.CurrentCulture, SR.ForestTrustDoesNotExist , Name, targetForestName), typeof(TrustRelationshipInformation), null);
             }
         }
 
@@ -364,7 +363,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new ArgumentNullException("targetForestName");
 
             if (targetForestName.Length == 0)
-                throw new ArgumentException(Res.GetString(Res.EmptyStringParameter), "targetForestName");
+                throw new ArgumentException(SR.EmptyStringParameter, "targetForestName");
 
             return TrustHelper.GetTrustedDomainInfoStatus(_context, Name, targetForestName, TRUST_ATTRIBUTE.TRUST_ATTRIBUTE_CROSS_ORGANIZATION, true);
         }
@@ -377,7 +376,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new ArgumentNullException("targetForestName");
 
             if (targetForestName.Length == 0)
-                throw new ArgumentException(Res.GetString(Res.EmptyStringParameter), "targetForestName");
+                throw new ArgumentException(SR.EmptyStringParameter, "targetForestName");
 
             TrustHelper.SetTrustedDomainInfoStatus(_context, Name, targetForestName, TRUST_ATTRIBUTE.TRUST_ATTRIBUTE_CROSS_ORGANIZATION, enable, true);
         }
@@ -390,7 +389,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new ArgumentNullException("targetForestName");
 
             if (targetForestName.Length == 0)
-                throw new ArgumentException(Res.GetString(Res.EmptyStringParameter), "targetForestName");
+                throw new ArgumentException(SR.EmptyStringParameter, "targetForestName");
 
             return TrustHelper.GetTrustedDomainInfoStatus(_context, Name, targetForestName, TRUST_ATTRIBUTE.TRUST_ATTRIBUTE_TREAT_AS_EXTERNAL, true);
         }
@@ -403,7 +402,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new ArgumentNullException("targetForestName");
 
             if (targetForestName.Length == 0)
-                throw new ArgumentException(Res.GetString(Res.EmptyStringParameter), "targetForestName");
+                throw new ArgumentException(SR.EmptyStringParameter, "targetForestName");
 
             TrustHelper.SetTrustedDomainInfoStatus(_context, Name, targetForestName, TRUST_ATTRIBUTE.TRUST_ATTRIBUTE_TREAT_AS_EXTERNAL, enable, true);
         }
@@ -416,7 +415,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new ArgumentNullException("targetForestName");
 
             if (targetForestName.Length == 0)
-                throw new ArgumentException(Res.GetString(Res.EmptyStringParameter), "targetForestName");
+                throw new ArgumentException(SR.EmptyStringParameter, "targetForestName");
 
             // delete local side of trust only
             TrustHelper.DeleteTrust(_context, Name, targetForestName, true);
@@ -444,7 +443,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new ArgumentNullException("targetForestName");
 
             if (targetForestName.Length == 0)
-                throw new ArgumentException(Res.GetString(Res.EmptyStringParameter), "targetForestName");
+                throw new ArgumentException(SR.EmptyStringParameter, "targetForestName");
 
             TrustHelper.VerifyTrust(_context, Name, targetForestName, true/*forest*/, TrustDirection.Outbound, false /*just TC verification*/, null /* no need to go to specific server*/);
         }
@@ -468,7 +467,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
                 catch (ActiveDirectoryObjectNotFoundException)
                 {
-                    throw new ActiveDirectoryObjectNotFoundException(Res.GetString(Res.WrongTrustDirection, Name, targetForest.Name, direction), typeof(ForestTrustRelationshipInformation), null);
+                    throw new ActiveDirectoryObjectNotFoundException(String.Format(CultureInfo.CurrentCulture, SR.WrongTrustDirection , Name, targetForest.Name, direction), typeof(ForestTrustRelationshipInformation), null);
                 }
             }
 
@@ -481,7 +480,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
                 catch (ActiveDirectoryObjectNotFoundException)
                 {
-                    throw new ActiveDirectoryObjectNotFoundException(Res.GetString(Res.WrongTrustDirection, Name, targetForest.Name, direction), typeof(ForestTrustRelationshipInformation), null);
+                    throw new ActiveDirectoryObjectNotFoundException(String.Format(CultureInfo.CurrentCulture, SR.WrongTrustDirection , Name, targetForest.Name, direction), typeof(ForestTrustRelationshipInformation), null);
                 }
             }
         }
@@ -494,7 +493,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new ArgumentNullException("targetForestName");
 
             if (targetForestName.Length == 0)
-                throw new ArgumentException(Res.GetString(Res.EmptyStringParameter), "targetForestName");
+                throw new ArgumentException(SR.EmptyStringParameter, "targetForestName");
 
             if (direction < TrustDirection.Inbound || direction > TrustDirection.Bidirectional)
                 throw new InvalidEnumArgumentException("direction", (int)direction, typeof(TrustDirection));
@@ -503,7 +502,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new ArgumentNullException("trustPassword");
 
             if (trustPassword.Length == 0)
-                throw new ArgumentException(Res.GetString(Res.EmptyStringParameter), "trustPassword");
+                throw new ArgumentException(SR.EmptyStringParameter, "trustPassword");
 
             // verify first that the target forest name is valid
             Locator.GetDomainControllerInfo(null, targetForestName, null, (long)(PrivateLocatorFlags.DirectoryServicesRequired | PrivateLocatorFlags.GCRequired));
@@ -546,13 +545,13 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new ArgumentNullException("targetForestName");
 
             if (targetForestName.Length == 0)
-                throw new ArgumentException(Res.GetString(Res.EmptyStringParameter), "targetForestName");
+                throw new ArgumentException(SR.EmptyStringParameter, "targetForestName");
 
             if (newTrustPassword == null)
                 throw new ArgumentNullException("newTrustPassword");
 
             if (newTrustPassword.Length == 0)
-                throw new ArgumentException(Res.GetString(Res.EmptyStringParameter), "newTrustPassword");
+                throw new ArgumentException(SR.EmptyStringParameter, "newTrustPassword");
 
             TrustHelper.UpdateTrust(_context, Name, targetForestName, newTrustPassword, true);
         }
@@ -565,7 +564,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new ArgumentNullException("targetForestName");
 
             if (targetForestName.Length == 0)
-                throw new ArgumentException(Res.GetString(Res.EmptyStringParameter), "targetForestName");
+                throw new ArgumentException(SR.EmptyStringParameter, "targetForestName");
 
             if (newTrustDirection < TrustDirection.Inbound || newTrustDirection > TrustDirection.Bidirectional)
                 throw new InvalidEnumArgumentException("newTrustDirection", (int)newTrustDirection, typeof(TrustDirection));
@@ -574,7 +573,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new ArgumentNullException("newTrustPassword");
 
             if (newTrustPassword.Length == 0)
-                throw new ArgumentException(Res.GetString(Res.EmptyStringParameter), "newTrustPassword");
+                throw new ArgumentException(SR.EmptyStringParameter, "newTrustPassword");
 
             TrustHelper.UpdateTrustDirection(_context, Name, targetForestName, newTrustPassword, true /*is forest*/, newTrustDirection);
         }
@@ -639,7 +638,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             catch (ActiveDirectoryObjectNotFoundException)
             {
-                throw new ActiveDirectoryObjectNotFoundException(Res.GetString(Res.WrongTrustDirection, Name, targetForest.Name, direction), typeof(ForestTrustRelationshipInformation), null);
+                throw new ActiveDirectoryObjectNotFoundException(String.Format(CultureInfo.CurrentCulture, SR.WrongTrustDirection , Name, targetForest.Name, direction), typeof(ForestTrustRelationshipInformation), null);
             }
         }
 
@@ -1236,7 +1235,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
                 catch (ActiveDirectoryObjectNotFoundException)
                 {
-                    throw new ActiveDirectoryObjectNotFoundException(Res.GetString(Res.WrongTrustDirection, Name, targetForest.Name, direction), typeof(ForestTrustRelationshipInformation), null);
+                    throw new ActiveDirectoryObjectNotFoundException(String.Format(CultureInfo.CurrentCulture, SR.WrongTrustDirection , Name, targetForest.Name, direction), typeof(ForestTrustRelationshipInformation), null);
                 }
             }
 
@@ -1249,7 +1248,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
                 catch (ActiveDirectoryObjectNotFoundException)
                 {
-                    throw new ActiveDirectoryObjectNotFoundException(Res.GetString(Res.WrongTrustDirection, Name, targetForest.Name, direction), typeof(ForestTrustRelationshipInformation), null);
+                    throw new ActiveDirectoryObjectNotFoundException(String.Format(CultureInfo.CurrentCulture, SR.WrongTrustDirection , Name, targetForest.Name, direction), typeof(ForestTrustRelationshipInformation), null);
                 }
             }
         }

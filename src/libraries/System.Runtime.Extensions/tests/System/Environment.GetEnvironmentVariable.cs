@@ -224,7 +224,7 @@ namespace System.Tests
             Assert.True(success);
         }
 
-        [DllImport("api-ms-win-core-processenvironment-l1-1-0.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
         private static extern bool SetEnvironmentVariable(string lpName, string lpValue);
 
         [DllImport("libc")]

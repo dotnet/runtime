@@ -15,6 +15,10 @@
       <OSGroup>debian.8</OSGroup>
       <Platform>amd64</Platform>
     </Project>
+    <Project Include="debian\runtime.native.System.Net.Http.pkgproj">
+      <OSGroup>debian.8</OSGroup>
+      <Platform>armel</Platform>
+    </Project>
     <Project Include="fedora\23\runtime.native.System.Net.Http.pkgproj">
       <OSGroup>fedora.23</OSGroup>
       <Platform>amd64</Platform>
@@ -62,6 +66,10 @@
     <Project Include="alpine\3.4.3\runtime.native.System.Net.Http.pkgproj">
       <OSGroup>alpine.3.4.3</OSGroup>
       <Platform>amd64</Platform>
+    </Project>
+    <Project Include="tizen\4.0.0\runtime.native.System.Net.Http.pkgproj">
+      <OSGroup>tizen.4.0.0</OSGroup>
+      <Platform>armel</Platform>
     </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />

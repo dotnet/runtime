@@ -56,7 +56,9 @@ namespace System.DirectoryServices.ActiveDirectory
         public ActiveDirectorySchedule()
         {
             // need to get the offset between local time and UTC time
+#pragma warning disable 612, 618
             _utcOffSet = TimeZone.CurrentTimeZone.GetUtcOffset(DateTime.Now).Ticks / TimeSpan.TicksPerHour;
+#pragma warning restore 612, 618
         }
 
         public ActiveDirectorySchedule(ActiveDirectorySchedule schedule) : this()
@@ -119,7 +121,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             // end time should be later than the start time
             if ((int)fromHour * 60 + (int)fromMinute > (int)toHour * 60 + (int)toMinute)
-                throw new ArgumentException(Res.GetString(Res.InvalidTime));
+                throw new ArgumentException(SR.InvalidTime);
 
             // set the availability            
             int startPoint = (int)day * 24 * 4 + (int)fromHour * 4 + (int)fromMinute / 15;

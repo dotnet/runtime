@@ -147,7 +147,6 @@
     <Compile Include="System\ComponentModel\InstallerTypeAttribute.cs" />
     <Compile Include="System\ComponentModel\InstanceCreationEditor.cs" />
     <Compile Include="System\ComponentModel\InvalidEnumArgumentException.cs" />
-    <Compile Include="System\ComponentModel\ISupportInitialize.cs" />
     <Compile Include="System\ComponentModel\ISupportInitializeNotification.cs" />
     <Compile Include="System\ComponentModel\License.cs" />
     <Compile Include="System\ComponentModel\LicenseContext.cs" />

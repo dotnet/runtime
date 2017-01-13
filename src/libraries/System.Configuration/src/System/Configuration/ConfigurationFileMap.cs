@@ -27,11 +27,10 @@ namespace System.Configuration
         {
             if (string.IsNullOrEmpty(machineConfigFilename))
                 throw new ArgumentNullException(nameof(machineConfigFilename));
+
             if (!File.Exists(machineConfigFilename))
-            {
                 throw new ArgumentException(string.Format(SR.Machine_config_file_not_found, machineConfigFilename),
                     nameof(machineConfigFilename));
-            }
 
             MachineConfigFilename = machineConfigFilename;
         }
@@ -57,5 +56,7 @@ namespace System.Configuration
         {
             return ClientConfigurationHost.MachineConfigFilePath;
         }
+
+        internal bool IsMachinePathDefault => _getFilenameThunk == GetFilenameFromMachineConfigFilePath;
     }
 }

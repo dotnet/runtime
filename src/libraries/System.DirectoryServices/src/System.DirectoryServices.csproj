@@ -23,16 +23,10 @@
     <Compile Include="System\DirectoryServices\AuthenticationTypes.cs" />
     <Compile Include="System\DirectoryServices\BinaryCompatibility.cs" />
     <Compile Include="System\DirectoryServices\DerefAlias.cs" />
-    <Compile Include="System\DirectoryServices\DirectoryDescriptionAttribute.cs" />
     <Compile Include="System\DirectoryServices\DirectoryEntries.cs" />
     <Compile Include="System\DirectoryServices\DirectoryEntry.cs" />
     <Compile Include="System\DirectoryServices\DirectoryEntryConfiguration.cs" />
     <Compile Include="System\DirectoryServices\DirectorySearcher.cs" />
-    <!--     <Compile Include="System\DirectoryServices\DirectoryServicesPermission.cs" />
-    <Compile Include="System\DirectoryServices\DirectoryServicesPermissionAccess.cs" />
-    <Compile Include="System\DirectoryServices\DirectoryServicesPermissionAttribute.cs" />
-    <Compile Include="System\DirectoryServices\DirectoryServicesPermissionEntry.cs" />
-    <Compile Include="System\DirectoryServices\DirectoryServicesPermissionEntryCollection.cs" /> -->
     <Compile Include="System\DirectoryServices\DirectorySynchronization.cs" />
     <Compile Include="System\DirectoryServices\DirectorySynchronizationFlags.cs" />
     <Compile Include="System\DirectoryServices\DirectoryVirtualListView.cs" />

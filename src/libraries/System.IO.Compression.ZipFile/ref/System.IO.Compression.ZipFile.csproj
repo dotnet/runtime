@@ -3,6 +3,7 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <UseECMAKey Condition="'$(UseECMAKey)' == ''">true</UseECMAKey>
+    <DefineConstants Condition="'$(TargetGroup)'=='netcoreapp'">$(DefineConstants);netcoreapp11</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.IO.Compression.ZipFile.cs" />

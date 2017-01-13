@@ -10,6 +10,7 @@ namespace System.DirectoryServices.ActiveDirectory
     using System.ComponentModel;
     using System.Runtime.InteropServices;
     using System.Security.Permissions;
+    using System.Globalization;
 
     public enum SchemaClassType : int
     {
@@ -26,7 +27,6 @@ namespace System.DirectoryServices.ActiveDirectory
         InGlobalCatalog = 4
     }
 
-    [DirectoryServicesPermission(SecurityAction.LinkDemand, Unrestricted = true)]
     public class ActiveDirectorySchema : ActiveDirectoryPartition
     {
         private bool _disposed = false;
@@ -100,12 +100,12 @@ namespace System.DirectoryServices.ActiveDirectory
                 (context.ContextType != DirectoryContextType.ConfigurationSet) &&
                 (context.ContextType != DirectoryContextType.DirectoryServer))
             {
-                throw new ArgumentException(Res.GetString(Res.NotADOrADAM), "context");
+                throw new ArgumentException(SR.NotADOrADAM, "context");
             }
 
             if ((context.Name == null) && (!context.isRootDomain()))
             {
-                throw new ActiveDirectoryObjectNotFoundException(Res.GetString(Res.ContextNotAssociatedWithDomain), typeof(ActiveDirectorySchema), null);
+                throw new ActiveDirectoryObjectNotFoundException(SR.ContextNotAssociatedWithDomain, typeof(ActiveDirectorySchema), null);
             }
 
             if (context.Name != null)
@@ -115,15 +115,15 @@ namespace System.DirectoryServices.ActiveDirectory
                 {
                     if (context.ContextType == DirectoryContextType.Forest)
                     {
-                        throw new ActiveDirectoryObjectNotFoundException(Res.GetString(Res.ForestNotFound), typeof(ActiveDirectorySchema), context.Name);
+                        throw new ActiveDirectoryObjectNotFoundException(SR.ForestNotFound, typeof(ActiveDirectorySchema), context.Name);
                     }
                     else if (context.ContextType == DirectoryContextType.ConfigurationSet)
                     {
-                        throw new ActiveDirectoryObjectNotFoundException(Res.GetString(Res.ConfigSetNotFound), typeof(ActiveDirectorySchema), context.Name);
+                        throw new ActiveDirectoryObjectNotFoundException(SR.ConfigSetNotFound, typeof(ActiveDirectorySchema), context.Name);
                     }
                     else
                     {
-                        throw new ActiveDirectoryObjectNotFoundException(Res.GetString(Res.ServerNotFound, context.Name), typeof(ActiveDirectorySchema), null);
+                        throw new ActiveDirectoryObjectNotFoundException(String.Format(CultureInfo.CurrentCulture, SR.ServerNotFound , context.Name), typeof(ActiveDirectorySchema), null);
                     }
                 }
             }
@@ -139,7 +139,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                 if ((context.isServer()) && (!Utils.CheckCapability(rootDSE, Capability.ActiveDirectoryOrADAM)))
                 {
-                    throw new ActiveDirectoryObjectNotFoundException(Res.GetString(Res.ServerNotFound, context.Name), typeof(ActiveDirectorySchema), null);
+                    throw new ActiveDirectoryObjectNotFoundException(String.Format(CultureInfo.CurrentCulture, SR.ServerNotFound , context.Name), typeof(ActiveDirectorySchema), null);
                 }
 
                 schemaNC = (string)PropertyManager.GetPropertyValue(context, rootDSE, PropertyManager.SchemaNamingContext);
@@ -152,15 +152,15 @@ namespace System.DirectoryServices.ActiveDirectory
                 {
                     if (context.ContextType == DirectoryContextType.Forest)
                     {
-                        throw new ActiveDirectoryObjectNotFoundException(Res.GetString(Res.ForestNotFound), typeof(ActiveDirectorySchema), context.Name);
+                        throw new ActiveDirectoryObjectNotFoundException(SR.ForestNotFound, typeof(ActiveDirectorySchema), context.Name);
                     }
                     else if (context.ContextType == DirectoryContextType.ConfigurationSet)
                     {
-                        throw new ActiveDirectoryObjectNotFoundException(Res.GetString(Res.ConfigSetNotFound), typeof(ActiveDirectorySchema), context.Name);
+                        throw new ActiveDirectoryObjectNotFoundException(SR.ConfigSetNotFound, typeof(ActiveDirectorySchema), context.Name);
                     }
                     else
                     {
-                        throw new ActiveDirectoryObjectNotFoundException(Res.GetString(Res.ServerNotFound, context.Name), typeof(ActiveDirectorySchema), null);
+                        throw new ActiveDirectoryObjectNotFoundException(String.Format(CultureInfo.CurrentCulture, SR.ServerNotFound , context.Name), typeof(ActiveDirectorySchema), null);
                     }
                 }
                 else
@@ -173,7 +173,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 if (context.ContextType == DirectoryContextType.ConfigurationSet)
                 {
                     // this is the case where the context is a config set and we could not find an ADAM instance in that config set
-                    throw new ActiveDirectoryObjectNotFoundException(Res.GetString(Res.ConfigSetNotFound), typeof(ActiveDirectorySchema), context.Name);
+                    throw new ActiveDirectoryObjectNotFoundException(SR.ConfigSetNotFound, typeof(ActiveDirectorySchema), context.Name);
                 }
                 else
                     throw;
@@ -238,7 +238,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             if (commonName.Length == 0)
             {
-                throw new ArgumentException(Res.GetString(Res.EmptyStringParameter), "commonName");
+                throw new ArgumentException(SR.EmptyStringParameter, "commonName");
             }
 
             // this will bind to the schema container and load the properties of this class
@@ -314,7 +314,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             if (commonName.Length == 0)
             {
-                throw new ArgumentException(Res.GetString(Res.EmptyStringParameter), "commonName");
+                throw new ArgumentException(SR.EmptyStringParameter, "commonName");
             }
 
             // this will bind to the schema container and load the properties of this property
@@ -347,7 +347,7 @@ namespace System.DirectoryServices.ActiveDirectory
             // check validity of type
             if ((type & (~(PropertyTypes.Indexed | PropertyTypes.InGlobalCatalog))) != 0)
             {
-                throw new ArgumentException(Res.GetString(Res.InvalidFlags), "type");
+                throw new ArgumentException(SR.InvalidFlags, "type");
             }
 
             // start the filter
@@ -391,10 +391,6 @@ namespace System.DirectoryServices.ActiveDirectory
             return GetAllProperties(context, _schemaEntry, filter);
         }
 
-        [
-            DirectoryServicesPermission(SecurityAction.LinkDemand, Unrestricted = true),
-            DirectoryServicesPermission(SecurityAction.InheritanceDemand, Unrestricted = true)
-        ]
         public override DirectoryEntry GetDirectoryEntry()
         {
             CheckIfDisposed();

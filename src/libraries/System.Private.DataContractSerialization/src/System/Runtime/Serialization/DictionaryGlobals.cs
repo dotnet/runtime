@@ -50,7 +50,33 @@ namespace System.Runtime.Serialization
         public static readonly XmlDictionaryString QNameLocalName;
         public static readonly XmlDictionaryString Space;
 
+        public static readonly XmlDictionaryString timeLocalName;
+        public static readonly XmlDictionaryString dateLocalName;
         public static readonly XmlDictionaryString hexBinaryLocalName;
+        public static readonly XmlDictionaryString gYearMonthLocalName;
+        public static readonly XmlDictionaryString gYearLocalName;
+        public static readonly XmlDictionaryString gMonthDayLocalName;
+        public static readonly XmlDictionaryString gDayLocalName;
+        public static readonly XmlDictionaryString gMonthLocalName;
+        public static readonly XmlDictionaryString integerLocalName;
+        public static readonly XmlDictionaryString positiveIntegerLocalName;
+        public static readonly XmlDictionaryString negativeIntegerLocalName;
+        public static readonly XmlDictionaryString nonPositiveIntegerLocalName;
+        public static readonly XmlDictionaryString nonNegativeIntegerLocalName;
+        public static readonly XmlDictionaryString normalizedStringLocalName;
+        public static readonly XmlDictionaryString tokenLocalName;
+        public static readonly XmlDictionaryString languageLocalName;
+        public static readonly XmlDictionaryString NameLocalName;
+        public static readonly XmlDictionaryString NCNameLocalName;
+        public static readonly XmlDictionaryString XSDIDLocalName;
+        public static readonly XmlDictionaryString IDREFLocalName;
+        public static readonly XmlDictionaryString IDREFSLocalName;
+        public static readonly XmlDictionaryString ENTITYLocalName;
+        public static readonly XmlDictionaryString ENTITIESLocalName;
+        public static readonly XmlDictionaryString NMTOKENLocalName;
+        public static readonly XmlDictionaryString NMTOKENSLocalName;
+        public static readonly XmlDictionaryString AsmxTypesNamespace;
+
         static DictionaryGlobals()
         {
             // Update array size when adding new strings or templates
@@ -107,7 +133,44 @@ namespace System.Runtime.Serialization
                 ClrAssemblyLocalName = dictionary.Add(Globals.ClrAssemblyLocalName);
                 Space = dictionary.Add(Globals.Space);
 
+                // 35
+                timeLocalName = dictionary.Add("time");
+                dateLocalName = dictionary.Add("date");
                 hexBinaryLocalName = dictionary.Add("hexBinary");
+                gYearMonthLocalName = dictionary.Add("gYearMonth");
+                gYearLocalName = dictionary.Add("gYear");
+
+                // 40
+                gMonthDayLocalName = dictionary.Add("gMonthDay");
+                gDayLocalName = dictionary.Add("gDay");
+                gMonthLocalName = dictionary.Add("gMonth");
+                integerLocalName = dictionary.Add("integer");
+                positiveIntegerLocalName = dictionary.Add("positiveInteger");
+
+                // 45
+                negativeIntegerLocalName = dictionary.Add("negativeInteger");
+                nonPositiveIntegerLocalName = dictionary.Add("nonPositiveInteger");
+                nonNegativeIntegerLocalName = dictionary.Add("nonNegativeInteger");
+                normalizedStringLocalName = dictionary.Add("normalizedString");
+                tokenLocalName = dictionary.Add("token");
+
+                // 50
+                languageLocalName = dictionary.Add("language");
+                NameLocalName = dictionary.Add("Name");
+                NCNameLocalName = dictionary.Add("NCName");
+                XSDIDLocalName = dictionary.Add("ID");
+                IDREFLocalName = dictionary.Add("IDREF");
+
+                // 55
+                IDREFSLocalName = dictionary.Add("IDREFS");
+                ENTITYLocalName = dictionary.Add("ENTITY");
+                ENTITIESLocalName = dictionary.Add("ENTITIES");
+                NMTOKENLocalName = dictionary.Add("NMTOKEN");
+                NMTOKENSLocalName = dictionary.Add("NMTOKENS");
+
+                // 60
+                AsmxTypesNamespace = dictionary.Add("http://microsoft.com/wsdl/types/");
+
                 // Add new templates here
             }
             catch (Exception ex)

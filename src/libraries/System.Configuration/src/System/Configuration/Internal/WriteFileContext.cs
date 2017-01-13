@@ -144,9 +144,9 @@ namespace System.Configuration.Internal
             }
         }
 
-        // Replace one file with another using MoveFileEx.  This will
-        // retry the operation if the file is locked because someone
-        // is reading it
+        /// <summary>
+        /// Replace one file with another, retrying if locked.
+        /// </summary>
         private void ReplaceFile(string source, string target)
         {
             bool writeSucceeded;
@@ -173,12 +173,19 @@ namespace System.Configuration.Internal
             }
         }
 
-        // Attempt to move a file from one location to another
+        // Attempt to move a file from one location to another, overwriting if needed
         private bool AttemptMove(string source, string target)
         {
             try
             {
-                File.Replace(source, target, null);
+                if (File.Exists(target))
+                {
+                    File.Replace(source, target, null);
+                }
+                else
+                {
+                    File.Move(source, target);
+                }
                 return true;
             }
             catch
