@@ -2712,12 +2712,12 @@ ValueNum ValueNumStore::ExtendPtrVN(GenTreePtr opA, FieldSeqNode* fldSeq)
     return res;
 }
 
-void Compiler::fgValueNumberArrIndexAssign(CORINFO_CLASS_HANDLE elemTypeEq,
-                                           ValueNum             arrVN,
-                                           ValueNum             inxVN,
-                                           FieldSeqNode*        fldSeq,
-                                           ValueNum             rhsVN,
-                                           var_types            indType)
+ValueNum Compiler::fgValueNumberArrIndexAssign(CORINFO_CLASS_HANDLE elemTypeEq,
+                                               ValueNum             arrVN,
+                                               ValueNum             inxVN,
+                                               FieldSeqNode*        fldSeq,
+                                               ValueNum             rhsVN,
+                                               var_types            indType)
 {
     bool      invalidateArray      = false;
     ValueNum  elemTypeEqVN         = vnStore->VNForHandle(ssize_t(elemTypeEq), GTF_ICON_CLASS_HDL);
@@ -2813,10 +2813,7 @@ void Compiler::fgValueNumberArrIndexAssign(CORINFO_CLASS_HANDLE elemTypeEq,
     }
 #endif // DEBUG
 
-    // bbHeapDef must be set to true for any block that Mutates the global Heap
-    assert(compCurBB->bbHeapDef);
-
-    fgCurHeapVN = vnStore->VNForMapStore(TYP_REF, fgCurHeapVN, elemTypeEqVN, newValAtArrType);
+    return vnStore->VNForMapStore(TYP_REF, fgCurHeapVN, elemTypeEqVN, newValAtArrType);
 }
 
 ValueNum Compiler::fgValueNumberArrIndexVal(GenTreePtr tree, VNFuncApp* pFuncApp, ValueNum addrXvn)
@@ -4756,22 +4753,26 @@ ValueNum Compiler::fgHeapVNForLoopSideEffects(BasicBlock* entryBlock, unsigned i
 
 void Compiler::fgMutateHeap(GenTreePtr tree DEBUGARG(const char* msg))
 {
+    // Update the current heap VN, and if we're tracking the heap SSA # caused by this node, record it.
+    recordHeapStore(tree, vnStore->VNForExpr(compCurBB, TYP_REF) DEBUGARG(msg));
+}
+
+void Compiler::recordHeapStore(GenTreePtr curTree, ValueNum heapVN DEBUGARG(const char* msg))
+{
     // bbHeapDef must be set to true for any block that Mutates the global Heap
     assert(compCurBB->bbHeapDef);
-
-    fgCurHeapVN = vnStore->VNForExpr(compCurBB, TYP_REF);
-
-    // If we're tracking the heap SSA # caused by this node, record it.
-    fgValueNumberRecordHeapSsa(tree);
+    fgCurHeapVN = heapVN;
 
 #ifdef DEBUG
     if (verbose)
     {
         printf("  fgCurHeapVN assigned by %s at ", msg);
-        Compiler::printTreeID(tree);
-        printf(" to new unique VN: " STR_VN "%x.\n", fgCurHeapVN);
+        Compiler::printTreeID(curTree);
+        printf(" to VN: " STR_VN "%x.\n", heapVN);
     }
 #endif // DEBUG
+
+    fgValueNumberRecordHeapSsa(curTree);
 }
 
 void Compiler::fgValueNumberRecordHeapSsa(GenTreePtr tree)
@@ -5832,9 +5833,9 @@ void Compiler::fgValueNumberTree(GenTreePtr tree, bool evalAsgLhsInd)
                             }
 #endif // DEBUG
 
-                            fgValueNumberArrIndexAssign(elemTypeEq, arrVN, inxVN, fldSeq, rhsVNPair.GetLiberal(),
-                                                        lhs->TypeGet());
-                            fgValueNumberRecordHeapSsa(tree);
+                            ValueNum heapVN = fgValueNumberArrIndexAssign(elemTypeEq, arrVN, inxVN, fldSeq,
+                                                                          rhsVNPair.GetLiberal(), lhs->TypeGet());
+                            recordHeapStore(tree, heapVN DEBUGARG("Array element assignment"));
                         }
                         // It may be that we haven't parsed it yet.  Try.
                         else if (lhs->gtFlags & GTF_IND_ARR_INDEX)
@@ -5869,9 +5870,9 @@ void Compiler::fgValueNumberTree(GenTreePtr tree, bool evalAsgLhsInd)
                                 fldSeq = GetFieldSeqStore()->Append(fldSeq, zeroOffsetFldSeq);
                             }
 
-                            fgValueNumberArrIndexAssign(elemTypeEq, arrVN, inxVN, fldSeq, rhsVNPair.GetLiberal(),
-                                                        lhs->TypeGet());
-                            fgValueNumberRecordHeapSsa(tree);
+                            ValueNum heapVN = fgValueNumberArrIndexAssign(elemTypeEq, arrVN, inxVN, fldSeq,
+                                                                          rhsVNPair.GetLiberal(), lhs->TypeGet());
+                            recordHeapStore(tree, heapVN DEBUGARG("assignment to unparseable array expression"));
                         }
                         else if (arg->IsFieldAddr(this, &obj, &staticOffset, &fldSeq))
                         {
@@ -5980,10 +5981,11 @@ void Compiler::fgValueNumberTree(GenTreePtr tree, bool evalAsgLhsInd)
                                 assert(compCurBB->bbHeapDef);
 
                                 // Update the field map for firstField in Heap to this new value.
-                                fgCurHeapVN = vnStore->VNApplySelectorsAssign(VNK_Liberal, fgCurHeapVN, firstFieldOnly,
-                                                                              newFldMapVN, indType, compCurBB);
+                                ValueNum heapVN =
+                                    vnStore->VNApplySelectorsAssign(VNK_Liberal, fgCurHeapVN, firstFieldOnly,
+                                                                    newFldMapVN, indType, compCurBB);
 
-                                fgValueNumberRecordHeapSsa(tree);
+                                recordHeapStore(tree, heapVN DEBUGARG("StoreField"));
                             }
                         }
                         else
@@ -6033,8 +6035,7 @@ void Compiler::fgValueNumberTree(GenTreePtr tree, bool evalAsgLhsInd)
                     assert(compCurBB->bbHeapDef);
 
                     // Update the field map for the fgCurHeapVN
-                    fgCurHeapVN = storeVal;
-                    fgValueNumberRecordHeapSsa(tree);
+                    recordHeapStore(tree, storeVal DEBUGARG("Static Field store"));
                 }
                 break;
 

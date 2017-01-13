@@ -3804,18 +3804,18 @@ public:
     // tree node).
     void fgValueNumber();
 
-    // Updates "fgCurHeap" via the assignment H[elemTypeEq][arrVN][inx][fldSeq] = rhsVN.
+    // Computes new heap VN via the assignment H[elemTypeEq][arrVN][inx][fldSeq] = rhsVN.
     // Assumes that "elemTypeEq" is the (equivalence class rep) of the array element type.
     // The 'indType' is the indirection type of the lhs of the assignment and will typically
     // match the element type of the array or fldSeq.  When this type doesn't match
     // or if the fldSeq is 'NotAField' we invalidate the array contents H[elemTypeEq][arrVN]
     //
-    void fgValueNumberArrIndexAssign(CORINFO_CLASS_HANDLE elemTypeEq,
-                                     ValueNum             arrVN,
-                                     ValueNum             inxVN,
-                                     FieldSeqNode*        fldSeq,
-                                     ValueNum             rhsVN,
-                                     var_types            indType);
+    ValueNum fgValueNumberArrIndexAssign(CORINFO_CLASS_HANDLE elemTypeEq,
+                                         ValueNum             arrVN,
+                                         ValueNum             inxVN,
+                                         FieldSeqNode*        fldSeq,
+                                         ValueNum             rhsVN,
+                                         var_types            indType);
 
     // Requires that "tree" is a GT_IND marked as an array index, and that its address argument
     // has been parsed to yield the other input arguments.  If evaluation of the address
@@ -3853,6 +3853,9 @@ public:
 
     // Called when an operation (performed by "tree", described by "msg") may cause the global Heap to be mutated.
     void fgMutateHeap(GenTreePtr tree DEBUGARG(const char* msg));
+
+    // For a store at curTree, ecord the new heapVN in curHeapVN and curTree's HeapSsaMap entry.
+    void recordHeapStore(GenTreePtr curTree, ValueNum heapVN DEBUGARG(const char* msg));
 
     // Tree caused an update in the current heap VN.  If "tree" has an associated heap SSA #, record that
     // value in that SSA #.
