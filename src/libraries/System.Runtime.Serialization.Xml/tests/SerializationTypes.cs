@@ -4160,3 +4160,19 @@ public class MycodeGenerator : XmlSerializationGeneratedCode
 {
 
 }
+
+public class SoapEncodedTestType1
+{
+    public int IntValue;
+    public double DoubleValue;
+    public string StringValue;
+    public DateTime DateTimeValue;
+}
+
+public enum SoapEncodedTestEnum
+{
+    [SoapEnum("Small")]
+    A,
+    [SoapEnum("Large")]
+    B
+}

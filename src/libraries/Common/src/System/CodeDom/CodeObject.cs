@@ -5,10 +5,18 @@
 using System.Collections;
 using System.Collections.Specialized;
 
+#if !FEATURE_SERIALIZATION
 namespace System.CodeDom
+#else
+namespace System.Runtime.Serialization
+#endif
 {
     [Serializable]
+#if !FEATURE_SERIALIZATION
     public class CodeObject
+#else
+    internal class CodeObject
+#endif
     {
         private IDictionary _userData = null;
 

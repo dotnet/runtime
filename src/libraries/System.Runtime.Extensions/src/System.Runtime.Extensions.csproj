@@ -185,8 +185,8 @@
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetSystemDirectoryW.cs">
       <Link>Common\Interop\Windows\kernel32\Interop.GetSystemDirectoryW.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\sspicli\Interop.GetUserNameExW.cs">
-      <Link>Common\Interop\Windows\sspicli\Interop.GetUserNameExW.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\secur32\Interop.GetUserNameExW.cs">
+      <Link>Common\Interop\Windows\secur32\Interop.GetUserNameExW.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetVersionExW.cs">
       <Link>Common\Interop\Windows\kernel32\Interop.GetVersionExW.cs</Link>

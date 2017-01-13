@@ -72,7 +72,7 @@
     <Compile Include="System\CodeDom\CodeNamespaceCollection.cs" />
     <Compile Include="System\CodeDom\CodeNamespaceImport.cs" />
     <Compile Include="System\CodeDom\CodeNamespaceImportCollection.cs" />
-    <Compile Include="System\CodeDom\CodeObject.cs" />
+    <Compile Include="$(CommonPath)\System\CodeDom\CodeObject.cs" />
     <Compile Include="System\CodeDom\CodeObjectCreateExpression.cs" />
     <Compile Include="System\CodeDom\CodeParameterDeclarationExpression.cs" />
     <Compile Include="System\CodeDom\CodeParameterDeclarationExpressionCollection.cs" />
@@ -100,8 +100,8 @@
     <Compile Include="System\CodeDom\CodeTypeOfExpression.cs" />
     <Compile Include="System\CodeDom\CodeTypeParameter.cs" />
     <Compile Include="System\CodeDom\CodeTypeParameterCollection.cs" />
-    <Compile Include="System\CodeDom\CodeTypeReference.cs" />
-    <Compile Include="System\CodeDom\CodeTypeReferenceCollection.cs" />
+    <Compile Include="$(CommonPath)\System\CodeDom\CodeTypeReference.cs" />
+    <Compile Include="$(CommonPath)\System\CodeDom\CodeTypeReferenceCollection.cs" />
     <Compile Include="System\CodeDom\CodeTypeReferenceExpression.cs" />
     <Compile Include="System\CodeDom\CodeVariableDeclarationStatement.cs" />
     <Compile Include="System\CodeDom\CodeVariableReferenceExpression.cs" />

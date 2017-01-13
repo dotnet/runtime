@@ -164,7 +164,7 @@ namespace Internal.Cryptography
                 _outer.Mode,
                 blockSizeInBytes,
                 key,
-                0,
+                false,
                 iv,
                 encrypting);
 
