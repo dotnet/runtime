@@ -594,11 +594,25 @@ namespace System.Diagnostics.Tests
                 eventSourceListener.ResetEventCountAndLastEvent();
 
                 // Stop the ASP.NET reqeust.  
-                aspNetCoreSource.Write("Microsoft.AspNetCore.Hosting.EndRequest", null);
+                aspNetCoreSource.Write("Microsoft.AspNetCore.Hosting.EndRequest", 
+                    new
+                    {
+                        httpContext = new
+                        {
+                            Response = new
+                            {
+                                StatusCode = "200"
+                            },
+                            TraceIdentifier = "MyTraceId"
+                        }
+                    });
                 Assert.Equal(1, eventSourceListener.EventCount); // Exactly one more event has been emitted.
                 Assert.Equal("Activity1Stop", eventSourceListener.LastEvent.EventSourceEventName);
                 Assert.Equal("Microsoft.AspNetCore", eventSourceListener.LastEvent.SourceName);
                 Assert.Equal("Microsoft.AspNetCore.Hosting.EndRequest", eventSourceListener.LastEvent.EventName);
+                Assert.True(2 <= eventSourceListener.LastEvent.Arguments.Count);
+                Assert.Equal("MyTraceId", eventSourceListener.LastEvent.Arguments["TraceIdentifier"]);
+                Assert.Equal("200", eventSourceListener.LastEvent.Arguments["StatusCode"]);
                 eventSourceListener.ResetEventCountAndLastEvent();
             }
         }
