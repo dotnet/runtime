@@ -3839,6 +3839,9 @@ public:
     // "GT_IND" that does the dereference, and it is given the returned value number.
     ValueNum fgValueNumberArrIndexVal(GenTreePtr tree, struct VNFuncApp* funcApp, ValueNum addrXvn);
 
+    // Compute the value number for a byref-exposed load of the given type via the given pointerVN.
+    ValueNum fgValueNumberByrefExposedLoad(var_types type, ValueNum pointerVN);
+
     unsigned fgVNPassesCompleted; // Number of times fgValueNumber has been run.
 
     // Utility functions for fgValueNumber.
@@ -3852,10 +3855,19 @@ public:
     ValueNum fgMemoryVNForLoopSideEffects(MemoryKind memoryKind, BasicBlock* entryBlock, unsigned loopNum);
 
     // Called when an operation (performed by "tree", described by "msg") may cause the GcHeap to be mutated.
+    // As GcHeap is a subset of ByrefExposed, this will also annotate the ByrefExposed mutation.
     void fgMutateGcHeap(GenTreePtr tree DEBUGARG(const char* msg));
 
-    // For a GC heap store at curTree, record the new curHeapVN and update curTree's MemorySsaMap.
+    // Called when an operation (performed by "tree", described by "msg") may cause an address-exposed local to be
+    // mutated.
+    void fgMutateAddressExposedLocal(GenTreePtr tree DEBUGARG(const char* msg));
+
+    // For a GC heap store at curTree, record the new curMemoryVN's and update curTree's MemorySsaMap.
+    // As GcHeap is a subset of ByrefExposed, this will also record the ByrefExposed store.
     void recordGcHeapStore(GenTreePtr curTree, ValueNum gcHeapVN DEBUGARG(const char* msg));
+
+    // For a store to an address-exposed local at curTree, record the new curMemoryVN and update curTree's MemorySsaMap.
+    void recordAddressExposedLocalStore(GenTreePtr curTree, ValueNum memoryVN DEBUGARG(const char* msg));
 
     // Tree caused an update in the current memory VN.  If "tree" has an associated heap SSA #, record that
     // value in that SSA #.
