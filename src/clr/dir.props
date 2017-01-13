@@ -170,6 +170,8 @@
     <MinOSForArch>win7</MinOSForArch>
     <MinOSForArch Condition="'$(PackagePlatform)' == 'arm'">win8</MinOSForArch>
     <MinOSForArch Condition="'$(PackagePlatform)' == 'arm64'">win10</MinOSForArch>
+        <!-- This property must be set to disable local package installation -->
+    <SkipInstallLocallyBuiltPackages>true</SkipInstallLocallyBuiltPackages>
 
     <!-- Define packaging attributes for cross target components -->
     <HasCrossTargetComponents Condition="'$(TargetsWindows)' == 'true' and ('$(PackagePlatform)' =='arm64' or '$(PackagePlatform)' =='arm')">true</HasCrossTargetComponents>
