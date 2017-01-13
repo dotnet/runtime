@@ -748,18 +748,11 @@ compute_class_bitmap (MonoClass *klass, gsize *bitmap, int size, int offset, int
 
 			type = mono_type_get_underlying_type (field->type);
 			switch (type->type) {
+			case MONO_TYPE_U:
 			case MONO_TYPE_I:
 			case MONO_TYPE_PTR:
 			case MONO_TYPE_FNPTR:
 				break;
-			/* only UIntPtr is allowed to be GC-tracked and only in mscorlib */
-			case MONO_TYPE_U:
-#ifdef HAVE_SGEN_GC
-				break;
-#else
-				if (klass->image != mono_defaults.corlib)
-					break;
-#endif
 			case MONO_TYPE_STRING:
 			case MONO_TYPE_SZARRAY:
 			case MONO_TYPE_CLASS:

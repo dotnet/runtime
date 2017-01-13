@@ -69,9 +69,6 @@ struct _MonoGHashTable {
 	const char *msg;
 };
 
-static MonoGHashTable *
-mono_g_hash_table_new (GHashFunc hash_func, GEqualFunc key_equal_func);
-
 #ifdef HAVE_SGEN_GC
 static MonoGCDescriptor table_hash_descr = MONO_GC_DESCRIPTOR_NULL;
 
@@ -122,7 +119,25 @@ calc_prime (int x)
 MonoGHashTable *
 mono_g_hash_table_new_type (GHashFunc hash_func, GEqualFunc key_equal_func, MonoGHashGCType type, MonoGCRootSource source, const char *msg)
 {
-	MonoGHashTable *hash = mono_g_hash_table_new (hash_func, key_equal_func);
+	MonoGHashTable *hash;
+
+	if (hash_func == NULL)
+		hash_func = g_direct_hash;
+	if (key_equal_func == NULL)
+		key_equal_func = g_direct_equal;
+
+#ifdef HAVE_SGEN_GC
+	hash = mg_new0 (MonoGHashTable, 1);
+#else
+	hash = mono_gc_alloc_fixed (sizeof (MonoGHashTable), MONO_GC_ROOT_DESCR_FOR_FIXED (sizeof (MonoGHashTable)), source, msg);
+#endif
+
+	hash->hash_func = hash_func;
+	hash->key_equal_func = key_equal_func;
+
+	hash->table_size = g_spaced_primes_closest (1);
+	hash->table = mg_new0 (Slot *, hash->table_size);
+	hash->last_rehash = hash->table_size;
 
 	hash->gc_type = type;
 	hash->source = source;
@@ -141,27 +156,6 @@ mono_g_hash_table_new_type (GHashFunc hash_func, GEqualFunc key_equal_func, Mono
 	mono_gc_register_root_wbarrier ((char*)hash, sizeof (MonoGHashTable), table_hash_descr, source, msg);
 #endif
 
-	return hash;
-}
-
-static MonoGHashTable *
-mono_g_hash_table_new (GHashFunc hash_func, GEqualFunc key_equal_func)
-{
-	MonoGHashTable *hash;
-
-	if (hash_func == NULL)
-		hash_func = g_direct_hash;
-	if (key_equal_func == NULL)
-		key_equal_func = g_direct_equal;
-	hash = mg_new0 (MonoGHashTable, 1);
-
-	hash->hash_func = hash_func;
-	hash->key_equal_func = key_equal_func;
-
-	hash->table_size = g_spaced_primes_closest (1);
-	hash->table = mg_new0 (Slot *, hash->table_size);
-	hash->last_rehash = hash->table_size;
-	
 	return hash;
 }
 
@@ -404,7 +398,11 @@ mono_g_hash_table_destroy (MonoGHashTable *hash)
 		}
 	}
 	mg_free (hash->table);
+#ifdef HAVE_SGEN_GC
 	mg_free (hash);
+#else
+	mono_gc_free_fixed (hash);
+#endif
 }
 
 static void
