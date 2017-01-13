@@ -63,6 +63,7 @@ parser.add_argument('-build_type', dest='build_type', default='Debug')
 parser.add_argument('-clr_root', dest='clr_root', default=None)
 parser.add_argument('-fx_root', dest='fx_root', default=None)
 parser.add_argument('-fx_branch', dest='fx_branch', default='master')
+parser.add_argument('-fx_commit', dest='fx_commit', default=None)
 parser.add_argument('-env_script', dest='env_script', default=None)
 
 
@@ -75,8 +76,8 @@ def validate_args(args):
     Args:
         args (argparser.ArgumentParser): Args parsed by the argument parser.
     Returns:
-        (arch, build_type, clr_root, fx_root, fx_branch, env_script)
-            (str, str, str, str, str, str)
+        (arch, build_type, clr_root, fx_root, fx_branch, fx_commit, env_script)
+            (str, str, str, str, str, str, str)
     Notes:
     If the arguments are valid then return them all in a tuple. If not, raise
     an exception stating x argument is incorrect.
@@ -87,6 +88,7 @@ def validate_args(args):
     clr_root = args.clr_root
     fx_root = args.fx_root
     fx_branch = args.fx_branch
+    fx_commit = args.fx_commit
     env_script = args.env_script
 
     def validate_arg(arg, check):
@@ -115,6 +117,9 @@ def validate_args(args):
     validate_arg(build_type, lambda item: item in valid_build_types)
     validate_arg(fx_branch, lambda item: True)
 
+    if fx_commit is None:
+        fx_commit = '551fe49174378adcbf785c0ab12fc69355cef6e8' if fx_branch == 'master' else 'HEAD'
+
     if clr_root is None:
         clr_root = nth_dirname(os.path.abspath(sys.argv[0]), 3)
     else:
@@ -130,7 +135,7 @@ def validate_args(args):
         validate_arg(env_script, lambda item: os.path.isfile(env_script))
         env_script = os.path.abspath(env_script)
 
-    args = (arch, build_type, clr_root, fx_root, fx_branch, env_script)
+    args = (arch, build_type, clr_root, fx_root, fx_branch, fx_commit, env_script)
 
     log('Configuration:')
     log(' arch: %s' % arch)
@@ -138,6 +143,7 @@ def validate_args(args):
     log(' clr_root: %s' % clr_root)
     log(' fx_root: %s' % fx_root)
     log(' fx_branch: %s' % fx_branch)
+    log(' fx_commit: %s' % fx_commit)
     log(' env_script: %s' % env_script)
 
     return args
@@ -191,7 +197,7 @@ def main(args):
     global Corefx_url
     global Unix_name_map
 
-    arch, build_type, clr_root, fx_root, fx_branch, env_script = validate_args(
+    arch, build_type, clr_root, fx_root, fx_branch, fx_commit, env_script = validate_args(
         args)
 
     clr_os = 'Windows_NT' if Is_windows else Unix_name_map[os.uname()[0]]
@@ -227,6 +233,20 @@ def main(args):
 
     if testing:
         os.makedirs(fx_root)
+        returncode = 0
+    else:
+        returncode = os.system(command)
+
+    if returncode != 0:
+        sys.exit(returncode)
+
+
+    command = "git -C %s checkout %s" % (
+        fx_root, fx_commit)
+
+    log(command)
+
+    if testing:
         returncode = 0
     else:
         returncode = os.system(command)
