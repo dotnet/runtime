@@ -12719,5 +12719,8 @@
       <Member MemberType="Field" Name="Never" />
       <Member MemberType="Field" Name="Advanced" />
     </Type>
+    <Type Status="ImplRoot" Name="System.Runtime.CompilerServices.Unsafe">
+      <Member Status="ImplRoot" Name="AsPointer&lt;T&gt;(T@)" />
+    </Type>
   </Assembly>
 </ThinModel>

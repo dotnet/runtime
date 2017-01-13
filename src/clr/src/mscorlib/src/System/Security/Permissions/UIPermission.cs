@@ -184,35 +184,6 @@ namespace System.Security.Permissions
             }
         }
 
-#if false    
-        //------------------------------------------------------
-        //
-        // OBJECT METHOD OVERRIDES
-        //
-        //------------------------------------------------------
-        public String ToString()
-        {
-    #if _DEBUG
-            StringBuilder sb = new StringBuilder();
-            sb.Append("UIPermission(");
-            if (IsUnrestricted())
-            {
-                sb.Append("Unrestricted");
-            }
-            else
-            {
-                sb.Append(m_stateNameTableWindow[m_windowFlag]);
-                sb.Append(", ");
-                sb.Append(m_stateNameTableClipboard[m_clipboardFlag]);
-            }
-            
-            sb.Append(")");
-            return sb.ToString();
-    #else
-            return super.ToString();
-    #endif
-        }
-#endif
         
         //------------------------------------------------------
         //

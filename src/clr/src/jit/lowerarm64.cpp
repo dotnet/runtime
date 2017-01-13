@@ -136,7 +136,7 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
         GenTree* op2;
 
         default:
-            info->dstCount = (tree->TypeGet() == TYP_VOID) ? 0 : 1;
+            info->dstCount = tree->IsValue() ? 1 : 0;
             if (kind & (GTK_CONST | GTK_LEAF))
             {
                 info->srcCount = 0;

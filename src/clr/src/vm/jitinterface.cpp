@@ -2286,6 +2286,58 @@ BOOL CEEInfo::checkMethodModifier(CORINFO_METHOD_HANDLE hMethod,
 }
 
 /*********************************************************************/
+static unsigned ComputeGCLayout(MethodTable * pMT, BYTE* gcPtrs)
+{
+    STANDARD_VM_CONTRACT;
+
+    unsigned result = 0;
+
+    _ASSERTE(pMT->IsValueType());
+
+    ApproxFieldDescIterator fieldIterator(pMT, ApproxFieldDescIterator::INSTANCE_FIELDS);
+    for (FieldDesc *pFD = fieldIterator.Next(); pFD != NULL; pFD = fieldIterator.Next())
+    {
+        int fieldStartIndex = pFD->GetOffset() / sizeof(void*);
+
+        if (pFD->GetFieldType() != ELEMENT_TYPE_VALUETYPE)
+        {
+            if (pFD->IsObjRef())
+            {
+                if (gcPtrs[fieldStartIndex] == TYPE_GC_NONE)
+                {
+                    gcPtrs[fieldStartIndex] = TYPE_GC_REF;
+                    result++;
+                }
+                else if (gcPtrs[fieldStartIndex] != TYPE_GC_REF)
+                {
+                    COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+                }
+            }
+        }
+        else
+        {
+            MethodTable * pFieldMT = pFD->GetApproxFieldTypeHandleThrowing().AsMethodTable();
+            if (pFieldMT->HasSameTypeDefAs(g_pByReferenceClass))
+            {
+                if (gcPtrs[fieldStartIndex] == TYPE_GC_NONE)
+                {
+                    gcPtrs[fieldStartIndex] = TYPE_GC_BYREF;
+                    result++;
+                }
+                else if (gcPtrs[fieldStartIndex] != TYPE_GC_BYREF)
+                {
+                    COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+                }
+            }
+            else
+            {
+                result += ComputeGCLayout(pFieldMT, gcPtrs + fieldStartIndex);
+            }
+        }
+    }
+    return result;
+}
+
 unsigned CEEInfo::getClassGClayout (CORINFO_CLASS_HANDLE clsHnd, BYTE* gcPtrs)
 {
     CONTRACTL {
@@ -2313,10 +2365,12 @@ unsigned CEEInfo::getClassGClayout (CORINFO_CLASS_HANDLE clsHnd, BYTE* gcPtrs)
         }
         else
         {
-            // TODO-SPAN: Proper GC reporting
             memset(gcPtrs, TYPE_GC_NONE,
-                   (VMClsHnd.GetSize() + sizeof(void*) -1)/ sizeof(void*));
-            result = 0;
+                (VMClsHnd.GetSize() + sizeof(void*) - 1) / sizeof(void*));
+            // Note: This case is more complicated than the TypedReference case
+            // due to ByRefLike structs being included as fields in other value 
+            // types (TypedReference can not be.)
+            result = ComputeGCLayout(VMClsHnd.AsMethodTable(), gcPtrs);
         }
     }
     else if (VMClsHnd.IsNativeValueType())
@@ -8763,6 +8817,29 @@ CorInfoIntrinsics CEEInfo::getIntrinsicID(CORINFO_METHOD_HANDLE methodHnd,
     if (method->IsFCall())
     {
         result = ECall::GetIntrinsicID(method);
+    }
+    else
+    {
+        MethodTable * pMT = method->GetMethodTable();
+        if (pMT->IsByRefLike() && pMT->GetModule()->IsSystem())
+        {
+            if (pMT->HasSameTypeDefAs(g_pByReferenceClass))
+            {
+                // ByReference<T> has just two methods: constructor and Value property
+                if (method->IsCtor())
+                {
+                    result = CORINFO_INTRINSIC_ByReference_Ctor;
+                }
+                else
+                {
+                    _ASSERTE(strcmp(method->GetName(), "get_Value") == 0);
+                    result = CORINFO_INTRINSIC_ByReference_Value;
+                }
+                *pMustExpand = true;
+            }
+
+            // TODO-SPAN: Span<T> intrinsics for optimizations
+        }
     }
 
     EE_TO_JIT_TRANSITION();

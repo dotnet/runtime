@@ -265,10 +265,7 @@ void Compiler::fgPerNodeLocalVarLiveness(GenTree* tree)
                 GenTreePtr           addrArg         = tree->gtOp.gtOp1->gtEffectiveVal(/*commaOnly*/ true);
                 if (!addrArg->DefinesLocalAddr(this, /*width doesn't matter*/ 0, &dummyLclVarTree, &dummyIsEntire))
                 {
-                    if (!fgCurHeapDef)
-                    {
-                        fgCurHeapUse = true;
-                    }
+                    fgCurHeapUse = true;
                 }
                 else
                 {

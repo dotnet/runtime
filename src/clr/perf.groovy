@@ -41,7 +41,7 @@ def static getOSGroup(def os) {
 			{
 				parameters
 				{
-					stringParam('BenchviewCommitName', '%ghprbPullTitle%', 'The name that you will be used to build the full title of a run in Benchview.  The final name will be of the form <branch> private BenchviewCommitName')
+					stringParam('BenchviewCommitName', '\${ghprbPullTitle}', 'The name that you will be used to build the full title of a run in Benchview.  The final name will be of the form <branch> private BenchviewCommitName')
 				}
 			}
 			def configuration = 'Release'
@@ -107,7 +107,7 @@ def static getOSGroup(def os) {
 			{
 				parameters
 				{
-					stringParam('BenchviewCommitName', '\$ghprbPullTitle', 'The name that you will be used to build the full title of a run in Benchview.  The final name will be of the form <branch> private BenchviewCommitName')
+					stringParam('BenchviewCommitName', '\${ghprbPullTitle}', 'The name that you will be used to build the full title of a run in Benchview.  The final name will be of the form <branch> private BenchviewCommitName')
 				}
 			}
 			def osGroup = getOSGroup(os)

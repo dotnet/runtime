@@ -1918,6 +1918,10 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
     emitter*  emit       = getEmitter();
 
 #ifdef DEBUG
+    // Validate that all the operands for the current node are consumed in order.
+    // This is important because LSRA ensures that any necessary copies will be
+    // handled correctly.
+    lastConsumedNode = nullptr;
     if (compiler->verbose)
     {
         unsigned seqNum = treeNode->gtSeqNum; // Useful for setting a conditional break in Visual Studio
@@ -2262,7 +2266,6 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
             else
             {
                 assert(!data->isContained());
-                genConsumeReg(data);
                 dataReg = data->gtRegNum;
             }
             assert(dataReg != REG_NA);
@@ -2314,7 +2317,6 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
                 else
                 {
                     assert(!data->isContained());
-                    genConsumeReg(data);
                     dataReg = data->gtRegNum;
                 }
                 assert(dataReg != REG_NA);
@@ -3798,8 +3800,8 @@ void CodeGen::genRangeCheck(GenTreePtr oper)
     GenTree *    src1, *src2;
     emitJumpKind jmpKind;
 
-    genConsumeRegs(arrLen);
     genConsumeRegs(arrIndex);
+    genConsumeRegs(arrLen);
 
     if (arrIndex->isContainedIntOrIImmed())
     {
@@ -4118,12 +4120,11 @@ void CodeGen::genCodeForShift(GenTreePtr tree)
     assert(tree->gtRegNum != REG_NA);
 
     GenTreePtr operand = tree->gtGetOp1();
-    genConsumeReg(operand);
+    genConsumeOperands(tree->AsOp());
 
     GenTreePtr shiftBy = tree->gtGetOp2();
     if (!shiftBy->IsCnsIntOrI())
     {
-        genConsumeReg(shiftBy);
         getEmitter()->emitIns_R_R_R(ins, size, tree->gtRegNum, operand->gtRegNum, shiftBy->gtRegNum);
     }
     else
