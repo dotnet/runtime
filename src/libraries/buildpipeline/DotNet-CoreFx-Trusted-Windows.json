@@ -159,9 +159,36 @@
       },
       "inputs": {
         "filename": "$(Build.SourcesDirectory)\\corefx\\build-tests.cmd",
-        "arguments": "-buildArch=$(PB_Platform) -$(PB_ConfigurationGroup) -SkipTests -- /p:RuntimeOS=$(PB_RuntimeOS)",
+        "arguments": "-buildArch=$(PB_Platform) -$(PB_ConfigurationGroup) -SkipTests -- /p:RuntimeOS=$(PB_RuntimeOS) /p:ArchiveTests=true",
         "workingFolder": "corefx",
         "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Create Helix Test Jobs",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "c6c4c611-aa2e-4a33-b606-5eaba2196824",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "solution": "src\\tests.builds",
+        "platform": "",
+        "configuration": "",
+        "msbuildArguments": "/t:CloudBuild /p:ArchGroup=$(PB_Platform) /p:ConfigurationGroup=$(PB_ConfigurationGroup) /p:\"EnableCloudTest=$(PB_EnableCloudTest)\" /p:\"BuildMoniker=$(PB_BuildMoniker)\" /p:\"TargetQueue=$(PB_TargetQueue)\" /p:\"TestProduct=corefx\" /p:\"Branch=master\" /p:\"CloudDropAccountName=dotnetbuilddrops\" /p:\"CloudResultsAccountName=dotnetjobresults\" /p:\"CloudDropAccessToken=$(CloudDropAccessToken)\" /p:\"CloudResultsAccessToken=$(PB_CloudResultsAccessToken)\" /p:\"TimeoutInSeconds=1200\" /p:\"TargetOS=Windows_NT\" /p:\"HelixApiAccessKey=$(PB_HelixApiAccessKey)\" /p:HelixApiEndpoint=$(PB_HelixApiEndPoint)",
+        "clean": "false",
+        "maximumCpuCount": "false",
+        "restoreNugetPackages": "false",
+        "logProjectEvents": "false",
+        "createLogFile": "false",
+        "msbuildLocationMethod": "version",
+        "msbuildVersion": "14.0",
+        "msbuildArchitecture": "x64",
+        "msbuildLocation": ""
       }
     },
     {
@@ -427,6 +454,10 @@
     },
     "PB_SymbolsBuildId": {
       "value": "DotNet-CoreFx-$(System.DefinitionId)"
+    },
+    "PB_EnableCloudTest": {
+      "value": "true",
+      "allowOverride": true
     }
   },
   "demands": [
