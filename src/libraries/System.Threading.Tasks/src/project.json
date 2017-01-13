@@ -14,6 +14,11 @@
       "dependencies": {
         "Microsoft.TargetingPack.NETFramework.v4.6": "1.0.1"
       }
+    },
+    "netcoreapp1.2": {
+      "dependencies": {
+        "Microsoft.TargetingPack.Private.CoreRT": "1.0.0-alpha-24912-53" 
+      }
     }
   }
 }

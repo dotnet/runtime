@@ -25,7 +25,7 @@
     <TargetingPackReference Include="mscorlib" />
     <TargetingPackReference Include="System.Core" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'uap101aot'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'uap101aot' or '$(TargetGroup)' == 'netcoreapp1.2corert'">
     <Compile Include="System\Threading\Tasks\TaskExtensions.CoreRT.cs" />
     <TargetingPackReference Include="System.Private.CoreLib" />
   </ItemGroup>
