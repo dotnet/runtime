@@ -346,6 +346,7 @@
     <Compile Include="System\Xml\Schema\XmlSchemaComplexContentExtension.cs" />
     <Compile Include="System\Xml\Schema\XmlSchemaComplexContentRestriction.cs" />
     <Compile Include="System\Xml\Schema\XmlSchemaComplexType.cs" />
+    <Compile Include="System\Xml\Schema\XmlSchemaConstants.cs" />
     <Compile Include="System\Xml\Schema\XmlSchemaContent.cs" />
     <Compile Include="System\Xml\Schema\XmlSchemaContentModel.cs" />
     <Compile Include="System\Xml\Schema\XmlSchemaContentProcessing.cs" />
