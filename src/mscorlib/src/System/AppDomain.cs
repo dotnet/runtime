@@ -1581,7 +1581,6 @@ namespace System
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]              
         internal extern Int32 GetId();
 
-#if FEATURE_APPDOMAIN_RESOURCE_MONITORING
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern void nEnableMonitoring();
 
@@ -1686,7 +1685,6 @@ namespace System
                 return i64LastSurvivedProcessMemory;
             }
         }
-#endif
     }
 
     /// <summary>
