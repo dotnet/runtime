@@ -243,6 +243,7 @@
       "dependencies": {
         "Microsoft.Win32.Registry": "4.4.0-beta-24911-02",
         "Microsoft.Win32.Registry.AccessControl": "4.4.0-beta-24911-02",
+        "System.CodeDom": "4.4.0-beta-24911-02",
         "System.Configuration": "4.4.0-beta-24911-02",
         "System.Diagnostics.Process": "4.4.0-beta-24911-02",
         "System.IO.FileSystem.AccessControl": "4.4.0-beta-24911-02",
