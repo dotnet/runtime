@@ -152,7 +152,7 @@ namespace Mono.Linker.Steps {
 
 		static string GetAssemblyFileName (AssemblyDefinition assembly, string directory)
 		{
-			string file = assembly.Name.Name + (assembly.MainModule.Kind == ModuleKind.Dll ? ".dll" : ".exe");
+			string file = GetOriginalAssemblyFileInfo (assembly).Name;
 			return Path.Combine (directory, file);
 		}
 	}
