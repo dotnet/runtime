@@ -129,7 +129,7 @@ namespace Internal.NativeCrypto
             }
         }
 
-        public static void SetEffectiveKeyLength(this SafeKeyHandle hAlg, int effectiveKeyLength)
+        public static void SetEffectiveKeyLength(this SafeAlgorithmHandle hAlg, int effectiveKeyLength)
         {
             NTSTATUS ntStatus = Interop.BCryptSetIntProperty(hAlg, BCryptPropertyStrings.BCRYPT_EFFECTIVE_KEY_LENGTH, ref effectiveKeyLength, 0);
 
@@ -317,8 +317,28 @@ namespace Internal.NativeCrypto
 
     internal sealed class SafeKeyHandle : SafeBCryptHandle
     {
+        private SafeAlgorithmHandle _parentHandle = null;
+
+        public void SetParentHandle(SafeAlgorithmHandle parentHandle)
+        {
+            Debug.Assert(_parentHandle == null);
+            Debug.Assert(parentHandle != null);
+            Debug.Assert(!parentHandle.IsInvalid);
+
+            bool ignore = false;
+            parentHandle.DangerousAddRef(ref ignore);
+
+            _parentHandle = parentHandle;
+        }
+
         protected sealed override bool ReleaseHandle()
         {
+            if (_parentHandle != null)
+            {
+                _parentHandle.DangerousRelease();
+                _parentHandle = null;
+            }
+
             uint ntStatus = BCryptDestroyKey(handle);
             return ntStatus == 0;
         }

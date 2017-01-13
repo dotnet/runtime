@@ -16,7 +16,9 @@
       <Name>RemoteExecutorConsoleApp</Name>
     </ProjectReference>
     <Compile Include="..\PortedCommon\ReparsePointUtilities.cs" />
+    <Compile Include="..\TestData.cs" />
     <Compile Include="..\FileSystemTest.cs" />
+    <Compile Include="..\PathFeatures.cs" />
     <Compile Include="Perf.Directory.cs" />
     <Compile Include="Perf.File.cs" />
     <Compile Include="Perf.FileInfo.cs" />

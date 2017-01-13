@@ -846,6 +846,51 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal("(o As String)", e.ToString());
         }
 
+        [Fact]
+        public static void NonNullableValueType()
+        {
+            Assert.Throws<ArgumentException>("type", () => Expression.TypeAs(Expression.Constant(0), typeof(int)));
+            Assert.Throws<ArgumentException>("type", () => Expression.TypeAs(Expression.Constant(null), typeof(DateTime)));
+            Assert.Throws<ArgumentException>("type", () => Expression.TypeAs(Expression.Constant(DateTime.MinValue), typeof(DateTime)));
+        }
+
+        [Fact]
+        public static void NullType() =>
+            Assert.Throws<ArgumentNullException>("type", () => Expression.TypeAs(Expression.Constant(""), null));
+
+        [Fact]
+        public static void NullExpression() =>
+            Assert.Throws<ArgumentNullException>("expression", () => Expression.TypeAs(null, typeof(string)));
+
+        [Fact]
+        public static void AsOpenGeneric()
+        {
+            Assert.Throws<ArgumentException>("type", () => Expression.TypeAs(Expression.Constant(""), typeof(List<>)));
+            Assert.Throws<ArgumentException>("type", () => Expression.TypeAs(Expression.Constant(""), typeof(List<>).MakeGenericType(typeof(List<>))));
+        }
+
+        [Fact]
+        public static void PointerType()
+        {
+            Assert.Throws<ArgumentException>(
+                "type", () => Expression.TypeAs(Expression.Constant(""), typeof(int).MakePointerType()));
+        }
+
+        [Fact]
+        public static void ByRefType()
+        {
+            Assert.Throws<ArgumentException>(
+                "type", () => Expression.TypeAs(Expression.Constant(""), typeof(string).MakeByRefType()));
+        }
+
+        [Fact]
+        public static void UnreadableTypeAs()
+        {
+            MemberExpression unreadable = Expression.Property(
+                null, typeof(Unreadable<string>), nameof(Unreadable<string>.WriteOnly));
+            Assert.Throws<ArgumentException>("expression", () => Expression.TypeAs(unreadable, typeof(string)));
+        }
+
         #endregion
 
         #region Generic helpers

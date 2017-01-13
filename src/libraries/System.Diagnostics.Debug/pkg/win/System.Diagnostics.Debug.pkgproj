@@ -9,6 +9,10 @@
     <ProjectReference Include="..\..\src\System.Diagnostics.Debug.csproj">
       <OSGroup>Windows_NT</OSGroup>
     </ProjectReference>
+    <ProjectReference Include="..\..\src\System.Diagnostics.Debug.csproj" >
+      <OSGroup>Windows_NT</OSGroup>
+      <TargetGroup>netcoreapp1.2corert</TargetGroup>
+    </ProjectReference>
     <InboxOnTargetFramework Include="net45" />
     <InboxOnTargetFramework Include="win8" />
     <InboxOnTargetFramework Include="wp80" />

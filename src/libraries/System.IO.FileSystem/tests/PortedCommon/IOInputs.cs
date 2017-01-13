@@ -10,11 +10,6 @@ using System.Runtime.InteropServices;
 
 internal static class IOInputs
 {
-    // see: http://msdn.microsoft.com/en-us/library/aa365247.aspx
-    private static readonly char[] s_invalidFileNameChars = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ?
-        new char[] { '\"', '<', '>', '|', '\0', (Char)1, (Char)2, (Char)3, (Char)4, (Char)5, (Char)6, (Char)7, (Char)8, (Char)9, (Char)10, (Char)11, (Char)12, (Char)13, (Char)14, (Char)15, (Char)16, (Char)17, (Char)18, (Char)19, (Char)20, (Char)21, (Char)22, (Char)23, (Char)24, (Char)25, (Char)26, (Char)27, (Char)28, (Char)29, (Char)30, (Char)31, '*', '?' } :
-        new char[] { '\0' };
-
     public static bool SupportsSettingCreationTime { get { return RuntimeInformation.IsOSPlatform(OSPlatform.Windows); } }
     public static bool SupportsGettingCreationTime { get { return RuntimeInformation.IsOSPlatform(OSPlatform.Windows) | RuntimeInformation.IsOSPlatform(OSPlatform.OSX); } }
 
@@ -141,60 +136,6 @@ internal static class IOInputs
         yield return @"C:\fileName:FileName.txt:AA";
         yield return @"C:\fileName:FileName.txt:AAA";
         yield return @"ftp://fileName:FileName.txt:AAA";
-    }
-
-    public static IEnumerable<string> GetPathsWithInvalidColons()
-    {
-        // Windows specific. We document that these return NotSupportedException.
-        yield return @":";
-        yield return @" :";
-        yield return @"  :";
-        yield return @"C::";
-        yield return @"C::FileName";
-        yield return @"C::FileName.txt";
-        yield return @"C::FileName.txt:";
-        yield return @"C::FileName.txt::";
-        yield return @":f";
-        yield return @":filename";
-        yield return @"file:";
-        yield return @"file:file";
-        yield return @"http:";
-        yield return @"http:/";
-        yield return @"http://";
-        yield return @"http://www";
-        yield return @"http://www.microsoft.com";
-        yield return @"http://www.microsoft.com/index.html";
-        yield return @"http://server";
-        yield return @"http://server/";
-        yield return @"http://server/home";
-        yield return @"file://";
-        yield return @"file:///C|/My Documents/ALetter.html";
-    }
-
-    public static IEnumerable<string> GetPathsWithInvalidCharacters()
-    {
-        // NOTE: That I/O treats "file"/http" specially and throws ArgumentException.
-        // Otherwise, it treats all other urls as alternative data streams
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) // alternate data streams, drive labels, etc.
-        {
-            yield return "\0";
-            yield return "middle\0path";
-            yield return "trailing\0";
-            yield return @"\\?\";
-            yield return @"\\?\UNC\";
-            yield return @"\\?\UNC\LOCALHOST";
-        }
-        else
-        {
-            yield return "\0";
-            yield return "middle\0path";
-            yield return "trailing\0";
-        }
-
-        foreach (char c in s_invalidFileNameChars)
-        {
-            yield return c.ToString();
-        }
     }
 
     public static IEnumerable<string> GetPathsWithComponentLongerThanMaxComponent()

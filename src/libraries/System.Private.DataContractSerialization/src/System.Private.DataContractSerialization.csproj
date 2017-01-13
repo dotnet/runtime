@@ -10,6 +10,7 @@
     <FileAlignment>512</FileAlignment>
     <DebugSymbols>true</DebugSymbols>
     <PlatformTarget>AnyCPU</PlatformTarget>
+    <DefineConstants>$(DefineConstants);FEATURE_SERIALIZATION</DefineConstants>
     <DefineConstants Condition="'$(TargetGroup)'=='uap101aot'">$(DefineConstants);NET_NATIVE</DefineConstants>
     <!-- We do not want to block reflection for this assembly -->
     <BlockReflectionAttribute Condition="'$(TargetGroup)'=='uap101aot'">false</BlockReflectionAttribute>
@@ -142,6 +143,9 @@
     <Compile Include="$(JsonSources)\JsonEncodingStreamWrapper.cs" />
     <Compile Include="$(JsonSources)\JsonFormatGeneratorStatics.cs" Condition="!$(NetNative)" />
     <Compile Include="System\Runtime\Serialization\AccessorBuilder.cs" />
+    <Compile Include="$(CommonPath)\System\CodeDom\CodeTypeReference.cs" />
+    <Compile Include="$(CommonPath)\System\CodeDom\CodeTypeReferenceCollection.cs" />
+    <Compile Include="$(CommonPath)\System\CodeDom\CodeObject.cs" />
     <Compile Include="System\Runtime\Serialization\DataContractSet.cs" />
     <Compile Include="System\Runtime\Serialization\ExportOptions.cs" />
     <Compile Include="System\Runtime\Serialization\IExtensibleDataObject.cs" />
