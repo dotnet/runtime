@@ -205,7 +205,7 @@
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
-      "displayName": "Publish symbols path: \\\\cpvsbuild\\drops\\DotNetCore\\$(Build.DefinitionName)\\$(Build.BuildNumber)\\symbols",
+      "displayName": "Publish symbols path: \\\\cpvsbuild\\drops\\DotNetCore\\$(PB_SymbolsBuildId)\\$(Build.BuildNumber)\\symbols",
       "timeoutInMinutes": 0,
       "task": {
         "id": "0675668a-7bba-4ccb-901d-5ad6554ca653",
@@ -213,7 +213,7 @@
         "definitionType": "task"
       },
       "inputs": {
-        "SymbolsPath": "\\\\cpvsbuild\\drops\\DotNetCore\\$(Build.DefinitionName)\\$(Build.BuildNumber)\\symbols",
+        "SymbolsPath": "\\\\cpvsbuild\\drops\\DotNetCore\\$(PB_SymbolsBuildId)\\$(Build.BuildNumber)\\symbols",
         "SearchPattern": "corefx\\bin\\*$(PB_Platform).$(PB_ConfigurationGroup)\\**\\*.pdb",
         "SymbolsFolder": "",
         "SkipIndexing": "false",
@@ -221,7 +221,7 @@
         "SymbolsMaximumWaitTime": "",
         "SymbolsProduct": "",
         "SymbolsVersion": "",
-        "SymbolsArtifactName": "Symbols_$(ConfigurationGroup)"
+        "SymbolsArtifactName": "Symbols_$(PB_ConfigurationGroup)"
       }
     },
     {
