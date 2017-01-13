@@ -15,7 +15,7 @@
     Temporary until we have proper nuget support to deploy content files.
     Copies supplemental test data to the build output and test directories.
   -->
-  <Target Name="CopySupplementalTestData">
+  <Target Name="CopySupplementalTestData" DependsOnTargets="DiscoverTestInputs">
     <!-- coalesce supplemental test data items with and without DestinationDir metadata -->
     <ItemGroup>
       <_SupplementalTestData Include="@(SupplementalTestData)" Condition="'%(DestinationDir)' != ''">
