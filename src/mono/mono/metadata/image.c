@@ -1077,6 +1077,102 @@ install_pe_loader (void)
 	mono_install_image_loader (&pe_loader);
 }
 
+/*
+Ignored assemblies.
+
+There are some assemblies we need to ignore because they include an implementation that doesn't work under mono.
+Mono provides its own implementation of those assemblies so it's safe to do so.
+
+The ignored_assemblies list is generated using tools/nuget-hash-extractor and feeding the problematic nugets to it.
+
+Right now the list of nugets are the ones that provide the assemblies in $ignored_assemblies_names.
+
+This is to be removed once a proper fix is shipped through nuget.
+
+*/
+
+typedef enum {
+	SYS_RT_INTEROP_RUNTIME_INFO = 0, //System.Runtime.InteropServices.RuntimeInformation
+	SYS_GLOBALIZATION_EXT = 1, //System.Globalization.Extensions
+	SYS_IO_COMPRESSION = 2, //System.IO.Compression
+	SYS_NET_HTTP = 3, //System.Net.Http
+	SYS_TEXT_ENC_CODEPAGES = 4, //System.Text.Encoding.CodePages
+} IgnoredAssemblyNames;
+
+typedef struct {
+	int hash;
+	int assembly_name;
+	const char guid [40];
+} IgnoredAssembly;
+
+const char *ignored_assemblies_names[] = {
+	"System.Runtime.InteropServices.RuntimeInformation.dll",
+	"System.Globalization.Extensions.dll",
+	"System.IO.Compression.dll",
+	"System.Net.Http.dll",
+	"System.Text.Encoding.CodePages.dll"
+};
+
+#define IGNORED_ASSEMBLY(HASH, NAME, GUID, VER_STR)	{ .hash = HASH, .assembly_name = NAME, .guid = GUID }
+
+static const IgnoredAssembly ignored_assemblies [] = {
+	IGNORED_ASSEMBLY (0x1136045D, SYS_GLOBALIZATION_EXT, "475DBF02-9F68-44F1-8FB5-C9F69F1BD2B1", "4.0.0 net46"),
+	IGNORED_ASSEMBLY (0x358C9723, SYS_GLOBALIZATION_EXT, "5FCD54F0-4B97-4259-875D-30E481F02EA2", "4.0.1 net46"),
+	IGNORED_ASSEMBLY (0x450A096A, SYS_GLOBALIZATION_EXT, "E9FCFF5B-4DE1-4BDC-9CE8-08C640FC78CC", "4.3.0 net46"),
+	IGNORED_ASSEMBLY (0x7A39EA2D, SYS_IO_COMPRESSION, "C665DC9B-D9E5-4D00-98ED-E4F812F23545", "4.0.0 netcore50"),
+	IGNORED_ASSEMBLY (0x1CBD59A2, SYS_IO_COMPRESSION, "44FCA06C-A510-4B3E-BDBF-D08D697EF65A", "4.1.0 net46"),
+	IGNORED_ASSEMBLY (0x5E393C29, SYS_IO_COMPRESSION, "3A58A219-266B-47C3-8BE8-4E4F394147AB", "4.3.0 net46"),
+	IGNORED_ASSEMBLY (0x726C7CC1, SYS_NET_HTTP, "7C0B577F-A4FD-47F1-ADF5-EE65B5A04BB5", "4.0.0 netcore50"),
+	IGNORED_ASSEMBLY (0x27726A90, SYS_NET_HTTP, "269B562C-CC15-4736-B1B1-68D4A43CAA98", "4.1.0 net46"),
+	IGNORED_ASSEMBLY (0x10CADA75, SYS_NET_HTTP, "EA2EC6DC-51DD-479C-BFC2-E713FB9E7E47", "4.1.1 net46"),
+	IGNORED_ASSEMBLY (0x8437178B, SYS_NET_HTTP, "C0E04D9C-70CF-48A6-A179-FBFD8CE69FD0", "4.3.0 net46"),
+	IGNORED_ASSEMBLY (0x46A4A1C5, SYS_RT_INTEROP_RUNTIME_INFO, "F13660F8-9D0D-419F-BA4E-315693DD26EA", "4.0.0 net45"),
+	IGNORED_ASSEMBLY (0xD07383BB, SYS_RT_INTEROP_RUNTIME_INFO, "DD91439F-3167-478E-BD2C-BF9C036A1395", "4.3.0 net45"),
+	IGNORED_ASSEMBLY (0x911D9EC3, SYS_TEXT_ENC_CODEPAGES, "C142254F-DEB5-46A7-AE43-6F10320D1D1F", "4.0.1 net46"),
+	IGNORED_ASSEMBLY (0xFA686A38, SYS_TEXT_ENC_CODEPAGES, "FD178CD4-EF4F-44D5-9C3F-812B1E25126B", "4.3.0 net46"),
+};
+
+/*
+Equivalent C# code:
+	static void Main  () {
+		string str = "...";
+		int h = 5381;
+        for (int i = 0;  i < str.Length; ++i)
+            h = ((h << 5) + h) ^ str[i];
+
+		Console.WriteLine ("{0:X}", h);
+	}
+*/
+static int
+hash_guid (const char *str)
+{
+	int h = 5381;
+    while (*str) {
+        h = ((h << 5) + h) ^ *str;
+		++str;
+	}
+
+	return h;
+}
+
+static gboolean
+is_problematic_image (MonoImage *image)
+{
+	int h = hash_guid (image->guid);
+
+	//TODO make this more cache effiecient.
+	// Either sort by hash and bseach or use SoA and make the linear search more cache efficient.
+	for (int i = 0; i < G_N_ELEMENTS (ignored_assemblies); ++i) {
+		if (ignored_assemblies [i].hash == h && !strcmp (image->guid, ignored_assemblies [i].guid)) {
+			const char *needle = ignored_assemblies_names [ignored_assemblies [i].assembly_name];
+			char *p = strcasestr (image->name, needle);
+			if (p && p [strlen (needle)] == 0)
+				return TRUE;
+		}
+	}
+	return FALSE;
+}
+
 static MonoImage *
 do_mono_image_load (MonoImage *image, MonoImageOpenStatus *status,
 		    gboolean care_about_cli, gboolean care_about_pecoff)
@@ -1131,6 +1227,12 @@ do_mono_image_load (MonoImage *image, MonoImageOpenStatus *status,
 
 	if (!mono_image_load_cli_data (image))
 		goto invalid_image;
+
+	if (is_problematic_image (image)) {
+		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Denying load of problematic image %s", image->name);
+		*status = MONO_IMAGE_IMAGE_INVALID;
+		goto invalid_image;
+	}
 
 	if (image->loader == &pe_loader && !image->metadata_only && !mono_verifier_verify_table_data (image, &errors))
 		goto invalid_image;
