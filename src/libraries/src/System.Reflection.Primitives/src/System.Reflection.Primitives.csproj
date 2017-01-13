@@ -12,7 +12,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Release|AnyCPU'" />
-  <ItemGroup Condition="'$(TargetGroup)'=='uap101aot'">
+  <ItemGroup Condition="'$(TargetGroup)'=='uap101aot' or '$(TargetGroup)'=='netcoreapp1.2corert'">
     <Compile Include="System\Reflection\Emit\FlowControl.cs" />
     <Compile Include="System\Reflection\Emit\Opcode.cs" />
     <Compile Include="System\Reflection\Emit\OpCodes.cs" />
