@@ -1132,7 +1132,7 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
         case GT_CNS_INT:
         case GT_PUTARG_REG:
         case GT_PUTARG_STK:
-            info->dstCount = (tree->TypeGet() == TYP_VOID) ? 0 : 1;
+            info->dstCount = tree->IsValue() ? 1 : 0;
             if (kind & (GTK_CONST | GTK_LEAF))
             {
                 info->srcCount = 0;

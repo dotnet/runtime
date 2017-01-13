@@ -847,12 +847,12 @@ Compiler::fgWalkResult Compiler::fgWalkTreePreRec(GenTreePtr* pTree, fgWalkData*
 #ifdef FEATURE_SIMD
             case GT_SIMD_CHK:
 #endif // FEATURE_SIMD
-                result = fgWalkTreePreRec<computeStack>(&tree->gtBoundsChk.gtArrLen, fgWalkData);
+                result = fgWalkTreePreRec<computeStack>(&tree->gtBoundsChk.gtIndex, fgWalkData);
                 if (result == WALK_ABORT)
                 {
                     return result;
                 }
-                result = fgWalkTreePreRec<computeStack>(&tree->gtBoundsChk.gtIndex, fgWalkData);
+                result = fgWalkTreePreRec<computeStack>(&tree->gtBoundsChk.gtArrLen, fgWalkData);
                 if (result == WALK_ABORT)
                 {
                     return result;
@@ -1102,12 +1102,12 @@ Compiler::fgWalkResult Compiler::fgWalkTreePostRec(GenTreePtr* pTree, fgWalkData
 #ifdef FEATURE_SIMD
         case GT_SIMD_CHK:
 #endif // FEATURE_SIMD
-            result = fgWalkTreePostRec<computeStack>(&tree->gtBoundsChk.gtArrLen, fgWalkData);
+            result = fgWalkTreePostRec<computeStack>(&tree->gtBoundsChk.gtIndex, fgWalkData);
             if (result == WALK_ABORT)
             {
                 return result;
             }
-            result = fgWalkTreePostRec<computeStack>(&tree->gtBoundsChk.gtIndex, fgWalkData);
+            result = fgWalkTreePostRec<computeStack>(&tree->gtBoundsChk.gtArrLen, fgWalkData);
             if (result == WALK_ABORT)
             {
                 return result;
@@ -1446,12 +1446,12 @@ Compiler::fgWalkResult Compiler::fgWalkTreeRec(GenTreePtr* pTree, fgWalkData* fg
 #ifdef FEATURE_SIMD
         case GT_SIMD_CHK:
 #endif // FEATURE_SIMD
-            result = fgWalkTreeRec<doPreOrder, doPostOrder>(&tree->gtBoundsChk.gtArrLen, fgWalkData);
+            result = fgWalkTreeRec<doPreOrder, doPostOrder>(&tree->gtBoundsChk.gtIndex, fgWalkData);
             if (result == WALK_ABORT)
             {
                 return result;
             }
-            result = fgWalkTreeRec<doPreOrder, doPostOrder>(&tree->gtBoundsChk.gtIndex, fgWalkData);
+            result = fgWalkTreeRec<doPreOrder, doPostOrder>(&tree->gtBoundsChk.gtArrLen, fgWalkData);
             if (result == WALK_ABORT)
             {
                 return result;
@@ -2378,8 +2378,8 @@ AGAIN:
 #ifdef FEATURE_SIMD
         case GT_SIMD_CHK:
 #endif // FEATURE_SIMD
-            return Compare(op1->gtBoundsChk.gtArrLen, op2->gtBoundsChk.gtArrLen) &&
-                   Compare(op1->gtBoundsChk.gtIndex, op2->gtBoundsChk.gtIndex) &&
+            return Compare(op1->gtBoundsChk.gtIndex, op2->gtBoundsChk.gtIndex) &&
+                   Compare(op1->gtBoundsChk.gtArrLen, op2->gtBoundsChk.gtArrLen) &&
                    (op1->gtBoundsChk.gtThrowKind == op2->gtBoundsChk.gtThrowKind);
 
         case GT_STORE_DYN_BLK:
@@ -2604,11 +2604,11 @@ AGAIN:
 #ifdef FEATURE_SIMD
         case GT_SIMD_CHK:
 #endif // FEATURE_SIMD
-            if (gtHasRef(tree->gtBoundsChk.gtArrLen, lclNum, defOnly))
+            if (gtHasRef(tree->gtBoundsChk.gtIndex, lclNum, defOnly))
             {
                 return true;
             }
-            if (gtHasRef(tree->gtBoundsChk.gtIndex, lclNum, defOnly))
+            if (gtHasRef(tree->gtBoundsChk.gtArrLen, lclNum, defOnly))
             {
                 return true;
             }
@@ -3001,8 +3001,8 @@ AGAIN:
 #ifdef FEATURE_SIMD
         case GT_SIMD_CHK:
 #endif // FEATURE_SIMD
-            hash = genTreeHashAdd(hash, gtHashValue(tree->gtBoundsChk.gtArrLen));
             hash = genTreeHashAdd(hash, gtHashValue(tree->gtBoundsChk.gtIndex));
+            hash = genTreeHashAdd(hash, gtHashValue(tree->gtBoundsChk.gtArrLen));
             hash = genTreeHashAdd(hash, tree->gtBoundsChk.gtThrowKind);
             break;
 
@@ -3265,12 +3265,12 @@ AGAIN:
         case GT_SIMD_CHK:
 #endif // FEATURE_SIMD
         {
-            if (!lvaLclVarRefsAccum(tree->gtBoundsChk.gtArrLen, findPtr, refsPtr, &allVars, &trkdVars))
+            if (!lvaLclVarRefsAccum(tree->gtBoundsChk.gtIndex, findPtr, refsPtr, &allVars, &trkdVars))
             {
                 return false;
             }
             // Otherwise...
-            if (!lvaLclVarRefsAccum(tree->gtBoundsChk.gtIndex, findPtr, refsPtr, &allVars, &trkdVars))
+            if (!lvaLclVarRefsAccum(tree->gtBoundsChk.gtArrLen, findPtr, refsPtr, &allVars, &trkdVars))
             {
                 return false;
             }
@@ -5622,17 +5622,17 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
             costEx = 4; // cmp reg,reg and jae throw (not taken)
             costSz = 7; // jump to cold section
 
-            level = gtSetEvalOrder(tree->gtBoundsChk.gtArrLen);
-            costEx += tree->gtBoundsChk.gtArrLen->gtCostEx;
-            costSz += tree->gtBoundsChk.gtArrLen->gtCostSz;
+            level = gtSetEvalOrder(tree->gtBoundsChk.gtIndex);
+            costEx += tree->gtBoundsChk.gtIndex->gtCostEx;
+            costSz += tree->gtBoundsChk.gtIndex->gtCostSz;
 
-            lvl2 = gtSetEvalOrder(tree->gtBoundsChk.gtIndex);
+            lvl2 = gtSetEvalOrder(tree->gtBoundsChk.gtArrLen);
             if (level < lvl2)
             {
                 level = lvl2;
             }
-            costEx += tree->gtBoundsChk.gtIndex->gtCostEx;
-            costSz += tree->gtBoundsChk.gtIndex->gtCostSz;
+            costEx += tree->gtBoundsChk.gtArrLen->gtCostEx;
+            costSz += tree->gtBoundsChk.gtArrLen->gtCostSz;
 
             break;
 
@@ -5954,8 +5954,8 @@ void Compiler::gtComputeFPlvls(GenTreePtr tree)
             break;
 
         case GT_ARR_BOUNDS_CHECK:
-            gtComputeFPlvls(tree->gtBoundsChk.gtArrLen);
             gtComputeFPlvls(tree->gtBoundsChk.gtIndex);
+            gtComputeFPlvls(tree->gtBoundsChk.gtArrLen);
             noway_assert(!isflt);
             break;
 
@@ -6134,13 +6134,13 @@ GenTreePtr* GenTree::gtGetChildPointer(GenTreePtr parent)
 #ifdef FEATURE_SIMD
         case GT_SIMD_CHK:
 #endif // FEATURE_SIMD
-            if (this == parent->gtBoundsChk.gtArrLen)
-            {
-                return &(parent->gtBoundsChk.gtArrLen);
-            }
             if (this == parent->gtBoundsChk.gtIndex)
             {
                 return &(parent->gtBoundsChk.gtIndex);
+            }
+            if (this == parent->gtBoundsChk.gtArrLen)
+            {
+                return &(parent->gtBoundsChk.gtArrLen);
             }
             if (this == parent->gtBoundsChk.gtIndRngFailBB)
             {
@@ -8341,8 +8341,8 @@ GenTreePtr Compiler::gtCloneExpr(
 #endif // FEATURE_SIMD
             copy = new (this, oper)
                 GenTreeBoundsChk(oper, tree->TypeGet(),
-                                 gtCloneExpr(tree->gtBoundsChk.gtArrLen, addFlags, deepVarNum, deepVarVal),
                                  gtCloneExpr(tree->gtBoundsChk.gtIndex, addFlags, deepVarNum, deepVarVal),
+                                 gtCloneExpr(tree->gtBoundsChk.gtArrLen, addFlags, deepVarNum, deepVarVal),
                                  tree->gtBoundsChk.gtThrowKind);
             break;
 
@@ -9051,9 +9051,9 @@ GenTreePtr GenTree::GetChild(unsigned childNum)
                 switch (childNum)
                 {
                     case 0:
-                        return AsBoundsChk()->gtArrLen;
-                    case 1:
                         return AsBoundsChk()->gtIndex;
+                    case 1:
+                        return AsBoundsChk()->gtArrLen;
                     default:
                         unreached();
                 }
@@ -9227,9 +9227,9 @@ GenTree** GenTreeUseEdgeIterator::GetNextUseEdge() const
             switch (m_state)
             {
                 case 0:
-                    return &m_node->AsBoundsChk()->gtArrLen;
-                case 1:
                     return &m_node->AsBoundsChk()->gtIndex;
+                case 1:
+                    return &m_node->AsBoundsChk()->gtArrLen;
                 default:
                     return nullptr;
             }
@@ -11721,8 +11721,8 @@ void Compiler::gtDispTree(GenTreePtr   tree,
             printf("\n");
             if (!topOnly)
             {
-                gtDispChild(tree->gtBoundsChk.gtArrLen, indentStack, IIArc, nullptr, topOnly);
-                gtDispChild(tree->gtBoundsChk.gtIndex, indentStack, IIArcBottom, nullptr, topOnly);
+                gtDispChild(tree->gtBoundsChk.gtIndex, indentStack, IIArc, nullptr, topOnly);
+                gtDispChild(tree->gtBoundsChk.gtArrLen, indentStack, IIArcBottom, nullptr, topOnly);
             }
             break;
 
@@ -14642,8 +14642,8 @@ void Compiler::gtExtractSideEffList(GenTreePtr  expr,
 #endif // FEATURE_SIMD
         )
     {
-        gtExtractSideEffList(expr->AsBoundsChk()->gtArrLen, pList, flags);
         gtExtractSideEffList(expr->AsBoundsChk()->gtIndex, pList, flags);
+        gtExtractSideEffList(expr->AsBoundsChk()->gtArrLen, pList, flags);
     }
 
     if (expr->OperGet() == GT_DYN_BLK || expr->OperGet() == GT_STORE_DYN_BLK)

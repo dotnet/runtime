@@ -176,8 +176,10 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
 
+        // SPAN-TODO: GC reporting - https://github.com/dotnet/coreclr/issues/8517
+
        _ASSERTE(IsStructPassedInRegs());
-     
+
         TADDR genRegDest = dac_cast<TADDR>(GetStructGenRegDestinationAddress());
         INDEBUG(int remainingBytes = fieldBytes;)
 

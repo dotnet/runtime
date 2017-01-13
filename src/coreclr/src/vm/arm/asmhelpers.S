@@ -1392,8 +1392,6 @@ DelayLoad_MethodCall:
 
     .macro DynamicHelper frameFlags, suffix
 
-__FakePrologName="DelayLoad_Helper\suffix\()_FakeProlog"
-
         NESTED_ENTRY DelayLoad_Helper\suffix\()_FakeProlog, _TEXT, NoHandler
 
         // Match what the lazy thunk has pushed. The actual method arguments will be spilled later.

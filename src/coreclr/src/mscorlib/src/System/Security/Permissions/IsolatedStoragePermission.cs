@@ -123,32 +123,6 @@ namespace System.Security.Permissions {
             }
         }
 
-#if false
-        internal long MachineQuota {
-            set{
-                m_machineQuota = value;
-            }
-            get{
-                return m_machineQuota;
-            }
-        }
-        internal long ExpirationDays {
-            set{
-                m_expirationDays = value;
-            }
-            get{
-                return m_expirationDays;
-            }
-        }
-        internal bool PermanentData {
-            set{
-                m_permanentData = value;
-            }
-            get{
-                return m_permanentData;
-            }
-        }
-#endif
 
         public IsolatedStorageContainment UsageAllowed {
             set{

@@ -7556,10 +7556,9 @@ void FaultingExceptionFrame::Init(CONTEXT *pContext)
 #ifndef WIN64EXCEPTIONS
 #ifdef _TARGET_X86_
     CalleeSavedRegisters *pRegs = GetCalleeSavedRegisters();
-    pRegs->ebp = pContext->Ebp;
-    pRegs->ebx = pContext->Ebx;
-    pRegs->esi = pContext->Esi;
-    pRegs->edi = pContext->Edi;
+#define CALLEE_SAVED_REGISTER(regname) pRegs->regname = pContext->regname;
+    ENUM_CALLEE_SAVED_REGISTERS();
+#undef CALLEE_SAVED_REGISTER
     m_ReturnAddress = ::GetIP(pContext);
     m_Esp = (DWORD)GetSP(pContext);
 #else // _TARGET_X86_
