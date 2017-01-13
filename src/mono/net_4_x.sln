@@ -669,8 +669,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "mono-symbolicate-net_4_x", 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "linkeranalyzer-net_4_x", "mcs/tools/linker-analyzer/linkeranalyzer-net_4_x.csproj", "{D7789C48-C33A-4FE5-BD42-4DBAB2850796}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "btls-cert-sync-net_4_x", "mcs/tools/btls/btls-cert-sync-net_4_x.csproj", "{2323EB4F-0DBA-47C7-B4AA-AD38CCD16BF8}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "mcs-net_4_x", "mcs/mcs/mcs-net_4_x.csproj", "{322A755A-ED38-4295-979D-E49EBAFA2852}"
 EndProject
 Global
@@ -2015,10 +2013,6 @@ Global
 		{D7789C48-C33A-4FE5-BD42-4DBAB2850796}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D7789C48-C33A-4FE5-BD42-4DBAB2850796}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D7789C48-C33A-4FE5-BD42-4DBAB2850796}.Release|Any CPU.Build.0 = Release|Any CPU
-		{2323EB4F-0DBA-47C7-B4AA-AD38CCD16BF8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{2323EB4F-0DBA-47C7-B4AA-AD38CCD16BF8}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{2323EB4F-0DBA-47C7-B4AA-AD38CCD16BF8}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{2323EB4F-0DBA-47C7-B4AA-AD38CCD16BF8}.Release|Any CPU.Build.0 = Release|Any CPU
 		{322A755A-ED38-4295-979D-E49EBAFA2852}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{322A755A-ED38-4295-979D-E49EBAFA2852}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{322A755A-ED38-4295-979D-E49EBAFA2852}.Release|Any CPU.ActiveCfg = Release|Any CPU

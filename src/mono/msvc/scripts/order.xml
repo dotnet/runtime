@@ -5610,17 +5610,6 @@
       <resources></resources>
       <response>linkeranalyzer.exe.sources</response>
     </project>
-    <project dir="tools/btls" library="btls-cert-sync-net_4_x">
-      <boot></boot>
-      <flags>/codepage:65001 /nologo /noconfig /deterministic -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:WIN_PLATFORM -nowarn:1699 -nostdlib -r:./../../class/lib/net_4_x/mscorlib.dll /debug:portable -optimize -r:System -r:Mono.Security -r:Mono.Btls.Interface</flags>
-      <output>btls-cert-sync.exe</output>
-      <built_sources></built_sources>
-      <library_output>./../../class/lib/net_4_x/btls-cert-sync.exe</library_output>
-      <fx_version>4.5</fx_version>
-      <profile>net_4_x</profile>
-      <resources></resources>
-      <response>btls-cert-sync.exe.sources</response>
-    </project>
     <project dir="mcs" library="mcs-net_4_x">
       <boot></boot>
       <flags>/codepage:65001 /nologo /noconfig /deterministic -d:STATIC,NO_SYMBOL_WRITER,NO_AUTHENTICODE -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_PROCESS_START -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:WIN_PLATFORM -nowarn:1699 -nostdlib -r:./../class/lib/net_4_x/mscorlib.dll /debug:portable -optimize -r:System.Core -r:System.Xml -r:System</flags>
