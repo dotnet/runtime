@@ -1489,17 +1489,16 @@ var_types Compiler::impNormStructType(CORINFO_CLASS_HANDLE structHnd,
     const DWORD structFlags = info.compCompHnd->getClassAttribs(structHnd);
     var_types   structType  = TYP_STRUCT;
 
-#ifdef FEATURE_CORECLR
-    const bool hasGCPtrs = (structFlags & CORINFO_FLG_CONTAINS_GC_PTR) != 0;
-#else
-    // Desktop CLR won't report FLG_CONTAINS_GC_PTR for RefAnyClass - need to check explicitly.
-    const bool        isRefAny    = (structHnd == impGetRefAnyClass());
-    const bool        hasGCPtrs   = isRefAny || ((structFlags & CORINFO_FLG_CONTAINS_GC_PTR) != 0);
-#endif
+    // On coreclr the check for GC includes a "may" to account for the special
+    // ByRef like span structs.  The added check for "CONTAINS_STACK_PTR" is the particular bit.
+    // When this is set the struct will contain a ByRef that could be a GC pointer or a native
+    // pointer.
+    const bool mayContainGCPtrs =
+        ((structFlags & CORINFO_FLG_CONTAINS_STACK_PTR) != 0 || ((structFlags & CORINFO_FLG_CONTAINS_GC_PTR) != 0));
 
 #ifdef FEATURE_SIMD
     // Check to see if this is a SIMD type.
-    if (featureSIMD && !hasGCPtrs)
+    if (featureSIMD && !mayContainGCPtrs)
     {
         unsigned originalSize = info.compCompHnd->getClassSize(structHnd);
 
@@ -1532,9 +1531,10 @@ var_types Compiler::impNormStructType(CORINFO_CLASS_HANDLE structHnd,
         // Verify that the quick test up above via the class attributes gave a
         // safe view of the type's GCness.
         //
-        // Note there are cases where hasGCPtrs is true but getClassGClayout
+        // Note there are cases where mayContainGCPtrs is true but getClassGClayout
         // does not report any gc fields.
-        assert(hasGCPtrs || (numGCVars == 0));
+
+        assert(mayContainGCPtrs || (numGCVars == 0));
 
         if (pNumGCVars != nullptr)
         {
@@ -3271,7 +3271,8 @@ GenTreePtr Compiler::impInitializeArrayIntrinsic(CORINFO_SIG_INFO* sig)
 // Returns the GenTree that should be used to do the intrinsic instead of the call.
 // Returns NULL if an intrinsic cannot be used
 
-GenTreePtr Compiler::impIntrinsic(CORINFO_CLASS_HANDLE  clsHnd,
+GenTreePtr Compiler::impIntrinsic(GenTreePtr            newobjThis,
+                                  CORINFO_CLASS_HANDLE  clsHnd,
                                   CORINFO_METHOD_HANDLE method,
                                   CORINFO_SIG_INFO*     sig,
                                   int                   memberRef,
@@ -3283,7 +3284,7 @@ GenTreePtr Compiler::impIntrinsic(CORINFO_CLASS_HANDLE  clsHnd,
 #if COR_JIT_EE_VERSION > 460
     CorInfoIntrinsics intrinsicID = info.compCompHnd->getIntrinsicID(method, &mustExpand);
 #else
-    CorInfoIntrinsics intrinsicID = info.compCompHnd->getIntrinsicID(method);
+    CorInfoIntrinsics intrinsicID                                      = info.compCompHnd->getIntrinsicID(method);
 #endif
     *pIntrinsicID = intrinsicID;
 
@@ -3607,7 +3608,33 @@ GenTreePtr Compiler::impIntrinsic(CORINFO_CLASS_HANDLE  clsHnd,
             retNode = op1;
             break;
 #endif
-
+        // Implement ByReference Ctor.  This wraps the assignment of the ref into a byref-like field
+        // in a value type.  The canonical example of this is Span<T>. In effect this is just a
+        // substitution.  The parameter byref will be assigned into the newly allocated object.
+        case CORINFO_INTRINSIC_ByReference_Ctor:
+        {
+            // Remove call to constructor and directly assign the byref passed
+            // to the call to the first slot of the ByReference struct.
+            op1                                    = impPopStack().val;
+            GenTreePtr           thisptr           = newobjThis;
+            CORINFO_FIELD_HANDLE fldHnd            = info.compCompHnd->getFieldInClass(clsHnd, 0);
+            GenTreePtr           field             = gtNewFieldRef(TYP_BYREF, fldHnd, thisptr, 0, false);
+            GenTreePtr           assign            = gtNewAssignNode(field, op1);
+            GenTreePtr           byReferenceStruct = gtCloneExpr(thisptr->gtGetOp1());
+            assert(byReferenceStruct != nullptr);
+            impPushOnStack(byReferenceStruct, typeInfo(TI_STRUCT, clsHnd));
+            retNode = assign;
+            break;
+        }
+        // Implement ptr value getter for ByReference struct.
+        case CORINFO_INTRINSIC_ByReference_Value:
+        {
+            op1                         = impPopStack().val;
+            CORINFO_FIELD_HANDLE fldHnd = info.compCompHnd->getFieldInClass(clsHnd, 0);
+            GenTreePtr           field  = gtNewFieldRef(TYP_BYREF, fldHnd, op1, 0, false);
+            retNode                     = field;
+            break;
+        }
         default:
             /* Unknown intrinsic */
             break;
@@ -6538,7 +6565,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         // <NICE> Factor this into getCallInfo </NICE>
         if ((mflags & CORINFO_FLG_INTRINSIC) && !pConstrainedResolvedToken)
         {
-            call = impIntrinsic(clsHnd, methHnd, sig, pResolvedToken->token, readonlyCall,
+            call = impIntrinsic(newobjThis, clsHnd, methHnd, sig, pResolvedToken->token, readonlyCall,
                                 (canTailCall && (tailCall != 0)), &intrinsicID);
 
             if (call != nullptr)

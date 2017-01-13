@@ -154,12 +154,17 @@ typedef INT32 StackElemType;
 // This represents some of the FramedMethodFrame fields that are
 // stored at negative offsets.
 //--------------------------------------------------------------------
+#define ENUM_CALLEE_SAVED_REGISTERS() \
+    CALLEE_SAVED_REGISTER(Edi) \
+    CALLEE_SAVED_REGISTER(Esi) \
+    CALLEE_SAVED_REGISTER(Ebx) \
+    CALLEE_SAVED_REGISTER(Ebp)
+
 typedef DPTR(struct CalleeSavedRegisters) PTR_CalleeSavedRegisters;
 struct CalleeSavedRegisters {
-    INT32       edi;
-    INT32       esi;
-    INT32       ebx;
-    INT32       ebp;
+#define CALLEE_SAVED_REGISTER(regname) INT32 regname;
+    ENUM_CALLEE_SAVED_REGISTERS();
+#undef CALLEE_SAVED_REGISTER
 };
 
 //--------------------------------------------------------------------

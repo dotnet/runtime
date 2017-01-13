@@ -573,11 +573,10 @@ namespace System.Reflection
         {
             Module[] m = GetModules(false);
 
-            int iNumModules = m.Length;
             int iFinalLength = 0;
-            Type[][] ModuleTypes = new Type[iNumModules][];
+            Type[][] ModuleTypes = new Type[m.Length][];
 
-            for (int i = 0; i < iNumModules; i++)
+            for (int i = 0; i < ModuleTypes.Length; i++)
             {
                 ModuleTypes[i] = m[i].GetTypes();
                 iFinalLength += ModuleTypes[i].Length;
@@ -585,7 +584,7 @@ namespace System.Reflection
 
             int iCurrent = 0;
             Type[] ret = new Type[iFinalLength];
-            for (int i = 0; i < iNumModules; i++)
+            for (int i = 0; i < ModuleTypes.Length; i++)
             {
                 int iLength = ModuleTypes[i].Length;
                 Array.Copy(ModuleTypes[i], 0, ret, iCurrent, iLength);
@@ -1515,13 +1514,14 @@ namespace System.Reflection
         public override FileStream[] GetFiles(bool getResourceModules)
         {
             Module[] m = GetModules(getResourceModules);
-            int iLength = m.Length;
-            FileStream[] fs = new FileStream[iLength];
+            FileStream[] fs = new FileStream[m.Length];
 
-            for(int i = 0; i < iLength; i++)
+            for (int i = 0; i < fs.Length; i++)
+            {
                 fs[i] = new FileStream(((RuntimeModule)m[i]).GetFullyQualifiedName(),
                                        FileMode.Open,
                                        FileAccess.Read, FileShare.Read, FileStream.DefaultBufferSize, false);
+            }
 
             return fs;
         }

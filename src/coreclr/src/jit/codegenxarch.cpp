@@ -3863,16 +3863,16 @@ void CodeGen::genRangeCheck(GenTreePtr oper)
 
     GenTreeBoundsChk* bndsChk = oper->AsBoundsChk();
 
-    GenTreePtr arrLen    = bndsChk->gtArrLen;
     GenTreePtr arrIndex  = bndsChk->gtIndex;
+    GenTreePtr arrLen    = bndsChk->gtArrLen;
     GenTreePtr arrRef    = nullptr;
     int        lenOffset = 0;
 
     GenTree *    src1, *src2;
     emitJumpKind jmpKind;
 
-    genConsumeRegs(arrLen);
     genConsumeRegs(arrIndex);
+    genConsumeRegs(arrLen);
 
     if (arrIndex->isContainedIntOrIImmed())
     {
@@ -4616,8 +4616,7 @@ void CodeGen::genStoreInd(GenTreePtr node)
                     assert(rmwSrc == data->gtGetOp2());
                     genCodeForShiftRMW(storeInd);
                 }
-                else if (!compiler->opts.compDbgCode && data->OperGet() == GT_ADD &&
-                         (rmwSrc->IsIntegralConst(1) || rmwSrc->IsIntegralConst(-1)))
+                else if (data->OperGet() == GT_ADD && (rmwSrc->IsIntegralConst(1) || rmwSrc->IsIntegralConst(-1)))
                 {
                     // Generate "inc/dec [mem]" instead of "add/sub [mem], 1".
                     //
@@ -4995,6 +4994,20 @@ void CodeGen::genCallInstruction(GenTreePtr node)
     }
 
 #endif // defined(_TARGET_X86_)
+
+#ifdef FEATURE_AVX_SUPPORT
+    // When it's a PInvoke call and the call type is USER function, we issue VZEROUPPER here
+    // if the function contains 256bit AVX instructions, this is to avoid AVX-256 to Legacy SSE
+    // transition penalty, assuming the user function contains legacy SSE instruction.
+    // To limit code size increase impact: we only issue VZEROUPPER before PInvoke call, not issue
+    // VZEROUPPER after PInvoke call because transition penalty from legacy SSE to AVX only happens
+    // when there's preceding 256-bit AVX to legacy SSE transition penalty.
+    if (call->IsPInvoke() && (call->gtCallType == CT_USER_FUNC) && getEmitter()->Contains256bitAVX())
+    {
+        assert(compiler->getSIMDInstructionSet() == InstructionSet_AVX);
+        instGen(INS_vzeroupper);
+    }
+#endif
 
     if (target != nullptr)
     {
