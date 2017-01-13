@@ -395,7 +395,7 @@ namespace Mono.Linker.Steps {
 			// e.g. System.String[] -> System.String
 			var ts = (type as TypeSpecification);
 			if (ts != null) {
-				MarkWithResolvedScope (ts.GetElementType ());
+				MarkWithResolvedScope (ts.ElementType);
 				return;
 			}
 
