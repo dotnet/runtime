@@ -37,6 +37,8 @@ ValueNumFuncDef(ReadyToRunIsInstanceOf, 2, false, false, false)       // Args: 0
 
 ValueNumFuncDef(LdElemA, 3, false, false, false)            // Args: 0: array value; 1: index value; 2: type handle of element.
 
+ValueNumFuncDef(ByrefExposedLoad, 3, false, false, false)      // Args: 0: type handle/id, 1: pointer value; 2: ByrefExposed heap value
+
 ValueNumFuncDef(GetRefanyVal, 2, false, false, false)       // Args: 0: type handle; 1: typedref value.  Returns the value (asserting that the type is right).
 
 ValueNumFuncDef(GetClassFromMethodParam, 1, false, true, false)       // Args: 0: method generic argument.
