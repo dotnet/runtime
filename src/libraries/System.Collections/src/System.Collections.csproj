@@ -34,6 +34,11 @@
       <OSGroup>$(InputOSGroup)</OSGroup>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp1.2corert'">
+    <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj">
+      <TargetGroup>netcoreapp1.2corert</TargetGroup>
+    </ProjectReference>
+  </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'uap101aot'">
     <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj">
       <TargetGroup>uap101aot</TargetGroup>
@@ -72,7 +77,7 @@
       <Link>Common\System\Collections\Generic\LargeArrayBuilder.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'uap101aot'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'uap101aot' or '$(TargetGroup)' == 'netcoreapp1.2corert'">
     <Compile Include="System\Collections\Generic\Dictionary.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'net463'">

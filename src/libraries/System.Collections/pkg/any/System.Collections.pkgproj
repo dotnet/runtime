@@ -9,6 +9,9 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\System.Collections.csproj" />
+    <ProjectReference Include="..\..\src\System.Collections.csproj" >
+      <TargetGroup>netcoreapp1.2corert</TargetGroup>
+    </ProjectReference>
 
     <!-- AOT implementation comes from AOT package -->
     <File Include="$(PlaceholderFile)">
