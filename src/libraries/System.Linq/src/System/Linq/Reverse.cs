@@ -44,6 +44,11 @@ namespace System.Linq
             {
                 if (_state - 2 <= -2)
                 {
+                    // Either someone called a method and cast us to IEnumerable without calling GetEnumerator,
+                    // or we were already disposed. In either case, iteration has ended, so return false.
+                    // A comparison is made against -2 instead of _state <= 0 because we want to handle cases where
+                    // the source is really large and adding the bias causes _state to overflow.
+                    Debug.Assert(_state == -1 || _state == 0);
                     Dispose();
                     return false;
                 }
@@ -51,11 +56,17 @@ namespace System.Linq
                 switch (_state)
                 {
                     case 1:
+                        // Iteration has just started. Capture the source into an array and set _state to 2 + the count.
+                        // Having an extra field for the count would be more readable, but we save it into _state with a
+                        // bias instead to minimize field size of the iterator.
                         Buffer<TSource> buffer = new Buffer<TSource>(_source);
                         _buffer = buffer._items;
                         _state = buffer._count + 2;
                         goto default;
                     default:
+                        // At this stage, _state starts from 2 + the count. _state - 3 represents the current index into the
+                        // buffer. It is continuously decremented until it hits 2, which means that we've run out of items to
+                        // yield and should return false.
                         int index = _state - 3;
                         if (index != -1)
                         {
