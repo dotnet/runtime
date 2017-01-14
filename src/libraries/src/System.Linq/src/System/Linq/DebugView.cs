@@ -97,4 +97,20 @@ namespace System.Linq
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         private IEnumerable _enumerable;
     }
+
+    internal sealed class GroupingDebuggerProxy<TKey, TElement>
+    {
+        private readonly Grouping<TKey, TElement> _grouping;
+
+        public GroupingDebuggerProxy(Grouping<TKey, TElement> grouping)
+        {
+            _grouping = grouping;
+        }
+
+        public TKey Key => _grouping.Key;
+
+        // The name of this property must alphabetically follow others so the elements appear last in the display.
+        [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
+        public TElement[] Values => _grouping.ToArray();
+    }
 }
