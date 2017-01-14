@@ -17,11 +17,16 @@ namespace System.Threading.Tests
             var s = new Semaphore(1, 1);
             var m = new Mutex();
 
-            e.GetAccessControl();
+            Assert.NotNull(e.GetAccessControl());
+            Assert.Throws<ArgumentNullException>(() => e.SetAccessControl(null));
             e.SetAccessControl(new EventWaitHandleSecurity());
-            s.GetAccessControl();
+
+            Assert.NotNull(s.GetAccessControl());
+            Assert.Throws<ArgumentNullException>(() => s.SetAccessControl(null));
             s.SetAccessControl(new SemaphoreSecurity());
-            m.GetAccessControl();
+
+            Assert.NotNull(m.GetAccessControl());
+            Assert.Throws<ArgumentNullException>(() => m.SetAccessControl(null));
             m.SetAccessControl(new MutexSecurity());
         }
 
