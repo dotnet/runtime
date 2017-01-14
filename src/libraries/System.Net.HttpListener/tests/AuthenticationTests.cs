@@ -9,11 +9,24 @@ using Xunit;
 
 namespace System.Net.Tests
 {
-    public class AuthenticationTests
+    public class AuthenticationTests : IDisposable
     {
         private const string Basic = "Basic";
         private const string TestUser = "testuser";
         private const string TestPassword = "testpassword";
+
+        private HttpListenerFactory _factory;
+        private HttpListener _listener;
+        private string _url;
+
+        public AuthenticationTests()
+        {
+            _factory = new HttpListenerFactory();
+            _listener = _factory.GetListener();
+            _url = _factory.ListeningUrl;
+        }
+
+        public void Dispose() => _factory.Dispose();
 
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
         [InlineData(AuthenticationSchemes.Basic)]
@@ -21,92 +34,40 @@ namespace System.Net.Tests
         [InlineData(AuthenticationSchemes.Basic | AuthenticationSchemes.Anonymous)]
         public async Task TestBasicAuthentication(AuthenticationSchemes authScheme)
         {
-            string url = UrlPrefix.CreateLocal();
-            HttpListener listener = new HttpListener();
-
-            try
-            {
-                listener.Prefixes.Add(url);
-                listener.AuthenticationSchemes = authScheme;
-                listener.Start();
-
-                await ValidateValidUser(url, listener);
-            }
-            finally
-            {
-                listener.Stop();
-                listener.Close();
-            }
+            _listener.AuthenticationSchemes = authScheme;
+            await ValidateValidUser();
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
         public async Task TestAnonymousAuthentication()
         {
-            string url = UrlPrefix.CreateLocal();
-            HttpListener listener = new HttpListener();
-
-            try
-            {
-                listener.Prefixes.Add(url);
-                listener.AuthenticationSchemes = AuthenticationSchemes.Anonymous;
-                listener.Start();
-
-                await ValidateNullUser(url, listener);
-            }
-            finally
-            {
-                listener.Stop();
-                listener.Close();
-            }
+            _listener.AuthenticationSchemes = AuthenticationSchemes.Anonymous;
+            await ValidateNullUser();
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
         public async Task TestBasicAuthenticationWithDelegate()
         {
-            string url = UrlPrefix.CreateLocal();
-            HttpListener listener = new HttpListener();
-            try
-            {
-                listener.Prefixes.Add(url);
-                listener.AuthenticationSchemes = AuthenticationSchemes.None;
-                AuthenticationSchemeSelector selector = new AuthenticationSchemeSelector(SelectAnonymousAndBasicSchemes);
-                listener.AuthenticationSchemeSelectorDelegate += selector;
-                listener.Start();
+            _listener.AuthenticationSchemes = AuthenticationSchemes.None;
+            AuthenticationSchemeSelector selector = new AuthenticationSchemeSelector(SelectAnonymousAndBasicSchemes);
+            _listener.AuthenticationSchemeSelectorDelegate += selector;
 
-                await ValidateValidUser(url, listener);
-            }
-            finally
-            {
-                listener.Stop();
-                listener.Close();
-            }
+            await ValidateValidUser();
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
         public async Task TestAnonymousAuthenticationWithDelegate()
         {
-            string url = UrlPrefix.CreateLocal();
-            HttpListener listener = new HttpListener();
-            try
-            {
-                listener.Prefixes.Add(url);
-                listener.AuthenticationSchemes = AuthenticationSchemes.None;
-                AuthenticationSchemeSelector selector = new AuthenticationSchemeSelector(SelectAnonymousScheme);
-                listener.AuthenticationSchemeSelectorDelegate += selector;
-                listener.Start();
+            _listener.AuthenticationSchemes = AuthenticationSchemes.None;
+            AuthenticationSchemeSelector selector = new AuthenticationSchemeSelector(SelectAnonymousScheme);
+            _listener.AuthenticationSchemeSelectorDelegate += selector;
 
-                await ValidateNullUser(url, listener);
-            }
-            finally
-            {
-                listener.Stop();
-                listener.Close();
-            }
+            await ValidateNullUser();
         }
 
-        private async Task ValidateNullUser(string url, HttpListener listener)
+        private async Task ValidateNullUser()
         {
-            var serverContextTask = listener.GetContextAsync();
+            var serverContextTask = _listener.GetContextAsync();
 
             using (HttpClient client = new HttpClient())
             {
@@ -114,23 +75,23 @@ namespace System.Net.Tests
                     Basic,
                     Convert.ToBase64String(Encoding.ASCII.GetBytes(string.Format("{0}:{1}", TestUser, TestPassword))));
 
-                var clientTask = client.GetStringAsync(url);
+                var clientTask = client.GetStringAsync(_url);
                 HttpListenerContext listenerContext = await serverContextTask;
 
                 Assert.Null(listenerContext.User);
             }
         }
 
-        private async Task ValidateValidUser(string url, HttpListener listener)
+        private async Task ValidateValidUser()
         {
-            var serverContextTask = listener.GetContextAsync();
+            var serverContextTask = _listener.GetContextAsync();
             using (HttpClient client = new HttpClient())
             {
                 client.DefaultRequestHeaders.Authorization = new Http.Headers.AuthenticationHeaderValue(
                     Basic,
                     Convert.ToBase64String(Encoding.ASCII.GetBytes(string.Format("{0}:{1}", TestUser, TestPassword))));
 
-                var clientTask = client.GetStringAsync(url);
+                var clientTask = client.GetStringAsync(_url);
                 HttpListenerContext listenerContext = await serverContextTask;
 
                 Assert.Equal(TestUser, listenerContext.User.Identity.Name);
@@ -138,7 +99,7 @@ namespace System.Net.Tests
                 Assert.Equal(Basic, listenerContext.User.Identity.AuthenticationType);
             }
         }
-        
+
         private AuthenticationSchemes SelectAnonymousAndBasicSchemes(HttpListenerRequest request)
         {
             return AuthenticationSchemes.Anonymous | AuthenticationSchemes.Basic;
