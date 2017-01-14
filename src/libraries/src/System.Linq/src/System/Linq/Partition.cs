@@ -253,7 +253,10 @@ namespace System.Linq
 
             public override bool MoveNext()
             {
-                int index = _state - 1; // Represents the zero-based index we're at.
+                // _state - 1 represents the zero-based index into the list.
+                // Having a separate field for the index would be more readable. However, we save it
+                // into _state with a bias to minimize field size of the iterator.
+                int index = _state - 1;
                 if ((uint)index <= (uint)(_maxIndexInclusive - _minIndexInclusive) && index < _source.Count - _minIndexInclusive)
                 {
                     _current = _source[_minIndexInclusive + index];

@@ -46,14 +46,20 @@ namespace System.Linq
 
             public override void Dispose()
             {
-                // Don't let base Dispose wipe current.
+                // Don't let base.Dispose wipe Current.
                 _state = -1;
             }
 
             public override bool MoveNext()
             {
+                // Having a separate field for the number of sent items would be more readable.
+                // However, we save it into _state with a bias to minimize field size of the iterator.
                 int sent = _state - 1;
-                if (sent > -1 && sent != _count)
+
+                // We can't have sent a negative number of items, obviously. However, if this iterator
+                // was illegally casted to IEnumerator without GetEnumerator being called, or if we've
+                // already been disposed, then `sent` will be negative.
+                if (sent >= 0 && sent != _count)
                 {
                     ++_state;
                     return true;
