@@ -426,7 +426,7 @@
       "value": "true"
     },
     "PB_SymbolsBuildId": {
-      "value": "DotNet-CoreFx-Windows"
+      "value": "DotNet-CoreFx-$(System.DefinitionId)"
     }
   },
   "demands": [
