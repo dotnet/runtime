@@ -4533,9 +4533,6 @@ retry:
         {
             // Probe all handles with a timeout of zero. When we find one that's
             // invalid, move it out of the list and retry the wait.
-#ifdef _DEBUG
-            BOOL fFoundInvalid = FALSE;
-#endif
             for (int i = 0; i < countHandles; i++)
             {
                 // WaitForSingleObject won't pump memssage; we already probe enough space
@@ -4548,12 +4545,8 @@ retry:
                 if ((countHandles - i - 1) > 0)
                     memmove(&handles[i], &handles[i+1], (countHandles - i - 1) * sizeof(HANDLE));
                 countHandles--;
-#ifdef _DEBUG
-                fFoundInvalid = TRUE;
-#endif
                 break;
             }
-            _ASSERTE(fFoundInvalid);
 
             // Compute the new timeout value by assume that the timeout
             // is not large enough for more than one wrap
@@ -4599,7 +4592,6 @@ retry:
                 _ASSERTE(subRet == WAIT_TIMEOUT);
                 ret++;
             }
-            _ASSERTE(i != countHandles);
         }
     }
 
