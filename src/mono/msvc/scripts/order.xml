@@ -3588,7 +3588,7 @@
     </project>
     <project dir="class/Facades/System.Runtime.Serialization.Primitives" library="Facades_System.Runtime.Serialization.Primitives-net_4_x">
       <boot>false</boot>
-      <flags>/codepage:65001 /nologo /noconfig /deterministic -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:WIN_PLATFORM -nowarn:1699 -nostdlib -r:./../../../class/lib/net_4_x/mscorlib.dll /debug:portable -optimize /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 -r:./../../../class/lib/net_4_x/System.Runtime.Serialization.dll</flags>
+      <flags>/codepage:65001 /nologo /noconfig /deterministic -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:WIN_PLATFORM -nowarn:1699 -nostdlib -r:./../../../class/lib/net_4_x/mscorlib.dll -optimize /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 -r:./../../../class/lib/net_4_x/System.Runtime.Serialization.dll</flags>
       <output>System.Runtime.Serialization.Primitives.dll</output>
       <built_sources></built_sources>
       <library_output>./../../../class/lib/net_4_x/Facades/System.Runtime.Serialization.Primitives.dll</library_output>
@@ -4853,7 +4853,7 @@
     </project>
     <project dir="class/Facades/System.Threading.Overlapped" library="Facades_System.Threading.Overlapped-net_4_x">
       <boot>false</boot>
-      <flags>/codepage:65001 /nologo /noconfig /deterministic -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:WIN_PLATFORM -nowarn:1699 -nostdlib -r:./../../../class/lib/net_4_x/mscorlib.dll /debug:portable -optimize /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 -unsafe -r:./../../../class/lib/net_4_x/System.dll</flags>
+      <flags>/codepage:65001 /nologo /noconfig /deterministic -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:WIN_PLATFORM -nowarn:1699 -nostdlib -r:./../../../class/lib/net_4_x/mscorlib.dll /debug:portable -optimize /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 -unsafe -nowarn:3021 -r:./../../../class/lib/net_4_x/System.dll</flags>
       <output>System.Threading.Overlapped.dll</output>
       <built_sources></built_sources>
       <library_output>./../../../class/lib/net_4_x/Facades/System.Threading.Overlapped.dll</library_output>
