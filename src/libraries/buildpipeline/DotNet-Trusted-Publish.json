@@ -221,25 +221,6 @@
         "retentionDays": "30",
         "dropMetadataContainerName": "DropMetadata"
       }
-    },
-    {
-      "enabled": true,
-      "continueOnError": false,
-      "alwaysRun": true,
-      "displayName": "Copy Publish Artifact: PublishLogs",
-      "timeoutInMinutes": 0,
-      "task": {
-        "id": "1d341bb0-2106-458c-8422-d00bcea6512a",
-        "versionSpec": "1.*",
-        "definitionType": "task"
-      },
-      "inputs": {
-        "CopyRoot": "",
-        "Contents": "$(Pipeline.SourcesDirectory)\\*.log",
-        "ArtifactName": "PublishLogs",
-        "ArtifactType": "Container",
-        "TargetPath": "\\\\my\\share\\$(Build.DefinitionName)\\$(Build.BuildNumber)"
-      }
     }
   ],
   "options": [
@@ -449,7 +430,6 @@
     "checkoutSubmodules": false
   },
   "quality": "definition",
-  "defaultBranch": "refs/heads/master",
   "queue": {
     "pool": {
       "id": 39,
