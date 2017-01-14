@@ -461,7 +461,7 @@ def static addNonPRTriggers(def job, def branch, def isPR, def architecture, def
             // addEmailPublisher(job, 'dotnetgctests@microsoft.com')
             break
         case 'standalone_gc':
-            assert (os == 'Windows_NT')
+            assert (os == 'Ubuntu' || os == 'Windows_NT' || os == 'OSX')
             assert (configuration == 'Release' || configuration == 'Checked')
             // TODO: Add once external email sending is available again
             // addEmailPublisher(job, 'dotnetgctests@microsoft.com')
@@ -1541,6 +1541,11 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                             "(?i).*test\\W+${os}\\W+${arch}\\W+${jit}\\W+${configuration}\\W+${scenario}.*")
                     }
                     break
+                case 'standalone_gc':
+                    if (configuration == 'Release' || configuration == 'Checked') {
+                        Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} Standalone GC", "(?i).*test\\W+${os}\\W+${configuration}\\W+${scenario}.*")
+                    }
+                    break
                 case 'minopts':
                     Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${arch} ${jit} ${configuration} Build and Test (Jit - MinOpts)",
                        "(?i).*test\\W+${os}\\W+${arch}\\W+${jit}\\W+${configuration}\\W+${scenario}.*")
@@ -1742,6 +1747,11 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                     if (configuration == 'Release') {
                         Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${arch} ${jit} ${configuration} GC Simulator",
                             "(?i).*test\\W+${os}\\W+${arch}\\W+${jit}\\W+${configuration}\\W+${scenario}.*")
+                    }
+                    break
+                case 'standalone_gc':
+                    if (configuration == 'Release' || configuration == 'Checked') {
+                        Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} Standalone GC", "(?i).*test\\W+${os}\\W+${configuration}\\W+${scenario}.*")
                     }
                     break
                 default:
@@ -2029,19 +2039,24 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                         Utilities.addArchival(newJob, "format.patch", "", true, false)
                         break
                     }
+
+                    def standaloneGc = ''
+                    if (scenario == 'standalone_gc') {
+                        standaloneGc = 'buildstandalonegc'
+                    }
                 
                     if (!enableCorefxTesting) {
                         // We run pal tests on all OS but generate mscorlib (and thus, nuget packages)
                         // only on supported OS platforms.
                         if ((os == 'FreeBSD') || (os == 'OpenSUSE13.2'))
                         {
-                            buildCommands += "./build.sh skipmscorlib verbose ${lowerConfiguration} ${arch}"
+                            buildCommands += "./build.sh skipmscorlib verbose ${lowerConfiguration} ${arch} ${standaloneGc}"
                         }
                         else
                         {
                             def bootstrapRid = Utilities.getBoostrapPublishRid(os)
                             def bootstrapRidEnv = bootstrapRid != null ? "__PUBLISH_RID=${bootstrapRid} " : ''
-                            buildCommands += "${bootstrapRidEnv}./build.sh verbose ${lowerConfiguration} ${arch}"
+                            buildCommands += "${bootstrapRidEnv}./build.sh verbose ${lowerConfiguration} ${arch} ${standaloneGc}"
                         }
                         buildCommands += "src/pal/tests/palsuite/runpaltests.sh \${WORKSPACE}/bin/obj/${osGroup}.${arch}.${configuration} \${WORKSPACE}/bin/paltestout"
                     
@@ -2354,7 +2369,7 @@ combinedScenarios.each { scenario ->
                                 }
                                 break
                             case 'standalone_gc':
-                                if (os != 'Windows_NT') {
+                                if (os != 'Windows_NT' && os != 'Ubuntu' && os != 'OSX') {
                                     return
                                 }
 
