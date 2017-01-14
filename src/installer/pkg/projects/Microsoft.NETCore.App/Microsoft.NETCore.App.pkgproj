@@ -6,11 +6,14 @@
     <IsLineupPackage Condition="'$(PackageTargetRuntime)' == ''">true</IsLineupPackage>
     <PreventImplementationReference Condition="'$(PackageTargetRuntime)' != ''">true</PreventImplementationReference>
     <Version>$(NetCoreAppVersion)</Version>
+    <NETCoreAppFramework>netcoreapp$([System.Version]::Parse('$(NetCoreAppVersion)').ToString(2))</NETCoreAppFramework>
     <PackagePlatform>AnyCPU</PackagePlatform>
     <SkipPackageFileCheck>true</SkipPackageFileCheck>
     <OmitDependencies>true</OmitDependencies>
     <SkipValidatePackage>true</SkipValidatePackage>
     <ShouldCreateLayout>false</ShouldCreateLayout>
+    <PropsFile>$(IntermediateOutputPath)$(MSBuildProjectName).props</PropsFile>
+    <PlatformManifestFile>$(IntermediateOutputPath)$(MSBuildProjectName).PlatformManifest.txt</PlatformManifestFile>
   </PropertyGroup>
   
   <Choose>
@@ -59,7 +62,14 @@
     <!-- Add a placeholder to make sure NuGet understands we still support older versions,
          even though they don't have ref-assets -->
     <File Include="$(PlaceHolderFile)">
-      <TargetPath>.NETCoreApp</TargetPath>
+      <TargetPath>ref/netcoreapp</TargetPath>
+    </File>
+    
+    <File Include="$(PropsFile)">
+      <TargetPath>build/$(NETCoreAppFramework)</TargetPath>
+    </File>
+    <File Include="$(PlatformManifestFile)">
+      <TargetPath>build/$(NETCoreAppFramework)</TargetPath>
     </File>
   </ItemGroup>
 
@@ -91,6 +101,23 @@
       <TargetPath>runtimes/$(PackageTargetRuntime)/native</TargetPath>
     </File>
   </ItemGroup>
+
+  <UsingTask TaskName="GenerateFileVersionProps" AssemblyFile="$(BuildToolsTaskDir)core-setup.tasks.dll"/>
+  <Target Name="GenerateFileVersionProps" BeforeTargets="GenerateNuSpec" Condition="'$(PackageTargetRuntime)' == ''">
+    <MSBuild Projects="@(ProjectReference)"
+             Condition="'%(ProjectReference.PackageTargetRuntime)' == '$(PackageRID)' OR 
+                        '%(ProjectReference.BuidOnRID)' == '$(PackageRID)' OR 
+                        ('$(IncludeAllPackages)' == 'true' AND '%(ProjectReference.PackageTargetRuntime)' != '')"
+             Targets="GetPackageFiles">
+      <Output TaskParameter="TargetOutputs" ItemName="SharedFrameworkRuntimeFiles" />
+    </MSBuild>
+    
+    <GenerateFileVersionProps Files="@(SharedFrameworkRuntimeFiles)"
+                              PackageId="$(Id)"
+                              PlatformManifestFile="$(PlatformManifestFile)"
+                              PropsFile="$(PropsFile)"
+                              PreferredPackages="$(Id);@(RuntimeDependency)" />
+  </Target>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
   
