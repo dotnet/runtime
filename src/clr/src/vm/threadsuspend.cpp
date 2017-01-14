@@ -1345,7 +1345,7 @@ BOOL Thread::IsSafeToInjectThreadAbort(PTR_CONTEXT pContextToCheck)
 #endif
 
 
-BOOL Thread::ReadyForAsyncException(ThreadInterruptMode mode)
+BOOL Thread::ReadyForAsyncException()
 {
     CONTRACTL {
         NOTHROW;
@@ -1354,8 +1354,7 @@ BOOL Thread::ReadyForAsyncException(ThreadInterruptMode mode)
     }
     CONTRACTL_END;
 
-    if (((mode & TI_Abort) != 0 && !IsAbortRequested()) ||
-        ((mode & TI_Interrupt) != 0 && (m_UserInterrupt & TI_Interrupt) == 0))
+    if (!IsAbortRequested())
     {
         return FALSE;
     }
