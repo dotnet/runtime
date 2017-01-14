@@ -3166,12 +3166,7 @@ public:
     };
 
 private:
-    BOOL           ReadyForInterrupt()
-    {
-        return ReadyForAsyncException(TI_Interrupt);
-    }
-
-    BOOL           ReadyForAsyncException(ThreadInterruptMode mode);
+    BOOL           ReadyForAsyncException();
 
 public:
     inline BOOL IsYieldRequested()
@@ -3185,7 +3180,7 @@ public:
     void           SetAbortRequest(EEPolicy::ThreadAbortTypes abortType);  // Should only be called by ADUnload
     BOOL           ReadyForAbort()
     {
-        return ReadyForAsyncException(TI_Abort);
+        return ReadyForAsyncException();
     }
 
     BOOL           IsRudeAbort();
