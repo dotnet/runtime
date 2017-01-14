@@ -177,7 +177,7 @@ namespace System.Collections.Immutable
             }
 
             var array = new T[length];
-            for (int i = 0; i < length; i++)
+            for (int i = 0; i < array.Length; i++)
             {
                 array[i] = items[start + i];
             }
@@ -240,7 +240,7 @@ namespace System.Collections.Immutable
             }
 
             var array = new TResult[length];
-            for (int i = 0; i < length; i++)
+            for (int i = 0; i < array.Length; i++)
             {
                 array[i] = selector(items[i]);
             }
@@ -275,7 +275,7 @@ namespace System.Collections.Immutable
             }
 
             var array = new TResult[length];
-            for (int i = 0; i < length; i++)
+            for (int i = 0; i < array.Length; i++)
             {
                 array[i] = selector(items[i + start]);
             }
@@ -307,7 +307,7 @@ namespace System.Collections.Immutable
             }
 
             var array = new TResult[length];
-            for (int i = 0; i < length; i++)
+            for (int i = 0; i < array.Length; i++)
             {
                 array[i] = selector(items[i], arg);
             }
@@ -343,7 +343,7 @@ namespace System.Collections.Immutable
             }
 
             var array = new TResult[length];
-            for (int i = 0; i < length; i++)
+            for (int i = 0; i < array.Length; i++)
             {
                 array[i] = selector(items[i + start], arg);
             }

@@ -613,7 +613,7 @@ namespace System.Linq.Expressions.Interpreter
                 var boxes = new List<IStrongBox>();
                 var vars = new List<ParameterExpression>();
                 var indexes = new int[count];
-                for (int i = 0; i < count; i++)
+                for (int i = 0; i < indexes.Length; i++)
                 {
                     IStrongBox box = GetBox(node.Variables[i]);
                     if (box == null)
