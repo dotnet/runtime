@@ -1,0 +1,36 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <NuGetTargetMoniker>.NETStandard,Version=v1.5</NuGetTargetMoniker>
+    <NuGetTargetMoniker Condition="'$(TargetGroup)' == 'net45'">.NETFramework,Version=v4.5</NuGetTargetMoniker>
+    <CLSCompliant>false</CLSCompliant>
+    <ProjectGuid>{360F25FA-3CD9-4338-B961-A4F3122B88B2}</ProjectGuid>
+    <OutputPath Condition="'$(TargetGroup)' != 'net45'">$(ToolRuntimePath)</OutputPath>
+    <IntermediateOutputPath Condition="'$(TargetGroup)' == 'net45'">$(IntermediateOutputPath)\net45</IntermediateOutputPath>
+    <OutputPath Condition="'$(TargetGroup)' == 'net45'">$(ToolRuntimePath)\net45</OutputPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)' == 'netstandard1.5_Debug'" />
+  <PropertyGroup Condition="'$(Configuration)' == 'net45_Debug'" />
+  <ItemGroup>
+    <Compile Include="BuildTask.cs" />
+    <Compile Include="GenerateFileVersionProps.cs" />
+    <Compile Include="FileUtilities.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' != 'net45'">
+    <Compile Include="FileUtilities.netstandard.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'net45'">
+    <Compile Include="FileUtilities.net45.cs" />
+    <TargetingPackReference Include="System" />
+    <TargetingPackReference Include="System.Core" />
+    <TargetingPackReference Include="Microsoft.Build" />
+    <TargetingPackReference Include="Microsoft.Build.Framework" />
+    <TargetingPackReference Include="Microsoft.Build.Utilities.v4.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="project.json" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>

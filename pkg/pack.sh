@@ -69,6 +69,8 @@ fi
 
 __common_parameters="/p:$__targets_param /p:DistroRid=$__distro_rid /verbosity:minimal"
 
+$__msbuild $__project_dir/tasks/core-setup.tasks.builds $__common_parameters || exit 1
+
 $__msbuild $__project_dir/projects/packages.builds $__common_parameters || exit 1
 
 exit 0

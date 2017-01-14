@@ -14,7 +14,7 @@
     "Libuv": "1.10.0-preview1-22036",
 
     "Microsoft.NETCore.Platforms": "1.2.0-beta-24912-52",
-    "NETStandard.Library": "2.0.0-beta-24909-0"
+    "NETStandard.Library": "2.0.0-beta-24913-0"
   },
   "frameworks": {
     "netcoreapp2.0": { }
