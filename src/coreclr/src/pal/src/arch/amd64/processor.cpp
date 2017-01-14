@@ -54,10 +54,18 @@ Return value:
 extern "C" unsigned int XmmYmmStateSupport()
 {
     unsigned int eax;
-    __asm("  xgetbv\n" \
-        : "=a"(eax) /*output in eax*/\
-        : "c"(0) /*inputs - 0 in ecx*/\
-        : "eax", "edx" /* registers that are clobbered*/
+    __asm("  mov $1, %%eax\n" \
+          "  cpuid\n" \
+          "  xor %%eax, %%eax\n" \
+          "  and $0x18000000, %%ecx\n" /* check for xsave feature set and that it is enabled by the OS */ \
+          "  cmp $0x18000000, %%ecx\n" \
+          "  jne end\n" \
+          "  xor %%ecx, %%ecx\n" \
+          "  xgetbv\n" \
+          "end:\n" \
+        : "=a"(eax) /* output in eax */ \
+        : /* no inputs */ \
+        : "eax", "ebx", "ecx", "edx" /* registers that are clobbered */
       );
     // Check OS has enabled both XMM and YMM state support
     return ((eax & 0x06) == 0x06) ? 1 : 0;
