@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Net.Http;
 using System.Net.WebSockets;
 using System.Text;
 using System.Threading;
@@ -11,54 +10,56 @@ using Xunit;
 
 namespace System.Net.Tests
 {
-    public class WebSocketTests
+    public class WebSocketTests : IDisposable
     {
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
-        public static async Task AcceptWebSocketAsync_NullSubProtocol_Succeeds()
+        private HttpListenerFactory _factory;
+        private HttpListener _listener;
+        private string _url;
+
+        public WebSocketTests()
         {
-            string url = UrlPrefix.CreateLocal();
+            _factory = new HttpListenerFactory();
+            _listener = _factory.GetListener();
+            _url = _factory.ListeningUrl;
+        }
 
-            using (HttpListener listener = new HttpListener())
+        public void Dispose() => _factory.Dispose();
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        public async Task AcceptWebSocketAsync_NullSubProtocol_Succeeds()
+        {
+            UriBuilder uriBuilder = new UriBuilder(_url);
+            uriBuilder.Scheme = "ws";
+
+            Task<HttpListenerContext> serverContextTask = _listener.GetContextAsync();
+            using (ClientWebSocket clientWebSocket = new ClientWebSocket())
             {
-                listener.Prefixes.Add(url);
-                listener.Start();
+                Task clientConnectTask = clientWebSocket.ConnectAsync(uriBuilder.Uri, CancellationToken.None);
 
-                UriBuilder uriBuilder = new UriBuilder(url);
-                uriBuilder.Scheme = "ws";
+                Assert.Equal(WebSocketState.Connecting, clientWebSocket.State);
 
-                var serverContextTask = listener.GetContextAsync();
+                HttpListenerContext listenerContext = await serverContextTask;
+                HttpListenerWebSocketContext wsContext = await listenerContext.AcceptWebSocketAsync(null);
 
-                using (ClientWebSocket clientWebSocket = new ClientWebSocket())
-                {
-                    Task clientConnectTask = clientWebSocket.ConnectAsync(uriBuilder.Uri, CancellationToken.None);
+                await clientConnectTask;
 
-                    Assert.Equal(WebSocketState.Connecting, clientWebSocket.State);
+                // Ensure websocket is connected from server.
+                Assert.Equal(WebSocketState.Open, wsContext.WebSocket.State);
 
-                    HttpListenerContext listenerContext = await serverContextTask;
-                    HttpListenerWebSocketContext wsContext = await listenerContext.AcceptWebSocketAsync(null);
+                // Websocket subProtocol.
+                Assert.Null(wsContext.WebSocket.SubProtocol);
 
-                    await clientConnectTask;
+                const string expected = "hello";
+                byte[] receiveBuffer = Encoding.UTF8.GetBytes(expected);
 
-                    // Ensure websocket is connected from server.
-                    Assert.Equal(WebSocketState.Open, wsContext.WebSocket.State);
+                // Send binary data from server.
+                await wsContext.WebSocket.SendAsync(new ArraySegment<byte>(receiveBuffer), WebSocketMessageType.Binary, true, CancellationToken.None);
 
-                    // Websocket subProtocol.
-                    Assert.Null(wsContext.WebSocket.SubProtocol);
+                // Receive binary data in client.
+                ArraySegment<byte> getBuffer = new ArraySegment<byte>(new byte[receiveBuffer.Length]);
+                await clientWebSocket.ReceiveAsync(getBuffer, CancellationToken.None);
 
-                    const string expected = "hello";
-                    byte[] receiveBuffer = Encoding.UTF8.GetBytes(expected);
-
-                    // Send binary data from server.
-                    await wsContext.WebSocket.SendAsync(new ArraySegment<byte>(receiveBuffer), WebSocketMessageType.Binary, true, CancellationToken.None);
-
-                    // Receive binary data in client.
-                    ArraySegment<byte> getBuffer = new ArraySegment<byte>(new byte[receiveBuffer.Length]);
-                    await clientWebSocket.ReceiveAsync(getBuffer, CancellationToken.None);
-
-                    Assert.Equal(expected, Encoding.UTF8.GetString(getBuffer.Array));
-                }
-
-                listener.Stop();
+                Assert.Equal(expected, Encoding.UTF8.GetString(getBuffer.Array));
             }
         }
     }
