@@ -530,7 +530,7 @@ namespace System.Linq
         {
             ComputeKeys(elements, count);
             int[] map = new int[count];
-            for (int i = 0; i < count; i++)
+            for (int i = 0; i < map.Length; i++)
             {
                 map[i] = i;
             }
