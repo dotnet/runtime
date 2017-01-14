@@ -6807,17 +6807,14 @@ void Thread::HandleThreadInterrupt (BOOL fWaitForADUnload)
     }
     if ((m_UserInterrupt & TI_Interrupt) != 0)
     {
-        if (ReadyForInterrupt())
-        {
-            ResetThreadState ((ThreadState)(TS_Interrupted | TS_Interruptible));
-            FastInterlockAnd ((DWORD*)&m_UserInterrupt, ~TI_Interrupt);
+        ResetThreadState ((ThreadState)(TS_Interrupted | TS_Interruptible));
+        FastInterlockAnd ((DWORD*)&m_UserInterrupt, ~TI_Interrupt);
 
 #ifdef _DEBUG
-            AddFiberInfo(ThreadTrackInfo_Abort);
+        AddFiberInfo(ThreadTrackInfo_Abort);
 #endif
 
-            COMPlusThrow(kThreadInterruptedException);
-        }
+        COMPlusThrow(kThreadInterruptedException);
     }
     END_SO_INTOLERANT_CODE;
 }
