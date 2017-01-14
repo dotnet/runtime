@@ -242,7 +242,7 @@
         "portableLinux":{
           "description": "Make the build-native script generate binaries that are portable over glibc based Linux distros.",
           "settings": {
-            "FilterToOSGroup":"linux"
+            "RuntimeOS":"linux"
           }
         },
         "tests": {
