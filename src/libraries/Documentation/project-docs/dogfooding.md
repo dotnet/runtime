@@ -86,7 +86,7 @@ $ dotnet restore
 
 ## Consume the new build
 
-Edit your `Program.cs` to consume the new APIs, for exampe:
+Edit your `Program.cs` to consume the new APIs, for example:
 
 ```CSharp
 using System;
