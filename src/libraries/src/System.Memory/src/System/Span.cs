@@ -233,6 +233,109 @@ namespace System
         }
 
         /// <summary>
+        /// Clears the contents of this span.
+        /// </summary>
+        public unsafe void Clear()
+        {
+            int length = _length;
+
+            if (length == 0)
+                return;
+
+            var byteLength = (UIntPtr)((uint)length * Unsafe.SizeOf<T>());
+
+            if ((Unsafe.SizeOf<T>() & (sizeof(IntPtr) - 1)) != 0) 
+            {
+                if (_pinnable == null)
+                {
+                    var ptr = (byte*)_byteOffset.ToPointer();
+                    
+                    SpanHelpers.ClearLessThanPointerSized(ptr, byteLength);
+                }
+                else
+                {
+                    ref byte b = ref Unsafe.As<T, byte>(ref Unsafe.AddByteOffset<T>(ref _pinnable.Data, _byteOffset));
+
+                    SpanHelpers.ClearLessThanPointerSized(ref b, byteLength);
+                }
+            }
+            else
+            {
+                if (SpanHelpers.IsReferenceFree<T>())
+                {
+                    ref byte b = ref Unsafe.As<T, byte>(ref DangerousGetPinnableReference());
+
+                    SpanHelpers.ClearPointerSizedWithoutReferences(ref b, byteLength);
+                }
+                else
+                {
+                    UIntPtr pointerSizedLength = (UIntPtr)((length * Unsafe.SizeOf<T>()) / sizeof(IntPtr));
+
+                    ref IntPtr ip = ref Unsafe.As<T, IntPtr>(ref DangerousGetPinnableReference());
+
+                    SpanHelpers.ClearPointerSizedWithReferences(ref ip, pointerSizedLength);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Fills the contents of this span with the given value.
+        /// </summary>
+        public unsafe void Fill(T value)
+        {
+            int length = _length;
+
+            if (length == 0)
+                return;
+
+            if (Unsafe.SizeOf<T>() == 1)
+            {
+                byte fill = Unsafe.As<T, byte>(ref value);
+                if (_pinnable == null)
+                {
+                    Unsafe.InitBlockUnaligned(_byteOffset.ToPointer(), fill, (uint)length);
+                }
+                else
+                {
+                    ref byte r = ref Unsafe.As<T, byte>(ref Unsafe.AddByteOffset<T>(ref _pinnable.Data, _byteOffset));
+                    Unsafe.InitBlockUnaligned(ref r, fill, (uint)length);
+                }
+            }
+            else
+            {
+                ref T r = ref DangerousGetPinnableReference();
+
+                // TODO: Create block fill for value types of power of two sizes e.g. 2,4,8,16
+
+                // Simple loop unrolling
+                int i = 0;
+                for (; i < (length & ~7); i += 8)
+                {
+                    Unsafe.Add<T>(ref r, i + 0) = value;
+                    Unsafe.Add<T>(ref r, i + 1) = value;
+                    Unsafe.Add<T>(ref r, i + 2) = value;
+                    Unsafe.Add<T>(ref r, i + 3) = value;
+                    Unsafe.Add<T>(ref r, i + 4) = value;
+                    Unsafe.Add<T>(ref r, i + 5) = value;
+                    Unsafe.Add<T>(ref r, i + 6) = value;
+                    Unsafe.Add<T>(ref r, i + 7) = value;
+                }
+                if (i < (length & ~3))
+                {
+                    Unsafe.Add<T>(ref r, i + 0) = value;
+                    Unsafe.Add<T>(ref r, i + 1) = value;
+                    Unsafe.Add<T>(ref r, i + 2) = value;
+                    Unsafe.Add<T>(ref r, i + 3) = value;
+                    i += 4;
+                }
+                for (; i < length; i++)
+                {
+                    Unsafe.Add<T>(ref r, i) = value;
+                }
+            }
+        }
+
+        /// <summary>
         /// Copies the contents of this span into destination span. If the source
         /// and destinations overlap, this method behaves as if the original values in
         /// a temporary location before the destination is overwritten.
