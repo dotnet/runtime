@@ -22,6 +22,7 @@
     <Compile Include="System\SpanHelpers.T.cs" />
     <Compile Include="System\SpanHelpers.byte.cs" />
     <Compile Include="System\SpanHelpers.char.cs" />
+    <Compile Include="System\SpanHelpers.Clear.cs" />
     <Compile Include="System\ThrowHelper.cs" />
   </ItemGroup>
   <ItemGroup>

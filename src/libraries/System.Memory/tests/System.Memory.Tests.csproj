@@ -11,6 +11,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Span\AsBytes.cs" />
+    <Compile Include="Span\Fill.cs" />
+    <Compile Include="Span\Clear.cs" />
     <Compile Include="Span\CopyTo.cs" />
     <Compile Include="Span\CtorArray.cs" />
     <Compile Include="Span\CtorArrayInt.cs" />

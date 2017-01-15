@@ -6,13 +6,12 @@
       <OSGroup>Windows_NT</OSGroup>
       <TestTFMs>netcore50;netcoreapp1.0;net46;netcoreapp1.1</TestTFMs>
     </Project>
-    <!-- Add these tests back for fast span once the GC correctness work is done.
     <Project Include="System.Memory.Tests.csproj">
       <TargetGroup>netcoreapp1.1</TargetGroup>
       <OSGroup>Windows_NT</OSGroup>
       <TestTFMs>netcoreapp1.1</TestTFMs>
     </Project>
-    -->
+    <Project Include="Performance\System.Memory.Performance.Tests.csproj" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
 </Project>
