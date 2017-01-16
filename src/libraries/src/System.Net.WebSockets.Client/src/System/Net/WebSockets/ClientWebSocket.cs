@@ -224,33 +224,5 @@ namespace System.Net.WebSockets
                 throw new InvalidOperationException(SR.net_WebSockets_NotConnected);
             }
         }
-
-        internal static void ThrowIfInvalidState(WebSocketState currentState, bool isDisposed, WebSocketState[] validStates)
-        {
-            string validStatesText = string.Empty;
-
-            if (validStates != null && validStates.Length > 0)
-            {
-                foreach (WebSocketState validState in validStates)
-                {
-                    if (currentState == validState)
-                    {
-                        // Ordering is important to maintain .NET 4.5 WebSocket implementation exception behavior.
-                        if (isDisposed)
-                        {
-                            throw new ObjectDisposedException(nameof(ClientWebSocket));
-                        }
-
-                        return;
-                    }
-                }
-
-                validStatesText = string.Join(", ", validStates);
-            }
-
-            throw new WebSocketException(
-                WebSocketError.InvalidState,
-                SR.Format(SR.net_WebSockets_InvalidState, currentState, validStatesText));
-        }
     }
 }
