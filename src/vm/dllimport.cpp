@@ -7010,62 +7010,6 @@ HINSTANCE NDirect::LoadLibraryModule(NDirectMethodDesc * pMD, LoadLibErrorTracke
     hmod = CheckForWellKnownModules(wszLibName, pErrorTracker);
 #endif
 
-#ifndef FEATURE_CORECLR
-    // Since fusion.dll has been incorporated into mscorwks.dll, we need to redirect
-    // any PInvokes for fusion.dll over to this runtime module. In order to avoid picking
-    // up invalid versions of fusion.dll, we perform this redirection first. Also redirect
-    // PInvokes to mscorwks.dll and clr.dll to this runtime module (module rename back
-    // compat and in-proc SxS correctness).
-    if (hmod == NULL)
-    {
-        static LPCWSTR const rwszAliases[] =
-        {
-            W("fusion.dll"), W("mscorwks.dll"), W("clr.dll"),
-            W("fusion"),     W("mscorwks"),     W("clr")
-        };
-
-        for (int i = 0; i < COUNTOF(rwszAliases); i++)
-        {
-            if (SString::_wcsicmp(wszLibName, rwszAliases[i]) == 0)
-            {
-                hmod = GetCLRModule();
-                break;
-            }
-        }
-    }
-    // Some CLR DLLs cannot be directly PInvoked. They need in-proc SxS intialization - shim 
-    // (mscoreei.dll) takes care of that. Load such DLLs via shim.
-    // 
-    // Note that we do not support PInvoking into the newly renamed SxS versions of DLLs directly. 
-    // For example mscorpe.dll functionality was moved to mscorpehost.dll in 4.0. When asked for 
-    // loading mscorpe.dll, shim will load mscorpehost.dll and will call its InitializeSxS function 
-    // first. However shim will not call InitializeSxS when asked for mscorpehost.dll directly. 
-    // As a result users cannot use mscorpehost.dll directly for PInvokes (by design), they can only 
-    // use the old mscorpe.dll name.
-    if (hmod == NULL)
-    {
-        static LPCWSTR const rgSxSAwareDlls[] = 
-        {
-            W("mscorpe.dll"), W("mscorpe")
-        };
-
-        for (int i = 0; i < COUNTOF(rgSxSAwareDlls); i++)
-        {
-            if (SString::_wcsicmp(wszLibName, rgSxSAwareDlls[i]) == 0)
-            {
-                // Load the DLL using shim (shim takes care of the DLL SxS initialization)
-                HRESULT hr = g_pCLRRuntime->LoadLibrary(rgSxSAwareDlls[i], &hmod);
-                if (FAILED(hr))
-                {   // We failed to load CLR DLL (probably corrupted installation)
-                    pErrorTracker->TrackHR_CouldNotLoad(hr);
-                    hmod = NULL;
-                }
-                break;
-            }
-        }
-    }
-#endif //!FEATURE_CORECLR
-
 #ifdef FEATURE_PAL
     // In the PAL version of CoreCLR, the CLR module itself exports the functionality
     // that the Windows version obtains from kernel32 and friends.  In order to avoid
