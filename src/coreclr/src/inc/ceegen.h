@@ -45,9 +45,6 @@ typedef DWORD StringRef;
                 Has a bunch of methods to emit signatures, tokens, methods,
                 etc which are not implemented. These are left over from before
 
-  CeeFileGenWriter, PEWriter and ICeeFileGen are implemented in mscorpe.dll.
-  The other types live in mscorwks.dll (src\md\CeeFileGen)
-  
                                                      +----------------------------+
                                                      |       ICeeGen              |
                                                      |                            |
