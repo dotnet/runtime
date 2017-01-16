@@ -338,24 +338,14 @@
     <Compile Include="$(CommonPath)\System\Net\WebSockets\ManagedWebSocket.cs">
       <Link>Common\System\Net\WebSockets\ManagedWebSocket.cs</Link>
     </Compile>
+    <Reference Include="System.Buffers" />
     <Reference Include="System.Net.Sockets" />
     <Reference Include="System.Threading.ThreadPool" />
     <Reference Include="System.Net.ServicePoint" />
   </ItemGroup>
-  <PropertyGroup Condition=" '$(TargetsWindows)' == 'true' AND '$(ProjectJson)' == '' ">
-    <ProjectJson>win/project.json</ProjectJson>
-    <ProjectLockJson>win/project.lock.json</ProjectLockJson>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(TargetsUnix)' == 'true' and '$(ProjectJson)' == '' ">
-    <ProjectJson>unix/project.json</ProjectJson>
-    <ProjectLockJson>unix/project.lock.json</ProjectLockJson>
-  </PropertyGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'net461'">
     <TargetingPackReference Include="mscorlib" />
     <TargetingPackReference Include="System" />
-  </ItemGroup>
-  <ItemGroup>
-    <Folder Include="System\Net\Managed\WebSockets\" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
