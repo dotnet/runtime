@@ -15,51 +15,26 @@
 #include "shimload.h"
 #include "metadataexports.h"
 #include "ex.h"
-#if !defined(FEATURE_CORECLR)
-#include "corsym.h"
-#endif 
 
-#if defined(FEATURE_CORECLR)
 #include "product_version.h"
-#endif // FEATURE_CORECLR
 
 #ifdef FEATURE_COMINTEROP
 #include "ComCallUnmarshal.h"
 #endif // FEATURE_COMINTEROP
 
-#if !defined(FEATURE_CORECLR) && !defined(CROSSGEN_COMPILE)
-#include <metahost.h>
-extern ICLRRuntimeInfo *g_pCLRRuntime;
-#endif // !FEATURE_CORECLR && !CROSSGEN_COMPILE
-
 #include "clrprivhosting.h"
-
-#ifndef FEATURE_CORECLR
-#include "clr/win32.h"
-#endif // FEATURE_CORECLR
 
 #ifdef FEATURE_PROFAPI_ATTACH_DETACH
 #include "../../vm/profattach.h"
 #endif // FEATURE_PROFAPI_ATTACH_DETACH
 
-
-#if defined(FEATURE_CORECLR)
 #include <dbgenginemetrics.h>
-#endif // FEATURE_CORECLR
 
 // Locals.
 BOOL STDMETHODCALLTYPE EEDllMain( // TRUE on success, FALSE on error.
                        HINSTANCE    hInst,                  // Instance handle of the loaded module.
                        DWORD        dwReason,               // Reason for loading.
                        LPVOID       lpReserved);                // Unused.
-
-#ifdef FEATURE_COMINTEROP_MANAGED_ACTIVATION
-// try to load a com+ class and give out an IClassFactory
-HRESULT STDMETHODCALLTYPE EEDllGetClassObject(
-                            REFCLSID rclsid,
-                            REFIID riid,
-                            LPVOID FAR *ppv);
-#endif // FEATURE_COMINTEROP_MANAGED_ACTIVATION
 
 // Globals.
 HINSTANCE g_hThisInst;  // This library.
@@ -68,8 +43,6 @@ HINSTANCE g_hThisInst;  // This library.
 //*****************************************************************************
 // Handle lifetime of loaded library.
 //*****************************************************************************
-
-#ifdef FEATURE_CORECLR
 
 #include <shlwapi.h>
 
@@ -141,7 +114,6 @@ extern "C" BOOL WINAPI CoreDllMain(HANDLE hInstance, DWORD dwReason, LPVOID lpRe
     }
     return result;
 }
-#endif //FEATURE_CORECLR
 
 extern "C"
 BOOL WINAPI DllMain(HANDLE hInstance, DWORD dwReason, LPVOID lpReserved)
@@ -154,16 +126,6 @@ BOOL WINAPI DllMain(HANDLE hInstance, DWORD dwReason, LPVOID lpReserved)
         {
             // Save the module handle.
             g_hThisInst = (HINSTANCE)hInstance;
-
-#ifndef FEATURE_CORECLR
-            // clr.dll cannot be unloaded
-            // Normally the shim prevents it from ever being unloaded, but we now support fusion loading
-            // us directly, so we need to take an extra ref on our handle to ensure we don't get unloaded.
-            if (FAILED(clr::win32::PreventModuleUnload(g_hThisInst)))
-            {
-                return FALSE;
-            }
-#endif // FEATURE_CORECLR
 
             // Prevent buffer-overruns
             // If buffer is overrun, it is possible the saved callback has been trashed.
@@ -191,129 +153,6 @@ BOOL WINAPI DllMain(HANDLE hInstance, DWORD dwReason, LPVOID lpReserved)
 
     return TRUE;
 }
-
-#ifndef FEATURE_CORECLR // coreclr does not export this 
-// ---------------------------------------------------------------------------
-// %%Function: DllGetClassObjectInternal  %%Owner: NatBro   %%Reviewed: 00/00/00
-// 
-// Parameters:
-//  rclsid                  - reference to the CLSID of the object whose
-//                            ClassObject is being requested
-//  iid                     - reference to the IID of the interface on the
-//                            ClassObject that the caller wants to communicate
-//                            with
-//  ppv                     - location to return reference to the interface
-//                            specified by iid
-// 
-// Returns:
-//  S_OK                    - if successful, valid interface returned in *ppv,
-//                            otherwise *ppv is set to NULL and one of the
-//                            following errors is returned:
-//  E_NOINTERFACE           - ClassObject doesn't support requested interface
-//  CLASS_E_CLASSNOTAVAILABLE - clsid does not correspond to a supported class
-// 
-// Description:
-//  Returns a reference to the iid interface on the main COR ClassObject.
-//  This function is one of the required by-name entry points for COM
-// DLL's. Its purpose is to provide a ClassObject which by definition
-// supports at least IClassFactory and can therefore create instances of
-// objects of the given class.
-// ---------------------------------------------------------------------------
-
-#ifdef FEATURE_COMINTEROP
-// This could be merged with Metadata's class factories!
-static CComCallUnmarshalFactory g_COMCallUnmarshal;
-#endif // FEATURE_COMINTEROP
-
-STDAPI InternalDllGetClassObject(
-    REFCLSID rclsid,
-    REFIID riid,
-    LPVOID FAR *ppv)
-{
-    // @todo: this is called before the runtime is really started, so the contract's don't work.
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_SO_TOLERANT;
-
-    HRESULT hr = CLASS_E_CLASSNOTAVAILABLE;
-    BEGIN_SO_INTOLERANT_CODE_NO_THROW_CHECK_THREAD(return COR_E_STACKOVERFLOW);
-
-
-    if (rclsid == CLSID_CorMetaDataDispenser || rclsid == CLSID_CorMetaDataDispenserRuntime ||
-        rclsid == CLSID_CorRuntimeHost || rclsid == CLSID_CLRRuntimeHost ||
-        rclsid == CLSID_TypeNameFactory
-        || rclsid == __uuidof(CLRPrivRuntime)
-       )
-    {
-        hr = MetaDataDllGetClassObject(rclsid, riid, ppv);
-    }
-#ifdef FEATURE_PROFAPI_ATTACH_DETACH
-    else if (rclsid == CLSID_CLRProfiling)
-    {
-        hr = ICLRProfilingGetClassObject(rclsid, riid, ppv);
-    }
-#endif // FEATURE_PROFAPI_ATTACH_DETACH
-#ifdef FEATURE_COMINTEROP
-    else if (rclsid == CLSID_ComCallUnmarshal || rclsid == CLSID_ComCallUnmarshalV4)
-    {
-        // We still respond to the 1.0/1.1/2.0 CLSID so we don't break anyone who is instantiating
-        // this (we could be called for CLSID_ComCallUnmarshal if the process is rollForward=true)
-        hr = g_COMCallUnmarshal.QueryInterface(riid, ppv);
-    }
-    else if (rclsid == CLSID_CorSymBinder_SxS)
-    {
-        EX_TRY
-        {
-
-            // PDB format - use diasymreader.dll with COM activation
-            InlineSString<_MAX_PATH> ssBuf;
-            if (SUCCEEDED(GetHModuleDirectory(GetModuleInst(), ssBuf)))
-            {
-                hr = FakeCoCallDllGetClassObject(rclsid,
-                    ssBuf,
-                    riid,
-                    ppv,
-                    NULL
-                    );
-            }
-        }
-        EX_CATCH_HRESULT(hr);
-    }
-    else
-    {
-#ifdef FEATURE_COMINTEROP_MANAGED_ACTIVATION
-        // Returns a managed object imported into COM-classic.
-        hr = EEDllGetClassObject(rclsid,riid,ppv);
-#endif // FEATURE_COMINTEROP_MANAGED_ACTIVATION
-    }
-#endif // FEATURE_COMINTEROP
-
-    END_SO_INTOLERANT_CODE;
-    return hr;
-}  // InternalDllGetClassObject
-
-
-STDAPI DllGetClassObjectInternal(
-                                 REFCLSID rclsid,
-                                 REFIID riid,
-                                 LPVOID FAR *ppv)
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_ENTRY_POINT;
-
-    HRESULT hr = S_OK;
-    BEGIN_ENTRYPOINT_NOTHROW;
-    
-    // InternalDllGetClassObject exists to resolve an issue
-    // on FreeBSD, where libsscoree.so's DllGetClassObject's
-    // call to DllGetClassObjectInternal() was being bound to
-    // the implementation in libmscordbi.so, not the one in
-    // libsscoree.so.  The fix is to disambiguate the name.
-    hr = InternalDllGetClassObject(rclsid, riid, ppv);
-    END_ENTRYPOINT_NOTHROW;
-
-    return hr;
-}
-#endif // FEATURE_CORECLR
 
 #ifdef FEATURE_COMINTEROP
 // ---------------------------------------------------------------------------
@@ -767,128 +606,13 @@ CLRRuntimeHostInternal_GetImageVersionString(
     // Simply forward the call to the ICLRRuntimeHostInternal implementation.
     STATIC_CONTRACT_WRAPPER;
 
-#if defined(FEATURE_CORECLR) || defined(CROSSGEN_COMPILE)
     HRESULT hr = GetCORVersionInternal(wszBuffer, *pcchBuffer, pcchBuffer);
-#else
-    ReleaseHolder<ICLRRuntimeHostInternal> pRuntimeHostInternal;
-    HRESULT hr = g_pCLRRuntime->GetInterface(CLSID_CLRRuntimeHostInternal,
-                                             IID_ICLRRuntimeHostInternal,
-                                             &pRuntimeHostInternal);
-    if (SUCCEEDED(hr))
-    {
-        hr = pRuntimeHostInternal->GetImageVersionString(wszBuffer, pcchBuffer);
-    }
-#endif
     
     return hr;
 } // CLRRuntimeHostInternal_GetImageVersionString
 
-  //LONGPATH:TODO: Remove this once Desktop usage has been removed 
-#if !defined(FEATURE_CORECLR) 
-STDAPI GetCORSystemDirectoryInternal(__out_ecount_part_opt(cchBuffer, *pdwLength) LPWSTR pBuffer,
-    DWORD  cchBuffer,
-    __out_opt DWORD* pdwLength)
-{
-#if defined(CROSSGEN_COMPILE)
-
-    CONTRACTL{
-        NOTHROW;
-    GC_NOTRIGGER;
-    ENTRY_POINT;
-    PRECONDITION(CheckPointer(pBuffer, NULL_OK));
-    PRECONDITION(CheckPointer(pdwLength, NULL_OK));
-    } CONTRACTL_END;
-
-    HRESULT hr = S_OK;
-    BEGIN_ENTRYPOINT_NOTHROW;
-
-    if (pdwLength == NULL)
-        IfFailGo(E_POINTER);
-
-    if (pBuffer == NULL)
-        IfFailGo(E_POINTER);
-
-    if (WszGetModuleFileName(NULL, pBuffer, cchBuffer) == 0)
-    {
-        IfFailGo(HRESULT_FROM_GetLastError());
-    }
-    WCHAR *pSeparator;
-    pSeparator = wcsrchr(pBuffer, DIRECTORY_SEPARATOR_CHAR_W);
-    if (pSeparator == NULL)
-    {
-        IfFailGo(HRESULT_FROM_WIN32(ERROR_PATH_NOT_FOUND));
-    }
-    *pSeparator = W('\0');
-
-    // Include the null terminator in the length
-    *pdwLength = (DWORD)wcslen(pBuffer) + 1;
-
-ErrExit:
-    END_ENTRYPOINT_NOTHROW;
-    return hr;
-
-#else // CROSSGEN_COMPILE
-
-    // Simply forward the call to the ICLRRuntimeInfo implementation.
-    STATIC_CONTRACT_WRAPPER;
-    HRESULT hr = S_OK;
-    if (g_pCLRRuntime)
-    {
-        hr = g_pCLRRuntime->GetRuntimeDirectory(pBuffer, &cchBuffer);
-        *pdwLength = cchBuffer;
-    }
-    else
-    {
-        // not invoked via shim (most probably loaded by Fusion)
-        WCHAR wszPath[_MAX_PATH];
-        DWORD dwLength = WszGetModuleFileName(g_hThisInst, wszPath, NumItems(wszPath));
-
-
-        if (dwLength == 0 || (dwLength == NumItems(wszPath) && GetLastError() == ERROR_INSUFFICIENT_BUFFER))
-        {
-            return E_UNEXPECTED;
-        }
-
-        LPWSTR pwzSeparator = wcsrchr(wszPath, W('\\'));
-        if (pwzSeparator == NULL)
-        {
-            return E_UNEXPECTED;
-        }
-        pwzSeparator[1] = W('\0'); // after '\'
-
-        LPWSTR pwzDirectoryName = wszPath;
-
-        size_t cchLength = wcslen(pwzDirectoryName) + 1;
-
-        if (cchBuffer < cchLength)
-        {
-            hr = HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER);
-        }
-        else
-        {
-            if (pBuffer != NULL)
-            {
-                // all look good, copy the string over
-                wcscpy_s(pBuffer,
-                    cchLength,
-                    pwzDirectoryName
-                    );
-            }
-        }
-
-        // hand out the length regardless of success/failure
-        *pdwLength = (DWORD)cchLength;
-    }
-    return hr;
-
-#endif // CROSSGEN_COMPILE
-}
-#endif // !FEATURE_CORECLR 
-
 STDAPI GetCORSystemDirectoryInternaL(SString& pBuffer)
 {
-#if defined(FEATURE_CORECLR) || defined(CROSSGEN_COMPILE)
-
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
@@ -918,34 +642,6 @@ STDAPI GetCORSystemDirectoryInternaL(SString& pBuffer)
 
     END_ENTRYPOINT_NOTHROW;
     return hr;
-
-#else // FEATURE_CORECLR || CROSSGEN_COMPILE
-    DWORD cchBuffer = MAX_PATH - 1;
-    // Simply forward the call to the ICLRRuntimeInfo implementation.
-    STATIC_CONTRACT_WRAPPER;
-    HRESULT hr = S_OK;
-    if (g_pCLRRuntime)
-    {
-        WCHAR* temp = pBuffer.OpenUnicodeBuffer(cchBuffer);
-        hr = g_pCLRRuntime->GetRuntimeDirectory(temp, &cchBuffer);
-        pBuffer.CloseBuffer(cchBuffer - 1);
-    }
-    else
-    {
-        // not invoked via shim (most probably loaded by Fusion)
-        DWORD dwLength = WszGetModuleFileName(g_hThisInst, pBuffer);
-            
-
-        if (dwLength == 0 || ((dwLength == pBuffer.GetCount() + 1) && GetLastError() == ERROR_INSUFFICIENT_BUFFER))
-        {
-            return E_UNEXPECTED;
-        }
-
-        CopySystemDirectory(pBuffer, pBuffer);
-    }
-    return hr;
-
-#endif // FEATURE_CORECLR || CROSSGEN_COMPILE
 }
 
 //
@@ -967,8 +663,6 @@ __out_ecount_z_opt(cchBuffer) LPWSTR pBuffer,
                               DWORD cchBuffer,
                         __out DWORD *pdwLength)
 {
-#if defined(FEATURE_CORECLR) || defined(CROSSGEN_COMPILE)
-
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
@@ -1009,112 +703,7 @@ __out_ecount_z_opt(cchBuffer) LPWSTR pBuffer,
     END_ENTRYPOINT_NOTHROW;
     return hr;
 
-#else // FEATURE_CORECLR || CROSSGEN_COMPILE
-
-    // Simply forward the call to the ICLRRuntimeInfo implementation.
-    STATIC_CONTRACT_WRAPPER;
-    HRESULT hr = S_OK;
-    if (g_pCLRRuntime)
-    {
-        hr = g_pCLRRuntime->GetVersionString(pBuffer, &cchBuffer);
-       *pdwLength = cchBuffer;
-    }
-    else
-    {
-        // not invoked via shim (most probably loaded by Fusion)
-        WCHAR wszPath[_MAX_PATH];
-        DWORD dwLength = WszGetModuleFileName(g_hThisInst, wszPath,NumItems(wszPath));
-            
-
-        if (dwLength == 0 || (dwLength == NumItems(wszPath) && GetLastError() == ERROR_INSUFFICIENT_BUFFER))
-        {
-            return E_UNEXPECTED;
-        }
-
-        LPWSTR pwzSeparator = wcsrchr(wszPath, W('\\'));
-        if (pwzSeparator == NULL)
-        {
-            return E_UNEXPECTED;
-        }
-        *pwzSeparator = W('\0');
-
-        LPWSTR pwzDirectoryName = wcsrchr(wszPath, W('\\')); 
-        if (pwzDirectoryName == NULL)
-        {
-            return E_UNEXPECTED;
-        }
-        pwzDirectoryName++; // skip '\'
-
-        size_t cchLength = wcslen(pwzDirectoryName) + 1;
-
-        if (cchBuffer < cchLength)
-        {
-            hr = HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER);
-        }
-        else
-        {
-            if (pBuffer != NULL)
-            {
-                // all look good, copy the string over
-                wcscpy_s(pBuffer,
-                         cchLength,
-                         pwzDirectoryName
-                        );
-            }
-        }
-
-        // hand out the length regardless of success/failure
-        *pdwLength = (DWORD)cchLength;
-       
-    }
-    return hr;
-
-#endif // FEATURE_CORECLR || CROSSGEN_COMPILE
-
 }
-
-#ifndef CROSSGEN_COMPILE
-#ifndef FEATURE_CORECLR
-STDAPI LoadLibraryShimInternal(LPCWSTR szDllName, LPCWSTR szVersion, LPVOID pvReserved, HMODULE *phModDll)
-{
-    // Simply forward the call to the ICLRRuntimeInfo implementation.
-    STATIC_CONTRACT_WRAPPER;
-    if (g_pCLRRuntime)
-    {
-        return g_pCLRRuntime->LoadLibrary(szDllName, phModDll);
-    }
-    else
-    {
-        // no runtime info, probably loaded directly (e.g. from Fusion)
-        // just look next to ourselves.
-        WCHAR wszPath[MAX_PATH];
-        DWORD dwLength = WszGetModuleFileName(g_hThisInst, wszPath,NumItems(wszPath));
-            
-
-        if (dwLength == 0 || (dwLength == NumItems(wszPath) && GetLastError() == ERROR_INSUFFICIENT_BUFFER))
-        {
-            return E_UNEXPECTED;
-        }
-
-        LPWSTR pwzSeparator = wcsrchr(wszPath, W('\\'));
-        if (pwzSeparator == NULL)
-        {
-            return E_UNEXPECTED;
-        }
-        pwzSeparator[1]=W('\0');
-
-        wcscat_s(wszPath,NumItems(wszPath),szDllName);
-        *phModDll= WszLoadLibraryEx(wszPath,NULL,GetLoadWithAlteredSearchPathFlag());
-
-        if (*phModDll == NULL)
-        {
-            return HRESULT_FROM_GetLastError();
-        }
-        return S_OK;
-    }
-}
-#endif
-#endif 
 
 static DWORD g_dwSystemDirectory = 0;
 static WCHAR * g_pSystemDirectory = NULL;
@@ -1213,7 +802,7 @@ HRESULT SetInternalSystemDirectory()
     return hr;
 }
 
-#if defined(CROSSGEN_COMPILE) && defined(FEATURE_CORECLR)
+#if defined(CROSSGEN_COMPILE)
 void SetMscorlibPath(LPCWSTR wzSystemDirectory)
 {
     DWORD len = (DWORD)wcslen(wzSystemDirectory);
