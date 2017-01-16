@@ -1765,6 +1765,16 @@ ncells ) {
 	public static int test_142_byte_enum_arg_zero_extend () {
 		return enum_arg_zero_extend (ByteEnum2.High);
 	}
+
+	enum Mine { One, Two }
+
+	public static int test_0_enum_gethashcode_opt () {
+		int sum = 0;
+        for (int i = 0; i < 1000000; ++i)
+			sum += Mine.Two.GetHashCode();
+
+        return 0;
+    }
 }
 
 #if __MOBILE__

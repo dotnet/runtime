@@ -8582,6 +8582,15 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						CHECK_CFG_ERROR;
 					}
 				}
+
+				if (constrained_class->enumtype && !strcmp (cmethod->name, "GetHashCode")) {
+					/* Use the corresponding method from the base type to avoid boxing */
+					MonoType *base_type = mono_class_enum_basetype (constrained_class);
+					g_assert (base_type);
+					constrained_class = mono_class_from_mono_type (base_type);
+					cmethod = mono_class_get_method_from_name (constrained_class, cmethod->name, 0);
+					g_assert (cmethod);
+				}
 			}
 					
 			if (!dont_verify && !cfg->skip_visibility) {
