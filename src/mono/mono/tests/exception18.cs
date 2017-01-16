@@ -51,27 +51,51 @@ class C
 		}
 
 		try {
-			new C ().M1 ();
+			new C ().M1a ();
 		} catch (Exception ex) {
 			int frames = FrameCount (ex);
 			if (frames != 4)
 				throw new Exception (String.Format("Exception carried {0} frames along with it when it should have reported four.", frames));
 		}
+
+		try {
+			new C ().M1b ();
+		} catch (Exception ex) {
+			int frames = FrameCount (ex);
+			if (frames != 3)
+				throw new Exception (String.Format("Exception carried {0} frames along with it when it should have reported three.", frames));
+		}
 	}
 
 	[MethodImpl(MethodImplOptions.NoInlining)]
-	private void M1 ()
+	private void M1a ()
 	{
-		M2 ();
+		M2a ();
 	}
 
 	[MethodImpl(MethodImplOptions.NoInlining)]
-	private void M2 ()
+	private void M1b ()
+	{
+		M2b ();
+	}
+
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	private void M2a ()
 	{
 		try {
 			M3 ();
 		} catch {
 			throw;
+		}
+	}
+
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	private void M2b ()
+	{
+		try {
+			M3 ();
+		} catch (Exception ex) {
+			throw ex;
 		}
 	}
 
