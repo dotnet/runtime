@@ -44,7 +44,11 @@ namespace System.Net.Sockets.Tests
                     args.Completed += OnCompleted;
                     args.UserToken = completed;
 
-                    Assert.True(receiver.ReceiveMessageFromAsync(args));
+                    bool pending = receiver.ReceiveMessageFromAsync(args);
+                    if (!pending)
+                    {
+                        OnCompleted(null, args);
+                    }
 
                     Assert.True(completed.WaitOne(TestSettings.PassingTestTimeout), "Timeout while waiting for connection");
 
@@ -84,7 +88,11 @@ namespace System.Net.Sockets.Tests
                     args.Completed += OnCompleted;
                     args.UserToken = completed;
 
-                    Assert.True(receiver.ReceiveMessageFromAsync(args));
+                    bool pending = receiver.ReceiveMessageFromAsync(args);
+                    if (!pending)
+                    {
+                        OnCompleted(null, args);
+                    }
 
                     Assert.True(completed.WaitOne(TestSettings.PassingTestTimeout), "Timeout while waiting for connection");
 
