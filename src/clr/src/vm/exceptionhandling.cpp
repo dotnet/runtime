@@ -405,7 +405,14 @@ void ExceptionTracker::UpdateNonvolatileRegisters(CONTEXT *pContextRecord, REGDI
         }                                                                                   \
     } while (0)
 
-#if defined(_TARGET_AMD64_)
+#if defined(_TARGET_X86_)
+
+    UPDATEREG(Ebx);
+    UPDATEREG(Esi);
+    UPDATEREG(Edi);
+    UPDATEREG(Ebp);
+
+#elif defined(_TARGET_AMD64_)
 
     UPDATEREG(Rbx);
     UPDATEREG(Rbp);
