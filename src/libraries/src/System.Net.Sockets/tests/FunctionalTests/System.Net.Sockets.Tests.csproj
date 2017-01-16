@@ -21,6 +21,7 @@
     <Compile Include="DnsEndPointTest.cs" />
     <Compile Include="DualModeSocketTest.cs" />
     <Compile Include="IPPacketInformationTest.cs" />
+    <Compile Include="Issue14037.cs" />
     <Compile Include="LingerStateTest.cs" />
     <Compile Include="NetworkStreamTest.cs" />
     <Compile Include="ReceiveMessageFrom.cs" />
