@@ -8,11 +8,11 @@
       "version": "1.3.0",
       "exclude": "compile"
     },
-    "Microsoft.Private.CoreFx.NETCoreApp": "4.4.0-beta-24914-13",
-    "Microsoft.NETCore.Runtime.CoreCLR": "1.2.0-beta-24915-02",
+    "Microsoft.Private.CoreFx.NETCoreApp": "4.4.0-beta-24916-02",
+    "Microsoft.NETCore.Runtime.CoreCLR": "1.2.0-beta-24916-03",
     "Microsoft.DiaSymReader.Native": "1.4.0",
     "Libuv": "1.10.0-preview1-22036",
-    "Microsoft.NETCore.Platforms": "2.0.0-beta-24914-13",
+    "Microsoft.NETCore.Platforms": "2.0.0-beta-24916-02",
     "NETStandard.Library": "1.6.2-beta-24913-02"
   },
   "frameworks": {
