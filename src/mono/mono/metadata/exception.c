@@ -1073,7 +1073,7 @@ mono_error_set_pending_exception (MonoError *error)
 }
 
 void
-mono_install_unhandled_exception_hook (MonoUnhandledExceptionFunc func, gpointer user_data)
+mono_install_unhandled_exception_hook (MonoUnhandledExceptionFunc func, void *user_data)
 {
 	unhandled_exception_hook = func;
 	unhandled_exception_hook_data = user_data;
