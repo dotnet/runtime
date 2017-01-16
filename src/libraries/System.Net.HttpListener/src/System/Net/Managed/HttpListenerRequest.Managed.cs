@@ -642,15 +642,15 @@ namespace System.Net
         {
             get
             {
-                bool foundConnectionUpgradeHeader = false;
-                if (string.IsNullOrEmpty(this.Headers[HttpKnownHeaderNames.Connection]) || string.IsNullOrEmpty(this.Headers[HttpKnownHeaderNames.Upgrade]))
+                if (string.IsNullOrEmpty(Headers[HttpKnownHeaderNames.Connection]) || string.IsNullOrEmpty(Headers[HttpKnownHeaderNames.Upgrade]))
                 {
                     return false;
                 }
 
-                foreach (string connection in this.Headers.GetValues(HttpKnownHeaderNames.Connection))
+                bool foundConnectionUpgradeHeader = false;
+                foreach (string connection in Headers.GetValues(HttpKnownHeaderNames.Connection))
                 {
-                    if (string.Compare(connection, HttpKnownHeaderNames.Upgrade, StringComparison.OrdinalIgnoreCase) == 0)
+                    if (string.Equals(connection, HttpKnownHeaderNames.Upgrade, StringComparison.OrdinalIgnoreCase))
                     {
                         foundConnectionUpgradeHeader = true;
                         break;
@@ -662,9 +662,9 @@ namespace System.Net
                     return false;
                 }
 
-                foreach (string upgrade in this.Headers.GetValues(HttpKnownHeaderNames.Upgrade))
+                foreach (string upgrade in Headers.GetValues(HttpKnownHeaderNames.Upgrade))
                 {
-                    if (string.Equals(upgrade, WebSocketValidate.WebSocketUpgradeToken, StringComparison.OrdinalIgnoreCase))
+                    if (string.Equals(upgrade, HttpWebSocket.WebSocketUpgradeToken, StringComparison.OrdinalIgnoreCase))
                     {
                         return true;
                     }

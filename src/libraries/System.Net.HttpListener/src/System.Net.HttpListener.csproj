@@ -27,6 +27,7 @@
     <Reference Include="System.Net.Security" />
     <Reference Include="System.Net.WebHeaderCollection" />
     <Reference Include="System.Net.WebSockets" />
+    <Reference Include="System.Net.WebSockets.Client" />
     <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
@@ -55,7 +56,7 @@
     <Compile Include="System\Net\HttpListenerResponse.cs" />
     <Compile Include="System\Net\NetEventSource.HttpListener.cs" />
     <Compile Include="System\Net\WebSockets\HttpListenerWebSocketContext.cs" />
-    <Compile Include="System\Net\WebSockets\WebSocketValidate.Http.cs" />
+    <Compile Include="System\Net\WebSockets\HttpWebSocket.cs" />
     <Compile Include="$(CommonPath)\System\Net\Logging\NetEventSource.Common.cs">
       <Link>Common\System\Net\Logging\NetEventSource.Common.cs</Link>
     </Compile>
@@ -113,7 +114,7 @@
     <Compile Include="System\Net\Windows\HttpResponseStream.Windows.cs" />
     <Compile Include="System\Net\Windows\HttpResponseStreamAsyncResult.cs" />
     <Compile Include="System\Net\Windows\WebSockets\ServerWebSocket.cs" />
-    <Compile Include="System\Net\Windows\WebSockets\WebSocketValidate.Http.Windows.cs" />
+    <Compile Include="System\Net\Windows\WebSockets\HttpWebSocket.Windows.cs" />
     <Compile Include="System\Net\Windows\WebSockets\WebSocketBase.cs" />
     <Compile Include="System\Net\Windows\WebSockets\WebSocketBuffer.cs" />
     <Compile Include="System\Net\Windows\WebSockets\SafeWebSocketHandle.cs" />
@@ -333,7 +334,7 @@
     <Compile Include="System\Net\Managed\ChunkedInputStream.cs" />
     <Compile Include="System\Net\Managed\ChunkStream.cs" />
     <Compile Include="System\Net\Managed\HttpResponseStream.Managed.cs" />
-    <Compile Include="System\Net\Managed\WebSockets\WebSocketValidate.Http.Managed.cs" />
+    <Compile Include="System\Net\Managed\WebSockets\HttpWebSocket.Managed.cs" />
     <Compile Include="$(CommonPath)\System\Net\WebSockets\ManagedWebSocket.cs">
       <Link>Common\System\Net\WebSockets\ManagedWebSocket.cs</Link>
     </Compile>
@@ -352,6 +353,9 @@
   <ItemGroup Condition="'$(TargetGroup)' == 'net461'">
     <TargetingPackReference Include="mscorlib" />
     <TargetingPackReference Include="System" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="System\Net\Managed\WebSockets\" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

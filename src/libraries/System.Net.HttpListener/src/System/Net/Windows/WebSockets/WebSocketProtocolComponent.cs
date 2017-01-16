@@ -29,8 +29,8 @@ namespace System.Net.WebSockets
                 {
                     Name = HttpKnownHeaderNames.Upgrade,
                     NameLength = (uint)HttpKnownHeaderNames.Upgrade.Length,
-                    Value = WebSocketValidate.WebSocketUpgradeToken,
-                    ValueLength = (uint)WebSocketValidate.WebSocketUpgradeToken.Length
+                    Value = HttpWebSocket.WebSocketUpgradeToken,
+                    ValueLength = (uint)HttpWebSocket.WebSocketUpgradeToken.Length
                 }
             };
 
@@ -94,8 +94,8 @@ namespace System.Net.WebSockets
                     {
                         Name = HttpKnownHeaderNames.Upgrade,
                         NameLength = (uint)HttpKnownHeaderNames.Upgrade.Length,
-                        Value = WebSocketValidate.WebSocketUpgradeToken,
-                        ValueLength = (uint)WebSocketValidate.WebSocketUpgradeToken.Length
+                        Value = HttpWebSocket.WebSocketUpgradeToken,
+                        ValueLength = (uint)HttpWebSocket.WebSocketUpgradeToken.Length
                     },
                     new Interop.WebSocket.HttpHeader()
                     {
@@ -128,7 +128,7 @@ namespace System.Net.WebSockets
             {
                 if (s_webSocketDllHandle.IsInvalid)
                 {
-                    WebSocketValidate.ThrowPlatformNotSupportedException_WSPC();
+                    HttpWebSocket.ThrowPlatformNotSupportedException_WSPC();
                 }
 
                 return s_supportedVersion;
@@ -147,7 +147,7 @@ namespace System.Net.WebSockets
         {
             if (s_webSocketDllHandle.IsInvalid)
             {
-                WebSocketValidate.ThrowPlatformNotSupportedException_WSPC();
+                HttpWebSocket.ThrowPlatformNotSupportedException_WSPC();
             }
 
             SafeWebSocketHandle webSocketHandle = null;
@@ -159,7 +159,7 @@ namespace System.Net.WebSockets
                 if (webSocketHandle == null ||
                     webSocketHandle.IsInvalid)
                 {
-                    WebSocketValidate.ThrowPlatformNotSupportedException_WSPC();
+                    HttpWebSocket.ThrowPlatformNotSupportedException_WSPC();
                 }
 
                 IntPtr additionalHeadersPtr;
@@ -213,7 +213,7 @@ namespace System.Net.WebSockets
 
             if (s_webSocketDllHandle.IsInvalid)
             {
-                WebSocketValidate.ThrowPlatformNotSupportedException_WSPC();
+                HttpWebSocket.ThrowPlatformNotSupportedException_WSPC();
             }
 
             int errorCode = Interop.WebSocket.WebSocketCreateServerHandle(properties, (uint)propertyCount, out webSocketHandle);
@@ -222,7 +222,7 @@ namespace System.Net.WebSockets
             if (webSocketHandle == null ||
                 webSocketHandle.IsInvalid)
             {
-                WebSocketValidate.ThrowPlatformNotSupportedException_WSPC();
+                HttpWebSocket.ThrowPlatformNotSupportedException_WSPC();
             }
 
             IntPtr responseHeadersPtr;

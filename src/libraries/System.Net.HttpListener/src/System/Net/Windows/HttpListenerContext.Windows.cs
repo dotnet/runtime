@@ -53,14 +53,14 @@ namespace System.Net
         public Task<HttpListenerWebSocketContext> AcceptWebSocketAsync(string subProtocol)
         {
             return this.AcceptWebSocketAsync(subProtocol,
-                WebSocketValidate.DefaultReceiveBufferSize,
+                HttpWebSocket.DefaultReceiveBufferSize,
                 WebSocket.DefaultKeepAliveInterval);
         }
 
         public Task<HttpListenerWebSocketContext> AcceptWebSocketAsync(string subProtocol, TimeSpan keepAliveInterval)
         {
             return this.AcceptWebSocketAsync(subProtocol,
-                WebSocketValidate.DefaultReceiveBufferSize,
+                HttpWebSocket.DefaultReceiveBufferSize,
                 keepAliveInterval);
         }
 
@@ -68,7 +68,7 @@ namespace System.Net
             int receiveBufferSize,
             TimeSpan keepAliveInterval)
         {
-            WebSocketValidate.ValidateOptions(subProtocol, receiveBufferSize, WebSocketBuffer.MinSendBufferSize, keepAliveInterval);
+            HttpWebSocket.ValidateOptions(subProtocol, receiveBufferSize, WebSocketBuffer.MinSendBufferSize, keepAliveInterval);
 
             ArraySegment<byte> internalBuffer = WebSocketBuffer.CreateInternalBufferArraySegment(receiveBufferSize, WebSocketBuffer.MinSendBufferSize, true);
             return this.AcceptWebSocketAsync(subProtocol,
@@ -83,7 +83,7 @@ namespace System.Net
             TimeSpan keepAliveInterval,
             ArraySegment<byte> internalBuffer)
         {
-            return WebSocketValidate.AcceptWebSocketAsync(this,
+            return HttpWebSocket.AcceptWebSocketAsync(this,
                 subProtocol,
                 receiveBufferSize,
                 keepAliveInterval,

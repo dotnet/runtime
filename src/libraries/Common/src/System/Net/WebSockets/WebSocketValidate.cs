@@ -128,5 +128,23 @@ namespace System.Net.WebSockets
                 throw new ArgumentNullException(parameterName + ".Array");
             }
         }
+
+        internal static void ValidateBuffer(byte[] buffer, int offset, int count)
+        {
+            if (buffer == null)
+            {
+                throw new ArgumentNullException(nameof(buffer));
+            }
+
+            if (offset < 0 || offset > buffer.Length)
+            {
+                throw new ArgumentOutOfRangeException(nameof(offset));
+            }
+
+            if (count < 0 || count > (buffer.Length - offset))
+            {
+                throw new ArgumentOutOfRangeException(nameof(count));
+            }
+        }
     }
 }

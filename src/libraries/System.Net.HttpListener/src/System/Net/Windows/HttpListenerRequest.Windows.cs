@@ -362,7 +362,7 @@ namespace System.Net
 
                 foreach (string upgrade in this.Headers.GetValues(HttpKnownHeaderNames.Upgrade))
                 {
-                    if (string.Equals(upgrade, WebSocketValidate.WebSocketUpgradeToken, StringComparison.OrdinalIgnoreCase))
+                    if (string.Equals(upgrade, HttpWebSocket.WebSocketUpgradeToken, StringComparison.OrdinalIgnoreCase))
                     {
                         return true;
                     }

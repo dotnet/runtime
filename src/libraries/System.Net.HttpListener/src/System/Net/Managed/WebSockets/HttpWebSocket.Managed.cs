@@ -2,14 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections.Generic;
-using System.IO;
 using System.Threading.Tasks;
 
 namespace System.Net.WebSockets
 {
-    internal static partial class WebSocketValidate
+    internal static partial class HttpWebSocket
     {
+        private const string SupportedVersion = "13";
+
         internal static async Task<HttpListenerWebSocketContext> AcceptWebSocketAsyncCore(HttpListenerContext context,
             string subProtocol,
             int receiveBufferSize,
@@ -26,7 +26,7 @@ namespace System.Net.WebSockets
             // Optional for non-browser client
             string origin = request.Headers[HttpKnownHeaderNames.Origin];
 
-            List<string> secWebSocketProtocols = new List<string>();
+            string[] secWebSocketProtocols = null;
             string outgoingSecWebSocketProtocolString;
             bool shouldSendSecWebSocketProtocolHeader =
                 ProcessWebSocketProtocolHeader(
@@ -36,14 +36,13 @@ namespace System.Net.WebSockets
 
             if (shouldSendSecWebSocketProtocolHeader)
             {
-                secWebSocketProtocols.Add(outgoingSecWebSocketProtocolString);
-                response.Headers.Add(HttpKnownHeaderNames.SecWebSocketProtocol,
-                    outgoingSecWebSocketProtocolString);
+                secWebSocketProtocols = new string[] { outgoingSecWebSocketProtocolString };
+                response.Headers.Add(HttpKnownHeaderNames.SecWebSocketProtocol, outgoingSecWebSocketProtocolString);
             }
 
             // negotiate the websocket key return value
             string secWebSocketKey = request.Headers[HttpKnownHeaderNames.SecWebSocketKey];
-            string secWebSocketAccept = WebSocketValidate.GetSecWebSocketAcceptString(secWebSocketKey);
+            string secWebSocketAccept = HttpWebSocket.GetSecWebSocketAcceptString(secWebSocketKey);
 
             response.Headers.Add(HttpKnownHeaderNames.Connection, HttpKnownHeaderNames.Upgrade);
             response.Headers.Add(HttpKnownHeaderNames.Upgrade, WebSocketUpgradeToken);
@@ -55,7 +54,7 @@ namespace System.Net.WebSockets
             HttpResponseStream responseStream = response.OutputStream as HttpResponseStream;
             
             // Send websocket handshake headers
-            await responseStream.WriteWebSocketHandshakeHeadersAsync();
+            await responseStream.WriteWebSocketHandshakeHeadersAsync().ConfigureAwait(false);
 
             WebSocket webSocket = ManagedWebSocket.CreateFromConnectedStream(context.Connection.ConnectedStream, true, subProtocol, keepAliveInterval, receiveBufferSize, internalBuffer);
 
@@ -68,7 +67,7 @@ namespace System.Net.WebSockets
                                                                 request.IsLocal,
                                                                 request.IsSecureConnection,
                                                                 origin,
-                                                                secWebSocketProtocols.AsReadOnly(),
+                                                                secWebSocketProtocols != null ? secWebSocketProtocols : Array.Empty<string>(),
                                                                 secWebSocketVersion,
                                                                 secWebSocketKey,
                                                                 webSocket);
@@ -85,7 +84,7 @@ namespace System.Net.WebSockets
                     nameof(ValidateWebSocketHeaders),
                     HttpKnownHeaderNames.Connection,
                     HttpKnownHeaderNames.Upgrade,
-                    WebSocketValidate.WebSocketUpgradeToken,
+                    HttpWebSocket.WebSocketUpgradeToken,
                     context.Request.Headers[HttpKnownHeaderNames.Upgrade]));
             }
 
@@ -98,7 +97,14 @@ namespace System.Net.WebSockets
                     HttpKnownHeaderNames.SecWebSocketVersion));
             }
 
-            // TODO: Figure out how to validate version.
+            if (!string.Equals(secWebSocketVersion, SupportedVersion))
+            {
+                throw new WebSocketException(WebSocketError.UnsupportedVersion,
+                    SR.Format(SR.net_WebSockets_AcceptUnsupportedWebSocketVersion,
+                    nameof(ValidateWebSocketHeaders),
+                    secWebSocketVersion,
+                    SupportedVersion));
+            }
 
             if (string.IsNullOrWhiteSpace(context.Request.Headers[HttpKnownHeaderNames.SecWebSocketKey]))
             {
@@ -110,3 +116,4 @@ namespace System.Net.WebSockets
         }
     }
 }
+

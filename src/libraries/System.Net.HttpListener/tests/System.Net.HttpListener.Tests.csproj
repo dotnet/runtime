@@ -10,12 +10,12 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="AuthenticationTests.cs" />
-    <Compile Include="SimpleHttpTest.cs" />
-    <Compile Include="UrlPrefix.cs" />
+    <Compile Include="SimpleHttpTests.cs" />
+    <Compile Include="HttpListenerFactory.cs" />
+    <Compile Include="WebSocketTests.cs" />
     <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
       <Link>Common\tests\System\PlatformDetection.cs</Link>
     </Compile>
-    <Compile Include="WebSocketTests.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

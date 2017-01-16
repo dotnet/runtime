@@ -113,21 +113,21 @@ namespace System.Net
             if (_disposed)
                 throw new ObjectDisposedException(GetType().ToString());
 
-            byte[] bytes = null;
-            MemoryStream ms = GetHeaders(false, true);
-            bool chunked = _response.SendChunked;
             if (_stream.CanWrite)
             {
+                MemoryStream ms = GetHeaders(closing: false, isWebSocketHandshake: true);
+                bool chunked = _response.SendChunked;
+
                 long start = ms.Position;
                 if (chunked)
                 {
-                    bytes = GetChunkSizeBytes(0, true);
+                    byte[] bytes = GetChunkSizeBytes(0, true);
                     ms.Position = ms.Length;
                     ms.Write(bytes, 0, bytes.Length);
                 }
 
-                await InternalWriteAsync(ms.GetBuffer(), (int)start, (int)(ms.Length - start));
-                _stream.Flush();
+                await InternalWriteAsync(ms.GetBuffer(), (int)start, (int)(ms.Length - start)).ConfigureAwait(false);
+                await _stream.FlushAsync().ConfigureAwait(false);
             }
         }
 
@@ -174,20 +174,13 @@ namespace System.Net
             }
         }
 
-        internal async Task InternalWriteAsync(byte[] buffer, int offset, int count)
+        internal Task InternalWriteAsync(byte[] buffer, int offset, int count) => 
+            _ignore_errors ? InternalWriteIgnoreErrorsAsync(buffer, offset, count) : _stream.WriteAsync(buffer, offset, count);
+
+        private async Task InternalWriteIgnoreErrorsAsync(byte[] buffer, int offset, int count)
         {
-            if (_ignore_errors)
-            {
-                try
-                {
-                    await _stream.WriteAsync(buffer, offset, count);
-                }
-                catch { }
-            }
-            else
-            {
-                await _stream.WriteAsync(buffer, offset, count);
-            }
+            try { await _stream.WriteAsync(buffer, offset, count).ConfigureAwait(false); }
+            catch { }
         }
 
         public override void Write(byte[] buffer, int offset, int count)
