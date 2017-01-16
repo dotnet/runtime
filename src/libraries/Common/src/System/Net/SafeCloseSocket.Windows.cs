@@ -3,9 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using Microsoft.Win32.SafeHandles;
-
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 
@@ -19,6 +17,7 @@ namespace System.Net.Sockets
 #endif
     {
         private ThreadPoolBoundHandle _iocpBoundHandle;
+        private bool _skipCompletionPortOnSuccess;
         private object _iocpBindingLock = new object();
 
         public ThreadPoolBoundHandle IOCPBoundHandle
@@ -30,7 +29,7 @@ namespace System.Net.Sockets
         }
 
         // Binds the Socket Win32 Handle to the ThreadPool's CompletionPort.
-        public ThreadPoolBoundHandle GetOrAllocateThreadPoolBoundHandle()
+        public ThreadPoolBoundHandle GetOrAllocateThreadPoolBoundHandle(bool trySkipCompletionPortOnSuccess)
         {
             if (_released)
             {
@@ -49,12 +48,13 @@ namespace System.Net.Sockets
                         // Bind the socket native _handle to the ThreadPool.
                         if (NetEventSource.IsEnabled) NetEventSource.Info(this, "calling ThreadPool.BindHandle()");
 
+                        ThreadPoolBoundHandle boundHandle;
                         try
                         {
                             // The handle (this) may have been already released:
                             // E.g.: The socket has been disposed in the main thread. A completion callback may
                             //       attempt starting another operation.
-                            _iocpBoundHandle = ThreadPoolBoundHandle.BindHandle(this);
+                            boundHandle = ThreadPoolBoundHandle.BindHandle(this);
                         }
                         catch (Exception exception)
                         {
@@ -62,11 +62,30 @@ namespace System.Net.Sockets
                             CloseAsIs();
                             throw;
                         }
+
+                        // Try to disable completions for synchronous success, if requested
+                        if (trySkipCompletionPortOnSuccess &&
+                            CompletionPortHelper.SkipCompletionPortOnSuccess(boundHandle.Handle))
+                        {
+                            _skipCompletionPortOnSuccess = true;
+                        }
+
+                        // Don't set this until after we've configured the handle above (if we did)
+                        _iocpBoundHandle = boundHandle;
                     }
                 }
             }
 
             return _iocpBoundHandle;
+        }
+
+        public bool SkipCompletionPortOnSuccess
+        {
+            get
+            {
+                Debug.Assert(_iocpBoundHandle != null);
+                return _skipCompletionPortOnSuccess;
+            }
         }
 
         internal static unsafe SafeCloseSocket CreateWSASocket(byte* pinnedBuffer)

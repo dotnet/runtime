@@ -6,6 +6,7 @@ using Microsoft.Win32.SafeHandles;
 using System.Collections;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Threading;
 
 namespace System.Net.Sockets
 {
@@ -246,12 +247,9 @@ namespace System.Net.Sockets
             SocketError errorCode = SocketPal.SendFileAsync(_handle, fileStream, preBuffer, postBuffer, flags, asyncResult);
 
             // Check for synchronous exception
-            if (errorCode != SocketError.Success)
+            if (!CheckErrorAndUpdateStatus(errorCode))
             {
-                SocketException socketException = new SocketException((int)errorCode);
-                UpdateStatusAfterSocketError(socketException);
-                if (NetEventSource.IsEnabled) NetEventSource.Error(this, socketException);
-                throw socketException;
+                throw new SocketException((int)errorCode);
             }
 
             asyncResult.FinishPostingAsyncOp(ref Caches.SendClosureCache);
@@ -291,6 +289,15 @@ namespace System.Net.Sockets
                 throw socketException;
             }
 
+        }
+
+        internal ThreadPoolBoundHandle GetOrAllocateThreadPoolBoundHandle()
+        {
+            // There is a known bug that exists through Windows 7 with UDP and
+            // SetFileCompletionNotificationModes.
+            // So, don't try to enable skipping the completion port on success in this case.
+            bool trySkipCompletionPortOnSuccess = !(CompletionPortHelper.PlatformHasUdpIssue && _protocolType == ProtocolType.Udp);
+            return _handle.GetOrAllocateThreadPoolBoundHandle(trySkipCompletionPortOnSuccess);
         }
     }
 }
