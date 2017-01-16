@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Runtime.CompilerServices;
 
 class C
 {
@@ -49,5 +50,34 @@ class C
 				throw new Exception (String.Format("Exception carried {0} frames along with it when it should have reported four.", frames));
 		}
 
+		try {
+			new C ().M1 ();
+		} catch (Exception ex) {
+			int frames = FrameCount (ex);
+			if (frames != 4)
+				throw new Exception (String.Format("Exception carried {0} frames along with it when it should have reported four.", frames));
+		}
+	}
+
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	private void M1 ()
+	{
+		M2 ();
+	}
+
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	private void M2 ()
+	{
+		try {
+			M3 ();
+		} catch {
+			throw;
+		}
+	}
+
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	private void M3 ()
+	{
+		throw new NotImplementedException ();
 	}
 }

@@ -1400,9 +1400,9 @@ build_native_trace (MonoError *error)
 }
 
 static void
-setup_stack_trace (MonoException *mono_ex, GSList *dynamic_methods, MonoArray *initial_trace_ips, GList **trace_ips)
+setup_stack_trace (MonoException *mono_ex, GSList *dynamic_methods, GList **trace_ips)
 {
-	if (mono_ex && !initial_trace_ips) {
+	if (mono_ex) {
 		*trace_ips = g_list_reverse (*trace_ips);
 		MonoError error;
 		MonoArray *ips_arr = mono_glist_to_array (*trace_ips, mono_defaults.int_class, &error);
@@ -1456,7 +1456,6 @@ mono_handle_exception_internal_first_pass (MonoContext *ctx, MonoObject *obj, gi
 	static int (*call_filter) (MonoContext *, gpointer) = NULL;
 	MonoJitTlsData *jit_tls = (MonoJitTlsData *)mono_tls_get_jit_tls ();
 	MonoLMF *lmf = mono_get_lmf ();
-	MonoArray *initial_trace_ips = NULL;
 	GList *trace_ips = NULL;
 	GSList *dynamic_methods = NULL;
 	MonoException *mono_ex;
@@ -1474,12 +1473,19 @@ mono_handle_exception_internal_first_pass (MonoContext *ctx, MonoObject *obj, gi
 		stack_overflow = TRUE;
 
 	mono_ex = (MonoException*)obj;
-	initial_trace_ips = mono_ex->trace_ips;
+	MonoArray *initial_trace_ips = mono_ex->trace_ips;
+	if (initial_trace_ips) {
+		int len = mono_array_length (initial_trace_ips) >> 1;
 
-	if (mono_object_isinst_checked (obj, mono_defaults.exception_class, &error)) {
-		mono_ex = (MonoException*)obj;
-		initial_trace_ips = mono_ex->trace_ips;
-	} else {
+		for (i = 0; i < (len - 1); i++) {
+			gpointer ip = mono_array_get (initial_trace_ips, gpointer, i * 2 + 0);
+			gpointer generic_info = mono_array_get (initial_trace_ips, gpointer, i * 2 + 1);
+			trace_ips = g_list_prepend (trace_ips, ip);
+			trace_ips = g_list_prepend (trace_ips, generic_info);
+		}
+	}
+
+	if (!mono_object_isinst_checked (obj, mono_defaults.exception_class, &error)) {
 		mono_error_assert_ok (&error);
 		mono_ex = NULL;
 	}
@@ -1523,7 +1529,7 @@ mono_handle_exception_internal_first_pass (MonoContext *ctx, MonoObject *obj, gi
 		}
 
 		if (!unwind_res) {
-			setup_stack_trace (mono_ex, dynamic_methods, initial_trace_ips, &trace_ips);
+			setup_stack_trace (mono_ex, dynamic_methods, &trace_ips);
 			g_slist_free (dynamic_methods);
 			return FALSE;
 		}
@@ -1539,15 +1545,10 @@ mono_handle_exception_internal_first_pass (MonoContext *ctx, MonoObject *obj, gi
 		}
 
 		if (method->wrapper_type != MONO_WRAPPER_RUNTIME_INVOKE && mono_ex) {
-			/* 
-			 * Avoid overwriting the stack trace if the exception is
-			 * rethrown. Also avoid giant stack traces during a stack
-			 * overflow.
-			 */
-			if (!initial_trace_ips && (frame_count < 1000)) {
+			// avoid giant stack traces during a stack overflow
+			if (frame_count < 1000) {
 				trace_ips = g_list_prepend (trace_ips, MONO_CONTEXT_GET_IP (ctx));
-				trace_ips = g_list_prepend (trace_ips,
-											get_generic_info_from_stack_frame (ji, ctx));
+				trace_ips = g_list_prepend (trace_ips, get_generic_info_from_stack_frame (ji, ctx));
 			}
 		}
 
@@ -1599,7 +1600,7 @@ mono_handle_exception_internal_first_pass (MonoContext *ctx, MonoObject *obj, gi
 					FIXME Not 100% sure if it's a good idea even with user clauses.
 					*/
 					if (is_user_frame)
-						setup_stack_trace (mono_ex, dynamic_methods, initial_trace_ips, &trace_ips);
+						setup_stack_trace (mono_ex, dynamic_methods, &trace_ips);
 
 #ifndef MONO_CROSS_COMPILE
 #ifdef MONO_CONTEXT_SET_LLVM_EXC_REG
@@ -1637,7 +1638,7 @@ mono_handle_exception_internal_first_pass (MonoContext *ctx, MonoObject *obj, gi
 
 					if (filtered) {
 						if (!is_user_frame)
-							setup_stack_trace (mono_ex, dynamic_methods, initial_trace_ips, &trace_ips);
+							setup_stack_trace (mono_ex, dynamic_methods, &trace_ips);
 						g_slist_free (dynamic_methods);
 						/* mono_debugger_agent_handle_exception () needs this */
 						mini_set_abort_threshold (ctx);
@@ -1649,7 +1650,7 @@ mono_handle_exception_internal_first_pass (MonoContext *ctx, MonoObject *obj, gi
 				MonoError isinst_error;
 				mono_error_init (&isinst_error);
 				if (ei->flags == MONO_EXCEPTION_CLAUSE_NONE && mono_object_isinst_checked (ex_obj, catch_class, &error)) {
-					setup_stack_trace (mono_ex, dynamic_methods, initial_trace_ips, &trace_ips);
+					setup_stack_trace (mono_ex, dynamic_methods, &trace_ips);
 					g_slist_free (dynamic_methods);
 
 					if (out_ji)
