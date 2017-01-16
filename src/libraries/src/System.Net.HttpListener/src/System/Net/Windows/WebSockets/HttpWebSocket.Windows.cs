@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 
 namespace System.Net.WebSockets
 {
-    internal static partial class WebSocketValidate
+    internal static partial class HttpWebSocket
     {
         private static readonly ArraySegment<byte> s_EmptyPayload = new ArraySegment<byte>(new byte[] { }, 0, 0);
         private static readonly Random s_keyGenerator = new Random();
@@ -30,7 +30,7 @@ namespace System.Net.WebSockets
             ArraySegment<byte> internalBuffer)
         {
             ValidateOptions(subProtocol, receiveBufferSize, WebSocketBuffer.MinSendBufferSize, keepAliveInterval);
-            ValidateArraySegment<byte>(internalBuffer, nameof(internalBuffer));
+            ValidateArraySegment(internalBuffer, nameof(internalBuffer));
             WebSocketBuffer.Validate(internalBuffer.Count, receiveBufferSize, WebSocketBuffer.MinSendBufferSize, true);
 
             return AcceptWebSocketAsyncCore(context, subProtocol, receiveBufferSize, keepAliveInterval, internalBuffer);
@@ -77,7 +77,7 @@ namespace System.Net.WebSockets
 
                 // negotiate the websocket key return value
                 string secWebSocketKey = request.Headers[HttpKnownHeaderNames.SecWebSocketKey];
-                string secWebSocketAccept = WebSocketValidate.GetSecWebSocketAcceptString(secWebSocketKey);
+                string secWebSocketAccept = HttpWebSocket.GetSecWebSocketAcceptString(secWebSocketKey);
 
                 response.Headers.Add(HttpKnownHeaderNames.Connection, HttpKnownHeaderNames.Upgrade);
                 response.Headers.Add(HttpKnownHeaderNames.Upgrade, WebSocketUpgradeToken);
@@ -203,7 +203,7 @@ namespace System.Net.WebSockets
                     nameof(ValidateWebSocketHeaders),
                     HttpKnownHeaderNames.Connection,
                     HttpKnownHeaderNames.Upgrade,
-                    WebSocketValidate.WebSocketUpgradeToken,
+                    HttpWebSocket.WebSocketUpgradeToken,
                     context.Request.Headers[HttpKnownHeaderNames.Upgrade]));
             }
 
@@ -261,7 +261,7 @@ namespace System.Net.WebSockets
             // We allow the subProtocol to be null. Validate if it is not null.
             if (subProtocol != null)
             {
-                ValidateSubprotocol(subProtocol);
+                WebSocketValidate.ValidateSubprotocol(subProtocol);
             }
 
             ValidateBufferSizes(receiveBufferSize, sendBufferSize);

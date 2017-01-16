@@ -65,8 +65,8 @@ namespace System.Net.WebSockets
             WebSocketBuffer internalBuffer)
         {
             Debug.Assert(internalBuffer != null, "'internalBuffer' MUST NOT be NULL.");
-            WebSocketValidate.ValidateInnerStream(innerStream);
-            WebSocketValidate.ValidateOptions(subProtocol, internalBuffer.ReceiveBufferSize,
+            HttpWebSocket.ValidateInnerStream(innerStream);
+            HttpWebSocket.ValidateOptions(subProtocol, internalBuffer.ReceiveBufferSize,
                 internalBuffer.SendBufferSize, keepAliveInterval);
 
             string parameters = string.Empty;
@@ -188,7 +188,7 @@ namespace System.Net.WebSockets
         public override Task<WebSocketReceiveResult> ReceiveAsync(ArraySegment<byte> buffer,
             CancellationToken cancellationToken)
         {
-            WebSocketValidate.ValidateArraySegment<byte>(buffer, nameof(buffer));
+            WebSocketValidate.ValidateArraySegment(buffer, nameof(buffer));
             return ReceiveAsyncCore(buffer, cancellationToken);
         }
 
@@ -279,7 +279,7 @@ namespace System.Net.WebSockets
                     nameof(messageType));
             }
 
-            WebSocketValidate.ValidateArraySegment<byte>(buffer, nameof(buffer));
+            WebSocketValidate.ValidateArraySegment(buffer, nameof(buffer));
 
             return SendAsyncCore(buffer, messageType, endOfMessage, cancellationToken);
         }
@@ -1696,7 +1696,7 @@ namespace System.Net.WebSockets
                                         ArraySegment<byte> payload = _webSocket._internalBuffer.ConvertNativeBuffer(action, dataBuffers[0], bufferType);
 
                                         ReleaseLock(_webSocket.SessionHandle, ref sessionHandleLockTaken);
-                                        WebSocketValidate.ThrowIfConnectionAborted(_webSocket._innerStream, true);
+                                        HttpWebSocket.ThrowIfConnectionAborted(_webSocket._innerStream, true);
                                         try
                                         {
                                             Task<int> readTask = _webSocket._innerStream.ReadAsync(payload.Array,
@@ -1780,7 +1780,7 @@ namespace System.Net.WebSockets
                                             }
 
                                             ReleaseLock(_webSocket.SessionHandle, ref sessionHandleLockTaken);
-                                            WebSocketValidate.ThrowIfConnectionAborted(_webSocket._innerStream, false);
+                                            HttpWebSocket.ThrowIfConnectionAborted(_webSocket._innerStream, false);
                                             await _webSocket.SendFrameAsync(sendBuffers, cancellationToken).SuppressContextFlow();
                                             Monitor.Enter(_webSocket.SessionHandle, ref sessionHandleLockTaken);
                                             _webSocket.ThrowIfPendingException();
@@ -1961,7 +1961,7 @@ namespace System.Net.WebSockets
 
                         if (bufferType == WebSocketProtocolComponent.BufferType.Close)
                         {
-                            payload = WebSocketValidate.EmptyPayload;
+                            payload = HttpWebSocket.EmptyPayload;
                             string reason;
                             WebSocketCloseStatus closeStatus;
                             _webSocket._internalBuffer.ConvertCloseBuffer(action, dataBuffers[0], out closeStatus, out reason);
