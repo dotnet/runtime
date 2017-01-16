@@ -351,7 +351,7 @@ typedef struct MonoCompileArch {
 #define MONO_ARCH_HAVE_PATCH_CODE_NEW 1
 #define MONO_ARCH_HAVE_OP_GENERIC_CLASS_INIT 1
 
-#ifdef TARGET_WATCHOS
+#if defined(TARGET_WATCHOS) || (defined(__linux__) && !defined(TARGET_ANDROID))
 #define MONO_ARCH_DISABLE_HW_TRAPS 1
 #define MONO_ARCH_HAVE_UNWIND_BACKTRACE 1
 #endif
