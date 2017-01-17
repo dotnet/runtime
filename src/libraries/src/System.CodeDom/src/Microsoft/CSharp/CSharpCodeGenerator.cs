@@ -1213,7 +1213,7 @@ namespace Microsoft.CSharp
             string name = e.Name;
             if (e.PrivateImplementationType != null)
             {
-                name = GetBaseTypeOutput(e.PrivateImplementationType) + "." + name;
+                name = GetBaseTypeOutput(e.PrivateImplementationType, preferBuiltInTypes: false) + "." + name;
             }
             OutputTypeNamePair(e.Type, name);
             Output.WriteLine(';');
@@ -1472,7 +1472,7 @@ namespace Microsoft.CSharp
             Output.Write(' ');
             if (e.PrivateImplementationType != null)
             {
-                Output.Write(GetBaseTypeOutput(e.PrivateImplementationType));
+                Output.Write(GetBaseTypeOutput(e.PrivateImplementationType, preferBuiltInTypes: false));
                 Output.Write('.');
             }
             OutputIdentifier(e.Name);
@@ -1558,7 +1558,7 @@ namespace Microsoft.CSharp
 
             if (e.PrivateImplementationType != null && !IsCurrentInterface)
             {
-                Output.Write(GetBaseTypeOutput(e.PrivateImplementationType));
+                Output.Write(GetBaseTypeOutput(e.PrivateImplementationType, preferBuiltInTypes: false));
                 Output.Write('.');
             }
 
@@ -2803,68 +2803,56 @@ namespace Microsoft.CSharp
         }
 
         // returns the type name without any array declaration.
-        private string GetBaseTypeOutput(CodeTypeReference typeRef)
+        private string GetBaseTypeOutput(CodeTypeReference typeRef, bool preferBuiltInTypes = true)
         {
             string s = typeRef.BaseType;
-            if (s.Length == 0)
+
+            if (preferBuiltInTypes)
             {
-                s = "void";
-                return s;
+                if (s.Length == 0)
+                {
+                    return "void";
+                }
+
+                string lowerCaseString = s.ToLower(CultureInfo.InvariantCulture).Trim();
+
+                switch (lowerCaseString)
+                {
+                    case "system.int16":
+                        return "short";
+                    case "system.int32":
+                        return "int";
+                    case "system.int64":
+                        return "long";
+                    case "system.string":
+                        return "string";
+                    case "system.object":
+                        return "object";
+                    case "system.boolean":
+                        return "bool";
+                    case "system.void":
+                        return "void";
+                    case "system.char":
+                        return "char";
+                    case "system.byte":
+                        return "byte";
+                    case "system.uint16":
+                        return "ushort";
+                    case "system.uint32":
+                        return "uint";
+                    case "system.uint64":
+                        return "ulong";
+                    case "system.sbyte":
+                        return "sbyte";
+                    case "system.single":
+                        return "float";
+                    case "system.double":
+                        return "double";
+                    case "system.decimal":
+                        return "decimal";
+                }
             }
 
-            string lowerCaseString = s.ToLower(CultureInfo.InvariantCulture).Trim();
-
-            switch (lowerCaseString)
-            {
-                case "system.int16":
-                    s = "short";
-                    break;
-                case "system.int32":
-                    s = "int";
-                    break;
-                case "system.int64":
-                    s = "long";
-                    break;
-                case "system.string":
-                    s = "string";
-                    break;
-                case "system.object":
-                    s = "object";
-                    break;
-                case "system.boolean":
-                    s = "bool";
-                    break;
-                case "system.void":
-                    s = "void";
-                    break;
-                case "system.char":
-                    s = "char";
-                    break;
-                case "system.byte":
-                    s = "byte";
-                    break;
-                case "system.uint16":
-                    s = "ushort";
-                    break;
-                case "system.uint32":
-                    s = "uint";
-                    break;
-                case "system.uint64":
-                    s = "ulong";
-                    break;
-                case "system.sbyte":
-                    s = "sbyte";
-                    break;
-                case "system.single":
-                    s = "float";
-                    break;
-                case "system.double":
-                    s = "double";
-                    break;
-                case "system.decimal":
-                    s = "decimal";
-                    break;
-                default:
                     // replace + with . for nested classes.
                     //
                     var sb = new StringBuilder(s.Length + 10);
@@ -2919,8 +2907,6 @@ namespace Microsoft.CSharp
                         sb.Append(CreateEscapedIdentifier(baseType.Substring(lastIndex)));
 
                     return sb.ToString();
-            }
-            return s;
         }
 
         private string GetTypeArgumentsOutput(CodeTypeReferenceCollection typeArguments)
