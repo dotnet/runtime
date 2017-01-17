@@ -91,7 +91,8 @@
           "Name": "DotNet-CoreFx-Trusted-Linux",
           "Parameters": {
             "PB_DockerTag": "rhel7_prereqs_2",
-            "PB_AdditionalArguments": "-portableLinux"
+            "PB_TargetQueue": "Redhat.72.Amd64",
+            "PB_AdditionalArguments": "-portableLinux",
           },
           "ReportingParameters": {
             "OperatingSystem": "RedHat 7",
