@@ -1,11 +1,14 @@
-﻿
+
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2013
 VisualStudioVersion = 12.0.31101.0
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Threading.Tasks.Parallel", "src\System.Threading.Tasks.Parallel.csproj", "{A6BA5DF2-772E-4DA1-BC2D-89FF4A21EE4F}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Threading.Tasks.Parallel.Tests", "tests\System.Threading.Tasks.Parallel.Tests.csproj", "{DE29C320-2ECA-43FD-9F41-6F4F6C6BACD5}"
+	ProjectSection(ProjectDependencies) = postProject
+		{A6BA5DF2-772E-4DA1-BC2D-89FF4A21EE4F} = {A6BA5DF2-772E-4DA1-BC2D-89FF4A21EE4F}
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Threading.Tasks.Parallel", "src\System.Threading.Tasks.Parallel.csproj", "{A6BA5DF2-772E-4DA1-BC2D-89FF4A21EE4F}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{47919FF5-DA40-4D99-AF2D-F560282AA913}"
 	ProjectSection(SolutionItems) = preProject
@@ -14,18 +17,18 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{47919F
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
-		Debug|Any CPU = Debug|Any CPU
-		Release|Any CPU = Release|Any CPU
+		DebugNETCoreAppnetstandard1.3netstandard1.5|AnyCPU = DebugNETCoreAppnetstandard1.3netstandard1.5|AnyCPU
+		ReleaseNETCoreAppnetstandard1.3netstandard1.5|AnyCPU = ReleaseNETCoreAppnetstandard1.3netstandard1.5|AnyCPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{A6BA5DF2-772E-4DA1-BC2D-89FF4A21EE4F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{A6BA5DF2-772E-4DA1-BC2D-89FF4A21EE4F}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{A6BA5DF2-772E-4DA1-BC2D-89FF4A21EE4F}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{A6BA5DF2-772E-4DA1-BC2D-89FF4A21EE4F}.Release|Any CPU.Build.0 = Release|Any CPU
-		{DE29C320-2ECA-43FD-9F41-6F4F6C6BACD5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{DE29C320-2ECA-43FD-9F41-6F4F6C6BACD5}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{DE29C320-2ECA-43FD-9F41-6F4F6C6BACD5}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{DE29C320-2ECA-43FD-9F41-6F4F6C6BACD5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DE29C320-2ECA-43FD-9F41-6F4F6C6BACD5}.DebugNETCoreAppnetstandard1.3netstandard1.5|AnyCPU.ActiveCfg = netstandard1.5-Debug|Any CPU
+		{DE29C320-2ECA-43FD-9F41-6F4F6C6BACD5}.DebugNETCoreAppnetstandard1.3netstandard1.5|AnyCPU.Build.0 = netstandard1.5-Debug|Any CPU
+		{DE29C320-2ECA-43FD-9F41-6F4F6C6BACD5}.ReleaseNETCoreAppnetstandard1.3netstandard1.5|AnyCPU.ActiveCfg = netstandard1.5-Release|Any CPU
+		{DE29C320-2ECA-43FD-9F41-6F4F6C6BACD5}.ReleaseNETCoreAppnetstandard1.3netstandard1.5|AnyCPU.Build.0 = netstandard1.5-Release|Any CPU
+		{A6BA5DF2-772E-4DA1-BC2D-89FF4A21EE4F}.DebugNETCoreAppnetstandard1.3netstandard1.5|AnyCPU.ActiveCfg = netstandard1.3-Debug|Any CPU
+		{A6BA5DF2-772E-4DA1-BC2D-89FF4A21EE4F}.DebugNETCoreAppnetstandard1.3netstandard1.5|AnyCPU.Build.0 = netstandard1.3-Debug|Any CPU
+		{A6BA5DF2-772E-4DA1-BC2D-89FF4A21EE4F}.ReleaseNETCoreAppnetstandard1.3netstandard1.5|AnyCPU.ActiveCfg = netstandard1.3-Release|Any CPU
+		{A6BA5DF2-772E-4DA1-BC2D-89FF4A21EE4F}.ReleaseNETCoreAppnetstandard1.3netstandard1.5|AnyCPU.Build.0 = netstandard1.3-Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

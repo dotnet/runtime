@@ -1,46 +1,38 @@
-﻿
+
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2013
 VisualStudioVersion = 12.0.21005.1
 MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Runtime.Serialization.Json.Performance.Tests", "tests\Performance\System.Runtime.Serialization.Json.Performance.Tests.csproj", "{90B5085A-C3CE-45D9-ADE7-07410EEE664B}"
+	ProjectSection(ProjectDependencies) = postProject
+		{4EC040FB-CC0D-441F-9853-E966C32647E7} = {4EC040FB-CC0D-441F-9853-E966C32647E7}
+	EndProjectSection
+EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Runtime.Serialization.Json.Tests", "tests\System.Runtime.Serialization.Json.Tests.csproj", "{701CB3BC-00DC-435D-BDE4-C5FC29A708A7}"
+	ProjectSection(ProjectDependencies) = postProject
+		{} = {}
+	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Runtime.Serialization.Json", "src\System.Runtime.Serialization.Json.csproj", "{4EC040FB-CC0D-441F-9853-E966C32647E7}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Runtime.Serialization.Json.Performance.Tests", "tests\Performance\System.Runtime.Serialization.Json.Performance.Tests.csproj", "{90B5085A-C3CE-45D9-ADE7-07410EEE664B}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
-		Debug|Any CPU = Debug|Any CPU
-		net46_Debug|Any CPU = net46_Debug|Any CPU
-		net46_Release|Any CPU = net46_Release|Any CPU
-		Release|Any CPU = Release|Any CPU
+		DebugNETCoreAppnetstandardnetstandard|AnyCPU = DebugNETCoreAppnetstandardnetstandard|AnyCPU
+		ReleaseNETCoreAppnetstandardnetstandard|AnyCPU = ReleaseNETCoreAppnetstandardnetstandard|AnyCPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{701CB3BC-00DC-435D-BDE4-C5FC29A708A7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{701CB3BC-00DC-435D-BDE4-C5FC29A708A7}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{701CB3BC-00DC-435D-BDE4-C5FC29A708A7}.net46_Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{701CB3BC-00DC-435D-BDE4-C5FC29A708A7}.net46_Debug|Any CPU.Build.0 = Debug|Any CPU
-		{701CB3BC-00DC-435D-BDE4-C5FC29A708A7}.net46_Release|Any CPU.ActiveCfg = Debug|Any CPU
-		{701CB3BC-00DC-435D-BDE4-C5FC29A708A7}.net46_Release|Any CPU.Build.0 = Debug|Any CPU
-		{701CB3BC-00DC-435D-BDE4-C5FC29A708A7}.Release|Any CPU.ActiveCfg = Debug|Any CPU
-		{701CB3BC-00DC-435D-BDE4-C5FC29A708A7}.Release|Any CPU.Build.0 = Debug|Any CPU
-		{4EC040FB-CC0D-441F-9853-E966C32647E7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{4EC040FB-CC0D-441F-9853-E966C32647E7}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{4EC040FB-CC0D-441F-9853-E966C32647E7}.net46_Debug|Any CPU.ActiveCfg = net46_Debug|Any CPU
-		{4EC040FB-CC0D-441F-9853-E966C32647E7}.net46_Debug|Any CPU.Build.0 = net46_Debug|Any CPU
-		{4EC040FB-CC0D-441F-9853-E966C32647E7}.net46_Release|Any CPU.ActiveCfg = net46_Release|Any CPU
-		{4EC040FB-CC0D-441F-9853-E966C32647E7}.net46_Release|Any CPU.Build.0 = net46_Release|Any CPU
-		{4EC040FB-CC0D-441F-9853-E966C32647E7}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{4EC040FB-CC0D-441F-9853-E966C32647E7}.Release|Any CPU.Build.0 = Release|Any CPU
-		{90B5085A-C3CE-45D9-ADE7-07410EEE664B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{90B5085A-C3CE-45D9-ADE7-07410EEE664B}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{90B5085A-C3CE-45D9-ADE7-07410EEE664B}.net46_Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{90B5085A-C3CE-45D9-ADE7-07410EEE664B}.net46_Debug|Any CPU.Build.0 = Debug|Any CPU
-		{90B5085A-C3CE-45D9-ADE7-07410EEE664B}.net46_Release|Any CPU.ActiveCfg = Debug|Any CPU
-		{90B5085A-C3CE-45D9-ADE7-07410EEE664B}.net46_Release|Any CPU.Build.0 = Debug|Any CPU
-		{90B5085A-C3CE-45D9-ADE7-07410EEE664B}.Release|Any CPU.ActiveCfg = Debug|Any CPU
-		{90B5085A-C3CE-45D9-ADE7-07410EEE664B}.Release|Any CPU.Build.0 = Debug|Any CPU
+		{701CB3BC-00DC-435D-BDE4-C5FC29A708A7}.DebugNETCoreAppnetstandardnetstandard|AnyCPU.ActiveCfg = netstandard-Debug|Any CPU
+		{701CB3BC-00DC-435D-BDE4-C5FC29A708A7}.DebugNETCoreAppnetstandardnetstandard|AnyCPU.Build.0 = netstandard-Debug|Any CPU
+		{701CB3BC-00DC-435D-BDE4-C5FC29A708A7}.ReleaseNETCoreAppnetstandardnetstandard|AnyCPU.ActiveCfg = netstandard-Release|Any CPU
+		{701CB3BC-00DC-435D-BDE4-C5FC29A708A7}.ReleaseNETCoreAppnetstandardnetstandard|AnyCPU.Build.0 = netstandard-Release|Any CPU
+		{90B5085A-C3CE-45D9-ADE7-07410EEE664B}.DebugNETCoreAppnetstandardnetstandard|AnyCPU.ActiveCfg = netstandard-Debug|Any CPU
+		{90B5085A-C3CE-45D9-ADE7-07410EEE664B}.DebugNETCoreAppnetstandardnetstandard|AnyCPU.Build.0 = netstandard-Debug|Any CPU
+		{90B5085A-C3CE-45D9-ADE7-07410EEE664B}.ReleaseNETCoreAppnetstandardnetstandard|AnyCPU.ActiveCfg = netstandard-Release|Any CPU
+		{90B5085A-C3CE-45D9-ADE7-07410EEE664B}.ReleaseNETCoreAppnetstandardnetstandard|AnyCPU.Build.0 = netstandard-Release|Any CPU
+		{4EC040FB-CC0D-441F-9853-E966C32647E7}.DebugNETCoreAppnetstandardnetstandard|AnyCPU.ActiveCfg = netstandard-Debug|Any CPU
+		{4EC040FB-CC0D-441F-9853-E966C32647E7}.DebugNETCoreAppnetstandardnetstandard|AnyCPU.Build.0 = netstandard-Debug|Any CPU
+		{4EC040FB-CC0D-441F-9853-E966C32647E7}.ReleaseNETCoreAppnetstandardnetstandard|AnyCPU.ActiveCfg = netstandard-Release|Any CPU
+		{4EC040FB-CC0D-441F-9853-E966C32647E7}.ReleaseNETCoreAppnetstandardnetstandard|AnyCPU.Build.0 = netstandard-Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

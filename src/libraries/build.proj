@@ -70,6 +70,16 @@
     <MSBuild Projects="@(ExternalProject)"
              ContinueOnError="ErrorAndContinue" />
   </Target>
+  
+ <UsingTask TaskName="ValidateVSConfigurations" AssemblyFile="$(CoreFxToolsTaskDir)CoreFx.Tools.dll"/>
+ <Target Name="ValidateVSConfigurations" DependsOnTargets="BuildCoreFxTools" Condition="'$(CheckProjectConfiguration)'=='true'">
+    <Message Importance="High" Text="Validating configurations for projects ..." />
+    <ItemGroup>
+      <ProjectsToCheckHeaders Include="$(MSBuildThisFileDirectory)src/**/*.*proj" Exclude="@(ProjectExclusions)" />
+    </ItemGroup>
+    <ValidateVSConfigurations ProjectsToValidate="@(ProjectsToCheckHeaders)" />
+    <Message Importance="High" Text="Validating configurations for projects ... Done." />
+ </Target>
 
   <!-- TODO: Can we move this archive test build to BuildTools -->
   <UsingTask TaskName="ZipFileCreateFromDependencyLists" Condition="'$(Platform)' == 'ARM64' and '$(ArchiveTests)' == 'true'" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll"/>
