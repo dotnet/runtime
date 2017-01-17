@@ -1,8 +1,13 @@
-﻿
+
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
 VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.IO.FileSystem.AccessControl.Tests", "tests\System.IO.FileSystem.AccessControl.Tests.csproj", "{5915DD11-5D57-45A9-BFB0-56FEB7741E1F}"
+	ProjectSection(ProjectDependencies) = postProject
+		{D77FBA6C-1AA6-45A4-93E2-97A370672C53} = {D77FBA6C-1AA6-45A4-93E2-97A370672C53}
+	EndProjectSection
+EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "pkg", "pkg", "{2B698E05-658B-4024-AB36-5E104D537CC1}"
 	ProjectSection(SolutionItems) = preProject
 		pkg\System.IO.FileSystem.AccessControl.builds = pkg\System.IO.FileSystem.AccessControl.builds
@@ -24,49 +29,48 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{77EA6776
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.IO.FileSystem.AccessControl", "src\System.IO.FileSystem.AccessControl.csproj", "{D77FBA6C-1AA6-45A4-93E2-97A370672C53}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.IO.FileSystem.AccessControl.Tests", "tests\System.IO.FileSystem.AccessControl.Tests.csproj", "{5915DD11-5D57-45A9-BFB0-56FEB7741E1F}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.IO.FileSystem.AccessControl", "ref\System.IO.FileSystem.AccessControl.csproj", "{06E401AE-A25F-47D0-8337-43C315F08EDA}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
-		Debug|Any CPU = Debug|Any CPU
-		net46_Debug|Any CPU = net46_Debug|Any CPU
-		net46_Release|Any CPU = net46_Release|Any CPU
-		Release|Any CPU = Release|Any CPU
+		DebugNETCoreAppnet46-Windows_NTnetstandard1.3-Windows_NT|AnyCPU = DebugNETCoreAppnet46-Windows_NTnetstandard1.3-Windows_NT|AnyCPU
+		ReleaseNETCoreAppnet46-Windows_NTnetstandard1.3-Windows_NT|AnyCPU = ReleaseNETCoreAppnet46-Windows_NTnetstandard1.3-Windows_NT|AnyCPU
+		DebugNETCoreAppnetstandard1.3-Windows_NTnetstandard1.3-Windows_NT|AnyCPU = DebugNETCoreAppnetstandard1.3-Windows_NTnetstandard1.3-Windows_NT|AnyCPU
+		ReleaseNETCoreAppnetstandard1.3-Windows_NTnetstandard1.3-Windows_NT|AnyCPU = ReleaseNETCoreAppnetstandard1.3-Windows_NTnetstandard1.3-Windows_NT|AnyCPU
+		DebugNETCoreAppnetstandard1.3-Unixnetstandard1.3-Windows_NT|AnyCPU = DebugNETCoreAppnetstandard1.3-Unixnetstandard1.3-Windows_NT|AnyCPU
+		ReleaseNETCoreAppnetstandard1.3-Unixnetstandard1.3-Windows_NT|AnyCPU = ReleaseNETCoreAppnetstandard1.3-Unixnetstandard1.3-Windows_NT|AnyCPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{D77FBA6C-1AA6-45A4-93E2-97A370672C53}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{D77FBA6C-1AA6-45A4-93E2-97A370672C53}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{D77FBA6C-1AA6-45A4-93E2-97A370672C53}.net46_Debug|Any CPU.ActiveCfg = net46_Debug|Any CPU
-		{D77FBA6C-1AA6-45A4-93E2-97A370672C53}.net46_Debug|Any CPU.Build.0 = net46_Debug|Any CPU
-		{D77FBA6C-1AA6-45A4-93E2-97A370672C53}.net46_Release|Any CPU.ActiveCfg = net46_Release|Any CPU
-		{D77FBA6C-1AA6-45A4-93E2-97A370672C53}.net46_Release|Any CPU.Build.0 = net46_Release|Any CPU
-		{D77FBA6C-1AA6-45A4-93E2-97A370672C53}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{D77FBA6C-1AA6-45A4-93E2-97A370672C53}.Release|Any CPU.Build.0 = Release|Any CPU
-		{5915DD11-5D57-45A9-BFB0-56FEB7741E1F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{5915DD11-5D57-45A9-BFB0-56FEB7741E1F}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{5915DD11-5D57-45A9-BFB0-56FEB7741E1F}.net46_Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{5915DD11-5D57-45A9-BFB0-56FEB7741E1F}.net46_Debug|Any CPU.Build.0 = Debug|Any CPU
-		{5915DD11-5D57-45A9-BFB0-56FEB7741E1F}.net46_Release|Any CPU.ActiveCfg = Release|Any CPU
-		{5915DD11-5D57-45A9-BFB0-56FEB7741E1F}.net46_Release|Any CPU.Build.0 = Release|Any CPU
-		{5915DD11-5D57-45A9-BFB0-56FEB7741E1F}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{5915DD11-5D57-45A9-BFB0-56FEB7741E1F}.Release|Any CPU.Build.0 = Release|Any CPU
-		{06E401AE-A25F-47D0-8337-43C315F08EDA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{06E401AE-A25F-47D0-8337-43C315F08EDA}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{06E401AE-A25F-47D0-8337-43C315F08EDA}.net46_Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{06E401AE-A25F-47D0-8337-43C315F08EDA}.net46_Debug|Any CPU.Build.0 = Debug|Any CPU
-		{06E401AE-A25F-47D0-8337-43C315F08EDA}.net46_Release|Any CPU.ActiveCfg = Debug|Any CPU
-		{06E401AE-A25F-47D0-8337-43C315F08EDA}.net46_Release|Any CPU.Build.0 = Debug|Any CPU
-		{06E401AE-A25F-47D0-8337-43C315F08EDA}.Release|Any CPU.ActiveCfg = Debug|Any CPU
-		{06E401AE-A25F-47D0-8337-43C315F08EDA}.Release|Any CPU.Build.0 = Debug|Any CPU
+		{5915DD11-5D57-45A9-BFB0-56FEB7741E1F}.DebugNETCoreAppnet46-Windows_NTnetstandard1.3-Windows_NT|AnyCPU.ActiveCfg = netstandard1.3-Windows_NT-Debug|Any CPU
+		{5915DD11-5D57-45A9-BFB0-56FEB7741E1F}.DebugNETCoreAppnet46-Windows_NTnetstandard1.3-Windows_NT|AnyCPU.Build.0 = netstandard1.3-Windows_NT-Debug|Any CPU
+		{5915DD11-5D57-45A9-BFB0-56FEB7741E1F}.ReleaseNETCoreAppnet46-Windows_NTnetstandard1.3-Windows_NT|AnyCPU.ActiveCfg = netstandard1.3-Windows_NT-Release|Any CPU
+		{5915DD11-5D57-45A9-BFB0-56FEB7741E1F}.ReleaseNETCoreAppnet46-Windows_NTnetstandard1.3-Windows_NT|AnyCPU.Build.0 = netstandard1.3-Windows_NT-Release|Any CPU
+		{5915DD11-5D57-45A9-BFB0-56FEB7741E1F}.DebugNETCoreAppnetstandard1.3-Windows_NTnetstandard1.3-Windows_NT|AnyCPU.ActiveCfg = netstandard1.3-Windows_NT-Debug|Any CPU
+		{5915DD11-5D57-45A9-BFB0-56FEB7741E1F}.DebugNETCoreAppnetstandard1.3-Windows_NTnetstandard1.3-Windows_NT|AnyCPU.Build.0 = netstandard1.3-Windows_NT-Debug|Any CPU
+		{5915DD11-5D57-45A9-BFB0-56FEB7741E1F}.ReleaseNETCoreAppnetstandard1.3-Windows_NTnetstandard1.3-Windows_NT|AnyCPU.ActiveCfg = netstandard1.3-Windows_NT-Release|Any CPU
+		{5915DD11-5D57-45A9-BFB0-56FEB7741E1F}.ReleaseNETCoreAppnetstandard1.3-Windows_NTnetstandard1.3-Windows_NT|AnyCPU.Build.0 = netstandard1.3-Windows_NT-Release|Any CPU
+		{5915DD11-5D57-45A9-BFB0-56FEB7741E1F}.DebugNETCoreAppnetstandard1.3-Unixnetstandard1.3-Windows_NT|AnyCPU.ActiveCfg = netstandard1.3-Windows_NT-Debug|Any CPU
+		{5915DD11-5D57-45A9-BFB0-56FEB7741E1F}.DebugNETCoreAppnetstandard1.3-Unixnetstandard1.3-Windows_NT|AnyCPU.Build.0 = netstandard1.3-Windows_NT-Debug|Any CPU
+		{5915DD11-5D57-45A9-BFB0-56FEB7741E1F}.ReleaseNETCoreAppnetstandard1.3-Unixnetstandard1.3-Windows_NT|AnyCPU.ActiveCfg = netstandard1.3-Windows_NT-Release|Any CPU
+		{5915DD11-5D57-45A9-BFB0-56FEB7741E1F}.ReleaseNETCoreAppnetstandard1.3-Unixnetstandard1.3-Windows_NT|AnyCPU.Build.0 = netstandard1.3-Windows_NT-Release|Any CPU
+		{D77FBA6C-1AA6-45A4-93E2-97A370672C53}.DebugNETCoreAppnet46-Windows_NTnetstandard1.3-Windows_NT|AnyCPU.ActiveCfg = net46-Windows_NT-Debug|Any CPU
+		{D77FBA6C-1AA6-45A4-93E2-97A370672C53}.DebugNETCoreAppnet46-Windows_NTnetstandard1.3-Windows_NT|AnyCPU.Build.0 = net46-Windows_NT-Debug|Any CPU
+		{D77FBA6C-1AA6-45A4-93E2-97A370672C53}.ReleaseNETCoreAppnet46-Windows_NTnetstandard1.3-Windows_NT|AnyCPU.ActiveCfg = net46-Windows_NT-Release|Any CPU
+		{D77FBA6C-1AA6-45A4-93E2-97A370672C53}.ReleaseNETCoreAppnet46-Windows_NTnetstandard1.3-Windows_NT|AnyCPU.Build.0 = net46-Windows_NT-Release|Any CPU
+		{D77FBA6C-1AA6-45A4-93E2-97A370672C53}.DebugNETCoreAppnetstandard1.3-Windows_NTnetstandard1.3-Windows_NT|AnyCPU.ActiveCfg = netstandard1.3-Windows_NT-Debug|Any CPU
+		{D77FBA6C-1AA6-45A4-93E2-97A370672C53}.DebugNETCoreAppnetstandard1.3-Windows_NTnetstandard1.3-Windows_NT|AnyCPU.Build.0 = netstandard1.3-Windows_NT-Debug|Any CPU
+		{D77FBA6C-1AA6-45A4-93E2-97A370672C53}.ReleaseNETCoreAppnetstandard1.3-Windows_NTnetstandard1.3-Windows_NT|AnyCPU.ActiveCfg = netstandard1.3-Windows_NT-Release|Any CPU
+		{D77FBA6C-1AA6-45A4-93E2-97A370672C53}.ReleaseNETCoreAppnetstandard1.3-Windows_NTnetstandard1.3-Windows_NT|AnyCPU.Build.0 = netstandard1.3-Windows_NT-Release|Any CPU
+		{D77FBA6C-1AA6-45A4-93E2-97A370672C53}.DebugNETCoreAppnetstandard1.3-Unixnetstandard1.3-Windows_NT|AnyCPU.ActiveCfg = netstandard1.3-Unix-Debug|Any CPU
+		{D77FBA6C-1AA6-45A4-93E2-97A370672C53}.DebugNETCoreAppnetstandard1.3-Unixnetstandard1.3-Windows_NT|AnyCPU.Build.0 = netstandard1.3-Unix-Debug|Any CPU
+		{D77FBA6C-1AA6-45A4-93E2-97A370672C53}.ReleaseNETCoreAppnetstandard1.3-Unixnetstandard1.3-Windows_NT|AnyCPU.ActiveCfg = netstandard1.3-Unix-Release|Any CPU
+		{D77FBA6C-1AA6-45A4-93E2-97A370672C53}.ReleaseNETCoreAppnetstandard1.3-Unixnetstandard1.3-Windows_NT|AnyCPU.Build.0 = netstandard1.3-Unix-Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
-		{D77FBA6C-1AA6-45A4-93E2-97A370672C53} = {91794700-31C8-4DCC-8C1D-C323C558F972}
-		{5915DD11-5D57-45A9-BFB0-56FEB7741E1F} = {77EA6776-61A2-43CB-B08F-4833A18EC7A1}
-		{06E401AE-A25F-47D0-8337-43C315F08EDA} = {08653D19-36A7-4278-A38C-6A67FDD72BB0}
+		{5915DD11-5D57-45A9-BFB0-56FEB7741E1F} = {5915DD11-5D57-45A9-BFB0-56FEB7741E1F}
+		{D77FBA6C-1AA6-45A4-93E2-97A370672C53} = {D77FBA6C-1AA6-45A4-93E2-97A370672C53}
 	EndGlobalSection
 EndGlobal

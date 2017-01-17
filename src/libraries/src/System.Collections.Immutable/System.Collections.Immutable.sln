@@ -2,9 +2,12 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
 VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Collections.Immutable", "src\System.Collections.Immutable.csproj", "{1DD0FF15-6234-4BD6-850A-317F05479554}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Collections.Immutable.Tests", "tests\System.Collections.Immutable.Tests.csproj", "{95DFC527-4DC1-495E-97D7-E94EE1F7140D}"
+	ProjectSection(ProjectDependencies) = postProject
+		{1DD0FF15-6234-4BD6-850A-317F05479554} = {1DD0FF15-6234-4BD6-850A-317F05479554}
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Collections.Immutable", "src\System.Collections.Immutable.csproj", "{1DD0FF15-6234-4BD6-850A-317F05479554}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{1CA59CB2-FE88-4510-92AC-3561026C3B13}"
 	ProjectSection(SolutionItems) = preProject
@@ -17,42 +20,24 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{E181070D
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
-		Debug|Any CPU = Debug|Any CPU
-		Debug|ARM = Debug|ARM
-		Debug|x64 = Debug|x64
-		Debug|x86 = Debug|x86
-		Release|Any CPU = Release|Any CPU
-		Release|ARM = Release|ARM
-		Release|x64 = Release|x64
-		Release|x86 = Release|x86
+		DebugNETCoreAppnetstandard1.0netstandard1.3|AnyCPU = DebugNETCoreAppnetstandard1.0netstandard1.3|AnyCPU
+		ReleaseNETCoreAppnetstandard1.0netstandard1.3|AnyCPU = ReleaseNETCoreAppnetstandard1.0netstandard1.3|AnyCPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{1DD0FF15-6234-4BD6-850A-317F05479554}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{1DD0FF15-6234-4BD6-850A-317F05479554}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{1DD0FF15-6234-4BD6-850A-317F05479554}.Debug|ARM.ActiveCfg = Debug|Any CPU
-		{1DD0FF15-6234-4BD6-850A-317F05479554}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{1DD0FF15-6234-4BD6-850A-317F05479554}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{1DD0FF15-6234-4BD6-850A-317F05479554}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{1DD0FF15-6234-4BD6-850A-317F05479554}.Release|Any CPU.Build.0 = Release|Any CPU
-		{1DD0FF15-6234-4BD6-850A-317F05479554}.Release|ARM.ActiveCfg = Release|Any CPU
-		{1DD0FF15-6234-4BD6-850A-317F05479554}.Release|x64.ActiveCfg = Release|Any CPU
-		{1DD0FF15-6234-4BD6-850A-317F05479554}.Release|x86.ActiveCfg = Release|Any CPU
-		{95DFC527-4DC1-495E-97D7-E94EE1F7140D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{95DFC527-4DC1-495E-97D7-E94EE1F7140D}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{95DFC527-4DC1-495E-97D7-E94EE1F7140D}.Debug|ARM.ActiveCfg = Debug|Any CPU
-		{95DFC527-4DC1-495E-97D7-E94EE1F7140D}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{95DFC527-4DC1-495E-97D7-E94EE1F7140D}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{95DFC527-4DC1-495E-97D7-E94EE1F7140D}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{95DFC527-4DC1-495E-97D7-E94EE1F7140D}.Release|Any CPU.Build.0 = Release|Any CPU
-		{95DFC527-4DC1-495E-97D7-E94EE1F7140D}.Release|ARM.ActiveCfg = Release|Any CPU
-		{95DFC527-4DC1-495E-97D7-E94EE1F7140D}.Release|x64.ActiveCfg = Release|Any CPU
-		{95DFC527-4DC1-495E-97D7-E94EE1F7140D}.Release|x86.ActiveCfg = Release|Any CPU
+		{95DFC527-4DC1-495E-97D7-E94EE1F7140D}.DebugNETCoreAppnetstandard1.0netstandard1.3|AnyCPU.ActiveCfg = netstandard1.3-Debug|Any CPU
+		{95DFC527-4DC1-495E-97D7-E94EE1F7140D}.DebugNETCoreAppnetstandard1.0netstandard1.3|AnyCPU.Build.0 = netstandard1.3-Debug|Any CPU
+		{95DFC527-4DC1-495E-97D7-E94EE1F7140D}.ReleaseNETCoreAppnetstandard1.0netstandard1.3|AnyCPU.ActiveCfg = netstandard1.3-Release|Any CPU
+		{95DFC527-4DC1-495E-97D7-E94EE1F7140D}.ReleaseNETCoreAppnetstandard1.0netstandard1.3|AnyCPU.Build.0 = netstandard1.3-Release|Any CPU
+		{1DD0FF15-6234-4BD6-850A-317F05479554}.DebugNETCoreAppnetstandard1.0netstandard1.3|AnyCPU.ActiveCfg = netstandard1.0-Debug|Any CPU
+		{1DD0FF15-6234-4BD6-850A-317F05479554}.DebugNETCoreAppnetstandard1.0netstandard1.3|AnyCPU.Build.0 = netstandard1.0-Debug|Any CPU
+		{1DD0FF15-6234-4BD6-850A-317F05479554}.ReleaseNETCoreAppnetstandard1.0netstandard1.3|AnyCPU.ActiveCfg = netstandard1.0-Release|Any CPU
+		{1DD0FF15-6234-4BD6-850A-317F05479554}.ReleaseNETCoreAppnetstandard1.0netstandard1.3|AnyCPU.Build.0 = netstandard1.0-Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
-		{1DD0FF15-6234-4BD6-850A-317F05479554} = {D7979177-679D-4E56-919B-479871FA1BDF}
-		{95DFC527-4DC1-495E-97D7-E94EE1F7140D} = {E181070D-D93C-4B03-B1EB-133CEA43503E}
+		{95DFC527-4DC1-495E-97D7-E94EE1F7140D} = {95DFC527-4DC1-495E-97D7-E94EE1F7140D}
+		{1DD0FF15-6234-4BD6-850A-317F05479554} = {1DD0FF15-6234-4BD6-850A-317F05479554}
 	EndGlobalSection
 EndGlobal
