@@ -97,16 +97,14 @@ PLOG_TESTS=$(PLOG_TESTS_SRC:.cs=.exe)
 
 CLASS=$(mcs_topdir)/class/lib/$(DEFAULT_PROFILE)
 
-with_mono_path = MONO_PATH=$(CLASS)
-
-RUNTIME = $(with_mono_path) $(top_builddir)/runtime/mono-wrapper
-MCS = $(RUNTIME) $(CSC) -lib:$(CLASS) -unsafe -nologo -noconfig -nowarn:0162 -nowarn:0168 -nowarn:0219 -debug:portable
+TOOLS_RUNTIME = MONO_PATH=$(mcs_topdir)/class/lib/build $(top_builddir)/runtime/mono-wrapper
+MCS = $(TOOLS_RUNTIME) $(CSC) -lib:$(CLASS) -unsafe -nologo -noconfig -nowarn:0162 -nowarn:0168 -nowarn:0219 -debug:portable
 
 %.exe: %.cs
 	$(MCS) -out:$@ $<
 
 testlog: $(PLOG_TESTS)
-	$(with_mono_path) perl $(srcdir)/ptestrunner.pl $(top_builddir)
+	MONO_PATH=$(CLASS) perl $(srcdir)/ptestrunner.pl $(top_builddir)
 
 check-local: $(check_targets)
 
