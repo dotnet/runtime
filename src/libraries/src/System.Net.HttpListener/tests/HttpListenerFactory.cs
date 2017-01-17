@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Net.Sockets;
+
 namespace System.Net.Tests
 {
     // Utilities for generating URL prefixes for HttpListener
@@ -41,9 +43,9 @@ namespace System.Net.Tests
                     // Remember the exception for later
                     _processPrefixException = e;
 
-                    // If this is not an HttpListenerException, something very wrong has happened, and there's no point
+                    // If this is not an HttpListenerException or SocketException, something very wrong has happened, and there's no point
                     // in trying again.
-                    if (!(e is HttpListenerException))
+                    if (!(e is HttpListenerException) && !(e is SocketException))
                         break;
                 }
             }
@@ -53,7 +55,7 @@ namespace System.Net.Tests
             // asks for the prefix, because dealing with a type initialization exception is not nice in xunit.
         }
 
-        private string ProcessPrefix
+        public string ListeningUrl
         {
             get
             {
@@ -65,8 +67,6 @@ namespace System.Net.Tests
                 return _processPrefix;
             }
         }
-
-        public string ListeningUrl => _processPrefix;
 
         public HttpListener GetListener() => _processPrefixListener;
 
