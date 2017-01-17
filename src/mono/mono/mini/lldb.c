@@ -15,6 +15,7 @@
 #include <mono/metadata/mono-debug.h>
 #include <mono/metadata/mono-debug-debugger.h>
 #include <mono/metadata/debug-mono-symfile.h>
+#include <mono/utils/mono-counters.h>
 
 #if !defined(DISABLE_JIT) && !defined(DISABLE_LLDB)
 
@@ -49,10 +50,15 @@ typedef struct
 	guint32 version;
 	/* Align */
 	guint32 dummy;
-	/* Keep these as pointers so accessing them is atomic */
 	DebugEntry *entry;
 	/* List of all entries */
+	/* Keep this as a pointer so accessing it is atomic */
 	DebugEntry *all_entries;
+	/* The current entry embedded here to reduce the amount of roundtrips */
+	guint32 type;
+	guint32 dummy2;
+	guint64 size;
+	guint64 addr;
 } JitDescriptor;
 
 /*
@@ -114,6 +120,8 @@ static GHashTable *codegen_regions;
 static DebugEntry *last_entry;
 static mono_mutex_t mutex;
 static GHashTable *dyn_codegen_regions;
+static double register_time;
+static int num_entries;
 
 #define lldb_lock() mono_os_mutex_lock (&mutex)
 #define lldb_unlock() mono_os_mutex_unlock (&mutex)
@@ -291,7 +299,17 @@ add_entry (EntryType type, Buffer *buf)
 	}
 
 	__mono_jit_debug_descriptor.entry = entry;
+
+	__mono_jit_debug_descriptor.type = entry->type;
+	__mono_jit_debug_descriptor.size = entry->size;
+	__mono_jit_debug_descriptor.addr = entry->addr;
+	mono_memory_barrier ();
+
+	GTimer *timer = mono_time_track_start ();
 	__mono_jit_debug_register_code ();
+	mono_time_track_end (&register_time, timer);
+	num_entries ++;
+	//printf ("%lf %d %d\n", register_time, num_entries, entry->type);
 
 	lldb_unlock ();
 }
@@ -395,6 +413,8 @@ mono_lldb_init (const char *options)
 {
 	enabled = TRUE;
 	mono_os_mutex_init_recursive (&mutex);
+
+	mono_counters_register ("Time spent in LLDB", MONO_COUNTER_JIT | MONO_COUNTER_DOUBLE, &register_time);
 }
 
 typedef struct
@@ -600,6 +620,13 @@ mono_lldb_save_trampoline_info (MonoTrampInfo *info)
 void
 mono_lldb_save_specific_trampoline_info (gpointer arg1, MonoTrampolineType tramp_type, MonoDomain *domain, gpointer code, guint32 code_len)
 {
+	/*
+	 * Avoid emitting these for now,
+	 * they slow down execution too much, and they are
+	 * only needed during single stepping which doesn't
+	 * work anyway.
+	 */
+#if 0
 	TrampolineEntry *entry;
 	UserData udata;
 	int region_id;
@@ -635,6 +662,7 @@ mono_lldb_save_specific_trampoline_info (gpointer arg1, MonoTrampolineType tramp
 
 	add_entry (ENTRY_TRAMPOLINE, buf);
 	buffer_free (buf);
+#endif
 }
 
 /*
