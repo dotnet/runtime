@@ -24,9 +24,6 @@ set "__ProjectFilesDir=%__ProjectDir%"
 set "__RootBinDir=%__ProjectDir%\..\bin"
 set "__LogsDir=%__RootBinDir%\Logs"
 
-:: Default __Exclude to issues.targets
-set __Exclude0=%~dp0\issues.targets
-
 set __Sequential=
 set __msbuildExtraArgs=
 set __LongGCTests=
@@ -55,9 +52,6 @@ if /i "%1" == "checked"               (set __BuildType=Checked&shift&goto Arg_Lo
 if /i "%1" == "vs2013"                (set __VSVersion=%1&shift&goto Arg_Loop)
 if /i "%1" == "vs2015"                (set __VSVersion=%1&shift&goto Arg_Loop)
 
-if /i "%1" == "SkipWrapperGeneration" (set __SkipWrapperGeneration=true&shift&goto Arg_Loop)
-if /i "%1" == "Exclude"               (set __Exclude=%2&shift&shift&goto Arg_Loop)
-if /i "%1" == "Exclude0"              (set __Exclude0=%2&shift&shift&goto Arg_Loop)
 if /i "%1" == "TestEnv"               (set __TestEnv=%2&shift&shift&goto Arg_Loop)
 if /i "%1" == "AgainstPackages"       (set __AgainstPackages=1&shift&goto Arg_Loop)
 if /i "%1" == "sequential"            (set __Sequential=1&shift&goto Arg_Loop)
@@ -69,8 +63,8 @@ if /i "%1" == "jitstressregs"         (set COMPlus_JitStressRegs=%2&shift&shift&
 if /i "%1" == "jitminopts"            (set COMPlus_JITMinOpts=1&shift&shift&goto Arg_Loop)
 if /i "%1" == "jitforcerelocs"        (set COMPlus_ForceRelocs=1&shift&shift&goto Arg_Loop)
 if /i "%1" == "jitdisasm"             (set __JitDisasm=1&shift&goto Arg_Loop)
-if /i "%1" == "GenerateLayoutOnly"    (set __GenerateLayoutOnly=1&set __SkipWrapperGeneration=true&shift&goto Arg_Loop)
-if /i "%1" == "PerfTests"             (set __PerfTests=true&set __SkipWrapperGeneration=true&shift&goto Arg_Loop)
+if /i "%1" == "GenerateLayoutOnly"    (set __GenerateLayoutOnly=1&shift&goto Arg_Loop)
+if /i "%1" == "PerfTests"             (set __PerfTests=true&shift&goto Arg_Loop)
 if /i "%1" == "runcrossgentests"      (set RunCrossGen=true&shift&goto Arg_Loop)
 REM change it to COMPlus_GCStress when we stop using xunit harness
 if /i "%1" == "gcstresslevel"         (set __GCSTRESSLEVEL=%2&set __TestTimeout=1800000&shift&shift&goto Arg_Loop)
@@ -152,25 +146,13 @@ if defined __AgainstPackages (
     set __msbuildCommonArgs=%__msbuildCommonArgs% /p:BuildTestsAgainstPackages=true
 )
 
-REM Prepare the Test Drop
-REM Cleans any NI from the last run
-powershell "Get-ChildItem -path %__TestWorkingDir% -Include '*.ni.*' -Recurse -Force | Remove-Item -force"
-REM Cleans up any lock folder used for synchronization from last run
-powershell "Get-ChildItem -path %__TestWorkingDir% -Include 'lock' -Recurse -Force |  where {$_.Attributes -eq 'Directory'}| Remove-Item -force -Recurse"
-
 if defined CORE_ROOT goto SkipCoreRootSetup
 
 set "CORE_ROOT=%XunitTestBinBase%\Tests\Core_Root"
-echo %__MsgPrefix%Using Default CORE_ROOT as %CORE_ROOT%
-echo %__MsgPrefix%Copying Built binaries from %__BinDir% to %CORE_ROOT%
-if exist "%CORE_ROOT%" rd /s /q "%CORE_ROOT%"
-md "%CORE_ROOT%"
-xcopy /s "%__BinDir%" "%CORE_ROOT%"
 
 :SkipCoreRootSetup
 
 
-if defined __Exclude (if not exist %__Exclude% echo %__MsgPrefix%Error: Exclusion file %__Exclude% not found && exit /b 1)
 if defined __TestEnv (if not exist %__TestEnv% echo %__MsgPrefix%Error: Test Environment script %__TestEnv% not found && exit /b 1)
 
 REM These log files are created automatically by the test run process. Q: what do they depend on being set?
@@ -179,13 +161,6 @@ set __TestRunXmlLog=%__LogsDir%\TestRun_%__BuildOS%__%__BuildArch%__%__BuildType
 
 
 if "%__PerfTests%"=="true" goto RunPerfTests
-if "%__SkipWrapperGeneration%"=="true" goto SkipWrapperGeneration
-
-set __BuildLogRootName=Tests_XunitWrapper
-call :msbuild "%__ProjectFilesDir%\runtest.proj" /p:BuildWrappers=true
-if errorlevel 1 exit /b 1
-
-:SkipWrapperGeneration
 
 call :ResolveDependecies
 
@@ -378,13 +353,6 @@ if defined __JitDisasm (
     set RunningJitDisasm=1
 )
 
-set __BuildLogRootName=Tests_GenerateRuntimeLayout
-call :msbuild "%__ProjectFilesDir%\runtest.proj" /p:GenerateRuntimeLayout=true 
-if errorlevel 1 (
-    echo Test Dependency Resolution Failed
-    exit /b 1
-)
-echo %__MsgPrefix%Created the runtime layout with all dependencies in %CORE_ROOT%
 exit /b 0
 
 
@@ -392,16 +360,12 @@ exit /b 0
 :Usage
 echo.
 echo Usage:
-echo   %0 BuildArch BuildType [SkipWrapperGeneration] [Exclude EXCLUSION_TARGETS] [TestEnv TEST_ENV_SCRIPT] [VSVersion] CORE_ROOT
+echo   %0 BuildArch BuildType [TestEnv TEST_ENV_SCRIPT] [VSVersion] CORE_ROOT
 echo where:
 echo.
 echo./? -? /h -h /help -help: view this message.
 echo BuildArch- Optional parameter - x64 or x86 ^(default: x64^).
 echo BuildType- Optional parameter - Debug, Release, or Checked ^(default: Debug^).
-echo SkipWrapperGeneration- Optional parameter - this will run the same set of tests as the last time it was run
-echo Exclude0- Optional parameter - specify location of default exclusion file (defaults to issues.targets if not specified)
-echo                                Set to "" to disable default exclusion file.
-echo Exclude-  Optional parameter - this will exclude individual tests from running, specified by ExcludeList ItemGroup in an .targets file.
 echo TestEnv- Optional parameter - this will run a custom script to set custom test environment settings.
 echo VSVersion- Optional parameter - VS2013 or VS2015 ^(default: VS2015^)
 echo AgainstPackages - Optional parameter - this indicates that we are running tests that were built against packages

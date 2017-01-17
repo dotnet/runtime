@@ -39,6 +39,14 @@
     <RootBinDir Condition="'$(__RootBinDir)'==''">$(ProjectDir)bin\</RootBinDir>
   </PropertyGroup>
 
+<!-- Default Test platform to deploy the netstandard compiled tests to -->
+  <PropertyGroup>
+    <!-- we default TestTFM and FilterToTestTFM to netcoreapp1.0 if they are not explicity defined -->
+    <DefaultTestTFM Condition="'$(DefaultTestTFM)'==''">netcoreapp1.0</DefaultTestTFM>
+    <TestTFM Condition="'$(TestTFM)'==''">$(DefaultTestTFM)</TestTFM>
+    <FilterToTestTFM Condition="'$(FilterToTestTFM)'==''">$(DefaultTestTFM)</FilterToTestTFM>
+  </PropertyGroup>
+
   <!-- Output paths -->
   <PropertyGroup>
     <BaseIntermediateOutputPath Condition="'$(BaseIntermediateOutputPath)' == ''">$(RootBinDir)obj\</BaseIntermediateOutputPath>
