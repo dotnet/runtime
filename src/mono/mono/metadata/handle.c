@@ -265,7 +265,7 @@ mono_gchandle_from_handle (MonoObjectHandle handle, mono_bool pinned)
 MonoObjectHandle
 mono_gchandle_get_target_handle (uint32_t gchandle)
 {
-	return MONO_HANDLE_NEW (MonoObject, mono_gchandle_get_target);
+	return MONO_HANDLE_NEW (MonoObject, mono_gchandle_get_target (gchandle));
 }
 
 gpointer
