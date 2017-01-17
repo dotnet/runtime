@@ -16,7 +16,7 @@ using System.Text;
 
 namespace Microsoft.CSharp
 {
-    internal sealed class CSharpCodeGenerator : ICodeCompiler, ICodeGenerator
+    internal sealed partial class CSharpCodeGenerator : ICodeCompiler, ICodeGenerator
     {
         private static readonly char[] s_periodArray = new char[] { '.' };
 
@@ -2991,20 +2991,6 @@ namespace Microsoft.CSharp
             {
                 Output.WriteLine(" {");
             }
-        }
-
-        private CompilerResults FromFileBatch(CompilerParameters options, string[] fileNames)
-        {
-            if (options == null)
-            {
-                throw new ArgumentNullException(nameof(options));
-            }
-            if (fileNames == null)
-            {
-                throw new ArgumentNullException(nameof(fileNames));
-            }
-
-            throw new PlatformNotSupportedException();
         }
 
         CompilerResults ICodeCompiler.CompileAssemblyFromDom(CompilerParameters options, CodeCompileUnit e)

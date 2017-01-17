@@ -15,7 +15,7 @@ using System.Text;
 
 namespace Microsoft.VisualBasic
 {
-    internal sealed class VBCodeGenerator : CodeCompiler
+    internal sealed partial class VBCodeGenerator : CodeCompiler
     {
         private static readonly char[] s_periodArray = new char[] { '.' };
         private const int MaxLineLength = 80;
@@ -2607,22 +2607,6 @@ namespace Microsoft.VisualBasic
             {
                 _statementDepth--;
             }
-        }
-
-
-
-        protected override CompilerResults FromFileBatch(CompilerParameters options, string[] fileNames)
-        {
-            if (options == null)
-            {
-                throw new ArgumentNullException(nameof(options));
-            }
-            if (fileNames == null)
-            {
-                throw new ArgumentNullException(nameof(fileNames));
-            }
-
-            throw new PlatformNotSupportedException();
         }
     }
 }
