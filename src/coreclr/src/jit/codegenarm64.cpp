@@ -2425,8 +2425,8 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
             var_types  op1Type = op1->TypeGet();
             var_types  op2Type = op2->TypeGet();
 
-            assert(!op1->isContainedMemoryOp());
-            assert(!op2->isContainedMemoryOp());
+            assert(!op1->isUsedFromMemory());
+            assert(!op2->isUsedFromMemory());
 
             genConsumeOperands(tree);
 
