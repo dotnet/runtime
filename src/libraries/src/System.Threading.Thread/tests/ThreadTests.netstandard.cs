@@ -620,7 +620,7 @@ namespace System.Threading.Threads.Tests
         public static void InterruptTest()
         {
             // Interrupting a thread that is not blocked does not do anything, but once the thread starts blocking, it gets
-            // interrupted
+            // interrupted and does not auto-reset the signaled event
             var threadReady = new AutoResetEvent(false);
             var continueThread = new AutoResetEvent(false);
             bool continueThreadBool = false;
@@ -636,10 +636,12 @@ namespace System.Threading.Threads.Tests
             t.IsBackground = true;
             t.Start();
             threadReady.CheckedWait();
+            continueThread.Set();
             t.Interrupt();
             Assert.False(threadReady.WaitOne(ExpectedTimeoutMilliseconds));
             Volatile.Write(ref continueThreadBool, true);
             waitForThread();
+            Assert.True(continueThread.WaitOne(0));
 
             // Interrupting a dead thread does nothing
             t.Interrupt();
@@ -659,6 +661,32 @@ namespace System.Threading.Threads.Tests
             t.IsBackground = true;
             t.Start();
             ThreadTestHelpers.WaitForCondition(() => (t.ThreadState & ThreadState.WaitSleepJoin) != 0);
+            t.Interrupt();
+            waitForThread();
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        public static void InterruptInFinallyBlockTest_SkipOnDesktopFramework()
+        {
+            // A wait in a finally block can be interrupted. The desktop framework applies the same rules as thread abort, and
+            // does not allow thread interrupt in a finally block. There is nothing special about thread interrupt that requires
+            // not allowing it in finally blocks, so this behavior has changed in .NET Core.
+            var continueThread = new AutoResetEvent(false);
+            Action waitForThread;
+            Thread t =
+                ThreadTestHelpers.CreateGuardedThread(out waitForThread, () =>
+                {
+                    try
+                    {
+                    }
+                    finally
+                    {
+                        Assert.Throws<ThreadInterruptedException>(() => continueThread.CheckedWait());
+                    }
+                });
+            t.IsBackground = true;
+            t.Start();
             t.Interrupt();
             waitForThread();
         }
