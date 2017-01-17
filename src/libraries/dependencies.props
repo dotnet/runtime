@@ -110,7 +110,7 @@
     <StaticDependency Include="@(XUnitDependency)">
       <Version>2.2.0-beta2-build3300</Version>
     </StaticDependency>
-   
+
     <StaticDependency Include="Microsoft.xunit.netcore.extensions;Microsoft.DotNet.BuildTools.TestSuite">
       <Version>1.0.1-prerelease-01001-04</Version>
     </StaticDependency>
@@ -133,6 +133,10 @@
       <PackageId>microsoft.xunit.runner.uwp</PackageId>
       <Version>$(AppXRunnerVersion)</Version>
     </DependencyBuildInfo>
+
+    <!-- project.json files to update -->
+    <ProjectJsonFiles Include="external\**\project.json" />
+    <ProjectJsonFiles Include="external\**\project.json.template" />
 
   </ItemGroup>
 </Project>
