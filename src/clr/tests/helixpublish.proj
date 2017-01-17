@@ -1,0 +1,63 @@
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  
+  <Import Project="..\dir.props" />
+  <Import Project="$(ToolsDir)CloudTest.targets" Condition="Exists('$(ToolsDir)CloudTest.targets')" />
+
+  <!-- Define test payload & Correlation (Core_Root) payload -->
+  <ItemGroup>
+    <TestList Include="$(TestWorkingDir)\archive\tests\*" ></TestList>
+    <CoreRootUri Include="$(TestWorkingDir)\archive\Core_Root*\*.zip" ></CoreRootUri>
+    <DummyPackages Include="$(TestWorkingDir)\archive\packages\*" ></DummyPackages>
+    <ForUpload Include="@(TestList)" ></ForUpload>
+    <ForUpload Include="@(CoreRootUri)" ></ForUpload>
+    <SupplementalPayload Include="@(DummyPackages)" >
+      <RelativeBlobPath>$(Platform)$(ConfigurationGroup)/Packages.zip</RelativeBlobPath>
+    </SupplementalPayload>
+  </ItemGroup>
+
+  <!-- Define name & location of test JSON blob -->
+  <PropertyGroup>
+    <PayloadTestListFilename>Tests.$(ConfigurationGroup).json</PayloadTestListFilename>
+    <PayloadTestListFile>$(TestWorkingDir)$(PayloadTestListFilename)</PayloadTestListFile>
+    <SkipArchive>true</SkipArchive>
+  </PropertyGroup>
+
+  <Target Name="CreateTestListJson"
+          DependsOnTargets="CreateAzureStorage">
+
+    <!-- Define Correlation Payload as a property -->
+    <PropertyGroup>
+      <CoreRootUris>$(DropUri)$(Platform)$(ConfigurationGroup)/Tests/$([System.String]::Copy('%(RecursiveDir)').Replace('\', '/'))%(CoreRootUri.Filename)%(CoreRootUri.Extension)$(DropUriReadOnlyToken)</CoreRootUris>
+      <CorrelationPayloadProperty>$(CorrelationPayloadUris);$(CoreRootUris)</CorrelationPayloadProperty>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <TestList>
+        <Command Condition="'$(TargetsWindows)' == 'true'">$(HelixPythonPath) $(RunnerScript) --script %HELIX_WORKITEM_PAYLOAD%\runtests.cmd</Command>
+        <Command Condition="'$(TargetsWindows)' != 'true'">chmod +x $HELIX_WORKITEM_PAYLOAD/runtests.sh &amp;&amp; $(HelixPythonPath) $(RunnerScript) --script $HELIX_WORKITEM_PAYLOAD/runtests.sh</Command>
+        <CorrelationPayloadUris>[$(CorrelationPayloadProperty)]</CorrelationPayloadUris>
+        <PayloadUri>$(DropUri)$(Platform)$(ConfigurationGroup)/Tests/$([System.String]::Copy('%(RecursiveDir)').Replace('\', '/'))%(Filename)%(Extension)$(DropUriReadOnlyToken)</PayloadUri>
+        <WorkItemId>%(Filename)</WorkItemId>
+        <TimeoutInSeconds>$(TimeoutInSeconds)</TimeoutInSeconds>
+      </TestList>
+    </ItemGroup>
+    <WriteItemsToJson JsonFileName="$(PayloadTestListFile)" Items="@(TestList)" />
+    <!-- add test lists to the list of items for upload -->
+    <ItemGroup>
+      <ForUpload Include="$(PayloadTestListFile)">
+        <RelativeBlobPath>$(PayloadTestListFilename)</RelativeBlobPath>
+      </ForUpload>
+    </ItemGroup>
+    <!-- for completion event -->
+    <ItemGroup>
+      <TestListFile Include="$(PayloadTestListFile)">
+        <BuildCompleteJson>$(TestWorkingDir)$(OSPlatformConfig)/FuncBuildComplete.json</BuildCompleteJson>
+        <OfficialBuildJson>$(TestWorkingDir)$(OSPlatformConfig)/FuncOfficialBuild.json</OfficialBuildJson>
+        <HelixJobUploadCompletePath>$(TestWorkingDir)$(OSPlatformConfig)/helixjobuploadcomplete.sem</HelixJobUploadCompletePath>
+      </TestListFile>
+    </ItemGroup>
+  </Target>
+
+  <Target Name="Build" />
+
+</Project>
