@@ -1,0 +1,152 @@
+<Project ToolsVersion="12.0" DefaultTargets="ArchiveAll" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <UsingTask TaskName="ZipFileCreateFromDirectory" AssemblyFile="$(ToolsDir)\net45\Microsoft.DotNet.Build.Tasks.dll"/>
+  
+  <Import Project="dir.props" />
+  <Import Project="..\dir.props" />
+
+  <PropertyGroup>
+    <DiscoveryDirectory>$(TestWorkingDir)</DiscoveryDirectory>
+    <CoreRootDir Condition="'$(RuntimeID)' == '' ">$(CORE_ROOT)</CoreRootDir>
+    <CoreRootDir Condition="'$(RuntimeID)' != '' ">$(CORE_OVERLAY)</CoreRootDir>
+    <CoreRootName Condition="'$(RuntimeID)' == '' ">Core_Root_Windows_NT-$(__BuildArch)</CoreRootName>
+    <CoreRootName Condition="'$(RuntimeID)' != '' ">Core_Root_$(RuntimeID)</CoreRootName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <TestCmds Include="$(DiscoveryDirectory)\**\*.cmd" ></TestCmds>
+    <XunitDlls Include="$(DiscoveryDirectory)\*\*.XUnitWrapper.dll" ></XunitDlls>
+  </ItemGroup>
+
+  <!-- Build the platform-specific wrapper to run an individual xunit wrapper -->
+
+  <Target Name="GenerateWrapperExecutables"
+    Inputs="@(XunitDlls)"
+    Outputs="$(TestWorkingDir)*\runtests.cmd" >
+
+    <MSBuild Projects="helixprep.proj"
+             Properties="BuildPath=%(XunitDlls.RootDir)%(XunitDlls.Directory);ProjectName=%(XunitDlls.Filename)%(XunitDlls.Extension)"
+             Targets="GenerateWrapperCmd" />
+
+    <MSBuild Projects="helixprep.proj"
+             Properties="BuildPath=%(XunitDlls.RootDir)%(XunitDlls.Directory);ProjectName=%(XunitDlls.Filename)%(XunitDlls.Extension)"
+             Targets="GenerateWrapperSh" />
+  </Target>
+
+  <!-- Zip each top-level test folder to send to Helix -->
+
+  <Target Name="ArchiveTests"
+    Inputs="@(XunitDlls)"
+    Outputs="$(TestWorkingDir)archive\**" >
+    
+    <Copy SourceFiles="$(CORE_ROOT)\xunit.console.netcore.exe"
+          DestinationFolder="%(XunitDlls.RootDir)%(XunitDlls.Directory)"
+    />
+    <MSBuild Projects="helixprep.proj"
+             Properties="BuildPath=%(XunitDlls.RootDir)%(XunitDlls.Directory);ProjectName=%(XunitDlls.Filename);BuildArchiveDir=$(TestWorkingDir)archive\tests\"
+             Targets="ArchiveBuild" />
+  </Target>
+
+  <!-- Zip Core_Root & Packages payload to send to Helix -->
+
+  <Target Name="ArchiveCoreRoot"
+    Inputs="$(CoreRootDir)"
+    Outputs="$(TestWorkingDir)archive\Core_Root" >
+    <MSBuild Projects="helixprep.proj"
+             Properties="BuildPath=$(CoreRootDir);ProjectName=$(CoreRootName);BuildArchiveDir=$(TestWorkingDir)archive\Core_Root\"
+             Targets="ArchiveBuild" />
+
+    <!-- Make dummy packages.zip to upload to Helix -->
+    <PropertyGroup>
+      <DummyDir>$(TestWorkingDir)\archive\dummy</DummyDir>
+      <DummyPackageDir>$(TestWorkingDir)\archive\packages</DummyPackageDir>
+    </PropertyGroup>
+
+    <MakeDir Directories="$(DummyDir)" />
+    <MakeDir Directories="$(DummyPackageDir)" />
+    <ZipFileCreateFromDirectory SourceDirectory="$(DummyDir)" DestinationArchive="$(DummyPackageDir)\Packages.zip" OverwriteDestination="true" />
+  </Target>
+
+  <!-- Generate wrapper .cmd file for an Xunit wrapper -->
+  <Target Name="GenerateWrapperCmd"
+    Condition="'$(RuntimeID)' == '' ">
+
+    <PropertyGroup>
+      <WrapperCmdContents>
+        <![CDATA[
+@ECHO OFF
+setlocal ENABLEDELAYEDEXPANSION
+pushd %~dp0
+
+set CORE_ROOT=%HELIX_CORRELATION_PAYLOAD%
+
+ECHO BEGIN EXECUTION
+ECHO %HELIX_CORRELATION_PAYLOAD%\CoreRun.exe %HELIX_WORKITEM_PAYLOAD%\xunit.console.netcore.exe %HELIX_WORKITEM_PAYLOAD%\$(ProjectName) -noshadow -xml testResults.xml -notrait category=outerloop -notrait category=failing
+%HELIX_CORRELATION_PAYLOAD%\CoreRun.exe %HELIX_WORKITEM_PAYLOAD%\xunit.console.netcore.exe %HELIX_WORKITEM_PAYLOAD%\$(ProjectName) -noshadow -xml testResults.xml -notrait category=outerloop -notrait category=failing
+
+echo Finished running tests. Exit code = %ERRORLEVEL%
+EXIT /B %ERRORLEVEL%
+
+        ]]>
+      </WrapperCmdContents>
+    </PropertyGroup>
+
+    <!-- Write the file -->
+    <WriteLinesToFile
+      File="$(BuildPath)\runtests.cmd"
+      Lines="$(WrapperCmdContents)"
+      Overwrite="true" />
+
+  </Target>
+
+  <Target Name="GenerateWrapperSh"
+    Condition="'$(RuntimeID)' != '' ">
+
+    <!-- Need to force in Unix line endings for Shell script -->
+    <PropertyGroup>
+      <WrapperShContents>#!/bin/sh%0a</WrapperShContents>
+      <WrapperShContents>$(WrapperShContents)%0a</WrapperShContents> 
+      <WrapperShContents>$(WrapperShContents)export CORE_ROOT="$HELIX_CORRELATION_PAYLOAD"%0a</WrapperShContents>
+      <WrapperShContents>$(WrapperShContents)%0a</WrapperShContents>
+      <WrapperShContents>$(WrapperShContents)for scriptFilePath in %24(find . -type f -iname '%2A.sh' ! -iname "runtests.sh" | sort)%0a</WrapperShContents>
+      <WrapperShContents>$(WrapperShContents)do%0a</WrapperShContents>
+      <WrapperShContents>$(WrapperShContents) perl -pi -e 's/\r\n|\n|\r/\n/g' "%24scriptFilePath"%0a</WrapperShContents>
+      <WrapperShContents>$(WrapperShContents)done%0a</WrapperShContents>
+      <WrapperShContents>$(WrapperShContents)%0a</WrapperShContents>
+      <WrapperShContents>$(WrapperShContents)echo BEGIN EXECUTION%0a</WrapperShContents>
+      <WrapperShContents>$(WrapperShContents)echo "%24{HELIX_CORRELATION_PAYLOAD}/corerun" %24HELIX_WORKITEM_PAYLOAD/xunit.console.netcore.exe %24HELIX_WORKITEM_PAYLOAD/$(ProjectName) -noshadow -xml testResults.xml -notrait category=outerloop -notrait category=failing%0a</WrapperShContents>
+      <WrapperShContents>$(WrapperShContents)"%24{HELIX_CORRELATION_PAYLOAD}/corerun" %24HELIX_WORKITEM_PAYLOAD/xunit.console.netcore.exe %24HELIX_WORKITEM_PAYLOAD/$(ProjectName) -noshadow -xml testResults.xml -notrait category=outerloop -notrait category=failing%0a</WrapperShContents>
+      <WrapperShContents>$(WrapperShContents)ErrorLevel=%24%3F%0a</WrapperShContents>
+      <WrapperShContents>$(WrapperShContents)%0a</WrapperShContents>
+      <WrapperShContents>$(WrapperShContents)echo Finished running tests. Exit code = %24ErrorLevel%0a</WrapperShContents>
+      <WrapperShContents>$(WrapperShContents)exit %24ErrorLevel%0a</WrapperShContents>
+
+    </PropertyGroup>
+
+    <!-- Write the file -->
+    <WriteLinesToFile
+      File="$(BuildPath)\runtests.sh"
+      Lines="$(WrapperShContents)"
+      Overwrite="true" />
+
+  </Target>
+
+  <!-- archive the test binaries along with some supporting files -->
+  <Target Name="ArchiveBuild">
+    <PropertyGroup Condition="'$(ProjectName)'==''">
+      <TestProjectName>$(MSBuildProjectName)</TestProjectName>
+    </PropertyGroup>
+
+    <!-- the project json and runner script files need to be included in the archive -->
+    <MakeDir Directories="$(BuildArchiveDir)" />
+    <ZipFileCreateFromDirectory SourceDirectory="$(BuildPath)" DestinationArchive="$(BuildArchiveDir)$(ProjectName).zip" OverwriteDestination="true" />
+  </Target>
+
+  <!-- Default target to run - builds executables & archives everything needed for Helix run -->
+
+  <Target Name="ArchiveAll" >
+    <MSBuild Projects="helixprep.proj"
+             Targets="GenerateWrapperExecutables;ArchiveTests;ArchiveCoreRoot" />
+  </Target>
+
+</Project>

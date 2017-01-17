@@ -16,10 +16,14 @@
     <ItemGroup>
       <DisabledProjects Include="TestWrappers*\*\*.csproj" />
       <DisabledProjects Include="*\**\cs_template.csproj" />
-      <DisabledProjects Include="Common\Coreclr.TestWrapper\Coreclr.TestWrapper.csproj" />
+      <DisabledProjects Include="Common\Coreclr.TestWrapper\Coreclr.TestWrapper.csproj" Condition="'$(BuildTestsAgainstPackages)' != 'true'" />
+      <DisabledProjects Include="Common\Desktop.Coreclr.TestWrapper\Desktop.Coreclr.TestWrapper.csproj" Condition="'$(BuildTestsAgainstPackages)' == 'true'" />
       <DisabledProjects Include="Common\test_runtime\test_runtime.csproj" />
       <DisabledProjects Include="Common\test_dependencies\test_dependencies.csproj" />
+      <DisabledProjects Include="Common\build_against_pkg_dependencies\build_against_pkg_dependencies.csproj" />
+      <DisabledProjects Include="Common\targeting_pack_ref\targeting_pack_ref.csproj" />
       <DisabledProjects Include="GC\Performance\Framework\GCPerfTestFramework.csproj" />
+      <DisabledProjects Include="JIT\superpmi\superpmicollect.csproj" Condition="'$(BuildTestsAgainstPackages)' == 'true'" />
       <DisabledProjects Include="Loader\classloader\generics\regressions\DD117522\Test.csproj" />
       <DisabledProjects Include="Loader\classloader\generics\GenericMethods\VSW491668.csproj" /> <!-- issue 5501 -->
     </ItemGroup>
