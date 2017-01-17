@@ -512,7 +512,7 @@ namespace System.Threading.Tasks
          Level = EventLevel.Informational, Keywords = Keywords.TaskTransfer|Keywords.Tasks)]
         public void TaskWaitBegin(
             int OriginatingTaskSchedulerID, int OriginatingTaskID,  // PFX_COMMON_EVENT_HEADER
-            int TaskID, TaskWaitBehavior Behavior, int ContinueWithTaskID, int appDomain)
+            int TaskID, TaskWaitBehavior Behavior, int ContinueWithTaskID)
         {
             if (IsEnabled() && IsEnabled(EventLevel.Informational, Keywords.TaskTransfer|Keywords.Tasks))
             {
@@ -534,8 +534,10 @@ namespace System.Threading.Tasks
                         Guid childActivityId = CreateGuidForTaskID(TaskID);
                         WriteEventWithRelatedActivityIdCore(TASKWAITBEGIN_ID, &childActivityId, 5, eventPayload);
                     }
-                    else 
+                    else
+                    {
                         WriteEventCore(TASKWAITBEGIN_ID, 5, eventPayload);
+                    }
                 }
             }
         }
