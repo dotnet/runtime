@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <!--
+    enables cloud-distributed testing.  please see target VerifyInputs
+    in CloudTest.targets for the complete list of required properties.
+  -->
+  <Import Project="$(MSBuildThisFileDirectory)CloudTest.targets" Condition="'$(EnableCloudTest)' == 'true'" />
+
+</Project>
