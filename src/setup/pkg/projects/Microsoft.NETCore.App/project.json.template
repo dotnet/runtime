@@ -13,7 +13,7 @@
     "Microsoft.DiaSymReader.Native": "1.4.0",
     "Libuv": "1.10.0-preview1-22036",
     "Microsoft.NETCore.Platforms": "2.0.0-beta-24917-02",
-    "NETStandard.Library": "1.6.2-beta-24913-02"
+    "NETStandard.Library": "2.0.0-beta-24914-01"
   },
   "frameworks": {
     "netcoreapp2.0": {}
