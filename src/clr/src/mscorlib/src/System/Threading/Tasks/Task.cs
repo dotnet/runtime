@@ -3176,7 +3176,7 @@ namespace System.Threading.Tasks
                 Task currentTask = Task.InternalCurrent;
                 etwLog.TaskWaitBegin(
                     (currentTask != null ? currentTask.m_taskScheduler.Id : TaskScheduler.Default.Id), (currentTask != null ? currentTask.Id : 0),
-                    this.Id, TplEtwProvider.TaskWaitBehavior.Synchronous, 0, System.Threading.Thread.GetDomainID());
+                    this.Id, TplEtwProvider.TaskWaitBehavior.Synchronous, 0);
             }
 
             bool returnValue = IsCompleted;
