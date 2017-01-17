@@ -6143,7 +6143,7 @@ void CodeGen::genCompareInt(GenTreePtr treeNode)
     {
         ins = INS_test;
     }
-    else if (!op1->isContained() && op2->IsIntegralConst(0))
+    else if (op1->isUsedFromReg() && op2->IsIntegralConst(0))
     {
         // We're comparing a register to 0 so we can generate "test reg1, reg1"
         // instead of the longer "cmp reg1, 0"
@@ -6185,10 +6185,10 @@ void CodeGen::genCompareInt(GenTreePtr treeNode)
     assert(!varTypeIsUnsigned(type) || varTypeIsSmall(type));
     // Small unsigned int types (TYP_BOOL can use anything) should use unsigned comparisons
     assert(!(varTypeIsSmallInt(type) && varTypeIsUnsigned(type)) || ((tree->gtFlags & GTF_UNSIGNED) != 0));
-    // If op1 is smaller then it cannot be contained, we're probably missing a cast
-    assert((genTypeSize(op1Type) >= genTypeSize(type)) || !op1->isContainedMemoryOp());
-    // If op2 is smaller then it cannot be contained, we're probably missing a cast
-    assert((genTypeSize(op2Type) >= genTypeSize(type)) || !op2->isContainedMemoryOp());
+    // If op1 is smaller then it cannot be in memory, we're probably missing a cast
+    assert((genTypeSize(op1Type) >= genTypeSize(type)) || !op1->isUsedFromMemory());
+    // If op2 is smaller then it cannot be in memory, we're probably missing a cast
+    assert((genTypeSize(op2Type) >= genTypeSize(type)) || !op2->isUsedFromMemory());
     // If op2 is a constant then it should fit in the common type
     assert(!op2->IsCnsIntOrI() || genTypeValueFitsIn(op2->AsIntCon()->IconValue(), type));
 
