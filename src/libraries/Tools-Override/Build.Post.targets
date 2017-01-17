@@ -7,4 +7,6 @@
   -->
   <Import Project="$(MSBuildThisFileDirectory)CloudTest.targets" Condition="'$(EnableCloudTest)' == 'true'" />
 
+  <Target Name="CloudBuild" Condition="'$(EnableCloudTest)' != 'true'" />
+
 </Project>
