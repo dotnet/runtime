@@ -216,7 +216,28 @@ void Lowering::LowerCast(GenTree* tree)
 //
 void Lowering::LowerRotate(GenTreePtr tree)
 {
-    NYI_ARM("ARM Lowering for ROL and ROR");
+    if (tree->OperGet() == GT_ROL)
+    {
+        // There is no ROL instruction on ARM. Convert ROL into ROR.
+        GenTreePtr rotatedValue        = tree->gtOp.gtOp1;
+        unsigned   rotatedValueBitSize = genTypeSize(rotatedValue->gtType) * 8;
+        GenTreePtr rotateLeftIndexNode = tree->gtOp.gtOp2;
+
+        if (rotateLeftIndexNode->IsCnsIntOrI())
+        {
+            ssize_t rotateLeftIndex                 = rotateLeftIndexNode->gtIntCon.gtIconVal;
+            ssize_t rotateRightIndex                = rotatedValueBitSize - rotateLeftIndex;
+            rotateLeftIndexNode->gtIntCon.gtIconVal = rotateRightIndex;
+        }
+        else
+        {
+            GenTreePtr tmp =
+                comp->gtNewOperNode(GT_NEG, genActualType(rotateLeftIndexNode->gtType), rotateLeftIndexNode);
+            BlockRange().InsertAfter(rotateLeftIndexNode, tmp);
+            tree->gtOp.gtOp2 = tmp;
+        }
+        tree->ChangeOper(GT_ROR);
+    }
 }
 
 //------------------------------------------------------------------------
