@@ -2830,56 +2830,20 @@ array_constructed:
 		MINT_IN_CASE(MINT_CASTCLASS)
 			c = rtm->data_items [*(guint16 *)(ip + 1)];
 			if ((o = sp [-1].data.p)) {
-				if (c->marshalbyref) {
-					MonoObject *isinst_obj = mono_object_isinst_mbyref_checked (o, c, &error);
-					mono_error_cleanup (&error); /* FIXME: don't swallow the error */
-					if (!isinst_obj)
-						THROW_EX (mono_get_exception_invalid_cast (), ip);
-				} else {
-					MonoVTable *vt = o->vtable;
-					MonoClass *oklass = vt->klass;
-					if (mono_class_is_interface (c)) {
-						g_error ("FIXME: interface method lookup");
-						if (c->interface_id > vt->max_interface_id /* || vt->interface_offsets [c->interface_id] == 0 */) {
-							THROW_EX (mono_get_exception_invalid_cast (), ip);
-						}
-					} else if (c->rank) {
-						MonoObject *isinst_obj = mono_object_isinst_checked (o, c, &error);
-						mono_error_cleanup (&error); /* FIXME: don't swallow the error */
-						if (!isinst_obj)
-							THROW_EX (mono_get_exception_invalid_cast (), ip);
-					} else if (!mono_class_has_parent (oklass, c)) {
-						THROW_EX (mono_get_exception_invalid_cast (), ip);
-					}
-				}
+				MonoObject *isinst_obj = mono_object_isinst_checked (o, c, &error);
+				mono_error_cleanup (&error); /* FIXME: don't swallow the error */
+				if (!isinst_obj)
+					THROW_EX (mono_get_exception_invalid_cast (), ip);
 			}
 			ip += 2;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_ISINST)
 			c = rtm->data_items [*(guint16 *)(ip + 1)];
 			if ((o = sp [-1].data.p)) {
-				if (c->marshalbyref) {
-					MonoObject *isinst_obj = mono_object_isinst_mbyref_checked (o, c, &error);
-					mono_error_cleanup (&error); /* FIXME: don't swallow the error */
-					if (!isinst_obj)
-						sp [-1].data.p = NULL;
-				} else {
-					MonoVTable *vt = o->vtable;
-					MonoClass *oklass = vt->klass;
-					if (mono_class_is_interface (c)) {
-						g_error ("FIXME: interface method lookup");
-						if (c->interface_id > vt->max_interface_id /* || vt->interface_offsets [c->interface_id] == 0 */) {
-							sp [-1].data.p = NULL;
-						}
-					} else if (c->rank) {
-						MonoObject *isinst_obj = mono_object_isinst_checked (o, c, &error);
-						mono_error_cleanup (&error); /* FIXME: don't swallow the error */
-						if (!isinst_obj)
-							sp [-1].data.p = NULL;
-					} else if (!mono_class_has_parent (oklass, c)) {
-						sp [-1].data.p = NULL;
-					}
-				}
+				MonoObject *isinst_obj = mono_object_isinst_checked (o, c, &error);
+				mono_error_cleanup (&error); /* FIXME: don't swallow the error */
+				if (!isinst_obj)
+					sp [-1].data.p = NULL;
 			}
 			ip += 2;
 			MINT_IN_BREAK;
