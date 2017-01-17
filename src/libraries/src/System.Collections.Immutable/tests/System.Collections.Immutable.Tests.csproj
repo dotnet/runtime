@@ -49,6 +49,9 @@
     <Compile Include="$(CommonTestPath)\System\Collections\CollectionAsserts.cs">
       <Link>Common\System\Collections\CollectionAsserts.cs</Link>
     </Compile>
+    <Compile Include="$(CommonTestPath)\System\Collections\DelegateEqualityComparer.cs">
+      <Link>Common\System\Collections\DelegateEqualityComparer.cs</Link>
+    </Compile>
     <Compile Include="$(CommonTestPath)\System\Collections\ICollection.NonGeneric.Tests.cs">
       <Link>Common\System\Collections\ICollection.NonGeneric.Tests.cs</Link>
     </Compile>
