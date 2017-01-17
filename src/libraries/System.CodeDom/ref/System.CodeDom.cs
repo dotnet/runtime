@@ -876,7 +876,7 @@ namespace System.CodeDom.Compiler
         System.CodeDom.Compiler.CompilerResults System.CodeDom.Compiler.ICodeCompiler.CompileAssemblyFromSource(System.CodeDom.Compiler.CompilerParameters options, string source) { throw null; }
         System.CodeDom.Compiler.CompilerResults System.CodeDom.Compiler.ICodeCompiler.CompileAssemblyFromSourceBatch(System.CodeDom.Compiler.CompilerParameters options, string[] sources) { throw null; }
     }
-    public abstract partial class CodeDomProvider
+    public abstract partial class CodeDomProvider : System.ComponentModel.Component
     {
         protected CodeDomProvider() { }
         public virtual string FileExtension { get { throw null; } }
