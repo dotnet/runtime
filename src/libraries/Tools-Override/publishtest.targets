@@ -15,7 +15,7 @@
     Temporary until we have proper nuget support to deploy content files.
     Copies supplemental test data to the build output and test directories.
   -->
-  <Target Name="CopySupplementalTestData">
+  <Target Name="CopySupplementalTestData" DependsOnTargets="DiscoverTestInputs">
     <!-- coalesce supplemental test data items with and without DestinationDir metadata -->
     <ItemGroup>
       <_SupplementalTestData Include="@(SupplementalTestData)" Condition="'%(DestinationDir)' != ''">
@@ -59,7 +59,7 @@
   <PropertyGroup Condition="'$(BuildingInsideVisualStudio)'=='true'">
     <PrepareForRunDependsOn>$(PrepareForRunDependsOn);CopyDefaultTestAssetsForVS</PrepareForRunDependsOn>
   </PropertyGroup>
-  <Target Name="CopyDefaultTestAssetsForVS" DependsOnTargets="CopyTestToTestDirectory;CopySupplementalTestData">
+  <Target Name="CopyDefaultTestAssetsForVS" DependsOnTargets="DiscoverTestInputs;CopySupplementalTestData">
      <!-- This was copied from RunTestsForProject in tests.targets
           The RunTestsForProject target does not execute in VS context and would be confused by the script based runner.
           _TestCopyLocalByFileNameWithoutDuplicates are the precise items that are fed to the runner script generation code.
