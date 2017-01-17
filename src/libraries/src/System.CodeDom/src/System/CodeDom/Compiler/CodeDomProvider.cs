@@ -11,7 +11,7 @@ using System.Runtime.Serialization;
 
 namespace System.CodeDom.Compiler
 {
-    public abstract class CodeDomProvider // TODO: Inherit Component
+    public abstract class CodeDomProvider : Component
     {
         private static readonly Dictionary<string, CompilerInfo> s_compilerLanguages = new Dictionary<string, CompilerInfo>(StringComparer.OrdinalIgnoreCase);
         private static readonly Dictionary<string, CompilerInfo> s_compilerExtensions = new Dictionary<string, CompilerInfo>(StringComparer.OrdinalIgnoreCase);
