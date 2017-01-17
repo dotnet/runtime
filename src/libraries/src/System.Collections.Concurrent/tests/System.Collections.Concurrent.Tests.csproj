@@ -60,6 +60,9 @@
     <Compile Include="$(CommonTestPath)\System\Diagnostics\Tracing\TestEventListener.cs">
       <Link>Common\System\Diagnostics\Tracing\TestEventListener.cs</Link>
     </Compile>
+    <Compile Include="$(CommonTestPath)\System\EnumTypes.cs">
+      <Link>Common\System\EnumTypes.cs</Link>
+    </Compile>
     <Compile Include="BlockingCollectionCancellationTests.cs" />
     <Compile Include="BlockingCollectionTests.cs" />
     <Compile Include="ConcurrentBagTests.cs" />

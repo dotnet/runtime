@@ -712,7 +712,7 @@ namespace System.Collections.Concurrent.Tests
             dictionary["1"] = 100; // try a valid setter
             Assert.Equal(100, (int)dictionary["1"]);
 
-            //nonsexist key
+            //non-existing key
             Assert.Null(dictionary["NotAKey"]);
         }
 
@@ -759,7 +759,7 @@ namespace System.Collections.Concurrent.Tests
         }
 
         [Fact]
-        public static void IDicionary_Remove_NullKeyInKeyValuePair_ThrowsArgumentNullException()
+        public static void IDictionary_Remove_NullKeyInKeyValuePair_ThrowsArgumentNullException()
         {
             IDictionary<string, int> dictionary = new ConcurrentDictionary<string, int>();
             Assert.Throws<ArgumentNullException>(() => dictionary.Remove(new KeyValuePair<string, int>(null, 0)));

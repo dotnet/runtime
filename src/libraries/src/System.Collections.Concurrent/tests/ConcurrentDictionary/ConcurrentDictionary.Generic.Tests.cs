@@ -9,6 +9,20 @@ using Xunit;
 
 namespace System.Collections.Concurrent.Tests
 {
+    public class ConcurrentDictionary_Generic_Tests_enum_enum : ConcurrentDictionary_Generic_Tests<SimpleEnum, SimpleEnum>
+    {
+        protected override bool DefaultValueAllowed => true;
+
+        protected override KeyValuePair<SimpleEnum, SimpleEnum> CreateT(int seed)
+        {
+            return new KeyValuePair<SimpleEnum, SimpleEnum>(CreateTKey(seed), CreateTValue(seed));
+        }
+
+        protected override SimpleEnum CreateTKey(int seed) => (SimpleEnum)new Random(seed).Next();
+
+        protected override SimpleEnum CreateTValue(int seed) => CreateTKey(seed);
+    }
+
     public class ConcurrentDictionary_Generic_Tests_string_string : ConcurrentDictionary_Generic_Tests<string, string>
     {
         protected override KeyValuePair<string, string> CreateT(int seed)
@@ -58,7 +72,7 @@ namespace System.Collections.Concurrent.Tests
         protected override IEnumerable<ModifyEnumerable> ModifyEnumerables => new List<ModifyEnumerable>();
 
         protected override bool IDictionary_Generic_Keys_Values_Enumeration_ThrowsInvalidOperation_WhenParentModified => false;
-        
+
         protected override bool IDictionary_Generic_Keys_Values_ModifyingTheDictionaryUpdatesTheCollection => false;
 
         protected override bool ResetImplemented => false;
@@ -100,7 +114,7 @@ namespace System.Collections.Concurrent.Tests
         }
 
         #endregion
-        
+
         #region IReadOnlyDictionary<TKey, TValue>.Keys
 
         [Theory]
