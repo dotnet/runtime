@@ -294,6 +294,12 @@
       "values": [ true, false ],
       "defaultValue": true
     },
+    "BuildWrappers": {
+      "description": "Builds test Xunit wrappers",
+      "valueType": "property",
+      "values": [ true, false ],
+      "defaultValue": true
+    },
     "RuntimeId": {
       "description": "Specifies the OS to build Core_Root for",
       "valueType": "property",
