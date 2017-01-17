@@ -2,9 +2,9 @@
   "frameworks": {
     "{TFM}": {
       "dependencies": {
-        "Microsoft.NETCore.Platforms": "2.0.0-beta-24916-02",
-        "Microsoft.NETCore.Runtime.CoreCLR": "1.2.0-beta-24916-02",
-        "Microsoft.NETCore.TestHost": "1.2.0-beta-24916-02",
+        "Microsoft.NETCore.Platforms": "2.0.0-beta-24917-02",
+        "Microsoft.NETCore.Runtime.CoreCLR": "1.2.0-beta-24917-03",
+        "Microsoft.NETCore.TestHost": "1.2.0-beta-24917-03",
         "runtime.native.System.Data.SqlClient.sni": "4.4.0-beta-24913-02",
         "Microsoft.NETCore.DotNetHost": "1.2.0-beta-001259-00",
         "Microsoft.NETCore.DotNetHostPolicy": "1.2.0-beta-001259-00"
