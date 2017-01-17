@@ -40,7 +40,7 @@
   <PropertyGroup>
     <PackageOutputPath>$(PackagesOutDir)</PackageOutputPath>
     <SymbolPackageOutputPath>$(SymbolPackagesOutDir)</SymbolPackageOutputPath>
-    <RuntimeIdGraphDefinitionFile>$(ProjectDir)packages\Microsoft.NETCore.Platforms\2.0.0-beta-24916-02\runtime.json</RuntimeIdGraphDefinitionFile>
+    <RuntimeIdGraphDefinitionFile>$(ProjectDir)packages\Microsoft.NETCore.Platforms\2.0.0-beta-24917-02\runtime.json</RuntimeIdGraphDefinitionFile>
     <PackageLicenseFile>$(ProjectDir)projects/dotnet_library_license.txt</PackageLicenseFile>
     <PackageThirdPartyNoticesFile>$(ProjectDir)projects/ThirdPartyNotices.txt</PackageThirdPartyNoticesFile>
     <PackageDescriptionFile>$(ProjectDir)projects/descriptions.json</PackageDescriptionFile>
