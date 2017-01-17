@@ -15,7 +15,6 @@
     <FeatureLegacySurface>true</FeatureLegacySurface>
     <FeatureClickonce>true</FeatureClickonce>
     <FeatureCodepagesFile>true</FeatureCodepagesFile>
-    <FeatureCollectibleTypes>true</FeatureCollectibleTypes>
     <FeatureCominterop>true</FeatureCominterop>
     <FeatureCominteropApartmentSupport>true</FeatureCominteropApartmentSupport>
     <FeatureCominteropManagedActivation>true</FeatureCominteropManagedActivation>

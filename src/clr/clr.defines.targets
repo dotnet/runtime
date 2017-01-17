@@ -135,7 +135,6 @@
         <DefineConstants Condition="'$(FeatureClassicCominterop)' == 'true'">$(DefineConstants);FEATURE_CLASSIC_COMINTEROP</DefineConstants>
         <DefineConstants Condition="'$(FeatureClickonce)' == 'true'">$(DefineConstants);FEATURE_CLICKONCE</DefineConstants>
         <DefineConstants Condition="'$(FeatureCodepagesFile)' == 'true'">$(DefineConstants);FEATURE_CODEPAGES_FILE</DefineConstants>
-        <DefineConstants Condition="'$(FeatureCollectibleTypes)' == 'true'">$(DefineConstants);FEATURE_COLLECTIBLE_TYPES</DefineConstants>
         <DefineConstants Condition="'$(FeatureCominterop)' == 'true'">$(DefineConstants);FEATURE_COMINTEROP</DefineConstants>
         <DefineConstants Condition="'$(FeatureCominteropApartmentSupport)' == 'true'">$(DefineConstants);FEATURE_COMINTEROP_APARTMENT_SUPPORT</DefineConstants>
         <DefineConstants Condition="'$(FeatureCominteropManagedActivation)' == 'true'">$(DefineConstants);FEATURE_COMINTEROP_MANAGED_ACTIVATION</DefineConstants>
