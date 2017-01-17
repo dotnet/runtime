@@ -1129,7 +1129,9 @@ class LiveVarAnalysis
         VarSetOps::DiffD(m_compiler, m_liveIn, block->bbVarDef);
         VarSetOps::UnionD(m_compiler, m_liveIn, block->bbVarUse);
 
-        m_heapLiveIn = (m_heapLiveOut && !block->bbHeapDef) || block->bbHeapUse;
+        // Even if m_heapDef is set, we must assume that it doesn't kill heap if m_heapLiveOut, since
+        // (without proof otherwise) the use and def may touch different heap memory at run-time.
+        m_heapLiveIn = m_heapLiveOut || block->bbHeapUse;
 
         /* Can exceptions from this block be handled (in this function)? */
 
