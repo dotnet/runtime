@@ -663,6 +663,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "cccheck-net_4_x", "mcs/tool
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "mdbrebase-net_4_x", "mcs/tools/mdbrebase/mdbrebase-net_4_x.csproj", "{01B02BFF-0DC3-4265-BFAA-EDE405950796}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "mdb2ppdb-net_4_x", "mcs/tools/mdb2ppdb/mdb2ppdb-net_4_x.csproj", "{3252021D-F3DE-425F-B4A6-20B2B02EE3A4}"
+EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ikdasm-net_4_x", "mcs/tools/ikdasm/ikdasm-net_4_x.csproj", "{921F19B8-7276-446C-B096-A29AAAB83E12}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "mono-symbolicate-net_4_x", "mcs/tools/mono-symbolicate/mono-symbolicate-net_4_x.csproj", "{63E373FB-CE4B-4F7B-A421-5CE8ED7BD851}"
@@ -2001,6 +2003,10 @@ Global
 		{01B02BFF-0DC3-4265-BFAA-EDE405950796}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{01B02BFF-0DC3-4265-BFAA-EDE405950796}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{01B02BFF-0DC3-4265-BFAA-EDE405950796}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3252021D-F3DE-425F-B4A6-20B2B02EE3A4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3252021D-F3DE-425F-B4A6-20B2B02EE3A4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3252021D-F3DE-425F-B4A6-20B2B02EE3A4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3252021D-F3DE-425F-B4A6-20B2B02EE3A4}.Release|Any CPU.Build.0 = Release|Any CPU
 		{921F19B8-7276-446C-B096-A29AAAB83E12}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{921F19B8-7276-446C-B096-A29AAAB83E12}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{921F19B8-7276-446C-B096-A29AAAB83E12}.Release|Any CPU.ActiveCfg = Release|Any CPU
