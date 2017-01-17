@@ -7,7 +7,6 @@
     <EnableDownlevelForNls Condition="'$(CrossTargetArchitecture)' != ''">true</EnableDownlevelForNls>
     <FeatureArrayStubAsIL Condition="('$(TargetArch)' == 'arm') or ('$(TargetArch)' == 'amd64') or ('$(TargetArch)' == 'arm64')">true</FeatureArrayStubAsIL>
     <FeatureStubsAsIL Condition="'$(TargetArch)' == 'arm64'">true</FeatureStubsAsIL>
-    <FeatureCollectibleTypes>true</FeatureCollectibleTypes>
     <FeatureCominteropApartmentSupport>true</FeatureCominteropApartmentSupport>
     <FeatureCoreclr>true</FeatureCoreclr>
     <FeatureCorruptingExceptions>true</FeatureCorruptingExceptions>
