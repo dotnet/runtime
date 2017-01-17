@@ -244,7 +244,7 @@ namespace System.Runtime.CompilerServices
                     (currentTaskAtBegin != null ? currentTaskAtBegin.m_taskScheduler.Id : TaskScheduler.Default.Id),
                     (currentTaskAtBegin != null ? currentTaskAtBegin.Id : 0),
                     task.Id, TplEtwProvider.TaskWaitBehavior.Asynchronous, 
-                    (continuationTask != null ? continuationTask.Id : 0), System.Threading.Thread.GetDomainID());
+                    (continuationTask != null ? continuationTask.Id : 0));
             }
 
             // Create a continuation action that outputs the end event and then invokes the user
