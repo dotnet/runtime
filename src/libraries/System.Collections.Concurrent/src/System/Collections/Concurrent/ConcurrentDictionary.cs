@@ -93,6 +93,10 @@ namespace System.Collections.Concurrent
             // See http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-335.pdf
             //
             Type valueType = typeof(TValue);
+            if (valueType.IsEnum)
+            {
+                valueType = Enum.GetUnderlyingType(valueType);
+            }
             bool isAtomic =
                 !valueType.GetTypeInfo().IsValueType ||
                 valueType == typeof(bool) ||
