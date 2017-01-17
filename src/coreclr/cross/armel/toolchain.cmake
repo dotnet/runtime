@@ -31,8 +31,10 @@ if("$ENV{__DistroRid}" MATCHES "tizen.*")
     set(CROSS_LINK_FLAGS "${CROSS_LINK_FLAGS} -B${CROSS_ROOTFS}/usr/lib/gcc/${TIZEN_TOOLCHAIN}")
     set(CROSS_LINK_FLAGS "${CROSS_LINK_FLAGS} -L${CROSS_ROOTFS}/usr/lib/gcc/${TIZEN_TOOLCHAIN}")
 else()
-    set(CROSS_LINK_FLAGS "${CROSS_LINK_FLAGS} -B${CROSS_ROOTFS}/usr/lib/gcc/${TOOLCHAIN}")
-    set(CROSS_LINK_FLAGS "${CROSS_LINK_FLAGS} -L${CROSS_ROOTFS}/usr/lib/gcc/${TOOLCHAIN}")
+    # TODO: this setting assumes debian armel rootfs
+    include_directories(SYSTEM ${CROSS_ROOTFS}/usr/include/c++/4.9 ${CROSS_ROOTFS}/usr/include/${TOOLCHAIN}/c++/4.9 )   
+    set(CROSS_LINK_FLAGS "${CROSS_LINK_FLAGS} -B${CROSS_ROOTFS}/usr/lib/gcc/${TOOLCHAIN}/4.9")
+    set(CROSS_LINK_FLAGS "${CROSS_LINK_FLAGS} -L${CROSS_ROOTFS}/usr/lib/gcc/${TOOLCHAIN}/4.9")
 endif()
 
 set(CMAKE_EXE_LINKER_FLAGS    "${CMAKE_EXE_LINKER_FLAGS}    ${CROSS_LINK_FLAGS}" CACHE STRING "" FORCE)
