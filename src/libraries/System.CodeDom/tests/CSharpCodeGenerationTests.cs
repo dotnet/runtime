@@ -449,6 +449,14 @@ namespace System.CodeDom.Tests
         }
 
         [Fact]
+        public void ExplicitImplementation()
+        {
+            var m = new CodeMemberMethod() { Name = "MyMethod" };
+            m.PrivateImplementationType = new CodeTypeReference(typeof(System.Int64));
+            AssertEqual(m, @"void System.Int64.MyMethod() { }");
+        }
+
+        [Fact]
         public void Arrays_SingleDimensional_PrimitiveTypes()
         {
             var arrayMethod = new CodeMemberMethod();
