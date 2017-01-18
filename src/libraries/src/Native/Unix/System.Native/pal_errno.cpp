@@ -132,6 +132,10 @@ extern "C" Error SystemNative_ConvertErrorPlatformToPal(int32_t platformErrno)
             return PAL_ENOTDIR;
         case ENOTEMPTY:
             return PAL_ENOTEMPTY;
+#ifdef ENOTRECOVERABLE // not available in NetBSD
+        case ENOTRECOVERABLE:
+            return PAL_ENOTRECOVERABLE;
+#endif
         case ENOTSOCK:
             return PAL_ENOTSOCK;
         case ENOTSUP:
@@ -142,6 +146,10 @@ extern "C" Error SystemNative_ConvertErrorPlatformToPal(int32_t platformErrno)
             return PAL_ENXIO;
         case EOVERFLOW:
             return PAL_EOVERFLOW;
+#ifdef EOWNERDEAD // not available in NetBSD
+        case EOWNERDEAD:
+            return PAL_EOWNERDEAD;
+#endif
         case EPERM:
             return PAL_EPERM;
         case EPIPE:
@@ -310,6 +318,10 @@ extern "C" int32_t SystemNative_ConvertErrorPalToPlatform(Error error)
             return ENOTDIR;
         case PAL_ENOTEMPTY:
             return ENOTEMPTY;
+#ifdef ENOTRECOVERABLE // not available in NetBSD
+        case PAL_ENOTRECOVERABLE:
+            return ENOTRECOVERABLE;
+#endif
         case PAL_ENOTSOCK:
             return ENOTSOCK;
         case PAL_ENOTSUP:
@@ -320,6 +332,10 @@ extern "C" int32_t SystemNative_ConvertErrorPalToPlatform(Error error)
             return ENXIO;
         case PAL_EOVERFLOW:
             return EOVERFLOW;
+#ifdef EOWNERDEAD // not available in NetBSD
+        case PAL_EOWNERDEAD:
+            return EOWNERDEAD;
+#endif
         case PAL_EPERM:
             return EPERM;
         case PAL_EPIPE:
