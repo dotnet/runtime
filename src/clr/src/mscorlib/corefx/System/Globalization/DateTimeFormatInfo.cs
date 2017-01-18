@@ -2163,7 +2163,7 @@ namespace System.Globalization
         //
         // Positive TimeSpan Pattern
         //
-
+        [NonSerialized]
         private string _fullTimeSpanPositivePattern;
         internal String FullTimeSpanPositivePattern
         {
@@ -2187,7 +2187,7 @@ namespace System.Globalization
         //
         // Negative TimeSpan Pattern
         //
-
+        [NonSerialized]
         private string _fullTimeSpanNegativePattern;
         internal String FullTimeSpanNegativePattern
         {
@@ -2343,7 +2343,7 @@ namespace System.Globalization
         //
         // DateTimeFormatInfo tokenizer.  This is used by DateTime.Parse() to break input string into tokens.
         //
-
+        [NonSerialized]
         private TokenHashValue[] _dtfiTokenHash;
 
         private const int TOKEN_HASH_SIZE = 199;
