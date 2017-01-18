@@ -982,8 +982,6 @@ CannotRemoveBaseTypeOrInterface : Type 'System.Threading.WaitHandleCannotBeOpene
 CannotRemoveBaseTypeOrInterface : Type 'System.Threading.Tasks.TaskCanceledException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Threading.Tasks.TaskSchedulerException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
 Compat issues with assembly System:
-CannotRemoveBaseTypeOrInterface : Type 'Microsoft.CSharp.CSharpCodeProvider' does not inherit from base type 'System.ComponentModel.Component' in the implementation but it does in the contract.
-CannotRemoveBaseTypeOrInterface : Type 'Microsoft.VisualBasic.VBCodeProvider' does not inherit from base type 'System.ComponentModel.Component' in the implementation but it does in the contract.
 TypesMustExist : Type 'Microsoft.Win32.IntranetZoneCredentialPolicy' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'Microsoft.Win32.PowerModeChangedEventArgs' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'Microsoft.Win32.PowerModeChangedEventHandler' does not exist in the implementation but it does exist in the contract.
@@ -1005,7 +1003,6 @@ TypesMustExist : Type 'Microsoft.Win32.UserPreferenceChangedEventHandler' does n
 TypesMustExist : Type 'Microsoft.Win32.UserPreferenceChangingEventArgs' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'Microsoft.Win32.UserPreferenceChangingEventHandler' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.UriFormatException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
-CannotRemoveBaseTypeOrInterface : Type 'System.CodeDom.Compiler.CodeDomProvider' does not inherit from base type 'System.ComponentModel.Component' in the implementation but it does in the contract.
 MembersMustExist : Member 'System.CodeDom.Compiler.CompilerParameters.Evidence.get()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.CodeDom.Compiler.CompilerParameters.Evidence.set(System.Security.Policy.Evidence)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.CodeDom.Compiler.CompilerResults.Evidence.get()' does not exist in the implementation but it does exist in the contract.
@@ -3030,4 +3027,4 @@ CannotRemoveBaseTypeOrInterface : Type 'System.Xml.Xsl.XsltException' does not i
 MembersMustExist : Member 'System.Xml.Xsl.XslTransform.Load(System.Xml.XmlReader, System.Xml.XmlResolver, System.Security.Policy.Evidence)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Xml.Xsl.XslTransform.Load(System.Xml.XPath.IXPathNavigable, System.Xml.XmlResolver, System.Security.Policy.Evidence)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Xml.Xsl.XslTransform.Load(System.Xml.XPath.XPathNavigator, System.Xml.XmlResolver, System.Security.Policy.Evidence)' does not exist in the implementation but it does exist in the contract.
-Total Issues: 3022
+Total Issues: 3018
