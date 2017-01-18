@@ -561,9 +561,7 @@ UINT_PTR Thread::VirtualUnwindCallFrame(PREGDISPLAY pRD, EECodeInfo* pCodeInfo /
     }
     else
     {
-        PT_KNONVOLATILE_CONTEXT_POINTERS pCurrentContextPointers = NULL;
-        NOT_X86(pCurrentContextPointers = pRD->pCurrentContextPointers);
-        VirtualUnwindCallFrame(pRD->pCurrentContext, pCurrentContextPointers, pCodeInfo);
+        VirtualUnwindCallFrame(pRD->pCurrentContext, pRD->pCurrentContextPointers, pCodeInfo);
     }
 
     SyncRegDisplayToCurrentContext(pRD);
