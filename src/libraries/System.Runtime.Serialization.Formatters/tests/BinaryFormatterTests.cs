@@ -291,26 +291,6 @@ namespace System.Runtime.Serialization.Formatters.Tests
             }
         }
 
-        public static IEnumerable<object[]> SerializeDeserialize_DeserializedTypeExpectedDifferentFromInput_MemberData()
-        {
-            yield return new object[] { EqualityComparer<Int16Enum>.Default };
-            yield return new object[] { EqualityComparer<Int64Enum>.Default };
-            yield return new object[] { EqualityComparer<UInt16Enum>.Default };
-            yield return new object[] { EqualityComparer<UInt32Enum>.Default };
-            yield return new object[] { EqualityComparer<UInt64Enum>.Default };
-            yield return new object[] { EqualityComparer<SByteEnum>.Default };
-            yield return new object[] { EqualityComparer<ByteEnum>.Default };
-        }
-
-        [Theory]
-        [MemberData(nameof(SerializeDeserialize_DeserializedTypeExpectedDifferentFromInput_MemberData))]
-        public void SerializeDeserialize_EqualityComparerThatDeserializesToADifferentType(object input)
-        {
-            Type expected = EqualityComparer<object>.Default.GetType().GetGenericTypeDefinition();
-            Assert.NotEqual(expected, input.GetType().GetGenericTypeDefinition());
-            Assert.Equal(expected, FormatterClone(input).GetType().GetGenericTypeDefinition());
-        }
-
         public static IEnumerable<object[]> SerializableExceptions()
         {
             yield return new object[] { new AbandonedMutexException() };
