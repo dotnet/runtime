@@ -209,7 +209,25 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "exec $(PB_DockerContainerName) $(PB_GitDirectory)/build-tests.sh -buildArch=$(PB_Platform) -$(PB_ConfigurationGroup) -SkipTests",
+        "arguments": "exec $(PB_DockerContainerName) $(PB_GitDirectory)/build-tests.sh -buildArch=$(PB_Platform) -$(PB_ConfigurationGroup) -SkipTests -- /p:ArchiveTests=true",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Create Helix Test Jobs",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "docker",
+        "arguments": "exec $(PB_DockerContainerName) $(PB_GitDirectory)/Tools/msbuild.sh $(PB_GitDirectory)/src/tests.builds /t:CloudBuild /p:ArchGroup=$(PB_Platform) /p:ConfigurationGroup=$(PB_ConfigurationGroup) /p:\"EnableCloudTest=$(PB_EnableCloudTest)\" /p:\"BuildMoniker=$(PB_BuildMoniker)\" /p:\"TargetQueue=$(PB_TargetQueue)\" /p:\"TestProduct=$(PB_TestProduct)\" /p:\"Branch=$(SourceBranch)\" /p:\"CloudDropAccountName=$(PB_CloudDropAccountName)\" /p:\"CloudResultsAccountName=$(PB_CloudResultsAccountName)\" /p:\"CloudDropAccessToken=$(CloudDropAccessToken)\" /p:\"CloudResultsAccessToken=$(OutputCloudResultsAccessToken)\" /p:\"TimeoutInSeconds=1200\" /p:\"TargetOS=Linux\" /p:FilterToOSGroup=Linux /p:\"HelixApiAccessKey=$(HelixApiAccessKey)\" /p:HelixApiEndpoint=$(PB_HelixApiEndPoint)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -441,6 +459,10 @@
     },
     "PB_AdditionalArguments": {
       "value": ""
+    },
+    "PB_EnableCloudTest": {
+      "value": "true",
+      "allowOverride": true
     }
   },
   "demands": [

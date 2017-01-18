@@ -408,7 +408,7 @@
 
   <Target Name="CompressRuntimeDir" Condition="'$(SkipArchive)' != 'true'">
     <ZipFileCreateFromDirectory
-        SourceDirectory="$(RuntimePath)"
+        SourceDirectory="$(TestSharedFxDir)"
         DestinationArchive="$(TestRuntimeArchiveFile)"
         OverwriteDestination="true" />
     <ItemGroup>
