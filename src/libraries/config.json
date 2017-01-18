@@ -502,6 +502,12 @@
             "BuildNumberMinor": "default"
           }
         },
+        "portableLinux":{
+          "description": "Download packages that are portable over glibc based Linux distros.",
+          "settings": {
+            "RuntimeOS":"linux"
+          }
+        },
         "verbose": {
           "description": "Passes /flp:v=diag to the msbuild command or the value passed by the user.",
           "settings": {
