@@ -899,7 +899,7 @@ mono_gdb_render_native_backtraces (pid_t crashed_pid)
 
 	commands = fopen (commands_filename, "w");
 	if (!commands) {
-	unlink (commands_filename);
+		unlink (commands_filename);
 		return;
 	}
 
