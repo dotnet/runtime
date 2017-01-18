@@ -11,7 +11,7 @@ using System.Xml.XPath;
 namespace System.Xml.Tests
 {
     //[TestCase(Name = "TC_SchemaSet_Misc", Desc = "")]
-    public class TC_SchemaSet_Misc
+    public class TC_SchemaSet_Misc : TC_SchemaSetBase
     {
         private ITestOutputHelper _output;
 

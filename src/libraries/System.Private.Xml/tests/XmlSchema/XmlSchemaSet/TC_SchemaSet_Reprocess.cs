@@ -10,7 +10,7 @@ using System.Xml.Schema;
 namespace System.Xml.Tests
 {
     //[TestCase(Name = "TC_SchemaSet_Reprocess", Desc = "", Priority = 1)]
-    public class TC_SchemaSet_Reprocess
+    public class TC_SchemaSet_Reprocess : TC_SchemaSetBase
     {
         private ITestOutputHelper _output;
 

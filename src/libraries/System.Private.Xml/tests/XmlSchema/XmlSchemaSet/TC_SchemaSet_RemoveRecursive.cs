@@ -11,7 +11,7 @@ using System.Xml.Schema;
 namespace System.Xml.Tests
 {
     //[TestCase(Name = "TC_SchemaSet_RemoveRecursive", Desc = "")]
-    public class TC_SchemaSet_RemoveRecursive
+    public class TC_SchemaSet_RemoveRecursive : TC_SchemaSetBase
     {
         private ITestOutputHelper _output;
 

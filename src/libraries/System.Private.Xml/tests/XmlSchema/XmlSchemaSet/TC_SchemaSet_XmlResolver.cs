@@ -10,7 +10,7 @@ using System.Xml.Schema;
 namespace System.Xml.Tests
 {
     //[TestCase(Name = "TC_SchemaSet_XmlResolver", Desc = "")]
-    public class TC_SchemaSet_XmlResolver
+    public class TC_SchemaSet_XmlResolver : TC_SchemaSetBase
     {
         private ITestOutputHelper _output;
 
@@ -94,7 +94,6 @@ namespace System.Xml.Tests
         }
 
         //[Variation(Desc = "v4 - schema(Local)->schema(Local)", Priority = 1)]
-        [ActiveIssue(14918)]
         [Fact]
         public void v4()
         {
@@ -110,7 +109,6 @@ namespace System.Xml.Tests
         }
 
         //[Variation(Desc = "v5 - schema(Local)->schema(Local)->schema(Local)", Priority = 1)]
-        [ActiveIssue(14918)]
         [Fact]
         public void v5()
         {

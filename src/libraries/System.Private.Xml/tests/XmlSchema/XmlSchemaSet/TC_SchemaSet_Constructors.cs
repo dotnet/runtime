@@ -9,7 +9,7 @@ using System.Xml.Schema;
 namespace System.Xml.Tests
 {
     //[TestCase(Name = "TC_SchemaSet_Constructors", Desc = "", Priority = 0)]
-    public class TC_SchemaSet_Constructors
+    public class TC_SchemaSet_Constructors : TC_SchemaSetBase
     {
         private ITestOutputHelper _output;
 

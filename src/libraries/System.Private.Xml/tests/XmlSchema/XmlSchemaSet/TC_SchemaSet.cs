@@ -8,11 +8,6 @@ namespace System.Xml.Tests
 {
     public class TestData
     {
-        static TestData()
-        {
-            AppContext.SetSwitch("TestSwitch.LocalAppContext.DisableCaching", true);
-        }
-        
         internal static string _Root = Path.Combine("TestFiles", "TestData");
         internal static string StandardPath = Path.Combine("TestFiles", "StandardTests");
         internal static string _FileXSD1 = Path.Combine(_Root, "schema1.xsd");
@@ -37,5 +32,13 @@ namespace System.Xml.Tests
         internal static string _XsdNoNs = Path.Combine(_Root, "nons.xsd");
 
         internal static string _SchemaXdr = Path.Combine(_Root, "schema1.xdr");
+    }
+
+    public class TC_SchemaSetBase
+    {
+        static TC_SchemaSetBase()
+        {
+            AppContext.SetSwitch("TestSwitch.LocalAppContext.DisableCaching", true);
+        }
     }
 }

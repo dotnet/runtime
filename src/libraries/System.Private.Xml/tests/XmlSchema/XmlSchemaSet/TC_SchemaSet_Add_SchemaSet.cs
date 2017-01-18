@@ -9,7 +9,7 @@ using Xunit.Abstractions;
 
 namespace System.Xml.Tests
 {
-    public class TC_SchemaSet_Add_SchemaSet
+    public class TC_SchemaSet_Add_SchemaSet : TC_SchemaSetBase
     {
         private ITestOutputHelper _output;
 
