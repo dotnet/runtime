@@ -13,11 +13,13 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Release|AnyCPU'" />
   <ItemGroup Condition="'$(TargetGroup)' == 'netstandard'">
     <Compile Include="Microsoft\CSharp\CSharpCodeGenerator.cs" />
+    <Compile Include="Microsoft\CSharp\CSharpCodeGenerator.PlatformNotSupported.cs" />
     <Compile Include="Microsoft\CSharp\CSharpCodeProvider.cs" />
     <Compile Include="Microsoft\CSharp\CSharpMemberAttributeConverter.cs" />
     <Compile Include="Microsoft\CSharp\CSharpModifierAttributeConverter.cs" />
     <Compile Include="Microsoft\CSharp\CSharpTypeAttributeConverter.cs" />
     <Compile Include="Microsoft\VisualBasic\VBCodeGenerator.cs" />
+    <Compile Include="Microsoft\VisualBasic\VBCodeGenerator.PlatformNotSupported.cs" />
     <Compile Include="Microsoft\VisualBasic\VBCodeProvider.cs" />
     <Compile Include="Microsoft\VisualBasic\VBMemberAttributeConverter.cs" />
     <Compile Include="Microsoft\VisualBasic\VBModiferAttributeConverter.cs" />
