@@ -9,10 +9,9 @@ namespace System.Linq.Expressions.Compiler
         private readonly StackGuard _guard = new StackGuard();
 
         /// <summary>
-        /// Rewrite the expression
+        /// Rewrite the expression by performing stack spilling where necessary.
         /// </summary>
-        /// 
-        /// <param name="node">Expression to rewrite</param>
+        /// <param name="node">Expression to rewrite.</param>
         /// <param name="stack">State of the stack before the expression is emitted.</param>
         /// <returns>Rewritten expression.</returns>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1505:AvoidUnmaintainableCode")]
@@ -24,7 +23,7 @@ namespace System.Linq.Expressions.Compiler
                 return new Result(RewriteAction.None, null);
             }
 
-            // When compling deep trees, we run the risk of triggering a terminating StackOverflowException,
+            // When compiling deep trees, we run the risk of triggering a terminating StackOverflowException,
             // so we use the StackGuard utility here to probe for sufficient stack and continue the work on
             // another thread when we run out of stack space.
             if (!_guard.TryEnterOnCurrentStack())
@@ -95,7 +94,7 @@ namespace System.Linq.Expressions.Compiler
                     result = RewriteInvocationExpression(node, stack);
                     break;
                 case ExpressionType.Lambda:
-                    result = RewriteLambdaExpression(node, stack);
+                    result = RewriteLambdaExpression(node);
                     break;
                 case ExpressionType.ListInit:
                     result = RewriteListInitExpression(node, stack);
@@ -121,7 +120,7 @@ namespace System.Linq.Expressions.Compiler
                     result = RewriteBlockExpression(node, stack);
                     break;
                 case ExpressionType.Dynamic:
-                    result = RewriteDynamicExpression(node, stack);
+                    result = RewriteDynamicExpression(node);
                     break;
                 case ExpressionType.Extension:
                     result = RewriteExtensionExpression(node, stack);
@@ -177,7 +176,7 @@ namespace System.Linq.Expressions.Compiler
                     result = RewriteExpression(node.ReduceAndCheck(), stack);
                     if (result.Action == RewriteAction.None)
                     {
-                        // it's at least Copy because we reduced the node
+                        // It's at least Copy because we reduced the node.
                         result = new Result(result.Action | RewriteAction.Copy, result.Node);
                     }
 
@@ -190,4 +189,3 @@ namespace System.Linq.Expressions.Compiler
         }
     }
 }
-

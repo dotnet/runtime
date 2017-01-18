@@ -45,7 +45,7 @@ namespace Microsoft.Win32.SafeHandles
         [System.Security.SecurityCritical]
         override protected bool ReleaseHandle()
         {
-            return Interop.mincore.CloseHandle(handle);
+            return Interop.Kernel32.CloseHandle(handle);
         }
 
         public override bool IsInvalid

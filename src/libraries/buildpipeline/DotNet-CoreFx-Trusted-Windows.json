@@ -8,7 +8,7 @@
       "timeoutInMinutes": 0,
       "task": {
         "id": "e213ff0f-5d5c-4791-802d-52ea3e7be1f1",
-        "versionSpec": "*",
+        "versionSpec": "1.*",
         "definitionType": "task"
       },
       "inputs": {
@@ -21,22 +21,6 @@
       }
     },
     {
-      "enabled": false,
-      "continueOnError": false,
-      "alwaysRun": false,
-      "displayName": "Delete files from $(build.SourcesDirectory)",
-      "timeoutInMinutes": 0,
-      "task": {
-        "id": "b7e8b412-0437-4065-9371-edc5881de25b",
-        "versionSpec": "*",
-        "definitionType": "task"
-      },
-      "inputs": {
-        "SourceFolder": "$(build.SourcesDirectory)",
-        "Contents": "**\n.gitignore"
-      }
-    },
-    {
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
@@ -44,12 +28,12 @@
       "timeoutInMinutes": 0,
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
-        "versionSpec": "*",
+        "versionSpec": "1.*",
         "definitionType": "task"
       },
       "inputs": {
-        "filename": "$(Git)",
-        "arguments": "clone $(VsoCorefxGitUrl) corefx",
+        "filename": "$(PB_Git)",
+        "arguments": "clone $(PB_VsoCorefxGitUrl) corefx",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -62,11 +46,11 @@
       "timeoutInMinutes": 0,
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
-        "versionSpec": "*",
+        "versionSpec": "1.*",
         "definitionType": "task"
       },
       "inputs": {
-        "filename": "$(Git)",
+        "filename": "$(PB_Git)",
         "arguments": "checkout $(SourceVersion)",
         "workingFolder": "corefx",
         "failOnStandardError": "false"
@@ -80,11 +64,11 @@
       "timeoutInMinutes": 0,
       "task": {
         "id": "30666190-6959-11e5-9f96-f56098202fef",
-        "versionSpec": "*",
+        "versionSpec": "1.*",
         "definitionType": "task"
       },
       "inputs": {
-        "signType": "$(SignType)",
+        "signType": "$(PB_SignType)",
         "zipSources": "false",
         "version": "",
         "feedSource": "https://devdiv.pkgs.visualstudio.com/DefaultCollection/_packaging/MicroBuildToolset/nuget/v3/index.json"
@@ -98,7 +82,7 @@
       "timeoutInMinutes": 0,
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
-        "versionSpec": "*",
+        "versionSpec": "1.*",
         "definitionType": "task"
       },
       "inputs": {
@@ -116,12 +100,12 @@
       "timeoutInMinutes": 0,
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
-        "versionSpec": "*",
+        "versionSpec": "1.*",
         "definitionType": "task"
       },
       "inputs": {
         "filename": "$(Build.SourcesDirectory)\\corefx\\sync.cmd",
-        "arguments": "-p",
+        "arguments": "-p -- /p:ArchGroup=$(PB_Platform)  /p:RuntimeOS=$(PB_RuntimeOS)",
         "workingFolder": "corefx",
         "failOnStandardError": "false"
       }
@@ -134,7 +118,7 @@
       "timeoutInMinutes": 0,
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
-        "versionSpec": "*",
+        "versionSpec": "1.*",
         "definitionType": "task"
       },
       "inputs": {
@@ -148,16 +132,16 @@
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
-      "displayName": "Run $(Build.SourcesDirectory)\\corefx\\build-native.cmd",
+      "displayName": "Run $(Build.SourcesDirectory)\\corefx\\build.cmd",
       "timeoutInMinutes": 0,
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
-        "versionSpec": "*",
+        "versionSpec": "1.*",
         "definitionType": "task"
       },
       "inputs": {
-        "filename": "$(Build.SourcesDirectory)\\corefx\\build-native.cmd",
-        "arguments": "-buildArch=$(Platform) -$(ConfigurationGroup)",
+        "filename": "$(Build.SourcesDirectory)\\corefx\\build.cmd",
+        "arguments": "-buildArch=$(PB_Platform) -$(PB_ConfigurationGroup) -- /p:SignType=$(PB_SignType) /p:RuntimeOS=$(PB_RuntimeOS)",
         "workingFolder": "corefx",
         "failOnStandardError": "false"
       }
@@ -166,16 +150,16 @@
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
-      "displayName": "Run $(Build.SourcesDirectory)\\corefx\\build-managed.cmd",
+      "displayName": "Run $(Build.SourcesDirectory)\\corefx\\build-tests.cmd",
       "timeoutInMinutes": 0,
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
-        "versionSpec": "*",
+        "versionSpec": "1.*",
         "definitionType": "task"
       },
       "inputs": {
-        "filename": "$(Build.SourcesDirectory)\\corefx\\build-managed.cmd",
-        "arguments": "-binaries -buildArch=$(Platform) -$(ConfigurationGroup) -- /p:SignType=$(SignType)",
+        "filename": "$(Build.SourcesDirectory)\\corefx\\build-tests.cmd",
+        "arguments": "-buildArch=$(PB_Platform) -$(PB_ConfigurationGroup) -SkipTests -- /p:RuntimeOS=$(PB_RuntimeOS)",
         "workingFolder": "corefx",
         "failOnStandardError": "false"
       }
@@ -184,34 +168,16 @@
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
-      "displayName": "Run $(Build.SourcesDirectory)\\corefx\\build-packages.cmd",
+      "displayName": "Push packages to Azure",
       "timeoutInMinutes": 0,
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
-        "versionSpec": "*",
-        "definitionType": "task"
-      },
-      "inputs": {
-        "filename": "$(Build.SourcesDirectory)\\corefx\\build-packages.cmd",
-        "arguments": "-$(ConfigurationGroup) -BuildPackageLibraryReferences=false",
-        "workingFolder": "corefx",
-        "failOnStandardError": "false"
-      }
-    },
-    {
-      "enabled": true,
-      "continueOnError": false,
-      "alwaysRun": false,
-      "displayName": "Run $(Build.SourcesDirectory)\\corefx\\publish-packages.cmd",
-      "timeoutInMinutes": 0,
-      "task": {
-        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
-        "versionSpec": "*",
+        "versionSpec": "1.*",
         "definitionType": "task"
       },
       "inputs": {
         "filename": "$(Build.SourcesDirectory)\\corefx\\publish-packages.cmd",
-        "arguments": "-AzureAccount=$(CloudDropAccountName) -AzureToken=$(CloudDropAccessToken) -Container=$(Label) -- /p:OverwriteOnPublish=true",
+        "arguments": "-AzureAccount=$(PB_CloudDropAccountName) -AzureToken=$(CloudDropAccessToken) -Container=$(PB_Label) -- /p:OverwriteOnPublish=true",
         "workingFolder": "corefx",
         "failOnStandardError": "false"
       }
@@ -219,24 +185,43 @@
     {
       "enabled": true,
       "continueOnError": false,
-      "alwaysRun": false,
-      "displayName": "Publish symbols path: \\\\cpvsbuild\\drops\\DotNetCore\\$(Build.DefinitionName)\\$(Build.BuildNumber)\\symbols",
+      "alwaysRun": true,
+      "displayName": "Copy Publish Artifact: BuildLogs",
       "timeoutInMinutes": 0,
       "task": {
-        "id": "0675668a-7bba-4ccb-901d-5ad6554ca653",
-        "versionSpec": "*",
+        "id": "1d341bb0-2106-458c-8422-d00bcea6512a",
+        "versionSpec": "1.*",
         "definitionType": "task"
       },
       "inputs": {
-        "SymbolsPath": "\\\\cpvsbuild\\drops\\DotNetCore\\$(Build.DefinitionName)\\$(Build.BuildNumber)\\symbols",
-        "SearchPattern": "corefx\\bin\\*$(Platform).$(ConfigurationGroup)\\**\\*.pdb",
+        "CopyRoot": "",
+        "Contents": "*.log\ncorefx\\*.log\ncorefx\\src\\*.log",
+        "ArtifactName": "BuildLogs",
+        "ArtifactType": "Container",
+        "TargetPath": "\\\\my\\share\\$(Build.DefinitionName)\\$(Build.BuildNumber)"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Publish symbols path: \\\\cpvsbuild\\drops\\DotNetCore\\$(PB_SymbolsBuildId)\\$(Build.BuildNumber)\\symbols",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "0675668a-7bba-4ccb-901d-5ad6554ca653",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "SymbolsPath": "\\\\cpvsbuild\\drops\\DotNetCore\\$(PB_SymbolsBuildId)\\$(Build.BuildNumber)\\symbols",
+        "SearchPattern": "corefx\\bin\\*$(PB_Platform).$(PB_ConfigurationGroup)\\**\\*.pdb",
         "SymbolsFolder": "",
         "SkipIndexing": "false",
         "TreatNotIndexedAsWarning": "false",
         "SymbolsMaximumWaitTime": "",
         "SymbolsProduct": "",
         "SymbolsVersion": "",
-        "SymbolsArtifactName": "Symbols_$(ConfigurationGroup)"
+        "SymbolsArtifactName": "Symbols_$(PB_ConfigurationGroup)"
       }
     },
     {
@@ -247,11 +232,11 @@
       "timeoutInMinutes": 0,
       "task": {
         "id": "af503aa3-9d06-44b6-a549-d063a544a5c5",
-        "versionSpec": "*",
+        "versionSpec": "1.*",
         "definitionType": "task"
       },
       "inputs": {
-        "symbolStore": "\\\\cpvsbuild\\drops\\DotNetCore\\$(Build.DefinitionName)\\$(Build.BuildNumber)\\symbols",
+        "symbolStore": "\\\\cpvsbuild\\drops\\DotNetCore\\$(PB_SymbolsBuildId)\\$(Build.BuildNumber)\\symbols",
         "contacts": "jhendrix;mawilkie",
         "project": "DDE"
       }
@@ -264,7 +249,7 @@
       "timeoutInMinutes": 0,
       "task": {
         "id": "29827cd1-5c33-4ff0-a817-abd46970ffc4",
-        "versionSpec": "*",
+        "versionSpec": "0.*",
         "definitionType": "task"
       },
       "inputs": {
@@ -286,84 +271,10 @@
       "timeoutInMinutes": 0,
       "task": {
         "id": "521a94ea-9e68-468a-8167-6dcf361ea776",
-        "versionSpec": "*",
+        "versionSpec": "1.*",
         "definitionType": "task"
       },
       "inputs": {}
-    },
-    {
-      "enabled": true,
-      "continueOnError": false,
-      "alwaysRun": true,
-      "displayName": "Copy Publish Artifact: BuildLogs",
-      "timeoutInMinutes": 0,
-      "task": {
-        "id": "1d341bb0-2106-458c-8422-d00bcea6512a",
-        "versionSpec": "*",
-        "definitionType": "task"
-      },
-      "inputs": {
-        "CopyRoot": "",
-        "Contents": "*.log\ncorefx\\*.log\ncorefx\\src\\*.log",
-        "ArtifactName": "BuildLogs",
-        "ArtifactType": "Container",
-        "TargetPath": "\\\\my\\share\\$(Build.DefinitionName)\\$(Build.BuildNumber)"
-      }
-    },
-    {
-      "enabled": true,
-      "continueOnError": true,
-      "alwaysRun": false,
-      "displayName": "Zip",
-      "timeoutInMinutes": 0,
-      "task": {
-        "id": "dc66d2f0-a7ba-11e5-ae62-3deab86d85e3",
-        "versionSpec": "*",
-        "definitionType": "task"
-      },
-      "inputs": {
-        "pathToZipFolder": "corefx\\bin",
-        "pathToZipFile": "bin.zip",
-        "overwrite": "false"
-      }
-    },
-    {
-      "enabled": true,
-      "continueOnError": true,
-      "alwaysRun": false,
-      "displayName": "Copy Publish Artifact: bin",
-      "timeoutInMinutes": 0,
-      "task": {
-        "id": "1d341bb0-2106-458c-8422-d00bcea6512a",
-        "versionSpec": "*",
-        "definitionType": "task"
-      },
-      "inputs": {
-        "CopyRoot": "",
-        "Contents": "bin.zip",
-        "ArtifactName": "bin",
-        "ArtifactType": "Container",
-        "TargetPath": "\\\\my\\share\\$(Build.DefinitionName)\\$(Build.BuildNumber)"
-      }
-    },
-    {
-      "enabled": false,
-      "continueOnError": true,
-      "alwaysRun": false,
-      "displayName": "Copy Publish Artifact: symbols",
-      "timeoutInMinutes": 0,
-      "task": {
-        "id": "1d341bb0-2106-458c-8422-d00bcea6512a",
-        "versionSpec": "*",
-        "definitionType": "task"
-      },
-      "inputs": {
-        "CopyRoot": "",
-        "Contents": "bin\\*$(Platform).$(ConfigurationGroup)\\**\\*.dll\nbin\\*$(Platform).$(ConfigurationGroup)\\**\\*.pdb",
-        "ArtifactName": "symbols",
-        "ArtifactType": "FilePath",
-        "TargetPath": "\\\\cpvsbuild\\drops\\DotNetCore\\$(Build.DefinitionName)\\$(Build.BuildNumber)\\FullSymbols"
-      }
     },
     {
       "enabled": true,
@@ -373,7 +284,7 @@
       "timeoutInMinutes": 0,
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
-        "versionSpec": "*",
+        "versionSpec": "1.*",
         "definitionType": "task"
       },
       "inputs": {
@@ -381,6 +292,33 @@
         "arguments": "",
         "workingFolder": "corefx",
         "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": true,
+      "alwaysRun": true,
+      "displayName": "Build solution corefx\\Tools\\scripts\\vstsagent\\cleanupagent.proj",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "c6c4c611-aa2e-4a33-b606-5eaba2196824",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "solution": "corefx\\Tools\\scripts\\vstsagent\\cleanupagent.proj",
+        "platform": "",
+        "configuration": "",
+        "msbuildArguments": "/p:AgentDirectory=$(Agent.HomeDirectory) /p:DoClean=$(PB_CleanAgent)",
+        "clean": "false",
+        "maximumCpuCount": "false",
+        "restoreNugetPackages": "false",
+        "logProjectEvents": "false",
+        "createLogFile": "false",
+        "msbuildLocationMethod": "version",
+        "msbuildVersion": "14.0",
+        "msbuildArchitecture": "x86",
+        "msbuildLocation": ""
       }
     }
   ],
@@ -423,22 +361,19 @@
       "value": "false",
       "allowOverride": true
     },
-    "ConfigurationGroup": {
+    "PB_ConfigurationGroup": {
       "value": "Release",
       "allowOverride": true
     },
-    "Platform": {
+    "PB_Platform": {
       "value": "AnyCPU",
       "allowOverride": true
     },
-    "TeamName": {
-      "value": "DotNetCore"
-    },
-    "SignType": {
+    "PB_SignType": {
       "value": "test",
       "allowOverride": true
     },
-    "CloudDropAccountName": {
+    "PB_CloudDropAccountName": {
       "value": "dotnetbuildoutput"
     },
     "CloudDropAccessToken": {
@@ -449,7 +384,7 @@
       "value": "$(Build.BuildNumber)",
       "allowOverride": true
     },
-    "Label": {
+    "PB_Label": {
       "value": "$(Build.BuildNumber)",
       "allowOverride": true
     },
@@ -460,26 +395,38 @@
     "Build.Clean": {
       "value": "all"
     },
-    "VsoAccountName": {
+    "PB_VsoAccountName": {
       "value": "dn-bot"
     },
     "VsoPassword": {
       "value": null,
       "isSecret": true
     },
-    "VsoRepositoryName": {
+    "PB_VsoRepositoryName": {
       "value": "DotNet-CoreFX-Trusted",
       "allowOverride": true
     },
-    "VsoCorefxGitUrl": {
-      "value": "https://$(VsoAccountName):$(VsoPassword)@devdiv.visualstudio.com/DevDiv/_git/$(VsoRepositoryName)/"
+    "PB_VsoCorefxGitUrl": {
+      "value": "https://github.com/dotnet/corefx"
     },
-    "SourceBranch": {
+    "PB_SourceBranch": {
       "value": "master",
       "allowOverride": true
     },
-    "Git": {
+    "PB_Git": {
       "value": "$(ProgramFiles)\\Git\\cmd\\git.exe"
+    },
+    "TeamName": {
+      "value": "DotNetCore"
+    },
+    "PB_RuntimeOS": {
+      "value": "win10"
+    },
+    "PB_CleanAgent": {
+      "value": "true"
+    },
+    "PB_SymbolsBuildId": {
+      "value": "DotNet-CoreFx-$(System.DefinitionId)"
     }
   },
   "demands": [
@@ -508,18 +455,19 @@
       "labelSources": "0",
       "reportBuildStatus": "true",
       "fetchDepth": "0",
-      "gitLfsSupport": "false"
+      "gitLfsSupport": "false",
+      "skipSyncSource": "true",
+      "cleanOptions": "3"
     },
     "id": "0a2b2664-c1be-429c-9b40-8a24dee27a4a",
     "type": "TfsGit",
     "name": "DotNet-BuildPipeline",
     "url": "https://devdiv.visualstudio.com/DevDiv/_git/DotNet-BuildPipeline",
     "defaultBranch": "refs/heads/master",
-    "clean": "true",
+    "clean": "false",
     "checkoutSubmodules": false
   },
   "quality": "definition",
-  "defaultBranch": "refs/heads/master",
   "queue": {
     "pool": {
       "id": 39,
@@ -538,6 +486,6 @@
     "description": "Visual Studio and DevDiv team project for git source code repositories.  Work items will be added for Adams, Dev14 work items are tracked in vstfdevdiv.  ",
     "url": "https://devdiv.visualstudio.com/DefaultCollection/_apis/projects/0bdbc590-a062-4c3f-b0f6-9383f67865ee",
     "state": "wellFormed",
-    "revision": 418097399
+    "revision": 418097459
   }
 }

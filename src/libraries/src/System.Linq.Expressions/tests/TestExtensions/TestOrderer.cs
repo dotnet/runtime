@@ -2,9 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
-using Xunit.Abstractions;
 using Xunit.Sdk;
 
 namespace System.Linq.Expressions.Tests
@@ -18,7 +16,7 @@ namespace System.Linq.Expressions.Tests
             Dictionary<int, List<TTestCase>> queue = new Dictionary<int, List<TTestCase>>();
             foreach (TTestCase testCase in testCases)
             {
-                var orderAttribute = testCase.TestMethod.Method.GetCustomAttributes(typeof(TestOrderAttribute)).FirstOrDefault();
+                Xunit.Abstractions.IAttributeInfo orderAttribute = ReflectionAbstractionExtensions.GetCustomAttributes(testCase.TestMethod.Method, typeof(TestOrderAttribute)).FirstOrDefault();
                 int order;
                 if (orderAttribute == null || (order = orderAttribute.GetConstructorArguments().Cast<int>().First()) == 0)
                 {

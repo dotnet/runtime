@@ -12,7 +12,7 @@ using System.Collections.Generic;
 
 namespace System.Net.Sockets
 {
-    unsafe internal sealed partial class ReceiveMessageOverlappedAsyncResult : BaseOverlappedAsyncResult
+    internal unsafe sealed partial class ReceiveMessageOverlappedAsyncResult : BaseOverlappedAsyncResult
     {
         private Interop.Winsock.WSAMsg* _message;
         private WSABuffer* _wsaBuffer;
@@ -99,48 +99,23 @@ namespace System.Net.Sockets
             _message->flags = socketFlags;
         }
 
-        unsafe private void InitIPPacketInformation()
+        private unsafe void InitIPPacketInformation()
         {
-            IPAddress address = null;
-
             if (_controlBuffer.Length == s_controlDataSize)
             {
                 // IPv4
-                Interop.Winsock.ControlData controlData = Marshal.PtrToStructure<Interop.Winsock.ControlData>(_message->controlBuffer.Pointer);
-                if (controlData.length != UIntPtr.Zero)
-                {
-                    address = new IPAddress((long)controlData.address);
-                }
-
-                _ipPacketInformation = new IPPacketInformation(((address != null) ? address : IPAddress.None), (int)controlData.index);
+                _ipPacketInformation = SocketPal.GetIPPacketInformation((Interop.Winsock.ControlData*)_message->controlBuffer.Pointer);
             }
             else if (_controlBuffer.Length == s_controlDataIPv6Size)
             {
                 // IPv6
-                Interop.Winsock.ControlDataIPv6 controlData = Marshal.PtrToStructure<Interop.Winsock.ControlDataIPv6>(_message->controlBuffer.Pointer);
-                if (controlData.length != UIntPtr.Zero)
-                {
-                    address = new IPAddress(controlData.address);
-                }
-
-                _ipPacketInformation = new IPPacketInformation(((address != null) ? address : IPAddress.IPv6None), (int)controlData.index);
+                _ipPacketInformation = SocketPal.GetIPPacketInformation((Interop.Winsock.ControlDataIPv6*)_message->controlBuffer.Pointer);
             }
             else
             {
                 // Other
                 _ipPacketInformation = new IPPacketInformation();
             }
-        }
-
-        // This method is called after an asynchronous call is made for the user.
-        // It checks and acts accordingly if the IO:
-        // 1) completed synchronously.
-        // 2) was pended.
-        // 3) failed.
-        internal void SyncReleaseUnmanagedStructures()
-        {
-            InitIPPacketInformation();
-            ForceReleaseUnmanagedStructures();
         }
 
         protected override void ForceReleaseUnmanagedStructures()

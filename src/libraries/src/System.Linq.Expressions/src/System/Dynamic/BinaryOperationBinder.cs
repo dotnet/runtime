@@ -70,7 +70,9 @@ namespace System.Dynamic
             return target.BindBinaryOperation(this, arg0);
         }
 
-        // this is a standard DynamicMetaObjectBinder
+        /// <summary>
+        /// Always returns <c>true</c> because this is a standard <see cref="DynamicMetaObjectBinder"/>.
+        /// </summary>
         internal override sealed bool IsStandardBinder => true;
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]

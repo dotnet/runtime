@@ -626,7 +626,7 @@ namespace System.Xml
     {
         private const int MaxFractionDigits = 7;
 
-        static internal int[] KatmaiTimeScaleMultiplicator = new int[8] {
+        internal static int[] KatmaiTimeScaleMultiplicator = new int[8] {
             10000000,
             1000000,
             100000,

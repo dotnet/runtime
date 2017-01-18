@@ -25,7 +25,7 @@ namespace System.Net.Http
 {
     internal class HttpHandlerToFilter : HttpMessageHandler
     {
-        private readonly static DiagnosticListener s_diagnosticListener = new DiagnosticListener(HttpHandlerLoggingStrings.DiagnosticListenerName);
+        private static readonly DiagnosticListener s_diagnosticListener = new DiagnosticListener(HttpHandlerLoggingStrings.DiagnosticListenerName);
 
         private readonly RTHttpBaseProtocolFilter _next;
         private int _filterMaxVersionSet;

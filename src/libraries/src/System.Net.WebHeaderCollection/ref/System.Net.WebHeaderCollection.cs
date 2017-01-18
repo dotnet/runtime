@@ -113,6 +113,9 @@ namespace System.Net
         public override void Clear() { }
         public override string Get(int index) { throw null; }
         public override string Get(string name) { throw null; }
+        public void Set(HttpRequestHeader header, string value) { }
+        public void Set(HttpResponseHeader header, string value) { }
+        public override void Set(string name, string value) { }
         public void Add(HttpRequestHeader header, string value) { }
         public void Add(HttpResponseHeader header, string value) { }
         public void Add(string header) { }

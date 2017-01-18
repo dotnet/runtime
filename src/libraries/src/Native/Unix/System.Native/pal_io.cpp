@@ -6,9 +6,7 @@
 #include "pal_errno.h"
 #include "pal_io.h"
 #include "pal_utilities.h"
-#if !HAVE_READDIR_R
 #include "pal_safecrt.h"
-#endif
 
 #include <assert.h>
 #include <errno.h>
@@ -30,7 +28,7 @@
 #include <limits.h>
 #if HAVE_FCOPYFILE
 #include <copyfile.h>
-#elif HAVE_SENDFILE
+#elif HAVE_SENDFILE_4
 #include <sys/sendfile.h>
 #endif
 #if HAVE_INOTIFY
@@ -809,9 +807,18 @@ extern "C" Error SystemNative_Poll(PollEvent* pollEvents, uint32_t eventCount, i
         return PAL_EINVAL;
     }
 
-    size_t bufferSize = sizeof(pollfd) * static_cast<size_t>(eventCount);
+    size_t bufferSize;
+    if (!multiply_s(sizeof(pollfd), static_cast<size_t>(eventCount), &bufferSize))
+    {
+        return SystemNative_ConvertErrorPlatformToPal(EOVERFLOW);        
+    }
+
     bool useStackBuffer = bufferSize <= 2048;
     pollfd* pollfds = reinterpret_cast<pollfd*>(useStackBuffer ? alloca(bufferSize) : malloc(bufferSize));
+    if (pollfds == nullptr)
+    {
+        return PAL_ENOMEM;
+    }
 
     for (uint32_t i = 0; i < eventCount; i++)
     {
@@ -1017,7 +1024,7 @@ extern "C" int32_t SystemNative_CopyFile(intptr_t sourceFd, intptr_t destination
     int ret;
     struct stat_ sourceStat;
     bool copied = false;
-#if HAVE_SENDFILE
+#if HAVE_SENDFILE_4
     // If sendfile is available (Linux), try to use it, as the whole copy
     // can be performed in the kernel, without lots of unnecessary copying.
     while (CheckInterrupted(ret = fstat_(inFd, &sourceStat)));
@@ -1062,7 +1069,7 @@ extern "C" int32_t SystemNative_CopyFile(intptr_t sourceFd, intptr_t destination
     // sendfile couldn't be used; fall back to a manual copy below. This could happen
     // if we're on an old kernel, for example, where sendfile could only be used
     // with sockets and not regular files.
-#endif // HAVE_SENDFILE
+#endif // HAVE_SENDFILE_4
 
     // Manually read all data from the source and write it to the destination.
     if (!copied && CopyFile_ReadWrite(inFd, outFd) != 0)
@@ -1163,4 +1170,23 @@ extern "C" char* SystemNative_RealPath(const char* path)
 {
     assert(path != nullptr);
     return realpath(path, nullptr);
+}
+
+extern "C" int32_t SystemNative_LockFileRegion(intptr_t fd, int64_t offset, int64_t length, int16_t lockType)
+{
+    if (offset < 0 || length < 0) 
+    {
+        errno = EINVAL;
+        return -1;
+    }
+    
+    struct flock lockArgs;
+    lockArgs.l_type = lockType;
+    lockArgs.l_whence = SEEK_SET;
+    lockArgs.l_start = offset;
+    lockArgs.l_len = length;
+    
+    int32_t ret;
+    while (CheckInterrupted(ret = fcntl (ToFileDescriptor(fd), F_SETLK, &lockArgs)));
+    return ret;
 }

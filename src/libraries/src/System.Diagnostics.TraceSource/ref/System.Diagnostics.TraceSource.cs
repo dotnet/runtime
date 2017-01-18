@@ -31,6 +31,8 @@ namespace System.Diagnostics
         public override void Fail(string message, string detailMessage) { }
         public override void Write(string message) { }
         public override void WriteLine(string message) { }
+        public bool AssertUiEnabled { get { throw null; } set { } }
+        public string LogFileName { get { throw null; } set { } }
     }
     public partial class EventTypeFilter : System.Diagnostics.TraceFilter
     {
@@ -76,7 +78,7 @@ namespace System.Diagnostics
         protected virtual void OnSwitchSettingChanged() { }
         protected virtual void OnValueChanged() { }
         public System.Collections.Specialized.StringDictionary Attributes { get { throw null; } }
-        protected internal virtual string[] GetSupportedAttributes() { throw null; }
+        protected virtual string[] GetSupportedAttributes() { throw null; }
     }
     public sealed partial class Trace
     {
@@ -158,6 +160,8 @@ namespace System.Diagnostics
         public int ProcessId { get { throw null; } }
         public string ThreadId { get { throw null; } }
         public long Timestamp { get { throw null; } }
+        public string Callstack { get { throw null; } }
+        public System.Collections.Stack LogicalOperationStack { get { throw null; } }
     }
     public enum TraceEventType
     {
@@ -166,6 +170,11 @@ namespace System.Diagnostics
         Information = 8,
         Verbose = 16,
         Warning = 4,
+        Resume = 2048,
+        Start = 256,
+        Stop = 512,
+        Suspend = 1024,
+        Transfer = 4096,
     }
     public abstract partial class TraceFilter
     {
@@ -212,7 +221,7 @@ namespace System.Diagnostics
         public virtual void WriteLine(string message, string category) { }
         public System.Collections.Specialized.StringDictionary Attributes { get { throw null; } }
         public virtual void Close() { }
-        protected internal virtual string[] GetSupportedAttributes() { throw null; }
+        protected virtual string[] GetSupportedAttributes() { throw null; }
         public virtual void TraceTransfer(TraceEventCache eventCache, string source, int id, string message, Guid relatedActivityId) { throw null; }
     }
     public partial class TraceListenerCollection : System.Collections.ICollection, System.Collections.IEnumerable, System.Collections.IList
@@ -250,9 +259,11 @@ namespace System.Diagnostics
     {
         DateTime = 2,
         None = 0,
+        LogicalOperationStack = 1,
         ProcessId = 8,
         ThreadId = 16,
         Timestamp = 4,
+        Callstack = 32,
     }
     public partial class TraceSource
     {
@@ -277,6 +288,9 @@ namespace System.Diagnostics
         public void TraceInformation(string message) { }
         [System.Diagnostics.ConditionalAttribute("TRACE")]
         public void TraceInformation(string format, params object[] args) { }
+        public System.Collections.Specialized.StringDictionary Attributes { get { throw null; } }
+        protected virtual string[] GetSupportedAttributes() { throw null; }
+        public void TraceTransfer(int id, string message, System.Guid relatedActivityId) { }
     }
     public partial class TraceSwitch : System.Diagnostics.Switch
     {

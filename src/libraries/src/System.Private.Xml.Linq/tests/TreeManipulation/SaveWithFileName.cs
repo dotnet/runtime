@@ -37,7 +37,7 @@ namespace XLinqTests
             finally
             {
                 Assert.True(File.Exists(_fileName));
-                Assert.Equal("<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n" + markup, File.ReadAllText(_fileName));
+                Assert.Equal("<?xml version=\"1.0\" encoding=\"utf-8\"?>" + markup, NormalizeNewLines(File.ReadAllText(_fileName)));
                 File.Delete(_fileName);
             }
         }
@@ -85,7 +85,7 @@ namespace XLinqTests
             finally
             {
                 Assert.True(File.Exists(_fileName));
-                Assert.Equal("<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n" + markup, File.ReadAllText(_fileName));
+                Assert.Equal("<?xml version=\"1.0\" encoding=\"utf-8\"?>" + markup, NormalizeNewLines(File.ReadAllText(_fileName)));
                 File.Delete(_fileName);
             }
         }
@@ -136,7 +136,7 @@ namespace XLinqTests
             finally
             {
                 Assert.True(File.Exists(_fileName));
-                Assert.Equal("<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n" + markup, File.ReadAllText(_fileName));
+                Assert.Equal("<?xml version=\"1.0\" encoding=\"utf-8\"?>" + markup, NormalizeNewLines(File.ReadAllText(_fileName)));
                 File.Delete(_fileName);
             }
         }
@@ -219,7 +219,7 @@ namespace XLinqTests
             // Verify that without annotation the output gets indented and the duplicate ns decls are not removed
             if (testXElement)
             {
-                Assert.Equal(serialize(child), "<child xmlns:a=\"uri\">\r\n  <baby xmlns:a=\"uri\">text</baby>\r\n</child>");
+                Assert.Equal(NormalizeNewLines(serialize(child)), "<child xmlns:a=\"uri\">  <baby xmlns:a=\"uri\">text</baby></child>");
             }
 
             // Now add annotation to the leaf element node
@@ -237,9 +237,9 @@ namespace XLinqTests
             if (testXElement)
             {
                 // Verify that the options are applied correctly
-                Assert.Equal(serialize(child), "<child xmlns:a=\"uri\"><baby>text</baby></child>");
+                Assert.Equal(NormalizeNewLines(serialize(child)), "<child xmlns:a=\"uri\"><baby>text</baby></child>");
                 // Verify that the root node is not affected as we don't look for the annotation among descendants
-                Assert.Equal(serialize(root), "<root xmlns:a=\"uri\">\r\n  <child xmlns:a=\"uri\">\r\n    <baby xmlns:a=\"uri\">text</baby>\r\n  </child>\r\n</root>");
+                Assert.Equal(NormalizeNewLines(serialize(root)), "<root xmlns:a=\"uri\">  <child xmlns:a=\"uri\">    <baby xmlns:a=\"uri\">text</baby>  </child></root>");
             }
 
             // And now add the annotation to the root and remove it from the child to test that we can correctly skip over a node
@@ -283,6 +283,13 @@ namespace XLinqTests
                     s = s.Substring(2);
                 }
             }
+            return s;
+        }
+
+        private static string NormalizeNewLines(string s)
+        {
+            s = s.Replace("\n", "");
+            s = s.Replace("\r", "");
             return s;
         }
     }

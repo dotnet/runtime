@@ -88,7 +88,7 @@ namespace System.Data.SqlClient
             }
         }
 
-        static private void ReadDispatcher(IntPtr key, IntPtr packet, UInt32 error)
+        private static void ReadDispatcher(IntPtr key, IntPtr packet, UInt32 error)
         {
             // This is the app-domain dispatcher for all async read callbacks, It 
             // simply gets the state object from the key that it is passed, and 
@@ -109,7 +109,7 @@ namespace System.Data.SqlClient
             }
         }
 
-        static private void WriteDispatcher(IntPtr key, IntPtr packet, UInt32 error)
+        private static void WriteDispatcher(IntPtr key, IntPtr packet, UInt32 error)
         {
             // This is the app-domain dispatcher for all async write callbacks, It 
             // simply gets the state object from the key that it is passed, and 

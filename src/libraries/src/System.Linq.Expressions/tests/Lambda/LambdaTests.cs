@@ -4,7 +4,6 @@
 
 using System.Collections.Generic;
 using System.Reflection;
-using System.Threading;
 using Xunit;
 
 namespace System.Linq.Expressions.Tests
@@ -37,10 +36,10 @@ namespace System.Linq.Expressions.Tests
         [Theory, ClassData(typeof(CompilationTypes))]
         public void Lambda(bool useInterpreter)
         {
-            var paramI = Expression.Parameter(typeof(int), "i");
-            var paramJ = Expression.Parameter(typeof(double), "j");
-            var paramK = Expression.Parameter(typeof(decimal), "k");
-            var paramL = Expression.Parameter(typeof(short), "l");
+            ParameterExpression paramI = Expression.Parameter(typeof(int), "i");
+            ParameterExpression paramJ = Expression.Parameter(typeof(double), "j");
+            ParameterExpression paramK = Expression.Parameter(typeof(decimal), "k");
+            ParameterExpression paramL = Expression.Parameter(typeof(short), "l");
 
             Expression lambda = (Expression<Func<int, double, decimal, int>>)((i, j, k) => i);
 
@@ -81,8 +80,8 @@ namespace System.Linq.Expressions.Tests
         [Theory, ClassData(typeof(CompilationTypes))]
         public void HighArityDelegate(bool useInterpreter)
         {
-            var paramList = Enumerable.Range(0, 20).Select(_ => Expression.Variable(typeof(int))).ToArray();
-            var exp = Expression.Lambda<IcosanaryInt32Func>(
+            ParameterExpression[] paramList = Enumerable.Range(0, 20).Select(_ => Expression.Variable(typeof(int))).ToArray();
+            Expression<IcosanaryInt32Func> exp = Expression.Lambda<IcosanaryInt32Func>(
                 Expression.Add(
                     paramList[0],
                     Expression.Add(
@@ -223,23 +222,23 @@ namespace System.Linq.Expressions.Tests
         [Fact, TestOrder(1)]
         public void ImplicitlyTyped()
         {
-            var exp = Expression.Lambda(
+            LambdaExpression exp = Expression.Lambda(
                 Expression.Empty()
                 );
-            Assert.IsType<Expression<Action>>(exp);
+            Assert.IsAssignableFrom<Expression<Action>>(exp);
             Assert.Equal(typeof(Action), exp.Type);
 
             exp = Expression.Lambda(
                 Expression.Constant(3)
                 );
-            Assert.IsType<Expression<Func<int>>>(exp);
+            Assert.IsAssignableFrom<Expression<Func<int>>>(exp);
             Assert.Equal(typeof(Func<int>), exp.Type);
 
             exp = Expression.Lambda(
                 Expression.Empty(),
                 Enumerable.Range(0, 16).Select(_ => Expression.Variable(typeof(int)))
                 );
-            Assert.IsType<Expression<Action<
+            Assert.IsAssignableFrom<Expression<Action<
                 int, int, int, int,
                 int, int, int, int,
                 int, int, int, int,
@@ -254,7 +253,7 @@ namespace System.Linq.Expressions.Tests
                 Expression.Constant(false),
                 Enumerable.Range(0, 16).Select(_ => Expression.Variable(typeof(double)))
                 );
-            Assert.IsType<Expression<Func<
+            Assert.IsAssignableFrom<Expression<Func<
                 double, double, double, double,
                 double, double, double, double,
                 double, double, double, double,
@@ -267,7 +266,7 @@ namespace System.Linq.Expressions.Tests
                 double, double, double, double,
                 bool>), exp.Type);
 
-            var paramList = Enumerable.Range(0, 20).Select(_ => Expression.Variable(typeof(int))).ToArray();
+            ParameterExpression[] paramList = Enumerable.Range(0, 20).Select(_ => Expression.Variable(typeof(int))).ToArray();
             exp = Expression.Lambda(
                 Expression.Constant(0),
                 paramList
@@ -306,14 +305,14 @@ namespace System.Linq.Expressions.Tests
             // The two compilation options are given plenty of exercise between here and elsewhere
             // Make sure the no-preference approach keeps working.
 
-            var param = Expression.Parameter(typeof(int));
-            var typedExp = Expression.Lambda<Func<int, int>>(
+            ParameterExpression param = Expression.Parameter(typeof(int));
+            Expression<Func<int, int>> typedExp = Expression.Lambda<Func<int, int>>(
                 Expression.Add(param, Expression.Constant(2)),
                 param
                 );
             Assert.Equal(5, typedExp.Compile()(3));
 
-            var exp = Expression.Lambda(
+            LambdaExpression exp = Expression.Lambda(
                 Expression.Add(param, Expression.Constant(7)),
                 param
                 );
@@ -323,7 +322,7 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public void DuplicateParameters()
         {
-            var param = Expression.Parameter(typeof(int));
+            ParameterExpression param = Expression.Parameter(typeof(int));
             Assert.Throws<ArgumentException>("parameters[1]", () => Expression.Lambda(Expression.Empty(), false, param, param));
             Assert.Throws<ArgumentException>("parameters[1]",
                 () => Expression.Lambda<Func<int, int, int>>(Expression.Constant(0), false, param, param));
@@ -393,38 +392,38 @@ namespace System.Linq.Expressions.Tests
         [Theory, ClassData(typeof(CompilationTypes))]
         public void AutoQuote(bool useInterpreter)
         {
-            var param = Expression.Parameter(typeof(int));
-            var inner = Expression.Lambda<Func<int, int>>(
+            ParameterExpression param = Expression.Parameter(typeof(int));
+            Expression<Func<int, int>> inner = Expression.Lambda<Func<int, int>>(
                 Expression.Multiply(param, Expression.Constant(2)),
                 param
                 );
-            var outer = Expression.Lambda<Func<Expression<Func<int, int>>>>(inner);
+            Expression<Func<Expression<Func<int, int>>>> outer = Expression.Lambda<Func<Expression<Func<int, int>>>>(inner);
             Assert.IsType<UnaryExpression>(outer.Body);
             Assert.Equal(ExpressionType.Quote, outer.Body.NodeType);
-            var outerDel = outer.Compile(useInterpreter);
-            var innerDel = outerDel().Compile(useInterpreter);
+            Func<Expression<Func<int, int>>> outerDel = outer.Compile(useInterpreter);
+            Func<int, int> innerDel = outerDel().Compile(useInterpreter);
             Assert.Equal(16, innerDel(8));
         }
 
         [Theory, ClassData(typeof(CompilationTypes))]
         public void NestedCompile(bool useInterpreter)
         {
-            var param = Expression.Parameter(typeof(int));
-            var inner = Expression.Lambda<Func<int, int>>(
+            ParameterExpression param = Expression.Parameter(typeof(int));
+            Expression<Func<int, int>> inner = Expression.Lambda<Func<int, int>>(
                 Expression.Multiply(param, Expression.Constant(2)),
                 param
                 );
-            var outer = Expression.Lambda<Func<Func<int, int>>>(inner);
+            Expression<Func<Func<int, int>>> outer = Expression.Lambda<Func<Func<int, int>>>(inner);
             Assert.Same(inner, outer.Body);
-            var outerDel = outer.Compile(useInterpreter);
-            var innerDel = outerDel();
+            Func<Func<int, int>> outerDel = outer.Compile(useInterpreter);
+            Func<int, int> innerDel = outerDel();
             Assert.Equal(16, innerDel(8));
         }
 
         [Theory, ClassData(typeof(CompilationTypes))]
         public void AnyTypeCanBeReturnedVoid(bool useInterpreter)
         {
-            var act = Expression.Lambda<Action>(Expression.Constant("foo")).Compile(useInterpreter);
+            Action act = Expression.Lambda<Action>(Expression.Constant("foo")).Compile(useInterpreter);
             act();
         }
 
@@ -448,30 +447,111 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public void UpdateSameReturnsSame()
         {
-            var param = Expression.Parameter(typeof(int));
-            var identExp = Expression.Lambda<Func<int, int>>(param, param);
-            Assert.Same(identExp, identExp.Update(param, identExp.Parameters));
+            Expression body = Expression.Empty();
+            ParameterExpression[] pars = Array.Empty<ParameterExpression>();
+            Expression<Action> lambda0 = Expression.Lambda<Action>(body, pars);
+            Assert.Same(lambda0, lambda0.Update(body, null));
+            Assert.Same(lambda0, lambda0.Update(body, pars));
+            pars = pars.Append(Expression.Parameter(typeof(int))).ToArray();
+            Expression<Action<int>> lambda1 = Expression.Lambda<Action<int>>(body, pars);
+            Assert.Same(lambda1, lambda1.Update(body, pars));
+            pars = pars.Append(Expression.Parameter(typeof(int))).ToArray();
+            Expression<Action<int, int>> lambda2 = Expression.Lambda<Action<int, int>>(body, pars);
+            Assert.Same(lambda2, lambda2.Update(body, pars));
+            pars = pars.Append(Expression.Parameter(typeof(int))).ToArray();
+            Expression<Action<int, int, int>> lambda3 = Expression.Lambda<Action<int, int, int>>(body, pars);
+            Assert.Same(lambda3, lambda3.Update(body, pars));
+            pars = pars.Append(Expression.Parameter(typeof(int))).ToArray();
+            Expression<Action<int, int, int, int>> lambda4 = Expression.Lambda<Action<int, int, int, int>>(body, pars);
+            Assert.Same(lambda4, lambda4.Update(body, pars));
+        }
+
+        [Fact]
+        public void UpdateDoesntRepeatEnumeration()
+        {
+            Expression body = Expression.Empty();
+            ParameterExpression[] pars = Array.Empty<ParameterExpression>();
+            Expression<Action> lambda0 = Expression.Lambda<Action>(body, pars);
+            Assert.Same(lambda0, lambda0.Update(body, new RunOnceEnumerable<ParameterExpression>(pars)));
+            pars = pars.Append(Expression.Parameter(typeof(int))).ToArray();
+            Expression<Action<int>> lambda1 = Expression.Lambda<Action<int>>(body, pars);
+            Assert.Same(lambda1, lambda1.Update(body, new RunOnceEnumerable<ParameterExpression>(pars)));
+            pars = pars.Append(Expression.Parameter(typeof(int))).ToArray();
+            Expression<Action<int, int>> lambda2 = Expression.Lambda<Action<int, int>>(body, pars);
+            Assert.Same(lambda2, lambda2.Update(body, new RunOnceEnumerable<ParameterExpression>(pars)));
+            pars = pars.Append(Expression.Parameter(typeof(int))).ToArray();
+            Expression<Action<int, int, int>> lambda3 = Expression.Lambda<Action<int, int, int>>(body, pars);
+            Assert.Same(lambda3, lambda3.Update(body, new RunOnceEnumerable<ParameterExpression>(pars)));
+            pars = pars.Append(Expression.Parameter(typeof(int))).ToArray();
+            Expression<Action<int, int, int, int>> lambda4 = Expression.Lambda<Action<int, int, int, int>>(body, pars);
+            Assert.Same(lambda4, lambda4.Update(body, new RunOnceEnumerable<ParameterExpression>(pars)));
         }
 
         [Fact]
         public void UpdateDifferentBodyReturnsDifferent()
         {
-            var param = Expression.Parameter(typeof(int));
-            var identExp = Expression.Lambda<Func<int, int>>(param, param);
-            Assert.NotSame(identExp, identExp.Update(Expression.UnaryPlus(param), identExp.Parameters));
+            Expression body = Expression.Empty();
+            Expression newBody = Expression.Empty();
+            ParameterExpression[] pars = Array.Empty<ParameterExpression>();
+            Expression<Action> lambda0 = Expression.Lambda<Action>(body, pars);
+            Assert.NotSame(lambda0, lambda0.Update(newBody, pars));
+            pars = pars.Append(Expression.Parameter(typeof(int))).ToArray();
+            Expression<Action<int>> lambda1 = Expression.Lambda<Action<int>>(body, pars);
+            Assert.NotSame(lambda1, lambda1.Update(newBody, pars));
+            pars = pars.Append(Expression.Parameter(typeof(int))).ToArray();
+            Expression<Action<int, int>> lambda2 = Expression.Lambda<Action<int, int>>(body, pars);
+            Assert.NotSame(lambda2, lambda2.Update(newBody, pars));
+            pars = pars.Append(Expression.Parameter(typeof(int))).ToArray();
+            Expression<Action<int, int, int>> lambda3 = Expression.Lambda<Action<int, int, int>>(body, pars);
+            Assert.NotSame(lambda3, lambda3.Update(newBody, pars));
+            pars = pars.Append(Expression.Parameter(typeof(int))).ToArray();
+            Expression<Action<int, int, int, int>> lambda4 = Expression.Lambda<Action<int, int, int, int>>(body, pars);
+            Assert.NotSame(lambda4, lambda4.Update(newBody, pars));
         }
 
         [Fact]
         public void UpdateDifferentParamsReturnsDifferent()
         {
-            var param0 = Expression.Parameter(typeof(int));
-            var param1 = Expression.Parameter(typeof(int));
-            var add = Expression.Lambda<Func<int, int, int>>(
-                Expression.Add(param0, param1),
-                param0,
-                param1
-                );
-            Assert.NotSame(add, add.Update(add.Body, new[] {param1, param0}));
+            Expression body = Expression.Empty();
+            ParameterExpression[] pars = Array.Empty<ParameterExpression>();
+            Expression<Action> lambda0 = Expression.Lambda<Action>(body, pars);
+            VerifyUpdateDifferentParamsReturnsDifferent(lambda0, pars);
+            pars = pars.Append(Expression.Parameter(typeof(int))).ToArray();
+            Expression<Action<int>> lambda1 = Expression.Lambda<Action<int>>(body, pars);
+            VerifyUpdateDifferentParamsReturnsDifferent(lambda1, pars);
+            pars = pars.Append(Expression.Parameter(typeof(int))).ToArray();
+            Expression<Action<int, int>> lambda2 = Expression.Lambda<Action<int, int>>(body, pars);
+            VerifyUpdateDifferentParamsReturnsDifferent(lambda2, pars);
+            pars = pars.Append(Expression.Parameter(typeof(int))).ToArray();
+            Expression<Action<int, int, int>> lambda3 = Expression.Lambda<Action<int, int, int>>(body, pars);
+            VerifyUpdateDifferentParamsReturnsDifferent(lambda3, pars);
+            pars = pars.Append(Expression.Parameter(typeof(int))).ToArray();
+            Expression<Action<int, int, int, int>> lambda4 = Expression.Lambda<Action<int, int, int, int>>(body, pars);
+            VerifyUpdateDifferentParamsReturnsDifferent(lambda4, pars);
+        }
+
+        private static void VerifyUpdateDifferentParamsReturnsDifferent<TDelegate>(Expression<TDelegate> lamda, ParameterExpression[] pars)
+        {
+            // Should try to create new lambda, but should fail as should have wrong number of arguments.
+            Assert.Throws<ArgumentException>(() => lamda.Update(lamda.Body, pars.Append(Expression.Parameter(typeof(int)))));
+
+            if (pars.Length != 0)
+            {
+                Assert.Throws<ArgumentException>(() => lamda.Update(lamda.Body, null));
+                for (int i = 0; i != pars.Length; ++i)
+                {
+                    ParameterExpression[] newPars = new ParameterExpression[pars.Length];
+                    pars.CopyTo(newPars, 0);
+                    newPars[i] = Expression.Parameter(typeof(int));
+                    Assert.NotSame(lamda, lamda.Update(lamda.Body, newPars));
+                }
+
+                IEnumerable<ParameterExpression> diffPars = new RunOnceEnumerable<ParameterExpression>(
+                    Enumerable.Range(0, lamda.Parameters.Count) // Trigger Parameters collection build.
+                    .Select(_ => Expression.Parameter(typeof(int))));
+
+                Assert.NotSame(lamda, lamda.Update(lamda.Body, diffPars));
+            }
         }
 
         [Fact]
@@ -490,24 +570,24 @@ namespace System.Linq.Expressions.Tests
         public void CurriedFunctions(bool useInterpreter)
         {
             Expression<Func<int, Func<int>>> f1 = x => () => x;
-            var d1 = f1.Compile(useInterpreter);
-            var c1 = d1(42);
+            Func<int, Func<int>> d1 = f1.Compile(useInterpreter);
+            Func<int> c1 = d1(42);
             Assert.Equal(42, c1());
             Assert.Equal(42, c1());
 
             Expression<Func<int, Func<int, int>>> f2 = x => y => x - y;
-            var d2 = f2.Compile(useInterpreter);
-            var c2 = d2(42);
+            Func<int, Func<int, int>> d2 = f2.Compile(useInterpreter);
+            Func<int, int> c2 = d2(42);
             Assert.Equal(41, c2(1));
             Assert.Equal(40, c2(2));
 
             Expression<Func<int, Func<int, Func<int, int>>>> f3 = x => y => z => x * y - z;
-            var d3 = f3.Compile(useInterpreter);
-            var c3 = d3(2);
-            var c31 = c3(21);
+            Func<int, Func<int, Func<int, int>>> d3 = f3.Compile(useInterpreter);
+            Func<int, Func<int, int>> c3 = d3(2);
+            Func<int, int> c31 = c3(21);
             Assert.Equal(41, c31(1));
             Assert.Equal(40, c31(2));
-            var c32 = c3(22);
+            Func<int, int> c32 = c3(22);
             Assert.Equal(41, c32(3));
             Assert.Equal(40, c32(4));
         }
@@ -535,8 +615,8 @@ namespace System.Linq.Expressions.Tests
             //
             for (var i = 0; i < 10; i++)
             {
-                var val = Expression.Parameter(typeof(int));
-                var sum = Expression.Parameter(typeof(int));
+                ParameterExpression val = Expression.Parameter(typeof(int));
+                ParameterExpression sum = Expression.Parameter(typeof(int));
 
                 var addExprs = new List<Expression>();
 
@@ -546,11 +626,11 @@ namespace System.Linq.Expressions.Tests
                     addExprs.Add(Expression.AddAssign(sum, val));
                 }
 
-                var adds = Expression.Block(addExprs);
-                var body = Expression.Block(new[] { sum }, Expression.Assign(sum, Expression.Constant(0)), adds, sum);
+                BlockExpression adds = Expression.Block(addExprs);
+                BlockExpression body = Expression.Block(new[] { sum }, Expression.Assign(sum, Expression.Constant(0)), adds, sum);
 
-                var e = Expression.Lambda<Func<int, Func<int>>>(Expression.Lambda<Func<int>>(body), val);
-                var f = e.Compile(useInterpreter);
+                Expression<Func<int, Func<int>>> e = Expression.Lambda<Func<int, Func<int>>>(Expression.Lambda<Func<int>>(body), val);
+                Func<int, Func<int>> f = e.Compile(useInterpreter);
 
                 Assert.Equal(i * (i + 1) / 2, f(i)());
             }
@@ -560,15 +640,15 @@ namespace System.Linq.Expressions.Tests
         public void CurriedFunctionsUsingRef(bool useInterpreter)
         {
             Expression<Func<int, Func<int>>> f1 = x => () => x * Add(ref x, 1);
-            var d1 = f1.Compile(useInterpreter);
+            Func<int, Func<int>> d1 = f1.Compile(useInterpreter);
             Assert.Equal(3 * 4, d1(3)());
 
             Expression<Func<int, Func<int>>> f2 = x => () => x * Add(ref x, 1) * Add(ref x, 2);
-            var d2 = f2.Compile(useInterpreter);
+            Func<int, Func<int>> d2 = f2.Compile(useInterpreter);
             Assert.Equal(3 * 4 * 6, d2(3)());
 
             Expression<Func<int, Func<int>>> f3 = x => () => x * Add(ref x, 1) * Add(ref x, 2) * x;
-            var d3 = f3.Compile(useInterpreter);
+            Func<int, Func<int>> d3 = f3.Compile(useInterpreter);
             Assert.Equal(3 * 4 * 6 * 6, d3(3)());
         }
 
@@ -594,12 +674,12 @@ namespace System.Linq.Expressions.Tests
             // to optimizations for closure storage access.
             //
 
-            var add = typeof(LambdaTests).GetMethod(nameof(LambdaTests.Add), BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
+            MethodInfo add = typeof(LambdaTests).GetMethod(nameof(LambdaTests.Add), BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
 
             for (var i = 0; i < 10; i++)
             {
-                var val = Expression.Parameter(typeof(int));
-                var sum = Expression.Parameter(typeof(int));
+                ParameterExpression val = Expression.Parameter(typeof(int));
+                ParameterExpression sum = Expression.Parameter(typeof(int));
 
                 var addExprs = new List<Expression>();
 
@@ -609,11 +689,11 @@ namespace System.Linq.Expressions.Tests
                     addExprs.Add(Expression.Call(add, sum, val));
                 }
 
-                var adds = Expression.Block(addExprs);
-                var body = Expression.Block(new[] { sum }, Expression.Assign(sum, Expression.Constant(0)), adds, sum);
+                BlockExpression adds = Expression.Block(addExprs);
+                BlockExpression body = Expression.Block(new[] { sum }, Expression.Assign(sum, Expression.Constant(0)), adds, sum);
 
-                var e = Expression.Lambda<Func<int, Func<int>>>(Expression.Lambda<Func<int>>(body), val);
-                var f = e.Compile(useInterpreter);
+                Expression<Func<int, Func<int>>> e = Expression.Lambda<Func<int, Func<int>>>(Expression.Lambda<Func<int>>(body), val);
+                Func<int, Func<int>> f = e.Compile(useInterpreter);
 
                 Assert.Equal(i * (i + 1) / 2, f(i)());
             }
@@ -622,10 +702,10 @@ namespace System.Linq.Expressions.Tests
         [Theory, ClassData(typeof(CompilationTypes))]
         public void CurriedFunctionsVariableCaptureSemantics(bool useInterpreter)
         {
-            var x = Expression.Parameter(typeof(int));
-            var f = Expression.Parameter(typeof(Func<int>));
+            ParameterExpression x = Expression.Parameter(typeof(int));
+            ParameterExpression f = Expression.Parameter(typeof(Func<int>));
 
-            var e =
+            Expression<Func<Func<int>>> e =
                 Expression.Lambda<Func<Func<int>>>(
                     Expression.Block(
                         new[] { f, x },
@@ -642,9 +722,9 @@ namespace System.Linq.Expressions.Tests
                     )
                 );
 
-            var d = e.Compile(useInterpreter);
+            Func<Func<int>> d = e.Compile(useInterpreter);
 
-            var i = d();
+            Func<int> i = d();
 
             Assert.Equal(42, i());
             Assert.Equal(84, i());

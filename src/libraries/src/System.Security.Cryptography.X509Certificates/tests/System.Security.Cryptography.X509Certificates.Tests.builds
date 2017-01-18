@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
@@ -11,7 +11,7 @@
       <OSGroup>Unix</OSGroup>
     </Project>
     <Project Include="System.Security.Cryptography.X509Certificates.Tests.csproj">
-      <TargetGroup>netcoreapp1.1</TargetGroup>
+      <TargetGroup>netcoreapp</TargetGroup>
       <OSGroup>Unix</OSGroup>
     </Project>
     <Project Include="System.Security.Cryptography.X509Certificates.Tests.csproj">
@@ -20,13 +20,13 @@
       <TestTFMs>netcoreapp1.0</TestTFMs>
     </Project>
     <Project Include="System.Security.Cryptography.X509Certificates.Tests.csproj">
-      <TargetGroup>netcoreapp1.1</TargetGroup>
+      <TargetGroup>netcoreapp</TargetGroup>
       <OSGroup>Windows_NT</OSGroup>
     </Project>
     <Project Include="System.Security.Cryptography.X509Certificates.Tests.csproj">
       <OSGroup>Windows_NT</OSGroup>
-      <TestTFMs>netcoreapp1.1;net463</TestTFMs>
+      <TestTFMs>netcoreapp;net463</TestTFMs>
     </Project>
-    </ItemGroup>
-    <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
 </Project>

@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Reflection;
 using System.Reflection.Emit;
@@ -27,43 +28,52 @@ namespace System.Linq.Expressions.Tests
             MethodInfo method = d.GetMethodInfo();
             ITypeFactory typeFactory = GetTypeFactory(expression);
 
-            var sw = new StringWriter();
-
-            AppendIL(method, sw, typeFactory);
-
-            if (appendInnerLambdas)
+            CultureInfo oldCulture = CultureInfo.CurrentCulture;
+            CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
+            try
             {
-                var closure = (Closure)d.Target;
+                var sw = new StringWriter();
 
-                int i = 0;
-                foreach (object constant in closure.Constants)
+                AppendIL(method, sw, typeFactory);
+
+                if (appendInnerLambdas)
                 {
-                    var innerMethod = constant as DynamicMethod;
-                    if (innerMethod != null)
+                    var closure = (Closure)d.Target;
+
+                    int i = 0;
+                    foreach (object constant in closure.Constants)
                     {
-                        sw.WriteLine();
-                        sw.WriteLine("// closure.Constants[" + i + "]");
-                        AppendIL(innerMethod, sw, typeFactory);
+                        var innerMethod = constant as DynamicMethod;
+                        if (innerMethod != null)
+                        {
+                            sw.WriteLine();
+                            sw.WriteLine("// closure.Constants[" + i + "]");
+                            AppendIL(innerMethod, sw, typeFactory);
+                        }
+
+                        i++;
                     }
-
-                    i++;
                 }
-            }
 
-            return sw.ToString();
+                return sw.ToString();
+            }
+            finally
+            {
+                CultureInfo.CurrentCulture = oldCulture;
+            }
         }
 
         private static void AppendIL(MethodInfo method, StringWriter sw, ITypeFactory typeFactory)
         {
-            var reader = ILReaderFactory.Create(method);
-            var exceptions = reader.ILProvider.GetExceptionInfos();
+            ILReader reader = ILReaderFactory.Create(method);
+            ExceptionInfo[] exceptions = reader.ILProvider.GetExceptionInfos();
             var writer = new RichILStringToTextWriter(sw, exceptions);
 
             sw.WriteLine(".method " + method.ToIL());
             sw.WriteLine("{");
             sw.WriteLine("  .maxstack " + reader.ILProvider.MaxStackSize);
 
-            var sig = reader.ILProvider.GetLocalSignature();
+            byte[] sig = reader.ILProvider.GetLocalSignature();
             var lsp = new LocalsSignatureParser(reader.Resolver, typeFactory);
             var locals = default(Type[]);
             if (lsp.Parse(sig, out locals) && locals.Length > 0)
@@ -147,9 +157,24 @@ namespace System.Linq.Expressions.Tests
                 return base.Visit(node);
             }
 
+            protected override MemberBinding VisitMemberBinding(MemberBinding node)
+            {
+                var property = node.Member as PropertyInfo;
+                if (property != null)
+                {
+                    Visit(property.PropertyType);
+                }
+                else
+                {
+                    Visit(((FieldInfo)node.Member).FieldType);
+                }
+
+                return base.VisitMemberBinding(node);
+            }
+
             private void Visit(Type type)
             {
-                var ti = type.GetTypeInfo();
+                TypeInfo ti = type.GetTypeInfo();
 
                 if (ti.IsArray || ti.IsPointer || ti.IsByRef)
                 {

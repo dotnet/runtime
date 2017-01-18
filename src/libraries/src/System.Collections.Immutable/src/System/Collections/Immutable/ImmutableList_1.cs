@@ -7,6 +7,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
+using System.Runtime.CompilerServices;
 
 namespace System.Collections.Immutable
 {
@@ -281,7 +282,7 @@ namespace System.Collections.Immutable
             // Some optimizations may apply if we're an empty list.
             if (this.IsEmpty)
             {
-                return this.FillFromEmpty(items);
+                return CreateRange(items);
             }
 
             var result = _root.AddRange(items);
@@ -1460,11 +1461,8 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <param name="items">The sequence of elements from which to create the list.</param>
         /// <returns>The immutable list.</returns>
-        [Pure]
-        private ImmutableList<T> FillFromEmpty(IEnumerable<T> items)
+        private static ImmutableList<T> CreateRange(IEnumerable<T> items)
         {
-            Debug.Assert(this.IsEmpty);
-
             // If the items being added actually come from an ImmutableList<T>
             // then there is no value in reconstructing it.
             ImmutableList<T> other;
@@ -1483,7 +1481,7 @@ namespace System.Collections.Immutable
             var list = items.AsOrderedCollection();
             if (list.Count == 0)
             {
-                return this;
+                return Empty;
             }
 
             Node root = Node.NodeTreeFromList(list, 0, list.Count);
@@ -1866,8 +1864,8 @@ namespace System.Collections.Immutable
                 _key = key;
                 _left = left;
                 _right = right;
-                _height = checked((byte)(1 + Math.Max(left._height, right._height)));
-                _count = 1 + left._count + right._count;
+                _height = ParentHeight(left, right);
+                _count = ParentCount(left, right);
                 _frozen = frozen;
             }
 
@@ -1882,6 +1880,7 @@ namespace System.Collections.Immutable
                 get
                 {
                     Contract.Ensures(Contract.Result<bool>() == (_left == null));
+                    Debug.Assert(!(_left == null ^ _right == null));
                     return _left == null;
                 }
             }
@@ -1889,80 +1888,52 @@ namespace System.Collections.Immutable
             /// <summary>
             /// Gets the height of the tree beneath this node.
             /// </summary>
-            public int Height
-            {
-                get { return _height; }
-            }
+            public int Height => _height;
 
             /// <summary>
             /// Gets the left branch of this node.
             /// </summary>
-            public Node Left { get { return _left; } }
+            public Node Left => _left;
 
             /// <summary>
             /// Gets the left branch of this node.
             /// </summary>
-            IBinaryTree IBinaryTree.Left
-            {
-                get { return _left; }
-            }
+            IBinaryTree IBinaryTree.Left => _left;
 
             /// <summary>
             /// Gets the right branch of this node.
             /// </summary>
-            public Node Right { get { return _right; } }
+            public Node Right => _right;
 
             /// <summary>
             /// Gets the right branch of this node.
             /// </summary>
-            IBinaryTree IBinaryTree.Right
-            {
-                get { return _right; }
-            }
+            IBinaryTree IBinaryTree.Right => _right;
 
             /// <summary>
             /// Gets the left branch of this node.
             /// </summary>
-            IBinaryTree<T> IBinaryTree<T>.Left
-            {
-                get { return _left; }
-            }
+            IBinaryTree<T> IBinaryTree<T>.Left => _left;
 
             /// <summary>
             /// Gets the right branch of this node.
             /// </summary>
-            IBinaryTree<T> IBinaryTree<T>.Right
-            {
-                get { return _right; }
-            }
+            IBinaryTree<T> IBinaryTree<T>.Right => _right;
 
             /// <summary>
             /// Gets the value represented by the current node.
             /// </summary>
-            public T Value
-            {
-                get { return _key; }
-            }
+            public T Value => _key;
 
             /// <summary>
             /// Gets the number of elements contained by this subtree starting at this node.
             /// </summary>
-            public int Count
-            {
-                get
-                {
-                    Contract.Ensures(Contract.Result<int>() == _count);
-                    return _count;
-                }
-            }
+            public int Count => _count;
 
             /// <summary>
             /// Gets the key.
             /// </summary>
-            internal T Key
-            {
-                get { return _key; }
-            }
+            internal T Key => _key;
 
             /// <summary>
             /// Gets the element of the set at the given index.
@@ -2073,7 +2044,14 @@ namespace System.Collections.Immutable
             /// <returns>The new tree.</returns>
             internal Node Add(T key)
             {
-                return this.Insert(_count, key);
+                if (this.IsEmpty)
+                {
+                    return CreateLeaf(key);
+                }
+
+                Node newRight = _right.Add(key);
+                Node result = this.MutateRight(newRight);
+                return result.IsBalanced ? result : result.BalanceRight();
             }
 
             /// <summary>
@@ -2088,41 +2066,47 @@ namespace System.Collections.Immutable
 
                 if (this.IsEmpty)
                 {
-                    return new Node(key, this, this);
+                    return CreateLeaf(key);
+                }
+
+                if (index <= _left._count)
+                {
+                    Node newLeft = _left.Insert(index, key);
+                    Node result = this.MutateLeft(newLeft);
+                    return result.IsBalanced ? result : result.BalanceLeft();
                 }
                 else
                 {
-                    Node result;
-                    if (index <= _left._count)
-                    {
-                        var newLeft = _left.Insert(index, key);
-                        result = this.Mutate(left: newLeft);
-                    }
-                    else
-                    {
-                        var newRight = _right.Insert(index - _left._count - 1, key);
-                        result = this.Mutate(right: newRight);
-                    }
-
-                    return MakeBalanced(result);
+                    Node newRight = _right.Insert(index - _left._count - 1, key);
+                    Node result = this.MutateRight(newRight);
+                    return result.IsBalanced ? result : result.BalanceRight();
                 }
             }
 
             /// <summary>
-            /// Adds the specified keys to the tree.
+            /// Adds the specified keys to this tree.
             /// </summary>
             /// <param name="keys">The keys.</param>
             /// <returns>The new tree.</returns>
             internal Node AddRange(IEnumerable<T> keys)
             {
-                return this.InsertRange(_count, keys);
+                Requires.NotNull(keys, nameof(keys));
+
+                if (this.IsEmpty)
+                {
+                    return CreateRange(keys);
+                }
+
+                Node newRight = _right.AddRange(keys);
+                Node result = this.MutateRight(newRight);
+                return result.BalanceMany();
             }
 
             /// <summary>
-            /// Adds a collection of values at a given index to this node.
+            /// Adds the specified keys at a given index to this tree.
             /// </summary>
-            /// <param name="index">The location for the new values.</param>
-            /// <param name="keys">The values to add.</param>
+            /// <param name="index">The location for the new keys.</param>
+            /// <param name="keys">The keys.</param>
             /// <returns>The new tree.</returns>
             internal Node InsertRange(int index, IEnumerable<T> keys)
             {
@@ -2131,31 +2115,22 @@ namespace System.Collections.Immutable
 
                 if (this.IsEmpty)
                 {
-                    ImmutableList<T> other;
-                    if (TryCastToImmutableList(keys, out other))
-                    {
-                        return other._root;
-                    }
+                    return CreateRange(keys);
+                }
 
-                    var list = keys.AsOrderedCollection();
-                    return Node.NodeTreeFromList(list, 0, list.Count);
+                Node result;
+                if (index <= _left._count)
+                {
+                    Node newLeft = _left.InsertRange(index, keys);
+                    result = this.MutateLeft(newLeft);
                 }
                 else
                 {
-                    Node result;
-                    if (index <= _left._count)
-                    {
-                        var newLeft = _left.InsertRange(index, keys);
-                        result = this.Mutate(left: newLeft);
-                    }
-                    else
-                    {
-                        var newRight = _right.InsertRange(index - _left._count - 1, keys);
-                        result = this.Mutate(right: newRight);
-                    }
-
-                    return BalanceNode(result);
+                    Node newRight = _right.InsertRange(index - _left._count - 1, keys);
+                    result = this.MutateRight(newRight);
                 }
+
+                return result.BalanceMany();
             }
 
             /// <summary>
@@ -2196,21 +2171,21 @@ namespace System.Collections.Immutable
                         }
 
                         var newRight = _right.RemoveAt(0);
-                        result = successor.Mutate(left: _left, right: newRight);
+                        result = successor.MutateBoth(left: _left, right: newRight);
                     }
                 }
                 else if (index < _left._count)
                 {
                     var newLeft = _left.RemoveAt(index);
-                    result = this.Mutate(left: newLeft);
+                    result = this.MutateLeft(newLeft);
                 }
                 else
                 {
                     var newRight = _right.RemoveAt(index - _left._count - 1);
-                    result = this.Mutate(right: newRight);
+                    result = this.MutateRight(newRight);
                 }
 
-                return result.IsEmpty ? result : MakeBalanced(result);
+                return result.IsEmpty || result.IsBalanced ? result : result.Balance();
             }
 
             /// <summary>
@@ -2255,22 +2230,23 @@ namespace System.Collections.Immutable
             internal Node ReplaceAt(int index, T value)
             {
                 Requires.Range(index >= 0 && index < this.Count, nameof(index));
+                Debug.Assert(!this.IsEmpty);
 
                 Node result = this;
                 if (index == _left._count)
                 {
                     // We have a match. 
-                    result = this.Mutate(value);
+                    result = this.MutateKey(value);
                 }
                 else if (index < _left._count)
                 {
                     var newLeft = _left.ReplaceAt(index, value);
-                    result = this.Mutate(left: newLeft);
+                    result = this.MutateLeft(newLeft);
                 }
                 else
                 {
                     var newRight = _right.ReplaceAt(index - _left._count - 1, value);
-                    result = this.Mutate(right: newRight);
+                    result = this.MutateRight(newRight);
                 }
 
                 return result;
@@ -2466,7 +2442,6 @@ namespace System.Collections.Immutable
                     }
 
                     int result = _left.BinarySearch(index, count, item, comparer);
-                    //return result < 0 ? result - thisNodeIndex : result + thisNodeIndex;
                     return result;
                 }
             }
@@ -3050,171 +3025,162 @@ namespace System.Collections.Immutable
             /// <summary>
             /// AVL rotate left operation.
             /// </summary>
-            /// <param name="tree">The tree.</param>
             /// <returns>The rotated tree.</returns>
-            private static Node RotateLeft(Node tree)
+            private Node RotateLeft()
             {
-                Requires.NotNull(tree, nameof(tree));
-                Debug.Assert(!tree.IsEmpty);
+                Debug.Assert(!this.IsEmpty);
+                Debug.Assert(!_right.IsEmpty);
                 Contract.Ensures(Contract.Result<Node>() != null);
 
-                if (tree._right.IsEmpty)
-                {
-                    return tree;
-                }
-
-                var right = tree._right;
-                return right.Mutate(left: tree.Mutate(right: right._left));
+                return _right.MutateLeft(this.MutateRight(_right._left));
             }
 
             /// <summary>
             /// AVL rotate right operation.
             /// </summary>
-            /// <param name="tree">The tree.</param>
             /// <returns>The rotated tree.</returns>
-            private static Node RotateRight(Node tree)
+            private Node RotateRight()
             {
-                Requires.NotNull(tree, nameof(tree));
-                Debug.Assert(!tree.IsEmpty);
+                Debug.Assert(!this.IsEmpty);
+                Debug.Assert(!_left.IsEmpty);
                 Contract.Ensures(Contract.Result<Node>() != null);
 
-                if (tree._left.IsEmpty)
-                {
-                    return tree;
-                }
-
-                var left = tree._left;
-                return left.Mutate(right: tree.Mutate(left: left._right));
+                return _left.MutateRight(this.MutateLeft(_left._right));
             }
 
             /// <summary>
             /// AVL rotate double-left operation.
             /// </summary>
-            /// <param name="tree">The tree.</param>
             /// <returns>The rotated tree.</returns>
-            private static Node DoubleLeft(Node tree)
+            private Node DoubleLeft()
             {
-                Requires.NotNull(tree, nameof(tree));
-                Debug.Assert(!tree.IsEmpty);
+                Debug.Assert(!this.IsEmpty);
+                Debug.Assert(!_right.IsEmpty);
+                Debug.Assert(!_right._left.IsEmpty);
                 Contract.Ensures(Contract.Result<Node>() != null);
 
-                if (tree._right.IsEmpty)
-                {
-                    return tree;
-                }
-
-                Node rotatedRightChild = tree.Mutate(right: RotateRight(tree._right));
-                return RotateLeft(rotatedRightChild);
+                // The following is an optimized version of rotating the right child right, then rotating the parent left.
+                Node right = _right;
+                Node rightLeft = right._left;
+                return rightLeft.MutateBoth(
+                    left: this.MutateRight(rightLeft._left),
+                    right: right.MutateLeft(rightLeft._right));
             }
 
             /// <summary>
             /// AVL rotate double-right operation.
             /// </summary>
-            /// <param name="tree">The tree.</param>
             /// <returns>The rotated tree.</returns>
-            private static Node DoubleRight(Node tree)
+            private Node DoubleRight()
             {
-                Requires.NotNull(tree, nameof(tree));
-                Debug.Assert(!tree.IsEmpty);
+                Debug.Assert(!this.IsEmpty);
+                Debug.Assert(!_left.IsEmpty);
+                Debug.Assert(!_left._right.IsEmpty);
                 Contract.Ensures(Contract.Result<Node>() != null);
 
-                if (tree._left.IsEmpty)
-                {
-                    return tree;
-                }
-
-                Node rotatedLeftChild = tree.Mutate(left: RotateLeft(tree._left));
-                return RotateRight(rotatedLeftChild);
+                // The following is an optimized version of rotating the left child left, then rotating the parent right.
+                Node left = _left;
+                Node leftRight = left._right;
+                return leftRight.MutateBoth(
+                    left: left.MutateRight(leftRight._left),
+                    right: this.MutateLeft(leftRight._right));
             }
 
             /// <summary>
-            /// Returns a value indicating whether the tree is in balance.
+            /// Gets a value indicating whether this tree is in balance.
             /// </summary>
-            /// <param name="tree">The tree.</param>
-            /// <returns>0 if the tree is in balance, a positive integer if the right side is heavy, or a negative integer if the left side is heavy.</returns>
-            [Pure]
-            private static int Balance(Node tree)
-            {
-                Requires.NotNull(tree, nameof(tree));
-                Debug.Assert(!tree.IsEmpty);
-
-                return tree._right._height - tree._left._height;
-            }
-
-            /// <summary>
-            /// Determines whether the specified tree is right heavy.
-            /// </summary>
-            /// <param name="tree">The tree.</param>
             /// <returns>
-            /// <c>true</c> if [is right heavy] [the specified tree]; otherwise, <c>false</c>.
+            /// 0 if the heights of both sides are the same, a positive integer if the right side is taller, or a negative integer if the left side is taller.
             /// </returns>
-            [Pure]
-            private static bool IsRightHeavy(Node tree)
+            private int BalanceFactor
             {
-                Requires.NotNull(tree, nameof(tree));
-                Debug.Assert(!tree.IsEmpty);
-                return Balance(tree) >= 2;
+                get
+                {
+                    Debug.Assert(!this.IsEmpty);
+                    return _right._height - _left._height;
+                }
             }
 
             /// <summary>
-            /// Determines whether the specified tree is left heavy.
+            /// Determines whether this tree is right heavy.
             /// </summary>
-            [Pure]
-            private static bool IsLeftHeavy(Node tree)
-            {
-                Requires.NotNull(tree, nameof(tree));
-                Debug.Assert(!tree.IsEmpty);
-                return Balance(tree) <= -2;
-            }
+            /// <returns>
+            /// <c>true</c> if this tree is right heavy; otherwise, <c>false</c>.
+            /// </returns>
+            private bool IsRightHeavy => this.BalanceFactor >= 2;
 
             /// <summary>
-            /// Balances the specified tree.
+            /// Determines whether this tree is left heavy.
             /// </summary>
-            /// <param name="tree">The tree.</param>
+            /// <returns>
+            /// <c>true</c> if this tree is left heavy; otherwise, <c>false</c>.
+            /// </returns>
+            private bool IsLeftHeavy => this.BalanceFactor <= -2;
+
+            /// <summary>
+            /// Determines whether this tree has a balance factor of -1, 0, or 1.
+            /// </summary>
+            /// <returns>
+            /// <c>true</c> if this tree is balanced; otherwise, <c>false</c>.
+            /// </returns>
+            private bool IsBalanced => (uint)(this.BalanceFactor + 1) <= 2;
+
+            /// <summary>
+            /// Balances this tree.
+            /// </summary>
             /// <returns>A balanced tree.</returns>
-            [Pure]
-            private static Node MakeBalanced(Node tree)
+            private Node Balance() => this.IsLeftHeavy ? this.BalanceLeft() : this.BalanceRight();
+
+            /// <summary>
+            /// Balances the left side of this tree by rotating this tree rightwards.
+            /// </summary>
+            /// <returns>A balanced tree.</returns>
+            private Node BalanceLeft()
             {
-                Requires.NotNull(tree, nameof(tree));
-                Debug.Assert(!tree.IsEmpty);
-                Contract.Ensures(Contract.Result<Node>() != null);
+                Debug.Assert(!this.IsEmpty);
+                Debug.Assert(this.IsLeftHeavy);
 
-                if (IsRightHeavy(tree))
-                {
-                    return Balance(tree._right) < 0 ? DoubleLeft(tree) : RotateLeft(tree);
-                }
-
-                if (IsLeftHeavy(tree))
-                {
-                    return Balance(tree._left) > 0 ? DoubleRight(tree) : RotateRight(tree);
-                }
-
-                return tree;
+                return _left.BalanceFactor > 0 ? this.DoubleRight() : this.RotateRight();
             }
 
             /// <summary>
-            /// Balance the specified node.  Allows for a large imbalance between left and
+            /// Balances the right side of this tree by rotating this tree leftwards.
+            /// </summary>
+            /// <returns>A balanced tree.</returns>
+            private Node BalanceRight()
+            {
+                Debug.Assert(!this.IsEmpty);
+                Debug.Assert(this.IsRightHeavy);
+
+                return _right.BalanceFactor < 0 ? this.DoubleLeft() : this.RotateLeft();
+            }
+
+            /// <summary>
+            /// Balances this tree.  Allows for a large imbalance between left and
             /// right nodes, but assumes left and right nodes are individually balanced.
             /// </summary>
-            /// <param name="node">The node.</param>
-            /// <returns>A balanced node</returns>
-            private static Node BalanceNode(Node node)
+            /// <returns>A balanced tree.</returns>
+            /// <remarks>
+            /// If this tree is already balanced, this method does nothing.
+            /// </remarks>
+            private Node BalanceMany()
             {
-                while (IsRightHeavy(node) || IsLeftHeavy(node))
+                Node tree = this;
+                while (!tree.IsBalanced)
                 {
-                    if (IsRightHeavy(node))
+                    if (tree.IsRightHeavy)
                     {
-                        node = Balance(node._right) < 0 ? DoubleLeft(node) : RotateLeft(node);
-                        node.Mutate(left: BalanceNode(node._left));
+                        tree = tree.BalanceRight();
+                        tree.MutateLeft(tree._left.BalanceMany());
                     }
                     else
                     {
-                        node = Balance(node._left) > 0 ? DoubleRight(node) : RotateRight(node);
-                        node.Mutate(right: BalanceNode(node._right));
+                        tree = tree.BalanceLeft();
+                        tree.MutateRight(tree._right.BalanceMany());
                     }
                 }
 
-                return node;
+                return tree;
             }
 
             #endregion
@@ -3226,26 +3192,22 @@ namespace System.Collections.Immutable
             /// <param name="left">The left branch of the mutated node.</param>
             /// <param name="right">The right branch of the mutated node.</param>
             /// <returns>The mutated (or created) node.</returns>
-            private Node Mutate(Node left = null, Node right = null)
+            private Node MutateBoth(Node left, Node right)
             {
+                Requires.NotNull(left, nameof(left));
+                Requires.NotNull(right, nameof(right));
+                Debug.Assert(!this.IsEmpty);
+
                 if (_frozen)
                 {
-                    return new Node(_key, left ?? _left, right ?? _right);
+                    return new Node(_key, left, right);
                 }
                 else
                 {
-                    if (left != null)
-                    {
-                        _left = left;
-                    }
-
-                    if (right != null)
-                    {
-                        _right = right;
-                    }
-
-                    _height = checked((byte)(1 + Math.Max(_left._height, _right._height)));
-                    _count = 1 + _left._count + _right._count;
+                    _left = left;
+                    _right = right;
+                    _height = ParentHeight(left, right);
+                    _count = ParentCount(left, right);
                     return this;
                 }
             }
@@ -3254,20 +3216,111 @@ namespace System.Collections.Immutable
             /// Creates a node mutation, either by mutating this node (if not yet frozen) or by creating a clone of this node
             /// with the described changes.
             /// </summary>
-            /// <param name="value">The new value for this node.</param>
+            /// <param name="left">The left branch of the mutated node.</param>
             /// <returns>The mutated (or created) node.</returns>
-            private Node Mutate(T value)
+            private Node MutateLeft(Node left)
             {
+                Requires.NotNull(left, nameof(left));
+                Debug.Assert(!this.IsEmpty);
+
                 if (_frozen)
                 {
-                    return new Node(value, _left, _right);
+                    return new Node(_key, left, _right);
                 }
                 else
                 {
-                    _key = value;
+                    _left = left;
+                    _height = ParentHeight(left, _right);
+                    _count = ParentCount(left, _right);
                     return this;
                 }
             }
+
+            /// <summary>
+            /// Creates a node mutation, either by mutating this node (if not yet frozen) or by creating a clone of this node
+            /// with the described changes.
+            /// </summary>
+            /// <param name="right">The right branch of the mutated node.</param>
+            /// <returns>The mutated (or created) node.</returns>
+            private Node MutateRight(Node right)
+            {
+                Requires.NotNull(right, nameof(right));
+                Debug.Assert(!this.IsEmpty);
+
+                if (_frozen)
+                {
+                    return new Node(_key, _left, right);
+                }
+                else
+                {
+                    _right = right;
+                    _height = ParentHeight(_left, right);
+                    _count = ParentCount(_left, right);
+                    return this;
+                }
+            }
+
+            /// <summary>
+            /// Calculates the height of the parent node from its children.
+            /// </summary>
+            /// <param name="left">The left child.</param>
+            /// <param name="right">The right child.</param>
+            /// <returns>The height of the parent node.</returns>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            private static byte ParentHeight(Node left, Node right) => checked((byte)(1 + Math.Max(left._height, right._height)));
+
+            /// <summary>
+            /// Calculates the number of elements in the parent node from its children.
+            /// </summary>
+            /// <param name="left">The left child.</param>
+            /// <param name="right">The right child.</param>
+            /// <returns>The number of elements in the parent node.</returns>
+            private static int ParentCount(Node left, Node right) => 1 + left._count + right._count;
+
+            /// <summary>
+            /// Creates a node mutation, either by mutating this node (if not yet frozen) or by creating a clone of this node
+            /// with the described changes.
+            /// </summary>
+            /// <param name="key">The new key for this node.</param>
+            /// <returns>The mutated (or created) node.</returns>
+            private Node MutateKey(T key)
+            {
+                Debug.Assert(!this.IsEmpty);
+
+                if (_frozen)
+                {
+                    return new Node(key, _left, _right);
+                }
+                else
+                {
+                    _key = key;
+                    return this;
+                }
+            }
+
+            /// <summary>
+            /// Creates a node from the specified keys.
+            /// </summary>
+            /// <param name="keys">The keys.</param>
+            /// <returns>The root of the created node tree.</returns>
+            private static Node CreateRange(IEnumerable<T> keys)
+            {
+                ImmutableList<T> other;
+                if (TryCastToImmutableList(keys, out other))
+                {
+                    return other._root;
+                }
+
+                var list = keys.AsOrderedCollection();
+                return NodeTreeFromList(list, 0, list.Count);
+            }
+
+            /// <summary>
+            /// Creates a leaf node.
+            /// </summary>
+            /// <param name="key">The leaf node's key.</param>
+            /// <returns>The leaf node.</returns>
+            private static Node CreateLeaf(T key) => new Node(key, left: EmptyNode, right: EmptyNode);
         }
     }
 

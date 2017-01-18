@@ -20,19 +20,13 @@ namespace System.Dynamic.Utils
                 pis = method.GetParameters();
 
                 Type t = method.DeclaringType;
-                if (t != null && TypeUtils.CanCache(t))
+                if (t != null && t.CanCache())
                 {
                     pic[method] = pis;
                 }
             }
 
             return pis;
-        }
-
-
-        public static bool IsSubclassOf(this Type source, Type other)
-        {
-            return source.GetTypeInfo().IsSubclassOf(other);
         }
 
 #if FEATURE_COMPILE
@@ -45,6 +39,6 @@ namespace System.Dynamic.Utils
 
             return (pi.Attributes & (ParameterAttributes.Out)) == ParameterAttributes.Out;
         }
-#endif 
+#endif
     }
 }

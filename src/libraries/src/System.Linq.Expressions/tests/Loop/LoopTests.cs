@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Reflection;
 using System.Text;
 using Xunit;
 
@@ -191,10 +190,10 @@ namespace System.Linq.Expressions.Tests
         public void ExplicitContinue(bool useInterpreter)
         {
             var builder = new StringBuilder();
-            var value = Expression.Variable(typeof(int));
-            var @break = Expression.Label();
-            var @continue = Expression.Label();
-            var append = typeof(StringBuilder).GetMethod(nameof(StringBuilder.Append), new[] {typeof(int)});
+            ParameterExpression value = Expression.Variable(typeof(int));
+            LabelTarget @break = Expression.Label();
+            LabelTarget @continue = Expression.Label();
+            Reflection.MethodInfo append = typeof(StringBuilder).GetMethod(nameof(StringBuilder.Append), new[] {typeof(int)});
             Action act = Expression.Lambda<Action>(
                 Expression.Block(
                     new[] {value},
@@ -252,7 +251,7 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public void CannotReduce()
         {
-            var loop = Expression.Loop(Expression.Empty(), Expression.Label(), Expression.Label());
+            LoopExpression loop = Expression.Loop(Expression.Empty(), Expression.Label(), Expression.Label());
             Assert.False(loop.CanReduce);
             Assert.Same(loop, loop.Reduce());
             Assert.Throws<ArgumentException>(null, () => loop.ReduceAndCheck());
@@ -261,35 +260,35 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public void UpdateSameIsSame()
         {
-            var loop = Expression.Loop(Expression.Empty(), Expression.Label(), Expression.Label());
+            LoopExpression loop = Expression.Loop(Expression.Empty(), Expression.Label(), Expression.Label());
             Assert.Same(loop, loop.Update(loop.BreakLabel, loop.ContinueLabel, loop.Body));
         }
 
         [Fact]
         public void UpdateDifferentBodyIsDifferent()
         {
-            var loop = Expression.Loop(Expression.Empty(), Expression.Label(), Expression.Label());
+            LoopExpression loop = Expression.Loop(Expression.Empty(), Expression.Label(), Expression.Label());
             Assert.NotSame(loop, loop.Update(loop.BreakLabel, loop.ContinueLabel, Expression.Empty()));
         }
 
         [Fact]
         public void UpdateDifferentBreakIsDifferent()
         {
-            var loop = Expression.Loop(Expression.Empty(), Expression.Label(), Expression.Label());
+            LoopExpression loop = Expression.Loop(Expression.Empty(), Expression.Label(), Expression.Label());
             Assert.NotSame(loop, loop.Update(Expression.Label(), loop.ContinueLabel, loop.Body));
         }
 
         [Fact]
         public void UpdateDifferentContinueIsDifferent()
         {
-            var loop = Expression.Loop(Expression.Empty(), Expression.Label(), Expression.Label());
+            LoopExpression loop = Expression.Loop(Expression.Empty(), Expression.Label(), Expression.Label());
             Assert.NotSame(loop, loop.Update(loop.BreakLabel, Expression.Label(), loop.Body));
         }
 
         [Fact]
         public void ToStringTest()
         {
-            var e = Expression.Loop(Expression.Empty());
+            LoopExpression e = Expression.Loop(Expression.Empty());
             Assert.Equal("loop { ... }", e.ToString());
         }
     }

@@ -1,0 +1,65 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 14
+VisualStudioVersion = 14.0.25420.1
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Configuration.ConfigurationManager", "src\System.Configuration.ConfigurationManager.csproj", "{B7697463-7C98-4462-BA09-67B7BF3842B6}"
+	ProjectSection(ProjectDependencies) = postProject
+		{B65EE71E-2894-45E3-B0FD-FF34118E9F9A} = {B65EE71E-2894-45E3-B0FD-FF34118E9F9A}
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{6BF3AE2C-3EEE-42F0-8C62-BAAC04AE6897}"
+	ProjectSection(SolutionItems) = preProject
+		src\Configurations.props = src\Configurations.props
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ref", "ref", "{A6D1680E-20AB-4253-AD1F-AACC478A2510}"
+	ProjectSection(SolutionItems) = preProject
+		ref\Configurations.props = ref\Configurations.props
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{76C3F1E4-2EA8-4700-A9C0-EFEF909D7983}"
+	ProjectSection(SolutionItems) = preProject
+		tests\Configurations.props = tests\Configurations.props
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Configuration.ConfigurationManager.Tests", "tests\System.Configuration.ConfigurationManager.Tests.csproj", "{7669C397-C21C-4C08-83F1-BE6691911E88}"
+	ProjectSection(ProjectDependencies) = postProject
+		{B7697463-7C98-4462-BA09-67B7BF3842B6} = {B7697463-7C98-4462-BA09-67B7BF3842B6}
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "pkg", "pkg", "{CDDB4E69-37E9-4EE9-93A8-0B5DC240AC11}"
+	ProjectSection(SolutionItems) = preProject
+		pkg\System.Configuration.ConfigurationManager.builds = pkg\System.Configuration.ConfigurationManager.builds
+		pkg\System.Configuration.ConfigurationManager.pkgproj = pkg\System.Configuration.ConfigurationManager.pkgproj
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Configuration.ConfigurationManager", "ref\System.Configuration.ConfigurationManager.csproj", "{B65EE71E-2894-45E3-B0FD-FF34118E9F9A}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		DebugNETCoreAppnetstandardnetstandard|AnyCPU = DebugNETCoreAppnetstandardnetstandard|AnyCPU
+		ReleaseNETCoreAppnetstandardnetstandard|AnyCPU = ReleaseNETCoreAppnetstandardnetstandard|AnyCPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{B7697463-7C98-4462-BA09-67B7BF3842B6}.DebugNETCoreAppnetstandardnetstandard|AnyCPU.ActiveCfg = netstandard-Debug|Any CPU
+		{B7697463-7C98-4462-BA09-67B7BF3842B6}.DebugNETCoreAppnetstandardnetstandard|AnyCPU.Build.0 = netstandard-Debug|Any CPU
+		{B7697463-7C98-4462-BA09-67B7BF3842B6}.ReleaseNETCoreAppnetstandardnetstandard|AnyCPU.ActiveCfg = netstandard-Release|Any CPU
+		{B7697463-7C98-4462-BA09-67B7BF3842B6}.ReleaseNETCoreAppnetstandardnetstandard|AnyCPU.Build.0 = netstandard-Release|Any CPU
+		{7669C397-C21C-4C08-83F1-BE6691911E88}.DebugNETCoreAppnetstandardnetstandard|AnyCPU.ActiveCfg = netstandard-Debug|Any CPU
+		{7669C397-C21C-4C08-83F1-BE6691911E88}.DebugNETCoreAppnetstandardnetstandard|AnyCPU.Build.0 = netstandard-Debug|Any CPU
+		{7669C397-C21C-4C08-83F1-BE6691911E88}.ReleaseNETCoreAppnetstandardnetstandard|AnyCPU.ActiveCfg = netstandard-Release|Any CPU
+		{7669C397-C21C-4C08-83F1-BE6691911E88}.ReleaseNETCoreAppnetstandardnetstandard|AnyCPU.Build.0 = netstandard-Release|Any CPU
+		{B65EE71E-2894-45E3-B0FD-FF34118E9F9A}.DebugNETCoreAppnetstandardnetstandard|AnyCPU.ActiveCfg = Debug|Any CPU
+		{B65EE71E-2894-45E3-B0FD-FF34118E9F9A}.DebugNETCoreAppnetstandardnetstandard|AnyCPU.Build.0 = Debug|Any CPU
+		{B65EE71E-2894-45E3-B0FD-FF34118E9F9A}.ReleaseNETCoreAppnetstandardnetstandard|AnyCPU.ActiveCfg = Debug|Any CPU
+		{B65EE71E-2894-45E3-B0FD-FF34118E9F9A}.ReleaseNETCoreAppnetstandardnetstandard|AnyCPU.Build.0 = Debug|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{B7697463-7C98-4462-BA09-67B7BF3842B6} = {6BF3AE2C-3EEE-42F0-8C62-BAAC04AE6897}
+		{7669C397-C21C-4C08-83F1-BE6691911E88} = {76C3F1E4-2EA8-4700-A9C0-EFEF909D7983}
+		{B65EE71E-2894-45E3-B0FD-FF34118E9F9A} = {A6D1680E-20AB-4253-AD1F-AACC478A2510}
+	EndGlobalSection
+EndGlobal

@@ -134,7 +134,55 @@ namespace System.Tests
             }
         }
 
+        public void EnumerateYieldsDictionaryEntryFromIEnumerable()
+        {
+            // GetEnvironmentVariables has always yielded DictionaryEntry from IEnumerable
+            IDictionary vars = Environment.GetEnvironmentVariables();
+            IEnumerator enumerator = ((IEnumerable)vars).GetEnumerator();
+            if (enumerator.MoveNext())
+            {
+                Assert.IsType<DictionaryEntry>(enumerator.Current);
+            }
+            else
+            {
+                Assert.Throws<InvalidOperationException>(() => enumerator.Current);
+            }
+        }
+
 #if netstandard17
+        public void EnvironmentVariablesAreHashtable()
+        {
+            // On NetFX, the type returned was always Hashtable
+            Assert.IsType<Hashtable>(Environment.GetEnvironmentVariables());
+        }
+
+        [InlineData(EnvironmentVariableTarget.Process)]
+        [InlineData(EnvironmentVariableTarget.Machine)]
+        [InlineData(EnvironmentVariableTarget.User)]
+        public void EnvironmentVariablesAreHashtable(EnvironmentVariableTarget target)
+        {
+            // On NetFX, the type returned was always Hashtable
+            Assert.IsType<Hashtable>(Environment.GetEnvironmentVariables(target));
+        }
+
+        [InlineData(EnvironmentVariableTarget.Process)]
+        [InlineData(EnvironmentVariableTarget.Machine)]
+        [InlineData(EnvironmentVariableTarget.User)]
+        public void EnumerateYieldsDictionaryEntryFromIEnumerable(EnvironmentVariableTarget target)
+        {
+            // GetEnvironmentVariables has always yielded DictionaryEntry from IEnumerable
+            IDictionary vars = Environment.GetEnvironmentVariables(target);
+            IEnumerator enumerator = ((IEnumerable)vars).GetEnumerator();
+            if (enumerator.MoveNext())
+            {
+                Assert.IsType<DictionaryEntry>(enumerator.Current);
+            }
+            else
+            {
+                Assert.Throws<InvalidOperationException>(() => enumerator.Current);
+            }
+        }
+
         [OuterLoop] // manipulating environment variables broader in scope than the process
         [Theory]
         [InlineData(EnvironmentVariableTarget.Process)]
@@ -176,7 +224,7 @@ namespace System.Tests
             Assert.True(success);
         }
 
-        [DllImport("api-ms-win-core-processenvironment-l1-1-0.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
         private static extern bool SetEnvironmentVariable(string lpName, string lpValue);
 
         [DllImport("libc")]

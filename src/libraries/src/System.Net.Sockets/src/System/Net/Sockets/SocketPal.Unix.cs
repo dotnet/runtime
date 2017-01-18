@@ -2,9 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using Microsoft.Win32.SafeHandles;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Runtime.InteropServices;
 
 namespace System.Net.Sockets
@@ -16,7 +18,7 @@ namespace System.Net.Sockets
         public const int ProtocolInformationSize = 0;
 
         public const bool SupportsMultipleConnectAttempts = false;
-        private readonly static bool SupportsDualModeIPv4PacketInfo = GetPlatformSupportsDualModeIPv4PacketInfo();
+        private static readonly bool SupportsDualModeIPv4PacketInfo = GetPlatformSupportsDualModeIPv4PacketInfo();
 
         private static bool GetPlatformSupportsDualModeIPv4PacketInfo()
         {
@@ -227,6 +229,21 @@ namespace System.Net.Sockets
             offset = endOffset;
 
             return sent;
+        }
+
+        private static unsafe long SendFile(SafeCloseSocket socket, SafeFileHandle fileHandle, ref long offset, ref long count, out Interop.Error errno)
+        {
+            long bytesSent; 
+            errno = Interop.Sys.SendFile(socket, fileHandle, offset, count, out bytesSent);
+
+            if (errno != Interop.Error.SUCCESS)
+            {
+                return -1;
+            }
+
+            offset += bytesSent;
+            count -= bytesSent;
+            return bytesSent;
         }
 
         private static unsafe int Receive(SafeCloseSocket socket, SocketFlags flags, IList<ArraySegment<byte>> buffers, byte[] socketAddress, ref int socketAddressLen, out SocketFlags receivedFlags, out Interop.Error errno)
@@ -620,6 +637,45 @@ namespace System.Net.Sockets
             }
         }
 
+        public static bool TryCompleteSendFile(SafeCloseSocket socket, SafeFileHandle handle, ref long offset, ref long count, ref long bytesSent, out SocketError errorCode)
+        {
+            for (;;)
+            {
+                long sent;
+                Interop.Error errno;
+                try
+                {
+                    sent = SendFile(socket, handle, ref offset, ref count, out errno);
+                }
+                catch (ObjectDisposedException)
+                {
+                    // The socket was closed, or is closing.
+                    errorCode = SocketError.OperationAborted;
+                    return true;
+                }
+
+                if (sent == -1)
+                {
+                    if (errno != Interop.Error.EAGAIN && errno != Interop.Error.EWOULDBLOCK)
+                    {
+                        errorCode = GetSocketErrorForErrorCode(errno);
+                        return true;
+                    }
+
+                    errorCode = SocketError.Success;
+                    return false;
+                }
+
+                bytesSent += sent;
+
+                if (sent == 0 || count == 0)
+                {
+                    errorCode = SocketError.Success;
+                    return true;
+                }
+            }
+        }
+
         public static SocketError SetBlocking(SafeCloseSocket handle, bool shouldBlock, out bool willBlock)
         {
             handle.IsNonBlocking = !shouldBlock;
@@ -732,6 +788,25 @@ namespace System.Net.Sockets
             bytesTransferred = 0;
             SocketError errorCode;
             bool completed = TryCompleteSendTo(handle, buffer, ref offset, ref count, socketFlags, null, 0, ref bytesTransferred, out errorCode);
+            return completed ? errorCode : SocketError.WouldBlock;
+        }
+
+        public static SocketError SendFile(SafeCloseSocket handle, FileStream fileStream)
+        {
+            long offset = 0;
+            long length = fileStream.Length;
+
+            SafeFileHandle fileHandle = fileStream.SafeFileHandle;
+
+            long bytesTransferred = 0;
+
+            if (!handle.IsNonBlocking)
+            {
+                return handle.AsyncContext.SendFile(fileHandle, offset, length, handle.SendTimeout, out bytesTransferred);
+            }
+
+            SocketError errorCode;
+            bool completed = TryCompleteSendFile(handle, fileHandle, ref offset, ref length, ref bytesTransferred, out errorCode);
             return completed ? errorCode : SocketError.WouldBlock;
         }
 
@@ -1266,41 +1341,98 @@ namespace System.Net.Sockets
 
         public static SocketError ConnectAsync(Socket socket, SafeCloseSocket handle, byte[] socketAddress, int socketAddressLen, ConnectOverlappedAsyncResult asyncResult)
         {
-            return handle.AsyncContext.ConnectAsync(socketAddress, socketAddressLen, asyncResult.CompletionCallback);
+            SocketError socketError = handle.AsyncContext.ConnectAsync(socketAddress, socketAddressLen, asyncResult.CompletionCallback);
+            if (socketError == SocketError.Success)
+            {
+                asyncResult.CompletionCallback(SocketError.Success);
+            }
+            return socketError;
         }
 
         public static SocketError SendAsync(SafeCloseSocket handle, byte[] buffer, int offset, int count, SocketFlags socketFlags, OverlappedAsyncResult asyncResult)
         {
-            return handle.AsyncContext.SendAsync(buffer, offset, count, socketFlags, asyncResult.CompletionCallback);
+            int bytesSent;
+            SocketError socketError = handle.AsyncContext.SendAsync(buffer, offset, count, socketFlags, out bytesSent, asyncResult.CompletionCallback);
+            if (socketError == SocketError.Success)
+            {
+                asyncResult.CompletionCallback(bytesSent, null, 0, SocketFlags.None, SocketError.Success);
+            }
+            return socketError;
         }
 
         public static SocketError SendAsync(SafeCloseSocket handle, IList<ArraySegment<byte>> buffers, SocketFlags socketFlags, OverlappedAsyncResult asyncResult)
         {
-            return handle.AsyncContext.SendAsync(buffers, socketFlags, asyncResult.CompletionCallback);
+            int bytesSent;
+            SocketError socketError = handle.AsyncContext.SendAsync(buffers, socketFlags, out bytesSent, asyncResult.CompletionCallback);
+            if (socketError == SocketError.Success)
+            {
+                asyncResult.CompletionCallback(bytesSent, null, 0, SocketFlags.None, SocketError.Success);
+            }
+            return socketError;
+        }
+
+        public static SocketError SendFileAsync(SafeCloseSocket handle, FileStream fileStream, Action<long, SocketError> callback)
+        {
+            long bytesSent;
+            SocketError socketError = handle.AsyncContext.SendFileAsync(fileStream.SafeFileHandle, 0, (int)fileStream.Length, out bytesSent, callback);
+            if (socketError == SocketError.Success)
+            {
+                callback(bytesSent, SocketError.Success);
+            }
+            return socketError;
         }
 
         public static SocketError SendToAsync(SafeCloseSocket handle, byte[] buffer, int offset, int count, SocketFlags socketFlags, Internals.SocketAddress socketAddress, OverlappedAsyncResult asyncResult)
         {
             asyncResult.SocketAddress = socketAddress;
 
-            return handle.AsyncContext.SendToAsync(buffer, offset, count, socketFlags, socketAddress.Buffer, socketAddress.Size, asyncResult.CompletionCallback);
+            int bytesSent;
+            int socketAddressLen = socketAddress.Size;
+            SocketError socketError = handle.AsyncContext.SendToAsync(buffer, offset, count, socketFlags, socketAddress.Buffer, ref socketAddressLen, out bytesSent, asyncResult.CompletionCallback);
+            if (socketError == SocketError.Success)
+            {
+                asyncResult.CompletionCallback(bytesSent, socketAddress.Buffer, socketAddressLen, SocketFlags.None, SocketError.Success);
+            }
+            return socketError;
         }
 
         public static SocketError ReceiveAsync(SafeCloseSocket handle, byte[] buffer, int offset, int count, SocketFlags socketFlags, OverlappedAsyncResult asyncResult)
         {
-            return handle.AsyncContext.ReceiveAsync(buffer, offset, count, socketFlags, asyncResult.CompletionCallback);
+            int bytesReceived;
+            SocketFlags receivedFlags;
+            SocketError socketError = handle.AsyncContext.ReceiveAsync(buffer, offset, count, socketFlags, out bytesReceived, out receivedFlags, asyncResult.CompletionCallback);
+            if (socketError == SocketError.Success)
+            {
+                asyncResult.CompletionCallback(bytesReceived, null, 0, receivedFlags, SocketError.Success);
+            }
+            return socketError;
         }
 
         public static SocketError ReceiveAsync(SafeCloseSocket handle, IList<ArraySegment<byte>> buffers, SocketFlags socketFlags, OverlappedAsyncResult asyncResult)
         {
-            return handle.AsyncContext.ReceiveAsync(buffers, socketFlags, asyncResult.CompletionCallback);
+            int bytesReceived;
+            SocketFlags receivedFlags;
+            SocketError socketError = handle.AsyncContext.ReceiveAsync(buffers, socketFlags, out bytesReceived, out receivedFlags, asyncResult.CompletionCallback);
+            if (socketError == SocketError.Success)
+            {
+                asyncResult.CompletionCallback(bytesReceived, null, 0, receivedFlags, SocketError.Success);
+            }
+            return socketError;
         }
 
         public static SocketError ReceiveFromAsync(SafeCloseSocket handle, byte[] buffer, int offset, int count, SocketFlags socketFlags, Internals.SocketAddress socketAddress, OverlappedAsyncResult asyncResult)
         {
             asyncResult.SocketAddress = socketAddress;
 
-            return handle.AsyncContext.ReceiveFromAsync(buffer, offset, count, socketFlags, socketAddress.Buffer, socketAddress.InternalSize, asyncResult.CompletionCallback);
+            int socketAddressSize = socketAddress.InternalSize;
+            int bytesReceived;
+            SocketFlags receivedFlags;
+            SocketError socketError = handle.AsyncContext.ReceiveFromAsync(buffer, offset, count, socketFlags, socketAddress.Buffer, ref socketAddressSize, out bytesReceived, out receivedFlags, asyncResult.CompletionCallback);
+            if (socketError == SocketError.Success)
+            {
+                asyncResult.CompletionCallback(bytesReceived, socketAddress.Buffer, socketAddressSize, receivedFlags, SocketError.Success);
+            }
+            return socketError;
         }
 
         public static SocketError ReceiveMessageFromAsync(Socket socket, SafeCloseSocket handle, byte[] buffer, int offset, int count, SocketFlags socketFlags, Internals.SocketAddress socketAddress, ReceiveMessageOverlappedAsyncResult asyncResult)
@@ -1310,7 +1442,16 @@ namespace System.Net.Sockets
             bool isIPv4, isIPv6;
             Socket.GetIPProtocolInformation(((Socket)asyncResult.AsyncObject).AddressFamily, socketAddress, out isIPv4, out isIPv6);
 
-            return handle.AsyncContext.ReceiveMessageFromAsync(buffer, offset, count, socketFlags, socketAddress.Buffer, socketAddress.InternalSize, isIPv4, isIPv6, asyncResult.CompletionCallback);
+            int socketAddressSize = socketAddress.InternalSize;
+            int bytesReceived;
+            SocketFlags receivedFlags;
+            IPPacketInformation ipPacketInformation;
+            SocketError socketError = handle.AsyncContext.ReceiveMessageFromAsync(buffer, offset, count, socketFlags, socketAddress.Buffer, ref socketAddressSize, isIPv4, isIPv6, out bytesReceived, out receivedFlags, out ipPacketInformation, asyncResult.CompletionCallback);
+            if (socketError == SocketError.Success)
+            {
+                asyncResult.CompletionCallback(bytesReceived, socketAddress.Buffer, socketAddressSize, receivedFlags, ipPacketInformation, SocketError.Success);
+            }
+            return socketError;
         }
 
         public static SocketError AcceptAsync(Socket socket, SafeCloseSocket handle, SafeCloseSocket acceptHandle, int receiveSize, int socketAddressSize, AcceptOverlappedAsyncResult asyncResult)
@@ -1320,7 +1461,14 @@ namespace System.Net.Sockets
 
             byte[] socketAddressBuffer = new byte[socketAddressSize];
 
-            return handle.AsyncContext.AcceptAsync(socketAddressBuffer, socketAddressSize, asyncResult.CompletionCallback);
+            IntPtr acceptedFd;
+            SocketError socketError = handle.AsyncContext.AcceptAsync(socketAddressBuffer, ref socketAddressSize, out acceptedFd, asyncResult.CompletionCallback);
+            if (socketError == SocketError.Success)
+            {
+                asyncResult.CompletionCallback(acceptedFd, socketAddressBuffer, socketAddressSize, SocketError.Success);
+            }
+
+            return socketError;
         }
 
         internal static SocketError DisconnectAsync(Socket socket, SafeCloseSocket handle, bool reuseSocket, DisconnectOverlappedAsyncResult asyncResult)

@@ -16,7 +16,8 @@ namespace System.Diagnostics
     /// </devdoc>
     public class TextWriterTraceListener : TraceListener
     {
-        internal TextWriter writer;
+        internal TextWriter _writer;
+        private string _fileName;
 
         /// <devdoc>
         /// <para>Initializes a new instance of the <see cref='System.Diagnostics.TextWriterTraceListener'/> class with
@@ -44,7 +45,7 @@ namespace System.Diagnostics
             : base(name)
         {
             if (stream == null) throw new ArgumentNullException(nameof(stream));
-            this.writer = new StreamWriter(stream);
+            _writer = new StreamWriter(stream);
         }
 
         /// <devdoc>
@@ -66,7 +67,26 @@ namespace System.Diagnostics
             : base(name)
         {
             if (writer == null) throw new ArgumentNullException(nameof(writer));
-            this.writer = writer;
+            _writer = writer;
+        }
+
+        /// <devdoc>
+        ///    <para>Initializes a new instance of the <see cref='System.Diagnostics.TextWriterTraceListener'/> class with the 
+        ///    specified file name.</para>
+        /// </devdoc>
+        public TextWriterTraceListener(string fileName)
+        {
+            _fileName = fileName;
+        }
+
+        /// <devdoc>
+        ///    <para>Initializes a new instance of the <see cref='System.Diagnostics.TextWriterTraceListener'/> class with the 
+        ///    specified name and the specified file name.</para>
+        /// </devdoc>
+        public TextWriterTraceListener(string fileName, string name)
+            : base(name)
+        {
+            _fileName = fileName;
         }
 
         /// <devdoc>
@@ -77,12 +97,29 @@ namespace System.Diagnostics
         {
             get
             {
-                return writer;
+                return _writer;
             }
 
             set
             {
-                writer = value;
+                _writer = value;
+            }
+        }
+
+        /// <devdoc>
+        /// <para>Closes the <see cref='System.Diagnostics.TextWriterTraceListener.Writer'/> so that it no longer
+        ///    receives tracing or debugging output.</para>
+        /// </devdoc>
+        public override void Close()
+        {
+            if (_writer != null)
+            {
+                try 
+                {
+                    _writer.Close();
+                }
+                catch (ObjectDisposedException) { }
+                _writer = null;
             }
         }
 
@@ -93,9 +130,9 @@ namespace System.Diagnostics
         {
             try
             {
-                if (disposing && writer != null)
+                if (disposing && _writer != null)
                 {
-                    writer.Dispose();
+                    _writer.Dispose();
                 }
             }
             finally
@@ -111,8 +148,7 @@ namespace System.Diagnostics
         {
             try
             {
-                if (writer != null)
-                    writer.Flush();
+                _writer?.Flush();
             }
             catch (ObjectDisposedException) { }
         }
@@ -123,12 +159,12 @@ namespace System.Diagnostics
         /// </devdoc>
         public override void Write(string message)
         {
-            if (writer != null)
+            if (_writer != null)
             {
                 if (NeedIndent) WriteIndent();
                 try
                 {
-                    writer.Write(message);
+                    _writer.Write(message);
                 }
                 catch (ObjectDisposedException) { }
             }
@@ -141,12 +177,12 @@ namespace System.Diagnostics
         /// </devdoc>
         public override void WriteLine(string message)
         {
-            if (writer != null)
+            if (_writer != null)
             {
                 if (NeedIndent) WriteIndent();
                 try
                 {
-                    writer.WriteLine(message);
+                    _writer.WriteLine(message);
                     NeedIndent = true;
                 }
                 catch (ObjectDisposedException) { }

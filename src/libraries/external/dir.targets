@@ -1,0 +1,28 @@
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="..\dir.targets" />
+
+  <PropertyGroup>
+    <RestorePackages>true</RestorePackages>
+    <PrereleaseResolveNuGetPackages>true</PrereleaseResolveNuGetPackages>
+  </PropertyGroup>
+
+  <Target
+    Name="GenerateProjectJsonFromTemplates"
+    BeforeTargets="RestorePackages"
+    Inputs="$(ProjectJsonTemplate)"
+    Outputs="$(ProjectJson)"
+    Condition="Exists('$(ProjectJsonTemplate)')"
+    >
+    <!-- Update project.json template -->
+    <WriteLinesToFile
+      File="$(ProjectJson)"
+      Lines="$([System.IO.File]::ReadAllText('project.json.template').Replace('{RID}', $(NuGetRuntimeIdentifier)).Replace('{TFM}', $(NuGetTargetMoniker)))"
+      Overwrite="true"
+                      />
+    <ItemGroup>
+      <FileWrites Include="$(ProjectJson);$(ProjectLockJson)" />
+    </ItemGroup>
+
+  </Target>
+
+</Project>

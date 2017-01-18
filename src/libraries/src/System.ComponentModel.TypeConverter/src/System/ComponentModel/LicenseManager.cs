@@ -22,11 +22,11 @@ namespace System.ComponentModel
     {
         private static readonly object s_selfLock = new object();
 
-        private static volatile LicenseContext s_context = null;
-        private static object s_contextLockHolder = null;
+        private static volatile LicenseContext s_context;
+        private static object s_contextLockHolder;
         private static volatile Hashtable s_providers;
         private static volatile Hashtable s_providerInstances;
-        private static object s_internalSyncObject = new object();
+        private static readonly object s_internalSyncObject = new object();
 
         // not creatable...
         //
@@ -118,7 +118,7 @@ namespace System.ComponentModel
         /// </summary>
         public static object CreateWithContext(Type type, LicenseContext creationContext)
         {
-            return CreateWithContext(type, creationContext, new object[0]);
+            return CreateWithContext(type, creationContext, Array.Empty<object>());
         }
 
 
@@ -178,11 +178,7 @@ namespace System.ComponentModel
         /// </summary>
         private static LicenseProvider GetCachedProvider(Type type)
         {
-            if (s_providers != null)
-            {
-                return (LicenseProvider)s_providers[type];
-            }
-            return null;
+            return (LicenseProvider) s_providers?[type];
         }
 
 
@@ -193,11 +189,7 @@ namespace System.ComponentModel
         private static LicenseProvider GetCachedProviderInstance(Type providerType)
         {
             Debug.Assert(providerType != null, "Type cannot ever be null");
-            if (s_providerInstances != null)
-            {
-                return (LicenseProvider)s_providerInstances[providerType];
-            }
-            return null;
+            return (LicenseProvider) s_providerInstances?[providerType];
         }
 
         /// <summary>
@@ -303,26 +295,13 @@ namespace System.ComponentModel
                 // NOTE : Must look directly at the class, we want no inheritance.
                 //
 
-                //TODO NETSTANDARD2.0
-                // original:                 LicenseProviderAttribute attr = (LicenseProviderAttribute)Attribute.GetCustomAttribute(type, typeof(LicenseProviderAttribute), false);
-
-                IEnumerator attributes = CustomAttributeExtensions.GetCustomAttributes<LicenseProviderAttribute>(type, false).GetEnumerator();
-                LicenseProviderAttribute attr = null;
-                if (attributes.MoveNext())
-                    attr = (LicenseProviderAttribute)attributes.Current;
-
-                // END_TODO NETSTANDARD2.0
-
+                LicenseProviderAttribute attr = (LicenseProviderAttribute)Attribute.GetCustomAttribute(type, typeof(LicenseProviderAttribute), false);
 
                 if (attr != null)
                 {
                     Type providerType = attr.LicenseProvider;
-                    provider = GetCachedProviderInstance(providerType);
-
-                    if (provider == null)
-                    {
-                        provider = (LicenseProvider)SecurityUtils.SecureCreateInstance(providerType);
-                    }
+                    provider = GetCachedProviderInstance(providerType) ??
+                               (LicenseProvider)SecurityUtils.SecureCreateInstance(providerType);
                 }
 
                 CacheProvider(type, provider);
@@ -609,23 +588,16 @@ namespace System.ComponentModel
             // of a single Type.
             internal class CLRLicenseContext : LicenseContext
             {
-                private LicenseUsageMode _usageMode;
                 private Type _type;
                 private string _key;
 
                 public CLRLicenseContext(LicenseUsageMode usageMode, Type type)
                 {
-                    _usageMode = usageMode;
+                    UsageMode = usageMode;
                     _type = type;
                 }
 
-                public override LicenseUsageMode UsageMode
-                {
-                    get
-                    {
-                        return _usageMode;
-                    }
-                }
+                public override LicenseUsageMode UsageMode { get; }
 
 
                 public override string GetSavedLicenseKey(Type type, Assembly resourceAssembly)

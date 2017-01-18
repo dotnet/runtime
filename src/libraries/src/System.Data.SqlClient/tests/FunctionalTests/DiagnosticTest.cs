@@ -7,20 +7,30 @@ using System.Reflection;
 using System.Diagnostics;
 using System.Collections;
 using System.Xml;
-using Xunit.Abstractions;
 using System.Threading.Tasks;
+using Microsoft.SqlServer.TDS.Servers;
+using Microsoft.SqlServer.TDS;
+using Microsoft.SqlServer.TDS.EndPoint;
+using Microsoft.SqlServer.TDS.SQLBatch;
+using Microsoft.SqlServer.TDS.Error;
 
 namespace System.Data.SqlClient.Tests
 {
-    public class DiagnosticTest
+    public class DiagnosticTest : IDisposable
     {
-        private string _connectionString = "server=tcp:server,1432;database=test;uid=admin;pwd=SQLDB;connect timeout=60;";
+        private string _connectionString;
         private string _badConnectionString = "data source = bad; initial catalog = bad; uid = bad; password = bad; connection timeout = 1;";
-        private readonly ITestOutputHelper _output;
+        
+        private TestTdsServer _server;
+        private static readonly string s_tcpConnStr = Environment.GetEnvironmentVariable("TEST_TCP_CONN_STR");
 
-        public DiagnosticTest(ITestOutputHelper output)
+        public static bool IsConnectionStringConfigured() => !string.IsNullOrEmpty(s_tcpConnStr);
+
+        public DiagnosticTest()
         {
-            _output = output;
+            QueryEngine engine = new DiagnosticsQueryEngine();
+            _server = TestTdsServer.StartServerWithQueryEngine(engine);
+            _connectionString = _server.ConnectionString;
         }
 
         [Fact]
@@ -32,7 +42,7 @@ namespace System.Data.SqlClient.Tests
                 using (SqlCommand cmd = new SqlCommand())
                 {
                     cmd.Connection = conn;
-                    cmd.CommandText = "select @@servername;";
+                    cmd.CommandText = "SELECT [name], [state] FROM [sys].[databases] WHERE [name] = db_name();";
 
                     conn.Open();
                     var output = cmd.ExecuteScalar();
@@ -68,7 +78,7 @@ namespace System.Data.SqlClient.Tests
                 using (SqlCommand cmd = new SqlCommand())
                 {
                     cmd.Connection = conn;
-                    cmd.CommandText = "select @@servername;";
+                    cmd.CommandText = "SELECT [name], [state] FROM [sys].[databases] WHERE [name] = db_name();";
 
                     conn.Open();
                     var output = cmd.ExecuteNonQuery();
@@ -103,7 +113,7 @@ namespace System.Data.SqlClient.Tests
                 using (SqlCommand cmd = new SqlCommand())
                 {
                     cmd.Connection = conn;
-                    cmd.CommandText = "select @@servername;";
+                    cmd.CommandText = "SELECT [name], [state] FROM [sys].[databases] WHERE [name] = db_name();";
 
                     conn.Open();
                     SqlDataReader reader = cmd.ExecuteReader();
@@ -142,7 +152,7 @@ namespace System.Data.SqlClient.Tests
                 using (SqlCommand cmd = new SqlCommand())
                 {
                     cmd.Connection = conn;
-                    cmd.CommandText = "select @@servername;";
+                    cmd.CommandText = "SELECT [name], [state] FROM [sys].[databases] WHERE [name] = db_name();";
 
                     conn.Open();
                     SqlDataReader reader = cmd.ExecuteReader(CommandBehavior.Default);
@@ -151,12 +161,12 @@ namespace System.Data.SqlClient.Tests
             });
         }
 
-        [Fact]
+        [ConditionalFact(nameof(IsConnectionStringConfigured))]
         public void ExecuteXmlReaderTest()
         {
             CollectStatisticsDiagnostics(() =>
             {
-                using (SqlConnection conn = new SqlConnection(_connectionString))
+                using (SqlConnection conn = new SqlConnection(s_tcpConnStr))
                 using (SqlCommand cmd = new SqlCommand())
                 {
                     cmd.Connection = conn;
@@ -199,7 +209,7 @@ namespace System.Data.SqlClient.Tests
                 using (SqlCommand cmd = new SqlCommand())
                 {
                     cmd.Connection = conn;
-                    cmd.CommandText = "select @@servername;";
+                    cmd.CommandText = "SELECT [name], [state] FROM [sys].[databases] WHERE [name] = db_name();";
 
                     conn.Open();
                     var output = await cmd.ExecuteScalarAsync();
@@ -235,7 +245,7 @@ namespace System.Data.SqlClient.Tests
                 using (SqlCommand cmd = new SqlCommand())
                 {
                     cmd.Connection = conn;
-                    cmd.CommandText = "select @@servername;";
+                    cmd.CommandText = "SELECT [name], [state] FROM [sys].[databases] WHERE [name] = db_name();";
 
                     conn.Open();
                     var output = await cmd.ExecuteNonQueryAsync();
@@ -270,7 +280,7 @@ namespace System.Data.SqlClient.Tests
                 using (SqlCommand cmd = new SqlCommand())
                 {
                     cmd.Connection = conn;
-                    cmd.CommandText = "select @@servername;";
+                    cmd.CommandText = "SELECT [name], [state] FROM [sys].[databases] WHERE [name] = db_name();";
 
                     conn.Open();
                     SqlDataReader reader = await cmd.ExecuteReaderAsync();
@@ -300,12 +310,12 @@ namespace System.Data.SqlClient.Tests
             });
         }
 
-        [Fact]
+        [ConditionalFact(nameof(IsConnectionStringConfigured))]
         public void ExecuteXmlReaderAsyncTest()
         {
             CollectStatisticsDiagnosticsAsync(async () =>
             {
-                using (SqlConnection conn = new SqlConnection(_connectionString))
+                using (SqlConnection conn = new SqlConnection(s_tcpConnStr))
                 using (SqlCommand cmd = new SqlCommand())
                 {
                     cmd.Connection = conn;
@@ -764,6 +774,32 @@ namespace System.Data.SqlClient.Tests
 
             var propertyValue = pi.GetValue(obj);
             return (T)propertyValue;
+        }
+
+        public void Dispose() => _server?.Dispose();
+
+    }
+
+    public class DiagnosticsQueryEngine : QueryEngine
+    {
+        public DiagnosticsQueryEngine() : base(new TDSServerArguments())
+        {
+        }
+
+        protected override TDSMessageCollection CreateQueryResponse(ITDSServerSession session, TDSSQLBatchToken batchRequest)
+        {
+            string lowerBatchText = batchRequest.Text.ToLowerInvariant();
+            
+            if (lowerBatchText.Contains("1 / 0")) // SELECT 1/0 
+            {
+                TDSErrorToken errorToken = new TDSErrorToken(8134, 1, 1, "Divide by zero error encountered.");
+                TDSMessage responseMessage = new TDSMessage(TDSMessageType.Response, errorToken);
+                return new TDSMessageCollection(responseMessage);
+            }
+            else
+            {
+                return base.CreateQueryResponse(session, batchRequest);
+            }
         }
     }
 }

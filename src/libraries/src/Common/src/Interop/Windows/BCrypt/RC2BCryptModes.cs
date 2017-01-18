@@ -10,28 +10,32 @@ namespace Internal.Cryptography
 {
     internal static class RC2BCryptModes
     {
-        private static readonly SafeAlgorithmHandle s_hAlgCbc = OpenRC2Algorithm(Cng.BCRYPT_CHAIN_MODE_CBC);
-        private static readonly SafeAlgorithmHandle s_hAlgEcb = OpenRC2Algorithm(Cng.BCRYPT_CHAIN_MODE_ECB);
-
-        internal static SafeAlgorithmHandle GetSharedHandle(CipherMode cipherMode)
+        internal static SafeAlgorithmHandle GetHandle(CipherMode cipherMode, int effectiveKeyLength)
         {
-            // Windows 8 added support to set the CipherMode value on a key,
-            // but Windows 7 requires that it be set on the algorithm before key creation.
+            // Windows 8 added support to set CipherMode and EffectiveKeyLength on a key,
+            // but Windows 7 requires that they be set on the algorithm before key creation.
+            // Unlike the other SymmetricAlgorithm types that cache the algorithm based on CipherMode,
+            // RC2 creates a new algorithm each time since it must set EffectiveKeyLength.
             switch (cipherMode)
             {
                 case CipherMode.CBC:
-                    return s_hAlgCbc;
+                    return OpenRC2Algorithm(Cng.BCRYPT_CHAIN_MODE_CBC, effectiveKeyLength);
                 case CipherMode.ECB:
-                    return s_hAlgEcb;
+                    return OpenRC2Algorithm(Cng.BCRYPT_CHAIN_MODE_ECB, effectiveKeyLength);
                 default:
                     throw new NotSupportedException();
             }
         }
 
-        private static SafeAlgorithmHandle OpenRC2Algorithm(string cipherMode)
+        private static SafeAlgorithmHandle OpenRC2Algorithm(string cipherMode, int effectiveKeyLength)
         {
             SafeAlgorithmHandle hAlg = Cng.BCryptOpenAlgorithmProvider(Cng.BCRYPT_RC2_ALGORITHM, null, Cng.OpenAlgorithmProviderFlags.NONE);
             hAlg.SetCipherMode(cipherMode);
+
+            if (effectiveKeyLength != 0)
+            {
+                Cng.SetEffectiveKeyLength(hAlg, effectiveKeyLength);
+            }
 
             return hAlg;
         }

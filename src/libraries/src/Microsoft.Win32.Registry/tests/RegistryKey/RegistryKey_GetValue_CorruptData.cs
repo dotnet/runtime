@@ -25,7 +25,7 @@ namespace Microsoft.Win32.RegistryTests
             string corrupt = "str1\0str2\0str3\0";
 
             SafeRegistryHandle handle = TestRegistryKey.Handle;
-            int ret = Interop.mincore.RegSetValueEx(handle, TestValueName, 0,
+            int ret = Interop.Advapi32.RegSetValueEx(handle, TestValueName, 0,
                 RegistryValueKind.MultiString, corrupt, corrupt.Length * 2);
             Assert.Equal(0, ret);
             try
@@ -53,7 +53,7 @@ namespace Microsoft.Win32.RegistryTests
             const string TestValueName = "CorruptData2";
 
             SafeRegistryHandle handle = TestRegistryKey.Handle;
-            int ret = Interop.mincore.RegSetValueEx(handle, TestValueName, 0,
+            int ret = Interop.Advapi32.RegSetValueEx(handle, TestValueName, 0,
                 kind, contents, contents.Length);
             Assert.Equal(0, ret);
             try

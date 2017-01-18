@@ -219,4 +219,13 @@
   <data name="ReaderWriterLock_RestoreLockWithOwnedLocks" xml:space="preserve">
     <value>ReaderWriterLock.RestoreLock was called without releasing all locks acquired since the call to ReleaseLock.</value>
   </data>
+  <data name="HostExecutionContextManager_InvalidOperation_NotNewCaptureContext" xml:space="preserve">
+    <value>Cannot apply a context that has been marshaled across AppDomains, that was not acquired through a Capture operation or that has already been the argument to a Set call.</value>
+  </data>
+  <data name="HostExecutionContextManager_InvalidOperation_CannotOverrideSetWithoutRevert" xml:space="preserve">
+    <value>Must override both HostExecutionContextManager.SetHostExecutionContext and HostExecutionContextManager.Revert.</value>
+  </data>
+  <data name="HostExecutionContextManager_InvalidOperation_CannotUseSwitcherOtherThread" xml:space="preserve">
+    <value>Undo operation must be performed on the thread where the corresponding context was Set.</value>
+  </data>
 </root>

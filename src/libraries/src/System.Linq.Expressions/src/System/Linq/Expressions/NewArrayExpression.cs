@@ -42,7 +42,7 @@ namespace System.Linq.Expressions
         public sealed override Type Type { get; }
 
         /// <summary>
-        /// Gets the bounds of the array if the value of the <see cref="ExpressionType"/> property is NewArrayBounds, or the values to initialize the elements of the new array if the value of the <see cref="Expression.NodeType"/> property is NewArrayInit. 
+        /// Gets the bounds of the array if the value of the <see cref="ExpressionType"/> property is NewArrayBounds, or the values to initialize the elements of the new array if the value of the <see cref="Expression.NodeType"/> property is NewArrayInit.
         /// </summary>
         public ReadOnlyCollection<Expression> Expressions { get; }
 
@@ -63,15 +63,17 @@ namespace System.Linq.Expressions
         /// <returns>This expression if no children changed, or an expression with the updated children.</returns>
         public NewArrayExpression Update(IEnumerable<Expression> expressions)
         {
-            if (expressions == Expressions)
+            // Explicit null check here as otherwise wrong parameter name will be used.
+            ContractUtils.RequiresNotNull(expressions, nameof(expressions));
+
+            if (ExpressionUtils.SameElements(ref expressions, Expressions))
             {
                 return this;
             }
-            if (NodeType == ExpressionType.NewArrayInit)
-            {
-                return Expression.NewArrayInit(Type.GetElementType(), expressions);
-            }
-            return Expression.NewArrayBounds(Type.GetElementType(), expressions);
+
+            return NodeType == ExpressionType.NewArrayInit
+                ? NewArrayInit(Type.GetElementType(), expressions)
+                : NewArrayBounds(Type.GetElementType(), expressions);
         }
     }
 
@@ -232,7 +234,7 @@ namespace System.Linq.Expressions
             {
                 Expression expr = boundsList[i];
                 RequiresCanRead(expr, nameof(bounds), i);
-                if (!TypeUtils.IsInteger(expr.Type))
+                if (!expr.Type.IsInteger())
                 {
                     throw Error.ArgumentMustBeInteger(nameof(bounds), i);
                 }
@@ -241,7 +243,7 @@ namespace System.Linq.Expressions
             Type arrayType;
             if (dimensions == 1)
             {
-                //To get a vector, need call Type.MakeArrayType(). 
+                //To get a vector, need call Type.MakeArrayType().
                 //Type.MakeArrayType(1) gives a non-vector array, which will cause type check error.
                 arrayType = type.MakeArrayType();
             }
@@ -250,7 +252,7 @@ namespace System.Linq.Expressions
                 arrayType = type.MakeArrayType(dimensions);
             }
 
-            return NewArrayExpression.Make(ExpressionType.NewArrayBounds, arrayType, bounds.ToReadOnly());
+            return NewArrayExpression.Make(ExpressionType.NewArrayBounds, arrayType, boundsList);
         }
 
         #endregion

@@ -42,7 +42,7 @@ namespace System.Linq.Expressions.Interpreter
             }
 
             frame.Push(converted);
-            return +1;
+            return 1;
         }
 
         protected abstract object Convert(object obj);
@@ -101,6 +101,7 @@ namespace System.Linq.Expressions.Interpreter
                         case TypeCode.Single: return (float)obj;
                         case TypeCode.Double: return (double)obj;
                         case TypeCode.Decimal: return (decimal)obj;
+                        case TypeCode.Boolean: return obj != 0;
                         default: throw ContractUtils.Unreachable;
                     }
                 }

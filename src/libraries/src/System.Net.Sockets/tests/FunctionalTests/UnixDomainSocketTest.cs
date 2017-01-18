@@ -70,9 +70,11 @@ namespace System.Net.Sockets.Tests
 
                 using (Socket sock = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified))
                 {
-                    Assert.True(sock.ConnectAsync(args));
-
-                    await complete.Task;
+                    bool willRaiseEvent = sock.ConnectAsync(args);
+                    if (willRaiseEvent)
+                    {
+                        await complete.Task;
+                    }
 
                     Assert.Equal(SocketError.Success, args.SocketError);
                     Assert.Null(args.ConnectByNameError);

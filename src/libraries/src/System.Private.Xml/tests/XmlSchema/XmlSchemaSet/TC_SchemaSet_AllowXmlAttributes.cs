@@ -4,13 +4,13 @@
 
 using Xunit;
 using Xunit.Abstractions;
-using System.Xml;
+using System.IO;
 using System.Xml.Schema;
 
 namespace System.Xml.Tests
 {
     //[TestCase(Name = "TC_SchemaSet_AllowXmlAttributes", Desc = "")]
-    public class TC_SchemaSet_AllowXmlAttributes
+    public class TC_SchemaSet_AllowXmlAttributes : TC_SchemaSetBase
     {
         private ITestOutputHelper _output;
 
@@ -29,7 +29,7 @@ namespace System.Xml.Tests
 
         public void Initialize()
         {
-            this.testData = TestData._Root + @"AllowXmlAttributes\";
+            this.testData = Path.Combine(TestData._Root, "AllowXmlAttributes");
             bWarningCallback = bErrorCallback = false;
             errorCount = warningCount = 0;
         }
@@ -273,9 +273,9 @@ namespace System.Xml.Tests
             xss.XmlResolver = new XmlUrlResolver();
             xss.ValidationEventHandler += new ValidationEventHandler(ValidationCallback);
             if (xsdFile != null)
-                xss.Add(null, testData + xsdFile);
+                xss.Add(null, Path.Combine(testData, xsdFile));
 
-            XmlReader vr = CreateReader(testData + xmlFile, xss, allowXmlAttributes);
+            XmlReader vr = CreateReader(Path.Combine(testData, xmlFile), xss, allowXmlAttributes);
             while (vr.Read()) ;
 
             Assert.Equal(warningCount, expectedWarningCount);

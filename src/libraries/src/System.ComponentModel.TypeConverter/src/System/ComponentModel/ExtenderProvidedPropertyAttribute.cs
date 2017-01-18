@@ -14,19 +14,15 @@ namespace System.ComponentModel
     [AttributeUsage(AttributeTargets.All)]
     public sealed class ExtenderProvidedPropertyAttribute : Attribute
     {
-        private PropertyDescriptor _extenderProperty;
-        private IExtenderProvider _provider;
-        private Type _receiverType;
-
         /// <summary>
         ///     Creates a new ExtenderProvidedPropertyAttribute.
         /// </summary>
         internal static ExtenderProvidedPropertyAttribute Create(PropertyDescriptor extenderProperty, Type receiverType, IExtenderProvider provider)
         {
             ExtenderProvidedPropertyAttribute e = new ExtenderProvidedPropertyAttribute();
-            e._extenderProperty = extenderProperty;
-            e._receiverType = receiverType;
-            e._provider = provider;
+            e.ExtenderProperty = extenderProperty;
+            e.ReceiverType = receiverType;
+            e.Provider = provider;
             return e;
         }
 
@@ -40,35 +36,17 @@ namespace System.ComponentModel
         /// <summary>
         ///     PropertyDescriptor of the property that is being provided.
         /// </summary>
-        public PropertyDescriptor ExtenderProperty
-        {
-            get
-            {
-                return _extenderProperty;
-            }
-        }
+        public PropertyDescriptor ExtenderProperty { get; private set; }
 
         /// <summary>
         ///     Extender provider that is providing the property.
         /// </summary>
-        public IExtenderProvider Provider
-        {
-            get
-            {
-                return _provider;
-            }
-        }
+        public IExtenderProvider Provider { get; private set; }
 
         /// <summary>
         ///     The type of object that can receive these properties.
         /// </summary>
-        public Type ReceiverType
-        {
-            get
-            {
-                return _receiverType;
-            }
-        }
+        public Type ReceiverType { get; private set; }
 
         public override bool Equals(object obj)
         {
@@ -79,7 +57,7 @@ namespace System.ComponentModel
 
             ExtenderProvidedPropertyAttribute other = obj as ExtenderProvidedPropertyAttribute;
 
-            return (other != null) && other._extenderProperty.Equals(_extenderProperty) && other._provider.Equals(_provider) && other._receiverType.Equals(_receiverType);
+            return (other != null) && other.ExtenderProperty.Equals(ExtenderProperty) && other.Provider.Equals(Provider) && other.ReceiverType.Equals(ReceiverType);
         }
 
         public override int GetHashCode()
@@ -89,7 +67,7 @@ namespace System.ComponentModel
 
         public override bool IsDefaultAttribute()
         {
-            return _receiverType == null;
+            return ReceiverType == null;
         }
     }
 }

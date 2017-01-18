@@ -11,22 +11,6 @@ namespace System.Linq.Tests
 {
     public class ConcatTests : EnumerableTests
     {
-        private static List<Func<IEnumerable<T>, IEnumerable<T>>> IdentityTransforms<T>()
-        {
-            // All of these transforms should take an enumerable and produce
-            // another enumerable with the same contents.
-            return new List<Func<IEnumerable<T>, IEnumerable<T>>>
-            {
-                e => e,
-                e => e.ToArray(),
-                e => e.ToList(),
-                e => e.Select(i => i),
-                e => e.Concat(Array.Empty<T>()),
-                e => ForceNotCollection(e),
-                e => e.Concat(ForceNotCollection(Array.Empty<T>()))
-            };
-        }
-
         [Theory]
         [InlineData(new int[] { 2, 3, 2, 4, 5 }, new int[] { 1, 9, 4 })]
         public void SameResultsWithQueryAndRepeatCalls(IEnumerable<int> first, IEnumerable<int> second)
@@ -234,6 +218,22 @@ namespace System.Linq.Tests
 
                 Assert.Equal(sources.Sum(s => s.Count()), concatee.Count());
                 VerifyEqualsWorker(sources.SelectMany(s => s), concatee);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(ManyConcatsData))]
+        public void ManyConcatsRunOnce(IEnumerable<IEnumerable<int>> sources, IEnumerable<int> expected)
+        {
+            foreach (var transform in IdentityTransforms<int>())
+            {
+                IEnumerable<int> concatee = Enumerable.Empty<int>();
+                foreach (var source in sources)
+                {
+                    concatee = concatee.RunOnce().Concat(transform(source));
+                }
+
+                Assert.Equal(sources.Sum(s => s.Count()), concatee.Count());
             }
         }
 

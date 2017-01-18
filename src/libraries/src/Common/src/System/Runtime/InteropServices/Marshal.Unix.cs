@@ -14,7 +14,7 @@ namespace System.Runtime.InteropServices
             return 0;
         }
         
-        unsafe public static String PtrToStringAnsi(IntPtr ptr)
+        public static unsafe String PtrToStringAnsi(IntPtr ptr)
         {
             if (IntPtr.Zero == ptr) 
             {

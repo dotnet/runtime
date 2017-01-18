@@ -10,8 +10,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
     internal sealed class ExprFactory
     {
-        private GlobalSymbolContext _globalSymbolContext;
-        private ConstValFactory _constants;
+        private readonly GlobalSymbolContext _globalSymbolContext;
+        private readonly ConstValFactory _constants;
 
         public ExprFactory(GlobalSymbolContext globalSymbolContext)
         {
@@ -376,7 +376,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             Debug.Assert(fieldType != null);
             EXPRFIELDINFO rval = new EXPRFIELDINFO();
             rval.kind = ExpressionKind.EK_FIELDINFO;
-            rval.type = GetTypes().GetOptPredefAgg(PredefinedType.PT_FIELDINFO).getThisType(); ;
+            rval.type = GetTypes().GetOptPredefAgg(PredefinedType.PT_FIELDINFO).getThisType();
             rval.flags = 0;
             rval.Init(field, fieldType);
             return rval;

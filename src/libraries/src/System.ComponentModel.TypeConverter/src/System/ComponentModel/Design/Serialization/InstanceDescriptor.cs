@@ -17,10 +17,6 @@ namespace System.ComponentModel.Design.Serialization
     /// </summary>
     public sealed class InstanceDescriptor
     {
-        private MemberInfo _member;
-        private ICollection _arguments;
-        private bool _isComplete;
-
         /// <summary>
         ///     Creates a new InstanceDescriptor.
         /// </summary>
@@ -33,18 +29,18 @@ namespace System.ComponentModel.Design.Serialization
         /// </summary>
         public InstanceDescriptor(MemberInfo member, ICollection arguments, bool isComplete)
         {
-            _member = member;
-            _isComplete = isComplete;
+            MemberInfo = member;
+            IsComplete = isComplete;
 
             if (arguments == null)
             {
-                _arguments = new object[0];
+                Arguments = Array.Empty<object>();
             }
             else
             {
                 object[] args = new object[arguments.Count];
                 arguments.CopyTo(args, 0);
-                _arguments = args;
+                Arguments = args;
             }
 
             if (member is FieldInfo)
@@ -54,7 +50,7 @@ namespace System.ComponentModel.Design.Serialization
                 {
                     throw new ArgumentException(SR.InstanceDescriptorMustBeStatic);
                 }
-                if (_arguments.Count != 0)
+                if (Arguments.Count != 0)
                 {
                     throw new ArgumentException(SR.InstanceDescriptorLengthMismatch);
                 }
@@ -66,7 +62,7 @@ namespace System.ComponentModel.Design.Serialization
                 {
                     throw new ArgumentException(SR.InstanceDescriptorCannotBeStatic);
                 }
-                if (_arguments.Count != ci.GetParameters().Length)
+                if (Arguments.Count != ci.GetParameters().Length)
                 {
                     throw new ArgumentException(SR.InstanceDescriptorLengthMismatch);
                 }
@@ -78,7 +74,7 @@ namespace System.ComponentModel.Design.Serialization
                 {
                     throw new ArgumentException(SR.InstanceDescriptorMustBeStatic);
                 }
-                if (_arguments.Count != mi.GetParameters().Length)
+                if (Arguments.Count != mi.GetParameters().Length)
                 {
                     throw new ArgumentException(SR.InstanceDescriptorLengthMismatch);
                 }
@@ -102,13 +98,7 @@ namespace System.ComponentModel.Design.Serialization
         ///     The collection of arguments that should be passed to
         ///     MemberInfo in order to create an instance.
         /// </summary>
-        public ICollection Arguments
-        {
-            get
-            {
-                return _arguments;
-            }
-        }
+        public ICollection Arguments { get; }
 
         /// <summary>
         ///     Determines if the contents of this instance descriptor completely identify the instance.
@@ -116,25 +106,13 @@ namespace System.ComponentModel.Design.Serialization
         ///     or constructor to represent.  IsComplete can be used to identify these objects and take
         ///     additional steps to further describe their state.
         /// </summary>
-        public bool IsComplete
-        {
-            get
-            {
-                return _isComplete;
-            }
-        }
+        public bool IsComplete { get; }
 
         /// <summary>
         ///     The MemberInfo object that was passed into the constructor
         ///     of this InstanceDescriptor.
         /// </summary>
-        public MemberInfo MemberInfo
-        {
-            get
-            {
-                return _member;
-            }
-        }
+        public MemberInfo MemberInfo { get; }
 
         /// <summary>
         ///     Invokes this instance descriptor, returning the object
@@ -142,8 +120,8 @@ namespace System.ComponentModel.Design.Serialization
         /// </summary>
         public object Invoke()
         {
-            object[] translatedArguments = new object[_arguments.Count];
-            _arguments.CopyTo(translatedArguments, 0);
+            object[] translatedArguments = new object[Arguments.Count];
+            Arguments.CopyTo(translatedArguments, 0);
 
             // Instance descriptors can contain other instance
             // descriptors.  Translate them if necessary.
@@ -156,25 +134,25 @@ namespace System.ComponentModel.Design.Serialization
                 }
             }
 
-            if (_member is ConstructorInfo)
+            if (MemberInfo is ConstructorInfo)
             {
-                return ((ConstructorInfo)_member).Invoke(translatedArguments);
+                return ((ConstructorInfo)MemberInfo).Invoke(translatedArguments);
             }
-            else if (_member is MethodInfo)
+            else if (MemberInfo is MethodInfo)
             {
-                return ((MethodInfo)_member).Invoke(null, translatedArguments);
+                return ((MethodInfo)MemberInfo).Invoke(null, translatedArguments);
             }
-            else if (_member is PropertyInfo)
+            else if (MemberInfo is PropertyInfo)
             {
-                return ((PropertyInfo)_member).GetValue(null, translatedArguments);
+                return ((PropertyInfo)MemberInfo).GetValue(null, translatedArguments);
             }
-            else if (_member is FieldInfo)
+            else if (MemberInfo is FieldInfo)
             {
-                return ((FieldInfo)_member).GetValue(null);
+                return ((FieldInfo)MemberInfo).GetValue(null);
             }
             else
             {
-                Debug.Fail("Unrecognized reflection type in instance descriptor: " + _member.GetType().Name);
+                Debug.Fail($"Unrecognized reflection type in instance descriptor: {MemberInfo.GetType().Name}");
             }
 
             return null;

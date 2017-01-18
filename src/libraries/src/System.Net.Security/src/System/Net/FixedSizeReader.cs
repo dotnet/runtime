@@ -4,6 +4,7 @@
 
 using System.Diagnostics;
 using System.IO;
+using System.Threading.Tasks;
 
 namespace System.Net
 {
@@ -70,16 +71,25 @@ namespace System.Net
         {
             while (true)
             {
-                IAsyncResult ar = _transport.BeginRead(_request.Buffer, _request.Offset + _totalRead, _request.Count - _totalRead, s_readCallback, this);
-                if (!ar.CompletedSynchronously)
-                {
-#if DEBUG
-                    _request._DebugAsyncChain = ar;
-#endif
-                    break;
-                }
+                int bytes;
 
-                int bytes = _transport.EndRead(ar);
+                Task<int> t = _transport.ReadAsync(_request.Buffer, _request.Offset + _totalRead, _request.Count - _totalRead);
+                if (t.IsCompleted)
+                {
+                    bytes = t.GetAwaiter().GetResult();
+                }
+                else
+                {
+                    IAsyncResult ar = TaskToApm.Begin(t, s_readCallback, this);
+                    if (!ar.CompletedSynchronously)
+                    {
+#if DEBUG
+                        _request._DebugAsyncChain = ar;
+#endif
+                        break;
+                    }
+                    bytes = TaskToApm.End<int>(ar);
+                }
 
                 if (CheckCompletionBeforeNextRead(bytes))
                 {
@@ -135,7 +145,7 @@ namespace System.Net
             // Async completion.
             try
             {
-                int bytes = reader._transport.EndRead(transportResult);
+                int bytes = TaskToApm.End<int>(transportResult);
 
                 if (reader.CheckCompletionBeforeNextRead(bytes))
                 {

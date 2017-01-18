@@ -90,6 +90,80 @@ namespace System.Security.Cryptography.Encryption.TripleDes.Tests
             }
         }
 
+#if netstandard17
+        [Fact]
+        public static void TripleDESRoundTrip192BitsISO10126ECB()
+        {
+            byte[] key = "9da5b265179d65f634dfc95513f25094411e51bb3be877ef".HexToByteArray();
+
+            using (TripleDES alg = TripleDESFactory.Create())
+            {
+                alg.Key = key;
+                alg.Padding = PaddingMode.ISO10126;
+                alg.Mode = CipherMode.ECB;
+
+                byte[] plainText = "77a8b2efb45addb38d7ef3aa9e6ab5d71957445ab8".HexToByteArray();
+                byte[] cipher = alg.Encrypt(plainText);
+
+                // the padding data for ISO10126 is made up of random bytes, so we cannot actually test
+                // the full encrypted text. We need to strip the padding and then compare
+                byte[] decrypted = alg.Decrypt(cipher);
+
+                Assert.Equal<byte>(plainText, decrypted);
+            }
+        }
+
+        [Fact]
+        public static void TripleDESRoundTrip192BitsANSIX923ECB()
+        {
+            byte[] key = "9da5b265179d65f634dfc95513f25094411e51bb3be877ef".HexToByteArray();
+
+            using (TripleDES alg = TripleDESFactory.Create())
+            {
+                alg.Key = key;
+                alg.Padding = PaddingMode.ANSIX923;
+                alg.Mode = CipherMode.ECB;
+
+                byte[] plainText = "77a8b2efb45addb38d7ef3aa9e6ab5d71957445ab8".HexToByteArray();
+                byte[] cipher = alg.Encrypt(plainText);
+                
+                byte[] expectedCipher = "149ec32f558b27c7e4151e340d8184f1c90f0a499e20fda9".HexToByteArray();
+                Assert.Equal<byte>(expectedCipher, cipher);
+
+                byte[] decrypted = alg.Decrypt(cipher);
+                byte[] expectedDecrypted = "77a8b2efb45addb38d7ef3aa9e6ab5d71957445ab8".HexToByteArray();
+                Assert.Equal<byte>(plainText, decrypted);
+            }
+        }
+
+        [Fact]
+        public static void TripleDES_FailureToRoundTrip192Bits_DifferentPadding_ANSIX923_ZerosECB()
+        {
+            byte[] key = "9da5b265179d65f634dfc95513f25094411e51bb3be877ef".HexToByteArray();
+
+            using (TripleDES alg = TripleDESFactory.Create())
+            {
+                alg.Key = key;
+                alg.Padding = PaddingMode.ANSIX923;
+                alg.Mode = CipherMode.ECB;
+
+                byte[] plainText = "77a8b2efb45addb38d7ef3aa9e6ab5d71957445ab8".HexToByteArray();
+                byte[] cipher = alg.Encrypt(plainText);
+
+                byte[] expectedCipher = "149ec32f558b27c7e4151e340d8184f1c90f0a499e20fda9".HexToByteArray();
+                Assert.Equal<byte>(expectedCipher, cipher);
+
+                alg.Padding = PaddingMode.Zeros;
+                byte[] decrypted = alg.Decrypt(cipher);
+                byte[] expectedDecrypted = "77a8b2efb45addb38d7ef3aa9e6ab5d71957445ab8".HexToByteArray();
+
+                // They should not decrypt to the same value
+                Assert.NotEqual<byte>(plainText, decrypted);
+            }
+        }
+
+#endif
+
         [Fact]
         public static void TripleDESRoundTrip192BitsZerosCBC()
         {

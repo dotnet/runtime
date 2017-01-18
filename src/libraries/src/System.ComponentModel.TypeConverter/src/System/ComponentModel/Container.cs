@@ -25,7 +25,7 @@ namespace System.ComponentModel
         private ContainerFilterService _filter;
         private bool _checkedFilter;
 
-        private object _syncObj = new Object();
+        private readonly object _syncObj = new Object();
 
         ~Container()
         {
@@ -86,10 +86,7 @@ namespace System.ComponentModel
                     }
                 }
 
-                if (site != null)
-                {
-                    site.Container.Remove(component);
-                }
+                site?.Container.Remove(component);
 
                 ISite newSite = CreateSite(component, name);
                 _sites[_siteCount++] = newSite;
@@ -232,9 +229,7 @@ namespace System.ComponentModel
         {
             lock (_syncObj)
             {
-                if (component == null)
-                    return;
-                ISite site = component.Site;
+                ISite site = component?.Site;
                 if (site == null || site.Container != this)
                     return;
                 if (!preserveSite)
@@ -276,9 +271,7 @@ namespace System.ComponentModel
                 {
                     ISite s = _sites[i];
 
-                    if (s != null && s.Name != null
-                            && string.Equals(s.Name, name, StringComparison.OrdinalIgnoreCase)
-                            && s.Component != component)
+                    if (s?.Name != null && string.Equals(s.Name, name, StringComparison.OrdinalIgnoreCase) && s.Component != component)
                     {
                         InheritanceAttribute inheritanceAttribute = (InheritanceAttribute)TypeDescriptor.GetAttributes(s.Component)[typeof(InheritanceAttribute)];
                         if (inheritanceAttribute.InheritanceLevel != InheritanceLevel.InheritedReadOnly)
@@ -292,49 +285,29 @@ namespace System.ComponentModel
 
         private class Site : ISite
         {
-            private IComponent _component;
-            private Container _container;
             private String _name;
 
             internal Site(IComponent component, Container container, String name)
             {
-                _component = component;
-                _container = container;
+                Component = component;
+                Container = container;
                 _name = name;
             }
 
             // The component sited by this component site.
-            public IComponent Component
-            {
-                get
-                {
-                    return _component;
-                }
-            }
+            public IComponent Component { get; }
 
             // The container in which the component is sited.
-            public IContainer Container
-            {
-                get
-                {
-                    return _container;
-                }
-            }
+            public IContainer Container { get; }
 
             public Object GetService(Type service)
             {
-                return ((service == typeof(ISite)) ? this : _container.GetService(service));
+                return ((service == typeof(ISite)) ? this : ((Container)Container).GetService(service));
             }
 
 
             // Indicates whether the component is in design mode.
-            public bool DesignMode
-            {
-                get
-                {
-                    return false;
-                }
-            }
+            public bool DesignMode => false;
 
             // The name of the component.
             //
@@ -346,7 +319,7 @@ namespace System.ComponentModel
                     if (value == null || _name == null || !value.Equals(_name))
                     {
                         // UNDONE : This is a breaking change.  
-                        _container.ValidateName(_component, value);
+                       ((Container)Container).ValidateName(Component, value);
                         _name = value;
                     }
                 }

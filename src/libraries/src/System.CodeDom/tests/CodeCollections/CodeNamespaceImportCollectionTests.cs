@@ -17,6 +17,7 @@ namespace System.CodeDom.Tests
 
         protected override bool NullAllowed => false;
         protected override bool Enumerator_Current_UndefinedOperation_Throws => true;
+        protected override bool IList_CurrentAfterAdd_Throws => false;
         protected override bool ICollection_NonGeneric_HasNullSyncRoot => true;
 
         protected override Type ICollection_NonGeneric_CopyTo_NonZeroLowerBound_ThrowType => typeof(ArgumentOutOfRangeException);

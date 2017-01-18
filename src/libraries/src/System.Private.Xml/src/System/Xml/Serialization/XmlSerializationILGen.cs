@@ -67,7 +67,7 @@ namespace System.Xml.Serialization
         internal TypeAttributes TypeAttributes { get { return _typeAttributes; } }
 
         private static Dictionary<string, Regex> s_regexs = new Dictionary<string, Regex>();
-        static internal Regex NewRegex(string pattern)
+        internal static Regex NewRegex(string pattern)
         {
             Regex regex;
             lock (s_regexs)

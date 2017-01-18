@@ -186,7 +186,7 @@ internal static partial class Interop
         internal static extern int ConvertErrorPalToPlatform(Error error);
 
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_StrErrorR")]
-        private static unsafe extern byte* StrErrorR(int platformErrno, byte* buffer, int bufferSize);
+        private static extern unsafe byte* StrErrorR(int platformErrno, byte* buffer, int bufferSize);
     }
 }
 

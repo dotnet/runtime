@@ -2,9 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.IO;
-using System.Xml;
 using System.Xml.Schema;
 using Xunit;
 using Xunit.Abstractions;
@@ -16,9 +14,12 @@ namespace System.Xml.Tests
     public class TCInitialize : CXmlSchemaValidatorTestCase
     {
         private ITestOutputHelper _output;
+        private ExceptionVerifier _exVerifier;
+
         public TCInitialize(ITestOutputHelper output): base(output)
         {
             _output = output;
+            _exVerifier = new ExceptionVerifier("System.Xml", _output);
         }
 
         [Fact]
@@ -137,7 +138,7 @@ namespace System.Xml.Tests
             val.EndValidation();
 
             val.Initialize();
-            val.ValidateElement("foo", "", info, "type1", null, null, TestData + XSDFILE_NO_TARGET_NAMESPACE);
+            val.ValidateElement("foo", "", info, "type1", null, null, Path.Combine(TestData, XSDFILE_NO_TARGET_NAMESPACE));
             val.ValidateEndOfAttributes(null);
             val.ValidateElement("bar", "", info);
             val.ValidateEndOfAttributes(null);
@@ -176,7 +177,7 @@ namespace System.Xml.Tests
             XmlSchemaInfo info = new XmlSchemaInfo();
             XmlSchemaSet schemas = new XmlSchemaSet();
 
-            schemas.Add("", TestData + XSDFILE_PARTIAL_VALIDATION);
+            schemas.Add("", Path.Combine(TestData, XSDFILE_PARTIAL_VALIDATION));
             schemas.Compile();
 
             val = CreateValidator(schemas);
@@ -203,7 +204,7 @@ namespace System.Xml.Tests
             XmlSchemaInfo info = new XmlSchemaInfo();
             XmlSchemaSet schemas = new XmlSchemaSet();
 
-            schemas.Add("", TestData + XSDFILE_PARTIAL_VALIDATION);
+            schemas.Add("", Path.Combine(TestData, XSDFILE_PARTIAL_VALIDATION));
             schemas.Compile();
 
             val = CreateValidator(schemas);
@@ -230,9 +231,23 @@ namespace System.Xml.Tests
                         break;
                 }
             }
-            catch (XmlSchemaValidationException)
+            catch (XmlSchemaValidationException e)
             {
-                //XmlExceptionVerifier.IsExceptionOk(e, (string)null);
+                switch (typeToValidate)
+                {
+                    case "other":
+                        _exVerifier.IsExceptionOk(e, "Sch_SchemaElementNameMismatch", new string[] { "PartialElement2", "PartialElement" });
+                        break;
+                    case "type":
+                        _exVerifier.IsExceptionOk(e, "Sch_SchemaElementNameMismatch", new string[] { "foo", "PartialElement" });
+                        break;
+                    case "attribute":
+                        _exVerifier.IsExceptionOk(e, "Sch_ValidateAttributeInvalidCall");
+                        break;
+                    default:
+                        Assert.True(false);
+                        break;
+                }
                 return;
             }
 
@@ -246,7 +261,7 @@ namespace System.Xml.Tests
             XmlSchemaInfo info = new XmlSchemaInfo();
             XmlSchemaSet schemas = new XmlSchemaSet();
 
-            schemas.Add("", TestData + XSDFILE_PARTIAL_VALIDATION);
+            schemas.Add("", Path.Combine(TestData, XSDFILE_PARTIAL_VALIDATION));
             schemas.Compile();
 
             val = CreateValidator(schemas);
@@ -271,7 +286,7 @@ namespace System.Xml.Tests
             XmlSchemaInfo info = new XmlSchemaInfo();
             XmlSchemaSet schemas = new XmlSchemaSet();
 
-            schemas.Add("", TestData + XSDFILE_PARTIAL_VALIDATION);
+            schemas.Add("", Path.Combine(TestData, XSDFILE_PARTIAL_VALIDATION));
             schemas.Compile();
 
             val = CreateValidator(schemas);
@@ -285,10 +300,6 @@ namespace System.Xml.Tests
                         val.ValidateElement("foo", "", info, "PartialType2", null, null, null);
                         break;
 
-                    case "element":
-                        val.ValidateElement("PartialElement", "", info);
-                        break;
-
                     case "attribute":
                         val.ValidateAttribute("PartialAttribute", "", StringGetter("123"), info);
                         break;
@@ -298,10 +309,20 @@ namespace System.Xml.Tests
                         break;
                 }
             }
-            catch (XmlSchemaValidationException)
+            catch (XmlSchemaValidationException e)
             {
-                //XmlExceptionVerifier.IsExceptionOk(e, (string)null);
-
+                switch (typeToValidate)
+                {
+                    case "other":
+                        _exVerifier.IsExceptionOk(e, "Sch_XsiTypeBlockedEx", new string[] { "PartialType2", "foo" });
+                        break;
+                    case "attribute":
+                        _exVerifier.IsExceptionOk(e, "Sch_ValidateAttributeInvalidCall");
+                        break;
+                    default:
+                        Assert.True(false);
+                        break;
+                }
                 return;
             }
 
@@ -315,7 +336,7 @@ namespace System.Xml.Tests
             XmlSchemaInfo info = new XmlSchemaInfo();
             XmlSchemaSet schemas = new XmlSchemaSet();
 
-            schemas.Add("", TestData + XSDFILE_PARTIAL_VALIDATION);
+            schemas.Add("", Path.Combine(TestData, XSDFILE_PARTIAL_VALIDATION));
             schemas.Compile();
 
             val = CreateValidator(schemas);
@@ -340,7 +361,7 @@ namespace System.Xml.Tests
             XmlSchemaInfo info = new XmlSchemaInfo();
             XmlSchemaSet schemas = new XmlSchemaSet();
 
-            schemas.Add("", TestData + XSDFILE_PARTIAL_VALIDATION);
+            schemas.Add("", Path.Combine(TestData, XSDFILE_PARTIAL_VALIDATION));
             schemas.Compile();
 
             val = CreateValidator(schemas);
@@ -364,7 +385,7 @@ namespace System.Xml.Tests
             XmlSchemaInfo info = new XmlSchemaInfo();
             XmlSchemaSet schemas = new XmlSchemaSet();
 
-            schemas.Add("", TestData + XSDFILE_PARTIAL_VALIDATION);
+            schemas.Add("", Path.Combine(TestData, XSDFILE_PARTIAL_VALIDATION));
             schemas.Compile();
 
             val = CreateValidator(schemas);
@@ -391,10 +412,23 @@ namespace System.Xml.Tests
                         break;
                 }
             }
-            catch (XmlSchemaValidationException)
+            catch (XmlSchemaValidationException e)
             {
-                //XmlExceptionVerifier.IsExceptionOk(e, (string)null);
-
+                switch (typeToValidate)
+                {
+                    case "other":
+                        _exVerifier.IsExceptionOk(e, "Sch_SchemaAttributeNameMismatch", new string[] { "PartialAttribute2", "PartialAttribute" });
+                        break;
+                    case "element":
+                        _exVerifier.IsExceptionOk(e, "Sch_ValidateElementInvalidCall");
+                        break;
+                    case "type":
+                        _exVerifier.IsExceptionOk(e, "Sch_ValidateElementInvalidCall");
+                        break;
+                    default:
+                        Assert.True(false);
+                        break;
+                }
                 return;
             }
 
@@ -450,7 +484,7 @@ namespace System.Xml.Tests
             XmlSchemaInfo info = new XmlSchemaInfo();
             XmlSchemaSet schemas = new XmlSchemaSet();
 
-            schemas.Add("", TestData + XSDFILE_PARTIAL_VALIDATION);
+            schemas.Add("", Path.Combine(TestData, XSDFILE_PARTIAL_VALIDATION));
             schemas.Compile();
 
             val = CreateValidator(schemas);
@@ -459,7 +493,7 @@ namespace System.Xml.Tests
             if (typeToValidate == "text")
                 val.ValidateText(StringGetter("foo"));
             else
-                val.ValidateWhitespace(StringGetter("\r\n\t "));
+                val.ValidateWhitespace(StringGetter(Environment.NewLine + "\t "));
 
             return;
         }
@@ -470,9 +504,12 @@ namespace System.Xml.Tests
     public class TCEndValidation : CXmlSchemaValidatorTestCase
     {
         private ITestOutputHelper _output;
+        private ExceptionVerifier _exVerifier;
+
         public TCEndValidation(ITestOutputHelper output): base(output)
         {
             _output = output;
+            _exVerifier = new ExceptionVerifier("System.Xml", _output);
         }
 
         [Fact]
@@ -559,9 +596,9 @@ namespace System.Xml.Tests
                     val.EndValidation();
                     Assert.True(false);
                 }
-                catch (XmlSchemaValidationException)
+                catch (XmlSchemaValidationException e)
                 {
-                    //XmlExceptionVerifier.IsExceptionOk(e, "Sch_UndeclaredId", new string[] { "a3" });
+                    _exVerifier.IsExceptionOk(e, "Sch_UndeclaredId", new string[] { "a3" });
                     return;
                 }
             }

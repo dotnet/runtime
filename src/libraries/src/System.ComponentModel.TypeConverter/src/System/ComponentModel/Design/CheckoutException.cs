@@ -29,7 +29,7 @@ namespace System.ComponentModel.Design
         ///       canceled. This field is read-only.
         ///    </para>
         /// </summary>
-        public readonly static CheckoutException Canceled = new CheckoutException(SR.CHECKOUTCanceled, E_ABORT);
+        public static readonly CheckoutException Canceled = new CheckoutException(SR.CHECKOUTCanceled, E_ABORT);
 
         /// <summary>
         ///    <para>

@@ -108,6 +108,24 @@ namespace System.Linq.Tests
         }
 
         [Fact]
+        public void RunOnce()
+        {
+            string[] key = { "Chris", "Prakash", "Robert" };
+            int[] element = { 50, 80, 100, 95, 99, 56 };
+            var source = new[]
+            {
+                new { Name = key[0], Score = element[0] },
+                new { Name = key[1], Score = element[2] },
+                new { Name = key[2], Score = element[5] },
+                new { Name = key[1], Score = element[3] },
+                new { Name = key[0], Score = element[1] },
+                new { Name = key[1], Score = element[4] }
+            };
+
+            AssertMatches(key, element, source.RunOnce().ToLookup(e => e.Name, e => e.Score, new AnagramEqualityComparer()));
+        }
+
+        [Fact]
         public void Count()
         {
             string[] key = { "Chris", "Prakash", "Robert" };

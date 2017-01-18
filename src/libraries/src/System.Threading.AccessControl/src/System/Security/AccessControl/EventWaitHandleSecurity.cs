@@ -136,9 +136,9 @@ namespace System.Security.AccessControl
 
             switch (errorCode)
             {
-                case Interop.mincore.Errors.ERROR_INVALID_NAME:
-                case Interop.mincore.Errors.ERROR_INVALID_HANDLE:
-                case Interop.mincore.Errors.ERROR_FILE_NOT_FOUND:
+                case Interop.Errors.ERROR_INVALID_NAME:
+                case Interop.Errors.ERROR_INVALID_HANDLE:
+                case Interop.Errors.ERROR_FILE_NOT_FOUND:
                     if ((name != null) && (name.Length != 0))
                         exception = new WaitHandleCannotBeOpenedException(SR.Format(SR.WaitHandleCannotBeOpenedException_InvalidHandle, name));
                     else

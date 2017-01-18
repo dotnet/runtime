@@ -13,7 +13,6 @@ namespace System.Collections.Generic
 {
     [DebuggerTypeProxy(typeof(IDictionaryDebugView<,>))]
     [DebuggerDisplay("Count = {Count}")]
-    [System.Runtime.InteropServices.ComVisible(false)]
     [Serializable]
     public class Dictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictionary, IReadOnlyDictionary<TKey, TValue>, ISerializable, IDeserializationCallback
     {
@@ -86,6 +85,22 @@ namespace System.Collections.Generic
             }
 
             foreach (KeyValuePair<TKey, TValue> pair in dictionary)
+            {
+                Add(pair.Key, pair.Value);
+            }
+        }
+
+        public Dictionary(IEnumerable<KeyValuePair<TKey, TValue>> collection) : this(collection, null) { }
+
+        public Dictionary(IEnumerable<KeyValuePair<TKey, TValue>> collection, IEqualityComparer<TKey> comparer) :
+            this((collection as ICollection<KeyValuePair<TKey, TValue>>)?.Count ?? 0, comparer)
+        {
+            if (collection == null)
+            {
+                throw new ArgumentNullException(nameof(collection));
+            }
+
+            foreach (KeyValuePair<TKey, TValue> pair in collection)
             {
                 Add(pair.Key, pair.Value);
             }

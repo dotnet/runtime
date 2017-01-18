@@ -41,6 +41,10 @@ namespace System.Linq
             return new AppendPrepend1Iterator<TSource>(source, element, false);
         }
 
+        /// <summary>
+        /// Represents the insertion of one or more items before or after an <see cref="IEnumerable{TSource}"/>.
+        /// </summary>
+        /// <typeparam name="TSource">The type of the source enumerable.</typeparam>
         private abstract class AppendPrependIterator<TSource> : Iterator<TSource>, IIListProvider<TSource>
         {
             protected readonly IEnumerable<TSource> _source;
@@ -92,6 +96,10 @@ namespace System.Linq
             public abstract int GetCount(bool onlyIfCheap);
         }
 
+        /// <summary>
+        /// Represents the insertion of an item before or after an <see cref="IEnumerable{TSource}"/>.
+        /// </summary>
+        /// <typeparam name="TSource">The type of the source enumerable.</typeparam>
         private class AppendPrepend1Iterator<TSource> : AppendPrependIterator<TSource>
         {
             private readonly TSource _item;
@@ -260,8 +268,17 @@ namespace System.Linq
             }
         }
 
+        /// <summary>
+        /// An immutable node in a singly-linked list of items.
+        /// </summary>
+        /// <typeparam name="TSource">The type of the node's item.</typeparam>
         private sealed class SingleLinkedNode<TSource>
         {
+            /// <summary>
+            /// Constructs a node linked to the tail node.
+            /// </summary>
+            /// <param name="first">The first item, to be placed in the tail node.</param>
+            /// <param name="second">The second item, to be placed in this node.</param> 
             public SingleLinkedNode(TSource first, TSource second)
             {
                 Linked = new SingleLinkedNode<TSource>(first);
@@ -269,12 +286,21 @@ namespace System.Linq
                 Count = 2;
             }
 
+            /// <summary>
+            /// Constructs a tail node.
+            /// </summary>
+            /// <param name="item">The item to place in the tail node.</param>
             public SingleLinkedNode(TSource item)
             {
                 Item = item;
                 Count = 1;
             }
 
+            /// <summary>
+            /// Constructs a node linked to the specified node.
+            /// </summary>
+            /// <param name="linked">The linked node.</param>
+            /// <param name="item">The item to place in this node.</param>
             private SingleLinkedNode(SingleLinkedNode<TSource> linked, TSource item)
             {
                 Debug.Assert(linked != null);
@@ -283,19 +309,38 @@ namespace System.Linq
                 Count = linked.Count + 1;
             }
 
+            /// <summary>
+            /// The item held by this node.
+            /// </summary>
             public TSource Item { get; }
 
+            /// <summary>
+            /// The next node in the singly-linked list.
+            /// </summary>
             public SingleLinkedNode<TSource> Linked { get; }
 
+            /// <summary>
+            /// The number of items stored in this and subsequent nodes.
+            /// </summary>
             public int Count { get; }
 
+            /// <summary>
+            /// Creates a new node that holds the specified item and is linked to this node.
+            /// </summary>
+            /// <param name="item">The item to place in the new node.</param>
             public SingleLinkedNode<TSource> Add(TSource item) => new SingleLinkedNode<TSource>(this, item);
 
+            /// <summary>
+            /// Gets an <see cref="IEnumerator{TSource}"/> that enumerates the items of this node's singly-linked list in reverse.
+            /// </summary>
             public IEnumerator<TSource> GetEnumerator()
             {
                 return ((IEnumerable<TSource>)ToArray()).GetEnumerator();
             }
 
+            /// <summary>
+            /// Returns an <see cref="T:TSource[]"/> that contains the items of this node's singly-linked list in reverse.
+            /// </summary>
             public TSource[] ToArray()
             {
                 TSource[] array = new TSource[Count];
@@ -311,6 +356,10 @@ namespace System.Linq
             }
         }
 
+        /// <summary>
+        /// Represents the insertion of multiple items before or after an <see cref="IEnumerable{TSource}"/>.
+        /// </summary>
+        /// <typeparam name="TSource">The type of the source enumerable.</typeparam>
         private class AppendPrependN<TSource> : AppendPrependIterator<TSource>
         {
             private readonly SingleLinkedNode<TSource> _prepended;

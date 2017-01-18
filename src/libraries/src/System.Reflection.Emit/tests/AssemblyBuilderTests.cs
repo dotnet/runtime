@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.Reflection.Emit.Tests
@@ -71,11 +72,20 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Theory]
-        [InlineData((AssemblyBuilderAccess)0)] // No such case
-        [InlineData((AssemblyBuilderAccess)10)] // No such case
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "The coreclr doesn't support Save or ReflectionOnly AssemblyBuilders.")]
         [InlineData((AssemblyBuilderAccess)2)] // Save (not supported)
         [InlineData((AssemblyBuilderAccess)2 | AssemblyBuilderAccess.Run)] // RunAndSave (not supported)
         [InlineData((AssemblyBuilderAccess)6)] // ReflectionOnly (not supported)
+        public void DefineDynamicAssembly_CoreclrNotSupportedAccess_ThrowsArgumentException(AssemblyBuilderAccess access)
+        {
+            DefineDynamicAssembly_InvalidAccess_ThrowsArgumentException(access);
+        }
+
+        [Theory]
+        [InlineData((AssemblyBuilderAccess)(-1))]
+        [InlineData((AssemblyBuilderAccess)0)]
+        [InlineData((AssemblyBuilderAccess)10)]
+        [InlineData((AssemblyBuilderAccess)int.MaxValue)]
         public void DefineDynamicAssembly_InvalidAccess_ThrowsArgumentException(AssemblyBuilderAccess access)
         {
             Assert.Throws<ArgumentException>("access", () => AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Name"), access));
@@ -87,10 +97,10 @@ namespace System.Reflection.Emit.Tests
         {
             AssemblyName name = new AssemblyName("Name") { Version = new Version(0, 0, 0, 0) };
             AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(name, AssemblyBuilderAccess.Run);
-            Assert.Equal(name.ToString(), assembly.FullName);
+            Assert.StartsWith(name.ToString(), assembly.FullName);
 
             name.Name = "NewName";
-            Assert.NotEqual(name.ToString(), assembly.FullName);
+            Assert.False(assembly.FullName.StartsWith(name.ToString()));
         }
 
         public static IEnumerable<object[]> DefineDynamicModule_TestData()
@@ -113,26 +123,53 @@ namespace System.Reflection.Emit.Tests
             Assert.Empty(module.CustomAttributes);
 
             Assert.Equal("<In Memory Module>", module.Name);
-            Assert.Equal("RefEmit_InMemoryManifestModule", module.FullyQualifiedName);
+
+            // The coreclr ignores the name passed to AssemblyBuilder.DefineDynamicModule
+            if (RuntimeInformation.FrameworkDescription.StartsWith(".NET Framework"))
+            {
+                Assert.Equal(name, module.FullyQualifiedName);
+            }
+            else
+            {
+                Assert.Equal("RefEmit_InMemoryManifestModule", module.FullyQualifiedName);
+            }
 
             Assert.Equal(module, assembly.GetDynamicModule(module.FullyQualifiedName));
         }
 
-        [Theory]
-        [InlineData(null, typeof(ArgumentNullException))]
-        [InlineData("", typeof(ArgumentException))]
-        [InlineData("\0test", typeof(ArgumentException))]
-        public void DefineDyamicModule_InvalidName_ThrowsArgumentException(string name, Type exceptionType)
+        [Fact]
+        public void DefineDynamicModule_NullName_ThrowsArgumentNullException()
         {
             AssemblyBuilder assembly = Helpers.DynamicAssembly();
-            Assert.Throws(exceptionType, () => assembly.DefineDynamicModule(name));
+            Assert.Throws<ArgumentNullException>("name", () => assembly.DefineDynamicModule(null));
+        }
+
+        [Theory]
+        [InlineData("")]
+        [InlineData("\0test")]
+        public void DefineDynamicModule_InvalidName_ThrowsArgumentException(string name)
+        {
+            AssemblyBuilder assembly = Helpers.DynamicAssembly();
+            Assert.Throws<ArgumentException>("name", () => assembly.DefineDynamicModule(name));
         }
 
         [Fact]
-        public void DefineDyamicModule_ModuleAlreadyDefined_ThrowsInvalidOperationException()
+        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework, "The coreclr only supports AssemblyBuilders with one module.")]
+        public void DefineDynamicModule_NetFxModuleAlreadyDefined_ThrowsInvalidOperationException()
         {
             AssemblyBuilder assembly = Helpers.DynamicAssembly();
-            ModuleBuilder mb = assembly.DefineDynamicModule("module1");
+            assembly.DefineDynamicModule("module1");
+            assembly.DefineDynamicModule("module2");
+            Assert.Throws<ArgumentException>(null, () => assembly.DefineDynamicModule("module1"));
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "The coreclr only supports AssemblyBuilders with one module.")]
+        public void DefineDynamicModule_CoreFxModuleAlreadyDefined_ThrowsInvalidOperationException()
+        {
+            AssemblyBuilder assembly = Helpers.DynamicAssembly();
+            assembly.DefineDynamicModule("module1");
+            Assert.Throws<InvalidOperationException>(() => assembly.DefineDynamicModule("module1"));
             Assert.Throws<InvalidOperationException>(() => assembly.DefineDynamicModule("module2"));
         }
 
@@ -258,9 +295,9 @@ namespace System.Reflection.Emit.Tests
 
         public static void VerifyAssemblyBuilder(AssemblyBuilder assembly, AssemblyName name, IEnumerable<CustomAttributeBuilder> attributes)
         {
-            Assert.Equal(name.ToString(), assembly.FullName);
-            Assert.Equal(name.ToString(), assembly.GetName().ToString());
-            
+            Assert.StartsWith(name.ToString(), assembly.FullName);
+            Assert.StartsWith(name.ToString(), assembly.GetName().ToString());
+
             Assert.True(assembly.IsDynamic);
 
             Assert.Equal(attributes?.Count() ?? 0, assembly.CustomAttributes.Count());

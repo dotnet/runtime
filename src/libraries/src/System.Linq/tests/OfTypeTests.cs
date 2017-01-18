@@ -80,6 +80,15 @@ namespace System.Linq.Tests
         }
 
         [Fact]
+        public void RunOnce()
+        {
+            object[] source = { 3.5m, -4, "Test", "Check", 4, 8.0, 10.5, 9 };
+            int[] expected = { -4, 4, 9 };
+
+            Assert.Equal(expected, source.RunOnce().OfType<int>());
+        }
+
+        [Fact]
         public void IntFromNullableInt()
         {
             int[] source = { -4, 4, 9 };

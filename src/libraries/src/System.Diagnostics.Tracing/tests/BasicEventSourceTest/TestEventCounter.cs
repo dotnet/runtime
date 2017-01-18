@@ -154,7 +154,7 @@ namespace BasicEventSourceTests
             return rawPayload;
         }
 
-        private static void ValidateEventCounter(string counterName, int count, float mean, float standardDerivation, float min, float max, IDictionary<string, object> payloadContent)
+        private static void ValidateEventCounter(string counterName, int count, float mean, float standardDeviation, float min, float max, IDictionary<string, object> payloadContent)
         {
             var payloadContentValue = new List<KeyValuePair<string, object>>();
             foreach (var payloadContentEntry in payloadContent)
@@ -165,7 +165,7 @@ namespace BasicEventSourceTests
             Assert.Equal(7, payloadContentValue.Count);
             ValidatePayloadEntry("Name", counterName, payloadContentValue[0]);
             ValidatePayloadEntry("Mean", mean, payloadContentValue[1]);
-            ValidatePayloadEntry("StandardDerivation", standardDerivation, payloadContentValue[2]);
+            ValidatePayloadEntry("StandardDeviation", standardDeviation, payloadContentValue[2]);
             ValidatePayloadEntry("Count", count, payloadContentValue[3]);
             ValidatePayloadEntry("Min", min, payloadContentValue[4]);
             ValidatePayloadEntry("Max", max, payloadContentValue[5]);

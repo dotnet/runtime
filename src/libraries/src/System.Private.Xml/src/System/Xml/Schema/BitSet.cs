@@ -257,7 +257,7 @@ namespace System.Xml.Schema
 
 #if DEBUG
         public void Dump(StringBuilder bb) {
-            for (int i = 0; i < count; i ++) {
+            for (int i = 0; i < _count; i ++) {
                 bb.Append( Get(i) ? "1" : "0");
             }
         }

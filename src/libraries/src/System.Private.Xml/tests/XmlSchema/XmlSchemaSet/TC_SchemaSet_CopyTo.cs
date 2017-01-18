@@ -4,14 +4,13 @@
 
 using Xunit;
 using Xunit.Abstractions;
-using System;
 using System.Collections;
 using System.Xml.Schema;
 
 namespace System.Xml.Tests
 {
     //[TestCase(Name = "TC_SchemaSet_CopyTo", Desc = "")]
-    public class TC_SchemaSet_CopyTo
+    public class TC_SchemaSet_CopyTo : TC_SchemaSetBase
     {
         private ITestOutputHelper _output;
 

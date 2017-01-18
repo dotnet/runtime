@@ -2,13 +2,7 @@
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{10EFE488-FAB4-43DA-847D-FF057BFF52AC}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <AssemblyName>System.Xml.Linq.TreeManipulation.Tests</AssemblyName>
-    <NuGetTargetMoniker>.NETStandard,Version=v1.7</NuGetTargetMoniker>
-    <RootNamespace>XLinqTests</RootNamespace>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -55,7 +49,7 @@
     <Compile Include="XNodeSequenceRemove.cs" />
     <Compile Include="XElementChangedNotificationTests.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == ''">
+  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard'">
     <Compile Include="SaveWithFileName.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -64,11 +58,6 @@
     <ProjectReference Include="$(CommonTestPath)\System\Xml\XmlDiff\XmlDiff.csproj" />
     <ProjectReference Include="..\XDocument.Common\XDocument.Common.csproj" />
     <ProjectReference Include="..\XDocument.Test.ModuleCore\XDocument.Test.ModuleCore.csproj" />
-    <ProjectReference Include="..\..\..\System.Xml.XDocument\pkg\System.Xml.XDocument.pkgproj" />
-    <ProjectReference Include="..\..\pkg\System.Private.Xml.Linq.pkgproj" />
-  </ItemGroup>
-  <ItemGroup>
-    <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

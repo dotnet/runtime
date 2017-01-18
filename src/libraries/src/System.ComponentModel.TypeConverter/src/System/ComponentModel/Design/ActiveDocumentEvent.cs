@@ -17,23 +17,13 @@ namespace System.ComponentModel.Design
     public class ActiveDesignerEventArgs : EventArgs
     {
         /// <summary>
-        ///     The document that is losing activation.
-        /// </summary>
-        private readonly IDesignerHost _oldDesigner;
-
-        /// <summary>
-        ///     The document that is gaining activation.
-        /// </summary>
-        private readonly IDesignerHost _newDesigner;
-
-        /// <summary>
         /// <para>Initializes a new instance of the <see cref='System.ComponentModel.Design.ActiveDesignerEventArgs'/>
         /// class.</para>
         /// </summary>
         public ActiveDesignerEventArgs(IDesignerHost oldDesigner, IDesignerHost newDesigner)
         {
-            _oldDesigner = oldDesigner;
-            _newDesigner = newDesigner;
+            OldDesigner = oldDesigner;
+            NewDesigner = newDesigner;
         }
 
         /// <summary>
@@ -42,13 +32,7 @@ namespace System.ComponentModel.Design
         ///       sets the document that is losing activation.
         ///    </para>
         /// </summary>
-        public IDesignerHost OldDesigner
-        {
-            get
-            {
-                return _oldDesigner;
-            }
-        }
+        public IDesignerHost OldDesigner { get; }
 
         /// <summary>
         ///    <para>
@@ -56,12 +40,6 @@ namespace System.ComponentModel.Design
         ///       sets the document that is gaining activation.
         ///    </para>
         /// </summary>
-        public IDesignerHost NewDesigner
-        {
-            get
-            {
-                return _newDesigner;
-            }
-        }
+        public IDesignerHost NewDesigner { get; }
     }
 }

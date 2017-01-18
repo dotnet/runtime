@@ -1191,5 +1191,53 @@ namespace System.Net.Sockets.Tests
                 listener.Stop();
             }
         }
+
+        [ActiveIssue(13778, TestPlatforms.OSX)]
+        [Fact]
+        public static async Task SendRecvAsync_0ByteReceive_Success()
+        {
+            using (Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            using (Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            {
+                listener.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+                listener.Listen(1);
+
+                Task<Socket> acceptTask = listener.AcceptAsync();
+                await Task.WhenAll(
+                    acceptTask, 
+                    client.ConnectAsync(new IPEndPoint(IPAddress.Loopback, ((IPEndPoint)listener.LocalEndPoint).Port)));
+
+                using (Socket server = await acceptTask)
+                {
+                    TaskCompletionSource<bool> tcs = null;
+
+                    var ea = new SocketAsyncEventArgs();
+                    ea.SetBuffer(Array.Empty<byte>(), 0, 0);
+                    ea.Completed += delegate { tcs.SetResult(true); };
+
+                    for (int i = 0; i < 3; i++)
+                    {
+                        tcs = new TaskCompletionSource<bool>();
+
+                        // Have the client do a 0-byte receive.  No data is available, so this should pend.
+                        Assert.True(client.ReceiveAsync(ea));
+                        Assert.Equal(0, client.Available);
+
+                        // Have the server send 1 byte to the client.
+                        Assert.Equal(1, server.Send(new byte[1], 0, 1, SocketFlags.None));
+
+                        // The client should now wake up, getting 0 bytes with 1 byte available.
+                        await tcs.Task;
+                        Assert.Equal(0, ea.BytesTransferred);
+                        Assert.Equal(SocketError.Success, ea.SocketError);
+                        Assert.Equal(1, client.Available); // Due to #13778, this sometimes fails on macOS
+
+                        // Receive that byte
+                        Assert.Equal(1, client.Receive(new byte[1]));
+                        Assert.Equal(0, client.Available);
+                    }
+                }
+            }
+        }
     }
 }

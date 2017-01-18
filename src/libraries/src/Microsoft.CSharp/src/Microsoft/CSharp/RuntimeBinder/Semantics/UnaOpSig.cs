@@ -31,8 +31,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         protected class UnaOpFullSig : UnaOpSig
         {
-            private LiftFlags _grflt;
-            private CType _type;
+            private readonly LiftFlags _grflt;
+            private readonly CType _type;
 
             public UnaOpFullSig(CType type, PfnBindUnaOp pfn, LiftFlags grflt, UnaOpFuncKind fnkind)
             {

@@ -278,39 +278,77 @@ namespace System.Net.Mail.Tests
             client.Credentials = new NetworkCredential("user", "password");
             MailMessage msg = new MailMessage("foo@example.com", "bar@example.com", "hello", "howdydoo");
 
-            Thread t = new Thread(server.Run);
-            t.Start();
-            client.Send(msg);
-            t.Join();
+            try
+            {
+                Thread t = new Thread(server.Run);
+                t.Start();
+                client.Send(msg);
+                t.Join();
 
-            server.Stop();
-
-            Assert.Equal("<foo@example.com>", server.MailFrom);
-            Assert.Equal("<bar@example.com>", server.MailTo);
-            Assert.Equal("hello", server.Subject);
-            Assert.Equal("howdydoo", server.Body);
+                Assert.Equal("<foo@example.com>", server.MailFrom);
+                Assert.Equal("<bar@example.com>", server.MailTo);
+                Assert.Equal("hello", server.Subject);
+                Assert.Equal("howdydoo", server.Body);
+            }
+            finally
+            {
+                server.Stop();
+            }
         }
 
         [Fact]
-        public void TestMailDeliveryAsync()
+        public async void TestMailDeliveryAsync()
         {
             SmtpServer server = new SmtpServer();
             SmtpClient client = new SmtpClient("localhost", server.EndPoint.Port);
             MailMessage msg = new MailMessage("foo@example.com", "bar@example.com", "hello", "howdydoo");
 
-            Thread t = new Thread(server.Run);
-            t.Start();
-            Task task = client.SendMailAsync(msg);
-            t.Join();
+            try
+            {
+                Thread t = new Thread(server.Run);
+                t.Start();
+                await client.SendMailAsync(msg);
+                t.Join();
 
-            server.Stop();
+                Assert.Equal("<foo@example.com>", server.MailFrom);
+                Assert.Equal("<bar@example.com>", server.MailTo);
+                Assert.Equal("hello", server.Subject);
+                Assert.Equal("howdydoo", server.Body);
+            }
+            finally
+            {
+                server.Stop();
+            }
+        }
 
-            Assert.Equal("<foo@example.com>", server.MailFrom);
-            Assert.Equal("<bar@example.com>", server.MailTo);
-            Assert.Equal("hello", server.Subject);
-            Assert.Equal("howdydoo", server.Body);
+        [Fact]
+        public async void TestCredentialsCopyInAsyncContext()
+        {
+            SmtpServer server = new SmtpServer();
+            SmtpClient client = new SmtpClient("localhost", server.EndPoint.Port);
+            MailMessage msg = new MailMessage("foo@example.com", "bar@example.com", "hello", "howdydoo");
 
-            Assert.True(task.Wait(1000));
+            CredentialCache cache = new CredentialCache();
+            cache.Add("localhost", server.EndPoint.Port, "NTLM", CredentialCache.DefaultNetworkCredentials);
+
+            client.Credentials = cache;
+
+            try
+            {
+                Thread t = new Thread(server.Run);
+                t.Start();
+                await client.SendMailAsync(msg);
+                t.Join();
+
+                Assert.Equal("<foo@example.com>", server.MailFrom);
+                Assert.Equal("<bar@example.com>", server.MailTo);
+                Assert.Equal("hello", server.Subject);
+                Assert.Equal("howdydoo", server.Body);
+            }
+            finally
+            {
+                server.Stop();
+            }
         }
     }
 }

@@ -1,0 +1,131 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+
+  <Import Project="$(MSBuildProjectName).props" />
+
+  <!-- Add path globs specific to native binaries to exclude unnecessary files from packages. -->
+  <Choose>
+    <When Condition="$(PackageTargetRuntime.StartsWith('win'))"/>
+    <When Condition="$(PackageTargetRuntime.StartsWith('osx'))">
+      <PropertyGroup>
+        <LibraryFileExtension>.dylib</LibraryFileExtension>
+        <SymbolFileExtension>.dwarf</SymbolFileExtension>
+      </PropertyGroup>
+    </When>
+    <Otherwise>
+      <PropertyGroup>
+        <LibraryFileExtension>.so</LibraryFileExtension>
+        <SymbolFileExtension>.dbg</SymbolFileExtension>
+      </PropertyGroup>
+    </Otherwise>
+  </Choose>
+  <ItemGroup>
+    <AdditionalLibPackageExcludes Condition="'$(SymbolFileExtension)' != ''" Include="%2A%2A\%2A$(SymbolFileExtension)" />
+    <AdditionalSymbolPackageExcludes Condition="'$(LibraryFileExtension)' != ''" Include="%2A%2A\%2A.a;%2A%2A\%2A$(LibraryFileExtension)" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <IsLineupPackage Condition="'$(PackageTargetRuntime)' == ''">true</IsLineupPackage>
+    <TargetFrameworkName>netcoreapp</TargetFrameworkName>
+    <TargetFrameworkVersion>2.0</TargetFrameworkVersion>
+    <TargetFramework>$(TargetFrameworkName)$(TargetFrameworkVersion)</TargetFramework>
+    <SkipPackageFileCheck>true</SkipPackageFileCheck>
+    <SkipValidatePackage>true</SkipValidatePackage>
+
+    <RefBinDir>$(BinDir)$(TargetFrameworkName)/pkg/ref</RefBinDir>
+    <LibBinDir>$(BinDir)$(TargetFrameworkName)/pkg/lib</LibBinDir>
+
+    <NETStandardLibraryPackage>NETStandard.Library2</NETStandardLibraryPackage>
+    <NETStandardLibraryPackageVersion>2.0.0-beta-24709-0</NETStandardLibraryPackageVersion>
+    <NETStandardVersion>2.0</NETStandardVersion>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(PackageTargetRuntime)' == ''">
+    <ProjectReference Include="@(Project)" />
+
+    <!-- Include refs -->
+    <RefFile Include="$(RefBinDir)/*.*">
+      <TargetPath>ref/$(TargetFramework)</TargetPath>
+    </RefFile>
+    <File Include="@(RefFile)" />
+    <!-- force a missing file if ref build is absent -->
+    <File Include="$(RefBinDir)/MISSING_REF_BUILD" Condition="'@(RefFile)' == ''" />
+
+    <FilePackageDependency Include="Microsoft.NETCore.Platforms">
+      <Version>$(PlatformPackageVersion)</Version>
+    </FilePackageDependency>
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(PackageTargetRuntime)' != ''">
+    <!-- Include lib -->
+    <LibFile Include="$(LibBinDir)/*.*">
+      <TargetPath>runtimes/$(PackageTargetRuntime)/lib/$(TargetFramework)</TargetPath>
+    </LibFile>
+    <File Include="@(LibFile)" />
+    <!-- force a missing file if lib build is absent -->
+    <File Include="$(LibBinDir)/MISSING_LIB_BUILD" Condition="'@(LibFile)' == ''" />
+
+    <!-- Include native -->
+    <ExcludeNative Include="$(NativeBinDir)/*.lib" />
+    <NativeFile Include="$(NativeBinDir)/*.*" Exclude="@(ExcludeNative)">
+      <TargetPath>runtimes/$(PackageTargetRuntime)/native</TargetPath>
+    </NativeFile>
+    <File Include="@(NativeFile)" />
+    <!-- force a missing file if native build is absent -->
+    <File Include="$(NativeBinDir)/MISSING_NATIVE_BUILD" Condition="'@(NativeFile)' == ''" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <IgnoredReference Include="System.Private.CoreLib" />
+  </ItemGroup>
+
+  <Target Name="VerifyClosure" AfterTargets="Build">
+    <ItemGroup>
+      <!-- Exclude shims from the closure verification -->
+      <ExcludeFromClosure Include="mscorlib" />
+      <ExcludeFromClosure Include="netstandard" />
+      <ExcludeFromClosure Include="System.Core" />
+      <ExcludeFromClosure Include="System" />
+      <ExcludeFromClosure Include="System.Drawing" />
+      <ExcludeFromClosure Include="System.Numerics" />
+      <ExcludeFromClosure Include="System.Runtime.Serialization" />
+      <ExcludeFromClosure Include="System.Web" />
+      <ExcludeFromClosure Include="System.Xml" />
+      <ExcludeFromClosure Include="System.Xml.Linq" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <_fileExisting Include="@(File)" Condition="Exists(%(FullPath))"/>
+
+      <_fileNames Include="@(_fileExisting -> '%(FileName)')" Exclude="@(ExcludeFromClosure)">
+        <Original>%(_fileExisting.Identity)</Original>
+      </_fileNames>
+      <_filesFiltered Include="@(_fileNames->'%(Original)')" />
+    </ItemGroup>
+
+    <VerifyClosure Sources="@(_filesFiltered)"
+                   IgnoredReferences="@(IgnoredReference)" />
+  </Target>
+
+  <Target Name="VerifyNETStandard" AfterTargets="Build">
+    <ItemGroup>
+      <_NETStandardFile Include="$(PackagesDir)$(NETStandardLibraryPackage)\$(NETStandardLibraryPackageVersion)\ref\netstandard$(NETStandardVersion)\*.dll" />
+      <_NETStandardMissingFile Include="@(_NETStandardFile->'%(FileName)')" Exclude="@(File->'%(FileName)')" />
+      <_NETStandardMissingFileError Include="@(_NETStandardMissingFile)" Exclude="@(SuppressNETStandardMissingFile)" />
+      <_NETStandardSuppressedMissingFile Include="@(_NETStandardMissingFile)" Exclude="@(_NETStandardMissingFileError)" />
+    </ItemGroup>
+    <Message Condition="'@(_NETStandardSuppressedMissingFile)' != ''" Text="Files'@(_NETStandardSuppressedMissingFile)' are part of '$(NETStandardLibraryPackage)' but missing from this package.  This error has been suppressed." />
+    <Error Condition="'@(_NETStandardMissingFileError)' != ''" Text="Files '@(_NETStandardMissingFileError)' are part of '$(NETStandardLibraryPackage)' but missing from this package." />
+  </Target>
+
+  <Target Name="GetSymbolPackageFiles" BeforeTargets="GetPackageFiles">
+    <ItemGroup>
+      <File>
+        <IsSymbolFile Condition="'%(Extension)' == '.pdb'">true</IsSymbolFile>
+        <IsSymbolFile Condition="'$(SymbolFileExtension)' != '' AND'%(Extension)' == '$(SymbolFileExtension)'">true</IsSymbolFile>
+      </File>
+    </ItemGroup>
+  </Target>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>

@@ -34,7 +34,7 @@ namespace System.Linq.Expressions.Compiler
 
         public override Expression Visit(Expression node)
         {
-            // When compling deep trees, we run the risk of triggering a terminating StackOverflowException,
+            // When compiling deep trees, we run the risk of triggering a terminating StackOverflowException,
             // so we use the StackGuard utility here to probe for sufficient stack and continue the work on
             // another thread when we run out of stack space.
             if (!_guard.TryEnterOnCurrentStack())
@@ -187,7 +187,6 @@ namespace System.Linq.Expressions.Compiler
                         currentScope.Definitions.Add(v, VariableStorageKind.Local);
                     }
                 }
-                node = block;
                 body = block.Expressions;
             }
             return body;

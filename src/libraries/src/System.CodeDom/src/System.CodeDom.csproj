@@ -1,18 +1,17 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <ProjectGuid>{53D09AF4-0C13-4197-B8AD-9746F0374E88}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <IsPartialFacadeAssembly Condition="'$(TargetGroup)'=='net463'">true</IsPartialFacadeAssembly>
-    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
+    <IsPartialFacadeAssembly Condition="'$(TargetGroup)'=='net461'">true</IsPartialFacadeAssembly>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.7_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.7_Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Release|AnyCPU'" />
-  <ItemGroup Condition="'$(TargetGroup)' != 'net463'">
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='net461-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='net461-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Release|AnyCPU'" />
+  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard'">
     <Compile Include="Microsoft\CSharp\CSharpCodeGenerator.cs" />
     <Compile Include="Microsoft\CSharp\CSharpCodeProvider.cs" />
     <Compile Include="Microsoft\CSharp\CSharpMemberAttributeConverter.cs" />
@@ -73,7 +72,7 @@
     <Compile Include="System\CodeDom\CodeNamespaceCollection.cs" />
     <Compile Include="System\CodeDom\CodeNamespaceImport.cs" />
     <Compile Include="System\CodeDom\CodeNamespaceImportCollection.cs" />
-    <Compile Include="System\CodeDom\CodeObject.cs" />
+    <Compile Include="$(CommonPath)\System\CodeDom\CodeObject.cs" />
     <Compile Include="System\CodeDom\CodeObjectCreateExpression.cs" />
     <Compile Include="System\CodeDom\CodeParameterDeclarationExpression.cs" />
     <Compile Include="System\CodeDom\CodeParameterDeclarationExpressionCollection.cs" />
@@ -101,8 +100,8 @@
     <Compile Include="System\CodeDom\CodeTypeOfExpression.cs" />
     <Compile Include="System\CodeDom\CodeTypeParameter.cs" />
     <Compile Include="System\CodeDom\CodeTypeParameterCollection.cs" />
-    <Compile Include="System\CodeDom\CodeTypeReference.cs" />
-    <Compile Include="System\CodeDom\CodeTypeReferenceCollection.cs" />
+    <Compile Include="$(CommonPath)\System\CodeDom\CodeTypeReference.cs" />
+    <Compile Include="$(CommonPath)\System\CodeDom\CodeTypeReferenceCollection.cs" />
     <Compile Include="System\CodeDom\CodeTypeReferenceExpression.cs" />
     <Compile Include="System\CodeDom\CodeVariableDeclarationStatement.cs" />
     <Compile Include="System\CodeDom\CodeVariableReferenceExpression.cs" />
@@ -130,11 +129,24 @@
     <Compile Include="System\Collections\Specialized\FixedStringLookup.cs" />
     <Compile Include="$(CommonPath)\System\CSharpHelpers.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'net463'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'net461'">
     <TargetingPackReference Include="System" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="project.json" />
+    <Reference Include="System.Collections" />
+    <Reference Include="System.Collections.NonGeneric" />
+    <Reference Include="System.Collections.Specialized" />
+    <Reference Include="System.ComponentModel.Primitives" />
+    <Reference Include="System.ComponentModel.TypeConverter" />
+    <Reference Include="System.Diagnostics.Debug" />
+    <Reference Include="System.Diagnostics.Process" />
+    <Reference Include="System.Diagnostics.Tools" />
+    <Reference Include="System.IO.FileSystem" />
+    <Reference Include="System.Resources.ResourceManager" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.Extensions" />
+    <Reference Include="System.Security.Permissions" />
+    <Reference Include="System.Threading" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

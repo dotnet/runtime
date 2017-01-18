@@ -1,26 +1,29 @@
-﻿
+
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2013
 VisualStudioVersion = 12.0.31101.0
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Linq.Queryable", "src\System.Linq.Queryable.csproj", "{BE12B753-C130-4B68-86E3-877F1AEE52C0}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Linq.Queryable.Tests", "tests\System.Linq.Queryable.Tests.csproj", "{7B88D79B-B799-4116-A7D0-AED572540CD4}"
+	ProjectSection(ProjectDependencies) = postProject
+		{BE12B753-C130-4B68-86E3-877F1AEE52C0} = {BE12B753-C130-4B68-86E3-877F1AEE52C0}
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Linq.Queryable", "src\System.Linq.Queryable.csproj", "{BE12B753-C130-4B68-86E3-877F1AEE52C0}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
-		Debug|Any CPU = Debug|Any CPU
-		Release|Any CPU = Release|Any CPU
+		DebugNETCoreAppnetstandardnetstandard|AnyCPU = DebugNETCoreAppnetstandardnetstandard|AnyCPU
+		ReleaseNETCoreAppnetstandardnetstandard|AnyCPU = ReleaseNETCoreAppnetstandardnetstandard|AnyCPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{BE12B753-C130-4B68-86E3-877F1AEE52C0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{BE12B753-C130-4B68-86E3-877F1AEE52C0}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{BE12B753-C130-4B68-86E3-877F1AEE52C0}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{BE12B753-C130-4B68-86E3-877F1AEE52C0}.Release|Any CPU.Build.0 = Release|Any CPU
-		{7B88D79B-B799-4116-A7D0-AED572540CD4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{7B88D79B-B799-4116-A7D0-AED572540CD4}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{7B88D79B-B799-4116-A7D0-AED572540CD4}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{7B88D79B-B799-4116-A7D0-AED572540CD4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7B88D79B-B799-4116-A7D0-AED572540CD4}.DebugNETCoreAppnetstandardnetstandard|AnyCPU.ActiveCfg = netstandard-Debug|Any CPU
+		{7B88D79B-B799-4116-A7D0-AED572540CD4}.DebugNETCoreAppnetstandardnetstandard|AnyCPU.Build.0 = netstandard-Debug|Any CPU
+		{7B88D79B-B799-4116-A7D0-AED572540CD4}.ReleaseNETCoreAppnetstandardnetstandard|AnyCPU.ActiveCfg = netstandard-Release|Any CPU
+		{7B88D79B-B799-4116-A7D0-AED572540CD4}.ReleaseNETCoreAppnetstandardnetstandard|AnyCPU.Build.0 = netstandard-Release|Any CPU
+		{BE12B753-C130-4B68-86E3-877F1AEE52C0}.DebugNETCoreAppnetstandardnetstandard|AnyCPU.ActiveCfg = netstandard-Debug|Any CPU
+		{BE12B753-C130-4B68-86E3-877F1AEE52C0}.DebugNETCoreAppnetstandardnetstandard|AnyCPU.Build.0 = netstandard-Debug|Any CPU
+		{BE12B753-C130-4B68-86E3-877F1AEE52C0}.ReleaseNETCoreAppnetstandardnetstandard|AnyCPU.ActiveCfg = netstandard-Release|Any CPU
+		{BE12B753-C130-4B68-86E3-877F1AEE52C0}.ReleaseNETCoreAppnetstandardnetstandard|AnyCPU.Build.0 = netstandard-Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -10,7 +10,7 @@ namespace System.Numerics
     internal static partial class BigIntegerCalculator
     {
         [SecuritySafeCritical]
-        public unsafe static uint[] Square(uint[] value)
+        public static unsafe uint[] Square(uint[] value)
         {
             Debug.Assert(value != null);
 
@@ -33,7 +33,7 @@ namespace System.Numerics
         private static int AllocationThreshold = 256;
 
         [SecuritySafeCritical]
-        private unsafe static void Square(uint* value, int valueLength,
+        private static unsafe void Square(uint* value, int valueLength,
                                           uint* bits, int bitsLength)
         {
             Debug.Assert(valueLength >= 0);
@@ -186,7 +186,7 @@ namespace System.Numerics
         }
 
         [SecuritySafeCritical]
-        public unsafe static uint[] Multiply(uint[] left, uint[] right)
+        public static unsafe uint[] Multiply(uint[] left, uint[] right)
         {
             Debug.Assert(left != null);
             Debug.Assert(right != null);
@@ -211,7 +211,7 @@ namespace System.Numerics
         private static int MultiplyThreshold = 32;
 
         [SecuritySafeCritical]
-        private unsafe static void Multiply(uint* left, int leftLength,
+        private static unsafe void Multiply(uint* left, int leftLength,
                                             uint* right, int rightLength,
                                             uint* bits, int bitsLength)
         {
@@ -359,7 +359,7 @@ namespace System.Numerics
         }
 
         [SecuritySafeCritical]
-        private unsafe static void SubtractCore(uint* left, int leftLength,
+        private static unsafe void SubtractCore(uint* left, int leftLength,
                                                 uint* right, int rightLength,
                                                 uint* core, int coreLength)
         {

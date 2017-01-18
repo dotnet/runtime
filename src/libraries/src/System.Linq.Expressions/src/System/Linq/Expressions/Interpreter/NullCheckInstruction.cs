@@ -21,7 +21,7 @@ namespace System.Linq.Expressions.Interpreter
                 throw new NullReferenceException();
             }
 
-            return +1;
+            return 1;
         }
     }
 }

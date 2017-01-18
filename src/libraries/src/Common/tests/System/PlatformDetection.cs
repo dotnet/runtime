@@ -14,6 +14,7 @@ namespace System
     {
         public static bool IsWindows { get; } = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
         public static bool IsWindows7 { get; } = IsWindows && GetWindowsVersion() == 6 && GetWindowsMinorVersion() == 1;
+        public static bool IsWindows8x { get; } = IsWindows && GetWindowsVersion() == 6 && (GetWindowsMinorVersion() == 2 || GetWindowsMinorVersion() == 3);
         public static bool IsOSX { get; } = RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
         public static bool IsNetBSD { get; } = RuntimeInformation.IsOSPlatform(OSPlatform.Create("NETBSD"));
         public static bool IsOpenSUSE { get; } = IsDistroAndVersion("opensuse");
@@ -22,6 +23,12 @@ namespace System
             File.Exists(Path.Combine(Environment.GetEnvironmentVariable("windir"), "regedit.exe")));
         public static bool IsWindows10Version1607OrGreater { get; } = IsWindows &&
             GetWindowsVersion() == 10 && GetWindowsMinorVersion() == 0 && GetWindowsBuildNumber() >= 14393;
+        // Windows OneCoreUAP SKU doesn't have httpapi.dll
+        public static bool HasHttpApi { get; } = (IsWindows &&
+            File.Exists(Path.Combine(Environment.GetEnvironmentVariable("windir"), "System32", "httpapi.dll")));
+
+        public static bool IsNotOneCoreUAP { get; } = (!IsWindows || 
+            File.Exists(Path.Combine(Environment.GetEnvironmentVariable("windir"), "System32", "httpapi.dll")));
 
         public static int WindowsVersion { get; } = GetWindowsVersion();
 
@@ -39,7 +46,7 @@ namespace System
                 const string versionFile = "/proc/version";
                 if (File.Exists(versionFile))
                 {
-                    var s = File.ReadAllText(versionFile);
+                    string s = File.ReadAllText(versionFile);
 
                     if (s.Contains("Microsoft") || s.Contains("WSL"))
                     {

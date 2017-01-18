@@ -3,11 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
-using System.Runtime.CompilerServices;
-using System.Security;
 using Microsoft.CSharp.RuntimeBinder.Syntax;
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
@@ -109,7 +106,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             {
                 Debug.Assert(GetTypeVars() == GetTypeVarsAll() || isNested());
 
-                AggregateType pOuterType = this.isNested() ? GetOuterAgg().getThisType() : null;
+                AggregateType pOuterType = isNested() ? GetOuterAgg().getThisType() : null;
 
                 _atsInst = _pTypeManager.GetAggregate(this, pOuterType, GetTypeVars());
             }
@@ -211,7 +208,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             //An interface is always abstract
             if (aggKind == AggKindEnum.Interface)
             {
-                this.SetAbstract(true);
+                SetAbstract(true);
             }
         }
 
@@ -366,7 +363,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public bool IsKnownManagedStructStatus()
         {
-            Debug.Assert(this.IsStruct());
+            Debug.Assert(IsStruct());
             Debug.Assert(!IsManagedStruct() || !IsUnmanagedStruct());
             return IsManagedStruct() || IsUnmanagedStruct();
         }
@@ -427,12 +424,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             else
             {
                 TypeArray outerTypeVars;
-                if (this.GetOuterAgg() != null)
+                if (GetOuterAgg() != null)
                 {
-                    Debug.Assert(this.GetOuterAgg().GetTypeVars() != null);
-                    Debug.Assert(this.GetOuterAgg().GetTypeVarsAll() != null);
+                    Debug.Assert(GetOuterAgg().GetTypeVars() != null);
+                    Debug.Assert(GetOuterAgg().GetTypeVarsAll() != null);
 
-                    outerTypeVars = this.GetOuterAgg().GetTypeVarsAll();
+                    outerTypeVars = GetOuterAgg().GetTypeVarsAll();
                 }
                 else
                 {

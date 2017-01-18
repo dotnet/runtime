@@ -16,9 +16,14 @@ namespace System.Security.Cryptography
     {
         protected SHA256() { }
 
-        public static SHA256 Create()
+        public static new SHA256 Create()
         {
             return new Implementation();
+        }
+
+        public static new SHA256 Create(string hashName)
+        {
+            return (SHA256)CryptoConfig.CreateFromName(hashName);
         }
 
         private sealed class Implementation : SHA256
@@ -28,14 +33,7 @@ namespace System.Security.Cryptography
             public Implementation()
             {
                 _hashProvider = HashProviderDispenser.CreateHashProvider(HashAlgorithmNames.SHA256);
-            }
-
-            public sealed override int HashSize
-            {
-                get
-                {
-                    return _hashProvider.HashSizeInBytes * 8;
-                }
+                HashSizeValue = _hashProvider.HashSizeInBytes * 8;
             }
 
             protected sealed override void HashCore(byte[] array, int ibStart, int cbSize)

@@ -876,7 +876,7 @@ namespace System.CodeDom.Compiler
         System.CodeDom.Compiler.CompilerResults System.CodeDom.Compiler.ICodeCompiler.CompileAssemblyFromSource(System.CodeDom.Compiler.CompilerParameters options, string source) { throw null; }
         System.CodeDom.Compiler.CompilerResults System.CodeDom.Compiler.ICodeCompiler.CompileAssemblyFromSourceBatch(System.CodeDom.Compiler.CompilerParameters options, string[] sources) { throw null; }
     }
-    public abstract partial class CodeDomProvider
+    public abstract partial class CodeDomProvider : System.ComponentModel.Component
     {
         protected CodeDomProvider() { }
         public virtual string FileExtension { get { throw null; } }
@@ -1105,8 +1105,6 @@ namespace System.CodeDom.Compiler
         public string CompilerOptions { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
         public string CoreAssemblyFileName { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
         public System.Collections.Specialized.StringCollection EmbeddedResources { get { throw null; } }
-        [System.ObsoleteAttribute("CAS policy is obsolete and will be removed in a future release of the .NET Framework. Please see http://go2.microsoft.com/fwlink/?LinkId=131738 for more information.")]
-        public System.Security.Policy.Evidence Evidence { get { throw null; } set { } }
         public bool GenerateExecutable { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
         public bool GenerateInMemory { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
         public bool IncludeDebugInformation { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
@@ -1125,8 +1123,6 @@ namespace System.CodeDom.Compiler
         public CompilerResults(System.CodeDom.Compiler.TempFileCollection tempFiles) { }
         public System.Reflection.Assembly CompiledAssembly { get { throw null; } set { } }
         public System.CodeDom.Compiler.CompilerErrorCollection Errors { get { throw null; } }
-        [System.ObsoleteAttribute("CAS policy is obsolete and will be removed in a future release of the .NET Framework. Please see http://go2.microsoft.com/fwlink/?LinkId=131738 for more information.")]
-        public System.Security.Policy.Evidence Evidence { get { throw null; } set { } }
         public int NativeCompilerReturnValue { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
         public System.Collections.Specialized.StringCollection Output { get { throw null; } }
         public string PathToAssembly { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
@@ -1219,6 +1215,7 @@ namespace System.CodeDom.Compiler
         public string AddExtension(string fileExtension, bool keepFile) { throw null; }
         public void AddFile(string fileName, bool keepFile) { }
         public void CopyTo(string[] fileNames, int start) { }
+        public void Delete() { }
         protected virtual void Dispose(bool disposing) { }
         ~TempFileCollection() { }
         public System.Collections.IEnumerator GetEnumerator() { throw null; }

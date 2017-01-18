@@ -69,7 +69,7 @@ namespace System.Linq.Expressions.Compiler
 
         /// <summary>
         /// Indicates if it is legal to emit a "branch" instruction based on
-        /// currently available information. Call the Reference method before 
+        /// currently available information. Call the Reference method before
         /// using this property.
         /// </summary>
         internal bool CanBranch => _opCode != OpCodes.Leave;

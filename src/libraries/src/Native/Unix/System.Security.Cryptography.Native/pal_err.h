@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 #include <stdint.h>
+#include "opensslshim.h"
 
 /*
 Shims the ERR_get_error method.

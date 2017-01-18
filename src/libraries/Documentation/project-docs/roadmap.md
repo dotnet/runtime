@@ -1,5 +1,7 @@
 # Roadmap for CoreFx
 
+Related: [Overall .NET Core Roadmap](https://github.com/dotnet/core/blob/master/roadmap.md).
+
 ---8<---8<---8<---8<---8<---8<---8<---8<---8<---8<---8<---8<---8<---8<---8<---8<
 
 We need a document that outlines our vision for .NET Core:

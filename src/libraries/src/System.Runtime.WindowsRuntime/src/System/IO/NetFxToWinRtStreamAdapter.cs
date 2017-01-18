@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+extern alias System_Runtime_Extensions;
+
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Runtime.InteropServices.WindowsRuntime;
@@ -11,6 +13,8 @@ using System.Threading.Tasks;
 using System.Threading;
 using Windows.Foundation;
 using Windows.Storage.Streams;
+
+using MemoryStream = System_Runtime_Extensions::System.IO.MemoryStream;
 
 namespace System.IO
 {
@@ -437,7 +441,7 @@ namespace System.IO
         // Cloning can be added in future, however, it would be quite complex
         // to support it correctly for generic streams.
 
-        private static void ThrowCloningNotSuported(String methodName)
+        private static void ThrowCloningNotSupported(String methodName)
         {
             NotSupportedException nse = new NotSupportedException(SR.Format(SR.NotSupported_CloningNotSupported, methodName));
             nse.SetErrorCode(HResults.E_NOTIMPL);
@@ -447,21 +451,21 @@ namespace System.IO
 
         public IRandomAccessStream CloneStream()
         {
-            ThrowCloningNotSuported("CloneStream");
+            ThrowCloningNotSupported("CloneStream");
             return null;
         }
 
 
         public IInputStream GetInputStreamAt(UInt64 position)
         {
-            ThrowCloningNotSuported("GetInputStreamAt");
+            ThrowCloningNotSupported("GetInputStreamAt");
             return null;
         }
 
 
         public IOutputStream GetOutputStreamAt(UInt64 position)
         {
-            ThrowCloningNotSuported("GetOutputStreamAt");
+            ThrowCloningNotSupported("GetOutputStreamAt");
             return null;
         }
         #endregion IRandomAccessStream public interface: Cloning related

@@ -193,6 +193,7 @@ namespace System.PrivateUri.Tests
         [Fact]
         public static void GetComponents_BadUriComponents()
         {
+            http = new Uri(full_http);
             TestUriParser parser = new TestUriParser();
             Assert.Equal(full_http, parser.GetComponents(http, (UriComponents)Int32.MinValue, UriFormat.SafeUnescaped));
         }

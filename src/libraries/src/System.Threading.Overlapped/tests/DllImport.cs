@@ -8,20 +8,20 @@ using System.Threading;
 
 internal static class DllImport
 {
-    [DllImport("api-ms-win-core-file-l1-1-0.dll", SetLastError = true, CharSet = CharSet.Unicode, BestFitMapping = false)]
+    [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode, BestFitMapping = false)]
     internal static extern Win32Handle CreateFile(String lpFileName,
        FileAccess dwDesiredAccess, FileShare dwShareMode,
        IntPtr securityAttrs, CreationDisposition dwCreationDisposition,
        FileAttributes dwFlagsAndAttributes, IntPtr hTemplateFile);
 
-    [DllImport("api-ms-win-core-file-l1-1-0.dll", SetLastError = true)]
-    internal static unsafe extern int WriteFile(SafeHandle handle, byte* bytes, int numBytesToWrite, IntPtr numBytesWritten_mustBeZero, NativeOverlapped* lpOverlapped);
+    [DllImport("kernel32.dll", SetLastError = true)]
+    internal static extern unsafe int WriteFile(SafeHandle handle, byte* bytes, int numBytesToWrite, IntPtr numBytesWritten_mustBeZero, NativeOverlapped* lpOverlapped);
 
 
-    [DllImport("api-ms-win-core-handle-l1-1-0.dll", SetLastError = true)]
+    [DllImport("kernel32.dll", SetLastError = true)]
     internal static extern bool CloseHandle(IntPtr handle);
 
-    [DllImport("api-ms-win-core-handle-l1-1-0.dll", ExactSpelling = true, SetLastError = true)]
+    [DllImport("kernel32.dll", ExactSpelling = true, SetLastError = true)]
     internal static extern bool GetHandleInformation(IntPtr handle, out int flags);
 
     internal const int ERROR_IO_PENDING = 0x000003E5;

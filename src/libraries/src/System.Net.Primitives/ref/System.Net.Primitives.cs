@@ -215,7 +215,7 @@ namespace System.Net
         public static System.Net.IPAddress Parse(string ipString) { throw null; }
         public override string ToString() { throw null; }
         public static bool TryParse(string ipString, out System.Net.IPAddress address) { throw null; }
-        [Obsolete("This property has been deprecated. It is address family dependent. Please use IPAddress.Equals method to perform comparisons.http://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("This property has been deprecated. It is address family dependent. Please use IPAddress.Equals method to perform comparisons. http://go.microsoft.com/fwlink/?linkid=14202")]
         public long Address { get { throw null; } set { } }
     }
     public partial class IPEndPoint : System.Net.EndPoint
@@ -243,9 +243,15 @@ namespace System.Net
     {
         public NetworkCredential() { }
         public NetworkCredential(string userName, string password) { }
+        [System.CLSCompliant(false)]
+        public NetworkCredential(string userName, System.Security.SecureString password) { }
         public NetworkCredential(string userName, string password, string domain) { }
+        [System.CLSCompliant(false)]
+        public NetworkCredential(string userName, System.Security.SecureString password, string domain) { }
         public string Domain { get { throw null; } set { } }
         public string Password { get { throw null; } set { } }
+        [System.CLSCompliant(false)]
+        public System.Security.SecureString SecurePassword { get { throw null; } set { } }
         public string UserName { get { throw null; } set { } }
         public System.Net.NetworkCredential GetCredential(string host, int port, string authenticationType) { throw null; }
         public System.Net.NetworkCredential GetCredential(System.Uri uri, string authType) { throw null; }
@@ -269,12 +275,12 @@ namespace System.Net
 
     public static class HttpVersion
     {
-#if netcoreapp11
+#if netcoreapp
         public static readonly Version Unknown = new Version(0, 0);
 #endif
         public static readonly Version Version10 = new Version(1, 0);
         public static readonly Version Version11 = new Version(1, 1);
-#if netcoreapp11
+#if netcoreapp
         public static readonly Version Version20 = new Version(2, 0);
 #endif
     }
@@ -357,6 +363,7 @@ namespace System.Net.Sockets
         Irda = 26,
         Iso = 7,
         Lat = 14,
+        Max = 29,
         NetBios = 17,
         NetworkDesigners = 28,
         NS = 6,
@@ -455,7 +462,7 @@ namespace System.Security.Authentication
         Md5 = 32771,
         None = 0,
         Sha1 = 32772,
-#if netcoreapp11
+#if netcoreapp
         Sha256 = 32780,
         Sha384 = 32781,
         Sha512 = 32782
@@ -472,6 +479,8 @@ namespace System.Security.Authentication
         Tls = 192,
         Tls11 = 768,
         Tls12 = 3072,
+        [Obsolete("This value has been deprecated.  It is no longer supported. http://go.microsoft.com/fwlink/?linkid=14202")]
+        Default = Ssl3 | Tls
     }
 }
 namespace System.Security.Authentication.ExtendedProtection

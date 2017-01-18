@@ -41,9 +41,9 @@ namespace System.Linq.Expressions.Tests
         [Theory, ClassData(typeof(CompilationTypes))]
         public void CreateByRef(bool useInterpreter)
         {
-            var pX = Expression.Parameter(typeof(int).MakeByRefType());
-            var pY = Expression.Parameter(typeof(int).MakeByRefType());
-            var del =
+            ParameterExpression pX = Expression.Parameter(typeof(int).MakeByRefType());
+            ParameterExpression pY = Expression.Parameter(typeof(int).MakeByRefType());
+            ByRefNewFactory2 del =
                 Expression.Lambda<ByRefNewFactory2>(
                     Expression.New(typeof(ByRefNewType).GetConstructors()[0], pX, pY), pX, pY).Compile(useInterpreter);
             int x = 3;
@@ -56,9 +56,9 @@ namespace System.Linq.Expressions.Tests
         [Theory, InlineData(false)]
         public void CreateByRefAliasing(bool useInterpreter)
         {
-            var pX = Expression.Parameter(typeof(int).MakeByRefType());
-            var pY = Expression.Parameter(typeof(int).MakeByRefType());
-            var del =
+            ParameterExpression pX = Expression.Parameter(typeof(int).MakeByRefType());
+            ParameterExpression pY = Expression.Parameter(typeof(int).MakeByRefType());
+            ByRefNewFactory2 del =
                 Expression.Lambda<ByRefNewFactory2>(
                     Expression.New(typeof(ByRefNewType).GetConstructors()[0], pX, pY), pX, pY).Compile(useInterpreter);
             int x = 3;
@@ -75,8 +75,8 @@ namespace System.Linq.Expressions.Tests
         [Theory, ClassData(typeof(CompilationTypes))]
         public void CreateByRefReferencingReadonly(bool useInterpreter)
         {
-            var p = Expression.Parameter(typeof(int).MakeByRefType());
-            var del =
+            ParameterExpression p = Expression.Parameter(typeof(int).MakeByRefType());
+            ByRefNewFactory1 del =
                 Expression.Lambda<ByRefNewFactory1>(
                     Expression.New(
                         typeof(ByRefNewType).GetConstructors()[0],
@@ -90,7 +90,7 @@ namespace System.Linq.Expressions.Tests
         [Theory, ClassData(typeof(CompilationTypes))]
         public void CreateByRefReferencingOnlyReadonly(bool useInterpreter)
         {
-            var del =
+            Func<ByRefNewType> del =
                 Expression.Lambda<Func<ByRefNewType>>(
                     Expression.New(
                         typeof(ByRefNewType).GetConstructors()[0],
@@ -103,9 +103,9 @@ namespace System.Linq.Expressions.Tests
         [Theory, ClassData(typeof(CompilationTypes))]
         public void CreateByRefThrowing(bool useInterpreter)
         {
-            var pX = Expression.Parameter(typeof(int).MakeByRefType());
-            var pY = Expression.Parameter(typeof(int).MakeByRefType());
-            var del =
+            ParameterExpression pX = Expression.Parameter(typeof(int).MakeByRefType());
+            ParameterExpression pY = Expression.Parameter(typeof(int).MakeByRefType());
+            ByRefNewFactory2 del =
                 Expression.Lambda<ByRefNewFactory2>(
                     Expression.New(typeof(ByRefNewType).GetConstructors()[0], pX, pY), pX, pY).Compile(useInterpreter);
             int x = -9;
@@ -116,8 +116,8 @@ namespace System.Linq.Expressions.Tests
         [Theory, ClassData(typeof(CompilationTypes))]
         public void CreateOut(bool useInterpreter)
         {
-            var p = Expression.Parameter(typeof(int).MakeByRefType());
-            var del =
+            ParameterExpression p = Expression.Parameter(typeof(int).MakeByRefType());
+            OutNewTypeFactory del =
                 Expression.Lambda<OutNewTypeFactory>(Expression.New(typeof(OutNewType).GetConstructors()[0], p), p)
                     .Compile(useInterpreter);
             int x;

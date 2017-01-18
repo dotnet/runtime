@@ -1617,7 +1617,7 @@ nameof(boundedCapacity), boundedCapacity,
             }
             catch (ArgumentException)
             {
-                throw new ArgumentException(SR.BlockingCollection_CopyTo_TooManyElems, nameof(index));
+                throw new ArgumentException(SR.Collection_CopyTo_TooManyElems, nameof(index));
             }
             catch (RankException)
             {

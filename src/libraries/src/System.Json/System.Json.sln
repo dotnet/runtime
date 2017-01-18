@@ -2,24 +2,27 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
 VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Json", "src\System.Json.csproj", "{2ADDB484-6F57-4D71-A3FE-A57EC6329A2B}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Json.Tests", "tests\System.Json.Tests.csproj", "{62E2AD5F-C8D0-45FB-B6A5-AED2C77F198C}"
+	ProjectSection(ProjectDependencies) = postProject
+		{2ADDB484-6F57-4D71-A3FE-A57EC6329A2B} = {2ADDB484-6F57-4D71-A3FE-A57EC6329A2B}
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Json", "src\System.Json.csproj", "{2ADDB484-6F57-4D71-A3FE-A57EC6329A2B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
-		Debug|Any CPU = Debug|Any CPU
-		Release|Any CPU = Release|Any CPU
+		DebugNETCoreAppnetstandard1.0netcoreapp1.0|AnyCPU = DebugNETCoreAppnetstandard1.0netcoreapp1.0|AnyCPU
+		ReleaseNETCoreAppnetstandard1.0netcoreapp1.0|AnyCPU = ReleaseNETCoreAppnetstandard1.0netcoreapp1.0|AnyCPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{2ADDB484-6F57-4D71-A3FE-A57EC6329A2B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{2ADDB484-6F57-4D71-A3FE-A57EC6329A2B}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{2ADDB484-6F57-4D71-A3FE-A57EC6329A2B}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{2ADDB484-6F57-4D71-A3FE-A57EC6329A2B}.Release|Any CPU.Build.0 = Release|Any CPU
-		{62E2AD5F-C8D0-45FB-B6A5-AED2C77F198C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{62E2AD5F-C8D0-45FB-B6A5-AED2C77F198C}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{62E2AD5F-C8D0-45FB-B6A5-AED2C77F198C}.Release|Any CPU.ActiveCfg = Debug|Any CPU
-		{62E2AD5F-C8D0-45FB-B6A5-AED2C77F198C}.Release|Any CPU.Build.0 = Debug|Any CPU
+		{62E2AD5F-C8D0-45FB-B6A5-AED2C77F198C}.DebugNETCoreAppnetstandard1.0netcoreapp1.0|AnyCPU.ActiveCfg = netcoreapp1.0-Debug|Any CPU
+		{62E2AD5F-C8D0-45FB-B6A5-AED2C77F198C}.DebugNETCoreAppnetstandard1.0netcoreapp1.0|AnyCPU.Build.0 = netcoreapp1.0-Debug|Any CPU
+		{62E2AD5F-C8D0-45FB-B6A5-AED2C77F198C}.ReleaseNETCoreAppnetstandard1.0netcoreapp1.0|AnyCPU.ActiveCfg = netcoreapp1.0-Release|Any CPU
+		{62E2AD5F-C8D0-45FB-B6A5-AED2C77F198C}.ReleaseNETCoreAppnetstandard1.0netcoreapp1.0|AnyCPU.Build.0 = netcoreapp1.0-Release|Any CPU
+		{2ADDB484-6F57-4D71-A3FE-A57EC6329A2B}.DebugNETCoreAppnetstandard1.0netcoreapp1.0|AnyCPU.ActiveCfg = netstandard1.0-Debug|Any CPU
+		{2ADDB484-6F57-4D71-A3FE-A57EC6329A2B}.DebugNETCoreAppnetstandard1.0netcoreapp1.0|AnyCPU.Build.0 = netstandard1.0-Debug|Any CPU
+		{2ADDB484-6F57-4D71-A3FE-A57EC6329A2B}.ReleaseNETCoreAppnetstandard1.0netcoreapp1.0|AnyCPU.ActiveCfg = netstandard1.0-Release|Any CPU
+		{2ADDB484-6F57-4D71-A3FE-A57EC6329A2B}.ReleaseNETCoreAppnetstandard1.0netcoreapp1.0|AnyCPU.Build.0 = netstandard1.0-Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

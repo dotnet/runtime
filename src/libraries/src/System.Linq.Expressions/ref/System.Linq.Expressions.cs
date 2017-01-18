@@ -358,8 +358,7 @@ namespace System.Linq.Expressions
     public abstract partial class DynamicExpressionVisitor : System.Linq.Expressions.ExpressionVisitor
     {
         protected DynamicExpressionVisitor() { }
-        // Member is excluded in the base so it is automatically excluded for this type without any way to override that behavior
-        protected virtual Expression VisitDynamic(DynamicExpression node) { throw null; }
+        protected internal override System.Linq.Expressions.Expression VisitDynamic(System.Linq.Expressions.DynamicExpression node) { throw null; }
     }
     public sealed partial class ElementInit : System.Linq.Expressions.IArgumentProvider
     {
@@ -701,6 +700,7 @@ namespace System.Linq.Expressions
         protected internal override System.Linq.Expressions.Expression Accept(System.Linq.Expressions.ExpressionVisitor visitor) { throw null; }
         public new TDelegate Compile() { throw null; }
         public new TDelegate Compile(bool preferInterpretation) { throw null; }
+        public new TDelegate Compile(System.Runtime.CompilerServices.DebugInfoGenerator debugInfoGenerator) { throw null; }
         public System.Linq.Expressions.Expression<TDelegate> Update(System.Linq.Expressions.Expression body, System.Collections.Generic.IEnumerable<System.Linq.Expressions.ParameterExpression> parameters) { throw null; }
     }
     public enum ExpressionType
@@ -806,6 +806,7 @@ namespace System.Linq.Expressions
         protected internal virtual System.Linq.Expressions.Expression VisitConstant(System.Linq.Expressions.ConstantExpression node) { throw null; }
         protected internal virtual System.Linq.Expressions.Expression VisitDebugInfo(System.Linq.Expressions.DebugInfoExpression node) { throw null; }
         protected internal virtual System.Linq.Expressions.Expression VisitDefault(System.Linq.Expressions.DefaultExpression node) { throw null; }
+        protected internal virtual System.Linq.Expressions.Expression VisitDynamic(System.Linq.Expressions.DynamicExpression node) { throw null; }
         protected virtual System.Linq.Expressions.ElementInit VisitElementInit(System.Linq.Expressions.ElementInit node) { throw null; }
         protected internal virtual System.Linq.Expressions.Expression VisitExtension(System.Linq.Expressions.Expression node) { throw null; }
         protected internal virtual System.Linq.Expressions.Expression VisitGoto(System.Linq.Expressions.GotoExpression node) { throw null; }
@@ -916,6 +917,7 @@ namespace System.Linq.Expressions
         public sealed override System.Type Type { get { throw null; } }
         public System.Delegate Compile() { throw null; }
         public System.Delegate Compile(bool preferInterpretation) { throw null; }
+        public System.Delegate Compile(System.Runtime.CompilerServices.DebugInfoGenerator debugInfoGenerator) { throw null; }
     }
     public sealed partial class ListInitExpression : System.Linq.Expressions.Expression
     {
@@ -948,6 +950,8 @@ namespace System.Linq.Expressions
     }
     public abstract partial class MemberBinding
     {
+        [System.ObsoleteAttribute("Do not use this constructor. It will be removed in future releases.")]
+        protected MemberBinding(System.Linq.Expressions.MemberBindingType type, System.Reflection.MemberInfo member) { }
         internal MemberBinding() { }
         public System.Linq.Expressions.MemberBindingType BindingType { get { throw null; } }
         public System.Reflection.MemberInfo Member { get { throw null; } }
@@ -1171,11 +1175,26 @@ namespace System.Runtime.CompilerServices
     {
         public static bool IsInternalFrame(System.Reflection.MethodBase mb) { throw null; }
     }
+    public abstract partial class DebugInfoGenerator
+    {
+        protected DebugInfoGenerator() { }
+        public static System.Runtime.CompilerServices.DebugInfoGenerator CreatePdbGenerator() { throw null; }
+        public abstract void MarkSequencePoint(System.Linq.Expressions.LambdaExpression method, int ilOffset, System.Linq.Expressions.DebugInfoExpression sequencePoint);
+    }
+    public partial interface IRuntimeVariables
+    {
+        int Count { get; }
+        object this[int index] { get; set; }
+    }
     [System.AttributeUsageAttribute((System.AttributeTargets)(10636))]
     public sealed partial class DynamicAttribute : System.Attribute
     {
         public DynamicAttribute() { }
         public DynamicAttribute(bool[] transformFlags) { }
         public System.Collections.Generic.IList<bool> TransformFlags { get { throw null; } }
+    }
+    public partial class RuleCache<T> where T : class
+    {
+        internal RuleCache() { }
     }
 }

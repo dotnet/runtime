@@ -10,7 +10,7 @@ namespace XmlCoreTest.Common
 {
     public static class MiscUtil
     {
-        static public bool IsCurrentCultureHasLimitedDateRange
+        public static bool IsCurrentCultureHasLimitedDateRange
         {
             get
             {

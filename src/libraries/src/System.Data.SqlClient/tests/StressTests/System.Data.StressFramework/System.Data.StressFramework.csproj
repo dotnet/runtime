@@ -4,8 +4,6 @@
   <PropertyGroup>
     <ProjectGuid>{518A4E22-0144-4699-80AE-757B744E8E38}</ProjectGuid>
     <RootNamespace>Stress.Data</RootNamespace>
-    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
-    <OutputType>Library</OutputType>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Release|AnyCPU'" />
@@ -26,6 +24,7 @@
     <Compile Include="TrackedRandom.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="project.json" />
     <None Include="StressTest.config">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

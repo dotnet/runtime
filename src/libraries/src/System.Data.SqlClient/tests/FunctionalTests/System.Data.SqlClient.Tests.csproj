@@ -3,28 +3,32 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <ProjectGuid>{F3E72F35-0351-4D67-9388-725BCAD807BA}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <RootNamespace>System.Data.SqlClient.Tests</RootNamespace>
-    <AssemblyName>System.Data.SqlClient.Tests</AssemblyName>
-    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'" />
-  <ItemGroup Condition=" '$(EnableManualTests)' == 'true' ">
-    <Compile Include="DiagnosticTest.cs" />
-  </ItemGroup>
   <ItemGroup>
+    <Compile Include="DiagnosticTest.cs" />
     <Compile Include="ExceptionTest.cs" />
     <Compile Include="FakeDiagnosticListenerObserver.cs" />
     <Compile Include="SqlBulkCopyColumnMappingCollectionTest.cs" />
     <Compile Include="SqlConnectionTest.RetrieveStatistics.cs" />
     <Compile Include="SqlErrorCollectionTest.cs" />
     <Compile Include="TcpDefaultForAzureTest.cs" />
+    <Compile Include="SqlConnectionTest.cs" />
+    <Compile Include="TestTdsServer.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\pkg\System.Data.SqlClient.pkgproj" />
+    <ProjectReference Include="..\Tools\TDS\TDS.Servers\TDS.Servers.csproj">
+      <Name>TDS.Servers</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Tools\TDS\TDS.EndPoint\TDS.EndPoint.csproj">
+      <Name>TDS.EndPoint</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Tools\TDS\TDS\TDS.csproj">
+      <Name>TDS</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

@@ -2,13 +2,7 @@
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{B01E2AE1-1B52-4518-B32E-016070356A7F}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <AssemblyName>XsltCompiler.Tests</AssemblyName>
-    <RootNamespace>System.Xml.Tests</RootNamespace>
-    <NuGetTargetMoniker>.NETCoreApp,Version=v1.1</NuGetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -18,17 +12,9 @@
     <OutputPath>$(OutputPath)\$(RootNamespace)\$(AssemblyName)</OutputPath>
   </PropertyGroup>
   <ItemGroup>
-    <!--<Reference Include="TestStylesheet">
-      <HintPath>.\TestStylesheet.dll</HintPath>
-    </Reference>-->
-  </ItemGroup>
-  <ItemGroup>
     <Compile Include="CommonScenarios\XsltcTestBasicFunctionality.cs" />
     <Compile Include="CommonScenarios\XsltcTestCaseBase.cs" />
-    <Compile Include="CommonScenarios\XsltcTestClassname.cs" />
-    <Compile Include="CommonScenarios\XsltcTestCompile.cs" />
     <Compile Include="CommonScenarios\XsltcTestFile.cs" />
-    <Compile Include="CommonScenarios\XsltcTestOut.cs" />
     <Compile Include="CommonScenarios\XsltcTestPlatform.cs" />
     <Compile Include="CommonScenarios\XsltcTestSettings.cs" />
     <Compile Include="XsltcModule.cs" />
@@ -42,19 +28,7 @@
   <ItemGroup>
     <ProjectReference Include="$(CommonTestPath)\System\Xml\ModuleCore\ModuleCore.csproj" />
     <ProjectReference Include="$(CommonTestPath)\System\Xml\XmlCoreTest\XmlCoreTest.csproj" />
-    <ProjectReference Include="$(CommonTestPath)\System\Xml\xmlDiff\XmlDiff.csproj" />
-    <ProjectReference Include="..\..\..\..\System.Private.Xml\pkg\System.Private.Xml.pkgproj" />
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="Identity.xslt" />
-    <Content Include="IdentityTransform.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="IdentityTransform.xslt">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <SubType>Designer</SubType>
-    </Content>
-    <Content Include="TestStylesheet.xslt" />
+    <ProjectReference Include="$(CommonTestPath)\System\Xml\XmlDiff\XmlDiff.csproj" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

@@ -1,8 +1,5 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <PropertyGroup>
-    <Configuration Condition="'$(Configuration)'=='' AND ('$(TargetGroup)' == '' OR '$(TargetGroup)' == 'netstandard1.3')">Windows_Debug</Configuration>
-  </PropertyGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <ProjectGuid>{F9DF2357-81B4-4317-908E-512DA9395583}</ProjectGuid>
@@ -10,19 +7,18 @@
     <AssemblyName>System.Console</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net463'">true</IsPartialFacadeAssembly>
-    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetGroup)'!='net463'">
-    <AdditionalFiles Include="$(ToolsDir)PinvokeAnalyzer_OneCoreApis.txt" />
-  </ItemGroup>
   <!-- Help VS understand available configurations -->
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Release|AnyCPU'" />
-  <ItemGroup Condition="'$(TargetGroup)' != 'net463'">
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Unix-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Unix-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Windows_NT-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='net463-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='net463-Windows_NT-Release|AnyCPU'" />
+  <ItemGroup>
+    <Compile Include="FxCopBaseline.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard'">
     <Compile Include="System\Console.cs" />
     <Compile Include="System\ConsoleCancelEventArgs.cs" />
     <Compile Include="System\ConsoleColor.cs" />
@@ -37,9 +33,6 @@
     <Compile Include="$(CommonPath)\System\Text\ConsoleEncoding.cs">
       <Link>Common\System\Text\ConsoleEncoding.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Text\EncodingHelper.cs">
-      <Link>Common\System\IO\EncodingHelper.cs</Link>
-    </Compile>
   </ItemGroup>
   <!-- Windows : UAP 
   <ItemGroup Condition="'$(TargetsWindows)' == 'true' And '$(TargetGroup)' == 'uap101aot' ">
@@ -47,119 +40,143 @@
   </ItemGroup> 
   -->
   <!-- Windows : Win32 -->
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true' And '$(TargetGroup)' == ''">
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true' And '$(TargetGroup)' == 'netstandard'">
     <Compile Include="System\ConsolePal.Windows.cs" />
+    <Compile Include="$(CommonPath)\System\Text\OSEncoding.Windows.cs">
+      <Link>Common\System\Text\OSEncoding.Windows.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Text\OSEncoder.cs">
+      <Link>Common\System\Text\OSEncoder.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Text\DBCSDecoder.cs">
+      <Link>Common\System\Text\DBCSDecoder.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.Encoding.Constants.cs">
+      <Link>Common\Interop\Windows\kernel32\Interop.Encoding.Constants.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetCPInfoEx.cs">
+      <Link>Common\Interop\Windows\kernel32\Interop.GetCPInfoEx.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
       <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.Beep.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.Beep.cs">
       <Link>Common\Interop\Windows\Interop.Beep.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.FormatMessage.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.FormatMessage.cs">
       <Link>Common\Interop\Windows\Interop.FormatMessage.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.ConsoleCursorInfo.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.ConsoleCursorInfo.cs">
       <Link>Common\Interop\Windows\Interop.ConsoleCursorInfo.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.ConsoleScreenBufferInfo.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.ConsoleScreenBufferInfo.cs">
       <Link>Common\Interop\Windows\Interop.ConsoleScreenBufferInfo.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.Errors.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\Interop.Errors.cs">
       <Link>Common\Interop\Windows\Interop.Errors.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.FillConsoleOutputAttribute.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.FillConsoleOutputAttribute.cs">
       <Link>Common\Interop\Windows\Interop.FillConsoleOutputAttribute.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.FillConsoleOutputCharacter.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.FillConsoleOutputCharacter.cs">
       <Link>Common\Interop\Windows\Interop.FillConsoleOutputCharacter.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.FileTypes.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.FileTypes.cs">
       <Link>Common\Interop\Windows\Interop.FileTypes.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetConsoleScreenBufferInfo.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetConsoleScreenBufferInfo.cs">
       <Link>Common\Interop\Windows\Interop.GetConsoleScreenBufferInfo.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetConsoleCP.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetConsoleCP.cs">
       <Link>Common\Interop\Windows\Interop.GetConsoleCP.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetConsoleTitle.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetConsoleTitle.cs">
       <Link>Common\Interop\Windows\Interop.GetConsoleTitle.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetConsoleMode.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetConsoleMode.cs">
       <Link>Common\Interop\Windows\Interop.GetConsoleMode.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetConsoleOutputCP.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetConsoleOutputCP.cs">
       <Link>Common\Interop\Windows\Interop.GetConsoleOutputCP.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetLargestConsoleWindowSize.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetLargestConsoleWindowSize.cs">
       <Link>Common\Interop\Windows\Interop.GetLargestConsoleWindowSize.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetFileType_IntPtr.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetFileType_IntPtr.cs">
       <Link>Common\Interop\Windows\Interop.GetFileType.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetKeyState.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\user32\Interop.GetKeyState.cs">
       <Link>Common\Interop\Windows\Interop.GetKeyState.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetStdHandle.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetStdHandle.cs">
       <Link>Common\Interop\Windows\Interop.GetStdHandle.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.HandleTypes.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.HandleTypes.cs">
       <Link>Common\Interop\Windows\Interop.HandleTypes.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.PeekConsoleInput.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.MultiByteToWideChar.cs">
+      <Link>Common\Interop\Windows\Interop.MultiByteToWideChar.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.PeekConsoleInput.cs">
       <Link>Common\Interop\Windows\Interop.PeekConsoleInput.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.ReadFile_IntPtr.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.ReadFile_IntPtr.cs">
       <Link>Common\Interop\Windows\Interop.ReadFile.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.ReadConsole.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.ReadConsole.cs">
       <Link>Common\Interop\Windows\Interop.ReadConsole.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.ReadConsoleInput.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.ReadConsoleInput.cs">
       <Link>Common\Interop\Windows\Interop.ReadConsoleInput.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.ReadConsoleOutput.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.ReadConsoleOutput.cs">
       <Link>Common\Interop\Windows\Interop.ReadConsoleOutput.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.SetConsoleCP.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.SetConsoleCP.cs">
       <Link>Common\Interop\Windows\Interop.SetConsoleCP.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.SetConsoleCtrlHandler.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.SetConsoleCtrlHandler.cs">
       <Link>Common\Interop\Windows\Interop.SetConsoleCtrlHandler.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.SetConsoleCursorPosition.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.SetConsoleCursorPosition.cs">
       <Link>Common\Interop\Windows\Interop.SetConsoleCursorPosition.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.SetConsoleOutputCP.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.SetConsoleOutputCP.cs">
       <Link>Common\Interop\Windows\Interop.SetConsoleOutputCP.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.SetConsoleScreenBufferSize.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.SetConsoleScreenBufferSize.cs">
       <Link>Common\Interop\Windows\Interop.SetConsoleScreenBufferSize.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.SetConsoleTextAttribute.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.SetConsoleTextAttribute.cs">
       <Link>Common\Interop\Windows\Interop.SetConsoleTextAttribute.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.SetConsoleTitle.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.SetConsoleTitle.cs">
       <Link>Common\Interop\Windows\Interop.SetConsoleTitle.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.SetConsoleWindowInfo.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.SetConsoleWindowInfo.cs">
       <Link>Common\Interop\Windows\Interop.SetConsoleWindowInfo.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.WriteFile_IntPtr.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.WideCharToMultiByte.cs">
+      <Link>Common\Interop\Windows\Interop.WideCharToMultiByte.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.WriteFile_IntPtr.cs">
       <Link>Common\Interop\Windows\Interop.WriteFile.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.WriteConsole.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.WriteConsole.cs">
       <Link>Common\Interop\Windows\Interop.WriteConsole.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.WriteConsoleOutput.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.WriteConsoleOutput.cs">
       <Link>Common\Interop\Windows\Interop.WriteConsoleOutput.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Text\EncodingHelper.Windows.cs">
+      <Link>Common\System\IO\EncodingHelper.Windows.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\IO\Win32Marshal.cs">
       <Link>Common\System\IO\Win32Marshal.cs</Link>
     </Compile>
   </ItemGroup>
   <!-- Unix -->
-  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' And '$(TargetGroup)' == ''"> 
+  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' And '$(TargetGroup)' == 'netstandard'">
     <Compile Include="System\ConsolePal.Unix.cs" />
     <Compile Include="System\TermInfo.cs" />
     <Compile Include="System\IO\StdInReader.cs" />
@@ -259,15 +276,17 @@
     <TargetingPackReference Include="mscorlib" />
   </ItemGroup>
   <ItemGroup>
-    <!-- ToDo: Remove this P2P reference once new packages are produced and updated -->
-    <ProjectReference Include="..\..\System.Runtime\pkg\System.Runtime.pkgproj" />
-    <!-- ToDo: Remove this P2P reference once new packages are produced and updated -->
-    <ProjectReference Include="..\..\System.Runtime.Extensions\pkg\System.Runtime.Extensions.pkgproj" />
-    <!-- ToDo: Remove this P2P reference once new packages are produced and updated -->
-    <ProjectReference Include="..\..\System.IO\pkg\System.IO.pkgproj" />
-    <!-- ToDo: Remove this P2P reference once new packages are produced and updated -->
-    <ProjectReference Include="..\..\System.IO.FileSystem.Primitives\pkg\System.IO.FileSystem.Primitives.pkgproj" />
-    <None Include="project.json" />
+    <Reference Include="System.Collections" />
+    <Reference Include="System.Diagnostics.Contracts" />
+    <Reference Include="System.Diagnostics.Debug" />
+    <Reference Include="System.Diagnostics.Tools" />
+    <Reference Include="System.Resources.ResourceManager" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.Extensions" />
+    <Reference Include="System.Runtime.InteropServices" />
+    <Reference Include="System.Text.Encoding.Extensions" />
+    <Reference Include="System.Threading" />
+    <Reference Include="System.Threading.Tasks" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

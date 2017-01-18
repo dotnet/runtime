@@ -49,7 +49,9 @@ namespace System.IO.Pipes
         public NamedPipeClientStream(string serverName, string pipeName, System.IO.Pipes.PipeDirection direction) : base(default(System.IO.Pipes.PipeDirection), default(int)) { }
         public NamedPipeClientStream(string serverName, string pipeName, System.IO.Pipes.PipeDirection direction, System.IO.Pipes.PipeOptions options) : base(default(System.IO.Pipes.PipeDirection), default(int)) { }
         public NamedPipeClientStream(string serverName, string pipeName, System.IO.Pipes.PipeDirection direction, System.IO.Pipes.PipeOptions options, System.Security.Principal.TokenImpersonationLevel impersonationLevel) : base(default(System.IO.Pipes.PipeDirection), default(int)) { }
+        public NamedPipeClientStream(string serverName, string pipeName, System.IO.Pipes.PipeDirection direction, System.IO.Pipes.PipeOptions options, System.Security.Principal.TokenImpersonationLevel impersonationLevel, HandleInheritability inheritability) : base(default(System.IO.Pipes.PipeDirection), default(int)) { }
         public int NumberOfServerInstances { get { throw null; } }
+        protected internal override void CheckPipePropertyOperations() { }
         public void Connect() { }
         public void Connect(int timeout) { }
         public System.Threading.Tasks.Task ConnectAsync() { throw null; }

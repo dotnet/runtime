@@ -181,7 +181,7 @@ namespace System.Diagnostics.Tests
             }
             else
             {
-                IEnumerable<int> testProcessIds = Process.GetProcessesByName(HostRunner).Select(p => p.Id);
+                IEnumerable<int> testProcessIds = Process.GetProcessesByName(HostRunnerName).Select(p => p.Id);
                 Assert.Contains(_process.Id, testProcessIds);
             }
         }
@@ -223,9 +223,9 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void TestMainModuleOnNonOSX()
         {
-            string fileName = "corerun";
+            string fileName = "dotnet";
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                fileName = "CoreRun.exe";
+                fileName = "dotnet.exe";
 
             Process p = Process.GetCurrentProcess();
             Assert.True(p.Modules.Count > 0);
@@ -595,8 +595,13 @@ namespace System.Diagnostics.Tests
         {
             try
             {
-                int? value = (int?)Microsoft.Win32.Registry.GetValue(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\PerfProc\Performance", "Disable Performance Counters", null);
-                return !value.HasValue || value.Value == 0;
+                using (Microsoft.Win32.RegistryKey perfKey = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(@"SYSTEM\CurrentControlSet\Services\PerfProc\Performance"))
+                {
+                    if (perfKey == null)
+                        return false;
+                    int? value = (int?)perfKey.GetValue("Disable Performance Counters", null);
+                    return !value.HasValue || value.Value == 0;
+                }
             }
             catch (Exception)
             {

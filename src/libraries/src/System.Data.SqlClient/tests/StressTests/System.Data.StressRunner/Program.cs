@@ -217,7 +217,7 @@ namespace DPStressHarness
             }
         }
 
-        static private void PrintHelp()
+        private static void PrintHelp()
         {
             Console.WriteLine("stresstest.exe [-a <module name>] <arguments>");
             Console.WriteLine();
@@ -256,18 +256,18 @@ namespace DPStressHarness
             Console.WriteLine();
         }
 
-        static private int ExitWithError()
+        private static int ExitWithError()
         {
             Environment.FailFast("Exit with error(s).");
             return 1;
         }
 
-        static private int RunVerify()
+        private static int RunVerify()
         {
             throw new NotImplementedException();
         }
 
-        static private int RunStress()
+        private static int RunStress()
         {
             return s_eng.Run();
         }

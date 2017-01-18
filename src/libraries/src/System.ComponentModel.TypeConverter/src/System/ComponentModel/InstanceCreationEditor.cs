@@ -22,13 +22,7 @@ namespace System.ComponentModel
     {
         /// <summary>
         /// </summary>
-        public virtual string Text
-        {
-            get
-            {
-                return SR.InstanceCreationEditorDefaultText;
-            }
-        }
+        public virtual string Text => SR.InstanceCreationEditorDefaultText;
 
         /// <summary>
         /// This method is invoked when you user chooses the link displayed by the PropertyGrid for the InstanceCreationEditor.

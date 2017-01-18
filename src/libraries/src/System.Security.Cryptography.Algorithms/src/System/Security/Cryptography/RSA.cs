@@ -10,15 +10,35 @@ namespace System.Security.Cryptography
 {
     public abstract partial class RSA : AsymmetricAlgorithm
     {
+        public static new RSA Create(String algName)
+        {
+            return (RSA)CryptoConfig.CreateFromName(algName);
+        }
+
         public abstract RSAParameters ExportParameters(bool includePrivateParameters);
         public abstract void ImportParameters(RSAParameters parameters);
-        public abstract byte[] Encrypt(byte[] data, RSAEncryptionPadding padding);
-        public abstract byte[] Decrypt(byte[] data, RSAEncryptionPadding padding);
-        public abstract byte[] SignHash(byte[] hash, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding);
-        public abstract bool VerifyHash(byte[] hash, byte[] signature, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding);
+        public virtual byte[] Encrypt(byte[] data, RSAEncryptionPadding padding) { throw DerivedClassMustOverride(); }
+        public virtual byte[] Decrypt(byte[] data, RSAEncryptionPadding padding) { throw DerivedClassMustOverride(); }
+        public virtual byte[] SignHash(byte[] hash, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding) { throw DerivedClassMustOverride(); }
+        public virtual bool VerifyHash(byte[] hash, byte[] signature, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding) { throw DerivedClassMustOverride(); }
 
-        protected abstract byte[] HashData(byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm);
-        protected abstract byte[] HashData(Stream data, HashAlgorithmName hashAlgorithm);
+        protected virtual byte[] HashData(byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm) { throw DerivedClassMustOverride(); }
+        protected virtual byte[] HashData(Stream data, HashAlgorithmName hashAlgorithm) { throw DerivedClassMustOverride(); }
+
+        private static Exception DerivedClassMustOverride()
+        {
+            return new NotImplementedException(SR.NotSupported_SubclassOverride);
+        }
+
+        public virtual byte[] DecryptValue(byte[] rgb) 
+        {
+            throw new NotSupportedException(SR.NotSupported_Method); // Same as Desktop
+        }
+
+        public virtual byte[] EncryptValue(byte[] rgb) 
+        {
+            throw new NotSupportedException(SR.NotSupported_Method); // Same as Desktop
+        }
 
         public byte[] SignData(byte[] data, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding)
         {
@@ -112,6 +132,9 @@ namespace System.Security.Cryptography
             byte[] hash = HashData(data, hashAlgorithm);
             return VerifyHash(hash, signature, hashAlgorithm, padding);
         }
+
+        public override string KeyExchangeAlgorithm => "RSA";
+        public override string SignatureAlgorithm => "RSA";
 
         private static Exception HashAlgorithmNameNullOrEmpty()
         {

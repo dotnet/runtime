@@ -51,7 +51,7 @@ namespace System.Security.Principal
             Loa.SecurityDescriptor = IntPtr.Zero;
             Loa.SecurityQualityOfService = IntPtr.Zero;
 
-            if (0 == (ReturnCode = Interop.mincore.LsaOpenPolicy(systemName, ref Loa, (int)rights, out Result)))
+            if (0 == (ReturnCode = Interop.Advapi32.LsaOpenPolicy(systemName, ref Loa, (int)rights, out Result)))
             {
                 return Result;
             }
@@ -66,7 +66,7 @@ namespace System.Security.Principal
             }
             else
             {
-                int win32ErrorCode = Interop.mincore.RtlNtStatusToDosError(unchecked((int)ReturnCode));
+                int win32ErrorCode = Interop.NtDll.RtlNtStatusToDosError(unchecked((int)ReturnCode));
 
                 throw new Win32Exception(win32ErrorCode);
             }
@@ -131,7 +131,7 @@ namespace System.Security.Principal
 
             try
             {
-                if (FALSE == Interop.mincore.ConvertStringSidToSid(stringSid, out ByteArray))
+                if (FALSE == Interop.Advapi32.ConvertStringSidToSid(stringSid, out ByteArray))
                 {
                     ErrorCode = Marshal.GetLastWin32Error();
                     goto Error;
@@ -145,14 +145,14 @@ namespace System.Security.Principal
                 // Now is a good time to get rid of the returned pointer
                 //
 
-                Interop.mincore_obsolete.LocalFree(ByteArray);
+                Interop.Kernel32.LocalFree(ByteArray);
             }
 
             //
             // Now invoke the SecurityIdentifier factory method to create the result
             //
 
-            return Interop.mincore.Errors.ERROR_SUCCESS;
+            return Interop.Errors.ERROR_SUCCESS;
 
         Error:
 
@@ -179,9 +179,9 @@ namespace System.Security.Principal
             uint length = (uint)SecurityIdentifier.MaxBinaryLength;
             resultSid = new byte[length];
 
-            if (FALSE != Interop.mincore.CreateWellKnownSid((int)sidType, domainSid == null ? null : domainSid.BinaryForm, resultSid, ref length))
+            if (FALSE != Interop.Advapi32.CreateWellKnownSid((int)sidType, domainSid == null ? null : domainSid.BinaryForm, resultSid, ref length))
             {
-                return Interop.mincore.Errors.ERROR_SUCCESS;
+                return Interop.Errors.ERROR_SUCCESS;
             }
             else
             {
@@ -212,7 +212,7 @@ namespace System.Security.Principal
                 byte[] BinaryForm2 = new Byte[sid2.BinaryLength];
                 sid2.GetBinaryForm(BinaryForm2, 0);
 
-                return (Interop.mincore.IsEqualDomainSid(BinaryForm1, BinaryForm2, out result) == FALSE ? false : result);
+                return (Interop.Advapi32.IsEqualDomainSid(BinaryForm1, BinaryForm2, out result) == FALSE ? false : result);
             }
         }
 
@@ -276,11 +276,11 @@ namespace System.Security.Principal
             uint sidLength = (uint)SecurityIdentifier.MaxBinaryLength;
             byte[] resultSidBinary = new byte[sidLength];
 
-            if (FALSE != Interop.mincore.GetWindowsAccountDomainSid(BinaryForm, resultSidBinary, ref sidLength))
+            if (FALSE != Interop.Advapi32.GetWindowsAccountDomainSid(BinaryForm, resultSidBinary, ref sidLength))
             {
                 resultSid = new SecurityIdentifier(resultSidBinary, 0);
 
-                return Interop.mincore.Errors.ERROR_SUCCESS;
+                return Interop.Errors.ERROR_SUCCESS;
             }
             else
             {
@@ -303,7 +303,7 @@ namespace System.Security.Principal
             byte[] BinaryForm = new byte[sid.BinaryLength];
             sid.GetBinaryForm(BinaryForm, 0);
 
-            if (FALSE == Interop.mincore.IsWellKnownSid(BinaryForm, (int)type))
+            if (FALSE == Interop.Advapi32.IsWellKnownSid(BinaryForm, (int)type))
             {
                 return false;
             }

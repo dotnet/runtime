@@ -1957,7 +1957,7 @@ namespace System.Tests
             VerifyTimeSpanArray(ret, expectedOffsets, string.Format("Wrong offsets when used {0} with the zone {1}", dt, tz.Id));
         }
 
-        static public void VerifyTimeSpanArray(TimeSpan[] actual, TimeSpan[] expected, string errorMsg)
+        public static void VerifyTimeSpanArray(TimeSpan[] actual, TimeSpan[] expected, string errorMsg)
         {
             Assert.True(actual != null);
             Assert.True(expected != null);

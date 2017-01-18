@@ -206,32 +206,32 @@ namespace System.Xml
         {
             return Equals2(prefix2.Value);
         }
-        static public bool operator ==(PrefixHandle prefix1, string prefix2)
+        public static bool operator ==(PrefixHandle prefix1, string prefix2)
         {
             return prefix1.Equals2(prefix2);
         }
 
-        static public bool operator !=(PrefixHandle prefix1, string prefix2)
+        public static bool operator !=(PrefixHandle prefix1, string prefix2)
         {
             return !prefix1.Equals2(prefix2);
         }
 
-        static public bool operator ==(PrefixHandle prefix1, XmlDictionaryString prefix2)
+        public static bool operator ==(PrefixHandle prefix1, XmlDictionaryString prefix2)
         {
             return prefix1.Equals2(prefix2);
         }
 
-        static public bool operator !=(PrefixHandle prefix1, XmlDictionaryString prefix2)
+        public static bool operator !=(PrefixHandle prefix1, XmlDictionaryString prefix2)
         {
             return !prefix1.Equals2(prefix2);
         }
 
-        static public bool operator ==(PrefixHandle prefix1, PrefixHandle prefix2)
+        public static bool operator ==(PrefixHandle prefix1, PrefixHandle prefix2)
         {
             return prefix1.Equals(prefix2);
         }
 
-        static public bool operator !=(PrefixHandle prefix1, PrefixHandle prefix2)
+        public static bool operator !=(PrefixHandle prefix1, PrefixHandle prefix2)
         {
             return !prefix1.Equals(prefix2);
         }

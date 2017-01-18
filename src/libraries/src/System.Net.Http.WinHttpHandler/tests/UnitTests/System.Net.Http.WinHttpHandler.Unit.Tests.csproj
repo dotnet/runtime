@@ -1,24 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <PropertyGroup>
-    <Configuration Condition="'$(Configuration)'==''">Windows_Debug</Configuration>
-  </PropertyGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Windows_Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{A2ECDEDB-12B7-402C-9230-152B7601179F}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <AssemblyName>System.Net.Http.WinHttpHandler.Unit.Tests</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <StringResourcesPath>../../src/Resources/Strings.resx</StringResourcesPath>
-    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
   </PropertyGroup>
-  
   <!-- Help VS understand available configurations -->
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'" />
-
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard1.3-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard1.3-Windows_NT-Release|AnyCPU'" />
+  <ItemGroup>
+    <TargetingPackExclusions Include="System.Net.Http.WinHttpHandler" />
+  </ItemGroup>
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
     <Compile Include="$(CommonTestPath)\System\Net\SslProtocolSupport.cs">
       <Link>CommonTest\System\Net\SslProtocolSupport.cs</Link>
@@ -29,17 +22,14 @@
     <Compile Include="$(CommonPath)\Interop\Windows\Crypt32\Interop.certificates_types.cs">
       <Link>Common\Interop\Windows\Crypt32\Interop.certificates_types.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.HRESULT_FROM_WIN32.cs">
-      <Link>Common\Interop\Windows\mincore\Interop.HRESULT_FROM_WIN32.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\Interop.HRESULT_FROM_WIN32.cs">
+      <Link>Common\Interop\Windows\Interop.HRESULT_FROM_WIN32.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\winhttp\Interop.SafeWinHttpHandle.cs">
       <Link>Common\Interop\Windows\winhttp\Interop.SafeWinHttpHandle.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\winhttp\Interop.winhttp_types.cs">
       <Link>Common\Interop\Windows\winhttp\Interop.winhttp_types.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeHandleZeroOrMinusOneIsInvalid.cs">
-      <Link>Common\Microsoft\Win32\SafeHandles\SafeHandleZeroOrMinusOneIsInvalid.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\CharArrayHelpers.cs">
       <Link>Common\System\CharArrayHelpers.cs</Link>
@@ -50,6 +40,9 @@
     <Compile Include="$(CommonPath)\System\Diagnostics\ExceptionExtensions.cs">
       <Link>Common\System\Diagnostics\ExceptionExtensions.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\IO\StreamHelpers.CopyValidation.cs">
+      <Link>Common\System\IO\StreamHelpers.CopyValidation.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\Net\HttpKnownHeaderNames.cs">
       <Link>Common\System\Net\HttpKnownHeaderNames.cs</Link>
     </Compile>
@@ -59,7 +52,7 @@
     <Compile Include="$(CommonPath)\System\Net\HttpStatusDescription.cs">
       <Link>Common\System\Net\HttpStatusDescription.cs</Link>
     </Compile>
-	<Compile Include="$(CommonPath)\System\Net\HttpVersionInternal.cs">
+    <Compile Include="$(CommonPath)\System\Net\HttpVersionInternal.cs">
       <Link>Common\System\Net\HttpVersionInternal.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\UriScheme.cs">
@@ -77,8 +70,14 @@
     <Compile Include="$(CommonPath)\System\Net\Http\HttpHandlerLoggingStrings.cs">
       <Link>Common\System\Net\Http\HttpHandlerLoggingStrings.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Http\NoWriteNoSeekStreamContent.cs">
+      <Link>Common\System\Net\Http\NoWriteNoSeekStreamContent.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\Net\Http\WinHttpException.cs">
       <Link>Common\System\Net\Http\WinHttpException.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Threading\Tasks\RendezvousAwaitable.cs">
+      <Link>Common\System\Threading\Tasks\RendezvousAwaitable.cs</Link>
     </Compile>
     <Compile Include="..\..\src\System\Net\Http\WinHttpAuthHelper.cs">
       <Link>ProductionCode\WinHttpAuthHelper.cs</Link>
@@ -140,6 +139,5 @@
     <Compile Include="WinHttpResponseStreamTest.cs" />
     <Compile Include="XunitTestAssemblyAtrributes.cs" />
   </ItemGroup>
-  
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

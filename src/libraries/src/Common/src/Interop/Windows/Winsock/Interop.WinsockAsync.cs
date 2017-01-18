@@ -22,14 +22,15 @@ internal static partial class Interop
             internal uint index;
         }
 
+        internal const int IPv6AddressLength = 16;
+
         [StructLayout(LayoutKind.Sequential)]
-        internal struct ControlDataIPv6
+        internal unsafe struct ControlDataIPv6
         {
             internal UIntPtr length;
             internal uint level;
             internal uint type;
-            [MarshalAs(UnmanagedType.ByValArray, SizeConst = 16)]
-            internal byte[] address;
+            internal fixed byte address[IPv6AddressLength];
             internal uint index;
         }
 

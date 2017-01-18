@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Diagnostics;
 using System.Dynamic;
 using System.Linq.Expressions;
@@ -17,19 +16,17 @@ namespace Microsoft.CSharp.RuntimeBinder
     /// </summary>
     internal sealed class CSharpBinaryOperationBinder : BinaryOperationBinder
     {
-        internal bool IsChecked { get { return _isChecked; } }
-        private bool _isChecked;
+        internal bool IsChecked { get; }
 
         internal bool IsLogicalOperation { get { return (_binopFlags & CSharpBinaryOperationFlags.LogicalOperation) != 0; } }
-        private CSharpBinaryOperationFlags _binopFlags;
+        private readonly CSharpBinaryOperationFlags _binopFlags;
 
-        internal Type CallingContext { get { return _callingContext; } }
-        private Type _callingContext;
+        internal Type CallingContext { get; }
 
         internal IList<CSharpArgumentInfo> ArgumentInfo { get { return _argumentInfo.AsReadOnly(); } }
-        private List<CSharpArgumentInfo> _argumentInfo;
+        private readonly List<CSharpArgumentInfo> _argumentInfo;
 
-        private RuntimeBinder _binder;
+        private readonly RuntimeBinder _binder;
 
         //////////////////////////////////////////////////////////////////////
 
@@ -48,9 +45,9 @@ namespace Microsoft.CSharp.RuntimeBinder
             IEnumerable<CSharpArgumentInfo> argumentInfo) :
             base(operation)
         {
-            _isChecked = isChecked;
+            IsChecked = isChecked;
             _binopFlags = binaryOperationFlags;
-            _callingContext = callingContext;
+            CallingContext = callingContext;
             _argumentInfo = BinderHelper.ToList(argumentInfo);
             Debug.Assert(_argumentInfo.Count == 2);
             _binder = RuntimeBinder.GetInstance();

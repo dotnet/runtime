@@ -4,14 +4,13 @@
 
 using Xunit;
 using Xunit.Abstractions;
-using System;
-using System.Xml;
+using System.IO;
 using System.Xml.Schema;
 
 namespace System.Xml.Tests
 {
     //[TestCase(Name = "TC_SchemaSet_EnableUpaCheck", Desc = "")]
-    public class TC_SchemaSet_EnableUpaCheck
+    public class TC_SchemaSet_EnableUpaCheck : TC_SchemaSetBase
     {
         private ITestOutputHelper _output;
 
@@ -32,7 +31,7 @@ namespace System.Xml.Tests
 
         public void Initialize()
         {
-            this.testData = TestData._Root + @"EnableUpaCheck\";
+            this.testData = Path.Combine(TestData._Root, "EnableUpaCheck");
             bWarningCallback = bErrorCallback = false;
             errorCount = 0;
             errorLineNumbers = new Int32[10];
@@ -148,9 +147,9 @@ namespace System.Xml.Tests
             XmlSchemaSet xss = new XmlSchemaSet();
             xss.XmlResolver = new XmlUrlResolver();
             xss.ValidationEventHandler += new ValidationEventHandler(ValidationCallback);
-            xss.Add(null, testData + xsdFile);
+            xss.Add(null, Path.Combine(testData, xsdFile));
 
-            XmlReader vr = CreateReader(testData + xmlFile, xss, false);
+            XmlReader vr = CreateReader(Path.Combine(testData, xmlFile), xss, false);
             while (vr.Read()) ;
 
             CError.Compare(errorCount, expectedErrorCount, "Error Count mismatch");

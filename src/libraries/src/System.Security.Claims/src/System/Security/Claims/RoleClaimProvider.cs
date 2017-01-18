@@ -18,7 +18,6 @@ namespace System.Security.Claims
     /// made on parameters.
     /// </summary>    
 
-    [System.Runtime.InteropServices.ComVisible(false)]
     internal class RoleClaimProvider
     {
         string m_issuer;

@@ -20,12 +20,12 @@ namespace System.Runtime.Serialization
         private delegate object CollectionReadItemDelegate(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext context, CollectionDataContract collectionContract, Type itemType, string itemName, string itemNs);
         private delegate object CollectionSetItemDelegate(object resultCollection, object collectionItem, int itemIndex);
 
-        private readonly static MethodInfo s_getCollectionSetItemDelegateMethod = typeof(ReflectionReader).GetMethod(nameof(GetCollectionSetItemDelegate), BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance);
-        private readonly static MethodInfo s_objectToKeyValuePairGetKey = typeof(ReflectionReader).GetMethod(nameof(ObjectToKeyValuePairGetKey), BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static);
-        private readonly static MethodInfo s_objectToKeyValuePairGetValue = typeof(ReflectionReader).GetMethod(nameof(ObjectToKeyValuePairGetValue), BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static);
+        private static readonly MethodInfo s_getCollectionSetItemDelegateMethod = typeof(ReflectionReader).GetMethod(nameof(GetCollectionSetItemDelegate), BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance);
+        private static readonly MethodInfo s_objectToKeyValuePairGetKey = typeof(ReflectionReader).GetMethod(nameof(ObjectToKeyValuePairGetKey), BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static);
+        private static readonly MethodInfo s_objectToKeyValuePairGetValue = typeof(ReflectionReader).GetMethod(nameof(ObjectToKeyValuePairGetValue), BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static);
 
-        private readonly static Type[] s_arrayConstructorParameters = new Type[] { Globals.TypeOfInt };
-        private readonly static object[] s_arrayConstructorArguments = new object[] { 32 };
+        private static readonly Type[] s_arrayConstructorParameters = new Type[] { Globals.TypeOfInt };
+        private static readonly object[] s_arrayConstructorArguments = new object[] { 32 };
 
         public object ReflectionReadClass(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext context, XmlDictionaryString[] memberNames, XmlDictionaryString[] memberNamespaces, ClassDataContract classContract)
         {
@@ -33,9 +33,17 @@ namespace System.Runtime.Serialization
             context.AddNewObject(obj);
             InvokeOnDeserializing(context, classContract, obj);
 
-            ReflectionReadMembers(xmlReader, context, memberNames, memberNamespaces, classContract, ref obj);
-            obj = ResolveAdapterObject(obj, classContract);
+            if (classContract.IsISerializable)
+            {
+                obj = ReadISerializable(xmlReader, context, classContract);
+            }
+            else
+            {
+                ReflectionReadMembers(xmlReader, context, memberNames, memberNamespaces, classContract, ref obj);
+            }
 
+            obj = ResolveAdapterObject(obj, classContract);
+            InvokeDeserializationCallback(obj);
             InvokeOnDeserialized(context, classContract, obj);
 
             return obj;
@@ -279,6 +287,16 @@ namespace System.Runtime.Serialization
             return value;
         }
 
+        private static object ReadISerializable(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext context, ClassDataContract classContract)
+        {
+            object obj;
+            SerializationInfo serializationInfo = context.ReadSerializationInfo(xmlReader, classContract.UnderlyingType);
+            StreamingContext streamingContext = context.GetStreamingContext();
+            ConstructorInfo iSerializableConstructor = classContract.GetISerializableConstructor();
+            obj = iSerializableConstructor.Invoke(new object[] { serializationInfo, streamingContext });
+            return obj;
+        }
+
         // This method is a perf optimization for collections. The original method is ReflectionReadValue.
         private CollectionReadItemDelegate GetReflectionReadValueDelegate(Type type)
         {
@@ -347,6 +365,12 @@ namespace System.Runtime.Serialization
                 var contextArg = context.GetStreamingContext();
                 classContract.OnDeserialized.Invoke(obj, new object[] { contextArg });
             }
+        }
+
+        private void InvokeDeserializationCallback(object obj)
+        {
+            var deserializationCallbackObject = obj as IDeserializationCallback;
+            deserializationCallbackObject?.OnDeserialization(null);
         }
 
         private static object CreateObject(ClassDataContract classContract)
