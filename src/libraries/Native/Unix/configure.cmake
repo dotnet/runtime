@@ -224,7 +224,17 @@ check_cxx_source_compiles(
     #include <sys/sendfile.h>
     int main() { int i = sendfile(0, 0, 0, 0); }
     "
-    HAVE_SENDFILE)
+    HAVE_SENDFILE_4)
+
+check_cxx_source_compiles(
+    "
+    #include <stdlib.h>
+    #include <sys/types.h>
+    #include <sys/socket.h>
+    #include <sys/uio.h>
+    int main() { int i = sendfile(0, 0, 0, NULL, NULL, 0); }
+    "
+    HAVE_SENDFILE_6)
 
 check_function_exists(
     fcopyfile

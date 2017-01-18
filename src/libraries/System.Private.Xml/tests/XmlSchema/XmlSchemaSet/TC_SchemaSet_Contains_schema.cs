@@ -4,13 +4,12 @@
 
 using Xunit;
 using Xunit.Abstractions;
-using System;
 using System.Xml.Schema;
 
 namespace System.Xml.Tests
 {
     //[TestCase(Name = "TC_SchemaSet_Contains_Schema", Desc = "")]
-    public class TC_SchemaSet_Contains_Schema
+    public class TC_SchemaSet_Contains_Schema : TC_SchemaSetBase
     {
         private ITestOutputHelper _output;
 

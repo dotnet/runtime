@@ -181,7 +181,13 @@ namespace System.Security.Cryptography.Dsa.Tests
             }
         }
 
-        public static bool SupportsFips186_3 => DSAFactory.SupportsFips186_3;
+        internal static bool SupportsFips186_3
+        {
+            get
+            {
+                return DSAFactory.SupportsFips186_3;
+            }
+        }
         public static bool SupportsKeyGeneration => DSAFactory.SupportsKeyGeneration;
     }
 }

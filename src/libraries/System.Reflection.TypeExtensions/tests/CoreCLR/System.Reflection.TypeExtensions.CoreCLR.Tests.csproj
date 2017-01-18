@@ -2,12 +2,7 @@
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{BED9F8D5-7420-404E-9EAD-D9148C16EAC1}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <AssemblyName>System.Reflection.TypeExtensions.CoreCLR.Tests</AssemblyName>
-    <RootNamespace>System.Reflection.TypeExtensions.CoreCLR.Tests</RootNamespace>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -19,9 +14,6 @@
       <Link>TinyAssembly.dll</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\pkg\System.Reflection.TypeExtensions.pkgproj" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="MemberInfoTests.CoreCLR.cs" />

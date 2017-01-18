@@ -1,59 +1,54 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <PropertyGroup>
-    <Configuration Condition="'$(Configuration)'==''">Windows_Debug</Configuration>
-  </PropertyGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{6C314C9B-3D28-4B05-9B4C-B57A00A9B3B9}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <RootNamespace>System.Runtime.Extensions.Tests</RootNamespace>
-    <AssemblyName>System.Runtime.Extensions.Tests</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <DefineConstants Condition="'$(TargetGroup)'=='netstandard1.7'">$(DefineConstants);netstandard17</DefineConstants>
-    <NugetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.5</NugetTargetMoniker>
+    <DefineConstants Condition="'$(TargetGroup)'=='netstandard2.0'">$(DefineConstants);netstandard17</DefineConstants>
   </PropertyGroup>
   <!-- Folder logic needs moved into common targets: https://github.com/dotnet/corefx/issues/11468 -->
-  <ItemGroup Condition="'$(TargetGroup)'=='netstandard1.7'">
+  <ItemGroup Condition="'$(TargetGroup)'=='netstandard'">
     <TestNugetTargetMoniker Include="$(NugetTargetMoniker)">
-      <Folder>ns1.7-netcoreapp1.1</Folder>
+      <Folder>ns2.0-netcoreapp2.0</Folder>
     </TestNugetTargetMoniker>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'=='netcoreapp1.1'">
+  <ItemGroup Condition="'$(TargetGroup)'=='netcoreapp'">
     <TestNugetTargetMoniker Include="$(NugetTargetMoniker)">
-      <Folder>netcoreapp1.1</Folder>
+      <Folder>netcoreapp2.0</Folder>
     </TestNugetTargetMoniker>
   </ItemGroup>
   <!-- Default configurations to help VS understand the configurations -->
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' " />
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' " />
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'netstandard1.7_Debug|AnyCPU' " />
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'netstandard1.7_Release|AnyCPU' " />
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'netcoreapp1.1_Debug|AnyCPU' " />
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'netcoreapp1.1_Release|AnyCPU' " />
-  <ItemGroup Condition="'$(TargetGroup)'=='netstandard1.7' or '$(TargetGroup)'=='netcoreapp1.1'">
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netcoreapp-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netcoreapp-Windows_NT-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netcoreapp-Unix-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netcoreapp-Unix-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard1.5-Unix-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard1.5-Unix-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard1.5-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard1.5-Windows_NT-Release|AnyCPU'" />
+  <ItemGroup Condition="'$(TargetGroup)'=='netstandard' or '$(TargetGroup)'=='netcoreapp'">
     <Compile Include="System\ApplicationIdTests.cs" />
-    <Compile Include="System\IO\PathTests.netstandard1.7.cs" />
-    <Compile Include="System\Convert.netstandard1.7.cs" />
+    <Compile Include="System\IO\PathTests.netstandard.cs" />
+    <Compile Include="System\Convert.netstandard.cs" />
     <Compile Include="System\EnvironmentTests.cs" />
-    <Compile Include="System\Math.netstandard1.7.cs" />
+    <Compile Include="System\Math.netstandard.cs" />
     <Compile Include="System\OperatingSystemTests.cs" />
-    <Compile Include="System\StringComparer.netstandard1.7.cs" />
+    <Compile Include="System\StringComparer.netstandard.cs" />
     <Compile Include="System\Runtime\Versioning\VersioningHelperTests.cs" />
     <Compile Include="System\AppDomainTests.cs" />
+    <Compile Include="System\Net\WebUtility.netstandard.cs" />
     <Compile Include="$(CommonTestPath)\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs">
       <Link>Common\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs</Link>
     </Compile>
     <Compile Include="System\Reflection\AssemblyNameProxyTests.cs" />
     <Compile Include="System\MarshalByRefObjectTest.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'=='netcoreapp1.1'">
-    <Compile Include="System\BitConverter.netcoreapp1.1.cs" />
+  <ItemGroup Condition="'$(TargetGroup)'=='netcoreapp'">
+    <Compile Include="System\BitConverter.netcoreapp.cs" />
     <Compile Include="System\IO\Path.GetRelativePath.cs" />
-    <Compile Include="System\MathTests.netcoreapp1.1.cs" />
-    <Compile Include="System\MathF.netcoreapp1.1.cs" />
+    <Compile Include="System\MathTests.netcoreapp.cs" />
+    <Compile Include="System\MathF.netcoreapp.cs" />
+    <Compile Include="System\UnloadingAndProcessExitTests.netcoreapp.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="System\Diagnostics\Stopwatch.cs" />
@@ -116,20 +111,17 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\System.Runtime\pkg\System.Runtime.pkgproj" />
-    <ProjectReference Include="..\..\System.Diagnostics.Debug\pkg\System.Diagnostics.Debug.pkgproj" />
-    <!-- ToDo: Remove this P2P reference once new packages are produced and updated -->
-    <ProjectReference Include="..\..\System.IO.FileSystem.Primitives\pkg\System.IO.FileSystem.Primitives.pkgproj" />
-    <!-- ToDo: Remove this P2P reference once new packages are produced and updated -->
-    <ProjectReference Include="..\..\System.IO.FileSystem\pkg\System.IO.FileSystem.pkgproj" />
-    <ProjectReference Include="..\pkg\System.Runtime.Extensions.pkgproj">
-      <Project>{1e689c1b-690c-4799-bde9-6e7990585894}</Project>
-      <Name>System.Runtime.Extensions.CoreCLR</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\System.Private.Uri\pkg\System.Private.Uri.pkgproj" />
     <ProjectReference Include="$(CommonTestPath)\System\Diagnostics\RemoteExecutorConsoleApp\RemoteExecutorConsoleApp.csproj">
       <Project>{69e46a6f-9966-45a5-8945-2559fe337827}</Project>
       <Name>RemoteExecutorConsoleApp</Name>
+    </ProjectReference>
+    <ProjectReference Include="AssemblyResolveTests\AssemblyResolveTests.csproj">
+      <Project>{ad83807c-8be5-4f27-85df-9793613233e1}</Project>
+      <Name>AssemblyResolveTests</Name>
+    </ProjectReference>
+    <ProjectReference Include="TestAppOutsideOfTPA\TestAppOutsideOfTPA.csproj">
+      <Project>{c44b33e3-f89f-40b9-b353-d380c1524988}</Project>
+      <Name>TestAppOutsideOfTPA</Name>
     </ProjectReference>
     <ProjectReference Include="VoidMainWithExitCodeApp\VoidMainWithExitCodeApp.csproj">
       <Project>{9F312D76-9AF1-4E90-B3B0-815A1EC6C346}</Project>
@@ -139,8 +131,6 @@
       <Project>{9F312D76-9AF1-4E90-B3B0-815A1EC6C346}</Project>
       <Name>TestApp</Name>
     </ProjectReference>
-    <!-- ToDo: Remove this P2P reference once new packages are produced and updated -->
-    <ProjectReference Include="..\..\System.IO\pkg\System.IO.pkgproj" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

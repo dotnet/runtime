@@ -50,9 +50,10 @@ namespace System.IO.Tests
         }
 
         [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
-        public void Backup_FileCopiedAndDeleted_DestCopied(bool ignoreMetadataErrors)
+        [InlineData(false, false)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public void Backup_FileCopiedAndDeleted_DestCopied(bool backupExists, bool ignoreMetadataErrors)
         {
             string srcPath = GetTestFilePath();
             string destPath = GetTestFilePath();
@@ -64,6 +65,11 @@ namespace System.IO.Tests
             byte[] destContents = new byte[] { 6, 7, 8, 9, 10 };
             File.WriteAllBytes(destPath, destContents);
 
+            if (backupExists)
+            {
+                File.Create(destBackupPath).Dispose();
+            }
+
             Replace(srcPath, destPath, destBackupPath, ignoreMetadataErrors);
 
             Assert.False(File.Exists(srcPath));
@@ -72,9 +78,19 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        public void NonExistentSourcePath()
+        public void NonExistentSourcePath_ThrowsException()
         {
-            Assert.Throws<FileNotFoundException>(() => Replace(GetTestFilePath(), GetTestFilePath(), null));
+            string dest = GetTestFilePath();
+            File.Create(dest).Dispose();
+            Assert.Throws<FileNotFoundException>(() => Replace(GetTestFilePath(), dest, null));
+        }
+
+        [Fact]
+        public void NonExistentDestPath_ThrowsException()
+        {
+            string src = GetTestFilePath();
+            File.Create(src).Dispose();
+            Assert.Throws<FileNotFoundException>(() => Replace(src, GetTestFilePath(), null));
         }
 
         [Fact]

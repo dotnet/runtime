@@ -12,6 +12,7 @@ $footer = @"
   <Import Project="`$([MSBuild]::GetDirectoryNameOfFileAbove(`$(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
 </Project>
 
+
 "@
 
 function WriteBuilds($allConfigs, $srcDir, $projName)
@@ -184,39 +185,73 @@ function GetConfigurations($projs, $srcDir, $projName)
 }
 
 $srcDirs = dir .\src\*\src
+$layoutDir = "D:\corefx-packages-backup\packages\Debug\layout\runtimes\win7-x64\lib\netcoreapp2.0"
 
 foreach($srcDir in $srcDirs)
 {
-	#$srcDir.FullName
-	$projs = dir $srcDir -r -i *.*proj
-
-  if($projs.Count -eq 0) { Write-Host "Skipping $srcDir because it has no csproj files."; continue; }
-
-  $projName = $srcDir.Parent.Name;
-
-  $allSrcConfigs = GetConfigurations $projs $srcDir $projName
-  $defaultConfig = GetDefaultConfiguration $allSrcConfigs $projName
-
-  $testsDir = $srcDir.Parent.FullName + "\tests";
-  if (Test-Path $testsDir)
+  $projName = $srcDir.Parent.Name
+  $pjOrig = "$srcDir\project.json"
+  $pj = "$layoutDir\$projName.deps"
+  $plj = "$srcDir\project.lock.json"
+  $proj = "$srcDir\$projName.csproj"
+  Write-Host "Looking at $pj"
+  if (Test-Path $pj)
   {
-    $testProjs = dir $testsDir -r -i *.csproj
-
-    if ($defaultConfig.os -eq "Windows_NT")
+    $deps = new-object System.Collections.ArrayList
+    $pjc = gc $pj;
+    foreach ($line in $pjc)
     {
-      #$testProjs | % { WriteDefaultConfiguration $defaultConfig $_ $(gc $_) }
+      if ($line -match "\`"`(?<dep>.*`)\`": \`"\d")
+      {
+        $item = $matches["dep"];
+        if ($item -eq "Microsoft.TargetingPack.Private.CoreCLR")
+        {
+          $deps.Add("System.Private.CoreLib") | out-null
+        }
+        elseif ($item -eq "Microsoft.TargetingPack.NETFramework.v4.6")
+        {
+        }
+        elseif ($item -eq "Microsoft.TargetingPack.NETFramework.v4.6.1")
+        {
+        }
+        elseif ($item -eq "Microsoft.TargetingPack.NETFramework.v4.6.2")
+        {
+        }
+        elseif ($item -eq "Microsoft.TargetingPack.Private.NETNative")
+        {
+        }
+        elseif ($item -eq "Microsoft.NETCore.Platforms")
+        {
+        }
+        else
+        {
+          $deps.Add($item) | out-null
+        }
+      }
     }
-  }
-  #$testConfigs = GetConfigurations $testProjs $testsDir $projName
 
-  WriteBuilds $allSrcConfigs $srcDir $projName
+    $pjOrigC = gc $pjOrig;
+    foreach ($line in $pjOrigC)
+    {
+      if ($line -match "\`"`(?<dep>.*`)\`": \`"\d")
+      {
+        $item = $matches["dep"];
+        if ($item -eq "System.Diagnostics.Contracts")
+        {
+          $deps.Add($item) | out-null
+        }
+        elseif ($item -eq "System.Diagnostics.Tools")
+        {
+          $deps.Add($item) | out-null
+        }
+      }
+    }
 
-  $bfs = dir $srcDir -r -i *.builds
+    $projc = gc $proj;
+    $projc2 = $projc | % { if ($_ -match "None Include=`"project.json`"") { $($deps | % { "    <Reference Include=`"$_`" />" }) } else { $_ } }
+    $projc2 | sc $proj
 
-  if ($bfs.Count -ne 1)
-  {
-    $projName + " contains " + $bfs.Count + " builds files!";
+    del $pjOrig
+    #del $plj
   }
 }
-
-

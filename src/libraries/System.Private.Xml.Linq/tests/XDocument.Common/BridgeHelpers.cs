@@ -163,7 +163,7 @@ namespace CoreXml.Test.XLinq
             }
         }
 
-        public string GetTestFileName()
+        public static string GetTestFileName()
         {
             return Path.Combine("TestData", "XmlReader", "API", pGenericXml);
         }

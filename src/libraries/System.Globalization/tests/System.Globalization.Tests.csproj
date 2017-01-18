@@ -2,20 +2,13 @@
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{7F5F5134-00FE-4DE8-B20C-3DA8BA2EBA68}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <RootNamespace>System.Globalization.Tests</RootNamespace>
-    <AssemblyName>System.Globalization.Tests</AssemblyName>
-    <DefineConstants Condition="'$(TargetGroup)' == 'net46'">$(DefineConstants);net46</DefineConstants>
-    <NugetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NugetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard1.3-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard1.3-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="CharUnicodeInfo\CharUnicodeInfoTestData.cs" />
     <Compile Include="CharUnicodeInfo\CharUnicodeInfoTests.cs" />
@@ -50,8 +43,7 @@
     <Compile Include="RegionInfo\RegionInfoTests.Methods.cs" />
     <Compile Include="RegionInfo\RegionInfoTests.Properties.cs" />
     <Compile Include="CultureInfo\CultureInfoAll.cs" />
-    <!-- async current cultures feature is supported on 4.6.1 and up on Windows desktop framework -->
-    <Compile Include="CultureInfo\CultureInfoAsync.cs" Condition="'$(TargetGroup)' != 'net46'" />
+    <Compile Include="CultureInfo\CultureInfoAsync.cs" />
     <Compile Include="CultureInfo\CultureInfoCalendar.cs" />
     <Compile Include="CultureInfo\CultureInfoClone.cs" />
     <Compile Include="CultureInfo\CultureInfoCompareInfo.cs" />
@@ -147,43 +139,26 @@
       <Project>{69e46a6f-9966-45a5-8945-2559fe337827}</Project>
       <Name>RemoteExecutorConsoleApp</Name>
     </ProjectReference>
-    <ProjectReference Include="..\pkg\System.Globalization.pkgproj">
-      <Name>System.Globalization</Name>
-    </ProjectReference>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == ''">
-    <Compile Include="CharUnicodeInfo\CharUnicodeInfoTests.netstandard1.7.cs" />
-    <Compile Include="CompareInfo\CompareInfoTests.netstandard1.7.cs" />
-    <Compile Include="CultureInfo\CultureInfoTests.netstandard1.7.cs" />
-    <Compile Include="DateTimeFormatInfo\DateTimeFormatInfoTests.netstandard1.7.cs" />
-    <Compile Include="NumberFormatInfo\NumberFormatInfoTests.netstandard1.7.cs" />
-    <Compile Include="RegionInfo\RegionInfoTests.netstandard1.7.cs" />
-    <Compile Include="TextInfo\TextInfoTests.netstandard1.7.cs" />
-    <Compile Include="StringInfo\StringInfoTests.netstandard1.7.cs" />
-    <Compile Include="SortVersion\SortVersionTests.netstandard1.7.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\System.Runtime\pkg\System.Runtime.pkgproj">
-      <Name>System.Runtime</Name>
-    </ProjectReference>
-    <!-- ToDo: Remove this P2P reference once new packages are produced and updated -->
-    <ProjectReference Include="..\..\System.Runtime.Extensions\pkg\System.Runtime.Extensions.pkgproj" />
-    <!-- ToDo: Remove this P2P reference once new packages are produced and updated -->
-    <ProjectReference Include="..\..\System.IO\pkg\System.IO.pkgproj" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'net46'">
-    <TargetingPackReference Include="System" />
-    <TargetingPackReference Include="System.Threading.Tasks" />
-    <TargetingPackReference Include="System.Core" />
-    <TargetingPackReference Include="System.Runtime" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="project.json" />
+  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard'">
+    <Compile Include="CharUnicodeInfo\CharUnicodeInfoTests.netstandard.cs" />
+    <Compile Include="CompareInfo\CompareInfoTests.netstandard.cs" />
+    <Compile Include="CultureInfo\CultureInfoTests.netstandard.cs" />
+    <Compile Include="DateTimeFormatInfo\DateTimeFormatInfoTests.netstandard.cs" />
+    <Compile Include="NumberFormatInfo\NumberFormatInfoTests.netstandard.cs" />
+    <Compile Include="RegionInfo\RegionInfoTests.netstandard.cs" />
+    <Compile Include="TextInfo\TextInfoTests.netstandard.cs" />
+    <Compile Include="StringInfo\StringInfoTests.netstandard.cs" />
+    <Compile Include="SortVersion\SortVersionTests.netstandard.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="$(CommonTestPath)\Data\UnicodeData.8.0.txt">
       <Link>CharUnicodeInfo\UnicodeData8.0.txt</Link>
       <LogicalName>UnicodeData.8.0.txt</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(CommonTestPath)\Data\UnicodeData63.txt">
+      <Link>CharUnicodeInfo\UnicodeData6.3.txt</Link>
+      <LogicalName>UnicodeData6.3.txt</LogicalName>
     </EmbeddedResource>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

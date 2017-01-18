@@ -28,7 +28,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public static CallInstruction Create(MethodInfo info)
         {
-            return Create(info, info.GetParameters());
+            return Create(info, info.GetParametersCached());
         }
 
         /// <summary>
@@ -85,7 +85,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
             }
 
-            // create it 
+            // create it
             try
             {
 #if FEATURE_FAST_CREATE
@@ -110,9 +110,9 @@ namespace System.Linq.Expressions.Interpreter
             }
             catch (NotSupportedException)
             {
-                // if Delegate.CreateDelegate can't handle the method fall back to 
-                // the slow reflection version.  For example this can happen w/ 
-                // a generic method defined on an interface and implemented on a class or 
+                // if Delegate.CreateDelegate can't handle the method fall back to
+                // the slow reflection version.  For example this can happen w/
+                // a generic method defined on an interface and implemented on a class or
                 // a virtual generic method.
                 res = new MethodInfoCallInstruction(info, argumentCount);
             }
@@ -141,19 +141,19 @@ namespace System.Linq.Expressions.Interpreter
                 case 1:
                     alternativeMethod = isGetter ?
                         arrayType.GetMethod("GetValue", new[] { typeof(int) }) :
-                        typeof(CallInstruction).GetMethod("ArrayItemSetter1");
+                        typeof(CallInstruction).GetMethod(nameof(ArrayItemSetter1));
                     break;
 
                 case 2:
                     alternativeMethod = isGetter ?
                         arrayType.GetMethod("GetValue", new[] { typeof(int), typeof(int) }) :
-                        typeof(CallInstruction).GetMethod("ArrayItemSetter2");
+                        typeof(CallInstruction).GetMethod(nameof(ArrayItemSetter2));
                     break;
 
                 case 3:
                     alternativeMethod = isGetter ?
                         arrayType.GetMethod("GetValue", new[] { typeof(int), typeof(int), typeof(int) }) :
-                        typeof(CallInstruction).GetMethod("ArrayItemSetter3");
+                        typeof(CallInstruction).GetMethod(nameof(ArrayItemSetter3));
                     break;
             }
 
@@ -164,7 +164,6 @@ namespace System.Linq.Expressions.Interpreter
 
             return Create(alternativeMethod);
         }
-
 
         public static void ArrayItemSetter1(Array array, int index0, object value)
         {
@@ -248,7 +247,8 @@ namespace System.Linq.Expressions.Interpreter
             }
             catch (TargetInvocationException e)
             {
-                throw ExceptionHelpers.UpdateForRethrow(e.InnerException);
+                ExceptionHelpers.UnwrapAndRethrow(e);
+                throw ContractUtils.Unreachable;
             }
         }
 #endif
@@ -260,17 +260,14 @@ namespace System.Linq.Expressions.Interpreter
         public override int ConsumedStack => ArgumentCount;
 
         public override string ToString() => "Call()";
-        
+
         #endregion
 
         /// <summary>
         /// If the target of invocation happens to be a delegate
-        /// over enclosed instance lightLambda, return that instance. 
+        /// over enclosed instance lightLambda, return that instance.
         /// We can interpret LightLambdas directly.
         /// </summary>
-        /// <param name="instance"></param>
-        /// <param name="lightLambda"></param>
-        /// <returns></returns>
         protected static bool TryGetLightLambdaTarget(object instance, out LightLambda lightLambda)
         {
             var del = instance as Delegate;
@@ -333,7 +330,8 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 catch (TargetInvocationException e)
                 {
-                    throw ExceptionHelpers.UpdateForRethrow(e.InnerException);
+                    ExceptionHelpers.UnwrapAndRethrow(e);
+                    throw ContractUtils.Unreachable;
                 }
             }
             else
@@ -357,7 +355,8 @@ namespace System.Linq.Expressions.Interpreter
                     }
                     catch (TargetInvocationException e)
                     {
-                        throw ExceptionHelpers.UpdateForRethrow(e.InnerException);
+                        ExceptionHelpers.UnwrapAndRethrow(e);
+                        throw ContractUtils.Unreachable;
                     }
                 }
             }
@@ -429,7 +428,8 @@ namespace System.Linq.Expressions.Interpreter
                     }
                     catch (TargetInvocationException e)
                     {
-                        throw ExceptionHelpers.UpdateForRethrow(e.InnerException);
+                        ExceptionHelpers.UnwrapAndRethrow(e);
+                        throw ContractUtils.Unreachable;
                     }
                 }
                 else
@@ -453,7 +453,8 @@ namespace System.Linq.Expressions.Interpreter
                         }
                         catch (TargetInvocationException e)
                         {
-                            throw ExceptionHelpers.UpdateForRethrow(e.InnerException);
+                            ExceptionHelpers.UnwrapAndRethrow(e);
+                            throw ContractUtils.Unreachable;
                         }
                     }
                 }
@@ -476,7 +477,7 @@ namespace System.Linq.Expressions.Interpreter
                     {
                         if (arg.ArgumentIndex == -1)
                         {
-                            // instance param, just copy back the exact instance invoked with, which 
+                            // instance param, just copy back the exact instance invoked with, which
                             // gets passed by reference from reflection for value types.
                             arg.Update(frame, instance);
                         }

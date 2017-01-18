@@ -5,16 +5,13 @@
 using System.Reflection;
 using System.Threading;
 using System.Xml;
-using System.Security;
 
 namespace System.Runtime.Serialization.Json
 {
     internal class JsonCollectionDataContract : JsonDataContract
     {
-        [SecurityCritical]
         private JsonCollectionDataContractCriticalHelper _helper;
 
-        [SecuritySafeCritical]
         public JsonCollectionDataContract(CollectionDataContract traditionalDataContract)
             : base(new JsonCollectionDataContractCriticalHelper(traditionalDataContract))
         {
@@ -23,7 +20,6 @@ namespace System.Runtime.Serialization.Json
 
         internal JsonFormatCollectionReaderDelegate JsonFormatReaderDelegate
         {
-            [SecuritySafeCritical]
             get
             {
                 if (_helper.JsonFormatReaderDelegate == null)
@@ -67,7 +63,6 @@ namespace System.Runtime.Serialization.Json
 
         internal JsonFormatGetOnlyCollectionReaderDelegate JsonFormatGetOnlyReaderDelegate
         {
-            [SecuritySafeCritical]
             get
             {
                 if (_helper.JsonFormatGetOnlyReaderDelegate == null)
@@ -117,7 +112,6 @@ namespace System.Runtime.Serialization.Json
 
         internal JsonFormatCollectionWriterDelegate JsonFormatWriterDelegate
         {
-            [SecuritySafeCritical]
             get
             {
                 if (_helper.JsonFormatWriterDelegate == null)
@@ -159,12 +153,7 @@ namespace System.Runtime.Serialization.Json
             }
         }
 
-        private CollectionDataContract TraditionalCollectionDataContract
-        {
-            [SecuritySafeCritical]
-            get
-            { return _helper.TraditionalCollectionDataContract; }
-        }
+        private CollectionDataContract TraditionalCollectionDataContract => _helper.TraditionalCollectionDataContract;
 
         public override object ReadJsonValueCore(XmlReaderDelegator jsonReader, XmlObjectSerializerReadContextComplexJson context)
         {

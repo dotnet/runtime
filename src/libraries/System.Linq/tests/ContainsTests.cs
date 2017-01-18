@@ -52,6 +52,13 @@ namespace System.Linq.Tests
             Assert.Equal(expected, source.Contains(value, null));
         }
 
+        [Theory, MemberData(nameof(Int_TestData))]
+        public void IntRunOnce(IEnumerable<int> source, int value, bool expected)
+        {
+            Assert.Equal(expected, source.RunOnce().Contains(value));
+            Assert.Equal(expected, source.RunOnce().Contains(value, null));
+        }
+
         public static IEnumerable<object> String_TestData()
         {
             yield return new object[] { new string[] { null }, StringComparer.Ordinal, null, true };
@@ -70,6 +77,16 @@ namespace System.Linq.Tests
                 Assert.Equal(expected, source.Contains(value));
             }
             Assert.Equal(expected, source.Contains(value, comparer));
+        }
+
+        [Theory, MemberData(nameof(String_TestData))]
+        public void StringRunOnce(IEnumerable<string> source, IEqualityComparer<string> comparer, string value, bool expected)
+        {
+            if (comparer == null)
+            {
+                Assert.Equal(expected, source.RunOnce().Contains(value));
+            }
+            Assert.Equal(expected, source.RunOnce().Contains(value, comparer));
         }
 
         public static IEnumerable<object> NullableInt_TestData()
@@ -96,6 +113,34 @@ namespace System.Linq.Tests
             
             Assert.Throws<ArgumentNullException>("source", () => source.Contains(42));
             Assert.Throws<ArgumentNullException>("source", () => source.Contains(42, EqualityComparer<int>.Default));
+        }
+
+        [Fact]
+        public void ExplicitNullComparerDoesNotDeferToCollection()
+        {
+            IEnumerable<string> source = new HashSet<string>(new AnagramEqualityComparer()) {"ABC"};
+            Assert.False(source.Contains("BAC", null));
+        }
+
+        [Fact]
+        public void ExplicitComparerDoesNotDeferToCollection()
+        {
+            IEnumerable<string> source = new HashSet<string> {"ABC"};
+            Assert.True(source.Contains("abc", StringComparer.OrdinalIgnoreCase));
+        }
+
+        [Fact]
+        public void ExplicitComparerDoestNotDeferToCollectionWithComparer()
+        {
+            IEnumerable<string> source = new HashSet<string>(StringComparer.OrdinalIgnoreCase) {"ABC"};
+            Assert.True(source.Contains("BAC", new AnagramEqualityComparer()));
+        }
+
+        [Fact]
+        public void NoComparerDoesDeferToCollection()
+        {
+            IEnumerable<string> source = new HashSet<string>(StringComparer.OrdinalIgnoreCase) {"ABC"};
+            Assert.True(source.Contains("abc"));
         }
     }
 }

@@ -58,7 +58,7 @@ namespace System.IO.Pipes
         }
 
         [SecuritySafeCritical]
-        internal NamedPipeClientStream(String serverName, String pipeName, PipeDirection direction,
+        public NamedPipeClientStream(String serverName, String pipeName, PipeDirection direction,
             PipeOptions options, TokenImpersonationLevel impersonationLevel, HandleInheritability inheritability)
             : base(direction, 0)
         {

@@ -10,6 +10,16 @@ namespace System.Security.Cryptography
     {
         protected ECDsa() { }
 
+        public static new ECDsa Create(string algorithm)
+        {
+            if (algorithm == null)
+            {
+                throw new ArgumentNullException(nameof(algorithm));
+            }
+
+            return CryptoConfig.CreateFromName(algorithm) as ECDsa;
+        }
+
         /// <summary>
         /// When overridden in a derived class, exports the named or explicit ECParameters for an ECCurve.
         /// If the curve has a name, the Curve property will contain named curve parameters otherwise it will contain explicit parameters.
@@ -124,7 +134,17 @@ namespace System.Security.Cryptography
         public abstract byte[] SignHash(byte[] hash);
         public abstract bool VerifyHash(byte[] hash, byte[] signature);
 
-        protected abstract byte[] HashData(byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm);
-        protected abstract byte[] HashData(Stream data, HashAlgorithmName hashAlgorithm);
+        public override string KeyExchangeAlgorithm => null;
+        public override string SignatureAlgorithm => "ECDsa";
+
+        protected virtual byte[] HashData(byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm)
+        {
+            throw new NotSupportedException(SR.NotSupported_SubclassOverride);
+        }
+
+        protected virtual byte[] HashData(Stream data, HashAlgorithmName hashAlgorithm)
+        {
+            throw new NotSupportedException(SR.NotSupported_SubclassOverride);
+        }
     }
 }

@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <PropertyGroup>
+    <BuildConfigurations>
+      netcoreapp
+    </BuildConfigurations>
+  </PropertyGroup>
+
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+
+  <PropertyGroup>
+    <NetCoreAppRefPath>$(RefPath)</NetCoreAppRefPath>
+  </PropertyGroup>
+
+  <Target Name="GetGenFacadesInputs">
+    <ItemGroup>
+      <GenFacadesContracts Include="$(NetFxRefPath)*.dll" />
+      <GenFacadesContracts Include="$(NetStandardRefPath)netstandard.dll" />
+      <GenFacadesSeeds Include="$(NetCoreAppRefPath)*.dll" Exclude="$(NetCoreAppRefPath)System.Private.CoreLib.dll" />
+    </ItemGroup>
+  </Target>
+
+  <PropertyGroup>
+    <GenFacadesInputPath>$(IntermediateOutputPath)PreGenFacades/</GenFacadesInputPath>
+    <GenFacadesOutputPath>$(IntermediateOutputPath)facades/</GenFacadesOutputPath>
+    <GenFacadesResponseFile>$(GenFacadesInputPath)genfacades.rsp</GenFacadesResponseFile>
+    <GenFacadesSemaphoreFile>$(GenFacadesInputPath)genfacades.sempahore</GenFacadesSemaphoreFile>
+  </PropertyGroup>
+
+  <!-- Generate Facades -->
+  <Target Name="RunGenFacades"
+          DependsOnTargets="GetGenFacadesInputs"
+          Inputs="@(GenFacadesContracts);@(GenFacadeSeeds)"
+          Outputs="$(GenFacadesSemaphoreFile)">
+
+    <PropertyGroup>
+      <!--<GenFacadesArgs>$(GenFacadesArgs) -contracts:"@(GenFacadesContracts, ',')"</GenFacadesArgs>-->
+      <GenFacadesArgs>$(GenFacadesArgs) -seeds:"@(GenFacadesSeeds, ',')"</GenFacadesArgs>
+      <GenFacadesArgs>$(GenFacadesArgs) -facadePath:"$(GenFacadesOutputPath)"</GenFacadesArgs>
+      <GenFacadesArgs>$(GenFacadesArgs) -producePdb:false</GenFacadesArgs>
+      <!-- TODO: We should remove this flag once we have all the types for netstandard -->
+      <GenFacadesArgs>$(GenFacadesArgs) -ignoreMissingTypes</GenFacadesArgs>
+    </PropertyGroup>
+
+    <MakeDir Directories="$(GenFacadesInputPath)" />
+    <WriteLinesToFile File="$(GenFacadesResponseFile)" Lines="$(GenFacadesArgs)" Overwrite="true" />
+
+    <PropertyGroup>
+      <GenFacadesCmd>$(ToolHostCmd) "$(ToolsDir)GenFacades.exe"</GenFacadesCmd>
+    </PropertyGroup>
+
+    <Exec Command="$(GenFacadesCmd) -contracts:&quot;$(NetFxRefPath)&quot; @&quot;$(GenFacadesResponseFile)&quot;" WorkingDirectory="$(ToolRuntimePath)" />
+
+    <Exec Command="$(GenFacadesCmd) -contracts:$(NetStandardRefPath)netstandard.dll @&quot;$(GenFacadesResponseFile)&quot;" WorkingDirectory="$(ToolRuntimePath)" />
+
+    <!-- Copy the facades to the package ref and lib folders to be included in the packages -->
+    <ItemGroup>
+      <PackageOutputPaths Include="$(BinDir)$(TargetGroup)/pkg/ref" />
+      <PackageOutputPaths Include="$(BinDir)$(TargetGroup)/pkg/lib" />
+      <ProducedFacades Include="$(GenFacadesOutputPath)*.dll" />
+      <FileWrites Include="@(ProducedFacades)" />
+    </ItemGroup>
+
+    <Copy SourceFiles="@(ProducedFacades)" DestinationFolder="%(PackageOutputPaths.Identity)" >
+      <Output TaskParameter="DestinationFiles" ItemName="FileWrites" />
+    </Copy>
+
+    <Touch Files="$(GenFacadesSemaphoreFile)" AlwaysCreate="true" />
+  </Target>
+
+  <PropertyGroup>
+    <ApiCompatResponseFile>$(IntermediateOutputPath)/apicompat.rsp</ApiCompatResponseFile>
+    <ApiCompatBaselineFile>$(MSBuildThisFileDirectory)ApiCompatBaseline.netfx461.txt</ApiCompatBaselineFile>
+    <ApiCompatNSBaselineFile>$(MSBuildThisFileDirectory)ApiCompatBaseline.netstandard20.txt</ApiCompatNSBaselineFile>
+  </PropertyGroup>
+
+  <!-- Run ApiCompat -->
+  <Target Name="RunApiCompat"
+          Inputs="$(ApiCompatResponseFile);@(GenFacadesContracts)"
+          Outputs="$(ApiCompatBaselineFile);$(ApiCompatNSBaselineFile)"
+  >
+    <PropertyGroup>
+      <ApiCompatArgs>$(ApiCompatArgs) -implDirs:"$(NetCoreAppRefPath),$(GenFacadesOutputPath)"</ApiCompatArgs>
+      <ApiCompatExitCode>0</ApiCompatExitCode>
+
+      <ApiCompatCmd>$(ToolHostCmd) "$(ToolsDir)ApiCompat.exe"</ApiCompatCmd>
+    </PropertyGroup>
+
+    <MakeDir Directories="$(IntermediateOutputPath)" />
+    <WriteLinesToFile File="$(ApiCompatResponseFile)" Lines="$(ApiCompatArgs)" Overwrite="true" />
+
+    <Exec Command="$(ApiCompatCmd) &quot;$(NetFxRefPath)&quot; @&quot;$(ApiCompatResponseFile)&quot; &gt; $(ApiCompatBaselineFile)"
+          CustomErrorRegularExpression="^[a-zA-Z]+ :"
+          StandardOutputImportance="Low"
+          IgnoreExitCode="true"
+    >
+      <Output TaskParameter="ExitCode" PropertyName="ApiCompatExitCode" />
+    </Exec>
+
+    <Exec Command="$(ApiCompatCmd) &quot;$(NetStandardRefPath)&quot; @&quot;$(ApiCompatResponseFile)&quot; &gt; $(ApiCompatNSBaselineFile)"
+          CustomErrorRegularExpression="^[a-zA-Z]+ :"
+          StandardOutputImportance="Low"
+          IgnoreExitCode="true"
+    >
+      <Output TaskParameter="ExitCode" PropertyName="ApiCompatExitCode" />
+    </Exec>
+
+  </Target>
+
+  <Target Name="Build" DependsOnTargets="RunGenFacades;RunApiCompat" />
+  <Target Name="Clean">
+    <RemoveDir Directories="$(IntermediateOutputPath);$(GenFacadesOutputPath)" />
+  </Target>
+  <Target Name="Rebuild" DependsOnTargets="Clean;Build" />
+
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>

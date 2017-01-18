@@ -91,7 +91,7 @@ namespace System.Linq.Expressions
         /// </summary>
         /// <param name="fileName">A <see cref="String"/> to set the <see cref="SymbolDocumentInfo.FileName"/> equal to.</param>
         /// <param name="language">A <see cref="Guid"/> to set the <see cref="SymbolDocumentInfo.Language"/> equal to.</param>
-        /// <returns>A <see cref="SymbolDocumentInfo"/> that has the <see cref="SymbolDocumentInfo.FileName"/> 
+        /// <returns>A <see cref="SymbolDocumentInfo"/> that has the <see cref="SymbolDocumentInfo.FileName"/>
         /// and <see cref="SymbolDocumentInfo.Language"/> properties set to the specified value.</returns>
         public static SymbolDocumentInfo SymbolDocument(string fileName, Guid language)
         {
@@ -104,8 +104,8 @@ namespace System.Linq.Expressions
         /// <param name="fileName">A <see cref="String"/> to set the <see cref="SymbolDocumentInfo.FileName"/> equal to.</param>
         /// <param name="language">A <see cref="Guid"/> to set the <see cref="SymbolDocumentInfo.Language"/> equal to.</param>
         /// <param name="languageVendor">A <see cref="Guid"/> to set the <see cref="SymbolDocumentInfo.LanguageVendor"/> equal to.</param>
-        /// <returns>A <see cref="SymbolDocumentInfo"/> that has the <see cref="SymbolDocumentInfo.FileName"/> 
-        /// and <see cref="SymbolDocumentInfo.Language"/> 
+        /// <returns>A <see cref="SymbolDocumentInfo"/> that has the <see cref="SymbolDocumentInfo.FileName"/>
+        /// and <see cref="SymbolDocumentInfo.Language"/>
         /// and <see cref="SymbolDocumentInfo.LanguageVendor"/> properties set to the specified value.</returns>
         public static SymbolDocumentInfo SymbolDocument(string fileName, Guid language, Guid languageVendor)
         {
@@ -119,9 +119,9 @@ namespace System.Linq.Expressions
         /// <param name="language">A <see cref="Guid"/> to set the <see cref="SymbolDocumentInfo.Language"/> equal to.</param>
         /// <param name="languageVendor">A <see cref="Guid"/> to set the <see cref="SymbolDocumentInfo.LanguageVendor"/> equal to.</param>
         /// <param name="documentType">A <see cref="Guid"/> to set the <see cref="SymbolDocumentInfo.DocumentType"/> equal to.</param>
-        /// <returns>A <see cref="SymbolDocumentInfo"/> that has the <see cref="SymbolDocumentInfo.FileName"/> 
-        /// and <see cref="SymbolDocumentInfo.Language"/> 
-        /// and <see cref="SymbolDocumentInfo.LanguageVendor"/> 
+        /// <returns>A <see cref="SymbolDocumentInfo"/> that has the <see cref="SymbolDocumentInfo.FileName"/>
+        /// and <see cref="SymbolDocumentInfo.Language"/>
+        /// and <see cref="SymbolDocumentInfo.LanguageVendor"/>
         /// and <see cref="SymbolDocumentInfo.DocumentType"/> properties set to the specified value.</returns>
         public static SymbolDocumentInfo SymbolDocument(string fileName, Guid language, Guid languageVendor, Guid documentType)
         {

@@ -13,7 +13,7 @@ using Xunit.Abstractions;
 
 namespace System.Net.Tests
 {
-    public class HttpWebRequestTest
+    public partial class HttpWebRequestTest
     {
         private const string RequestBody = "This is data to POST.";
         private readonly byte[] _requestBodyBytes = Encoding.UTF8.GetBytes(RequestBody);
@@ -28,7 +28,7 @@ namespace System.Net.Tests
         private int _responseCallbackCallCount = 0;
         private readonly ITestOutputHelper _output;
 
-        public readonly static object[][] EchoServers = System.Net.Test.Common.Configuration.Http.EchoServers;
+        public static readonly object[][] EchoServers = System.Net.Test.Common.Configuration.Http.EchoServers;
 
         public HttpWebRequestTest(ITestOutputHelper output)
         {

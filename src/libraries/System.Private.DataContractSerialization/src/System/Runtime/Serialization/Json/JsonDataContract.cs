@@ -5,7 +5,6 @@
 using System.Collections.Generic;
 using System.Runtime;
 using System.Runtime.Serialization;
-using System.Security;
 using System.Reflection;
 using System.Xml;
 
@@ -13,46 +12,25 @@ namespace System.Runtime.Serialization.Json
 {
     internal class JsonDataContract
     {
-        [SecurityCritical]
         private JsonDataContractCriticalHelper _helper;
 
-        [SecuritySafeCritical]
         protected JsonDataContract(DataContract traditionalDataContract)
         {
             _helper = new JsonDataContractCriticalHelper(traditionalDataContract);
         }
 
-        [SecuritySafeCritical]
         protected JsonDataContract(JsonDataContractCriticalHelper helper)
         {
             _helper = helper;
         }
 
-        internal virtual string TypeName
-        {
-            get { return null; }
-        }
+        internal virtual string TypeName => null;
 
-        protected JsonDataContractCriticalHelper Helper
-        {
-            [SecurityCritical]
-            get
-            { return _helper; }
-        }
+        protected JsonDataContractCriticalHelper Helper => _helper;
 
-        protected DataContract TraditionalDataContract
-        {
-            [SecuritySafeCritical]
-            get
-            { return _helper.TraditionalDataContract; }
-        }
+        protected DataContract TraditionalDataContract => _helper.TraditionalDataContract;
 
-        private Dictionary<XmlQualifiedName, DataContract> KnownDataContracts
-        {
-            [SecuritySafeCritical]
-            get
-            { return _helper.KnownDataContracts; }
-        }
+        private Dictionary<XmlQualifiedName, DataContract> KnownDataContracts => _helper.KnownDataContracts;
 
         public static JsonReadWriteDelegates GetGeneratedReadWriteDelegates(DataContract c)
         {
@@ -91,7 +69,6 @@ namespace System.Runtime.Serialization.Json
             return result;
         }
 
-        [SecuritySafeCritical]
         public static JsonDataContract GetJsonDataContract(DataContract traditionalDataContract)
         {
             return JsonDataContractCriticalHelper.GetJsonDataContract(traditionalDataContract);
@@ -178,20 +155,11 @@ namespace System.Runtime.Serialization.Json
                 _typeName = string.IsNullOrEmpty(traditionalDataContract.Namespace.Value) ? traditionalDataContract.Name.Value : string.Concat(traditionalDataContract.Name.Value, JsonGlobals.NameValueSeparatorString, XmlObjectSerializerWriteContextComplexJson.TruncateDefaultDataContractNamespace(traditionalDataContract.Namespace.Value));
             }
 
-            internal Dictionary<XmlQualifiedName, DataContract> KnownDataContracts
-            {
-                get { return _knownDataContracts; }
-            }
+            internal Dictionary<XmlQualifiedName, DataContract> KnownDataContracts => _knownDataContracts;
 
-            internal DataContract TraditionalDataContract
-            {
-                get { return _traditionalDataContract; }
-            }
+            internal DataContract TraditionalDataContract => _traditionalDataContract;
 
-            internal virtual string TypeName
-            {
-                get { return _typeName; }
-            }
+            internal virtual string TypeName => _typeName;
 
             public static JsonDataContract GetJsonDataContract(DataContract traditionalDataContract)
             {

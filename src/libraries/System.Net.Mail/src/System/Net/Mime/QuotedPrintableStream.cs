@@ -376,7 +376,7 @@ namespace System.Net.Mime
             private readonly byte[] _buffer;
             private readonly int _offset;
             private readonly int _count;
-            private readonly static AsyncCallback s_onWrite = new AsyncCallback(OnWrite);
+            private static readonly AsyncCallback s_onWrite = new AsyncCallback(OnWrite);
             private int _written;
 
             internal WriteAsyncResult(QuotedPrintableStream parent, byte[] buffer, int offset, int count, AsyncCallback callback, object state) : base(null, state, callback)

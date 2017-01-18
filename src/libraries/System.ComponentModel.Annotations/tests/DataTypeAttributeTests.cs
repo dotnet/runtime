@@ -68,6 +68,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
         [Theory]
         [InlineData("CustomValue")]
         [InlineData("")]
+        [InlineData(" ")]
         [InlineData(null)]
         public static void Ctor_String(string customDataType)
         {
@@ -75,7 +76,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
             Assert.Equal(DataType.Custom, attribute.DataType);
             Assert.Equal(customDataType, attribute.CustomDataType);
 
-            if (string.IsNullOrEmpty(customDataType))
+            if (string.IsNullOrWhiteSpace(customDataType))
             {
                 Assert.Throws<InvalidOperationException>(() => attribute.GetDataTypeName());
                 Assert.Throws<InvalidOperationException>(() => attribute.Validate(new object(), s_testValidationContext));

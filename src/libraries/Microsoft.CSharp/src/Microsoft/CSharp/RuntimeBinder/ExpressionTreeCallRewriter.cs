@@ -19,16 +19,16 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         private class ExpressionEXPR : EXPR
         {
-            public Expression Expression;
+            public readonly Expression Expression;
             public ExpressionEXPR(Expression e)
             {
                 Expression = e;
             }
         }
 
-        private Dictionary<EXPRCALL, Expression> _DictionaryOfParameters;
-        private IEnumerable<Expression> _ListOfParameters;
-        private TypeManager _typeManager;
+        private readonly Dictionary<EXPRCALL, Expression> _DictionaryOfParameters;
+        private readonly IEnumerable<Expression> _ListOfParameters;
+        private readonly TypeManager _typeManager;
         // Counts how many EXPRSAVEs we've encountered so we know which index into the 
         // parameter list we should be taking.
         private int _currentParameterIndex;
@@ -943,7 +943,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                 {
                     return GetObject(pExpr.asZEROINIT().OptionalArgument);
                 }
-                return System.Activator.CreateInstance(pExpr.type.AssociatedSystemType);
+                return Activator.CreateInstance(pExpr.type.AssociatedSystemType);
             }
 
             Debug.Assert(false, "Invalid EXPR in GetObject");

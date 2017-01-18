@@ -81,7 +81,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         // Extracts properties from a managed NotifyCollectionChangedEventArgs and passes them to
         // a VM-implemented helper that creates a WinRT NotifyCollectionChangedEventArgs instance.
         // This method is called from IL stubs and needs to have its token stabilized.
-        static internal IntPtr ConvertToNative(NotifyCollectionChangedEventArgs managedArgs)
+        internal static IntPtr ConvertToNative(NotifyCollectionChangedEventArgs managedArgs)
         {
             if (managedArgs == null)
                 return IntPtr.Zero;
@@ -97,7 +97,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         // Extracts properties from a WinRT NotifyCollectionChangedEventArgs and creates a new
         // managed NotifyCollectionChangedEventArgs instance.
         // This method is called from IL stubs and needs to have its token stabilized.
-        static internal NotifyCollectionChangedEventArgs ConvertToManaged(IntPtr nativeArgsIP)
+        internal static NotifyCollectionChangedEventArgs ConvertToManaged(IntPtr nativeArgsIP)
         {
             if (nativeArgsIP == IntPtr.Zero)
                 return null;
@@ -113,7 +113,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                         nativeArgs.OldStartingIndex);
         }
 
-        static internal NotifyCollectionChangedEventArgs CreateNotifyCollectionChangedEventArgs(
+        internal static NotifyCollectionChangedEventArgs CreateNotifyCollectionChangedEventArgs(
             NotifyCollectionChangedAction action, IList newItems, IList oldItems, int newStartingIndex, int oldStartingIndex)
         {
             switch (action)
@@ -143,7 +143,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         // Extracts PropertyName from a managed PropertyChangedEventArgs and passes them to
         // a VM-implemented helper that creates a WinRT PropertyChangedEventArgs instance.
         // This method is called from IL stubs and needs to have its token stabilized.
-        static internal IntPtr ConvertToNative(PropertyChangedEventArgs managedArgs)
+        internal static IntPtr ConvertToNative(PropertyChangedEventArgs managedArgs)
         {
             if (managedArgs == null)
                 return IntPtr.Zero;
@@ -154,7 +154,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         // Extracts properties from a WinRT PropertyChangedEventArgs and creates a new
         // managed PropertyChangedEventArgs instance.
         // This method is called from IL stubs and needs to have its token stabilized.
-        static internal PropertyChangedEventArgs ConvertToManaged(IntPtr nativeArgsIP)
+        internal static PropertyChangedEventArgs ConvertToManaged(IntPtr nativeArgsIP)
         {
             if (nativeArgsIP == IntPtr.Zero)
                 return null;

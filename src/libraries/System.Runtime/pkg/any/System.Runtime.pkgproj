@@ -10,6 +10,9 @@
     <ProjectReference Include="..\..\src\System.Runtime.csproj">
       <TargetGroup>netstandard1.5</TargetGroup>
     </ProjectReference>
+    <ProjectReference Include="..\..\src\System.Runtime.csproj">
+      <TargetGroup>netcoreapp1.2corert</TargetGroup>
+    </ProjectReference>
     <!-- AOT implementation comes from AOT package -->
     <File Include="$(PlaceholderFile)">
       <TargetPath>runtimes/aot/lib/netcore50</TargetPath>

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Buffers;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -84,6 +85,83 @@ namespace System.Net.Http
                 Task.CompletedTask;
         }
 
+        public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
+        {
+            // Validate arguments as would base CopyToAsync
+            StreamHelpers.ValidateCopyToArgs(this, destination, bufferSize);
+
+            // Check that there are no other pending read operations
+            if (_state.AsyncReadInProgress)
+            {
+                throw new InvalidOperationException(SR.net_http_no_concurrent_io_allowed);
+            }
+
+            // Early check for cancellation
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return Task.FromCanceled(cancellationToken);
+            }
+
+            // Check out a buffer and start the copy
+            return CopyToAsyncCore(destination, ArrayPool<byte>.Shared.Rent(bufferSize), cancellationToken);
+        }
+
+        private async Task CopyToAsyncCore(Stream destination, byte[] buffer, CancellationToken cancellationToken)
+        {
+            _state.PinReceiveBuffer(buffer);
+            CancellationTokenRegistration ctr = cancellationToken.Register(s => ((WinHttpResponseStream)s).CancelPendingResponseStreamReadOperation(), this);
+            _state.AsyncReadInProgress = true;
+            try
+            {
+                // Loop until there's no more data to be read
+                while (true)
+                {
+                    // Query for data available
+                    lock (_state.Lock)
+                    {
+                        if (!Interop.WinHttp.WinHttpQueryDataAvailable(_requestHandle, IntPtr.Zero))
+                        {
+                            throw new IOException(SR.net_http_io_read, WinHttpException.CreateExceptionUsingLastError());
+                        }
+                    }
+                    int bytesAvailable = await _state.LifecycleAwaitable;
+                    if (bytesAvailable == 0)
+                    {
+                        break;
+                    }
+                    Debug.Assert(bytesAvailable > 0);
+
+                    // Read the available data
+                    cancellationToken.ThrowIfCancellationRequested();
+                    lock (_state.Lock)
+                    {
+                        if (!Interop.WinHttp.WinHttpReadData(_requestHandle, Marshal.UnsafeAddrOfPinnedArrayElement(buffer, 0), (uint)Math.Min(bytesAvailable, buffer.Length), IntPtr.Zero))
+                        {
+                            throw new IOException(SR.net_http_io_read, WinHttpException.CreateExceptionUsingLastError());
+                        }
+                    }
+                    int bytesRead = await _state.LifecycleAwaitable;
+                    if (bytesRead == 0)
+                    {
+                        break;
+                    }
+                    Debug.Assert(bytesRead > 0);
+
+                    // Write that data out to the output stream
+                    await destination.WriteAsync(buffer, 0, bytesRead, cancellationToken).ConfigureAwait(false);
+                }
+            }
+            finally
+            {
+                _state.AsyncReadInProgress = false;
+                ctr.Dispose();
+                ArrayPool<byte>.Shared.Return(buffer);
+            }
+
+            // Leaving buffer pinned as it is in ReadAsync.  It'll get unpinned when another read
+            // request is made with a different buffer or when the state is cleared.
+        }
+
         public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken token)
         {
             if (buffer == null)
@@ -113,85 +191,52 @@ namespace System.Net.Http
 
             CheckDisposed();
 
-            if (_state.TcsReadFromResponseStream != null && !_state.TcsReadFromResponseStream.Task.IsCompleted)
+            if (_state.AsyncReadInProgress)
             {
                 throw new InvalidOperationException(SR.net_http_no_concurrent_io_allowed);
             }
 
+            return ReadAsyncCore(buffer, offset, count, token);
+        }
+
+        private async Task<int> ReadAsyncCore(byte[] buffer, int offset, int count, CancellationToken token)
+        {
             _state.PinReceiveBuffer(buffer);
-
-            _state.TcsReadFromResponseStream =
-                new TaskCompletionSource<int>(TaskCreationOptions.RunContinuationsAsynchronously);
-
-            _state.TcsQueryDataAvailable =
-                new TaskCompletionSource<int>(TaskCreationOptions.RunContinuationsAsynchronously);
-            _state.TcsQueryDataAvailable.Task.ContinueWith((previousTask) => 
+            var ctr = token.Register(s => ((WinHttpResponseStream)s).CancelPendingResponseStreamReadOperation(), this);
+            _state.AsyncReadInProgress = true;
+            try
+            {
+                lock (_state.Lock)
                 {
-                    if (previousTask.IsFaulted)
+                    Debug.Assert(!_requestHandle.IsInvalid);
+                    if (!Interop.WinHttp.WinHttpQueryDataAvailable(_requestHandle, IntPtr.Zero))
                     {
-                        _state.DisposeCtrReadFromResponseStream();
-                        _state.TcsReadFromResponseStream.TrySetException(previousTask.Exception.InnerException);
+                        throw new IOException(SR.net_http_io_read, WinHttpException.CreateExceptionUsingLastError());
                     }
-                    else if (previousTask.IsCanceled || token.IsCancellationRequested)
-                    {
-                        _state.DisposeCtrReadFromResponseStream();
-                        _state.TcsReadFromResponseStream.TrySetCanceled(token);
-                    }
-                    else
-                    {
-                        int bytesToRead;
-                        int bytesAvailable = previousTask.Result;
-                        if (bytesAvailable > count)
-                        {
-                            bytesToRead = count;
-                        }
-                        else
-                        {
-                            bytesToRead = bytesAvailable;
-                        }
-                        
-                        lock (_state.Lock)
-                        {
-                            Debug.Assert(!_requestHandle.IsInvalid);
-                            if (!Interop.WinHttp.WinHttpReadData(
-                                _requestHandle,
-                                Marshal.UnsafeAddrOfPinnedArrayElement(buffer, offset),
-                                (uint)bytesToRead,
-                                IntPtr.Zero))
-                            {
-                                _state.DisposeCtrReadFromResponseStream();
-                                _state.TcsReadFromResponseStream.TrySetException(
-                                    new IOException(SR.net_http_io_read, WinHttpException.CreateExceptionUsingLastError().InitializeStackTrace()));
-                            }
-                        }
-                    }
-                }, 
-                CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default);
-
-            // Register callback on cancellation token to cancel any pending WinHTTP operation.
-            if (token.CanBeCanceled)
-            {
-                WinHttpTraceHelper.Trace("WinHttpResponseStream.ReadAsync: registering for cancellation token request");
-                _state.CtrReadFromResponseStream =
-                    token.Register(s => ((WinHttpResponseStream)s).CancelPendingResponseStreamReadOperation(), this);
-            }
-            else
-            {
-                WinHttpTraceHelper.Trace("WinHttpResponseStream.ReadAsync: received no cancellation token");
-            }
-
-            lock (_state.Lock)
-            {
-                Debug.Assert(!_requestHandle.IsInvalid);
-                if (!Interop.WinHttp.WinHttpQueryDataAvailable(_requestHandle, IntPtr.Zero))
-                {
-                    _state.DisposeCtrReadFromResponseStream();
-                    _state.TcsReadFromResponseStream.TrySetException(
-                        new IOException(SR.net_http_io_read, WinHttpException.CreateExceptionUsingLastError().InitializeStackTrace()));
                 }
-            }
 
-            return _state.TcsReadFromResponseStream.Task;
+                int bytesAvailable = await _state.LifecycleAwaitable;
+
+                lock (_state.Lock)
+                {
+                    Debug.Assert(!_requestHandle.IsInvalid);
+                    if (!Interop.WinHttp.WinHttpReadData(
+                        _requestHandle,
+                        Marshal.UnsafeAddrOfPinnedArrayElement(buffer, offset),
+                        (uint)Math.Min(bytesAvailable, count),
+                        IntPtr.Zero))
+                    {
+                        throw new IOException(SR.net_http_io_read, WinHttpException.CreateExceptionUsingLastError());
+                    }
+                }
+
+                return await _state.LifecycleAwaitable;
+            }
+            finally
+            {
+                _state.AsyncReadInProgress = false;
+                ctr.Dispose();
+            }
         }
 
         public override int Read(byte[] buffer, int offset, int count)
@@ -256,10 +301,7 @@ namespace System.Net.Http
             WinHttpTraceHelper.Trace("WinHttpResponseStream.CancelPendingResponseStreamReadOperation");
             lock (_state.Lock)
             {
-                WinHttpTraceHelper.Trace(
-                    string.Format("WinHttpResponseStream.CancelPendingResponseStreamReadOperation: {0} {1}",
-                    (int)_state.TcsQueryDataAvailable.Task.Status, (int)_state.TcsReadFromResponseStream.Task.Status));
-                if (!_state.TcsQueryDataAvailable.Task.IsCompleted)
+                if (_state.AsyncReadInProgress)
                 {
                     Debug.Assert(_requestHandle != null);
                     Debug.Assert(!_requestHandle.IsInvalid);

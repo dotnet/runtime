@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 #include "pal_types.h"
-#include <openssl/evp.h>
+#include "opensslshim.h"
 
 /*
 Creates and initializes an EVP_CIPHER_CTX with the given args.

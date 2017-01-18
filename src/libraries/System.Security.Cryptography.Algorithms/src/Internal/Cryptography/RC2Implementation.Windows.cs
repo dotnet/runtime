@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Security.Cryptography;
+using System.Diagnostics;
 using Internal.NativeCrypto;
 
 namespace Internal.Cryptography
@@ -18,10 +19,12 @@ namespace Internal.Cryptography
             int blockSize,
             bool encrypting)
         {
-            SafeAlgorithmHandle algorithm = RC2BCryptModes.GetSharedHandle(cipherMode);
-
-            BasicSymmetricCipher cipher = new BasicSymmetricCipherBCrypt(algorithm, cipherMode, blockSize, key, effectiveKeyLength, iv, encrypting);
-            return UniversalCryptoTransform.Create(paddingMode, cipher, encrypting);
+            using (SafeAlgorithmHandle algorithm = RC2BCryptModes.GetHandle(cipherMode, effectiveKeyLength))
+            {
+                // The BasicSymmetricCipherBCrypt ctor will increase algorithm reference count and take ownership.
+                BasicSymmetricCipher cipher = new BasicSymmetricCipherBCrypt(algorithm, cipherMode, blockSize, key, true, iv, encrypting);
+                return UniversalCryptoTransform.Create(paddingMode, cipher, encrypting);
+            }
         }
     }
 }

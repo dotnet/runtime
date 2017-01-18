@@ -5,13 +5,12 @@
 using Xunit;
 using Xunit.Abstractions;
 using System.Collections;
-using System.Xml;
 using System.Xml.Schema;
 
 namespace System.Xml.Tests
 {
     //[TestCase(Name = "TC_SchemaSet_ValidationEventHandler", Desc = "")]
-    public class TC_SchemaSet_ValidationEventHandler
+    public class TC_SchemaSet_ValidationEventHandler : TC_SchemaSetBase
     {
         private ITestOutputHelper _output;
 

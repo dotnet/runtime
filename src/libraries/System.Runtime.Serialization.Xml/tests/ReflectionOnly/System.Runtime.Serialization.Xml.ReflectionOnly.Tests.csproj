@@ -3,23 +3,19 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <DefineConstants>$(DefineConstants);ReflectionOnly</DefineConstants>
-    <RootNamespace>System.Runtime.Serialization.Xml.ReflectionOnly.Tests</RootNamespace>
-    <AssemblyName>System.Runtime.Serialization.Xml.ReflectionOnly.Tests</AssemblyName>
     <ProjectGuid>{38889701-0af4-48b3-999c-e99d639c61b6}</ProjectGuid>
-    <ProjectJson>../project.json</ProjectJson>
-    <ProjectLockJson>../project.lock.json</ProjectLockJson>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="$(TestSourceFolder)Utils.cs" />
-    <Compile Include="$(TestSourceFolder)SerializationTypes.cs" />
-    <Compile Include="$(TestSourceFolder)SerializationTypes.CoreCLR.cs" />
-    <Compile Include="$(TestSourceFolder)DataContractSerializer.cs" />
-    <Compile Include="$(TestSourceFolder)DataContractSerializer.CoreCLR.cs" />
-    <Compile Include="$(TestSourceFolder)DataContractSerializerStressTests.cs" />
-    <Compile Include="$(TestSourceFolder)DataContractSerializerTestData.cs" />
-    <Compile Include="$(TestSourceFolder)MyResolver.cs" />
-    <Compile Include="$(TestSourceFolder)XmlDictionaryReaderTests.cs" />
-    <Compile Include="$(TestSourceFolder)XmlDictionaryWriterTest.cs" />
+    <Compile Include="$(TestSourceFolder)..\Utils.cs" />
+    <Compile Include="$(TestSourceFolder)..\SerializationTypes.cs" />
+    <Compile Include="$(TestSourceFolder)..\SerializationTypes.CoreCLR.cs" />
+    <Compile Include="$(TestSourceFolder)..\DataContractSerializer.cs" />
+    <Compile Include="$(TestSourceFolder)..\DataContractSerializer.CoreCLR.cs" />
+    <Compile Include="$(TestSourceFolder)..\DataContractSerializerStressTests.cs" />
+    <Compile Include="$(TestSourceFolder)..\DataContractSerializerTestData.cs" />
+    <Compile Include="$(TestSourceFolder)..\MyResolver.cs" />
+    <Compile Include="$(TestSourceFolder)..\XmlDictionaryReaderTests.cs" />
+    <Compile Include="$(TestSourceFolder)..\XmlDictionaryWriterTest.cs" />
   </ItemGroup>
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), System.Runtime.Serialization.Xml.Tests.settings.targets))\System.Runtime.Serialization.Xml.Tests.settings.targets" />
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

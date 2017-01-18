@@ -1,9 +1,9 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
     <ProjectReference Include="..\ref\System.Reflection.Extensions.csproj">
-      <SupportedFramework>net463;netcoreapp1.1;uap10.1;$(AllXamarinFrameworks)</SupportedFramework>
+      <SupportedFramework>net463;netcoreapp2.0;uap10.1;$(AllXamarinFrameworks)</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.Reflection.Extensions.builds" />
     <InboxOnTargetFramework Include="MonoAndroid10" />
@@ -19,12 +19,12 @@
     <InboxOnTargetFramework Include="xamarinwatchos10" />
     <HarvestAdditionalPackages Include="runtime.any.System.Reflection.Extensions">
       <ExcludePaths>runtimes/aot/lib/netcore50;ref/netstandard</ExcludePaths>
-      <Version>4.0.1</Version>
+      <Version>4.3.0</Version>
     </HarvestAdditionalPackages>
     <HarvestAdditionalPackages Include="runtime.aot.System.Reflection.Extensions">
       <ExcludePaths>ref/netstandard</ExcludePaths>
-      <Version>4.0.0</Version>
-    </HarvestAdditionalPackages>    
+      <Version>4.3.0</Version>
+    </HarvestAdditionalPackages>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

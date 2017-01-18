@@ -221,6 +221,12 @@ run_test()
   fi
 
   dirName="$1/$TestRelPath"
+
+  if [ ! -d "$dirName" ]; then
+    echo "Nothing to test in $testProject"
+    exit 0
+  fi
+
   copy_test_overlay $dirName
 
   pushd $dirName > /dev/null
@@ -386,7 +392,7 @@ fi
 
 if [ "$CoreFxNativeBins" == "" ]
 then
-    CoreFxNativeBins="$ProjectRoot/bin/$OS.x64.$ConfigurationGroup/Native"
+    CoreFxNativeBins="$ProjectRoot/bin/$OS.x64.$ConfigurationGroup/native"
 fi
 
 if [ "$CoreFxPackages" == "" ]

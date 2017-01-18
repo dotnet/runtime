@@ -191,6 +191,11 @@ namespace System.ComponentModel
         bool DesignMode { get; }
         string Name { get; set; }
     }
+    public partial interface ISupportInitialize
+    {
+        void BeginInit();
+        void EndInit();
+    }
     public sealed partial class LocalizableAttribute : System.Attribute
     {
         public static readonly System.ComponentModel.LocalizableAttribute Default;

@@ -115,7 +115,7 @@ namespace System.ComponentModel.DataAnnotations
         /// <exception cref="InvalidOperationException"> is thrown if the current attribute is ill-formed.</exception>
         private void EnsureValidDataType()
         {
-            if (DataType == DataType.Custom && string.IsNullOrEmpty(CustomDataType))
+            if (DataType == DataType.Custom && string.IsNullOrWhiteSpace(CustomDataType))
             {
                 throw new InvalidOperationException(string.Format(CultureInfo.CurrentCulture,
                     SR.DataTypeAttribute_EmptyDataTypeString));

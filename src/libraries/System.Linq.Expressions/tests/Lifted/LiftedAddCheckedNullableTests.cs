@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Reflection;
 using Xunit;
 
@@ -166,6 +165,34 @@ namespace System.Linq.Expressions.Tests
                     VerifyAddCheckedNullableUShort(values[i], values[j], useInterpreter);
                 }
             }
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckLiftedAddCheckedNullableNumberTest(bool useInterpreter)
+        {
+            Number?[] values = new Number?[] { null, new Number(0), new Number(1), Number.MaxValue };
+            for (int i = 0; i < values.Length; i++)
+            {
+                for (int j = 0; j < values.Length; j++)
+                {
+                    VerifyAddCheckedNullableNumber(values[i], values[j], useInterpreter);
+                }
+            }
+        }
+
+        [Fact] // See https://github.com/dotnet/corefx/issues/13048
+        public static void CheckLiftedAddCheckedRegressionTest()
+        {
+            // Regression test for an issue where `liftToNull` was set to `false` in `AddChecked`,
+            // causing the return type not to get lifted to null, unlike for other binary node types.
+
+            BinaryExpression expr =
+                Expression.AddChecked(
+                    Expression.Parameter(typeof(PeculiarAddable?)),
+                    Expression.Parameter(typeof(PeculiarAddable?))
+                );
+
+            Assert.Equal(typeof(bool?), expr.Type);
         }
 
         #endregion
@@ -452,6 +479,29 @@ namespace System.Linq.Expressions.Tests
                 Assert.Throws<OverflowException>(() => f());
             else
                 Assert.Equal(expected, f());
+        }
+
+        private static void VerifyAddCheckedNullableNumber(Number? a, Number? b, bool useInterpreter)
+        {
+            Expression<Func<Number?>> e =
+                Expression.Lambda<Func<Number?>>(
+                    Expression.AddChecked(
+                        Expression.Constant(a, typeof(Number?)),
+                        Expression.Constant(b, typeof(Number?))));
+            Assert.Equal(typeof(Number?), e.Body.Type);
+            Func<Number?> f = e.Compile(useInterpreter);
+
+            Number? expected = a + b;
+            Assert.Equal(expected, f()); // NB: checked behavior doesn't apply to non-primitive types
+        }
+
+        #endregion
+
+        #region Helper types
+
+        struct PeculiarAddable
+        {
+            public static bool operator +(PeculiarAddable l, PeculiarAddable r) => true;
         }
 
         #endregion

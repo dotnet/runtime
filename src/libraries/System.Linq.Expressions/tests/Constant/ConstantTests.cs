@@ -386,9 +386,9 @@ namespace System.Linq.Expressions.Tests
         [Theory, ClassData(typeof(CompilationTypes))]
         public static void BoundConstantCaching1(bool useInterpreter)
         {
-            var c = Expression.Constant(new Bar());
+            ConstantExpression c = Expression.Constant(new Bar());
 
-            var e =
+            BinaryExpression e =
                 Expression.Add(
                     Expression.Field(c, "Foo"),
                     Expression.Subtract(
@@ -404,11 +404,11 @@ namespace System.Linq.Expressions.Tests
         public static void BoundConstantCaching2(bool useInterpreter)
         {
             var b = new Bar();
-            var c1 = Expression.Constant(b);
-            var c2 = Expression.Constant(b);
-            var c3 = Expression.Constant(b);
+            ConstantExpression c1 = Expression.Constant(b);
+            ConstantExpression c2 = Expression.Constant(b);
+            ConstantExpression c3 = Expression.Constant(b);
 
-            var e =
+            BinaryExpression e =
                 Expression.Add(
                     Expression.Field(c1, "Foo"),
                     Expression.Subtract(
@@ -441,7 +441,7 @@ namespace System.Linq.Expressions.Tests
         [Theory, ClassData(typeof(CompilationTypes))]
         public static void BoundConstantCaching4(bool useInterpreter)
         {
-            var bs = new[]
+            Bar[] bs = new[]
             {
                 new Bar() { Foo = 1 },
                 new Bar() { Foo = 1 },
@@ -935,21 +935,21 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void ToStringTest()
         {
-            var e1 = Expression.Constant(1);
+            ConstantExpression e1 = Expression.Constant(1);
             Assert.Equal("1", e1.ToString());
 
-            var e2 = Expression.Constant("bar");
+            ConstantExpression e2 = Expression.Constant("bar");
             Assert.Equal("\"bar\"", e2.ToString());
 
-            var e3 = Expression.Constant(null, typeof(object));
+            ConstantExpression e3 = Expression.Constant(null, typeof(object));
             Assert.Equal("null", e3.ToString());
 
             var b = new Bar();
-            var e4 = Expression.Constant(b);
+            ConstantExpression e4 = Expression.Constant(b);
             Assert.Equal($"value({b.ToString()})", e4.ToString());
 
             var f = new Foo();
-            var e5 = Expression.Constant(f);
+            ConstantExpression e5 = Expression.Constant(f);
             Assert.Equal(f.ToString(), e5.ToString());
         }
 

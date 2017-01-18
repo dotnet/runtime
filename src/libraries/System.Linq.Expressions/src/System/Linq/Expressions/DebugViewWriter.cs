@@ -203,9 +203,7 @@ namespace System.Linq.Expressions
 
         private Flow GetFlow(Flow flow)
         {
-            Flow last;
-
-            last = CheckBreak(_flow);
+            Flow last = CheckBreak(_flow);
             flow = CheckBreak(flow);
 
             // Get the biggest flow that is requested None < Space < NewLine
@@ -616,7 +614,7 @@ namespace System.Linq.Expressions
                 // 3) Parent op is -, / or %, and the child is the left operand.
                 // In this case, if left and right operand are the same, we don't
                 // remove parenthesis, e.g. (x + y) - (x + y)
-                // 
+                //
                 switch (parent.NodeType)
                 {
                     case ExpressionType.AndAlso:

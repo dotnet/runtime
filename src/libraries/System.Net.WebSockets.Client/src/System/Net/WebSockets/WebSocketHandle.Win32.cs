@@ -31,9 +31,9 @@ namespace System.Net.WebSockets
         {
             bool isPlatformSupported = false;
 
-            using (SafeLibraryHandle libHandle = Interop.mincore.LoadLibraryExW(Interop.Libraries.WinHttp, IntPtr.Zero, 0))
+            using (SafeLibraryHandle libHandle = Interop.Kernel32.LoadLibraryExW(Interop.Libraries.WinHttp, IntPtr.Zero, 0))
             {
-                isPlatformSupported = Interop.mincore.GetProcAddress(libHandle, WebSocketAvailableApiCheck) != IntPtr.Zero;
+                isPlatformSupported = Interop.Kernel32.GetProcAddress(libHandle, WebSocketAvailableApiCheck) != IntPtr.Zero;
             }
 
             if (!isPlatformSupported)

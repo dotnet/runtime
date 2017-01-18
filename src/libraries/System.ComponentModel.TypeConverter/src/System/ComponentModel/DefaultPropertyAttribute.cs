@@ -11,11 +11,6 @@ namespace System.ComponentModel
     public sealed class DefaultPropertyAttribute : Attribute
     {
         /// <summary>
-        ///     This is the default event name.
-        /// </summary>
-        private readonly string _name;
-
-        /// <summary>
         ///    <para>
         ///       Initializes a new instance of
         ///       the <see cref='System.ComponentModel.DefaultPropertyAttribute'/> class.
@@ -23,7 +18,7 @@ namespace System.ComponentModel
         /// </summary>
         public DefaultPropertyAttribute(string name)
         {
-            _name = name;
+            Name = name;
         }
 
         /// <summary>
@@ -32,13 +27,7 @@ namespace System.ComponentModel
         ///       bound to.
         ///    </para>
         /// </summary>
-        public string Name
-        {
-            get
-            {
-                return _name;
-            }
-        }
+        public string Name { get; }
 
         /// <summary>
         ///    <para>
@@ -51,7 +40,7 @@ namespace System.ComponentModel
         public override bool Equals(object obj)
         {
             DefaultPropertyAttribute other = obj as DefaultPropertyAttribute;
-            return (other != null) && other.Name == _name;
+            return (other != null) && other.Name == Name;
         }
 
         public override int GetHashCode()

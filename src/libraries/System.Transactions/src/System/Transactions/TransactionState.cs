@@ -6,7 +6,6 @@ using System.Collections;
 using System.Diagnostics;
 using System.Runtime.Serialization;
 using System.Threading;
-using System.Transactions.Diagnostics;
 using System.Transactions.Distributed;
 
 namespace System.Transactions
@@ -755,19 +754,19 @@ namespace System.Transactions
 
         internal virtual void BeginCommit(InternalTransaction tx, bool asyncCommit, AsyncCallback asyncCallback, object asyncState)
         {
-            throw TransactionException.CreateTransactionStateException(SR.TraceSourceLtm, tx._innerException, tx.DistributedTxId);
+            throw TransactionException.CreateTransactionStateException(tx._innerException, tx.DistributedTxId);
         }
 
         internal virtual void EndCommit(InternalTransaction tx)
         {
             Debug.Assert(false, string.Format(null, "Invalid Event for State; Current State: {0}", GetType()));
 
-            throw TransactionException.CreateTransactionStateException(SR.TraceSourceLtm, tx._innerException, tx.DistributedTxId);
+            throw TransactionException.CreateTransactionStateException(tx._innerException, tx.DistributedTxId);
         }
 
         internal virtual void Rollback(InternalTransaction tx, Exception e)
         {
-            throw TransactionException.CreateTransactionStateException(SR.TraceSourceLtm, tx._innerException, tx.DistributedTxId);
+            throw TransactionException.CreateTransactionStateException(tx._innerException, tx.DistributedTxId);
         }
 
         internal virtual Enlistment EnlistDurable(
@@ -778,7 +777,7 @@ namespace System.Transactions
             Transaction atomicTransaction
             )
         {
-            throw TransactionException.CreateTransactionStateException(SR.TraceSourceLtm, tx._innerException, tx.DistributedTxId);
+            throw TransactionException.CreateTransactionStateException(tx._innerException, tx.DistributedTxId);
         }
 
         internal virtual Enlistment EnlistDurable(
@@ -789,7 +788,7 @@ namespace System.Transactions
             Transaction atomicTransaction
             )
         {
-            throw TransactionException.CreateTransactionStateException(SR.TraceSourceLtm, tx._innerException, tx.DistributedTxId);
+            throw TransactionException.CreateTransactionStateException(tx._innerException, tx.DistributedTxId);
         }
 
         internal virtual Enlistment EnlistVolatile(
@@ -799,7 +798,7 @@ namespace System.Transactions
             Transaction atomicTransaction
             )
         {
-            throw TransactionException.CreateTransactionStateException(SR.TraceSourceLtm, tx._innerException, tx.DistributedTxId);
+            throw TransactionException.CreateTransactionStateException(tx._innerException, tx.DistributedTxId);
         }
 
         internal virtual Enlistment EnlistVolatile(
@@ -809,7 +808,7 @@ namespace System.Transactions
             Transaction atomicTransaction
             )
         {
-            throw TransactionException.CreateTransactionStateException(SR.TraceSourceLtm, tx._innerException, tx.DistributedTxId);
+            throw TransactionException.CreateTransactionStateException(tx._innerException, tx.DistributedTxId);
         }
 
         internal virtual void CheckForFinishedTransaction(InternalTransaction tx)
@@ -835,12 +834,12 @@ namespace System.Transactions
 
         internal virtual void AddOutcomeRegistrant(InternalTransaction tx, TransactionCompletedEventHandler transactionCompletedDelegate)
         {
-            throw TransactionException.CreateTransactionStateException(SR.TraceSourceLtm, tx._innerException, tx.DistributedTxId);
+            throw TransactionException.CreateTransactionStateException(tx._innerException, tx.DistributedTxId);
         }
 
         internal virtual void GetObjectData(InternalTransaction tx, SerializationInfo serializationInfo, StreamingContext context)
         {
-            throw TransactionException.CreateTransactionStateException(SR.TraceSourceLtm, tx._innerException, tx.DistributedTxId);
+            throw TransactionException.CreateTransactionStateException(tx._innerException, tx.DistributedTxId);
         }
 
         internal virtual bool EnlistPromotableSinglePhase(
@@ -850,7 +849,7 @@ namespace System.Transactions
             Guid promoterType
             )
         {
-            throw TransactionException.CreateTransactionStateException(SR.TraceSourceLtm, tx._innerException, tx.DistributedTxId);
+            throw TransactionException.CreateTransactionStateException(tx._innerException, tx.DistributedTxId);
         }
 
         internal virtual void CompleteBlockingClone(InternalTransaction tx)
@@ -864,20 +863,24 @@ namespace System.Transactions
 
         internal virtual void CreateBlockingClone(InternalTransaction tx)
         {
-            throw TransactionException.CreateTransactionStateException(SR.TraceSourceLtm, tx._innerException, tx.DistributedTxId);
+            throw TransactionException.CreateTransactionStateException(tx._innerException, tx.DistributedTxId);
         }
 
         internal virtual void CreateAbortingClone(InternalTransaction tx)
         {
-            throw TransactionException.CreateTransactionStateException(SR.TraceSourceLtm, tx._innerException, tx.DistributedTxId);
+            throw TransactionException.CreateTransactionStateException(tx._innerException, tx.DistributedTxId);
         }
 
         internal virtual void ChangeStateTransactionAborted(InternalTransaction tx, Exception e)
         {
             Debug.Assert(false, string.Format(null, "Invalid Event for State; Current State: {0}", GetType()));
-            if (DiagnosticTrace.Error)
+            TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+            if (etwLog.IsEnabled())
             {
-                InvalidOperationExceptionTraceRecord.Trace(SR.TraceSourceLtm, "");
+                if (tx != null && tx.TransactionTraceId != null && tx.TransactionTraceId.TransactionIdentifier != null)
+                    etwLog.TransactionExceptionTrace(TransactionExceptionType.InvalidOperationException, tx.TransactionTraceId.TransactionIdentifier.ToString(), e.ToString());
+                else
+                    etwLog.TransactionExceptionTrace(TransactionExceptionType.InvalidOperationException, string.Empty, e.ToString());
             }
 
             throw new InvalidOperationException();
@@ -886,9 +889,13 @@ namespace System.Transactions
         internal virtual void ChangeStateTransactionCommitted(InternalTransaction tx)
         {
             Debug.Assert(false, string.Format(null, "Invalid Event for State; Current State: {0}", GetType()));
-            if (DiagnosticTrace.Error)
+            TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+            if (etwLog.IsEnabled())
             {
-                InvalidOperationExceptionTraceRecord.Trace(SR.TraceSourceLtm, "");
+                if (tx != null && tx.TransactionTraceId != null && tx.TransactionTraceId.TransactionIdentifier != null)
+                    etwLog.TransactionExceptionTrace(TransactionExceptionType.InvalidOperationException, tx.TransactionTraceId.TransactionIdentifier.ToString(), string.Empty);
+                else
+                    etwLog.TransactionExceptionTrace(TransactionExceptionType.InvalidOperationException, string.Empty, string.Empty);
             }
 
             throw new InvalidOperationException();
@@ -897,9 +904,13 @@ namespace System.Transactions
         internal virtual void InDoubtFromEnlistment(InternalTransaction tx)
         {
             Debug.Assert(false, string.Format(null, "Invalid Event for State; Current State: {0}", GetType()));
-            if (DiagnosticTrace.Error)
+            TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+            if (etwLog.IsEnabled())
             {
-                InvalidOperationExceptionTraceRecord.Trace(SR.TraceSourceLtm, "");
+                if (tx != null && tx.TransactionTraceId != null && tx.TransactionTraceId.TransactionIdentifier != null)
+                    etwLog.TransactionExceptionTrace(TransactionExceptionType.InvalidOperationException, tx.TransactionTraceId.TransactionIdentifier.ToString(), string.Empty);
+                else
+                    etwLog.TransactionExceptionTrace(TransactionExceptionType.InvalidOperationException, string.Empty, string.Empty);
             }
 
             throw new InvalidOperationException();
@@ -908,9 +919,13 @@ namespace System.Transactions
         internal virtual void ChangeStatePromotedAborted(InternalTransaction tx)
         {
             Debug.Assert(false, string.Format(null, "Invalid Event for State; Current State: {0}", GetType()));
-            if (DiagnosticTrace.Error)
+            TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+            if (etwLog.IsEnabled())
             {
-                InvalidOperationExceptionTraceRecord.Trace(SR.TraceSourceLtm, "");
+                if (tx != null && tx.TransactionTraceId != null && tx.TransactionTraceId.TransactionIdentifier != null)
+                    etwLog.TransactionExceptionTrace(TransactionExceptionType.InvalidOperationException, tx.TransactionTraceId.TransactionIdentifier.ToString(), string.Empty);
+                else
+                    etwLog.TransactionExceptionTrace(TransactionExceptionType.InvalidOperationException, string.Empty, string.Empty);
             }
 
             throw new InvalidOperationException();
@@ -919,9 +934,13 @@ namespace System.Transactions
         internal virtual void ChangeStatePromotedCommitted(InternalTransaction tx)
         {
             Debug.Assert(false, string.Format(null, "Invalid Event for State; Current State: {0}", GetType()));
-            if (DiagnosticTrace.Error)
+            TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+            if (etwLog.IsEnabled())
             {
-                InvalidOperationExceptionTraceRecord.Trace(SR.TraceSourceLtm, "");
+                if (tx != null && tx.TransactionTraceId != null && tx.TransactionTraceId.TransactionIdentifier != null)
+                    etwLog.TransactionExceptionTrace(TransactionExceptionType.InvalidOperationException, tx.TransactionTraceId.TransactionIdentifier.ToString(), string.Empty);
+                else
+                    etwLog.TransactionExceptionTrace(TransactionExceptionType.InvalidOperationException, string.Empty, string.Empty);
             }
 
             throw new InvalidOperationException();
@@ -930,9 +949,13 @@ namespace System.Transactions
         internal virtual void InDoubtFromDtc(InternalTransaction tx)
         {
             Debug.Assert(false, string.Format(null, "Invalid Event for State; Current State: {0}", GetType()));
-            if (DiagnosticTrace.Error)
+            TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+            if (etwLog.IsEnabled())
             {
-                InvalidOperationExceptionTraceRecord.Trace(SR.TraceSourceLtm, "");
+                if (tx != null && tx.TransactionTraceId != null && tx.TransactionTraceId.TransactionIdentifier != null)
+                    etwLog.TransactionExceptionTrace(TransactionExceptionType.InvalidOperationException, tx.TransactionTraceId.TransactionIdentifier.ToString(), string.Empty);
+                else
+                    etwLog.TransactionExceptionTrace(TransactionExceptionType.InvalidOperationException, string.Empty, string.Empty);
             }
 
             throw new InvalidOperationException();
@@ -941,9 +964,13 @@ namespace System.Transactions
         internal virtual void ChangeStatePromotedPhase0(InternalTransaction tx)
         {
             Debug.Assert(false, string.Format(null, "Invalid Event for State; Current State: {0}", GetType()));
-            if (DiagnosticTrace.Error)
+            TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+            if (etwLog.IsEnabled())
             {
-                InvalidOperationExceptionTraceRecord.Trace(SR.TraceSourceLtm, "");
+                if (tx != null && tx.TransactionTraceId != null && tx.TransactionTraceId.TransactionIdentifier != null)
+                    etwLog.TransactionExceptionTrace(TransactionExceptionType.InvalidOperationException, tx.TransactionTraceId.TransactionIdentifier.ToString(), string.Empty);
+                else
+                    etwLog.TransactionExceptionTrace(TransactionExceptionType.InvalidOperationException, string.Empty, string.Empty);
             }
 
             throw new InvalidOperationException();
@@ -952,9 +979,13 @@ namespace System.Transactions
         internal virtual void ChangeStatePromotedPhase1(InternalTransaction tx)
         {
             Debug.Assert(false, string.Format(null, "Invalid Event for State; Current State: {0}", GetType()));
-            if (DiagnosticTrace.Error)
+            TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+            if (etwLog.IsEnabled())
             {
-                InvalidOperationExceptionTraceRecord.Trace(SR.TraceSourceLtm, "");
+                if (tx != null && tx.TransactionTraceId != null && tx.TransactionTraceId.TransactionIdentifier != null)
+                    etwLog.TransactionExceptionTrace(TransactionExceptionType.InvalidOperationException, tx.TransactionTraceId.TransactionIdentifier.ToString(), string.Empty);
+                else
+                    etwLog.TransactionExceptionTrace(TransactionExceptionType.InvalidOperationException, string.Empty, string.Empty);
             }
 
             throw new InvalidOperationException();
@@ -963,9 +994,13 @@ namespace System.Transactions
         internal virtual void ChangeStateAbortedDuringPromotion(InternalTransaction tx)
         {
             Debug.Assert(false, string.Format(null, "Invalid Event for State; Current State: {0}", GetType()));
-            if (DiagnosticTrace.Error)
+            TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+            if (etwLog.IsEnabled())
             {
-                InvalidOperationExceptionTraceRecord.Trace(SR.TraceSourceLtm, "");
+                if (tx != null && tx.TransactionTraceId != null && tx.TransactionTraceId.TransactionIdentifier != null)
+                    etwLog.TransactionExceptionTrace(TransactionExceptionType.InvalidOperationException, tx.TransactionTraceId.TransactionIdentifier.ToString(), string.Empty);
+                else
+                    etwLog.TransactionExceptionTrace(TransactionExceptionType.InvalidOperationException, string.Empty, string.Empty);
             }
 
             throw new InvalidOperationException();
@@ -978,21 +1013,25 @@ namespace System.Transactions
         internal virtual void Phase0VolatilePrepareDone(InternalTransaction tx)
         {
             Debug.Assert(false, string.Format(null, "Invalid Event for State; Current State: {0}", GetType()));
-            throw TransactionException.CreateTransactionStateException(SR.TraceSourceLtm, tx._innerException, tx.DistributedTxId);
+            throw TransactionException.CreateTransactionStateException(tx._innerException, tx.DistributedTxId);
         }
 
         internal virtual void Phase1VolatilePrepareDone(InternalTransaction tx)
         {
             Debug.Assert(false, string.Format(null, "Invalid Event for State; Current State: {0}", GetType()));
-            throw TransactionException.CreateTransactionStateException(SR.TraceSourceLtm, tx._innerException, tx.DistributedTxId);
+            throw TransactionException.CreateTransactionStateException(tx._innerException, tx.DistributedTxId);
         }
 
         internal virtual void RestartCommitIfNeeded(InternalTransaction tx)
         {
             Debug.Assert(false, string.Format(null, "Invalid Event for State; Current State: {0}", GetType()));
-            if (DiagnosticTrace.Error)
+            TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+            if (etwLog.IsEnabled())
             {
-                InvalidOperationExceptionTraceRecord.Trace(SR.TraceSourceLtm, "");
+                if (tx != null && tx.TransactionTraceId != null && tx.TransactionTraceId.TransactionIdentifier != null)
+                    etwLog.TransactionExceptionTrace(TransactionExceptionType.InvalidOperationException, tx.TransactionTraceId.TransactionIdentifier.ToString(), string.Empty);
+                else
+                    etwLog.TransactionExceptionTrace(TransactionExceptionType.InvalidOperationException, string.Empty, string.Empty);
             }
 
             throw new InvalidOperationException();
@@ -1010,12 +1049,12 @@ namespace System.Transactions
 
         internal virtual void Promote(InternalTransaction tx)
         {
-            throw TransactionException.CreateTransactionStateException(SR.TraceSourceLtm, tx._innerException, tx.DistributedTxId);
+            throw TransactionException.CreateTransactionStateException(tx._innerException, tx.DistributedTxId);
         }
 
         internal virtual byte[] PromotedToken(InternalTransaction tx)
         {
-            throw TransactionException.CreateTransactionStateException(SR.TraceSourceLtm, tx._innerException, tx.DistributedTxId);
+            throw TransactionException.CreateTransactionStateException(tx._innerException, tx.DistributedTxId);
         }
 
         internal virtual Enlistment PromoteAndEnlistDurable(
@@ -1026,14 +1065,14 @@ namespace System.Transactions
             EnlistmentOptions enlistmentOptions,
             Transaction atomicTransaction)
         {
-            throw TransactionException.CreateTransactionStateException(SR.TraceSourceLtm, tx._innerException, tx.DistributedTxId);
+            throw TransactionException.CreateTransactionStateException(tx._innerException, tx.DistributedTxId);
         }
 
         internal virtual void SetDistributedTransactionId(InternalTransaction tx,
                     IPromotableSinglePhaseNotification promotableNotification,
                     Guid distributedTransactionIdentifier)
         {
-            throw TransactionException.CreateTransactionStateException(SR.TraceSourceLtm, tx._innerException, tx.DistributedTxId);
+            throw TransactionException.CreateTransactionStateException(tx._innerException, tx.DistributedTxId);
         }
 
         internal virtual void DisposeRoot(InternalTransaction tx)
@@ -1139,13 +1178,10 @@ namespace System.Transactions
             tx._durableEnlistment = en.InternalEnlistment;
             DurableEnlistmentState.DurableEnlistmentActive.EnterState(tx._durableEnlistment);
 
-            if (DiagnosticTrace.Information)
+            TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+            if (etwLog.IsEnabled())
             {
-                EnlistmentTraceRecord.Trace(SR.TraceSourceLtm,
-                    tx._durableEnlistment.EnlistmentTraceId,
-                    EnlistmentType.Durable,
-                    EnlistmentOptions.None
-                    );
+                etwLog.TransactionstateEnlist(tx._durableEnlistment.EnlistmentTraceId, EnlistmentType.Durable, EnlistmentOptions.None);
             }
 
             return en;
@@ -1153,11 +1189,10 @@ namespace System.Transactions
 
         internal override void Timeout(InternalTransaction tx)
         {
-            if (DiagnosticTrace.Warning)
+            TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+            if (etwLog.IsEnabled())
             {
-                TransactionTimeoutTraceRecord.Trace(SR.TraceSourceLtm,
-                    tx.TransactionTraceId
-                    );
+                etwLog.TransactionTimeout(tx.TransactionTraceId);
             }
 
             TimeoutException e = new TimeoutException(SR.TraceTransactionTimeout);
@@ -1292,13 +1327,10 @@ namespace System.Transactions
                 AddVolatileEnlistment(ref tx._phase1Volatiles, enlistment);
             }
 
-            if (DiagnosticTrace.Information)
+            TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+            if (etwLog.IsEnabled())
             {
-                EnlistmentTraceRecord.Trace(SR.TraceSourceLtm,
-                    enlistment.InternalEnlistment.EnlistmentTraceId,
-                    EnlistmentType.Volatile,
-                    enlistmentOptions
-                    );
+                etwLog.TransactionstateEnlist(enlistment.InternalEnlistment.EnlistmentTraceId, EnlistmentType.Volatile, enlistmentOptions);
             }
 
             return enlistment;
@@ -1321,13 +1353,10 @@ namespace System.Transactions
                 AddVolatileEnlistment(ref tx._phase1Volatiles, enlistment);
             }
 
-            if (DiagnosticTrace.Information)
+            TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+            if (etwLog.IsEnabled())
             {
-                EnlistmentTraceRecord.Trace(SR.TraceSourceLtm,
-                    enlistment.InternalEnlistment.EnlistmentTraceId,
-                    EnlistmentType.Volatile,
-                    enlistmentOptions
-                    );
+                etwLog.TransactionstateEnlist(enlistment.InternalEnlistment.EnlistmentTraceId, EnlistmentType.Volatile, enlistmentOptions);
             }
 
             return enlistment;
@@ -1350,13 +1379,10 @@ namespace System.Transactions
             // Create a durable enlistment.
             Enlistment en = new Enlistment(tx, promotableSinglePhaseNotification, atomicTransaction);
             tx._durableEnlistment = en.InternalEnlistment;
-            if (DiagnosticTrace.Information)
+            TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+            if (etwLog.IsEnabled())
             {
-                EnlistmentTraceRecord.Trace(SR.TraceSourceLtm,
-                    tx._durableEnlistment.EnlistmentTraceId,
-                    EnlistmentType.PromotableSinglePhase,
-                    EnlistmentOptions.None
-                    );
+                etwLog.TransactionstateEnlist(tx._durableEnlistment.EnlistmentTraceId, EnlistmentType.PromotableSinglePhase, EnlistmentOptions.None);
             }
 
             // Specify the promoter for the transaction.
@@ -1582,13 +1608,10 @@ namespace System.Transactions
                 AddVolatileEnlistment(ref tx._phase1Volatiles, enlistment);
             }
 
-            if (DiagnosticTrace.Information)
+            TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+            if (etwLog.IsEnabled())
             {
-                EnlistmentTraceRecord.Trace(SR.TraceSourceLtm,
-                    enlistment.InternalEnlistment.EnlistmentTraceId,
-                    EnlistmentType.Volatile,
-                    enlistmentOptions
-                    );
+                etwLog.TransactionstateEnlist(enlistment.InternalEnlistment.EnlistmentTraceId, EnlistmentType.Volatile, enlistmentOptions);
             }
 
             return enlistment;
@@ -1612,13 +1635,10 @@ namespace System.Transactions
                 AddVolatileEnlistment(ref tx._phase1Volatiles, enlistment);
             }
 
-            if (DiagnosticTrace.Information)
+            TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+            if (etwLog.IsEnabled())
             {
-                EnlistmentTraceRecord.Trace(SR.TraceSourceLtm,
-                    enlistment.InternalEnlistment.EnlistmentTraceId,
-                    EnlistmentType.Volatile,
-                    enlistmentOptions
-                    );
+                etwLog.TransactionstateEnlist(enlistment.InternalEnlistment.EnlistmentTraceId, EnlistmentType.Volatile, enlistmentOptions);
             }
 
             return enlistment;
@@ -1650,13 +1670,10 @@ namespace System.Transactions
             // Create a durable enlistment.
             Enlistment en = new Enlistment(tx, promotableSinglePhaseNotification, atomicTransaction);
             tx._durableEnlistment = en.InternalEnlistment;
-            if (DiagnosticTrace.Information)
+            TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+            if (etwLog.IsEnabled())
             {
-                EnlistmentTraceRecord.Trace(SR.TraceSourceLtm,
-                    tx._durableEnlistment.EnlistmentTraceId,
-                    EnlistmentType.PromotableSinglePhase,
-                    EnlistmentOptions.None
-                    );
+                etwLog.TransactionstateEnlist(tx._durableEnlistment.EnlistmentTraceId, EnlistmentType.PromotableSinglePhase, EnlistmentOptions.None);
             }
 
             // Specify the promoter for the transaction.
@@ -1839,11 +1856,10 @@ namespace System.Transactions
 
         internal override void Timeout(InternalTransaction tx)
         {
-            if (DiagnosticTrace.Warning)
+            TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+            if (etwLog.IsEnabled())
             {
-                TransactionTimeoutTraceRecord.Trace(SR.TraceSourceLtm,
-                    tx.TransactionTraceId
-                    );
+                etwLog.TransactionTimeout(tx.TransactionTraceId);
             }
 
             TimeoutException e = new TimeoutException(SR.TraceTransactionTimeout);
@@ -2006,11 +2022,10 @@ namespace System.Transactions
             // Remove this from the timeout list
             TransactionManager.TransactionTable.Remove(tx);
 
-            if (DiagnosticTrace.Warning)
+            TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+            if (etwLog.IsEnabled())
             {
-                TransactionAbortedTraceRecord.Trace(SR.TraceSourceLtm,
-                    tx.TransactionTraceId
-                    );
+                etwLog.TransactionTimeout(tx.TransactionTraceId);
             }
 
             // Fire Completion for anyone listening
@@ -2104,7 +2119,7 @@ namespace System.Transactions
 
         private TransactionException CreateTransactionAbortedException(InternalTransaction tx)
         {
-            return TransactionAbortedException.Create(SR.TraceSourceLtm, SR.TransactionAborted, tx._innerException, tx.DistributedTxId);
+            return TransactionAbortedException.Create(SR.TransactionAborted, tx._innerException, tx.DistributedTxId);
         }
     }
 
@@ -2138,11 +2153,10 @@ namespace System.Transactions
             // Remove this from the timeout list
             TransactionManager.TransactionTable.Remove(tx);
 
-            if (DiagnosticTrace.Verbose)
+            TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+            if (etwLog.IsEnabled())
             {
-                TransactionCommittedTraceRecord.Trace(SR.TraceSourceLtm,
-                    tx.TransactionTraceId
-                    );
+                etwLog.TransactionCommitted(tx.TransactionTraceId);
             }
 
             // Fire Completion for anyone listening
@@ -2164,7 +2178,7 @@ namespace System.Transactions
 
         internal override void Rollback(InternalTransaction tx, Exception e)
         {
-            throw TransactionException.CreateTransactionStateException(SR.TraceSourceLtm, tx._innerException, tx.DistributedTxId);
+            throw TransactionException.CreateTransactionStateException(tx._innerException, tx.DistributedTxId);
         }
 
 
@@ -2202,11 +2216,10 @@ namespace System.Transactions
             // Remove this from the timeout list
             TransactionManager.TransactionTable.Remove(tx);
 
-            if (DiagnosticTrace.Warning)
+            TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+            if (etwLog.IsEnabled())
             {
-                TransactionInDoubtTraceRecord.Trace(SR.TraceSourceLtm,
-                    tx.TransactionTraceId
-                    );
+                etwLog.TransactionInDoubt(tx.TransactionTraceId);
             }
 
             // Fire Completion for anyone listening
@@ -2228,25 +2241,25 @@ namespace System.Transactions
 
         internal override void Rollback(InternalTransaction tx, Exception e)
         {
-            throw TransactionException.CreateTransactionStateException(SR.TraceSourceLtm, tx._innerException, tx.DistributedTxId);
+            throw TransactionException.CreateTransactionStateException(tx._innerException, tx.DistributedTxId);
         }
 
 
         internal override void EndCommit(InternalTransaction tx)
         {
-            throw TransactionInDoubtException.Create(SR.TraceSourceBase, SR.TransactionIndoubt, tx._innerException, tx.DistributedTxId);
+            throw TransactionInDoubtException.Create(TraceSourceType.TraceSourceBase, SR.TransactionIndoubt, tx._innerException, tx.DistributedTxId);
         }
 
 
         internal override void CheckForFinishedTransaction(InternalTransaction tx)
         {
-            throw TransactionInDoubtException.Create(SR.TraceSourceBase, SR.TransactionIndoubt, tx._innerException, tx.DistributedTxId);
+            throw TransactionInDoubtException.Create(TraceSourceType.TraceSourceBase, SR.TransactionIndoubt, tx._innerException, tx.DistributedTxId);
         }
 
 
         internal override void GetObjectData(InternalTransaction tx, SerializationInfo serializationInfo, StreamingContext context)
         {
-            throw TransactionInDoubtException.Create(SR.TraceSourceBase, SR.TransactionIndoubt, tx._innerException, tx.DistributedTxId);
+            throw TransactionInDoubtException.Create(TraceSourceType.TraceSourceBase, SR.TransactionIndoubt, tx._innerException, tx.DistributedTxId);
         }
     }
 
@@ -2683,11 +2696,10 @@ namespace System.Transactions
                 }
                 tx.PromotedTransaction.Rollback();
 
-                if (DiagnosticTrace.Warning)
+                TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+                if (etwLog.IsEnabled())
                 {
-                    TransactionTimeoutTraceRecord.Trace(SR.TraceSourceLtm,
-                        tx.TransactionTraceId
-                        );
+                    etwLog.TransactionTimeout(tx.TransactionTraceId);
                 }
             }
             catch (TransactionException te)
@@ -2698,10 +2710,11 @@ namespace System.Transactions
 
                 // The exception needs to be caught because we don't want it to go unhandled on the
                 // timer thread.
-                if (DiagnosticTrace.Verbose)
+
+                TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+                if (etwLog.IsEnabled())
                 {
-                    ExceptionConsumedTraceRecord.Trace(SR.TraceSourceLtm,
-                        te);
+                    etwLog.ExceptionConsumed(te);
                 }
             }
         }
@@ -2765,7 +2778,7 @@ namespace System.Transactions
 
             if (tx._outcomeSource._isoLevel == IsolationLevel.Snapshot)
             {
-                throw TransactionException.CreateInvalidOperationException(SR.TraceSourceLtm,
+                throw TransactionException.CreateInvalidOperationException(TraceSourceType.TraceSourceLtm,
                     SR.CannotPromoteSnapshot, null);
             }
 
@@ -2802,12 +2815,10 @@ namespace System.Transactions
                     TransactionManager.DistributedTransactionManager.CreateTransaction(options);
                 distributedTx.SavedLtmPromotedTransaction = tx._outcomeSource;
 
-                if (DiagnosticTrace.Information)
+                TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+                if (etwLog.IsEnabled())
                 {
-                    TransactionPromotedTraceRecord.Trace(SR.TraceSourceLtm,
-                        tx.TransactionTraceId,
-                        distributedTx.TransactionTraceId
-                        );
+                    etwLog.TransactionPromoted(tx.TransactionTraceId, distributedTx.TransactionTraceId);
                 }
             }
             catch (TransactionException te)
@@ -2815,10 +2826,10 @@ namespace System.Transactions
                 // There was an exception trying to create the distributed transaction.
                 // Save the exception and let the transaction get aborted by the finally block.
                 tx._innerException = te;
-                if (DiagnosticTrace.Verbose)
+                TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+                if (etwLog.IsEnabled())
                 {
-                    ExceptionConsumedTraceRecord.Trace(SR.TraceSourceLtm,
-                        te);
+                    etwLog.ExceptionConsumed(te);
                 }
                 return;
             }
@@ -2922,10 +2933,10 @@ namespace System.Transactions
             {
                 // Record the exception information.
                 tx._innerException = te;
-                if (DiagnosticTrace.Verbose)
+                TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+                if (etwLog.IsEnabled())
                 {
-                    ExceptionConsumedTraceRecord.Trace(SR.TraceSourceLtm,
-                        te);
+                    etwLog.ExceptionConsumed(te);
                 }
 
                 return;
@@ -2951,10 +2962,10 @@ namespace System.Transactions
             {
                 // Record the exception information.
                 tx._innerException = te;
-                if (DiagnosticTrace.Verbose)
+                TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+                if (etwLog.IsEnabled())
                 {
-                    ExceptionConsumedTraceRecord.Trace(SR.TraceSourceLtm,
-                        te);
+                    etwLog.ExceptionConsumed(te);
                 }
 
                 return;
@@ -2981,10 +2992,10 @@ namespace System.Transactions
             {
                 // Record the exception information.
                 tx._innerException = te;
-                if (DiagnosticTrace.Verbose)
+                TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+                if (etwLog.IsEnabled())
                 {
-                    ExceptionConsumedTraceRecord.Trace(SR.TraceSourceLtm,
-                        te);
+                    etwLog.ExceptionConsumed(te);
                 }
 
                 return;
@@ -3025,7 +3036,7 @@ namespace System.Transactions
         internal override void BeginCommit(InternalTransaction tx, bool asyncCommit, AsyncCallback asyncCallback, object asyncState)
         {
             // Don't allow this again.
-            throw TransactionException.CreateTransactionStateException(SR.TraceSourceLtm, tx._innerException, tx.DistributedTxId);
+            throw TransactionException.CreateTransactionStateException(tx._innerException, tx.DistributedTxId);
         }
 
 
@@ -3045,10 +3056,10 @@ namespace System.Transactions
                 {
                     tx._innerException = e;
                 }
-                if (DiagnosticTrace.Verbose)
+                TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+                if (etwLog.IsEnabled())
                 {
-                    ExceptionConsumedTraceRecord.Trace(SR.TraceSourceLtm,
-                        e);
+                    etwLog.ExceptionConsumed(e);
                 }
             }
         }
@@ -3092,7 +3103,7 @@ namespace System.Transactions
         internal override void BeginCommit(InternalTransaction tx, bool asyncCommit, AsyncCallback asyncCallback, object asyncState)
         {
             // Don't allow this again.
-            throw TransactionException.CreateTransactionStateException(SR.TraceSourceLtm, tx._innerException, tx.DistributedTxId);
+            throw TransactionException.CreateTransactionStateException(tx._innerException, tx.DistributedTxId);
         }
 
 
@@ -3242,13 +3253,13 @@ namespace System.Transactions
 
         internal override void CreateBlockingClone(InternalTransaction tx)
         {
-            throw TransactionException.CreateTransactionStateException(SR.TraceSourceLtm, tx._innerException, tx.DistributedTxId);
+            throw TransactionException.CreateTransactionStateException(tx._innerException, tx.DistributedTxId);
         }
 
 
         internal override void CreateAbortingClone(InternalTransaction tx)
         {
-            throw TransactionException.CreateTransactionStateException(SR.TraceSourceLtm, tx._innerException, tx.DistributedTxId);
+            throw TransactionException.CreateTransactionStateException(tx._innerException, tx.DistributedTxId);
         }
 
 
@@ -3335,19 +3346,19 @@ namespace System.Transactions
         internal override void BeginCommit(InternalTransaction tx, bool asyncCommit, AsyncCallback asyncCallback, object asyncState)
         {
             // Don't allow this again.
-            throw TransactionException.CreateTransactionStateException(SR.TraceSourceLtm, tx._innerException, tx.DistributedTxId);
+            throw TransactionException.CreateTransactionStateException(tx._innerException, tx.DistributedTxId);
         }
 
 
         internal override void CreateBlockingClone(InternalTransaction tx)
         {
-            throw TransactionException.CreateTransactionStateException(SR.TraceSourceLtm, tx._innerException, tx.DistributedTxId);
+            throw TransactionException.CreateTransactionStateException(tx._innerException, tx.DistributedTxId);
         }
 
 
         internal override void CreateAbortingClone(InternalTransaction tx)
         {
-            throw TransactionException.CreateTransactionStateException(SR.TraceSourceLtm, tx._innerException, tx.DistributedTxId);
+            throw TransactionException.CreateTransactionStateException(tx._innerException, tx.DistributedTxId);
         }
 
 
@@ -3460,7 +3471,7 @@ namespace System.Transactions
             if (!ThreadPool.QueueUserWorkItem(SignalMethod, tx))
             {
                 throw TransactionException.CreateInvalidOperationException(
-                    SR.TraceSourceLtm,
+                    TraceSourceType.TraceSourceLtm,
                     SR.UnexpectedFailureOfThreadPool,
                     null,
                     tx == null ? Guid.Empty : tx.DistributedTxId
@@ -3502,13 +3513,13 @@ namespace System.Transactions
 
         internal override void CreateBlockingClone(InternalTransaction tx)
         {
-            throw TransactionException.CreateTransactionStateException(SR.TraceSourceLtm, tx._innerException, tx.DistributedTxId);
+            throw TransactionException.CreateTransactionStateException(tx._innerException, tx.DistributedTxId);
         }
 
 
         internal override void CreateAbortingClone(InternalTransaction tx)
         {
-            throw TransactionException.CreateTransactionStateException(SR.TraceSourceLtm, tx._innerException, tx.DistributedTxId);
+            throw TransactionException.CreateTransactionStateException(tx._innerException, tx.DistributedTxId);
         }
 
         internal override Guid get_Identifier(InternalTransaction tx)
@@ -3582,11 +3593,10 @@ namespace System.Transactions
             tx.FireCompletion();
             // We don't need to do the AsyncCompletion stuff.  If it was needed, it was done out of SignalCallback.
 
-            if (DiagnosticTrace.Warning)
+            TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+            if (etwLog.IsEnabled())
             {
-                TransactionAbortedTraceRecord.Trace(SR.TraceSourceLtm,
-                    tx.TransactionTraceId
-                    );
+                etwLog.TransactionAborted(tx.TransactionTraceId);
             }
         }
 
@@ -3605,19 +3615,19 @@ namespace System.Transactions
 
         internal override void BeginCommit(InternalTransaction tx, bool asyncCommit, AsyncCallback asyncCallback, object asyncState)
         {
-            throw TransactionAbortedException.Create(SR.TraceSourceLtm, SR.TransactionAborted, tx._innerException, tx.DistributedTxId);
+            throw TransactionAbortedException.Create(SR.TransactionAborted, tx._innerException, tx.DistributedTxId);
         }
 
 
         internal override void CreateBlockingClone(InternalTransaction tx)
         {
-            throw TransactionAbortedException.Create(SR.TraceSourceLtm, SR.TransactionAborted, tx._innerException, tx.DistributedTxId);
+            throw TransactionAbortedException.Create(SR.TransactionAborted, tx._innerException, tx.DistributedTxId);
         }
 
 
         internal override void CreateAbortingClone(InternalTransaction tx)
         {
-            throw TransactionAbortedException.Create(SR.TraceSourceLtm, SR.TransactionAborted, tx._innerException, tx.DistributedTxId);
+            throw TransactionAbortedException.Create(SR.TransactionAborted, tx._innerException, tx.DistributedTxId);
         }
 
 
@@ -3667,7 +3677,7 @@ namespace System.Transactions
             {
                 tx._innerException = tx.PromotedTransaction.InnerException;
             }
-            throw TransactionAbortedException.Create(SR.TraceSourceLtm, SR.TransactionAborted, tx._innerException, tx.DistributedTxId);
+            throw TransactionAbortedException.Create(SR.TransactionAborted, tx._innerException, tx.DistributedTxId);
         }
 
 
@@ -3679,7 +3689,7 @@ namespace System.Transactions
 
         internal override void GetObjectData(InternalTransaction tx, SerializationInfo serializationInfo, StreamingContext context)
         {
-            throw TransactionAbortedException.Create(SR.TraceSourceLtm, SR.TransactionAborted, tx._innerException, tx.DistributedTxId);
+            throw TransactionAbortedException.Create(SR.TransactionAborted, tx._innerException, tx.DistributedTxId);
         }
 
 
@@ -3727,11 +3737,10 @@ namespace System.Transactions
             tx.FireCompletion();
             // We don't need to do the AsyncCompletion stuff.  If it was needed, it was done out of SignalCallback.
 
-            if (DiagnosticTrace.Verbose)
+            TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+            if (etwLog.IsEnabled())
             {
-                TransactionCommittedTraceRecord.Trace(SR.TraceSourceLtm,
-                    tx.TransactionTraceId
-                    );
+                etwLog.TransactionCommitted(tx.TransactionTraceId);
             }
         }
 
@@ -3798,11 +3807,10 @@ namespace System.Transactions
             tx.FireCompletion();
             // We don't need to do the AsyncCompletion stuff.  If it was needed, it was done out of SignalCallback.
 
-            if (DiagnosticTrace.Warning)
+            TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+            if (etwLog.IsEnabled())
             {
-                TransactionInDoubtTraceRecord.Trace(SR.TraceSourceLtm,
-                    tx.TransactionTraceId
-                    );
+                etwLog.TransactionInDoubt(tx.TransactionTraceId);
             }
         }
 
@@ -3821,12 +3829,12 @@ namespace System.Transactions
 
         internal override void ChangeStatePromotedPhase0(InternalTransaction tx)
         {
-            throw TransactionInDoubtException.Create(SR.TraceSourceBase, SR.TransactionIndoubt, tx._innerException, tx.DistributedTxId);
+            throw TransactionInDoubtException.Create(TraceSourceType.TraceSourceBase, SR.TransactionIndoubt, tx._innerException, tx.DistributedTxId);
         }
 
         internal override void ChangeStatePromotedPhase1(InternalTransaction tx)
         {
-            throw TransactionInDoubtException.Create(SR.TraceSourceBase, SR.TransactionIndoubt, tx._innerException, tx.DistributedTxId);
+            throw TransactionInDoubtException.Create(TraceSourceType.TraceSourceBase, SR.TransactionIndoubt, tx._innerException, tx.DistributedTxId);
         }
 
 
@@ -3852,19 +3860,19 @@ namespace System.Transactions
             {
                 tx._innerException = tx.PromotedTransaction.InnerException;
             }
-            throw TransactionInDoubtException.Create(SR.TraceSourceBase, SR.TransactionIndoubt, tx._innerException, tx.DistributedTxId);
+            throw TransactionInDoubtException.Create(TraceSourceType.TraceSourceBase, SR.TransactionIndoubt, tx._innerException, tx.DistributedTxId);
         }
 
 
         internal override void CheckForFinishedTransaction(InternalTransaction tx)
         {
-            throw TransactionInDoubtException.Create(SR.TraceSourceBase, SR.TransactionIndoubt, tx._innerException, tx.DistributedTxId);
+            throw TransactionInDoubtException.Create(TraceSourceType.TraceSourceBase, SR.TransactionIndoubt, tx._innerException, tx.DistributedTxId);
         }
 
 
         internal override void GetObjectData(InternalTransaction tx, SerializationInfo serializationInfo, StreamingContext context)
         {
-            throw TransactionInDoubtException.Create(SR.TraceSourceBase, SR.TransactionIndoubt, tx._innerException, tx.DistributedTxId);
+            throw TransactionInDoubtException.Create(TraceSourceType.TraceSourceBase, SR.TransactionIndoubt, tx._innerException, tx.DistributedTxId);
         }
 
 
@@ -3895,7 +3903,7 @@ namespace System.Transactions
         {
             if (tx._outcomeSource._isoLevel == IsolationLevel.Snapshot)
             {
-                throw TransactionException.CreateInvalidOperationException(SR.TraceSourceLtm,
+                throw TransactionException.CreateInvalidOperationException(TraceSourceType.TraceSourceLtm,
                     SR.CannotPromoteSnapshot, null, tx == null ? Guid.Empty : tx.DistributedTxId);
             }
 
@@ -3907,12 +3915,13 @@ namespace System.Transactions
             try
             {
                 // Ask the delegation interface to promote the transaction.
-                if (DiagnosticTrace.Verbose && tx._durableEnlistment != null)
+                if (tx._durableEnlistment != null)
                 {
-                    EnlistmentNotificationCallTraceRecord.Trace(SR.TraceSourceLtm,
-                        tx._durableEnlistment.EnlistmentTraceId,
-                        NotificationCall.Promote
-                        );
+                    TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+                    if (etwLog.IsEnabled())
+                    {
+                        etwLog.EnlistmentStatus(tx._durableEnlistment, NotificationCall.Promote);
+                    }
                 }
 
 
@@ -3921,10 +3930,10 @@ namespace System.Transactions
             catch (TransactionPromotionException e)
             {
                 tx._innerException = e;
-                if (DiagnosticTrace.Verbose)
+                TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+                if (etwLog.IsEnabled())
                 {
-                    ExceptionConsumedTraceRecord.Trace(SR.TraceSourceLtm,
-                        e);
+                    etwLog.ExceptionConsumed(e);
                 }
             }
             finally
@@ -3968,12 +3977,10 @@ namespace System.Transactions
                 }
                 TransactionManager.FireDistributedTransactionStarted(tx._outcomeSource);
 
-                if (DiagnosticTrace.Information)
+                TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+                if (etwLog.IsEnabled())
                 {
-                    TransactionPromotedTraceRecord.Trace(SR.TraceSourceLtm,
-                        tx.TransactionTraceId,
-                        distributedTx.TransactionTraceId
-                        );
+                    etwLog.TransactionPromoted(tx.TransactionTraceId, distributedTx.TransactionTraceId);
                 }
 
                 // Once we have a promoted transaction promote the enlistments.
@@ -4061,13 +4068,10 @@ namespace System.Transactions
                 AddVolatileEnlistment(ref tx._phase1Volatiles, enlistment);
             }
 
-            if (DiagnosticTrace.Information)
+            TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+            if (etwLog.IsEnabled())
             {
-                EnlistmentTraceRecord.Trace(SR.TraceSourceLtm,
-                    enlistment.InternalEnlistment.EnlistmentTraceId,
-                    EnlistmentType.Volatile,
-                    enlistmentOptions
-                    );
+                etwLog.TransactionstateEnlist(enlistment.InternalEnlistment.EnlistmentTraceId, EnlistmentType.Volatile, enlistmentOptions);
             }
 
             return enlistment;
@@ -4091,13 +4095,10 @@ namespace System.Transactions
                 AddVolatileEnlistment(ref tx._phase1Volatiles, enlistment);
             }
 
-            if (DiagnosticTrace.Information)
+            TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+            if (etwLog.IsEnabled())
             {
-                EnlistmentTraceRecord.Trace(SR.TraceSourceLtm,
-                    enlistment.InternalEnlistment.EnlistmentTraceId,
-                    EnlistmentType.Volatile,
-                    enlistmentOptions
-                    );
+                etwLog.TransactionstateEnlist(enlistment.InternalEnlistment.EnlistmentTraceId, EnlistmentType.Volatile, enlistmentOptions);
             }
 
             return enlistment;
@@ -4256,11 +4257,10 @@ namespace System.Transactions
 
         internal override void Timeout(InternalTransaction tx)
         {
-            if (DiagnosticTrace.Warning)
+            TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+            if (etwLog.IsEnabled())
             {
-                TransactionTimeoutTraceRecord.Trace(SR.TraceSourceLtm,
-                    tx.TransactionTraceId
-                    );
+                etwLog.TransactionTimeout(tx.TransactionTraceId);
             }
 
             TimeoutException e = new TimeoutException(SR.TraceTransactionTimeout);
@@ -4338,7 +4338,7 @@ namespace System.Transactions
 
         internal override void BeginCommit(InternalTransaction tx, bool asyncCommit, AsyncCallback asyncCallback, object asyncState)
         {
-            throw TransactionException.CreateTransactionStateException(SR.TraceSourceLtm, tx._innerException, tx.DistributedTxId);
+            throw TransactionException.CreateTransactionStateException(tx._innerException, tx.DistributedTxId);
         }
 
         internal override void Rollback(InternalTransaction tx, Exception e)
@@ -4433,7 +4433,7 @@ namespace System.Transactions
 
         internal override void BeginCommit(InternalTransaction tx, bool asyncCommit, AsyncCallback asyncCallback, object asyncState)
         {
-            throw TransactionException.CreateTransactionStateException(SR.TraceSourceLtm, tx._innerException, tx.DistributedTxId);
+            throw TransactionException.CreateTransactionStateException(tx._innerException, tx.DistributedTxId);
         }
 
         internal override void Rollback(InternalTransaction tx, Exception e)
@@ -4501,12 +4501,10 @@ namespace System.Transactions
         {
             CommonEnterState(tx);
 
-            if (DiagnosticTrace.Verbose)
+            TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+            if (etwLog.IsEnabled())
             {
-                EnlistmentNotificationCallTraceRecord.Trace(SR.TraceSourceLtm,
-                    tx._durableEnlistment.EnlistmentTraceId,
-                    NotificationCall.SinglePhaseCommit
-                    );
+                etwLog.EnlistmentStatus(tx._durableEnlistment, NotificationCall.SinglePhaseCommit);
             }
 
             // We are about to tell the PSPE to do the SinglePhaseCommit. It is too late for us to timeout the transaction.
@@ -4518,13 +4516,13 @@ namespace System.Transactions
 
         internal override void BeginCommit(InternalTransaction tx, bool asyncCommit, AsyncCallback asyncCallback, object asyncState)
         {
-            throw TransactionException.CreateTransactionStateException(SR.TraceSourceLtm, tx._innerException, tx.DistributedTxId);
+            throw TransactionException.CreateTransactionStateException(tx._innerException, tx.DistributedTxId);
         }
 
         internal override void Rollback(InternalTransaction tx, Exception e)
         {
             // We have told the PSPE enlistment to do a single phase commit. It's too late to rollback.
-            throw TransactionException.CreateTransactionStateException(SR.TraceSourceLtm, tx._innerException, tx.DistributedTxId);
+            throw TransactionException.CreateTransactionStateException(tx._innerException, tx.DistributedTxId);
         }
 
         internal override void ChangeStateTransactionCommitted(InternalTransaction tx)
@@ -4610,7 +4608,7 @@ namespace System.Transactions
             if (!ThreadPool.QueueUserWorkItem(SignalMethod, tx))
             {
                 throw TransactionException.CreateInvalidOperationException(
-                    SR.TraceSourceLtm,
+                    TraceSourceType.TraceSourceLtm,
                     SR.UnexpectedFailureOfThreadPool,
                     null,
                     tx == null ? Guid.Empty : tx.DistributedTxId
@@ -4646,12 +4644,12 @@ namespace System.Transactions
 
         internal override void CreateBlockingClone(InternalTransaction tx)
         {
-            throw TransactionException.CreateTransactionStateException(SR.TraceSourceLtm, tx._innerException, tx.DistributedTxId);
+            throw TransactionException.CreateTransactionStateException(tx._innerException, tx.DistributedTxId);
         }
 
         internal override void CreateAbortingClone(InternalTransaction tx)
         {
-            throw TransactionException.CreateTransactionStateException(SR.TraceSourceLtm, tx._innerException, tx.DistributedTxId);
+            throw TransactionException.CreateTransactionStateException(tx._innerException, tx.DistributedTxId);
         }
 
         internal override Guid get_Identifier(InternalTransaction tx)
@@ -4730,11 +4728,10 @@ namespace System.Transactions
             tx.FireCompletion();
             // We don't need to do the AsyncCompletion stuff.  If it was needed, it was done out of SignalCallback.
 
-            if (DiagnosticTrace.Warning)
+            TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+            if (etwLog.IsEnabled())
             {
-                TransactionAbortedTraceRecord.Trace(SR.TraceSourceLtm,
-                    tx.TransactionTraceId
-                    );
+                etwLog.TransactionAborted(tx.TransactionTraceId);
             }
         }
 
@@ -4750,17 +4747,17 @@ namespace System.Transactions
 
         internal override void BeginCommit(InternalTransaction tx, bool asyncCommit, AsyncCallback asyncCallback, object asyncState)
         {
-            throw TransactionAbortedException.Create(SR.TraceSourceLtm, SR.TransactionAborted, tx._innerException, tx.DistributedTxId);
+            throw TransactionAbortedException.Create(SR.TransactionAborted, tx._innerException, tx.DistributedTxId);
         }
 
         internal override void CreateBlockingClone(InternalTransaction tx)
         {
-            throw TransactionAbortedException.Create(SR.TraceSourceLtm, SR.TransactionAborted, tx._innerException, tx.DistributedTxId);
+            throw TransactionAbortedException.Create(SR.TransactionAborted, tx._innerException, tx.DistributedTxId);
         }
 
         internal override void CreateAbortingClone(InternalTransaction tx)
         {
-            throw TransactionAbortedException.Create(SR.TraceSourceLtm, SR.TransactionAborted, tx._innerException, tx.DistributedTxId);
+            throw TransactionAbortedException.Create(SR.TransactionAborted, tx._innerException, tx.DistributedTxId);
         }
 
         internal override void Phase0VolatilePrepareDone(InternalTransaction tx)
@@ -4784,7 +4781,7 @@ namespace System.Transactions
             {
                 tx._innerException = tx.PromotedTransaction.InnerException;
             }
-            throw TransactionAbortedException.Create(SR.TraceSourceLtm, SR.TransactionAborted, tx._innerException, tx.DistributedTxId);
+            throw TransactionAbortedException.Create(SR.TransactionAborted, tx._innerException, tx.DistributedTxId);
         }
 
         internal override void CheckForFinishedTransaction(InternalTransaction tx)
@@ -4794,7 +4791,7 @@ namespace System.Transactions
 
         internal override void GetObjectData(InternalTransaction tx, SerializationInfo serializationInfo, StreamingContext context)
         {
-            throw TransactionAbortedException.Create(SR.TraceSourceLtm, SR.TransactionAborted, tx._innerException, tx.DistributedTxId);
+            throw TransactionAbortedException.Create(SR.TransactionAborted, tx._innerException, tx.DistributedTxId);
         }
     }
 
@@ -4824,11 +4821,10 @@ namespace System.Transactions
             tx.FireCompletion();
             // We don't need to do the AsyncCompletion stuff.  If it was needed, it was done out of SignalCallback.
 
-            if (DiagnosticTrace.Verbose)
+            TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+            if (etwLog.IsEnabled())
             {
-                TransactionCommittedTraceRecord.Trace(SR.TraceSourceLtm,
-                    tx.TransactionTraceId
-                    );
+                etwLog.TransactionCommitted(tx.TransactionTraceId);
             }
         }
 
@@ -4869,11 +4865,10 @@ namespace System.Transactions
             tx.FireCompletion();
             // We don't need to do the AsyncCompletion stuff.  If it was needed, it was done out of SignalCallback.
 
-            if (DiagnosticTrace.Warning)
+            TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+            if (etwLog.IsEnabled())
             {
-                TransactionInDoubtTraceRecord.Trace(SR.TraceSourceLtm,
-                    tx.TransactionTraceId
-                    );
+                etwLog.TransactionInDoubt(tx.TransactionTraceId);
             }
         }
 
@@ -4884,12 +4879,12 @@ namespace System.Transactions
 
         internal override void ChangeStatePromotedPhase0(InternalTransaction tx)
         {
-            throw TransactionInDoubtException.Create(SR.TraceSourceBase, SR.TransactionIndoubt, tx._innerException, tx.DistributedTxId);
+            throw TransactionInDoubtException.Create(TraceSourceType.TraceSourceBase, SR.TransactionIndoubt, tx._innerException, tx.DistributedTxId);
         }
 
         internal override void ChangeStatePromotedPhase1(InternalTransaction tx)
         {
-            throw TransactionInDoubtException.Create(SR.TraceSourceBase, SR.TransactionIndoubt, tx._innerException, tx.DistributedTxId);
+            throw TransactionInDoubtException.Create(TraceSourceType.TraceSourceBase, SR.TransactionIndoubt, tx._innerException, tx.DistributedTxId);
         }
 
         protected override void PromotedTransactionOutcome(InternalTransaction tx)
@@ -4898,27 +4893,27 @@ namespace System.Transactions
             {
                 tx._innerException = tx.PromotedTransaction.InnerException;
             }
-            throw TransactionInDoubtException.Create(SR.TraceSourceBase, SR.TransactionIndoubt, tx._innerException, tx.DistributedTxId);
+            throw TransactionInDoubtException.Create(TraceSourceType.TraceSourceBase, SR.TransactionIndoubt, tx._innerException, tx.DistributedTxId);
         }
 
         internal override void CheckForFinishedTransaction(InternalTransaction tx)
         {
-            throw TransactionInDoubtException.Create(SR.TraceSourceBase, SR.TransactionIndoubt, tx._innerException, tx.DistributedTxId);
+            throw TransactionInDoubtException.Create(TraceSourceType.TraceSourceBase, SR.TransactionIndoubt, tx._innerException, tx.DistributedTxId);
         }
 
         internal override void GetObjectData(InternalTransaction tx, SerializationInfo serializationInfo, StreamingContext context)
         {
-            throw TransactionInDoubtException.Create(SR.TraceSourceBase, SR.TransactionIndoubt, tx._innerException, tx.DistributedTxId);
+            throw TransactionInDoubtException.Create(TraceSourceType.TraceSourceBase, SR.TransactionIndoubt, tx._innerException, tx.DistributedTxId);
         }
 
         internal override void CreateBlockingClone(InternalTransaction tx)
         {
-            throw TransactionInDoubtException.Create(SR.TraceSourceLtm, SR.TransactionAborted, tx._innerException, tx.DistributedTxId);
+            throw TransactionInDoubtException.Create(SR.TransactionAborted, tx._innerException, tx.DistributedTxId);
         }
 
         internal override void CreateAbortingClone(InternalTransaction tx)
         {
-            throw TransactionInDoubtException.Create(SR.TraceSourceLtm, SR.TransactionAborted, tx._innerException, tx.DistributedTxId);
+            throw TransactionInDoubtException.Create(SR.TransactionAborted, tx._innerException, tx.DistributedTxId);
         }
     }
 
@@ -4937,12 +4932,13 @@ namespace System.Transactions
             try
             {
                 // Ask the delegation interface to promote the transaction.
-                if (DiagnosticTrace.Verbose && tx._durableEnlistment != null)
+                if (tx._durableEnlistment != null)
                 {
-                    EnlistmentNotificationCallTraceRecord.Trace(SR.TraceSourceLtm,
-                        tx._durableEnlistment.EnlistmentTraceId,
-                        NotificationCall.Promote
-                        );
+                    TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+                    if (etwLog.IsEnabled())
+                    {
+                        etwLog.EnlistmentStatus(tx._durableEnlistment, NotificationCall.Promote);
+                    }
                 }
 
 
@@ -4953,10 +4949,10 @@ namespace System.Transactions
             catch (TransactionPromotionException e)
             {
                 tx._innerException = e;
-                if (DiagnosticTrace.Verbose)
+                TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+                if (etwLog.IsEnabled())
                 {
-                    ExceptionConsumedTraceRecord.Trace(SR.TraceSourceLtm,
-                        e);
+                    etwLog.ExceptionConsumed(e);
                 }
             }
             finally
@@ -5026,7 +5022,7 @@ namespace System.Transactions
 
         internal override TransactionStatus get_Status(InternalTransaction tx)
         {
-            throw TransactionException.CreateTransactionStateException(SR.TraceSourceLtm, tx._innerException, tx.DistributedTxId);
+            throw TransactionException.CreateTransactionStateException(tx._innerException, tx.DistributedTxId);
         }
 
 
@@ -5098,7 +5094,7 @@ namespace System.Transactions
                 {
                     // There should not already be a PSPEPromote call outstanding.
                     throw TransactionException.CreateInvalidOperationException(
-                            SR.TraceSourceLtm,
+                            TraceSourceType.TraceSourceLtm,
                             SR.PromotedReturnedInvalidValue,
                             null,
                             tx.DistributedTxId
@@ -5115,7 +5111,7 @@ namespace System.Transactions
                     if (propagationToken == null)
                     {
                         throw TransactionException.CreateInvalidOperationException(
-                                SR.TraceSourceLtm,
+                                TraceSourceType.TraceSourceLtm,
                                 SR.PromotedReturnedInvalidValue,
                                 null,
                                 tx.DistributedTxId
@@ -5138,7 +5134,7 @@ namespace System.Transactions
                     {
                         // The PSPE has returned an invalid promoted transaction.
                         throw TransactionException.CreateInvalidOperationException(
-                                SR.TraceSourceLtm,
+                                TraceSourceType.TraceSourceLtm,
                                 SR.PromotedReturnedInvalidValue,
                                 null,
                                 tx.DistributedTxId
@@ -5165,7 +5161,7 @@ namespace System.Transactions
                     {
                         // The PSPE has returned an invalid promoted transaction.
                         throw TransactionException.CreateInvalidOperationException(
-                                SR.TraceSourceLtm,
+                                TraceSourceType.TraceSourceLtm,             
                                 SR.PromotedReturnedInvalidValue,
                                 e,
                                 tx.DistributedTxId
@@ -5177,7 +5173,7 @@ namespace System.Transactions
                         // If there is already a promoted transaction then someone has committed an error.
                         distributedTx.Dispose();
                         throw TransactionException.CreateInvalidOperationException(
-                                SR.TraceSourceLtm,
+                                TraceSourceType.TraceSourceLtm,
                                 SR.PromotedTransactionExists,
                                 null,
                                 tx.DistributedTxId
@@ -5213,13 +5209,13 @@ namespace System.Transactions
             // This call is only allowed if we have an outstanding call to ITransactionPromoter.Promote.
             if (!tx._attemptingPSPEPromote)
             {
-                throw TransactionException.CreateTransactionStateException(SR.TraceSourceLtm, tx._innerException, tx.DistributedTxId);
+                throw TransactionException.CreateTransactionStateException(tx._innerException, tx.DistributedTxId);
             }
 
             if (promotableNotification != tx._promoter)
             {
                 throw TransactionException.CreateInvalidOperationException(
-                        SR.TraceSourceLtm,
+                        TraceSourceType.TraceSourceLtm,
                         SR.InvalidIPromotableSinglePhaseNotificationSpecified,
                         null,
                         tx.DistributedTxId
@@ -5256,13 +5252,13 @@ namespace System.Transactions
             // This call is only allowed if we have an outstanding call to ITransactionPromoter.Promote.
             if (!tx._attemptingPSPEPromote)
             {
-                throw TransactionException.CreateTransactionStateException(SR.TraceSourceLtm, tx._innerException, tx.DistributedTxId);
+                throw TransactionException.CreateTransactionStateException(tx._innerException, tx.DistributedTxId);
             }
 
             if (promotableNotification != tx._promoter)
             {
                 throw TransactionException.CreateInvalidOperationException(
-                        SR.TraceSourceLtm,
+                        TraceSourceType.TraceSourceLtm,
                         SR.InvalidIPromotableSinglePhaseNotificationSpecified,
                         null,
                         tx.DistributedTxId
@@ -5300,12 +5296,10 @@ namespace System.Transactions
             // Forward this on to the promotable single phase enlisment
             Monitor.Exit(tx);
 
-            if (DiagnosticTrace.Verbose)
+            TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+            if (etwLog.IsEnabled())
             {
-                EnlistmentNotificationCallTraceRecord.Trace(SR.TraceSourceLtm,
-                    tx._durableEnlistment.EnlistmentTraceId,
-                    NotificationCall.SinglePhaseCommit
-                    );
+                etwLog.EnlistmentStatus(tx._durableEnlistment, NotificationCall.SinglePhaseCommit);
             }
 
             try
@@ -5338,12 +5332,10 @@ namespace System.Transactions
             Monitor.Exit(tx);
             try
             {
-                if (DiagnosticTrace.Verbose)
+                TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+                if (etwLog.IsEnabled())
                 {
-                    EnlistmentNotificationCallTraceRecord.Trace(SR.TraceSourceLtm,
-                        tx._durableEnlistment.EnlistmentTraceId,
-                        NotificationCall.Rollback
-                        );
+                    etwLog.EnlistmentStatus(tx._durableEnlistment, NotificationCall.Rollback);
                 }
 
                 tx._durableEnlistment.PromotableSinglePhaseNotification.Rollback(
@@ -5359,7 +5351,7 @@ namespace System.Transactions
         internal override void BeginCommit(InternalTransaction tx, bool asyncCommit, AsyncCallback asyncCallback, object asyncState)
         {
             // Initiate the commit process.
-            throw TransactionException.CreateTransactionStateException(SR.TraceSourceLtm, tx._innerException, tx.DistributedTxId);
+            throw TransactionException.CreateTransactionStateException(tx._innerException, tx.DistributedTxId);
         }
 
 

@@ -30,6 +30,7 @@ namespace System
         public event System.EventHandler DomainUnload { add { } remove { } }
         public event System.EventHandler<System.Runtime.ExceptionServices.FirstChanceExceptionEventArgs> FirstChanceException { add { } remove { } }
         public event System.EventHandler ProcessExit { add { } remove { } }
+        public event ResolveEventHandler ReflectionOnlyAssemblyResolve { add { } remove { } }
         public event System.ResolveEventHandler ResourceResolve { add { } remove { } }
         public event System.ResolveEventHandler TypeResolve { add { } remove { } }
         public string ApplyPolicy(string assemblyName) { throw null; }
@@ -53,22 +54,24 @@ namespace System
         public System.Reflection.Assembly Load(string assemblyString) { throw null; }
         public System.Reflection.Assembly[] ReflectionOnlyGetAssemblies() { throw null; }
         public void SetData(string name, object data) { }
+        [ObsoleteAttribute("AppDomain.SetDynamicBase has been deprecated. Please investigate the use of AppDomainSetup.DynamicBase instead. http://go.microsoft.com/fwlink/?linkid=14202")]
+        public void SetDynamicBase(string path) { }
         public void SetPrincipalPolicy(System.Security.Principal.PrincipalPolicy policy) { }
         public void SetThreadPrincipal(System.Security.Principal.IPrincipal principal) { }
         public override string ToString() { throw null; }
         public static void Unload(System.AppDomain domain) { }
         public bool ShadowCopyFiles { get { throw null; } }
-        [Obsolete("AppDomain.AppendPrivatePath has been deprecated.")]
+        [Obsolete("AppDomain.AppendPrivatePath has been deprecated. Please investigate the use of AppDomainSetup.PrivateBinPath instead. http://go.microsoft.com/fwlink/?linkid=14202")]
         public void AppendPrivatePath(string path) { }
-        [Obsolete("AppDomain.ClearPrivatePath has been deprecated.")]
+        [Obsolete("AppDomain.ClearPrivatePath has been deprecated. Please investigate the use of AppDomainSetup.PrivateBinPath instead. http://go.microsoft.com/fwlink/?linkid=14202")]
         public void ClearPrivatePath() { }
-        [Obsolete("AppDomain.ClearShadowCopyPath has been deprecated.")]
+        [Obsolete("AppDomain.ClearShadowCopyPath has been deprecated. Please investigate the use of AppDomainSetup.ShadowCopyDirectories instead. http://go.microsoft.com/fwlink/?linkid=14202")]
         public void ClearShadowCopyPath() { }
-        [Obsolete("AppDomain.SetCachePath has been deprecated.")]
+        [Obsolete("AppDomain.SetCachePath has been deprecated. Please investigate the use of AppDomainSetup.CachePath instead. http://go.microsoft.com/fwlink/?linkid=14202")]
         public void SetCachePath(string path) { }
-        [Obsolete("AppDomain.SetShadowCopyFiles has been deprecated.")]
+        [Obsolete("AppDomain.SetShadowCopyFiles has been deprecated. Please investigate the use of AppDomainSetup.ShadowCopyFiles instead. http://go.microsoft.com/fwlink/?linkid=14202")]
         public void SetShadowCopyFiles() { }
-        [Obsolete("AppDomain.SetShadowCopyPath has been deprecated.")]
+        [Obsolete("AppDomain.SetShadowCopyPath has been deprecated. Please investigate the use of AppDomainSetup.ShadowCopyDirectories instead. http://go.microsoft.com/fwlink/?linkid=14202")]
         public void SetShadowCopyPath(string path) { }
     }
 
@@ -610,6 +613,7 @@ namespace System
         public static System.OperatingSystem OSVersion { get { throw null; } }
         public static int ProcessorCount { get { throw null; } }
         public static string StackTrace { get { throw null; } }
+        public static string SystemDirectory { get { throw null; } }
         public static int SystemPageSize { get { throw null; } }
         public static int TickCount { get { throw null; } }
         public static bool UserInteractive { get { throw null; } }
@@ -695,6 +699,24 @@ namespace System
         Process = 0,
         User = 1,
         Machine = 2,
+    }
+    public enum LoaderOptimization
+    {
+        [System.ObsoleteAttribute("This method has been deprecated. Please use Assembly.Load() instead. http://go.microsoft.com/fwlink/?linkid=14202")]
+        DisallowBindings = 4,
+        [System.ObsoleteAttribute("This method has been deprecated. Please use Assembly.Load() instead. http://go.microsoft.com/fwlink/?linkid=14202")]
+        DomainMask = 3,
+        MultiDomain = 2,
+        MultiDomainHost = 3,
+        NotSpecified = 0,
+        SingleDomain = 1,
+    }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Method)]
+    public sealed partial class LoaderOptimizationAttribute : System.Attribute
+    {
+        public LoaderOptimizationAttribute(byte value) { }
+        public LoaderOptimizationAttribute(System.LoaderOptimization value) { }
+        public System.LoaderOptimization Value { get { throw null; } }
     }
     public static partial class Math
     {
@@ -926,6 +948,146 @@ namespace System
     {
         public ContextStaticAttribute() { }
     }
+    public static class StringNormalizationExtensions
+    {
+        public static bool IsNormalized(this string value) { throw null; }
+        [System.Security.SecurityCritical]
+        public static bool IsNormalized(this string value, System.Text.NormalizationForm normalizationForm) { throw null; }
+        public static String Normalize(this string value) { throw null; }
+        [System.Security.SecurityCritical]
+        public static String Normalize(this string value, System.Text.NormalizationForm normalizationForm) { throw null; }
+    }
+}
+namespace System.Globalization
+{
+    public static partial class GlobalizationExtensions
+    {
+        public static System.StringComparer GetStringComparer(this System.Globalization.CompareInfo compareInfo, System.Globalization.CompareOptions options) { throw null; }
+    }
+}
+namespace System.Collections
+{
+    public partial class Hashtable : System.Collections.ICollection, System.Collections.IDictionary, System.Collections.IEnumerable, System.Runtime.Serialization.ISerializable, System.Runtime.Serialization.IDeserializationCallback, System.ICloneable
+    {
+        public Hashtable() { }
+        public Hashtable(System.Collections.IDictionary d) { }
+        public Hashtable(System.Collections.IDictionary d, System.Collections.IEqualityComparer equalityComparer) { }
+        [System.ObsoleteAttribute("Please use Hashtable(IDictionary, IEqualityComparer) instead.")]
+        public Hashtable(System.Collections.IDictionary d, System.Collections.IHashCodeProvider hcp, System.Collections.IComparer comparer) { }
+        public Hashtable(System.Collections.IDictionary d, float loadFactor) { }
+        public Hashtable(System.Collections.IDictionary d, float loadFactor, System.Collections.IEqualityComparer equalityComparer) { }
+        [System.ObsoleteAttribute("Please use Hashtable(IDictionary, float, IEqualityComparer) instead.")]
+        public Hashtable(System.Collections.IDictionary d, float loadFactor, System.Collections.IHashCodeProvider hcp, System.Collections.IComparer comparer) { }
+        public Hashtable(System.Collections.IEqualityComparer equalityComparer) { }
+        [System.ObsoleteAttribute("Please use Hashtable(IEqualityComparer) instead.")]
+        public Hashtable(System.Collections.IHashCodeProvider hcp, System.Collections.IComparer comparer) { }
+        public Hashtable(int capacity) { }
+        public Hashtable(int capacity, System.Collections.IEqualityComparer equalityComparer) { }
+        [System.ObsoleteAttribute("Please use Hashtable(int, IEqualityComparer) instead.")]
+        public Hashtable(int capacity, System.Collections.IHashCodeProvider hcp, System.Collections.IComparer comparer) { }
+        public Hashtable(int capacity, float loadFactor) { }
+        public Hashtable(int capacity, float loadFactor, System.Collections.IEqualityComparer equalityComparer) { }
+        [System.ObsoleteAttribute("Please use Hashtable(int, float, IEqualityComparer) instead.")]
+        public Hashtable(int capacity, float loadFactor, System.Collections.IHashCodeProvider hcp, System.Collections.IComparer comparer) { }
+        protected Hashtable(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
+        [System.ObsoleteAttribute("Please use KeyComparer properties.")]
+        protected System.Collections.IComparer comparer { get { throw null; } set { } }
+        public virtual int Count { get { throw null; } }
+        protected System.Collections.IEqualityComparer EqualityComparer { get { throw null; } }
+        [System.ObsoleteAttribute("Please use EqualityComparer property.")]
+        protected System.Collections.IHashCodeProvider hcp { get { throw null; } set { } }
+        public virtual bool IsFixedSize { get { throw null; } }
+        public virtual bool IsReadOnly { get { throw null; } }
+        public virtual bool IsSynchronized { get { throw null; } }
+        public virtual object this[object key] { get { throw null; } set { } }
+        public virtual System.Collections.ICollection Keys { get { throw null; } }
+        public virtual object SyncRoot { get { throw null; } }
+        public virtual System.Collections.ICollection Values { get { throw null; } }
+        public virtual void Add(object key, object value) { }
+        public virtual void Clear() { }
+        public virtual object Clone() { throw null; }
+        public virtual bool Contains(object key) { throw null; }
+        public virtual bool ContainsKey(object key) { throw null; }
+        public virtual bool ContainsValue(object value) { throw null; }
+        public virtual void CopyTo(System.Array array, int arrayIndex) { }
+        public virtual System.Collections.IDictionaryEnumerator GetEnumerator() { throw null; }
+        protected virtual int GetHash(object key) { throw null; }
+        public virtual void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
+        protected virtual bool KeyEquals(object item, object key) { throw null; }
+        public virtual void OnDeserialization(object sender) { }
+        public virtual void Remove(object key) { }
+        public static System.Collections.Hashtable Synchronized(System.Collections.Hashtable table) { throw null; }
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
+    }
+    public partial class ArrayList : System.Collections.IEnumerable, System.Collections.IList, System.ICloneable
+    {
+        public ArrayList() { }
+        public ArrayList(System.Collections.ICollection c) { }
+        public ArrayList(int capacity) { }
+        public virtual int Capacity { get { throw null; } set { } }
+        public virtual int Count { get { throw null; } }
+        public virtual bool IsFixedSize { get { throw null; } }
+        public virtual bool IsReadOnly { get { throw null; } }
+        public virtual bool IsSynchronized { get { throw null; } }
+        public virtual object this[int index] { get { throw null; } set { } }
+        public virtual object SyncRoot { get { throw null; } }
+        public static System.Collections.ArrayList Adapter(System.Collections.IList list) { throw null; }
+        public virtual int Add(object value) { throw null; }
+        public virtual void AddRange(System.Collections.ICollection c) { }
+        public virtual int BinarySearch(int index, int count, object value, System.Collections.IComparer comparer) { throw null; }
+        public virtual int BinarySearch(object value) { throw null; }
+        public virtual int BinarySearch(object value, System.Collections.IComparer comparer) { throw null; }
+        public virtual void Clear() { }
+        public virtual object Clone() { throw null; }
+        public virtual bool Contains(object item) { throw null; }
+        public virtual void CopyTo(System.Array array) { }
+        public virtual void CopyTo(System.Array array, int arrayIndex) { }
+        public virtual void CopyTo(int index, System.Array array, int arrayIndex, int count) { }
+        public static System.Collections.ArrayList FixedSize(System.Collections.ArrayList list) { throw null; }
+        public static System.Collections.IList FixedSize(System.Collections.IList list) { throw null; }
+        public virtual System.Collections.IEnumerator GetEnumerator() { throw null; }
+        public virtual System.Collections.IEnumerator GetEnumerator(int index, int count) { throw null; }
+        public virtual System.Collections.ArrayList GetRange(int index, int count) { throw null; }
+        public virtual int IndexOf(object value) { throw null; }
+        public virtual int IndexOf(object value, int startIndex) { throw null; }
+        public virtual int IndexOf(object value, int startIndex, int count) { throw null; }
+        public virtual void Insert(int index, object value) { }
+        public virtual void InsertRange(int index, System.Collections.ICollection c) { }
+        public virtual int LastIndexOf(object value) { throw null; }
+        public virtual int LastIndexOf(object value, int startIndex) { throw null; }
+        public virtual int LastIndexOf(object value, int startIndex, int count) { throw null; }
+        public static System.Collections.ArrayList ReadOnly(System.Collections.ArrayList list) { throw null; }
+        public static System.Collections.IList ReadOnly(System.Collections.IList list) { throw null; }
+        public virtual void Remove(object obj) { }
+        public virtual void RemoveAt(int index) { }
+        public virtual void RemoveRange(int index, int count) { }
+        public static System.Collections.ArrayList Repeat(object value, int count) { throw null; }
+        public virtual void Reverse() { }
+        public virtual void Reverse(int index, int count) { }
+        public virtual void SetRange(int index, System.Collections.ICollection c) { }
+        public virtual void Sort() { }
+        public virtual void Sort(System.Collections.IComparer comparer) { }
+        public virtual void Sort(int index, int count, System.Collections.IComparer comparer) { }
+        public static System.Collections.ArrayList Synchronized(System.Collections.ArrayList list) { throw null; }
+        public static System.Collections.IList Synchronized(System.Collections.IList list) { throw null; }
+        public virtual object[] ToArray() { throw null; }
+        public virtual System.Array ToArray(System.Type type) { throw null; }
+        public virtual void TrimToSize() { }
+    }
+    public sealed partial class Comparer : System.Collections.IComparer, System.Runtime.Serialization.ISerializable
+    {
+        public static readonly System.Collections.Comparer Default;
+        public static readonly System.Collections.Comparer DefaultInvariant;
+        public Comparer(System.Globalization.CultureInfo culture) { }
+        private Comparer(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
+        public int Compare(object a, object b) { throw null; }
+        public void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
+    }
+    [System.ObsoleteAttribute("Please use IEqualityComparer instead.")]
+    public partial interface IHashCodeProvider
+    {
+        int GetHashCode(object obj);
+    }
 }
 
 namespace System.CodeDom.Compiler
@@ -1001,6 +1163,7 @@ namespace System.IO
     {
         public static readonly char AltDirectorySeparatorChar;
         public static readonly char DirectorySeparatorChar;
+        [ObsoleteAttribute("Please use GetInvalidPathChars or GetInvalidFileNameChars instead.")]
         public static readonly char[] InvalidPathChars;
         public static readonly char PathSeparator;
         public static readonly char VolumeSeparatorChar;
@@ -1315,7 +1478,7 @@ namespace System.IO
         public virtual System.Threading.Tasks.Task FlushAsync() { throw null; }
         public static System.IO.TextWriter Synchronized(System.IO.TextWriter writer) { throw null; }
         public virtual void Write(bool value) { }
-        public abstract void Write(char value);
+        public virtual void Write(char value) { }
         public virtual void Write(char[] buffer) { }
         public virtual void Write(char[] buffer, int index, int count) { }
         public virtual void Write(decimal value) { }
@@ -1369,14 +1532,128 @@ namespace System.Net
     public static partial class WebUtility
     {
         public static string HtmlDecode(string value) { throw null; }
+        public static void HtmlDecode(string value, System.IO.TextWriter output) { }
         public static string HtmlEncode(string value) { throw null; }
+        public static void HtmlEncode(string value, System.IO.TextWriter output) { }
         public static string UrlDecode(string encodedValue) { throw null; }
         public static byte[] UrlDecodeToBytes(byte[] encodedValue, int offset, int count) { throw null; }
         public static string UrlEncode(string value) { throw null; }
         public static byte[] UrlEncodeToBytes(byte[] value, int offset, int count) { throw null; }
     }
 }
-namespace  System.Reflection
+namespace System.Security
+{
+    public partial interface IPermission : System.Security.ISecurityEncodable
+    {
+        System.Security.IPermission Copy();
+        void Demand();
+        System.Security.IPermission Intersect(System.Security.IPermission target);
+        bool IsSubsetOf(System.Security.IPermission target);
+        System.Security.IPermission Union(System.Security.IPermission target);
+    }
+    public partial interface ISecurityEncodable
+    {
+        void FromXml(System.Security.SecurityElement e);
+        System.Security.SecurityElement ToXml();
+    }
+    public sealed partial class SecurityElement
+    {
+        public SecurityElement(string tag) { }
+        public SecurityElement(string tag, string text) { }
+        public System.Collections.Hashtable Attributes { get; set; }
+        public System.Collections.ArrayList Children { get; set; }
+        public string Tag { get; set; }
+        public string Text { get; set; }
+        public void AddAttribute(string name, string value) { }
+        public void AddChild(System.Security.SecurityElement child) { }
+        public string Attribute(string name) { throw null; }
+        public System.Security.SecurityElement Copy() { throw null; }
+        public bool Equal(System.Security.SecurityElement other) { throw null; }
+        public static string Escape(string str) { throw null; }
+        public static System.Security.SecurityElement FromString(string xml) { throw null; }
+        public static bool IsValidAttributeName(string name) { throw null; }
+        public static bool IsValidAttributeValue(string value) { throw null; }
+        public static bool IsValidTag(string tag) { throw null; }
+        public static bool IsValidText(string text) { throw null; }
+        public System.Security.SecurityElement SearchForChildByTag(string tag) { throw null; }
+        public string SearchForTextOfTag(string tag) { throw null; }
+        public override string ToString() => base.ToString();
+    }
+}
+namespace System.Security.Permissions
+{
+    [System.AttributeUsageAttribute((System.AttributeTargets)109, AllowMultiple = true, Inherited = false)]
+    public abstract partial class CodeAccessSecurityAttribute : System.Security.Permissions.SecurityAttribute
+    {
+        protected CodeAccessSecurityAttribute(System.Security.Permissions.SecurityAction action) : base(default(System.Security.Permissions.SecurityAction)) { }
+    }
+    public enum SecurityAction
+    {
+        Assert = 3,
+        Demand = 2,
+        [System.ObsoleteAttribute("Deny is obsolete and will be removed in a future release of the .NET Framework. See http://go.microsoft.com/fwlink/?LinkID=155570 for more information.")]
+        Deny = 4,
+        InheritanceDemand = 7,
+        LinkDemand = 6,
+        PermitOnly = 5,
+        [System.ObsoleteAttribute("Assembly level declarative security is obsolete and is no longer enforced by the CLR by default. See http://go.microsoft.com/fwlink/?LinkID=155570 for more information.")]
+        RequestMinimum = 8,
+        [System.ObsoleteAttribute("Assembly level declarative security is obsolete and is no longer enforced by the CLR by default. See http://go.microsoft.com/fwlink/?LinkID=155570 for more information.")]
+        RequestOptional = 9,
+        [System.ObsoleteAttribute("Assembly level declarative security is obsolete and is no longer enforced by the CLR by default. See http://go.microsoft.com/fwlink/?LinkID=155570 for more information.")]
+        RequestRefuse = 10,
+    }
+    [System.AttributeUsageAttribute((System.AttributeTargets)109, AllowMultiple = true, Inherited = false)]
+    public abstract partial class SecurityAttribute : System.Attribute
+    {
+        protected SecurityAttribute(System.Security.Permissions.SecurityAction action) { }
+        public System.Security.Permissions.SecurityAction Action { get; set; }
+        public bool Unrestricted { get; set; }
+        public abstract System.Security.IPermission CreatePermission();
+    }
+    [System.AttributeUsageAttribute((System.AttributeTargets)109, AllowMultiple = true, Inherited = false)]
+    public sealed partial class SecurityPermissionAttribute : System.Security.Permissions.CodeAccessSecurityAttribute
+    {
+        public SecurityPermissionAttribute(System.Security.Permissions.SecurityAction action) : base(default(System.Security.Permissions.SecurityAction)) { }
+        public bool Assertion { get; set; }
+        public bool BindingRedirects { get; set; }
+        public bool ControlAppDomain { get; set; }
+        public bool ControlDomainPolicy { get; set; }
+        public bool ControlEvidence { get; set; }
+        public bool ControlPolicy { get; set; }
+        public bool ControlPrincipal { get; set; }
+        public bool ControlThread { get; set; }
+        public bool Execution { get; set; }
+        public System.Security.Permissions.SecurityPermissionFlag Flags { get; set; }
+        public bool Infrastructure { get; set; }
+        public bool RemotingConfiguration { get; set; }
+        public bool SerializationFormatter { get; set; }
+        public bool SkipVerification { get; set; }
+        public bool UnmanagedCode { get; set; }
+        public override System.Security.IPermission CreatePermission() { throw null; }
+    }
+    [System.FlagsAttribute]
+    public enum SecurityPermissionFlag
+    {
+        AllFlags = 16383,
+        Assertion = 1,
+        BindingRedirects = 8192,
+        ControlAppDomain = 1024,
+        ControlDomainPolicy = 256,
+        ControlEvidence = 32,
+        ControlPolicy = 64,
+        ControlPrincipal = 512,
+        ControlThread = 16,
+        Execution = 8,
+        Infrastructure = 4096,
+        NoFlags = 0,
+        RemotingConfiguration = 2048,
+        SerializationFormatter = 128,
+        SkipVerification = 4,
+        UnmanagedCode = 2,
+    }
+}
+namespace System.Reflection
 {
     public class AssemblyNameProxy : System.MarshalByRefObject
     {

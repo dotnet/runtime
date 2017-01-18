@@ -379,5 +379,16 @@ namespace System.Linq.Tests
             var en = iterator as IEnumerator<int>;
             Assert.False(en != null && en.MoveNext());
         }
+
+        [Fact]
+        public void RunOnce()
+        {
+            IEnumerable<int?> first = new[] { 1, (int?)null, 3 };
+            IEnumerable<int> second = new[] { 2, 4, 6, 8 };
+            Func<int?, int, int?> func = (x, y) => x + y;
+            IEnumerable<int?> expected = new int?[] { 3, null, 9 };
+
+            Assert.Equal(expected, first.RunOnce().Zip(second.RunOnce(), func));
+        }
     }
 }

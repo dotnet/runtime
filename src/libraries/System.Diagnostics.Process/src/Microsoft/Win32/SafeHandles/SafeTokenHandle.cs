@@ -54,7 +54,7 @@ namespace Microsoft.Win32.SafeHandles
         [SecurityCritical]
         protected override bool ReleaseHandle()
         {
-            return Interop.mincore.CloseHandle(handle);
+            return Interop.Kernel32.CloseHandle(handle);
         }
     }
 }

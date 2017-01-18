@@ -44,6 +44,9 @@ namespace System.Security.Cryptography
                 }
             }
 
+            public override string SignatureAlgorithm => "DSA";
+            public override string KeyExchangeAlgorithm  => null;
+
             // Need to override since base methods throw a "override me" exception: makes SignData/VerifyData function.
             protected override byte[] HashData(byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm)
             {

@@ -34,10 +34,14 @@ namespace System.Linq.Expressions.Tests
             foreach (object[] received in delegatedTo.GetData(testMethod))
             {
                 object[] withFalse = new object[received.Length + 1];
+#if FEATURE_COMPILE && FEATURE_INTERPRET
                 object[] withTrue = new object[received.Length + 1];
+#endif
 
                 withFalse[received.Length] = s_boxedFalse;
+#if FEATURE_COMPILE && FEATURE_INTERPRET
                 withTrue[received.Length] = s_boxedTrue;
+#endif
 
                 for (int i = 0; i != received.Length; ++i)
                 {
@@ -47,7 +51,9 @@ namespace System.Linq.Expressions.Tests
                 }
 
                 yield return withFalse;
+#if FEATURE_COMPILE && FEATURE_INTERPRET
                 yield return withTrue;
+#endif
             }
         }
     }

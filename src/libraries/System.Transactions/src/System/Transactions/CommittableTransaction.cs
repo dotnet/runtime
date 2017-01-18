@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Threading;
-using System.Transactions.Diagnostics;
 
 namespace System.Transactions
 {
@@ -37,18 +36,20 @@ namespace System.Transactions
             // fill in the traceIdentifier field here.
             _internalTransaction._cloneCount = 1;
             _cloneId = 1;
-            if (DiagnosticTrace.Information)
+            TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+            if (etwLog.IsEnabled())
             {
-                TransactionCreatedTraceRecord.Trace(SR.TraceSourceLtm, TransactionTraceId);
+                etwLog.TransactionCreated(this, "CommittableTransaction");
             }
         }
 
         public IAsyncResult BeginCommit(AsyncCallback asyncCallback, object asyncState)
         {
-            if (DiagnosticTrace.Verbose)
+            TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+            if (etwLog.IsEnabled())
             {
-                MethodEnteredTraceRecord.Trace(SR.TraceSourceLtm, "CommittableTransaction.BeginCommit");
-                TransactionCommitCalledTraceRecord.Trace(SR.TraceSourceLtm, TransactionTraceId);
+                etwLog.MethodEnter(TraceSourceType.TraceSourceLtm, this);
+                etwLog.TransactionCommit(this, "CommittableTransaction");
             }
 
             if (Disposed)
@@ -60,7 +61,7 @@ namespace System.Transactions
             {
                 if (_complete)
                 {
-                    throw TransactionException.CreateTransactionCompletedException(SR.TraceSourceLtm, DistributedTxId);
+                    throw TransactionException.CreateTransactionCompletedException(DistributedTxId);
                 }
 
                 // this.complete will get set to true when the transaction enters a state that is
@@ -68,9 +69,9 @@ namespace System.Transactions
                 _internalTransaction.State.BeginCommit(_internalTransaction, true, asyncCallback, asyncState);
             }
 
-            if (DiagnosticTrace.Verbose)
+            if (etwLog.IsEnabled())
             {
-                MethodExitedTraceRecord.Trace(SR.TraceSourceLtm, "CommittableTransaction.BeginCommit");
+                etwLog.MethodExit(TraceSourceType.TraceSourceLtm, this);
             }
 
             return this;
@@ -80,10 +81,11 @@ namespace System.Transactions
         //
         public void Commit()
         {
-            if (DiagnosticTrace.Verbose)
+            TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+            if (etwLog.IsEnabled())
             {
-                MethodEnteredTraceRecord.Trace(SR.TraceSourceLtm, "CommittableTransaction.Commit");
-                TransactionCommitCalledTraceRecord.Trace(SR.TraceSourceLtm, TransactionTraceId);
+                etwLog.MethodEnter(TraceSourceType.TraceSourceLtm, this);
+                etwLog.TransactionCommit(this, "CommittableTransaction");
             }
 
             if (Disposed)
@@ -95,7 +97,7 @@ namespace System.Transactions
             {
                 if (_complete)
                 {
-                    throw TransactionException.CreateTransactionCompletedException(SR.TraceSourceLtm, DistributedTxId);
+                    throw TransactionException.CreateTransactionCompletedException(DistributedTxId);
                 }
 
                 _internalTransaction.State.BeginCommit(_internalTransaction, false, null, null);
@@ -113,17 +115,19 @@ namespace System.Transactions
                 _internalTransaction.State.EndCommit(_internalTransaction);
             }
 
-            if (DiagnosticTrace.Verbose)
+            if (etwLog.IsEnabled())
             {
-                MethodExitedTraceRecord.Trace(SR.TraceSourceLtm, "CommittableTransaction.Commit");
+                etwLog.MethodExit(TraceSourceType.TraceSourceLtm, this);
             }
+
         }
 
         internal override void InternalDispose()
         {
-            if (DiagnosticTrace.Verbose)
+            TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+            if (etwLog.IsEnabled())
             {
-                MethodEnteredTraceRecord.Trace(SR.TraceSourceLtm, "IDisposable.Dispose");
+                etwLog.MethodEnter(TraceSourceType.TraceSourceLtm, this);
             }
 
             if (Interlocked.Exchange(ref _disposed, Transaction._disposedTrueValue) == Transaction._disposedTrueValue)
@@ -147,17 +151,18 @@ namespace System.Transactions
                 _internalTransaction.Dispose();
             }
 
-            if (DiagnosticTrace.Verbose)
+            if (etwLog.IsEnabled())
             {
-                MethodExitedTraceRecord.Trace(SR.TraceSourceLtm, "IDisposable.Dispose");
+                etwLog.MethodExit(TraceSourceType.TraceSourceLtm, this);
             }
         }
 
         public void EndCommit(IAsyncResult asyncResult)
         {
-            if (DiagnosticTrace.Verbose)
+            TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+            if (etwLog.IsEnabled())
             {
-                MethodEnteredTraceRecord.Trace(SR.TraceSourceLtm, "CommittableTransaction.EndCommit");
+                etwLog.MethodEnter(TraceSourceType.TraceSourceLtm, this);
             }
 
             if (asyncResult != ((object)this))
@@ -178,9 +183,9 @@ namespace System.Transactions
                 _internalTransaction.State.EndCommit(_internalTransaction);
             }
 
-            if (DiagnosticTrace.Verbose)
+            if (etwLog.IsEnabled())
             {
-                MethodExitedTraceRecord.Trace(SR.TraceSourceLtm, "CommittableTransaction.EndCommit");
+                etwLog.MethodExit(TraceSourceType.TraceSourceLtm, this);
             }
         }
 

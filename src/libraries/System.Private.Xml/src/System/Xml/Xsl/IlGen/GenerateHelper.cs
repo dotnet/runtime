@@ -661,10 +661,6 @@ namespace System.Xml.Xsl.IlGen
             LocalBuilder locBldr = _ilgen.DeclareLocal(type);
 #if DEBUG
             if (XmlILTrace.IsEnabled) {
-                // Set name for internal MS debugging.  This is not the user-defined name--that will be set later
-                if (this.isDebug)
-                    locBldr.SetLocalSymInfo(name + this.numLocals.ToString(CultureInfo.InvariantCulture));
-
                 this.symbols.Add(locBldr, name + this.numLocals.ToString(CultureInfo.InvariantCulture));
                 this.numLocals++;
             }
@@ -878,8 +874,8 @@ namespace System.Xml.Xsl.IlGen
                 OpCode opcode = meth.IsVirtual || meth.IsAbstract ? OpCodes.Callvirt : OpCodes.Call;
 
                 TraceCall(opcode, meth);
-                //BinCompat TODO: test this
-                //this.ilgen.Emit(opcode, ((ModuleBuilder) methBldr.GetModule()).GetMethodToken(meth).Token);
+
+                this._ilgen.Emit(opcode, ((ModuleBuilder) methBldr.Module).MetadataToken);
 
                 if (_lastSourceInfo != null)
                 {

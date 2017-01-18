@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Dynamic.Utils;
 using System.Reflection;
 
 namespace System.Linq.Expressions.Interpreter
@@ -35,14 +36,14 @@ namespace System.Linq.Expressions.Interpreter
             }
             catch (TargetInvocationException e)
             {
-                ExceptionHelpers.UpdateForRethrow(e.InnerException);
-                throw e.InnerException;
+                ExceptionHelpers.UnwrapAndRethrow(e);
+                throw ContractUtils.Unreachable;
             }
 
             frame.Data[first] = ret;
             frame.StackIndex = first + 1;
 
-            return +1;
+            return 1;
         }
 
         protected object[] GetArgs(InterpretedFrame frame, int first)
@@ -95,7 +96,8 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 catch (TargetInvocationException e)
                 {
-                    throw ExceptionHelpers.UpdateForRethrow(e.InnerException);
+                    ExceptionHelpers.UnwrapAndRethrow(e);
+                    throw ContractUtils.Unreachable;
                 }
 
                 frame.Data[first] = ret;

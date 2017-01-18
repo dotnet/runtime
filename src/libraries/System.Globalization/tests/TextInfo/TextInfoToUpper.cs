@@ -9,9 +9,38 @@ namespace System.Globalization.Tests
 {
     public class TextInfoToUpper
     {
+        private static readonly string [] s_cultureNames = new string[] { "", "en-US", "fr", "fr-FR" };
+
+        // ToUpper_TestData_netcore has the data which is specific to netcore framework 
+        public static IEnumerable<object[]> ToUpper_TestData_netcore()
+        {
+            foreach (string cultureName in s_cultureNames)
+            {
+                // DESERT SMALL LETTER LONG I has an upper case variant (but not on Windows 7).
+                yield return new object[] { cultureName, "\U00010428", PlatformDetection.IsWindows7 ? "\U00010428" : "\U00010400" };
+            }
+        }
+
+        // ToUpper_TestData_net46 has the data which is specific to the full framework 
+        public static IEnumerable<object[]> ToUpper_TestData_net46()
+        {
+            foreach (string cultureName in s_cultureNames)
+            {
+                if (PlatformDetection.IsWindows7)
+                {
+                    // on Windows 7, Desktop framework is using its own sorting DLL and not calling the OS except with Invariant culture
+                    yield return new object[] { cultureName, "\U00010428", cultureName == "" ? "\U00010428" : "\U00010400" };
+                }
+                else 
+                {
+                    yield return new object[] { cultureName, "\U00010428", "\U00010400" };
+                }
+            }
+        }
+        
         public static IEnumerable<object[]> ToUpper_TestData()
         {
-            foreach (string cultureName in new string[] { "", "en-US", "fr", "fr-FR" })
+            foreach (string cultureName in s_cultureNames)
             {
                 yield return new object[] { cultureName, "", "" };
 
@@ -39,21 +68,6 @@ namespace System.Globalization.Tests
 
                 // SNOWMAN, which does not have an upper case variant.
                 yield return new object[] { cultureName, "\u2603", "\u2603" };
-
-#if net46
-                if (PlatformDetection.IsWindows7)
-                {
-                    // on Windows 7, Desktop framework is using its own sorting DLL and not calling the OS except with Invariant culture
-                    yield return new object[] { cultureName, "\U00010428", cultureName == "" ? "\U00010428" : "\U00010400" };
-                }
-                else 
-                {
-                    yield return new object[] { cultureName, "\U00010428", "\U00010400" };
-                }
-#else //!net46
-                // DESERT SMALL LETTER LONG I has an upper case variant (but not on Windows 7).
-                yield return new object[] { cultureName, "\U00010428", PlatformDetection.IsWindows7 ? "\U00010428" : "\U00010400" };
-#endif // net46
 
                 // RAINBOW (outside the BMP and does not case)
                 yield return new object[] { cultureName, "\U0001F308", "\U0001F308" };
@@ -93,15 +107,36 @@ namespace System.Globalization.Tests
             }
         }
 
-        [Theory]
-        [MemberData(nameof(ToUpper_TestData))]
-        public void ToUpper(string name, string str, string expected)
+        public void TestToUpper(string name, string str, string expected)
         {
             Assert.Equal(expected, new CultureInfo(name).TextInfo.ToUpper(str));
             if (str.Length == 1)
             {
                 Assert.Equal(expected[0], new CultureInfo(name).TextInfo.ToUpper(str[0]));
             }
+        }
+
+        [Theory]
+        [MemberData(nameof(ToUpper_TestData))]
+        public void ToUpper(string name, string str, string expected)
+        {
+            TestToUpper(name, str, expected);
+        }
+
+        [Theory]
+        [MemberData(nameof(ToUpper_TestData_netcore))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        public void ToUpper_netcore(string name, string str, string expected)
+        {
+            TestToUpper(name, str, expected);
+        }
+
+        [Theory]
+        [MemberData(nameof(ToUpper_TestData_net46))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Netcoreapp | TargetFrameworkMonikers.NetcoreUwp)]
+        public void ToUpper_net46(string name, string str, string expected)
+        {
+            TestToUpper(name, str, expected);
         }
 
         [Fact]

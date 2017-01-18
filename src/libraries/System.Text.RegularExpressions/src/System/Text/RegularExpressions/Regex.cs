@@ -175,6 +175,7 @@ namespace System.Text.RegularExpressions
              && (options & ~(RegexOptions.ECMAScript |
                              RegexOptions.IgnoreCase |
                              RegexOptions.Multiline |
+                             RegexOptions.Compiled |
                              RegexOptions.CultureInvariant
 #if DEBUG
                            | RegexOptions.Debug
@@ -391,7 +392,7 @@ namespace System.Text.RegularExpressions
                 int max = capsize;
                 result = new int[max];
 
-                for (int i = 0; i < max; i++)
+                for (int i = 0; i < result.Length; i++)
                 {
                     result[i] = i;
                 }

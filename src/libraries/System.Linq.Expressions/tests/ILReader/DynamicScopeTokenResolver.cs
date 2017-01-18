@@ -26,8 +26,8 @@ namespace System.Linq.Expressions.Tests
 
         static DynamicScopeTokenResolver()
         {
-            var dynamicScope = Type.GetType("System.Reflection.Emit.DynamicScope", throwOnError: true);
-            var dynamicILGenerator = Type.GetType("System.Reflection.Emit.DynamicILGenerator", throwOnError: true);
+            Type dynamicScope = Type.GetType("System.Reflection.Emit.DynamicScope", throwOnError: true);
+            Type dynamicILGenerator = Type.GetType("System.Reflection.Emit.DynamicILGenerator", throwOnError: true);
 
             s_indexer = dynamicScope.GetPropertyAssert("Item");
             s_scopeFi = dynamicILGenerator.GetFieldAssert("m_scope");
@@ -65,7 +65,7 @@ namespace System.Linq.Expressions.Tests
 
         public FieldInfo AsField(int token)
         {
-            var item = this[token];
+            object item = this[token];
 
             if (item is RuntimeFieldHandle)
                 return FieldInfo.GetFieldFromHandle((RuntimeFieldHandle)item);
@@ -85,7 +85,7 @@ namespace System.Linq.Expressions.Tests
 
         public MethodBase AsMethod(int token)
         {
-            var item = this[token];
+            object item = this[token];
 
             if (item is DynamicMethod)
                 return item as DynamicMethod;

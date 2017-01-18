@@ -121,18 +121,10 @@ namespace System.Collections.Immutable
             int count;
             if (items.TryGetCount(out count))
             {
-                if (count == 0)
-                {
-                    // Return a wrapper around the singleton empty array.
-                    return Create<T>();
-                }
-                else
-                {
-                    // We know how long the sequence is. Linq's built-in ToArray extension method
-                    // isn't as comprehensive in finding the length as we are, so call our own method
-                    // to avoid reallocating arrays as the sequence is enumerated.
-                    return new ImmutableArray<T>(items.ToArray(count));
-                }
+                // We know how long the sequence is. Linq's built-in ToArray extension method
+                // isn't as comprehensive in finding the length as we are, so call our own method
+                // to avoid reallocating arrays as the sequence is enumerated.
+                return new ImmutableArray<T>(items.ToArray(count));
             }
             else
             {
@@ -185,7 +177,7 @@ namespace System.Collections.Immutable
             }
 
             var array = new T[length];
-            for (int i = 0; i < length; i++)
+            for (int i = 0; i < array.Length; i++)
             {
                 array[i] = items[start + i];
             }
@@ -248,7 +240,7 @@ namespace System.Collections.Immutable
             }
 
             var array = new TResult[length];
-            for (int i = 0; i < length; i++)
+            for (int i = 0; i < array.Length; i++)
             {
                 array[i] = selector(items[i]);
             }
@@ -283,7 +275,7 @@ namespace System.Collections.Immutable
             }
 
             var array = new TResult[length];
-            for (int i = 0; i < length; i++)
+            for (int i = 0; i < array.Length; i++)
             {
                 array[i] = selector(items[i + start]);
             }
@@ -315,7 +307,7 @@ namespace System.Collections.Immutable
             }
 
             var array = new TResult[length];
-            for (int i = 0; i < length; i++)
+            for (int i = 0; i < array.Length; i++)
             {
                 array[i] = selector(items[i], arg);
             }
@@ -351,7 +343,7 @@ namespace System.Collections.Immutable
             }
 
             var array = new TResult[length];
-            for (int i = 0; i < length; i++)
+            for (int i = 0; i < array.Length; i++)
             {
                 array[i] = selector(items[i + start], arg);
             }

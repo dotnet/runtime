@@ -5,7 +5,7 @@
 using System.Diagnostics;
 using System.IO;
 using Internal.NativeCrypto;
-
+using static Internal.NativeCrypto.CapiHelper;
 
 namespace System.Security.Cryptography
 {
@@ -439,7 +439,7 @@ namespace System.Security.Cryptography
             if (PublicOnly)
                 throw new CryptographicException(SR.Cryptography_CSP_NoPrivateKey);
 
-            int calgHash = CapiHelper.NameOrOidToHashAlgId(str);
+            int calgHash = CapiHelper.NameOrOidToHashAlgId(str, OidGroup.HashAlgorithm);
 
             return SignHash(rgbHash, calgHash);
         }
@@ -485,7 +485,7 @@ namespace System.Security.Cryptography
             if (rgbSignature == null)
                 throw new ArgumentNullException(nameof(rgbSignature));
 
-            int calgHash = CapiHelper.NameOrOidToHashAlgId(str);
+            int calgHash = CapiHelper.NameOrOidToHashAlgId(str, OidGroup.HashAlgorithm);
             return VerifyHash(rgbHash, calgHash, rgbSignature);
         }
 
@@ -681,6 +681,26 @@ namespace System.Security.Cryptography
                 throw PaddingModeNotSupported();
 
             return VerifyHash(hash, GetAlgorithmId(hashAlgorithm), signature);
+        }
+
+        public override string KeyExchangeAlgorithm
+        {
+            get
+            {
+                if (_parameters.KeyNumber == (int) KeySpec.AT_KEYEXCHANGE)
+                {
+                    return "RSA-PKCS1-KeyEx";
+                }
+                return null;
+            }
+        }
+
+        public override string SignatureAlgorithm
+        {
+            get
+            {
+                return "http://www.w3.org/2000/09/xmldsig#rsa-sha1";
+            }
         }
 
         private static Exception PaddingModeNotSupported()

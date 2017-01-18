@@ -13,7 +13,7 @@ internal static partial class Interop
 {
     internal static partial class Heap
     {
-        [DllImport(Libraries.Heap_L1, CharSet = CharSet.Unicode, SetLastError = true)]
+        [DllImport(Libraries.Kernel32, CharSet = CharSet.Unicode, SetLastError = true)]
         internal static extern IntPtr GetProcessHeap();
 
         [Flags]
@@ -30,10 +30,10 @@ internal static partial class Interop
             return HeapAlloc(hHeap, dwFlags, new IntPtr(dwBytes));
         }
 
-        [DllImport(Libraries.Heap_L1, CharSet = CharSet.Unicode, SetLastError = true)]
+        [DllImport(Libraries.Kernel32, CharSet = CharSet.Unicode, SetLastError = true)]
         private static extern SafeHeapAllocHandle HeapAlloc(IntPtr hHeap, HeapAllocFlags dwFlags, IntPtr dwBytes);
 
-        [DllImport(Libraries.Heap_L1, CharSet = CharSet.Unicode, SetLastError = true)]
+        [DllImport(Libraries.Kernel32, CharSet = CharSet.Unicode, SetLastError = true)]
         internal static extern bool HeapFree(IntPtr hHeap, HeapAllocFlags dwFlags, IntPtr lpMem);
     }
 }

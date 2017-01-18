@@ -18,12 +18,19 @@ namespace System.Security.Cryptography
             LegalKeySizesValue = s_legalKeySizes.CloneKeySizesArray();
             KeySizeValue = 128;
             BlockSizeValue = 64;
+            FeedbackSizeValue = BlockSizeValue;
         }
 
-        public static RC2 Create()
+        public static new RC2 Create()
         {
             return new RC2Implementation();
         }
+
+        public static new RC2 Create(string AlgName)
+        {
+            return (RC2)CryptoConfig.CreateFromName(AlgName);
+        }
+
 
         public override int KeySize
         {

@@ -10,9 +10,14 @@ namespace System.Security.Cryptography
     [EditorBrowsable(EditorBrowsableState.Never)]
     public abstract class Rijndael : SymmetricAlgorithm
     {
-        public static Rijndael Create()
+        public static new Rijndael Create()
         {
             return new RijndaelImplementation();
+        }
+
+        public static new Rijndael Create(string algName)
+        {
+            return (Rijndael)CryptoConfig.CreateFromName(algName);
         }
 
         protected Rijndael()
@@ -21,6 +26,7 @@ namespace System.Security.Cryptography
             LegalKeySizesValue = s_legalKeySizes.CloneKeySizesArray();
             KeySizeValue = 256;
             BlockSizeValue = 128;
+            FeedbackSizeValue = BlockSizeValue;
         }
 
         private static readonly KeySizes[] s_legalBlockSizes =

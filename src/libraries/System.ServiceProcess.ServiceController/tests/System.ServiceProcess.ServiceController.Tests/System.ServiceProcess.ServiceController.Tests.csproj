@@ -1,33 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <PropertyGroup>
-    <Configuration Condition="'$(Configuration)'==''">Windows_Debug</Configuration>
-  </PropertyGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <RootNamespace>System.ServiceProcess.ServiceController.Tests</RootNamespace>
-    <AssemblyName>System.ServiceProcess.ServiceController.Tests</AssemblyName>
     <ProjectGuid>{F7D9984B-02EB-4573-84EF-00FFFBFB872C}</ProjectGuid>
-    <NugetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NugetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard1.4-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard1.4-Windows_NT-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Windows_NT-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="SafeServiceControllerTests.cs" />
     <Compile Include="ServiceControllerTests.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\pkg\System.ServiceProcess.ServiceController.pkgproj">
-      <Project>{f4821cb6-91a3-4546-bc4f-e00dbfbdaa05}</Project>
-      <Name>System.ServiceProcess.ServiceController</Name>
-    </ProjectReference>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)'=='true' AND '$(Platform)'!='arm64'">
     <ProjectReference Include="..\System.ServiceProcess.ServiceController.TestNativeService\System.ServiceProcess.ServiceController.TestNativeService.vcxproj">
       <Project>{ceb0775c-4273-4ac4-b50e-4492718051ae}</Project>
       <Name>System.ServiceProcess.ServiceController.TestNativeService</Name>
-      <UndefineProperties>OSGroup;TargetGroup</UndefineProperties>
+      <UndefineProperties>OSGroup;TargetGroup;Configuration</UndefineProperties>
       <SetConfiguration>Configuration=Release</SetConfiguration>
       <SetPlatform Condition="'$(Platform)'=='AnyCPU'">Platform=x64</SetPlatform>
     </ProjectReference>

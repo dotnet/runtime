@@ -10,7 +10,7 @@ namespace System.IO
     partial class DirectoryInfo
     {
         [SecurityCritical]
-        internal DirectoryInfo(string fullPath, ref Interop.mincore.WIN32_FIND_DATA findData)
+        internal DirectoryInfo(string fullPath, ref Interop.Kernel32.WIN32_FIND_DATA findData)
             : this(fullPath, findData.cFileName)
         {
             Debug.Assert(string.Equals(findData.cFileName, Path.GetFileName(fullPath), StringComparison.Ordinal));

@@ -10,8 +10,8 @@ namespace System.Data.SqlClient.ManualTesting.Tests
 {
     public static class DataTestUtility
     {
-        public readonly static string NpConnStr = null;
-        public readonly static string TcpConnStr = null;
+        public static readonly string NpConnStr = null;
+        public static readonly string TcpConnStr = null;
 
         static DataTestUtility()
         {

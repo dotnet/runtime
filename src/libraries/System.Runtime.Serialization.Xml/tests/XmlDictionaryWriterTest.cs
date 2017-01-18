@@ -278,26 +278,25 @@ public static class XmlDictionaryWriterTest
         binaryReader.Close();
     }
 
-    [ActiveIssue(12902)]
     [Fact]
     public static void IXmlTextReaderInitializerTest()
     {
-        DataContractSerializer serializer = new DataContractSerializer(typeof(TestData));
+        var writer = new SampleTextWriter();
+        var ms = new MemoryStream();
+        var encoding = Encoding.UTF8;
+        writer.SetOutput(ms, encoding, true);
+    }
+
+    [Fact]
+    public static void FragmentTest()
+    {
+        string rwTypeStr = "Text";
+        ReaderWriterFactory.ReaderWriterType rwType = (ReaderWriterFactory.ReaderWriterType)
+            Enum.Parse(typeof(ReaderWriterFactory.ReaderWriterType), rwTypeStr, true);
+        Encoding encoding = Encoding.GetEncoding("utf-8");
         MemoryStream ms = new MemoryStream();
-        TestData td = new TestData();
-        Encoding encoding = Encoding.UTF8;
-        XmlDictionaryWriter textWriter = XmlDictionaryWriter.CreateTextWriter(ms, encoding, false);
-        IXmlTextWriterInitializer writerInitializer = (IXmlTextWriterInitializer)textWriter;
-        writerInitializer.SetOutput(ms, encoding, false);
-        serializer.WriteObject(ms, td);
-        textWriter.Flush();
-        byte[] xmlDoc = ms.ToArray();
-        textWriter.Close();
-        XmlDictionaryReader textReader = XmlDictionaryReader.CreateTextReader(xmlDoc, 0, xmlDoc.Length, encoding, XmlDictionaryReaderQuotas.Max, new OnXmlDictionaryReaderClose((XmlDictionaryReader reader) => { }));
-        IXmlTextReaderInitializer readerInitializer = (IXmlTextReaderInitializer)textReader;
-        readerInitializer.SetInput(xmlDoc, 0, xmlDoc.Length, encoding, XmlDictionaryReaderQuotas.Max, new OnXmlDictionaryReaderClose((XmlDictionaryReader reader) => { }));
-        textReader.ReadContentAsObject();
-        textReader.Close();
+        XmlDictionaryWriter writer = (XmlDictionaryWriter)ReaderWriterFactory.CreateXmlWriter(rwType, ms, encoding);
+        Assert.False(FragmentHelper.CanFragment(writer));
     }
 
     private static bool ReadTest(MemoryStream ms, Encoding encoding, ReaderWriterFactory.ReaderWriterType rwType, byte[] byteArray)
@@ -333,30 +332,14 @@ public static class XmlDictionaryWriterTest
         if (rwType != ReaderWriterFactory.ReaderWriterType.MTOM)
         {
             // stream should be released right after WriteValue
-            if (myStreamProvider.StreamReleased)
-            {
-                Console.WriteLine("Ok, stream released right after WriteValue");
-            }
-            else
-            {
-                Console.WriteLine("Error, stream not released after WriteValue");
-                return false;
-            }
+            Assert.True(myStreamProvider.StreamReleased, "Error, stream not released after WriteValue");
         }
         writer.WriteEndElement();
 
         // stream should be released now for MTOM
         if (rwType == ReaderWriterFactory.ReaderWriterType.MTOM)
         {
-            if (myStreamProvider.StreamReleased)
-            {
-                Console.WriteLine("Ok, stream released right after WriteValue");
-            }
-            else
-            {
-                Console.WriteLine("Error, stream not released after WriteValue");
-                return false;
-            }
+            Assert.True(myStreamProvider.StreamReleased, "Error, stream not released after WriteEndElement");
         }
         writer.Flush();
         return true;
@@ -368,15 +351,7 @@ public static class XmlDictionaryWriterTest
         writer.WriteStartElement("Root");
         Task writeValueAsynctask = writer.WriteValueAsync(myStreamProvider);
         writeValueAsynctask.Wait();
-        if (myStreamProvider.StreamReleased)
-        {
-            Console.WriteLine("Ok, stream released right after AsyncWriteValue");
-        }
-        else
-        {
-            Console.WriteLine("Error, stream not released after AsyncWriteValue");
-            return false;
-        }
+        Assert.True(myStreamProvider.StreamReleased, "Error, stream not released.");
         writer.WriteEndElement();
         writer.Flush();
         return true;
@@ -388,16 +363,7 @@ public static class XmlDictionaryWriterTest
         writer.WriteStartElement("Root");
         Task writeValueBase64Asynctask = writer.WriteBase64Async(byteArray, 0, byteArray.Length);
         writeValueBase64Asynctask.Wait();
-
-        if (myStreamProvider.StreamReleased)
-        {
-            Console.WriteLine("Ok, stream released right after AsyncWriteValueBase64");
-        }
-        else
-        {
-            Console.WriteLine("Error, stream not released after AsyncWriteValueBase64");
-            return false;
-        }
+        Assert.True(myStreamProvider.StreamReleased, "Error, stream not released.");
         writer.WriteEndElement();
         writer.Flush();
         return true;
@@ -431,6 +397,63 @@ public static class XmlDictionaryWriterTest
             return sr.ReadToEnd();
         }
 
+    }
+    private static void SimulateWriteFragment(XmlDictionaryWriter writer, bool useFragmentAPI, int nestedLevelsLeft)
+    {
+        if (nestedLevelsLeft <= 0)
+        {
+            return;
+        }
+
+        Random rndGen = new Random(nestedLevelsLeft);
+        int signatureLen = rndGen.Next(100, 200);
+        byte[] signature = new byte[signatureLen];
+        rndGen.NextBytes(signature);
+
+        MemoryStream fragmentStream = new MemoryStream();
+
+        if (!useFragmentAPI) // simulating in the writer itself
+        {
+            writer.WriteStartElement("SignatureValue_" + nestedLevelsLeft);
+            writer.WriteBase64(signature, 0, signatureLen);
+            writer.WriteEndElement();
+        }
+
+        if (useFragmentAPI)
+        {
+            FragmentHelper.Start(writer, fragmentStream);
+        }
+
+        writer.WriteStartElement("Fragment" + nestedLevelsLeft);
+        for (int i = 0; i < 5; i++)
+        {
+            writer.WriteStartElement(String.Format("Element{0}_{1}", nestedLevelsLeft, i));
+            writer.WriteAttributeString("attr1", "value1");
+            writer.WriteAttributeString("attr2", "value2");
+        }
+        writer.WriteString("This is a text with unicode characters: <>&;\u0301\u2234");
+        for (int i = 0; i < 5; i++)
+        {
+            writer.WriteEndElement();
+        }
+
+        // write other nested fragments...
+        SimulateWriteFragment(writer, useFragmentAPI, nestedLevelsLeft - 1);
+
+        writer.WriteEndElement(); // Fragment{nestedLevelsLeft}
+        writer.Flush();
+
+        if (useFragmentAPI)
+        {
+            FragmentHelper.End(writer);
+            writer.WriteStartElement("SignatureValue_" + nestedLevelsLeft);
+            writer.WriteBase64(signature, 0, signatureLen);
+            writer.WriteEndElement();
+
+            FragmentHelper.Write(writer, fragmentStream.GetBuffer(), 0, (int)fragmentStream.Length);
+
+            writer.Flush();
+        }
     }
 
     public class AsyncMemoryStream : MemoryStream

@@ -1,8 +1,5 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <PropertyGroup>
-    <Configuration Condition="'$(Configuration)'==''">Windows_Debug</Configuration>
-  </PropertyGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <RootNamespace>System.ServiceProcess.ServiceController</RootNamespace>
@@ -12,60 +9,61 @@
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net463'">true</IsPartialFacadeAssembly>
     <ResourcesSourceOutputDirectory Condition="'$(TargetGroup)' == 'net463'">None</ResourcesSourceOutputDirectory>
     <GeneratePlatformNotSupportedAssembly Condition="'$(TargetsUnix)' == 'true'">true</GeneratePlatformNotSupportedAssembly>
-    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
   </PropertyGroup>
   <!-- Help VS understand available configurations -->
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Release|AnyCPU'" />
-  <ItemGroup Condition="'$(TargetGroup)' != 'net463' AND '$(TargetsWindows)' == 'true'">
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Windows_NT-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Unix-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Unix-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='net463-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='net463-Windows_NT-Release|AnyCPU'" />
+  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard' AND '$(TargetsWindows)' == 'true'">
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
       <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.Errors.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\Interop.Errors.cs">
       <Link>Common\Interop\Windows\Interop.Errors.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.ServiceProcessOptions.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.ServiceProcessOptions.cs">
       <Link>Common\Interop\Windows\Interop.ServiceProcessOptions.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.CloseServiceHandle.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.CloseServiceHandle.cs">
       <Link>Common\Interop\Windows\Interop.CloseServiceHandle.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.ControlService.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.ControlService.cs">
       <Link>Common\Interop\Windows\Interop.ControlService.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.EnumDependentServices.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.EnumDependentServices.cs">
       <Link>Common\Interop\Windows\Interop.EnumDependentServices.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.EnumServicesStatusEx.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.EnumServicesStatusEx.cs">
       <Link>Common\Interop\Windows\Interop.EnumServicesStatusEx.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.OpenSCManager.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.OpenSCManager.cs">
       <Link>Common\Interop\Windows\Interop.OpenSCManager.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.OpenService.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.OpenService.cs">
       <Link>Common\Interop\Windows\Interop.OpenService.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.QueryServiceConfig.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.QueryServiceConfig.cs">
       <Link>Common\Interop\Windows\Interop.QueryServiceConfig.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.QueryServiceStatus.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.QueryServiceStatus.cs">
       <Link>Common\Interop\Windows\Interop.QueryServiceStatus.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.StartService.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.StartService.cs">
       <Link>Common\Interop\Windows\Interop.StartService.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.ENUM_SERVICE_STATUS.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.ENUM_SERVICE_STATUS.cs">
       <Link>Common\Interop\Windows\Interop.ENUM_SERVICE_STATUS.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.ENUM_SERVICE_STATUS_PROCESS.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.ENUM_SERVICE_STATUS_PROCESS.cs">
       <Link>Common\Interop\Windows\Interop.ENUM_SERVICE_STATUS_PROCESS.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.QUERY_SERVICE_CONFIG.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.QUERY_SERVICE_CONFIG.cs">
       <Link>Common\Interop\Windows\Interop.QUERY_SERVICE_CONFIG.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.SERVICE_STATUS.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.SERVICE_STATUS.cs">
       <Link>Common\Interop\Windows\Interop.SERVICE_STATUS.cs</Link>
     </Compile>
     <Compile Include="Microsoft\Win32\SafeHandles\SafeServiceHandle.cs" />
@@ -80,7 +78,13 @@
     <TargetingPackReference Include="System.ServiceProcess" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="project.json" />
+    <Reference Include="Microsoft.Win32.Primitives" />
+    <Reference Include="System.Collections" />
+    <Reference Include="System.Diagnostics.Tools" />
+    <Reference Include="System.Resources.ResourceManager" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.InteropServices" />
+    <Reference Include="System.Threading" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

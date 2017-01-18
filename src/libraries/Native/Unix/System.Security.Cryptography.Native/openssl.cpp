@@ -5,6 +5,7 @@
 #include "pal_types.h"
 #include "pal_utilities.h"
 #include "pal_safecrt.h"
+#include "opensslshim.h"
 
 #include <assert.h>
 #include <limits.h>
@@ -13,13 +14,7 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
-#include <openssl/asn1.h>
-#include <openssl/bio.h>
-#include <openssl/err.h>
-#include <openssl/evp.h>
-#include <openssl/rand.h>
-#include <openssl/x509.h>
-#include <openssl/x509v3.h>
+#include <memory>
 
 // See X509NameType.SimpleName
 #define NAME_TYPE_SIMPLE 0
@@ -83,7 +78,11 @@ extern "C" int32_t CryptoNative_GetX509Thumbprint(X509* x509, uint8_t* pBuf, int
         return -SHA_DIGEST_LENGTH;
     }
 
-    memcpy_s(pBuf, UnsignedCast(cBuf), x509->sha1_hash, SHA_DIGEST_LENGTH);
+    if (!X509_digest(x509, EVP_sha1(), pBuf, NULL))
+    {
+        return 0;
+    }
+
     return 1;
 }
 
@@ -717,11 +716,7 @@ static int CheckX509HostnameMatch(ASN1_STRING* candidate, const char* hostname, 
         // RFC2818 says to use RFC2595 matching rules, but then gives an example that f*.com would match foo.com
         // RFC2595 says that '*' may be used as the left name component, in which case it is a wildcard that does
         // not match a '.'.
-        //
-        // In the interest of time, and the idea that it's better to err on the side of more restrictive,
-        // this implementation does not support mid-string wildcards.
-        //
-        // TODO (3444): Determine if we're too restrictive here.
+        // The recommendation from the Windows Crypto team was not to match f*.com with foo.com.
 
         char* candidateStr;
         int i;
@@ -1250,7 +1245,7 @@ extern "C" int32_t CryptoNative_LookupFriendlyNameByOid(const char* oidValue, co
 static pthread_mutex_t g_initLock = PTHREAD_MUTEX_INITIALIZER;
 
 // Set of locks initialized for OpenSSL
-static pthread_mutex_t* g_locks = NULL;
+static pthread_mutex_t* g_locks = nullptr;
 
 /*
 Function:
@@ -1315,7 +1310,7 @@ extern "C" int32_t CryptoNative_EnsureOpenSslInitialized()
 
     pthread_mutex_lock(&g_initLock);
 
-    if (g_locks != NULL)
+    if (g_locks != nullptr)
     {
         // Already initialized; nothing more to do.
         goto done;
@@ -1331,8 +1326,8 @@ extern "C" int32_t CryptoNative_EnsureOpenSslInitialized()
     }
 
     // Create the locks array
-    g_locks = static_cast<pthread_mutex_t*>(malloc(sizeof(pthread_mutex_t) * UnsignedCast(numLocks)));
-    if (g_locks == NULL)
+    g_locks = new (std::nothrow) pthread_mutex_t[numLocks];
+    if (g_locks == nullptr)
     {
         ret = 2;
         goto done;
@@ -1375,13 +1370,13 @@ done:
     if (ret != 0)
     {
         // Cleanup on failure
-        if (g_locks != NULL)
+        if (g_locks != nullptr)
         {
             for (int i = locksInitialized - 1; i >= 0; i--)
             {
                 pthread_mutex_destroy(&g_locks[i]); // ignore failures
             }
-            free(g_locks);
+            delete[] g_locks;
             g_locks = NULL;
         }
     }

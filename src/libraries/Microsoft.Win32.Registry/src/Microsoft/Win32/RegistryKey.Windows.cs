@@ -75,25 +75,25 @@ namespace Microsoft.Win32
             // the dispose below and usage elsewhere (other threads). This is By Design. 
             // This is less of an issue when OS > NT5 (i.e Vista & higher), we can close the perfkey  
             // (to release & refresh PERFLIB resources) and the OS will rebuild PERFLIB as necessary. 
-            Interop.mincore.RegCloseKey(HKEY_PERFORMANCE_DATA);
+            Interop.Advapi32.RegCloseKey(HKEY_PERFORMANCE_DATA);
         }
 
         private void FlushCore()
         {
             if (_hkey != null && IsDirty())
             {
-                Interop.mincore.RegFlushKey(_hkey);
+                Interop.Advapi32.RegFlushKey(_hkey);
             }
         }
 
         private unsafe RegistryKey CreateSubKeyInternalCore(string subkey, bool writable, RegistryOptions registryOptions)
         {
-            Interop.mincore.SECURITY_ATTRIBUTES secAttrs = default(Interop.mincore.SECURITY_ATTRIBUTES);
+            Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = default(Interop.Kernel32.SECURITY_ATTRIBUTES);
             int disposition = 0;
 
             // By default, the new key will be writable.
             SafeRegistryHandle result = null;
-            int ret = Interop.mincore.RegCreateKeyEx(_hkey,
+            int ret = Interop.Advapi32.RegCreateKeyEx(_hkey,
                 subkey,
                 0,
                 null,
@@ -127,11 +127,11 @@ namespace Microsoft.Win32
 
         private void DeleteSubKeyCore(string subkey, bool throwOnMissingSubKey)
         {
-            int ret = Interop.mincore.RegDeleteKeyEx(_hkey, subkey, (int)_regView, 0);
+            int ret = Interop.Advapi32.RegDeleteKeyEx(_hkey, subkey, (int)_regView, 0);
 
             if (ret != 0)
             {
-                if (ret == Interop.mincore.Errors.ERROR_FILE_NOT_FOUND)
+                if (ret == Interop.Errors.ERROR_FILE_NOT_FOUND)
                 {
                     if (throwOnMissingSubKey)
                     {
@@ -147,7 +147,7 @@ namespace Microsoft.Win32
 
         private void DeleteSubKeyTreeCore(string subkey)
         {
-            int ret = Interop.mincore.RegDeleteKeyEx(_hkey, subkey, (int)_regView, 0);
+            int ret = Interop.Advapi32.RegDeleteKeyEx(_hkey, subkey, (int)_regView, 0);
             if (ret != 0)
             {
                 Win32Error(ret, null);
@@ -156,14 +156,14 @@ namespace Microsoft.Win32
 
         private void DeleteValueCore(string name, bool throwOnMissingValue)
         {
-            int errorCode = Interop.mincore.RegDeleteValue(_hkey, name);
+            int errorCode = Interop.Advapi32.RegDeleteValue(_hkey, name);
 
             //
             // From windows 2003 server, if the name is too long we will get error code ERROR_FILENAME_EXCED_RANGE  
             // This still means the name doesn't exist. We need to be consistent with previous OS.
             //
-            if (errorCode == Interop.mincore.Errors.ERROR_FILE_NOT_FOUND ||
-                errorCode == Interop.mincore.Errors.ERROR_FILENAME_EXCED_RANGE)
+            if (errorCode == Interop.Errors.ERROR_FILE_NOT_FOUND ||
+                errorCode == Interop.Errors.ERROR_FILENAME_EXCED_RANGE)
             {
                 if (throwOnMissingValue)
                 {
@@ -221,9 +221,9 @@ namespace Microsoft.Win32
 
             // connect to the specified remote registry
             SafeRegistryHandle foreignHKey = null;
-            int ret = Interop.mincore.RegConnectRegistry(machineName, new SafeRegistryHandle(new IntPtr((int)hKey), false), out foreignHKey);
+            int ret = Interop.Advapi32.RegConnectRegistry(machineName, new SafeRegistryHandle(new IntPtr((int)hKey), false), out foreignHKey);
 
-            if (ret == Interop.mincore.Errors.ERROR_DLL_INIT_FAILED)
+            if (ret == Interop.Errors.ERROR_DLL_INIT_FAILED)
             {
                 // return value indicates an error occurred
                 throw new ArgumentException(SR.Arg_DllInitFailure);
@@ -248,7 +248,7 @@ namespace Microsoft.Win32
         private RegistryKey InternalOpenSubKeyCore(string name, RegistryRights rights, bool throwOnPermissionFailure)
         {
             SafeRegistryHandle result = null;
-            int ret = Interop.mincore.RegOpenKeyEx(_hkey, name, 0, ((int)rights | (int)_regView), out result);
+            int ret = Interop.Advapi32.RegOpenKeyEx(_hkey, name, 0, ((int)rights | (int)_regView), out result);
             if (ret == 0 && !result.IsInvalid)
             {
                 RegistryKey key = new RegistryKey(result, IsWritable((int)rights), false, _remoteKey, false, _regView);
@@ -258,7 +258,7 @@ namespace Microsoft.Win32
 
             if (throwOnPermissionFailure)
             {
-                if (ret == Interop.mincore.Errors.ERROR_ACCESS_DENIED || ret == Interop.mincore.Errors.ERROR_BAD_IMPERSONATION_LEVEL)
+                if (ret == Interop.Errors.ERROR_ACCESS_DENIED || ret == Interop.Errors.ERROR_BAD_IMPERSONATION_LEVEL)
                 {
                     // We need to throw SecurityException here for compatibility reason,
                     // although UnauthorizedAccessException will make more sense.
@@ -276,7 +276,7 @@ namespace Microsoft.Win32
             {
                 Debug.Assert(IsSystemKey());
 
-                int ret = Interop.mincore.Errors.ERROR_INVALID_HANDLE;
+                int ret = Interop.Errors.ERROR_INVALID_HANDLE;
                 IntPtr baseKey = (IntPtr)0;
                 switch (_keyName)
                 {
@@ -305,7 +305,7 @@ namespace Microsoft.Win32
 
                 // open the base key so that RegistryKey.Handle will return a valid handle
                 SafeRegistryHandle result;
-                ret = Interop.mincore.RegOpenKeyEx(baseKey,
+                ret = Interop.Advapi32.RegOpenKeyEx(baseKey,
                     null,
                     0,
                     (int)GetRegistryKeyRights(IsWritable()) | (int)_regView,
@@ -318,7 +318,7 @@ namespace Microsoft.Win32
                 else
                 {
                     Win32Error(ret, null);
-                    throw new IOException(Interop.mincore.GetMessage(ret), ret);
+                    throw new IOException(Interop.Kernel32.GetMessage(ret), ret);
                 }
             }
         }
@@ -327,7 +327,7 @@ namespace Microsoft.Win32
         {
             int subkeys = 0;
             int junk = 0;
-            int ret = Interop.mincore.RegQueryInfoKey(_hkey,
+            int ret = Interop.Advapi32.RegQueryInfoKey(_hkey,
                                       null,
                                       null,
                                       IntPtr.Zero,
@@ -360,7 +360,7 @@ namespace Microsoft.Win32
                 for (int i = 0; i < subkeys; i++)
                 {
                     namelen = name.Length; // Don't remove this. The API's doesn't work if this is not properly initialized.
-                    int ret = Interop.mincore.RegEnumKeyEx(_hkey,
+                    int ret = Interop.Advapi32.RegEnumKeyEx(_hkey,
                         i,
                         namePtr,
                         ref namelen,
@@ -384,7 +384,7 @@ namespace Microsoft.Win32
         {
             int values = 0;
             int junk = 0;
-            int ret = Interop.mincore.RegQueryInfoKey(_hkey,
+            int ret = Interop.Advapi32.RegQueryInfoKey(_hkey,
                                       null,
                                       null,
                                       IntPtr.Zero,
@@ -418,7 +418,7 @@ namespace Microsoft.Win32
                 {
                     namelen = name.Length;
 
-                    int ret = Interop.mincore.RegEnumValue(_hkey,
+                    int ret = Interop.Advapi32.RegEnumValue(_hkey,
                         i,
                         namePtr,
                         ref namelen,
@@ -430,7 +430,7 @@ namespace Microsoft.Win32
                     if (ret != 0)
                     {
                         // ignore ERROR_MORE_DATA if we're querying HKEY_PERFORMANCE_DATA
-                        if (!(IsPerfDataKey() && ret == Interop.mincore.Errors.ERROR_MORE_DATA))
+                        if (!(IsPerfDataKey() && ret == Interop.Errors.ERROR_MORE_DATA))
                             Win32Error(ret, null);
                     }
 
@@ -447,7 +447,7 @@ namespace Microsoft.Win32
             int type = 0;
             int datasize = 0;
 
-            int ret = Interop.mincore.RegQueryValueEx(_hkey, name, null, ref type, (byte[])null, ref datasize);
+            int ret = Interop.Advapi32.RegQueryValueEx(_hkey, name, null, ref type, (byte[])null, ref datasize);
 
             if (ret != 0)
             {
@@ -458,7 +458,7 @@ namespace Microsoft.Win32
 
                     int r;
                     byte[] blob = new byte[size];
-                    while (Interop.mincore.Errors.ERROR_MORE_DATA == (r = Interop.mincore.RegQueryValueEx(_hkey, name, null, ref type, blob, ref sizeInput)))
+                    while (Interop.Errors.ERROR_MORE_DATA == (r = Interop.Advapi32.RegQueryValueEx(_hkey, name, null, ref type, blob, ref sizeInput)))
                     {
                         if (size == Int32.MaxValue)
                         {
@@ -488,7 +488,7 @@ namespace Microsoft.Win32
                     // For stuff like ERROR_FILE_NOT_FOUND, we want to return null (data).
                     // Some OS's returned ERROR_MORE_DATA even in success cases, so we 
                     // want to continue on through the function. 
-                    if (ret != Interop.mincore.Errors.ERROR_MORE_DATA)
+                    if (ret != Interop.Errors.ERROR_MORE_DATA)
                     {
                         return data;
                     }
@@ -504,47 +504,47 @@ namespace Microsoft.Win32
 
             switch (type)
             {
-                case Interop.mincore.RegistryValues.REG_NONE:
-                case Interop.mincore.RegistryValues.REG_DWORD_BIG_ENDIAN:
-                case Interop.mincore.RegistryValues.REG_BINARY:
+                case Interop.Advapi32.RegistryValues.REG_NONE:
+                case Interop.Advapi32.RegistryValues.REG_DWORD_BIG_ENDIAN:
+                case Interop.Advapi32.RegistryValues.REG_BINARY:
                     {
                         byte[] blob = new byte[datasize];
-                        ret = Interop.mincore.RegQueryValueEx(_hkey, name, null, ref type, blob, ref datasize);
+                        ret = Interop.Advapi32.RegQueryValueEx(_hkey, name, null, ref type, blob, ref datasize);
                         data = blob;
                     }
                     break;
-                case Interop.mincore.RegistryValues.REG_QWORD:
+                case Interop.Advapi32.RegistryValues.REG_QWORD:
                     {    // also REG_QWORD_LITTLE_ENDIAN
                         if (datasize > 8)
                         {
                             // prevent an AV in the edge case that datasize is larger than sizeof(long)
-                            goto case Interop.mincore.RegistryValues.REG_BINARY;
+                            goto case Interop.Advapi32.RegistryValues.REG_BINARY;
                         }
                         long blob = 0;
                         Debug.Assert(datasize == 8, "datasize==8");
                         // Here, datasize must be 8 when calling this
-                        ret = Interop.mincore.RegQueryValueEx(_hkey, name, null, ref type, ref blob, ref datasize);
+                        ret = Interop.Advapi32.RegQueryValueEx(_hkey, name, null, ref type, ref blob, ref datasize);
 
                         data = blob;
                     }
                     break;
-                case Interop.mincore.RegistryValues.REG_DWORD:
+                case Interop.Advapi32.RegistryValues.REG_DWORD:
                     {    // also REG_DWORD_LITTLE_ENDIAN
                         if (datasize > 4)
                         {
                             // prevent an AV in the edge case that datasize is larger than sizeof(int)
-                            goto case Interop.mincore.RegistryValues.REG_QWORD;
+                            goto case Interop.Advapi32.RegistryValues.REG_QWORD;
                         }
                         int blob = 0;
                         Debug.Assert(datasize == 4, "datasize==4");
                         // Here, datasize must be four when calling this
-                        ret = Interop.mincore.RegQueryValueEx(_hkey, name, null, ref type, ref blob, ref datasize);
+                        ret = Interop.Advapi32.RegQueryValueEx(_hkey, name, null, ref type, ref blob, ref datasize);
 
                         data = blob;
                     }
                     break;
 
-                case Interop.mincore.RegistryValues.REG_SZ:
+                case Interop.Advapi32.RegistryValues.REG_SZ:
                     {
                         if (datasize % 2 == 1)
                         {
@@ -560,7 +560,7 @@ namespace Microsoft.Win32
                         }
                         char[] blob = new char[datasize / 2];
 
-                        ret = Interop.mincore.RegQueryValueEx(_hkey, name, null, ref type, blob, ref datasize);
+                        ret = Interop.Advapi32.RegQueryValueEx(_hkey, name, null, ref type, blob, ref datasize);
                         if (blob.Length > 0 && blob[blob.Length - 1] == (char)0)
                         {
                             data = new string(blob, 0, blob.Length - 1);
@@ -574,7 +574,7 @@ namespace Microsoft.Win32
                     }
                     break;
 
-                case Interop.mincore.RegistryValues.REG_EXPAND_SZ:
+                case Interop.Advapi32.RegistryValues.REG_EXPAND_SZ:
                     {
                         if (datasize % 2 == 1)
                         {
@@ -590,7 +590,7 @@ namespace Microsoft.Win32
                         }
                         char[] blob = new char[datasize / 2];
 
-                        ret = Interop.mincore.RegQueryValueEx(_hkey, name, null, ref type, blob, ref datasize);
+                        ret = Interop.Advapi32.RegQueryValueEx(_hkey, name, null, ref type, blob, ref datasize);
 
                         if (blob.Length > 0 && blob[blob.Length - 1] == (char)0)
                         {
@@ -609,7 +609,7 @@ namespace Microsoft.Win32
                         }
                     }
                     break;
-                case Interop.mincore.RegistryValues.REG_MULTI_SZ:
+                case Interop.Advapi32.RegistryValues.REG_MULTI_SZ:
                     {
                         if (datasize % 2 == 1)
                         {
@@ -625,7 +625,7 @@ namespace Microsoft.Win32
                         }
                         char[] blob = new char[datasize / 2];
 
-                        ret = Interop.mincore.RegQueryValueEx(_hkey, name, null, ref type, blob, ref datasize);
+                        ret = Interop.Advapi32.RegQueryValueEx(_hkey, name, null, ref type, blob, ref datasize);
 
                         // make sure the string is null terminated before processing the data
                         if (blob.Length > 0 && blob[blob.Length - 1] != (char)0)
@@ -685,7 +685,7 @@ namespace Microsoft.Win32
                         data = strings;
                     }
                     break;
-                case Interop.mincore.RegistryValues.REG_LINK:
+                case Interop.Advapi32.RegistryValues.REG_LINK:
                 default:
                     break;
             }
@@ -697,14 +697,14 @@ namespace Microsoft.Win32
         {
             int type = 0;
             int datasize = 0;
-            int ret = Interop.mincore.RegQueryValueEx(_hkey, name, null, ref type, (byte[])null, ref datasize);
+            int ret = Interop.Advapi32.RegQueryValueEx(_hkey, name, null, ref type, (byte[])null, ref datasize);
             if (ret != 0)
             {
                 Win32Error(ret, null);
             }
 
             return
-                type == Interop.mincore.RegistryValues.REG_NONE ? RegistryValueKind.None :
+                type == Interop.Advapi32.RegistryValues.REG_NONE ? RegistryValueKind.None :
                 !Enum.IsDefined(typeof(RegistryValueKind), type) ? RegistryValueKind.Unknown :
                 (RegistryValueKind)type;
         }
@@ -720,7 +720,7 @@ namespace Microsoft.Win32
                     case RegistryValueKind.String:
                         {
                             string data = value.ToString();
-                            ret = Interop.mincore.RegSetValueEx(_hkey,
+                            ret = Interop.Advapi32.RegSetValueEx(_hkey,
                                 name,
                                 0,
                                 valueKind,
@@ -762,7 +762,7 @@ namespace Microsoft.Win32
                                 destinationIndex += (length + 1); // +1 for null terminator, which is already zero-initialized in new array.
                             }
 
-                            ret = Interop.mincore.RegSetValueEx(_hkey,
+                            ret = Interop.Advapi32.RegSetValueEx(_hkey,
                                 name,
                                 0,
                                 RegistryValueKind.MultiString,
@@ -775,10 +775,10 @@ namespace Microsoft.Win32
                     case RegistryValueKind.None:
                     case RegistryValueKind.Binary:
                         byte[] dataBytes = (byte[])value;
-                        ret = Interop.mincore.RegSetValueEx(_hkey,
+                        ret = Interop.Advapi32.RegSetValueEx(_hkey,
                             name,
                             0,
-                            (valueKind == RegistryValueKind.None ? Interop.mincore.RegistryValues.REG_NONE : RegistryValueKind.Binary),
+                            (valueKind == RegistryValueKind.None ? Interop.Advapi32.RegistryValues.REG_NONE : RegistryValueKind.Binary),
                             dataBytes,
                             dataBytes.Length);
                         break;
@@ -789,7 +789,7 @@ namespace Microsoft.Win32
                             // unboxed and cast at the same time.  I.e. ((int)(object)(short) 5) will fail.
                             int data = Convert.ToInt32(value, System.Globalization.CultureInfo.InvariantCulture);
 
-                            ret = Interop.mincore.RegSetValueEx(_hkey,
+                            ret = Interop.Advapi32.RegSetValueEx(_hkey,
                                 name,
                                 0,
                                 RegistryValueKind.DWord,
@@ -802,7 +802,7 @@ namespace Microsoft.Win32
                         {
                             long data = Convert.ToInt64(value, System.Globalization.CultureInfo.InvariantCulture);
 
-                            ret = Interop.mincore.RegSetValueEx(_hkey,
+                            ret = Interop.Advapi32.RegSetValueEx(_hkey,
                                 name,
                                 0,
                                 RegistryValueKind.QWord,
@@ -838,12 +838,12 @@ namespace Microsoft.Win32
         {
             switch (errorCode)
             {
-                case Interop.mincore.Errors.ERROR_ACCESS_DENIED:
+                case Interop.Errors.ERROR_ACCESS_DENIED:
                     throw str != null ?
                         new UnauthorizedAccessException(SR.Format(SR.UnauthorizedAccess_RegistryKeyGeneric_Key, str)) :
                         new UnauthorizedAccessException();
 
-                case Interop.mincore.Errors.ERROR_INVALID_HANDLE:
+                case Interop.Errors.ERROR_INVALID_HANDLE:
                     // For normal RegistryKey instances we dispose the SafeRegHandle and throw IOException.
                     // However, for HKEY_PERFORMANCE_DATA (on a local or remote machine) we avoid disposing the
                     // SafeRegHandle and only throw the IOException.  This is to workaround reentrancy issues
@@ -861,11 +861,11 @@ namespace Microsoft.Win32
                     }
                     goto default;
 
-                case Interop.mincore.Errors.ERROR_FILE_NOT_FOUND:
+                case Interop.Errors.ERROR_FILE_NOT_FOUND:
                     throw new IOException(SR.Arg_RegKeyNotFound, errorCode);
 
                 default:
-                    throw new IOException(Interop.mincore.GetMessage(errorCode), errorCode);
+                    throw new IOException(Interop.Kernel32.GetMessage(errorCode), errorCode);
             }
         }
 
@@ -873,20 +873,20 @@ namespace Microsoft.Win32
         {
             switch (errorCode)
             {
-                case Interop.mincore.Errors.ERROR_ACCESS_DENIED:
+                case Interop.Errors.ERROR_ACCESS_DENIED:
                     throw str != null ?
                         new UnauthorizedAccessException(SR.Format(SR.UnauthorizedAccess_RegistryKeyGeneric_Key, str)) :
                         new UnauthorizedAccessException();
 
                 default:
-                    throw new IOException(Interop.mincore.GetMessage(errorCode), errorCode);
+                    throw new IOException(Interop.Kernel32.GetMessage(errorCode), errorCode);
             }
         }
 
         private static bool IsWritable(int rights)
         {
-            return (rights & (Interop.mincore.RegistryOperations.KEY_SET_VALUE |
-                              Interop.mincore.RegistryOperations.KEY_CREATE_SUB_KEY |
+            return (rights & (Interop.Advapi32.RegistryOperations.KEY_SET_VALUE |
+                              Interop.Advapi32.RegistryOperations.KEY_CREATE_SUB_KEY |
                               (int)RegistryRights.Delete |
                               (int)RegistryRights.TakeOwnership |
                               (int)RegistryRights.ChangePermissions)) != 0;

@@ -11,8 +11,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
     internal struct KeyPair<Key1, Key2> : IEquatable<KeyPair<Key1, Key2>>
     {
-        private Key1 _pKey1;
-        private Key2 _pKey2;
+        private readonly Key1 _pKey1;
+        private readonly Key2 _pKey2;
 
         public KeyPair(Key1 pKey1, Key2 pKey2)
         {
@@ -22,14 +22,14 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public bool Equals(KeyPair<Key1, Key2> other)
         {
-            return object.Equals(_pKey1, other._pKey1)
-                && object.Equals(_pKey2, other._pKey2);
+            return Equals(_pKey1, other._pKey1)
+                && Equals(_pKey2, other._pKey2);
         }
 
         public override bool Equals(object obj)
         {
             if (!(obj is KeyPair<Key1, Key2>)) return false;
-            return this.Equals((KeyPair<Key1, Key2>)obj);
+            return Equals((KeyPair<Key1, Key2>)obj);
         }
 
         public override int GetHashCode()
@@ -42,16 +42,16 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     internal class TypeTable
     {
         // Two way hashes
-        private Dictionary<KeyPair<AggregateSymbol, Name>, AggregateType> _pAggregateTable;
-        private Dictionary<KeyPair<CType, Name>, ErrorType> _pErrorWithTypeParentTable;
-        private Dictionary<KeyPair<AssemblyQualifiedNamespaceSymbol, Name>, ErrorType> _pErrorWithNamespaceParentTable;
-        private Dictionary<KeyPair<CType, Name>, ArrayType> _pArrayTable;
-        private Dictionary<KeyPair<CType, Name>, ParameterModifierType> _pParameterModifierTable;
+        private readonly Dictionary<KeyPair<AggregateSymbol, Name>, AggregateType> _pAggregateTable;
+        private readonly Dictionary<KeyPair<CType, Name>, ErrorType> _pErrorWithTypeParentTable;
+        private readonly Dictionary<KeyPair<AssemblyQualifiedNamespaceSymbol, Name>, ErrorType> _pErrorWithNamespaceParentTable;
+        private readonly Dictionary<KeyPair<CType, Name>, ArrayType> _pArrayTable;
+        private readonly Dictionary<KeyPair<CType, Name>, ParameterModifierType> _pParameterModifierTable;
 
         // One way hashes
-        private Dictionary<CType, PointerType> _pPointerTable;
-        private Dictionary<CType, NullableType> _pNullableTable;
-        private Dictionary<TypeParameterSymbol, TypeParameterType> _pTypeParameterTable;
+        private readonly Dictionary<CType, PointerType> _pPointerTable;
+        private readonly Dictionary<CType, NullableType> _pNullableTable;
+        private readonly Dictionary<TypeParameterSymbol, TypeParameterType> _pTypeParameterTable;
 
         public TypeTable()
         {

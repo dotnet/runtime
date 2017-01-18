@@ -538,7 +538,7 @@ namespace System
         // The assumptions:
         //  - baseUri is a valid absolute Uri
         //  - relative part is not null and not empty
-        private unsafe static ParsingError GetCombinedString(Uri baseUri, string relativeStr,
+        private static unsafe ParsingError GetCombinedString(Uri baseUri, string relativeStr,
             bool dontEscape, ref string result)
         {
             // NB: This is not RFC2396 compliant although it is inline with w3c.org recommendations
@@ -1944,7 +1944,7 @@ namespace System
             return (index >= 0 && uriString[index] == ':');
         }
 
-        internal unsafe static string InternalEscapeString(string rawString)
+        internal static unsafe string InternalEscapeString(string rawString)
         {
             if ((object)rawString == null)
                 return string.Empty;
@@ -3615,7 +3615,7 @@ namespace System
         // returns the start of the next component  position
         // throws UriFormatException if invalid scheme
         //
-        unsafe static private ushort ParseSchemeCheckImplicitFile(char* uriString, ushort length,
+        private static unsafe ushort ParseSchemeCheckImplicitFile(char* uriString, ushort length,
             ref ParsingError err, ref Flags flags, ref UriParser syntax)
         {
             ushort idx = 0;
@@ -3730,7 +3730,7 @@ namespace System
         //
         // Quickly parses well known schemes.
         // nChars does not include the last ':'. Assuming there is one at the end of passed buffer
-        unsafe static private bool CheckKnownSchemes(long* lptr, ushort nChars, ref UriParser syntax)
+        private static unsafe bool CheckKnownSchemes(long* lptr, ushort nChars, ref UriParser syntax)
         {
             //NOTE beware of too short input buffers!
 
@@ -3885,7 +3885,7 @@ namespace System
         //
         // This will check whether a scheme string follows the rules
         //
-        unsafe static private ParsingError CheckSchemeSyntax(char* ptr, ushort length, ref UriParser syntax)
+        private static unsafe ParsingError CheckSchemeSyntax(char* ptr, ushort length, ref UriParser syntax)
         {
             //First character must be an alpha
             {
@@ -3928,8 +3928,60 @@ namespace System
                     return ParsingError.BadScheme;
                 }
             }
-            // A not well-known scheme, needs string creation
-            // Note it is already in the lower case as required.
+
+            // Special-case common and known schemes to avoid allocations and dictionary lookups in these cases.
+            switch (length)
+            {
+                case 2:
+                    if (ptr[0] == 'w' && ptr[1] == 's')
+                    {
+                        syntax = UriParser.WsUri;
+                        return ParsingError.None;
+                    }
+                    break;
+                case 3:
+                    const int ftpMask = 'f' << 16 | 't' << 8 | 'p';
+                    const int wssMask = 'w' << 16 | 's' << 8 | 's';
+                    switch (ptr[0] << 16 | ptr[1] << 8 | ptr[2])
+                    {
+                        case ftpMask:
+                            syntax = UriParser.FtpUri;
+                            return ParsingError.None;
+                        case wssMask:
+                            syntax = UriParser.WssUri;
+                            return ParsingError.None;
+                    }
+                    break;
+                case 4:
+                    const int httpMask = 'h' << 24 | 't' << 16 | 't' << 8 | 'p';
+                    const int fileMask = 'f' << 24 | 'i' << 16 | 'l' << 8 | 'e';
+                    switch (ptr[0] << 24 | ptr[1] << 16 | ptr[2] << 8 | ptr[3])
+                    {
+                        case httpMask:
+                            syntax = UriParser.HttpUri;
+                            return ParsingError.None;
+                        case fileMask:
+                            syntax = UriParser.FileUri;
+                            return ParsingError.None;
+                    }
+                    break;
+                case 5:
+                    if (ptr[0] == 'h' && ptr[1] == 't' && ptr[2] == 't' && ptr[3] == 'p' && ptr[4] == 's')
+                    {
+                        syntax = UriParser.HttpsUri;
+                        return ParsingError.None;
+                    }
+                    break;
+                case 6:
+                    if (ptr[0] == 'm' && ptr[1] == 'a' && ptr[2] == 'i' && ptr[3] == 'l' && ptr[4] == 't' && ptr[5] == 'o')
+                    {
+                        syntax = UriParser.MailToUri;
+                        return ParsingError.None;
+                    }
+                    break;
+            }
+
+            // Not special-cased scheme.  Look up the syntax based on the substring.
             string str = new string(ptr, 0, length);
             syntax = UriParser.FindOrFetchAsUnknownV1Syntax(str);
             return ParsingError.None;
@@ -4778,7 +4830,7 @@ namespace System
         }
 
         // works only with ASCII characters, used to partially unescape path before compressing
-        private unsafe static void UnescapeOnly(char* pch, int start, ref int end, char ch1, char ch2, char ch3)
+        private static unsafe void UnescapeOnly(char* pch, int start, ref int end, char ch1, char ch2, char ch3)
         {
             if (end - start < 3)
             {

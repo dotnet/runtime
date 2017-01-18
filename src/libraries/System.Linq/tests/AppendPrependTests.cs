@@ -255,5 +255,14 @@ namespace System.Linq.Tests
             Assert.Equal(Enumerable.Range(0, 6), source.ToList());
             Assert.Equal(Enumerable.Range(0, 6), source.ToArray());
         }
+
+        [Fact]
+        public void AppendPrependRunOnce()
+        {
+            var source = NumberRangeGuaranteedNotCollectionType(2, 2).RunOnce().Prepend(1).RunOnce().Prepend(0).RunOnce().Append(4).RunOnce().Append(5).RunOnce();
+            Assert.Equal(Enumerable.Range(0, 6), source.ToList());
+            source = NumberRangeGuaranteedNotCollectionType(2, 2).Prepend(1).Prepend(0).Append(4).Append(5).RunOnce();
+            Assert.Equal(Enumerable.Range(0, 6), source.ToList());
+        }
     }
 }

@@ -42,13 +42,13 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public CType type;
         public void setType(CType t)
         {
-            this.type = t;
+            type = t;
         }
 
         public void setAssignment()
         {
             Debug.Assert(!this.isSTMT());
-            this.flags |= EXPRFLAG.EXF_ASSGOP;
+            flags |= EXPRFLAG.EXF_ASSGOP;
         }
 
         public bool isOK()
@@ -127,7 +127,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public EXPR getObject()
         {
-            RETAILVERIFY(this.HasObject());
+            RETAILVERIFY(HasObject());
             switch (kind)
             {
                 case ExpressionKind.EK_FIELD:

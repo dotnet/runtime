@@ -23,8 +23,8 @@ namespace System.Runtime.InteropServices
     /// </remarks>
     internal class NativeBuffer : IDisposable
     {
-        private readonly static SafeHeapHandleCache s_handleCache = new SafeHeapHandleCache();
-        private readonly static SafeHandle s_emptyHandle = new EmptySafeHandle();
+        private static readonly SafeHeapHandleCache s_handleCache = new SafeHeapHandleCache();
+        private static readonly SafeHandle s_emptyHandle = new EmptySafeHandle();
         private SafeHeapHandle _handle;
         private ulong _capacity;
 

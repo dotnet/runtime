@@ -82,15 +82,12 @@ namespace System.Linq.Expressions
         /// <returns>This expression if no children changed, or an expression with the updated children.</returns>
         public NewExpression Update(IEnumerable<Expression> arguments)
         {
-            if (arguments == Arguments)
+            if (ExpressionUtils.SameElements(ref arguments, Arguments))
             {
                 return this;
             }
-            if (Members != null)
-            {
-                return Expression.New(Constructor, arguments, Members);
-            }
-            return Expression.New(Constructor, arguments);
+
+            return Members != null ? New(Constructor, arguments, Members) : New(Constructor, arguments);
         }
     }
 
@@ -116,7 +113,7 @@ namespace System.Linq.Expressions
         {
             return New(constructor, (IEnumerable<Expression>)null);
         }
-        
+
         /// <summary>
         /// Creates a new <see cref="NewExpression"/> that represents calling the specified constructor that takes no arguments.
         /// </summary>
@@ -127,7 +124,7 @@ namespace System.Linq.Expressions
         {
             return New(constructor, (IEnumerable<Expression>)arguments);
         }
-        
+
         /// <summary>
         /// Creates a new <see cref="NewExpression"/> that represents calling the specified constructor that takes no arguments.
         /// </summary>
@@ -145,7 +142,7 @@ namespace System.Linq.Expressions
 
             return new NewExpression(constructor, argList, null);
         }
-        
+
         /// <summary>
         /// Creates a new <see cref="NewExpression"/> that represents calling the specified constructor with the specified arguments. The members that access the constructor initialized fields are specified.
         /// </summary>
@@ -176,7 +173,7 @@ namespace System.Linq.Expressions
         {
             return New(constructor, arguments, (IEnumerable<MemberInfo>)members);
         }
-        
+
         /// <summary>
         /// Creates a <see cref="NewExpression"/> that represents calling the parameterless constructor of the specified type.
         /// </summary>
@@ -189,10 +186,11 @@ namespace System.Linq.Expressions
             {
                 throw Error.ArgumentCannotBeOfTypeVoid(nameof(type));
             }
-            ConstructorInfo ci = null;
+            TypeUtils.ValidateType(type, nameof(type));
+
             if (!type.GetTypeInfo().IsValueType)
             {
-                ci = type.GetConstructors(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic).SingleOrDefault(c => c.GetParameters().Length == 0);
+                ConstructorInfo ci = type.GetConstructors(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic).SingleOrDefault(c => c.GetParametersCached().Length == 0);
                 if (ci == null)
                 {
                     throw Error.TypeMissingDefaultConstructor(type, nameof(type));
@@ -201,7 +199,7 @@ namespace System.Linq.Expressions
             }
             return new NewValueTypeExpression(type, EmptyReadOnlyCollection<Expression>.Instance, null);
         }
-        
+
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
         private static void ValidateNewArgs(ConstructorInfo constructor, ref ReadOnlyCollection<Expression> arguments, ref ReadOnlyCollection<MemberInfo> members)
         {

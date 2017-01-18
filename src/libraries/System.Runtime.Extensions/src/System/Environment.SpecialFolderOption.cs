@@ -15,7 +15,7 @@ namespace System
 
         // These values are specific to Windows and are known to SHGetFolderPath, however they are
         // also the values used in the SpecialFolderOption enum.  As such, we keep them as constants
-        // with their Win32 names, but keep them here rather than in Interop.mincore as they're
+        // with their Win32 names, but keep them here rather than in Interop.Kernel32 as they're
         // used on all platforms.
         private static class SpecialFolderOptionValues
         {

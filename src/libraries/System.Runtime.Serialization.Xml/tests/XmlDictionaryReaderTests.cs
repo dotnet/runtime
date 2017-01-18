@@ -101,6 +101,54 @@ namespace System.Runtime.Serialization.Xml.Tests
             Assert.Equal(new DateTime(2003, 1, 8, 15, 0, 0), dt);
         }
 
+        [Fact]
+        public static void GetNonAtomizedNamesTest()
+        {
+            string localNameTest = "localNameTest";
+            string namespaceUriTest = "http://www.msn.com/";
+            var encoding = Encoding.UTF8;
+            var rndGen = new Random();
+            int byteArrayLength = rndGen.Next(100, 2000);
+            byte[] byteArray = new byte[byteArrayLength];
+            rndGen.NextBytes(byteArray);
+            MemoryStream ms = new MemoryStream();
+            XmlDictionaryWriter writer = XmlDictionaryWriter.CreateTextWriter(ms, encoding);
+            writer.WriteElementString(localNameTest, namespaceUriTest, "value");
+            writer.Flush();
+            ms.Position = 0;
+            XmlDictionaryReader reader = XmlDictionaryReader.CreateTextReader(ms, encoding, XmlDictionaryReaderQuotas.Max, null);
+            bool success = reader.ReadToDescendant(localNameTest);
+            Assert.True(success);
+            string localName;
+            string namespaceUriStr;
+            reader.GetNonAtomizedNames(out localName, out namespaceUriStr);
+            Assert.Equal(localNameTest, localName);
+            Assert.Equal(namespaceUriTest, namespaceUriStr);
+            writer.Close();
+        }
+
+        [Fact]
+        public static void ReadStringTest()
+        {
+            MemoryStream stream = new MemoryStream();
+            XmlDictionary dictionary = new XmlDictionary();
+            List<XmlDictionaryString> stringList = new List<XmlDictionaryString>();
+            stringList.Add(dictionary.Add("Name"));
+            stringList.Add(dictionary.Add("urn:Test"));
+
+            using (XmlDictionaryWriter writer = XmlDictionaryWriter.CreateBinaryWriter(stream, dictionary, null))
+            {
+                // write using the dictionary - element name, namespace, value 
+                string value = "value";
+                writer.WriteElementString(stringList[0], stringList[1], value);
+                writer.Flush();
+                stream.Position = 0;
+                XmlDictionaryReader reader = XmlDictionaryReader.CreateBinaryReader(stream, dictionary, new XmlDictionaryReaderQuotas());
+                reader.Read();
+                string s = reader.ReadString();
+                Assert.Equal(value, s);
+            }
+        }
         private static Stream GenerateStreamFromString(string s)
         {
             var stream = new MemoryStream();

@@ -59,17 +59,7 @@ namespace System.ComponentModel
         /// <summary>
         ///    <para>Gets the list of event handlers that are attached to this component.</para>
         /// </summary>
-        protected EventHandlerList Events
-        {
-            get
-            {
-                if (_events == null)
-                {
-                    _events = new EventHandlerList();
-                }
-                return _events;
-            }
-        }
+        protected EventHandlerList Events => _events ?? (_events = new EventHandlerList());
 
         /// <summary>
         ///    <para>Gets or sets the site of the component.</para>
@@ -154,15 +144,8 @@ namespace System.ComponentModel
             {
                 lock (this)
                 {
-                    if (_site != null && _site.Container != null)
-                    {
-                        _site.Container.Remove(this);
-                    }
-                    if (_events != null)
-                    {
-                        EventHandler handler = (EventHandler)_events[s_eventDisposed];
-                        if (handler != null) handler(this, EventArgs.Empty);
-                    }
+                    _site?.Container?.Remove(this);
+                    ((EventHandler) _events?[s_eventDisposed])?.Invoke(this, EventArgs.Empty);
                 }
             }
         }
@@ -171,21 +154,14 @@ namespace System.ComponentModel
         ///    <para>Gets the container for the component.</para>
         /// </summary>
         [Browsable(false), DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-        public virtual IContainer Container
-        {
-            get
-            {
-                ISite s = _site;
-                return s == null ? null : s.Container;
-            }
-        }
+        public virtual IContainer Container => _site?.Container;
 
         /// <summary>
         /// <para>Gets the implementer of the <see cref='System.IServiceProvider'/>.</para>
         /// </summary>
         public virtual object GetService(Type service)
         {
-            return ((_site == null) ? null : _site.GetService(service));
+            return _site?.GetService(service);
         }
 
 
@@ -198,7 +174,7 @@ namespace System.ComponentModel
             get
             {
                 ISite s = _site;
-                return (s == null) ? false : s.DesignMode;
+                return s?.DesignMode ?? false;
             }
         }
         /// <internalonly/>

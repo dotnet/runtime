@@ -1,0 +1,20 @@
+CannotRemoveBaseTypeOrInterface : Type 'System.Threading.ParameterizedThreadStart' does not implement interface 'System.Runtime.Serialization.ISerializable' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Threading.Thread' does not inherit from base type 'System.Runtime.ConstrainedExecution.CriticalFinalizerObject' in the implementation but it does in the contract.
+MembersMustExist : Member 'System.Threading.Thread.AllocateDataSlot()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Threading.Thread.AllocateNamedDataSlot(System.String)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Threading.Thread.CurrentPrincipal.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Threading.Thread.CurrentPrincipal.set(System.Security.Principal.IPrincipal)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Threading.Thread.FreeNamedDataSlot(System.String)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Threading.Thread.GetData(System.LocalDataStoreSlot)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Threading.Thread.GetDomain()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Threading.Thread.GetDomainID()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Threading.Thread.GetNamedDataSlot(System.String)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Threading.Thread.SetData(System.LocalDataStoreSlot, System.Object)' does not exist in the implementation but it does exist in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Threading.ThreadAbortException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Threading.ThreadExceptionEventHandler' does not implement interface 'System.Runtime.Serialization.ISerializable' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Threading.ThreadInterruptedException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
+MembersMustExist : Member 'System.Threading.ThreadInterruptedException..ctor(System.Runtime.Serialization.SerializationInfo, System.Runtime.Serialization.StreamingContext)' does not exist in the implementation but it does exist in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Threading.ThreadStart' does not implement interface 'System.Runtime.Serialization.ISerializable' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Threading.ThreadStartException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Threading.ThreadStateException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
+MembersMustExist : Member 'System.Threading.ThreadStateException..ctor(System.Runtime.Serialization.SerializationInfo, System.Runtime.Serialization.StreamingContext)' does not exist in the implementation but it does exist in the contract.

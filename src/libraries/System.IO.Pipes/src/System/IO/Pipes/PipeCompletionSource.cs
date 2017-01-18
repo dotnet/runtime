@@ -140,7 +140,7 @@ namespace System.IO.Pipes
             NativeOverlapped* overlapped = Overlapped;
 
             // If the handle is still valid, attempt to cancel the IO
-            if (!handle.IsInvalid && !Interop.mincore.CancelIoEx(handle, overlapped))
+            if (!handle.IsInvalid && !Interop.Kernel32.CancelIoEx(handle, overlapped))
             {
                 // This case should not have any consequences although
                 // it will be easier to debug if there exists any special case
@@ -158,7 +158,7 @@ namespace System.IO.Pipes
 
             if (resultState == ResultError)
             {
-                if (_errorCode == Interop.mincore.Errors.ERROR_OPERATION_ABORTED)
+                if (_errorCode == Interop.Errors.ERROR_OPERATION_ABORTED)
                 {
                     if (_cancellationToken.CanBeCanceled && !_cancellationToken.IsCancellationRequested)
                     {

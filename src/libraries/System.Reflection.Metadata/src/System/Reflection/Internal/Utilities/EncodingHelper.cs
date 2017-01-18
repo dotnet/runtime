@@ -46,7 +46,7 @@ namespace System.Reflection.Internal
     /// (lightUpAttemptFailed || prefix != null), we give up and allocate a temporary array,
     /// copy to it, decode, and throw it away.
     /// </summary>
-    internal unsafe static class EncodingHelper
+    internal static unsafe class EncodingHelper
     {
         // Size of pooled buffers. Input larger than that is prefixed or given to us on a
         // platform that doesn't have unsafe Encoding.GetString, will cause us to

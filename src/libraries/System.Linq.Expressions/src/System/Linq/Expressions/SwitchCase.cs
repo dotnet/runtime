@@ -32,7 +32,7 @@ namespace System.Linq.Expressions
         public Expression Body { get; }
 
         /// <summary>
-        /// Returns a <see cref="String"/> that represents the current <see cref="Object"/>. 
+        /// Returns a <see cref="String"/> that represents the current <see cref="Object"/>.
         /// </summary>
         /// <returns>A <see cref="String"/> that represents the current <see cref="Object"/>.</returns>
         public override string ToString()
@@ -50,10 +50,14 @@ namespace System.Linq.Expressions
         /// <returns>This expression if no children changed, or an expression with the updated children.</returns>
         public SwitchCase Update(IEnumerable<Expression> testValues, Expression body)
         {
-            if (testValues == TestValues && body == Body)
+            if (body == Body & testValues != null)
             {
-                return this;
+                if (ExpressionUtils.SameElements(ref testValues, TestValues))
+                {
+                    return this;
+                }
             }
+
             return Expression.SwitchCase(body, testValues);
         }
     }

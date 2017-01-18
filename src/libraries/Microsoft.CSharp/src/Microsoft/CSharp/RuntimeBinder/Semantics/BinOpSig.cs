@@ -52,9 +52,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         protected class BinOpFullSig : BinOpSig
         {
-            private LiftFlags _grflt;
-            private CType _type1;
-            private CType _type2;
+            private readonly LiftFlags _grflt;
+            private readonly CType _type1;
+            private readonly CType _type2;
 
             public BinOpFullSig(CType type1, CType type2, PfnBindBinOp pfn, OpSigFlags grfos,
                 LiftFlags grflt, BinOpFuncKind fnkind)

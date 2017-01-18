@@ -536,7 +536,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.property.autopr
         }
     }
 
-    static public class Extension
+    public static class Extension
     {
         public static Test ExReturnTest(this string s)
         {

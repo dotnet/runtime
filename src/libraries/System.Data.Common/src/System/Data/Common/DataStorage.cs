@@ -124,8 +124,8 @@ namespace System.Data.Common
         internal readonly bool _isStringType;
         internal readonly bool _isValueType;
 
-        private readonly static Func<Type, Tuple<bool, bool, bool, bool>> s_inspectTypeForInterfaces = InspectTypeForInterfaces;
-        private readonly static ConcurrentDictionary<Type, Tuple<bool, bool, bool, bool>> s_typeImplementsInterface = new ConcurrentDictionary<Type, Tuple<bool, bool, bool, bool>>();
+        private static readonly Func<Type, Tuple<bool, bool, bool, bool>> s_inspectTypeForInterfaces = InspectTypeForInterfaces;
+        private static readonly ConcurrentDictionary<Type, Tuple<bool, bool, bool, bool>> s_typeImplementsInterface = new ConcurrentDictionary<Type, Tuple<bool, bool, bool, bool>>();
 
         protected DataStorage(DataColumn column, Type type, object defaultValue, StorageType storageType)
             : this(column, type, defaultValue, DBNull.Value, false, storageType)

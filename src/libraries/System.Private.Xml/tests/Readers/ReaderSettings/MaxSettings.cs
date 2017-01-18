@@ -341,7 +341,7 @@ namespace System.Xml.Tests
         //[Variation(Pri = 2, Desc = "nwf xml: MaxEnt = bigVal, MaxDoc = bigVal", Params = new object[] { "" })]
         //[Variation(Pri = 2, Desc = "nwf xml: MaxEnt = bigVal, MaxDoc = bigVal", Params = new object[] { "<?xml version='1.0'?><!DOCTYPE test [ <!ELEMENT test ANY> <!ELEMENT a ANY> <!ELEMENT b ANY> <!ELEMENT c ANY> <!ENTITY a '<a>&amp;</a>'>]><test>&a;<test>" })]
         //[Variation(Pri = 2, Desc = "nwf xml: MaxEnt = bigVal, MaxDoc = bigVal", Params = new object[] { "<q = 'a'/>" })]
-        //[Variation(Pri = 2, Desc = "nwf xml: MaxEnt = bigVal, MaxDoc = bigVal", Params = new object[] { "<!-- http://www.w3.org is bound to n1 and n2 -->\r\n<x xmlns:n1=\"http://www.w3.org\"\r\n   xmlns:n2=\"http://www.w3.org\" >\r\n   <bad n1:a=\"1\"  n2:a=\"2\" /></x>" })]
+        //[Variation(Pri = 2, Desc = "nwf xml: MaxEnt = bigVal, MaxDoc = bigVal", Params = new object[] { string.Format("<!-- http://www.w3.org is bound to n1 and n2 -->{0}<x xmlns:n1=\"http://www.w3.org\"{0}   xmlns:n2=\"http://www.w3.org\" >{0}   <bad n1:a=\"1\"  n2:a=\"2\" /></x>", Environment.NewLine) })]
         //[Variation(Pri = 2, Desc = "nwf xml: MaxEnt = bigVal, MaxDoc = bigVal", Params = new object[] { "<root><!--comment \uD812><!--comment \uD812>-->--></root>" })]
         public int v260()
         {
@@ -371,7 +371,7 @@ namespace System.Xml.Tests
         //[Variation(Pri = 2, Desc = "nwf xml: MaxEnt = 1, MaxDoc = val", Params = new object[] { "<?xml version='1.0'?><!DOCTYPE test [ <!ELEMENT test ANY> <!ELEMENT a ANY> <!ELEMENT b ANY> <!ELEMENT c ANY> <!ENTITY a '<a>&a;</a>'>]><test>&a;</test>", 25 })]     
         //[Variation(Pri = 2, Desc = "nwf xml: MaxEnt = 1, MaxDoc = val", Params = new object[] { "<?xml version='1.0'?><!DOCTYPE test [ <!ELEMENT test ANY> <!ELEMENT a ANY> <!ELEMENT b ANY> <!ELEMENT c ANY> <!ENTITY a '<a>&amp;</a>'>]><test>&a;<test>", 26 })]
         //[Variation(Pri = 2, Desc = "nwf xml: MaxEnt = 1, MaxDoc = val", Params = new object[] { "<q = 'a'/>", 5 })]
-        //[Variation(Pri = 2, Desc = "nwf xml: MaxEnt = 1, MaxDoc = val", Params = new object[] { "<!-- http://www.w3.org is bound to n1 and n2 -->\r\n<x xmlns:n1=\"http://www.w3.org\"\r\n   xmlns:n2=\"http://www.w3.org\" >\r\n   <bad n1:a=\"1\"  n2:a=\"2\" /></x>", 35 })]
+        //[Variation(Pri = 2, Desc = "nwf xml: MaxEnt = 1, MaxDoc = val", Params = new object[] { string.Format("<!-- http://www.w3.org is bound to n1 and n2 -->{0}<x xmlns:n1=\"http://www.w3.org\"{0}   xmlns:n2=\"http://www.w3.org\" >{0}   <bad n1:a=\"1\"  n2:a=\"2\" /></x>", Environment.NewLine), 35 })]
         //[Variation(Pri = 2, Desc = "nwf xml: MaxEnt = 1, MaxDoc = val", Params = new object[] { "<root><!--comment \uD812><!--comment \uD812>-->--></root>", 18 })]
         public int v270()
         {

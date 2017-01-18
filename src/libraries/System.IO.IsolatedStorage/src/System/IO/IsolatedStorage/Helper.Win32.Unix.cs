@@ -4,6 +4,7 @@
 
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Security;
 using System.Security.AccessControl;
 using System.Security.Principal;
 
@@ -24,7 +25,6 @@ namespace System.IO.IsolatedStorage
             {
                 // SpecialFolder.CommonApplicationData -> C:\ProgramData
                 dataDirectory = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
-                    dataDirectory = @"/usr/local/share";
             }
             else if (IsRoaming(scope))
             {
@@ -126,7 +126,7 @@ namespace System.IO.IsolatedStorage
             AssemblyName assemblyName = assembly.GetName();
             Uri codeBase = new Uri(assembly.CodeBase);
 
-            hash = GetNormalizedStrongNameHash(assemblyName);
+            hash = IdentityHelper.GetNormalizedStrongNameHash(assemblyName);
             if (hash != null)
             {
                 hash = "StrongName" + separator + hash;
@@ -134,7 +134,7 @@ namespace System.IO.IsolatedStorage
             }
             else
             {
-                hash = GetNormalizedUriHash(codeBase);
+                hash = IdentityHelper.GetNormalizedUriHash(codeBase);
                 hash = "Url" + separator + hash;
                 identity = codeBase;
             }

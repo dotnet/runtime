@@ -262,6 +262,9 @@ namespace System.Security.Cryptography
             }
         }
 
+        public override string KeyExchangeAlgorithm => null;
+        public override string SignatureAlgorithm => "http://www.w3.org/2000/09/xmldsig#dsa-sha1";
+
         protected override void Dispose(bool disposing)
         {
             base.Dispose(disposing);
@@ -438,7 +441,7 @@ namespace System.Security.Cryptography
             if (PublicOnly)
                 throw new CryptographicException(SR.Cryptography_CSP_NoPrivateKey);
 
-            int calgHash = CapiHelper.NameOrOidToHashAlgId(str);
+            int calgHash = CapiHelper.NameOrOidToHashAlgId(str, OidGroup.HashAlgorithm);
 
             if (rgbHash.Length != _sha1.HashSize / 8)
                 throw new CryptographicException(string.Format(SR.Cryptography_InvalidHashSize, "SHA1", _sha1.HashSize / 8));
@@ -466,7 +469,7 @@ namespace System.Security.Cryptography
             if (rgbSignature == null)
                 throw new ArgumentNullException(nameof(rgbSignature));
 
-            int calgHash = CapiHelper.NameOrOidToHashAlgId(str);
+            int calgHash = CapiHelper.NameOrOidToHashAlgId(str, OidGroup.HashAlgorithm);
 
             return CapiHelper.VerifySign(
                 SafeProvHandle,

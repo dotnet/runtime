@@ -25,7 +25,7 @@ internal static partial class Interop
         internal static extern IntPtr ErrReasonErrorString(ulong error);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_ErrErrorStringN")]
-        private static unsafe extern void ErrErrorStringN(ulong e, byte* buf, int len);
+        private static extern unsafe void ErrErrorStringN(ulong e, byte* buf, int len);
 
         private static unsafe string ErrErrorStringN(ulong error)
         {

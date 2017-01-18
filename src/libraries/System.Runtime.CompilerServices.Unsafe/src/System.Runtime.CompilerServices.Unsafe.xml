@@ -160,7 +160,7 @@
             <param name="source">The source address to copy from.</param>
             <param name="byteCount">The number of bytes to copy.</param>
         </member>
-        <member name="M:System.Runtime.CompilerServices.Unsafe.CopyBlock(System.Void*,System.Void*,System.UIntPtr)">
+        <member name="M:System.Runtime.CompilerServices.Unsafe.CopyBlock(System.Byte@,System.Byte@,System.UInt32)">
             <summary>
             Copies bytes from the source address to the destination address.
             </summary>
@@ -177,7 +177,7 @@
             <param name="source">The source address to copy from.</param>
             <param name="byteCount">The number of bytes to copy.</param>
         </member>
-        <member name="M:System.Runtime.CompilerServices.Unsafe.CopyBlockUnaligned(System.Void*,System.Void*,System.UIntPtr)">
+        <member name="M:System.Runtime.CompilerServices.Unsafe.CopyBlockUnaligned(System.Byte@,System.Byte@,System.UInt32)">
             <summary>
             Copies bytes from the source address to the destination address 
             without assuming architecture dependent alignment of the addresses.
@@ -194,7 +194,7 @@
             <param name="value">The value to initialize the block to.</param>
             <param name="byteCount">The number of bytes to initialize.</param>
         </member>
-        <member name="M:System.Runtime.CompilerServices.Unsafe.InitBlock(System.Void*,System.Byte,System.UIntPtr)">
+        <member name="M:System.Runtime.CompilerServices.Unsafe.InitBlock(System.Byte@,System.Byte,System.UInt32)">
             <summary>
             Initializes a block of memory at the given location with a given initial value.
             </summary>
@@ -211,7 +211,7 @@
             <param name="value">The value to initialize the block to.</param>
             <param name="byteCount">The number of bytes to initialize.</param>
         </member>
-        <member name="M:System.Runtime.CompilerServices.Unsafe.InitBlockUnaligned(System.Void*,System.Byte,System.UIntPtr)">
+        <member name="M:System.Runtime.CompilerServices.Unsafe.InitBlockUnaligned(System.Byte@,System.Byte,System.UInt32)">
             <summary>
             Initializes a block of memory at the given location with a given initial value 
             without assuming architecture dependent alignment of the address.

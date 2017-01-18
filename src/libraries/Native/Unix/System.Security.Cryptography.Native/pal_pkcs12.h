@@ -3,8 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 #include "pal_crypto_types.h"
-
-#include <openssl/pkcs12.h>
+#include "opensslshim.h"
 
 /*
 Shims the d2i_PKCS12 method and makes it easier to invoke from managed code.

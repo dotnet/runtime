@@ -2,18 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Net;
-using System.Xml;
 using System.Xml.Schema;
 using Xunit;
 using Xunit.Abstractions;
 
 namespace System.Xml.Tests
 {
-    public class TC_SchemaSet_Add_Schema
+    public class TC_SchemaSet_Add_Schema : TC_SchemaSetBase
     {
         private ITestOutputHelper _output;
         public TC_SchemaSet_Add_Schema(ITestOutputHelper output)
@@ -190,21 +187,21 @@ namespace System.Xml.Tests
         [Fact]
         public void v7()
         {
-            Assert.Equal(0, AddSchema(TestData._Root + "Bug430164_c_import.xsd", TestData._Root + "Bug430164.xsd", 2));
+            Assert.Equal(0, AddSchema(Path.Combine(TestData._Root, "Bug430164_c_import.xsd"), Path.Combine(TestData._Root, "Bug430164.xsd"), 2));
         }
 
         //[Variation(Desc = "v8 - 430164_include Add(XmlSchema)")]
         [Fact]
         public void v8()
         {
-            Assert.Equal(0, AddSchema(TestData._Root + "Bug430164_b_include.xsd", TestData._Root + "Bug430164.xsd", 1));
+            Assert.Equal(0, AddSchema(Path.Combine(TestData._Root, "Bug430164_b_include.xsd"), Path.Combine(TestData._Root, "Bug430164.xsd"), 1));
         }
 
         //[Variation(Desc = "v9 - 430164_redefine Add(XmlSchema)")]
         [Fact]
         public void v9()
         {
-            Assert.Equal(0, AddSchema(TestData._Root + "Bug430164_a_redefine.xsd", TestData._Root + "Bug430164.xsd", 1));
+            Assert.Equal(0, AddSchema(Path.Combine(TestData._Root, "Bug430164_a_redefine.xsd"), Path.Combine(TestData._Root, "Bug430164.xsd"), 1));
         }
 
         private int AddSchema(string path1, string path2, int expCount)
@@ -253,11 +250,11 @@ namespace System.Xml.Tests
         public void v10()
         {
             XmlCachedSchemaSetResolver resolver = new XmlCachedSchemaSetResolver();
-            XmlTextReader r = new XmlTextReader(TestData._Root + @"RedefineEmployee.xsd");
+            XmlTextReader r = new XmlTextReader(Path.Combine(TestData._Root, @"RedefineEmployee.xsd"));
             XmlSchema s = XmlSchema.Read(r, null);
             resolver.Add(new Uri(s.SourceUri), s);
 
-            XmlTextReader r2 = new XmlTextReader(TestData._Root + @"BaseEmployee2.xsd");
+            XmlTextReader r2 = new XmlTextReader(Path.Combine(TestData._Root, @"BaseEmployee2.xsd"));
             XmlSchema s2 = XmlSchema.Read(r2, null);
             resolver.Add(new Uri(s2.SourceUri), s2);
 
@@ -281,7 +278,7 @@ namespace System.Xml.Tests
             Assert.Equal(set.Contains(s), true);
             Assert.Equal(set.IsCompiled, true);
 
-            XmlTextReader r3 = new XmlTextReader(TestData._Root + @"BaseEmployee2.xsd");
+            XmlTextReader r3 = new XmlTextReader(Path.Combine(TestData._Root, @"BaseEmployee2.xsd"));
             XmlSchema s3 = XmlSchema.Read(r3, null);
             resolver.Add(new Uri(s3.SourceUri), s3);
 
@@ -323,11 +320,11 @@ namespace System.Xml.Tests
         {
             XmlCachedSchemaSetResolver resolver = new XmlCachedSchemaSetResolver();
 
-            XmlTextReader r = new XmlTextReader(TestData._Root + @"RedefineEmployee.xsd");
+            XmlTextReader r = new XmlTextReader(Path.Combine(TestData._Root, @"RedefineEmployee.xsd"));
             XmlSchema s = XmlSchema.Read(r, null);
             resolver.Add(new Uri(s.SourceUri), s);
 
-            XmlTextReader r2 = new XmlTextReader(TestData._Root + @"BaseEmployee2.xsd");
+            XmlTextReader r2 = new XmlTextReader(Path.Combine(TestData._Root, @"BaseEmployee2.xsd"));
             XmlSchema s2 = XmlSchema.Read(r2, null);
             resolver.Add(new Uri(s2.SourceUri), s2);
 
@@ -353,11 +350,11 @@ namespace System.Xml.Tests
             settings.ValidationType = ValidationType.Schema;
             settings.Schemas = set;
 
-            using (XmlReader reader = XmlReader.Create(TestData._Root + "EmployeesDefaultPrefix.xml", settings))
+            using (XmlReader reader = XmlReader.Create(Path.Combine(TestData._Root, "EmployeesDefaultPrefix.xml"), settings))
             {
                 while (reader.Read()) ;
             }
-            XmlTextReader r3 = new XmlTextReader(TestData._Root + @"BaseEmployee2.xsd");
+            XmlTextReader r3 = new XmlTextReader(Path.Combine(TestData._Root, @"BaseEmployee2.xsd"));
             XmlSchema s3 = XmlSchema.Read(r3, null);
             resolver.Add(new Uri(s3.SourceUri), s3);
 
@@ -391,7 +388,7 @@ namespace System.Xml.Tests
 
             settings.Schemas = set2;
 
-            using (XmlReader reader = XmlReader.Create(TestData._Root + "EmployeesDefaultPrefix.xml", settings))
+            using (XmlReader reader = XmlReader.Create(Path.Combine(TestData._Root, "EmployeesDefaultPrefix.xml"), settings))
             {
                 while (reader.Read()) ;
             }
@@ -402,10 +399,10 @@ namespace System.Xml.Tests
         [Fact]
         public void v12a()
         {
-            using (XmlReader r = XmlReader.Create(TestData._Root + @"bug264908_v1.xsd"))
+            using (XmlReader r = XmlReader.Create(Path.Combine(TestData._Root, @"bug264908_v1.xsd")))
             {
                 XmlSchema s = XmlSchema.Read(r, null);
-                using (XmlReader r2 = XmlReader.Create(TestData._Root + @"bug264908_v1a.xsd"))
+                using (XmlReader r2 = XmlReader.Create(Path.Combine(TestData._Root, @"bug264908_v1a.xsd")))
                 {
                     XmlSchema s2 = XmlSchema.Read(r2, null);
                     XmlSchemaSet set = new XmlSchemaSet();

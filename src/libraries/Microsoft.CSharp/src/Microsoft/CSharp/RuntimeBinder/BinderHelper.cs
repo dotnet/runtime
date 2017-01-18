@@ -312,13 +312,13 @@ namespace Microsoft.CSharp.RuntimeBinder
             var invokeConstructor = action as CSharpInvokeConstructorBinder;
             if (invokeConstructor != null)
             {
-                if (arg0 == null || !(arg0.Value is System.Type))
+                if (arg0 == null || !(arg0.Value is Type))
                 {
                     Debug.Assert(false);
                     return typeof(object);
                 }
 
-                Type result = arg0.Value as System.Type;
+                Type result = arg0.Value as Type;
 
                 return result;
             }

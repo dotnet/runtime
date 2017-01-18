@@ -20,6 +20,17 @@ using Xunit;
 
 public static partial class XmlSerializerTests
 {
+#if ReflectionOnly
+    private static readonly string SerializationModeSetterName = "set_Mode";
+
+    static XmlSerializerTests()
+    {
+        var method = typeof(XmlSerializer).GetMethod(SerializationModeSetterName);
+        Assert.True(method != null, $"No method named {SerializationModeSetterName}");
+        method.Invoke(null, new object[] { 1 });
+    }
+
+#endif
     [Fact]
     public static void Xml_BoolAsRoot()
     {
@@ -2367,6 +2378,9 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         Assert.Equal(dog1.Breed, dog2.Breed);
     }
 
+#if ReflectionOnly
+    [ActiveIssue(14259)]
+#endif
     [Fact]
     public static void XmlUnknownElementAndEventHandlerTest()
     {
@@ -2397,6 +2411,9 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         Assert.True(b);
     }
 
+#if ReflectionOnly
+    [ActiveIssue(14259)]
+#endif
     [Fact]
     public static void XmlUnknownNodeAndEventHandlerTest()
     {
@@ -2529,6 +2546,172 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         }
     }
 
+    [ActiveIssue(12799)]
+    [Fact]
+    public static void SoapEncodedSerializationTest_Basic()
+    {
+        XmlTypeMapping myTypeMapping = new SoapReflectionImporter().ImportTypeMapping(typeof(SoapEncodedTestType1));
+        var ser = new XmlSerializer(myTypeMapping);
+        var value = new SoapEncodedTestType1()
+        {
+            IntValue = 11,
+            DoubleValue = 12.0,
+            StringValue = "abc",
+            DateTimeValue = new DateTime(1000)
+        };
+
+        var actual = SerializeAndDeserialize(
+            value: value,
+            baseline: "<?xml version=\"1.0\"?>\r\n<SoapEncodedTestType1 xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" id=\"id1\">\r\n  <IntValue xsi:type=\"xsd:int\">11</IntValue>\r\n  <DoubleValue xsi:type=\"xsd:double\">12</DoubleValue>\r\n  <StringValue xsi:type=\"xsd:string\">abc</StringValue>\r\n  <DateTimeValue xsi:type=\"xsd:dateTime\">0001-01-01T00:00:00.0001</DateTimeValue>\r\n</SoapEncodedTestType1>",
+            serializerFactory: () => ser);
+
+        Assert.NotNull(actual);
+        Assert.Equal(value.IntValue, actual.IntValue);
+        Assert.Equal(value.DoubleValue, actual.DoubleValue);
+        Assert.Equal(value.StringValue, actual.StringValue);
+        Assert.Equal(value.DateTimeValue, actual.DateTimeValue);
+    }
+
+    [ActiveIssue(12799)]
+    [Fact]
+    public static void SoapEncodedSerializationTest_With_SoapIgnore()
+    {
+        var soapAttributes = new SoapAttributes();
+        soapAttributes.SoapIgnore = true;
+
+        var soapOverrides = new SoapAttributeOverrides();
+        soapOverrides.Add(typeof(SoapEncodedTestType1), "IntValue", soapAttributes);
+
+        XmlTypeMapping myTypeMapping = new SoapReflectionImporter(soapOverrides).ImportTypeMapping(typeof(SoapEncodedTestType1));
+        var ser = new XmlSerializer(myTypeMapping);
+        var value = new SoapEncodedTestType1()
+        {
+            IntValue = 11,
+            DoubleValue = 12.0,
+            StringValue = "abc",
+            DateTimeValue = new DateTime(1000)
+        };
+
+        var actual = SerializeAndDeserialize(
+            value: value,
+            baseline: "<?xml version=\"1.0\"?>\r\n<SoapEncodedTestType1 xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" id=\"id1\">\r\n  <DoubleValue xsi:type=\"xsd:double\">12</DoubleValue>\r\n  <StringValue xsi:type=\"xsd:string\">abc</StringValue>\r\n  <DateTimeValue xsi:type=\"xsd:dateTime\">0001-01-01T00:00:00.0001</DateTimeValue>\r\n</SoapEncodedTestType1>",
+            serializerFactory: () => ser);
+
+        Assert.NotNull(actual);
+        Assert.NotEqual(value.IntValue, actual.IntValue);
+        Assert.Equal(value.DoubleValue, actual.DoubleValue);
+        Assert.Equal(value.StringValue, actual.StringValue);
+        Assert.Equal(value.DateTimeValue, actual.DateTimeValue);
+    }
+
+    [ActiveIssue(12799)]
+    [Fact]
+    public static void SoapEncodedSerializationTest_With_SoapElement()
+    {
+        var soapAttributes = new SoapAttributes();
+        var soapElement = new SoapElementAttribute("MyStringValue");
+        soapAttributes.SoapElement = soapElement;
+
+        var soapOverrides = new SoapAttributeOverrides();
+        soapOverrides.Add(typeof(SoapEncodedTestType1), "StringValue", soapAttributes);
+
+        XmlTypeMapping myTypeMapping = new SoapReflectionImporter(soapOverrides).ImportTypeMapping(typeof(SoapEncodedTestType1));
+        var ser = new XmlSerializer(myTypeMapping);
+        var value = new SoapEncodedTestType1()
+        {
+            IntValue = 11,
+            DoubleValue = 12.0,
+            StringValue = "abc",
+            DateTimeValue = new DateTime(1000)
+        };
+
+        var actual = SerializeAndDeserialize(
+            value: value,
+            baseline: "<?xml version=\"1.0\"?>\r\n<SoapEncodedTestType1 xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" id=\"id1\">\r\n  <IntValue xsi:type=\"xsd:int\">11</IntValue>\r\n  <DoubleValue xsi:type=\"xsd:double\">12</DoubleValue>\r\n  <MyStringValue xsi:type=\"xsd:string\">abc</MyStringValue>\r\n  <DateTimeValue xsi:type=\"xsd:dateTime\">0001-01-01T00:00:00.0001</DateTimeValue>\r\n</SoapEncodedTestType1>",
+            serializerFactory: () => ser);
+
+        Assert.NotNull(actual);
+        Assert.Equal(value.IntValue, actual.IntValue);
+        Assert.Equal(value.DoubleValue, actual.DoubleValue);
+        Assert.Equal(value.StringValue, actual.StringValue);
+        Assert.Equal(value.DateTimeValue, actual.DateTimeValue);
+    }
+
+    [ActiveIssue(12799)]
+    [Fact]
+    public static void SoapEncodedSerializationTest_With_SoapType()
+    {
+        var soapAttributes = new SoapAttributes();
+        var soapType = new SoapTypeAttribute();
+        soapType.TypeName = "MyType";
+        soapAttributes.SoapType = soapType;
+
+        var soapOverrides = new SoapAttributeOverrides();
+        soapOverrides.Add(typeof(SoapEncodedTestType1), soapAttributes);
+
+        XmlTypeMapping myTypeMapping = new SoapReflectionImporter(soapOverrides).ImportTypeMapping(typeof(SoapEncodedTestType1));
+        var ser = new XmlSerializer(myTypeMapping);
+        var value = new SoapEncodedTestType1()
+        {
+            IntValue = 11,
+            DoubleValue = 12.0,
+            StringValue = "abc",
+            DateTimeValue = new DateTime(1000)
+        };
+
+        var actual = SerializeAndDeserialize(
+            value: value,
+            baseline: "<?xml version=\"1.0\"?>\r\n<MyType xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" id=\"id1\">\r\n  <IntValue xsi:type=\"xsd:int\">11</IntValue>\r\n  <DoubleValue xsi:type=\"xsd:double\">12</DoubleValue>\r\n  <StringValue xsi:type=\"xsd:string\">abc</StringValue>\r\n  <DateTimeValue xsi:type=\"xsd:dateTime\">0001-01-01T00:00:00.0001</DateTimeValue>\r\n</MyType>",
+            serializerFactory: () => ser);
+
+        Assert.NotNull(actual);
+        Assert.Equal(value.IntValue, actual.IntValue);
+        Assert.Equal(value.DoubleValue, actual.DoubleValue);
+        Assert.Equal(value.StringValue, actual.StringValue);
+        Assert.Equal(value.DateTimeValue, actual.DateTimeValue);
+    }
+
+    [ActiveIssue(12799)]
+    [Fact]
+    public static void SoapEncodedSerializationTest_Enum()
+    {
+        XmlTypeMapping myTypeMapping = new SoapReflectionImporter().ImportTypeMapping(typeof(SoapEncodedTestEnum));
+        var ser = new XmlSerializer(myTypeMapping);
+        var value = SoapEncodedTestEnum.A;
+
+        var actual = SerializeAndDeserialize(
+            value: value,
+            baseline: "<?xml version=\"1.0\"?>\r\n<SoapEncodedTestEnum d1p1:type=\"SoapEncodedTestEnum\" xmlns:d1p1=\"http://www.w3.org/2001/XMLSchema-instance\">Small</SoapEncodedTestEnum>",
+            serializerFactory: () => ser);
+
+        Assert.Equal(value, actual);
+    }
+
+    [ActiveIssue(12799)]
+    [Fact]
+    public static void SoapEncodedSerializationTest_Enum_With_SoapEnumOverrides()
+    {
+        var soapAtts = new SoapAttributes();
+        var soapEnum = new SoapEnumAttribute();
+        soapEnum.Name = "Tiny";
+        soapAtts.SoapEnum = soapEnum;
+
+        var soapAttributeOverrides = new SoapAttributeOverrides();
+        soapAttributeOverrides.Add(typeof(SoapEncodedTestEnum), "A", soapAtts);
+
+
+        XmlTypeMapping myTypeMapping = new SoapReflectionImporter(soapAttributeOverrides).ImportTypeMapping(typeof(SoapEncodedTestEnum));
+        var ser = new XmlSerializer(myTypeMapping);
+        var value = SoapEncodedTestEnum.A;
+
+        var actual = SerializeAndDeserialize(
+            value: value,
+            baseline: "<?xml version=\"1.0\"?>\r\n<SoapEncodedTestEnum d1p1:type=\"SoapEncodedTestEnum\" xmlns:d1p1=\"http://www.w3.org/2001/XMLSchema-instance\">Tiny</SoapEncodedTestEnum>",
+            serializerFactory: () => ser);
+
+        Assert.Equal(value, actual);
+    }
+
     [Fact]
     public static void XmlSerializationReaderWriterTest()
     {
@@ -2538,6 +2721,104 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         Assert.Equal(original, converted);
     }
 
+    [Fact]
+    public static void XmlReflectionImporterTest()
+    {
+        string membername = "Action";
+        XmlReflectionImporter importer = new XmlReflectionImporter("http://www.contoso.com/");
+        XmlReflectionMember[] members = new XmlReflectionMember[1];
+        XmlReflectionMember member = members[0] = new XmlReflectionMember();
+        member.MemberType = typeof(AttributedURI);
+        member.MemberName = membername;
+        XmlMembersMapping mappings = importer.ImportMembersMapping("root", "", members, true);
+        Assert.Equal(1, mappings.Count);
+        XmlMemberMapping xmp = mappings[0];
+        Assert.Equal(membername, xmp.ElementName);
+        Assert.False(xmp.CheckSpecified);
+    }
+
+    [Fact]
+    public static void XmlSerializerImplementationTest()
+    {
+        Employee emp = new Employee() { EmployeeName = "Allice" };
+        SerializeIm sm = new SerializeIm();
+        Func<XmlSerializer> serializerfunc = () => sm.GetSerializer(typeof(Employee));
+        string expected = "<?xml version=\"1.0\"?>\r\n<Employee xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">\r\n  <EmployeeName>Allice</EmployeeName>\r\n</Employee>";
+        SerializeAndDeserialize(emp, expected, serializerfunc);
+    }
+
+    [Fact]
+    public static void XmlSerializerVersionAttributeTest()
+    {
+        XmlSerializerVersionAttribute attr = new XmlSerializerVersionAttribute();
+        Assert.Null(attr.Type);
+        XmlSerializerVersionAttribute attr2 = new XmlSerializerVersionAttribute(typeof(Employee));
+        Assert.Equal(typeof(Employee), attr2.Type);
+    }
+
+    [Fact]
+    public static void XmlSerializerAssemblyAttributeTest()
+    {
+        object[] attrs = typeof(AssemblyAttrTestClass).GetCustomAttributes(typeof(XmlSerializerAssemblyAttribute), false);
+        XmlSerializerAssemblyAttribute attr = (XmlSerializerAssemblyAttribute)attrs[0];
+        Assert.NotNull(attr);
+        Assert.Equal("AssemblyAttrTestClass", attr.AssemblyName);
+    }
+
+    [Fact]
+    public static void CodeIdentifierTest()
+    {
+        CodeIdentifiers cds = new CodeIdentifiers(true);
+        cds.AddReserved(typeof(Employee).Name);
+        cds.Add("test", new TestData());
+        cds.AddUnique("test2", new TestData());
+        Assert.Equal("camelText", CodeIdentifier.MakeCamel("Camel Text"));
+        Assert.Equal("PascalText", CodeIdentifier.MakePascal("Pascal Text"));
+        Assert.Equal("ValidText", CodeIdentifier.MakeValid("Valid  Text!"));
+    }
+
+    [Fact]
+    public static void IXmlTextParserTest()
+    {
+        string xmlFileContent = @"<root><date>2003-01-08T15:00:00-00:00</date></root>";
+        Stream sm = GenerateStreamFromString(xmlFileContent);
+        XmlTextReader reader = new XmlTextReader(sm);
+        MyXmlTextParser text = new MyXmlTextParser(reader);
+    }
+
+    [Fact]
+    public static void SoapSchemaMemberTest()
+    {
+        string ns = "http://www.w3.org/2001/XMLSchema";
+        SoapSchemaMember member = new SoapSchemaMember();
+        member.MemberName = "System.DateTime";
+        member.MemberType = new XmlQualifiedName("dateTime", ns);
+        SoapSchemaMember[] members = new SoapSchemaMember[] { member };
+        var schemas = new XmlSchemas();
+        XmlSchemaImporter importer = new XmlSchemaImporter(schemas);
+        string name = "mydatetime";
+        var mapping = importer.ImportMembersMapping(name, ns, members);
+        Assert.NotNull(mapping);
+        Assert.Equal(name, mapping.ElementName);
+        Assert.Equal(name, mapping.XsdElementName);
+        Assert.Equal(1, mapping.Count);
+    }
+
+    [Fact]
+    public static void XmlSerializationGeneratedCodeTest()
+    {
+        var cg = new MycodeGenerator();
+        Assert.NotNull(cg);
+    }
+    private static Stream GenerateStreamFromString(string s)
+    {
+        var stream = new MemoryStream();
+        var writer = new StreamWriter(stream);
+        writer.Write(s);
+        writer.Flush();
+        stream.Position = 0;
+        return stream;
+    }
     private static T SerializeAndDeserialize<T>(T value, string baseline, Func<XmlSerializer> serializerFactory = null,
         bool skipStringCompare = false, XmlSerializerNamespaces xns = null)
     {

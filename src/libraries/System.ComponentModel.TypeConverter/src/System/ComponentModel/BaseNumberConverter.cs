@@ -15,13 +15,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Determines whether this editor will attempt to convert hex (0x or #) strings
         /// </summary>
-        internal virtual bool AllowHex
-        {
-            get
-            {
-                return true;
-            }
-        }
+        internal virtual bool AllowHex => true;
 
         /// <summary>
         /// The Type this converter is targeting (e.g. Int16, UInt32, etc.)

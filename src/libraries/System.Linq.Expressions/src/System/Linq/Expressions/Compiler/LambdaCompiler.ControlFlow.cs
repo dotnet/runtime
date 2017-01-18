@@ -104,7 +104,7 @@ namespace System.Linq.Expressions.Compiler
             CompilationFlags tailCall = flags & CompilationFlags.EmitAsTailCallMask;
             if (tailCall != CompilationFlags.EmitAsNoTail)
             {
-                // Since tail call flags are not passed into EmitTryExpression, CanReturn 
+                // Since tail call flags are not passed into EmitTryExpression, CanReturn
                 // means the goto will be emitted as Ret. Therefore we can emit the goto's
                 // default value with tail call. This can be improved by detecting if the
                 // target label is equivalent to the return label.
@@ -147,7 +147,7 @@ namespace System.Linq.Expressions.Compiler
             // Anything that is "statement-like" -- e.g. has no associated
             // stack state can be jumped into, with the exception of try-blocks
             // We indicate this by a "Block"
-            // 
+            //
             // Otherwise, we push an "Expression" to indicate that it can't be
             // jumped into
             switch (node.NodeType)

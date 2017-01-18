@@ -78,6 +78,9 @@ namespace System.Collections
 
         private const int _defaultCapacity = 16;
 
+        // Copy of Array.MaxArrayLength
+        internal const int MaxArrayLength = 0X7FEFFFFF;
+
         // Constructs a new sorted list. The sorted list is initially empty and has
         // a capacity of zero. Upon adding the first element to the sorted list the
         // capacity is increased to 16, and then increased in multiples of two as
@@ -399,7 +402,7 @@ namespace System.Collections
             int newCapacity = _keys.Length == 0 ? 16 : _keys.Length * 2;
             // Allow the list to grow to maximum possible capacity (~2G elements) before encountering overflow.
             // Note that this check works even when _items.Length overflowed thanks to the (uint) cast
-            if ((uint)newCapacity > ArrayList.MaxArrayLength) newCapacity = ArrayList.MaxArrayLength;
+            if ((uint)newCapacity > MaxArrayLength) newCapacity = MaxArrayLength;
             if (newCapacity < min) newCapacity = min;
             Capacity = newCapacity;
         }

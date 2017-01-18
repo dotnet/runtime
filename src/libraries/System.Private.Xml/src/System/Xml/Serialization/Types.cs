@@ -549,7 +549,7 @@ namespace System.Xml.Serialization
 
             // Unsuppoted types that we map to string, if in the future we decide 
             // to add support for them we would need to create custom formatters for them
-            // normalizedString is the only one unsuported type that suppose to preserve whitesapce
+            // normalizedString is the only one unsupported type that suppose to preserve whitesapce
             AddPrimitive(typeof(string), "normalizedString", "String", TypeFlags.AmbiguousDataType | TypeFlags.CanBeAttributeValue | TypeFlags.CanBeElementValue | TypeFlags.CanBeTextValue | TypeFlags.Reference | TypeFlags.HasDefaultConstructor);
             for (int i = 0; i < s_unsupportedTypes.Length; i++)
             {
@@ -1366,7 +1366,7 @@ namespace System.Xml.Serialization
             return GetDefaultIndexer(type, memberInfo).PropertyType;
         }
 
-        static internal XmlQualifiedName ParseWsdlArrayType(string type, out string dims, XmlSchemaObject parent)
+        internal static XmlQualifiedName ParseWsdlArrayType(string type, out string dims, XmlSchemaObject parent)
         {
             string ns;
             string name;

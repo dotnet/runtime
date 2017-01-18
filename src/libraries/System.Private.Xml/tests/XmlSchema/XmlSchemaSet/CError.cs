@@ -13,19 +13,19 @@ namespace System.Xml.Tests
 {
     public static class CError
     {
-        static public bool Compare(bool equal, string message)
+        public static bool Compare(bool equal, string message)
         {
             Assert.True(equal, message);
             return true;
         }
 
-        static public bool Compare(object actual, object expected, string message)
+        public static bool Compare(object actual, object expected, string message)
         {
             Assert.Equal(expected, actual);
             return true;
         }
 
-        static public bool Compare(object actual, object expected1, object expected2, string message)
+        public static bool Compare(object actual, object expected1, object expected2, string message)
         {
             Assert.Equal(expected1, actual);
             Assert.Equal(expected2, actual);

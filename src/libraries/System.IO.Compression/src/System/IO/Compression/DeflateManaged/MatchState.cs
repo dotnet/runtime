@@ -2,9 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-internal enum MatchState
+namespace System.IO.Compression
 {
-    HasSymbol = 1,
-    HasMatch = 2,
-    HasSymbolAndMatch = 3
+    internal enum MatchState
+    {
+        HasSymbol = 1,
+        HasMatch = 2,
+        HasSymbolAndMatch = 3
+    }
 }

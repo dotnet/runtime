@@ -3939,3 +3939,240 @@ public class TypeForRootNameTest
     [DataMember]
     public string StringProperty { get; set; }
 }
+
+[Serializable]
+public class TypeWithSerializableAttributeAndNonSerializedField
+{
+    public int Member1;
+    private string _member2;
+    private int _member3;
+
+    [NonSerialized()]
+    public string Member4;
+
+    public string Member2
+    {
+        get
+        {
+            return _member2;
+        }
+
+        set
+        {
+            _member2 = value;
+        }
+    }
+
+    public int Member3
+    {
+        get
+        {
+            return _member3;
+        }
+    }
+
+    public void SetMember3(int value)
+    {
+        _member3 = value;
+    }
+}
+
+[Serializable]
+public class TypeWithOptionalField
+{
+    public int Member1;
+    [OptionalField]
+    public int Member2;
+}
+
+[Serializable]
+public enum SerializableEnumWithNonSerializedValue
+{
+    One = 1,
+    [NonSerialized]
+    Two = 2,
+}
+
+public class TypeWithSerializableEnum
+{
+    public SerializableEnumWithNonSerializedValue EnumField;
+}
+
+[DataContract]
+public class Poseesions
+{
+    [DataMember]
+    public string ItemName;
+}
+
+public static class ReaderWriterConstants
+{
+    public const string ReaderWriterType = "ReaderWriterType";
+    public const string Encoding = "Encoding";
+    public const string TransferMode = "TransferMode";
+    public const string ReaderMode = "ReaderMode";
+    public const string ReaderMode_Streamed = "Streamed";
+    public const string ReaderMode_Buffered = "Buffered";
+
+    public const string RootElementName = "Root";
+    public const string XmlNamespace = "http://www.w3.org/XML/1998/namespace";
+}
+
+public static class FragmentHelper
+{
+    public static bool CanFragment(XmlDictionaryWriter writer)
+    {
+        IFragmentCapableXmlDictionaryWriter fragmentWriter = writer as IFragmentCapableXmlDictionaryWriter;
+        return fragmentWriter != null && fragmentWriter.CanFragment;
+    }
+
+    public static void Start(XmlDictionaryWriter writer, Stream stream)
+    {
+        Start(writer, stream, false);
+    }
+
+    public static void Start(XmlDictionaryWriter writer, Stream stream, bool generateSelfContainedText)
+    {
+        EnsureWriterCanFragment(writer);
+        ((IFragmentCapableXmlDictionaryWriter)writer).StartFragment(stream, generateSelfContainedText);
+    }
+
+    public static void End(XmlDictionaryWriter writer)
+    {
+        EnsureWriterCanFragment(writer);
+        ((IFragmentCapableXmlDictionaryWriter)writer).EndFragment();
+    }
+
+    public static void Write(XmlDictionaryWriter writer, byte[] buffer, int offset, int count)
+    {
+        EnsureWriterCanFragment(writer);
+        ((IFragmentCapableXmlDictionaryWriter)writer).WriteFragment(buffer, offset, count);
+    }
+
+    static void EnsureWriterCanFragment(XmlDictionaryWriter writer)
+    {
+        if (!CanFragment(writer))
+        {
+            throw new InvalidOperationException("Fragment cannot be done using writer " + writer.GetType());
+        }
+    }
+}
+
+[System.Xml.Serialization.XmlTypeAttribute(Namespace = "http://schemas.xmlsoap.org/ws/2003/03/addressing")]
+[System.Xml.Serialization.XmlRootAttribute("Action", Namespace = "http://schemas.xmlsoap.org/ws/2003/03/addressing", IsNullable = false)]
+public class AttributedURI
+{
+    [XmlText]
+    public string Value;
+
+    public bool[] BooleanValues = new bool[] { false, true, false, true, true };
+}
+
+public class SerializeIm : XmlSerializerImplementation
+{
+    public override XmlSerializer GetSerializer(Type type)
+    {
+        return new XmlSerializer(type);
+    }
+}
+
+[XmlSerializerAssembly(AssemblyName = "AssemblyAttrTestClass")]
+public class AssemblyAttrTestClass
+{
+    public string TestString { get; set;  }
+}
+
+public class MyXmlTextParser : IXmlTextParser
+{
+    private XmlTextReader _myreader;
+    public MyXmlTextParser(XmlTextReader reader)
+    {
+        _myreader = reader;
+    }
+    bool IXmlTextParser.Normalized
+    {
+        get
+        {
+            return _myreader.Normalization;
+        }
+
+        set
+        {
+            _myreader.Normalization = value;
+        }
+    }
+
+    WhitespaceHandling IXmlTextParser.WhitespaceHandling
+    {
+        get
+        {
+            return _myreader.WhitespaceHandling;
+        }
+
+        set
+        {
+            _myreader.WhitespaceHandling = value;
+        }
+    }
+}
+
+[Serializable]
+public class SquareWithDeserializationCallback : IDeserializationCallback
+{
+
+    public int Edge;
+
+    [NonSerialized]
+    private int _area;
+
+    public int Area => _area;
+
+    public SquareWithDeserializationCallback(int edge)
+    {
+        Edge = edge;
+        _area = edge * edge;
+    }
+
+    void IDeserializationCallback.OnDeserialization(object sender)
+    {
+        // After being deserialized, initialize the _area field 
+        // using the deserialized Radius value.
+        _area = Edge * Edge;
+    }
+}
+
+public class SampleTextWriter : IXmlTextWriterInitializer
+{
+    public Encoding Encoding;
+    public Stream Stream;
+    public SampleTextWriter()
+    {
+
+    }
+    public void SetOutput(Stream stream, Encoding encoding, bool ownsStream)
+    {
+        Encoding = encoding;
+        Stream = stream;
+    }
+}
+
+public class MycodeGenerator : XmlSerializationGeneratedCode
+{
+
+}
+
+public class SoapEncodedTestType1
+{
+    public int IntValue;
+    public double DoubleValue;
+    public string StringValue;
+    public DateTime DateTimeValue;
+}
+
+public enum SoapEncodedTestEnum
+{
+    [SoapEnum("Small")]
+    A,
+    [SoapEnum("Large")]
+    B
+}

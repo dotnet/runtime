@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.IO;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -13,7 +12,7 @@ namespace System.IO.Compression
     {
         private DeflateStream _deflateStream;
 
-        public GZipStream(Stream stream, CompressionMode mode): this(stream, mode, false)
+        public GZipStream(Stream stream, CompressionMode mode): this(stream, mode, leaveOpen: false)
         {
         }
 
@@ -23,7 +22,7 @@ namespace System.IO.Compression
         }
 
         // Implies mode = Compress
-        public GZipStream(Stream stream, CompressionLevel compressionLevel): this(stream, compressionLevel, false)
+        public GZipStream(Stream stream, CompressionLevel compressionLevel): this(stream, compressionLevel, leaveOpen: false)
         {
         }
 
@@ -33,64 +32,21 @@ namespace System.IO.Compression
             _deflateStream = new DeflateStream(stream, compressionLevel, leaveOpen, ZLibNative.GZip_DefaultWindowBits);
         }
 
-        public override bool CanRead
-        {
-            get
-            {
-                if (_deflateStream == null)
-                {
-                    return false;
-                }
+        public override bool CanRead => _deflateStream?.CanRead ?? false;
 
-                return _deflateStream.CanRead;
-            }
-        }
+        public override bool CanWrite => _deflateStream?.CanWrite ?? false;
 
-        public override bool CanWrite
-        {
-            get
-            {
-                if (_deflateStream == null)
-                {
-                    return false;
-                }
-
-                return _deflateStream.CanWrite;
-            }
-        }
-
-        public override bool CanSeek
-        {
-            get
-            {
-                if (_deflateStream == null)
-                {
-                    return false;
-                }
-
-                return _deflateStream.CanSeek;
-            }
-        }
+        public override bool CanSeek => _deflateStream?.CanSeek ?? false;
 
         public override long Length
         {
-            get
-            {
-                throw new NotSupportedException(SR.NotSupported);
-            }
+            get { throw new NotSupportedException(SR.NotSupported); }
         }
 
         public override long Position
         {
-            get
-            {
-                throw new NotSupportedException(SR.NotSupported);
-            }
-
-            set
-            {
-                throw new NotSupportedException(SR.NotSupported);
-            }
+            get { throw new NotSupportedException(SR.NotSupported); }
+            set { throw new NotSupportedException(SR.NotSupported); }
         }
 
         public override void Flush()
@@ -136,7 +92,7 @@ namespace System.IO.Compression
 
         public override void EndWrite(IAsyncResult asyncResult) =>
             TaskToApm.End(asyncResult);
-#endif            
+#endif
 
         public override void Write(byte[] array, int offset, int count)
         {
@@ -160,28 +116,15 @@ namespace System.IO.Compression
             }
         }
 
-        public Stream BaseStream
-        {
-            get
-            {
-                if (_deflateStream != null)
-                {
-                    return _deflateStream.BaseStream;
-                }
-                else
-                {
-                    return null;
-                }
-            }
-        }
+        public Stream BaseStream => _deflateStream?.BaseStream;
 
-        public override Task<int> ReadAsync(Byte[] array, int offset, int count, CancellationToken cancellationToken)
+        public override Task<int> ReadAsync(byte[] array, int offset, int count, CancellationToken cancellationToken)
         {
             CheckDeflateStream();
             return _deflateStream.ReadAsync(array, offset, count, cancellationToken);
         }
 
-        public override Task WriteAsync(Byte[] array, int offset, int count, CancellationToken cancellationToken)
+        public override Task WriteAsync(byte[] array, int offset, int count, CancellationToken cancellationToken)
         {
             CheckDeflateStream();
             return _deflateStream.WriteAsync(array, offset, count, cancellationToken);

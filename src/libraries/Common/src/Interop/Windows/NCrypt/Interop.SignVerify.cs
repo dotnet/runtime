@@ -10,9 +10,9 @@ internal static partial class Interop
     internal static partial class NCrypt
     {
         [DllImport(Interop.Libraries.NCrypt, CharSet = CharSet.Unicode)]
-        internal static unsafe extern ErrorCode NCryptSignHash(SafeNCryptKeyHandle hKey, void* pPaddingInfo, [In] byte[] pbHashValue, int cbHashValue, [Out] byte[] pbSignature, int cbSignature, out int pcbResult, AsymmetricPaddingMode dwFlags);
+        internal static extern unsafe ErrorCode NCryptSignHash(SafeNCryptKeyHandle hKey, void* pPaddingInfo, [In] byte[] pbHashValue, int cbHashValue, [Out] byte[] pbSignature, int cbSignature, out int pcbResult, AsymmetricPaddingMode dwFlags);
 
         [DllImport(Interop.Libraries.NCrypt, CharSet = CharSet.Unicode)]
-        internal static unsafe extern ErrorCode NCryptVerifySignature(SafeNCryptKeyHandle hKey, void *pPaddingInfo, [In] byte[] pbHashValue, int cbHashValue, [In] byte[] pbSignature, int cbSignature, AsymmetricPaddingMode dwFlags);
+        internal static extern unsafe ErrorCode NCryptVerifySignature(SafeNCryptKeyHandle hKey, void *pPaddingInfo, [In] byte[] pbHashValue, int cbHashValue, [In] byte[] pbSignature, int cbSignature, AsymmetricPaddingMode dwFlags);
     }
 }

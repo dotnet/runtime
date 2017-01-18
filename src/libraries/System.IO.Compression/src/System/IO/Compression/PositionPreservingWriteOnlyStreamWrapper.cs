@@ -1,4 +1,8 @@
-﻿using System.Threading;
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace System.IO.Compression
@@ -24,10 +28,7 @@ namespace System.IO.Compression
         public override long Position
         {
             get { return _position; }
-            set
-            {
-                throw new NotSupportedException(SR.NotSupported);
-            }
+            set { throw new NotSupportedException(SR.NotSupported); }
         }
         public override void Write(byte[] buffer, int offset, int count)
         {
@@ -83,10 +84,7 @@ namespace System.IO.Compression
 
         public override long Length
         {
-            get
-            {
-                throw new NotSupportedException(SR.NotSupported);
-            }
+            get { throw new NotSupportedException(SR.NotSupported); }
         }
 
         public override long Seek(long offset, SeekOrigin origin)

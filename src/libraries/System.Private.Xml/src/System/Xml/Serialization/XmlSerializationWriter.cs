@@ -617,7 +617,7 @@ namespace System.Xml.Serialization
             {
 #if DEBUG
                     // use exception in the place of Debug.Assert to avoid throwing asserts from a server process such as aspnet_ewp.exe
-                    if (!objectsInUse.ContainsKey(o)) throw new InvalidOperationException(SR.Format(SR.XmlInternalErrorDetails, "missing stack object of type " + o.GetType().FullName));
+                    if (!_objectsInUse.ContainsKey(o)) throw new InvalidOperationException(SR.Format(SR.XmlInternalErrorDetails, "missing stack object of type " + o.GetType().FullName));
 #endif
 
                 _objectsInUse.Remove(o);
@@ -1834,7 +1834,8 @@ namespace System.Xml.Serialization
 
                     if (member.Attribute != null && !member.Ignore)
                     {
-                        string source = "p[" + i.ToString(CultureInfo.InvariantCulture) + "]";
+                        string index = i.ToString(CultureInfo.InvariantCulture);
+                        string source = "p[" + index + "]";
 
                         string specifiedSource = null;
                         int specifiedPosition = 0;
@@ -1853,7 +1854,7 @@ namespace System.Xml.Serialization
                         }
 
                         Writer.Write("if (pLength > ");
-                        Writer.Write(i.ToString(CultureInfo.InvariantCulture));
+                        Writer.Write(index);
                         Writer.WriteLine(") {");
                         Writer.Indent++;
 
@@ -1906,8 +1907,9 @@ namespace System.Xml.Serialization
                     }
                 }
 
+                string index = i.ToString(CultureInfo.InvariantCulture);
                 Writer.Write("if (pLength > ");
-                Writer.Write(i.ToString(CultureInfo.InvariantCulture));
+                Writer.Write(index);
                 Writer.WriteLine(") {");
                 Writer.Indent++;
 
@@ -1921,7 +1923,7 @@ namespace System.Xml.Serialization
                     Writer.Indent++;
                 }
 
-                string source = "p[" + i.ToString(CultureInfo.InvariantCulture) + "]";
+                string source = "p[" + index + "]";
                 string enumSource = null;
                 if (member.ChoiceIdentifier != null)
                 {

@@ -7476,7 +7476,7 @@ namespace System.Linq.Expressions.Tests
 
             if (value.HasValue)
             {
-                var unboxed = value.GetValueOrDefault();
+                byte unboxed = value.GetValueOrDefault();
                 if (unboxed > sbyte.MaxValue)
                     Assert.Throws<OverflowException>(() => f());
                 else
@@ -8170,7 +8170,7 @@ namespace System.Linq.Expressions.Tests
 
             if (value.HasValue)
             {
-                var unboxed = value.GetValueOrDefault();
+                char unboxed = value.GetValueOrDefault();
                 if (unboxed > sbyte.MaxValue)
                     Assert.Throws<OverflowException>(() => f());
                 else
@@ -11088,7 +11088,7 @@ namespace System.Linq.Expressions.Tests
 
             if (value.HasValue)
             {
-                var unboxed = value.GetValueOrDefault();
+                E unboxed = value.GetValueOrDefault();
                 if ((int)unboxed < sbyte.MinValue | (int)unboxed > sbyte.MaxValue)
                     Assert.Throws<OverflowException>(() => f());
                 else
@@ -11821,7 +11821,7 @@ namespace System.Linq.Expressions.Tests
 
             if (value.HasValue)
             {
-                var unboxed = value.GetValueOrDefault();
+                El unboxed = value.GetValueOrDefault();
                 if ((long)unboxed < sbyte.MinValue | (long)unboxed > sbyte.MaxValue)
                     Assert.Throws<OverflowException>(() => f());
                 else
@@ -13792,7 +13792,7 @@ namespace System.Linq.Expressions.Tests
 
             if (value.HasValue)
             {
-                var unboxed = value.GetValueOrDefault();
+                int unboxed = value.GetValueOrDefault();
                 if (unboxed < sbyte.MinValue | unboxed > sbyte.MaxValue)
                     Assert.Throws<OverflowException>(() => f());
                 else
@@ -14569,7 +14569,7 @@ namespace System.Linq.Expressions.Tests
 
             if (value.HasValue)
             {
-                var unboxed = value.GetValueOrDefault();
+                long unboxed = value.GetValueOrDefault();
                 if (unboxed < sbyte.MinValue | unboxed > sbyte.MaxValue)
                     Assert.Throws<OverflowException>(() => f());
                 else
@@ -16024,7 +16024,7 @@ namespace System.Linq.Expressions.Tests
 
             if (value.HasValue)
             {
-                var unboxed = value.GetValueOrDefault();
+                short unboxed = value.GetValueOrDefault();
                 if (unboxed < sbyte.MinValue | unboxed > sbyte.MaxValue)
                     Assert.Throws<OverflowException>(() => f());
                 else
@@ -16775,7 +16775,7 @@ namespace System.Linq.Expressions.Tests
 
             if (value.HasValue)
             {
-                var unboxed = value.GetValueOrDefault();
+                uint unboxed = value.GetValueOrDefault();
                 if (unboxed > sbyte.MaxValue)
                     Assert.Throws<OverflowException>(() => f());
                 else
@@ -17555,7 +17555,7 @@ namespace System.Linq.Expressions.Tests
 
             if (value.HasValue)
             {
-                var unboxed = value.GetValueOrDefault();
+                ulong unboxed = value.GetValueOrDefault();
                 if (unboxed > (ulong)sbyte.MaxValue)
                     Assert.Throws<OverflowException>(() => f());
                 else
@@ -18266,7 +18266,7 @@ namespace System.Linq.Expressions.Tests
 
             if (value.HasValue)
             {
-                var unboxed = value.GetValueOrDefault();
+                ushort unboxed = value.GetValueOrDefault();
                 if (unboxed > sbyte.MaxValue)
                     Assert.Throws<OverflowException>(() => f());
                 else
