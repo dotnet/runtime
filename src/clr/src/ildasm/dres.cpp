@@ -11,7 +11,6 @@
 #include "debugmacros.h"
 #include "corpriv.h"
 #include "dasmenum.hpp"
-#include "dasmgui.h"
 #include "formattype.h"
 #include "dis.h"
 #include "resource.h"
