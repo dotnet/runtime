@@ -221,8 +221,8 @@ namespace System.Configuration
         /// </summary>
         private sealed class ClientSettingsConfigurationHost : DelegatingConfigHost
         {
-            private const string ClientConfigurationHostTypeName = "System.Configuration.ClientConfigurationHost, System.Configuration";
-            private const string InternalConfigConfigurationFactoryTypeName = "System.Configuration.Internal.InternalConfigConfigurationFactory, System.Configuration";
+            private const string ClientConfigurationHostTypeName = "System.Configuration.ClientConfigurationHost, " + TypeUtil.ConfigurationManagerAssemblyName;
+            private const string InternalConfigConfigurationFactoryTypeName = "System.Configuration.Internal.InternalConfigConfigurationFactory, " + TypeUtil.ConfigurationManagerAssemblyName;
             private static volatile IInternalConfigConfigurationFactory s_configFactory;
 
             /// <summary>

@@ -24,7 +24,7 @@ namespace System.ConfigurationTests
 @"<?xml version='1.0' encoding='utf-8' ?>
 <configuration>
     <configSections>
-        <section name='simpleCustomSection' type='System.ConfigurationTests.BasicCustomSectionTests+SimpleCustomSection, System.Configuration.Tests' />
+        <section name='simpleCustomSection' type='System.ConfigurationTests.BasicCustomSectionTests+SimpleCustomSection, System.Configuration.ConfigurationManager.Tests' />
     </configSections>
     <simpleCustomSection />
 </configuration>";
@@ -45,7 +45,7 @@ namespace System.ConfigurationTests
 @"<?xml version='1.0' encoding='utf-8' ?>
 <configuration>
     <configSections>
-        <section name='simpleCustomSection' type='System.ConfigurationTests.BasicCustomSectionTests+SimpleCustomSection, System.Configuration.Tests' />
+        <section name='simpleCustomSection' type='System.ConfigurationTests.BasicCustomSectionTests+SimpleCustomSection, System.Configuration.ConfigurationManager.Tests' />
     </configSections>
     <simpleCustomSection test='Foo' />
 </configuration>";
@@ -76,7 +76,7 @@ namespace System.ConfigurationTests
 @"<?xml version='1.0' encoding='utf-8' ?>
 <configuration>
     <configSections>
-        <section name='simpleCustomSectionRequiredValue' type='System.ConfigurationTests.BasicCustomSectionTests+SimpleCustomSectionRequiredValue, System.Configuration.Tests' />
+        <section name='simpleCustomSectionRequiredValue' type='System.ConfigurationTests.BasicCustomSectionTests+SimpleCustomSectionRequiredValue, System.Configuration.ConfigurationManager.Tests' />
     </configSections>
     <simpleCustomSectionRequiredValue />
 </configuration>";
@@ -106,7 +106,7 @@ namespace System.ConfigurationTests
 @"<?xml version='1.0' encoding='utf-8' ?>
 <configuration>
     <configSections>
-        <section name='simpleCustomSectionDefaultValue' type='System.ConfigurationTests.BasicCustomSectionTests+SimpleCustomSectionDefaultValue, System.Configuration.Tests' />
+        <section name='simpleCustomSectionDefaultValue' type='System.ConfigurationTests.BasicCustomSectionTests+SimpleCustomSectionDefaultValue, System.Configuration.ConfigurationManager.Tests' />
     </configSections>
     <simpleCustomSectionDefaultValue />
 </configuration>";
@@ -133,7 +133,7 @@ namespace System.ConfigurationTests
 @"<?xml version='1.0' encoding='utf-8' ?>
 <configuration>
     <configSections>
-        <section name='simpleDefaultCollectionSection' type='System.ConfigurationTests.BasicCustomSectionTests+SimpleDefaultCollectionSection, System.Configuration.Tests' />
+        <section name='simpleDefaultCollectionSection' type='System.ConfigurationTests.BasicCustomSectionTests+SimpleDefaultCollectionSection, System.Configuration.ConfigurationManager.Tests' />
     </configSections>
     <simpleDefaultCollectionSection>
         <add key='Fruit' value='Pear' />
@@ -166,7 +166,7 @@ namespace System.ConfigurationTests
 @"<?xml version='1.0' encoding='utf-8' ?>
 <configuration>
     <configSections>
-        <section name='simpleCollectionSection' type='System.ConfigurationTests.BasicCustomSectionTests+SimpleCollectionSection, System.Configuration.Tests' />
+        <section name='simpleCollectionSection' type='System.ConfigurationTests.BasicCustomSectionTests+SimpleCollectionSection, System.Configuration.ConfigurationManager.Tests' />
     </configSections>
     <simpleCollectionSection>
         <foods>

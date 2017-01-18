@@ -121,7 +121,7 @@ namespace System.Configuration
         private const string InvalidLastSubPathCharacters = @"\./";
         private const string InvalidSubPathCharactersString = @"\?:*""<>|";
 
-        private const string ProtectedConfigurationSectionTypeName = "System.Configuration.ProtectedConfigurationSection, System.Configuration";
+        private const string ProtectedConfigurationSectionTypeName = "System.Configuration.ProtectedConfigurationSection, " + TypeUtil.ConfigurationManagerAssemblyName;
 
         internal const string ReservedSectionProtectedConfiguration = "configProtectedData";
         internal static readonly char[] s_configPathSeparatorParams = { ConfigPathSeparatorChar };

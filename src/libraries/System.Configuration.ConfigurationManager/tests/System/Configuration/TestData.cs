@@ -9,7 +9,7 @@ namespace System.ConfigurationTests
         public static string ImplicitMachineConfig =
 @"<configuration>
     <configSections>
-        <section name='appSettings' type='System.Configuration.AppSettingsSection, System.Configuration' restartOnExternalChanges='false' requirePermission='false'/>
+        <section name='appSettings' type='System.Configuration.AppSettingsSection, System.Configuration.ConfigurationManager' restartOnExternalChanges='false' requirePermission='false'/>
     </configSections>
 </configuration>";
 
