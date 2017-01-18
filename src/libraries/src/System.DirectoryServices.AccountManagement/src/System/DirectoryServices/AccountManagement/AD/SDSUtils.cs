@@ -13,7 +13,6 @@ using System.Net;
 
 namespace System.DirectoryServices.AccountManagement
 {
-    //    [System.DirectoryServices.DirectoryServicesPermission(System.Security.Permissions.SecurityAction.Assert, Unrestricted=true)]
     internal class SDSUtils
     {
         // To stop the compiler from autogenerating a constructor for this class

@@ -1,0 +1,4 @@
+<!-- Temporary workaround to get build to work. -->
+credui.dll!CredUIParseUserNameW
+advapi32.dll!LsaNtStatusToWinError
+activeds.dll!ADsOpenObject

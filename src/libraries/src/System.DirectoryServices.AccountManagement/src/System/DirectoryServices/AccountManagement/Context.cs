@@ -102,8 +102,9 @@ namespace System.DirectoryServices.AccountManagement
 
             try
             {
-                if (Thread.CurrentThread.GetApartmentState() == ApartmentState.Unknown)
-                    Thread.CurrentThread.SetApartmentState(ApartmentState.MTA);
+                // jsimmons - I presumeno COM apartments in .NET Core 
+                //if (Thread.CurrentThread.GetApartmentState() == ApartmentState.Unknown)
+                //    Thread.CurrentThread.SetApartmentState(ApartmentState.MTA);
                 // We need the credentials to be in the form <machine>\\<user>
                 // if they just passed user then append the machine name here.
                 if (null != userName)
@@ -244,7 +245,6 @@ namespace System.DirectoryServices.AccountManagement
         }
 
         [System.Security.SecurityCritical]
-        [DirectoryServicesPermission(SecurityAction.Assert, Unrestricted = true)]
         public bool Validate(string userName, string password)
         {
             NetworkCredential networkCredential = new NetworkCredential(userName, password);
@@ -315,7 +315,6 @@ namespace System.DirectoryServices.AccountManagement
         }
 
         [System.Security.SecurityCritical]
-        [DirectoryServicesPermission(SecurityAction.Assert, Unrestricted = true)]
         public bool Validate(string userName, string password, ContextOptions connectionMethod)
         {
             // empty username and password on the local box
@@ -354,46 +353,36 @@ namespace System.DirectoryServices.AccountManagement
 #pragma warning disable 618    // Have not migrated to v4 transparency yet
     [System.Security.SecurityCritical(System.Security.SecurityCriticalScope.Everything)]
 #pragma warning restore 618
-    [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.LinkDemand, Unrestricted = true)]
-    [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.InheritanceDemand, Unrestricted = true)]
-    //    [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.Assert, Unrestricted=true)]
     public class PrincipalContext : IDisposable
     {
         //
         // Public Constructors
         //
 
-        [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.Demand, Unrestricted = true)]
         public PrincipalContext(ContextType contextType) :
             this(contextType, null, null, PrincipalContext.GetDefaultOptionForStore(contextType), null, null)
         { }
 
-        [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.Demand, Unrestricted = true)]
         public PrincipalContext(ContextType contextType, string name) :
             this(contextType, name, null, PrincipalContext.GetDefaultOptionForStore(contextType), null, null)
         { }
 
-        [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.Demand, Unrestricted = true)]
         public PrincipalContext(ContextType contextType, string name, string container) :
             this(contextType, name, container, PrincipalContext.GetDefaultOptionForStore(contextType), null, null)
         { }
 
-        [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.Demand, Unrestricted = true)]
         public PrincipalContext(ContextType contextType, string name, string container, ContextOptions options) :
             this(contextType, name, container, options, null, null)
         { }
 
-        [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.Demand, Unrestricted = true)]
         public PrincipalContext(ContextType contextType, string name, string userName, string password) :
             this(contextType, name, null, PrincipalContext.GetDefaultOptionForStore(contextType), userName, password)
         { }
 
-        [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.Demand, Unrestricted = true)]
         public PrincipalContext(ContextType contextType, string name, string container, string userName, string password) :
             this(contextType, name, container, PrincipalContext.GetDefaultOptionForStore(contextType), userName, password)
         { }
 
-        [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.Demand, Unrestricted = true)]
         public PrincipalContext(
                     ContextType contextType, string name, string container, ContextOptions options, string userName, string password)
         {
@@ -572,7 +561,6 @@ namespace System.DirectoryServices.AccountManagement
         //
         // Private methods for initialization
         //                
-        [DirectoryServicesPermission(SecurityAction.Assert, Unrestricted = true)]
         private void Initialize()
         {
             if (!_initialized)
@@ -1109,7 +1097,6 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-        [DirectoryServicesPermission(SecurityAction.Assert, Unrestricted = true)]
         internal void ReadServerConfig(string serverName, ref ServerProperties properties)
         {
             string[] proplist = new string[] { "msDS-PortSSL", "msDS-PortLDAP", "domainControllerFunctionality", "dnsHostName", "supportedCapabilities" };

@@ -15,7 +15,6 @@ namespace System.DirectoryServices.AccountManagement
 #pragma warning disable 618    // Have not migrated to v4 transparency yet
     [System.Security.SecurityCritical(System.Security.SecurityCriticalScope.Everything)]
 #pragma warning restore 618
-    [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.Assert, Unrestricted = true)]
     internal class SAMQuerySet : ResultSet
     {
         // We will iterate over all principals under ctxBase, returning only those which are in the list of types and which
@@ -210,7 +209,6 @@ namespace System.DirectoryServices.AccountManagement
 #pragma warning disable 618    // Have not migrated to v4 transparency yet
     [System.Security.SecurityCritical(System.Security.SecurityCriticalScope.Everything)]
 #pragma warning restore 618
-    [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.Assert, Unrestricted = true)]
     internal class QbeMatcher : SAMMatcher
     {
         private QbeFilterDescription _propertiesToMatch;
@@ -707,7 +705,6 @@ namespace System.DirectoryServices.AccountManagement
 #pragma warning disable 618    // Have not migrated to v4 transparency yet
     [System.Security.SecurityCritical(System.Security.SecurityCriticalScope.Everything)]
 #pragma warning restore 618
-    [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.Assert, Unrestricted = true)]
     internal class FindByDateMatcher : SAMMatcher
     {
         internal enum DateProperty
@@ -849,7 +846,6 @@ namespace System.DirectoryServices.AccountManagement
 #pragma warning disable 618    // Have not migrated to v4 transparency yet
     [System.Security.SecurityCritical(System.Security.SecurityCriticalScope.Everything)]
 #pragma warning restore 618
-    [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.Assert, Unrestricted = true)]
     internal class GroupMemberMatcher : SAMMatcher
     {
         private byte[] _memberSidToMatch;
