@@ -3,6 +3,7 @@
   <PropertyGroup>
     <BuildConfigurations>
       net463-Windows_NT;
+      netstandard-OSX;
       netstandard-Unix;
       netstandard-Windows_NT;
     </BuildConfigurations>
