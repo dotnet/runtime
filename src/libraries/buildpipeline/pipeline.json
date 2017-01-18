@@ -287,19 +287,6 @@
         {
           "Name": "DotNet-CoreFx-Trusted-Linux",
           "Parameters": {
-            "PB_DockerTag": "ubuntu1404_prereqs_v3",
-            "PB_AdditionalArguments": "-portableLinux"
-          },
-          "ReportingParameters": {
-            "OperatingSystem": "Ubuntu 14.04",
-            "Type": "build/product/",
-            "ConfigurationGroup": "Debug",
-            "SubType": "PortableLinux"
-          }
-        },
-        {
-          "Name": "DotNet-CoreFx-Trusted-Linux",
-          "Parameters": {
             "PB_DockerTag": "ubuntu1604_prereqs"
           },
           "ReportingParameters": {
