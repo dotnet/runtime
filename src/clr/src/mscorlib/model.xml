@@ -6414,6 +6414,7 @@
       <Member Name="#ctor" />
       <Member Name="Add(TKey,TValue)" />
       <Member Name="AddOrUpdate(TKey,TValue)" />
+      <Member Name="Clear" />
       <Member Name="Remove(TKey)" />
       <Member Name="TryGetValue(TKey,TValue@)" />
       <Member Name="GetValue(TKey,System.Runtime.CompilerServices.ConditionalWeakTable+CreateValueCallback)" />
