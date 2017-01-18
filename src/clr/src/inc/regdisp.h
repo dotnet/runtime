@@ -489,7 +489,9 @@ inline void CopyRegDisplay(const PREGDISPLAY pInRD, PREGDISPLAY pOutRD, T_CONTEX
 
     T_CONTEXT* pOutCallerCtx = NULL;
 
-#ifdef _TARGET_X86_
+#ifndef WIN64EXCEPTIONS
+
+#if defined(_TARGET_X86_)
     if (pInRD->pEdi != NULL) {pOutCtx->Edi = *pInRD->pEdi;} else {pInRD->pEdi = NULL;}
     if (pInRD->pEsi != NULL) {pOutCtx->Esi = *pInRD->pEsi;} else {pInRD->pEsi = NULL;}
     if (pInRD->pEbx != NULL) {pOutCtx->Ebx = *pInRD->pEbx;} else {pInRD->pEbx = NULL;}
@@ -499,13 +501,19 @@ inline void CopyRegDisplay(const PREGDISPLAY pInRD, PREGDISPLAY pOutRD, T_CONTEX
     if (pInRD->pEdx != NULL) {pOutCtx->Edx = *pInRD->pEdx;} else {pInRD->pEdx = NULL;}
     pOutCtx->Esp = pInRD->Esp;
     pOutCtx->Eip = pInRD->ControlPC;
-#else
+#else // _TARGET_X86_
+    PORTABILITY_ASSERT("CopyRegDisplay");
+#endif // _TARGET_???_
+
+#else // WIN64EXCEPTIONS
+
     *pOutCtx = *(pInRD->pCurrentContext);
     if (pInRD->IsCallerContextValid)
     {
         pOutCallerCtx = pInRD->pCallerContext;
     }
-#endif
+
+#endif // WIN64EXCEPTIONS
 
     if (pOutRD)
         FillRegDisplay(pOutRD, pOutCtx, pOutCallerCtx);
@@ -572,6 +580,8 @@ inline void UpdateContextFromRegDisp(PREGDISPLAY pRegDisp, PT_CONTEXT pContext)
 {
     _ASSERTE((pRegDisp != NULL) && (pContext != NULL));
 
+#ifndef WIN64EXCEPTIONS
+
 #if defined(_TARGET_X86_)
     pContext->ContextFlags = (CONTEXT_INTEGER | CONTEXT_CONTROL);
     pContext->Edi = *pRegDisp->pEdi;
@@ -583,9 +593,15 @@ inline void UpdateContextFromRegDisp(PREGDISPLAY pRegDisp, PT_CONTEXT pContext)
     pContext->Edx = *pRegDisp->pEdx;
     pContext->Esp = pRegDisp->Esp;
     pContext->Eip = pRegDisp->ControlPC;
-#else
+#else // _TARGET_X86_
+    PORTABILITY_ASSERT("UpdateContextFromRegDisp");
+#endif // _TARGET_???_
+
+#else // WIN64EXCEPTIONS
+
     *pContext = *pRegDisp->pCurrentContext;
-#endif
+
+#endif // WIN64EXCEPTIONS
 }
 
 

@@ -590,6 +590,26 @@ void InlinedCallFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
 
     /* Now we need to pop off the outgoing arguments */
     pRD->Esp  = (DWORD) dac_cast<TADDR>(m_pCallSiteSP) + stackArgSize;
+
+#ifdef WIN64EXCEPTIONS
+    pRD->IsCallerContextValid = FALSE;
+    pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
+
+    pRD->pCurrentContext->Eip = pRD->ControlPC;
+    pRD->pCurrentContext->Esp = pRD->Esp;
+    pRD->pCurrentContext->Ebp = *pRD->pEbp;
+
+#define CALLEE_SAVED_REGISTER(regname) pRD->pCurrentContextPointers->regname = NULL;
+    ENUM_CALLEE_SAVED_REGISTERS();
+#undef CALLEE_SAVED_REGISTER
+
+    pRD->pCurrentContextPointers->Ebp = pRD->pEbp;
+
+    SyncRegDisplayToCurrentContext(pRD);
+#endif
+
+    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    InlinedCallFrame::UpdateRegDisplay(ip:%p, sp:%p)\n", pRD->ControlPC, pRD->Esp));
+
     RETURN;
 }
 
