@@ -66,3 +66,6 @@
 *.sh text eol=lf
 src/pal/tests/palsuite/paltestlist.txt text eol=lf
 src/pal/tests/palsuite/paltestlist_to_be_reviewed.txt text eol=lf
+
+tests/src/JIT/Performance/CodeQuality/BenchmarksGame/revcomp/revcomp-input25.txt text eol=lf
+tests/src/JIT/Performance/CodeQuality/BenchmarksGame/revcomp/revcomp-input25000.txt text eol=lf
