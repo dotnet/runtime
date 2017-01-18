@@ -23,7 +23,7 @@ namespace System.DirectoryServices.AccountManagement
                     base(message, innerException)
         { }
 
-        internal PrincipalException(SerializationInfo info, StreamingContext context) :
+        protected PrincipalException(SerializationInfo info, StreamingContext context) :
                     base(info, context)
         { }
     }

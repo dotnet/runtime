@@ -31,18 +31,7 @@
     <Compile Include="System\DirectoryServices\Protocols\common\ResultCode.cs" />
     <Compile Include="System\DirectoryServices\Protocols\common\SearchResults.cs" />
     <Compile Include="System\DirectoryServices\Protocols\common\SearchScope.cs" />
-    <Compile Include="System\DirectoryServices\Protocols\dsml\adreqresp2.cs" />
-    <Compile Include="System\DirectoryServices\Protocols\dsml\DsmlAsyncResult.cs" />
-    <Compile Include="System\DirectoryServices\Protocols\dsml\DsmlConstants.cs" />
-    <Compile Include="System\DirectoryServices\Protocols\dsml\DsmlDirectoryIdentifier.cs" />
-    <Compile Include="System\DirectoryServices\Protocols\dsml\DsmlDocument.cs" />
-    <Compile Include="System\DirectoryServices\Protocols\dsml\DsmlDocumentProcessing.cs" />
-    <Compile Include="System\DirectoryServices\Protocols\dsml\DsmlException.cs" />
-    <Compile Include="System\DirectoryServices\Protocols\dsml\dsmlfilterwriter.cs" />
-    <Compile Include="System\DirectoryServices\Protocols\dsml\DsmlSoapConnection.cs" />
-    <Compile Include="System\DirectoryServices\Protocols\dsml\DsmlSoapHttpConnection.cs" />
-    <Compile Include="System\DirectoryServices\Protocols\dsml\filterparser.cs" />
-    <Compile Include="System\DirectoryServices\Protocols\dsml\utils.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\common\utils.cs" />
     <Compile Include="System\DirectoryServices\Protocols\ldap\LdapAsyncResult.cs" />
     <Compile Include="System\DirectoryServices\Protocols\ldap\LdapConnection.cs" />
     <Compile Include="System\DirectoryServices\Protocols\ldap\LdapDirectoryIdentifier.cs" />
@@ -51,6 +40,7 @@
     <Compile Include="System\DirectoryServices\Protocols\ldap\LdapSessionOptions.cs" />
     <Compile Include="System\DirectoryServices\Protocols\ldap\SafeHandles.cs" />
     <Compile Include="System\DirectoryServices\Protocols\ldap\Wldap32UnsafeMethods.cs" />
+    <ProjectReference Include="..\..\System.DirectoryServices\ref\System.DirectoryServices.csproj" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

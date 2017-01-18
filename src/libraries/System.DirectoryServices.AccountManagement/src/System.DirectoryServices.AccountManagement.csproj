@@ -89,6 +89,8 @@
     <Compile Include="System\DirectoryServices\AccountManagement\IdentityClaim.cs" />
     <Compile Include="System\DirectoryServices\AccountManagement\IdentityReference.cs" />
     <Compile Include="System\DirectoryServices\AccountManagement\UnknownPrincipal.cs" />
+    <ProjectReference Include="..\..\System.DirectoryServices\ref\System.DirectoryServices.csproj" />
+    <ProjectReference Include="..\..\System.DirectoryServices.Protocols\ref\System.DirectoryServices.Protocols.csproj" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

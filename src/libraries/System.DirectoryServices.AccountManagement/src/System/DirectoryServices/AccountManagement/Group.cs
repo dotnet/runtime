@@ -12,16 +12,12 @@ namespace System.DirectoryServices.AccountManagement
 #pragma warning disable 618    // Have not migrated to v4 transparency yet
     [System.Security.SecurityCritical(System.Security.SecurityCriticalScope.Everything)]
 #pragma warning restore 618
-    [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.LinkDemand, Unrestricted = true)]
-    [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.InheritanceDemand, Unrestricted = true)]
     [DirectoryRdnPrefix("CN")]
     public class GroupPrincipal : Principal
     {
         //
         // Public constructors
         //
-        [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.LinkDemand, Unrestricted = true)]
-        [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.InheritanceDemand, Unrestricted = true)]
         public GroupPrincipal(PrincipalContext context)
         {
             if (context == null)
@@ -31,8 +27,6 @@ namespace System.DirectoryServices.AccountManagement
             this.unpersisted = true;
         }
 
-        [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.LinkDemand, Unrestricted = true)]
-        [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.InheritanceDemand, Unrestricted = true)]
         public GroupPrincipal(PrincipalContext context, string samAccountName) : this(context)
         {
             if (samAccountName == null)
