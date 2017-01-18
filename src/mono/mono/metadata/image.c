@@ -1165,8 +1165,9 @@ is_problematic_image (MonoImage *image)
 	for (int i = 0; i < G_N_ELEMENTS (ignored_assemblies); ++i) {
 		if (ignored_assemblies [i].hash == h && !strcmp (image->guid, ignored_assemblies [i].guid)) {
 			const char *needle = ignored_assemblies_names [ignored_assemblies [i].assembly_name];
-			char *p = strcasestr (image->name, needle);
-			if (p && p [strlen (needle)] == 0)
+			size_t needle_len = strlen (needle);
+			size_t asm_len = strlen (image->name);
+			if (asm_len > needle_len && !g_ascii_strcasecmp (image->name + (asm_len - needle_len), needle))
 				return TRUE;
 		}
 	}
