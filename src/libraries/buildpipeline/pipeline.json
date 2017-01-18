@@ -84,7 +84,7 @@
         {
           "Name": "DotNet-CoreFx-Trusted-Linux",
           "Parameters": {
-            "PB_DockerTag": "rhel7_prereqs_2"
+            "PB_DockerTag": "rhel7_prereqs_2",
             "PB_AdditionalArguments": "-portableLinux"
           },
           "ReportingParameters": {
@@ -275,7 +275,7 @@
         {
           "Name": "DotNet-CoreFx-Trusted-Linux",
           "Parameters": {
-            "PB_DockerTag": "rhel7_prereqs_2"
+            "PB_DockerTag": "rhel7_prereqs_2",
             "PB_AdditionalArguments": "-portableLinux"
           },
           "ReportingParameters": {
