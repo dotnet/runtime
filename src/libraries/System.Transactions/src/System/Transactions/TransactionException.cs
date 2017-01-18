@@ -11,7 +11,7 @@ namespace System.Transactions
     /// Summary description for TransactionException.
     /// </summary>
     [Serializable]
-    public class TransactionException : Exception // SystemException
+    public class TransactionException : SystemException
     {
         internal static bool IncludeDistributedTxId(Guid distributedTxId)
         {
@@ -70,14 +70,14 @@ namespace System.Transactions
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         public TransactionException()
         {
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="message"></param>
         public TransactionException(string message) : base(message)
@@ -85,7 +85,7 @@ namespace System.Transactions
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="message"></param>
         /// <param name="innerException"></param>
@@ -94,11 +94,11 @@ namespace System.Transactions
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="info"></param>
         /// <param name="context"></param>
-        protected TransactionException(SerializationInfo info, StreamingContext context) // : base(info, context) // TODO #9582: Restore this when Exception exposes the appropriate ctor 
+        protected TransactionException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
         }
 
@@ -195,14 +195,14 @@ namespace System.Transactions
             return new TransactionAbortedException(message, innerException);
         }
         /// <summary>
-        /// 
+        ///
         /// </summary>
         public TransactionAbortedException() : base(SR.TransactionAborted)
         {
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="message"></param>
         public TransactionAbortedException(string message) : base(message)
@@ -210,7 +210,7 @@ namespace System.Transactions
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="message"></param>
         /// <param name="innerException"></param>
@@ -219,7 +219,7 @@ namespace System.Transactions
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="message"></param>
         /// <param name="innerException"></param>
@@ -235,7 +235,7 @@ namespace System.Transactions
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="info"></param>
         /// <param name="context"></param>
@@ -271,14 +271,14 @@ namespace System.Transactions
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         public TransactionInDoubtException() : base(SR.TransactionIndoubt)
         {
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="message"></param>
         public TransactionInDoubtException(string message) : base(message)
@@ -286,7 +286,7 @@ namespace System.Transactions
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="message"></param>
         /// <param name="innerException"></param>
@@ -295,7 +295,7 @@ namespace System.Transactions
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="info"></param>
         /// <param name="context"></param>
@@ -317,7 +317,7 @@ namespace System.Transactions
             {
                 etwLog.TransactionExceptionTrace(TransactionExceptionType.TransactionManagerCommunicationException, message, innerException==null?String.Empty:innerException.ToString());
             }
- 
+
             return new TransactionManagerCommunicationException(message, innerException);
         }
 
@@ -327,14 +327,14 @@ namespace System.Transactions
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         public TransactionManagerCommunicationException() : base(SR.TransactionManagerCommunicationException)
         {
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="message"></param>
         public TransactionManagerCommunicationException(string message) : base(message)
@@ -342,7 +342,7 @@ namespace System.Transactions
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="message"></param>
         /// <param name="innerException"></param>
@@ -354,7 +354,7 @@ namespace System.Transactions
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="info"></param>
         /// <param name="context"></param>
@@ -368,14 +368,14 @@ namespace System.Transactions
     public class TransactionPromotionException : TransactionException
     {
         /// <summary>
-        /// 
+        ///
         /// </summary>
         public TransactionPromotionException() : this(SR.PromotionFailed)
         {
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="message"></param>
         public TransactionPromotionException(string message) : base(message)
@@ -383,7 +383,7 @@ namespace System.Transactions
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="message"></param>
         /// <param name="innerException"></param>
@@ -392,7 +392,7 @@ namespace System.Transactions
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="info"></param>
         /// <param name="context"></param>
