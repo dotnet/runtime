@@ -2,9 +2,9 @@
 
 usage()
 {
-    echo "Usage: $0 [BuildArch] [UbuntuCodeName]"
+    echo "Usage: $0 [BuildArch] [LinuxCodeName]"
     echo "BuildArch can be: arm, armel, arm64, x86"
-    echo "UbuntuCodeName - optional, Code name for Ubuntu, can be: trusty(default), vivid, wily, xenial. If BuildArch is armel, jessie(default) or tizen."
+    echo "LinuxCodeName - optional, Code name for Ubuntu, can be: trusty(default), vivid, wily, xenial. If BuildArch is armel, jessie(default) or tizen."
     exit 1
 }
 
@@ -35,7 +35,7 @@ fi
 
 __BuildArch=arm
 __UbuntuArch=armhf
-__UbuntuCodeName=trusty
+__LinuxCodeName=trusty
 __UbuntuRepo="http://ports.ubuntu.com/"
 __MachineTriple=arm-linux-gnueabihf
 
@@ -67,25 +67,25 @@ for i in "$@" ; do
             __UbuntuArch=armel
             __UbuntuRepo="http://ftp.debian.org/debian/"
             __MachineTriple=arm-linux-gnueabi
-            __UbuntuCodeName=jessie
+            __LinuxCodeName=jessie
             ;;
         vivid)
-            if [ "$__UbuntuCodeName" != "jessie" ]; then
-                __UbuntuCodeName=vivid
+            if [ "$__LinuxCodeName" != "jessie" ]; then
+                __LinuxCodeName=vivid
             fi
             ;;
         wily)
-            if [ "$__UbuntuCodeName" != "jessie" ]; then
-                __UbuntuCodeName=wily
+            if [ "$__LinuxCodeName" != "jessie" ]; then
+                __LinuxCodeName=wily
             fi
             ;;
         xenial)
-            if [ "$__UbuntuCodeName" != "jessie" ]; then
-                __UbuntuCodeName=xenial
+            if [ "$__LinuxCodeName" != "jessie" ]; then
+                __LinuxCodeName=xenial
             fi
             ;;
         jessie)
-            __UbuntuCodeName=jessie
+            __LinuxCodeName=jessie
             __UbuntuRepo="http://ftp.debian.org/debian/"
             ;;
         tizen)
@@ -94,7 +94,7 @@ for i in "$@" ; do
                 usage;
                 exit 1;
             fi
-            __UbuntuCodeName=
+            __LinuxCodeName=
             __UbuntuRepo=
             __Tizen=tizen
             ;;
@@ -122,9 +122,9 @@ fi
 umount $__RootfsDir/*
 rm -rf $__RootfsDir
 
-if [[ -n $__UbuntuCodeName ]]; then
-    qemu-debootstrap --arch $__UbuntuArch $__UbuntuCodeName $__RootfsDir $__UbuntuRepo
-    cp $__CrossDir/$__BuildArch/sources.list.$__UbuntuCodeName $__RootfsDir/etc/apt/sources.list
+if [[ -n $__LinuxCodeName ]]; then
+    qemu-debootstrap --arch $__UbuntuArch $__LinuxCodeName $__RootfsDir $__UbuntuRepo
+    cp $__CrossDir/$__BuildArch/sources.list.$__LinuxCodeName $__RootfsDir/etc/apt/sources.list
     chroot $__RootfsDir apt-get update
     chroot $__RootfsDir apt-get -f -y install
     chroot $__RootfsDir apt-get -y install $__UbuntuPackages
