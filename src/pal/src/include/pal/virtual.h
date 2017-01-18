@@ -58,12 +58,7 @@ enum VIRTUAL_CONSTANTS
     VIRTUAL_EXECUTE,
     VIRTUAL_EXECUTE_READ,
     
-    /* Page manipulation constants. */
-#ifdef __sparc__
-    VIRTUAL_PAGE_SIZE       = 0x2000,
-#else   // __sparc__
     VIRTUAL_PAGE_SIZE       = 0x1000,
-#endif  // __sparc__
     VIRTUAL_PAGE_MASK       = VIRTUAL_PAGE_SIZE - 1,
     BOUNDARY_64K    = 0xffff
 };
