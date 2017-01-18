@@ -3884,21 +3884,11 @@ bool UnwindEbpDoubleAlignFrame(
     return true;
 }
 
-/*****************************************************************************
- *
- *  Unwind the current stack frame, i.e. update the virtual register
- *  set in pContext. This will be similar to the state after the function
- *  returns back to caller (IP points to after the call, Frame and Stack
- *  pointer has been reset, callee-saved registers restored (if UpdateAllRegs),
- *  callee-unsaved registers are trashed.
- *  Returns success of operation.
- */
-
-bool EECodeManager::UnwindStackFrame(PREGDISPLAY     pContext,
-                                     EECodeInfo     *pCodeInfo,
-                                     unsigned        flags,
-                                     CodeManState   *pState,
-                                     StackwalkCacheUnwindInfo  *pUnwindInfo /* out-only, perf improvement */)
+bool UnwindStackFrame(PREGDISPLAY     pContext,
+                      EECodeInfo     *pCodeInfo,
+                      unsigned        flags,
+                      CodeManState   *pState,
+                      StackwalkCacheUnwindInfo  *pUnwindInfo /* out-only, perf improvement */)
 {
     CONTRACTL {
         NOTHROW;
@@ -3989,6 +3979,29 @@ bool EECodeManager::UnwindStackFrame(PREGDISPLAY     pContext,
     */
 
     return true;
+}
+
+#endif // _TARGET_X86_
+
+#if defined(_TARGET_X86_) && !defined(WIN64EXCEPTIONS)
+
+/*****************************************************************************
+ *
+ *  Unwind the current stack frame, i.e. update the virtual register
+ *  set in pContext. This will be similar to the state after the function
+ *  returns back to caller (IP points to after the call, Frame and Stack
+ *  pointer has been reset, callee-saved registers restored (if UpdateAllRegs),
+ *  callee-unsaved registers are trashed.
+ *  Returns success of operation.
+ */
+
+bool EECodeManager::UnwindStackFrame(PREGDISPLAY     pContext,
+                                     EECodeInfo     *pCodeInfo,
+                                     unsigned        flags,
+                                     CodeManState   *pState,
+                                     StackwalkCacheUnwindInfo  *pUnwindInfo /* out-only, perf improvement */)
+{
+    return ::UnwindStackFrame(pContext, pCodeInfo, flags, pState, pUnwindInfo);
 }
 
 /*****************************************************************************/
