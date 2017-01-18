@@ -243,7 +243,7 @@ inline void *__cdecl operator new(size_t, void *_P)
 #define ARGUMENT_PRESENT(ArgumentPointer)    (\
     (CHAR *)(ArgumentPointer) != (CHAR *)(NULL) )
 
-#if defined(_WIN64) || defined(_M_ALPHA)
+#if defined(_WIN64)
 #define MAX_NATURAL_ALIGNMENT sizeof(ULONGLONG)
 #else
 #define MAX_NATURAL_ALIGNMENT sizeof(ULONG)

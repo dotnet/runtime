@@ -74,7 +74,7 @@ int __cdecl main(int argc, char *argv[]) {
 #endif
     }
 
-#endif  //defined(BIT64) && defined(_IA64_)
+#endif  // BIT64 && PLATFORM_UNIX
     PAL_Terminate();
     return PASS; 
 } 

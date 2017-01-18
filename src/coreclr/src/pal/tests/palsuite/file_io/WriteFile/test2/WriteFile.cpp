@@ -20,11 +20,7 @@
 char* writeBuffer;
 const char* szWritableFile = "Writeable.txt";
 const char* szResultsFile = "Results.txt";
-#ifdef __sparc__
-const int PAGESIZE = 8192;
-#else   // __sparc__
 const int PAGESIZE = 4096;
-#endif  // __sparc__
 
 BOOL writeTest(DWORD dwByteCount, DWORD dwBytesWrittenResult, BOOL bResult)
 {

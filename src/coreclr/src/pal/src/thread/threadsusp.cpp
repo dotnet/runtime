@@ -36,16 +36,6 @@ Revision History:
 #include <limits.h>
 #include <debugmacrosext.h>
 
-#if defined(_AIX)
-// AIX requires explicit definition of the union semun (see semctl man page)
-union semun 
-{
-    int val;
-    struct semid_ds * buf;
-    unsigned short * array;
-};
-#endif 
-
 using namespace CorUnix;
 
 /* ------------------- Definitions ------------------------------*/
