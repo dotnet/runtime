@@ -9,6 +9,8 @@ namespace System.Configuration
 {
     internal static class TypeUtil
     {
+        internal const string ConfigurationManagerAssemblyName = "System.Configuration.ConfigurationManager";
+
         // Deliberately not being explicit about the versions to make
         // things simpler for consumers of System.Configuration.
         private static string[] s_implicitAssemblies =

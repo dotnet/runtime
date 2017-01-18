@@ -65,22 +65,22 @@ namespace System.Configuration
         private static string s_implicitMachineConfig =
 @"<configuration>
     <configSections>
-        <section name='appSettings' type='System.Configuration.AppSettingsSection, System.Configuration' restartOnExternalChanges='false' requirePermission='false'/>
-        <section name='connectionStrings' type='System.Configuration.ConnectionStringsSection, System.Configuration' requirePermission='false'/>
-        <section name='mscorlib' type='System.Configuration.IgnoreSection, System.Configuration' allowLocation='false'/>
-        <section name='runtime' type='System.Configuration.IgnoreSection, System.Configuration' allowLocation='false'/>
-        <section name='assemblyBinding' type='System.Configuration.IgnoreSection, System.Configuration' allowLocation='false'/>
-        <section name='satelliteassemblies' type='System.Configuration.IgnoreSection, System.Configuration' allowLocation='false'/>
-        <section name='startup' type='System.Configuration.IgnoreSection, System.Configuration' allowLocation='false'/>
+        <section name='appSettings' type='System.Configuration.AppSettingsSection, System.Configuration.ConfigurationManager' restartOnExternalChanges='false' requirePermission='false' />
+        <section name='connectionStrings' type='System.Configuration.ConnectionStringsSection, System.Configuration.ConfigurationManager' requirePermission='false' />
+        <section name='mscorlib' type='System.Configuration.IgnoreSection, System.Configuration.ConfigurationManager' allowLocation='false' />
+        <section name='runtime' type='System.Configuration.IgnoreSection, System.Configuration.ConfigurationManager' allowLocation='false' />
+        <section name='assemblyBinding' type='System.Configuration.IgnoreSection, System.Configuration.ConfigurationManager' allowLocation='false' />
+        <section name='satelliteassemblies' type='System.Configuration.IgnoreSection, System.Configuration.ConfigurationManager' allowLocation='false' />
+        <section name='startup' type='System.Configuration.IgnoreSection, System.Configuration.ConfigurationManager' allowLocation='false' />
     </configSections>
     <configProtectedData defaultProvider='RsaProtectedConfigurationProvider'>
         <providers>
-            <add name = 'RsaProtectedConfigurationProvider' type='System.Configuration.RsaProtectedConfigurationProvider,System.Configuration' description='Uses RsaCryptoServiceProvider to encrypt and decrypt' keyContainerName='NetFrameworkConfigurationKey' cspProviderName='' useMachineContainer='true' useOAEP='false'/>
-            <add name = 'DataProtectionConfigurationProvider' type='System.Configuration.DpapiProtectedConfigurationProvider,System.Configuration' description='Uses CryptProtectData and CryptUnProtectData Windows APIs to encrypt and decrypt' useMachineProtection='true' keyEntropy=''/>
+            <add name = 'RsaProtectedConfigurationProvider' type='System.Configuration.RsaProtectedConfigurationProvider, System.Configuration.ConfigurationManager' description='Uses RsaCryptoServiceProvider to encrypt and decrypt' keyContainerName='NetFrameworkConfigurationKey' cspProviderName='' useMachineContainer='true' useOAEP='false' />
+            <add name = 'DataProtectionConfigurationProvider' type='System.Configuration.DpapiProtectedConfigurationProvider, System.Configuration.ConfigurationManager' description='Uses CryptProtectData and CryptUnProtectData Windows APIs to encrypt and decrypt' useMachineProtection='true' keyEntropy='' />
         </providers>
     </configProtectedData>
     <connectionStrings>
-        <add name = 'LocalSqlServer' connectionString='data source=.\SQLEXPRESS;Integrated Security=SSPI;AttachDBFilename=|DataDirectory|aspnetdb.mdf;User Instance=true' providerName='System.Data.SqlClient'/>
+        <add name = 'LocalSqlServer' connectionString='data source=.\SQLEXPRESS;Integrated Security=SSPI;AttachDBFilename=|DataDirectory|aspnetdb.mdf;User Instance=true' providerName='System.Data.SqlClient' />
     </connectionStrings>
 </configuration>";
     }

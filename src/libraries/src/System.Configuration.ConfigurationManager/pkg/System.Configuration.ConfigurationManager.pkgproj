@@ -2,10 +2,10 @@
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
-    <ProjectReference Include="..\ref\System.Configuration.csproj">
+    <ProjectReference Include="..\ref\System.Configuration.ConfigurationManager.csproj">
       <SupportedFramework>netcoreapp2.0;net461;$(AllXamarinFrameworks)</SupportedFramework>
     </ProjectReference>
-    <ProjectReference Include="..\src\System.Configuration.builds" />
+    <ProjectReference Include="..\src\System.Configuration.ConfigurationManager.builds" />
     <InboxOnTargetFramework Include="net461" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
