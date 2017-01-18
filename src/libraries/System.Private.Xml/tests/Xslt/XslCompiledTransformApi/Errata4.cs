@@ -120,9 +120,9 @@ namespace System.Xml.Tests
 
         #endregion private const string createElementsXsltInline = ...
 
-        //[Variation(Priority = 1, Desc = "Crate elment/attribute :: Invalid start name char", Params = new object[] { false, CharType.NameStartChar })]
+        //[Variation(Priority = 1, Desc = "Crate elment/attribute :: Invalid start name char", Params = new object[] { false, CharType.NCNameStartChar })]
         [InlineData(false, CharType.NameStartChar)]
-        //[Variation(Priority = 1, Desc = "Crate elment/attribute :: Invalid name char", Params = new object[] { false, CharType.NameChar })]
+        //[Variation(Priority = 1, Desc = "Crate elment/attribute :: Invalid name char", Params = new object[] { false, CharType.NCNameChar })]
         [InlineData(false, CharType.NameChar)]
         //[Variation(Priority = 1, Desc = "Crate elment/attribute :: Invalid name CharType.NameStartSurrogateHighChar", Params = new object[] { false, CharType.NameStartSurrogateHighChar })]
         [InlineData(false, CharType.NameStartSurrogateHighChar)]
@@ -133,9 +133,9 @@ namespace System.Xml.Tests
         //[Variation(Priority = 1, Desc = "Crate elment/attribute :: Invalid name CharType.NameSurrogateLowChar", Params = new object[] { false, CharType.NameSurrogateLowChar })]
         [InlineData(false, CharType.NameSurrogateLowChar)]
         // ---
-        //[Variation(Priority = 0, Desc = "Crate elment/attribute :: Valid start name char", Params = new object[] { true, CharType.NameStartChar })]
+        //[Variation(Priority = 0, Desc = "Crate elment/attribute :: Valid start name char", Params = new object[] { true, CharType.NCNameStartChar })]
         [InlineData(true, CharType.NameStartChar)]
-        //[Variation(Priority = 0, Desc = "Crate elment/attribute :: Valid name char", Params = new object[] { true, CharType.NameChar })]
+        //[Variation(Priority = 0, Desc = "Crate elment/attribute :: Valid name char", Params = new object[] { true, CharType.NCNameChar })]
         [InlineData(true, CharType.NameChar)]
         // Only Valid for Fifth Edition Xml
         //[Variation(Priority = 0, Desc = "Crate elment/attribute :: Valid name CharType.NameStartSurrogateHighChar", Params = new object[] { true, CharType.NameStartSurrogateHighChar })]
@@ -175,19 +175,18 @@ namespace System.Xml.Tests
                     }
                     catch (Exception)
                     {
-                        Assert.True(!isValidChar);
-                        // TODO: verification of the exception params/message
+                        if (isValidChar) throw;
+                        else continue; //exception expected -> continue
                     }
                 }
             }
             return;
         }
 
-        [ActiveIssue(14772)]
-        //[Variation(Priority = 1, Desc = "Crate elment/attribute (Inline) :: Invalid start name char", Params = new object[] { false, CharType.NameStartChar })]
-        [InlineData(false, CharType.NameStartChar)]
-        //[Variation(Priority = 1, Desc = "Crate elment/attribute (Inline) :: Invalid name char", Params = new object[] { false, CharType.NameChar })]
-        [InlineData(false, CharType.NameChar)]
+        //[Variation(Priority = 1, Desc = "Crate elment/attribute (Inline) :: Invalid start name char", Params = new object[] { false, CharType.NCNameStartChar })]
+        [InlineData(false, CharType.NCNameStartChar)]
+        //[Variation(Priority = 1, Desc = "Crate elment/attribute (Inline) :: Invalid name char", Params = new object[] { false, CharType.NCNameChar })]
+        [InlineData(false, CharType.NCNameChar)]
         //[Variation(Priority = 1, Desc = "Crate elment/attribute (Inline) :: Invalid name CharType.NameStartSurrogateHighChar", Params = new object[] { false, CharType.NameStartSurrogateHighChar })]
         [InlineData(false, CharType.NameStartSurrogateHighChar)]
         //[Variation(Priority = 1, Desc = "Crate elment/attribute (Inline) :: Invalid name CharType.NameStartSurrogateLowChar", Params = new object[] { false, CharType.NameStartSurrogateLowChar })]
@@ -197,10 +196,10 @@ namespace System.Xml.Tests
         //[Variation(Priority = 1, Desc = "Crate elment/attribute (Inline) :: Invalid name CharType.NameSurrogateLowChar", Params = new object[] { false, CharType.NameSurrogateLowChar })]
         [InlineData(false, CharType.NameSurrogateLowChar)]
         // ---
-        //[Variation(Priority = 0, Desc = "Crate elment/attribute (Inline) :: Valid start name char", Params = new object[] { true, CharType.NameStartChar })]
-        [InlineData(true, CharType.NameStartChar)]
-        //[Variation(Priority = 0, Desc = "Crate elment/attribute (Inline) :: Valid name char", Params = new object[] { true, CharType.NameChar })]
-        [InlineData(true, CharType.NameChar)]
+        //[Variation(Priority = 0, Desc = "Crate elment/attribute (Inline) :: Valid start name char", Params = new object[] { true, CharType.NCNameStartChar })]
+        [InlineData(true, CharType.NCNameStartChar)]
+        //[Variation(Priority = 0, Desc = "Crate elment/attribute (Inline) :: Valid name char", Params = new object[] { true, CharType.NCNameChar })]
+        [InlineData(true, CharType.NCNameChar)]
         // Only Valid for Fifth Edition Xml
         //[Variation(Priority = 0, Desc = "Crate elment/attribute (Inline) :: Valid name CharType.NameStartSurrogateHighChar", Params = new object[] { true, CharType.NameStartSurrogateHighChar })]
         //[Variation(Priority = 0, Desc = "Crate elment/attribute (Inline) :: Valid name CharType.NameStartSurrogateLowChar", Params = new object[] { true, CharType.NameStartSurrogateLowChar })]
@@ -231,9 +230,8 @@ namespace System.Xml.Tests
                     }
                     catch (Exception)
                     {
-                        Assert.True(!isValidChar);
-                        // TODO: verification of the exception params/message
-                        return;
+                        if (isValidChar) throw;
+                        else continue; //exception expected -> continue
                     }
 
                     // if loading of the stylesheet passed, then we should be able to provide
@@ -267,11 +265,10 @@ namespace System.Xml.Tests
             }
         }
 
-        [ActiveIssue(14775)]
-        //[Variation(Priority = 1, Desc = "Invalid start name char", Params = new object[] { false, CharType.NameStartChar })]
-        [InlineData(false, CharType.NameStartChar)]
-        //[Variation(Priority = 1, Desc = "Invalid name char", Params = new object[] { false, CharType.NameChar })]
-        [InlineData(false, CharType.NameChar)]
+        //[Variation(Priority = 1, Desc = "Invalid start name char", Params = new object[] { false, CharType.NCNameStartChar })]
+        [InlineData(false, CharType.NCNameStartChar)]
+        //[Variation(Priority = 1, Desc = "Invalid name char", Params = new object[] { false, CharType.NCNameChar })]
+        [InlineData(false, CharType.NCNameChar)]
         //[Variation(Priority = 1, Desc = "Invalid name CharType.NameStartSurrogateHighChar", Params = new object[] { false, CharType.NameStartSurrogateHighChar })]
         [InlineData(false, CharType.NameStartSurrogateHighChar)]
         //[Variation(Priority = 1, Desc = "Invalid name CharType.NameStartSurrogateLowChar", Params = new object[] { false, CharType.NameStartSurrogateLowChar })]
@@ -281,10 +278,10 @@ namespace System.Xml.Tests
         //[Variation(Priority = 1, Desc = "Invalid name CharType.NameSurrogateLowChar", Params = new object[] { false, CharType.NameSurrogateLowChar })]
         [InlineData(false, CharType.NameSurrogateLowChar)]
         // ---
-        //[Variation(Priority = 0, Desc = "Valid start name char", Params = new object[] { true, CharType.NameStartChar })]
-        [InlineData(true, CharType.NameStartChar)]
-        //[Variation(Priority = 0, Desc = "Valid name char", Params = new object[] { true, CharType.NameChar })]
-        [InlineData(true, CharType.NameChar)]
+        //[Variation(Priority = 0, Desc = "Valid start name char", Params = new object[] { true, CharType.NCNameStartChar })]
+        [InlineData(true, CharType.NCNameStartChar)]
+        //[Variation(Priority = 0, Desc = "Valid name char", Params = new object[] { true, CharType.NCNameChar })]
+        [InlineData(true, CharType.NCNameChar)]
         // Only Valid for Fifth Edition Xml
         //[Variation(Priority = 0, Desc = "Valid name CharType.NameStartSurrogateHighChar", Params = new object[] { true, CharType.NameStartSurrogateHighChar })]
         //[Variation(Priority = 0, Desc = "Valid name CharType.NameStartSurrogateLowChar", Params = new object[] { true, CharType.NameStartSurrogateLowChar })]
@@ -313,8 +310,8 @@ namespace System.Xml.Tests
                 }
                 catch (XsltException)
                 {
-                    Assert.True(!isValidChar);
-                    continue; //if exception expected -> continue
+                    if (isValidChar) throw;
+                    else continue; //exception expected -> continue
                 }
 
                 XmlDocument xmlDoc = new XmlDocument();
@@ -356,10 +353,10 @@ namespace System.Xml.Tests
         {
             switch (charType)
             {
-                case CharType.NameStartChar:
+                case CharType.NCNameStartChar:
                     return new string(new char[] { c, 'a', 'b' });
 
-                case CharType.NameChar:
+                case CharType.NCNameChar:
                     return new string(new char[] { 'a', c, 'b' });
 
                 case CharType.NameStartSurrogateHighChar:
