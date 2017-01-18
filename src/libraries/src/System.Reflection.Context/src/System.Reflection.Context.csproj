@@ -4,7 +4,6 @@
   <PropertyGroup>
     <UseECMAKey Condition="'$(UseECMAKey)' == ''">true</UseECMAKey>
     <OutputType>Library</OutputType>
-    <NuGetTargetMoniker>.NETStandard,Version=v1.1</NuGetTargetMoniker>
     <ProjectGuid>{404DB891-B5AF-41E6-B89D-29E3F4573C4F}</ProjectGuid>
     <!-- only supported by desktop CLR -->
     <GeneratePlatformNotSupportedAssembly>true</GeneratePlatformNotSupportedAssembly>

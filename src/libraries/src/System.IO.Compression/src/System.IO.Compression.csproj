@@ -3,23 +3,21 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <AssemblyName>System.IO.Compression</AssemblyName>
-    <AssemblyVersion Condition="'$(TargetGroup)'=='netstandard1.3' OR '$(TargetGroup)'=='net46'">4.1.2.0</AssemblyVersion>
-    <ContractProject Condition="'$(AssemblyVersion)'=='4.1.2.0'">../ref/4.1.0/System.IO.Compression.depproj</ContractProject>
     <OutputType>Library</OutputType>
     <ProjectGuid>{5471BFE8-8071-466F-838E-5ADAA779E742}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <UseECMAKey>true</UseECMAKey>
     <DefineConstants Condition="'$(TargetGroup)' == 'netstandard'">$(DefineConstants);FEATURE_ZLIB</DefineConstants>
-    <DefineConstants Condition="'$(AssemblyVersion)'!='4.1.2.0'">$(DefineConstants);netstandard17</DefineConstants>
-    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net46' Or '$(TargetGroup)' == 'net463'">true</IsPartialFacadeAssembly>
+    <DefineConstants>$(DefineConstants);netstandard20</DefineConstants>
+    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net46'">true</IsPartialFacadeAssembly>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Unix-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Unix-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Windows_NT-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='net463-Windows_NT-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='net463-Windows_NT-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='net46-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='net46-Windows_NT-Release|AnyCPU'" />
   <!-- Files shared between net46 and core -->
   <ItemGroup>
     <Compile Include="$(SharedOpenSourcePath)System\IO\Compression\Crc32Helper.cs" />
@@ -103,7 +101,7 @@
     </Compile>
   </ItemGroup>
   <!-- Files exclusive to net46 -->
-  <ItemGroup Condition="'$(TargetGroup)' == 'net46' Or '$(TargetGroup)' == 'net463'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'net46'">
     <Compile Include="AssemblyInfo.cs" />
     <TargetingPackReference Include="mscorlib" />
     <TargetingPackReference Include="System" />
