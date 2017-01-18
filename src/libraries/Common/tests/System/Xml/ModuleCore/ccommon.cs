@@ -5,7 +5,7 @@
 using System;
 using System.Diagnostics;		//Assert
 
-[assembly: System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
+[assembly: System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverageAssembly]
 
 namespace OLEDB.Test.ModuleCore
 {
