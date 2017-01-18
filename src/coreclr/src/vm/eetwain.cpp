@@ -562,7 +562,8 @@ FrameType   GetHandlerFrameInfo(hdrInfo   * info,
     // The slots grow towards lower address on the stack and is terminted by a NULL entry.  
     // Since each subsequent slot contains the SP of a more nested EH clause, the contents of the slots are
     // expected to be in decreasing order.
-    size_t lvl;
+    size_t lvl = 0;
+#ifndef WIN64EXCEPTIONS
     PTR_TADDR pSlot;
     for(lvl = 0, pSlot = pFirstBaseSPslot;
         *pSlot && lvl < unwindLevel;
@@ -625,6 +626,7 @@ FrameType   GetHandlerFrameInfo(hdrInfo   * info,
             baseSP = curSlotVal;
         }
     }
+#endif // WIN64EXCEPTIONS
 
     if (unwindESP != (TADDR) IGNORE_VAL)
     {
