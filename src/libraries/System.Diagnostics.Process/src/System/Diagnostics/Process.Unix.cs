@@ -53,10 +53,9 @@ namespace System.Diagnostics
         public void Kill()
         {
             EnsureState(State.HaveId);
-            int errno = Interop.Sys.Kill(_processId, Interop.Sys.Signals.SIGKILL);
-            if (errno != 0)
+            if (Interop.Sys.Kill(_processId, Interop.Sys.Signals.SIGKILL) != 0)
             {
-                throw new Win32Exception(errno); // same exception as on Windows
+                throw new Win32Exception(); // same exception as on Windows
             }
         }
 
@@ -158,7 +157,7 @@ namespace System.Diagnostics
 
                 int pri = 0;
                 int errno = Interop.Sys.GetPriority(Interop.Sys.PriorityWhich.PRIO_PROCESS, _processId, out pri);
-                if (errno != 0)
+                if (errno != 0) // Interop.Sys.GetPriority returns GetLastWin32Error()
                 {
                     throw new Win32Exception(errno); // match Windows exception
                 }
@@ -174,16 +173,17 @@ namespace System.Diagnostics
             }
             set
             {
-                int pri;
+                int pri = 0; // Normal
                 switch (value)
                 {
                     case ProcessPriorityClass.RealTime: pri = -19; break;
                     case ProcessPriorityClass.High: pri = -11; break;
                     case ProcessPriorityClass.AboveNormal: pri = -6; break;
-                    case ProcessPriorityClass.Normal: pri = 0; break;
                     case ProcessPriorityClass.BelowNormal: pri = 10; break;
                     case ProcessPriorityClass.Idle: pri = 19; break;
-                    default: throw new Win32Exception(); // match Windows exception
+                    default:
+                        Debug.Assert(value == ProcessPriorityClass.Normal, "Input should have been validated by caller");
+                        break;
                 }
 
                 int result = Interop.Sys.SetPriority(Interop.Sys.PriorityWhich.PRIO_PROCESS, _processId, pri);

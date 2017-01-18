@@ -459,7 +459,7 @@ extern "C" int64_t SystemNative_GetMaximumPath()
 
 extern "C" int32_t SystemNative_GetPriority(PriorityWhich which, int32_t who)
 {
-    // GetPriority uses errno 0 to show succes to make sure we don't have a stale value
+    // GetPriority uses errno 0 to show success to make sure we don't have a stale value
     errno = 0;
 #if PRIORITY_REQUIRES_INT_WHO
     return getpriority(which, who);
