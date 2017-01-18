@@ -8182,11 +8182,11 @@ void CodeGen::genPutStructArgStk(GenTreePutArgStk* putArgStk)
  *
  *  Create and record GC Info for the function.
  */
-#ifdef _TARGET_AMD64_
+#ifndef JIT32_GCENCODER
 void
-#else  // !_TARGET_AMD64_
+#else  // !JIT32_GCENCODER
 void*
-#endif // !_TARGET_AMD64_
+#endif // !JIT32_GCENCODER
 CodeGen::genCreateAndStoreGCInfo(unsigned codeSize, unsigned prologSize, unsigned epilogSize DEBUGARG(void* codePtr))
 {
 #ifdef JIT32_GCENCODER
