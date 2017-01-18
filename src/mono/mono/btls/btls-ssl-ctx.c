@@ -64,6 +64,15 @@ mono_btls_ssl_ctx_new (void)
 	memset (ctx, 0, sizeof (MonoBtlsSslCtx));
 	ctx->references = 1;
 	ctx->ctx = SSL_CTX_new (TLS_method ());
+
+	// enable the default ciphers but disable any RC4 based ciphers
+	// since they're insecure: RFC 7465 "Prohibiting RC4 Cipher Suites"
+	SSL_CTX_set_cipher_list (ctx->ctx, "DEFAULT:!RC4");
+
+	// disable SSLv2 and SSLv3 by default, they are deprecated
+	// and should generally not be used according to the openssl docs
+	SSL_CTX_set_options (ctx->ctx, SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3);
+
 	return ctx;
 }
 

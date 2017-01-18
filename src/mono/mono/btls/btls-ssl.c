@@ -36,8 +36,6 @@ mono_btls_ssl_new (MonoBtlsSslCtx *ctx)
 	ptr->ctx = mono_btls_ssl_ctx_up_ref (ctx);
 	ptr->ssl = SSL_new (mono_btls_ssl_ctx_get_ctx (ptr->ctx));
 
-	SSL_set_options (ptr->ssl, SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3);
-
 	return ptr;
 }
 
