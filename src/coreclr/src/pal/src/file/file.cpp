@@ -3657,12 +3657,9 @@ DWORD FILEGetLastErrorFromErrno( void )
     case EEXIST:
         dwRet = ERROR_ALREADY_EXISTS; 
         break;
-#if !defined(_AIX)
-    // ENOTEMPTY is the same as EEXIST on AIX. Meaningful when involving directory operations
     case ENOTEMPTY:
         dwRet = ERROR_DIR_NOT_EMPTY; 
         break;
-#endif
     case EBADF:
         dwRet = ERROR_INVALID_HANDLE; 
         break;

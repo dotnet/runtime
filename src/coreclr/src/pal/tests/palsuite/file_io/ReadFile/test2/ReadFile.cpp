@@ -30,11 +30,7 @@ const char* szResultsFile = "Results.txt";
 //Previously number of tests was 6, now 4 refer VSW 312690
 #define NOOFTESTS 4
 
-#ifdef __sparc__
-const int PAGESIZE = 8192;
-#else   // __sparc__
 const int PAGESIZE = 4096;
-#endif  // __sparc__
 
 char *readBuffer;
 

@@ -76,11 +76,6 @@ Revision History:
 
 SET_DEFAULT_DEBUG_CHANNEL(MISC);
 
-#if defined(_HPUX_) && ( defined (_IA64_) || defined (__hppa__) )
-#include <sys/pstat.h>
-#include <sys/vmparam.h>
-#endif
-
 #ifndef __APPLE__
 #if HAVE_SYSCONF && HAVE__SC_AVPHYS_PAGES
 #define SYSCONF_PAGES _SC_AVPHYS_PAGES
@@ -135,22 +130,11 @@ GetSystemInfo(
     lpSystemInfo->dwActiveProcessorMask_PAL_Undefined = 0;
 
 #if HAVE_SYSCONF
-#if defined(_HPUX_) && ( defined (_IA64_) || defined (__hppa__) )
-    struct pst_dynamic psd;
-    if (pstat_getdynamic(&psd, sizeof(psd), (size_t)1, 0) != -1) {
-        nrcpus = psd.psd_proc_cnt;
-    }
-    else {
-        ASSERT("pstat_getdynamic failed (%d)\n", errno);
-    }
-
-#else // !__hppa__
     nrcpus = sysconf(_SC_NPROCESSORS_ONLN);
     if (nrcpus < 1)
     {
         ASSERT("sysconf failed for _SC_NPROCESSORS_ONLN (%d)\n", errno);
     }
-#endif // __hppa__
 #elif HAVE_SYSCTL
     int rc;
     size_t sz;
@@ -171,7 +155,7 @@ GetSystemInfo(
 
 #ifdef VM_MAXUSER_ADDRESS
     lpSystemInfo->lpMaximumApplicationAddress = (PVOID) VM_MAXUSER_ADDRESS;
-#elif defined(__sun__) || defined(_AIX) || defined(__hppa__) || ( defined (_IA64_) && defined (_HPUX_) ) || defined(__linux__)
+#elif defined(__linux__)
     lpSystemInfo->lpMaximumApplicationAddress = (PVOID) (1ull << 47);
 #elif defined(USERLIMIT)
     lpSystemInfo->lpMaximumApplicationAddress = (PVOID) USERLIMIT;
