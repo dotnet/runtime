@@ -773,14 +773,16 @@ namespace System.Runtime.CompilerServices
                     // to compact and thus have no expired entries.
                     for (int entriesIndex = 0; entriesIndex < _entries.Length; entriesIndex++)
                     {
-                        if (_entries[entriesIndex].HashCode == -1)
+                        ref Entry entry = ref _entries[entriesIndex];
+
+                        if (entry.HashCode == -1)
                         {
                             // the entry was removed
                             hasExpiredEntries = true;
                             break;
                         }
 
-                        if (_entries[entriesIndex].depHnd.IsAllocated && _entries[entriesIndex].depHnd.GetPrimary() == null)
+                        if (entry.depHnd.IsAllocated && entry.depHnd.GetPrimary() == null)
                         {
                             // the entry has expired
                             hasExpiredEntries = true;
@@ -823,12 +825,14 @@ namespace System.Runtime.CompilerServices
                     // as the buckets are dependent on the buckets list length, which is changing.
                     for (; newEntriesIndex < _entries.Length; newEntriesIndex++)
                     {
-                        int hashCode = _entries[newEntriesIndex].HashCode;
+                        ref Entry oldEntry = ref _entries[newEntriesIndex];
+                        ref Entry newEntry = ref newEntries[newEntriesIndex];
+                        int hashCode = oldEntry.HashCode;
 
-                        newEntries[newEntriesIndex].HashCode = hashCode;
-                        newEntries[newEntriesIndex].depHnd = _entries[newEntriesIndex].depHnd;
+                        newEntry.HashCode = hashCode;
+                        newEntry.depHnd = oldEntry.depHnd;
                         int bucket = hashCode & (newBuckets.Length - 1);
-                        newEntries[newEntriesIndex].Next = newBuckets[bucket];
+                        newEntry.Next = newBuckets[bucket];
                         newBuckets[bucket] = newEntriesIndex;
                     }
                 }
@@ -838,17 +842,20 @@ namespace System.Runtime.CompilerServices
                     // removing expired/removed entries.
                     for (int entriesIndex = 0; entriesIndex < _entries.Length; entriesIndex++)
                     {
-                        int hashCode = _entries[entriesIndex].HashCode;
-                        DependentHandle depHnd = _entries[entriesIndex].depHnd;
+                        ref Entry oldEntry = ref _entries[entriesIndex];
+                        int hashCode = oldEntry.HashCode;
+                        DependentHandle depHnd = oldEntry.depHnd;
                         if (hashCode != -1 && depHnd.IsAllocated)
                         {
                             if (depHnd.GetPrimary() != null)
                             {
+                                ref Entry newEntry = ref newEntries[newEntriesIndex];
+
                                 // Entry is used and has not expired. Link it into the appropriate bucket list.
-                                newEntries[newEntriesIndex].HashCode = hashCode;
-                                newEntries[newEntriesIndex].depHnd = depHnd;
+                                newEntry.HashCode = hashCode;
+                                newEntry.depHnd = depHnd;
                                 int bucket = hashCode & (newBuckets.Length - 1);
-                                newEntries[newEntriesIndex].Next = newBuckets[bucket];
+                                newEntry.Next = newBuckets[bucket];
                                 newBuckets[bucket] = newEntriesIndex;
                                 newEntriesIndex++;
                             }
@@ -856,7 +863,7 @@ namespace System.Runtime.CompilerServices
                             {
                                 // Pretend the item was removed, so that this container's finalizer
                                 // will clean up this dependent handle.
-                                Volatile.Write(ref _entries[entriesIndex].HashCode, -1);
+                                Volatile.Write(ref oldEntry.HashCode, -1);
                             }
                         }
                     }
