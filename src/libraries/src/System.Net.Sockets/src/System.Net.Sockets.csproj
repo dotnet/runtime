@@ -9,7 +9,6 @@
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net463'">true</IsPartialFacadeAssembly>
     <AssemblyVersion Condition="'$(TargetGroup)' == 'netcore50'">4.1.1.0</AssemblyVersion>
     <DefineConstants Condition="'$(TargetGroup)' == 'netcore50'">$(DefineConstants);netcore50</DefineConstants>
-    <ContractProject Condition="'$(AssemblyVersion)'=='4.1.1.0'">../ref/4.1.0/System.Net.Sockets.depproj</ContractProject>
   </PropertyGroup>
   <!-- Help VS understand available configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netcore50-Windows_NT-Debug|AnyCPU'" />

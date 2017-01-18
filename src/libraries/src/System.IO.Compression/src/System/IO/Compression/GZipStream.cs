@@ -72,7 +72,7 @@ namespace System.IO.Compression
             return _deflateStream.ReadByte();
         }
 
-#if netstandard17
+#if netstandard20
         public override IAsyncResult BeginRead(byte[] array, int offset, int count, AsyncCallback asyncCallback, object asyncState) =>
             TaskToApm.Begin(WriteAsync(array, offset, count, CancellationToken.None), asyncCallback, asyncState);
 
@@ -86,7 +86,7 @@ namespace System.IO.Compression
             return _deflateStream.Read(array, offset, count);
         }
 
-#if netstandard17
+#if netstandard20
         public override IAsyncResult BeginWrite(byte[] array, int offset, int count, AsyncCallback asyncCallback, object asyncState) =>
             TaskToApm.Begin(WriteAsync(array, offset, count, CancellationToken.None), asyncCallback, asyncState);
 

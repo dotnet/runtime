@@ -3,8 +3,6 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <AssemblyName>System.Reflection.Extensions</AssemblyName>
-    <AssemblyVersion Condition="'$(TargetGroup)'=='netstandard1.3'">4.0.2.0</AssemblyVersion>
-    <ContractProject Condition="'$(AssemblyVersion)'=='4.0.2.0'">..\ref\4.0.0\System.Reflection.Extensions.depproj</ContractProject>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <!-- all targets but netcore50aot are pure facades. Exclude resources for pure facades -->
     <ExcludeResourcesImport Condition="'$(TargetGroup)'!='netcore50aot'">true</ExcludeResourcesImport>

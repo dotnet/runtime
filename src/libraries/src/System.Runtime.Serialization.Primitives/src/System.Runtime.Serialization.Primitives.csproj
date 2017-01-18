@@ -3,8 +3,6 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <AssemblyName>System.Runtime.Serialization.Primitives</AssemblyName>
-    <AssemblyVersion Condition="'$(TargetGroup)'=='netstandard1.3' Or '$(TargetGroup)'=='netcore50aot'">4.1.1.0</AssemblyVersion>
-    <ContractProject Condition="'$(AssemblyVersion)'=='4.1.1.0'">../ref/4.1.1/System.Runtime.Serialization.Primitives.depproj</ContractProject>
     <RootNamespace>System.Runtime.Serialization.Primitives</RootNamespace>
     <NoWarn>$(NoWarn);1634;1691;649</NoWarn>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -14,12 +12,8 @@
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)'=='net463'">true</IsPartialFacadeAssembly>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netcore50aot-Windows_NT-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netcore50aot-Windows_NT-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='uap101aot-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='uap101aot-Windows_NT-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard1.3-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard1.3-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='net463-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='net463-Windows_NT-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Debug|AnyCPU'" />
@@ -34,14 +28,6 @@
     <Compile Include="System\Runtime\Serialization\InvalidDataContractException.cs" />
     <Compile Include="System\Runtime\Serialization\ISerializationSurrogateProvider.cs" />
     <Compile Include="System\Runtime\Serialization\KnownTypeAttribute.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'=='netstandard1.3' Or '$(TargetGroup)'=='netcore50aot'">
-    <Compile Include="System\Runtime\Serialization\OnDeserializedAttribute.cs" />
-    <Compile Include="System\Runtime\Serialization\OnDeserializingAttribute.cs" />
-    <Compile Include="System\Runtime\Serialization\OnSerializedAttribute.cs" />
-    <Compile Include="System\Runtime\Serialization\OnSerializingAttribute.cs" />
-    <Compile Include="System\Runtime\Serialization\SerializationException.cs" />
-    <Compile Include="System\Runtime\Serialization\StreamingContext.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netstandard' Or '$(TargetGroup)'=='uap101aot'">
     <Compile Include="System\Runtime\Serialization\InvalidDataContractException.Serialization.cs" />
