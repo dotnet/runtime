@@ -449,13 +449,9 @@ ULONGLONG GetTicks(void)
     asm volatile("rdtsc":"=a" (a), "=d" (d));
     return ((ULONGLONG)((unsigned int)(d)) << 32) | (unsigned int)(a);
 #else
-#if defined(__sparc__) || (defined (_HPUX_) && defined(__ia64__))
-    return (ULONGLONG)gethrtime();
-#else
     // #error Don''t know how to get ticks on this platform
     return (ULONGLONG)gethrtime();
-#endif // __sparc__
-#endif // _X86_
+#endif // i386
 }
 
 

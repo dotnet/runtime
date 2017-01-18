@@ -189,10 +189,6 @@ SET_DEFAULT_DEBUG_CHANNEL(SHMEM);
 
 #define SEGMENT_NAME_SUFFIX_LENGTH 10
 
-#if defined(_DEBUG) && defined(_HPUX_)
-#define TRACK_SHMLOCK_OWNERSHIP
-#endif // _DEBUG && _HPUX_
-
 /*
 SHMPTR structure :
 High byte is SHM segment number
@@ -808,24 +804,6 @@ int SHMLock(void)
             CHECK_CANARIES(header);
 #endif // TRACK_SHMLOCK_OWNERSHIP
 
-#ifdef _HPUX_
-            //
-            // TODO: workaround for VSW # 381564
-            // 
-            if (0 == tmp_pid && my_pid != header->spinlock)
-            {
-                ERROR("InterlockedCompareExchange returned the Comperand but "
-                      "failed to store the Exchange value to the Destination: "
-                      "looping again [my_pid=%u header->spinlock=%u tmp_pid=%u "
-                      "spincount=%d locking_thread=%u]\n", (DWORD)my_pid, 
-                      (DWORD)header->spinlock, (DWORD)tmp_pid, (int)spincount, 
-                      (HANDLE)locking_thread);
-
-                // Keep looping
-                tmp_pid = 42;
-            }
-#endif // _HPUX_
-
             if (0 == tmp_pid)
             {
                 // Spinlock acquired: break out of the loop
@@ -964,31 +942,17 @@ int SHMRelease(void)
 #endif // TRACK_SHMLOCK_OWNERSHIP
 
 
-#ifdef _HPUX_
-        //
-        // TODO: workaround for VSW # 381564 
-        //
-        do
-#endif // _HPUX_
-        {
-            /* Make sure we don't touch the spinlock if we don't own it. We're
-               supposed to own it if we get here, but just in case... */
-            tmp_pid = InterlockedCompareExchange((LONG *) &header->spinlock, 0, my_pid);
+        /* Make sure we don't touch the spinlock if we don't own it. We're
+           supposed to own it if we get here, but just in case... */
+        tmp_pid = InterlockedCompareExchange((LONG *) &header->spinlock, 0, my_pid);
 
-            if (tmp_pid != my_pid)
-            {
-                ASSERT("Process 0x%08x tried to release spinlock owned by process "
-                       "0x%08x! \n", my_pid, tmp_pid);
-                PALCLeaveCriticalSection(&shm_critsec);
-                return 0;
-            }
+        if (tmp_pid != my_pid)
+        {
+            ASSERT("Process 0x%08x tried to release spinlock owned by process "
+                   "0x%08x! \n", my_pid, tmp_pid);
+            PALCLeaveCriticalSection(&shm_critsec);
+            return 0;
         }
-#ifdef _HPUX_
-        //
-        // TODO: workaround for VSW # 381564
-        //
-        while (my_pid == header->spinlock);
-#endif // _HPUX_
 
         /* indicate no thread (in this process) holds the SHM lock */
         locking_thread = 0;

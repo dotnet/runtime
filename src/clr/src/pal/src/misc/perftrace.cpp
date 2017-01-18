@@ -231,11 +231,7 @@ PERFGetTicks(){
   #endif
   return ((ULONGLONG)((unsigned int)(d)) << 32) | (unsigned int)(a);
 #else
-#ifdef __sparc__
-  return (ULONGLONG)gethrtime();
-#else
   return 0; // on non-BSD and non-Windows, we'll return 0 for now.
-#endif // __sparc__
 #endif // _X86_
 }
 
