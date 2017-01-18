@@ -683,9 +683,6 @@
       <Member Name="GetHashCode(T)" />
       <Member MemberType="Property" Name="Default" />
     </Type>
-    <Type Name="System.Collections.Generic.EnumEqualityComparer&lt;T&gt;">
-      <Member Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
-    </Type>
     <Type Name="System.Collections.Generic.ICollection&lt;T&gt;">
       <Member Name="Add(T)" />
       <Member Name="Clear" />
