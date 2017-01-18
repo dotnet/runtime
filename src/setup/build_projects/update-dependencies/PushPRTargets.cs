@@ -98,7 +98,7 @@ namespace Microsoft.DotNet.Scripts
             string commitMessage = c.GetCommitMessage();
 
             NewPullRequest prInfo = new NewPullRequest(
-                commitMessage,
+                $"[{s_config.GitHubUpstreamBranch}] {commitMessage}",
                 s_config.GitHubOriginOwner + ":" + remoteBranchName,
                 s_config.GitHubUpstreamBranch);
 
