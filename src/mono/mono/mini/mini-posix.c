@@ -925,6 +925,7 @@ mono_gdb_render_native_backtraces (pid_t crashed_pid)
 	return;
 
 exec:
+	fclose (commands);
 	execv (argv [0], (char**)argv);
 
 	_exit (-1);
