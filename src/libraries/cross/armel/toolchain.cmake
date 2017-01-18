@@ -4,6 +4,7 @@ set(CMAKE_SYSTEM_NAME Linux)
 set(CMAKE_SYSTEM_VERSION 1)
 set(CMAKE_SYSTEM_PROCESSOR armv7l)
 
+# Specify the toolchain
 set(TOOLCHAIN "arm-linux-gnueabi")
 
 add_compile_options(-target armv7-linux-gnueabi)
@@ -11,6 +12,10 @@ add_compile_options(-mthumb)
 add_compile_options(-mfpu=vfpv3)
 add_compile_options(-mfloat-abi=softfp)
 add_compile_options(--sysroot=${CROSS_ROOTFS})
+
+set(CROSS_LINK_FLAGS "${CROSS_LINK_FLAGS} -target ${TOOLCHAIN}")
+set(CROSS_LINK_FLAGS "${CROSS_LINK_FLAGS} --sysroot=${CROSS_ROOTFS}")
+
 if("$ENV{__DistroRid}" MATCHES "tizen.*")
     include_directories(SYSTEM ${CROSS_ROOTFS}/usr/lib/gcc/armv7l-tizen-linux-gnueabi/4.9.2/include/c++/ ${CROSS_ROOTFS}/usr/lib/gcc/armv7l-tizen-linux-gnueabi/4.9.2/include/c++/armv7l-tizen-linux-gnueabi)
     add_compile_options(-Wno-deprecated-declarations) # compile-time option
@@ -20,16 +25,14 @@ if("$ENV{__DistroRid}" MATCHES "tizen.*")
     set(CROSS_LINK_FLAGS "${CROSS_LINK_FLAGS} -L${CROSS_ROOTFS}/lib")
     set(CROSS_LINK_FLAGS "${CROSS_LINK_FLAGS} -L${CROSS_ROOTFS}/usr/lib")
     set(CROSS_LINK_FLAGS "${CROSS_LINK_FLAGS} -L${CROSS_ROOTFS}/usr/lib/gcc/armv7l-tizen-linux-gnueabi/4.9.2")
+else()
+    # TODO: this setting assumes debian armel rootfs
+    include_directories(SYSTEM ${CROSS_ROOTFS}/usr/include/c++/4.9 ${CROSS_ROOTFS}/usr/include/${TOOLCHAIN}/c++/4.9 )
+    set(CROSS_LINK_FLAGS "${CROSS_LINK_FLAGS} -B${CROSS_ROOTFS}/usr/lib/gcc/${TOOLCHAIN}/4.9")
+    set(CROSS_LINK_FLAGS "${CROSS_LINK_FLAGS} -L${CROSS_ROOTFS}/usr/lib/${TOOLCHAIN}")
+    set(CROSS_LINK_FLAGS "${CROSS_LINK_FLAGS} -L${CROSS_ROOTFS}/lib/${TOOLCHAIN}")
+    set(CROSS_LINK_FLAGS "${CROSS_LINK_FLAGS} -L${CROSS_ROOTFS}/usr/lib/gcc/${TOOLCHAIN}/4.9")
 endif()
-
-# TODO: this setting assumes debian armel rootfs
-include_directories(SYSTEM ${CROSS_ROOTFS}/usr/include/c++/4.9 ${CROSS_ROOTFS}/usr/include/${TOOLCHAIN}/c++/4.9 )
-set(CROSS_LINK_FLAGS "${CROSS_LINK_FLAGS} -target ${TOOLCHAIN}")
-set(CROSS_LINK_FLAGS "${CROSS_LINK_FLAGS} -B${CROSS_ROOTFS}/usr/lib/gcc/${TOOLCHAIN}/4.9")
-set(CROSS_LINK_FLAGS "${CROSS_LINK_FLAGS} -L${CROSS_ROOTFS}/usr/lib/${TOOLCHAIN}")
-set(CROSS_LINK_FLAGS "${CROSS_LINK_FLAGS} -L${CROSS_ROOTFS}/lib/${TOOLCHAIN}")
-set(CROSS_LINK_FLAGS "${CROSS_LINK_FLAGS} -L${CROSS_ROOTFS}/usr/lib/gcc/${TOOLCHAIN}/4.9")
-set(CROSS_LINK_FLAGS "${CROSS_LINK_FLAGS} --sysroot=${CROSS_ROOTFS}")
 
 set(CMAKE_EXE_LINKER_FLAGS    "${CMAKE_EXE_LINKER_FLAGS}    ${CROSS_LINK_FLAGS}" CACHE STRING "" FORCE)
 set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${CROSS_LINK_FLAGS}" CACHE STRING "" FORCE)
