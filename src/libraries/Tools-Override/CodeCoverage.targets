@@ -45,7 +45,8 @@
 
   <!-- Report Generator Properties -->
   <PropertyGroup>
-    <CoverageReportGeneratorOptions>-targetdir:$(CoverageReportDir) -reporttypes:Html;Badges</CoverageReportGeneratorOptions>
+    <AssemblyBeingTestedName>$(MSBuildProjectName.Replace('.Tests', '').Replace('.Functional', '').Replace('.Performance', ''))</AssemblyBeingTestedName>
+    <CoverageReportGeneratorOptions>-targetdir:$(CoverageReportDir) -reporttypes:Html;Badges -assemblyfilters:+$(AssemblyBeingTestedName)</CoverageReportGeneratorOptions>
     <CoverageReportGeneratorCommandLine>$(PackagesDir)ReportGenerator\$(ReportGeneratorVersion)\tools\ReportGenerator.exe $(CoverageReportGeneratorOptions)</CoverageReportGeneratorCommandLine>
   </PropertyGroup>
 
