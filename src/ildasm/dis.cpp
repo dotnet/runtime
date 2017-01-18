@@ -10,7 +10,6 @@
 #include "debugmacros.h"
 #include "corpriv.h"
 #include "dasmenum.hpp"
-#include "dasmgui.h"
 #include "formattype.h"
 #include "dis.h"
 #include "resource.h"
@@ -133,11 +132,6 @@ char* AnsiToUtf(__in __nullterminated const char* sz) { return UnicodeToUtf(Ansi
     
 static void UnicodeToConsoleOrMsgBox(__in __nullterminated const WCHAR* wz)
 {
-#ifndef FEATURE_CORECLR
-    if (g_Mode & MODE_GUI)
-            WszMessageBox(NULL,wz,RstrW(IDS_ERRORCAPTION),MB_OK|MB_ICONERROR|GetDasmMBRTLStyle());
-    else
-#endif
     {
         //DWORD dw;
         //char* sz = UnicodeToAnsi(wz);
@@ -155,11 +149,6 @@ static void UnicodeToFile(__in __nullterminated const WCHAR* wz, FILE* pF)
 }
 static void ToGUIOrFile(__in __nullterminated const char* sz, void* GUICookie)
 {
-#ifndef FEATURE_CORECLR
-    if (g_Mode & MODE_GUI)
-        GUIAddOpcode(sz, GUICookie);
-    else
-#endif
     {
         if(g_fDumpRTF) fprintf((FILE*)GUICookie,"%s\\line\n",sz);
         else fprintf((FILE*)GUICookie,"%s\n",sz);
@@ -168,8 +157,6 @@ static void ToGUIOrFile(__in __nullterminated const char* sz, void* GUICookie)
 //------------------------------------------------------------------
 void printError(void* GUICookie, __in __nullterminated const char* string)
 {
-    if(g_Mode & MODE_GUI) printLine(GUICookie, ERRORMSG(string));
-    else
     {
         //DWORD dw;
         const char* sz = ERRORMSG(string);
@@ -198,7 +185,7 @@ void printLine(void* GUICookie, __in __nullterminated const char* string)
         {
             sz = UnicodeToAnsi(wz);
         }
-        else if(GUICookie && (!(g_Mode & MODE_GUI)))
+        else if(GUICookie)
         {
             UnicodeToFile(wz,(FILE*)GUICookie);
             return;
@@ -219,11 +206,8 @@ void printLineW(void* GUICookie, __in __nullterminated const WCHAR* string)
     }
     if(g_uCodePage == 0xFFFFFFFF)
     {
-        if(!(g_Mode & MODE_GUI))
-        {
-            UnicodeToFile(string,(FILE*)GUICookie);
-            return;
-        }
+        UnicodeToFile(string,(FILE*)GUICookie);
+        return;
     }
     else if(g_uCodePage == CP_UTF8)
         sz = UnicodeToUtf(string);
@@ -1083,15 +1067,7 @@ BOOL Disassemble(IMDInternalImport *pImport, BYTE *ILHeader, void *GUICookie, md
     PC = 0;
     fTryInCode = enumEHInfo(method.EH, pImport, method.GetCodeSize());
     DasmExceptionInfoClause* ehInfoToPutNext = NULL;
-    if(g_Mode & MODE_GUI)
-    { // in GUI, reset everything for each method
-        ulWasFileToken = 0xFFFFFFFF;
-        memset(&guidWasLang,0,sizeof(GUID));
-        memset(&guidWasLangVendor,0,sizeof(GUID));
-        memset(&guidWasDoc,0,sizeof(GUID));
-        memset(wzWasFileName,0,sizeof(wzWasFileName));
-        ulWasLine = 0;
-    }
+
     while (PC < method.GetCodeSize())
     {
         DWORD   Len;
@@ -1117,8 +1093,7 @@ BOOL Disassemble(IMDInternalImport *pImport, BYTE *ILHeader, void *GUICookie, md
         if (fNeedNewLine)
         {
             fNeedNewLine = FALSE;
-            if (!(g_Mode & MODE_GUI))
-                printLine(GUICookie,"");
+            printLine(GUICookie,"");
         }
 
         if(fShowSource || fInsertSourceLines)
