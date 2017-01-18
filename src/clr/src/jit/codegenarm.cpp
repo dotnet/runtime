@@ -492,10 +492,39 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
 
         case GT_DIV:
         {
-            NYI("GT_DIV");
-        }
+            genConsumeOperands(treeNode->AsOp());
+
+            noway_assert(targetReg != REG_NA);
+
+            GenTreePtr  dst    = treeNode;
+            GenTreePtr  src1   = treeNode->gtGetOp1();
+            GenTreePtr  src2   = treeNode->gtGetOp2();
+            instruction ins    = genGetInsForOper(treeNode->OperGet(), targetType);
+            emitAttr    attr   = emitTypeSize(treeNode);
+            regNumber   result = REG_NA;
+
+            // dst can only be a reg
+            assert(!dst->isContained());
+
+            // src can be only reg
+            assert(!src1->isContained() || !src2->isContained());
+
+            if (varTypeIsFloating(targetType))
+            {
+                // Floating point divide never raises an exception
+
+                emit->emitIns_R_R_R(ins, attr, dst->gtRegNum, src1->gtRegNum, src2->gtRegNum);
+            }
+            else // an signed integer divide operation
+            {
+                // TODO-ARM-Bug: handle zero division exception.
+
+                emit->emitIns_R_R_R(ins, attr, dst->gtRegNum, src1->gtRegNum, src2->gtRegNum);
+            }
+
             genProduceReg(treeNode);
-            break;
+        }
+        break;
 
         case GT_INTRINSIC:
         {
@@ -963,6 +992,9 @@ instruction CodeGen::genGetInsForOper(genTreeOps oper, var_types type)
             break;
         case GT_MUL:
             ins = INS_MUL;
+            break;
+        case GT_DIV:
+            ins = INS_sdiv;
             break;
         case GT_LSH:
             ins = INS_SHIFT_LEFT_LOGICAL;
