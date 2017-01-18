@@ -6,17 +6,6 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants Condition="'$(TargetGroup)'=='netstandard2.0'">$(DefineConstants);netstandard17</DefineConstants>
   </PropertyGroup>
-  <!-- Folder logic needs moved into common targets: https://github.com/dotnet/corefx/issues/11468 -->
-  <ItemGroup Condition="'$(TargetGroup)'=='netstandard'">
-    <TestNugetTargetMoniker Include="$(NugetTargetMoniker)">
-      <Folder>ns2.0-netcoreapp2.0</Folder>
-    </TestNugetTargetMoniker>
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'=='netcoreapp'">
-    <TestNugetTargetMoniker Include="$(NugetTargetMoniker)">
-      <Folder>netcoreapp2.0</Folder>
-    </TestNugetTargetMoniker>
-  </ItemGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netcoreapp-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netcoreapp-Windows_NT-Release|AnyCPU'" />
