@@ -1215,6 +1215,7 @@ namespace System.CodeDom.Compiler
         public string AddExtension(string fileExtension, bool keepFile) { throw null; }
         public void AddFile(string fileName, bool keepFile) { }
         public void CopyTo(string[] fileNames, int start) { }
+        public void Delete() { }
         protected virtual void Dispose(bool disposing) { }
         ~TempFileCollection() { }
         public System.Collections.IEnumerator GetEnumerator() { throw null; }
