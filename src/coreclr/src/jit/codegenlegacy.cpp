@@ -20829,7 +20829,7 @@ GenTreePtr Compiler::fgLegacyPerStatementLocalVarLiveness(GenTreePtr startNode, 
                 // If the GT_CLS_VAR is the lhs of an assignment, we'll handle it as a heap def, when we get to
                 // assignment.
                 // Otherwise, we treat it as a use here.
-                if (!fgCurHeapDef && (tree->gtFlags & GTF_CLS_VAR_ASG_LHS) == 0)
+                if ((tree->gtFlags & GTF_CLS_VAR_ASG_LHS) == 0)
                 {
                     fgCurHeapUse = true;
                 }
@@ -20857,10 +20857,7 @@ GenTreePtr Compiler::fgLegacyPerStatementLocalVarLiveness(GenTreePtr startNode, 
                     GenTreePtr           addrArg         = tree->gtOp.gtOp1->gtEffectiveVal(/*commaOnly*/ true);
                     if (!addrArg->DefinesLocalAddr(this, /*width doesn't matter*/ 0, &dummyLclVarTree, &dummyIsEntire))
                     {
-                        if (!fgCurHeapDef)
-                        {
-                            fgCurHeapUse = true;
-                        }
+                        fgCurHeapUse = true;
                     }
                     else
                     {
@@ -20882,10 +20879,7 @@ GenTreePtr Compiler::fgLegacyPerStatementLocalVarLiveness(GenTreePtr startNode, 
             case GT_XADD:
             case GT_XCHG:
             case GT_CMPXCHG:
-                if (!fgCurHeapDef)
-                {
-                    fgCurHeapUse = true;
-                }
+                fgCurHeapUse   = true;
                 fgCurHeapDef   = true;
                 fgCurHeapHavoc = true;
                 break;
@@ -20911,10 +20905,7 @@ GenTreePtr Compiler::fgLegacyPerStatementLocalVarLiveness(GenTreePtr startNode, 
                 }
                 if (modHeap)
                 {
-                    if (!fgCurHeapDef)
-                    {
-                        fgCurHeapUse = true;
-                    }
+                    fgCurHeapUse   = true;
                     fgCurHeapDef   = true;
                     fgCurHeapHavoc = true;
                 }
