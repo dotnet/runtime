@@ -10,7 +10,7 @@ using System.Xml.XPath;
 namespace System.Xml.Tests
 {
     //[TestCase(Name = "TC_SchemaSet_Add_URL", Desc = "")]
-    public class TC_SchemaSet_Add_URL
+    public class TC_SchemaSet_Add_URL : TC_SchemaSetBase
     {
         //-----------------------------------------------------------------------------------
         [Fact]

@@ -8,7 +8,7 @@ using Xunit;
 
 namespace System.Xml.Tests
 {
-    public class TC_SchemaSet_Add_Reader
+    public class TC_SchemaSet_Add_Reader : TC_SchemaSetBase
     {
         [Fact]
         public void NullNamespaceAndNullReader()

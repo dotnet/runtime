@@ -10,7 +10,7 @@ using System.Xml.Schema;
 namespace System.Xml.Tests
 {
     //[TestCase(Name = "TC_SchemaSet_ProhibitDTD", Desc = "")]
-    public class TC_SchemaSet_ProhibitDTD
+    public class TC_SchemaSet_ProhibitDTD : TC_SchemaSetBase
     {
         private ITestOutputHelper _output;
 

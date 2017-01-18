@@ -10,7 +10,7 @@ using System.Xml.Schema;
 namespace System.Xml.Tests
 {
     //[TestCase(Name = "TC_SchemaSet_Compile", Desc = "", Priority = 0)]
-    public class TC_SchemaSet_Compile
+    public class TC_SchemaSet_Compile : TC_SchemaSetBase
     {
         private ITestOutputHelper _output;
 

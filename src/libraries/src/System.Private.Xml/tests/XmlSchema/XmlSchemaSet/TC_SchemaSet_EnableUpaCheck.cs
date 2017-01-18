@@ -10,7 +10,7 @@ using System.Xml.Schema;
 namespace System.Xml.Tests
 {
     //[TestCase(Name = "TC_SchemaSet_EnableUpaCheck", Desc = "")]
-    public class TC_SchemaSet_EnableUpaCheck
+    public class TC_SchemaSet_EnableUpaCheck : TC_SchemaSetBase
     {
         private ITestOutputHelper _output;
 
