@@ -2796,7 +2796,7 @@ ves_icall_RuntimeTypeHandle_GetGenericTypeDefinition_impl (MonoReflectionTypeHan
 	if (mono_class_is_ginst (klass)) {
 		MonoClass *generic_class = mono_class_get_generic_class (klass)->container_class;
 
-		guint32 ref_info_handle = mono_class_get_ref_info_handle (klass);
+		guint32 ref_info_handle = mono_class_get_ref_info_handle (generic_class);
 		
 		if (generic_class->wastypebuilder && ref_info_handle) {
 			MonoObjectHandle tb = mono_gchandle_get_target_handle (ref_info_handle);
