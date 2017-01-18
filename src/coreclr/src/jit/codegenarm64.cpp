@@ -3953,14 +3953,14 @@ void CodeGen::genCodeForArrOffset(GenTreeArrOffs* arrOffset)
 
     if (!offsetNode->IsIntegralConst(0))
     {
-        emitter*   emit   = getEmitter();
-        GenTreePtr arrObj = arrOffset->gtArrObj;
-        regNumber  arrReg = genConsumeReg(arrObj);
-        noway_assert(arrReg != REG_NA);
+        emitter*  emit      = getEmitter();
         regNumber offsetReg = genConsumeReg(offsetNode);
         noway_assert(offsetReg != REG_NA);
         regNumber indexReg = genConsumeReg(indexNode);
         noway_assert(indexReg != REG_NA);
+        GenTreePtr arrObj = arrOffset->gtArrObj;
+        regNumber  arrReg = genConsumeReg(arrObj);
+        noway_assert(arrReg != REG_NA);
         regMaskTP tmpRegMask = arrOffset->gtRsvdRegs;
         regNumber tmpReg     = genRegNumFromMask(tmpRegMask);
         noway_assert(tmpReg != REG_NA);
