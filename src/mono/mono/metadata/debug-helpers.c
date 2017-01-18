@@ -280,8 +280,8 @@ mono_signature_full_name (MonoMethodSignature *sig)
 	return result;
 }
 
-static void
-ginst_get_desc (GString *str, MonoGenericInst *ginst)
+void
+mono_ginst_get_desc (GString *str, MonoGenericInst *ginst)
 {
 	int i;
 
@@ -302,11 +302,11 @@ mono_context_get_desc (MonoGenericContext *context)
 	g_string_append (str, "<");
 
 	if (context->class_inst)
-		ginst_get_desc (str, context->class_inst);
+		mono_ginst_get_desc (str, context->class_inst);
 	if (context->method_inst) {
 		if (context->class_inst)
 			g_string_append (str, "; ");
-		ginst_get_desc (str, context->method_inst);
+		mono_ginst_get_desc (str, context->method_inst);
 	}
 
 	g_string_append (str, ">");
@@ -827,7 +827,7 @@ mono_method_get_name_full (MonoMethod *method, gboolean signature, gboolean ret,
 			g_string_append (str, "<");
 		else
 			g_string_append (str, "[");
-		ginst_get_desc (str, ((MonoMethodInflated*)method)->context.method_inst);
+		mono_ginst_get_desc (str, ((MonoMethodInflated*)method)->context.method_inst);
 		if (format == MONO_TYPE_NAME_FORMAT_IL)
 			g_string_append_c (str, '>');
 		else
@@ -843,7 +843,7 @@ mono_method_get_name_full (MonoMethod *method, gboolean signature, gboolean ret,
 			g_string_append (str, "<");
 		else
 			g_string_append (str, "[");
-		ginst_get_desc (str, container->context.method_inst);
+		mono_ginst_get_desc (str, container->context.method_inst);
 		if (format == MONO_TYPE_NAME_FORMAT_IL)
 			g_string_append_c (str, '>');
 		else
