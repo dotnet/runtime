@@ -28,6 +28,9 @@
     <Copy Condition="'@(RuntimeDir)' != ''" SourceFiles="$(TargetPath)" DestinationFolder="%(RuntimeDir.Identity)">
       <Output TaskParameter="DestinationFiles" ItemName="FileWrites" />
     </Copy>
+    <Copy Condition="'@(RuntimeDir)' != '' And Exists($(TargetPath.Replace('dll', 'pdb')))" SourceFiles="$(TargetPath.Replace('dll', 'pdb'))" DestinationFolder="%(RuntimeDir.Identity)">
+      <Output TaskParameter="DestinationFiles" ItemName="FileWrites" />
+    </Copy>
   </Target>
 
   <Target Name="GetTargetingPackDir">
