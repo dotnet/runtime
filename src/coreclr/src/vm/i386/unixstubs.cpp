@@ -103,22 +103,3 @@ RtlpGetFunctionEndAddress (
     PORTABILITY_ASSERT("RtlpGetFunctionEndAddress");
     return 0;
 }
-
-EXTERN_C
-NTSYSAPI
-PEXCEPTION_ROUTINE
-NTAPI
-RtlVirtualUnwind (
-    __in DWORD HandlerType,
-    __in DWORD ImageBase,
-    __in DWORD ControlPc,
-    __in PRUNTIME_FUNCTION FunctionEntry,
-    __inout PT_CONTEXT ContextRecord,
-    __out PVOID *HandlerData,
-    __out PDWORD EstablisherFrame,
-    __inout_opt PT_KNONVOLATILE_CONTEXT_POINTERS ContextPointers
-    )
-{
-    PORTABILITY_ASSERT("RtlVirtualUnwind");
-    return NULL;
-}

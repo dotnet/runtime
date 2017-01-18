@@ -613,6 +613,13 @@ HRESULT FixContextForEnC(PCONTEXT        pCtx,
 
 };
 
+#ifdef _TARGET_X86_
+bool UnwindStackFrame(PREGDISPLAY     pContext,
+                      EECodeInfo     *pCodeInfo,
+                      unsigned        flags,
+                      CodeManState   *pState,
+                      StackwalkCacheUnwindInfo  *pUnwindInfo);
+#endif
 
 /*****************************************************************************
  <TODO>ToDo: Do we want to include JIT/IL/target.h? </TODO>
