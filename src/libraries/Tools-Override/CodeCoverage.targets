@@ -25,6 +25,9 @@
     <GenerateFullCoverageReport Condition="'$(GenerateCodeCoverageReportForAll)'=='true' and '$(CodeCoverageEnabled)'=='true' and '$(SkipFullCoverageReport)' != 'true'">true</GenerateFullCoverageReport>
     <GenerateVisitedMethodsReport Condition="'$(GenerateCodeCoverageReportForAll)'=='true' and '$(CodeCoverageEnabled)'=='true' and '$(GenerateVisitedReport)' == 'true'">true</GenerateVisitedMethodsReport>
 
+    <!-- We need to filter the data to only the assembly being tested. Otherwise we will gather tons of data about other assemblies. -->
+    <AssemblyBeingTestedName>$(MSBuildProjectName.Replace('.Tests', '').Replace('.Functional', '').Replace('.Performance', ''))</AssemblyBeingTestedName>
+
     <!-- 
       When coverage is enabled, we disallow building projects in parallel. 
       There appear to be issues with the OpenCover tool in these scenarios. 
@@ -32,11 +35,23 @@
     <SerializeProjects Condition="'$(CodeCoverageEnabled)'=='true'">true</SerializeProjects>
   </PropertyGroup>
 
+  <Target Name="CreateCoverageFilter" BeforeTargets="GenerateTestExecutionScripts">
+    <!-- By default, code coverage data is only gathered for the assembly being tested. 
+         CodeCoverageAssemblies can be passed in to the build to gather coverage on additional assemblies. -->
+    <ItemGroup>
+      <_CodeCoverageAssemblies Include="$(AssemblyBeingTestedName)" /> 
+      <_CodeCoverageAssemblies Include="$(CodeCoverageAssemblies)" Condition="'$(CodeCoverageAssemblies)' != ''" />
+    </ItemGroup>
+    <PropertyGroup>
+      <CoverageFilter>@(_CodeCoverageAssemblies->'+[%(Identity)]*', ' ')</CoverageFilter>
+    </PropertyGroup>
+  </Target>
+
   <!-- xUnit command line with coverage enabled -->
   <PropertyGroup Condition="'$(CoverageEnabledForProject)'=='true'">
     <CoverageHost>$(PackagesDir)OpenCover\$(OpenCoverVersion)\tools\OpenCover.Console.exe</CoverageHost>
     <CoverageOutputFilePath>$(CoverageReportDir)$(MSBuildProjectName).coverage.xml</CoverageOutputFilePath>
-    <CoverageOptions>-oldStyle -filter:"+[*]* -[*.Tests]* -[xunit.*]*" -excludebyfile:"*\Common\src\System\SR.*" -nodefaultfilters -excludebyattribute:*.ExcludeFromCodeCoverage* -skipautoprops -hideskipped:All -threshold:1</CoverageOptions>
+    <CoverageOptions>-oldStyle -filter:"{CoverageFilter}" -excludebyfile:"*\Common\src\System\SR.*" -nodefaultfilters -excludebyattribute:*.ExcludeFromCodeCoverage* -skipautoprops -hideskipped:All -threshold:1</CoverageOptions>
     <CoverageCommandLine>$(CoverageOptions) -returntargetcode -register:user -target:$(TestProgram) -output:$(CoverageOutputFilePath)</CoverageCommandLine>
     <TestHost>$(CoverageHost)</TestHost>
     <XunitOptions>$(XunitOptions) -parallel none</XunitOptions>
@@ -45,8 +60,8 @@
 
   <!-- Report Generator Properties -->
   <PropertyGroup>
-    <AssemblyBeingTestedName>$(MSBuildProjectName.Replace('.Tests', '').Replace('.Functional', '').Replace('.Performance', ''))</AssemblyBeingTestedName>
-    <CoverageReportGeneratorOptions>-targetdir:$(CoverageReportDir) -reporttypes:Html;Badges -assemblyfilters:+$(AssemblyBeingTestedName)</CoverageReportGeneratorOptions>
+    <CoverageReportAssemblyFilters>@(_CodeCoverageAssemblies->'+%(Identity)', ';')</CoverageReportAssemblyFilters>
+    <CoverageReportGeneratorOptions>-targetdir:$(CoverageReportDir) -reporttypes:Html;Badges "-assemblyfilters:$(CoverageReportAssemblyFilters)"</CoverageReportGeneratorOptions>
     <CoverageReportGeneratorCommandLine>$(PackagesDir)ReportGenerator\$(ReportGeneratorVersion)\tools\ReportGenerator.exe $(CoverageReportGeneratorOptions)</CoverageReportGeneratorCommandLine>
   </PropertyGroup>
 
