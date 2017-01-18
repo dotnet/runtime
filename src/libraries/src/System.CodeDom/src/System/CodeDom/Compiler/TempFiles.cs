@@ -143,6 +143,11 @@ namespace System.CodeDom.Compiler
             return keep != null ? (bool)keep : false;
         }
 
+        public void Delete()
+        {
+            SafeDelete();
+        }
+
         internal void Delete(string fileName)
         {
             try

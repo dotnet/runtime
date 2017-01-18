@@ -248,6 +248,31 @@ namespace System.CodeDom.Tests
             }
         }
 
+        [Fact]
+        public void Delete()
+        {
+            string directory = TempDirectory();
+            string filePath1 = Path.Combine(directory, "file1.extension");
+
+            File.Create(filePath1).Dispose();
+
+            try
+            {
+                using (var collection = new TempFileCollection(directory))
+                {
+                    collection.AddFile(filePath1, false);
+                    Assert.True(File.Exists(filePath1));
+                    collection.Delete();
+                    Assert.False(File.Exists(filePath1));
+                    Assert.Equal(0, collection.Count);
+                }
+            }
+            finally
+            {
+                File.Delete(filePath1);
+            }
+        }
+
         private static string s_tempDirectory = null;
         private static string TempDirectory()
         {
