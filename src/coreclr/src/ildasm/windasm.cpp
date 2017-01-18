@@ -13,8 +13,6 @@
 
 #include "dynamicarray.h"
 
-#define DO_DASM_GUI
-#include "dasmgui.h"
 #include "dasmenum.hpp"
 #include "dis.h"
 #include <ndpversion.h>
@@ -26,7 +24,6 @@
 #define MODE_DUMP_CLASS             1
 #define MODE_DUMP_CLASS_METHOD      2
 #define MODE_DUMP_CLASS_METHOD_SIG  3
-#define MODE_GUI                    4
 
 // All externs are defined in DASM.CPP
 extern BOOL                    g_fDumpIL;
@@ -47,7 +44,6 @@ extern BOOL                    g_fShowSource;
 extern BOOL                    g_fInsertSourceLines;
 extern BOOL                    g_fTryInCode;
 extern BOOL                    g_fQuoteAllNames;
-extern BOOL                    g_fShowProgressBar;
 extern BOOL                    g_fTDC;
 extern BOOL                    g_fShowCA;
 extern BOOL                    g_fCAVerbal;
@@ -98,13 +94,6 @@ void Uninit();
 void Cleanup();
 void DumpMetaInfo(__in __nullterminated const WCHAR* pszFileName, __in __nullterminated const char* pszObjFileName, void* GUICookie);
 FILE* OpenOutput(__in __nullterminated const char* szFileName);
-
-// Do we only view an IL-dasm window in GUI mode?
-// TRUE when we're in GUI mode and we specified a particular method from the cmd line
-BOOL IsGuiILOnly()
-{
-    return (g_Mode & MODE_GUI) && (g_pszMethodToDump[0] != 0);
-}
 
 void PrintLogo()
 {
@@ -221,11 +210,7 @@ int ProcessOneArg(__in __nullterminated char* szArg, __out char** ppszObjFileNam
         }
         else if (_stricmp(szOpt, "sou") == 0)
         {
-#ifdef FEATURE_CORECLR
             printf("Warning: 'SOURCE' option is ignored for ildasm on CoreCLR.\n");
-#else
-            g_fShowSource = TRUE;
-#endif
         }
         else if (_stricmp(szOpt, "lin") == 0)
         {
@@ -303,10 +288,6 @@ int ProcessOneArg(__in __nullterminated char* szArg, __out char** ppszObjFileNam
                                    g_fHideFOA  ||
                                    g_fHidePrivScope;
         }
-        else if (_stricmp(szOpt, "nob") == 0)
-        {
-            g_fShowProgressBar = FALSE;
-        }
         else if (_stricmp(szOpt, "quo") == 0)
         {
             g_fQuoteAllNames = TRUE;
@@ -383,29 +364,7 @@ int ProcessOneArg(__in __nullterminated char* szArg, __out char** ppszObjFileNam
         }
         else if ((_stricmp(szOpt, "met") == 0)&&g_fTDC)
         {
-#ifdef FEATURE_CORECLR
             printf("Warning: 'METADATA' option is ignored for ildasm on CoreCLR.\n");
-#else
-
-            char *pStr = EqualOrColon(szArg);
-            g_fDumpMetaInfo = TRUE;
-            if(pStr)
-            {
-                char szOptn[64];
-                strncpy_s(szOptn, 64, pStr+1,10);
-                szOptn[3] = 0; // recognize metainfo specifier by first 3 chars
-                if     (_stricmp(szOptn, "hex") == 0) g_ulMetaInfoFilter |= MDInfo::dumpMoreHex;
-                else if(_stricmp(szOptn, "csv") == 0) g_ulMetaInfoFilter |= MDInfo::dumpCSV;
-                else if(_stricmp(szOptn, "mdh") == 0) g_ulMetaInfoFilter |= MDInfo::dumpHeader;
-                else if(_stricmp(szOptn, "raw") == 0) g_ulMetaInfoFilter |= MDInfo::dumpRaw;
-                else if(_stricmp(szOptn, "hea") == 0) g_ulMetaInfoFilter |= MDInfo::dumpRawHeaps;
-                else if(_stricmp(szOptn, "sch") == 0) g_ulMetaInfoFilter |= MDInfo::dumpSchema;
-                else if(_stricmp(szOptn, "unr") == 0) g_ulMetaInfoFilter |= MDInfo::dumpUnsat;
-                else if(_stricmp(szOptn, "val") == 0) g_ulMetaInfoFilter |= MDInfo::dumpValidate;
-                else if(_stricmp(szOptn, "sta") == 0) g_ulMetaInfoFilter |= MDInfo::dumpStats;
-                else return -1;
-            }
-#endif // FEATURE_CORECLR
         }
         else if (_stricmp(szOpt, "obj") == 0)
         {
@@ -428,15 +387,6 @@ int ProcessOneArg(__in __nullterminated char* szArg, __out char** ppszObjFileNam
                 strncpy_s(g_szOutputFile, MAX_FILENAME_LENGTH, pStr,MAX_FILENAME_LENGTH-1);
                 g_szOutputFile[MAX_FILENAME_LENGTH-1] = 0;
             }
-            else
-                g_fShowProgressBar = FALSE;
-
-            g_Mode &= ~MODE_GUI;
-        }
-        else if (_stricmp(szOpt, "tex") == 0)
-        {
-            g_Mode &= ~MODE_GUI;
-            g_fShowProgressBar = FALSE;
         }
         else
         {
@@ -541,16 +491,9 @@ int ParseCmdLineA(__in __nullterminated char* szCmdLine, __out char** ppszObjFil
     return ret;
 }
 
-#ifdef FEATURE_CORECLR
 int __cdecl main(int nCmdShow, char* lpCmdLine[])
-#else
-int APIENTRY WinMain(HINSTANCE hInstance,
-                     HINSTANCE hPrevInstance,
-                     __in LPSTR     lpCmdLine,
-                     int       nCmdShow)
-#endif
 {
-#if defined(FEATURE_CORECLR) && defined(FEATURE_PAL)
+#if defined(FEATURE_PAL)
     if (0 != PAL_Initialize(nCmdShow, lpCmdLine))
     {
         printError(g_pFile, "Error: Fail to PAL_Initialize\n");
@@ -575,10 +518,6 @@ int APIENTRY WinMain(HINSTANCE hInstance,
 
     g_fUseProperName = TRUE;
 
-#ifndef FEATURE_CORECLR
-    g_hInstance = hInstance;
-    g_Mode = MODE_GUI;
-#endif
     g_pszClassToDump[0]=0;
     g_pszMethodToDump[0]=0;
     g_pszSigToDump[0]=0;
@@ -623,7 +562,7 @@ int APIENTRY WinMain(HINSTANCE hInstance,
             SyntaxCon();
             exit((iCommandLineParsed == 1) ? 0 : 1);
         }
-        if(!(g_Mode & MODE_GUI))
+
         {
             DWORD   exitCode = 1;
             if(g_szInputFile[0] == 0)
@@ -658,75 +597,7 @@ int APIENTRY WinMain(HINSTANCE hInstance,
             Uninit();
             exit(exitCode);
         }
-        else // if GUI ordered, restart as WinApp
-        {
-#ifdef FEATURE_CORECLR
-            _ASSERTE(!"GUI is not supported for ildasm on CoreCLR.");
-#else
-            PROCESS_INFORMATION pi;
-            STARTUPINFO         si;
-            memset(&pi, 0, sizeof(PROCESS_INFORMATION) );
-            memset(&si, 0, sizeof(STARTUPINFO) );
-            si.cb = sizeof(STARTUPINFO);
-            si.dwFlags = STARTF_USESHOWWINDOW | STARTF_USESTDHANDLES;
-            si.wShowWindow = SW_SHOW;
-            si.hStdOutput = INVALID_HANDLE_VALUE;
-            si.hStdInput  = INVALID_HANDLE_VALUE;
-            si.hStdError  = INVALID_HANDLE_VALUE;
-            // Create the child process.
-            if(CreateProcessW(NULL,
-                                wzCommandLine,                      // command line
-                                NULL,                               // process security attributes
-                                NULL,                               // primary thread security attributes
-                                TRUE,                               // handles are inherited
-                                DETACHED_PROCESS,                   // creation flags
-                                NULL,                               // use parent's environment
-                                NULL,                               // use parent's current directory
-                                (LPSTARTUPINFOW)&si,                // STARTUPINFO pointer
-                                &pi)==0)                            // receives PROCESS_INFORMATION
-            {
-                printf(RstrANSI(IDS_E_CANTCREATEPROC));//"Failed to CreateProcess\n\n");
-                exit(1);
-            }
-            exit(0);
-#endif
-        }
     }
-#ifndef FEATURE_CORECLR
-    else //Second pass: WinApp
-    {
-        g_uCodePage = CP_UTF8;
-        g_Mode = MODE_GUI;
-        g_fDumpHTML = FALSE;
-
-        if(g_szInputFile[0])
-        {
-            char* pch = strrchr(g_szInputFile,'.');
-            if(pch && (!_strcmpi(pch+1,"lib") || !_strcmpi(pch+1,"obj")))
-            {
-                WszMessageBox(NULL,
-                           RstrW(IDS_ONLYPEINGUI),//"ILDASM supports only PE files in graphic mode",
-                           RstrW(IDS_BADFILETYPE),//"Invalid File Type",
-                           MB_OK|MB_ICONERROR|GetDasmMBRTLStyle());
-                return 0;
-            }
-        }
-        if (Init() == TRUE)
-        {
-            CreateGUI();
-            if(g_szInputFile[0])
-            {
-                GUISetModule(g_szInputFile);
-                DumpFile();
-            }
-            GUIMainLoop();
-            Cleanup();
-            DestroyGUI();
-        }
-        Uninit();
-        return 0 ;
-    }
-#endif
     return 0;
 }
 

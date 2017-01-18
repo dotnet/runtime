@@ -7,63 +7,7 @@
 // Used by dasm.rc
 //
 
-#define IDS_FILE                        1
-#define IDS_VIEW                        2
-#define IDS_HELP                        3
-#define IDS_OPEN                        4
-#define IDS_DUMP                        5
-#define IDS_DUMPTREE                    6
-#define IDS_EXIT                        7
-#define IDS_FONTS                       8
-#define IDS_FONT_TREE                   9
-#define IDS_FONT_DASM                   10
-#define IDS_SORT_BY_NAME                11
-#define IDS_SHOW_PUB                    12
-#define IDS_SHOW_PRIV                   13
-#define IDS_SHOW_FAM                    14
-#define IDS_SHOW_ASM                    15
-#define IDS_SHOW_FAA                    16
-#define IDS_SHOW_FOA                    17
-#define IDS_SHOW_PSCOPE                 18
-#define IDS_FULL_INFO                   19
-#define IDS_BYTES                       20
-#define IDS_TOKENS                      21
-#define IDS_SOURCELINES                 22
-#define IDS_QUOTEALLNAMES               23
-#define IDS_EXPANDTRY                   24
-#define IDS_SHOW_HEADER                 25
-#define IDS_SHOW_STAT                   26
-#define IDS_METAINFO                    27
-#define IDS_MI_HEADER                   28
-#define IDS_MI_HEX                      29
-#define IDS_MI_CSV                      30
-#define IDS_MI_UNREX                    31
-#define IDS_MI_DEBUG                    32
-#define IDS_MI_SCHEMA                   33
-#define IDS_MI_RAW                      34
-#define IDS_MI_HEAPS                    35
-#define IDS_MI_VALIDATE                 36
-#define IDS_SHOW_METAINFO               37
-#define IDS_ABOUT                       38
-#define IDS_ABOUT_COPYRIGHTINFO         39
-#define IDS_PRODUCTNAME                 40
-#define IDS_MAINWINDOWCAPTION           41
-#define IDS_MAINWINDOWCAPTIONAPPEND     42
-#define IDS_NETHEADER                   43
-#define IDS_STATISTICS                  44
-#define IDS_METAINFOTEXT                45
-#define IDS_FIND                        46
-#define IDS_FINDNEXT                    47
 #define IDS_RTL                         48
-#define IDS_TREEVIEWFCN                 49
-#define IDS_CAVERBAL                    50
-#define IDS_DUMPRTF                     51
-
-#define IDI_ICON2                       136
-#define IDD_DIALOG1                     137
-#define IDD_ABOUT                       149
-#define IDR_MAINMENU                    149
-#define IDI_ICON1                       150
 
 #define IDS_USAGE_TITLE                 200
 #define IDS_USAGE_01                    IDS_USAGE_TITLE + 1
@@ -152,7 +96,6 @@
 #define IDS_E_BADCORHDR                 404
 #define IDS_E_OPENMD                    405
 #define IDS_E_COPYRIGHT                 406
-#define IDS_E_DASMABORT                 407
 #define IDS_E_DASMOK                    408
 #define IDS_E_PARTDASM                  409
 #define IDS_E_INSTRDT                   410
