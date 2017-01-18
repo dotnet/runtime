@@ -56,28 +56,40 @@ namespace System.Net.Sockets.Performance.Tests
             callback(e.SocketError);
         }
 
-        public override void Send(Action<int, SocketError> onSendCallback)
+        public override bool Send(out int bytesSent, out SocketError socketError, Action<int, SocketError> onSendCallback)
         {
+            bytesSent = 0;
+            socketError = SocketError.Success;
+
             _sendEventArgs.SetBuffer(_sendBuffer, _sendBufferIndex, _sendBuffer.Length - _sendBufferIndex);
             _sendEventArgs.UserToken = onSendCallback;
 
-            bool willRaiseEvent = _s.SendAsync(_sendEventArgs);
-            if (!willRaiseEvent)
+            bool pending = _s.SendAsync(_sendEventArgs);
+            if (!pending)
             {
-                IO_Complete(this, _sendEventArgs);
+                bytesSent = _sendEventArgs.BytesTransferred;
+                socketError = _sendEventArgs.SocketError;
             }
+
+            return pending;
         }
 
-        public override void Receive(Action<int, SocketError> onReceiveCallback)
+        public override bool Receive(out int bytesReceived, out SocketError socketError, Action<int, SocketError> onReceiveCallback)
         {
+            bytesReceived = 0;
+            socketError = SocketError.Success;
+
             _recvEventArgs.SetBuffer(_recvBuffer, _recvBufferIndex, _recvBuffer.Length - _recvBufferIndex);
             _recvEventArgs.UserToken = onReceiveCallback;
 
-            bool willRaiseEvent = _s.ReceiveAsync(_recvEventArgs);
-            if (!willRaiseEvent)
+            bool pending = _s.ReceiveAsync(_recvEventArgs);
+            if (!pending)
             {
-                IO_Complete(this, _recvEventArgs);
+                bytesReceived = _recvEventArgs.BytesTransferred;
+                socketError = _recvEventArgs.SocketError;
             }
+
+            return pending;
         }
 
         private void IO_Complete(object sender, SocketAsyncEventArgs e)
