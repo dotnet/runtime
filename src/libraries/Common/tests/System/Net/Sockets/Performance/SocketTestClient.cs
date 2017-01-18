@@ -123,105 +123,117 @@ namespace System.Net.Sockets.Performance.Tests
 
             // IMPORTANT: The code currently assumes one outstanding Send and one Receive. Interlocked operations
             //            are required to handle re-entrancy.
-            Send(OnSend);
-            Receive(OnReceive);
+
+            int bytesTransferred;
+            SocketError socketError;
+
+            if (!Send(out bytesTransferred, out socketError, OnSend))
+            {
+                OnSend(bytesTransferred, socketError);
+            }
+
+            if (!Receive(out bytesTransferred, out socketError, OnReceive))
+            {
+                OnReceive(bytesTransferred, socketError);
+            }
         }
 
-        public abstract void Send(Action<int, SocketError> onSendCallback);
+        public abstract bool Send(out int bytesTransferred, out SocketError socketError, Action<int, SocketError> onSendCallback);
 
         // Called when the entire _sendBuffer has been sent.
         private void OnSend(int bytesSent, SocketError error)
         {
-            _log.WriteLine(this.GetHashCode() + " OnSend({0}, {1})", bytesSent, error);
+            // Keep sending until pending
+            bool pending;
+            do
+            {
+                _log.WriteLine(this.GetHashCode() + " OnSend({0}, {1})", bytesSent, error);
 
-            // TODO: an error should fail the test.
-            if (error != SocketError.Success)
-            {
-                _timeClose.Start();
-                Close(OnClose);
-                return;
-            }
+                // TODO: an error should fail the test.
+                if (error != SocketError.Success)
+                {
+                    _timeClose.Start();
+                    Close(OnClose);
+                    return;
+                }
 
-            if (bytesSent == _sendBuffer.Length)
-            {
-                OnSendMessage();
-            }
-            else
-            {
-                _log.WriteLine(
-                    "OnSend: Unexpected bytesSent={0}, expected {1}",
-                    bytesSent,
-                    _sendBuffer.Length);
-            }
+                if (bytesSent != _sendBuffer.Length)
+                {
+                    _log.WriteLine(
+                        "OnSend: Unexpected bytesSent={0}, expected {1}",
+                        bytesSent,
+                        _sendBuffer.Length);
+                    return;
+                }
+
+                _send_iterations++;
+                _log.WriteLine(this.GetHashCode() + " OnSendMessage() _send_iterations={0}", _send_iterations);
+
+                if (_send_iterations == _iterations)
+                {
+                    //TODO: _s.Shutdown(SocketShutdown.Send);
+                    return;
+                }
+
+                pending = Send(out bytesSent, out error, OnSend);
+            } while (!pending);
         }
 
-        private void OnSendMessage()
-        {
-            _send_iterations++;
-            _log.WriteLine(this.GetHashCode() + " OnSendMessage() _send_iterations={0}", _send_iterations);
-
-            if (_send_iterations < _iterations)
-            {
-                Send(OnSend);
-            }
-
-            //TODO: _s.Shutdown(SocketShutdown.Send);
-        }
-
-        public abstract void Receive(Action<int, SocketError> onReceiveCallback);
+        public abstract bool Receive(out int bytesTransferred, out SocketError socketError, Action<int, SocketError> onSendCallback);
 
         // Called when the entire _recvBuffer has been received.
         private void OnReceive(int receivedBytes, SocketError error)
         {
-            _log.WriteLine(this.GetHashCode() + " OnSend({0}, {1})", receivedBytes, error);
-            _recvBufferIndex += receivedBytes;
+            bool pending;
+            do
+            {
+                _log.WriteLine(this.GetHashCode() + " OnSend({0}, {1})", receivedBytes, error);
+                _recvBufferIndex += receivedBytes;
 
-            // TODO: an error should fail the test.
-            if (error != SocketError.Success)
-            {
-                _timeClose.Start();
-                Close(OnClose);
-                return;
-            }
+                // TODO: an error should fail the test.
+                if (error != SocketError.Success)
+                {
+                    _timeClose.Start();
+                    Close(OnClose);
+                    return;
+                }
 
-            if (_recvBufferIndex == _recvBuffer.Length)
-            {
-                OnReceiveMessage();
-            }
-            else if (receivedBytes == 0)
-            {
-                _log.WriteLine("Socket unexpectedly closed.");
-            }
-            else
-            {
-                Receive(OnReceive);
-            }
-        }
+                if (_recvBufferIndex == _recvBuffer.Length)
+                {
+                    _receive_iterations++;
+                    _log.WriteLine(this.GetHashCode() + " OnReceiveMessage() _receive_iterations={0}", _receive_iterations);
 
-        private void OnReceiveMessage()
-        {
-            _receive_iterations++;
-            _log.WriteLine(this.GetHashCode() + " OnReceiveMessage() _receive_iterations={0}", _receive_iterations);
+                    _recvBufferIndex = 0;
 
-            _recvBufferIndex = 0;
+                    // Expect echo server.
+                    if (!SocketTestMemcmp.Compare(_sendBuffer, _recvBuffer))
+                    {
+                        _log.WriteLine("Received different data from echo server");
+                    }
 
-            // Expect echo server.
-            if (!SocketTestMemcmp.Compare(_sendBuffer, _recvBuffer))
-            {
-                _log.WriteLine("Received different data from echo server");
-            }
-
-            if (_receive_iterations >= _iterations)
-            {
-                _timeSendRecv.Stop();
-                _timeClose.Start();
-                Close(OnClose);
-            }
-            else
-            {
-                Array.Clear(_recvBuffer, 0, _recvBuffer.Length);
-                Receive(OnReceive);
-            }
+                    if (_receive_iterations >= _iterations)
+                    {
+                        _timeSendRecv.Stop();
+                        _timeClose.Start();
+                        Close(OnClose);
+                        return;
+                    }
+                    else
+                    {
+                        Array.Clear(_recvBuffer, 0, _recvBuffer.Length);
+                        pending = Receive(out receivedBytes, out error, OnReceive);
+                    }
+                }
+                else if (receivedBytes == 0)
+                {
+                    _log.WriteLine("Socket unexpectedly closed.");
+                    return;
+                }
+                else
+                {
+                    pending = Receive(out receivedBytes, out error, OnReceive);
+                }
+            } while (!pending);
         }
 
         public abstract void Close(Action onCloseCallback);
