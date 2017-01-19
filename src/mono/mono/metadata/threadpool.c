@@ -132,7 +132,13 @@ destroy (gpointer unused)
 	mono_coop_mutex_destroy (&threadpool->threads_lock);
 	mono_coop_cond_destroy (&threadpool->threads_exit_cond);
 
-	g_free (threadpool);
+	/* We cannot free the threadpool, because there is a race
+	 * on shutdown where a managed thread may request a new
+	 * threadpool thread, but we already destroyed the
+	 * threadpool. So to avoid a use-after-free, we simply do
+	 * not free the threadpool, as we won't be able to access
+	 * the threadpool anyway because the ref count will be 0 */
+	// g_free (threadpool);
 }
 
 static void
@@ -797,11 +803,17 @@ ves_icall_System_Threading_ThreadPool_RequestWorkerThread (void)
 	if (mono_domain_is_unloading (domain))
 		return FALSE;
 
+	if (!mono_refcount_tryinc (threadpool)) {
+		/* threadpool has been destroyed, we are shutting down */
+		return FALSE;
+	}
+
 	domains_lock ();
 
 	/* synchronize with mono_threadpool_remove_domain_jobs */
 	if (mono_domain_is_unloading (domain)) {
 		domains_unlock ();
+		mono_refcount_dec (threadpool);
 		return FALSE;
 	}
 
@@ -814,13 +826,13 @@ ves_icall_System_Threading_ThreadPool_RequestWorkerThread (void)
 	domains_unlock ();
 
 	COUNTER_ATOMIC (threadpool, counter, {
-		if (counter._.starting == 16)
+		if (counter._.starting == 16) {
+			mono_refcount_dec (threadpool);
 			return TRUE;
+		}
 
 		counter._.starting ++;
 	});
-
-	mono_refcount_inc (threadpool);
 
 	mono_threadpool_worker_enqueue (threadpool->worker, worker_callback, NULL);
 

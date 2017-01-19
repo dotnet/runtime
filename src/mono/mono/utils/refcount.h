@@ -23,6 +23,7 @@ typedef struct {
 
 #define mono_refcount_init(v,destructor) do { mono_refcount_initialize (&(v)->ref, (destructor)); } while (0)
 #define mono_refcount_inc(v) (mono_refcount_increment (&(v)->ref),(v))
+#define mono_refcount_tryinc(v) (mono_refcount_tryincrement (&(v)->ref))
 #define mono_refcount_dec(v) do { mono_refcount_decrement (&(v)->ref); } while (0)
 
 static inline void
@@ -32,8 +33,8 @@ mono_refcount_initialize (MonoRefCount *refcount, void (*destructor) (gpointer d
 	refcount->destructor = destructor;
 }
 
-static inline void
-mono_refcount_increment (MonoRefCount *refcount)
+static inline gboolean
+mono_refcount_tryincrement (MonoRefCount *refcount)
 {
 	guint32 oldref, newref;
 
@@ -42,10 +43,19 @@ mono_refcount_increment (MonoRefCount *refcount)
 	do {
 		oldref = refcount->ref;
 		if (oldref == 0)
-			g_error ("%s: cannot increment a ref with value 0", __func__);
+			return FALSE;
 
 		newref = oldref + 1;
 	} while (InterlockedCompareExchange ((gint32*) &refcount->ref, newref, oldref) != oldref);
+
+	return TRUE;
+}
+
+static inline void
+mono_refcount_increment (MonoRefCount *refcount)
+{
+	if (!mono_refcount_tryincrement (refcount))
+		g_error ("%s: cannot increment a ref with value 0", __func__);
 }
 
 static inline void
