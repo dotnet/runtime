@@ -26,7 +26,8 @@
     <GenerateVisitedMethodsReport Condition="'$(GenerateCodeCoverageReportForAll)'=='true' and '$(CodeCoverageEnabled)'=='true' and '$(GenerateVisitedReport)' == 'true'">true</GenerateVisitedMethodsReport>
 
     <!-- We need to filter the data to only the assembly being tested. Otherwise we will gather tons of data about other assemblies. -->
-    <AssemblyBeingTestedName>$(MSBuildProjectName.Replace('.Tests', '').Replace('.Functional', '').Replace('.Performance', '').Replace('.Unit', ''))</AssemblyBeingTestedName>
+    <_ProjectDirectoryUnderSourceDir Condition="'$(IsTestProject)' == 'true'">$(MSBuildProjectDirectory.SubString($(SourceDir.Length)))</_ProjectDirectoryUnderSourceDir>
+    <AssemblyBeingTestedName Condition="'$(IsTestProject)' == 'true'">$(_ProjectDirectoryUnderSourceDir.SubString(0, $(_ProjectDirectoryUnderSourceDir.IndexOfAny("\\/"))))</AssemblyBeingTestedName>
 
     <!-- 
       When coverage is enabled, we disallow building projects in parallel. 
