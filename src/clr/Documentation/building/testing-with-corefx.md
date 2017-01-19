@@ -3,18 +3,23 @@ Testing with CoreFX
 
 It may be valuable to use CoreFX tests to validate your changes to CoreCLR or mscorlib.
 
-**Windows**
+**NOTE:** The `BUILDTOOLS_OVERRIDE_RUNTIME` property no longer works.
 
-As part of building tests, CoreFX restores a copy of the runtime from myget, in order to update the runtime that is deployed, a special build property `BUILDTOOLS_OVERRIDE_RUNTIME` can be used. If this is set, the CoreFX testing targets will copy all the files in the folder it points to into the test folder, overwriting any files that exist.
+**Replace runtime between build.[cmd|sh] and build-tests.[cmd|sh]**
 
-To run tests, follow the procedure for [running tests in CoreFX](https://github.com/dotnet/corefx/blob/master/Documentation/building/windows-instructions.md). You can pass `/p:BUILDTOOLS_OVERRIDE_RUNTIME=<path-to-coreclr>\bin\Product\Windows_NT.x64.Release` to build.cmd to set this property, e.g. (note the space between the "--" and the "/p" option):
+Use the following instructions to test a change to the dotnet/coreclr repo using dotnet/corefx tests.  Refer to the [CoreFx Developer Guide](https://github.com/dotnet/corefx/blob/master/Documentation/project-docs/developer-guide.md) for information about CoreFx build scripts.
 
-```
-build.cmd -Release -- /p:BUILDTOOLS_OVERRIDE_RUNTIME=<root of coreclr repo>\bin\Product\Windows_NT.x64.Checked
-```
+1. Build the CoreClr runtime you wish to test under `<coreclr_root>`
+2. Build the CoreFx repo (`build.[cmd|sh]`) under `<corefx_root>`, but don't build tests yet
+3. Copy the contents of the CoreCLR binary root you wish to test into the CoreFx runtime folder (`<flavor>` below) created in step #2.  For example:
 
-**FreeBSD, Linux, NetBSD, OS X**
+  `copy <coreclr_root>\bin\Product\Windows_NT.<arch>.<build_type>\* <corefx_root>\bin\runtime\<flavor>`  
+  -or-  
+  `cp <coreclr_root>/bin/Product/<os>.<arch>.<build_type>/* <corefx_root>/bin/runtime/<flavor>`  
+  
+4. Run the CoreFx `build-tests.[cmd|sh]` script as described in the Developer Guide.
 
-Refer to the procedure for [running tests in CoreFX](https://github.com/dotnet/corefx/blob/master/Documentation/building/cross-platform-testing.md)
-- Note the --coreclr-bins and --mscorlib-bins arguments to [run-test.sh](https://github.com/dotnet/corefx/blob/master/run-test.sh)
-- Pass in paths to your private build of CoreCLR
+**CI Script**
+
+[run-corefx-tests.py](https://github.com/dotnet/coreclr/blob/master/tests/scripts/run-corefx-tests.py) will clone dotnet/corefx and run steps 2-4 above automatically.  It is primarily intended to be run by the dotnet/coreclr CI system, but it might provide a useful reference or shortcut for individuals running the tests locally.
+
