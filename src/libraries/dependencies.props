@@ -29,6 +29,7 @@
     <CoreClrExpectedPrerelease>beta-24917-03</CoreClrExpectedPrerelease>
     <ExternalExpectedPrerelease>beta-24727-00</ExternalExpectedPrerelease>
     <ProjectNTfsExpectedPrerelease>beta-24917-00</ProjectNTfsExpectedPrerelease>
+    <StandardExpectedPrerelease>beta-24919-01</StandardExpectedPrerelease>
   </PropertyGroup>
 
   <!-- Full package version strings that are used in other parts of the build. -->
