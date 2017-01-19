@@ -53,8 +53,8 @@ namespace System.Net.Security.Tests
                 var clientNet = new VirtualNetworkStream(network, false);
                 var serverNet = new VirtualNetworkStream(network, true);
 
-                _clientStream = new SslStream(clientNet, false, AllowAnyServerCertificate);
-                _serverStream = new SslStream(serverNet, false, AllowAnyServerCertificate);
+                _clientStream = new SslStream(clientNet, false, ClientCertCallback);
+                _serverStream = new SslStream(serverNet, false, ServerCertCallback);
             }
 
             public async Task RunTest()
@@ -66,9 +66,9 @@ namespace System.Net.Security.Tests
 
                 var tasks = new Task[2];
                 tasks[0] = AuthenticateClient(serverHost, clientCertificates, checkCertificateRevocation: false);
-                tasks[1] = AuthenticateServer(serverCertificate, clientCertificateRequired:true, checkCertificateRevocation:false);
+                tasks[1] = AuthenticateServer(serverCertificate, clientCertificateRequired: true, checkCertificateRevocation: false);
                 await Task.WhenAll(tasks);
-                
+
                 if (PlatformDetection.IsWindows && PlatformDetection.WindowsVersion >= 10)
                 {
                     Assert.True(_clientStream.HashAlgorithm == HashAlgorithmType.Sha256 ||
@@ -77,11 +77,7 @@ namespace System.Net.Security.Tests
                 }
             }
 
-            private bool AllowAnyServerCertificate(
-                object sender,
-                X509Certificate certificate,
-                X509Chain chain,
-                SslPolicyErrors sslPolicyErrors)
+            private bool ClientCertCallback(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors)
             {
                 switch (sslPolicyErrors)
                 {
@@ -90,6 +86,32 @@ namespace System.Net.Security.Tests
                     case SslPolicyErrors.RemoteCertificateNameMismatch:
                         return true;
                     case SslPolicyErrors.RemoteCertificateNotAvailable:
+                    default:
+                        return false;
+                }
+            }
+
+            private bool ServerCertCallback(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors)
+            {
+                switch (sslPolicyErrors)
+                {
+                    case SslPolicyErrors.None:
+                    case SslPolicyErrors.RemoteCertificateChainErrors:
+                    case SslPolicyErrors.RemoteCertificateNameMismatch:
+                        return true;
+                    case SslPolicyErrors.RemoteCertificateNotAvailable:
+                        if (PlatformDetection.IsWindows7 && !Capability.IsTrustedRootCertificateInstalled())
+                        {
+                            // https://technet.microsoft.com/en-us/library/hh831771.aspx#BKMK_Changes2012R2
+                            // Starting with Windows 8, the "Management of trusted issuers for client authentication" has changed:
+                            // The behavior to send the Trusted Issuers List by default is off.
+                            //
+                            // In Windows 7 the Trusted Issuers List is sent within the Server Hello TLS record. This list is built
+                            // by the server using certificates from the Trusted Root Authorities certificate store.
+                            // The client side will use the Trusted Issuers List, if not empty, to filter proposed certificates.
+                            return true;
+                        }
+                        return false;
                     default:
                         return false;
                 }
