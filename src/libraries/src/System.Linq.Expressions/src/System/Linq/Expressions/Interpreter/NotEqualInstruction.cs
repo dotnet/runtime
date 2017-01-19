@@ -512,12 +512,9 @@ namespace System.Linq.Expressions.Interpreter
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
         public static Instruction Create(Type type, bool liftedToNull)
         {
-            // Boxed enums can be unboxed as their underlying types:
-            Type underlyingType = type.GetTypeInfo().IsEnum ? Enum.GetUnderlyingType(type) : type.GetNonNullableType();
-
             if (liftedToNull)
             {
-                switch (underlyingType.GetTypeCode())
+                switch (type.GetNonNullableType().GetTypeCode())
                 {
                     case TypeCode.Boolean: return s_BooleanLiftedToNull ?? (s_BooleanLiftedToNull = new NotEqualBooleanLiftedToNull());
                     case TypeCode.SByte: return s_SByteLiftedToNull ?? (s_SByteLiftedToNull = new NotEqualSByteLiftedToNull());
@@ -531,13 +528,13 @@ namespace System.Linq.Expressions.Interpreter
                     case TypeCode.UInt64: return s_UInt64LiftedToNull ?? (s_UInt64LiftedToNull = new NotEqualUInt64LiftedToNull());
                     case TypeCode.Single: return s_SingleLiftedToNull ?? (s_SingleLiftedToNull = new NotEqualSingleLiftedToNull());
                     default:
-                        Debug.Assert(underlyingType.GetTypeCode() == TypeCode.Double);
+                        Debug.Assert(type.GetNonNullableType().GetTypeCode() == TypeCode.Double);
                         return s_DoubleLiftedToNull ?? (s_DoubleLiftedToNull = new NotEqualDoubleLiftedToNull());
                 }
             }
             else
             {
-                switch (underlyingType.GetTypeCode())
+                switch (type.GetNonNullableType().GetTypeCode())
                 {
                     case TypeCode.Boolean: return s_Boolean ?? (s_Boolean = new NotEqualBoolean());
                     case TypeCode.SByte: return s_SByte ?? (s_SByte = new NotEqualSByte());

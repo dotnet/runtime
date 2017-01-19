@@ -28,6 +28,7 @@ namespace System.Linq.Expressions.Tests
                 yield return new object[] { new ushort[] { 0, 1, ushort.MaxValue }, useInterpreter };
                 yield return new object[] { new TestClass[] { new TestClass(), new TestClass() }, useInterpreter };
                 yield return new object[] { new TestEnum[] { new TestEnum(), new TestEnum() }, useInterpreter };
+                yield return new object[] { new E[] {E.A, E.B, (E)int.MinValue}, useInterpreter };
 
                 yield return new object[] { new bool?[] { null, true, false }, useInterpreter };
                 yield return new object[] { new byte?[] { null, 0, 1, byte.MaxValue }, useInterpreter };
@@ -42,6 +43,7 @@ namespace System.Linq.Expressions.Tests
                 yield return new object[] { new uint?[] { null, 0, 1, uint.MaxValue }, useInterpreter };
                 yield return new object[] { new ulong?[] { null, 0, 1, ulong.MaxValue }, useInterpreter };
                 yield return new object[] { new ushort?[] { null, 0, 1, ushort.MaxValue }, useInterpreter };
+                yield return new object[] { new E?[] {null, E.A, E.B, (E)int.MaxValue, (E)int.MinValue}, useInterpreter };
             }
         }
 
