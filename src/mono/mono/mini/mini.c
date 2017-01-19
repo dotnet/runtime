@@ -3895,7 +3895,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 		g_free (id);
 	}
 
-	if (!cfg->compile_aot) {
+	if (!cfg->compile_aot && !(flags & JIT_FLAG_DISCARD_RESULTS)) {
 		mono_domain_lock (cfg->domain);
 		mono_jit_info_table_add (cfg->domain, cfg->jit_info);
 

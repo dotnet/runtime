@@ -956,7 +956,7 @@ compile_all_methods_thread_main_inner (CompileAllThreadArgs *args)
 			g_print ("Compiling %d %s\n", count, desc);
 			g_free (desc);
 		}
-		cfg = mini_method_compile (method, mono_get_optimizations_for_method (method, args->opts), mono_get_root_domain (), (JitFlags)0, 0, -1);
+		cfg = mini_method_compile (method, mono_get_optimizations_for_method (method, args->opts), mono_get_root_domain (), (JitFlags)JIT_FLAG_DISCARD_RESULTS, 0, -1);
 		if (cfg->exception_type != MONO_EXCEPTION_NONE) {
 			printf ("Compilation of %s failed with exception '%s':\n", mono_method_full_name (cfg->method, TRUE), cfg->exception_message);
 			fail_count ++;
