@@ -44,8 +44,17 @@
 #error Unsupported or unset target architecture
 #endif
 
-/*****************************************************************************/
-
+//------------------------------------------------------------------------
+//
+// Each register list in register.h must declare REG_STK as the last value.
+// In the following enum declarations, the following REG_XXX are created beyond
+// the "real" registers:
+//    REG_STK          - Used to indicate something evaluated onto the stack.
+//    ACTUAL_REG_COUNT - The number of physical registers. (same as REG_STK).
+//    REG_COUNT        - The number of physical register + REG_STK. This is the count of values that may
+//                       be assigned during register allocation.
+//    REG_NA           - Used to indicate that a register is either not yet assigned or not required.
+//
 #if defined(_TARGET_ARM_)
 DECLARE_TYPED_ENUM(_regNumber_enum, unsigned)
 {

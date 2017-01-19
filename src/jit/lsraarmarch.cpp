@@ -196,6 +196,7 @@ void Lowering::TreeNodeInfoInitIndir(GenTreePtr indirTree)
         if (makeContained)
         {
             m_lsra->clearOperandCounts(addr);
+            addr->SetContained();
             // The srcCount is decremented because addr is now "contained",
             // then we account for the base and index below, if they are non-null.
             info->srcCount--;
@@ -210,6 +211,7 @@ void Lowering::TreeNodeInfoInitIndir(GenTreePtr indirTree)
 
         assert(base != addr);
         m_lsra->clearOperandCounts(addr);
+        addr->SetContained();
 
         // Traverse the computation below GT_IND to find the operands
         // for the addressing mode, marking the various constants and
@@ -239,6 +241,7 @@ void Lowering::TreeNodeInfoInitIndir(GenTreePtr indirTree)
             else
             {
                 m_lsra->clearOperandCounts(op1);
+                op1->SetContained();
                 if (!op1->OperIsLeaf())
                 {
                     nextChild = op1;
@@ -258,6 +261,7 @@ void Lowering::TreeNodeInfoInitIndir(GenTreePtr indirTree)
                 else
                 {
                     m_lsra->clearOperandCounts(op2);
+                    op2->SetContained();
                     if (!op2->OperIsLeaf())
                     {
                         assert(nextChild == nullptr);
@@ -336,8 +340,7 @@ void Lowering::TreeNodeInfoInitShiftRotate(GenTree* tree)
     GenTreePtr source  = tree->gtOp.gtOp1;
     if (shiftBy->IsCnsIntOrI())
     {
-        l->clearDstCount(shiftBy);
-        info->srcCount--;
+        MakeSrcContained(tree, shiftBy);
     }
 
 #ifdef _TARGET_ARM_
@@ -347,6 +350,7 @@ void Lowering::TreeNodeInfoInitShiftRotate(GenTree* tree)
     if (tree->OperGet() == GT_LSH_HI || tree->OperGet() == GT_RSH_LO)
     {
         assert(source->OperGet() == GT_LONG);
+        source->SetContained();
 
         info->srcCount++;
 
@@ -518,6 +522,7 @@ void Lowering::TreeNodeInfoInitCall(GenTreeCall* call)
         if (thisPtrNode->gtOper == GT_PUTARG_REG)
         {
             l->clearOperandCounts(thisPtrNode);
+            thisPtrNode->SetContained();
             l->clearDstCount(thisPtrNode->gtOp.gtOp1);
         }
         else
@@ -550,6 +555,8 @@ void Lowering::TreeNodeInfoInitCall(GenTreeCall* call)
         // A GT_FIELD_LIST has a TYP_VOID, but is used to represent a multireg struct
         if (argNode->OperGet() == GT_FIELD_LIST)
         {
+            argNode->SetContained();
+
             // There could be up to 2-4 PUTARG_REGs in the list (3 or 4 can only occur for HFAs)
             regNumber argReg = curArgTabEntry->regNum;
             for (GenTreeFieldList* entry = argNode->AsFieldList(); entry != nullptr; entry = entry->Rest())
@@ -742,6 +749,8 @@ void Lowering::TreeNodeInfoInitBlockStore(GenTreeBlk* blkNode)
                 srcAddrOrFill->gtLsraInfo.setSrcCount(source->gtLsraInfo.srcCount);
             }
             m_lsra->clearOperandCounts(source);
+            source->SetContained();
+            source->AsIndir()->Addr()->ClearContained();
         }
         else if (!source->IsMultiRegCall() && !source->OperIsSIMD())
         {
@@ -755,6 +764,7 @@ void Lowering::TreeNodeInfoInitBlockStore(GenTreeBlk* blkNode)
         GenTreePtr initVal = source;
         if (initVal->OperIsInitVal())
         {
+            initVal->SetContained();
             initVal = initVal->gtGetOp1();
         }
         srcAddrOrFill = initVal;

@@ -7182,7 +7182,9 @@ void Compiler::fgMorphTailCall(GenTreeCall* call)
     // Now inject a placeholder for the real call target that codegen
     // will generate
     GenTreePtr arg = new (this, GT_NOP) GenTreeOp(GT_NOP, TYP_I_IMPL);
+#ifdef LEGACY_BACKEND
     codeGen->genMarkTreeInReg(arg, REG_TAILCALL_ADDR);
+#endif
     call->gtCallArgs = gtNewListNode(arg, call->gtCallArgs);
 
     // Lastly inject the pointer for the copy routine
