@@ -1229,7 +1229,7 @@ do_mono_image_load (MonoImage *image, MonoImageOpenStatus *status,
 	if (!mono_image_load_cli_data (image))
 		goto invalid_image;
 
-	if (is_problematic_image (image)) {
+	if (!image->ref_only && is_problematic_image (image)) {
 		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Denying load of problematic image %s", image->name);
 		*status = MONO_IMAGE_IMAGE_INVALID;
 		goto invalid_image;
