@@ -155,7 +155,7 @@
       },
       "inputs": {
         "filename": "$(Agent.BuildDirectory)/s/corefx/Tools/msbuild.sh",
-        "arguments": "$(Agent.BuildDirectory)/s/corefx/src/tests.builds $(PB_CreateHelixArguments) /p:\"CloudDropAccountName=$(PB_CloudDropAccountName)\" /p:\"CloudResultsAccountName=$(PB_CloudResultsAccountName)\" /p:\"CloudDropAccessToken=$(CloudDropAccessToken)\" /p:\"CloudResultsAccessToken=$(OutputCloudResultsAccessToken)\" /p:\"HelixApiAccessKey=$(HelixApiAccessKey)\" /p:HelixApiEndpoint=$(PB_HelixApiEndPoint) /p:\"Branch=$(SourceBranch)\" /p:\"TargetQueue=$(PB_TargetQueue)\"",
+        "arguments": "$(Agent.BuildDirectory)/s/corefx/src/tests.builds $(PB_CreateHelixArguments) /p:\"CloudDropAccountName=$(PB_CloudDropAccountName)\" /p:\"CloudResultsAccountName=$(PB_CloudResultsAccountName)\" /p:\"CloudDropAccessToken=$(CloudDropAccessToken)\" /p:\"CloudResultsAccessToken=$(OutputCloudResultsAccessToken)\" /p:\"HelixApiAccessKey=$(HelixApiAccessKey)\" /p:HelixApiEndpoint=$(PB_HelixApiEndPoint) /p:\"Branch=$(SourceBranch)\" /p:\"TargetQueue=$(PB_TargetQueue)\" /p:\"OfficialBuildId=$(OfficialBuildId)\"",
         "workingFolder": "",
         "failOnStandardError": "false"
       }

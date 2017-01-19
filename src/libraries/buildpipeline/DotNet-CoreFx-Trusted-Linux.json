@@ -227,7 +227,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "exec $(PB_DockerContainerName) $(PB_GitDirectory)/Tools/msbuild.sh $(PB_GitDirectory)/src/tests.builds $(PB_CreateHelixArguments) /p:\"CloudDropAccountName=$(PB_CloudDropAccountName)\" /p:\"CloudResultsAccountName=$(PB_CloudResultsAccountName)\" /p:\"CloudDropAccessToken=$(CloudDropAccessToken)\" /p:\"CloudResultsAccessToken=$(OutputCloudResultsAccessToken)\" /p:\"HelixApiAccessKey=$(HelixApiAccessKey)\" /p:HelixApiEndpoint=$(PB_HelixApiEndPoint) /p:\"Branch=$(SourceBranch)\" /p:\"TargetQueue=$(PB_TargetQueue)\"",
+        "arguments": "exec $(PB_DockerContainerName) $(PB_GitDirectory)/Tools/msbuild.sh $(PB_GitDirectory)/src/tests.builds $(PB_CreateHelixArguments) /p:\"CloudDropAccountName=$(PB_CloudDropAccountName)\" /p:\"CloudResultsAccountName=$(PB_CloudResultsAccountName)\" /p:\"CloudDropAccessToken=$(CloudDropAccessToken)\" /p:\"CloudResultsAccessToken=$(OutputCloudResultsAccessToken)\" /p:\"HelixApiAccessKey=$(HelixApiAccessKey)\" /p:HelixApiEndpoint=$(PB_HelixApiEndPoint) /p:\"Branch=$(SourceBranch)\" /p:\"TargetQueue=$(PB_TargetQueue)\" /p:\"OfficialBuildId=$(OfficialBuildId)\"",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -465,7 +465,6 @@
       "value": "/t:CloudBuild /p:ArchGroup=x64 /p:ConfigurationGroup=Debug /p:\"EnableCloudTest=true /p:\"TestProduct=corefx  /p:\"TimeoutInSeconds=1200\" /p:\"TargetOS=Linux\" /p:FilterToOSGroup=Linux",
       "allowOverride": true
     }
-    
   },
   "demands": [
     "Agent.OS -equals linux"
