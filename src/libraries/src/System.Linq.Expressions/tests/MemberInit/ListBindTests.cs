@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Reflection;
+using System.Reflection.Emit;
 using Xunit;
 
 namespace System.Linq.Expressions.Tests
@@ -271,6 +272,17 @@ namespace System.Linq.Expressions.Tests
             MemberListBinding binding = Expression.ListBind(
                 typeof(ListWrapper<int>).GetProperty(nameof(ListWrapper<int>.ListProperty)), initializers);
             Assert.Same(binding, binding.Update(initializers));
+        }
+
+        [Fact]
+        public void GlobalMethod()
+        {
+            ModuleBuilder module = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Name"), AssemblyBuilderAccess.Run).DefineDynamicModule("Module");
+            MethodBuilder globalMethod = module.DefineGlobalMethod("GlobalMethod", MethodAttributes.Public | MethodAttributes.Static, typeof(List<int>), Type.EmptyTypes);
+            globalMethod.GetILGenerator().Emit(OpCodes.Ret);
+            module.CreateGlobalFunctions();
+            MethodInfo globalMethodInfo = module.GetMethod(globalMethod.Name);
+            Assert.Throws<ArgumentException>("propertyAccessor", () => Expression.ListBind(globalMethodInfo));
         }
     }
 }
