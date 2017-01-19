@@ -115,11 +115,18 @@ namespace System.Numerics
                 return double.PositiveInfinity;
             }
 
+            return Hypot(value._real, value._imaginary);
+        }
+
+        private static double Hypot (double a, double b)
+        {
             // |value| == sqrt(a^2 + b^2)
             // sqrt(a^2 + b^2) == a/a * sqrt(a^2 + b^2) = a * sqrt(a^2/a^2 + b^2/a^2)
             // Using the above we can factor out the square of the larger component to dodge overflow.
-            double c = Math.Abs(value._real);
-            double d = Math.Abs(value._imaginary);
+            // Really this should be public on Math; it is a very standard numerical method.
+
+            double c = Math.Abs(a);
+            double d = Math.Abs(b);
 
             if (c > d)
             {
@@ -295,7 +302,62 @@ namespace System.Numerics
         [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "Sqrt", Justification = "Sqrt is the name of a mathematical function.")]
         public static Complex Sqrt(Complex value)
         {
-            return FromPolarCoordinates(Math.Sqrt(value.Magnitude), value.Phase / 2.0);
+
+            if (value._imaginary == 0.0)
+            {
+                // Handle the trivial case quickly.
+                if (value._real < 0.0)
+                {
+                    return new Complex(0.0, Math.Sqrt(-value._real));
+                }
+                else
+                {
+                    return new Complex(Math.Sqrt(value._real), 0.0);
+                }
+            }
+            else
+            {
+
+                // One way to compute Sqrt(z) is just to call Pow(z, 0.5), which coverts to polar coordinates
+                // (sqrt + atan), halves the phase, and reconverts to cartesian coordinates (cos + sin).
+                // Not only is this more expensive than necessary, it also fails to preserve certain expected
+                // symmetries, such as that the square root of a pure negative is a pure imaginary, and that the
+                // square root of a pure imaginary has exactly equal real and imaginary parts. This all goes
+                // back to the fact that Math.PI is not stored with infinite precision, so taking half of Math.PI
+                // does not land us on an argument with sine exactly equal to zero.
+
+                // To find a fast and symmetry-respecting formula for complex square root,
+                // note x + i y = \sqrt{a + i b} implies x^2 + 2 i x y - y^2 = a + i b,
+                // so x^2 - y^2 = a and 2 x y = b. Cross-substitute and use the quadratic formula to obtain
+                //   x = \sqrt{\frac{\sqrt{a^2 + b^2} + a}{2}}  y = \pm \sqrt{\frac{\sqrt{a^2 + b^2} - a}{2}}
+                // There is just one complication: depending on the sign on a, either x or y suffers from
+                // cancelation when |b| << |a|. We can get aroud this by noting that our formulas imply
+                // x^2 y^2 = b^2 / 4, so |x| |y| = |b| / 2. So after computing the one that doesn't suffer
+                // from cancelation, we can compute the other with just a division. This is basically just
+                // the right way to evaluate the quadratic formula without cancelation.
+
+                // All this reduces our total cost to two sqrts and a few flops, and it respects the desired
+                // symmetries. Much better than atan + cos + sin!
+
+                // The signs are a matter of choice of branch cut, which is traditionally taken so x > 0 and sign(y) = sign(b).
+
+                double x, y;
+                if (value._real >= 0.0)
+                {
+                    x = Math.Sqrt((Hypot(value._real, value._imaginary) + value._real) / 2.0);
+                    y = value._imaginary / x / 2.0;
+                }
+                else
+                {
+                    y = Math.Sqrt((Hypot(value._real, value._imaginary) - value._real) / 2.0);
+                    if (value._imaginary < 0.0) y = -y;
+                    x = value._imaginary / y / 2.0;
+                }
+
+                return new Complex(x, y);
+
+            }
+            
         }
 
         public static Complex Pow(Complex value, Complex power)
