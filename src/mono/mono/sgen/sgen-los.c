@@ -644,6 +644,9 @@ sgen_los_scan_card_table (CardTableScanType scan_type, ScanCopyContext ctx, int 
 			if (!sgen_los_object_is_pinned (obj->data))
 				continue;
 
+			if (!obj->cardtable_mod_union)
+				continue;
+
 			cards = get_cardtable_mod_union_for_object (obj);
 			g_assert (cards);
 			if (scan_type == CARDTABLE_SCAN_MOD_UNION_PRECLEAN) {
