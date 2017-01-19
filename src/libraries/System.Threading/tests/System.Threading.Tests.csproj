@@ -2,16 +2,13 @@
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <OutputType>Library</OutputType>
-    <AssemblyName>System.Threading.Tests</AssemblyName>
     <ProjectGuid>{33F5A50E-B823-4FDD-8571-365C909ACEAE}</ProjectGuid>
-    <NugetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NugetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard1.3-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard1.3-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="AsyncLocalTests.cs" />
     <Compile Include="AutoResetEventTests.cs" />
@@ -45,11 +42,15 @@
       <Link>CommonTest\System\IO\FileCleanupTestBase.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == ''">
-    <Compile Include="MonitorTests.netstandard1.7.cs" />
+  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard'">
+    <Compile Include="ExecutionContextTests.netstandard.cs" />
+    <Compile Include="HostExecutionContextTests.cs" />
+    <Compile Include="HostExecutionContextManagerTests.cs" />
+    <Compile Include="MonitorTests.netstandard.cs" />
     <Compile Include="ReaderWriterLockTests.cs" />
+    <Compile Include="SynchronizationContextTests.netstandard.cs" />
     <Compile Include="$(CommonTestPath)\System\Threading\ThreadTestHelpers.cs">
-      <Link>CommonTest\System\Threading\ThreadPoolHelpers.cs</Link>
+      <Link>CommonTest\System\Threading\ThreadTestHelpers.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>
@@ -57,9 +58,6 @@
       <Project>{69e46a6f-9966-45a5-8945-2559fe337827}</Project>
       <Name>RemoteExecutorConsoleApp</Name>
     </ProjectReference>
-    <!-- Compile tests against the System.Runtime contract, but copy our local-built implementation for testing -->
-    <ProjectReference Include="..\pkg\System.Threading.pkgproj"/>
-    <ProjectReference Include="..\..\System.Diagnostics.Debug\pkg\System.Diagnostics.Debug.pkgproj" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

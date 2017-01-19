@@ -31,6 +31,15 @@ public class WindowAndCursorProps : RemoteExecutorTestBase
     }
 
     [Fact]
+    [SkipOnTargetFramework(TargetFrameworkMonikers.Netcoreapp | TargetFrameworkMonikers.NetcoreUwp)]
+    public static void WindowWidth_WindowHeight_InvalidSize_net46()
+    {
+        Assert.Throws<IOException>(() => Console.WindowWidth = 0);
+        Assert.Throws<IOException>(() => Console.WindowHeight = 0);
+    }
+
+    [Fact]
+    [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
     public static void WindowWidth_WindowHeight_InvalidSize()
     {
         Assert.Throws<ArgumentOutOfRangeException>("value", () => Console.WindowWidth = 0);
@@ -305,7 +314,7 @@ public class WindowAndCursorProps : RemoteExecutorTestBase
     {
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
-            if (!Console.IsInputRedirected && !Console.IsOutputRedirected)
+            if (PlatformDetection.IsNotWindowsNanoServer && !Console.IsInputRedirected && !Console.IsOutputRedirected)
             {
                 Assert.Throws<ArgumentOutOfRangeException>(() => Console.SetWindowSize(-1, Console.WindowHeight));
                 Assert.Throws<ArgumentOutOfRangeException>(() => Console.SetWindowSize(Console.WindowWidth, -1));

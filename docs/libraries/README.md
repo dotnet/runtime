@@ -45,6 +45,7 @@ Coding Guidelines
 - [Breaking Change Definitions](coding-guidelines/breaking-change-definitions.md)
 - [Breaking Change Rules](coding-guidelines/breaking-change-rules.md)
 - [Project Guidelines](coding-guidelines/project-guidelines.md)
+- [Adding APIs Guidelines](coding-guidelines/adding-api-guidelines.md)
 
 Building from Source
 ====================

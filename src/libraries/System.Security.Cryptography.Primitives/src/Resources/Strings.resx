@@ -144,6 +144,9 @@
   <data name="Cryptography_HashNotYetFinalized" xml:space="preserve">
     <value>Hash must be finalized before the hash value is retrieved.</value>
   </data>
+  <data name="Cryptography_InvalidFeedbackSize" xml:space="preserve">
+    <value>Specified feedback size is not valid for this algorithm.</value>
+  </data>
   <data name="Cryptography_InvalidBlockSize" xml:space="preserve">
     <value>Specified block size is not valid for this algorithm.</value>
   </data>

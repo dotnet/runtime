@@ -234,6 +234,59 @@ namespace System.Xml.Xsl.Runtime
         }
 
         internal const int InvariantCultureLcid = 0x007f;
+
+        public int LangToLcid(string lang, bool forwardCompatibility)
+        {
+            return LangToLcidInternal(lang, forwardCompatibility, null);
+        }
+
+        internal static int LangToLcidInternal(string lang, bool forwardCompatibility, IErrorHelper errorHelper)
+        {
+            int lcid = InvariantCultureLcid;
+
+            if (lang != null)
+            {
+                // The value of the 'lang' attribute must be a non-empty nmtoken
+                if (lang.Length == 0)
+                {
+                    if (!forwardCompatibility)
+                    {
+                        if (errorHelper != null)
+                        {
+                            errorHelper.ReportError(SR.Xslt_InvalidAttrValue, "lang", lang);
+                        }
+                        else
+                        {
+                            throw new XslTransformException(SR.Xslt_InvalidAttrValue, "lang", lang);
+                        }
+                    }
+                }
+                else
+                {
+                    // Check if lang is a supported culture name
+                    try
+                    {
+                        lcid = new CultureInfo(lang).LCID;
+                    }
+                    catch (ArgumentException)
+                    {
+                        if (!forwardCompatibility)
+                        {
+                            if (errorHelper != null)
+                            {
+                                errorHelper.ReportError(SR.Xslt_InvalidLanguage, lang);
+                            }
+                            else
+                            {
+                                throw new XslTransformException(SR.Xslt_InvalidLanguage, lang);
+                            }
+                        }
+                    }
+                }
+            }
+            return lcid;
+        }
+
         internal const string InvariantCultureName = "";
 
         internal static string LangToNameInternal(string lang, bool forwardCompatibility, IErrorHelper errorHelper)

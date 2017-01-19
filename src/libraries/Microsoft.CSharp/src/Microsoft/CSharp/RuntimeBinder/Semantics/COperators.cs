@@ -18,9 +18,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 methodName = pn;
                 expressionKind = e;
             }
-            public TokenKind iToken;
-            public PredefinedName methodName;
-            public ExpressionKind expressionKind;
+            public readonly TokenKind iToken;
+            public readonly PredefinedName methodName;
+            public readonly ExpressionKind expressionKind;
         }
 
         private static readonly Dictionary<OperatorKind, OPINFO> s_rgOpInfo = new Dictionary<OperatorKind, OPINFO>()

@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Reflection;
 
 namespace System.Linq.Expressions.Tests
@@ -61,7 +60,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         // Returns the matching method if the parameter types are reference
-        // assignable from the provided type arguments, otherwise null. 
+        // assignable from the provided type arguments, otherwise null.
         internal static MethodInfo GetAnyStaticMethodValidated(
             this Type type,
             string name,
@@ -80,8 +79,8 @@ namespace System.Linq.Expressions.Tests
         /// <summary>
         /// Returns true if the method's parameter types are reference assignable from
         /// the argument types, otherwise false.
-        /// 
-        /// An example that can make the method return false is that 
+        ///
+        /// An example that can make the method return false is that
         /// typeof(double).GetMethod("op_Equality", ..., new[] { typeof(double), typeof(int) })
         /// returns a method with two double parameters, which doesn't match the provided
         /// argument types.
@@ -93,7 +92,7 @@ namespace System.Linq.Expressions.Tests
             {
                 return false;
             }
-            var ps = mi.GetParameters();
+            ParameterInfo[] ps = mi.GetParameters();
 
             if (ps.Length != argTypes.Length)
             {

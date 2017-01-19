@@ -17,9 +17,6 @@ namespace System.ComponentModel
     [Serializable]
     public class WarningException : SystemException
     {
-        private readonly string _helpUrl;
-        private readonly string _helpTopic;
-
         /// <summary>
         /// <para>Initializes a new instance of the <see cref='System.ComponentModel.Win32Exception'/> class with the last Win32 error 
         ///    that occured.</para>
@@ -61,8 +58,8 @@ namespace System.ComponentModel
         public WarningException(string message, string helpUrl, string helpTopic)
             : base(message)
         {
-            _helpUrl = helpUrl;
-            _helpTopic = helpTopic;
+            HelpUrl = helpUrl;
+            HelpTopic = helpTopic;
         }
 
         /// <summary>
@@ -70,33 +67,21 @@ namespace System.ComponentModel
         /// </summary>
         protected WarningException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
-            _helpUrl = (string)info.GetValue("helpUrl", typeof(string));
-            _helpTopic = (string)info.GetValue("helpTopic", typeof(string));
+            HelpUrl = (string)info.GetValue("helpUrl", typeof(string));
+            HelpTopic = (string)info.GetValue("helpTopic", typeof(string));
         }
 
         /// <summary>
         ///    <para> Specifies the Help file associated with the 
         ///       warning. This field is read-only.</para>
         /// </summary>
-        public string HelpUrl
-        {
-            get
-            {
-                return _helpUrl;
-            }
-        }
+        public string HelpUrl { get; }
 
         /// <summary>
         ///    <para> Specifies the 
         ///       Help topic associated with the warning. This field is read-only. </para>
         /// </summary>
-        public string HelpTopic
-        {
-            get
-            {
-                return _helpTopic;
-            }
-        }
+        public string HelpTopic { get; }
 
         /// <summary>
         ///     Need this since Exception implements ISerializable and we have fields to save out.
@@ -109,8 +94,8 @@ namespace System.ComponentModel
                 throw new ArgumentNullException(nameof(info));
             }
 
-            info.AddValue("helpUrl", _helpUrl);
-            info.AddValue("helpTopic", _helpTopic);
+            info.AddValue("helpUrl", HelpUrl);
+            info.AddValue("helpTopic", HelpTopic);
 
             base.GetObjectData(info, context);
         }

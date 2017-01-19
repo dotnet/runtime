@@ -29,7 +29,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
     internal class BindingContext
     {
-        static public BindingContext CreateInstance(
+        public static BindingContext CreateInstance(
                 CSemanticChecker pSemanticChecker,
                 ExprFactory exprFactory,
                 OutputContext outputContext,
@@ -239,7 +239,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return m_UnsafeState;
         }
 
-        public KAID m_aidExternAliasLookupContext { get; private set; }
+        public KAID m_aidExternAliasLookupContext { get; }
 
         // Members.
 
@@ -322,7 +322,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         protected IErrorSink m_returnErrorSink;
 
-        public CSemanticChecker SemanticChecker { get; private set; }
+        public CSemanticChecker SemanticChecker { get; }
 
         public ExprFactory GetExprFactory() { return m_ExprFactory; }
 

@@ -331,7 +331,7 @@ namespace System.Diagnostics.Tracing
         protected EventKeywords MatchAnyKeyword { get { return (EventKeywords)m_anyKeywordMask; } set { m_anyKeywordMask = unchecked((long)value); } }
         protected EventKeywords MatchAllKeyword { get { return (EventKeywords)m_allKeywordMask; } set { m_allKeywordMask = unchecked((long)value); } }
 
-        static private int FindNull(byte[] buffer, int idx)
+        private static int FindNull(byte[] buffer, int idx)
         {
             while (idx < buffer.Length && buffer[idx] != 0)
                 idx++;
@@ -1132,7 +1132,7 @@ namespace System.Diagnostics.Tracing
         // </SecurityKernel>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1045:DoNotPassTypesByReference")]
         [System.Security.SecurityCritical]
-        internal unsafe protected bool WriteEvent(ref EventDescriptor eventDescriptor, Guid* activityID, Guid* childActivityID, int dataCount, IntPtr data)
+        protected internal unsafe bool WriteEvent(ref EventDescriptor eventDescriptor, Guid* activityID, Guid* childActivityID, int dataCount, IntPtr data)
         {
             if (childActivityID != null)
             {

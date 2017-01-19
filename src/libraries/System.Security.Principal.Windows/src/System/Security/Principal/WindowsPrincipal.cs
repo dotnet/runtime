@@ -186,7 +186,7 @@ namespace System.Security.Principal
             SafeAccessTokenHandle token = SafeAccessTokenHandle.InvalidHandle;
             if (_identity.ImpersonationLevel == TokenImpersonationLevel.None)
             {
-                if (!Interop.mincore.DuplicateTokenEx(_identity.AccessToken,
+                if (!Interop.Advapi32.DuplicateTokenEx(_identity.AccessToken,
                                                   (uint)TokenAccessLevels.Query,
                                                   IntPtr.Zero,
                                                   (uint)TokenImpersonationLevel.Identification,
@@ -197,7 +197,7 @@ namespace System.Security.Principal
 
             bool isMember = false;
             // CheckTokenMembership will check if the SID is both present and enabled in the access token.
-            if (!Interop.mincore.CheckTokenMembership((_identity.ImpersonationLevel != TokenImpersonationLevel.None ? _identity.AccessToken : token),
+            if (!Interop.Advapi32.CheckTokenMembership((_identity.ImpersonationLevel != TokenImpersonationLevel.None ? _identity.AccessToken : token),
                                                   sid.BinaryForm,
                                                   ref isMember))
                 throw new SecurityException(new Win32Exception().Message);

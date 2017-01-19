@@ -240,12 +240,21 @@ namespace System.Net.Primitives.Functional.Tests
             Assert.Equal(string.Empty, c.Value);
         }
         
-        // NOTE: This test is expected to fail on the full desktop.
-        // The behavior this tests was only recently added in #8206.
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Netcoreapp | TargetFrameworkMonikers.NetcoreUwp)]
+        public static void Value_PassNullToCtor_GetReturnsEmptyString_net46()
+        {
+            var cookie = new Cookie("SomeName", null);
+            // Cookie.Value returns null on full framework.
+            Assert.Null(cookie.Value);
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public static void Value_PassNullToCtor_GetReturnsEmptyString()
         {
             var cookie = new Cookie("SomeName", null);
+            // Cookie.Value returns empty string on netcore.
             Assert.Equal(string.Empty, cookie.Value);
         }
 

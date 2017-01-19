@@ -156,14 +156,14 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public bool computeCurrentBogusState()
         {
-            if (this.hasBogus())
+            if (hasBogus())
             {
-                return this.checkBogus();
+                return checkBogus();
             }
 
             bool fBogus = false;
 
-            switch (this.getKind())
+            switch (getKind())
             {
                 case SYMKIND.SK_PropertySymbol:
                 case SYMKIND.SK_MethodSymbol:
@@ -236,11 +236,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             case SYMKIND.SK_NaturalIntegerType:
                  */
                 case SYMKIND.SK_LocalVariableSymbol:
-                    this.setBogus(false);
+                    setBogus(false);
                     break;
 
                 case SYMKIND.SK_AggregateSymbol:
-                    fBogus = this.hasBogus() && this.checkBogus();
+                    fBogus = hasBogus() && checkBogus();
                     break;
 
                 case SYMKIND.SK_Scope:
@@ -249,17 +249,17 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 case SYMKIND.SK_NamespaceDeclaration:
                 default:
                     Debug.Assert(false, "CheckBogus with invalid Symbol kind");
-                    this.setBogus(false);
+                    setBogus(false);
                     break;
             }
 
             if (fBogus)
             {
                 // Only set this if at least 1 declared thing is bogus
-                this.setBogus(fBogus);
+                setBogus(fBogus);
             }
 
-            return this.hasBogus() && this.checkBogus();
+            return hasBogus() && checkBogus();
         }
 
         public bool IsNamespaceSymbol() { return _kind == SYMKIND.SK_NamespaceSymbol; }
@@ -275,12 +275,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public bool IsMethodOrPropertySymbol()
         {
-            return this.IsMethodSymbol() || this.IsPropertySymbol();
+            return IsMethodSymbol() || IsPropertySymbol();
         }
 
         public bool IsFMETHSYM()
         {
-            return this.IsMethodSymbol();
+            return IsMethodSymbol();
         }
 
         public CType getType()
@@ -442,15 +442,15 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     }
                  */
                 case SYMKIND.SK_TypeParameterSymbol:
-                    if (this.parent.IsAggregateSymbol())
+                    if (parent.IsAggregateSymbol())
                     {
                         // Because an AggregateSymbol that isn't metadata can be defined across multiple
                         // files, getInputFile isn't a reasonable operation.
                         Debug.Assert(false);
                         return null;
                     }
-                    else if (this.parent.IsMethodSymbol())
-                        return this.parent.AsMethodSymbol().getInputFile();
+                    else if (parent.IsMethodSymbol())
+                        return parent.AsMethodSymbol().getInputFile();
                     Debug.Assert(false);
                     break;
 

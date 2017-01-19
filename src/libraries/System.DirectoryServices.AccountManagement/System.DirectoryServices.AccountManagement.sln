@@ -1,0 +1,39 @@
+
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 14
+VisualStudioVersion = 14.0.25123.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.DirectoryServices.AccountManagement.Tests", "tests\System.DirectoryServices.AccountManagement.Tests.csproj", "{57E8F8D4-0766-4CC7-B3F9-B243B81DB6A5}"
+	ProjectSection(ProjectDependencies) = postProject
+		{879C23DC-D828-4DFB-8E92-ABBC11B71035} = {879C23DC-D828-4DFB-8E92-ABBC11B71035}
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.DirectoryServices.AccountManagement", "ref\System.DirectoryServices.AccountManagement.csproj", "{2F7F1E21-0277-436B-85B8-E8FFA902FA66}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.DirectoryServices.AccountManagement", "src\System.DirectoryServices.AccountManagement.csproj", "{879C23DC-D828-4DFB-8E92-ABBC11B71035}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ref", "ref", "{E37A8E5B-B822-436D-84FD-99EE46C0733F}"
+	ProjectSection(SolutionItems) = preProject
+		ref\project.lock.json = ref\project.lock.json
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{AD3CFC4E-B3AE-4931-B631-C39216ABD115}"
+	ProjectSection(SolutionItems) = preProject
+		src\System.DirectoryServices.AccountManagement.builds = src\System.DirectoryServices.AccountManagement.builds
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{8CC3DFAB-7778-4181-A13D-321FC719A78D}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{57E8F8D4-0766-4CC7-B3F9-B243B81DB6A5} = {57E8F8D4-0766-4CC7-B3F9-B243B81DB6A5}
+		{879C23DC-D828-4DFB-8E92-ABBC11B71035} = {879C23DC-D828-4DFB-8E92-ABBC11B71035}
+	EndGlobalSection
+EndGlobal

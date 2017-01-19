@@ -71,7 +71,7 @@ namespace System.Numerics
         }
 
         [SecuritySafeCritical]
-        public unsafe static uint[] Divide(uint[] left, uint[] right,
+        public static unsafe uint[] Divide(uint[] left, uint[] right,
                                            out uint[] remainder)
         {
             Debug.Assert(left != null);
@@ -101,7 +101,7 @@ namespace System.Numerics
         }
 
         [SecuritySafeCritical]
-        public unsafe static uint[] Divide(uint[] left, uint[] right)
+        public static unsafe uint[] Divide(uint[] left, uint[] right)
         {
             Debug.Assert(left != null);
             Debug.Assert(right != null);
@@ -125,7 +125,7 @@ namespace System.Numerics
         }
 
         [SecuritySafeCritical]
-        public unsafe static uint[] Remainder(uint[] left, uint[] right)
+        public static unsafe uint[] Remainder(uint[] left, uint[] right)
         {
             Debug.Assert(left != null);
             Debug.Assert(right != null);
@@ -148,7 +148,7 @@ namespace System.Numerics
         }
 
         [SecuritySafeCritical]
-        private unsafe static void Divide(uint* left, int leftLength,
+        private static unsafe void Divide(uint* left, int leftLength,
                                           uint* right, int rightLength,
                                           uint* bits, int bitsLength)
         {
@@ -235,7 +235,7 @@ namespace System.Numerics
         }
 
         [SecuritySafeCritical]
-        private unsafe static uint AddDivisor(uint* left, int leftLength,
+        private static unsafe uint AddDivisor(uint* left, int leftLength,
                                               uint* right, int rightLength)
         {
             Debug.Assert(leftLength >= 0);
@@ -256,7 +256,7 @@ namespace System.Numerics
         }
 
         [SecuritySafeCritical]
-        private unsafe static uint SubtractDivisor(uint* left, int leftLength,
+        private static unsafe uint SubtractDivisor(uint* left, int leftLength,
                                                    uint* right, int rightLength,
                                                    ulong q)
         {

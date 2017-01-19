@@ -2,13 +2,49 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
+using System.Collections.Generic;
+using System.Reflection;
 using Xunit;
 
 namespace System.Linq.Expressions.Tests
 {
-    public static class UnaryIncrementNullableTests
+    public class UnaryIncrementNullableTests : IncrementDecrementTests
     {
+        public struct IncrementableWhenNullable
+        {
+            public IncrementableWhenNullable(int value)
+            {
+                Value = value;
+            }
+
+            public int Value { get; }
+
+            public static IncrementableWhenNullable? operator ++(IncrementableWhenNullable? operand)
+            {
+                if (operand.HasValue)
+                {
+                    int dec = operand.GetValueOrDefault().Value + 1;
+                    if (dec == 0)
+                    {
+                        return null;
+                    }
+
+                    return new IncrementableWhenNullable(dec);
+                }
+
+                return new IncrementableWhenNullable(1);
+            }
+        }
+
+        private static IEnumerable<object[]> IncrementableWhenNullableValues()
+        {
+            yield return new object[] { new IncrementableWhenNullable(0), new IncrementableWhenNullable(1) };
+            yield return new object[] { new IncrementableWhenNullable(-1), null };
+            yield return new object[] { new IncrementableWhenNullable(int.MinValue), new IncrementableWhenNullable(int.MinValue + 1) };
+            yield return new object[] { new IncrementableWhenNullable(int.MaxValue), new IncrementableWhenNullable(int.MinValue) };
+            yield return new object[] { null, new IncrementableWhenNullable(1) };
+        }
+
         #region Test methods
 
         [Theory, ClassData(typeof(CompilationTypes))]
@@ -92,6 +128,48 @@ namespace System.Linq.Expressions.Tests
         }
 
         #endregion
+
+        [Theory, MemberData(nameof(NonArithmeticObjects), false)]
+        public static void DecrementNonArithmetic(object value)
+        {
+            Expression ex = Expression.Constant(value, typeof(Nullable<>).MakeGenericType(value.GetType()));
+            Assert.Throws<InvalidOperationException>(() => Expression.Decrement(ex));
+        }
+
+        [Theory, PerCompilationType(nameof(IncrementableValues), true)]
+        public static void CustomOpIncrement(Incrementable? operand, Incrementable? expected, bool useInterpreter)
+        {
+            Func<Incrementable?> func = Expression.Lambda<Func<Incrementable?>>(
+                Expression.Increment(Expression.Constant(operand, typeof(Incrementable?)))).Compile(useInterpreter);
+            Assert.Equal(expected, func());
+        }
+
+        [Theory, PerCompilationType(nameof(IncrementableWhenNullableValues))]
+        public static void NonLiftedNullableOpIncrement(
+            IncrementableWhenNullable? operand, IncrementableWhenNullable? expected, bool useInterpreter)
+        {
+            Func<IncrementableWhenNullable?> func = Expression.Lambda<Func<IncrementableWhenNullable?>>(
+                Expression.Increment(Expression.Constant(operand, typeof(IncrementableWhenNullable?)))).Compile(useInterpreter);
+            Assert.Equal(expected, func());
+        }
+
+        [Theory, PerCompilationType(nameof(DoublyIncrementedIncrementableValues), true)]
+        public static void UserDefinedOpIncrement(Incrementable? operand, Incrementable? expected, bool useInterpreter)
+        {
+            MethodInfo method = typeof(IncrementDecrementTests).GetMethod(nameof(DoublyIncrement));
+            Func<Incrementable?> func = Expression.Lambda<Func<Incrementable?>>(
+                Expression.Increment(Expression.Constant(operand, typeof(Incrementable?)), method)).Compile(useInterpreter);
+            Assert.Equal(expected, func());
+        }
+
+        [Theory, PerCompilationType(nameof(DoublyIncrementedInt32s), true)]
+        public static void UserDefinedOpIncrementArithmeticType(int? operand, int? expected, bool useInterpreter)
+        {
+            MethodInfo method = typeof(IncrementDecrementTests).GetMethod(nameof(DoublyIncrementInt32));
+            Func<int?> func = Expression.Lambda<Func<int?>>(
+                Expression.Increment(Expression.Constant(operand, typeof(int?)), method)).Compile(useInterpreter);
+            Assert.Equal(expected, func());
+        }
 
         #region Test verifiers
 

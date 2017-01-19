@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <ProjectGuid>{4BBC8F69-D03E-4432-AA8A-D458FA5B235A}</ProjectGuid>
+    <AssemblyName>System.Memory</AssemblyName>
+    <AssemblyVersion>4.0.0.0</AssemblyVersion>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <CLSCompliant>false</CLSCompliant>
+    <DocumentationFile>$(OutputPath)$(AssemblyName).xml</DocumentationFile>
+    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'netcoreapp'">true</IsPartialFacadeAssembly>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard1.0-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard1.0-Windows_NT-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netcoreapp-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netcoreapp-Windows_NT-Release|AnyCPU'" />
+  <ItemGroup>
+    <Compile Include="System\Pinnable.cs" />
+    <Compile Include="System\ReadOnlySpan.cs" />
+    <Compile Include="System\ReadOnlySpanExtensions.cs" />
+    <Compile Include="System\Span.cs" />
+    <Compile Include="System\SpanExtensions.cs" />
+    <Compile Include="System\SpanHelpers.cs" />
+    <Compile Include="System\SpanHelpers.T.cs" />
+    <Compile Include="System\SpanHelpers.byte.cs" />
+    <Compile Include="System\SpanHelpers.char.cs" />
+    <Compile Include="System\SpanHelpers.Clear.cs" />
+    <Compile Include="System\ThrowHelper.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\System.Runtime.CompilerServices.Unsafe\src\System.Runtime.CompilerServices.Unsafe.ilproj" />
+    <Reference Include="System.Diagnostics.Debug" />
+    <Reference Include="System.Reflection" />
+    <Reference Include="System.Resources.ResourceManager" />
+    <Reference Include="System.Runtime" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>

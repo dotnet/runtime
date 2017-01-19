@@ -9,29 +9,18 @@ namespace System.Linq
     /// </summary>
     internal static class Strings
     {
-        internal static string ArgumentNotIEnumerableGeneric(string message)
-        {
-            return SR.Format(SR.ArgumentNotIEnumerableGeneric, message);
-        }
+        internal static string ArgumentNotIEnumerableGeneric(string message) =>
+            SR.Format(SR.ArgumentNotIEnumerableGeneric, message);
 
-        internal static string ArgumentNotValid(string message)
-        {
-            return SR.Format(SR.ArgumentNotValid, message);
-        }
+        internal static string ArgumentNotValid(string message) =>
+            SR.Format(SR.ArgumentNotValid, message);
 
-        internal static string NoMethodOnType(string name, object type)
-        {
-            return SR.Format(SR.NoMethodOnType, name, type);
-        }
+        internal static string NoMethodOnType(string name, object type) =>
+            SR.Format(SR.NoMethodOnType, name, type);
 
-        internal static string NoMethodOnTypeMatchingArguments(string name, object type)
-        {
-            return SR.Format(SR.NoMethodOnTypeMatchingArguments, name, type);
-        }
+        internal static string NoMethodOnTypeMatchingArguments(string name, object type) =>
+            SR.Format(SR.NoMethodOnTypeMatchingArguments, name, type);
 
-        internal static string EnumeratingNullEnumerableExpression()
-        {
-            return SR.EnumeratingNullEnumerableExpression;
-        }
+        internal static string EnumeratingNullEnumerableExpression() => SR.EnumeratingNullEnumerableExpression;
     }
 }

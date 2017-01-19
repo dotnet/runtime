@@ -16,6 +16,13 @@ namespace System.Xml.Xsl.Runtime
             SortKey sortKey;
             byte[] bytesKey;
 
+            if (UpperFirst)
+            {
+                // TODO: Support upper case first on Linux
+                // Issues #13926, #13236
+                throw new PlatformNotSupportedException(SR.Xslt_UpperCaseFirstNotSupported);
+            }
+
             sortKey = Culture.CompareInfo.GetSortKey(s, _compops);
 
             // Create an XmlStringSortKey using the SortKey if possible
@@ -30,8 +37,6 @@ namespace System.Xml.Xsl.Runtime
 
             // Get byte buffer from SortKey and modify it
             bytesKey = sortKey.KeyData;
-
-            // TODO: Add Linux implementation for modifying SortKey; issue #13236
 
             return new XmlStringSortKey(bytesKey, DescendingOrder);
         }

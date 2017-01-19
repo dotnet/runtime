@@ -67,7 +67,7 @@ namespace System.Numerics
             }
 
             [SecuritySafeCritical]
-            private unsafe static int DivMul(uint[] left, int leftLength,
+            private static unsafe int DivMul(uint[] left, int leftLength,
                                              uint[] right, int rightLength,
                                              uint[] bits, int k)
             {
@@ -112,7 +112,7 @@ namespace System.Numerics
             }
 
             [SecuritySafeCritical]
-            private unsafe static int SubMod(uint[] left, int leftLength,
+            private static unsafe int SubMod(uint[] left, int leftLength,
                                              uint[] right, int rightLength,
                                              uint[] modulus, int k)
             {

@@ -490,6 +490,11 @@ namespace System.Net.Security
             _sslState.Flush();
         }
 
+        public override Task FlushAsync(CancellationToken cancellationToken)
+        {
+            return _sslState.FlushAsync(cancellationToken);
+        }
+
         protected override void Dispose(bool disposing)
         {
             try

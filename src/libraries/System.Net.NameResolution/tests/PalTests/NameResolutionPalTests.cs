@@ -70,7 +70,7 @@ namespace System.Net.NameResolution.PalTests
         [Fact]
         public void GetHostByName_HostName_GetHostByAddr()
         {
-            IPHostEntry hostEntry1 = NameResolutionPal.GetHostByName(Configuration.Http.Http2Host);
+            IPHostEntry hostEntry1 = NameResolutionPal.GetHostByName(System.Net.Test.Common.Configuration.Http.Http2Host);
             Assert.NotNull(hostEntry1);
 
             IPAddress[] list1 = hostEntry1.AddressList;

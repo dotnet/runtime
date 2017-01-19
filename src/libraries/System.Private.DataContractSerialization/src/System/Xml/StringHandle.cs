@@ -240,31 +240,31 @@ namespace System.Xml
             return Equals2(other.GetString());
         }
 
-        static public bool operator ==(StringHandle s1, XmlDictionaryString xmlString2)
+        public static bool operator ==(StringHandle s1, XmlDictionaryString xmlString2)
         {
             return s1.Equals2(xmlString2);
         }
 
-        static public bool operator !=(StringHandle s1, XmlDictionaryString xmlString2)
+        public static bool operator !=(StringHandle s1, XmlDictionaryString xmlString2)
         {
             return !s1.Equals2(xmlString2);
         }
-        static public bool operator ==(StringHandle s1, string s2)
+        public static bool operator ==(StringHandle s1, string s2)
         {
             return s1.Equals2(s2);
         }
 
-        static public bool operator !=(StringHandle s1, string s2)
+        public static bool operator !=(StringHandle s1, string s2)
         {
             return !s1.Equals2(s2);
         }
 
-        static public bool operator ==(StringHandle s1, StringHandle s2)
+        public static bool operator ==(StringHandle s1, StringHandle s2)
         {
             return s1.Equals(s2);
         }
 
-        static public bool operator !=(StringHandle s1, StringHandle s2)
+        public static bool operator !=(StringHandle s1, StringHandle s2)
         {
             return !s1.Equals(s2);
         }

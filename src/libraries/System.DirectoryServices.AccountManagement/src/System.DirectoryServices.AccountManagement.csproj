@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <PropertyGroup>
+    <Configuration Condition="'$(Configuration)'=='' AND '$(TargetGroup)' == ''">Windows_Debug</Configuration>
+  </PropertyGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <ProjectGuid>{879C23DC-D828-4DFB-8E92-ABBC11B71035}</ProjectGuid>
+    <AssemblyName>System.DirectoryServices.AccountManagement</AssemblyName>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DefineConstants>$(DefineConstants);FLAVOR_WHIDBEY;PAPI_AD;PAPI_REGSAM;USE_CTX_CACHE</DefineConstants>
+    <NoWarn>$(NoWarn);8073</NoWarn>
+    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v2.0</NuGetTargetMoniker>
+    <GeneratePlatformNotSupportedAssembly Condition="'$(TargetsUnix)' == 'true'">true</GeneratePlatformNotSupportedAssembly>
+  </PropertyGroup>
+  <!-- Help VS understand available configurations -->
+  <ItemGroup>
+    <Compile Include="System\DirectoryServices\AccountManagement\externdll.cs" />
+    <Compile Include="System\DirectoryServices\AccountManagement\interopt.cs" />
+    <Compile Include="System\DirectoryServices\AccountManagement\PrincipalSearcher.cs" />
+    <Compile Include="System\DirectoryServices\AccountManagement\utils.cs" />
+    <Compile Include="System\DirectoryServices\AccountManagement\constants.cs" />
+    <Compile Include="System\DirectoryServices\AccountManagement\Context.cs" />
+    <Compile Include="System\DirectoryServices\AccountManagement\Resources.cs" />
+    <Compile Include="System\DirectoryServices\AccountManagement\StoreCtx.cs" />
+    <Compile Include="System\DirectoryServices\AccountManagement\StoreKey.cs" />
+    <Compile Include="System\DirectoryServices\AccountManagement\Principal.cs" />
+    <Compile Include="System\DirectoryServices\AccountManagement\AuthenticablePrincipal.cs" />
+    <Compile Include="System\DirectoryServices\AccountManagement\User.cs" />
+    <Compile Include="System\DirectoryServices\AccountManagement\Computer.cs" />
+    <Compile Include="System\DirectoryServices\AccountManagement\Group.cs" />
+    <Compile Include="System\DirectoryServices\AccountManagement\AccountInfo.cs" />
+    <Compile Include="System\DirectoryServices\AccountManagement\PasswordInfo.cs" />
+    <Compile Include="System\DirectoryServices\AccountManagement\MatchType.cs" />
+    <Compile Include="System\DirectoryServices\AccountManagement\CredentialTypes.cs" />
+    <Compile Include="System\DirectoryServices\AccountManagement\RejectedClaimChange.cs" />
+    <Compile Include="System\DirectoryServices\AccountManagement\ContextType.cs" />
+    <Compile Include="System\DirectoryServices\AccountManagement\ContextOptions.cs" />
+    <Compile Include="System\DirectoryServices\AccountManagement\SidType.cs" />
+    <Compile Include="System\DirectoryServices\AccountManagement\ResultSet.cs" />
+    <Compile Include="System\DirectoryServices\AccountManagement\EmptySet.cs" />
+    <Compile Include="System\DirectoryServices\AccountManagement\QbeFilterDescription.cs" />
+    <Compile Include="System\DirectoryServices\AccountManagement\PrincipalCollection.cs" />
+    <Compile Include="System\DirectoryServices\AccountManagement\PrincipalCollectionEnumerator.cs" />
+    <Compile Include="System\DirectoryServices\AccountManagement\TrackedCollection.cs" />
+    <Compile Include="System\DirectoryServices\AccountManagement\TrackedCollectionEnumerator.cs" />
+    <Compile Include="System\DirectoryServices\AccountManagement\ValueCollection.cs" />
+    <Compile Include="System\DirectoryServices\AccountManagement\ValueCollectionEnumerator.cs" />
+    <Compile Include="System\DirectoryServices\AccountManagement\Pair.cs" />
+    <Compile Include="System\DirectoryServices\AccountManagement\FindResult.cs" />
+    <Compile Include="System\DirectoryServices\AccountManagement\FindResultEnumerator.cs" />
+    <Compile Include="System\DirectoryServices\AccountManagement\exceptions.cs" />
+    <Compile Include="System\DirectoryServices\AccountManagement\IdentityType.cs" />
+    <Compile Include="System\DirectoryServices\AccountManagement\UrnScheme.cs" />
+    <Compile Include="System\DirectoryServices\AccountManagement\GroupType.cs" />
+    <Compile Include="System\DirectoryServices\AccountManagement\AuthZSet.cs" />
+    <Compile Include="System\DirectoryServices\AccountManagement\ConfigurationHandler.cs" />
+    <Compile Include="System\DirectoryServices\AccountManagement\GlobalConfig.cs" />
+    <Compile Include="System\DirectoryServices\AccountManagement\GlobalDebug.cs" />
+    <Compile Include="System\DirectoryServices\AccountManagement\NetCred.cs" />
+    <Compile Include="System\DirectoryServices\AccountManagement\ExtensionAttributes.cs" />
+    <Compile Include="System\DirectoryServices\AccountManagement\ExtensionCache.cs" />
+    <Compile Include="System\DirectoryServices\AccountManagement\ExtensionHelper.cs" />
+    <Compile Include="System\DirectoryServices\AccountManagement\AdvancedFilters.cs" />
+    <Compile Include="System\DirectoryServices\AccountManagement\GlobalSuppressions.cs" />
+    <Compile Include="System\DirectoryServices\AccountManagement\AD\QBEMatchType.cs" />
+    <Compile Include="System\DirectoryServices\AccountManagement\AD\SidList.cs" />
+    <Compile Include="System\DirectoryServices\AccountManagement\AD\ADDNConstraintLinkedAttrSet.cs" />
+    <Compile Include="System\DirectoryServices\AccountManagement\AD\dspropertycollection.cs" />
+    <Compile Include="System\DirectoryServices\AccountManagement\AD\ADStoreCtx.cs" />
+    <Compile Include="System\DirectoryServices\AccountManagement\AD\ADStoreCtx_Query.cs" />
+    <Compile Include="System\DirectoryServices\AccountManagement\AD\ADStoreCtx_LoadStore.cs" />
+    <Compile Include="System\DirectoryServices\AccountManagement\AD\ADStoreKey.cs" />
+    <Compile Include="System\DirectoryServices\AccountManagement\AD\ADEntriesSet.cs" />
+    <Compile Include="System\DirectoryServices\AccountManagement\AD\ADDNLinkedAttrSet.cs" />
+    <Compile Include="System\DirectoryServices\AccountManagement\AD\ADUtils.cs" />
+    <Compile Include="System\DirectoryServices\AccountManagement\AD\SDSUtils.cs" />
+    <Compile Include="System\DirectoryServices\AccountManagement\AD\SDSCache.cs" />
+    <Compile Include="System\DirectoryServices\AccountManagement\AD\RangeRetriever.cs" />
+    <Compile Include="System\DirectoryServices\AccountManagement\AD\ADAMStoreCtx.cs" />
+    <Compile Include="System\DirectoryServices\AccountManagement\AD\TokenGroupsSet.cs" />
+    <Compile Include="System\DirectoryServices\AccountManagement\SAM\SAMStoreCtx.cs" />
+    <Compile Include="System\DirectoryServices\AccountManagement\SAM\SAMStoreCtx_Query.cs" />
+    <Compile Include="System\DirectoryServices\AccountManagement\SAM\SAMStoreCtx_LoadStore.cs" />
+    <Compile Include="System\DirectoryServices\AccountManagement\SAM\SAMQuerySet.cs" />
+    <Compile Include="System\DirectoryServices\AccountManagement\SAM\SAMMembersSet.cs" />
+    <Compile Include="System\DirectoryServices\AccountManagement\SAM\SAMGroupsSet.cs" />
+    <Compile Include="System\DirectoryServices\AccountManagement\SAM\SAMStoreKey.cs" />
+    <Compile Include="System\DirectoryServices\AccountManagement\SAM\SAMUtils.cs" />
+    <Compile Include="System\DirectoryServices\AccountManagement\IdentityClaim.cs" />
+    <Compile Include="System\DirectoryServices\AccountManagement\IdentityReference.cs" />
+    <Compile Include="System\DirectoryServices\AccountManagement\UnknownPrincipal.cs" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>

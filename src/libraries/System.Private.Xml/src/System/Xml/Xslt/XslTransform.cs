@@ -27,7 +27,9 @@ namespace System.Xml.Xsl
                 if (_isDocumentResolverSet)
                     return _documentResolver;
                 else
-                    return XmlNullResolver.Singleton;
+                {
+                    return CreateDefaultResolver();
+                }
             }
         }
 
@@ -54,7 +56,7 @@ namespace System.Xml.Xsl
 
         public void Load(XmlReader stylesheet)
         {
-            Load(stylesheet, XmlNullResolver.Singleton);
+            Load(stylesheet, CreateDefaultResolver());
         }
         public void Load(XmlReader stylesheet, XmlResolver resolver)
         {
@@ -67,7 +69,7 @@ namespace System.Xml.Xsl
 
         public void Load(IXPathNavigable stylesheet)
         {
-            Load(stylesheet, XmlNullResolver.Singleton);
+            Load(stylesheet, CreateDefaultResolver());
         }
         public void Load(IXPathNavigable stylesheet, XmlResolver resolver)
         {
@@ -84,7 +86,7 @@ namespace System.Xml.Xsl
             {
                 throw new ArgumentNullException(nameof(stylesheet));
             }
-            Load(stylesheet, XmlNullResolver.Singleton);
+            Load(stylesheet, CreateDefaultResolver());
         }
 
         public void Load(XPathNavigator stylesheet, XmlResolver resolver)
@@ -99,7 +101,7 @@ namespace System.Xml.Xsl
         public void Load(string url)
         {
             XmlTextReaderImpl tr = new XmlTextReaderImpl(url);
-            Compile(Compiler.LoadDocument(tr).CreateNavigator(), XmlNullResolver.Singleton);
+            Compile(Compiler.LoadDocument(tr).CreateNavigator(), CreateDefaultResolver());
         }
 
         public void Load(string url, XmlResolver resolver)
@@ -299,6 +301,18 @@ namespace System.Xml.Xsl
             if (debugger != null)
             {
                 _debugger = new DebuggerAddapter(debugger);
+            }
+        }
+
+        private static XmlResolver CreateDefaultResolver()
+        {
+            if (LocalAppContextSwitches.AllowDefaultResolver)
+            {
+                return new XmlUrlResolver();
+            }
+            else
+            {
+                return XmlNullResolver.Singleton;
             }
         }
 

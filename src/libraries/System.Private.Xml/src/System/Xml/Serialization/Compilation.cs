@@ -159,13 +159,6 @@ namespace System.Xml.Serialization
             contract = null;
             string serializerName = null;
 
-            //BinCompat TODO: Check if this needs to come back
-            // Packaged apps do not support loading generated serializers.
-            /*if (Microsoft.Win32.UnsafeNativeMethods.IsPackagedProcess.Value)
-            {
-                return null;
-            }*/
-
             // check to see if we loading explicit pre-generated assembly
             object[] attrs = type.GetCustomAttributes(typeof(XmlSerializerAssemblyAttribute), false);
             if (attrs.Length == 0)
@@ -175,9 +168,8 @@ namespace System.Xml.Serialization
                 serializerName = Compiler.GetTempAssemblyName(name, defaultNamespace);
                 // use strong name 
                 name.Name = serializerName;
-                //BinCompat TODO: Check if this was actually needed
-                //name.CodeBase = null;
-                //name.CultureInfo = CultureInfo.InvariantCulture;
+                name.CodeBase = null;
+                name.CultureInfo = CultureInfo.InvariantCulture;
                 try
                 {
                     serializer = Assembly.Load(name);
@@ -194,11 +186,9 @@ namespace System.Xml.Serialization
                         // the parent assembly was signed, so do not try to LoadWithPartialName
                         return null;
                     }
-                    //BinCompat TODO: Test this
-                    throw new NotImplementedException(string.Format("Could not load assembly ", name));
-                    /*#pragma warning disable 618
-                                        serializer = Assembly.LoadWithPartialName(serializerName, null);
-#pragma warning restore 618*/
+#pragma warning disable 618
+                    serializer = Assembly.LoadWithPartialName(serializerName);
+#pragma warning restore 618
                 }
                 if (serializer == null)
                 {
@@ -215,18 +205,14 @@ namespace System.Xml.Serialization
                 if (assemblyAttribute.AssemblyName != null)
                 {
                     serializerName = assemblyAttribute.AssemblyName;
-                    //BinCompat TODO: Test this
-                    throw new NotImplementedException(string.Format("Could not load assembly ", serializerName));
-                    /*#pragma warning disable 618
-                                        serializer = Assembly.LoadWithPartialName(serializerName, null);
-#pragma warning restore 618*/
+#pragma warning disable 618
+                    serializer = Assembly.LoadWithPartialName(serializerName);
+#pragma warning restore 618
                 }
                 else if (assemblyAttribute.CodeBase != null && assemblyAttribute.CodeBase.Length > 0)
                 {
                     serializerName = assemblyAttribute.CodeBase;
-                    //BinCompat TODO: Test this
-                    throw new NotImplementedException(string.Format("Could not load assembly ", serializerName));
-                    //serializer = Assembly.LoadFrom(serializerName);
+                    serializer = Assembly.LoadFrom(serializerName);
                 }
                 else
                 {
@@ -244,29 +230,6 @@ namespace System.Xml.Serialization
                 return serializer;
 
             return null;
-        }
-
-        // SxS: This method does not take any resource name and does not expose any resources to the caller.
-        // It's OK to suppress the SxS warning.
-        private static string GenerateAssemblyId(Type type)
-        {
-            //BinCompat TODO
-            throw new NotImplementedException();
-
-            /*Module[] modules = type.GetTypeInfo().Assembly.GetModules();
-            ArrayList list = new ArrayList();
-            for (int i = 0; i < modules.Length; i++)
-            {
-                list.Add(modules[i].ModuleVersionId.ToString());
-            }
-            list.Sort();
-            StringBuilder sb = new StringBuilder();
-            for (int i = 0; i < list.Count; i++)
-            {
-                sb.Append(list[i].ToString());
-                sb.Append(",");
-            }
-            return sb.ToString();*/
         }
 
 #if !NET_NATIVE

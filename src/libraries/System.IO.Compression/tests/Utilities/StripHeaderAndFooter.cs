@@ -18,7 +18,7 @@ class StripHeaderAndFooter
         var outputStream = new MemoryStream();
 
         bool fText, fCRC, fextra, fname, fComment;
-        Byte flag;
+        byte flag;
         int len;
         int value;
 
@@ -30,7 +30,7 @@ class StripHeaderAndFooter
         SkipBytes(inputStream, 3);
 
         //flag
-        flag = (Byte)inputStream.ReadByte();
+        flag = (byte)inputStream.ReadByte();
         fText = ((flag & 1) != 0);
         fCRC = ((flag & 2) != 0);
         fextra = ((flag & 4) != 0);
@@ -66,11 +66,11 @@ class StripHeaderAndFooter
         //body
         //We will now write the body to the output file
 
-        List<Byte> bitlist = new List<Byte>();
+        List<byte> bitlist = new List<byte>();
 
         while ((value = inputStream.ReadByte()) != -1)
         {
-            bitlist.Add((Byte)value);
+            bitlist.Add((byte)value);
             //				outputStream.WriteByte((Byte)value);
         }
 
@@ -87,7 +87,7 @@ class StripHeaderAndFooter
         //			inputStream = new MemoryStream(inputFileName, FileMode.Open, FileAccess.Read, FileShare.Read);
 
         //			outputStream.Flush();
-        Byte[] bits = new Byte[bitlist.Count - 8];
+        byte[] bits = new byte[bitlist.Count - 8];
         bitlist.CopyTo(0, bits, 0, bitlist.Count - 8);
         outputStream.Write(bits, 0, bits.Length);
 

@@ -2,9 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections.Generic;
 using System.ComponentModel;
-using System.Dynamic;
 
 namespace Microsoft.CSharp.RuntimeBinder
 {
@@ -21,19 +19,17 @@ namespace Microsoft.CSharp.RuntimeBinder
         /// <summary>
         /// The flags for the argument.
         /// </summary>
-        internal CSharpArgumentInfoFlags Flags { get { return _flags; } }
-        private CSharpArgumentInfoFlags _flags;
+        internal CSharpArgumentInfoFlags Flags { get; }
 
         /// <summary>
         /// The name of the argument, if named; otherwise null.
         /// </summary>
-        internal string Name { get { return _name; } }
-        private string _name;
+        internal string Name { get; }
 
         private CSharpArgumentInfo(CSharpArgumentInfoFlags flags, string name)
         {
-            _flags = flags;
-            _name = name;
+            Flags = flags;
+            Name = name;
         }
 
         /// <summary>

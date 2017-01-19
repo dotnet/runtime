@@ -19,7 +19,7 @@ namespace System.Linq.Expressions.Interpreter
         internal InterpretedFrame _parent;
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2105:ArrayFieldsShouldNotBeReadOnly")]
-        private int[] _continuations;
+        private readonly int[] _continuations;
         private int _continuationIndex;
         private int _pendingContinuation;
         private object _pendingValue;
@@ -73,7 +73,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public void Push(bool value)
         {
-            Data[StackIndex++] = value ? ScriptingRuntimeHelpers.Boolean_True : ScriptingRuntimeHelpers.Boolean_False;
+            Data[StackIndex++] = value ? Utils.BoxedTrue : Utils.BoxedFalse;
         }
 
         public void Push(int value)

@@ -9,9 +9,38 @@ namespace System.Globalization.Tests
 {
     public class TextInfoToLower
     {
+        private static readonly string [] s_cultureNames = new string[] { "", "en-US", "fr", "fr-FR" };
+        
+        // ToLower_TestData_net46 has the data which is specific to the full framework 
+        public static IEnumerable<object[]> ToLower_TestData_net46()
+        {
+            foreach (string cultureName in s_cultureNames)
+            {
+                if (PlatformDetection.IsWindows7)
+                {
+                    // on Windows 7, Desktop framework is using its own sorting DLL and not calling the OS except with Invariant culture
+                    yield return new object[] { cultureName, "\U00010400", cultureName == "" ? "\U00010400" : "\U00010428" };
+                }
+                else 
+                {
+                    yield return new object[] { cultureName, "\U00010400", "\U00010428" };
+                }
+            }
+        }
+
+        // ToLower_TestData_netcore has the data which is specific to netcore framework 
+        public static IEnumerable<object[]> ToLower_TestData_netcore()
+        {
+            foreach (string cultureName in s_cultureNames)
+            {
+                // DESERT CAPITAL LETTER LONG I has a lower case variant (but not on Windows 7).
+                yield return new object[] { cultureName, "\U00010400", PlatformDetection.IsWindows7 ? "\U00010400" : "\U00010428" };
+            }
+        }
+
         public static IEnumerable<object[]> ToLower_TestData()
         {
-            foreach (string cultureName in new string[] { "", "en-US", "fr", "fr-FR" })
+            foreach (string cultureName in s_cultureNames)
             {
                 yield return new object[] { cultureName, "", "" };
 
@@ -39,20 +68,6 @@ namespace System.Globalization.Tests
 
                 // SNOWMAN, which does not have a lower case variant.
                 yield return new object[] { cultureName, "\u2603", "\u2603" };
-#if net46
-                if (PlatformDetection.IsWindows7)
-                {
-                    // on Windows 7, Desktop framework is using its own sorting DLL and not calling the OS except with Invariant culture
-                    yield return new object[] { cultureName, "\U00010400", cultureName == "" ? "\U00010400" : "\U00010428" };
-                }
-                else 
-                {
-                    yield return new object[] { cultureName, "\U00010400", "\U00010428" };
-                }
-#else //!net46
-                // DESERT CAPITAL LETTER LONG I has a lower case variant (but not on Windows 7).
-                yield return new object[] { cultureName, "\U00010400", PlatformDetection.IsWindows7 ? "\U00010400" : "\U00010428" };
-#endif // net46
 
                 // RAINBOW (outside the BMP and does not case)
                 yield return new object[] { cultureName, "\U0001F308", "\U0001F308" };
@@ -84,9 +99,7 @@ namespace System.Globalization.Tests
             }
         }
 
-        [Theory]
-        [MemberData(nameof(ToLower_TestData))]
-        public void ToLower(string name, string str, string expected)
+        public void TestToLower(string name, string str, string expected)
         {
             Assert.Equal(expected, new CultureInfo(name).TextInfo.ToLower(str));
             if (str.Length == 1)
@@ -95,6 +108,29 @@ namespace System.Globalization.Tests
             }
         }
 
+        [Theory]
+        [MemberData(nameof(ToLower_TestData))]
+        public void ToLower(string name, string str, string expected)
+        {
+            TestToLower(name, str, expected);
+        }
+
+        [Theory]
+        [MemberData(nameof(ToLower_TestData_netcore))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        public void ToLower_Netcore(string name, string str, string expected)
+        {
+            TestToLower(name, str, expected);
+        }
+
+        [Theory]
+        [MemberData(nameof(ToLower_TestData_net46))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Netcoreapp | TargetFrameworkMonikers.NetcoreUwp)]
+        public void ToLower_net46(string name, string str, string expected)
+        {
+            TestToLower(name, str, expected);
+        }
+        
         [Fact]
         public void ToLower_InvalidSurrogates()
         {

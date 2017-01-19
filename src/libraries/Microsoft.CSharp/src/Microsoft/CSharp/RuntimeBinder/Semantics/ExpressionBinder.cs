@@ -501,11 +501,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     EXPR pTemp = mustConvert(x, pDestType);
                     if (pDestType == pIntType)
                         return pTemp;
-                    EXPRFLAG flag;
 #if CSEE
-                    flag = 0;
+                    EXPRFLAG flag = 0;
 #else
-                    flag = EXPRFLAG.EXF_INDEXEXPR;
+                    EXPRFLAG flag = EXPRFLAG.EXF_INDEXEXPR;
 #endif
                     EXPRCLASS exprType = GetExprFactory().MakeClass(pDestType);
                     return GetExprFactory().CreateCast(flag, exprType, pTemp);
@@ -535,11 +534,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         protected EXPRUNARYOP bindPtrToString(EXPR @string)
         {
             CType typeRet = GetTypes().GetPointer(GetReqPDT(PredefinedType.PT_CHAR));
-            EXPRUNARYOP rval;
 
-            rval = GetExprFactory().CreateUnaryOp(ExpressionKind.EK_ADDR, typeRet, @string);
-
-            return rval;
+            return GetExprFactory().CreateUnaryOp(ExpressionKind.EK_ADDR, typeRet, @string);
         }
 
         protected EXPRQUESTIONMARK BindPtrToArray(EXPRLOCAL exprLoc, EXPR array)
@@ -608,7 +604,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         protected EXPR bindIndexer(EXPR pObject, EXPR args, BindingFlag bindFlags)
         {
-            Name pName;
             CType type = pObject.type;
 
             if (!type.IsAggregateType() && !type.IsTypeParameterType())
@@ -621,7 +616,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 return rval;
             }
 
-            pName = GetSymbolLoader().GetNameManager().GetPredefName(PredefinedName.PN_INDEXERINTERNAL);
+            Name pName = GetSymbolLoader().GetNameManager().GetPredefName(PredefinedName.PN_INDEXERINTERNAL);
 
             MemberLookup mem = new MemberLookup();
             if (!mem.Lookup(GetSemanticChecker(), type, pObject, ContextForMemberLookup(), pName, 0,
@@ -1223,28 +1218,14 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         // Methods
         private bool BindMethodGroupToArgumentsCore(out GroupToArgsBinderResult pResults, BindingFlag bindFlags, EXPRMEMGRP grp, ref EXPR args, int carg, bool bindingCollectionAdd, bool bHasNamedArgumentSpecifiers)
         {
-            bool retval = false;
-            ArgInfos pargInfo;
-            ArgInfos pOriginalArgInfo;
-            int exprCount = carg;
-
-            pargInfo = new ArgInfos();
-            pargInfo.carg = carg;
+            ArgInfos pargInfo = new ArgInfos {carg = carg};
             FillInArgInfoFromArgList(pargInfo, args);
 
-            pOriginalArgInfo = new ArgInfos();
-            pOriginalArgInfo.carg = carg;
+            ArgInfos pOriginalArgInfo = new ArgInfos {carg = carg};
             FillInArgInfoFromArgList(pOriginalArgInfo, args);
 
             GroupToArgsBinder binder = new GroupToArgsBinder(this, bindFlags, grp, pargInfo, pOriginalArgInfo, bHasNamedArgumentSpecifiers, null/*atsDelegate*/);
-            if (bindingCollectionAdd)
-            {
-                retval = binder.BindCollectionAddArgs();
-            }
-            else
-            {
-                retval = binder.Bind(true /*ReportErrors*/);
-            }
+            bool retval = bindingCollectionAdd ? binder.BindCollectionAddArgs() : binder.Bind(true /*ReportErrors*/);
 
             pResults = binder.GetResultsOfBind();
             return retval;
@@ -1932,7 +1913,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             newArgs = null;
             EXPR newArgsTail = null;
 
-            MethodOrPropertySymbol mostDerivedMethod = ExpressionBinder.GroupToArgsBinder.FindMostDerivedMethod(GetSymbolLoader(), mp, callingObjectType);
+            MethodOrPropertySymbol mostDerivedMethod = GroupToArgsBinder.FindMostDerivedMethod(GetSymbolLoader(), mp, callingObjectType);
 
             int paramCount = mp.Params.size;
             TypeArray @params = mp.Params;
@@ -1947,7 +1928,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             bool bDontFixParamArray = false;
 
-            EXPR indir = null;
             ExpressionIterator it = new ExpressionIterator(argsPtr);
 
             if (argsPtr == null)
@@ -1958,7 +1938,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
             for (; !it.AtEnd(); it.MoveNext())
             {
-                indir = it.Current();
+                EXPR indir = it.Current();
                 // this will splice the optional arguments into the list
 
                 if (indir.type.IsParameterModifierType())
@@ -2475,7 +2455,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return false;
         }
 
-        readonly static private PredefinedName[] s_EK2NAME =
+        private static readonly PredefinedName[] s_EK2NAME =
         {
             PredefinedName.PN_OPEQUALS,
             PredefinedName.PN_OPCOMPARE,

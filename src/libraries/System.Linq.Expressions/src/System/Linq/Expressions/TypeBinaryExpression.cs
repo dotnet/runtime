@@ -5,6 +5,7 @@
 using System.Diagnostics;
 using System.Dynamic.Utils;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using static System.Linq.Expressions.CachedReflectionInfo;
 
 namespace System.Linq.Expressions
@@ -60,7 +61,7 @@ namespace System.Linq.Expressions
                     // either matches or is its type argument (T to its T?).
                     if (cType.GetNonNullableType() != TypeOperand.GetNonNullableType())
                     {
-                        return Expression.Block(Expression, Expression.Constant(value: false));
+                        return Expression.Block(Expression, Utils.Constant(value: false));
                     }
                     else
                     {
@@ -71,7 +72,7 @@ namespace System.Linq.Expressions
                 {
                     // For other value types (including Void), we can
                     // determine the result now
-                    return Expression.Block(Expression, Expression.Constant(cType == TypeOperand.GetNonNullableType()));
+                    return Expression.Block(Expression, Utils.Constant(cType == TypeOperand.GetNonNullableType()));
                 }
             }
 
@@ -94,9 +95,11 @@ namespace System.Linq.Expressions
             parameter = Expression.Parameter(typeof(object));
 
             return Expression.Block(
-                new[] { parameter },
-                Expression.Assign(parameter, Expression),
-                ByValParameterTypeEqual(parameter)
+                new TrueReadOnlyCollection<ParameterExpression>(parameter),
+                new TrueReadOnlyCollection<Expression>(
+                    Expression.Assign(parameter, Expression),
+                    ByValParameterTypeEqual(parameter)
+                )
             );
         }
 
@@ -113,14 +116,20 @@ namespace System.Linq.Expressions
             if (TypeOperand.GetTypeInfo().IsInterface)
             {
                 ParameterExpression temp = Expression.Parameter(typeof(Type));
-                getType = Expression.Block(new[] { temp }, Expression.Assign(temp, getType), temp);
+                getType = Expression.Block(
+                    new TrueReadOnlyCollection<ParameterExpression>(temp),
+                    new TrueReadOnlyCollection<Expression>(
+                        Expression.Assign(temp, getType),
+                        temp
+                    )
+                );
             }
 
             // We use reference equality when comparing to null for correctness
             // (don't invoke a user defined operator), and reference equality
             // on types for performance (so the JIT can optimize the IL).
             return Expression.AndAlso(
-                Expression.ReferenceNotEqual(value, Expression.Constant(value: null)),
+                Expression.ReferenceNotEqual(value, Utils.Null),
                 Expression.ReferenceEqual(
                     getType,
                     Expression.Constant(TypeOperand.GetNonNullableType(), typeof(Type))
@@ -134,11 +143,11 @@ namespace System.Linq.Expressions
             //TypeEqual(null, T) always returns false.
             if (ce.Value == null)
             {
-                return Expression.Constant(value: false);
+                return Utils.Constant(value: false);
             }
             else
             {
-                return Expression.Constant(TypeOperand.GetNonNullableType() == ce.Value.GetType());
+                return Utils.Constant(TypeOperand.GetNonNullableType() == ce.Value.GetType());
             }
         }
 

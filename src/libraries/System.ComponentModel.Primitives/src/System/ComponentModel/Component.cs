@@ -13,7 +13,6 @@ namespace System.ComponentModel
     ///    interface and enables object-sharing between applications.</para>
     /// </summary>
     [
-        ComVisible(true),
         DesignerCategory("Component")
     ]
     public class Component : MarshalByRefObject, IComponent

@@ -1,26 +1,39 @@
-﻿
+
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
 VisualStudioVersion = 14.0.22823.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Net.WebSockets", "src\System.Net.WebSockets.csproj", "{B0C83201-EC32-4E8D-9DE4-EEF41E052DA1}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Net.WebSockets.Tests", "tests\System.Net.WebSockets.Tests.csproj", "{7C395A91-D955-444C-98BF-D3F809A56CE1}"
+	ProjectSection(ProjectDependencies) = postProject
+		{B0C83201-EC32-4E8D-9DE4-EEF41E052DA1} = {B0C83201-EC32-4E8D-9DE4-EEF41E052DA1}
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Net.WebSockets", "src\System.Net.WebSockets.csproj", "{B0C83201-EC32-4E8D-9DE4-EEF41E052DA1}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
-		Debug|Any CPU = Debug|Any CPU
-		Release|Any CPU = Release|Any CPU
+		DebugNETCoreAppnet463-Windows_NTnetstandard|AnyCPU = DebugNETCoreAppnet463-Windows_NTnetstandard|AnyCPU
+		ReleaseNETCoreAppnet463-Windows_NTnetstandard|AnyCPU = ReleaseNETCoreAppnet463-Windows_NTnetstandard|AnyCPU
+		DebugNETCoreAppnetstandardnetstandard|AnyCPU = DebugNETCoreAppnetstandardnetstandard|AnyCPU
+		ReleaseNETCoreAppnetstandardnetstandard|AnyCPU = ReleaseNETCoreAppnetstandardnetstandard|AnyCPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{B0C83201-EC32-4E8D-9DE4-EEF41E052DA1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{B0C83201-EC32-4E8D-9DE4-EEF41E052DA1}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{B0C83201-EC32-4E8D-9DE4-EEF41E052DA1}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{B0C83201-EC32-4E8D-9DE4-EEF41E052DA1}.Release|Any CPU.Build.0 = Release|Any CPU
-		{7C395A91-D955-444C-98BF-D3F809A56CE1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{7C395A91-D955-444C-98BF-D3F809A56CE1}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{7C395A91-D955-444C-98BF-D3F809A56CE1}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{7C395A91-D955-444C-98BF-D3F809A56CE1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7C395A91-D955-444C-98BF-D3F809A56CE1}.DebugNETCoreAppnet463-Windows_NTnetstandard|AnyCPU.ActiveCfg = netstandard-Debug|Any CPU
+		{7C395A91-D955-444C-98BF-D3F809A56CE1}.DebugNETCoreAppnet463-Windows_NTnetstandard|AnyCPU.Build.0 = netstandard-Debug|Any CPU
+		{7C395A91-D955-444C-98BF-D3F809A56CE1}.ReleaseNETCoreAppnet463-Windows_NTnetstandard|AnyCPU.ActiveCfg = netstandard-Release|Any CPU
+		{7C395A91-D955-444C-98BF-D3F809A56CE1}.ReleaseNETCoreAppnet463-Windows_NTnetstandard|AnyCPU.Build.0 = netstandard-Release|Any CPU
+		{7C395A91-D955-444C-98BF-D3F809A56CE1}.DebugNETCoreAppnetstandardnetstandard|AnyCPU.ActiveCfg = netstandard-Debug|Any CPU
+		{7C395A91-D955-444C-98BF-D3F809A56CE1}.DebugNETCoreAppnetstandardnetstandard|AnyCPU.Build.0 = netstandard-Debug|Any CPU
+		{7C395A91-D955-444C-98BF-D3F809A56CE1}.ReleaseNETCoreAppnetstandardnetstandard|AnyCPU.ActiveCfg = netstandard-Release|Any CPU
+		{7C395A91-D955-444C-98BF-D3F809A56CE1}.ReleaseNETCoreAppnetstandardnetstandard|AnyCPU.Build.0 = netstandard-Release|Any CPU
+		{B0C83201-EC32-4E8D-9DE4-EEF41E052DA1}.DebugNETCoreAppnet463-Windows_NTnetstandard|AnyCPU.ActiveCfg = net463-Windows_NT-Debug|Any CPU
+		{B0C83201-EC32-4E8D-9DE4-EEF41E052DA1}.DebugNETCoreAppnet463-Windows_NTnetstandard|AnyCPU.Build.0 = net463-Windows_NT-Debug|Any CPU
+		{B0C83201-EC32-4E8D-9DE4-EEF41E052DA1}.ReleaseNETCoreAppnet463-Windows_NTnetstandard|AnyCPU.ActiveCfg = net463-Windows_NT-Release|Any CPU
+		{B0C83201-EC32-4E8D-9DE4-EEF41E052DA1}.ReleaseNETCoreAppnet463-Windows_NTnetstandard|AnyCPU.Build.0 = net463-Windows_NT-Release|Any CPU
+		{B0C83201-EC32-4E8D-9DE4-EEF41E052DA1}.DebugNETCoreAppnetstandardnetstandard|AnyCPU.ActiveCfg = netstandard-Debug|Any CPU
+		{B0C83201-EC32-4E8D-9DE4-EEF41E052DA1}.DebugNETCoreAppnetstandardnetstandard|AnyCPU.Build.0 = netstandard-Debug|Any CPU
+		{B0C83201-EC32-4E8D-9DE4-EEF41E052DA1}.ReleaseNETCoreAppnetstandardnetstandard|AnyCPU.ActiveCfg = netstandard-Release|Any CPU
+		{B0C83201-EC32-4E8D-9DE4-EEF41E052DA1}.ReleaseNETCoreAppnetstandardnetstandard|AnyCPU.Build.0 = netstandard-Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

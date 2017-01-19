@@ -1,9 +1,15 @@
 <Project ToolsVersion="14.0" DefaultTargets="BuildAndTest" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="dir.props" />
 
+  <!-- required to build the projects in their specified order -->
+  <PropertyGroup>
+    <SerializeProjects>true</SerializeProjects>
+  </PropertyGroup>
+
   <ItemGroup>
     <Project Include="ref.builds" />
     <Project Include="src.builds" />
+    <Project Include="shims\shims.proj" />
   </ItemGroup>
 
   <Import Project="..\dir.targets" />

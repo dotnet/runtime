@@ -4,6 +4,7 @@
 
 using System.IO;
 using System.Text;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Security.Cryptography.Encryption.Tests.Asymmetric
@@ -158,6 +159,52 @@ namespace System.Security.Cryptography.Encryption.Tests.Asymmetric
             }
         }
 
+#if netstandard17
+        [Fact]
+        public static void Clear()
+        {
+            ICryptoTransform encryptor = new IdentityTransform(1, 1, true);
+            using (MemoryStream output = new MemoryStream())            
+            using (CryptoStream encryptStream = new CryptoStream(output, encryptor, CryptoStreamMode.Write))
+            {
+                encryptStream.Clear();
+                Assert.Throws<NotSupportedException>(() => encryptStream.Write(new byte[] { 1, 2, 3, 4, 5 }, 0, 5));
+            }
+        }
+
+        [Fact]
+        public static void FlushAsync()
+        {
+            ICryptoTransform encryptor = new IdentityTransform(1, 1, true);
+            using (MemoryStream output = new MemoryStream())
+            using (CryptoStream encryptStream = new CryptoStream(output, encryptor, CryptoStreamMode.Write))
+            {
+                encryptStream.WriteAsync(new byte[] { 1, 2, 3, 4, 5 }, 0, 5);
+                Task waitable = encryptStream.FlushAsync(new Threading.CancellationToken(false));
+                Assert.False(waitable.IsCanceled);
+
+                encryptStream.WriteAsync(new byte[] { 1, 2, 3, 4, 5 }, 0, 5);
+                waitable = encryptStream.FlushAsync(new Threading.CancellationToken(true));
+                Assert.True(waitable.IsCanceled);
+            }
+        }
+
+        [Fact]
+        public static void FlushCalledOnFlushAsync_DeriveClass()
+        {
+            ICryptoTransform encryptor = new IdentityTransform(1, 1, true);
+            using (MemoryStream output = new MemoryStream())
+            using (MinimalCryptoStream encryptStream = new MinimalCryptoStream(output, encryptor, CryptoStreamMode.Write))
+            {
+                encryptStream.WriteAsync(new byte[] { 1, 2, 3, 4, 5 }, 0, 5);
+                Task waitable = encryptStream.FlushAsync(new Threading.CancellationToken(false));
+                Assert.False(waitable.IsCanceled);
+                waitable.Wait();
+                Assert.True(encryptStream.FlushCalled);
+            }
+        }
+#endif
+
         [Fact]
         public static void MultipleDispose()
         {
@@ -210,6 +257,7 @@ namespace System.Security.Cryptography.Encryption.Tests.Asymmetric
         {
             private readonly int _inputBlockSize, _outputBlockSize;
             private readonly bool _canTransformMultipleBlocks;
+            private readonly object _lock = new object();
 
             private long _writePos, _readPos;
             private MemoryStream _stream;
@@ -234,31 +282,49 @@ namespace System.Security.Cryptography.Encryption.Tests.Asymmetric
 
             public int TransformBlock(byte[] inputBuffer, int inputOffset, int inputCount, byte[] outputBuffer, int outputOffset)
             {
-                _stream.Position = _writePos;
-                _stream.Write(inputBuffer, inputOffset, inputCount);
-                _writePos = _stream.Position;
+                lock (_lock)
+                {
+                    _stream.Position = _writePos;
+                    _stream.Write(inputBuffer, inputOffset, inputCount);
+                    _writePos = _stream.Position;
 
-                _stream.Position = _readPos;
-                int copied = _stream.Read(outputBuffer, outputOffset, outputBuffer.Length - outputOffset);
-                _readPos = _stream.Position;
-
-                return copied;
+                    _stream.Position = _readPos;
+                    int copied = _stream.Read(outputBuffer, outputOffset, outputBuffer.Length - outputOffset);
+                    _readPos = _stream.Position;
+                    return copied;
+                }
             }
 
             public byte[] TransformFinalBlock(byte[] inputBuffer, int inputOffset, int inputCount)
             {
-                _stream.Position = _writePos;
-                _stream.Write(inputBuffer, inputOffset, inputCount);
+                lock (_lock)
+                {
+                    _stream.Position = _writePos;
+                    _stream.Write(inputBuffer, inputOffset, inputCount);
 
-                _stream.Position = _readPos;
-                long len = _stream.Length - _stream.Position;
-                byte[] outputBuffer = new byte[len];
-                _stream.Read(outputBuffer, 0, outputBuffer.Length);
+                    _stream.Position = _readPos;
+                    long len = _stream.Length - _stream.Position;
+                    byte[] outputBuffer = new byte[len];
+                    _stream.Read(outputBuffer, 0, outputBuffer.Length);
 
-                _stream = new MemoryStream();
-                _writePos = 0;
-                _readPos = 0;
-                return outputBuffer;
+                    _stream = new MemoryStream();
+                    _writePos = 0;
+                    _readPos = 0;
+                    return outputBuffer;
+                }
+            }
+        }
+
+        public class MinimalCryptoStream : CryptoStream
+        {
+            public bool FlushCalled;
+
+            public MinimalCryptoStream(Stream stream, ICryptoTransform transform, CryptoStreamMode mode) : base(stream, transform, mode) { }
+
+            public override void Flush()
+            {
+                FlushCalled = true;
+                base.Flush();
             }
         }
 

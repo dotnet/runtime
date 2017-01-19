@@ -242,7 +242,7 @@ namespace System.Net.Mail
         {
             get
             {
-                return ReferenceEquals(_transport.Credentials, CredentialCache.DefaultNetworkCredentials) ? true : false;
+                return ReferenceEquals(_transport.Credentials, CredentialCache.DefaultNetworkCredentials);
             }
             set
             {
@@ -673,7 +673,7 @@ namespace System.Net.Mail
                     CredentialCache cache;
                     // Skip token capturing if no credentials are used or they don't include a default one.
                     // Also do capture the token if ICredential is not of CredentialCache type so we don't know what the exact credential response will be.
-                    _transport.IdentityRequired = Credentials != null && (ReferenceEquals(Credentials, CredentialCache.DefaultNetworkCredentials) || (cache = Credentials as CredentialCache) == null);
+                    _transport.IdentityRequired = Credentials != null && (ReferenceEquals(Credentials, CredentialCache.DefaultNetworkCredentials) || (cache = Credentials as CredentialCache) == null || IsSystemNetworkCredentialInCache(cache));
 
                     _asyncOp = AsyncOperationManager.CreateOperation(userToken);
                     switch (DeliveryMethod)
@@ -746,6 +746,20 @@ namespace System.Net.Mail
             {
                 if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
             }
+        }
+
+        private bool IsSystemNetworkCredentialInCache(CredentialCache cache)
+        {
+            // Check if SystemNetworkCredential is in given cache.
+            foreach (NetworkCredential credential in cache)
+            {
+                if (ReferenceEquals(credential, CredentialCache.DefaultNetworkCredentials))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         public void SendAsyncCancel()

@@ -17,7 +17,6 @@ namespace System.ComponentModel
     [Serializable]
     public class LicenseException : SystemException
     {
-        private Type _type;
         private object _instance;
 
         /// <summary>
@@ -40,7 +39,7 @@ namespace System.ComponentModel
         /// </summary>
         public LicenseException(Type type, object instance, string message) : base(message)
         {
-            _type = type;
+            LicensedType = type;
             _instance = instance;
             HResult = HResults.License;
         }
@@ -50,7 +49,7 @@ namespace System.ComponentModel
         /// </summary>
         public LicenseException(Type type, object instance, string message, Exception innerException) : base(message, innerException)
         {
-            _type = type;
+            LicensedType = type;
             _instance = instance;
             HResult = HResults.License;
         }
@@ -60,20 +59,14 @@ namespace System.ComponentModel
         /// </summary>
         protected LicenseException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
-            _type = (Type)info.GetValue("type", typeof(Type));
+            LicensedType = (Type)info.GetValue("type", typeof(Type));
             _instance = info.GetValue("instance", typeof(object));
         }
 
         /// <summary>
         ///    <para>Gets the type of the component that was not granted a license.</para>
         /// </summary>
-        public Type LicensedType
-        {
-            get
-            {
-                return _type;
-            }
-        }
+        public Type LicensedType { get; }
 
         /// <summary>
         ///     Need this since Exception implements ISerializable and we have fields to save out.
@@ -86,7 +79,7 @@ namespace System.ComponentModel
                 throw new ArgumentNullException(nameof(info));
             }
 
-            info.AddValue("type", _type);
+            info.AddValue("type", LicensedType);
             info.AddValue("instance", _instance);
 
             base.GetObjectData(info, context);

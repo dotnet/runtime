@@ -1,9 +1,7 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <RootNamespace>System.Runtime.Serialization.Xml.Tests</RootNamespace>
-    <AssemblyName>System.Runtime.Serialization.Xml.Tests</AssemblyName>
     <ProjectGuid>{30CAB353-089E-4294-B23B-F2DD1D945654}</ProjectGuid>
   </PropertyGroup>
   <ItemGroup>
@@ -18,5 +16,5 @@
     <Compile Include="$(TestSourceFolder)XmlDictionaryReaderTests.cs" />
     <Compile Include="$(TestSourceFolder)XmlDictionaryWriterTest.cs" />
   </ItemGroup>
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), System.Runtime.Serialization.Xml.Tests.settings.targets))\System.Runtime.Serialization.Xml.Tests.settings.targets" />
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

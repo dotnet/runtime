@@ -70,10 +70,10 @@ namespace System.IO.Compression.Tests
                 ZipArchiveEntry e2 = archive.GetEntry("notempty/second.txt");
 
                 //read all of e1 and e2's contents
-                Byte[] e1readnormal = new Byte[e1.Length];
-                Byte[] e2readnormal = new Byte[e2.Length];
-                Byte[] e1interleaved = new Byte[e1.Length];
-                Byte[] e2interleaved = new Byte[e2.Length];
+                byte[] e1readnormal = new byte[e1.Length];
+                byte[] e2readnormal = new byte[e2.Length];
+                byte[] e1interleaved = new byte[e1.Length];
+                byte[] e2interleaved = new byte[e2.Length];
 
                 using (Stream e1s = e1.Open())
                 {
@@ -85,66 +85,66 @@ namespace System.IO.Compression.Tests
                 }
 
                 //now read interleaved, assume we are working with < 4gb files
-                const Int32 bytesAtATime = 15;
+                const int bytesAtATime = 15;
 
                 using (Stream e1s = e1.Open(), e2s = e2.Open())
                 {
-                    Int32 e1pos = 0;
-                    Int32 e2pos = 0;
+                    int e1pos = 0;
+                    int e2pos = 0;
 
                     while (e1pos < e1.Length || e2pos < e2.Length)
                     {
                         if (e1pos < e1.Length)
                         {
-                            Int32 e1bytesRead = e1s.Read(e1interleaved, e1pos,
-                                bytesAtATime + e1pos > e1.Length ? (Int32)e1.Length - e1pos : bytesAtATime);
+                            int e1bytesRead = e1s.Read(e1interleaved, e1pos,
+                                bytesAtATime + e1pos > e1.Length ? (int)e1.Length - e1pos : bytesAtATime);
                             e1pos += e1bytesRead;
                         }
 
                         if (e2pos < e2.Length)
                         {
-                            Int32 e2bytesRead = e2s.Read(e2interleaved, e2pos,
-                                bytesAtATime + e2pos > e2.Length ? (Int32)e2.Length - e2pos : bytesAtATime);
+                            int e2bytesRead = e2s.Read(e2interleaved, e2pos,
+                                bytesAtATime + e2pos > e2.Length ? (int)e2.Length - e2pos : bytesAtATime);
                             e2pos += e2bytesRead;
                         }
                     }
                 }
 
                 //now compare to original read
-                ArraysEqual<Byte>(e1readnormal, e1interleaved, e1readnormal.Length);
-                ArraysEqual<Byte>(e2readnormal, e2interleaved, e2readnormal.Length);
+                ArraysEqual<byte>(e1readnormal, e1interleaved, e1readnormal.Length);
+                ArraysEqual<byte>(e2readnormal, e2interleaved, e2readnormal.Length);
 
                 //now read one entry interleaved
-                Byte[] e1selfInterleaved1 = new Byte[e1.Length];
-                Byte[] e1selfInterleaved2 = new Byte[e2.Length];
+                byte[] e1selfInterleaved1 = new byte[e1.Length];
+                byte[] e1selfInterleaved2 = new byte[e2.Length];
 
 
                 using (Stream s1 = e1.Open(), s2 = e1.Open())
                 {
-                    Int32 s1pos = 0;
-                    Int32 s2pos = 0;
+                    int s1pos = 0;
+                    int s2pos = 0;
 
                     while (s1pos < e1.Length || s2pos < e1.Length)
                     {
                         if (s1pos < e1.Length)
                         {
-                            Int32 s1bytesRead = s1.Read(e1interleaved, s1pos,
-                                bytesAtATime + s1pos > e1.Length ? (Int32)e1.Length - s1pos : bytesAtATime);
+                            int s1bytesRead = s1.Read(e1interleaved, s1pos,
+                                bytesAtATime + s1pos > e1.Length ? (int)e1.Length - s1pos : bytesAtATime);
                             s1pos += s1bytesRead;
                         }
 
                         if (s2pos < e1.Length)
                         {
-                            Int32 s2bytesRead = s2.Read(e2interleaved, s2pos,
-                                bytesAtATime + s2pos > e1.Length ? (Int32)e1.Length - s2pos : bytesAtATime);
+                            int s2bytesRead = s2.Read(e2interleaved, s2pos,
+                                bytesAtATime + s2pos > e1.Length ? (int)e1.Length - s2pos : bytesAtATime);
                             s2pos += s2bytesRead;
                         }
                     }
                 }
 
                 //now compare to original read
-                ArraysEqual<Byte>(e1readnormal, e1selfInterleaved1, e1readnormal.Length);
-                ArraysEqual<Byte>(e1readnormal, e1selfInterleaved2, e1readnormal.Length);
+                ArraysEqual<byte>(e1readnormal, e1selfInterleaved1, e1readnormal.Length);
+                ArraysEqual<byte>(e1readnormal, e1selfInterleaved2, e1readnormal.Length);
             }
         }
         [Fact]

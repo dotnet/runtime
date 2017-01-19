@@ -15,8 +15,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         private SymbolLoader _symbolLoader;
         private CController _pController;   // This is our parent "controller"
         private ErrorHandling _errorContext;
-        private GlobalSymbolContext _globalSymbolContext;
-        private UserStringBuilder _userStringBuilder;
 
         ////////////////////////////////////////////////////////////////////////////////
         // Construct a compiler. All the real work is done in the Init() routine. This 
@@ -27,10 +25,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             Debug.Assert(pCtrl != null);
 
             _pController = pCtrl;
-            _globalSymbolContext = new GlobalSymbolContext(pNameMgr);
-            _userStringBuilder = new UserStringBuilder(_globalSymbolContext);
-            _errorContext = new ErrorHandling(_userStringBuilder, this, pCtrl.GetErrorFactory());
-            _symbolLoader = new SymbolLoader(_globalSymbolContext, null, _errorContext);
+            GlobalSymbolContext globalSymbolContext = new GlobalSymbolContext(pNameMgr);
+            _errorContext = new ErrorHandling(new UserStringBuilder(globalSymbolContext), this, pCtrl.GetErrorFactory());
+            _symbolLoader = new SymbolLoader(globalSymbolContext, null, _errorContext);
         }
 
         public new ErrorHandling GetErrorContext()

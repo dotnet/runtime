@@ -2,9 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections;
-using System.Xml;
+using System.IO;
 using System.Xml.Schema;
 using Xunit;
 using Xunit.Abstractions;
@@ -16,9 +15,12 @@ namespace System.Xml.Tests
     public class TCValidateAttribute_String : CXmlSchemaValidatorTestCase
     {
         private ITestOutputHelper _output;
+        private ExceptionVerifier _exVerifier;
+
         public TCValidateAttribute_String(ITestOutputHelper output) : base(output)
         {
             _output = output;
+            _exVerifier = new ExceptionVerifier("System.Xml", _output);
         }
 
         [Theory]
@@ -161,7 +163,7 @@ namespace System.Xml.Tests
             XmlSchemaSet schemas = new XmlSchemaSet();
             XmlSchemaInfo info = new XmlSchemaInfo();
 
-            schemas.Add("", TestData + XSDFILE_200_DEF_ATTRIBUTES);
+            schemas.Add("", Path.Combine(TestData, XSDFILE_200_DEF_ATTRIBUTES));
             schemas.Compile();
             val = CreateValidator(schemas);
 
@@ -187,9 +189,9 @@ namespace System.Xml.Tests
             {
                 val.ValidateAttribute("RequiredAttribute", "", "foo", info);
             }
-            catch (XmlSchemaValidationException)
+            catch (XmlSchemaValidationException e)
             {
-                //XmlExceptionVerifier.IsExceptionOk(e, "Sch_DuplicateAttribute", new string[] { "RequiredAttribute" });
+                _exVerifier.IsExceptionOk(e, "Sch_DuplicateAttribute", new string[] { "RequiredAttribute" });
                 return;
             }
 

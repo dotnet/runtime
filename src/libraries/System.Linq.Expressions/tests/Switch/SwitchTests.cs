@@ -14,15 +14,15 @@ namespace System.Linq.Expressions.Tests
         [ClassData(typeof(CompilationTypes))]
         public void IntSwitch1(bool useInterpreter)
         {
-            var p = Expression.Parameter(typeof(int));
-            var p1 = Expression.Parameter(typeof(string));
-            var s = Expression.Switch(p,
+            ParameterExpression p = Expression.Parameter(typeof(int));
+            ParameterExpression p1 = Expression.Parameter(typeof(string));
+            SwitchExpression s = Expression.Switch(p,
                 Expression.Assign(p1, Expression.Constant("default")),
                 Expression.SwitchCase(Expression.Assign(p1, Expression.Constant("hello")), Expression.Constant(1)),
                 Expression.SwitchCase(Expression.Assign(p1, Expression.Constant("two")), Expression.Constant(2)),
                 Expression.SwitchCase(Expression.Assign(p1, Expression.Constant("lala")), Expression.Constant(1)));
 
-            var block = Expression.Block(new ParameterExpression[] { p1 }, s, p1);
+            BlockExpression block = Expression.Block(new ParameterExpression[] { p1 }, s, p1);
 
             Func<int, string> f = Expression.Lambda<Func<int, string>>(block, p).Compile(useInterpreter);
 
@@ -35,15 +35,15 @@ namespace System.Linq.Expressions.Tests
         [ClassData(typeof(CompilationTypes))]
         public void NullableIntSwitch1(bool useInterpreter)
         {
-            var p = Expression.Parameter(typeof(int?));
-            var p1 = Expression.Parameter(typeof(string));
-            var s = Expression.Switch(p,
+            ParameterExpression p = Expression.Parameter(typeof(int?));
+            ParameterExpression p1 = Expression.Parameter(typeof(string));
+            SwitchExpression s = Expression.Switch(p,
                 Expression.Assign(p1, Expression.Constant("default")),
                 Expression.SwitchCase(Expression.Assign(p1, Expression.Constant("hello")), Expression.Constant((int?)1, typeof(int?))),
                 Expression.SwitchCase(Expression.Assign(p1, Expression.Constant("two")), Expression.Constant((int?)2, typeof(int?))),
                 Expression.SwitchCase(Expression.Assign(p1, Expression.Constant("lala")), Expression.Constant((int?)1, typeof(int?))));
 
-            var block = Expression.Block(new ParameterExpression[] { p1 }, s, p1);
+            BlockExpression block = Expression.Block(new ParameterExpression[] { p1 }, s, p1);
 
             Func<int?, string> f = Expression.Lambda<Func<int?, string>>(block, p).Compile(useInterpreter);
 
@@ -57,16 +57,16 @@ namespace System.Linq.Expressions.Tests
         [ClassData(typeof(CompilationTypes))]
         public void NullableIntSwitch2(bool useInterpreter)
         {
-            var p = Expression.Parameter(typeof(int?));
-            var p1 = Expression.Parameter(typeof(string));
-            var s = Expression.Switch(p,
+            ParameterExpression p = Expression.Parameter(typeof(int?));
+            ParameterExpression p1 = Expression.Parameter(typeof(string));
+            SwitchExpression s = Expression.Switch(p,
                 Expression.Assign(p1, Expression.Constant("default")),
                 Expression.SwitchCase(Expression.Assign(p1, Expression.Constant("hello")), Expression.Constant((int?)1, typeof(int?))),
                 Expression.SwitchCase(Expression.Assign(p1, Expression.Constant("two")), Expression.Constant((int?)2, typeof(int?))),
                 Expression.SwitchCase(Expression.Assign(p1, Expression.Constant("null")), Expression.Constant((int?)null, typeof(int?))),
                 Expression.SwitchCase(Expression.Assign(p1, Expression.Constant("lala")), Expression.Constant((int?)1, typeof(int?))));
 
-            var block = Expression.Block(new ParameterExpression[] { p1 }, s, p1);
+            BlockExpression block = Expression.Block(new ParameterExpression[] { p1 }, s, p1);
 
             Func<int?, string> f = Expression.Lambda<Func<int?, string>>(block, p).Compile(useInterpreter);
 
@@ -80,15 +80,15 @@ namespace System.Linq.Expressions.Tests
         [ClassData(typeof(CompilationTypes))]
         public void IntSwitch2(bool useInterpreter)
         {
-            var p = Expression.Parameter(typeof(byte));
-            var p1 = Expression.Parameter(typeof(string));
-            var s = Expression.Switch(p,
+            ParameterExpression p = Expression.Parameter(typeof(byte));
+            ParameterExpression p1 = Expression.Parameter(typeof(string));
+            SwitchExpression s = Expression.Switch(p,
                 Expression.Assign(p1, Expression.Constant("default")),
                 Expression.SwitchCase(Expression.Assign(p1, Expression.Constant("hello")), Expression.Constant((byte)1)),
                 Expression.SwitchCase(Expression.Assign(p1, Expression.Constant("two")), Expression.Constant((byte)2)),
                 Expression.SwitchCase(Expression.Assign(p1, Expression.Constant("lala")), Expression.Constant((byte)1)));
 
-            var block = Expression.Block(new ParameterExpression[] { p1 }, s, p1);
+            BlockExpression block = Expression.Block(new ParameterExpression[] { p1 }, s, p1);
 
             Func<byte, string> f = Expression.Lambda<Func<byte, string>>(block, p).Compile(useInterpreter);
 
@@ -101,16 +101,16 @@ namespace System.Linq.Expressions.Tests
         [ClassData(typeof(CompilationTypes))]
         public void IntSwitch3(bool useInterpreter)
         {
-            var p = Expression.Parameter(typeof(uint));
-            var p1 = Expression.Parameter(typeof(string));
-            var s = Expression.Switch(p,
+            ParameterExpression p = Expression.Parameter(typeof(uint));
+            ParameterExpression p1 = Expression.Parameter(typeof(string));
+            SwitchExpression s = Expression.Switch(p,
                 Expression.Assign(p1, Expression.Constant("default")),
                 Expression.SwitchCase(Expression.Assign(p1, Expression.Constant("hello")), Expression.Constant((uint)1)),
                 Expression.SwitchCase(Expression.Assign(p1, Expression.Constant("two")), Expression.Constant((uint)2)),
                 Expression.SwitchCase(Expression.Assign(p1, Expression.Constant("lala")), Expression.Constant((uint)1)),
                 Expression.SwitchCase(Expression.Assign(p1, Expression.Constant("wow")), Expression.Constant(uint.MaxValue)));
 
-            var block = Expression.Block(new ParameterExpression[] { p1 }, s, p1);
+            BlockExpression block = Expression.Block(new ParameterExpression[] { p1 }, s, p1);
 
             Func<uint, string> f = Expression.Lambda<Func<uint, string>>(block, p).Compile(useInterpreter);
 
@@ -124,8 +124,8 @@ namespace System.Linq.Expressions.Tests
         [ClassData(typeof(CompilationTypes))]
         public void StringSwitch(bool useInterpreter)
         {
-            var p = Expression.Parameter(typeof(string));
-            var s = Expression.Switch(p,
+            ParameterExpression p = Expression.Parameter(typeof(string));
+            SwitchExpression s = Expression.Switch(p,
                 Expression.Constant("default"),
                 Expression.SwitchCase(Expression.Constant("hello"), Expression.Constant("hi")),
                 Expression.SwitchCase(Expression.Constant("lala"), Expression.Constant("bye")));
@@ -142,15 +142,15 @@ namespace System.Linq.Expressions.Tests
         [ClassData(typeof(CompilationTypes))]
         public void StringSwitch1(bool useInterpreter)
         {
-            var p = Expression.Parameter(typeof(string));
-            var p1 = Expression.Parameter(typeof(string));
-            var s = Expression.Switch(p,
+            ParameterExpression p = Expression.Parameter(typeof(string));
+            ParameterExpression p1 = Expression.Parameter(typeof(string));
+            SwitchExpression s = Expression.Switch(p,
                 Expression.Assign(p1, Expression.Constant("default")),
                 Expression.SwitchCase(Expression.Assign(p1, Expression.Constant("hello")), Expression.Constant("hi")),
                 Expression.SwitchCase(Expression.Assign(p1, Expression.Constant("null")), Expression.Constant(null, typeof(string))),
                 Expression.SwitchCase(Expression.Assign(p1, Expression.Constant("lala")), Expression.Constant("bye")));
 
-            var block = Expression.Block(new ParameterExpression[] { p1 }, s, p1);
+            BlockExpression block = Expression.Block(new ParameterExpression[] { p1 }, s, p1);
 
             Func<string, string> f = Expression.Lambda<Func<string, string>>(block, p).Compile(useInterpreter);
 
@@ -167,8 +167,8 @@ namespace System.Linq.Expressions.Tests
             Expression<Func<string>> expr1 = () => new string('a', 5);
             Expression<Func<string>> expr2 = () => new string('q', 5);
 
-            var p = Expression.Parameter(typeof(string));
-            var s = Expression.Switch(p,
+            ParameterExpression p = Expression.Parameter(typeof(string));
+            SwitchExpression s = Expression.Switch(p,
                 Expression.Constant("default"),
                 Expression.SwitchCase(Expression.Invoke(expr1), Expression.Invoke(expr2)),
                 Expression.SwitchCase(Expression.Constant("lala"), Expression.Constant("bye")));
@@ -185,16 +185,16 @@ namespace System.Linq.Expressions.Tests
         [ClassData(typeof(CompilationTypes))]
         public void ObjectSwitch1(bool useInterpreter)
         {
-            var p = Expression.Parameter(typeof(object));
-            var p1 = Expression.Parameter(typeof(string));
-            var s = Expression.Switch(p,
+            ParameterExpression p = Expression.Parameter(typeof(object));
+            ParameterExpression p1 = Expression.Parameter(typeof(string));
+            SwitchExpression s = Expression.Switch(p,
                 Expression.Assign(p1, Expression.Constant("default")),
                 Expression.SwitchCase(Expression.Assign(p1, Expression.Constant("hello")), Expression.Constant("hi")),
                 Expression.SwitchCase(Expression.Assign(p1, Expression.Constant("null")), Expression.Constant(null, typeof(string))),
                 Expression.SwitchCase(Expression.Assign(p1, Expression.Constant("lala")), Expression.Constant("bye")),
                 Expression.SwitchCase(Expression.Assign(p1, Expression.Constant("lalala")), Expression.Constant("hi")));
 
-            var block = Expression.Block(new ParameterExpression[] { p1 }, s, p1);
+            BlockExpression block = Expression.Block(new ParameterExpression[] { p1 }, s, p1);
 
             Func<object, string> f = Expression.Lambda<Func<object, string>>(block, p).Compile(useInterpreter);
 
@@ -209,10 +209,10 @@ namespace System.Linq.Expressions.Tests
         [ClassData(typeof(CompilationTypes))]
         public void DefaultOnlySwitch(bool useInterpreter)
         {
-            var p = Expression.Parameter(typeof(int));
-            var s = Expression.Switch(p, Expression.Constant(42));
+            ParameterExpression p = Expression.Parameter(typeof(int));
+            SwitchExpression s = Expression.Switch(p, Expression.Constant(42));
 
-            var fInt32Int32 = Expression.Lambda<Func<int, int>>(s, p).Compile(useInterpreter);
+            Func<int, int> fInt32Int32 = Expression.Lambda<Func<int, int>>(s, p).Compile(useInterpreter);
 
             Assert.Equal(42, fInt32Int32(0));
             Assert.Equal(42, fInt32Int32(1));
@@ -220,7 +220,7 @@ namespace System.Linq.Expressions.Tests
 
             s = Expression.Switch(typeof(object), p, Expression.Constant("A test string"), null);
 
-            var fInt32Object = Expression.Lambda<Func<int, object>>(s, p).Compile(useInterpreter);
+            Func<int, object> fInt32Object = Expression.Lambda<Func<int, object>>(s, p).Compile(useInterpreter);
 
             Assert.Equal("A test string", fInt32Object(0));
             Assert.Equal("A test string", fInt32Object(1));
@@ -229,7 +229,7 @@ namespace System.Linq.Expressions.Tests
             p = Expression.Parameter(typeof(string));
             s = Expression.Switch(p, Expression.Constant("foo"));
 
-            var fStringString = Expression.Lambda<Func<string, string>>(s, p).Compile(useInterpreter);
+            Func<string, string> fStringString = Expression.Lambda<Func<string, string>>(s, p).Compile(useInterpreter);
 
             Assert.Equal("foo", fStringString("bar"));
             Assert.Equal("foo", fStringString(null));
@@ -240,10 +240,10 @@ namespace System.Linq.Expressions.Tests
         [ClassData(typeof(CompilationTypes))]
         public void NoDefaultOrCasesSwitch(bool useInterpreter)
         {
-            var p = Expression.Parameter(typeof(int));
-            var s = Expression.Switch(p);
+            ParameterExpression p = Expression.Parameter(typeof(int));
+            SwitchExpression s = Expression.Switch(p);
 
-            var f = Expression.Lambda<Action<int>>(s, p).Compile(useInterpreter);
+            Action<int> f = Expression.Lambda<Action<int>>(s, p).Compile(useInterpreter);
 
             f(0);
 
@@ -253,7 +253,7 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public void TypedNoDefaultOrCasesSwitch()
         {
-            var p = Expression.Parameter(typeof(int));
+            ParameterExpression p = Expression.Parameter(typeof(int));
             // A SwitchExpression with neither a defaultBody nor any cases can not be any type except void.
             Assert.Throws<ArgumentException>("defaultBody", () => Expression.Switch(typeof(int), p, null, null));
         }
@@ -273,11 +273,11 @@ namespace System.Linq.Expressions.Tests
         public void DefaultOnlySwitchWithSideEffect(bool useInterpreter)
         {
             bool changed = false;
-            var pOut = Expression.Parameter(typeof(bool).MakeByRefType(), "changed");
-            var switchValue = Expression.Call(typeof(SwitchTests).GetMethod(nameof(QuestionMeaning)), pOut);
-            var s = Expression.Switch(switchValue, Expression.Constant(42));
+            ParameterExpression pOut = Expression.Parameter(typeof(bool).MakeByRefType(), "changed");
+            MethodCallExpression switchValue = Expression.Call(typeof(SwitchTests).GetMethod(nameof(QuestionMeaning)), pOut);
+            SwitchExpression s = Expression.Switch(switchValue, Expression.Constant(42));
 
-            var fInt32Int32 = Expression.Lambda<RefSettingDelegate>(s, pOut).Compile(useInterpreter);
+            RefSettingDelegate fInt32Int32 = Expression.Lambda<RefSettingDelegate>(s, pOut).Compile(useInterpreter);
 
             Assert.False(changed);
             Assert.Equal(42, fInt32Int32(ref changed));
@@ -292,11 +292,11 @@ namespace System.Linq.Expressions.Tests
         public void NoDefaultOrCasesSwitchWithSideEffect(bool useInterpreter)
         {
             bool changed = false;
-            var pOut = Expression.Parameter(typeof(bool).MakeByRefType(), "changed");
-            var switchValue = Expression.Call(typeof(SwitchTests).GetMethod(nameof(QuestionMeaning)), pOut);
-            var s = Expression.Switch(switchValue, (Expression)null);
+            ParameterExpression pOut = Expression.Parameter(typeof(bool).MakeByRefType(), "changed");
+            MethodCallExpression switchValue = Expression.Call(typeof(SwitchTests).GetMethod(nameof(QuestionMeaning)), pOut);
+            SwitchExpression s = Expression.Switch(switchValue, (Expression)null);
 
-            var f = Expression.Lambda<JustRefSettingDelegate>(s, pOut).Compile(useInterpreter);
+            JustRefSettingDelegate f = Expression.Lambda<JustRefSettingDelegate>(s, pOut).Compile(useInterpreter);
 
             Assert.False(changed);
             f(ref changed);
@@ -315,9 +315,9 @@ namespace System.Linq.Expressions.Tests
         [ClassData(typeof(CompilationTypes))]
         public void SwitchWithComparison(bool useInterpreter)
         {
-            var p = Expression.Parameter(typeof(string));
-            var p1 = Expression.Parameter(typeof(string));
-            var s = Expression.Switch(p,
+            ParameterExpression p = Expression.Parameter(typeof(string));
+            ParameterExpression p1 = Expression.Parameter(typeof(string));
+            SwitchExpression s = Expression.Switch(p,
                 Expression.Assign(p1, Expression.Constant("default")),
                 typeof(TestComparers).GetMethod(nameof(TestComparers.CaseInsensitiveStringCompare)),
                 Expression.SwitchCase(Expression.Assign(p1, Expression.Constant("hello")), Expression.Constant("hi")),
@@ -325,7 +325,7 @@ namespace System.Linq.Expressions.Tests
                 Expression.SwitchCase(Expression.Assign(p1, Expression.Constant("lala")), Expression.Constant("bye")),
                 Expression.SwitchCase(Expression.Assign(p1, Expression.Constant("lalala")), Expression.Constant("hi")));
 
-            var block = Expression.Block(new ParameterExpression[] { p1 }, s, p1);
+            BlockExpression block = Expression.Block(new ParameterExpression[] { p1 }, s, p1);
 
             Func<string, string> f = Expression.Lambda<Func<string, string>>(block, p).Compile(useInterpreter);
 
@@ -406,7 +406,7 @@ namespace System.Linq.Expressions.Tests
         [Theory, ClassData(typeof(CompilationTypes))]
         public void LiftedCall(bool useInterpreter)
         {
-            var f = Expression.Lambda<Func<int>>(
+            Func<int> f = Expression.Lambda<Func<int>>(
                 Expression.Switch(
                     Expression.Constant(30, typeof(int?)),
                     Expression.Constant(0),
@@ -529,8 +529,18 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public void SwitchCaseUpdateSameToSame()
         {
-            SwitchCase sc = Expression.SwitchCase(Expression.Constant(1), Expression.Constant(0), Expression.Constant(2));
+            Expression[] tests = {Expression.Constant(0), Expression.Constant(2)};
+            SwitchCase sc = Expression.SwitchCase(Expression.Constant(1), tests);
+            Assert.Same(sc, sc.Update(tests, sc.Body));
             Assert.Same(sc, sc.Update(sc.TestValues, sc.Body));
+        }
+
+        [Fact]
+        public void SwitchCaseUpdateNullTestsToSame()
+        {
+            SwitchCase sc = Expression.SwitchCase(Expression.Constant(0), Expression.Constant(1));
+            Assert.Throws<ArgumentException>("testValues", () => sc.Update(null, sc.Body));
+            Assert.Throws<ArgumentNullException>("body", () => sc.Update(sc.TestValues, null));
         }
 
         [Fact]
@@ -548,15 +558,28 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Fact]
+        public void SwitchCaseUpdateDoesntRepeatEnumeration()
+        {
+            SwitchCase sc = Expression.SwitchCase(Expression.Constant(1), Expression.Constant(0), Expression.Constant(2));
+            Assert.NotSame(sc, sc.Update(new RunOnceEnumerable<Expression>(new[] { Expression.Constant(0), Expression.Constant(2) }), sc.Body));
+        }
+
+        [Fact]
         public void SwitchUpdateSameToSame()
         {
+            SwitchCase[] cases =
+            {
+                Expression.SwitchCase(Expression.Constant(1), Expression.Constant(1)),
+                Expression.SwitchCase(Expression.Constant(2), Expression.Constant(2))
+            };
+
             SwitchExpression sw = Expression.Switch(
                 Expression.Constant(0),
                 Expression.Constant(0),
-                Expression.SwitchCase(Expression.Constant(1), Expression.Constant(1)),
-                Expression.SwitchCase(Expression.Constant(2), Expression.Constant(2))
+                cases
                 );
-            Assert.Same(sw, sw.Update(sw.SwitchValue, sw.Cases, sw.DefaultBody));
+            Assert.Same(sw, sw.Update(sw.SwitchValue, cases.Skip(0), sw.DefaultBody));
+            Assert.Same(sw, sw.Update(sw.SwitchValue, cases, sw.DefaultBody));
             Assert.Same(sw, NoOpVisitor.Instance.Visit(sw));
         }
 
@@ -594,11 +617,32 @@ namespace System.Linq.Expressions.Tests
                 Expression.SwitchCase(Expression.Constant(2), Expression.Constant(2))
                 );
 
-            var newCases = new[]
+            SwitchCase[] newCases = new[]
             {
                 Expression.SwitchCase(Expression.Constant(1), Expression.Constant(1)),
                 Expression.SwitchCase(Expression.Constant(2), Expression.Constant(2))
             };
+
+            Assert.NotSame(sw, sw.Update(sw.SwitchValue, newCases, sw.DefaultBody));
+        }
+
+        [Fact]
+        public void SwitchUpdateDoesntRepeatEnumeration()
+        {
+            SwitchExpression sw = Expression.Switch(
+                Expression.Constant(0),
+                Expression.Constant(0),
+                Expression.SwitchCase(Expression.Constant(1), Expression.Constant(1)),
+                Expression.SwitchCase(Expression.Constant(2), Expression.Constant(2))
+                );
+
+            IEnumerable<SwitchCase> newCases =
+                new RunOnceEnumerable<SwitchCase>(
+                    new SwitchCase[]
+                    {
+                        Expression.SwitchCase(Expression.Constant(1), Expression.Constant(1)),
+                        Expression.SwitchCase(Expression.Constant(2), Expression.Constant(2))
+                    });
 
             Assert.NotSame(sw, sw.Update(sw.SwitchValue, newCases, sw.DefaultBody));
         }
@@ -624,12 +668,12 @@ namespace System.Linq.Expressions.Tests
 
             for (var i = 1; i <= values.Length; i++)
             {
-                var cases = values.Take(i).Select((s, j) => Expression.SwitchCase(Expression.Constant(j), Expression.Constant(values[j]))).ToArray();
-                var value = Expression.Parameter(typeof(string));
-                var e = Expression.Lambda<Func<string, int>>(Expression.Switch(value, Expression.Constant(-1), cases), value);
-                var f = e.Compile(useInterpreter);
+                SwitchCase[] cases = values.Take(i).Select((s, j) => Expression.SwitchCase(Expression.Constant(j), Expression.Constant(values[j]))).ToArray();
+                ParameterExpression value = Expression.Parameter(typeof(string));
+                Expression<Func<string, int>> e = Expression.Lambda<Func<string, int>>(Expression.Switch(value, Expression.Constant(-1), cases), value);
+                Func<string, int> f = e.Compile(useInterpreter);
 
-                var k = 0;
+                int k = 0;
                 foreach (var str in values.Take(i))
                 {
                     Assert.Equal(k, f(str));
@@ -647,13 +691,13 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public void ToStringTest()
         {
-            var e1 = Expression.Switch(Expression.Parameter(typeof(int), "x"), Expression.SwitchCase(Expression.Empty(), Expression.Constant(1)));
+            SwitchExpression e1 = Expression.Switch(Expression.Parameter(typeof(int), "x"), Expression.SwitchCase(Expression.Empty(), Expression.Constant(1)));
             Assert.Equal("switch (x) { ... }", e1.ToString());
 
-            var e2 = Expression.SwitchCase(Expression.Parameter(typeof(int), "x"), Expression.Constant(1));
+            SwitchCase e2 = Expression.SwitchCase(Expression.Parameter(typeof(int), "x"), Expression.Constant(1));
             Assert.Equal("case (1): ...", e2.ToString());
 
-            var e3 = Expression.SwitchCase(Expression.Parameter(typeof(int), "x"), Expression.Constant(1), Expression.Constant(2));
+            SwitchCase e3 = Expression.SwitchCase(Expression.Parameter(typeof(int), "x"), Expression.Constant(1), Expression.Constant(2));
             Assert.Equal("case (1, 2): ...", e3.ToString());
         }
     }

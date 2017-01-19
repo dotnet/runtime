@@ -2,85 +2,75 @@
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{9574CEEC-5554-411B-B44C-6CA9EC1CEB08}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <AssemblyName>System.Collections.Tests</AssemblyName>
-    <RootNamespace>System.Collections.Tests</RootNamespace>
-    <DefineConstants Condition="'$(TargetGroup)'==''">$(DefineConstants);netstandard17</DefineConstants>
-    <NugetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NugetTargetMoniker>
+    <DefineConstants Condition="'$(TargetGroup)'=='netstandard'">$(DefineConstants);netstandard17</DefineConstants>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-  </PropertyGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\pkg\System.Collections.pkgproj" />
-    <ProjectReference Include="..\..\System.Diagnostics.Debug\pkg\System.Diagnostics.Debug.pkgproj" />
-  </ItemGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netcoreapp-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netcoreapp-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard1.3-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard1.3-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Release|AnyCPU'" />
   <ItemGroup>
     <!-- Common Collections tests -->
-    <Compile Include="$(CommonTestPath)\System\Collections\CollectionAsserts.cs" >
+    <Compile Include="$(CommonTestPath)\System\Collections\CollectionAsserts.cs">
       <Link>Common\System\Collections\CollectionAsserts.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System\Collections\ICollection.NonGeneric.Tests.cs" >
+    <Compile Include="$(CommonTestPath)\System\Collections\ICollection.NonGeneric.Tests.cs">
       <Link>Common\System\Collections\ICollection.NonGeneric.Tests.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System\Collections\ICollection.Generic.Tests.cs" >
+    <Compile Include="$(CommonTestPath)\System\Collections\ICollection.Generic.Tests.cs">
       <Link>Common\System\Collections\ICollection.Generic.Tests.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System\Collections\IDictionary.NonGeneric.Tests.cs" >
+    <Compile Include="$(CommonTestPath)\System\Collections\IDictionary.NonGeneric.Tests.cs">
       <Link>Common\System\Collections\IDictionary.NonGeneric.Tests.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System\Collections\IDictionary.Generic.Tests.cs" >
+    <Compile Include="$(CommonTestPath)\System\Collections\IDictionary.Generic.Tests.cs">
       <Link>Common\System\Collections\IDictionary.Generic.Tests.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System\Collections\IEnumerable.NonGeneric.Tests.cs" >
+    <Compile Include="$(CommonTestPath)\System\Collections\IEnumerable.NonGeneric.Tests.cs">
       <Link>Common\System\Collections\IEnumerable.NonGeneric.Tests.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System\Collections\IEnumerable.Generic.Tests.cs" >
+    <Compile Include="$(CommonTestPath)\System\Collections\IEnumerable.Generic.Tests.cs">
       <Link>Common\System\Collections\IEnumerable.Generic.Tests.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System\Collections\IList.NonGeneric.Tests.cs" >
+    <Compile Include="$(CommonTestPath)\System\Collections\IList.NonGeneric.Tests.cs">
       <Link>Common\System\Collections\IList.NonGeneric.Tests.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System\Collections\IList.Generic.Tests.cs" >
+    <Compile Include="$(CommonTestPath)\System\Collections\IList.Generic.Tests.cs">
       <Link>Common\System\Collections\IList.Generic.Tests.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System\Collections\IGenericSharedAPI.Tests.cs" >
+    <Compile Include="$(CommonTestPath)\System\Collections\IGenericSharedAPI.Tests.cs">
       <Link>Common\System\Collections\IGenericSharedAPI.Tests.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System\Collections\ISet.Generic.Tests.cs" >
+    <Compile Include="$(CommonTestPath)\System\Collections\ISet.Generic.Tests.cs">
       <Link>Common\System\Collections\ISet.Generic.Tests.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System\Collections\TestBase.NonGeneric.cs" >
+    <Compile Include="$(CommonTestPath)\System\Collections\TestBase.NonGeneric.cs">
       <Link>Common\System\Collections\TestBase.NonGeneric.Tests.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System\Collections\TestBase.Generic.cs" >
+    <Compile Include="$(CommonTestPath)\System\Collections\TestBase.Generic.cs">
       <Link>Common\System\Collections\TestBase.Generic.Tests.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System\Collections\DebugView.Tests.cs" >
+    <Compile Include="$(CommonTestPath)\System\Collections\DebugView.Tests.cs">
       <Link>Common\System\Collections\DebugView.Tests.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System\Collections\TestingTypes.cs" >
+    <Compile Include="$(CommonTestPath)\System\Collections\TestingTypes.cs">
       <Link>Common\System\Collections\TestingTypes.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System\EnumTypes.cs" >
+    <Compile Include="$(CommonTestPath)\System\EnumTypes.cs">
       <Link>Common\System\EnumTypes.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System\ObjectCloner.cs" >
+    <Compile Include="$(CommonTestPath)\System\ObjectCloner.cs">
       <Link>Common\System\ObjectCloner.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonTestPath)\System\RuntimeDetection.cs" >
-      <Link>Common\System\RuntimeDetection.cs</Link>
     </Compile>
     <!-- Generic tests -->
     <Compile Include="StructuralComparisonsTests.cs" />
     <Compile Include="BitArray\BitArray_CtorTests.cs" />
     <Compile Include="BitArray\BitArray_GetSetTests.cs" />
     <Compile Include="BitArray\BitArray_OperatorsTests.cs" />
+    <Compile Include="BitArray\BitArray_OperatorsTests.netcoreapp.cs" Condition="'$(TargetGroup)'=='netcoreapp'" />
     <Compile Include="Generic\Comparers\Comparer.Generic.Tests.cs" />
     <Compile Include="Generic\Comparers\Comparer.Tests.cs" />
     <Compile Include="Generic\Comparers\Comparers.Generic.cs" />
@@ -91,11 +81,12 @@
     <Compile Include="Generic\Dictionary\HashCollisionScenarios\OutOfBoundsRegression.cs" />
     <Compile Include="Generic\Dictionary\Dictionary.Generic.cs" />
     <Compile Include="Generic\Dictionary\Dictionary.Generic.Tests.cs" />
+    <Compile Include="Generic\Dictionary\Dictionary.Generic.Tests.netcoreapp.cs" Condition="'$(TargetGroup)'=='netcoreapp'" />
     <Compile Include="Generic\Dictionary\Dictionary.Generic.Tests.Keys.cs" />
     <Compile Include="Generic\Dictionary\Dictionary.Generic.Tests.Values.cs" />
     <Compile Include="Generic\HashSet\HashSet.Generic.cs" />
     <Compile Include="Generic\HashSet\HashSet.Generic.Tests.cs" />
-    <Compile Include="Generic\HashSet\HashSet.Generic.Tests.netcoreapp1.1.cs" Condition="'$(TargetGroup)'=='netcoreapp1.1'" />
+    <Compile Include="Generic\HashSet\HashSet.Generic.Tests.netcoreapp.cs" Condition="'$(TargetGroup)'=='netcoreapp'" />
     <Compile Include="Generic\HashSet\HashSet.Generic.Tests.AsNonGenericIEnumerable.cs" />
     <Compile Include="Generic\LinkedList\LinkedList.Generic.cs" />
     <Compile Include="Generic\LinkedList\LinkedList.Generic.Tests.AddAfter.cs" />
@@ -121,13 +112,13 @@
     <Compile Include="Generic\List\List.Generic.Tests.AddRange.cs" />
     <Compile Include="Generic\List\List.Generic.Tests.BinarySearch.cs" />
     <Compile Include="Generic\List\List.Generic.Tests.Constructor.cs" />
-    <Compile Include="Generic\List\List.Generic.Tests.ConvertAll.cs" Condition="'$(TargetGroup)'==''" />
+    <Compile Include="Generic\List\List.Generic.Tests.ConvertAll.cs" Condition="'$(TargetGroup)'=='netstandard'" />
     <Compile Include="Generic\List\List.Generic.Tests.Find.cs" />
     <Compile Include="Generic\List\List.Generic.Tests.Remove.cs" />
     <Compile Include="Generic\List\List.Generic.Tests.Sort.cs" />
     <Compile Include="Generic\Queue\Queue.Generic.cs" />
     <Compile Include="Generic\Queue\Queue.Generic.Tests.cs" />
-    <Compile Include="Generic\Queue\Queue.Generic.Tests.netcoreapp1.1.cs" Condition="'$(TargetGroup)'=='netcoreapp1.1'" />
+    <Compile Include="Generic\Queue\Queue.Generic.Tests.netcoreapp.cs" Condition="'$(TargetGroup)'=='netcoreapp'" />
     <Compile Include="Generic\Queue\Queue.Tests.cs" />
     <Compile Include="Generic\SortedDictionary\SortedDictionary.Generic.cs" />
     <Compile Include="Generic\SortedDictionary\SortedDictionary.Generic.Tests.cs" />
@@ -145,21 +136,21 @@
     <Compile Include="Generic\Stack\Stack.Tests.cs" />
     <Compile Include="Generic\Stack\Stack.Generic.cs" />
     <Compile Include="Generic\Stack\Stack.Generic.Tests.cs" />
-    <Compile Include="Generic\Stack\Stack.Generic.Tests.netcoreapp1.1.cs" Condition="'$(TargetGroup)'=='netcoreapp1.1'" />
+    <Compile Include="Generic\Stack\Stack.Generic.Tests.netcoreapp.cs" Condition="'$(TargetGroup)'=='netcoreapp'" />
     <Compile Include="$(CommonTestPath)\System\Diagnostics\DebuggerAttributes.cs">
       <Link>Common\System\Diagnostics\DebuggerAttributes.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'!='' and '$(TargetGroup)'!='netcoreapp1.1'">
+  <ItemGroup Condition="'$(TargetGroup)'!='netstandard' and '$(TargetGroup)'!='netcoreapp'">
     <Compile Include="$(CommonPath)\System\SerializableAttribute.cs">
       <Link>Common\System\SerializableAttribute.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'==''">
-    <Compile Include="$(CommonTestPath)\System\Collections\IEnumerable.NonGeneric.Serialization.Tests.cs" >
+  <ItemGroup Condition="'$(TargetGroup)'=='netstandard'">
+    <Compile Include="$(CommonTestPath)\System\Collections\IEnumerable.NonGeneric.Serialization.Tests.cs">
       <Link>Common\System\Collections\IEnumerable.NonGeneric.Serialization.Tests.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System\Collections\IEnumerable.Generic.Serialization.Tests.cs" >
+    <Compile Include="$(CommonTestPath)\System\Collections\IEnumerable.Generic.Serialization.Tests.cs">
       <Link>Common\System\Collections\IEnumerable.Generic.Serialization.Tests.cs</Link>
     </Compile>
   </ItemGroup>

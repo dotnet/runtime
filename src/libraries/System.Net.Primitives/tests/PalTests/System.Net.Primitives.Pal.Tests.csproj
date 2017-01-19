@@ -1,178 +1,164 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
-  <PropertyGroup>
-    <Configuration Condition="'$(Configuration)'==''">Windows_Debug</Configuration>
-  </PropertyGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
-
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Windows_Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <OutputType>Library</OutputType>
     <ProjectGuid>{7860A11A-1841-4416-8A30-28EEEB42C6BB}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <StringResourcesPath>../../src/Resources/Strings.resx</StringResourcesPath>
-    <NugetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NugetTargetMoniker>
   </PropertyGroup>
-  
   <!-- Help VS understand available configurations -->
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'" />
-
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Unix-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Unix-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Windows_NT-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard1.3-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard1.3-Windows_NT-Release|AnyCPU'" />
   <PropertyGroup>
     <!-- SYSTEM_NET_PRIMITIVES_DLL is required to allow source-level code sharing for types defined within the 
          System.Net.Internals namespace. -->
     <DefineConstants>$(DefineConstants);SYSTEM_NET_PRIMITIVES_DLL</DefineConstants>
   </PropertyGroup>
-  
+  <!-- Do not reference these assemblies from the TargetingPack since we are building part of the source code for tests. -->
+  <ItemGroup>
+    <TargetingPackExclusions Include="System.Net.Primitives" />
+  </ItemGroup>
   <ItemGroup>
     <Compile Include="IPAddressPalTest.cs" />
     <Compile Include="HostInformationPalTest.cs" />
     <Compile Include="SocketAddressPalTest.cs" />
-
     <Compile Include="Fakes\NetEventSource.cs" />
-    <Compile Include="Fakes\Serialization.cs" Condition="'$(TargetGroup)' != ''"/>
-
-    <Compile Include="..\..\src\System\Net\EndPoint.cs" >
+    <Compile Include="Fakes\Serialization.cs" Condition="'$(TargetGroup)' != 'netstandard'" />
+    <Compile Include="..\..\src\System\Net\EndPoint.cs">
       <Link>ProductionCode\System\Net\EndPoint.cs</Link>
     </Compile>
-    <Compile Include="..\..\src\System\Net\IPAddress.cs" >
+    <Compile Include="..\..\src\System\Net\IPAddress.cs">
       <Link>ProductionCode\System\Net\IPAddress.cs</Link>
     </Compile>
-    <Compile Include="..\..\src\System\Net\IPAddressParser.cs" >
+    <Compile Include="..\..\src\System\Net\IPAddressParser.cs">
       <Link>ProductionCode\System\Net\IPAddressParser.cs</Link>
     </Compile>
-    <Compile Include="..\..\src\System\Net\IPEndPoint.cs" >
+    <Compile Include="..\..\src\System\Net\IPEndPoint.cs">
       <Link>ProductionCode\System\Net\IPEndPoint.cs</Link>
     </Compile>
-    <Compile Include="..\..\src\System\Net\SocketException.cs" >
+    <Compile Include="..\..\src\System\Net\SocketException.cs">
       <Link>ProductionCode\System\Net\SocketException.cs</Link>
     </Compile>
-    <Compile Include="..\..\src\System\Net\Sockets\AddressFamily.cs" >
+    <Compile Include="..\..\src\System\Net\Sockets\AddressFamily.cs">
       <Link>ProductionCode\System\Net\Sockets\AddressFamily.cs</Link>
     </Compile>
-    <Compile Include="..\..\src\System\Net\Sockets\SocketError.cs" >
+    <Compile Include="..\..\src\System\Net\Sockets\SocketError.cs">
       <Link>ProductionCode\System\Net\Sockets\SocketError.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\ByteOrder.cs" >
+    <Compile Include="$(CommonPath)\System\Net\ByteOrder.cs">
       <Link>ProductionCode\Common\System\Net\ByteOrder.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\InternalException.cs" >
+    <Compile Include="$(CommonPath)\System\Net\InternalException.cs">
       <Link>ProductionCode\Common\System\Net\InternalException.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\IPAddressParserStatics.cs" >
+    <Compile Include="$(CommonPath)\System\Net\IPAddressParserStatics.cs">
       <Link>ProductionCode\Common\System\Net\IPAddressParserStatics.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\SocketAddress.cs" >
+    <Compile Include="$(CommonPath)\System\Net\SocketAddress.cs">
       <Link>Common\System\Net\SocketAddress.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\TcpValidationHelpers.cs" >
+    <Compile Include="$(CommonPath)\System\Net\TcpValidationHelpers.cs">
       <Link>ProductionCode\Common\System\Net\TcpValidationHelpers.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\NotImplemented.cs" >
+    <Compile Include="$(CommonPath)\System\NotImplemented.cs">
       <Link>ProductionCode\Common\System\NotImplemented.cs</Link>
     </Compile>
-
-    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.ErrorCodes.cs" >
+    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.ErrorCodes.cs">
       <Link>ProductionCode\Common\Interop\Windows\Winsock\Interop.ErrorCodes.cs</Link>
     </Compile>
   </ItemGroup>
-
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
-    <Compile Include="..\..\src\System\Net\IPAddressPal.Windows.cs" >
+    <Compile Include="..\..\src\System\Net\IPAddressPal.Windows.cs">
       <Link>ProductionCode\System\Net\IPAddressPal.Windows.cs</Link>
     </Compile>
-    <Compile Include="..\..\src\System\Net\SocketException.Windows.cs" >
+    <Compile Include="..\..\src\System\Net\SocketException.Windows.cs">
       <Link>ProductionCode\System\Net\SocketException.Windows.cs</Link>
     </Compile>
-
-    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeLocalAllocHandle.cs" >
+    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeLocalAllocHandle.cs">
       <Link>Common\Microsoft\Win32\SafeHandles\SafeLocalAllocHandle.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\SocketAddressPal.Windows.cs" >
+    <Compile Include="$(CommonPath)\System\Net\SocketAddressPal.Windows.cs">
       <Link>Common\System\Net\SocketAddressPal.Windows.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\NetworkInformation\HostInformationPal.Windows.cs" >
+    <Compile Include="$(CommonPath)\System\Net\NetworkInformation\HostInformationPal.Windows.cs">
       <Link>Common\System\Net\NetworkInformation\HostInformationPal.Windows.cs</Link>
     </Compile>
-
-    <Compile Include="$(CommonPath)\Interop\Windows\IpHlpApi\Interop.ErrorCodes.cs" >
+    <Compile Include="$(CommonPath)\Interop\Windows\IpHlpApi\Interop.ErrorCodes.cs">
       <Link>Common\Interop\Windows\IpHlpApi\Interop.ErrorCodes.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\IpHlpApi\Interop.FIXED_INFO.cs" >
+    <Compile Include="$(CommonPath)\Interop\Windows\IpHlpApi\Interop.FIXED_INFO.cs">
       <Link>Common\Interop\Windows\IpHlpApi\Interop.FIXED_INFO.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\IpHlpApi\Interop.GetNetworkParams.cs" >
+    <Compile Include="$(CommonPath)\Interop\Windows\IpHlpApi\Interop.GetNetworkParams.cs">
       <Link>Common\Interop\Windows\IpHlpApi\Interop.GetNetworkParams.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\IpHlpApi\Interop.IP_ADDR_STRING.cs" >
+    <Compile Include="$(CommonPath)\Interop\Windows\IpHlpApi\Interop.IP_ADDR_STRING.cs">
       <Link>Common\Interop\Windows\IpHlpApi\Interop.IP_ADDR_STRING.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs" >
+    <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
       <Link>ProductionCode\Common\Interop\Windows\Interop.Libraries.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore_obsolete\Interop.LocalAlloc.cs" >
-      <Link>Common\Interop\Windows\mincore_obsolete\Interop.LocalAlloc.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.LocalAlloc.cs">
+      <Link>Common\Interop\Windows\kernel32\Interop.LocalAlloc.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore_obsolete\Interop.LocalAlloc.Constants.cs">
-      <Link>Common\Interop\Windows\mincore_obsolete\Interop.LocalAlloc.Constants.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.LocalAlloc.Constants.cs">
+      <Link>Common\Interop\Windows\kernel32\Interop.LocalAlloc.Constants.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore_obsolete\Interop.LocalFree.cs" >
-      <Link>Common\Interop\Windows\mincore_obsolete\Interop.LocalFree.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.LocalFree.cs">
+      <Link>Common\Interop\Windows\kernel32\Interop.LocalFree.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\NtDll\Interop.NtStatus.cs" >
+    <Compile Include="$(CommonPath)\Interop\Windows\NtDll\Interop.NtStatus.cs">
       <Link>ProductionCode\Common\Interop\Windows\NtDll\Interop.NtStatus.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\NtDll\Interop.RtlIpv4AddressToStringEx.cs" >
+    <Compile Include="$(CommonPath)\Interop\Windows\NtDll\Interop.RtlIpv4AddressToStringEx.cs">
       <Link>ProductionCode\Common\Interop\Windows\NtDll\Interop.RtlIpv4AddressToStringEx.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\NtDll\Interop.RtlIpv4StringToAddressEx.cs" >
+    <Compile Include="$(CommonPath)\Interop\Windows\NtDll\Interop.RtlIpv4StringToAddressEx.cs">
       <Link>ProductionCode\Common\Interop\Windows\NtDll\Interop.RtlIpv4StringToAddressEx.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\NtDll\Interop.RtlIpv6AddressToStringEx.cs" >
+    <Compile Include="$(CommonPath)\Interop\Windows\NtDll\Interop.RtlIpv6AddressToStringEx.cs">
       <Link>ProductionCode\Common\Interop\Windows\NtDll\Interop.RtlIpv6AddressToStringEx.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\NtDll\Interop.RtlIpv6StringToAddressEx.cs" >
+    <Compile Include="$(CommonPath)\Interop\Windows\NtDll\Interop.RtlIpv6StringToAddressEx.cs">
       <Link>ProductionCode\Common\Interop\Windows\NtDll\Interop.RtlIpv6StringToAddressEx.cs</Link>
     </Compile>
   </ItemGroup>
-  
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
-    <Compile Include="..\..\src\System\Net\IPAddressPal.Unix.cs" >
+    <Compile Include="..\..\src\System\Net\IPAddressPal.Unix.cs">
       <Link>ProductionCode\System\Net\IPAddressPal.Unix.cs</Link>
     </Compile>
-    <Compile Include="..\..\src\System\Net\SocketException.Unix.cs" >
+    <Compile Include="..\..\src\System\Net\SocketException.Unix.cs">
       <Link>ProductionCode\System\Net\SocketException.Unix.cs</Link>
     </Compile>
-
-    <Compile Include="$(CommonPath)\System\Net\NetworkInformation\HostInformationPal.Unix.cs" >
+    <Compile Include="$(CommonPath)\System\Net\NetworkInformation\HostInformationPal.Unix.cs">
       <Link>Common\System\Net\NetworkInformation\HostInformationPal.Unix.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\SocketAddressPal.Unix.cs" >
+    <Compile Include="$(CommonPath)\System\Net\SocketAddressPal.Unix.cs">
       <Link>Common\System\Net\SocketAddressPal.Unix.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Sockets\SocketErrorPal.Unix.cs" >
+    <Compile Include="$(CommonPath)\System\Net\Sockets\SocketErrorPal.Unix.cs">
       <Link>Common\System\Net\Sockets\SocketErrorPal.Unix.cs</Link>
     </Compile>
-
-    <Compile Include="$(CommonPath)\Interop\Interop.CheckedAccess.cs" >
+    <Compile Include="$(CommonPath)\Interop\Interop.CheckedAccess.cs">
       <Link>ProductionCode\Common\Interop\Interop.CheckedAccess.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\Interop.Errors.cs" >
+    <Compile Include="$(CommonPath)\Interop\Unix\Interop.Errors.cs">
       <Link>ProductionCode\Common\Interop\Unix\Interop.Errors.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs" >
+    <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
       <Link>ProductionCode\Common\Interop\Unix\Interop.Libraries.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetDomainName.cs" >
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetDomainName.cs">
       <Link>ProductionCode\Common\Interop\Unix\System.Native\Interop.GetDomainName.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetHostName.cs" >
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetHostName.cs">
       <Link>ProductionCode\Common\Interop\Unix\System.Native\Interop.GetHostName.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetNameInfo.cs" >
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetNameInfo.cs">
       <Link>ProductionCode\Common\Interop\Unix\System.Native\Interop.GetNameInfo.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.HostEntry.cs">
@@ -185,10 +171,5 @@
       <Link>ProductionCode\Common\Interop\Unix\System.Native\Interop.SocketAddress.cs</Link>
     </Compile>
   </ItemGroup>
-
-  <ItemGroup>
-    <None Include="project.json" />
-  </ItemGroup>
-
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

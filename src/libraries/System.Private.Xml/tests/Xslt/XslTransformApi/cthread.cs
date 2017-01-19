@@ -4,7 +4,6 @@
 
 //ArrayList
 
-using System;
 using System.Reflection;
 using System.Threading;
 using Xunit;
@@ -128,7 +127,6 @@ namespace System.Xml.Tests
 
         public virtual void Abort()
         {
-            //Internal.Abort();
             throw new NotImplementedException();
         }
 
@@ -174,9 +172,6 @@ namespace System.Xml.Tests
                             //case TEST_SKIPPED:
                         _output.WriteLine(eTest.Message);
                         return eResult; //were done
-
-                        //case TEST_WARNING:
-                        //    break;
                 };
             }
 

@@ -15,7 +15,7 @@ namespace System.IO
         // This is an internal object extending TaskCompletionSource with fields
         // for all of the relevant data necessary to complete the IO operation.
         // This is used by IOCallback and all of the async methods.
-        unsafe private sealed class FileStreamCompletionSource : TaskCompletionSource<int>
+        private unsafe sealed class FileStreamCompletionSource : TaskCompletionSource<int>
         {
             private const long NoResult = 0;
             private const long ResultSuccess = (long)1 << 32;
@@ -178,7 +178,7 @@ namespace System.IO
                 if (result == ResultError)
                 {
                     int errorCode = unchecked((int)(packedResult & uint.MaxValue));
-                    if (errorCode == Interop.mincore.Errors.ERROR_OPERATION_ABORTED)
+                    if (errorCode == Interop.Errors.ERROR_OPERATION_ABORTED)
                     {
                         TrySetCanceled(_cancellationToken.IsCancellationRequested ? _cancellationToken : new CancellationToken(true));
                     }
@@ -204,13 +204,13 @@ namespace System.IO
 
                 // If the handle is still valid, attempt to cancel the IO
                 if (!completionSource._stream._fileHandle.IsInvalid && 
-                    !Interop.mincore.CancelIoEx(completionSource._stream._fileHandle, completionSource._overlapped))
+                    !Interop.Kernel32.CancelIoEx(completionSource._stream._fileHandle, completionSource._overlapped))
                 {
                     int errorCode = Marshal.GetLastWin32Error();
 
                     // ERROR_NOT_FOUND is returned if CancelIoEx cannot find the request to cancel.
                     // This probably means that the IO operation has completed.
-                    if (errorCode != Interop.mincore.Errors.ERROR_NOT_FOUND)
+                    if (errorCode != Interop.Errors.ERROR_NOT_FOUND)
                     {
                         throw Win32Marshal.GetExceptionForWin32Error(errorCode);
                     }

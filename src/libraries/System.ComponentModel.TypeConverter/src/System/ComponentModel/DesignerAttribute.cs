@@ -17,8 +17,6 @@ namespace System.ComponentModel
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Interface, AllowMultiple = true, Inherited = true)]
     public sealed class DesignerAttribute : Attribute
     {
-        private readonly string _designerTypeName;
-        private readonly string _designerBaseTypeName;
         private string _typeId;
 
         /// <summary>
@@ -30,9 +28,9 @@ namespace System.ComponentModel
         public DesignerAttribute(string designerTypeName)
         {
             string temp = designerTypeName.ToUpper(CultureInfo.InvariantCulture);
-            Debug.Assert(temp.IndexOf(".DLL") == -1, "Came across: " + designerTypeName + " . Please remove the .dll extension");
-            _designerTypeName = designerTypeName;
-            _designerBaseTypeName = typeof(IDesigner).FullName;
+            Debug.Assert(temp.IndexOf(".DLL") == -1, $"Came across: {designerTypeName}. Please remove the .dll extension");
+            DesignerTypeName = designerTypeName;
+            DesignerBaseTypeName = typeof(IDesigner).FullName;
         }
 
         /// <summary>
@@ -43,8 +41,8 @@ namespace System.ComponentModel
         /// </summary>
         public DesignerAttribute(Type designerType)
         {
-            _designerTypeName = designerType.AssemblyQualifiedName;
-            _designerBaseTypeName = typeof(IDesigner).FullName;
+            DesignerTypeName = designerType.AssemblyQualifiedName;
+            DesignerBaseTypeName = typeof(IDesigner).FullName;
         }
 
         /// <summary>
@@ -56,9 +54,9 @@ namespace System.ComponentModel
         public DesignerAttribute(string designerTypeName, string designerBaseTypeName)
         {
             string temp = designerTypeName.ToUpper(CultureInfo.InvariantCulture);
-            Debug.Assert(temp.IndexOf(".DLL") == -1, "Came across: " + designerTypeName + " . Please remove the .dll extension");
-            _designerTypeName = designerTypeName;
-            _designerBaseTypeName = designerBaseTypeName;
+            Debug.Assert(temp.IndexOf(".DLL") == -1, $"Came across: {designerTypeName}. Please remove the .dll extension");
+            DesignerTypeName = designerTypeName;
+            DesignerBaseTypeName = designerBaseTypeName;
         }
 
         /// <summary>
@@ -70,9 +68,9 @@ namespace System.ComponentModel
         public DesignerAttribute(string designerTypeName, Type designerBaseType)
         {
             string temp = designerTypeName.ToUpper(CultureInfo.InvariantCulture);
-            Debug.Assert(temp.IndexOf(".DLL") == -1, "Came across: " + designerTypeName + " . Please remove the .dll extension");
-            _designerTypeName = designerTypeName;
-            _designerBaseTypeName = designerBaseType.AssemblyQualifiedName;
+            Debug.Assert(temp.IndexOf(".DLL") == -1, $"Came across: {designerTypeName}. Please remove the .dll extension");
+            DesignerTypeName = designerTypeName;
+            DesignerBaseTypeName = designerBaseType.AssemblyQualifiedName;
         }
 
         /// <summary>
@@ -83,8 +81,8 @@ namespace System.ComponentModel
         /// </summary>
         public DesignerAttribute(Type designerType, Type designerBaseType)
         {
-            _designerTypeName = designerType.AssemblyQualifiedName;
-            _designerBaseTypeName = designerBaseType.AssemblyQualifiedName;
+            DesignerTypeName = designerType.AssemblyQualifiedName;
+            DesignerBaseTypeName = designerBaseType.AssemblyQualifiedName;
         }
 
         /// <summary>
@@ -93,26 +91,14 @@ namespace System.ComponentModel
         ///       the name of the base type of this designer.
         ///    </para>
         /// </summary>
-        public string DesignerBaseTypeName
-        {
-            get
-            {
-                return _designerBaseTypeName;
-            }
-        }
+        public string DesignerBaseTypeName { get; }
 
         /// <summary>
         ///    <para>
         ///       Gets the name of the designer type associated with this designer attribute.
         ///    </para>
         /// </summary>
-        public string DesignerTypeName
-        {
-            get
-            {
-                return _designerTypeName;
-            }
-        }
+        public string DesignerTypeName { get; }
 
         /// <internalonly/>
         /// <summary>
@@ -130,7 +116,7 @@ namespace System.ComponentModel
             {
                 if (_typeId == null)
                 {
-                    string baseType = _designerBaseTypeName;
+                    string baseType = DesignerBaseTypeName;
                     int comma = baseType.IndexOf(',');
                     if (comma != -1)
                     {
@@ -151,12 +137,12 @@ namespace System.ComponentModel
 
             DesignerAttribute other = obj as DesignerAttribute;
 
-            return (other != null) && other._designerBaseTypeName == _designerBaseTypeName && other._designerTypeName == _designerTypeName;
+            return (other != null) && other.DesignerBaseTypeName == DesignerBaseTypeName && other.DesignerTypeName == DesignerTypeName;
         }
 
         public override int GetHashCode()
         {
-            return _designerTypeName.GetHashCode() ^ _designerBaseTypeName.GetHashCode();
+            return DesignerTypeName.GetHashCode() ^ DesignerBaseTypeName.GetHashCode();
         }
     }
 }

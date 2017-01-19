@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using System.Reflection;
 using Xunit;
 
 namespace System.Linq.Expressions.Tests
@@ -33,7 +32,7 @@ namespace System.Linq.Expressions.Tests
                 return _dict.TryGetValue(node, out result) ? result : base.Visit(node);
             }
         }
-        
+
         [Fact]
         public void RewriteObjectTest()
         {
@@ -70,7 +69,7 @@ namespace System.Linq.Expressions.Tests
             var visitor = new IndexVisitor(expr, expr.Object, newArguments);
             IndexExpression expected = Expression.MakeIndex(expr.Object, expr.Indexer, newArguments);
             var actual = (IndexExpression) visitor.Visit(expr);
-            
+
             IndexExpressionHelpers.AssertEqual(expected, actual);
 
             // Invoke to check expression.

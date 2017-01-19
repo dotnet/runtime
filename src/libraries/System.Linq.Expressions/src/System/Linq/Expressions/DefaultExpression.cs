@@ -46,12 +46,12 @@ namespace System.Linq.Expressions
         /// Creates an empty expression that has <see cref="Void"/> type.
         /// </summary>
         /// <returns>
-        /// A <see cref="DefaultExpression"/> that has the <see cref="NodeType"/> property equal to 
+        /// A <see cref="DefaultExpression"/> that has the <see cref="NodeType"/> property equal to
         /// <see cref="ExpressionType.Default"/> and the <see cref="Type"/> property set to <see cref="Void"/>.
         /// </returns>
         public static DefaultExpression Empty()
         {
-            return new DefaultExpression(typeof(void)); // Create new object each time for different identity 
+            return new DefaultExpression(typeof(void)); // Create new object each time for different identity
         }
 
         /// <summary>
@@ -59,7 +59,7 @@ namespace System.Linq.Expressions
         /// </summary>
         /// <param name="type">A <see cref="Type"/> to set the <see cref="Type"/> property equal to.</param>
         /// <returns>
-        /// A <see cref="DefaultExpression"/> that has the <see cref="NodeType"/> property equal to 
+        /// A <see cref="DefaultExpression"/> that has the <see cref="NodeType"/> property equal to
         /// <see cref="ExpressionType.Default"/> and the <see cref="Type"/> property set to the specified type.
         /// </returns>
         public static DefaultExpression Default(Type type)

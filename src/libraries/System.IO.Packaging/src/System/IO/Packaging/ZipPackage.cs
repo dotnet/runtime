@@ -449,7 +449,7 @@ namespace System.IO.Packaging
         }
 
         // convert from Zip CompressionMethodEnum and DeflateOptionEnum to Metro CompressionOption 
-        static private CompressionOption GetCompressionOptionFromZipFileInfo(ZipArchiveEntry zipFileInfo)
+        private static CompressionOption GetCompressionOptionFromZipFileInfo(ZipArchiveEntry zipFileInfo)
         {
             // Note: we can't determine compression method / level from the ZipArchiveEntry.
             CompressionOption result = CompressionOption.Normal;

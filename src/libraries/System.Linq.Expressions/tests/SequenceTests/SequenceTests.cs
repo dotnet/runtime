@@ -17,10 +17,10 @@ namespace System.Linq.Expressions.Tests
         {
             int? i = 10;
             double? j = 23.89;
-            var left = Expression.Constant(i, typeof(Nullable<int>));
-            var right = Expression.Constant(j, typeof(Nullable<double>));
+            ConstantExpression left = Expression.Constant(i, typeof(Nullable<int>));
+            ConstantExpression right = Expression.Constant(j, typeof(Nullable<double>));
             Expression<Func<int, double?>> conversion = (int k) => (double?)i;
-            var v = Expression.MakeBinary(ExpressionType.Coalesce, left, right, false, null, conversion);
+            BinaryExpression v = Expression.MakeBinary(ExpressionType.Coalesce, left, right, false, null, conversion);
             Assert.NotNull(v);
         }
 
@@ -556,7 +556,7 @@ namespace System.Linq.Expressions.Tests
             CheckMethod("Min", Expression.Call(typeof(Queryable), "Min", taCust, query));
             CheckMethod("Min", Expression.Call(typeof(Queryable), "Min", taCustString, query, selName));
             CheckMethod("OfType", Expression.Call(typeof(Queryable), "OfType", new Type[] { typeof(object) }, query));
-            var ordered = Expression.Call(typeof(Queryable), "OrderBy", taCustString, query, selName);
+            MethodCallExpression ordered = Expression.Call(typeof(Queryable), "OrderBy", taCustString, query, selName);
             CheckMethod("OrderBy", ordered);
             ordered = Expression.Call(typeof(Queryable), "OrderByDescending", taCustString, query, selName);
             CheckMethod("OrderByDescending", ordered);
@@ -594,8 +594,8 @@ namespace System.Linq.Expressions.Tests
 
         private static void ConstructAggregates<T>(T value)
         {
-            var values = Expression.Constant(new T[] { }.AsQueryable());
-            var custs = Expression.Constant(new NWindProxy.Customer[] { }.AsQueryable());
+            ConstantExpression values = Expression.Constant(new T[] { }.AsQueryable());
+            ConstantExpression custs = Expression.Constant(new NWindProxy.Customer[] { }.AsQueryable());
             Expression<Func<NWindProxy.Customer, T>> cvalue = c => value;
             Type[] taCust = new Type[] { typeof(NWindProxy.Customer) };
             CheckMethod("Sum", Expression.Call(typeof(Queryable), "Sum", null, values));
@@ -678,9 +678,9 @@ namespace System.Linq.Expressions.Tests
         public static void ObjectCallOnValueType(bool useInterpreter)
         {
             object st_local = new TC1();
-            var mi = typeof(object).GetMethod("ToString");
-            var lam = Expression.Lambda<Func<string>>(Expression.Call(Expression.Constant(st_local), mi, null), null);
-            var f = lam.Compile(useInterpreter);
+            MethodInfo mi = typeof(object).GetMethod("ToString");
+            Expression<Func<string>> lam = Expression.Lambda<Func<string>>(Expression.Call(Expression.Constant(st_local), mi, null), null);
+            Func<string> f = lam.Compile(useInterpreter);
         }
 
         [Theory]
@@ -717,7 +717,7 @@ namespace System.Linq.Expressions.Tests
             Assert.NotNull(f2());
             Assert.Equal(f2().Value.Name, "lhs");
 
-            var constant = Expression.Constant(1.0, typeof(double));
+            ConstantExpression constant = Expression.Constant(1.0, typeof(double));
             Assert.Throws<ArgumentException>(null, () => Expression.Lambda<Func<double?>>(constant, null));
         }
 
@@ -802,17 +802,17 @@ namespace System.Linq.Expressions.Tests
         public static void Writeback(bool useInterpreter)
         {
             CustomerWriteBack a = new CustomerWriteBack();
-            var t = typeof(CustomerWriteBack);
-            var mi = t.GetMethod("Func0");
-            var pi = t.GetMethod("get_X");
-            var piCust = t.GetMethod("get_Cust");
-            var miCust = t.GetMethod("ComputeCust");
+            Type t = typeof(CustomerWriteBack);
+            MethodInfo mi = t.GetMethod("Func0");
+            MethodInfo pi = t.GetMethod("get_X");
+            MethodInfo piCust = t.GetMethod("get_Cust");
+            MethodInfo miCust = t.GetMethod("ComputeCust");
 
             Expression<Func<int>> e1 =
                     Expression.Lambda<Func<int>>(
                         Expression.Call(typeof(CustomerWriteBack).GetMethod("Funct1"), new[] { Expression.Property(null, typeof(CustomerWriteBack).GetProperty("Prop")) }),
                         null);
-            var f1 = e1.Compile(useInterpreter);
+            Func<int> f1 = e1.Compile(useInterpreter);
             int result = f1();
             Assert.Equal(5, result);
 
@@ -823,8 +823,8 @@ namespace System.Linq.Expressions.Tests
                      new Expression[] { Expression.Property(Expression.Constant(a, typeof(CustomerWriteBack)), pi) }
                      ),
                  null);
-            var f = e.Compile(useInterpreter);
-            var r = f();
+            Func<string> f = e.Compile(useInterpreter);
+            string r = f();
             Assert.Equal(a.m_x, "Changed");
 
             Expression<Func<Customer>> e2 = Expression.Lambda<Func<Customer>>(
@@ -834,8 +834,8 @@ namespace System.Linq.Expressions.Tests
                      new Expression[] { Expression.Property(Expression.Constant(a, typeof(CustomerWriteBack)), piCust) }
                      ),
                  null);
-            var f2 = e2.Compile(useInterpreter);
-            var r2 = f2();
+            Func<Customer> f2 = e2.Compile(useInterpreter);
+            Customer r2 = f2();
             Assert.True(a.Cust.zip == 90008 && a.Cust.name == "SreeCho");
         }
 
@@ -869,7 +869,7 @@ namespace System.Linq.Expressions.Tests
 
             Expression<Func<Complex, Complex>> testExpr = (x) => +x;
             Assert.Equal(testExpr.ToString(), "x => +x");
-            var v = testExpr.Compile(useInterpreter);
+            Func<Complex, Complex> v = testExpr.Compile(useInterpreter);
         }
 
         private struct S
@@ -887,8 +887,8 @@ namespace System.Linq.Expressions.Tests
 
             Expression<Func<int?, int?, bool?>> e = Expression.Lambda<Func<int?, int?, bool?>>(
                 Expression.GreaterThan(p1, p2, true, null), new ParameterExpression[] { p1, p2 });
-            var f = e.Compile(useInterpreter);
-            var r = f(x, y);
+            Func<int?, int?, bool?> f = e.Compile(useInterpreter);
+            bool? r = f(x, y);
             Assert.True(r.Value);
 
             Expression<Func<int?, int?, bool?>> e1 = Expression.Lambda<Func<int?, int?, bool?>>(
@@ -929,7 +929,7 @@ namespace System.Linq.Expressions.Tests
                     true,
                     null),
                 null);
-            var f6 = e6.Compile(useInterpreter);
+            Func<bool?> f6 = e6.Compile(useInterpreter);
             Assert.Null(f6());
         }
 
@@ -970,7 +970,7 @@ namespace System.Linq.Expressions.Tests
         [ClassData(typeof(CompilationTypes))]
         public static void NewExpressionwithMemberAssignInit(bool useInterpreter)
         {
-            var s = "Bad Mojo";
+            string s = "Bad Mojo";
             int val = 10;
 
             ConstructorInfo constructor = typeof(TestClass).GetConstructor(new Type[] { typeof(string), typeof(int) });
@@ -1442,7 +1442,7 @@ namespace System.Linq.Expressions.Tests
                 /*
                  * needs more thought about what should happen.. these have undefined runtime behavior.
                  * results depend on whether values are in registers or locals, debug or retail etc.
-                 * 
+                 *
                 float fmin = float.MinValue;
                 float fmax = float.MaxValue;
                 double dmin = double.MinValue;
@@ -1500,7 +1500,7 @@ namespace System.Linq.Expressions.Tests
         public static void ShiftWithMismatchedNulls(bool useInterpreter)
         {
             Expression<Func<byte?, int, int?>> e = (byte? b, int i) => (byte?)(b << i);
-            var f = e.Compile(useInterpreter);
+            Func<byte?, int, int?> f = e.Compile(useInterpreter);
             Assert.Equal(20, f(5, 2));
         }
 
@@ -1538,8 +1538,8 @@ namespace System.Linq.Expressions.Tests
         public static void MixedTypeNullableOps(bool useInterpreter)
         {
             Expression<Func<decimal, int?, decimal?>> e = (d, i) => d + i;
-            var f = e.Compile(useInterpreter);
-            var result = f(1.0m, 4);
+            Func<decimal, int?, decimal?> f = e.Compile(useInterpreter);
+            decimal? result = f(1.0m, 4);
             Debug.WriteLine(result);
         }
 
@@ -1548,7 +1548,7 @@ namespace System.Linq.Expressions.Tests
         public static void NullGuidConstant(bool useInterpreter)
         {
             Expression<Func<Guid?, bool>> f2 = g2 => g2 != null;
-            var d2 = f2.Compile(useInterpreter);
+            Func<Guid?, bool> d2 = f2.Compile(useInterpreter);
             Assert.True(d2(Guid.NewGuid()));
             Assert.False(d2(null));
         }
@@ -1563,7 +1563,7 @@ namespace System.Linq.Expressions.Tests
                     Expression.Constant(1, typeof(int?))
                     ));
 
-            var result = f.Compile(useInterpreter)();
+            int? result = f.Compile(useInterpreter)();
             Assert.False(result.HasValue);
         }
 
@@ -1737,7 +1737,7 @@ namespace System.Linq.Expressions.Tests
         public static void CallCompiledLambda(bool useInterpreter)
         {
             Expression<Func<int, int>> f = x => x + 1;
-            var compiled = f.Compile(useInterpreter);
+            Func<int, int> compiled = f.Compile(useInterpreter);
             Expression<Func<int>> lambda = () => compiled(5);
             Func<int> d = lambda.Compile(useInterpreter);
             Assert.Equal(6, d());
@@ -1748,7 +1748,7 @@ namespace System.Linq.Expressions.Tests
         public static void CallCompiledLambdaWithTypeMissing(bool useInterpreter)
         {
             Expression<Func<object, bool>> f = x => x == Type.Missing;
-            var compiled = f.Compile(useInterpreter);
+            Func<object, bool> compiled = f.Compile(useInterpreter);
             Expression<Func<object, bool>> lambda = x => compiled(x);
             Func<object, bool> d = lambda.Compile(useInterpreter);
             Assert.Equal(true, d(Type.Missing));
@@ -1829,7 +1829,7 @@ namespace System.Linq.Expressions.Tests
         public static void StaticMethodCall(bool useInterpreter)
         {
             Expression<Func<int, int, int>> f = (a, b) => Math.Max(a, b);
-            var d = f.Compile(useInterpreter);
+            Func<int, int, int> d = f.Compile(useInterpreter);
             Assert.Equal(4, d(3, 4));
         }
 
@@ -1839,7 +1839,7 @@ namespace System.Linq.Expressions.Tests
         {
             Foo foo = new Foo();
             Expression<Func<int, int>> f = (a) => foo.Zip(a);
-            var d = f.Compile(useInterpreter);
+            Func<int, int> d = f.Compile(useInterpreter);
             Assert.Equal(225, d(15));
         }
 
@@ -1849,7 +1849,7 @@ namespace System.Linq.Expressions.Tests
         {
             Foo bar = new Bar();
             Expression<Func<Foo, string>> f = foo => foo.Virt();
-            var d = f.Compile(useInterpreter);
+            Func<Foo, string> d = f.Compile(useInterpreter);
             Assert.Equal("Bar", d(bar));
         }
 
@@ -1858,7 +1858,7 @@ namespace System.Linq.Expressions.Tests
         public static void NestedLambda(bool useInterpreter)
         {
             Expression<Func<int, int>> f = (a) => M1(a, (b) => b * b);
-            var d = f.Compile(useInterpreter);
+            Func<int, int> d = f.Compile(useInterpreter);
             Assert.Equal(100, d(10));
         }
 
@@ -1867,7 +1867,7 @@ namespace System.Linq.Expressions.Tests
         public static void NestedLambdaWithOuterArg(bool useInterpreter)
         {
             Expression<Func<int, int>> f = (a) => M1(a + a, (b) => b * a);
-            var d = f.Compile(useInterpreter);
+            Func<int, int> d = f.Compile(useInterpreter);
             Assert.Equal(200, d(10));
         }
 
@@ -1876,7 +1876,7 @@ namespace System.Linq.Expressions.Tests
         public static void NestedExpressionLambda(bool useInterpreter)
         {
             Expression<Func<int, int>> f = (a) => M2(a, (b) => b * b);
-            var d = f.Compile(useInterpreter);
+            Func<int, int> d = f.Compile(useInterpreter);
             Assert.Equal(10, d(10));
         }
 
@@ -1885,7 +1885,7 @@ namespace System.Linq.Expressions.Tests
         public static void NestedExpressionLambdaWithOuterArg(bool useInterpreter)
         {
             Expression<Func<int, int>> f = (a) => M2(a, (b) => b * a);
-            var d = f.Compile(useInterpreter);
+            Func<int, int> d = f.Compile(useInterpreter);
             Assert.Equal(99, d(99));
         }
 
@@ -1894,7 +1894,7 @@ namespace System.Linq.Expressions.Tests
         public static void ArrayInitializedWithLiterals(bool useInterpreter)
         {
             Expression<Func<int[]>> f = () => new int[] { 1, 2, 3, 4, 5 };
-            var d = f.Compile(useInterpreter);
+            Func<int[]> d = f.Compile(useInterpreter);
             int[] v = d();
             Assert.Equal(5, v.Length);
         }
@@ -1905,7 +1905,7 @@ namespace System.Linq.Expressions.Tests
         {
             Foo foo = new Foo();
             Expression<Func<Foo[]>> f = () => new Foo[] { foo };
-            var d = f.Compile(useInterpreter);
+            Func<Foo[]> d = f.Compile(useInterpreter);
             Foo[] v = d();
             Assert.Equal(1, v.Length);
             Assert.Equal(foo, v[0]);
@@ -1916,7 +1916,7 @@ namespace System.Linq.Expressions.Tests
         public static void NullableAddition(bool useInterpreter)
         {
             Expression<Func<double?, double?>> f = (v) => v + v;
-            var d = f.Compile(useInterpreter);
+            Func<double?, double?> d = f.Compile(useInterpreter);
             Assert.Equal(20.0, d(10.0));
         }
 
@@ -1925,7 +1925,7 @@ namespace System.Linq.Expressions.Tests
         public static void NullableComparedToLiteral(bool useInterpreter)
         {
             Expression<Func<int?, bool>> f = (v) => v > 10;
-            var d = f.Compile(useInterpreter);
+            Func<int?, bool> d = f.Compile(useInterpreter);
             Assert.True(d(12));
             Assert.False(d(5));
             Assert.True(d(int.MaxValue));
@@ -1938,7 +1938,7 @@ namespace System.Linq.Expressions.Tests
         public static void NullableModuloLiteral(bool useInterpreter)
         {
             Expression<Func<double?, double?>> f = (v) => v % 10;
-            var d = f.Compile(useInterpreter);
+            Func<double?, double?> d = f.Compile(useInterpreter);
             Assert.Equal(5.0, d(15.0));
         }
 
@@ -1947,7 +1947,7 @@ namespace System.Linq.Expressions.Tests
         public static void ArrayIndexer(bool useInterpreter)
         {
             Expression<Func<int[], int, int>> f = (v, i) => v[i];
-            var d = f.Compile(useInterpreter);
+            Func<int[], int, int> d = f.Compile(useInterpreter);
             int[] ints = new[] { 1, 2, 3 };
             Assert.Equal(3, d(ints, 2));
         }
@@ -1957,7 +1957,7 @@ namespace System.Linq.Expressions.Tests
         public static void ConvertToNullableDouble(bool useInterpreter)
         {
             Expression<Func<int?, double?>> f = (v) => (double?)v;
-            var d = f.Compile(useInterpreter);
+            Func<int?, double?> d = f.Compile(useInterpreter);
             Assert.Equal(10.0, d(10));
         }
 
@@ -1966,7 +1966,7 @@ namespace System.Linq.Expressions.Tests
         public static void UnboxToInt(bool useInterpreter)
         {
             Expression<Func<object, int>> f = (a) => (int)a;
-            var d = f.Compile(useInterpreter);
+            Func<object, int> d = f.Compile(useInterpreter);
             Assert.Equal(5, d(5));
         }
 
@@ -1975,7 +1975,7 @@ namespace System.Linq.Expressions.Tests
         public static void TypeIs(bool useInterpreter)
         {
             Expression<Func<Foo, bool>> f = x => x is Foo;
-            var d = f.Compile(useInterpreter);
+            Func<Foo, bool> d = f.Compile(useInterpreter);
             Assert.True(d(new Foo()));
         }
 
@@ -1984,7 +1984,7 @@ namespace System.Linq.Expressions.Tests
         public static void TypeAs(bool useInterpreter)
         {
             Expression<Func<Foo, Bar>> f = x => x as Bar;
-            var d = f.Compile(useInterpreter);
+            Func<Foo, Bar> d = f.Compile(useInterpreter);
             Assert.Null(d(new Foo()));
             Assert.NotNull(d(new Bar()));
         }
@@ -1994,7 +1994,7 @@ namespace System.Linq.Expressions.Tests
         public static void Coalesce(bool useInterpreter)
         {
             Expression<Func<int?, int>> f = x => x ?? 5;
-            var d = f.Compile(useInterpreter);
+            Func<int?, int> d = f.Compile(useInterpreter);
             Assert.Equal(5, d(null));
             Assert.Equal(2, d(2));
         }
@@ -2004,7 +2004,7 @@ namespace System.Linq.Expressions.Tests
         public static void CoalesceRefTypes(bool useInterpreter)
         {
             Expression<Func<string, string>> f = x => x ?? "nil";
-            var d = f.Compile(useInterpreter);
+            Func<string, string> d = f.Compile(useInterpreter);
             Assert.Equal("nil", d(null));
             Assert.Equal("Not Nil", d("Not Nil"));
         }
@@ -2014,7 +2014,7 @@ namespace System.Linq.Expressions.Tests
         public static void MultiDimensionalArrayAccess(bool useInterpreter)
         {
             Expression<Func<int, int, int[,], int>> f = (x, y, a) => a[x, y];
-            var d = f.Compile(useInterpreter);
+            Func<int, int, int[,], int> d = f.Compile(useInterpreter);
             int[,] array = new int[2, 2] { { 0, 1 }, { 2, 3 } };
             Assert.Equal(3, d(1, 1, array));
         }
@@ -2024,7 +2024,7 @@ namespace System.Linq.Expressions.Tests
         public static void NewClassWithMemberIntializer(bool useInterpreter)
         {
             Expression<Func<int, ClassX>> f = v => new ClassX { A = v };
-            var d = f.Compile(useInterpreter);
+            Func<int, ClassX> d = f.Compile(useInterpreter);
             Assert.Equal(5, d(5).A);
         }
 
@@ -2033,7 +2033,7 @@ namespace System.Linq.Expressions.Tests
         public static void NewStructWithArgs(bool useInterpreter)
         {
             Expression<Func<int, StructZ>> f = v => new StructZ(v);
-            var d = f.Compile(useInterpreter);
+            Func<int, StructZ> d = f.Compile(useInterpreter);
             Assert.Equal(5, d(5).A);
         }
 
@@ -2042,7 +2042,7 @@ namespace System.Linq.Expressions.Tests
         public static void NewStructWithArgsAndMemberInitializer(bool useInterpreter)
         {
             Expression<Func<int, StructZ>> f = v => new StructZ(v) { A = v + 1 };
-            var d = f.Compile(useInterpreter);
+            Func<int, StructZ> d = f.Compile(useInterpreter);
             Assert.Equal(6, d(5).A);
         }
 
@@ -2051,7 +2051,7 @@ namespace System.Linq.Expressions.Tests
         public static void NewClassWithMemberIntializers(bool useInterpreter)
         {
             Expression<Func<int, ClassX>> f = v => new ClassX { A = v, B = v };
-            var d = f.Compile(useInterpreter);
+            Func<int, ClassX> d = f.Compile(useInterpreter);
             Assert.Equal(5, d(5).A);
             Assert.Equal(7, d(7).B);
         }
@@ -2061,7 +2061,7 @@ namespace System.Linq.Expressions.Tests
         public static void NewStructWithMemberIntializer(bool useInterpreter)
         {
             Expression<Func<int, StructX>> f = v => new StructX { A = v };
-            var d = f.Compile(useInterpreter);
+            Func<int, StructX> d = f.Compile(useInterpreter);
             Assert.Equal(5, d(5).A);
         }
 
@@ -2070,7 +2070,7 @@ namespace System.Linq.Expressions.Tests
         public static void NewStructWithMemberIntializers(bool useInterpreter)
         {
             Expression<Func<int, StructX>> f = v => new StructX { A = v, B = v };
-            var d = f.Compile(useInterpreter);
+            Func<int, StructX> d = f.Compile(useInterpreter);
             Assert.Equal(5, d(5).A);
             Assert.Equal(7, d(7).B);
         }
@@ -2080,7 +2080,7 @@ namespace System.Linq.Expressions.Tests
         public static void ListInitializer(bool useInterpreter)
         {
             Expression<Func<int, List<ClassY>>> f = x => new List<ClassY> { new ClassY { B = x } };
-            var d = f.Compile(useInterpreter);
+            Func<int, List<ClassY>> d = f.Compile(useInterpreter);
             List<ClassY> list = d(5);
             Assert.Equal(1, list.Count);
             Assert.Equal(5, list[0].B);
@@ -2091,7 +2091,7 @@ namespace System.Linq.Expressions.Tests
         public static void ListInitializerLong(bool useInterpreter)
         {
             Expression<Func<int, List<ClassY>>> f = x => new List<ClassY> { new ClassY { B = x }, new ClassY { B = x + 1 }, new ClassY { B = x + 2 } };
-            var d = f.Compile(useInterpreter);
+            Func<int, List<ClassY>> d = f.Compile(useInterpreter);
             List<ClassY> list = d(5);
             Assert.Equal(3, list.Count);
             Assert.Equal(5, list[0].B);
@@ -2104,7 +2104,7 @@ namespace System.Linq.Expressions.Tests
         public static void ListInitializerInferred(bool useInterpreter)
         {
             Expression<Func<int, List<ClassY>>> f = x => new List<ClassY> { new ClassY { B = x }, new ClassY { B = x + 1 }, new ClassY { B = x + 2 } };
-            var d = f.Compile(useInterpreter);
+            Func<int, List<ClassY>> d = f.Compile(useInterpreter);
             List<ClassY> list = d(5);
             Assert.Equal(3, list.Count);
             Assert.Equal(5, list[0].B);
@@ -2118,7 +2118,7 @@ namespace System.Linq.Expressions.Tests
         {
             Expression<Func<int, ClassX>> f =
                 v => new ClassX { A = v, B = v + 1, Ys = { new ClassY { B = v + 2 } } };
-            var d = f.Compile(useInterpreter);
+            Func<int, ClassX> d = f.Compile(useInterpreter);
             ClassX x = d(5);
             Assert.Equal(5, x.A);
             Assert.Equal(6, x.B);
@@ -2132,7 +2132,7 @@ namespace System.Linq.Expressions.Tests
         {
             Expression<Func<int, ClassX>> f =
                 v => new ClassX { A = v, B = v + 1, SYs = { new StructY { B = v + 2 } } };
-            var d = f.Compile(useInterpreter);
+            Func<int, ClassX> d = f.Compile(useInterpreter);
             ClassX x = d(5);
             Assert.Equal(5, x.A);
             Assert.Equal(6, x.B);
@@ -2146,7 +2146,7 @@ namespace System.Linq.Expressions.Tests
         {
             Expression<Func<int, ClassX>> f =
                 v => new ClassX { A = v, B = v + 1, Y = { B = v + 2 } };
-            var d = f.Compile(useInterpreter);
+            Func<int, ClassX> d = f.Compile(useInterpreter);
             ClassX x = d(5);
             Assert.Equal(5, x.A);
             Assert.Equal(6, x.B);
@@ -2159,7 +2159,7 @@ namespace System.Linq.Expressions.Tests
         {
             Expression<Func<int, StructX>> f =
                 v => new StructX { A = v, B = v + 1, Ys = { new ClassY { B = v + 2 } } };
-            var d = f.Compile(useInterpreter);
+            Func<int, StructX> d = f.Compile(useInterpreter);
             StructX x = d(5);
             Assert.Equal(5, x.A);
             Assert.Equal(6, x.B);
@@ -2173,7 +2173,7 @@ namespace System.Linq.Expressions.Tests
         {
             Expression<Func<int, StructX>> f =
                 v => new StructX { A = v, B = v + 1, SY = new StructY { B = v + 2 } };
-            var d = f.Compile(useInterpreter);
+            Func<int, StructX> d = f.Compile(useInterpreter);
             StructX x = d(5);
             Assert.Equal(5, x.A);
             Assert.Equal(6, x.B);
@@ -2200,12 +2200,12 @@ namespace System.Linq.Expressions.Tests
         {
             // Generate the expression:
             //   v => new T { A = v, B = v + 1, SYP = { B = v + 2 } };
-            var parameterV = Expression.Parameter(typeof(int), "v");
+            ParameterExpression parameterV = Expression.Parameter(typeof(int), "v");
             return
                 Expression.Lambda<Func<int, T>>(
                     // new T { A = v, B= v + 1, SYP = { B = v + 2 } }
                     Expression.MemberInit(
-                        // new T 
+                        // new T
                         Expression.New(typeof(T).GetConstructor(new Type[0])),
 
                         // { A = v, B= v + 1, SYP = { B = v + 2 } };
@@ -2216,7 +2216,7 @@ namespace System.Linq.Expressions.Tests
                             // B = v + 1
                             Expression.Bind(typeof(T).GetField("B"), Expression.Add(parameterV, Expression.Constant(1, typeof(int)))),
 
-                            // SYP = { B = v + 2 } 
+                            // SYP = { B = v + 2 }
                             Expression.MemberBind(
                                 typeof(T).GetMethod("get_SYP"),
                                 new MemberBinding[] {
@@ -2243,11 +2243,11 @@ namespace System.Linq.Expressions.Tests
         {
             int[] values = new[] { 1, 2, 3, 4, 5 };
 
-            var q = from v in values.AsQueryable()
+            IQueryable<int> q = from v in values.AsQueryable()
                     where v == 100 && BadJuju(v) == 10
                     select v;
 
-            var list = q.ToList();
+            List<int> list = q.ToList();
             Assert.Equal(0, list.Count);
         }
 
@@ -2256,11 +2256,11 @@ namespace System.Linq.Expressions.Tests
         {
             int[] values = new[] { 1, 2, 3, 4, 5 };
 
-            var q = from v in values.AsQueryable()
+            IQueryable<int> q = from v in values.AsQueryable()
                     where v != 100 || BadJuju(v) == 10
                     select v;
 
-            var list = q.ToList();
+            List<int> list = q.ToList();
             Assert.Equal(values.Length, list.Count);
         }
 
@@ -2431,9 +2431,9 @@ namespace System.Linq.Expressions.Tests
         [ClassData(typeof(CompilationTypes))]
         public static void UninitializedEnumOut(bool useInterpreter)
         {
-            var x = Expression.Variable(typeof(MyEnum), "x");
+            ParameterExpression x = Expression.Variable(typeof(MyEnum), "x");
 
-            var expression = Expression.Lambda<Action>(
+            Expression<Action> expression = Expression.Lambda<Action>(
                             Expression.Block(
                             new[] { x },
                             Expression.Call(null, typeof(EnumOutLambdaClass).GetMethod("Bar"), x)));
@@ -2726,7 +2726,7 @@ namespace System.Linq.Expressions.Tests
             Assert.Null(TestBinary<decimal?, decimal?>(ExpressionType.Divide, 5, null, useInterpreter));
             Assert.Null(TestBinary<decimal?, decimal?>(ExpressionType.Divide, null, null, useInterpreter));
 
-            // Modulo 
+            // Modulo
             Assert.Equal(3, TestBinary<int, int>(ExpressionType.Modulo, 7, 4, useInterpreter));
             Assert.Equal(3, TestBinary<int?, int?>(ExpressionType.Modulo, 7, 4, useInterpreter));
             Assert.Null(TestBinary<int?, int?>(ExpressionType.Modulo, null, 4, useInterpreter));

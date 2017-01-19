@@ -10,30 +10,13 @@ namespace System.Linq.Expressions.Interpreter
 {
     internal abstract class OnesComplementInstruction : Instruction
     {
-        private static Instruction s_byte, s_sbyte, s_int16, s_int32, s_int64, s_UInt16, s_UInt32, s_UInt64;
+        private static Instruction s_SByte, s_Int16, s_Int32, s_Int64, s_Byte, s_UInt16, s_UInt32, s_UInt64;
 
         public override int ConsumedStack => 1;
         public override int ProducedStack => 1;
         public override string InstructionName => "OnesComplement";
 
         private OnesComplementInstruction() { }
-
-        private sealed class OnesComplementInt32 : OnesComplementInstruction
-        {
-            public override int Run(InterpretedFrame frame)
-            {
-                object obj = frame.Pop();
-                if (obj == null)
-                {
-                    frame.Push(null);
-                }
-                else
-                {
-                    frame.Push(ScriptingRuntimeHelpers.Int32ToObject(~(int)obj));
-                }
-                return +1;
-            }
-        }
 
         private sealed class OnesComplementInt16 : OnesComplementInstruction
         {
@@ -48,7 +31,24 @@ namespace System.Linq.Expressions.Interpreter
                 {
                     frame.Push((short)(~(short)obj));
                 }
-                return +1;
+                return 1;
+            }
+        }
+
+        private sealed class OnesComplementInt32 : OnesComplementInstruction
+        {
+            public override int Run(InterpretedFrame frame)
+            {
+                object obj = frame.Pop();
+                if (obj == null)
+                {
+                    frame.Push(null);
+                }
+                else
+                {
+                    frame.Push(~(int)obj);
+                }
+                return 1;
             }
         }
 
@@ -63,9 +63,9 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Push((long)(~(long)obj));
+                    frame.Push(~(long)obj);
                 }
-                return +1;
+                return 1;
             }
         }
 
@@ -82,7 +82,7 @@ namespace System.Linq.Expressions.Interpreter
                 {
                     frame.Push((ushort)(~(ushort)obj));
                 }
-                return +1;
+                return 1;
             }
         }
 
@@ -97,9 +97,9 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Push((uint)(~(uint)obj));
+                    frame.Push(~(uint)obj);
                 }
-                return +1;
+                return 1;
             }
         }
 
@@ -114,9 +114,9 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Push((ulong)(~(ulong)obj));
+                    frame.Push(~(ulong)obj);
                 }
-                return +1;
+                return 1;
             }
         }
 
@@ -133,7 +133,7 @@ namespace System.Linq.Expressions.Interpreter
                 {
                     frame.Push((byte)(~(byte)obj));
                 }
-                return +1;
+                return 1;
             }
         }
 
@@ -150,24 +150,23 @@ namespace System.Linq.Expressions.Interpreter
                 {
                     frame.Push((sbyte)(~(sbyte)obj));
                 }
-                return +1;
+                return 1;
             }
         }
 
         public static Instruction Create(Type type)
         {
             Debug.Assert(!type.GetTypeInfo().IsEnum);
-            switch (TypeUtils.GetNonNullableType(type).GetTypeCode())
+            switch (type.GetNonNullableType().GetTypeCode())
             {
-                case TypeCode.Byte: return s_byte ?? (s_byte = new OnesComplementByte());
-                case TypeCode.SByte: return s_sbyte ?? (s_sbyte = new OnesComplementSByte());
-                case TypeCode.Int16: return s_int16 ?? (s_int16 = new OnesComplementInt16());
-                case TypeCode.Int32: return s_int32 ?? (s_int32 = new OnesComplementInt32());
-                case TypeCode.Int64: return s_int64 ?? (s_int64 = new OnesComplementInt64());
+                case TypeCode.SByte: return s_SByte ?? (s_SByte = new OnesComplementSByte());
+                case TypeCode.Int16: return s_Int16 ?? (s_Int16 = new OnesComplementInt16());
+                case TypeCode.Int32: return s_Int32 ?? (s_Int32 = new OnesComplementInt32());
+                case TypeCode.Int64: return s_Int64 ?? (s_Int64 = new OnesComplementInt64());
+                case TypeCode.Byte: return s_Byte ?? (s_Byte = new OnesComplementByte());
                 case TypeCode.UInt16: return s_UInt16 ?? (s_UInt16 = new OnesComplementUInt16());
                 case TypeCode.UInt32: return s_UInt32 ?? (s_UInt32 = new OnesComplementUInt32());
                 case TypeCode.UInt64: return s_UInt64 ?? (s_UInt64 = new OnesComplementUInt64());
-
                 default:
                     throw Error.ExpressionNotSupportedForType("OnesComplement", type);
             }

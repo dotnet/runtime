@@ -9,7 +9,7 @@ namespace System.Security.Cryptography
         /// <summary>
         /// Creates an instance of the platform specific implementation of the cref="ECDsa" algorithm.
         /// </summary>
-        public static ECDsa Create()
+        public static new ECDsa Create()
         {
             return new ECDsaImplementation.ECDsaOpenSsl();
         }

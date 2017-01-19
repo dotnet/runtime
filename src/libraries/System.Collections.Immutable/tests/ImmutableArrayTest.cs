@@ -3,8 +3,11 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Collections.Tests;
 using System.Diagnostics;
 using System.Linq;
+using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using Xunit;
@@ -20,239 +23,325 @@ namespace System.Collections.Immutable.Tests
         private static readonly ImmutableArray<GenericParameterHelper> s_oneElementRefType = ImmutableArray.Create(new GenericParameterHelper(1));
         private static readonly ImmutableArray<string> s_twoElementRefTypeWithNull = ImmutableArray.Create("1", null);
 
-        [Fact]
-        public void Clear()
+        public static IEnumerable<object[]> Int32EnumerableData()
         {
-            Assert.Equal(ImmutableArray<int>.Empty, ImmutableArray.Create<int>().Clear());
-            Assert.Equal(ImmutableArray<int>.Empty, ImmutableArray.Create<int>(1).Clear());
-            Assert.Equal(ImmutableArray<int>.Empty, ImmutableArray.Create<int>(1, 2, 3).Clear());
+            yield return new object[] { new int[0] };
+            yield return new object[] { new[] { 1 } };
+            yield return new object[] { Enumerable.Range(1, 3) };
+            yield return new object[] { Enumerable.Range(4, 4) };
+            yield return new object[] { new[] { 2, 3, 5 } };
+        }
+
+        public static IEnumerable<object[]> StrongBoxedInt32EnumerableData()
+        {
+            // Once https://github.com/xunit/assert.xunit/pull/5 comes into corefx, all the StrongBox stuff can be removed.
+
+            return Int32EnumerableData()
+                .Select(array => array[0])
+                .Cast<IEnumerable<int>>()
+                .Select(enumerable => new object[]
+                {
+                    new StrongBox<IEnumerable<int>>(enumerable)
+                });
+        }
+
+        public static IEnumerable<object[]> StrongBoxedSpecialInt32ImmutableArrayData()
+        {
+            // Once https://github.com/xunit/assert.xunit/pull/5 comes into corefx, all the StrongBox stuff can be removed.
+
+            yield return new object[] { new StrongBox<IEnumerable<int>>(s_emptyDefault) };
+            yield return new object[] { new StrongBox<IEnumerable<int>>(s_empty) };
+        }
+
+        [Theory]
+        [MemberData(nameof(Int32EnumerableData))]
+        public void Clear(IEnumerable<int> source)
+        {
+            Assert.True(s_empty == source.ToImmutableArray().Clear());
+        }
+
+        [Fact]
+        public void CreateEnumerableElementType()
+        {
+            // Create should not have the same semantics as CreateRange, except for arrays.
+            // If you pass in an IEnumerable<T> to Create, you should get an
+            // ImmutableArray<IEnumerable<T>>. However, if you pass a T[] in, you should get
+            // a ImmutableArray<T>.
+
+            var array = new int[0];
+            Assert.IsType<ImmutableArray<int>>(ImmutableArray.Create(array));
+
+            var immutable = ImmutableArray<int>.Empty;
+            Assert.IsType<ImmutableArray<ImmutableArray<int>>>(ImmutableArray.Create(immutable));
+
+            var enumerable = Enumerable.Empty<int>();
+            Assert.IsType<ImmutableArray<IEnumerable<int>>>(ImmutableArray.Create(enumerable));
         }
 
         [Fact]
         public void CreateEmpty()
         {
-            Assert.Equal(ImmutableArray<int>.Empty, ImmutableArray.Create<int>());
-            Assert.Equal(ImmutableArray<int>.Empty, ImmutableArray.Create<int>(new int[0]));
+            Assert.True(s_empty == ImmutableArray.Create<int>());
+            Assert.True(s_empty == ImmutableArray.Create(new int[0]));
+        }
+
+        [Theory]
+        [MemberData(nameof(Int32EnumerableData))]
+        public void CreateRange(IEnumerable<int> source)
+        {
+            Assert.Equal(source, ImmutableArray.CreateRange(source));
         }
 
         [Fact]
-        public void CreateFromEnumerable()
+        public void CreateRangeInvalid()
         {
             Assert.Throws<ArgumentNullException>("items", () => ImmutableArray.CreateRange((IEnumerable<int>)null));
-
-            IEnumerable<int> source = new[] { 1, 2, 3 };
-            var array = ImmutableArray.CreateRange(source);
-            Assert.Equal(3, array.Length);
         }
 
         [Fact]
-        public void CreateFromEmptyEnumerableReturnsSingleton()
+        public void CreateRangeEmptyReturnsSingleton()
         {
-            IEnumerable<int> emptySource1 = new int[0];
-            var immutable = ImmutableArray.CreateRange(emptySource1);
-
+            var empty = ImmutableArray.CreateRange(new int[0]);
             // This equality check returns true if the underlying arrays are the same instance.
-            Assert.Equal(s_empty, immutable);
+            Assert.True(s_empty == empty);
         }
 
-        [Fact]
-        public void CreateRangeFromImmutableArrayWithSelector()
+        [Theory]
+        [MemberData(nameof(CreateRangeWithSelectorData))]
+        public void CreateRangeWithSelector<TResult>(IEnumerable<int> source, Func<int, TResult> selector, TResult dummy)
         {
-            var array = ImmutableArray.Create(4, 5, 6, 7);
+            // Remove the dummy parameters once https://github.com/xunit/xunit/pull/965 makes it into corefx.
 
-            var copy1 = ImmutableArray.CreateRange(array, i => i + 0.5);
-            Assert.Equal(new[] { 4.5, 5.5, 6.5, 7.5 }, copy1);
-
-            var copy2 = ImmutableArray.CreateRange(array, i => i + 1);
-            Assert.Equal(new[] { 5, 6, 7, 8 }, copy2);
-
-            Assert.Equal(new int[] { }, ImmutableArray.CreateRange(s_empty, i => i));
-
-            Assert.Throws<ArgumentNullException>("selector", () => ImmutableArray.CreateRange(array, (Func<int, int>)null));
+            Assert.Equal(source.Select(selector), ImmutableArray.CreateRange(source.ToImmutableArray(), selector));
         }
 
-        [Fact]
-        public void CreateRangeFromImmutableArrayWithSelectorAndArgument()
+        public static IEnumerable<object[]> CreateRangeWithSelectorData()
         {
-            var array = ImmutableArray.Create(4, 5, 6, 7);
-
-            var copy1 = ImmutableArray.CreateRange(array, (i, j) => i + j, 0.5);
-            Assert.Equal(new[] { 4.5, 5.5, 6.5, 7.5 }, copy1);
-
-            var copy2 = ImmutableArray.CreateRange(array, (i, j) => i + j, 1);
-            Assert.Equal(new[] { 5, 6, 7, 8 }, copy2);
-
-            var copy3 = ImmutableArray.CreateRange(array, (int i, object j) => i, null);
-            Assert.Equal(new[] { 4, 5, 6, 7 }, copy3);
-
-            Assert.Equal(new int[] { }, ImmutableArray.CreateRange(s_empty, (i, j) => i + j, 0));
-
-            Assert.Throws<ArgumentNullException>("selector", () => ImmutableArray.CreateRange(array, (Func<int, int, int>)null, 0));
+            yield return new object[] { new int[] { }, new Func<int, int>(i => i), 0 };
+            yield return new object[] { new[] { 4, 5, 6, 7 }, new Func<int, float>(i => i + 0.5f), 0f };
+            yield return new object[] { new[] { 4, 5, 6, 7 }, new Func<int, int>(i => i + 1), 0 };
         }
 
-        [Fact]
-        public void CreateRangeSliceFromImmutableArrayWithSelector()
+        [Theory]
+        [MemberData(nameof(Int32EnumerableData))]
+        public void CreateRangeWithSelectorInvalid(IEnumerable<int> source)
         {
-            var array = ImmutableArray.Create(4, 5, 6, 7);
+            Assert.Throws<ArgumentNullException>("selector", () => ImmutableArray.CreateRange(source.ToImmutableArray(), (Func<int, int>)null));
+            // If both parameters are invalid, the selector should be validated first.
+            Assert.Throws<ArgumentNullException>("selector", () => ImmutableArray.CreateRange(s_emptyDefault, (Func<int, int>)null));
+            Assert.Throws<NullReferenceException>(() => ImmutableArray.CreateRange(s_emptyDefault, i => i));
+        }
 
-            var copy1 = ImmutableArray.CreateRange(array, 0, 0, i => i + 0.5);
-            Assert.Equal(new double[] { }, copy1);
+        [Theory]
+        [MemberData(nameof(CreateRangeWithSelectorAndArgumentData))]
+        public void CreateRangeWithSelectorAndArgument<TArg, TResult>(IEnumerable<int> source, Func<int, TArg, TResult> selector, TArg arg, TArg dummy1, TResult dummy2)
+        {
+            // Remove the dummy parameters once https://github.com/xunit/xunit/pull/965 makes it into corefx.
 
-            var copy2 = ImmutableArray.CreateRange(array, 0, 0, i => i);
-            Assert.Equal(new int[] { }, copy2);
+            var expected = source.Zip(Enumerable.Repeat(arg, source.Count()), selector);
+            Assert.Equal(expected, ImmutableArray.CreateRange(source.ToImmutableArray(), selector, arg));
+        }
 
-            var copy3 = ImmutableArray.CreateRange(array, 0, 1, i => i * 2);
-            Assert.Equal(new int[] { 8 }, copy3);
+        public static IEnumerable<object[]> CreateRangeWithSelectorAndArgumentData()
+        {
+            yield return new object[] { new int[] { }, new Func<int, int, int>((x, y) => x + y), 0, 0, 0 };
+            yield return new object[] { new[] { 4, 5, 6, 7 }, new Func<int, float, float>((x, y) => x + y), 0.5f, 0f, 0f };
+            yield return new object[] { new[] { 4, 5, 6, 7 }, new Func<int, int, int>((x, y) => x + y), 1, 0, 0 };
+            yield return new object[] { new[] { 4, 5, 6, 7 }, new Func<int, object, int>((x, y) => x), null, new object(), 0 };
+        }
 
-            var copy4 = ImmutableArray.CreateRange(array, 0, 2, i => i + 1);
-            Assert.Equal(new int[] { 5, 6 }, copy4);
+        [Theory]
+        [MemberData(nameof(Int32EnumerableData))]
+        public void CreateRangeWithSelectorAndArgumentInvalid(IEnumerable<int> source)
+        {
+            Assert.Throws<ArgumentNullException>("selector", () => ImmutableArray.CreateRange(source.ToImmutableArray(), (Func<int, int, int>)null, 0));
+            // If both parameters are invalid, the selector should be validated first.
+            Assert.Throws<ArgumentNullException>("selector", () => ImmutableArray.CreateRange(s_emptyDefault, (Func<int, int, int>)null, 0));
+            Assert.Throws<NullReferenceException>(() => ImmutableArray.CreateRange(s_emptyDefault, (x, y) => 0, 0));
+        }
 
-            var copy5 = ImmutableArray.CreateRange(array, 0, 4, i => i);
-            Assert.Equal(new int[] { 4, 5, 6, 7 }, copy5);
+        [Theory]
+        [MemberData(nameof(CreateRangeSliceWithSelectorData))]
+        public void CreateRangeSliceWithSelector<TResult>(IEnumerable<int> source, int start, int length, Func<int, TResult> selector, TResult dummy)
+        {
+            // Remove the dummy parameters once https://github.com/xunit/xunit/pull/965 makes it into corefx.
 
-            var copy6 = ImmutableArray.CreateRange(array, 3, 1, i => i);
-            Assert.Equal(new int[] { 7 }, copy6);
+            var expected = source.Skip(start).Take(length).Select(selector);
+            Assert.Equal(expected, ImmutableArray.CreateRange(source.ToImmutableArray(), start, length, selector));
+        }
 
-            var copy7 = ImmutableArray.CreateRange(array, 3, 0, i => i);
-            Assert.Equal(new int[] { }, copy7);
+        public static IEnumerable<object[]> CreateRangeSliceWithSelectorData()
+        {
+            yield return new object[] { new[] { 4, 5, 6, 7 }, 0, 0, new Func<int, float>(i => i + 0.5f), 0f };
+            yield return new object[] { new[] { 4, 5, 6, 7 }, 0, 0, new Func<int, double>(i => i + 0.5d), 0d };
+            yield return new object[] { new[] { 4, 5, 6, 7 }, 0, 0, new Func<int, int>(i => i), 0 };
+            yield return new object[] { new[] { 4, 5, 6, 7 }, 0, 1, new Func<int, int>(i => i * 2), 0 };
+            yield return new object[] { new[] { 4, 5, 6, 7 }, 0, 2, new Func<int, int>(i => i + 1), 0 };
+            yield return new object[] { new[] { 4, 5, 6, 7 }, 0, 4, new Func<int, int>(i => i), 0 };
+            yield return new object[] { new[] { 4, 5, 6, 7 }, 3, 1, new Func<int, int>(i => i), 0 };
+            yield return new object[] { new[] { 4, 5, 6, 7 }, 3, 0, new Func<int, int>(i => i), 0 };
+            yield return new object[] { new[] { 4, 5, 6, 7 }, 4, 0, new Func<int, int>(i => i), 0 };
+        }
 
-            var copy8 = ImmutableArray.CreateRange(array, 4, 0, i => i);
-            Assert.Equal(new int[] { }, copy8);
+        [Theory]
+        [MemberData(nameof(Int32EnumerableData))]
+        public void CreateRangeSliceWithSelectorInvalid(IEnumerable<int> source)
+        {
+            var array = source.ToImmutableArray();
 
             Assert.Throws<ArgumentNullException>("selector", () => ImmutableArray.CreateRange(array, 0, 0, (Func<int, int>)null));
-            Assert.Throws<ArgumentNullException>("selector", () => ImmutableArray.CreateRange(s_empty, 0, 0, (Func<int, int>)null));
 
             Assert.Throws<ArgumentOutOfRangeException>("start", () => ImmutableArray.CreateRange(array, -1, 1, (Func<int, int>)null));
             Assert.Throws<ArgumentOutOfRangeException>("start", () => ImmutableArray.CreateRange(array, -1, 1, i => i));
-            Assert.Throws<ArgumentOutOfRangeException>("length", () => ImmutableArray.CreateRange(array, 0, 5, i => i));
-            Assert.Throws<ArgumentOutOfRangeException>("length", () => ImmutableArray.CreateRange(array, 4, 1, i => i));
-            Assert.Throws<ArgumentOutOfRangeException>("length", () => ImmutableArray.CreateRange(array, 3, 2, i => i));
-            Assert.Throws<ArgumentOutOfRangeException>("length", () => ImmutableArray.CreateRange(array, 1, -1, i => i));
+
+            Assert.Throws<ArgumentOutOfRangeException>("length", () => ImmutableArray.CreateRange(array, 0, array.Length + 1, i => i));
+            Assert.Throws<ArgumentOutOfRangeException>("length", () => ImmutableArray.CreateRange(array, array.Length, 1, i => i));
+            Assert.Throws<ArgumentOutOfRangeException>("length", () => ImmutableArray.CreateRange(array, Math.Max(0, array.Length - 1), 2, i => i));
+            Assert.Throws<ArgumentOutOfRangeException>("length", () => ImmutableArray.CreateRange(array, 0, -1, i => i));
+
+            Assert.Throws<NullReferenceException>(() => ImmutableArray.CreateRange(s_emptyDefault, 0, 0, i => i));
         }
 
-        [Fact]
-        public void CreateRangeSliceFromImmutableArrayWithSelectorAndArgument()
+        [Theory]
+        [MemberData(nameof(CreateRangeSliceWithSelectorAndArgumentData))]
+        public void CreateRangeSliceWithSelectorAndArgument<TArg, TResult>(IEnumerable<int> source, int start, int length, Func<int, TArg, TResult> selector, TArg arg, TArg dummy1, TResult dummy2)
         {
-            var array = ImmutableArray.Create(4, 5, 6, 7);
+            // Remove the dummy parameters once https://github.com/xunit/xunit/pull/965 makes it into corefx.
 
-            var copy1 = ImmutableArray.CreateRange(array, 0, 0, (i, j) => i + j, 0.5);
-            Assert.Equal(new double[] { }, copy1);
+            var expected = source.Skip(start).Take(length).Zip(Enumerable.Repeat(arg, length), selector);
+            Assert.Equal(expected, ImmutableArray.CreateRange(source.ToImmutableArray(), start, length, selector, arg));
+        }
 
-            var copy2 = ImmutableArray.CreateRange(array, 0, 0, (i, j) => i + j, 0);
-            Assert.Equal(new int[] { }, copy2);
+        public static IEnumerable<object[]> CreateRangeSliceWithSelectorAndArgumentData()
+        {
+            yield return new object[] { new int[] { }, 0, 0, new Func<int, int, int>((x, y) => x + y), 0, 0, 0 };
+            yield return new object[] { new[] { 4, 5, 6, 7 }, 0, 0, new Func<int, float, float>((x, y) => x + y), 0.5f, 0f, 0f };
+            yield return new object[] { new[] { 4, 5, 6, 7 }, 0, 0, new Func<int, double, double>((x, y) => x + y), 0.5d, 0d, 0d };
+            yield return new object[] { new[] { 4, 5, 6, 7 }, 0, 0, new Func<int, int, int>((x, y) => x + y), 0, 0, 0 };
+            yield return new object[] { new[] { 4, 5, 6, 7 }, 0, 1, new Func<int, int, int>((x, y) => x * y), 2, 0, 0 };
+            yield return new object[] { new[] { 4, 5, 6, 7 }, 0, 2, new Func<int, int, int>((x, y) => x + y), 1, 0, 0 };
+            yield return new object[] { new[] { 4, 5, 6, 7 }, 0, 4, new Func<int, int, int>((x, y) => x + y), 0, 0, 0 };
+            yield return new object[] { new[] { 4, 5, 6, 7 }, 3, 1, new Func<int, int, int>((x, y) => x + y), 0, 0, 0 };
+            yield return new object[] { new[] { 4, 5, 6, 7 }, 3, 0, new Func<int, int, int>((x, y) => x + y), 0, 0, 0 };
+            yield return new object[] { new[] { 4, 5, 6, 7 }, 4, 0, new Func<int, int, int>((x, y) => x + y), 0, 0, 0 };
+            yield return new object[] { new[] { 4, 5, 6, 7 }, 0, 1, new Func<int, object, int>((x, y) => x), null, new object(), 0 };
+        }
 
-            var copy3 = ImmutableArray.CreateRange(array, 0, 1, (i, j) => i * j, 2);
-            Assert.Equal(new int[] { 8 }, copy3);
-
-            var copy4 = ImmutableArray.CreateRange(array, 0, 2, (i, j) => i + j, 1);
-            Assert.Equal(new int[] { 5, 6 }, copy4);
-
-            var copy5 = ImmutableArray.CreateRange(array, 0, 4, (i, j) => i + j, 0);
-            Assert.Equal(new int[] { 4, 5, 6, 7 }, copy5);
-
-            var copy6 = ImmutableArray.CreateRange(array, 3, 1, (i, j) => i + j, 0);
-            Assert.Equal(new int[] { 7 }, copy6);
-
-            var copy7 = ImmutableArray.CreateRange(array, 3, 0, (i, j) => i + j, 0);
-            Assert.Equal(new int[] { }, copy7);
-
-            var copy8 = ImmutableArray.CreateRange(array, 4, 0, (i, j) => i + j, 0);
-            Assert.Equal(new int[] { }, copy8);
-
-            var copy9 = ImmutableArray.CreateRange(array, 0, 1, (int i, object j) => i, null);
-            Assert.Equal(new int[] { 4 }, copy9);
-
-            Assert.Equal(new int[] { }, ImmutableArray.CreateRange(s_empty, 0, 0, (i, j) => i + j, 0));
+        [Theory]
+        [MemberData(nameof(Int32EnumerableData))]
+        public void CreateRangeSliceWithSelectorAndArgumentInvalid(IEnumerable<int> source)
+        {
+            var array = source.ToImmutableArray();
 
             Assert.Throws<ArgumentNullException>("selector", () => ImmutableArray.CreateRange(array, 0, 0, (Func<int, int, int>)null, 0));
-            Assert.Throws<ArgumentNullException>("selector", () => ImmutableArray.CreateRange(s_empty, 0, 0, (Func<int, int, int>)null, 0));
 
             Assert.Throws<ArgumentOutOfRangeException>("start", () => ImmutableArray.CreateRange(s_empty, -1, 1, (Func<int, int, int>)null, 0));
             Assert.Throws<ArgumentOutOfRangeException>("start", () => ImmutableArray.CreateRange(array, -1, 1, (i, j) => i + j, 0));
-            Assert.Throws<ArgumentOutOfRangeException>("length", () => ImmutableArray.CreateRange(array, 0, 5, (i, j) => i + j, 0));
-            Assert.Throws<ArgumentOutOfRangeException>("length", () => ImmutableArray.CreateRange(array, 4, 1, (i, j) => i + j, 0));
-            Assert.Throws<ArgumentOutOfRangeException>("length", () => ImmutableArray.CreateRange(array, 3, 2, (i, j) => i + j, 0));
-            Assert.Throws<ArgumentOutOfRangeException>("length", () => ImmutableArray.CreateRange(array, 1, -1, (i, j) => i + j, 0));
+
+            Assert.Throws<ArgumentOutOfRangeException>("length", () => ImmutableArray.CreateRange(array, 0, array.Length + 1, (i, j) => i + j, 0));
+            Assert.Throws<ArgumentOutOfRangeException>("length", () => ImmutableArray.CreateRange(array, array.Length, 1, (i, j) => i + j, 0));
+            Assert.Throws<ArgumentOutOfRangeException>("length", () => ImmutableArray.CreateRange(array, Math.Max(0, array.Length - 1), 2, (i, j) => i + j, 0));
+            Assert.Throws<ArgumentOutOfRangeException>("length", () => ImmutableArray.CreateRange(array, 0, -1, (i, j) => i + j, 0));
+
+            Assert.Throws<NullReferenceException>(() => ImmutableArray.CreateRange(s_emptyDefault, 0, 0, (x, y) => 0, 0));
         }
 
-        [Fact]
-        public void CreateFromSliceOfImmutableArray()
+        [Theory]
+        [MemberData(nameof(CreateFromSliceData))]
+        public void CreateFromSlice(IEnumerable<int> source, int start, int length)
         {
-            var array = ImmutableArray.Create(4, 5, 6, 7);
-            Assert.Equal(new[] { 4, 5 }, ImmutableArray.Create(array, 0, 2));
-            Assert.Equal(new[] { 5, 6 }, ImmutableArray.Create(array, 1, 2));
-            Assert.Equal(new[] { 6, 7 }, ImmutableArray.Create(array, 2, 2));
-            Assert.Equal(new[] { 7 }, ImmutableArray.Create(array, 3, 1));
-            Assert.Equal(new int[0], ImmutableArray.Create(array, 4, 0));
+            Assert.Equal(source.Skip(start).Take(length), ImmutableArray.Create(source.ToImmutableArray(), start, length));
+            Assert.Equal(source.Skip(start).Take(length), ImmutableArray.Create(source.ToArray(), start, length));
+        }
 
-            Assert.Equal(new int[] { }, ImmutableArray.Create(s_empty, 0, 0));
+        public static IEnumerable<object[]> CreateFromSliceData()
+        {
+            yield return new object[] { new int[] { }, 0, 0 };
+            yield return new object[] { new[] { 4, 5, 6, 7 }, 0, 2 };
+            yield return new object[] { new[] { 4, 5, 6, 7 }, 1, 2 };
+            yield return new object[] { new[] { 4, 5, 6, 7 }, 2, 2 };
+            yield return new object[] { new[] { 4, 5, 6, 7 }, 3, 1 };
+            yield return new object[] { new[] { 4, 5, 6, 7 }, 4, 0 };
+        }
 
-            Assert.Throws<ArgumentOutOfRangeException>("length", () => ImmutableArray.Create(s_empty, 0, 1));
+        [Theory]
+        [MemberData(nameof(Int32EnumerableData))]
+        public void CreateFromSliceOfImmutableArrayInvalid(IEnumerable<int> source)
+        {
+            var array = source.ToImmutableArray();
+
             Assert.Throws<ArgumentOutOfRangeException>("start", () => ImmutableArray.Create(array, -1, 0));
+            Assert.Throws<ArgumentOutOfRangeException>("start", () => ImmutableArray.Create(array, array.Length + 1, 0));
+
             Assert.Throws<ArgumentOutOfRangeException>("length", () => ImmutableArray.Create(array, 0, -1));
             Assert.Throws<ArgumentOutOfRangeException>("length", () => ImmutableArray.Create(array, 0, array.Length + 1));
-            Assert.Throws<ArgumentOutOfRangeException>("length", () => ImmutableArray.Create(array, 1, array.Length));
-            Assert.Throws<ArgumentOutOfRangeException>("start", () => ImmutableArray.Create(array, array.Length + 1, 0));
+            Assert.Throws<ArgumentOutOfRangeException>("length", () => ImmutableArray.Create(array, Math.Max(0, array.Length - 1), 2));
+
+            if (array.Length > 0)
+            {
+                Assert.Throws<ArgumentOutOfRangeException>("length", () => ImmutableArray.Create(array, 1, array.Length));
+            }
         }
 
-        [Fact]
-        public void CreateFromSliceOfImmutableArrayOptimizations()
+        [Theory]
+        [MemberData(nameof(Int32EnumerableData))]
+        public void CreateFromSliceOfImmutableArrayOptimizations(IEnumerable<int> source)
         {
-            var array = ImmutableArray.Create(4, 5, 6, 7);
+            var array = source.ToImmutableArray();
             var slice = ImmutableArray.Create(array, 0, array.Length);
-            Assert.Equal(array, slice); // array instance actually shared between the two
+            Assert.True(array == slice); // Verify that the underlying arrays are reference-equal.
         }
 
-        [Fact]
-        public void CreateFromSliceOfImmutableArrayEmptyReturnsSingleton()
+        [Theory]
+        [MemberData(nameof(Int32EnumerableData))]
+        public void CreateFromSliceOfImmutableArrayEmptyReturnsSingleton(IEnumerable<int> source)
         {
-            var array = ImmutableArray.Create(4, 5, 6, 7);
-            var slice = ImmutableArray.Create(array, 1, 0);
-            Assert.Equal(s_empty, slice);
+            var array = source.ToImmutableArray();
+            var slice = ImmutableArray.Create(array, Math.Min(1, array.Length), 0);
+            Assert.True(s_empty == slice);
         }
 
-        [Fact]
-        public void CreateFromSliceOfArray()
+        [Theory]
+        [MemberData(nameof(Int32EnumerableData))]
+        public void CreateFromSliceOfArrayInvalid(IEnumerable<int> source)
         {
-            var array = new int[] { 4, 5, 6, 7 };
-            Assert.Equal(new[] { 4, 5 }, ImmutableArray.Create(array, 0, 2));
-            Assert.Equal(new[] { 5, 6 }, ImmutableArray.Create(array, 1, 2));
-            Assert.Equal(new[] { 6, 7 }, ImmutableArray.Create(array, 2, 2));
-            Assert.Equal(new[] { 7 }, ImmutableArray.Create(array, 3, 1));
-            Assert.Equal(new int[0], ImmutableArray.Create(array, 4, 0));
+            var array = source.ToArray();
 
             Assert.Throws<ArgumentOutOfRangeException>("start", () => ImmutableArray.Create(array, -1, 0));
+            Assert.Throws<ArgumentOutOfRangeException>("start", () => ImmutableArray.Create(array, array.Length + 1, 0));
+
             Assert.Throws<ArgumentOutOfRangeException>("length", () => ImmutableArray.Create(array, 0, -1));
             Assert.Throws<ArgumentOutOfRangeException>("length", () => ImmutableArray.Create(array, 0, array.Length + 1));
-            Assert.Throws<ArgumentOutOfRangeException>("length", () => ImmutableArray.Create(array, 1, array.Length));
-            Assert.Throws<ArgumentOutOfRangeException>("start", () => ImmutableArray.Create(array, array.Length + 1, 0));
+            Assert.Throws<ArgumentOutOfRangeException>("length", () => ImmutableArray.Create(array, Math.Max(0, array.Length - 1), 2));
+
+            if (array.Length > 0)
+            {
+                Assert.Throws<ArgumentOutOfRangeException>("length", () => ImmutableArray.Create(array, 1, array.Length));
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(Int32EnumerableData))]
+        public void CreateFromSliceOfArrayEmptyReturnsSingleton(IEnumerable<int> source)
+        {
+            var array = source.ToArray();
+            var slice = ImmutableArray.Create(array, Math.Min(1, array.Length), 0);
+            Assert.True(s_empty == slice);
+        }
+
+        [Theory]
+        [MemberData(nameof(Int32EnumerableData))]
+        public void CreateFromArray(IEnumerable<int> source)
+        {
+            Assert.Equal(source, ImmutableArray.Create(source.ToArray()));
         }
 
         [Fact]
-        public void CreateFromSliceOfArrayEmptyReturnsSingleton()
+        public void CreateFromArrayNull()
         {
-            var array = new int[] { 4, 5, 6, 7 };
-            var slice = ImmutableArray.Create(array, 1, 0);
-            Assert.Equal(s_empty, slice);
-            slice = ImmutableArray.Create(array, array.Length, 0);
-            Assert.Equal(s_empty, slice);
-        }
-
-        [Fact]
-        public void CreateFromArray()
-        {
-            var source = new[] { 1, 2, 3 };
-            var immutable = ImmutableArray.Create(source);
-            Assert.Equal(source, immutable);
-        }
-
-        [Fact]
-        public void CreateFromNullArray()
-        {
-            int[] nullArray = null;
-            ImmutableArray<int> immutable = ImmutableArray.Create(nullArray);
+            var immutable = ImmutableArray.Create(default(int[]));
             Assert.False(immutable.IsDefault);
-            Assert.Equal(0, immutable.Length);
+            Assert.True(immutable.IsEmpty);
         }
 
         [Fact]
@@ -261,13 +350,13 @@ namespace System.Collections.Immutable.Tests
             ImmutableArray<string> derivedImmutable = ImmutableArray.Create("a", "b", "c");
             ImmutableArray<object> baseImmutable = derivedImmutable.As<object>();
             Assert.False(baseImmutable.IsDefault);
-            // Must cast to object or the IEnumerable<object> overload of Equals would be used
+            // Must cast to object or the IEnumerable<object> overload of Assert.Equal would be used
             Assert.Equal((object)derivedImmutable, baseImmutable, EqualityComparer<object>.Default);
 
             // Make sure we can reverse that, as a means to verify the underlying array is the same instance.
             ImmutableArray<string> derivedImmutable2 = baseImmutable.As<string>();
             Assert.False(derivedImmutable2.IsDefault);
-            Assert.Equal(derivedImmutable, derivedImmutable2);
+            Assert.True(derivedImmutable == derivedImmutable2);
 
             // Try a cast that would fail.
             Assert.True(baseImmutable.As<Encoder>().IsDefault);
@@ -287,13 +376,11 @@ namespace System.Collections.Immutable.Tests
             Assert.True(derivedImmutable == derivedImmutable2);
         }
 
-        /// <summary>
-        /// Verifies that using an ordinary Create factory method is smart enough to reuse
-        /// an underlying array when possible.
-        /// </summary>
         [Fact]
         public void CovarianceImplicit()
         {
+            // Verify that CreateRange is smart enough to reuse the underlying array when possible.
+
             ImmutableArray<string> derivedImmutable = ImmutableArray.Create("a", "b", "c");
             ImmutableArray<object> baseImmutable = ImmutableArray.CreateRange<object>(derivedImmutable);
             // Must cast to object or the IEnumerable<object> overload of Equals would be used
@@ -301,7 +388,7 @@ namespace System.Collections.Immutable.Tests
 
             // Make sure we can reverse that, as a means to verify the underlying array is the same instance.
             ImmutableArray<string> derivedImmutable2 = baseImmutable.As<string>();
-            Assert.Equal(derivedImmutable, derivedImmutable2);
+            Assert.True(derivedImmutable == derivedImmutable2);
         }
 
         [Fact]
@@ -313,8 +400,8 @@ namespace System.Collections.Immutable.Tests
             Assert.Equal((object)derivedImmutable, baseImmutable, EqualityComparer<object>.Default);
 
             // Make sure we can reverse that, as a means to verify the underlying array is the same instance.
-            Assert.Equal(derivedImmutable, baseImmutable.As<string>());
-            Assert.Equal(derivedImmutable, baseImmutable.CastArray<string>());
+            Assert.True(derivedImmutable == baseImmutable.As<string>());
+            Assert.True(derivedImmutable == baseImmutable.CastArray<string>());
         }
 
         [Fact]
@@ -332,13 +419,13 @@ namespace System.Collections.Immutable.Tests
         }
 
         [Fact]
-        public void CastUpRefToInterface()
+        public void CastUpReferenceToInterface()
         {
             var stringArray = ImmutableArray.Create("a", "b");
             var enumArray = ImmutableArray<IEnumerable>.CastUp(stringArray);
             Assert.Equal(2, enumArray.Length);
-            Assert.Equal(stringArray, enumArray.CastArray<string>());
-            Assert.Equal(stringArray, enumArray.As<string>());
+            Assert.True(stringArray == enumArray.CastArray<string>());
+            Assert.True(stringArray == enumArray.As<string>());
         }
 
         [Fact]
@@ -347,8 +434,8 @@ namespace System.Collections.Immutable.Tests
             var genericEnumArray = ImmutableArray.Create<IEnumerable<int>>(new List<int>(), new List<int>());
             var legacyEnumArray = ImmutableArray<IEnumerable>.CastUp(genericEnumArray);
             Assert.Equal(2, legacyEnumArray.Length);
-            Assert.Equal(genericEnumArray, legacyEnumArray.As<IEnumerable<int>>());
-            Assert.Equal(genericEnumArray, legacyEnumArray.CastArray<IEnumerable<int>>());
+            Assert.True(genericEnumArray == legacyEnumArray.As<IEnumerable<int>>());
+            Assert.True(genericEnumArray == legacyEnumArray.CastArray<IEnumerable<int>>());
         }
 
         [Fact]
@@ -357,18 +444,18 @@ namespace System.Collections.Immutable.Tests
             var arrayArray = ImmutableArray.Create(new int[] { 1, 2 }, new int[] { 3, 4 });
             var sysArray = ImmutableArray<Array>.CastUp(arrayArray);
             Assert.Equal(2, sysArray.Length);
-            Assert.Equal(arrayArray, sysArray.As<int[]>());
-            Assert.Equal(arrayArray, sysArray.CastArray<int[]>());
+            Assert.True(arrayArray == sysArray.As<int[]>());
+            Assert.True(arrayArray == sysArray.CastArray<int[]>());
         }
 
         [Fact]
         public void CastUpArrayToObject()
         {
             var arrayArray = ImmutableArray.Create(new int[] { 1, 2 }, new int[] { 3, 4 });
-            var objArray = ImmutableArray<object>.CastUp(arrayArray);
-            Assert.Equal(2, objArray.Length);
-            Assert.Equal(arrayArray, objArray.As<int[]>());
-            Assert.Equal(arrayArray, objArray.CastArray<int[]>());
+            var objectArray = ImmutableArray<object>.CastUp(arrayArray);
+            Assert.Equal(2, objectArray.Length);
+            Assert.True(arrayArray == objectArray.As<int[]>());
+            Assert.True(arrayArray == objectArray.CastArray<int[]>());
         }
 
         [Fact]
@@ -377,19 +464,19 @@ namespace System.Collections.Immutable.Tests
             var delArray = ImmutableArray.Create<Action>(() => { }, () => { });
             var sysDelArray = ImmutableArray<Delegate>.CastUp(delArray);
             Assert.Equal(2, sysDelArray.Length);
-            Assert.Equal(delArray, sysDelArray.As<Action>());
-            Assert.Equal(delArray, sysDelArray.CastArray<Action>());
+            Assert.True(delArray == sysDelArray.As<Action>());
+            Assert.True(delArray == sysDelArray.CastArray<Action>());
         }
 
         [Fact]
         public void CastArrayUnrelatedInterface()
         {
-            var strArray = ImmutableArray.Create<string>("cat", "dog");
-            var compArray = ImmutableArray<IComparable>.CastUp(strArray);
-            var enumArray = compArray.CastArray<IEnumerable>();
+            var stringArray = ImmutableArray.Create("cat", "dog");
+            var comparableArray = ImmutableArray<IComparable>.CastUp(stringArray);
+            var enumArray = comparableArray.CastArray<IEnumerable>();
             Assert.Equal(2, enumArray.Length);
-            Assert.Equal(strArray, enumArray.As<string>());
-            Assert.Equal(strArray, enumArray.CastArray<string>());
+            Assert.True(stringArray == enumArray.As<string>());
+            Assert.True(stringArray == enumArray.CastArray<string>());
         }
 
         [Fact]
@@ -400,48 +487,57 @@ namespace System.Collections.Immutable.Tests
         }
 
         [Fact]
-        public void CastArrayBadRef()
+        public void CastArrayBadReference()
         {
-            var objArray = ImmutableArray.Create<object>("cat", "dog");
-            Assert.Throws<InvalidCastException>(() => objArray.CastArray<string>());
+            var objectArray = ImmutableArray.Create<object>("cat", "dog");
+            Assert.Throws<InvalidCastException>(() => objectArray.CastArray<string>());
+        }
+
+        [Theory]
+        [MemberData(nameof(Int32EnumerableData))]
+        public void ToImmutableArray(IEnumerable<int> source)
+        {
+            var array = source.ToImmutableArray();
+            Assert.Equal(source, array);
+            Assert.True(array == array.ToImmutableArray()); // Compares referential equality.
+        }
+
+        [Theory]
+        [MemberData(nameof(Int32EnumerableData))]
+        public void Count(IEnumerable<int> source)
+        {
+            var array = source.ToImmutableArray();
+
+            Assert.Equal(source.Count(), array.Length);
+            Assert.Equal(source.Count(), ((ICollection)array).Count);
+            Assert.Equal(source.Count(), ((ICollection<int>)array).Count);
+            Assert.Equal(source.Count(), ((IReadOnlyCollection<int>)array).Count);
         }
 
         [Fact]
-        public void ToImmutableArray()
-        {
-            IEnumerable<int> source = new[] { 1, 2, 3 };
-            ImmutableArray<int> immutable = source.ToImmutableArray();
-            Assert.Equal(source, immutable);
-
-            ImmutableArray<int> immutable2 = immutable.ToImmutableArray();
-            Assert.Equal(immutable, immutable2); // this will compare array reference equality.
-        }
-
-        [Fact]
-        public void Count()
+        public void CountInvalid()
         {
             Assert.Throws<NullReferenceException>(() => s_emptyDefault.Length);
             Assert.Throws<InvalidOperationException>(() => ((ICollection)s_emptyDefault).Count);
             Assert.Throws<InvalidOperationException>(() => ((ICollection<int>)s_emptyDefault).Count);
             Assert.Throws<InvalidOperationException>(() => ((IReadOnlyCollection<int>)s_emptyDefault).Count);
+        }
 
-            Assert.Equal(0, s_empty.Length);
-            Assert.Equal(0, ((IReadOnlyCollection<int>)s_empty).Count);
-
-            Assert.Equal(1, s_oneElement.Length);
-            Assert.Equal(1, ((IReadOnlyCollection<int>)s_oneElement).Count);
+        [Theory]
+        [MemberData(nameof(Int32EnumerableData))]
+        public void IsEmpty(IEnumerable<int> source)
+        {
+            Assert.Equal(!source.Any(), source.ToImmutableArray().IsEmpty);
         }
 
         [Fact]
-        public void IsEmpty()
+        public void IsEmptyInvalid()
         {
             Assert.Throws<NullReferenceException>(() => s_emptyDefault.IsEmpty);
-            Assert.True(s_empty.IsEmpty);
-            Assert.False(s_oneElement.IsEmpty);
         }
 
         [Fact]
-        public void IndexOfDefault()
+        public void IndexOfInvalid()
         {
             Assert.Throws<NullReferenceException>(() => s_emptyDefault.IndexOf(5));
             Assert.Throws<NullReferenceException>(() => s_emptyDefault.IndexOf(5, 0));
@@ -449,7 +545,7 @@ namespace System.Collections.Immutable.Tests
         }
 
         [Fact]
-        public void LastIndexOfDefault()
+        public void LastIndexOfInvalid()
         {
             Assert.Throws<NullReferenceException>(() => s_emptyDefault.LastIndexOf(5));
             Assert.Throws<NullReferenceException>(() => s_emptyDefault.LastIndexOf(5, 0));
@@ -479,290 +575,762 @@ namespace System.Collections.Immutable.Tests
                 (b, v, i, c, eq) => b.LastIndexOf(v, i, c, eq));
         }
 
-        [Fact]
-        public void Contains()
+        [Theory]
+        [MemberData(nameof(Int32EnumerableData))]
+        public void ContainsInt32(IEnumerable<int> source)
         {
-            Assert.Throws<NullReferenceException>(() => s_emptyDefault.Contains(0));
-            Assert.False(s_empty.Contains(0));
-            Assert.True(s_oneElement.Contains(1));
-            Assert.False(s_oneElement.Contains(2));
-            Assert.True(s_manyElements.Contains(3));
-            Assert.False(s_oneElementRefType.Contains(null));
-            Assert.True(s_twoElementRefTypeWithNull.Contains(null));
-        }
+            var array = source.ToImmutableArray();
 
-        [Fact]
-        public void ContainsEqualityComparer()
-        {
-            var array = ImmutableArray.Create("a", "B");
-            Assert.False(array.Contains("A", StringComparer.Ordinal));
-            Assert.True(array.Contains("A", StringComparer.OrdinalIgnoreCase));
-            Assert.False(array.Contains("b", StringComparer.Ordinal));
-            Assert.True(array.Contains("b", StringComparer.OrdinalIgnoreCase));
-        }
-
-        [Fact]
-        public void Enumerator()
-        {
-            Assert.Throws<NullReferenceException>(() => s_emptyDefault.GetEnumerator());
-
-            ImmutableArray<int>.Enumerator enumerator = default(ImmutableArray<int>.Enumerator);
-            Assert.Throws<NullReferenceException>(() => enumerator.Current);
-            Assert.Throws<NullReferenceException>(() => enumerator.MoveNext());
-
-            enumerator = s_empty.GetEnumerator();
-            Assert.Throws<IndexOutOfRangeException>(() => enumerator.Current);
-            Assert.False(enumerator.MoveNext());
-
-            enumerator = s_manyElements.GetEnumerator();
-            Assert.Throws<IndexOutOfRangeException>(() => enumerator.Current);
-
-            Assert.True(enumerator.MoveNext());
-            Assert.Equal(1, enumerator.Current);
-            Assert.True(enumerator.MoveNext());
-            Assert.Equal(2, enumerator.Current);
-            Assert.True(enumerator.MoveNext());
-            Assert.Equal(3, enumerator.Current);
-
-            Assert.False(enumerator.MoveNext());
-            Assert.Throws<IndexOutOfRangeException>(() => enumerator.Current);
-        }
-
-        [Fact]
-        public void ObjectEnumerator()
-        {
-            Assert.Throws<InvalidOperationException>(() => ((IEnumerable<int>)s_emptyDefault).GetEnumerator());
-
-            IEnumerator<int> enumerator = ((IEnumerable<int>)s_empty).GetEnumerator();
-            Assert.Throws<InvalidOperationException>(() => enumerator.Current);
-            Assert.False(enumerator.MoveNext());
-
-            enumerator = ((IEnumerable<int>)s_manyElements).GetEnumerator();
-            Assert.Throws<InvalidOperationException>(() => enumerator.Current);
-
-            for (int i = 0; i < 2; i++)
+            if (source.Any(i => i >= 0))
             {
-                Assert.True(enumerator.MoveNext());
-                Assert.Equal(1, enumerator.Current);
-                Assert.True(enumerator.MoveNext());
-                Assert.Equal(2, enumerator.Current);
-                Assert.True(enumerator.MoveNext());
-                Assert.Equal(3, enumerator.Current);
-                if (i == 0)
-                    enumerator.Reset();
+                int contained = Enumerable.Range(0, int.MaxValue).First(i => source.Contains(i));
+                Assert.True(array.Contains(contained));
+                Assert.True(((ICollection<int>)array).Contains(contained));
             }
 
-            Assert.False(enumerator.MoveNext());
-            Assert.Throws<InvalidOperationException>(() => enumerator.Current);
+            int notContained = Enumerable.Range(0, int.MaxValue).First(i => !source.Contains(i));
+            Assert.False(array.Contains(notContained));
+            Assert.False(((ICollection<int>)array).Contains(notContained));
+        }
+
+        [Theory]
+        [MemberData(nameof(ContainsNullData))]
+        public void ContainsNull<T>(IEnumerable<T> source, T dummy) where T : class
+        {
+            // Remove the dummy parameters once https://github.com/xunit/xunit/pull/965 makes it into corefx.
+
+            bool expected = source.Contains(null, EqualityComparer<T>.Default);
+            Assert.Equal(expected, source.ToImmutableArray().Contains(null));
+        }
+
+        public static IEnumerable<object[]> ContainsNullData()
+        {
+            yield return new object[] { s_oneElementRefType, new GenericParameterHelper() };
+            yield return new object[] { s_twoElementRefTypeWithNull, string.Empty };
+            yield return new object[] { new[] { new object() }, new object() };
         }
 
         [Fact]
-        public void EnumeratorWithNullValues()
+        public void ContainsInvalid()
         {
-            var enumerationResult = System.Linq.Enumerable.ToArray(s_twoElementRefTypeWithNull);
-            Assert.Equal("1", enumerationResult[0]);
-            Assert.Null(enumerationResult[1]);
+            Assert.Throws<NullReferenceException>(() => s_emptyDefault.Contains(0));
+        }
+
+        [Theory]
+        [MemberData(nameof(Int32EnumerableData))]
+        public void GetEnumerator(IEnumerable<int> source)
+        {
+            var array = source.ToImmutableArray();
+            var enumeratorStruct = array.GetEnumerator();
+
+            Assert.IsType<ImmutableArray<int>.Enumerator>(enumeratorStruct);
+            AssertNotAssignableFrom<IDisposable>(enumeratorStruct);
+            AssertNotAssignableFrom<IEnumerator>(enumeratorStruct);
+            AssertNotAssignableFrom<IEnumerator<int>>(enumeratorStruct);
+
+            var set = new HashSet<IEnumerator>();
+
+            set.Add(((IEnumerable<int>)array).GetEnumerator());
+            set.Add(((IEnumerable<int>)array).GetEnumerator());
+
+            set.Add(((IEnumerable)array).GetEnumerator());
+            set.Add(((IEnumerable)array).GetEnumerator());
+
+            int expected = array.IsEmpty ? 1 : 4; // Empty ImmutableArrays should cache their enumerators.
+            Assert.Equal(expected, set.Count);
+            Assert.DoesNotContain(null, set);
+
+            Assert.All(set, enumerator =>
+            {
+                Assert.NotEqual(enumeratorStruct.GetType(), enumerator.GetType());
+                Assert.Equal(set.First().GetType(), enumerator.GetType());
+            });
+        }
+
+        private static void AssertNotAssignableFrom<T>(object obj)
+        {
+            var typeInfo = obj.GetType().GetTypeInfo();
+            Assert.False(typeof(T).GetTypeInfo().IsAssignableFrom(typeInfo));
         }
 
         [Fact]
-        public void EqualityCheckComparesInternalArrayByReference()
+        public void GetEnumeratorObjectEmptyReturnsSingleton()
         {
-            var immutable1 = ImmutableArray.Create(1);
-            var immutable2 = ImmutableArray.Create(1);
-            Assert.NotEqual(immutable1, immutable2);
-
-            Assert.True(immutable1.Equals(immutable1));
-            Assert.True(immutable1.Equals((object)immutable1));
+            var empty = (IEnumerable<int>)s_empty;
+            Assert.Same(empty.GetEnumerator(), empty.GetEnumerator());
         }
 
         [Fact]
-        public void EqualsObjectNull()
+        public void GetEnumeratorInvalid()
         {
-            Assert.False(s_empty.Equals((object)null));
+            Assert.Throws<NullReferenceException>(() => s_emptyDefault.GetEnumerator());
+            Assert.Throws<InvalidOperationException>(() => ((IEnumerable)s_emptyDefault).GetEnumerator());
+            Assert.Throws<InvalidOperationException>(() => ((IEnumerable<int>)s_emptyDefault).GetEnumerator());
+        }
+
+        [Theory]
+        [MemberData(nameof(Int32EnumerableData))]
+        public void EnumeratorTraversal(IEnumerable<int> source)
+        {
+            var array = source.ToImmutableArray();
+
+            var enumeratorStruct = array.GetEnumerator();
+            var enumeratorObject = ((IEnumerable<int>)array).GetEnumerator();
+
+            Assert.Throws<IndexOutOfRangeException>(() => enumeratorStruct.Current);
+            Assert.Throws<InvalidOperationException>(() => enumeratorObject.Current);
+
+            int count = source.Count();
+
+            for (int i = 0; i < count; i++)
+            {
+                Assert.True(enumeratorStruct.MoveNext());
+                Assert.True(enumeratorObject.MoveNext());
+
+                int element = source.ElementAt(i);
+                Assert.Equal(element, enumeratorStruct.Current);
+                Assert.Equal(element, enumeratorObject.Current);
+                Assert.Equal(element, ((IEnumerator)enumeratorObject).Current);
+            }
+
+            Assert.False(enumeratorStruct.MoveNext());
+            Assert.False(enumeratorObject.MoveNext());
+
+            Assert.Throws<IndexOutOfRangeException>(() => enumeratorStruct.Current);
+            Assert.Throws<InvalidOperationException>(() => enumeratorObject.Current);
+        }
+
+        [Theory]
+        [MemberData(nameof(Int32EnumerableData))]
+        public void EnumeratorObjectTraversalDisposeReset(IEnumerable<int> source)
+        {
+            var array = (IEnumerable<int>)source.ToImmutableArray();
+            var enumerator = array.GetEnumerator();
+
+            Assert.All(Enumerable.Range(0, source.Count()), bound =>
+            {
+                enumerator.Reset();
+                enumerator.Dispose(); // This should have no effect.
+
+                for (int i = 0; i < bound; i++)
+                {
+                    int element = source.ElementAt(i);
+
+                    enumerator.Dispose(); // This should have no effect.
+                    Assert.True(enumerator.MoveNext());
+                    Assert.Equal(element, enumerator.Current);
+                    Assert.Equal(element, ((IEnumerator)enumerator).Current);
+                }
+            });
         }
 
         [Fact]
-        public void OperatorsAndEquality()
+        public void EnumeratorStructTraversalDefaultInvalid()
         {
-            Assert.True(s_empty.Equals(s_empty));
-            var emptySame = s_empty;
-            Assert.True(s_empty == emptySame);
-            Assert.False(s_empty != emptySame);
+            var enumerator = default(ImmutableArray<int>.Enumerator);
+            Assert.Throws<NullReferenceException>(() => enumerator.Current);
+            Assert.Throws<NullReferenceException>(() => enumerator.MoveNext());
+        }
 
-            // empty and default should not be seen as equal
-            Assert.False(s_empty.Equals(s_emptyDefault));
-            Assert.False(s_empty == s_emptyDefault);
-            Assert.True(s_empty != s_emptyDefault);
-            Assert.False(s_emptyDefault == s_empty);
-            Assert.True(s_emptyDefault != s_empty);
+        [Theory]
+        [MemberData(nameof(EnumeratorTraversalNullData))]
+        public void EnumeratorTraversalNull<T>(IEnumerable<T> source, T dummy) where T : class
+        {
+            // Remove the dummy parameters once https://github.com/xunit/xunit/pull/965 makes it into corefx.
 
-            Assert.False(s_empty.Equals(s_oneElement));
-            Assert.False(s_empty == s_oneElement);
-            Assert.True(s_empty != s_oneElement);
-            Assert.False(s_oneElement == s_empty);
-            Assert.True(s_oneElement != s_empty);
+            var array = ForceLazy(source.ToImmutableArray()).ToArray();
+            Assert.Equal(source, array);
+            Assert.Contains(null, array);
+        }
+
+        public static IEnumerable<object[]> EnumeratorTraversalNullData()
+        {
+            yield return new object[] { s_twoElementRefTypeWithNull, string.Empty };
+            yield return new object[] { new[] { default(object) }, new object() };
+            yield return new object[] { new[] { null, new object() }, new object() };
+            yield return new object[] { new[] { null, string.Empty }, string.Empty };
+        }
+
+        [Theory]
+        [MemberData(nameof(EqualsData))]
+        public void Equals(StrongBox<ImmutableArray<int>> firstBox, StrongBox<ImmutableArray<int>> secondBox, bool expected)
+        {
+            ImmutableArray<int> first = firstBox.Value;
+            ImmutableArray<int> second = secondBox.Value;
+
+            Assert.Equal(expected, first == second);
+            Assert.NotEqual(expected, first != second);
+
+            Assert.Equal(expected, first.Equals(second));
+            Assert.Equal(expected, AsEquatable(first).Equals(second));
+            Assert.Equal(expected, first.Equals((object)second));
+
+            Assert.Equal(expected, second == first);
+            Assert.NotEqual(expected, second != first);
+
+            Assert.Equal(expected, second.Equals(first));
+            Assert.Equal(expected, AsEquatable(second).Equals(first));
+            Assert.Equal(expected, second.Equals((object)first));
+        }
+
+        public static IEnumerable<object[]> EqualsData()
+        {
+            // Once https://github.com/xunit/assert.xunit/pull/5 comes into corefx, all the StrongBox stuff can be removed.
+
+            var enumerables = Int32EnumerableData()
+                .Select(array => array[0])
+                .Cast<IEnumerable<int>>();
+
+            foreach (var enumerable in enumerables)
+            {
+                var array = enumerable.ToImmutableArray();
+
+                yield return new object[]
+                {
+                    new StrongBox<ImmutableArray<int>>(array),
+                    new StrongBox<ImmutableArray<int>>(array),
+                    true
+                };
+
+                // Reference equality, not content equality, should be compared.
+                yield return new object[]
+                {
+                    new StrongBox<ImmutableArray<int>>(array),
+                    new StrongBox<ImmutableArray<int>>(enumerable.ToImmutableArray()),
+                    !enumerable.Any() || enumerable is ImmutableArray<int>
+                };
+            }
+
+            // Empty and default ImmutableArrays should not be seen as equal.
+            yield return new object[]
+            {
+                new StrongBox<ImmutableArray<int>>(s_empty),
+                new StrongBox<ImmutableArray<int>>(s_emptyDefault),
+                false
+            };
+
+            yield return new object[]
+            {
+                new StrongBox<ImmutableArray<int>>(s_empty),
+                new StrongBox<ImmutableArray<int>>(s_oneElement),
+                false
+            };
+        }
+
+        [Theory]
+        [MemberData(nameof(StrongBoxedInt32EnumerableData))]
+        [MemberData(nameof(StrongBoxedSpecialInt32ImmutableArrayData))]
+        public void EqualsSelf(StrongBox<IEnumerable<int>> box)
+        {
+            IEnumerable<int> source = box.Value;
+            var array = source.ToImmutableArray();
+
+#pragma warning disable CS1718 // Comparison made to same variable
+            Assert.True(array == array);
+            Assert.False(array != array);
+#pragma warning restore CS1718 // Comparison made to same variable
+
+            Assert.True(array.Equals(array));
+            Assert.True(AsEquatable(array).Equals(array));
+            Assert.True(array.Equals((object)array));
+        }
+
+        [Theory]
+        [MemberData(nameof(StrongBoxedInt32EnumerableData))]
+        [MemberData(nameof(StrongBoxedSpecialInt32ImmutableArrayData))]
+        public void EqualsNull(StrongBox<IEnumerable<int>> box)
+        {
+            IEnumerable<int> source = box.Value;
+            Assert.False(source.ToImmutableArray().Equals(null));
+        }
+
+        [Theory]
+        [MemberData(nameof(StrongBoxedInt32EnumerableData))]
+        [MemberData(nameof(StrongBoxedSpecialInt32ImmutableArrayData))]
+        public void EqualsNullable(StrongBox<IEnumerable<int>> box)
+        {
+            // ImmutableArray<T> overrides the equality operators for ImmutableArray<T>?.
+            // If one nullable with HasValue = false is compared to a nullable with HasValue = true,
+            // but Value.IsDefault = true, the nullables will compare as equal.
+
+            IEnumerable<int> source = box.Value;
+            var array = source.ToImmutableArray();
+            ImmutableArray<int>? nullable = array;
+
+            Assert.Equal(array.IsDefault, null == nullable);
+            Assert.NotEqual(array.IsDefault, null != nullable);
+
+            Assert.Equal(array.IsDefault, nullable == null);
+            Assert.NotEqual(array.IsDefault, nullable != null);
+        }
+
+        [Theory]
+        [MemberData(nameof(StrongBoxedInt32EnumerableData))]
+        [MemberData(nameof(StrongBoxedSpecialInt32ImmutableArrayData))]
+        public void GetHashCode(StrongBox<IEnumerable<int>> box)
+        {
+            IEnumerable<int> source = box.Value;
+            var array = source.ToImmutableArray();
+
+            // We must box once. Otherwise, the following assert would not have much purpose since
+            // RuntimeHelpers.GetHashCode returns different values for boxed objects that are not
+            // reference-equal.
+            object boxed = array;
+
+            // The default implementation of object.GetHashCode is a call to RuntimeHelpers.GetHashCode.
+            // This assert effectively ensures that ImmutableArray overrides GetHashCode.
+            Assert.NotEqual(RuntimeHelpers.GetHashCode(boxed), boxed.GetHashCode());
+
+            // Ensure that the hash is consistent.
+            Assert.Equal(array.GetHashCode(), array.GetHashCode());
+
+            if (array.IsDefault)
+            {
+                Assert.Equal(0, array.GetHashCode());
+            }
+            else if (array.IsEmpty)
+            {
+                // Empty array instances should be cached.
+                var same = ImmutableArray.Create(new int[0]);
+                Assert.Equal(array.GetHashCode(), same.GetHashCode());
+            }
+
+            // Use reflection to retrieve the underlying array, and ensure that the ImmutableArray's
+            // hash code is equivalent to the array's hash code.
+
+            int[] underlyingArray = GetUnderlyingArray(array);
+            Assert.Equal(underlyingArray?.GetHashCode() ?? 0, array.GetHashCode());
+        }
+
+        [Theory]
+        [MemberData(nameof(AddData))]
+        public void Add(IEnumerable<int> source, IEnumerable<int> items)
+        {
+            var array = source.ToImmutableArray();
+
+            var list = new List<Tuple<int[], ImmutableArray<int>>>();
+
+            int index = 0;
+            foreach (int item in items)
+            {
+                // Take a snapshot of the ImmutableArray before the Add.
+                list.Add(Tuple.Create(array.ToArray(), array));
+
+                // Add the next item.
+                array = array.Add(item);
+
+                var expected = source.Concat(items.Take(++index));
+                Assert.Equal(expected, array);
+
+                // Go back to previous ImmutableArrays and make sure their contents
+                // didn't change by comparing them against their snapshots.
+                foreach (var tuple in list)
+                {
+                    Assert.Equal(tuple.Item1, tuple.Item2);
+                }
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(AddData))]
+        public void AddRange(IEnumerable<int> source, IEnumerable<int> items)
+        {
+            Assert.All(ChangeType(items), it =>
+            {
+                var array = source.ToImmutableArray();
+
+                Assert.Equal(source.Concat(items), array.AddRange(it)); // Enumerable overload
+                Assert.Equal(source.Concat(items), array.AddRange(it.ToImmutableArray())); // Struct overload
+                Assert.Equal(source, array); // Make sure the original array wasn't affected.
+            });
+        }
+
+        public static IEnumerable<object[]> AddData()
+        {
+            yield return new object[] { new int[] { }, new[] { 1 } };
+            yield return new object[] { new[] { 1, 2 }, new[] { 3 } };
+            yield return new object[] { s_empty, Enumerable.Empty<int>() };
+            yield return new object[] { s_empty, Enumerable.Range(1, 2) };
+            yield return new object[] { s_empty, new[] { 1, 2 } };
+            yield return new object[] { s_manyElements, new[] { 4 } };
+            yield return new object[] { s_manyElements, new[] { 4, 5 } };
+            yield return new object[] { s_manyElements, new[] { 4 } };
+            yield return new object[] { s_manyElements, new[] { 4, 5 } };
+            yield return new object[] { s_empty, s_empty };
+            yield return new object[] { s_empty, s_oneElement };
+            yield return new object[] { s_oneElement, s_empty };
+        }
+
+        [Theory]
+        [MemberData(nameof(Int32EnumerableData))]
+        public void AddRangeInvalid(IEnumerable<int> source)
+        {
+            // If the lhs or the rhs is a default ImmutableArray, AddRange should throw.
+
+            Assert.Throws<NullReferenceException>(() => s_emptyDefault.AddRange(source)); // Enumerable overload
+            Assert.Throws<NullReferenceException>(() => s_emptyDefault.AddRange(source.ToImmutableArray())); // Struct overload
+            Assert.Throws<NullReferenceException>(() => source.ToImmutableArray().AddRange(s_emptyDefault)); // Struct overload
+            Assert.Throws<InvalidOperationException>(() => source.ToImmutableArray().AddRange((IEnumerable<int>)s_emptyDefault)); // Enumerable overload
+
+            Assert.Throws<NullReferenceException>(() => s_emptyDefault.AddRange(s_emptyDefault));
+            Assert.Throws<NullReferenceException>(() => s_emptyDefault.AddRange((IEnumerable<int>)s_emptyDefault));
+        }
+
+        [Theory]
+        [MemberData(nameof(InsertData))]
+        public void Insert<T>(IEnumerable<T> source, int index, T item)
+        {
+            var expected = source.Take(index)
+                .Concat(new[] { item })
+                .Concat(source.Skip(index));
+            var array = source.ToImmutableArray();
+
+            Assert.Equal(expected, array.Insert(index, item));
+            Assert.Equal(source, array); // Make sure the original array wasn't affected.
+        }
+
+        public static IEnumerable<object[]> InsertData()
+        {
+            yield return new object[] { new char[] { }, 0, 'c' };
+            yield return new object[] { new[] { 'c' }, 0, 'a' };
+            yield return new object[] { new[] { 'c' }, 1, 'e' };
+            yield return new object[] { new[] { 'a', 'c' }, 1, 'b' };
+        }
+
+        [Theory]
+        [MemberData(nameof(Int32EnumerableData))]
+        public void InsertInvalid(IEnumerable<int> source)
+        {
+            var array = source.ToImmutableArray();
+
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => array.Insert(-1, 0x61));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => array.Insert(array.Length + 1, 0x61));
+        }
+
+        [Theory]
+        [InlineData(-1)]
+        [InlineData(1)]
+        [InlineData(0)]
+        public void InsertDefaultInvalid(int index)
+        {
+            Assert.Throws<NullReferenceException>(() => s_emptyDefault.Insert(index, 10));
+        }
+
+        [Theory]
+        [MemberData(nameof(Int32EnumerableData))]
+        public void InsertRangeInvalid(IEnumerable<int> source)
+        {
+            var array = source.ToImmutableArray();
+
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => array.InsertRange(array.Length + 1, s_oneElement));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => array.InsertRange(-1, s_oneElement));
+
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => array.InsertRange(array.Length + 1, (IEnumerable<int>)s_oneElement));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => array.InsertRange(-1, (IEnumerable<int>)s_oneElement));
+        }
+
+        [Theory]
+        [MemberData(nameof(Int32EnumerableData))]
+        public void InsertRangeDefaultInvalid(IEnumerable<int> items)
+        {
+            var array = items.ToImmutableArray();
+
+            Assert.Throws<NullReferenceException>(() => s_emptyDefault.InsertRange(1, items));
+            Assert.Throws<NullReferenceException>(() => s_emptyDefault.InsertRange(-1, items));
+            Assert.Throws<NullReferenceException>(() => s_emptyDefault.InsertRange(0, items));
+
+            Assert.Throws<NullReferenceException>(() => s_emptyDefault.InsertRange(1, array));
+            Assert.Throws<NullReferenceException>(() => s_emptyDefault.InsertRange(-1, array));
+            Assert.Throws<NullReferenceException>(() => s_emptyDefault.InsertRange(0, array));
+
+            Assert.Throws<NullReferenceException>(() => array.InsertRange(1, s_emptyDefault));
+            Assert.Throws<NullReferenceException>(() => array.InsertRange(-1, s_emptyDefault));
+            Assert.Throws<NullReferenceException>(() => array.InsertRange(0, s_emptyDefault));
+
+            if (array.Length > 0)
+            {
+                Assert.Throws<InvalidOperationException>(() => array.InsertRange(1, (IEnumerable<int>)s_emptyDefault));
+            }
+
+            Assert.Throws<InvalidOperationException>(() => array.InsertRange(0, (IEnumerable<int>)s_emptyDefault));
+        }
+
+        [Theory]
+        [MemberData(nameof(InsertRangeData))]
+        public void InsertRange(IEnumerable<int> source, int index, IEnumerable<int> items)
+        {
+            var array = source.ToImmutableArray();
+
+            Assert.All(ChangeType(items), it =>
+            {
+                var expected = source.Take(index)
+                    .Concat(items)
+                    .Concat(source.Skip(index));
+
+                Assert.Equal(expected, array.InsertRange(index, it)); // Enumerable overload
+                Assert.Equal(expected, array.InsertRange(index, it.ToImmutableArray())); // Struct overload
+
+                if (index == array.Length)
+                {
+                    // Insertion at the end is equivalent to adding.
+                    Assert.Equal(expected, array.InsertRange(index, it)); // Enumerable overload
+                    Assert.Equal(expected, array.InsertRange(index, it.ToImmutableArray())); // Struct overload
+                }
+            });
+        }
+
+        public static IEnumerable<object[]> InsertRangeData()
+        {
+            yield return new object[] { s_manyElements, 0, new[] { 7 } };
+            yield return new object[] { s_manyElements, 0, new[] { 7, 8 } };
+            yield return new object[] { s_manyElements, 1, new[] { 7 } };
+            yield return new object[] { s_manyElements, 1, new[] { 7, 8 } };
+            yield return new object[] { s_manyElements, 3, new[] { 7 } };
+            yield return new object[] { s_manyElements, 3, new[] { 7, 8 } };
+            yield return new object[] { s_empty, 0, new[] { 1 } };
+            yield return new object[] { s_empty, 0, new[] { 2, 3, 4 } };
+            yield return new object[] { s_manyElements, 0, new int[0] };
+            yield return new object[] { s_empty, 0, s_empty };
+            yield return new object[] { s_empty, 0, s_oneElement };
+            yield return new object[] { s_oneElement, 0, s_empty };
+            yield return new object[] { s_empty, 0, new uint[] { 1, 2, 3 } };
+            yield return new object[] { s_manyElements, 0, new uint[] { 4, 5, 6 } };
+            yield return new object[] { s_manyElements, 3, new uint[] { 4, 5, 6 } };
+        }
+
+        [Theory]
+        [MemberData(nameof(RemoveAtData))]
+        public void RemoveAt(IEnumerable<int> source, int index)
+        {
+            var array = source.ToImmutableArray();
+            var expected = source.Take(index).Concat(source.Skip(index + 1));
+            Assert.Equal(expected, array.RemoveAt(index));
+        }
+
+        public static IEnumerable<object[]> RemoveAtData()
+        {
+            yield return new object[] { s_oneElement, 0 };
+            yield return new object[] { s_manyElements, 0 };
+            yield return new object[] { s_manyElements, 1 };
+            yield return new object[] { s_manyElements, 2 };
+        }
+
+        [Theory]
+        [MemberData(nameof(Int32EnumerableData))]
+        public void RemoveAtInvalid(IEnumerable<int> source)
+        {
+            var array = source.ToImmutableArray();
+
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => array.RemoveAt(-1));
+            Assert.Throws<ArgumentOutOfRangeException>("length", () => array.RemoveAt(array.Length));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => array.RemoveAt(array.Length + 1));
+        }
+
+        [Theory]
+        [InlineData(-1, Skip = "#14961")]
+        [InlineData(0)]
+        [InlineData(1)]
+        public void RemoveAtDefaultInvalid(int index)
+        {
+            Assert.Throws<NullReferenceException>(() => s_emptyDefault.RemoveAt(index));
+        }
+
+        [Theory]
+        [MemberData(nameof(RemoveData))]
+        public void Remove<T>(IEnumerable<T> source, T item, IEqualityComparer<T> comparer)
+        {
+            var array = source.ToImmutableArray();
+
+            var comparerOrDefault = comparer ?? EqualityComparer<T>.Default;
+            var expected = source
+                .TakeWhile(x => !comparerOrDefault.Equals(x, item))
+                .Concat(source.SkipWhile(x => !comparerOrDefault.Equals(x, item)).Skip(1));
+
+            Assert.Equal(expected, array.Remove(item, comparer));
+            Assert.Equal(expected, ((IImmutableList<T>)array).Remove(item, comparer));
+            
+            if (comparer == null || comparer == EqualityComparer<T>.Default)
+            {
+                Assert.Equal(expected, array.Remove(item));
+                Assert.Equal(expected, ((IImmutableList<T>)array).Remove(item));
+            }
+        }
+
+        public static IEnumerable<object[]> RemoveData()
+        {
+            return SharedEqualityComparers<int>().SelectMany(comparer =>
+                new[]
+                {
+                    new object[] { s_manyElements, 1, comparer },
+                    new object[] { s_manyElements, 2, comparer },
+                    new object[] { s_manyElements, 3, comparer },
+                    new object[] { s_manyElements, 4, comparer },
+                    new object[] { new int[0], 4, comparer },
+                    new object[] { new int[] { 1, 4 }, 4, comparer },
+                    new object[] { s_oneElement, 1, comparer }
+                });
         }
 
         [Fact]
-        public void NullableOperators()
+        public void RemoveDefaultInvalid()
         {
-            ImmutableArray<int>? nullArray = null;
-            ImmutableArray<int>? nonNullDefault = s_emptyDefault;
-            ImmutableArray<int>? nonNullEmpty = s_empty;
+            Assert.All(SharedEqualityComparers<int>(), comparer =>
+            {
+                Assert.Throws<NullReferenceException>(() => s_emptyDefault.Remove(5));
+                Assert.Throws<NullReferenceException>(() => s_emptyDefault.Remove(5, comparer));
 
-            Assert.True(nullArray == nonNullDefault);
-            Assert.False(nullArray != nonNullDefault);
-            Assert.True(nonNullDefault == nullArray);
-            Assert.False(nonNullDefault != nullArray);
+                Assert.Throws<InvalidOperationException>(() => ((IImmutableList<int>)s_emptyDefault).Remove(5));
+                Assert.Throws<InvalidOperationException>(() => ((IImmutableList<int>)s_emptyDefault).Remove(5, comparer));
+            });
+        }
 
-            Assert.False(nullArray == nonNullEmpty);
-            Assert.True(nullArray != nonNullEmpty);
-            Assert.False(nonNullEmpty == nullArray);
-            Assert.True(nonNullEmpty != nullArray);
+        [Theory]
+        [MemberData(nameof(RemoveRangeIndexLengthData))]
+        public void RemoveRangeIndexLength(IEnumerable<int> source, int index, int length)
+        {
+            var array = source.ToImmutableArray();
+            var expected = source.Take(index).Concat(source.Skip(index + length));
+            Assert.Equal(expected, array.RemoveRange(index, length));
+        }
+
+        public static IEnumerable<object[]> RemoveRangeIndexLengthData()
+        {
+            yield return new object[] { s_empty, 0, 0 };
+            yield return new object[] { s_oneElement, 1, 0 };
+            yield return new object[] { s_oneElement, 0, 1 };
+            yield return new object[] { s_oneElement, 0, 0 };
+            yield return new object[] { new[] { 1, 2, 3, 4 }, 0, 2 };
+            yield return new object[] { new[] { 1, 2, 3, 4 }, 1, 2 };
+            yield return new object[] { new[] { 1, 2, 3, 4 }, 2, 2 };
+        }
+
+        [Theory]
+        [MemberData(nameof(Int32EnumerableData))]
+        public void RemoveRangeIndexLengthInvalid(IEnumerable<int> source)
+        {
+            var array = source.ToImmutableArray();
+
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => array.RemoveRange(-1, 1));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => array.RemoveRange(array.Length + 1, 1));
+            Assert.Throws<ArgumentOutOfRangeException>("length", () => array.RemoveRange(0, -1));
+            Assert.Throws<ArgumentOutOfRangeException>("length", () => array.RemoveRange(0, array.Length + 1));
+        }
+
+        [Theory]
+        [InlineData(-1, 0, Skip = "#14961")]
+        [InlineData(0, -1)]
+        [InlineData(0, 0)]
+        [InlineData(1, -1)]
+        public void RemoveRangeIndexLengthDefaultInvalid(int index, int length)
+        {
+            Assert.Throws<NullReferenceException>(() => s_emptyDefault.RemoveRange(index, length));
+        }
+
+        [Theory]
+        [MemberData(nameof(RemoveRangeEnumerableData))]
+        public void RemoveRangeEnumerable(IEnumerable<int> source, IEnumerable<int> items, IEqualityComparer<int> comparer)
+        {
+            var array = source.ToImmutableArray();
+            IEnumerable<int> expected = items.Aggregate(
+                seed: source.ToImmutableArray(),
+                func: (a, i) => a.Remove(i, comparer));
+
+            Assert.Equal(expected, array.RemoveRange(items, comparer)); // Enumerable overload
+            Assert.Equal(expected, array.RemoveRange(items.ToImmutableArray(), comparer)); // Struct overload
+            Assert.Equal(expected, ((IImmutableList<int>)array).RemoveRange(items, comparer));
+
+            if (comparer == null || comparer == EqualityComparer<int>.Default)
+            {
+                Assert.Equal(expected, array.RemoveRange(items)); // Enumerable overload
+                Assert.Equal(expected, array.RemoveRange(items.ToImmutableArray())); // Struct overload
+                Assert.Equal(expected, ((IImmutableList<int>)array).RemoveRange(items));
+            }
+        }
+
+        public static IEnumerable<object[]> RemoveRangeEnumerableData()
+        {
+            return SharedEqualityComparers<int>().SelectMany(comparer =>
+                new[]
+                {
+                    new object[] { s_empty, s_empty, comparer },
+                    new object[] { s_empty, s_oneElement, comparer },
+                    new object[] { s_oneElement, s_empty, comparer },
+                    new object[] { new[] { 1, 2, 3 }, new[] { 2, 3, 4 }, comparer },
+                    new object[] { Enumerable.Range(1, 5), Enumerable.Range(6, 5), comparer },
+                    new object[] { new[] { 1, 2, 3 }, new[] { 2 }, comparer },
+                    new object[] { s_empty, new int[] { }, comparer },
+                    new object[] { new[] { 1, 2, 3 }, new[] { 2 }, comparer },
+                    new object[] { new[] { 1, 2, 3 }, new[] { 1, 3, 5 }, comparer },
+                    new object[] { Enumerable.Range(1, 10), new[] { 2, 4, 5, 7, 10 }, comparer },
+                    new object[] { Enumerable.Range(1, 10), new[] { 1, 2, 4, 5, 7, 10 }, comparer },
+                    new object[] { new[] { 1, 2, 3 }, new[] { 5 }, comparer },
+                    new object[] { new[] { 1, 2, 2, 3 }, new[] { 2 }, comparer },
+                    new object[] { new[] { 1, 2, 2, 3 }, new[] { 2, 2 }, comparer },
+                    new object[] { new[] { 1, 2, 2, 3 }, new[] { 2, 2, 2 }, comparer },
+                    new object[] { new[] { 1, 2, 3 }, new[] { 42 }, comparer },
+                    new object[] { new[] { 1, 2, 3 }, new[] { 42, 42 }, comparer },
+                    new object[] { new[] { 1, 2, 3 }, new[] { 42, 42, 42 }, comparer },
+                });
+        }
+
+        [Theory]
+        [MemberData(nameof(Int32EnumerableData))]
+        public void RemoveRangeEnumerableInvalid(IEnumerable<int> source)
+        {
+            var array = source.ToImmutableArray();
+
+            Assert.All(SharedEqualityComparers<int>(), comparer =>
+            {
+                // Enumerable overloads, lhs is default
+                Assert.Throws<NullReferenceException>(() => s_emptyDefault.RemoveRange(source));
+                Assert.Throws<NullReferenceException>(() => s_emptyDefault.RemoveRange(source, comparer));
+                Assert.Throws<InvalidOperationException>(() => ((IImmutableList<int>)s_emptyDefault).RemoveRange(source));
+                Assert.Throws<InvalidOperationException>(() => ((IImmutableList<int>)s_emptyDefault).RemoveRange(source, comparer));
+
+                // Struct overloads, lhs is default
+                Assert.Throws<NullReferenceException>(() => s_emptyDefault.RemoveRange(array));
+                Assert.Throws<NullReferenceException>(() => s_emptyDefault.RemoveRange(array, comparer));
+
+                // Struct overloads, rhs is default
+                Assert.Throws<ArgumentNullException>("items", () => array.RemoveRange(s_emptyDefault));
+                Assert.Throws<ArgumentNullException>("items", () => array.RemoveRange(s_emptyDefault, comparer));
+
+                // Enumerable overloads, rhs is default
+                Assert.Throws<InvalidOperationException>(() => array.RemoveRange((IEnumerable<int>)s_emptyDefault));
+                Assert.Throws<InvalidOperationException>(() => array.RemoveRange((IEnumerable<int>)s_emptyDefault, comparer));
+                Assert.Throws<InvalidOperationException>(() => ((IImmutableList<int>)array).RemoveRange(s_emptyDefault));
+                Assert.Throws<InvalidOperationException>(() => ((IImmutableList<int>)array).RemoveRange(s_emptyDefault, comparer));
+
+                // Struct overloads, both sides are default
+                Assert.Throws<ArgumentNullException>("items", () => s_emptyDefault.RemoveRange(s_emptyDefault));
+                Assert.Throws<ArgumentNullException>("items", () => s_emptyDefault.RemoveRange(s_emptyDefault, comparer));
+
+                // Enumerable overloads, both sides are default
+                Assert.Throws<NullReferenceException>(() => s_emptyDefault.RemoveRange((IEnumerable<int>)s_emptyDefault));
+                Assert.Throws<NullReferenceException>(() => s_emptyDefault.RemoveRange((IEnumerable<int>)s_emptyDefault, comparer));
+                Assert.Throws<InvalidOperationException>(() => ((IImmutableList<int>)s_emptyDefault).RemoveRange(s_emptyDefault));
+                Assert.Throws<InvalidOperationException>(() => ((IImmutableList<int>)s_emptyDefault).RemoveRange(s_emptyDefault, comparer));
+
+                // Enumerable overloads, rhs is null
+                Assert.Throws<ArgumentNullException>("items", () => array.RemoveRange(items: null));
+                Assert.Throws<ArgumentNullException>("items", () => array.RemoveRange(items: null, equalityComparer: comparer));
+                Assert.Throws<ArgumentNullException>("items", () => ((IImmutableList<int>)array).RemoveRange(items: null));
+                Assert.Throws<ArgumentNullException>("items", () => ((IImmutableList<int>)array).RemoveRange(items: null, equalityComparer: comparer));
+
+                // Enumerable overloads, lhs is default and rhs is null
+                Assert.Throws<NullReferenceException>(() => s_emptyDefault.RemoveRange(items: null));
+                Assert.Throws<NullReferenceException>(() => s_emptyDefault.RemoveRange(items: null, equalityComparer: comparer));
+                Assert.Throws<InvalidOperationException>(() => ((IImmutableList<int>)s_emptyDefault).RemoveRange(items: null));
+                Assert.Throws<InvalidOperationException>(() => ((IImmutableList<int>)s_emptyDefault).RemoveRange(items: null, equalityComparer: comparer));
+            });
         }
 
         [Fact]
-        public void GetHashCodeTest()
+        public void RemoveRangeEnumerableRegression()
         {
-            Assert.Equal(0, s_emptyDefault.GetHashCode());
-            Assert.NotEqual(0, s_empty.GetHashCode());
-            Assert.NotEqual(0, s_oneElement.GetHashCode());
-        }
-
-        [Fact]
-        public void Add()
-        {
-            var source = new[] { 1, 2 };
-            var array1 = ImmutableArray.Create(source);
-            var array2 = array1.Add(3);
-            Assert.Equal(source, array1);
-            Assert.Equal(new[] { 1, 2, 3 }, array2);
-            Assert.Equal(new[] { 1 }, s_empty.Add(1));
-        }
-
-        [Fact]
-        public void AddRange()
-        {
-            var nothingToEmpty = s_empty.AddRange(Enumerable.Empty<int>());
-            Assert.False(nothingToEmpty.IsDefault);
-            Assert.True(nothingToEmpty.IsEmpty);
-
-            Assert.Equal(new[] { 1, 2 }, s_empty.AddRange(Enumerable.Range(1, 2)));
-            Assert.Equal(new[] { 1, 2 }, s_empty.AddRange(new[] { 1, 2 }));
-
-            Assert.Equal(new[] { 1, 2, 3, 4 }, s_manyElements.AddRange(new[] { 4 }));
-            Assert.Equal(new[] { 1, 2, 3, 4, 5 }, s_manyElements.AddRange(new[] { 4, 5 }));
-
-            Assert.Equal(new[] { 1, 2, 3, 4 }, s_manyElements.AddRange(ImmutableArray.Create(4)));
-            Assert.Equal(new[] { 1, 2, 3, 4, 5 }, s_manyElements.AddRange(ImmutableArray.Create(4, 5)));
-        }
-
-        [Fact]
-        public void AddRangeDefaultEnumerable()
-        {
-            Assert.Throws<NullReferenceException>(() => s_emptyDefault.AddRange(Enumerable.Empty<int>()));
-            Assert.Throws<NullReferenceException>(() => s_emptyDefault.AddRange(Enumerable.Range(1, 2)));
-            Assert.Throws<NullReferenceException>(() => s_emptyDefault.AddRange(new[] { 1, 2 }));
-        }
-
-        [Fact]
-        public void AddRangeDefaultStruct()
-        {
-            Assert.Throws<NullReferenceException>(() => s_emptyDefault.AddRange(s_empty));
-            Assert.Throws<NullReferenceException>(() => s_empty.AddRange(s_emptyDefault));
-            Assert.Throws<NullReferenceException>(() => s_emptyDefault.AddRange(s_oneElement));
-            Assert.Throws<NullReferenceException>(() => s_oneElement.AddRange(s_emptyDefault));
-
-            IEnumerable<int> emptyBoxed = s_empty;
-            IEnumerable<int> emptyDefaultBoxed = s_emptyDefault;
-            IEnumerable<int> oneElementBoxed = s_oneElement;
-            Assert.Throws<NullReferenceException>(() => s_emptyDefault.AddRange(emptyBoxed));
-            Assert.Throws<InvalidOperationException>(() => s_empty.AddRange(emptyDefaultBoxed));
-            Assert.Throws<NullReferenceException>(() => s_emptyDefault.AddRange(oneElementBoxed));
-            Assert.Throws<InvalidOperationException>(() => s_oneElement.AddRange(emptyDefaultBoxed));
-        }
-
-        [Fact]
-        public void AddRangeNoOpIdentity()
-        {
-            Assert.Equal(s_empty, s_empty.AddRange(s_empty));
-            Assert.Equal(s_oneElement, s_empty.AddRange(s_oneElement)); // struct overload
-            Assert.Equal(s_oneElement, s_empty.AddRange((IEnumerable<int>)s_oneElement)); // enumerable overload
-            Assert.Equal(s_oneElement, s_oneElement.AddRange(s_empty));
-        }
-
-        [Fact]
-        public void Insert()
-        {
-            var array1 = ImmutableArray.Create<char>();
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => array1.Insert(-1, 'a'));
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => array1.Insert(1, 'a'));
-
-            var insertFirst = array1.Insert(0, 'c');
-            Assert.Equal(new[] { 'c' }, insertFirst);
-
-            var insertLeft = insertFirst.Insert(0, 'a');
-            Assert.Equal(new[] { 'a', 'c' }, insertLeft);
-
-            var insertRight = insertFirst.Insert(1, 'e');
-            Assert.Equal(new[] { 'c', 'e' }, insertRight);
-
-            var insertBetween = insertLeft.Insert(1, 'b');
-            Assert.Equal(new[] { 'a', 'b', 'c' }, insertBetween);
-        }
-
-        [Fact]
-        public void InsertDefault()
-        {
-            Assert.Throws<NullReferenceException>(() => s_emptyDefault.Insert(-1, 10));
-            Assert.Throws<NullReferenceException>(() => s_emptyDefault.Insert(1, 10));
-            Assert.Throws<NullReferenceException>(() => s_emptyDefault.Insert(0, 10));
-        }
-
-        [Fact]
-        public void InsertRangeNoOpIdentity()
-        {
-            Assert.Equal(s_empty, s_empty.InsertRange(0, s_empty));
-            Assert.Equal(s_oneElement, s_empty.InsertRange(0, s_oneElement)); // struct overload
-            Assert.Equal(s_oneElement, s_empty.InsertRange(0, (IEnumerable<int>)s_oneElement)); // enumerable overload
-            Assert.Equal(s_oneElement, s_oneElement.InsertRange(0, s_empty));
-        }
-
-        [Fact]
-        public void InsertRangeEmpty()
-        {
-            Assert.Throws<NullReferenceException>(() => s_emptyDefault.Insert(-1, 10));
-            Assert.Throws<NullReferenceException>(() => s_emptyDefault.Insert(1, 10));
-            Assert.Equal(new int[0], s_empty.InsertRange(0, Enumerable.Empty<int>()));
-            Assert.Equal(s_empty, s_empty.InsertRange(0, Enumerable.Empty<int>()));
-            Assert.Equal(new[] { 1 }, s_empty.InsertRange(0, new[] { 1 }));
-            Assert.Equal(new[] { 2, 3, 4 }, s_empty.InsertRange(0, new[] { 2, 3, 4 }));
-            Assert.Equal(new[] { 2, 3, 4 }, s_empty.InsertRange(0, Enumerable.Range(2, 3)));
-            Assert.Equal(s_manyElements, s_manyElements.InsertRange(0, Enumerable.Empty<int>()));
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => s_empty.InsertRange(1, s_oneElement));
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => s_empty.InsertRange(-1, s_oneElement));
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => s_empty.InsertRange(1, (IEnumerable<int>)s_oneElement));
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => s_empty.InsertRange(-1, (IEnumerable<int>)s_oneElement));
-        }
-
-        [Fact]
-        public void InsertRangeDefault()
-        {
-            Assert.Throws<NullReferenceException>(() => s_emptyDefault.InsertRange(1, Enumerable.Empty<int>()));
-            Assert.Throws<NullReferenceException>(() => s_emptyDefault.InsertRange(-1, Enumerable.Empty<int>()));
-            Assert.Throws<NullReferenceException>(() => s_emptyDefault.InsertRange(0, Enumerable.Empty<int>()));
-            Assert.Throws<NullReferenceException>(() => s_emptyDefault.InsertRange(0, new[] { 1 }));
-            Assert.Throws<NullReferenceException>(() => s_emptyDefault.InsertRange(0, new[] { 2, 3, 4 }));
-            Assert.Throws<NullReferenceException>(() => s_emptyDefault.InsertRange(0, Enumerable.Range(2, 3)));
-        }
-
-        /// <summary>
-        /// Validates that a fixed bug in the inappropriate adding of the
-        /// Empty singleton enumerator to the reusable instances bag does not regress.
-        /// </summary>
-        [Fact]
-        public void EmptyEnumeratorReuseRegressionTest()
-        {
+            // Validates that a fixed bug in the inappropriate adding of the Empty
+            // singleton enumerator to the reusable instances bag does not regress.
+            
             IEnumerable<int> oneElementBoxed = s_oneElement;
             IEnumerable<int> emptyBoxed = s_empty;
             IEnumerable<int> emptyDefaultBoxed = s_emptyDefault;
@@ -770,626 +1338,762 @@ namespace System.Collections.Immutable.Tests
             Assert.Throws<NullReferenceException>(() => s_emptyDefault.RemoveRange(emptyBoxed));
             Assert.Throws<NullReferenceException>(() => s_emptyDefault.RemoveRange(emptyDefaultBoxed));
             Assert.Throws<InvalidOperationException>(() => s_empty.RemoveRange(emptyDefaultBoxed));
+
             Assert.Equal(oneElementBoxed, oneElementBoxed);
         }
 
-        [Fact]
-        public void InsertRangeDefaultStruct()
+        [Theory]
+        [MemberData(nameof(RemoveAllData))]
+        public void RemoveAll(IEnumerable<int> source, Predicate<int> match)
         {
-            Assert.Throws<NullReferenceException>(() => s_emptyDefault.InsertRange(0, s_empty));
-            Assert.Throws<NullReferenceException>(() => s_empty.InsertRange(0, s_emptyDefault));
-            Assert.Throws<NullReferenceException>(() => s_emptyDefault.InsertRange(0, s_oneElement));
-            Assert.Throws<NullReferenceException>(() => s_oneElement.InsertRange(0, s_emptyDefault));
-
-            IEnumerable<int> emptyBoxed = s_empty;
-            IEnumerable<int> emptyDefaultBoxed = s_emptyDefault;
-            IEnumerable<int> oneElementBoxed = s_oneElement;
-            Assert.Throws<NullReferenceException>(() => s_emptyDefault.InsertRange(0, emptyBoxed));
-            Assert.Throws<InvalidOperationException>(() => s_empty.InsertRange(0, emptyDefaultBoxed));
-            Assert.Throws<NullReferenceException>(() => s_emptyDefault.InsertRange(0, oneElementBoxed));
-            Assert.Throws<InvalidOperationException>(() => s_oneElement.InsertRange(0, emptyDefaultBoxed));
+            var array = source.ToImmutableArray();
+            var expected = source.Where(i => !match(i));
+            Assert.Equal(expected, array.RemoveAll(match));
         }
 
-        [Fact]
-        public void InsertRangeLeft()
+        public static IEnumerable<object[]> RemoveAllData()
         {
-            Assert.Equal(new[] { 7, 1, 2, 3 }, s_manyElements.InsertRange(0, new[] { 7 }));
-            Assert.Equal(new[] { 7, 8, 1, 2, 3 }, s_manyElements.InsertRange(0, new[] { 7, 8 }));
-        }
-
-        [Fact]
-        public void InsertRangeMid()
-        {
-            Assert.Equal(new[] { 1, 7, 2, 3 }, s_manyElements.InsertRange(1, new[] { 7 }));
-            Assert.Equal(new[] { 1, 7, 8, 2, 3 }, s_manyElements.InsertRange(1, new[] { 7, 8 }));
-        }
-
-        [Fact]
-        public void InsertRangeRight()
-        {
-            Assert.Equal(new[] { 1, 2, 3, 7 }, s_manyElements.InsertRange(3, new[] { 7 }));
-            Assert.Equal(new[] { 1, 2, 3, 7, 8 }, s_manyElements.InsertRange(3, new[] { 7, 8 }));
-        }
-
-        [Fact]
-        public void InsertRangeImmutableArray()
-        {
-            Assert.Equal(new[] { 7, 8, 1, 2, 3 }, s_manyElements.InsertRange(0, ImmutableArray.Create(7, 8)));
-            Assert.Equal(new[] { 1, 7, 2, 3 }, s_manyElements.InsertRange(1, ImmutableArray.Create(7)));
-            Assert.Equal(new[] { 1, 2, 3, 7 }, s_manyElements.InsertRange(3, ImmutableArray.Create(7)));
-        }
-
-        [Fact]
-        public void RemoveAt()
-        {
-            Assert.Throws<ArgumentOutOfRangeException>("length", () => s_empty.RemoveAt(0));
-            Assert.Throws<NullReferenceException>(() => s_emptyDefault.RemoveAt(0));
-            Assert.Throws<ArgumentOutOfRangeException>("length", () => s_oneElement.RemoveAt(1));
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => s_empty.RemoveAt(-1));
-
-            Assert.Equal(new int[0], s_oneElement.RemoveAt(0));
-            Assert.Equal(new[] { 2, 3 }, s_manyElements.RemoveAt(0));
-            Assert.Equal(new[] { 1, 3 }, s_manyElements.RemoveAt(1));
-            Assert.Equal(new[] { 1, 2 }, s_manyElements.RemoveAt(2));
-        }
-
-        [Fact]
-        public void Remove_NullEqualityComparer()
-        {
-            var modified = s_manyElements.Remove(2, null);
-            Assert.Equal(new[] { 1, 3 }, modified);
-
-            // Try again through the explicit interface implementation.
-            IImmutableList<int> boxedCollection = s_manyElements;
-            var modified2 = boxedCollection.Remove(2, null);
-            Assert.Equal(new[] { 1, 3 }, modified2);
-        }
-
-        [Fact]
-        public void Remove()
-        {
-            Assert.Throws<NullReferenceException>(() => s_emptyDefault.Remove(5));
-            Assert.False(s_empty.Remove(5).IsDefault);
-
-            Assert.True(s_oneElement.Remove(1).IsEmpty);
-            Assert.Equal(new[] { 2, 3 }, s_manyElements.Remove(1));
-            Assert.Equal(new[] { 1, 3 }, s_manyElements.Remove(2));
-            Assert.Equal(new[] { 1, 2 }, s_manyElements.Remove(3));
-        }
-
-        [Fact]
-        public void RemoveRange()
-        {
-            Assert.Equal(s_empty, s_empty.RemoveRange(0, 0));
-            Assert.Throws<NullReferenceException>(() => s_emptyDefault.RemoveRange(0, 0));
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => s_emptyDefault.RemoveRange(-1, 0));
-            Assert.Throws<NullReferenceException>(() => s_emptyDefault.RemoveRange(0, -1));
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => s_oneElement.RemoveRange(2, 0));
-            Assert.Equal(s_oneElement, s_oneElement.RemoveRange(1, 0));
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => s_empty.RemoveRange(-1, 0));
-            Assert.Throws<ArgumentOutOfRangeException>("length", () => s_oneElement.RemoveRange(0, 2));
-            Assert.Throws<ArgumentOutOfRangeException>("length", () => s_oneElement.RemoveRange(0, -1));
-
-            var fourElements = ImmutableArray.Create(1, 2, 3, 4);
-            Assert.Equal(new int[0], s_oneElement.RemoveRange(0, 1));
-            Assert.Equal(s_oneElement.ToArray(), s_oneElement.RemoveRange(0, 0));
-            Assert.Equal(new[] { 3, 4 }, fourElements.RemoveRange(0, 2));
-            Assert.Equal(new[] { 1, 4 }, fourElements.RemoveRange(1, 2));
-            Assert.Equal(new[] { 1, 2 }, fourElements.RemoveRange(2, 2));
-        }
-
-        [Fact]
-        public void RemoveRangeDefaultStruct()
-        {
-            Assert.Throws<NullReferenceException>(() => s_emptyDefault.RemoveRange(s_empty));
-            Assert.Throws<ArgumentNullException>("items", () => s_empty.RemoveRange(s_emptyDefault));
-            Assert.Throws<NullReferenceException>(() => s_emptyDefault.RemoveRange(s_oneElement));
-            Assert.Throws<ArgumentNullException>("items", () => s_oneElement.RemoveRange(s_emptyDefault));
-
-            IEnumerable<int> emptyBoxed = s_empty;
-            IEnumerable<int> emptyDefaultBoxed = s_emptyDefault;
-            IEnumerable<int> oneElementBoxed = s_oneElement;
-            Assert.Throws<NullReferenceException>(() => s_emptyDefault.RemoveRange(emptyBoxed));
-            Assert.Throws<InvalidOperationException>(() => s_empty.RemoveRange(emptyDefaultBoxed));
-            Assert.Throws<NullReferenceException>(() => s_emptyDefault.RemoveRange(oneElementBoxed));
-            Assert.Throws<InvalidOperationException>(() => s_oneElement.RemoveRange(emptyDefaultBoxed));
-        }
-
-        [Fact]
-        public void RemoveRangeNoOpIdentity()
-        {
-            Assert.Equal(s_empty, s_empty.RemoveRange(s_empty));
-            Assert.Equal(s_empty, s_empty.RemoveRange(s_oneElement)); // struct overload
-            Assert.Equal(s_empty, s_empty.RemoveRange((IEnumerable<int>)s_oneElement)); // enumerable overload
-            Assert.Equal(s_oneElement, s_oneElement.RemoveRange(s_empty));
-        }
-
-        [Fact]
-        public void RemoveAll()
-        {
-            Assert.Throws<ArgumentNullException>("match", () => s_oneElement.RemoveAll(null));
-
-            var array = ImmutableArray.CreateRange(Enumerable.Range(1, 10));
-            var removedEvens = array.RemoveAll(n => n % 2 == 0);
-            var removedOdds = array.RemoveAll(n => n % 2 == 1);
-            var removedAll = array.RemoveAll(n => true);
-            var removedNone = array.RemoveAll(n => false);
-
-            Assert.Equal(new[] { 1, 3, 5, 7, 9 }, removedEvens);
-            Assert.Equal(new[] { 2, 4, 6, 8, 10 }, removedOdds);
-            Assert.True(removedAll.IsEmpty);
-            Assert.Equal(Enumerable.Range(1, 10), removedNone);
-
-            Assert.False(s_empty.RemoveAll(n => false).IsDefault);
-            Assert.Throws<NullReferenceException>(() => s_emptyDefault.RemoveAll(n => false));
-        }
-
-        [Fact]
-        public void RemoveRange_EnumerableEqualityComparer_AcceptsNullEQ()
-        {
-            var array = ImmutableArray.Create(1, 2, 3);
-            var removed2eq = array.RemoveRange(new[] { 2 }, null);
-            Assert.Equal(2, removed2eq.Length);
-            Assert.Equal(new[] { 1, 3 }, removed2eq);
-        }
-
-        [Fact]
-        public void RemoveRangeEnumerableTest()
-        {
-            var list = ImmutableArray.Create(1, 2, 3);
-            Assert.Throws<ArgumentNullException>("items", () => list.RemoveRange(null));
-            Assert.Throws<NullReferenceException>(() => s_emptyDefault.RemoveRange(new int[0]).IsDefault);
-            Assert.False(s_empty.RemoveRange(new int[0]).IsDefault);
-
-            ImmutableArray<int> removed2 = list.RemoveRange(new[] { 2 });
-            Assert.Equal(2, removed2.Length);
-            Assert.Equal(new[] { 1, 3 }, removed2);
-
-            ImmutableArray<int> removed13 = list.RemoveRange(new[] { 1, 3, 5 });
-            Assert.Equal(1, removed13.Length);
-            Assert.Equal(new[] { 2 }, removed13);
-
-            Assert.Equal(new[] { 1, 3, 6, 8, 9 }, ImmutableArray.CreateRange(Enumerable.Range(1, 10)).RemoveRange(new[] { 2, 4, 5, 7, 10 }));
-            Assert.Equal(new[] { 3, 6, 8, 9 }, ImmutableArray.CreateRange(Enumerable.Range(1, 10)).RemoveRange(new[] { 1, 2, 4, 5, 7, 10 }));
-
-            Assert.Equal(list, list.RemoveRange(new[] { 5 }));
-            Assert.Equal(ImmutableArray.Create<int>(), ImmutableArray.Create<int>().RemoveRange(new[] { 1 }));
-
-            var listWithDuplicates = ImmutableArray.Create(1, 2, 2, 3);
-            Assert.Equal(new[] { 1, 2, 3 }, listWithDuplicates.RemoveRange(new[] { 2 }));
-            Assert.Equal(new[] { 1, 3 }, listWithDuplicates.RemoveRange(new[] { 2, 2 }));
-            Assert.Equal(new[] { 1, 3 }, listWithDuplicates.RemoveRange(new[] { 2, 2, 2 }));
-        }
-
-        [Fact]
-        public void RemoveRangeImmutableArrayTest()
-        {
-            var list = ImmutableArray.Create(1, 2, 3);
-
-            ImmutableArray<int> removed2 = list.RemoveRange(ImmutableArray.Create(2));
-            Assert.Equal(2, removed2.Length);
-            Assert.Equal(new[] { 1, 3 }, removed2);
-
-            ImmutableArray<int> removed13 = list.RemoveRange(ImmutableArray.Create(1, 3, 5));
-            Assert.Equal(1, removed13.Length);
-            Assert.Equal(new[] { 2 }, removed13);
-
-            Assert.Equal(new[] { 1, 3, 6, 8, 9 }, ImmutableArray.CreateRange(Enumerable.Range(1, 10)).RemoveRange(ImmutableArray.Create(2, 4, 5, 7, 10)));
-            Assert.Equal(new[] { 3, 6, 8, 9 }, ImmutableArray.CreateRange(Enumerable.Range(1, 10)).RemoveRange(ImmutableArray.Create(1, 2, 4, 5, 7, 10)));
-
-            Assert.Equal(list, list.RemoveRange(ImmutableArray.Create(5)));
-            Assert.Equal(ImmutableArray.Create<int>(), ImmutableArray.Create<int>().RemoveRange(ImmutableArray.Create(1)));
-
-            var listWithDuplicates = ImmutableArray.Create(1, 2, 2, 3);
-            Assert.Equal(new[] { 1, 2, 3 }, listWithDuplicates.RemoveRange(ImmutableArray.Create(2)));
-            Assert.Equal(new[] { 1, 3 }, listWithDuplicates.RemoveRange(ImmutableArray.Create(2, 2)));
-            Assert.Equal(new[] { 1, 3 }, listWithDuplicates.RemoveRange(ImmutableArray.Create(2, 2, 2)));
-
-            Assert.Equal(new[] { 2, 3 }, list.RemoveRange(ImmutableArray.Create(42), EverythingEqual<int>.Default));
-            Assert.Equal(new[] { 3 }, list.RemoveRange(ImmutableArray.Create(42, 42), EverythingEqual<int>.Default));
-            Assert.Equal(new int[0], list.RemoveRange(ImmutableArray.Create(42, 42, 42), EverythingEqual<int>.Default));
-        }
-
-        [Fact]
-        public void Replace()
-        {
-            Assert.Equal(new[] { 5 }, s_oneElement.Replace(1, 5));
-
-            Assert.Equal(new[] { 6, 2, 3 }, s_manyElements.Replace(1, 6));
-            Assert.Equal(new[] { 1, 6, 3 }, s_manyElements.Replace(2, 6));
-            Assert.Equal(new[] { 1, 2, 6 }, s_manyElements.Replace(3, 6));
-
-            Assert.Equal(new[] { 1, 2, 3, 4 }, ImmutableArray.Create(1, 3, 3, 4).Replace(3, 2));
-        }
-
-        [Fact]
-        public void ReplaceWithEqualityComparerTest()
-        {
-            var updatedArray = s_manyElements.Replace(2, 10, null);
-            Assert.Equal(new[] { 1, 10, 3 }, updatedArray);
-
-            // Finally, try one last time using the interface implementation.
-            IImmutableList<int> iface = s_manyElements;
-            var updatedIFace = iface.Replace(2, 10, null);
-            Assert.Equal(new[] { 1, 10, 3 }, updatedIFace);
-        }
-
-        [Fact]
-        public void ReplaceMissingThrowsTest()
-        {
-            Assert.Throws<ArgumentException>("oldValue", () => s_empty.Replace(5, 3));
-        }
-
-        [Fact]
-        public void SetItem()
-        {
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => s_empty.SetItem(0, 10));
-            Assert.Throws<NullReferenceException>(() => s_emptyDefault.SetItem(0, 10));
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => s_oneElement.SetItem(1, 10));
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => s_empty.SetItem(-1, 10));
-
-            Assert.Equal(new[] { 12345 }, s_oneElement.SetItem(0, 12345));
-            Assert.Equal(new[] { 12345, 2, 3 }, s_manyElements.SetItem(0, 12345));
-            Assert.Equal(new[] { 1, 12345, 3 }, s_manyElements.SetItem(1, 12345));
-            Assert.Equal(new[] { 1, 2, 12345 }, s_manyElements.SetItem(2, 12345));
-        }
-
-        [Fact]
-        public void CopyToArray()
-        {
-            {
-                var target = new int[s_manyElements.Length];
-                s_manyElements.CopyTo(target);
-                Assert.Equal(target, s_manyElements);
-            }
-
-            {
-                var target = new int[0];
-                Assert.Throws<NullReferenceException>(() => s_emptyDefault.CopyTo(target));
-            }
-        }
-
-        [Fact]
-        public void CopyToArrayInt()
-        {
-            var source = ImmutableArray.Create(1, 2, 3);
-            var target = new int[4];
-            source.CopyTo(target, 1);
-            Assert.Equal(new[] { 0, 1, 2, 3 }, target);
-
-            Assert.Throws<NullReferenceException>(() => s_emptyDefault.CopyTo(target, 0));
-            Assert.Throws<ArgumentNullException>("dest", () => source.CopyTo(null, 0));
-            Assert.Throws<ArgumentOutOfRangeException>("dstIndex", () => source.CopyTo(target, -1));
-            Assert.Throws<ArgumentException>("", () => source.CopyTo(target, 2));
-        }
-
-        [Fact]
-        public void CopyToIntArrayIntInt()
-        {
-            var source = ImmutableArray.Create(1, 2, 3);
-            var target = new int[4];
-            source.CopyTo(1, target, 3, 1);
-            Assert.Equal(new[] { 0, 0, 0, 2 }, target);
-        }
-
-        [Fact]
-        public void Concat()
-        {
-            var array1 = ImmutableArray.Create(1, 2, 3);
-            var array2 = ImmutableArray.Create(4, 5, 6);
-
-            var concat = array1.Concat(array2);
-            Assert.Equal(new[] { 1, 2, 3, 4, 5, 6 }, concat);
-        }
-
-        /// <summary>
-        /// Verifies reuse of the original array when concatenated to an empty array.
-        /// </summary>
-        [Fact]
-        public void ConcatEdgeCases()
-        {
-            // empty arrays
-            Assert.Equal(s_manyElements, s_manyElements.Concat(s_empty));
-            Assert.Equal(s_manyElements, s_empty.Concat(s_manyElements));
-
-            // default arrays
-            s_manyElements.Concat(s_emptyDefault);
-            Assert.Throws<InvalidOperationException>(() => s_manyElements.Concat(s_emptyDefault).Count());
-            Assert.Throws<InvalidOperationException>(() => s_emptyDefault.Concat(s_manyElements).Count());
-        }
-
-        [Fact]
-        public void IsDefault()
-        {
-            Assert.True(s_emptyDefault.IsDefault);
-            Assert.False(s_empty.IsDefault);
-            Assert.False(s_oneElement.IsDefault);
-        }
-
-        [Fact]
-        public void IsDefaultOrEmpty()
-        {
-            Assert.True(s_empty.IsDefaultOrEmpty);
-            Assert.True(s_emptyDefault.IsDefaultOrEmpty);
-            Assert.False(s_oneElement.IsDefaultOrEmpty);
-        }
-
-        [Fact]
-        public void IndexGetter()
-        {
-            Assert.Equal(1, s_oneElement[0]);
-            Assert.Equal(1, ((IReadOnlyList<int>)s_oneElement)[0]);
-
-            Assert.Throws<IndexOutOfRangeException>(() => s_oneElement[1]);
-            Assert.Throws<IndexOutOfRangeException>(() => s_oneElement[-1]);
-
-            Assert.Throws<NullReferenceException>(() => s_emptyDefault[0]);
-            Assert.Throws<InvalidOperationException>(() => ((IList)s_emptyDefault)[0]);
-            Assert.Throws<InvalidOperationException>(() => ((IList<int>)s_emptyDefault)[0]);
-            Assert.Throws<InvalidOperationException>(() => ((IReadOnlyList<int>)s_emptyDefault)[0]);
-        }
-
-        [Fact]
-        public void Sort()
-        {
-            var array = ImmutableArray.Create(2, 4, 1, 3);
-            Assert.Equal(new[] { 1, 2, 3, 4 }, array.Sort());
-            Assert.Equal(new[] { 2, 4, 1, 3 }, array); // original array unaffected.
+            yield return new object[] { Enumerable.Range(1, 10), new Predicate<int>(i => i % 2 == 0) };
+            yield return new object[] { Enumerable.Range(1, 10), new Predicate<int>(i => i % 2 == 1) };
+            yield return new object[] { Enumerable.Range(1, 10), new Predicate<int>(i => true) };
+            yield return new object[] { Enumerable.Range(1, 10), new Predicate<int>(i => false) };
+            yield return new object[] { s_empty, new Predicate<int>(i => false) };
         }
 
         [Theory]
-        [InlineData(new int[] { 2, 4, 1, 3 }, new int[] { 4, 3, 2, 1 })]
-        [InlineData(new int[] { 1 }, new int[] { 1 })]
-        [InlineData(new int[0], new int[0])]
-        public void Sort_Comparison(int[] items, int[] expected)
+        [MemberData(nameof(Int32EnumerableData))]
+        public void RemoveAllInvalid(IEnumerable<int> source)
         {
-            var array = ImmutableArray.Create(items);
-            Assert.Equal(expected, array.Sort((x, y) => y.CompareTo(x)));
-            Assert.Equal(items, array); // original array unaffected.
-        }
+            var array = source.ToImmutableArray();
 
-
-        [Fact]
-        public void Sort_NullComparison_Throws()
-        {
-            Assert.Throws<ArgumentNullException>("comparison", () => ImmutableArray.Create<int>().Sort((Comparison<int>)null));
+            Assert.Throws<ArgumentNullException>("match", () => array.RemoveAll(match: null));
         }
 
         [Fact]
-        public void SortNullComparer()
+        public void RemoveAllDefaultInvalid()
         {
-            var array = ImmutableArray.Create(2, 4, 1, 3);
-            Assert.Equal(new[] { 1, 2, 3, 4 }, array.Sort((IComparer<int>)null));
-            Assert.Equal(new[] { 2, 1, 4, 3 }, array.Sort(1, 2, null));
-            Assert.Equal(new[] { 2, 4, 1, 3 }, array); // original array unaffected.
-        }
-
-        [Fact]
-        public void SortRange()
-        {
-            var array = ImmutableArray.Create(2, 4, 1, 3);
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => array.Sort(-1, 2, Comparer<int>.Default));
-            Assert.Throws<ArgumentOutOfRangeException>("count", () => array.Sort(1, -1, Comparer<int>.Default));
-            Assert.Throws<ArgumentOutOfRangeException>("count", () => array.Sort(1, 4, Comparer<int>.Default));
-            Assert.Equal(new int[] { 2, 4, 1, 3 }, array.Sort(array.Length, 0, Comparer<int>.Default));
-            Assert.Equal(new[] { 2, 1, 4, 3 }, array.Sort(1, 2, Comparer<int>.Default));
-        }
-
-        [Fact]
-        public void SortComparer()
-        {
-            var array = ImmutableArray.Create("c", "B", "a");
-            Assert.Equal(new[] { "a", "B", "c" }, array.Sort(StringComparer.OrdinalIgnoreCase));
-            Assert.Equal(new[] { "B", "a", "c" }, array.Sort(StringComparer.Ordinal));
-        }
-
-        [Fact]
-        public void SortPreservesArrayWhenAlreadySorted()
-        {
-            var sortedArray = ImmutableArray.Create(1, 2, 3, 4);
-            Assert.Equal(sortedArray, sortedArray.Sort());
-
-            var mostlySorted = ImmutableArray.Create(1, 2, 3, 4, 6, 5, 7, 8, 9, 10);
-            Assert.Equal(mostlySorted, mostlySorted.Sort(0, 5, Comparer<int>.Default));
-            Assert.Equal(mostlySorted, mostlySorted.Sort(5, 5, Comparer<int>.Default));
-            Assert.Equal(Enumerable.Range(1, 10), mostlySorted.Sort(4, 2, Comparer<int>.Default));
-        }
-
-        [Fact]
-        public void ToBuilder()
-        {
-            Assert.Equal(0, s_empty.ToBuilder().Count);
-            Assert.Throws<NullReferenceException>(() => s_emptyDefault.ToBuilder().Count);
-
-            var builder = s_oneElement.ToBuilder();
-            Assert.Equal(s_oneElement.ToArray(), builder);
-
-            builder = s_manyElements.ToBuilder();
-            Assert.Equal(s_manyElements.ToArray(), builder);
-
-            // Make sure that changing the builder doesn't change the original immutable array.
-            int expected = s_manyElements[0];
-            builder[0] = expected + 1;
-            Assert.Equal(expected, s_manyElements[0]);
-            Assert.Equal(expected + 1, builder[0]);
-        }
-
-        [Fact]
-        public void StructuralEquatableEqualsDefault()
-        {
-            IStructuralEquatable eq = s_emptyDefault;
-
-            Assert.True(eq.Equals(s_emptyDefault, EqualityComparer<int>.Default));
-            Assert.False(eq.Equals(s_empty, EqualityComparer<int>.Default));
-            Assert.False(eq.Equals(s_oneElement, EqualityComparer<int>.Default));
-        }
-
-        [Fact]
-        public void StructuralEquatableEquals()
-        {
-            IStructuralEquatable array = new int[3] { 1, 2, 3 };
-            IStructuralEquatable immArray = ImmutableArray.Create(1, 2, 3);
-
-            var otherArray = new object[] { 1, 2, 3 };
-            var otherImmArray = ImmutableArray.Create(otherArray);
-            var unequalArray = new int[] { 1, 2, 4 };
-            var unequalImmArray = ImmutableArray.Create(unequalArray);
-            var unrelatedArray = new string[3];
-            var unrelatedImmArray = ImmutableArray.Create(unrelatedArray);
-            var otherList = new List<int> { 1, 2, 3 };
-            Assert.Equal(array.Equals(otherArray, EqualityComparer<int>.Default), immArray.Equals(otherImmArray, EqualityComparer<int>.Default));
-            Assert.Equal(array.Equals(otherList, EqualityComparer<int>.Default), immArray.Equals(otherList, EqualityComparer<int>.Default));
-            Assert.Equal(array.Equals(unrelatedArray, EverythingEqual<object>.Default), immArray.Equals(unrelatedImmArray, EverythingEqual<object>.Default));
-            Assert.Equal(array.Equals(new object(), EqualityComparer<int>.Default), immArray.Equals(new object(), EqualityComparer<int>.Default));
-            Assert.Equal(array.Equals(null, EqualityComparer<int>.Default), immArray.Equals(null, EqualityComparer<int>.Default));
-            Assert.Equal(array.Equals(unequalArray, EqualityComparer<int>.Default), immArray.Equals(unequalImmArray, EqualityComparer<int>.Default));
-        }
-
-        [Fact]
-        public void StructuralEquatableEqualsArrayInterop()
-        {
-            IStructuralEquatable array = new int[3] { 1, 2, 3 };
-            IStructuralEquatable immArray = ImmutableArray.Create(1, 2, 3);
-            var unequalArray = new int[] { 1, 2, 4 };
-
-            Assert.True(immArray.Equals(array, EqualityComparer<int>.Default));
-            Assert.False(immArray.Equals(unequalArray, EqualityComparer<int>.Default));
-        }
-
-        [Fact]
-        public void IStructuralEquatable_Equals_NullComparerNonNullUnderlyingArray_ThrowsNullReferenceException()
-        {
-            // This was not fixed for compatability reasons. See #13410
-            IStructuralEquatable equatable = ImmutableArray.Create(1, 2, 3);
-
-            Assert.True(equatable.Equals(equatable, null));
-            Assert.Throws<NullReferenceException>(() => equatable.Equals(ImmutableArray.Create(1, 2, 3), null));
-            Assert.False(equatable.Equals(new ImmutableArray<int>(), null));
-            Assert.False(equatable.Equals(null, null));
-        }
-
-        [Fact]
-        public void IStructuralEquatable_Equals_NullComparerNullUnderlyingArray_Works()
-        {
-            IStructuralEquatable equatable = new ImmutableArray<int>();
-            Assert.True(equatable.Equals(equatable, null));
-            Assert.False(equatable.Equals(ImmutableArray.Create(1, 2, 3), null));
-            Assert.True(equatable.Equals(new ImmutableArray<int>(), null));
-            Assert.Throws<NullReferenceException>(() => equatable.Equals(null, null));
-        }
-
-        [Fact]
-        public void StructuralEquatableGetHashCodeDefault()
-        {
-            IStructuralEquatable defaultImmArray = s_emptyDefault;
-            Assert.Equal(0, defaultImmArray.GetHashCode(EqualityComparer<int>.Default));
-        }
-
-        [Fact]
-        public void StructuralEquatableGetHashCode()
-        {
-            IStructuralEquatable emptyArray = new int[0];
-            IStructuralEquatable emptyImmArray = s_empty;
-            IStructuralEquatable array = new int[3] { 1, 2, 3 };
-            IStructuralEquatable immArray = ImmutableArray.Create(1, 2, 3);
-
-            Assert.Equal(emptyArray.GetHashCode(EqualityComparer<int>.Default), emptyImmArray.GetHashCode(EqualityComparer<int>.Default));
-            Assert.Equal(array.GetHashCode(EqualityComparer<int>.Default), immArray.GetHashCode(EqualityComparer<int>.Default));
-            Assert.Equal(array.GetHashCode(EverythingEqual<int>.Default), immArray.GetHashCode(EverythingEqual<int>.Default));
-        }
-
-        [Fact]
-        public void IStructuralEquatable_GetHashCode_NullComparerNonNullUnderlyingArray_ThrowsArgumentNullException()
-        {
-            IStructuralEquatable equatable = ImmutableArray.Create(1, 2, 3);
-            Assert.Throws<ArgumentNullException>(() => equatable.GetHashCode(null));
-        }
-
-        [Fact]
-        public void IStructuralEquatable_GetHashCode_NullComparerNullUnderlyingArray_Works()
-        {
-            IStructuralEquatable equatable = new ImmutableArray<int>();
-            Assert.Equal(0, equatable.GetHashCode(null));
-        }
-
-        [Fact]
-        public void StructuralComparableDefault()
-        {
-            IStructuralComparable def = s_emptyDefault;
-            IStructuralComparable mt = s_empty;
-
-            // default to default is fine, and should be seen as equal.
-            Assert.Equal(0, def.CompareTo(s_emptyDefault, Comparer<int>.Default));
-
-            // default to empty and vice versa should throw, on the basis that 
-            // arrays compared that are of different lengths throw. Empty vs. default aren't really compatible.
-            Assert.Throws<ArgumentException>("other", () => def.CompareTo(s_empty, Comparer<int>.Default));
-            Assert.Throws<ArgumentException>("other", () => mt.CompareTo(s_emptyDefault, Comparer<int>.Default));
-        }
-
-        [Fact]
-        public void StructuralComparable()
-        {
-            IStructuralComparable array = new int[3] { 1, 2, 3 };
-            IStructuralComparable equalArray = new int[3] { 1, 2, 3 };
-            IStructuralComparable immArray = ImmutableArray.Create((int[])array);
-            IStructuralComparable equalImmArray = ImmutableArray.Create((int[])equalArray);
-
-            IStructuralComparable longerArray = new int[] { 1, 2, 3, 4 };
-            IStructuralComparable longerImmArray = ImmutableArray.Create((int[])longerArray);
-
-            Assert.Equal(array.CompareTo(equalArray, Comparer<int>.Default), immArray.CompareTo(equalImmArray, Comparer<int>.Default));
-
-            Assert.Throws<ArgumentException>("other", () => array.CompareTo(longerArray, Comparer<int>.Default));
-            Assert.Throws<ArgumentException>("other", () => immArray.CompareTo(longerImmArray, Comparer<int>.Default));
-
-            var list = new List<int> { 1, 2, 3 };
-            Assert.Throws<ArgumentException>("other", () => array.CompareTo(list, Comparer<int>.Default));
-            Assert.Throws<ArgumentException>("other", () => immArray.CompareTo(list, Comparer<int>.Default));
-        }
-
-        [Fact]
-        public void StructuralComparableArrayInterop()
-        {
-            IStructuralComparable array = new int[3] { 1, 2, 3 };
-            IStructuralComparable equalArray = new int[3] { 1, 2, 3 };
-            IStructuralComparable immArray = ImmutableArray.Create((int[])array);
-            IStructuralComparable equalImmArray = ImmutableArray.Create((int[])equalArray);
-
-            Assert.Equal(array.CompareTo(equalArray, Comparer<int>.Default), immArray.CompareTo(equalArray, Comparer<int>.Default));
-        }
-
-        [Fact]
-        public void IStructuralComparable_NullComparerNonNullUnderlyingArray_ThrowsNullReferenceException()
-        {
-            // This was not fixed for compatability reasons. See #13410
-            IStructuralComparable comparable = ImmutableArray.Create(1, 2, 3);
-            Assert.Throws<NullReferenceException>(() => comparable.CompareTo(comparable, null));
-            Assert.Throws<NullReferenceException>(() => comparable.CompareTo(ImmutableArray.Create(1, 2, 3), null));
-            Assert.Throws<ArgumentException>("other", () => comparable.CompareTo(new ImmutableArray<int>(), null));
-        }
-
-        [Fact]
-        public void IStructuralComparable_NullComparerNullUnderlyingArray_Works()
-        {
-            IStructuralComparable comparable = new ImmutableArray<int>();
-            Assert.Equal(0, comparable.CompareTo(comparable, null));
-            Assert.Throws<ArgumentException>("other", () => comparable.CompareTo(null, null));
-            Assert.Throws<ArgumentException>("other", () => comparable.CompareTo(ImmutableArray.Create(1, 2, 3), null));
-            Assert.Equal(0, comparable.CompareTo(new ImmutableArray<int>(), null));
+            Assert.Throws<NullReferenceException>(() => s_emptyDefault.RemoveAll(i => false));
         }
 
         [Theory]
-        [InlineData(new int[0], 5)]
-        [InlineData(new int[] { 3 }, 5)]
-        [InlineData(new int[] { 5 }, 5)]
-        [InlineData(new int[] { 1, 2, 3 }, 1)]
-        [InlineData(new int[] { 1, 2, 3 }, 2)]
-        [InlineData(new int[] { 1, 2, 3 }, 3)]
-        [InlineData(new int[] { 1, 2, 3, 4 }, 4)]
-        public void BinarySearch(int[] array, int value)
+        [MemberData(nameof(ReplaceData))]
+        public void Replace<T>(IEnumerable<T> source, T oldValue, T newValue, IEqualityComparer<T> comparer)
         {
-            Assert.Throws<ArgumentNullException>("array", () => ImmutableArray.BinarySearch(default(ImmutableArray<int>), value));
+            var array = source.ToImmutableArray();
+
+            var comparerOrDefault = comparer ?? EqualityComparer<T>.Default;
+            var expected = source
+                .TakeWhile(x => !comparerOrDefault.Equals(x, oldValue))
+                .Concat(new[] { newValue })
+                .Concat(source.SkipWhile(x => !comparerOrDefault.Equals(x, oldValue)).Skip(1));
+
+            // If the comparer is a faulty implementation that says nothing is equal,
+            // an exception will be thrown here. Check that the comparer says the source contains
+            // this value first.
+
+            if (source.Contains(oldValue, comparer))
+            {
+                Assert.Equal(expected, array.Replace(oldValue, newValue, comparer));
+                Assert.Equal(expected, ((IImmutableList<T>)array).Replace(oldValue, newValue, comparer));
+            }
+
+            if (comparer == null || comparer == EqualityComparer<T>.Default)
+            {
+                Assert.Equal(expected, array.Replace(oldValue, newValue));
+                Assert.Equal(expected, ((IImmutableList<T>)array).Replace(oldValue, newValue));
+            }
+        }
+
+        public static IEnumerable<object[]> ReplaceData()
+        {
+            return SharedEqualityComparers<int>().SelectMany(comparer =>
+                new[]
+                {
+                    new object[] { s_oneElement, 1, 5, comparer },
+                    new object[] { s_manyElements, 1, 6, comparer },
+                    new object[] { s_manyElements, 2, 6, comparer },
+                    new object[] { s_manyElements, 3, 6, comparer },
+                    new object[] { new[] { 1, 3, 3, 4 }, 3, 2, comparer },
+                    new object[] { s_manyElements, 2, 10, comparer }
+                });
+        }
+
+        [Theory]
+        [MemberData(nameof(Int32EnumerableData))]
+        public void ReplaceInvalid(IEnumerable<int> source)
+        {
+            var array = source.ToImmutableArray();
+            int notContained = Enumerable.Range(0, int.MaxValue).First(i => !source.Contains(i));
+
+            Assert.All(SharedEqualityComparers<int>(), comparer =>
+            {
+                Assert.Throws<ArgumentException>("oldValue", () => array.Replace(notContained, 123));
+                Assert.Throws<ArgumentException>("oldValue", () => ((IImmutableList<int>)array).Replace(notContained, 123));
+
+                // If the comparer is a faulty implementation that says everything is equal,
+                // an exception won't be thrown here. Check that the comparer says the source does
+                // not contain this value first.
+                if (!source.Contains(notContained, comparer))
+                {
+                    Assert.Throws<ArgumentException>("oldValue", () => array.Replace(notContained, 123, comparer));
+                    Assert.Throws<ArgumentException>("oldValue", () => ((IImmutableList<int>)array).Replace(notContained, 123, comparer));
+                }
+            });
+        }
+
+        [Fact]
+        public void ReplaceDefaultInvalid()
+        {
+            Assert.All(SharedEqualityComparers<int>(), comparer =>
+            {
+                // Uncomment when #14961 is fixed.
+                // Assert.Throws<NullReferenceException>(() => s_emptyDefault.Replace(123, 123));
+                // Assert.Throws<NullReferenceException>(() => s_emptyDefault.Replace(123, 123, comparer));
+
+                Assert.Throws<InvalidOperationException>(() => ((IImmutableList<int>)s_emptyDefault).Replace(123, 123));
+                Assert.Throws<InvalidOperationException>(() => ((IImmutableList<int>)s_emptyDefault).Replace(123, 123, comparer));
+            });
+        }
+
+        [Theory]
+        [MemberData(nameof(SetItemData))]
+        public void SetItem<T>(IEnumerable<T> source, int index, T item)
+        {
+            var array = source.ToImmutableArray();
+            var expected = source.ToArray();
+            expected[index] = item;
+            Assert.Equal(expected, array.SetItem(index, item));
+        }
+
+        public static IEnumerable<object[]> SetItemData()
+        {
+            yield return new object[] { s_oneElement, 0, 12345 };
+            yield return new object[] { s_manyElements, 0, 12345 };
+            yield return new object[] { s_manyElements, 1, 12345 };
+            yield return new object[] { s_manyElements, 2, 12345 };
+        }
+
+        [Theory]
+        [MemberData(nameof(Int32EnumerableData))]
+        public void SetItemInvalid(IEnumerable<int> source)
+        {
+            var array = source.ToImmutableArray();
+
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => array.SetItem(index: -1, item: 0));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => array.SetItem(index: array.Length, item: 0));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => array.SetItem(index: array.Length + 1, item: 0));
+        }
+
+        [Theory]
+        [InlineData(-1, Skip = "#14961")]
+        [InlineData(0)]
+        [InlineData(1)]
+        public void SetItemDefaultInvalid(int index)
+        {
+            Assert.Throws<NullReferenceException>(() => s_emptyDefault.SetItem(index, item: 0));
+        }
+
+        [Theory]
+        [MemberData(nameof(CopyToData))]
+        public void CopyTo(IEnumerable<int> source, int sourceIndex, IEnumerable<int> destination, int destinationIndex, int length)
+        {
+            var array = source.ToImmutableArray();
+
+            // Take a snapshot of the destination array before calling CopyTo.
+            // Afterwards, ensure that the range we copied to was overwritten, and check
+            // that other areas were unaffected.
+
+            CopyAndInvoke(destination, destinationArray =>
+            {
+                array.CopyTo(sourceIndex, destinationArray, destinationIndex, length);
+
+                Assert.Equal(destination.Take(destinationIndex), destinationArray.Take(destinationIndex));
+                Assert.Equal(source.Skip(sourceIndex).Take(length), destinationArray.Skip(destinationIndex).Take(length));
+                Assert.Equal(destination.Skip(destinationIndex + length), destinationArray.Skip(destinationIndex + length));
+            });
+
+            if (sourceIndex == 0 && length == array.Length)
+            {
+                CopyAndInvoke(destination, destinationArray =>
+                {
+                    array.CopyTo(destinationArray, destinationIndex);
+
+                    Assert.Equal(destination.Take(destinationIndex), destinationArray.Take(destinationIndex));
+                    Assert.Equal(source, destinationArray.Skip(destinationIndex).Take(array.Length));
+                    Assert.Equal(destination.Skip(destinationIndex + array.Length), destinationArray.Skip(destinationIndex + array.Length));
+                });
+
+                if (destinationIndex == 0)
+                {
+                    CopyAndInvoke(destination, destinationArray =>
+                    {
+                        array.CopyTo(destinationArray);
+
+                        Assert.Equal(source, destinationArray.Take(array.Length));
+                        Assert.Equal(destination.Skip(array.Length), destinationArray.Skip(array.Length));
+                    });
+                }
+            }
+        }
+
+        private static void CopyAndInvoke<T>(IEnumerable<T> source, Action<T[]> action) => action(source.ToArray());
+
+        public static IEnumerable<object[]> CopyToData()
+        {
+            yield return new object[] { s_manyElements, 0, new int[3], 0, 3 };
+            yield return new object[] { new[] { 1, 2, 3 }, 0, new int[4], 1, 3 };
+            yield return new object[] { new[] { 1, 2, 3 }, 0, Enumerable.Range(1, 4), 1, 3 };
+            yield return new object[] { new[] { 1, 2, 3 }, 1, new int[4], 3, 1 };
+            yield return new object[] { new[] { 1, 2, 3 }, 1, Enumerable.Range(1, 4), 3, 1 };
+        }
+
+        [Theory]
+        [MemberData(nameof(Int32EnumerableData))]
+        public void CopyToInvalid(IEnumerable<int> source)
+        {
+            var array = source.ToImmutableArray();
+
+            // ImmutableArray<T>.CopyTo defers to Array.Copy for argument validation, so
+            // the parameter names here come from Array.Copy.
+
+            Assert.Throws<ArgumentNullException>("dest", () => array.CopyTo(null));
+            Assert.Throws<ArgumentNullException>("dest", () => array.CopyTo(null, 0));
+            Assert.Throws<ArgumentNullException>("dest", () => array.CopyTo(0, null, 0, 0));
+            Assert.Throws<ArgumentNullException>("dest", () => array.CopyTo(-1, null, -1, -1)); // The destination should be validated first.
+
+            Assert.Throws<ArgumentOutOfRangeException>("length", () => array.CopyTo(-1, new int[0], -1, -1));
+            Assert.Throws<ArgumentOutOfRangeException>("srcIndex", () => array.CopyTo(-1, new int[0], -1, 0));
+            Assert.Throws<ArgumentOutOfRangeException>("dstIndex", () => array.CopyTo(0, new int[0], -1, 0));
+
+            Assert.Throws<ArgumentException>(() => array.CopyTo(array.Length, new int[1], 0, 1)); // Not enough room in the source.
+
+            if (array.Length > 0)
+            {
+                Assert.Throws<ArgumentException>(() => array.CopyTo(array.Length - 1, new int[1], 1, 1)); // Not enough room in the destination.
+            }
+        }
+
+        [Theory]
+        [InlineData(0, 0)]
+        [InlineData(1, 0)]
+        [InlineData(2, 2)]
+        [InlineData(3, 1)]
+        public void CopyToDefaultInvalid(int destinationLength, int destinationIndex)
+        {
+            var destination = new int[destinationLength];
+
+            if (destinationIndex == 0)
+            {
+                Assert.Throws<NullReferenceException>(() => s_emptyDefault.CopyTo(destination));
+            }
+
+            Assert.Throws<NullReferenceException>(() => s_emptyDefault.CopyTo(destination, destinationIndex));
+            Assert.Throws<NullReferenceException>(() => s_emptyDefault.CopyTo(0, destination, destinationIndex, 0));
+        }
+
+        [Theory]
+        [MemberData(nameof(IsDefaultOrEmptyData))]
+        public void IsDefault(StrongBox<IEnumerable<int>> box, bool isDefault, bool isEmpty)
+        {
+            IEnumerable<int> source = box.Value;
+            var array = source.ToImmutableArray();
+
+            Assert.Equal(isDefault, array.IsDefault);
+        }
+
+        [Theory]
+        [MemberData(nameof(IsDefaultOrEmptyData))]
+        public void IsDefaultOrEmpty(StrongBox<IEnumerable<int>> box, bool isDefault, bool isEmpty)
+        {
+            IEnumerable<int> source = box.Value;
+            var array = source.ToImmutableArray();
+
+            Assert.Equal(isDefault || isEmpty, array.IsDefaultOrEmpty);
+        }
+
+        public static IEnumerable<object[]> IsDefaultOrEmptyData()
+        {
+            // Once https://github.com/xunit/assert.xunit/pull/5 comes into corefx, all the StrongBox stuff can be removed.
+
+            yield return new object[] { new StrongBox<IEnumerable<int>>(s_emptyDefault), true, false };
+            yield return new object[] { new StrongBox<IEnumerable<int>>(s_empty), false, true };
+            yield return new object[] { new StrongBox<IEnumerable<int>>(s_oneElement), false, false };
+        }
+
+        [Theory]
+        [MemberData(nameof(Int32EnumerableData))]
+        public void GetIndexer(IEnumerable<int> source)
+        {
+            var array = source.ToImmutableArray();
+            
+            for (int i = 0; i < array.Length; i++)
+            {
+                int expected = source.ElementAt(i);
+
+                Assert.Equal(expected, array[i]);
+                Assert.Equal(expected, ((IList)array)[i]);
+                Assert.Equal(expected, ((IList<int>)array)[i]);
+                Assert.Equal(expected, ((IReadOnlyList<int>)array)[i]);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(Int32EnumerableData))]
+        public void GetIndexerInvalid(IEnumerable<int> source)
+        {
+            var array = source.ToImmutableArray();
+
+            Assert.Throws<IndexOutOfRangeException>(() => array[-1]);
+            Assert.Throws<IndexOutOfRangeException>(() => ((IList)array)[-1]);
+            Assert.Throws<IndexOutOfRangeException>(() => ((IList<int>)array)[-1]);
+            Assert.Throws<IndexOutOfRangeException>(() => ((IReadOnlyList<int>)array)[-1]);
+
+            Assert.Throws<IndexOutOfRangeException>(() => array[array.Length]);
+            Assert.Throws<IndexOutOfRangeException>(() => ((IList)array)[array.Length]);
+            Assert.Throws<IndexOutOfRangeException>(() => ((IList<int>)array)[array.Length]);
+            Assert.Throws<IndexOutOfRangeException>(() => ((IReadOnlyList<int>)array)[array.Length]);
+
+            Assert.Throws<IndexOutOfRangeException>(() => array[array.Length + 1]);
+            Assert.Throws<IndexOutOfRangeException>(() => ((IList)array)[array.Length + 1]);
+            Assert.Throws<IndexOutOfRangeException>(() => ((IList<int>)array)[array.Length + 1]);
+            Assert.Throws<IndexOutOfRangeException>(() => ((IReadOnlyList<int>)array)[array.Length + 1]);
+        }
+
+        [Theory]
+        [InlineData(-1)]
+        [InlineData(0)]
+        [InlineData(1)]
+        public void GetIndexerDefaultInvalid(int index)
+        {
+            Assert.Throws<NullReferenceException>(() => s_emptyDefault[index]);
+            Assert.Throws<InvalidOperationException>(() => ((IList)s_emptyDefault)[index]);
+            Assert.Throws<InvalidOperationException>(() => ((IList<int>)s_emptyDefault)[index]);
+            Assert.Throws<InvalidOperationException>(() => ((IReadOnlyList<int>)s_emptyDefault)[index]);
+        }
+
+        [Theory]
+        [MemberData(nameof(SortData))]
+        public void Sort<T>(IEnumerable<T> source, int index, int count, IComparer<T> comparer, T dummy)
+        {
+            // Remove the dummy parameters once https://github.com/xunit/xunit/pull/965 makes it into corefx.
+
+            var array = source.ToImmutableArray();
+
+            var expected = source.ToArray();
+            Array.Sort(expected, index, count, comparer);
+
+            Assert.Equal(expected, array.Sort(index, count, comparer));
+            Assert.Equal(source, array); // Make sure the original array is unaffected.
+
+            if (index == 0 && count == array.Length)
+            {
+                Assert.Equal(expected, array.Sort(comparer));
+                Assert.Equal(source, array); // Make sure the original array is unaffected.
+
+                if (comparer != null)
+                {
+                    Assert.Equal(expected, array.Sort(comparer.Compare));
+                    Assert.Equal(source, array); // Make sure the original array is unaffected.
+                }
+
+                if (comparer == null || comparer == Comparer<T>.Default)
+                {
+                    Assert.Equal(expected, array.Sort());
+                    Assert.Equal(source, array); // Make sure the original array is unaffected.
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> SortData()
+        {
+            return SharedComparers<int>().SelectMany(comparer =>
+                new[]
+                {
+                    new object[] { new[] { 2, 4, 1, 3 }, 0, 4, comparer, 0 },
+                    new object[] { new[] { 1 }, 0, 1, comparer, 0 },
+                    new object[] { new int[0], 0, 0, comparer, 0 },
+                    new object[] { new[] { 2, 4, 1, 3 }, 1, 2, comparer, 0 },
+                    new object[] { new[] { 2, 4, 1, 3 }, 4, 0, comparer, 0 },
+                    new object[] { new[] { "c", "B", "a" }, 0, 3, StringComparer.OrdinalIgnoreCase, string.Empty },
+                    new object[] { new[] { "c", "B", "a" }, 0, 3, StringComparer.Ordinal, string.Empty },
+                    new object[] { new[] { 1, 2, 3, 4, 6, 5, 7, 8, 9, 10 }, 4, 2, comparer, 0 }
+                });
+        }
+
+        [Theory]
+        [MemberData(nameof(Int32EnumerableData))]
+        public void SortComparisonInvalid(IEnumerable<int> source)
+        {
+            var array = source.ToImmutableArray();
+
+            Assert.Throws<ArgumentNullException>("comparison", () => array.Sort(comparison: null));
+        }
+
+        [Theory]
+        [MemberData(nameof(Int32EnumerableData))]
+        public void SortComparerInvalid(IEnumerable<int> source)
+        {
+            var array = source.ToImmutableArray();
+
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => array.Sort(-1, -1, Comparer<int>.Default));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => array.Sort(-1, 0, Comparer<int>.Default));
+
+            Assert.Throws<ArgumentOutOfRangeException>("count", () => array.Sort(0, -1, Comparer<int>.Default));
+            Assert.Throws<ArgumentOutOfRangeException>("count", () => array.Sort(array.Length + 1, 0, Comparer<int>.Default));
+            Assert.Throws<ArgumentOutOfRangeException>("count", () => array.Sort(0, array.Length + 1, Comparer<int>.Default));
+        }
+
+        [Theory]
+        [InlineData(-1, -1)]
+        [InlineData(0, 0)]
+        [InlineData(1, 1)]
+        public void SortDefaultInvalid(int index, int count)
+        {
+            Assert.All(SharedComparers<int>(), comparer =>
+            {
+                Assert.Throws<NullReferenceException>(() => s_emptyDefault.Sort());
+                Assert.Throws<NullReferenceException>(() => s_emptyDefault.Sort(comparer));
+                Assert.Throws<NullReferenceException>(() => s_emptyDefault.Sort(comparer.Compare));
+                Assert.Throws<NullReferenceException>(() => s_emptyDefault.Sort(index, count, comparer));
+            });
+        }
+
+        [Theory]
+        [MemberData(nameof(SortAlreadySortedData))]
+        public void SortAlreadySorted(IEnumerable<int> source, int index, int count, IComparer<int> comparer)
+        {
+            // If ImmutableArray<T>.Sort is called when the array is already sorted,
+            // it should just return the original array rather than allocating a new one.
+
+            var array = source.ToImmutableArray();
+
+            Assert.True(array == array.Sort(index, count, comparer));
+
+            if (index == 0 && count == array.Length)
+            {
+                Assert.True(array == array.Sort(comparer));
+
+                if (comparer != null)
+                {
+                    Assert.True(array == array.Sort(comparer.Compare));
+                }
+
+                if (comparer == null || comparer == Comparer<int>.Default)
+                {
+                    Assert.True(array == array.Sort());
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> SortAlreadySortedData()
+        {
+            yield return new object[] { new[] { 1, 2, 3, 4 }, 0, 4, null };
+            yield return new object[] { new[] { 1, 2, 3, 4, 6, 5, 7, 8, 9, 10 }, 0, 5, null };
+            yield return new object[] { new[] { 1, 2, 3, 4, 6, 5, 7, 8, 9, 10 }, 5, 5, null };
+
+            yield return new object[] { new[] { 1, 2, 3, 4 }, 0, 4, Comparer<int>.Default };
+            yield return new object[] { new[] { 1, 2, 3, 4, 6, 5, 7, 8, 9, 10 }, 0, 5, Comparer<int>.Default };
+            yield return new object[] { new[] { 1, 2, 3, 4, 6, 5, 7, 8, 9, 10 }, 5, 5, Comparer<int>.Default };
+
+            yield return new object[] { new[] { 1, 5, 2 }, 0, 3, Comparer<int>.Create((x, y) => 0) };
+            yield return new object[] { new[] { 1, 5, 2 }, 1, 2, Comparer<int>.Create((x, y) => 0) };
+            yield return new object[] { new[] { 1, 5, 2 }, 1, 1, Comparer<int>.Create((x, y) => 0) };
+            yield return new object[] { new[] { 1, 5, 2 }, 0, 2, Comparer<int>.Create((x, y) => 0) };
+            yield return new object[] { new[] { 1, 5, 2, 4 }, 1, 2, Comparer<int>.Create((x, y) => 0) };
+        }
+
+        [Theory]
+        [MemberData(nameof(Int32EnumerableData))]
+        public void ToBuilder(IEnumerable<int> source)
+        {
+            var array = source.ToImmutableArray();
+            ImmutableArray<int>.Builder builder = array.ToBuilder();
+
+            Assert.Equal(array, builder);
+            Assert.Equal(array.Length, builder.Count);
+
+            // Make sure that mutating the builder doesn't change the ImmutableArray.
+            if (array.Length > 0)
+            {
+                builder[0] += 1;
+                Assert.Equal(source.First(), array[0]);
+                Assert.Equal(source.First() + 1, builder[0]);
+                builder[0] -= 1;
+            }
+
+            builder.Add(int.MinValue);
+            Assert.Equal(array.Length + 1, builder.Count);
+            Assert.Equal(array.Add(int.MinValue), builder);
+        }
+
+        [Theory]
+        [MemberData(nameof(IStructuralEquatableEqualsData))]
+        [MemberData(nameof(IStructuralEquatableEqualsNullComparerData))]
+        public void IStructuralEquatableEquals(StrongBox<IEnumerable<int>> firstBox, StrongBox<object> secondBox, IEqualityComparer comparer, bool expected)
+        {
+            // Once https://github.com/xunit/assert.xunit/pull/5 comes into corefx, all the StrongBox stuff can be removed.
+
+            ImmutableArray<int> first = firstBox.Value.ToImmutableArray();
+            object second = secondBox.Value;
+
+            Assert.Equal(expected, ((IStructuralEquatable)first).Equals(second, comparer));
+
+            if (!first.IsDefault)
+            {
+                int[] firstArray = first.ToArray();
+                Assert.Equal(!IsImmutableArray(second) && expected, ((IStructuralEquatable)firstArray).Equals(second, comparer));
+
+                var secondEquatable = second as IStructuralEquatable;
+                if (secondEquatable != null)
+                {
+                    Assert.Equal(expected, secondEquatable.Equals(firstArray, comparer));
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> IStructuralEquatableEqualsData()
+        {
+            // The comparers here must consider two arrays structurally equal if the default comparer does.
+            var optimisticComparers = new IEqualityComparer[]
+            {
+                EqualityComparer<int>.Default,
+                new DelegateEqualityComparer<object>(objectEquals: (x, y) => true)
+            };
+
+            // The comparers here must not consider two arrays structurally equal if the default comparer doesn't.
+            var pessimisticComparers = new IEqualityComparer[]
+            {
+                EqualityComparer<int>.Default,
+                new DelegateEqualityComparer<object>(objectEquals: (x, y) => false)
+            };
+
+            foreach (IEqualityComparer comparer in optimisticComparers)
+            {
+                yield return new object[] { new StrongBox<IEnumerable<int>>(s_empty), new StrongBox<object>(s_empty), comparer, true };
+                yield return new object[] { new StrongBox<IEnumerable<int>>(s_emptyDefault), new StrongBox<object>(s_emptyDefault), comparer, true };
+                yield return new object[] { new StrongBox<IEnumerable<int>>(new[] { 1, 2, 3 }), new StrongBox<object>(new[] { 1, 2, 3 }), comparer, true };
+                yield return new object[] { new StrongBox<IEnumerable<int>>(new[] { 1, 2, 3 }), new StrongBox<object>(ImmutableArray.Create(1, 2, 3)), comparer, true };
+                yield return new object[] { new StrongBox<IEnumerable<int>>(new[] { 1, 2, 3 }), new StrongBox<object>(new object[] { 1, 2, 3 }), comparer, true };
+                yield return new object[] { new StrongBox<IEnumerable<int>>(new[] { 1, 2, 3 }), new StrongBox<object>(ImmutableArray.Create<object>(1, 2, 3)), comparer, true };
+            }
+
+            foreach (IEqualityComparer comparer in pessimisticComparers)
+            {
+                yield return new object[] { new StrongBox<IEnumerable<int>>(s_emptyDefault), new StrongBox<object>(s_empty), comparer, false };
+                yield return new object[] { new StrongBox<IEnumerable<int>>(s_emptyDefault), new StrongBox<object>(s_oneElement), comparer, false };
+                yield return new object[] { new StrongBox<IEnumerable<int>>(new[] { 1, 2, 3 }), new StrongBox<object>(new List<int> { 1, 2, 3 }), comparer, false };
+                yield return new object[] { new StrongBox<IEnumerable<int>>(new[] { 1, 2, 3 }), new StrongBox<object>(new object()), comparer, false };
+                yield return new object[] { new StrongBox<IEnumerable<int>>(new[] { 1, 2, 3 }), new StrongBox<object>(null), comparer, false };
+                yield return new object[] { new StrongBox<IEnumerable<int>>(new[] { 1, 2, 3 }), new StrongBox<object>(new[] { 1, 2, 4 }), comparer, false };
+                yield return new object[] { new StrongBox<IEnumerable<int>>(new[] { 1, 2, 3 }), new StrongBox<object>(ImmutableArray.Create(1, 2, 4)), comparer, false };
+                yield return new object[] { new StrongBox<IEnumerable<int>>(new[] { 1, 2, 3 }), new StrongBox<object>(new string[3]), comparer, false };
+                yield return new object[] { new StrongBox<IEnumerable<int>>(new[] { 1, 2, 3 }), new StrongBox<object>(ImmutableArray.Create(new string[3])), comparer, false };
+            }
+        }
+
+        public static IEnumerable<object[]> IStructuralEquatableEqualsNullComparerData()
+        {
+            // Unlike other methods on ImmutableArray, null comparers are invalid inputs for IStructuralEquatable.Equals.
+            // However, it will not throw for a null comparer if the array is default and `other` is an ImmutableArray, or
+            // if Array's IStructuralEquatable.Equals implementation (which it calls under the cover) short-circuits before
+            // trying to use the comparer.
+
+            yield return new object[] { new StrongBox<IEnumerable<int>>(s_emptyDefault), new StrongBox<object>(s_emptyDefault), null, true };
+            yield return new object[] { new StrongBox<IEnumerable<int>>(s_emptyDefault), new StrongBox<object>(ImmutableArray.Create(1, 2, 3)), null, false };
+
+            yield return new object[] { new StrongBox<IEnumerable<int>>(new int[0]), new StrongBox<object>(null), null, false }; // Array short-circuits because `other` is null
+            yield return new object[] { new StrongBox<IEnumerable<int>>(s_empty), new StrongBox<object>(s_empty), null, true }; // Array short-circuits because the arrays are reference-equal
+            yield return new object[] { new StrongBox<IEnumerable<int>>(new int[0]), new StrongBox<object>(new List<int>()), null, false }; // Array short-circuits because `other` is not an array
+            yield return new object[] { new StrongBox<IEnumerable<int>>(new int[0]), new StrongBox<object>(new int[1]), null, false }; // Array short-circuits because `other.Length` isn't equal
+            yield return new object[] { new StrongBox<IEnumerable<int>>(new int[0]), new StrongBox<object>(new int[0]), null, true }; // For zero-element arrays, Array doesn't have to use the comparer
+        }
+
+        [Fact]
+        public void IStructuralEquatableEqualsNullComparerInvalid()
+        {
+            // This was not fixed for compatability reasons. See https://github.com/dotnet/corefx/issues/13410
+            Assert.Throws<NullReferenceException>(() => ((IStructuralEquatable)ImmutableArray.Create(1, 2, 3)).Equals(ImmutableArray.Create(1, 2, 3), comparer: null));
+            Assert.Throws<NullReferenceException>(() => ((IStructuralEquatable)s_emptyDefault).Equals(other: null, comparer: null));
+        }
+
+        [Theory]
+        [MemberData(nameof(IStructuralEquatableGetHashCodeData))]
+        public void IStructuralEquatableGetHashCode(IEnumerable<int> source, IEqualityComparer comparer)
+        {
+            var array = source.ToImmutableArray();
+            int expected = ((IStructuralEquatable)source.ToArray()).GetHashCode(comparer);
+            Assert.Equal(expected, ((IStructuralEquatable)array).GetHashCode(comparer));
+        }
+
+        public static IEnumerable<object[]> IStructuralEquatableGetHashCodeData()
+        {
+            var enumerables = Int32EnumerableData()
+                .Select(array => array[0])
+                .Cast<IEnumerable<int>>();
+
+            return SharedComparers<int>()
+                .OfType<IEqualityComparer>()
+                .Except(new IEqualityComparer[] { null })
+                .SelectMany(comparer => enumerables.Select(enumerable => new object[] { enumerable, comparer }));
+        }
+
+        [Fact]
+        public void IStructuralEquatableGetHashCodeDefault()
+        {
+            Assert.All(SharedComparers<int>().OfType<IEqualityComparer>(), comparer =>
+            {
+                // A default ImmutableArray should always hash to the same value, regardless of comparer.
+                // This includes null, which is included in the set of shared comparers.
+                Assert.Equal(0, ((IStructuralEquatable)s_emptyDefault).GetHashCode(comparer));
+            });
+        }
+
+        [Theory]
+        [MemberData(nameof(Int32EnumerableData))]
+        public void IStructuralEquatableGetHashCodeNullComparerNonNullUnderlyingArrayInvalid(IEnumerable<int> source)
+        {
+            var array = source.ToImmutableArray();
+            Assert.Throws<ArgumentNullException>("comparer", () => ((IStructuralEquatable)array).GetHashCode(comparer: null));
+        }
+
+        [Fact]
+        public void IStructuralComparableCompareToDefaultAndDefault()
+        {
+            Assert.All(SharedComparers<int>().OfType<IComparer>(), comparer =>
+            {
+                // Default ImmutableArrays are always considered the same as other default ImmutableArrays, no matter
+                // what the comparer is. (Even if the comparer is null.)
+                Assert.Equal(0, ((IStructuralComparable)s_emptyDefault).CompareTo(s_emptyDefault, comparer));
+            });
+        }
+
+        [Theory]
+        [MemberData(nameof(Int32EnumerableData))]
+        public void IStructuralComparableCompareToDefaultAndNonDefaultInvalid(IEnumerable<int> source)
+        {
+            object other = source.ToImmutableArray();
+            var comparers = SharedComparers<int>().OfType<IComparer>().Except(new IComparer[] { null });
+
+            Assert.All(comparers, comparer =>
+            {
+                // CompareTo should throw if the arrays are of different lengths. The default ImmutableArray is considered to have
+                // a different length from every other array, including empty ones.
+                Assert.Throws<ArgumentException>("other", () => ((IStructuralComparable)s_emptyDefault).CompareTo(other, comparer));
+                Assert.Throws<ArgumentException>("other", () => ((IStructuralComparable)other).CompareTo(s_emptyDefault, comparer));
+            });
+        }
+
+        [Theory]
+        [MemberData(nameof(IStructuralComparableCompareToNullComparerArgumentInvalidData))]
+        public void IStructuralComparableCompareToNullComparerArgumentInvalid(IEnumerable<int> source, object other)
+        {
+            // Because of https://github.com/xunit/assert.xunit/pull/5 we cannot pass in a default ImmutableArray directly,
+            // so a null source is used as a sentinel value to represent that here. Once that change makes it into corefx,
+            // just pass in a default array from the MemberData.
+
+            var array = source?.ToImmutableArray() ?? s_emptyDefault;
+            Assert.Throws<ArgumentException>("other", () => ((IStructuralComparable)array).CompareTo(other, comparer: null));
+
+            if (other is Array || IsImmutableArray(other))
+            {
+                Assert.Throws<ArgumentException>("other", () => ((IStructuralComparable)other).CompareTo(array, comparer: null));
+            }
+        }
+
+        public static IEnumerable<object[]> IStructuralComparableCompareToNullComparerArgumentInvalidData()
+        {
+            yield return new object[] { null, null };
+            yield return new object[] { null, ImmutableArray.Create(1, 2, 3) };
+            yield return new object[] { new[] { 1, 2, 3 }, null };
+        }
+
+        [Theory]
+        [MemberData(nameof(IStructuralComparableCompareToNullComparerNullReferenceInvalidData))]
+        public void IStructuralComparableCompareToNullComparerNullReferenceInvalid(IEnumerable<int> source, object other)
+        {
+            var array = source.ToImmutableArray();
+            Assert.Throws<NullReferenceException>(() => ((IStructuralComparable)array).CompareTo(other, comparer: null));
+
+            if (other == null)
+            {
+                Assert.Throws<NullReferenceException>(() => ((IStructuralComparable)array).CompareTo(s_emptyDefault, comparer: null));
+            }
+        }
+
+        public static IEnumerable<object[]> IStructuralComparableCompareToNullComparerNullReferenceInvalidData()
+        {
+            // This was not fixed for compatability reasons. See https://github.com/dotnet/corefx/issues/13410
+            yield return new object[] { new[] { 1, 2, 3 }, new[] { 1, 2, 3 } };
+            yield return new object[] { new[] { 1, 2, 3 }, ImmutableArray.Create(1, 2, 3) };
+            // Cache this into a local so the comparands are reference-equal.
+            var oneTwoThree = ImmutableArray.Create(1, 2, 3);
+            yield return new object[] { oneTwoThree, oneTwoThree };
+        }
+
+        [Theory]
+        [MemberData(nameof(IStructuralComparableCompareToData))]
+        public void IStructuralComparableCompareTo(IEnumerable<int> source, object other, IComparer comparer, int expected)
+        {
+            var array = source?.ToImmutableArray() ?? s_emptyDefault;
+            Assert.Equal(expected, ((IStructuralComparable)array).CompareTo(other ?? s_emptyDefault, comparer));
+
+            if (other is Array)
+            {
+                Assert.Equal(expected, ((IStructuralComparable)source.ToArray()).CompareTo(other ?? s_emptyDefault, comparer));
+            }
+        }
+
+        public static IEnumerable<object[]> IStructuralComparableCompareToData()
+        {
+            yield return new object[] { new[] { 1, 2, 3 }, new[] { 1, 2, 3 }, Comparer<int>.Default, 0 };
+            yield return new object[] { new[] { 1, 2, 3 }, new[] { 1, 2, 3 }, Comparer<object>.Default, 0 };
+
+            yield return new object[] { new[] { 1, 2, 3 }, ImmutableArray.Create(1, 2, 3), Comparer<int>.Default, 0 };
+            yield return new object[] { new[] { 1, 2, 3 }, ImmutableArray.Create(1, 2, 3), Comparer<object>.Default, 0 };
+
+            // The comparands are the same instance, so Array can short-circuit.
+            yield return new object[] { s_empty, s_empty, Comparer<int>.Default, 0 };
+            yield return new object[] { s_empty, s_empty, Comparer<object>.Default, 0 };
+
+            // Normally, a null comparer is an invalid input. However, if both comparands are default ImmutableArrays
+            // then CompareTo will short-circuit before it validates the comparer.
+            yield return new object[] { null, null, null, 0 };
+        }
+
+        [Theory]
+        [MemberData(nameof(IStructuralComparableCompareToInvalidData))]
+        public void IStructuralComparableCompareToInvalid(IEnumerable<int> source, object other, IComparer comparer)
+        {
+            var array = source.ToImmutableArray();
+
+            Assert.Throws<ArgumentException>("other", () => ((IStructuralComparable)array).CompareTo(other, comparer));
+            Assert.Throws<ArgumentException>("other", () => ((IStructuralComparable)source.ToArray()).CompareTo(other, comparer));
+
+            if (other is Array || IsImmutableArray(other))
+            {
+                Assert.Throws<ArgumentException>("other", () => ((IStructuralComparable)other).CompareTo(array, comparer));
+                Assert.Throws<ArgumentException>("other", () => ((IStructuralComparable)other).CompareTo(source.ToArray(), comparer));
+            }
+        }
+
+        public static IEnumerable<object[]> IStructuralComparableCompareToInvalidData()
+        {
+            return SharedComparers<int>()
+                .OfType<IComparer>()
+                .Except(new IComparer[] { null })
+                .SelectMany(comparer => new[]
+                {
+                    new object[] { new[] { 1, 2, 3 }, new[] { 1, 2, 3, 4 }, comparer },
+                    new object[] { new[] { 1, 2, 3 }, ImmutableArray.Create(1, 2, 3, 4), comparer },
+                    new object[] { new[] { 1, 2, 3 }, new List<int> { 1, 2, 3 }, comparer }
+                });
+        }
+
+        [Theory]
+        [MemberData(nameof(BinarySearchData))]
+        public void BinarySearch(IEnumerable<int> source, int value)
+        {
+            var array = source.ToArray();
 
             Assert.Equal(
                 Array.BinarySearch(array, value),
@@ -1415,17 +2119,35 @@ namespace System.Collections.Immutable.Tests
                 ImmutableArray.BinarySearch(ImmutableArray.Create(array), 0, array.Length, value, Comparer<int>.Default));
         }
 
-        [Fact]
-        public void OfType()
+        public static IEnumerable<object[]> BinarySearchData()
         {
-            Assert.Equal(0, s_emptyDefault.OfType<int>().Count());
-            Assert.Equal(0, s_empty.OfType<int>().Count());
-            Assert.Equal(1, s_oneElement.OfType<int>().Count());
-            Assert.Equal(1, s_twoElementRefTypeWithNull.OfType<string>().Count());
+            yield return new object[] { new int[0], 5 };
+            yield return new object[] { new[] { 3 }, 5 };
+            yield return new object[] { new[] { 5 }, 5 };
+            yield return new object[] { new[] { 1, 2, 3 }, 1 };
+            yield return new object[] { new[] { 1, 2, 3 }, 2 };
+            yield return new object[] { new[] { 1, 2, 3 }, 3 };
+            yield return new object[] { new[] { 1, 2, 3, 4 }, 4 };
+        }
+
+        [Theory]
+        [MemberData(nameof(BinarySearchData))]
+        public void BinarySearchDefaultInvalid(IEnumerable<int> source, int value)
+        {
+            Assert.Throws<ArgumentNullException>("array", () => ImmutableArray.BinarySearch(s_emptyDefault, value));
         }
 
         [Fact]
-        public void Add_ThreadSafety()
+        public void OfType()
+        {
+            Assert.Equal(new int[0], s_emptyDefault.OfType<int>());
+            Assert.Equal(new int[0], s_empty.OfType<int>());
+            Assert.Equal(s_oneElement, s_oneElement.OfType<int>());
+            Assert.Equal(new[] { "1" }, s_twoElementRefTypeWithNull.OfType<string>());
+        }
+
+        [Fact]
+        public void AddThreadSafety()
         {
             // Note the point of this thread-safety test is *not* to test the thread-safety of the test itself.
             // This test has a known issue where the two threads will stomp on each others updates, but that's not the point.
@@ -1446,16 +2168,121 @@ namespace System.Collections.Immutable.Tests
             Task.WaitAll(Task.Run(mutator), Task.Run(mutator));
         }
 
-        [Fact]
-        public void DebuggerAttributesValid()
+        [Theory]
+        [MemberData(nameof(Int32EnumerableData))]
+        public void DebuggerAttributesValid(IEnumerable<int> source)
         {
-            DebuggerAttributes.ValidateDebuggerDisplayReferences(ImmutableArray.Create<string>()); // verify empty
-            DebuggerAttributes.ValidateDebuggerDisplayReferences(ImmutableArray.Create(1, 2, 3));  // verify non-empty
+            DebuggerAttributes.ValidateDebuggerDisplayReferences(source.ToImmutableArray());
         }
 
         protected override IEnumerable<T> GetEnumerableOf<T>(params T[] contents)
         {
             return ImmutableArray.Create(contents);
+        }
+
+        /// <summary>
+        /// Returns an object typed as an <see cref="IEquatable{T}"/>.
+        /// </summary>
+        /// <typeparam name="T">The type of the object.</typeparam>
+        /// <param name="obj">The object.</param>
+        private static IEquatable<T> AsEquatable<T>(T obj) where T : IEquatable<T> => obj;
+
+        /// <summary>
+        /// Given an enumerable, produces a list of enumerables that have the same contents,
+        /// but have different underlying types.
+        /// </summary>
+        /// <typeparam name="T">The element type.</typeparam>
+        /// <param name="source">The source enumerable.</param>
+        private static IEnumerable<IEnumerable<T>> ChangeType<T>(IEnumerable<T> source)
+        {
+            yield return source;
+            // Implements IList<T>, but isn't a type we're likely to explicitly optimize for.
+            yield return new LinkedList<T>(source);
+            yield return source.Select(x => x); // A lazy enumerable.
+
+            // Constructing these types will be problematic if the source is a T[], but
+            // its underlying type is not typeof(T[]).
+            // The reason is since they are contiguous in memory, they call Array.Copy
+            // if the source is an array as an optimization, which throws if the types
+            // of the arrays do not exactly match up.
+            // More info here: https://github.com/dotnet/corefx/issues/2241
+
+            if (!(source is T[]) || source.GetType() == typeof(T[]))
+            {
+                yield return source.ToArray();
+                yield return source.ToList();
+                yield return source.ToImmutableArray();
+                // Is not an ICollection<T>, but does implement ICollection and IReadOnlyCollection<T>.
+                yield return new Queue<T>(source);
+            }
+        }
+
+        /// <summary>
+        /// Wraps an enumerable in an iterator, so that it does not implement interfaces such as <see cref="IList{T}"/>.
+        /// </summary>
+        /// <typeparam name="T">The element type.</typeparam>
+        /// <param name="source">The source enumerable.</param>
+        private static IEnumerable<T> ForceLazy<T>(IEnumerable<T> source)
+        {
+            foreach (T element in source)
+            {
+                yield return element;
+            }
+        }
+
+        /// <summary>
+        /// Gets the underlying array of an <see cref="ImmutableArray{T}"/>. For testing purposes only.
+        /// </summary>
+        /// <typeparam name="T">The element type.</typeparam>
+        /// <param name="array">The immutable array.</param>
+        /// <returns>The underlying array.</returns>
+        private static T[] GetUnderlyingArray<T>(ImmutableArray<T> array)
+        {
+            FieldInfo arrayField = typeof(ImmutableArray<T>)
+                .GetField("array", BindingFlags.Instance | BindingFlags.NonPublic);
+            return (T[])arrayField.GetValue(array);
+        }
+
+        /// <summary>
+        /// Returns whether the object is an instance of an <see cref="ImmutableArray{T}"/>.
+        /// </summary>
+        /// <param name="obj">The object.</param>
+        private static bool IsImmutableArray(object obj)
+        {
+            if (obj == null)
+            {
+                return false;
+            }
+
+            var typeInfo = obj.GetType().GetTypeInfo();
+            return typeInfo.IsGenericType && typeInfo.GetGenericTypeDefinition() == typeof(ImmutableArray<>);
+        }
+
+        /// <summary>
+        /// Returns a list of comparers that are shared between tests.
+        /// </summary>
+        /// <typeparam name="T">The comparand type.</typeparam>
+        private static IEnumerable<IComparer<T>> SharedComparers<T>()
+            where T : IComparable<T>
+        {
+            // Null comparers should be accepted and translated to the default comparer.
+            yield return null;
+            yield return Comparer<T>.Default;
+            yield return Comparer<T>.Create((x, y) => y.CompareTo(x));
+            yield return Comparer<T>.Create((x, y) => 0);
+        }
+
+        /// <summary>
+        /// Returns a list of equality comparers that are shared between tests.
+        /// </summary>
+        /// <typeparam name="T">The comparand type.</typeparam>
+        private static IEnumerable<IEqualityComparer<T>> SharedEqualityComparers<T>()
+        {
+            // Null comparers should be accepted and translated to the default comparer.
+            yield return null;
+            yield return EqualityComparer<T>.Default;
+            yield return new DelegateEqualityComparer<T>(equals: (x, y) => true, objectGetHashCode: obj => 0);
+            yield return new DelegateEqualityComparer<T>(equals: (x, y) => false, objectGetHashCode: obj => 0);
         }
 
         /// <summary>

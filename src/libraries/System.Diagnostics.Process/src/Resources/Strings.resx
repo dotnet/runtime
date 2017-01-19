@@ -279,4 +279,37 @@
   <data name="RemoteMachinesNotSupported" xml:space="preserve">
     <value>Access to processes on remote machines is not supported on this platform.</value>
   </data>
+  <data name="CantSetDuplicatePassword" xml:space="preserve">
+    <value>ProcessStartInfo.Password and ProcessStartInfo.PasswordInClearText cannot both be set. Use only one of them.</value>
+  </data>
+  <data name="ArgumentNull_Array" xml:space="preserve">
+    <value>Array cannot be null.</value>
+  </data>
+  <data name="ArgumentOutOfRange_IndexCountBuffer" xml:space="preserve">
+    <value>Index and count must refer to a location within the buffer.</value>
+  </data>
+  <data name="ArgumentOutOfRange_IndexCount" xml:space="preserve">
+    <value>Index and count must refer to a location within the string.</value>
+  </data>
+  <data name="ArgumentOutOfRange_Index" xml:space="preserve">
+    <value>Index was out of range. Must be non-negative and less than the size of the collection.</value>
+  </data>
+  <data name="Argument_EncodingConversionOverflowBytes" xml:space="preserve">
+    <value>The output byte buffer is too small to contain the encoded data, encoding '{0}' fallback '{1}'.</value>
+  </data>
+  <data name="Argument_EncodingConversionOverflowChars" xml:space="preserve">
+    <value>The output char buffer is too small to contain the decoded characters, encoding '{0}' fallback '{1}'.</value>
+  </data>
+  <data name="ArgumentOutOfRange_GetByteCountOverflow" xml:space="preserve">
+    <value>Too many characters. The resulting number of bytes is larger than what can be returned as an int.</value>
+  </data>
+  <data name="ArgumentOutOfRange_GetCharCountOverflow" xml:space="preserve">
+    <value>Too many bytes. The resulting number of chars is larger than what can be returned as an int.</value>
+  </data>
+  <data name="Argument_InvalidCharSequenceNoIndex" xml:space="preserve">
+    <value>String contains invalid Unicode code points.</value>
+  </data>
+  <data name="ArgumentOutOfRange_NeedNonNegNum" xml:space="preserve">
+    <value>Non-negative number required.</value>
+  </data>
 </root>

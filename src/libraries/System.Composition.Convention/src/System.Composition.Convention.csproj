@@ -1,15 +1,14 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <ProjectGuid>{E6592FAD-10B5-4B56-9287-D72DD136992F}</ProjectGuid>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <AssemblyName>System.Composition.Convention</AssemblyName>
-    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.0</NuGetTargetMoniker>
-    <PackageTargetFramework Condition="'$(TargetGroup)' == ''">netstandard1.0;portable-net45+win8+wp8+wpa81</PackageTargetFramework>
+    <PackageTargetFramework>netstandard1.0;portable-net45+win8+wp8+wpa81</PackageTargetFramework>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard1.0-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard1.0-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="$(CommonPath)\Microsoft\Internal\Assumes.cs">
       <Link>Microsoft\Internal\Assumes.cs</Link>
@@ -60,6 +59,20 @@
       <Project>{c6257381-c624-494a-a9d9-5586e60856ea}</Project>
       <Name>System.Composition.AttributedModel</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System.Collections" />
+    <Reference Include="System.Diagnostics.Contracts" />
+    <Reference Include="System.Diagnostics.Debug" />
+    <Reference Include="System.Diagnostics.Tools" />
+    <Reference Include="System.Globalization" />
+    <Reference Include="System.Linq" />
+    <Reference Include="System.Linq.Expressions" />
+    <Reference Include="System.Reflection" />
+    <Reference Include="System.Reflection.Extensions" />
+    <Reference Include="System.Resources.ResourceManager" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Threading" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

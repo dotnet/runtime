@@ -42,7 +42,7 @@ namespace System.Linq.Expressions
         public MethodInfo Method { get; }
 
         /// <summary>
-        /// Gets the <see cref="Expression"/> that represents the instance 
+        /// Gets the <see cref="Expression"/> that represents the instance
         /// for instance method calls or null for static method calls.
         /// </summary>
         public Expression Object => GetInstance();
@@ -62,11 +62,37 @@ namespace System.Linq.Expressions
         /// <returns>This expression if no children changed, or an expression with the updated children.</returns>
         public MethodCallExpression Update(Expression @object, IEnumerable<Expression> arguments)
         {
-            if (@object == Object && arguments == Arguments)
+            if (@object == Object)
             {
-                return this;
+                // Ensure arguments is safe to enumerate twice.
+                // (If this means a second call to ToReadOnly it will return quickly).
+                ICollection<Expression> args;
+                if (arguments == null)
+                {
+                    args = null;
+                }
+                else
+                {
+                    args = arguments as ICollection<Expression>;
+                    if (args == null)
+                    {
+                        arguments = args = arguments.ToReadOnly();
+                    }
+                }
+
+                if (SameArguments(args))
+                {
+                    return this;
+                }
             }
-            return Expression.Call(@object, Method, arguments);
+
+            return Call(@object, Method, arguments);
+        }
+
+        [ExcludeFromCodeCoverage] // Unreachable
+        internal virtual bool SameArguments(ICollection<Expression> arguments)
+        {
+            throw ContractUtils.Unreachable;
         }
 
         [ExcludeFromCodeCoverage] // Unreachable
@@ -87,9 +113,9 @@ namespace System.Linq.Expressions
         /// Returns a new MethodCallExpression replacing the existing instance/args with the
         /// newly provided instance and args.    Arguments can be null to use the existing
         /// arguments.
-        /// 
+        ///
         /// This helper is provided to allow re-writing of nodes to not depend on the specific optimized
-        /// subclass of MethodCallExpression which is being used. 
+        /// subclass of MethodCallExpression which is being used.
         /// </summary>
         [ExcludeFromCodeCoverage] // Unreachable
         internal virtual MethodCallExpression Rewrite(Expression instance, IReadOnlyList<Expression> args)
@@ -158,6 +184,9 @@ namespace System.Linq.Expressions
             return ReturnReadOnly(ref _arguments);
         }
 
+        internal override bool SameArguments(ICollection<Expression> arguments) =>
+            ExpressionUtils.SameElements(arguments, _arguments);
+
         internal override MethodCallExpression Rewrite(Expression instance, IReadOnlyList<Expression> args)
         {
             Debug.Assert(instance == null);
@@ -180,6 +209,9 @@ namespace System.Linq.Expressions
         public override Expression GetArgument(int index) => _arguments[index];
 
         public override int ArgumentCount => _arguments.Count;
+
+        internal override bool SameArguments(ICollection<Expression> arguments) =>
+            ExpressionUtils.SameElements(arguments, _arguments);
 
         internal override ReadOnlyCollection<Expression> GetOrMakeArguments()
         {
@@ -204,7 +236,7 @@ namespace System.Linq.Expressions
 
         public override Expression GetArgument(int index)
         {
-            throw new InvalidOperationException();
+            throw new ArgumentOutOfRangeException(nameof(index));
         }
 
         public override int ArgumentCount => 0;
@@ -213,6 +245,9 @@ namespace System.Linq.Expressions
         {
             return EmptyReadOnlyCollection<Expression>.Instance;
         }
+
+        internal override bool SameArguments(ICollection<Expression> arguments) =>
+            arguments == null || arguments.Count == 0;
 
         internal override MethodCallExpression Rewrite(Expression instance, IReadOnlyList<Expression> args)
         {
@@ -225,7 +260,7 @@ namespace System.Linq.Expressions
 
     internal sealed class MethodCallExpression1 : MethodCallExpression, IArgumentProvider
     {
-        private object _arg0;       // storage for the 1st argument or a readonly collection.  See IArgumentProvider
+        private object _arg0;       // storage for the 1st argument or a read-only collection.  See IArgumentProvider
 
         public MethodCallExpression1(MethodInfo method, Expression arg0)
             : base(method)
@@ -238,7 +273,7 @@ namespace System.Linq.Expressions
             switch (index)
             {
                 case 0: return ReturnObject<Expression>(_arg0);
-                default: throw new InvalidOperationException();
+                default: throw new ArgumentOutOfRangeException(nameof(index));
             }
         }
 
@@ -247,6 +282,20 @@ namespace System.Linq.Expressions
         internal override ReadOnlyCollection<Expression> GetOrMakeArguments()
         {
             return ReturnReadOnly(this, ref _arg0);
+        }
+
+        internal override bool SameArguments(ICollection<Expression> arguments)
+        {
+            if (arguments != null && arguments.Count == 1)
+            {
+                using (IEnumerator<Expression> en = arguments.GetEnumerator())
+                {
+                    en.MoveNext();
+                    return en.Current == ReturnObject<Expression>(_arg0);
+                }
+            }
+
+            return false;
         }
 
         internal override MethodCallExpression Rewrite(Expression instance, IReadOnlyList<Expression> args)
@@ -265,7 +314,7 @@ namespace System.Linq.Expressions
 
     internal sealed class MethodCallExpression2 : MethodCallExpression, IArgumentProvider
     {
-        private object _arg0;               // storage for the 1st argument or a readonly collection.  See IArgumentProvider
+        private object _arg0;               // storage for the 1st argument or a read-only collection.  See IArgumentProvider
         private readonly Expression _arg1;  // storage for the 2nd arg
 
         public MethodCallExpression2(MethodInfo method, Expression arg0, Expression arg1)
@@ -281,11 +330,35 @@ namespace System.Linq.Expressions
             {
                 case 0: return ReturnObject<Expression>(_arg0);
                 case 1: return _arg1;
-                default: throw new InvalidOperationException();
+                default: throw new ArgumentOutOfRangeException(nameof(index));
             }
         }
 
         public override int ArgumentCount => 2;
+
+        internal override bool SameArguments(ICollection<Expression> arguments)
+        {
+            if (arguments != null && arguments.Count == 2)
+            {
+                ReadOnlyCollection<Expression> alreadyCollection = _arg0 as ReadOnlyCollection<Expression>;
+                if (alreadyCollection != null)
+                {
+                    return ExpressionUtils.SameElements(arguments, alreadyCollection);
+                }
+
+                using (IEnumerator<Expression> en = arguments.GetEnumerator())
+                {
+                    en.MoveNext();
+                    if (en.Current == _arg0)
+                    {
+                        en.MoveNext();
+                        return en.Current == _arg1;
+                    }
+                }
+            }
+
+            return false;
+        }
 
         internal override ReadOnlyCollection<Expression> GetOrMakeArguments()
         {
@@ -307,7 +380,7 @@ namespace System.Linq.Expressions
 
     internal sealed class MethodCallExpression3 : MethodCallExpression, IArgumentProvider
     {
-        private object _arg0;           // storage for the 1st argument or a readonly collection.  See IArgumentProvider
+        private object _arg0;           // storage for the 1st argument or a read-only collection.  See IArgumentProvider
         private readonly Expression _arg1, _arg2; // storage for the 2nd - 3rd args.
 
         public MethodCallExpression3(MethodInfo method, Expression arg0, Expression arg1, Expression arg2)
@@ -325,11 +398,39 @@ namespace System.Linq.Expressions
                 case 0: return ReturnObject<Expression>(_arg0);
                 case 1: return _arg1;
                 case 2: return _arg2;
-                default: throw new InvalidOperationException();
+                default: throw new ArgumentOutOfRangeException(nameof(index));
             }
         }
 
         public override int ArgumentCount => 3;
+
+        internal override bool SameArguments(ICollection<Expression> arguments)
+        {
+            if (arguments != null && arguments.Count == 3)
+            {
+                ReadOnlyCollection<Expression> alreadyCollection = _arg0 as ReadOnlyCollection<Expression>;
+                if (alreadyCollection != null)
+                {
+                    return ExpressionUtils.SameElements(arguments, alreadyCollection);
+                }
+
+                using (IEnumerator<Expression> en = arguments.GetEnumerator())
+                {
+                    en.MoveNext();
+                    if (en.Current == _arg0)
+                    {
+                        en.MoveNext();
+                        if( en.Current == _arg1)
+                        {
+                            en.MoveNext();
+                            return en.Current == _arg2;
+                        }
+                    }
+                }
+            }
+
+            return false;
+        }
 
         internal override ReadOnlyCollection<Expression> GetOrMakeArguments()
         {
@@ -351,7 +452,7 @@ namespace System.Linq.Expressions
 
     internal sealed class MethodCallExpression4 : MethodCallExpression, IArgumentProvider
     {
-        private object _arg0;               // storage for the 1st argument or a readonly collection.  See IArgumentProvider
+        private object _arg0;               // storage for the 1st argument or a read-only collection.  See IArgumentProvider
         private readonly Expression _arg1, _arg2, _arg3;  // storage for the 2nd - 4th args.
 
         public MethodCallExpression4(MethodInfo method, Expression arg0, Expression arg1, Expression arg2, Expression arg3)
@@ -371,11 +472,43 @@ namespace System.Linq.Expressions
                 case 1: return _arg1;
                 case 2: return _arg2;
                 case 3: return _arg3;
-                default: throw new InvalidOperationException();
+                default: throw new ArgumentOutOfRangeException(nameof(index));
             }
         }
 
         public override int ArgumentCount => 4;
+
+        internal override bool SameArguments(ICollection<Expression> arguments)
+        {
+            if (arguments != null && arguments.Count == 4)
+            {
+                ReadOnlyCollection<Expression> alreadyCollection = _arg0 as ReadOnlyCollection<Expression>;
+                if (alreadyCollection != null)
+                {
+                    return ExpressionUtils.SameElements(arguments, alreadyCollection);
+                }
+
+                using (IEnumerator<Expression> en = arguments.GetEnumerator())
+                {
+                    en.MoveNext();
+                    if (en.Current == _arg0)
+                    {
+                        en.MoveNext();
+                        if (en.Current == _arg1)
+                        {
+                            en.MoveNext();
+                            if (en.Current == _arg2)
+                            {
+                                en.MoveNext();
+                                return en.Current == _arg3;
+                            }
+                        }
+                    }
+                }
+            }
+
+            return false;
+        }
 
         internal override ReadOnlyCollection<Expression> GetOrMakeArguments()
         {
@@ -397,7 +530,7 @@ namespace System.Linq.Expressions
 
     internal sealed class MethodCallExpression5 : MethodCallExpression, IArgumentProvider
     {
-        private object _arg0;           // storage for the 1st argument or a readonly collection.  See IArgumentProvider
+        private object _arg0;           // storage for the 1st argument or a read-only collection.  See IArgumentProvider
         private readonly Expression _arg1, _arg2, _arg3, _arg4;   // storage for the 2nd - 5th args.
 
         public MethodCallExpression5(MethodInfo method, Expression arg0, Expression arg1, Expression arg2, Expression arg3, Expression arg4)
@@ -419,11 +552,47 @@ namespace System.Linq.Expressions
                 case 2: return _arg2;
                 case 3: return _arg3;
                 case 4: return _arg4;
-                default: throw new InvalidOperationException();
+                default: throw new ArgumentOutOfRangeException(nameof(index));
             }
         }
 
         public override int ArgumentCount => 5;
+
+        internal override bool SameArguments(ICollection<Expression> arguments)
+        {
+            if (arguments != null && arguments.Count == 5)
+            {
+                ReadOnlyCollection<Expression> alreadyCollection = _arg0 as ReadOnlyCollection<Expression>;
+                if (alreadyCollection != null)
+                {
+                    return ExpressionUtils.SameElements(arguments, alreadyCollection);
+                }
+
+                using (IEnumerator<Expression> en = arguments.GetEnumerator())
+                {
+                    en.MoveNext();
+                    if (en.Current == _arg0)
+                    {
+                        en.MoveNext();
+                        if (en.Current == _arg1)
+                        {
+                            en.MoveNext();
+                            if (en.Current == _arg2)
+                            {
+                                en.MoveNext();
+                                if (en.Current == _arg3)
+                                {
+                                    en.MoveNext();
+                                    return en.Current == _arg4;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            return false;
+        }
 
         internal override ReadOnlyCollection<Expression> GetOrMakeArguments()
         {
@@ -453,7 +622,7 @@ namespace System.Linq.Expressions
 
         public override Expression GetArgument(int index)
         {
-            throw new InvalidOperationException();
+            throw new ArgumentOutOfRangeException(nameof(index));
         }
 
         public override int ArgumentCount => 0;
@@ -462,6 +631,9 @@ namespace System.Linq.Expressions
         {
             return EmptyReadOnlyCollection<Expression>.Instance;
         }
+
+        internal override bool SameArguments(ICollection<Expression> arguments) =>
+            arguments == null || arguments.Count == 0;
 
         internal override MethodCallExpression Rewrite(Expression instance, IReadOnlyList<Expression> args)
         {
@@ -474,7 +646,7 @@ namespace System.Linq.Expressions
 
     internal sealed class InstanceMethodCallExpression1 : InstanceMethodCallExpression, IArgumentProvider
     {
-        private object _arg0;                // storage for the 1st argument or a readonly collection.  See IArgumentProvider
+        private object _arg0;                // storage for the 1st argument or a read-only collection.  See IArgumentProvider
 
         public InstanceMethodCallExpression1(MethodInfo method, Expression instance, Expression arg0)
             : base(method, instance)
@@ -487,11 +659,25 @@ namespace System.Linq.Expressions
             switch (index)
             {
                 case 0: return ReturnObject<Expression>(_arg0);
-                default: throw new InvalidOperationException();
+                default: throw new ArgumentOutOfRangeException(nameof(index));
             }
         }
 
         public override int ArgumentCount => 1;
+
+        internal override bool SameArguments(ICollection<Expression> arguments)
+        {
+            if (arguments != null && arguments.Count == 1)
+            {
+                using (IEnumerator<Expression> en = arguments.GetEnumerator())
+                {
+                    en.MoveNext();
+                    return en.Current == ReturnObject<Expression>(_arg0);
+                }
+            }
+
+            return false;
+        }
 
         internal override ReadOnlyCollection<Expression> GetOrMakeArguments()
         {
@@ -513,7 +699,7 @@ namespace System.Linq.Expressions
 
     internal sealed class InstanceMethodCallExpression2 : InstanceMethodCallExpression, IArgumentProvider
     {
-        private object _arg0;                // storage for the 1st argument or a readonly collection.  See IArgumentProvider
+        private object _arg0;                // storage for the 1st argument or a read-only collection.  See IArgumentProvider
         private readonly Expression _arg1;   // storage for the 2nd argument
 
         public InstanceMethodCallExpression2(MethodInfo method, Expression instance, Expression arg0, Expression arg1)
@@ -529,11 +715,35 @@ namespace System.Linq.Expressions
             {
                 case 0: return ReturnObject<Expression>(_arg0);
                 case 1: return _arg1;
-                default: throw new InvalidOperationException();
+                default: throw new ArgumentOutOfRangeException(nameof(index));
             }
         }
 
         public override int ArgumentCount => 2;
+
+        internal override bool SameArguments(ICollection<Expression> arguments)
+        {
+            if (arguments != null && arguments.Count == 2)
+            {
+                ReadOnlyCollection<Expression> alreadyCollection = _arg0 as ReadOnlyCollection<Expression>;
+                if (alreadyCollection != null)
+                {
+                    return ExpressionUtils.SameElements(arguments, alreadyCollection);
+                }
+
+                using (IEnumerator<Expression> en = arguments.GetEnumerator())
+                {
+                    en.MoveNext();
+                    if (en.Current == _arg0)
+                    {
+                        en.MoveNext();
+                        return en.Current == _arg1;
+                    }
+                }
+            }
+
+            return false;
+        }
 
         internal override ReadOnlyCollection<Expression> GetOrMakeArguments()
         {
@@ -555,7 +765,7 @@ namespace System.Linq.Expressions
 
     internal sealed class InstanceMethodCallExpression3 : InstanceMethodCallExpression, IArgumentProvider
     {
-        private object _arg0;                       // storage for the 1st argument or a readonly collection.  See IArgumentProvider
+        private object _arg0;                       // storage for the 1st argument or a read-only collection.  See IArgumentProvider
         private readonly Expression _arg1, _arg2;   // storage for the 2nd - 3rd argument
 
         public InstanceMethodCallExpression3(MethodInfo method, Expression instance, Expression arg0, Expression arg1, Expression arg2)
@@ -573,11 +783,39 @@ namespace System.Linq.Expressions
                 case 0: return ReturnObject<Expression>(_arg0);
                 case 1: return _arg1;
                 case 2: return _arg2;
-                default: throw new InvalidOperationException();
+                default: throw new ArgumentOutOfRangeException(nameof(index));
             }
         }
 
         public override int ArgumentCount => 3;
+
+        internal override bool SameArguments(ICollection<Expression> arguments)
+        {
+            if (arguments != null && arguments.Count == 3)
+            {
+                ReadOnlyCollection<Expression> alreadyCollection = _arg0 as ReadOnlyCollection<Expression>;
+                if (alreadyCollection != null)
+                {
+                    return ExpressionUtils.SameElements(arguments, alreadyCollection);
+                }
+
+                using (IEnumerator<Expression> en = arguments.GetEnumerator())
+                {
+                    en.MoveNext();
+                    if (en.Current == _arg0)
+                    {
+                        en.MoveNext();
+                        if (en.Current == _arg1)
+                        {
+                            en.MoveNext();
+                            return en.Current == _arg2;
+                        }
+                    }
+                }
+            }
+
+            return false;
+        }
 
         internal override ReadOnlyCollection<Expression> GetOrMakeArguments()
         {

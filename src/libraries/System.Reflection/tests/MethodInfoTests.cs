@@ -685,7 +685,7 @@ namespace System.Reflection.Tests
             float single = 9.1f,
             double dbl = 11.12)
         {
-            return $"{boolean}, {str}, {character}, {unsignedbyte}, {signedbyte}, {int16}, {uint16}, {int32}, {uint32}, {int64}, {uint64}, {single}, {dbl}";
+            return FormattableString.Invariant($"{boolean}, {str}, {character}, {unsignedbyte}, {signedbyte}, {int16}, {uint16}, {int32}, {uint32}, {int64}, {uint64}, {single}, {dbl}");
         }
 
         public string String(string parameter = "test") => parameter;
@@ -719,12 +719,12 @@ namespace System.Reflection.Tests
 
         string MethodInfoDefaultParametersInterface.InterfaceMethod(int p1, string p2, decimal p3)
         {
-            return $"{p1}, {p2}, {p3}";
+            return FormattableString.Invariant($"{p1}, {p2}, {p3}");
         }
 
         public static string StaticMethod(int p1 = 1, string p2 = "test", decimal p3 = 3.14m)
         {
-            return $"{p1}, {p2}, {p3}";
+            return FormattableString.Invariant($"{p1}, {p2}, {p3}");
         }
 
         public object OptionalObjectParameter([Optional]object parameter) => parameter;

@@ -132,4 +132,7 @@
   <data name="ArgumentOutOfRange_NeedNonnegativeNumber" xml:space="preserve">
     <value>Nonnegative number required.</value>
   </data>
+  <data name="Thread_GetSetCompressedStack_NotSupported" xml:space="preserve">
+    <value>Use CompressedStack.(Capture/Run) instead.</value>
+  </data>
 </root>

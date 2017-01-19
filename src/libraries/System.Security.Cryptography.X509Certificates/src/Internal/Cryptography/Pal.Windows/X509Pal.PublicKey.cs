@@ -149,12 +149,12 @@ namespace Internal.Cryptography.Pal
             int numBytesNeeded = 0;
             NTSTATUS ntStatus = Interop.BCrypt.BCryptExportKey(bCryptKeyHandle, IntPtr.Zero, blobFormatString, null, 0, out numBytesNeeded, 0);
             if (ntStatus != NTSTATUS.STATUS_SUCCESS)
-                throw new CryptographicException(Interop.mincore.GetMessage((int)ntStatus));
+                throw new CryptographicException(Interop.Kernel32.GetMessage((int)ntStatus));
 
             byte[] keyBlob = new byte[numBytesNeeded];
             ntStatus = Interop.BCrypt.BCryptExportKey(bCryptKeyHandle, IntPtr.Zero, blobFormatString, keyBlob, keyBlob.Length, out numBytesNeeded, 0);
             if (ntStatus != NTSTATUS.STATUS_SUCCESS)
-                throw new CryptographicException(Interop.mincore.GetMessage((int)ntStatus));
+                throw new CryptographicException(Interop.Kernel32.GetMessage((int)ntStatus));
 
             Array.Resize(ref keyBlob, numBytesNeeded);
             return keyBlob;

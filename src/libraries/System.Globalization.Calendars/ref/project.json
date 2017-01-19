@@ -1,9 +1,0 @@
-{
-  "dependencies": {
-    "System.Globalization": "4.0.11",
-    "System.Runtime": "4.4.0-beta-24709-02"
-  },
-  "frameworks": {
-    "netstandard1.7": {}
-  }
-}

@@ -4,9 +4,7 @@
 
 using Xunit;
 using Xunit.Abstractions;
-using System;
 using System.IO;
-using System.Xml;
 using System.Xml.XPath;
 using System.Xml.Xsl;
 using XmlCoreTest.Common;
@@ -37,7 +35,7 @@ namespace System.Xml.Tests
 #pragma warning disable 0618
             xsltSameInstance = new XslTransform();
 #pragma warning restore 0618
-            _strPath = Path.Combine(@"TestFiles\", FilePathUtil.GetTestDataPath(), @"XsltApi\");
+            _strPath = Path.Combine("TestFiles", FilePathUtil.GetTestDataPath(), "XsltApi");
             return;
         }
 
@@ -113,13 +111,13 @@ namespace System.Xml.Tests
         public override void Load(string _strXslFile, string _strXmlFile)
         {
 #pragma warning disable 0618
-            XmlValidatingReader xrData = new XmlValidatingReader(new XmlTextReader(_strPath + _strXmlFile));
+            XmlValidatingReader xrData = new XmlValidatingReader(new XmlTextReader(Path.Combine(_strPath, _strXmlFile)));
 #pragma warning restore 0618
             _xd = new XPathDocument(xrData, XmlSpace.Preserve);
             xrData.Dispose();
 
 #pragma warning disable 0618
-            XmlValidatingReader xrTemp = new XmlValidatingReader(new XmlTextReader(_strPath + _strXslFile));
+            XmlValidatingReader xrTemp = new XmlValidatingReader(new XmlTextReader(Path.Combine(_strPath, _strXslFile)));
 #pragma warning restore 0618
             xrTemp.ValidationType = ValidationType.None;
             xrTemp.EntityHandling = EntityHandling.ExpandEntities;
@@ -153,13 +151,13 @@ namespace System.Xml.Tests
         public override void Load(string _strXslFile, string _strXmlFile)
         {
 #pragma warning disable 0618
-            XmlValidatingReader xrData = new XmlValidatingReader(new XmlTextReader(_strPath + _strXmlFile));
+            XmlValidatingReader xrData = new XmlValidatingReader(new XmlTextReader(Path.Combine(_strPath, _strXmlFile)));
 #pragma warning restore 0618
             _xd = new XPathDocument(xrData, XmlSpace.Preserve);
             xrData.Dispose();
 
 #pragma warning disable 0618
-            XmlValidatingReader xrTemp = new XmlValidatingReader(new XmlTextReader(_strPath + _strXslFile));
+            XmlValidatingReader xrTemp = new XmlValidatingReader(new XmlTextReader(Path.Combine(_strPath, _strXslFile)));
             xrTemp.ValidationType = ValidationType.None;
             xrTemp.EntityHandling = EntityHandling.ExpandEntities;
             xsltSameInstance.Load(xrTemp);

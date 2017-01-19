@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
@@ -10,11 +10,17 @@
     <File Include="$(PlaceHolderFile)">
       <TargetPath>lib/netstandard1.0</TargetPath>
     </File>
+    <ProjectReference Include="linux\runtime.native.System.Net.Security.pkgproj">
+      <Platform>amd64</Platform>
+    </ProjectReference>
     <ProjectReference Include="rhel\runtime.native.System.Net.Security.pkgproj">
       <Platform>amd64</Platform>
     </ProjectReference>
     <ProjectReference Include="debian\runtime.native.System.Net.Security.pkgproj">
       <Platform>amd64</Platform>
+    </ProjectReference>
+    <ProjectReference Include="debian\runtime.native.System.Net.Security.pkgproj">
+      <Platform>armel</Platform>
     </ProjectReference>
     <ProjectReference Include="fedora\23\runtime.native.System.Net.Security.pkgproj">
       <Platform>amd64</Platform>
@@ -34,14 +40,23 @@
     <ProjectReference Include="ubuntu\14.04\runtime.native.System.Net.Security.pkgproj">
       <Platform>amd64</Platform>
     </ProjectReference>
+    <ProjectReference Include="ubuntu\14.04\runtime.native.System.Net.Security.pkgproj">
+      <Platform>arm</Platform>
+    </ProjectReference>
     <ProjectReference Include="ubuntu\16.04\runtime.native.System.Net.Security.pkgproj">
       <Platform>amd64</Platform>
+    </ProjectReference>
+    <ProjectReference Include="ubuntu\16.04\runtime.native.System.Net.Security.pkgproj">
+      <Platform>arm</Platform>
     </ProjectReference>
     <ProjectReference Include="ubuntu\16.10\runtime.native.System.Net.Security.pkgproj">
       <Platform>amd64</Platform>
     </ProjectReference>
     <ProjectReference Include="alpine\3.4.3\runtime.native.System.Net.Security.pkgproj">
       <Platform>amd64</Platform>
+    </ProjectReference>
+    <ProjectReference Include="tizen\4.0.0\runtime.native.System.Net.Security.pkgproj">
+      <Platform>armel</Platform>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

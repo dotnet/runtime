@@ -15,13 +15,7 @@ namespace System.ComponentModel
         /// <summary>
         /// The Type this converter is targeting (e.g. Int16, UInt64, etc.)
         /// </summary>
-        internal override Type TargetType
-        {
-            get
-            {
-                return typeof(UInt64);
-            }
-        }
+        internal override Type TargetType => typeof(ulong);
 
         /// <summary>
         /// Convert the given value to a string using the given radix

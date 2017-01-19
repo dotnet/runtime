@@ -117,9 +117,6 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="EmptyEnumerable" xml:space="preserve">
-    <value>Enumeration yielded no results</value>
-  </data>
   <data name="MoreThanOneElement" xml:space="preserve">
     <value>Sequence contains more than one element</value>
   </data>
@@ -188,9 +185,6 @@
   </data>
   <data name="ParallelEnumerable_BinaryOpMustUseAsParallel" xml:space="preserve">
     <value>The second data source of a binary operator must be of type System.Linq.ParallelQuery&lt;T&gt; rather than System.Collections.Generic.IEnumerable&lt;T&gt;. To fix this problem, use the AsParallel() extension method to convert the right data source to System.Linq.ParallelQuery&lt;T&gt;.</value>
-  </data>
-  <data name="ParallelEnumerable_WithCancellation_TokenSourceDisposed" xml:space="preserve">
-    <value>The CancellationTokenSource associated with this CancellationToken has been disposed.</value>
   </data>
   <data name="ParallelEnumerable_WithQueryExecutionMode_InvalidMode" xml:space="preserve">
     <value>The executionMode argument contains an invalid value.</value>

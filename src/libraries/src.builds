@@ -2,7 +2,12 @@
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
-    <Project Include="*\src\*.builds" />
+    <Project Include="$(MSBuildThisFileDirectory)*/src/*.csproj" Exclude="@(ProjectExclusions)">
+      <AdditionalMetadata>ConfigurationGroup=$(ConfigurationGroup)</AdditionalMetadata>
+    </Project>
+    <Project Include="$(MSBuildThisFileDirectory)*/src/*.vbproj" Exclude="@(ProjectExclusions)">
+      <AdditionalMetadata>ConfigurationGroup=$(ConfigurationGroup)</AdditionalMetadata>
+    </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
 </Project>

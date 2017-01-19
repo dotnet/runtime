@@ -2,15 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections.Generic;
+using Microsoft.Win32.SafeHandles;
 using System.Collections;
-using System.ComponentModel;
-using System.Diagnostics;
-using System.Globalization;
 using System.IO;
-using System.Net;
 using System.Runtime.InteropServices;
-using System.Threading.Tasks;
 using System.Threading;
 
 namespace System.Net.Sockets
@@ -117,13 +112,12 @@ namespace System.Net.Sockets
             return recvMsg_Blocking(socketHandle, msg, out bytesTransferred, overlapped, completionRoutine);
         }
 
-        internal bool TransmitPackets(SafeCloseSocket socketHandle, IntPtr packetArray, int elementCount, int sendSize, SafeNativeOverlapped overlapped)
+        internal bool TransmitPackets(SafeCloseSocket socketHandle, IntPtr packetArray, int elementCount, int sendSize, SafeNativeOverlapped overlapped, TransmitFileOptions flags)
         {
             EnsureDynamicWinsockMethods();
             TransmitPacketsDelegate transmitPackets = _dynamicWinsockMethods.GetDelegate<TransmitPacketsDelegate>(socketHandle);
 
-            // UseDefaultWorkerThread = 0.
-            return transmitPackets(socketHandle, packetArray, elementCount, sendSize, overlapped, 0);
+            return transmitPackets(socketHandle, packetArray, elementCount, sendSize, overlapped, flags);
         }
 
         internal static IntPtr[] SocketListToFileDescriptorSet(IList socketList)
@@ -210,6 +204,100 @@ namespace System.Net.Sockets
 
             handle = acceptSocket._handle;
             return acceptSocket;
+        }
+
+        private void SendFileInternal(string fileName, byte[] preBuffer, byte[] postBuffer, TransmitFileOptions flags)
+        {
+            // Open the file, if any
+            FileStream fileStream = OpenFile(fileName);
+
+            SocketError errorCode;
+            using (fileStream)
+            {
+                SafeFileHandle fileHandle = fileStream?.SafeFileHandle;
+
+                // This can throw ObjectDisposedException.
+                errorCode = SocketPal.SendFile(_handle, fileHandle, preBuffer, postBuffer, flags);
+            }
+
+            if (errorCode != SocketError.Success)
+            {
+                SocketException socketException = new SocketException((int)errorCode);
+                UpdateStatusAfterSocketError(socketException);
+                if (NetEventSource.IsEnabled) NetEventSource.Error(this, socketException);
+                throw socketException;
+            }
+
+            // If the user passed the Disconnect and/or ReuseSocket flags, then TransmitFile disconnected the socket.
+            // Update our state to reflect this.
+            if ((flags & (TransmitFileOptions.Disconnect | TransmitFileOptions.ReuseSocket)) != 0)
+            {
+                SetToDisconnected();
+                _remoteEndPoint = null;
+            }
+        }
+
+        private IAsyncResult BeginSendFileInternal(string fileName, byte[] preBuffer, byte[] postBuffer, TransmitFileOptions flags, AsyncCallback callback, object state)
+        {
+            FileStream fileStream = OpenFile(fileName);
+
+            TransmitFileAsyncResult asyncResult = new TransmitFileAsyncResult(this, state, callback);
+            asyncResult.StartPostingAsyncOp(false);
+
+            SocketError errorCode = SocketPal.SendFileAsync(_handle, fileStream, preBuffer, postBuffer, flags, asyncResult);
+
+            // Check for synchronous exception
+            if (!CheckErrorAndUpdateStatus(errorCode))
+            {
+                throw new SocketException((int)errorCode);
+            }
+
+            asyncResult.FinishPostingAsyncOp(ref Caches.SendClosureCache);
+
+            return asyncResult;
+        }
+
+        private void EndSendFileInternal(IAsyncResult asyncResult)
+        {
+            TransmitFileAsyncResult castedAsyncResult = asyncResult as TransmitFileAsyncResult;
+            if (castedAsyncResult == null || castedAsyncResult.AsyncObject != this)
+            {
+                throw new ArgumentException(SR.net_io_invalidasyncresult, nameof(asyncResult));
+            }
+
+            if (castedAsyncResult.EndCalled)
+            {
+                throw new InvalidOperationException(SR.Format(SR.net_io_invalidendcall, "EndSendFile"));
+            }
+
+            castedAsyncResult.InternalWaitForCompletion();
+            castedAsyncResult.EndCalled = true;
+
+            // If the user passed the Disconnect and/or ReuseSocket flags, then TransmitFile disconnected the socket.
+            // Update our state to reflect this.
+            if (castedAsyncResult.DoDisconnect)
+            {
+                SetToDisconnected();
+                _remoteEndPoint = null;
+            }
+
+            if ((SocketError)castedAsyncResult.ErrorCode != SocketError.Success)
+            {
+                SocketException socketException = new SocketException(castedAsyncResult.ErrorCode);
+                UpdateStatusAfterSocketError(socketException);
+                if (NetEventSource.IsEnabled) NetEventSource.Error(this, socketException);
+                throw socketException;
+            }
+
+        }
+
+        internal ThreadPoolBoundHandle GetOrAllocateThreadPoolBoundHandle()
+        {
+            // There is a known bug that exists through Windows 7 with UDP and
+            // SetFileCompletionNotificationModes.
+            // So, don't try to enable skipping the completion port on success in this case.
+            bool trySkipCompletionPortOnSuccess = !(CompletionPortHelper.PlatformHasUdpIssue && _protocolType == ProtocolType.Udp);
+            return _handle.GetOrAllocateThreadPoolBoundHandle(trySkipCompletionPortOnSuccess);
         }
     }
 }

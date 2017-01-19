@@ -11,9 +11,9 @@ namespace System.Net.Sockets.Tests
 {
     public class DisposedSocket
     {
-        private readonly static byte[] s_buffer = new byte[1];
-        private readonly static IList<ArraySegment<byte>> s_buffers = new List<ArraySegment<byte>> { new ArraySegment<byte>(s_buffer) };
-        private readonly static SocketAsyncEventArgs s_eventArgs = new SocketAsyncEventArgs();
+        private static readonly byte[] s_buffer = new byte[1];
+        private static readonly IList<ArraySegment<byte>> s_buffers = new List<ArraySegment<byte>> { new ArraySegment<byte>(s_buffer) };
+        private static readonly SocketAsyncEventArgs s_eventArgs = new SocketAsyncEventArgs();
 
         private static Socket GetDisposedSocket(AddressFamily addressFamily = AddressFamily.InterNetwork)
         {

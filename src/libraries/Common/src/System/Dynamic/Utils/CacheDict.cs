@@ -13,24 +13,24 @@ namespace System.Dynamic.Utils
     /// </summary>
     internal sealed class CacheDict<TKey, TValue>
     {
-        // cache size is always ^2. 
+        // cache size is always ^2.
         // items are placed at [hash ^ mask]
         // new item will displace previous one at the same location.
-        private readonly int mask;
-        private readonly Entry[] entries;
+        private readonly int _mask;
+        private readonly Entry[] _entries;
 
         // class, to ensure atomic updates.
         private sealed class Entry
         {
-            internal readonly int hash;
-            internal readonly TKey key;
-            internal readonly TValue value;
+            internal readonly int _hash;
+            internal readonly TKey _key;
+            internal readonly TValue _value;
 
             internal Entry(int hash, TKey key, TValue value)
             {
-                this.hash = hash;
-                this.key = key;
-                this.value = value;
+                _hash = hash;
+                _key = key;
+                _value = value;
             }
         }
 
@@ -41,8 +41,8 @@ namespace System.Dynamic.Utils
         internal CacheDict(int size)
         {
             int alignedSize = AlignSize(size);
-            this.mask = alignedSize - 1;
-            this.entries = new Entry[alignedSize];
+            _mask = alignedSize - 1;
+            _entries = new Entry[alignedSize];
         }
 
         private static int AlignSize(int size)
@@ -68,12 +68,12 @@ namespace System.Dynamic.Utils
         internal bool TryGetValue(TKey key, out TValue value)
         {
             int hash = key.GetHashCode();
-            int idx = hash & mask;
+            int idx = hash & _mask;
 
-            Entry entry = Volatile.Read(ref this.entries[idx]);
-            if (entry != null && entry.hash == hash && entry.key.Equals(key))
+            Entry entry = Volatile.Read(ref _entries[idx]);
+            if (entry != null && entry._hash == hash && entry._key.Equals(key))
             {
-                value = entry.value;
+                value = entry._value;
                 return true;
             }
 
@@ -88,12 +88,12 @@ namespace System.Dynamic.Utils
         internal void Add(TKey key, TValue value)
         {
             int hash = key.GetHashCode();
-            int idx = hash & mask;
+            int idx = hash & _mask;
 
-            Entry entry = Volatile.Read(ref this.entries[idx]);
-            if (entry == null || entry.hash != hash || !entry.key.Equals(key))
+            Entry entry = Volatile.Read(ref _entries[idx]);
+            if (entry == null || entry._hash != hash || !entry._key.Equals(key))
             {
-                Volatile.Write(ref entries[idx], new Entry(hash, key, value));
+                Volatile.Write(ref _entries[idx], new Entry(hash, key, value));
             }
         }
 

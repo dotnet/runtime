@@ -14,43 +14,24 @@ namespace System.ComponentModel.Design.Serialization
     /// </summary>
     public class ResolveNameEventArgs : EventArgs
     {
-        private string _name;
-        private object _value;
-
         /// <summary>
         ///     Creates a new resolve name event args object.
         /// </summary>
         public ResolveNameEventArgs(string name)
         {
-            _name = name;
-            _value = null;
+            Name = name;
+            Value = null;
         }
 
         /// <summary>
         ///     The name of the object that needs to be resolved.
         /// </summary>
-        public string Name
-        {
-            get
-            {
-                return _name;
-            }
-        }
+        public string Name { get; }
 
         /// <summary>
         ///     The object that matches the name.
         /// </summary>
-        public object Value
-        {
-            get
-            {
-                return _value;
-            }
-            set
-            {
-                _value = value;
-            }
-        }
+        public object Value { get; set; }
     }
 }
 

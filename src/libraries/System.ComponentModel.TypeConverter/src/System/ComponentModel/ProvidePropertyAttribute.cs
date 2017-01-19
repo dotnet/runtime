@@ -11,16 +11,13 @@ namespace System.ComponentModel
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = true)]
     public sealed class ProvidePropertyAttribute : Attribute
     {
-        private readonly string _propertyName;
-        private readonly string _receiverTypeName;
-
         /// <summary>
         /// <para>Initializes a new instance of the <see cref='System.ComponentModel.ProvidePropertyAttribute'/> class.</para>
         /// </summary>
         public ProvidePropertyAttribute(string propertyName, Type receiverType)
         {
-            _propertyName = propertyName;
-            _receiverTypeName = receiverType.AssemblyQualifiedName;
+            PropertyName = propertyName;
+            ReceiverTypeName = receiverType.AssemblyQualifiedName;
         }
 
         /// <summary>
@@ -28,8 +25,8 @@ namespace System.ComponentModel
         /// </summary>
         public ProvidePropertyAttribute(string propertyName, string receiverTypeName)
         {
-            _propertyName = propertyName;
-            _receiverTypeName = receiverTypeName;
+            PropertyName = propertyName;
+            ReceiverTypeName = receiverTypeName;
         }
 
         /// <summary>
@@ -37,26 +34,14 @@ namespace System.ComponentModel
         ///       Gets the name of a property that this class provides.
         ///    </para>
         /// </summary>
-        public string PropertyName
-        {
-            get
-            {
-                return _propertyName;
-            }
-        }
+        public string PropertyName { get; }
 
         /// <summary>
         ///    <para>
         ///       Gets the name of the data type this property can extend
         ///    </para>
         /// </summary>
-        public string ReceiverTypeName
-        {
-            get
-            {
-                return _receiverTypeName;
-            }
-        }
+        public string ReceiverTypeName { get; }
 
         public override bool Equals(object obj)
         {
@@ -67,21 +52,15 @@ namespace System.ComponentModel
 
             ProvidePropertyAttribute other = obj as ProvidePropertyAttribute;
 
-            return (other != null) && other._propertyName == _propertyName && other._receiverTypeName == _receiverTypeName;
+            return (other != null) && other.PropertyName == PropertyName && other.ReceiverTypeName == ReceiverTypeName;
         }
 
         public override int GetHashCode()
         {
-            return _propertyName.GetHashCode() ^ _receiverTypeName.GetHashCode();
+            return PropertyName.GetHashCode() ^ ReceiverTypeName.GetHashCode();
         }
 
-        public override object TypeId
-        {
-            get
-            {
-                return base.GetType().FullName + _propertyName;
-            }
-        }
+        public override object TypeId => base.GetType().FullName + PropertyName;
     }
 }
 

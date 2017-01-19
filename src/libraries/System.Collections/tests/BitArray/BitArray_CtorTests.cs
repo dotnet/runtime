@@ -236,6 +236,16 @@ namespace System.Collections.Tests
             Assert.False(bitArray.IsReadOnly);
             Assert.Equal(bitArray, bitArray.Clone());
         }
+
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "A bug in BitArray.Clone() caused an ArgumentExeption to be thrown in this case.")]
+        [Fact]
+        public static void Clone_LongLength_Works()
+        {
+            BitArray bitArray = new BitArray(int.MaxValue - 30);
+            BitArray clone = (BitArray)bitArray.Clone();
+
+            Assert.Equal(bitArray.Length, clone.Length);            
+        }
 #endif //netstandard17
     }
 }

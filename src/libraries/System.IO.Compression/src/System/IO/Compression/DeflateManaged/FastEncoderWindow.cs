@@ -2,16 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Diagnostics;
 
 namespace System.IO.Compression
 {
-    internal class FastEncoderWindow
+    internal sealed class FastEncoderWindow
     {
-        private byte[] _window;             // complete bytes window
-        private int _bufPos;               // the start index of uncompressed bytes  
-        private int _bufEnd;                // the end index of uncompressed bytes
+        private byte[] _window; // complete bytes window
+        private int _bufPos;    // the start index of uncompressed bytes
+        private int _bufEnd;    // the end index of uncompressed bytes
 
         // Be very careful about increasing the window size; the code tables will have to
         // be updated, since they assume that extra_distance_bits is never larger than a
@@ -25,7 +24,7 @@ namespace System.IO.Compression
         internal const int MaxMatch = 258;
         internal const int MinMatch = 3;
 
-        // Following constants affect the search, 
+        // Following constants affect the search,
         // they should be modifiable if we support different compression levels in future.
         private const int SearchDepth = 32;
         private const int GoodLength = 4;
@@ -33,7 +32,7 @@ namespace System.IO.Compression
         private const int LazyMatchThreshold = 6;
 
         // Hashtable structure
-        private ushort[] _prev;     // next most recent occurance of chars with same hash value 
+        private ushort[] _prev;     // next most recent occurance of chars with same hash value
         private ushort[] _lookup;   // hash table to find most recent occurance of chars with same hash value
 
         public FastEncoderWindow()
@@ -41,8 +40,9 @@ namespace System.IO.Compression
             ResetWindow();
         }
 
+        /// <summary>Uncompressed bytes.</summary>
         public int BytesAvailable
-        {         // uncompressed bytes 
+        {
             get
             {
                 Debug.Assert(_bufEnd - _bufPos >= 0, "Ending pointer can't be in front of starting pointer!");
@@ -62,10 +62,7 @@ namespace System.IO.Compression
             }
         }
 
-        public void FlushWindow()
-        {
-            ResetWindow();
-        }
+        public void FlushWindow() => ResetWindow();
 
         private void ResetWindow()
         {
@@ -76,29 +73,23 @@ namespace System.IO.Compression
             _bufEnd = _bufPos;
         }
 
-        public int FreeWindowSpace
-        {        // Free space in the window
-            get
-            {
-                return 2 * FastEncoderWindowSize - _bufEnd;
-            }
-        }
+        public int FreeWindowSpace => 2 * FastEncoderWindowSize - _bufEnd;
 
-        // copy bytes from input buffer into window
+        /// <summary>Copy bytes from input buffer into window</summary>
         public void CopyBytes(byte[] inputBuffer, int startIndex, int count)
         {
             Array.Copy(inputBuffer, startIndex, _window, _bufEnd, count);
             _bufEnd += count;
         }
 
-        // slide the history window to the left by FastEncoderWindowSize bytes
+        /// <summary>Slide the history window to the left by FastEncoderWindowSize bytes.</summary>
         public void MoveWindows()
         {
             int i;
             Debug.Assert(_bufPos == 2 * FastEncoderWindowSize, "only call this at the end of the window");
 
             // verify that the hash table is correct
-            VerifyHashes();   // Debug only code
+            DebugAssertVerifyHashes();
 
             Array.Copy(_window, _bufPos - FastEncoderWindowSize, _window, 0, FastEncoderWindowSize);
 
@@ -108,8 +99,9 @@ namespace System.IO.Compression
                 int val = ((int)_lookup[i]) - FastEncoderWindowSize;
 
                 if (val <= 0)
-                { // too far away now? then set to zero
-                    _lookup[i] = (ushort)0;
+                {
+                    // too far away now? then set to zero
+                    _lookup[i] = 0;
                 }
                 else
                 {
@@ -125,7 +117,7 @@ namespace System.IO.Compression
 
                 if (val <= 0)
                 {
-                    _prev[i] = (ushort)0;
+                    _prev[i] = 0;
                 }
                 else
                 {
@@ -140,23 +132,20 @@ namespace System.IO.Compression
             Array.Clear(_window, FastEncoderWindowSize, _window.Length - FastEncoderWindowSize);
 #endif
 
-            VerifyHashes(); // debug: verify hash table is correct
+            DebugAssertVerifyHashes();
 
             _bufPos = FastEncoderWindowSize;
             _bufEnd = _bufPos;
         }
 
-        private uint HashValue(uint hash, byte b)
-        {
-            return (hash << FastEncoderHashShift) ^ b;
-        }
+        private uint HashValue(uint hash, byte b) => (hash << FastEncoderHashShift) ^ b;
 
-        // insert string into hash table and return most recent location of same hash value
+        /// <summary>Insert string into hash table and return most recent location of same hash value.</summary>
         private uint InsertString(ref uint hash)
         {
             // Note we only use the lowest 11 bits of the hash vallue (hash table size is 11).
             // This enables fast calculation of hash value for the input string.
-            // If we want to get the next hash code starting at next position, 
+            // If we want to get the next hash code starting at next position,
             // we can just increment bufPos and call this function.
 
             hash = HashValue(hash, _window[_bufPos + 2]);
@@ -168,12 +157,9 @@ namespace System.IO.Compression
             return search;
         }
 
-        //
-        // insert strings into hashtable
-        // Arguments: 
-        //     hash     : intial hash value
-        //     matchLen : 1 + number of strings we need to insert.
-        //
+        /// <summary>Insert strings into hashtable.</summary>
+        /// <param name="hash">intial hash value</param>
+        /// <param name="matchLen">1 + number of strings we need to insert</param>
         private void InsertStrings(ref uint hash, int matchLen)
         {
             Debug.Assert(matchLen > 0, "Invalid match Len!");
@@ -191,15 +177,15 @@ namespace System.IO.Compression
             }
         }
 
-        //
-        // Find out what we should generate next. It can be a symbol, a distance/length pair
-        // or a symbol followed by distance/length pair
-        //
+        /// <summary>
+        /// Find out what we should generate next. It can be a symbol, a distance/length pair
+        /// or a symbol followed by distance/length pair
+        /// </summary>
         internal bool GetNextSymbolOrMatch(Match match)
         {
             Debug.Assert(_bufPos >= FastEncoderWindowSize && _bufPos < (2 * FastEncoderWindowSize), "Invalid Buffer Position!");
 
-            // initialise the value of the hash, no problem if locations bufPos, bufPos+1 
+            // initialise the value of the hash, no problem if locations bufPos, bufPos+1
             // are invalid (not enough data), since we will never insert using that hash value
             uint hash = HashValue(0, _window[_bufPos]);
             hash = HashValue(hash, _window[_bufPos + 1]);
@@ -207,7 +193,7 @@ namespace System.IO.Compression
             int matchLen;
             int matchPos = 0;
 
-            VerifyHashes();   // Debug only code
+            DebugAssertVerifyHashes();
             if (_bufEnd - _bufPos <= 3)
             {
                 // The hash value becomes corrupt when we get within 3 characters of the end of the
@@ -288,7 +274,7 @@ namespace System.IO.Compression
                         match.Position = nextMatchPos;
                         match.Length = nextMatchLen;
 
-                        // insert remainder of second match into search tree            
+                        // insert remainder of second match into search tree
                         // example: (*=inserted already)
                         //
                         // X      X+1               X+2      X+3     X+4
@@ -297,7 +283,7 @@ namespace System.IO.Compression
                         //        bufPos
                         //
                         // If nextMatchLen == 3, we want to perform 2
-                        // insertions (at X+2 and X+3).  However, first we must 
+                        // insertions (at X+2 and X+3).  However, first we must
                         // inc bufPos.
                         //
                         _bufPos++; // now points to X+2
@@ -313,9 +299,9 @@ namespace System.IO.Compression
 
                         // Insert remainder of first match into search tree, minus the first
                         // two locations, which were inserted by the FindMatch() calls.
-                        // 
+                        //
                         // For example, if matchLen == 3, then we've inserted at X and X+1
-                        // already (and bufPos is now pointing at X+1), and now we need to insert 
+                        // already (and bufPos is now pointing at X+1), and now we need to insert
                         // only at X+2.
                         //
                         matchLen--;
@@ -324,7 +310,8 @@ namespace System.IO.Compression
                     }
                 }
                 else
-                { // match_length >= good_match 
+                {
+                    // match_length >= good_match
                     // in assertion: bufPos points to X+1, location X inserted already
                     // first match is so good that we're not even going to check at X+1
                     match.State = MatchState.HasMatch;
@@ -343,19 +330,17 @@ namespace System.IO.Compression
             return true;
         }
 
-        //
-        // Find a match starting at specified position and return length of match
-        // Arguments:
-        //      search       : where to start searching
-        //      matchPos    : return match position here
-        //      searchDepth  : # links to traverse
-        //      NiceLength  : stop immediately if we find a match >= NiceLength
-        //
+        /// <summary>Find a match starting at specified position and return length of match.</summary>
+        /// <param name="search">where to start searching</param>
+        /// <param name="matchPos">return match position here</param>
+        /// <param name="searchDepth"># links to traverse</param>
+        /// <param name="niceLength">stop immediately if we find a match >= NiceLength</param>
+        /// <returns></returns>
         private int FindMatch(int search, out int matchPos, int searchDepth, int niceLength)
         {
             Debug.Assert(_bufPos >= 0 && _bufPos < 2 * FastEncoderWindowSize, "Invalid Buffer position!");
             Debug.Assert(search < _bufPos, "Invalid starting search point!");
-            Debug.Assert(RecalculateHash((int)search) == RecalculateHash(_bufPos));
+            DebugAssertRecalculatedHashesAreEqual(search, _bufPos);
 
             int bestMatch = 0;    // best match length found so far
             int bestMatchPos = 0; // absolute match position of best match found
@@ -368,7 +353,7 @@ namespace System.IO.Compression
             while (search > earliest)
             {
                 // make sure all our hash links are valid
-                Debug.Assert(RecalculateHash((int)search) == RecalculateHash(_bufPos), "Corrupted hash link!");
+                DebugAssertRecalculatedHashesAreEqual(search, _bufPos, "Corrupted hash link!");
 
                 // Start by checking the character that would allow us to increase the match
                 // length by one.  This improves performance quite a bit.
@@ -415,12 +400,12 @@ namespace System.IO.Compression
             return bestMatch;
         }
 
-
-        // This function makes any execution take a *very* long time to complete.  
-        // Disabling for now by using non-"DEBUG" compilation constant.
-        [Conditional("VERIFY_HASHES")] 
-        private void VerifyHashes()
+        [Conditional("DEBUG")]
+        private void DebugAssertVerifyHashes()
         {
+            // This function makes any execution take a *very* long time to complete.
+            // Disabling for now by using non-"DEBUG" compilation constant.
+#if DEBUG && VERIFY_HASHES
             for (int i = 0; i < FastEncoderHashtableSize; i++)
             {
                 ushort where = _lookup[i];
@@ -439,15 +424,22 @@ namespace System.IO.Compression
                     where = nextWhere;
                 }
             }
+#endif
         }
 
-        // can't use conditional attribute here.
-        private uint RecalculateHash(int position)
+        [Conditional("DEBUG")]
+        private void DebugAssertRecalculatedHashesAreEqual(int position1, int position2, string message = "")
         {
-            return (uint)(((_window[position] << (2 * FastEncoderHashShift)) ^
-                     (_window[position + 1] << FastEncoderHashShift) ^
-                     (_window[position + 2])) & FastEncoderHashMask);
+#if DEBUG
+            Debug.Assert(RecalculateHash(position1) == RecalculateHash(position2), message);
+#endif
         }
+
+#if DEBUG
+        private uint RecalculateHash(int position) =>
+            (uint)(((_window[position] << (2 * FastEncoderHashShift)) ^
+            (_window[position + 1] << FastEncoderHashShift) ^
+            (_window[position + 2])) & FastEncoderHashMask);
+#endif
     }
 }
-

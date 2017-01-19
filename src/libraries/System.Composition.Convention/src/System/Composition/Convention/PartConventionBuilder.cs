@@ -22,8 +22,8 @@ namespace System.Composition.Convention
     {
         private readonly Type[] _emptyTypeArray = EmptyArray<Type>.Value;
         private static List<Attribute> s_onImportsSatisfiedAttributeList;
-        private readonly static List<Attribute> s_importingConstructorList = new List<Attribute>() { new ImportingConstructorAttribute() };
-        private readonly static Type s_exportAttributeType = typeof(ExportAttribute);
+        private static readonly List<Attribute> s_importingConstructorList = new List<Attribute>() { new ImportingConstructorAttribute() };
+        private static readonly Type s_exportAttributeType = typeof(ExportAttribute);
         private readonly List<ExportConventionBuilder> _typeExportBuilders;
         private readonly List<ImportConventionBuilder> _constructorImportBuilders;
         private bool _isShared;
@@ -541,7 +541,7 @@ namespace System.Composition.Convention
             foreach (var ci in constructors)
             {
                 // We have a constructor configuration we must log a warning then not bother with ConstructorAttributes
-                IEnumerable<Attribute> attributes = ci.GetCustomAttributes(typeof(ImportingConstructorAttribute), false);
+                IEnumerable<Attribute> attributes = Attribute.GetCustomAttributes(ci, typeof(ImportingConstructorAttribute), false);
                 if (attributes.Count() != 0)
                 {
                     CompositionTrace.Registration_ConstructorConventionOverridden(type);

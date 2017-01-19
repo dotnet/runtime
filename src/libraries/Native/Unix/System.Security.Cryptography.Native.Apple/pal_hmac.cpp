@@ -71,6 +71,9 @@ extern "C" HmacCtx* AppleCryptoNative_HmacCreate(PAL_HashAlgorithm algorithm, in
     }
 
     HmacCtx* hmacCtx = reinterpret_cast<HmacCtx*>(malloc(sizeof(HmacCtx)));
+    if (hmacCtx == nullptr)
+        return hmacCtx;
+
     hmacCtx->appleAlgId = appleAlgId;
     *pcbHmac = GetHmacOutputSize(algorithm);
     return hmacCtx;

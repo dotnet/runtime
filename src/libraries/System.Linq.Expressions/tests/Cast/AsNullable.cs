@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Collections.Generic;
 using Xunit;
 
 namespace System.Linq.Expressions.Tests
@@ -26,6 +24,46 @@ namespace System.Linq.Expressions.Tests
             for (int i = 0; i < array.Length; i++)
             {
                 VerifyNullableEnumAsEnumType(array[i], useInterpreter);
+            }
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckEnumAsNullableEnumTypeTest(bool useInterpreter)
+        {
+            E[] array = { 0, E.A, E.B, (E)int.MaxValue, (E)int.MinValue };
+            for (int i = 0; i < array.Length; i++)
+            {
+                VerifyEnumAsNullableEnumType(array[i], useInterpreter);
+            }
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckNullableEnumAsNullableEnumTypeTest(bool useInterpreter)
+        {
+            E?[] array = { null, 0, E.A, E.B, (E)int.MaxValue, (E)int.MinValue };
+            for (int i = 0; i < array.Length; i++)
+            {
+                VerifyNullableEnumAsNullableEnumType(array[i], useInterpreter);
+            }
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckLongAsNullableEnumTypeTest(bool useInterpreter)
+        {
+            long[] array = { 0, 1, long.MinValue, long.MaxValue };
+            foreach (long value in array)
+            {
+                VerifyLongAsNullableEnumType(value, useInterpreter);
+            }
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckNullableLongAsNullableEnumTypeTest(bool useInterpreter)
+        {
+            long?[] array = { null, 0, 1, long.MinValue, long.MaxValue };
+            foreach (long? value in array)
+            {
+                VerifyNullableLongAsNullableEnumType(value, useInterpreter);
             }
         }
 
@@ -160,6 +198,38 @@ namespace System.Linq.Expressions.Tests
             Func<Enum> f = e.Compile(useInterpreter);
 
             Assert.Equal(value as ValueType, f());
+        }
+
+        private static void VerifyEnumAsNullableEnumType(E value, bool useInterpreter)
+        {
+            Expression<Func<E?>> e = Expression.Lambda<Func<E?>>(
+                Expression.TypeAs(Expression.Constant(value), typeof(E?)));
+            Func<E?> f = e.Compile(useInterpreter);
+            Assert.Equal(value, f());
+        }
+
+        private static void VerifyNullableEnumAsNullableEnumType(E? value, bool useInterpreter)
+        {
+            Expression<Func<E?>> e = Expression.Lambda<Func<E?>>(
+                Expression.TypeAs(Expression.Constant(value, typeof(E?)), typeof(E?)));
+            Func<E?> f = e.Compile(useInterpreter);
+            Assert.Equal(value, f());
+        }
+
+        private static void VerifyLongAsNullableEnumType(long value, bool useInterpreter)
+        {
+            Expression<Func<E?>> e = Expression.Lambda<Func<E?>>(
+                Expression.TypeAs(Expression.Constant(value), typeof(E?)));
+            Func<E?> f = e.Compile(useInterpreter);
+            Assert.False(f().HasValue);
+        }
+
+        private static void VerifyNullableLongAsNullableEnumType(long? value, bool useInterpreter)
+        {
+            Expression<Func<E?>> e = Expression.Lambda<Func<E?>>(
+                Expression.TypeAs(Expression.Constant(value, typeof(long?)), typeof(E?)));
+            Func<E?> f = e.Compile(useInterpreter);
+            Assert.False(f().HasValue);
         }
 
         private static void VerifyNullableEnumAsObject(E? value, bool useInterpreter)

@@ -31,6 +31,10 @@ namespace System.Linq
             return union != null && AreEqualityComparersEqual(comparer, union._comparer) ? union.Union(second) : new UnionIterator2<TSource>(first, second, comparer);
         }
 
+        /// <summary>
+        /// An iterator that yields distinct values from two or more <see cref="IEnumerable{TSource}"/>.
+        /// </summary>
+        /// <typeparam name="TSource">The type of the source enumerables.</typeparam>
         private abstract class UnionIterator<TSource> : Iterator<TSource>, IIListProvider<TSource>
         {
             internal readonly IEqualityComparer<TSource> _comparer;
@@ -166,7 +170,11 @@ namespace System.Linq
                 return onlyIfCheap ? -1 : FillSet().Count;
             }
         }
-
+        
+        /// <summary>
+        /// An iterator that yields distinct values from two <see cref="IEnumerable{TSource}"/>.
+        /// </summary>
+        /// <typeparam name="TSource">The type of the source enumerables.</typeparam>
         private sealed class UnionIterator2<TSource> : UnionIterator<TSource>
         {
             private readonly IEnumerable<TSource> _first;
@@ -206,6 +214,10 @@ namespace System.Linq
             }
         }
 
+        /// <summary>
+        /// An iterator that yields distinct values from three or more <see cref="IEnumerable{TSource}"/>.
+        /// </summary>
+        /// <typeparam name="TSource">The type of the source enumerables.</typeparam>
         private sealed class UnionIteratorN<TSource> : UnionIterator<TSource>
         {
             private readonly UnionIterator<TSource> _previous;

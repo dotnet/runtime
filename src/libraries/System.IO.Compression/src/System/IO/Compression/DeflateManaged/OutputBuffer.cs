@@ -6,12 +6,12 @@ using System.Diagnostics;
 
 namespace System.IO.Compression
 {
-    internal class OutputBuffer
+    internal sealed class OutputBuffer
     {
         private byte[] _byteBuffer;  // buffer for storing bytes
         private int _pos;            // position
-        private uint _bitBuf;        // store uncomplete bits 
-        private int _bitCount;       // number of bits in bitBuffer 
+        private uint _bitBuf;        // store uncomplete bits
+        private int _bitCount;       // number of bits in bitBuffer
 
         // set the output buffer we will be using
         internal void UpdateBuffer(byte[] output)
@@ -20,21 +20,9 @@ namespace System.IO.Compression
             _pos = 0;
         }
 
-        internal int BytesWritten
-        {
-            get
-            {
-                return _pos;
-            }
-        }
+        internal int BytesWritten => _pos;
 
-        internal int FreeBytes
-        {
-            get
-            {
-                return _byteBuffer.Length - _pos;
-            }
-        }
+        internal int FreeBytes => _byteBuffer.Length - _pos;
 
         internal void WriteUInt16(ushort value)
         {
@@ -59,7 +47,7 @@ namespace System.IO.Compression
             }
         }
 
-        // write the bits left in the output as bytes. 
+        /// <summary>Write the bits left in the output as bytes.</summary>
         internal void FlushBits()
         {
             // flush bits from bit buffer to output buffer
@@ -81,7 +69,7 @@ namespace System.IO.Compression
         internal void WriteBytes(byte[] byteArray, int offset, int count)
         {
             Debug.Assert(FreeBytes >= count, "Not enough space in output buffer!");
-            // faster 
+            // faster
             if (_bitCount == 0)
             {
                 Array.Copy(byteArray, offset, _byteBuffer, _pos, count);
@@ -107,35 +95,29 @@ namespace System.IO.Compression
             WriteBits(8, b);
         }
 
-        internal int BitsInBuffer
-        {
-            get
-            {
-                return (_bitCount / 8) + 1;
-            }
-        }
+        internal int BitsInBuffer => (_bitCount / 8) + 1;
 
-        internal OutputBuffer.BufferState DumpState()
-        {
-            OutputBuffer.BufferState savedState;
-            savedState.pos = _pos;
-            savedState.bitBuf = _bitBuf;
-            savedState.bitCount = _bitCount;
-            return savedState;
-        }
+        internal BufferState DumpState() => new BufferState(_pos, _bitBuf, _bitCount);
 
-        internal void RestoreState(OutputBuffer.BufferState state)
+        internal void RestoreState(BufferState state)
         {
-            _pos = state.pos;
-            _bitBuf = state.bitBuf;
-            _bitCount = state.bitCount;
+            _pos = state._pos;
+            _bitBuf = state._bitBuf;
+            _bitCount = state._bitCount;
         }
 
         internal struct BufferState
         {
-            internal int pos;            // position
-            internal uint bitBuf;        // store uncomplete bits 
-            internal int bitCount;       // number of bits in bitBuffer 
+            internal readonly int _pos;      // position
+            internal readonly uint _bitBuf;  // store uncomplete bits
+            internal readonly int _bitCount; // number of bits in bitBuffer
+
+            internal BufferState(int pos, uint bitBuf, int bitCount)
+            {
+                _pos = pos;
+                _bitBuf = bitBuf;
+                _bitCount = bitCount;
+            }
         }
     }
 }

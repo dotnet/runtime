@@ -43,18 +43,18 @@ namespace System.IO.Tests
             Assert.Throws<FileNotFoundException>(() => Move(Path.Combine(TestDirectory, GetTestFileName(), GetTestFileName()), testFile.FullName));
         }
 
-        [Fact]
-        public void PathWithIllegalCharacters()
+        [Theory MemberData(nameof(PathsWithInvalidCharacters))]
+        public void PathWithIllegalCharacters(string invalidPath)
         {
             FileInfo testFile = new FileInfo(GetTestFilePath());
             testFile.Create().Dispose();
-            Assert.All(IOInputs.GetPathsWithInvalidCharacters(), (invalid) =>
-            {
-                if (invalid.Contains(@"\\?\"))
-                    Assert.Throws<IOException>(() => Move(testFile.FullName, invalid));
-                else
-                    Assert.Throws<ArgumentException>(() => Move(testFile.FullName, invalid));
-            });
+
+            // Under legacy normalization we kick \\?\ paths back as invalid with ArgumentException
+            // New style we don't prevalidate \\?\ at all
+            if (invalidPath.Contains(@"\\?\") && !PathFeatures.IsUsingLegacyPathNormalization())
+                Assert.Throws<IOException>(() => Move(testFile.FullName, invalidPath));
+            else
+                Assert.Throws<ArgumentException>(() => Move(testFile.FullName, invalidPath));
         }
 
         [Fact]
@@ -147,9 +147,10 @@ namespace System.IO.Tests
             Assert.False(File.Exists(testFileSource));
         }
 
-        [Fact]
+        [ConditionalFact(nameof(AreAllLongPathsAvailable))]
+        [SkipOnTargetFramework(Tfm.BelowNet462 | Tfm.Core50, "long path support added in 4.6.2")]
         [PlatformSpecific(TestPlatforms.Windows)]
-        public void MaxPath_Windows()
+        public void OverMaxPathWorks_Windows()
         {
             // Create a destination path longer than the traditional Windows limit of 256 characters,
             // but under the long path limitation (32K).
@@ -196,16 +197,15 @@ namespace System.IO.Tests
 
         #region PlatformSpecific
 
-        [Fact]
+        // This is updated to be correct, need to update CoreCLR path code so this will pass on all platforms
+        [ActiveIssue(15098)]
+        [Theory MemberData(nameof(PathsWithInvalidColons))]
         [PlatformSpecific(TestPlatforms.Windows)]
-        public void WindowsPathWithIllegalColons()
+        public void WindowsPathWithIllegalColons(string invalidPath)
         {
             FileInfo testFile = new FileInfo(GetTestFilePath());
             testFile.Create().Dispose();
-            Assert.All(IOInputs.GetPathsWithInvalidColons(), (invalid) =>
-            {
-                Assert.Throws<NotSupportedException>(() => Move(testFile.FullName, invalid));
-            });
+            Assert.Throws<ArgumentException>(() => Move(testFile.FullName, invalidPath));
         }
 
         [Fact]

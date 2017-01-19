@@ -1,8 +1,28 @@
-﻿
+
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
 VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Net.Mail.Functional.Tests", "tests\Functional\System.Net.Mail.Functional.Tests.csproj", "{0D1E2954-A5C7-4B8C-932A-31EB4A96A726}"
+	ProjectSection(ProjectDependencies) = postProject
+		{} = {}
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Net.Mail.Unit.Tests", "tests\Unit\System.Net.Mail.Unit.Tests.csproj", "{2525E37E-0EC1-4374-92FD-D2752BEED978}"
+	ProjectSection(ProjectDependencies) = postProject
+		{} = {}
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Net.Mail.Unit.Tests", "tests\Unit\System.Net.Mail.Unit.Tests.csproj", "{2525E37E-0EC1-4374-92FD-D2752BEED978}"
+	ProjectSection(ProjectDependencies) = postProject
+		{53D09AF4-0C13-4197-B8AD-9746F0374E88} = {53D09AF4-0C13-4197-B8AD-9746F0374E88}
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Net.Mail.Functional.Tests", "tests\Functional\System.Net.Mail.Functional.Tests.csproj", "{0D1E2954-A5C7-4B8C-932A-31EB4A96A726}"
+	ProjectSection(ProjectDependencies) = postProject
+		{53D09AF4-0C13-4197-B8AD-9746F0374E88} = {53D09AF4-0C13-4197-B8AD-9746F0374E88}
+	EndProjectSection
+EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ref", "ref", "{350C956A-B4ED-4376-9B04-2908528D10FF}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Net.Mail", "ref\System.Net.Mail.csproj", "{14FAFC3A-8266-45C7-8604-8C2CB567E50D}"
@@ -13,58 +33,58 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Net.Mail", "src\Syst
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{096E7AD0-17A2-4EAF-9AC5-2F0FC67A4112}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Net.Mail.Functional.Tests", "tests\Functional\System.Net.Mail.Functional.Tests.csproj", "{0D1E2954-A5C7-4B8C-932A-31EB4A96A726}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Net.Mail.Unit.Tests", "tests\Unit\System.Net.Mail.Unit.Tests.csproj", "{2525E37E-0EC1-4374-92FD-D2752BEED978}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
-		net46_Debug|Any CPU = net46_Debug|Any CPU
-		net46_Release|Any CPU = net46_Release|Any CPU
-		netstandard1.7_Debug|Any CPU = netstandard1.7_Debug|Any CPU
-		netstandard1.7_Release|Any CPU = netstandard1.7_Release|Any CPU
+		DebugNETCoreAppnetstandard-Unixnetstandard|AnyCPU = DebugNETCoreAppnetstandard-Unixnetstandard|AnyCPU
+		ReleaseNETCoreAppnetstandard-Unixnetstandard|AnyCPU = ReleaseNETCoreAppnetstandard-Unixnetstandard|AnyCPU
+		DebugNETCoreAppnetstandard-Windows_NTnetstandard|AnyCPU = DebugNETCoreAppnetstandard-Windows_NTnetstandard|AnyCPU
+		ReleaseNETCoreAppnetstandard-Windows_NTnetstandard|AnyCPU = ReleaseNETCoreAppnetstandard-Windows_NTnetstandard|AnyCPU
+		DebugNETCoreAppnet461-Windows_NTnetstandard|AnyCPU = DebugNETCoreAppnet461-Windows_NTnetstandard|AnyCPU
+		ReleaseNETCoreAppnet461-Windows_NTnetstandard|AnyCPU = ReleaseNETCoreAppnet461-Windows_NTnetstandard|AnyCPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{14FAFC3A-8266-45C7-8604-8C2CB567E50D}.net46_Debug|Any CPU.ActiveCfg = netstandard1.7_Release|Any CPU
-		{14FAFC3A-8266-45C7-8604-8C2CB567E50D}.net46_Debug|Any CPU.Build.0 = netstandard1.7_Release|Any CPU
-		{14FAFC3A-8266-45C7-8604-8C2CB567E50D}.net46_Release|Any CPU.ActiveCfg = netstandard1.7_Release|Any CPU
-		{14FAFC3A-8266-45C7-8604-8C2CB567E50D}.net46_Release|Any CPU.Build.0 = netstandard1.7_Release|Any CPU
-		{14FAFC3A-8266-45C7-8604-8C2CB567E50D}.netstandard1.7_Debug|Any CPU.ActiveCfg = netstandard1.7_Debug|Any CPU
-		{14FAFC3A-8266-45C7-8604-8C2CB567E50D}.netstandard1.7_Debug|Any CPU.Build.0 = netstandard1.7_Debug|Any CPU
-		{14FAFC3A-8266-45C7-8604-8C2CB567E50D}.netstandard1.7_Release|Any CPU.ActiveCfg = netstandard1.7_Release|Any CPU
-		{14FAFC3A-8266-45C7-8604-8C2CB567E50D}.netstandard1.7_Release|Any CPU.Build.0 = netstandard1.7_Release|Any CPU
-		{53D09AF4-0C13-4197-B8AD-9746F0374E88}.net46_Debug|Any CPU.ActiveCfg = net463_Release|Any CPU
-		{53D09AF4-0C13-4197-B8AD-9746F0374E88}.net46_Debug|Any CPU.Build.0 = net463_Release|Any CPU
-		{53D09AF4-0C13-4197-B8AD-9746F0374E88}.net46_Release|Any CPU.ActiveCfg = net463_Release|Any CPU
-		{53D09AF4-0C13-4197-B8AD-9746F0374E88}.net46_Release|Any CPU.Build.0 = net463_Release|Any CPU
-		{53D09AF4-0C13-4197-B8AD-9746F0374E88}.netstandard1.7_Debug|Any CPU.ActiveCfg = Windows_Debug|Any CPU
-		{53D09AF4-0C13-4197-B8AD-9746F0374E88}.netstandard1.7_Debug|Any CPU.Build.0 = Windows_Debug|Any CPU
-		{53D09AF4-0C13-4197-B8AD-9746F0374E88}.netstandard1.7_Release|Any CPU.ActiveCfg = netstandard1.7_Release|Any CPU
-		{53D09AF4-0C13-4197-B8AD-9746F0374E88}.netstandard1.7_Release|Any CPU.Build.0 = netstandard1.7_Release|Any CPU
-		{0D1E2954-A5C7-4B8C-932A-31EB4A96A726}.net46_Debug|Any CPU.ActiveCfg = netstandard1.7_Release|Any CPU
-		{0D1E2954-A5C7-4B8C-932A-31EB4A96A726}.net46_Debug|Any CPU.Build.0 = netstandard1.7_Release|Any CPU
-		{0D1E2954-A5C7-4B8C-932A-31EB4A96A726}.net46_Release|Any CPU.ActiveCfg = netstandard1.7_Release|Any CPU
-		{0D1E2954-A5C7-4B8C-932A-31EB4A96A726}.net46_Release|Any CPU.Build.0 = netstandard1.7_Release|Any CPU
-		{0D1E2954-A5C7-4B8C-932A-31EB4A96A726}.netstandard1.7_Debug|Any CPU.ActiveCfg = netstandard1.7_Debug|Any CPU
-		{0D1E2954-A5C7-4B8C-932A-31EB4A96A726}.netstandard1.7_Debug|Any CPU.Build.0 = netstandard1.7_Debug|Any CPU
-		{0D1E2954-A5C7-4B8C-932A-31EB4A96A726}.netstandard1.7_Release|Any CPU.ActiveCfg = netstandard1.7_Release|Any CPU
-		{0D1E2954-A5C7-4B8C-932A-31EB4A96A726}.netstandard1.7_Release|Any CPU.Build.0 = netstandard1.7_Release|Any CPU
-		{2525E37E-0EC1-4374-92FD-D2752BEED978}.net46_Debug|Any CPU.ActiveCfg = netstandard1.7_Release|Any CPU
-		{2525E37E-0EC1-4374-92FD-D2752BEED978}.net46_Debug|Any CPU.Build.0 = netstandard1.7_Release|Any CPU
-		{2525E37E-0EC1-4374-92FD-D2752BEED978}.net46_Release|Any CPU.ActiveCfg = netstandard1.7_Release|Any CPU
-		{2525E37E-0EC1-4374-92FD-D2752BEED978}.net46_Release|Any CPU.Build.0 = netstandard1.7_Release|Any CPU
-		{2525E37E-0EC1-4374-92FD-D2752BEED978}.netstandard1.7_Debug|Any CPU.ActiveCfg = netstandard1.7_Debug|Any CPU
-		{2525E37E-0EC1-4374-92FD-D2752BEED978}.netstandard1.7_Debug|Any CPU.Build.0 = netstandard1.7_Debug|Any CPU
-		{2525E37E-0EC1-4374-92FD-D2752BEED978}.netstandard1.7_Release|Any CPU.ActiveCfg = netstandard1.7_Release|Any CPU
-		{2525E37E-0EC1-4374-92FD-D2752BEED978}.netstandard1.7_Release|Any CPU.Build.0 = netstandard1.7_Release|Any CPU
+		{2525E37E-0EC1-4374-92FD-D2752BEED978}.DebugNETCoreAppnetstandard-Unixnetstandard|AnyCPU.ActiveCfg = netstandard-Debug|Any CPU
+		{2525E37E-0EC1-4374-92FD-D2752BEED978}.DebugNETCoreAppnetstandard-Unixnetstandard|AnyCPU.Build.0 = netstandard-Debug|Any CPU
+		{2525E37E-0EC1-4374-92FD-D2752BEED978}.ReleaseNETCoreAppnetstandard-Unixnetstandard|AnyCPU.ActiveCfg = netstandard-Release|Any CPU
+		{2525E37E-0EC1-4374-92FD-D2752BEED978}.ReleaseNETCoreAppnetstandard-Unixnetstandard|AnyCPU.Build.0 = netstandard-Release|Any CPU
+		{2525E37E-0EC1-4374-92FD-D2752BEED978}.DebugNETCoreAppnetstandard-Windows_NTnetstandard|AnyCPU.ActiveCfg = netstandard-Debug|Any CPU
+		{2525E37E-0EC1-4374-92FD-D2752BEED978}.DebugNETCoreAppnetstandard-Windows_NTnetstandard|AnyCPU.Build.0 = netstandard-Debug|Any CPU
+		{2525E37E-0EC1-4374-92FD-D2752BEED978}.ReleaseNETCoreAppnetstandard-Windows_NTnetstandard|AnyCPU.ActiveCfg = netstandard-Release|Any CPU
+		{2525E37E-0EC1-4374-92FD-D2752BEED978}.ReleaseNETCoreAppnetstandard-Windows_NTnetstandard|AnyCPU.Build.0 = netstandard-Release|Any CPU
+		{2525E37E-0EC1-4374-92FD-D2752BEED978}.DebugNETCoreAppnet461-Windows_NTnetstandard|AnyCPU.ActiveCfg = netstandard-Debug|Any CPU
+		{2525E37E-0EC1-4374-92FD-D2752BEED978}.DebugNETCoreAppnet461-Windows_NTnetstandard|AnyCPU.Build.0 = netstandard-Debug|Any CPU
+		{2525E37E-0EC1-4374-92FD-D2752BEED978}.ReleaseNETCoreAppnet461-Windows_NTnetstandard|AnyCPU.ActiveCfg = netstandard-Release|Any CPU
+		{2525E37E-0EC1-4374-92FD-D2752BEED978}.ReleaseNETCoreAppnet461-Windows_NTnetstandard|AnyCPU.Build.0 = netstandard-Release|Any CPU
+		{0D1E2954-A5C7-4B8C-932A-31EB4A96A726}.DebugNETCoreAppnetstandard-Unixnetstandard|AnyCPU.ActiveCfg = netstandard-Debug|Any CPU
+		{0D1E2954-A5C7-4B8C-932A-31EB4A96A726}.DebugNETCoreAppnetstandard-Unixnetstandard|AnyCPU.Build.0 = netstandard-Debug|Any CPU
+		{0D1E2954-A5C7-4B8C-932A-31EB4A96A726}.ReleaseNETCoreAppnetstandard-Unixnetstandard|AnyCPU.ActiveCfg = netstandard-Release|Any CPU
+		{0D1E2954-A5C7-4B8C-932A-31EB4A96A726}.ReleaseNETCoreAppnetstandard-Unixnetstandard|AnyCPU.Build.0 = netstandard-Release|Any CPU
+		{0D1E2954-A5C7-4B8C-932A-31EB4A96A726}.DebugNETCoreAppnetstandard-Windows_NTnetstandard|AnyCPU.ActiveCfg = netstandard-Debug|Any CPU
+		{0D1E2954-A5C7-4B8C-932A-31EB4A96A726}.DebugNETCoreAppnetstandard-Windows_NTnetstandard|AnyCPU.Build.0 = netstandard-Debug|Any CPU
+		{0D1E2954-A5C7-4B8C-932A-31EB4A96A726}.ReleaseNETCoreAppnetstandard-Windows_NTnetstandard|AnyCPU.ActiveCfg = netstandard-Release|Any CPU
+		{0D1E2954-A5C7-4B8C-932A-31EB4A96A726}.ReleaseNETCoreAppnetstandard-Windows_NTnetstandard|AnyCPU.Build.0 = netstandard-Release|Any CPU
+		{0D1E2954-A5C7-4B8C-932A-31EB4A96A726}.DebugNETCoreAppnet461-Windows_NTnetstandard|AnyCPU.ActiveCfg = netstandard-Debug|Any CPU
+		{0D1E2954-A5C7-4B8C-932A-31EB4A96A726}.DebugNETCoreAppnet461-Windows_NTnetstandard|AnyCPU.Build.0 = netstandard-Debug|Any CPU
+		{0D1E2954-A5C7-4B8C-932A-31EB4A96A726}.ReleaseNETCoreAppnet461-Windows_NTnetstandard|AnyCPU.ActiveCfg = netstandard-Release|Any CPU
+		{0D1E2954-A5C7-4B8C-932A-31EB4A96A726}.ReleaseNETCoreAppnet461-Windows_NTnetstandard|AnyCPU.Build.0 = netstandard-Release|Any CPU
+		{53D09AF4-0C13-4197-B8AD-9746F0374E88}.DebugNETCoreAppnetstandard-Unixnetstandard|AnyCPU.ActiveCfg = netstandard-Unix-Debug|Any CPU
+		{53D09AF4-0C13-4197-B8AD-9746F0374E88}.DebugNETCoreAppnetstandard-Unixnetstandard|AnyCPU.Build.0 = netstandard-Unix-Debug|Any CPU
+		{53D09AF4-0C13-4197-B8AD-9746F0374E88}.ReleaseNETCoreAppnetstandard-Unixnetstandard|AnyCPU.ActiveCfg = netstandard-Unix-Release|Any CPU
+		{53D09AF4-0C13-4197-B8AD-9746F0374E88}.ReleaseNETCoreAppnetstandard-Unixnetstandard|AnyCPU.Build.0 = netstandard-Unix-Release|Any CPU
+		{53D09AF4-0C13-4197-B8AD-9746F0374E88}.DebugNETCoreAppnetstandard-Windows_NTnetstandard|AnyCPU.ActiveCfg = netstandard-Windows_NT-Debug|Any CPU
+		{53D09AF4-0C13-4197-B8AD-9746F0374E88}.DebugNETCoreAppnetstandard-Windows_NTnetstandard|AnyCPU.Build.0 = netstandard-Windows_NT-Debug|Any CPU
+		{53D09AF4-0C13-4197-B8AD-9746F0374E88}.ReleaseNETCoreAppnetstandard-Windows_NTnetstandard|AnyCPU.ActiveCfg = netstandard-Windows_NT-Release|Any CPU
+		{53D09AF4-0C13-4197-B8AD-9746F0374E88}.ReleaseNETCoreAppnetstandard-Windows_NTnetstandard|AnyCPU.Build.0 = netstandard-Windows_NT-Release|Any CPU
+		{53D09AF4-0C13-4197-B8AD-9746F0374E88}.DebugNETCoreAppnet461-Windows_NTnetstandard|AnyCPU.ActiveCfg = net461-Windows_NT-Debug|Any CPU
+		{53D09AF4-0C13-4197-B8AD-9746F0374E88}.DebugNETCoreAppnet461-Windows_NTnetstandard|AnyCPU.Build.0 = net461-Windows_NT-Debug|Any CPU
+		{53D09AF4-0C13-4197-B8AD-9746F0374E88}.ReleaseNETCoreAppnet461-Windows_NTnetstandard|AnyCPU.ActiveCfg = net461-Windows_NT-Release|Any CPU
+		{53D09AF4-0C13-4197-B8AD-9746F0374E88}.ReleaseNETCoreAppnet461-Windows_NTnetstandard|AnyCPU.Build.0 = net461-Windows_NT-Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
-		{14FAFC3A-8266-45C7-8604-8C2CB567E50D} = {350C956A-B4ED-4376-9B04-2908528D10FF}
-		{53D09AF4-0C13-4197-B8AD-9746F0374E88} = {827B5CCD-073A-4A75-9661-73D54F0A3528}
-		{0D1E2954-A5C7-4B8C-932A-31EB4A96A726} = {096E7AD0-17A2-4EAF-9AC5-2F0FC67A4112}
-		{2525E37E-0EC1-4374-92FD-D2752BEED978} = {096E7AD0-17A2-4EAF-9AC5-2F0FC67A4112}
+		{0D1E2954-A5C7-4B8C-932A-31EB4A96A726} = {0D1E2954-A5C7-4B8C-932A-31EB4A96A726}
+		{53D09AF4-0C13-4197-B8AD-9746F0374E88} = {53D09AF4-0C13-4197-B8AD-9746F0374E88}
 	EndGlobalSection
 EndGlobal

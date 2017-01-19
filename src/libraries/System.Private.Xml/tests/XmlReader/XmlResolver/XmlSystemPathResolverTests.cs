@@ -86,7 +86,8 @@ namespace System.Xml.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetcoreUwp)]  //[ActiveIssue(13121)]  // Access to path is denied in UWP
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetcoreUwp |    //[ActiveIssue(13121)]  // Access to path is denied in UWP
+        TargetFrameworkMonikers.NetFramework)]    // Full framework uses XmlUrlResolver instead of SystemPathResolver (which doesn't allow access to this path)
         public static void TestResolveInvalidPath()
         {
             AssertInvalidPath("ftp://www.bing.com");

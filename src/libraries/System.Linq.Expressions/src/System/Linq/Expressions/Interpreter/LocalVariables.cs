@@ -43,7 +43,7 @@ namespace System.Linq.Expressions.Interpreter
 
         internal Expression LoadFromArray(Expression frameData, Expression closure, Type parameterType)
         {
-            Expression result = Expression.ArrayAccess(InClosure ? closure : frameData, Expression.Constant(Index));
+            Expression result = Expression.ArrayAccess(InClosure ? closure : frameData, Utils.Constant(Index));
             return (IsBoxed && !InClosure) ? Expression.Convert(result, typeof(StrongBox<object>)) : result;
         }
 

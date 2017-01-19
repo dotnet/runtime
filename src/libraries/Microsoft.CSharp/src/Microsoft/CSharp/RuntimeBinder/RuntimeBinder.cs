@@ -1914,7 +1914,6 @@ namespace Microsoft.CSharp.RuntimeBinder
             string name = GetName(payload);
 
             // Find the lhs and rhs.
-            EXPR lhs;
             EXPR indexerArguments = null;
             bool bIsCompound = false;
 
@@ -1929,7 +1928,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                 bIsCompound = (payload as CSharpSetMemberBinder).IsCompoundAssignment;
             }
             _symbolTable.PopulateSymbolTableWithName(name, null, arguments[0].Type);
-            lhs = BindProperty(payload, arguments[0], dictionary[0], indexerArguments, false);
+            EXPR lhs = BindProperty(payload, arguments[0], dictionary[0], indexerArguments, false);
 
             int indexOfLast = arguments.Length - 1;
             EXPR rhs = CreateArgumentEXPR(arguments[indexOfLast], dictionary[indexOfLast]);

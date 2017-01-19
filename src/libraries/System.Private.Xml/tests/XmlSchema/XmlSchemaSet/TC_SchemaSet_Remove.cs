@@ -4,14 +4,14 @@
 
 using Xunit;
 using Xunit.Abstractions;
-using System;
+using System.IO;
 using System.Collections;
 using System.Xml.Schema;
 
 namespace System.Xml.Tests
 {
     //[TestCase(Name = "TC_SchemaSet_Remove", Desc = "")]
-    public class TC_SchemaSet_Remove
+    public class TC_SchemaSet_Remove : TC_SchemaSetBase
     {
         private ITestOutputHelper _output;
 
@@ -102,7 +102,7 @@ namespace System.Xml.Tests
             try
             {
                 XmlSchema Schema1 = sc.Add(null, TestData._XsdAuthor);
-                XmlSchema Schema2 = sc.Add(null, TestData._Root + param0.ToString()); // param as filename
+                XmlSchema Schema2 = sc.Add(null, Path.Combine(TestData._Root, param0.ToString())); // param as filename
 
                 sc.Compile();
                 sc.Remove(Schema2);
@@ -134,7 +134,7 @@ namespace System.Xml.Tests
             try
             {
                 XmlSchema Schema1 = sc.Add(null, TestData._XsdAuthor);
-                XmlSchema Schema2 = sc.Add(null, TestData._Root + param0.ToString()); // param as filename
+                XmlSchema Schema2 = sc.Add(null, Path.Combine(TestData._Root, param0.ToString())); // param as filename
 
                 sc.Compile();
                 sc.Remove(Schema2);
@@ -160,8 +160,8 @@ namespace System.Xml.Tests
 
             try
             {
-                XmlSchema Schema1 = sc.Add("ns-b", TestData._Root + "import_v4_b.xsd");
-                XmlSchema Schema2 = sc.Add(null, TestData._Root + "import_v5_a.xsd"); // param as filename
+                XmlSchema Schema1 = sc.Add("ns-b", Path.Combine(TestData._Root, "import_v4_b.xsd"));
+                XmlSchema Schema2 = sc.Add(null, Path.Combine(TestData._Root, "import_v5_a.xsd")); // param as filename
                 sc.Compile();
                 sc.Remove(Schema1);
                 CError.Compare(sc.Count, 2, "Count");
@@ -189,8 +189,8 @@ namespace System.Xml.Tests
 
             try
             {
-                XmlSchema Schema1 = sc.Add("ns-b", TestData._Root + "import_v4_b.xsd");
-                XmlSchema Schema2 = sc.Add(null, TestData._Root + "import_v5_a.xsd"); // param as filename
+                XmlSchema Schema1 = sc.Add("ns-b", Path.Combine(TestData._Root, "import_v4_b.xsd"));
+                XmlSchema Schema2 = sc.Add(null, Path.Combine(TestData._Root, "import_v5_a.xsd")); // param as filename
                 sc.Compile();
                 ICollection col = sc.Schemas(String.Empty);
                 foreach (XmlSchema schema in col)
@@ -225,7 +225,7 @@ namespace System.Xml.Tests
 
             try
             {
-                XmlSchema Schema1 = sc.Add(null, TestData._Root + param0.ToString());
+                XmlSchema Schema1 = sc.Add(null, Path.Combine(TestData._Root, param0.ToString()));
                 sc.Compile();
                 CError.Compare(sc.Count, 3, "Count");
 
@@ -267,7 +267,7 @@ namespace System.Xml.Tests
 
             try
             {
-                XmlSchema Schema1 = sc.Add(null, TestData._Root + param0.ToString());
+                XmlSchema Schema1 = sc.Add(null, Path.Combine(TestData._Root, param0.ToString()));
                 sc.Compile();
                 CError.Compare(sc.Count, 4, "Count");
 
@@ -317,8 +317,8 @@ namespace System.Xml.Tests
             {
                 XmlSchemaSet sc = new XmlSchemaSet();
                 sc.XmlResolver = new XmlUrlResolver();
-                sc.Add(null, TestData._Root + "import_v16_b.xsd");
-                XmlSchema parent = sc.Add(null, TestData._Root + "import_v16_a.xsd");
+                sc.Add(null, Path.Combine(TestData._Root, "import_v16_b.xsd"));
+                XmlSchema parent = sc.Add(null, Path.Combine(TestData._Root, "import_v16_a.xsd"));
                 sc.Compile();
                 sc.Remove(parent);
                 CError.Compare(sc.Count, 1, "Count");
@@ -344,8 +344,8 @@ namespace System.Xml.Tests
 
             try
             {
-                XmlSchema Schema1 = sc.Add(null, TestData._Root + param0.ToString()); // param as filename
-                XmlSchema Schema2 = sc.Add(null, TestData._Root + param1.ToString()); // param as filename
+                XmlSchema Schema1 = sc.Add(null, Path.Combine(TestData._Root, param0.ToString())); // param as filename
+                XmlSchema Schema2 = sc.Add(null, Path.Combine(TestData._Root, param1.ToString())); // param as filename
                 sc.Compile();
                 CError.Compare(sc.Count, 2, "Count");
                 sc.Remove(Schema2);

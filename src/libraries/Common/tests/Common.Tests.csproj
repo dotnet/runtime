@@ -1,78 +1,69 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
-  <PropertyGroup>
-    <Configuration Condition="'$(Configuration)'==''">Windows_Debug</Configuration>
-  </PropertyGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <ProjectGuid>{C72FD34C-539A-4447-9796-62A229571199}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <AssemblyName>Common.Tests</AssemblyName>
     <TestCategories>InnerLoop;OuterLoop</TestCategories>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'FreeBSD_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'FreeBSD_Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Linux_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Linux_Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'OSX_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'OSX_Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'" />
-  <ItemGroup>
-    <None Include="project.json" />
-  </ItemGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard1.3-Unix-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard1.3-Unix-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard1.3-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard1.3-Windows_NT-Release|AnyCPU'" />
   <ItemGroup>
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\src\Interop\Linux\procfs\Interop.ProcFsStat.cs">
+    <Compile Include="$(CommonPath)\Interop\Linux\procfs\Interop.ProcFsStat.cs">
       <Link>Common\Interop\Linux\procfs\Interop.ProcFsStat.cs</Link>
     </Compile>
-    <Compile Include="..\src\System\CharArrayHelpers.cs">
+    <Compile Include="$(CommonPath)\System\CharArrayHelpers.cs">
       <Link>Common\System\CharArrayHelpers.cs</Link>
     </Compile>
-    <Compile Include="..\src\System\StringExtensions.cs">
+    <Compile Include="$(CommonPath)\System\StringExtensions.cs">
       <Link>Common\System\StringExtensions.cs</Link>
     </Compile>
-    <Compile Include="..\src\System\Collections\Generic\ArrayBuilder.cs">
+    <Compile Include="$(CommonPath)\System\Collections\Generic\ArrayBuilder.cs">
       <Link>Common\System\Collections\Generic\ArrayBuilder.cs</Link>
     </Compile>
-    <Compile Include="..\src\System\Collections\Generic\LargeArrayBuilder.cs">
+    <Compile Include="$(CommonPath)\System\Collections\Generic\LargeArrayBuilder.cs">
       <Link>Common\System\Collections\Generic\LargeArrayBuilder.cs</Link>
     </Compile>
-    <Compile Include="..\src\System\IO\PathInternal.cs">
+    <Compile Include="$(CommonPath)\System\IO\PathInternal.cs">
       <Link>Common\System\IO\PathInternal.cs</Link>
     </Compile>
-    <Compile Include="..\src\System\IO\PathInternal.CaseSensitivity.cs">
+    <Compile Include="$(CommonPath)\System\IO\PathInternal.CaseSensitivity.cs">
       <Link>Common\System\IO\PathInternal.CaseSensitivity.cs</Link>
     </Compile>
-    <Compile Include="..\src\System\IO\RowConfigReader.cs">
+    <Compile Include="$(CommonPath)\System\IO\RowConfigReader.cs">
       <Link>Common\System\IO\RowConfigReader.cs</Link>
     </Compile>
-    <Compile Include="..\src\System\IO\StringBuilderCache.cs">
+    <Compile Include="$(CommonPath)\System\IO\StringBuilderCache.cs">
       <Link>Common\System\IO\StringBuilderCache.cs</Link>
     </Compile>
-    <Compile Include="..\src\System\IO\StringParser.cs">
+    <Compile Include="$(CommonPath)\System\IO\StringParser.cs">
       <Link>Common\System\IO\StringParser.cs</Link>
     </Compile>
-    <Compile Include="..\src\System\Net\HttpKnownHeaderNames.cs">
+    <Compile Include="$(CommonPath)\System\Net\HttpKnownHeaderNames.cs">
       <Link>Common\System\Net\HttpKnownHeaderNames.cs</Link>
     </Compile>
-    <Compile Include="..\src\System\Net\HttpKnownHeaderNames.TryGetHeaderName.cs">
+    <Compile Include="$(CommonPath)\System\Net\HttpKnownHeaderNames.TryGetHeaderName.cs">
       <Link>Common\System\Net\HttpKnownHeaderNames.TryGetHeaderName.cs</Link>
     </Compile>
-    <Compile Include="..\src\System\Text\ReusableTextReader.cs">
+    <Compile Include="$(CommonPath)\System\Text\ReusableTextReader.cs">
       <Link>Common\System\Text\ReusableTextReader.cs</Link>
     </Compile>
     <Compile Include="$(CommonTestPath)\System\AssertExtensions.cs">
       <Link>CommonTest\System\AssertExtensions.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Security\IdentityHelper.cs">
+      <Link>Common\System\Security\IdentityHelper.cs</Link>
+    </Compile>
     <Compile Include="Tests\Interop\procfsTests.cs" />
     <Compile Include="Tests\System\CharArrayHelpersTests.cs" />
     <Compile Include="Tests\System\IO\StringParserTests.cs" />
+    <Compile Include="Tests\System\Security\IdentityHelperTests.cs" />
     <Compile Include="Tests\System\StringExtensions.Tests.cs" />
     <Compile Include="Tests\System\Collections\Generic\ArrayBuilderTests.cs" />
     <Compile Include="Tests\System\Collections\Generic\LargeArrayBuilderTests.cs" />
@@ -118,14 +109,14 @@
       <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
     </Compile>
     <Compile Include="Tests\System\IO\PathInternal.Windows.Tests.cs" />
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetFullPathNameW.cs">
-      <Link>Common\Interop\Windows\mincore\Interop.GetFullPathNameW.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetFullPathNameW.cs">
+      <Link>Common\Interop\Windows\kernel32\Interop.GetFullPathNameW.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.FormatMessage.cs">
-      <Link>Common\Interop\Windows\mincore\Interop.FormatMessage.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.FormatMessage.cs">
+      <Link>Common\Interop\Windows\kernel32\Interop.FormatMessage.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.Errors.cs">
-      <Link>Common\Interop\Windows\mincore\Interop.Errors.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\Interop.Errors.cs">
+      <Link>Common\Interop\Windows\Interop.Errors.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\IO\Win32Marshal.cs">
       <Link>Common\System\IO\Win32Marshal.cs</Link>
@@ -144,6 +135,7 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
+    <Folder Include="CommonTest\System\" />
     <Folder Include="System\Net\Sockets\" />
     <Folder Include="System\Net\VirtualNetwork\" />
   </ItemGroup>

@@ -23,10 +23,8 @@ namespace System.Collections.Generic.Tests
 
         [Theory]
         [MemberData(nameof(EnumerableData))]
-        public void TypicalUsages(IEnumerable<T> seed)
+        public void AddCountAndToArray(IEnumerable<T> seed)
         {
-            // Verifies Count, Add, SlowAdd, and ToArray.
-
             var builder1 = new LargeArrayBuilder<T>(initialize: true);
             var builder2 = new LargeArrayBuilder<T>(initialize: true);
 
@@ -43,6 +41,22 @@ namespace System.Collections.Generic.Tests
 
                 Assert.Equal(seed.Take(count), builder1.ToArray());
                 Assert.Equal(seed.Take(count), builder2.ToArray());
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(MaxCapacityData))]
+        public void MaxCapacity(IEnumerable<T> seed, int maxCapacity)
+        {
+            var builder = new LargeArrayBuilder<T>(maxCapacity);
+
+            for (int i = 0; i < maxCapacity; i++)
+            {
+                builder.Add(seed.ElementAt(i));
+
+                int count = i + 1;
+                Assert.Equal(count, builder.Count);
+                Assert.Equal(seed.Take(count), builder.ToArray());
             }
         }
 
@@ -98,11 +112,26 @@ namespace System.Collections.Generic.Tests
             return data;
         }
 
+        public static TheoryData<IEnumerable<T>, int> MaxCapacityData()
+        {
+            var data = new TheoryData<IEnumerable<T>, int>();
+
+            IEnumerable<IEnumerable<T>> enumerables = EnumerableData().Select(array => array[0]).Cast<IEnumerable<T>>();
+
+            foreach (IEnumerable<T> enumerable in enumerables)
+            {
+                int count = enumerable.Count();
+                data.Add(enumerable, count);
+            }
+
+            return data;
+        }
+
         public static TheoryData<IEnumerable<T>, int, int> CopyToData()
         {
             var data = new TheoryData<IEnumerable<T>, int, int>();
 
-            var enumerables = EnumerableData().Select(array => array[0]).Cast<IEnumerable<T>>();
+            IEnumerable<IEnumerable<T>> enumerables = EnumerableData().Select(array => array[0]).Cast<IEnumerable<T>>();
 
             foreach (IEnumerable<T> enumerable in enumerables)
             {

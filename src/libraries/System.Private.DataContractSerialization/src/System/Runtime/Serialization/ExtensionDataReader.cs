@@ -4,7 +4,6 @@
 
 using System.Xml;
 using System.Collections.Generic;
-using System.Security;
 
 namespace System.Runtime.Serialization
 {
@@ -45,13 +44,10 @@ namespace System.Runtime.Serialization
         private Queue<IDataNode> _deserializedDataNodes;
         private XmlObjectSerializerReadContext _context;
 
-        [SecurityCritical]
         private static Dictionary<string, string> s_nsToPrefixTable;
 
-        [SecurityCritical]
         private static Dictionary<string, string> s_prefixToNsTable;
 
-        [SecurityCritical]
         static ExtensionDataReader()
         {
             s_nsToPrefixTable = new Dictionary<string, string>();
@@ -224,7 +220,6 @@ namespace System.Runtime.Serialization
             _attributeIndex = -1;
         }
 
-        [SecuritySafeCritical]
         public override string LookupNamespace(string prefix)
         {
             if (IsXmlDataNode)
@@ -510,7 +505,6 @@ namespace System.Runtime.Serialization
                 ? new ElementData() : _elements[nextDepth];
         }
 
-        [SecuritySafeCritical]
         internal static string GetPrefix(string ns)
         {
             string prefix;
@@ -529,7 +523,6 @@ namespace System.Runtime.Serialization
             return prefix;
         }
 
-        [SecuritySafeCritical]
         private static void AddPrefix(string prefix, string ns)
         {
             s_nsToPrefixTable.Add(ns, prefix);
@@ -589,4 +582,3 @@ namespace System.Runtime.Serialization
         }
     }
 }
-

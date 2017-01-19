@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Dynamic;
 
 namespace Microsoft.CSharp.RuntimeBinder
@@ -15,13 +14,12 @@ namespace Microsoft.CSharp.RuntimeBinder
     /// </summary>
     internal sealed class CSharpGetIndexBinder : GetIndexBinder
     {
-        internal Type CallingContext { get { return _callingContext; } }
-        private Type _callingContext;
+        internal Type CallingContext { get; }
 
         internal IList<CSharpArgumentInfo> ArgumentInfo { get { return _argumentInfo.AsReadOnly(); } }
-        private List<CSharpArgumentInfo> _argumentInfo;
+        private readonly List<CSharpArgumentInfo> _argumentInfo;
 
-        private RuntimeBinder _binder;
+        private readonly RuntimeBinder _binder;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CSharpGetIndexBinder" />.
@@ -33,7 +31,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             IEnumerable<CSharpArgumentInfo> argumentInfo) :
             base(BinderHelper.CreateCallInfo(argumentInfo, 1)) // discard 1 argument: the target object
         {
-            _callingContext = callingContext;
+            CallingContext = callingContext;
             _argumentInfo = BinderHelper.ToList(argumentInfo);
             _binder = RuntimeBinder.GetInstance();
         }

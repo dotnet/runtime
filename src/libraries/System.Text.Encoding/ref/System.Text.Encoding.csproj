@@ -3,21 +3,12 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <AssemblyVersion>4.1.0.0</AssemblyVersion>
-    <OutputType>Library</OutputType>
-    <NuGetTargetMoniker>.NETStandard,Version=v1.7</NuGetTargetMoniker>
-    <!-- copy to uap10.1 until nuget makes the change to map that to ns1.7 -->
-    <PackageTargetFramework Condition="'$(TargetGroup)' == ''">netstandard1.7;uap10.1</PackageTargetFramework>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Text.Encoding.Forwards.cs" />
   </ItemGroup>
   <ItemGroup>
-    <!-- Temporary till we publish System.Runtime updated package -->
     <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="project.json" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

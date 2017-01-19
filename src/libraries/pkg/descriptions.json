@@ -354,7 +354,7 @@
       "System.Composition.Convention.ConventionBuilder",
       "System.Composition.Hosting.CompositionHost",
       "System.Composition.CompositionContext",
-      "System.Composition.CompositionContextExtensions",
+      "System.Composition.CompositionContextExtensions"
     ]
   },
   {
@@ -397,6 +397,14 @@
     "CommonTypes": [
       "System.Composition.CompositionContextExtensions",
       "System.Composition.Hosting.ContainerConfiguration"
+    ]
+  },
+  {
+    "Name": "System.Configuration",
+    "Description": "Provides types that support using configuration files.",
+    "CommonTypes": [
+      "System.Configuration.Configuration",
+      "System.Configuration.ConfigurationManager"
     ]
   },
   {
@@ -834,6 +842,13 @@
     ]
   },
   {
+    "Name": "System.Memory",
+    "Description": "Provides types for efficient low-allocation access to memory.",
+    "CommonTypes": [
+      "System.Span",
+    ]
+  },
+  {
     "Name": "System.Net.Http",
     "Description": "Provides a programming interface for modern HTTP applications, including HTTP client components that allow applications to consume web services over HTTP and HTTP components that can be used by both clients and servers for parsing HTTP headers.",
     "CommonTypes": [
@@ -847,6 +862,13 @@
       "System.Net.Http.StreamContent",
       "System.Net.Http.FormUrlEncodedContent",
       "System.Net.Http.HttpMessageHandler"
+    ]
+  },
+  {
+    "Name": "System.Net.HttpListener",
+    "Description": "Provides a simple, programmatically controlled HTTP protocol listener.",
+    "CommonTypes": [
+      "System.Net.HttpListener"
     ]
   },
   {
@@ -1031,7 +1053,7 @@
     "Name": "System.Numerics.Vectors.WindowsRuntime",
     "Description": "Provides extension methods for converting between System.Numerics.Vector2 and Windows.Foundation.Point and Size.",
     "CommonTypes": [
-      "System.Numerics.VectorExtensions",
+      "System.Numerics.VectorExtensions"
     ]
   },
   {
@@ -1145,13 +1167,13 @@
   },
   {
     "Name": "System.Reflection.Metadata",
-        "Description": "This packages provides a low-level .NET (ECMA-335) metadata reader and writer. It's geared for performance and is the ideal choice for building higher-level libraries that intend to provide their own object model, such as compilers.",
+    "Description": "This packages provides a low-level .NET (ECMA-335) metadata reader and writer. It's geared for performance and is the ideal choice for building higher-level libraries that intend to provide their own object model, such as compilers.",
     "CommonTypes": [
       "System.Reflection.Metadata.MetadataReader",
-            "System.Reflection.PortableExecutable.PEReader",  
-            "System.Reflection.Metadata.Ecma335.MetadataBuilder",          
-            "System.Reflection.PortableExecutable.PEBuilder",          
-            "System.Reflection.PortableExecutable.ManagedPEBuilder"
+      "System.Reflection.PortableExecutable.PEReader",
+      "System.Reflection.Metadata.Ecma335.MetadataBuilder",
+      "System.Reflection.PortableExecutable.PEBuilder",
+      "System.Reflection.PortableExecutable.ManagedPEBuilder"
     ]
   },
   {
@@ -1232,7 +1254,7 @@
     "Name": "System.Runtime.CompilerServices.Unsafe",
     "Description": "Provides the System.Runtime.CompilerServices.Unsafe class, which provides generic, low-level functionality for manipulating pointers.",
     "CommonTypes": [
-      "System.Runtime.CompilerServices.Unsafe",
+      "System.Runtime.CompilerServices.Unsafe"
     ]
   },
   {
@@ -1500,7 +1522,7 @@
     "Description": "Provides access to Windows Data Protection Api.",
     "CommonTypes": [
       "System.Security.Cryptography.DataProtectionScope",
-      "System.Security.Cryptography.ProtectedData",
+      "System.Security.Cryptography.ProtectedData"
     ]
   },
   {
@@ -1623,7 +1645,7 @@
       "System.ServiceProcess.ServiceType"
     ]
   },
-  {
+ {
     "Name": "System.Text.Encoding",
     "Description": "Provides base abstract encoding classes for converting blocks of characters to and from blocks of bytes.",
     "CommonTypes": [
@@ -1805,7 +1827,7 @@
   },
   {
     "Name": "System.ValueTuple",
-    "Description": "Provides the System.ValueTuple structs, which implement the underlying types for C# 7 tuples.",
+    "Description": "Provides the System.ValueTuple structs, which implement the underlying types for tuples in C# and Visual Basic.",
     "CommonTypes": [
       "System.ValueTuple",
       "System.ValueTuple<T1>",

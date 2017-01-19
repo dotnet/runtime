@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Diagnostics;
-
 namespace System.IO.Compression
 {
     public partial class ZipArchiveEntry
@@ -17,12 +15,7 @@ namespace System.IO.Compression
         /// the platform-correct file name.
         /// </summary>
         /// <remarks>This method ensures no validation on the paths. Invalid characters are allowed.</remarks>
-        internal static string ParseFileName(string path, ZipVersionMadeByPlatform madeByPlatform)
-        {
-            if (madeByPlatform == ZipVersionMadeByPlatform.Windows)
-                return GetFileName_Windows(path);
-            else
-                return GetFileName_Unix(path);
-        }
+        internal static string ParseFileName(string path, ZipVersionMadeByPlatform madeByPlatform) =>
+            madeByPlatform == ZipVersionMadeByPlatform.Windows ? GetFileName_Windows(path) : GetFileName_Unix(path);
     }
 }

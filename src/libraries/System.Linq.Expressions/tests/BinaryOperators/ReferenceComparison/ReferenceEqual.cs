@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using Xunit;
 
 namespace System.Linq.Expressions.Tests
@@ -181,18 +180,18 @@ namespace System.Linq.Expressions.Tests
             Expression e2 = Expression.Constant("foo");
             Expression e3 = Expression.Constant("qux");
 
-            var eq = Expression.ReferenceEqual(e1, e2);
+            BinaryExpression eq = Expression.ReferenceEqual(e1, e2);
 
             Assert.Same(eq, eq.Update(e1, null, e2));
 
-            var eq1 = eq.Update(e1, null, e3);
+            BinaryExpression eq1 = eq.Update(e1, null, e3);
             Assert.Equal(ExpressionType.Equal, eq1.NodeType);
             Assert.Same(e1, eq1.Left);
             Assert.Same(e3, eq1.Right);
             Assert.Null(eq1.Conversion);
             Assert.Null(eq1.Method);
 
-            var eq2 = eq.Update(e3, null, e2);
+            BinaryExpression eq2 = eq.Update(e3, null, e2);
             Assert.Equal(ExpressionType.Equal, eq2.NodeType);
             Assert.Same(e3, eq2.Left);
             Assert.Same(e2, eq2.Right);

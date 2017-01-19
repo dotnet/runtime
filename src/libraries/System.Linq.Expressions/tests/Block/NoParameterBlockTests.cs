@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections;
 using System.Collections.Generic;
 using Xunit;
@@ -317,7 +316,6 @@ namespace System.Linq.Expressions.Tests
 
         [Theory]
         [MemberData(nameof(ConstantValuesAndSizes))]
-        [ActiveIssue(3958)]
         public void RewriteToSameWithSameValues(object value, int blockSize)
         {
             ConstantExpression constant = Expression.Constant(value, value.GetType());
@@ -326,6 +324,7 @@ namespace System.Linq.Expressions.Tests
             BlockExpression block = Expression.Block(expressions);
             Assert.Same(block, block.Update(null, expressions));
             Assert.Same(block, block.Update(Enumerable.Empty<ParameterExpression>(), expressions));
+            Assert.Same(block, NoOpVisitor.Instance.Visit(block));
         }
 
         [Theory]
@@ -408,6 +407,59 @@ namespace System.Linq.Expressions.Tests
             BlockExpression block = Expression.Block(typeof(object), expressions);
 
             Assert.NotSame(block, new TestVistor().Visit(block));
+        }
+
+        [Theory, MemberData(nameof(BlockSizes))]
+        public void UpdateToNullArguments(int blockSize)
+        {
+            ConstantExpression constant = Expression.Constant(0);
+            IEnumerable<Expression> expressions = PadBlock(blockSize - 1, constant);
+
+            BlockExpression block = Expression.Block(expressions);
+
+            Assert.Throws<ArgumentNullException>("expressions", () => block.Update(null, null));
+        }
+
+        [Theory, MemberData(nameof(BlockSizes))]
+        public void UpdateDoesntRepeatEnumeration(int blockSize)
+        {
+            ConstantExpression constant = Expression.Constant(0);
+            IEnumerable<Expression> expressions = PadBlock(blockSize - 1, constant).ToArray();
+
+            BlockExpression block = Expression.Block(expressions);
+
+            Assert.Same(block, block.Update(null, new RunOnceEnumerable<Expression>(expressions)));
+            Assert.NotSame(
+                block,
+                block.Update(null, new RunOnceEnumerable<Expression>(PadBlock(blockSize - 1, Expression.Constant(1)))));
+        }
+
+        [Theory, MemberData(nameof(BlockSizes))]
+        public void UpdateDifferentSizeReturnsDifferent(int blockSize)
+        {
+            ConstantExpression constant = Expression.Constant(0);
+            IEnumerable<Expression> expressions = PadBlock(blockSize - 1, constant).ToArray();
+
+            BlockExpression block = Expression.Block(expressions);
+
+            Assert.NotSame(block, block.Update(null, block.Expressions.Prepend(Expression.Empty())));
+        }
+
+        [Theory, MemberData(nameof(BlockSizes))]
+        public void UpdateAnyExpressionDifferentReturnsDifferent(int blockSize)
+        {
+            ConstantExpression constant = Expression.Constant(0);
+            Expression[] expressions = PadBlock(blockSize - 1, constant).ToArray();
+
+            BlockExpression block = Expression.Block(expressions);
+
+            for (int i = 0; i != expressions.Length; ++i)
+            {
+                Expression[] newExps = new Expression[expressions.Length];
+                expressions.CopyTo(newExps, 0);
+                newExps[i] = Expression.Constant(1);
+                Assert.NotSame(block, block.Update(null, newExps));
+            }
         }
     }
 }

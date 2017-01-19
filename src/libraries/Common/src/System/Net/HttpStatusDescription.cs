@@ -20,7 +20,7 @@ namespace System.Net
                 case 100: return "Continue";
                 case 101: return "Switching Protocols";
                 case 102: return "Processing";
-                
+
                 case 200: return "OK";
                 case 201: return "Created";
                 case 202: return "Accepted";
@@ -29,7 +29,7 @@ namespace System.Net
                 case 205: return "Reset Content";
                 case 206: return "Partial Content";
                 case 207: return "Multi-Status";
-                
+
                 case 300: return "Multiple Choices";
                 case 301: return "Moved Permanently";
                 case 302: return "Found";
@@ -37,7 +37,7 @@ namespace System.Net
                 case 304: return "Not Modified";
                 case 305: return "Use Proxy";
                 case 307: return "Temporary Redirect";
-                
+
                 case 400: return "Bad Request";
                 case 401: return "Unauthorized";
                 case 402: return "Payment Required";
@@ -60,7 +60,7 @@ namespace System.Net
                 case 423: return "Locked";
                 case 424: return "Failed Dependency";
                 case 426: return "Upgrade Required"; // RFC 2817
-                
+
                 case 500: return "Internal Server Error";
                 case 501: return "Not Implemented";
                 case 502: return "Bad Gateway";

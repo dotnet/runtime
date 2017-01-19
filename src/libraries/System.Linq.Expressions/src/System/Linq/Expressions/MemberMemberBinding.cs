@@ -14,7 +14,7 @@ namespace System.Linq.Expressions
     /// </summary>
     /// <remarks>
     /// Use the <see cref="Expression.MemberBind"/> factory methods to create a <see cref="MemberMemberBinding"/>.
-    /// The value of the <see cref="MemberBinding.BindingType"/> property of a <see cref="MemberMemberBinding"/> object is <see cref="MemberBinding"/>. 
+    /// The value of the <see cref="MemberBinding.BindingType"/> property of a <see cref="MemberMemberBinding"/> object is <see cref="MemberBinding"/>.
     /// </remarks>
     public sealed class MemberMemberBinding : MemberBinding
     {
@@ -27,7 +27,7 @@ namespace System.Linq.Expressions
         }
 
         /// <summary>
-        /// Gets the bindings that describe how to initialize the members of a member. 
+        /// Gets the bindings that describe how to initialize the members of a member.
         /// </summary>
         public ReadOnlyCollection<MemberBinding> Bindings { get; }
 
@@ -40,10 +40,14 @@ namespace System.Linq.Expressions
         /// <returns>This expression if no children changed, or an expression with the updated children.</returns>
         public MemberMemberBinding Update(IEnumerable<MemberBinding> bindings)
         {
-            if (bindings == Bindings)
+            if (bindings != null)
             {
-                return this;
+                if (ExpressionUtils.SameElements(ref bindings, Bindings))
+                {
+                    return this;
+                }
             }
+
             return Expression.MemberBind(Member, bindings);
         }
     }

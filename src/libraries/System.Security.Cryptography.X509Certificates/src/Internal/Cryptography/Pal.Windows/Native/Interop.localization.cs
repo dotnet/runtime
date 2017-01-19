@@ -13,7 +13,7 @@ internal static partial class Interop
 {
     public static class localization
     {
-        [DllImport(Libraries.Localization, CharSet = CharSet.Unicode, SetLastError = true, EntryPoint = "FormatMessageW")]
+        [DllImport(Libraries.Kernel32, CharSet = CharSet.Unicode, SetLastError = true, EntryPoint = "FormatMessageW")]
         public static extern int FormatMessage(FormatMessageFlags dwFlags, IntPtr lpSource, int dwMessageId, int dwLanguageId, [Out] StringBuilder lpBuffer, int nSize, IntPtr Arguments);
     }
 }

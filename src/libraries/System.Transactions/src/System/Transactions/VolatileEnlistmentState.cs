@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Threading;
-using System.Transactions.Diagnostics;
 
 namespace System.Transactions
 {
@@ -252,7 +251,7 @@ namespace System.Transactions
         // Override of get_RecoveryInformation to be more specific with the exception string.
         internal override byte[] RecoveryInformation(InternalEnlistment enlistment)
         {
-            throw TransactionException.CreateInvalidOperationException(SR.TraceSourceLtm,
+            throw TransactionException.CreateInvalidOperationException(TraceSourceType.TraceSourceLtm,
                 SR.VolEnlistNoRecoveryInfo, null, enlistment == null ? Guid.Empty : enlistment.DistributedTxId);
         }
     }
@@ -322,12 +321,10 @@ namespace System.Transactions
             Monitor.Exit(enlistment.Transaction);
             try // Don't hold this lock while calling into the application code.
             {
-                if (DiagnosticTrace.Verbose)
+                TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+                if (etwLog.IsEnabled())
                 {
-                    EnlistmentNotificationCallTraceRecord.Trace(SR.TraceSourceLtm,
-                        enlistment.EnlistmentTraceId,
-                        NotificationCall.Prepare
-                        );
+                    etwLog.EnlistmentStatus(enlistment, NotificationCall.Prepare);
                 }
 
                 enlistment.EnlistmentNotification.Prepare(enlistment.PreparingEnlistment);
@@ -394,12 +391,10 @@ namespace System.Transactions
             enlistment.State = this;
 
             // Send Single Phase Commit to the enlistment
-            if (DiagnosticTrace.Verbose)
+            TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+            if (etwLog.IsEnabled())
             {
-                EnlistmentNotificationCallTraceRecord.Trace(SR.TraceSourceLtm,
-                    enlistment.EnlistmentTraceId,
-                    NotificationCall.SinglePhaseCommit
-                    );
+                etwLog.EnlistmentStatus(enlistment, NotificationCall.SinglePhaseCommit);
             }
 
             Monitor.Exit(enlistment.Transaction);
@@ -547,12 +542,10 @@ namespace System.Transactions
             Monitor.Exit(enlistment.Transaction);
             try // Don't hold this lock while calling into the application code.
             {
-                if (DiagnosticTrace.Verbose)
+                TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+                if (etwLog.IsEnabled())
                 {
-                    EnlistmentNotificationCallTraceRecord.Trace(SR.TraceSourceLtm,
-                        enlistment.EnlistmentTraceId,
-                        NotificationCall.Rollback
-                        );
+                    etwLog.EnlistmentStatus(enlistment, NotificationCall.Rollback);
                 }
 
                 enlistment.EnlistmentNotification.Rollback(enlistment.SinglePhaseEnlistment);
@@ -591,12 +584,10 @@ namespace System.Transactions
             Monitor.Exit(enlistment.Transaction);
             try // Don't hold this lock while calling into the application code.
             {
-                if (DiagnosticTrace.Verbose)
+                TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+                if (etwLog.IsEnabled())
                 {
-                    EnlistmentNotificationCallTraceRecord.Trace(SR.TraceSourceLtm,
-                        enlistment.EnlistmentTraceId,
-                        NotificationCall.Commit
-                        );
+                    etwLog.EnlistmentStatus(enlistment, NotificationCall.Commit);
                 }
 
                 // Forward the notification to the enlistment
@@ -626,12 +617,10 @@ namespace System.Transactions
             Monitor.Exit(enlistment.Transaction);
             try // Don't hold this lock while calling into the application code.
             {
-                if (DiagnosticTrace.Verbose)
+                TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+                if (etwLog.IsEnabled())
                 {
-                    EnlistmentNotificationCallTraceRecord.Trace(SR.TraceSourceLtm,
-                        enlistment.EnlistmentTraceId,
-                        NotificationCall.InDoubt
-                        );
+                    etwLog.EnlistmentStatus(enlistment, NotificationCall.InDoubt);
                 }
 
                 // Forward the notification to the enlistment

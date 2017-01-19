@@ -9,11 +9,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
     internal class TypeFactory
     {
-        // Constructor.
-        public TypeFactory()
-        {
-        }
-
         // Aggregate
         public AggregateType CreateAggregateType(
             Name name,

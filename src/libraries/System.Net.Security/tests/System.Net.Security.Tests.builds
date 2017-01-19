@@ -1,37 +1,37 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
     <Project Include="FunctionalTests\System.Net.Security.Tests.csproj">
       <OSGroup>Linux</OSGroup>
-      <TargetGroup>netcoreapp1.1</TargetGroup>
-      <TestTFMs>netcoreapp1.1</TestTFMs>
+      <TargetGroup>netcoreapp</TargetGroup>
+      <TestTFMs>netcoreapp</TestTFMs>
     </Project>
     <Project Include="FunctionalTests\System.Net.Security.Tests.csproj">
       <OSGroup>Linux</OSGroup>
-      <TargetGroup>netstandard1.7</TargetGroup>
-      <TestTFMs>netcoreapp1.1</TestTFMs>
+      <TargetGroup>netstandard</TargetGroup>
+      <TestTFMs>netcoreapp</TestTFMs>
     </Project>
     <Project Include="FunctionalTests\System.Net.Security.Tests.csproj">
       <OSGroup>OSX</OSGroup>
-      <TargetGroup>netcoreapp1.1</TargetGroup>
-      <TestTFMs>netcoreapp1.1</TestTFMs>
+      <TargetGroup>netcoreapp</TargetGroup>
+      <TestTFMs>netcoreapp</TestTFMs>
     </Project>
     <Project Include="FunctionalTests\System.Net.Security.Tests.csproj">
       <OSGroup>OSX</OSGroup>
-      <TargetGroup>netstandard1.7</TargetGroup>
-      <TestTFMs>netcoreapp1.1</TestTFMs>
+      <TargetGroup>netstandard</TargetGroup>
+      <TestTFMs>netcoreapp</TestTFMs>
     </Project>
     <Project Include="FunctionalTests\System.Net.Security.Tests.csproj">
       <OSGroup>Windows_NT</OSGroup>
-      <TargetGroup>netcoreapp1.1</TargetGroup>
+      <TargetGroup>netcoreapp</TargetGroup>
       <!-- TODO #13070 Add net463 once the TFM is actually .Net 4.6.3 -->
-      <TestTFMs>netcoreapp1.1</TestTFMs>
+      <TestTFMs>netcoreapp</TestTFMs>
     </Project>
     <Project Include="FunctionalTests\System.Net.Security.Tests.csproj">
       <OSGroup>Windows_NT</OSGroup>
-      <TargetGroup>netstandard1.7</TargetGroup>
-      <TestTFMs>netcoreapp1.1;net462</TestTFMs>
+      <TargetGroup>netstandard</TargetGroup>
+      <TestTFMs>netcoreapp;net462</TestTFMs>
     </Project>
     <Project Include="UnitTests\System.Net.Security.Unit.Tests.csproj">
       <OSGroup>Unix</OSGroup>

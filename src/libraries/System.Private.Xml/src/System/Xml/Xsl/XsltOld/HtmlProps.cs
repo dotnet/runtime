@@ -21,7 +21,7 @@ namespace System.Xml.Xsl.XsltOld
         private bool _head;
         private bool _nameParent;
 
-        static public HtmlElementProps Create(bool empty, bool abrParent, bool uriParent, bool noEntities, bool blockWS, bool head, bool nameParent)
+        public static HtmlElementProps Create(bool empty, bool abrParent, bool uriParent, bool noEntities, bool blockWS, bool head, bool nameParent)
         {
             HtmlElementProps props = new HtmlElementProps();
             props._empty = empty;
@@ -42,10 +42,10 @@ namespace System.Xml.Xsl.XsltOld
         public bool NameParent { get { return _nameParent; } }
 
 
-        static private Hashtable s_table = CreatePropsTable();
-        //        static private HtmlElementProps  s_otherElements = Create(false, false, false, false, false, false, false);
+        private static Hashtable s_table = CreatePropsTable();
+        //        private static HtmlElementProps  s_otherElements = Create(false, false, false, false, false, false, false);
 
-        static public HtmlElementProps GetProps(string name)
+        public static HtmlElementProps GetProps(string name)
         {
             HtmlElementProps result = (HtmlElementProps)s_table[name];
             return result;
@@ -141,7 +141,7 @@ namespace System.Xml.Xsl.XsltOld
         private bool _uri;
         private bool _name;
 
-        static public HtmlAttributeProps Create(bool abr, bool uri, bool name)
+        public static HtmlAttributeProps Create(bool abr, bool uri, bool name)
         {
             HtmlAttributeProps props = new HtmlAttributeProps();
             props._abr = abr;
@@ -153,10 +153,10 @@ namespace System.Xml.Xsl.XsltOld
         public bool Uri { get { return _uri; } }
         public bool Name { get { return _name; } }
 
-        static private Hashtable s_table = CreatePropsTable();
-        //      static private HtmlElementProps  s_otherAttributes = Create(false, false, false);
+        private static Hashtable s_table = CreatePropsTable();
+        //      private static HtmlElementProps  s_otherAttributes = Create(false, false, false);
 
-        static public HtmlAttributeProps GetProps(string name)
+        public static HtmlAttributeProps GetProps(string name)
         {
             HtmlAttributeProps result = (HtmlAttributeProps)s_table[name];
             return result;

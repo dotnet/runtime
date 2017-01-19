@@ -1,31 +1,26 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <PropertyGroup>
-    <Configuration Condition="'$(Configuration)'==''">Windows_Debug</Configuration>
-  </PropertyGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Windows_Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{16EE6633-F557-5C9E-9EF3-B5334B044F47}</ProjectGuid>
     <OutputType>Library</OutputType>
     <RootNamespace>System.Text.Encoding.CodePages</RootNamespace>
     <AssemblyName>System.Text.Encoding.CodePages</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
-    <PackageTargetFramework Include="netstandard1.7" />
+    <PackageTargetFramework Include="netstandard2.0" />
     <!-- need to support rid-less restore for packages.config -->
-    <PackageTargetFramework Include="net463">
-      <TargetRuntime></TargetRuntime>
+    <PackageTargetFramework Include="net461">
+      <TargetRuntime>
+      </TargetRuntime>
     </PackageTargetFramework>
   </ItemGroup>
   <!-- Help VS understand available configurations -->
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Unix-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Unix-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Windows_NT-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="Microsoft\Win32\SafeHandles\SafeAllocHHandle.cs" />
     <Compile Include="System\Text\BaseCodePageEncoding.cs" />
@@ -50,10 +45,13 @@
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
     <Compile Include="System\Text\CodePagesEncodingProvider.Windows.cs" />
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.Encoding.Constants.cs">
+      <Link>Common\Interop\Windows\kernel32\Interop.Encoding.Constants.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
       <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetCPInfoEx.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetCPInfoEx.cs">
       <Link>Common\Interop\Windows\Interop.GetCPInfoEx.cs</Link>
     </Compile>
   </ItemGroup>
@@ -68,7 +66,15 @@
   <ItemGroup>
     <None Include="Data\CodePageNameMappings.csv" />
     <None Include="Data\PreferredCodePageNames.csv" />
-    <None Include="project.json" />
+    <Reference Include="System.Collections" />
+    <Reference Include="System.Diagnostics.Contracts" />
+    <Reference Include="System.Diagnostics.Debug" />
+    <Reference Include="System.Diagnostics.Tools" />
+    <Reference Include="System.Resources.ResourceManager" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.Extensions" />
+    <Reference Include="System.Runtime.InteropServices" />
+    <Reference Include="System.Threading" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
   <!-- Generator for code mapping table, target to invoke is GenerateEncodingSource -->

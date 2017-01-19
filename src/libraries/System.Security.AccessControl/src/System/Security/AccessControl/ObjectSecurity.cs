@@ -49,14 +49,14 @@ namespace System.Security.AccessControl
         
         // only these SACL control flags will be automatically carry forward
         // when update with new security descriptor.
-        static private readonly ControlFlags SACL_CONTROL_FLAGS = 
+        private static readonly ControlFlags SACL_CONTROL_FLAGS = 
             ControlFlags.SystemAclPresent | 
             ControlFlags.SystemAclAutoInherited |
             ControlFlags.SystemAclProtected;
 
         // only these DACL control flags will be automatically carry forward
         // when update with new security descriptor
-        static private readonly ControlFlags DACL_CONTROL_FLAGS = 
+        private static readonly ControlFlags DACL_CONTROL_FLAGS = 
             ControlFlags.DiscretionaryAclPresent | 
             ControlFlags.DiscretionaryAclAutoInherited |
             ControlFlags.DiscretionaryAclProtected;

@@ -640,8 +640,8 @@ namespace System.Xml.Tests
                 // for function CData_13
                 {
                     this.AddChild(new CVariation(CData_13) { Attribute = new Variation("WriteCData with 0x0A with NewLineHandling.Entitize") { Params = new object[] { 10, NewLineHandling.Entitize, "<r><![CDATA[\n]]></r>" }, id = 18, Pri = 1 } });
-                    this.AddChild(new CVariation(CData_13) { Attribute = new Variation("WriteCData with 0x0D with NewLineHandling.Replace") { Params = new object[] { 13, NewLineHandling.Replace, "<r><![CDATA[\r\n]]></r>" }, id = 13, Pri = 1 } });
-                    this.AddChild(new CVariation(CData_13) { Attribute = new Variation("WriteCData with 0x0A with NewLineHandling.Replace") { Params = new object[] { 10, NewLineHandling.Replace, "<r><![CDATA[\r\n]]></r>" }, id = 16, Pri = 1 } });
+                    this.AddChild(new CVariation(CData_13) { Attribute = new Variation("WriteCData with 0x0D with NewLineHandling.Replace") { Params = new object[] { 13, NewLineHandling.Replace, string.Format("<r><![CDATA[{0}]]></r>", Environment.NewLine) }, id = 13, Pri = 1 } });
+                    this.AddChild(new CVariation(CData_13) { Attribute = new Variation("WriteCData with 0x0A with NewLineHandling.Replace") { Params = new object[] { 10, NewLineHandling.Replace, string.Format("<r><![CDATA[{0}]]></r>", Environment.NewLine) }, id = 16, Pri = 1 } });
                     this.AddChild(new CVariation(CData_13) { Attribute = new Variation("WriteCData with 0x0A with NewLineHandling.None") { Params = new object[] { 10, NewLineHandling.None, "<r><![CDATA[\n]]></r>" }, id = 17, Pri = 1 } });
                     this.AddChild(new CVariation(CData_13) { Attribute = new Variation("WriteCData with 0x0D with NewLineHandling.Entitize") { Params = new object[] { 13, NewLineHandling.Entitize, "<r><![CDATA[\r]]></r>" }, id = 15, Pri = 1 } });
                     this.AddChild(new CVariation(CData_13) { Attribute = new Variation("WriteCData with 0x0D with NewLineHandling.None") { Params = new object[] { 13, NewLineHandling.None, "<r><![CDATA[\r]]></r>" }, id = 14, Pri = 1 } });

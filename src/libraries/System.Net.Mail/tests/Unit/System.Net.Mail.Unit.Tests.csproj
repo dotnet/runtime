@@ -1,15 +1,13 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <OutputType>Library</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <StringResourcesPath>../../src/Resources/Strings.resx</StringResourcesPath>
-    <NugetTargetMoniker>.NETStandard,Version=v1.7</NugetTargetMoniker>
     <ProjectGuid>{2525E37E-0EC1-4374-92FD-D2752BEED978}</ProjectGuid>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'netstandard1.7_Debug|AnyCPU' " />
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'netstandard1.7_Release|AnyCPU' " />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="Base64EncodingTest.cs" />
     <Compile Include="ByteEncodingTest.cs" />
@@ -22,11 +20,16 @@
     <Compile Include="MessageTests\MessageEncodeHeadersTest.cs" />
     <Compile Include="MessageTests\MessageHeaderBehaviorTest.cs" />
     <Compile Include="MessageTests\ReplyToListTest.cs" />
+    <Compile Include="NTAuthenticationStub.cs" />
     <Compile Include="NTAuthenticationStubTests.cs" />
     <Compile Include="QuotedPrintableStreamTest.cs" />
     <Compile Include="SmtpConnectionTests\EhloParseExtensionsTest.cs" />
     <Compile Include="SmtpDateTimeTest.cs" />
     <Compile Include="WriteStateInfoTest.cs" />
+  </ItemGroup>
+  <!-- Do not reference these assemblies from the TargetingPack since we are building part of the source code for tests. -->
+  <ItemGroup>
+    <TargetingPackExclusions Include="System.Net.Mail" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\..\src\System\Net\Base64Stream.cs">
@@ -58,9 +61,6 @@
     </Compile>
     <Compile Include="..\..\src\System\Net\Mail\SmtpNegotiateAuthenticationModule.cs">
       <Link>ProductionCode\SmtpNegotiateAuthenticationModule.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\Mail\NTAuthenticationStub.cs">
-      <Link>ProductionCode\NTAuthenticationStub.cs</Link>
     </Compile>
     <Compile Include="..\..\src\System\Net\Mail\SmtpNtlmAuthenticationModule.cs">
       <Link>ProductionCode\SmtpNtlmAuthenticationModule.cs</Link>
@@ -176,9 +176,6 @@
     <Compile Include="$(CommonPath)\System\Net\Mail\QuotedStringFormatReader.cs">
       <Link>ProductionCode\Common\System\Net\Mail\QuotedStringFormatReader.cs</Link>
     </Compile>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="project.json" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

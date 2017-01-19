@@ -201,7 +201,7 @@ namespace System.Text.RegularExpressions
                     {
                         int[] newarray = new int[256];
 
-                        for (int k = 0; k < 256; k++)
+                        for (int k = 0; k < newarray.Length; k++)
                             newarray[k] = last - beforefirst;
 
                         if (i == 0)

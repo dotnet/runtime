@@ -8,7 +8,7 @@
     <AssemblyName>RemoteExecutorConsoleApp</AssemblyName>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <CopyNuGetImplementations>false</CopyNuGetImplementations>
-    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
+    <NoWarn>0436</NoWarn>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
@@ -19,19 +19,15 @@
     <Compile Include="RemoteExecutorConsoleApp.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' != 'net46'">
-    <Compile Include="AssemblyAttributes.cs"/>
+    <Compile Include="AssemblyAttributes.cs" />
     <Compile Include="$(CommonPath)\System\Diagnostics\CodeAnalysis\ExcludeFromCodeCoverageAttribute.cs">
       <Link>Common\System\Diagnostics\CodeAnalysis\ExcludeFromCodeCoverageAttribute.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'net46'">
-    <TargetingPackReference Include="System" />
-    <TargetingPackReference Include="System.Threading.Tasks" />
-    <TargetingPackReference Include="System.Core" />
-    <TargetingPackReference Include="System.Runtime" />
-  </ItemGroup>
   <ItemGroup>
-    <None Include="project.json" />
+    <Content Include="RemoteExecutorConsoleApp.runtimeconfig.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

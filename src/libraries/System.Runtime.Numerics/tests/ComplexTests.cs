@@ -13,6 +13,7 @@ namespace System.Numerics.Tests
     public partial class ComplexTests
     {
         private static Random s_random = new Random(-55);
+        private static bool Is64Bit => IntPtr.Size == 8;
         
         public static readonly double[] s_validDoubleValues = new double[]
         {
@@ -291,6 +292,7 @@ namespace System.Numerics.Tests
         }
 
         [Theory, MemberData("ACos_Advanced_TestData")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public static void ACos_Advanced(double real, double imaginary, double expectedReal, double expectedImaginary)
         {
             var complex = new Complex(real, imaginary);
@@ -372,6 +374,7 @@ namespace System.Numerics.Tests
         }
 
         [Theory, MemberData("ASin_Advanced_TestData")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public static void ASin_Advanced(double real, double imaginary, double expectedReal, double expectedImaginary)
         {
             var complex = new Complex(real, imaginary);
@@ -486,7 +489,7 @@ namespace System.Numerics.Tests
             }
         }
 
-        [Theory, MemberData("Cos_Advanced_TestData")]
+        [ConditionalTheory(nameof(Is64Bit)), MemberData("Cos_Advanced_TestData")]
         public static void Cos_Advanced(double real, double imaginary, double expectedReal, double expectedImaginary)
         {
             var complex = new Complex(real, imaginary);
@@ -538,7 +541,7 @@ namespace System.Numerics.Tests
             }
         }
 
-        [Theory, MemberData("Cosh_Advanced_TestData")]
+        [ConditionalTheory(nameof(Is64Bit)), MemberData("Cosh_Advanced_TestData")]
         public static void Cosh_Advanced(double real, double imaginary, double expectedReal, double expectedImaginary)
         {
             var complex = new Complex(real, imaginary);
@@ -593,6 +596,31 @@ namespace System.Numerics.Tests
             // Static method
             result = Complex.Divide(dividend, divisor);
             VerifyRealImaginaryProperties(result, expectedReal, expectedImaginary);
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        public static void Equals_netcore()
+        {
+            // Invalid values
+            Complex invalidComplex;
+            var complex = new Complex(2, 3);
+            foreach (double invalidReal in s_invalidDoubleValues)
+            {
+                invalidComplex = new Complex(invalidReal, 1);
+                Equals(invalidComplex, complex, false, false);
+                Equals(invalidComplex, invalidComplex, !double.IsNaN(invalidReal), true); // Handle double.NaN != double.NaN
+                foreach (double invalidImaginary in s_invalidDoubleValues)
+                {
+                    invalidComplex = new Complex(1, invalidImaginary);
+                    Equals(invalidComplex, complex, false, false);
+                    Equals(invalidComplex, invalidComplex, !double.IsNaN(invalidImaginary), true); // Handle double.NaN != double.NaN
+
+                    invalidComplex = new Complex(invalidReal, invalidImaginary);
+                    Equals(invalidComplex, complex, false, false);
+                    Equals(invalidComplex, invalidComplex, !double.IsNaN(invalidReal) && !double.IsNaN(invalidImaginary), true); // Handle double.NaN != double.NaN
+                }
+            }
         }
 
         [Fact]
@@ -675,26 +703,6 @@ namespace System.Numerics.Tests
             Equals(new Complex(0, 100.5), 0, false, false);
             Equals(new Complex(0, 100.5), "0", false, false);
             Equals(new Complex(0, 100.5), null, false, false);
-
-            // Invalid values
-            Complex invalidComplex;
-            var complex = new Complex(2, 3);
-            foreach (double invalidReal in s_invalidDoubleValues)
-            {
-                invalidComplex = new Complex(invalidReal, 1);
-                Equals(invalidComplex, complex, false, false);
-                Equals(invalidComplex, invalidComplex, !double.IsNaN(invalidReal), true); // Handle double.NaN != double.NaN
-                foreach (double invalidImaginary in s_invalidDoubleValues)
-                {
-                    invalidComplex = new Complex(1, invalidImaginary);
-                    Equals(invalidComplex, complex, false, false);
-                    Equals(invalidComplex, invalidComplex, !double.IsNaN(invalidImaginary), true); // Handle double.NaN != double.NaN
-
-                    invalidComplex = new Complex(invalidReal, invalidImaginary);
-                    Equals(invalidComplex, complex, false, false);
-                    Equals(invalidComplex, invalidComplex, !double.IsNaN(invalidReal) && !double.IsNaN(invalidImaginary), true); // Handle double.NaN != double.NaN
-                }
-            }
         }
 
         private static void Equals(Complex complex1, object obj, bool expected, bool expectedEquals)
@@ -729,7 +737,7 @@ namespace System.Numerics.Tests
             yield return new object[] { double.MinValue, double.MinValue };
         }
 
-        [Theory]
+        [ConditionalTheory(nameof(Is64Bit))]
         [MemberData(nameof(Exp_TestData))]
         [MemberData(nameof(Primitives_2_TestData))]
         [MemberData(nameof(SmallRandom_2_TestData))]
@@ -1068,7 +1076,7 @@ namespace System.Numerics.Tests
             VerifyRealImaginaryProperties(result, expectedReal, expectedImaginary);
         }
         
-        [Theory]
+        [ConditionalTheory(nameof(Is64Bit))]
         [MemberData(nameof(Boundaries_2_TestData))]
         [MemberData(nameof(Primitives_2_TestData))]
         [MemberData(nameof(SmallRandom_2_TestData))]
@@ -1134,7 +1142,7 @@ namespace System.Numerics.Tests
             }
         }
 
-        [Theory, MemberData("Sin_Advanced_TestData")]
+        [ConditionalTheory(nameof(Is64Bit)), MemberData("Sin_Advanced_TestData")]
         public static void Sin_Advanced(double real, double imaginary, double expectedReal, double expectedImaginary)
         {
             var complex = new Complex(real, imaginary);
@@ -1186,7 +1194,7 @@ namespace System.Numerics.Tests
             }
         }
 
-        [Theory, MemberData("Sinh_Advanced_TestData")]
+        [ConditionalTheory(nameof(Is64Bit)), MemberData("Sinh_Advanced_TestData")]
         public static void Sinh_Advanced(double real, double imaginary, double expectedReal, double expectedImaginary)
         {
             var complex = new Complex(real, imaginary);

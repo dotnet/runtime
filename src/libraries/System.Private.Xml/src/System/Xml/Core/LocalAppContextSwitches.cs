@@ -8,7 +8,7 @@ namespace System
 {
     internal partial class LocalAppContextSwitches
     {
-        private const string DontThrowOnInvalidSurrogatePairsName = "DontThrowOnInvalidSurrogatePairs";
+        private const string DontThrowOnInvalidSurrogatePairsName = "Switch.System.Xml.DontThrowOnInvalidSurrogatePairs";
         private static int s_dontThrowOnInvalidSurrogatePairs;
 
         public static bool DontThrowOnInvalidSurrogatePairs
@@ -20,7 +20,7 @@ namespace System
             }
         }
 
-        private const string IgnoreEmptyKeySequencesName = "IgnoreEmptyKeySequencess";
+        private const string IgnoreEmptyKeySequencesName = "Switch.System.Xml.IgnoreEmptyKeySequencess";
         private static int s_ignoreEmptyKeySequences;
 
         public static bool IgnoreEmptyKeySequences
@@ -32,7 +32,7 @@ namespace System
             }
         }
 
-        private const string IgnoreKindInUtcTimeSerializationName = "IgnoreKindInUtcTimeSerialization";
+        private const string IgnoreKindInUtcTimeSerializationName = "Switch.System.Xml.IgnoreKindInUtcTimeSerialization";
         private static int s_ignoreKindInUtcTimeSerialization;
 
         public static bool IgnoreKindInUtcTimeSerialization
@@ -44,7 +44,7 @@ namespace System
             }
         }
 
-        private const string LimitXPathComplexityName = "LimitXPathComplexity";
+        private const string LimitXPathComplexityName = "Switch.System.Xml.LimitXPathComplexity";
         private static int s_limitXPathComplexity;
 
         public static bool LimitXPathComplexity
@@ -53,6 +53,18 @@ namespace System
             get
             {
                 return LocalAppContext.GetCachedSwitchValue(LimitXPathComplexityName, ref s_limitXPathComplexity);
+            }
+        }
+
+        private const string AllowDefaultResolverName = "Switch.System.Xml.AllowDefaultResolver";
+        private static int s_allowDefaultResolver;
+
+        public static bool AllowDefaultResolver
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                return LocalAppContext.GetCachedSwitchValue(AllowDefaultResolverName, ref s_allowDefaultResolver);
             }
         }
     }

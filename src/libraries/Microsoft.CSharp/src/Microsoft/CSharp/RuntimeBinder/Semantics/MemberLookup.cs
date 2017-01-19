@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Reflection;
 using System.Linq;
 using Microsoft.CSharp.RuntimeBinder.Errors;
 using Microsoft.CSharp.RuntimeBinder.Syntax;
@@ -52,20 +51,20 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         private CMemberLookupResults _results;
 
         // For maintaining the type array. We throw the first 8 or so here.
-        private List<AggregateType> _rgtypeStart;
+        private readonly List<AggregateType> _rgtypeStart;
 
         // Results of the lookup.
         private List<AggregateType> _prgtype;
         private int _csym;                 // Number of syms found.
-        private SymWithType _swtFirst;     // The first symbol found.
-        private List<MethPropWithType> _methPropWithTypeList; // When we look up methods, we want to keep the list of all candidate methods given a particular name.
+        private readonly SymWithType _swtFirst;     // The first symbol found.
+        private readonly List<MethPropWithType> _methPropWithTypeList; // When we look up methods, we want to keep the list of all candidate methods given a particular name.
 
         // These are for error reporting.
-        private SymWithType _swtAmbig;     // An ambiguous symbol.
-        private SymWithType _swtInaccess;  // An inaccessible symbol.
-        private SymWithType _swtBad;       // If we're looking for a constructor or indexer, this matched on name, but isn't the right thing.
-        private SymWithType _swtBogus;     // A bogus member - such as an indexed property.
-        private SymWithType _swtBadArity;  // An symbol with the wrong arity.
+        private readonly SymWithType _swtAmbig;     // An ambiguous symbol.
+        private readonly SymWithType _swtInaccess;  // An inaccessible symbol.
+        private readonly SymWithType _swtBad;       // If we're looking for a constructor or indexer, this matched on name, but isn't the right thing.
+        private readonly SymWithType _swtBogus;     // A bogus member - such as an indexed property.
+        private readonly SymWithType _swtBadArity;  // An symbol with the wrong arity.
         private SymWithType _swtAmbigWarn; // An ambiguous symbol, but only warn.
 
         // We have an override symbol, which we've errored on in SymbolPrepare. If we have nothing better, use this.
@@ -84,7 +83,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         // virtual, since it doesn't exist. We therefore want to use the override anyway, and
         // continue on to give results with that.
 
-        private SymWithType _swtOverride;
+        private readonly SymWithType _swtOverride;
         private bool _fMulti;              // Whether symFirst is of a kind for which we collect multiples (methods and indexers).
 
         /***************************************************************************************************
@@ -124,7 +123,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         private bool SearchSingleType(AggregateType typeCur, out bool pfHideByName)
         {
             bool fFoundSome = false;
-            MethPropWithType mwpInsert;
 
             pfHideByName = false;
 
@@ -273,7 +271,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
                 if (symCur.IsMethodOrPropertySymbol())
                 {
-                    mwpInsert = new MethPropWithType(symCur.AsMethodOrPropertySymbol(), typeCur);
+                    MethPropWithType mwpInsert = new MethPropWithType(symCur.AsMethodOrPropertySymbol(), typeCur);
                     _methPropWithTypeList.Add(mwpInsert);
                 }
 
@@ -540,9 +538,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             Debug.Assert(swt.Sym.hasBogus() && swt.Sym.checkBogus());
 
-            MethodSymbol meth1;
-            MethodSymbol meth2;
-
             switch (swt.Sym.getKind())
             {
                 case SYMKIND.SK_EventSymbol:
@@ -551,8 +546,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 case SYMKIND.SK_PropertySymbol:
                     if (swt.Prop().useMethInstead)
                     {
-                        meth1 = swt.Prop().methGet;
-                        meth2 = swt.Prop().methSet;
+                        MethodSymbol meth1 = swt.Prop().methGet;
+                        MethodSymbol meth2 = swt.Prop().methSet;
                         ReportBogusForEventsAndProperties(swt, meth1, meth2);
                         return;
                     }
