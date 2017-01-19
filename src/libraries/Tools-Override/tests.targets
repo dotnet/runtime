@@ -262,4 +262,6 @@
   <Target Name="BuildAndTest" DependsOnTargets="Build;Test" />
   <Target Name="RebuildAndTest" DependsOnTargets="Rebuild;Test" />
 
+  <!-- This helps collect crash dumps and requires python installed -->
+  <Import Project="$(MSBuildThisFileDirectory)Dumpling.targets" Condition="'$(EnableDumpling)' == 'true' OR '$(EnableCloudTest)' == 'true'" />
 </Project>
