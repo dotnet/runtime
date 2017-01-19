@@ -1,0 +1,16 @@
+<Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <!-- Setup Dumpling service to collect crash dumps -->
+  <Target Name="SetupDumpling"
+          BeforeTargets="GenerateTestExecutionScripts"
+          Condition="'$(TargetOS)'!='Windows_NT'">
+    <ReadLinesFromFile File="$(MSBuildThisFileDirectory)Dumpling.txt">
+      <Output TaskParameter="Lines" ItemName="DumplingCommands" />
+    </ReadLinesFromFile>
+    <ItemGroup>
+      <TestCommandLines Include="@(DumplingCommands)" />
+    </ItemGroup>
+    <ItemGroup>
+      <PostExecutionTestCommandLines Include="CollectDumps $%3f $(MSBuildProjectName)" />
+    </ItemGroup>
+  </Target>
+</Project>
