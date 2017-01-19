@@ -321,6 +321,8 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
 
     ENABLE_FORBID_GC_LOADER_USE_IN_THIS_SCOPE();
 
+    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    HelperMethodFrame::UpdateRegDisplay cached ip:%p, sp:%p\n", m_MachState.GetRetAddr(), m_MachState.esp()));
+
     // reset pContext; it's only valid for active (top-most) frame
     pRD->pContext = NULL;
 
@@ -362,6 +364,10 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
         // in the real code.  I'm not sure exactly
         // what should happen in the on-the-fly case,
         // but go with what would happen from an InsureInit.
+#ifdef WIN64EXCEPTIONS
+        PORTABILITY_ASSERT("HelperMethodFrame::UpdateRegDisplay");
+#endif
+
         RETURN;
     }
 
@@ -377,6 +383,25 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
     pRD->PCTAddr = dac_cast<TADDR>(m_MachState.pRetAddr());
     pRD->ControlPC = m_MachState.GetRetAddr();
     pRD->Esp  = (DWORD) m_MachState.esp();
+
+#ifdef WIN64EXCEPTIONS
+    pRD->IsCallerContextValid = FALSE;
+    pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
+
+    //
+    // Copy the saved state from the frame to the current context.
+    //
+    pRD->pCurrentContext->Eip = pRD->ControlPC;
+    pRD->pCurrentContext->Esp = pRD->Esp;
+
+#define CALLEE_SAVED_REGISTER(regname) pRD->pCurrentContext->regname = *pRD->p##regname;
+    ENUM_CALLEE_SAVED_REGISTERS();
+#undef CALLEE_SAVED_REGISTER
+
+#define CALLEE_SAVED_REGISTER(regname) pRD->pCurrentContextPointers->regname = pRD->p##regname;
+    ENUM_CALLEE_SAVED_REGISTERS();
+#undef CALLEE_SAVED_REGISTER
+#endif // WIN64EXCEPTIONS
 
     RETURN;
 }
