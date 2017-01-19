@@ -2,11 +2,6 @@
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="dir.props" />
 
-  <!-- required to build the projects in their specified order -->
-  <PropertyGroup>
-    <SerializeProjects>true</SerializeProjects>
-  </PropertyGroup>
-
   <PropertyGroup>
     <GenerateCodeCoverageReportForAll>true</GenerateCodeCoverageReportForAll>
   </PropertyGroup>
