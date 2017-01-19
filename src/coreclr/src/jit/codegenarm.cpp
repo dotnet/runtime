@@ -1383,12 +1383,41 @@ void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
 //------------------------------------------------------------------------
 // genSetRegToCond: Generate code to materialize a condition into a register.
 //
+// Arguments:
+//   dstReg - The target register to set to 1 or 0
+//   tree - The GenTree Relop node that was used to set the Condition codes
+//
+// Return Value: none
+//
 // Preconditions:
 //    The condition codes must already have been appropriately set.
 //
 void CodeGen::genSetRegToCond(regNumber dstReg, GenTreePtr tree)
 {
-    NYI("genSetRegToCond");
+    // Emit code like that:
+    //   ...
+    //   bgt True
+    //   movs rD, #0
+    //   b Next
+    // True:
+    //   movs rD, #1
+    // Next:
+    //   ...
+
+    CompareKind  compareKind = ((tree->gtFlags & GTF_UNSIGNED) != 0) ? CK_UNSIGNED : CK_SIGNED;
+    emitJumpKind jmpKind     = genJumpKindForOper(tree->gtOper, compareKind);
+
+    BasicBlock* labelTrue = genCreateTempLabel();
+    getEmitter()->emitIns_J(emitter::emitJumpKindToIns(jmpKind), labelTrue);
+
+    getEmitter()->emitIns_R_I(INS_mov, emitActualTypeSize(tree->gtType), dstReg, 0);
+
+    BasicBlock* labelNext = genCreateTempLabel();
+    getEmitter()->emitIns_J(INS_b, labelNext);
+
+    genDefineTempLabel(labelTrue);
+    getEmitter()->emitIns_R_I(INS_mov, emitActualTypeSize(tree->gtType), dstReg, 1);
+    genDefineTempLabel(labelNext);
 }
 
 //------------------------------------------------------------------------
