@@ -95,6 +95,7 @@
           "Name": "DotNet-CoreFx-Trusted-Linux",
           "Parameters": {
             "PB_DockerTag": "rhel7_prereqs_2",
+            "PB_TargetQueue": "Redhat.72.Amd64",
             "PB_BuildArguments": "-buildArch=x64 -Release -portableLinux",
             "PB_SyncArguments": "-p -portableLinux -- /p:ArchGroup=x64"
           },
@@ -339,6 +340,7 @@
           "Name": "DotNet-CoreFx-Trusted-Linux",
           "Parameters": {
             "PB_DockerTag": "rhel7_prereqs_2",
+            "PB_TargetQueue": "Redhat.72.Amd64",
             "PB_BuildArguments": "-buildArch=x64 -Debug -portableLinux",
             "PB_SyncArguments": "-p -portableLinux -- /p:ArchGroup=x64"
           },
