@@ -33,9 +33,7 @@
     <TestHostExecutablePath Condition="'$(OS)'=='Windows_NT' AND '$(TestHostExecutablePath)' == ''">$(TestRuntimeEnvVar)dotnet.exe</TestHostExecutablePath>
     <TestHostExecutablePath Condition="'$(OS)'!='Windows_NT' AND '$(TestHostExecutablePath)' == ''">$(TestRuntimeEnvVar)dotnet</TestHostExecutablePath>
 
-    <ExecutionDirEnvVar Condition="'$(OS)' == 'Windows_NT'">%EXECUTION_DIR%\</ExecutionDirEnvVar>
-    <ExecutionDirEnvVar Condition="'$(OS)' != 'Windows_NT'">$EXECUTION_DIR/</ExecutionDirEnvVar>
-    <XunitExecutable Condition="'$(XunitExecutable)' == ''">$(ExecutionDirEnvVar)xunit.console.netcore.exe</XunitExecutable>
+    <XunitExecutable Condition="'$(XunitExecutable)' == ''">xunit.console.netcore.exe</XunitExecutable>
 
     <DebugEngines>{2E36F1D4-B23C-435D-AB41-18E608940038}</DebugEngines>
   </PropertyGroup>
@@ -72,7 +70,7 @@
   <PropertyGroup Condition="'$(IsTestProject)'=='true'">
     <StartWorkingDirectory Condition="'$(StartWorkingDirectory)'==''">$(TestPath)</StartWorkingDirectory>
     <StartAction Condition="'$(StartAction)'==''">Program</StartAction>
-    <StartProgram Condition="'$(StartProgram)'==''">$(TestProgram)</StartProgram>
+    <StartProgram Condition="'$(StartProgram)'==''">$(TestSharedFxDir)\dotnet.exe</StartProgram>
     <StartArguments Condition="'$(StartArguments)'==''">$(TestArguments) -wait -parallel none</StartArguments>
   </PropertyGroup>
 
