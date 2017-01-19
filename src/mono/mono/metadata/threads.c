@@ -476,7 +476,8 @@ mono_thread_internal_set_priority (MonoInternalThread *internal, MonoThreadPrior
 			param.sched_priority = 0;
 			break;
 		default:
-			g_error ("%s: unknown policy %d", __func__, policy);
+			g_warning ("%s: unknown policy %d", __func__, policy);
+			return;
 		}
 	}
 
