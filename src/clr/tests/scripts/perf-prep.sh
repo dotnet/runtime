@@ -59,12 +59,10 @@ python3.5 ./tests/scripts/Microsoft.BenchView.JSONFormat/tools/machinedata.py
 
 # Set up the copies
 # Coreclr build containing the tests and mscorlib
-curl http://ci.dot.net/job/$perfBranch/job/master/job/release_windows_nt/lastSuccessfulBuild/artifact/bin/tests/tests.zip -L -o tests.zip
-
+curl https://ci.dot.net/job/$perfBranch/job/master/job/release_windows_nt/lastSuccessfulBuild/artifact/bin/tests/tests.zip -o tests.zip
 
 # Corefx components.  We now have full stack builds on all distros we test here, so we can copy straight from CoreFX jobs.
-mkdir corefx
-curl http://ci.dot.net/job/dotnet_corefx/job/master/job/ubuntu14.04_release/lastSuccessfulBuild/artifact/bin/build.tar.gz -L -o ./corefx/build.tar.gz
+curl https://ci.dot.net/job/dotnet_corefx/job/master/job/ubuntu14.04_release/lastSuccessfulBuild/artifact/bin/build.tar.gz -o ./corefx/build.tar.gz
 
 # Unpack the corefx binaries
 pushd corefx > /dev/null
