@@ -10,8 +10,7 @@
 
   <!-- Runs during traversal to select which projects and configurations of those projects to build -->
   <Target Name="AnnotateAndFilterProjects"
-          BeforeTargets="BuildAllProjects;TestAllProjects"
-          Condition="!$(MSBuildProjectFullPath.EndsWith('.proj'))">
+          BeforeTargets="BuildAllProjects;TestAllProjects">
 
     <!-- find the best configuration for each project, projects that shouldn't build for this configuration
          return an empty item.  -->
