@@ -64,6 +64,13 @@ namespace System.Numerics.Tests
             VerifyMagnitudePhaseProperties(Complex.ImaginaryOne, 1, Math.PI / 2);
         }
 
+        [Fact]
+        public static void SqrtMinusOne()
+        {
+            // Sqrt(-1) should be I exactly, not just tollerably close.
+            Assert.Equal(Complex.Sqrt(-1.0), Complex.ImaginaryOne);
+        }
+
         public static IEnumerable<object[]> Valid_2_TestData()
         {
             foreach (double real in s_validDoubleValues)
@@ -354,12 +361,10 @@ namespace System.Numerics.Tests
             yield return new object[] { 0, 1234000000, 0, 21.62667394298955 }; // Imaginary part is positive
 
             // Boundary values
-            yield return new object[] { double.MaxValue, 0, double.NaN, double.NaN };
-            yield return new object[] { double.MinValue, 0, double.NaN, double.NaN };
-            yield return new object[] { 0, double.MaxValue, double.NaN, double.NaN };
-            yield return new object[] { 0, double.MinValue, double.NaN, double.NaN };
-            yield return new object[] { double.MaxValue, double.MaxValue, double.NaN, double.NaN };
-            yield return new object[] { double.MinValue, double.MinValue, double.NaN, double.NaN };
+            // We used to test that MinValue and MaxValue produced NaNs, but that's an implementation artifact and
+            // mathematically incorrect. For example, asin(Double.MaxValue) ~ 1.5708 \pm 710.47 i. In fact,
+            // for all arguments in the repesentable range, asin and acos lie in the representable range.
+            // We should fix the implementation so it returns the right values.
 
             // Invalid values
             foreach (double invalidReal in s_invalidDoubleValues)
@@ -1245,6 +1250,7 @@ namespace System.Numerics.Tests
         {
             yield return new object[] { 0, 0, 0, 0 };
             yield return new object[] { 1, 0, 1, 0 };
+            yield return new object[] { -1, 0, 0, 1 };
             yield return new object[] { 0, 1, 0.707106781186547, 0.707106781186547 };
             yield return new object[] { 0, -1, 0.707106781186547, -0.707106781186547 };
 
