@@ -40,7 +40,6 @@ typedef gconstpointer LPCVOID;
 
 typedef gpointer HANDLE;
 typedef gpointer *LPHANDLE;
-typedef guint32 SOCKET;
 typedef gpointer HMODULE;
 typedef gpointer HINSTANCE;
 typedef gpointer HWND;
@@ -54,21 +53,10 @@ typedef WapiFileTime FILETIME;
 typedef WapiFileTime *LPFILETIME;
 typedef WapiSystemTime SYSTEMTIME;
 typedef WapiSystemTime *LPSYSTEMTIME;
-typedef WapiWSAData WSADATA;
-typedef WapiWSAData *LDWSADATA;
-typedef WapiWSABuf WSABUF;
-typedef WapiWSABuf *LPWSABUF;
 typedef WapiFindData WIN32_FIND_DATA;
 typedef WapiFindData *LPWIN32_FIND_DATA;
 typedef WapiFileAttributesData WIN32_FILE_ATTRIBUTE_DATA;
 typedef WapiGetFileExInfoLevels GET_FILEEX_INFO_LEVELS;
-typedef WapiTransmitFileBuffers TRANSMIT_FILE_BUFFERS;
-typedef WapiTransmitFileBuffers *PTRANSMIT_FILE_BUFFERS;
-typedef WapiTransmitFileBuffers *LPTRANSMIT_FILE_BUFFERS;
-typedef WapiDisconnectExFn LPFN_DISCONNECTEX;
-typedef WapiTransmitFileFn LPFN_TRANSMITFILE;
-typedef WapiGuid GUID;
-typedef WapiGuid *LPGUID;
 
 #define CONST const
 #define VOID void

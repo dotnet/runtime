@@ -1,15 +1,37 @@
 /*
-* socket-io-windows.c: Windows specific socket code.
-*
-* Copyright 2016 Microsoft
-* Licensed under the MIT license. See LICENSE file in the project root for full license information.
-*/
+ * w32socket-win32.c: Windows specific socket code.
+ *
+ * Copyright 2016 Microsoft
+ * Licensed under the MIT license. See LICENSE file in the project root for full license information.
+ */
+
 #include <config.h>
 #include <glib.h>
 
-#include "mono/metadata/socket-io-windows-internals.h"
+#include <string.h>
+#include <stdlib.h>
+#include <ws2tcpip.h>
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+#include <errno.h>
+
+#include <sys/types.h>
+
+#include "w32socket.h"
+#include "w32socket-internals.h"
 
 #define LOGDEBUG(...)  
+
+void
+mono_w32socket_initialize (void)
+{
+}
+
+void
+mono_w32socket_cleanup (void)
+{
+}
 
 static gboolean set_blocking (SOCKET sock, gboolean block)
 {
@@ -108,14 +130,17 @@ static gboolean alertable_socket_wait (SOCKET sock, int event_bit)
 		blocking ? "blocking" : "non-blocking", sock, ret, _saved_error)); \
 	WSASetLastError (_saved_error);
 
-SOCKET alertable_accept (SOCKET s, struct sockaddr *addr, int *addrlen, gboolean blocking)
+SOCKET mono_w32socket_accept (SOCKET s, struct sockaddr *addr, socklen_t *addrlen, gboolean blocking)
 {
+	MonoInternalThread *curthread = mono_thread_internal_current ();
 	SOCKET newsock = INVALID_SOCKET;
+	curthread->interrupt_on_stop = (gpointer)TRUE;
 	ALERTABLE_SOCKET_CALL (FD_ACCEPT_BIT, blocking, TRUE, newsock, accept, s, addr, addrlen);
+	curthread->interrupt_on_stop = (gpointer)FALSE;
 	return newsock;
 }
 
-int alertable_connect (SOCKET s, const struct sockaddr *name, int namelen, gboolean blocking)
+int mono_w32socket_connect (SOCKET s, const struct sockaddr *name, int namelen, gboolean blocking)
 {
 	int ret = SOCKET_ERROR;
 	ALERTABLE_SOCKET_CALL (FD_CONNECT_BIT, blocking, FALSE, ret, connect, s, name, namelen);
@@ -123,42 +148,45 @@ int alertable_connect (SOCKET s, const struct sockaddr *name, int namelen, gbool
 	return ret;
 }
 
-int alertable_recv (SOCKET s, char *buf, int len, int flags, gboolean blocking)
+int mono_w32socket_recv (SOCKET s, char *buf, int len, int flags, gboolean blocking)
 {
+	MonoInternalThread *curthread = mono_thread_internal_current ();
 	int ret = SOCKET_ERROR;
+	curthread->interrupt_on_stop = (gpointer)TRUE;
 	ALERTABLE_SOCKET_CALL (FD_READ_BIT, blocking, TRUE, ret, recv, s, buf, len, flags);
+	curthread->interrupt_on_stop = (gpointer)FALSE;
 	return ret;
 }
 
-int alertable_recvfrom (SOCKET s, char *buf, int len, int flags, struct sockaddr *from, int *fromlen, gboolean blocking)
+int mono_w32socket_recvfrom (SOCKET s, char *buf, int len, int flags, struct sockaddr *from, socklen_t *fromlen, gboolean blocking)
 {
 	int ret = SOCKET_ERROR;
 	ALERTABLE_SOCKET_CALL (FD_READ_BIT, blocking, TRUE, ret, recvfrom, s, buf, len, flags, from, fromlen);
 	return ret;
 }
 
-int alertable_WSARecv (SOCKET s, LPWSABUF lpBuffers, DWORD dwBufferCount, LPDWORD lpNumberOfBytesRecvd, LPDWORD lpFlags, LPWSAOVERLAPPED lpOverlapped, LPWSAOVERLAPPED_COMPLETION_ROUTINE lpCompletionRoutine, gboolean blocking)
+int mono_w32socket_recvbuffers (SOCKET s, WSABUF *lpBuffers, guint32 dwBufferCount, guint32 *lpNumberOfBytesRecvd, guint32 *lpFlags, gpointer lpOverlapped, gpointer lpCompletionRoutine, gboolean blocking)
 {
 	int ret = SOCKET_ERROR;
 	ALERTABLE_SOCKET_CALL (FD_READ_BIT, blocking, TRUE, ret, WSARecv, s, lpBuffers, dwBufferCount, lpNumberOfBytesRecvd, lpFlags, lpOverlapped, lpCompletionRoutine);
 	return ret;
 }
 
-int alertable_send (SOCKET s, char *buf, int len, int flags, gboolean blocking)
+int mono_w32socket_send (SOCKET s, char *buf, int len, int flags, gboolean blocking)
 {
 	int ret = SOCKET_ERROR;
 	ALERTABLE_SOCKET_CALL (FD_WRITE_BIT, blocking, FALSE, ret, send, s, buf, len, flags);
 	return ret;
 }
 
-int alertable_sendto (SOCKET s, const char *buf, int len, int flags, const struct sockaddr *to, int tolen, gboolean blocking)
+int mono_w32socket_sendto (SOCKET s, const char *buf, int len, int flags, const struct sockaddr *to, int tolen, gboolean blocking)
 {
 	int ret = SOCKET_ERROR;
 	ALERTABLE_SOCKET_CALL (FD_WRITE_BIT, blocking, FALSE, ret, sendto, s, buf, len, flags, to, tolen);
 	return ret;
 }
 
-int alertable_WSASend (SOCKET s, LPWSABUF lpBuffers, DWORD dwBufferCount, LPDWORD lpNumberOfBytesRecvd, DWORD lpFlags, LPWSAOVERLAPPED lpOverlapped, LPWSAOVERLAPPED_COMPLETION_ROUTINE lpCompletionRoutine, gboolean blocking)
+int mono_w32socket_sendbuffers (SOCKET s, WSABUF *lpBuffers, guint32 dwBufferCount, guint32 *lpNumberOfBytesRecvd, guint32 lpFlags, gpointer lpOverlapped, gpointer lpCompletionRoutine, gboolean blocking)
 {
 	int ret = SOCKET_ERROR;
 	ALERTABLE_SOCKET_CALL (FD_WRITE_BIT, blocking, FALSE, ret, WSASend, s, lpBuffers, dwBufferCount, lpNumberOfBytesRecvd, lpFlags, lpOverlapped, lpCompletionRoutine);
@@ -166,18 +194,17 @@ int alertable_WSASend (SOCKET s, LPWSABUF lpBuffers, DWORD dwBufferCount, LPDWOR
 }
 
 #if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT | HAVE_UWP_WINAPI_SUPPORT)
-BOOL alertable_TransmitFile (SOCKET hSocket, HANDLE hFile, DWORD nNumberOfBytesToWrite, DWORD nNumberOfBytesPerSend, LPOVERLAPPED lpOverlapped, LPTRANSMIT_FILE_BUFFERS lpTransmitBuffers, DWORD dwReserved, gboolean blocking)
+BOOL mono_w32socket_transmit_file (SOCKET hSocket, gpointer hFile, TRANSMIT_FILE_BUFFERS *lpTransmitBuffers, guint32 dwReserved, gboolean blocking)
 {
 	LOGDEBUG (g_message ("%06d - Performing %s TransmitFile () on socket %d", GetCurrentThreadId (), blocking ? "blocking" : "non-blocking", hSocket));
 
 	int error = 0;
 	if (blocking) {
-		g_assert (lpOverlapped == NULL);
 		OVERLAPPED overlapped = { 0 };
 		overlapped.hEvent = WSACreateEvent ();
 		if (overlapped.hEvent == WSA_INVALID_EVENT)
 			return FALSE;
-		if (!TransmitFile (hSocket, hFile, nNumberOfBytesToWrite, nNumberOfBytesPerSend, &overlapped, lpTransmitBuffers, dwReserved)) {
+		if (!TransmitFile (hSocket, hFile, 0, 0, &overlapped, lpTransmitBuffers, dwReserved)) {
 			error = WSAGetLastError ();
 			if (error == WSA_IO_PENDING) {
 				error = 0;
@@ -195,7 +222,7 @@ BOOL alertable_TransmitFile (SOCKET hSocket, HANDLE hFile, DWORD nNumberOfBytesT
 		}
 		WSACloseEvent (overlapped.hEvent);
 	} else {
-		if (!TransmitFile (hSocket, hFile, nNumberOfBytesToWrite, nNumberOfBytesPerSend, lpOverlapped, lpTransmitBuffers, dwReserved)) {
+		if (!TransmitFile (hSocket, hFile, 0, 0, NULL, lpTransmitBuffers, dwReserved)) {
 			error = WSAGetLastError ();
 		}
 	}
@@ -207,3 +234,82 @@ BOOL alertable_TransmitFile (SOCKET hSocket, HANDLE hFile, DWORD nNumberOfBytesT
 	return error == 0;
 }
 #endif /* #if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT | HAVE_UWP_WINAPI_SUPPORT) */
+
+gint
+mono_w32socket_disconnect (SOCKET sock, gboolean reuse)
+{
+	LPFN_DISCONNECTEX disconnect;
+	LPFN_TRANSMITFILE transmit_file;
+	DWORD output_bytes;
+	gint ret;
+
+	/* Use the SIO_GET_EXTENSION_FUNCTION_POINTER to determine
+	 * the address of the disconnect method without taking
+	 * a hard dependency on a single provider
+	 *
+	 * For an explanation of why this is done, you can read the
+	 * article at http://www.codeproject.com/internet/jbsocketserver3.asp
+	 *
+	 * I _think_ the extension function pointers need to be looked
+	 * up for each socket.
+	 *
+	 * FIXME: check the best way to store pointers to functions in
+	 * managed objects that still works on 64bit platforms. */
+
+	GUID disconnect_guid = WSAID_DISCONNECTEX;
+	ret = WSAIoctl (sock, SIO_GET_EXTENSION_FUNCTION_POINTER, &disconnect_guid, sizeof (GUID), &disconnect, sizeof (LPFN_DISCONNECTEX), &output_bytes, NULL, NULL);
+	if (ret == 0) {
+		if (!disconnect (sock, NULL, reuse ? TF_REUSE_SOCKET : 0, 0))
+			return WSAGetLastError ();
+
+		return 0;
+	}
+
+	GUID transmit_file_guid = WSAID_TRANSMITFILE;
+	ret = WSAIoctl (sock, SIO_GET_EXTENSION_FUNCTION_POINTER, &transmit_file_guid, sizeof (GUID), &transmit_file, sizeof (LPFN_TRANSMITFILE), &output_bytes, NULL, NULL);
+	if (ret == 0) {
+		if (!transmit_file (sock, NULL, 0, 0, NULL, NULL, TF_DISCONNECT | (reuse ? TF_REUSE_SOCKET : 0)))
+			return WSAGetLastError ();
+
+		return 0;
+	}
+
+	return ERROR_NOT_SUPPORTED;
+}
+
+gint
+mono_w32socket_set_blocking (SOCKET sock, gboolean blocking)
+{
+	gulong nonblocking_long = !blocking;
+	return ioctlsocket (sock, FIONBIO, &nonblocking_long);
+}
+
+gint
+mono_w32socket_get_available (SOCKET sock, guint64 *amount)
+{
+	return ioctlsocket (sock, FIONREAD, (int*) amount);
+}
+
+void
+mono_w32socket_set_last_error (gint32 error)
+{
+	WSASetLastError (error);
+}
+
+gint32
+mono_w32socket_get_last_error (void)
+{
+	return WSAGetLastError ();
+}
+
+gint32
+mono_w32socket_convert_error (gint error)
+{
+	return (error > 0 && error < WSABASEERR) ? error + WSABASEERR : error;
+}
+
+gboolean
+ves_icall_System_Net_Sockets_Socket_SupportPortReuse (MonoProtocolType proto)
+{
+	return TRUE;
+}

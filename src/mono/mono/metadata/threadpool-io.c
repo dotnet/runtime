@@ -29,6 +29,7 @@
 #include <mono/utils/mono-threads.h>
 #include <mono/utils/mono-lazy-init.h>
 #include <mono/utils/mono-logger-internals.h>
+#include <mono/io-layer/io-layer.h>
 
 typedef struct {
 	gboolean (*init) (gint wakeup_pipe_fd);

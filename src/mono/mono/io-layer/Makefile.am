@@ -16,7 +16,6 @@ OTHER_H = \
 	io-trace.h	\
 	io-layer.h	\
 	io-portability.h	\
-	sockets.h	\
 	uglify.h	\
 	wapi.h		\
 	wapi-remap.h
@@ -32,10 +31,6 @@ OTHER_SRC = \
 	io-layer.h		\
 	locking.c		\
 	posix.c			\
-	sockets.c		\
-	sockets.h		\
-	socket-private.h	\
-	socket-wrappers.h	\
 	uglify.h		\
 	wapi_glob.h		\
 	wapi_glob.c		\

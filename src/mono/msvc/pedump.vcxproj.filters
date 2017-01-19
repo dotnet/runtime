@@ -79,7 +79,7 @@
     <ClCompile Include="..\mono\metadata\security-manager.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\mono\metadata\socket-io.c">
+    <ClCompile Include="..\mono\metadata\w32socket.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\mono\metadata\string-icalls.c">

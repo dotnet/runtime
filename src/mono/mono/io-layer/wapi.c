@@ -3,7 +3,6 @@
 
 #include "io-trace.h"
 #include "io.h"
-#include "socket-private.h"
 
 #include "mono/utils/mono-lazy-init.h"
 #include "mono/metadata/w32handle.h"
@@ -14,7 +13,6 @@ void
 wapi_init (void)
 {
 	_wapi_io_init ();
-	_wapi_socket_init ();
 }
 
 void

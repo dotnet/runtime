@@ -16,7 +16,7 @@ win32_sources = \
 	w32event-win32.c \
 	w32process-win32.c \
 	w32process-win32-internals.h \
-	socket-io-windows.c
+	w32socket-win32.c
 
 platform_sources = $(win32_sources)
 
@@ -48,7 +48,8 @@ unix_sources = \
 	w32process-unix-osx.c \
 	w32process-unix-bsd.c \
 	w32process-unix-haiku.c \
-	w32process-unix-default.c
+	w32process-unix-default.c \
+	w32socket-unix.c
 
 platform_sources = $(unix_sources)
 endif
@@ -205,8 +206,9 @@ common_sources = \
 	opcodes.c		\
 	property-bag.h	\
 	property-bag.c	\
-	socket-io.c		\
-	socket-io.h		\
+	w32socket.c		\
+	w32socket.h		\
+	w32socket-internals.h		\
 	w32process.c		\
 	w32process.h		\
 	w32process-internals.h		\

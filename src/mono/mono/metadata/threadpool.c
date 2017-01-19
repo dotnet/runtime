@@ -45,6 +45,7 @@
 #include <mono/utils/mono-threads.h>
 #include <mono/utils/mono-time.h>
 #include <mono/utils/refcount.h>
+#include <mono/io-layer/io-layer.h>
 
 typedef struct {
 	MonoDomain *domain;

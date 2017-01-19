@@ -28,7 +28,7 @@
     <ClCompile Include="..\mono\metadata\cominterop.c" />
     <ClCompile Include="..\mono\metadata\console-win32.c" />
     <ClCompile Include="..\mono\metadata\property-bag.c" />
-    <ClCompile Include="..\mono\metadata\socket-io-windows.c" />
+    <ClCompile Include="..\mono\metadata\w32socket-win32.c" />
     <ClCompile Include="..\mono\metadata\file-io-windows.c" />
     <ClCompile Include="..\mono\metadata\icall-windows.c" />
     <ClCompile Include="..\mono\metadata\marshal-windows.c" />
@@ -100,7 +100,7 @@
     <ClCompile Include="..\mono\metadata\sgen-tarjan-bridge.c" />
     <ClCompile Include="..\mono\metadata\sgen-toggleref.c" />
     <ClCompile Include="..\mono\metadata\sgen-stw.c" />
-    <ClCompile Include="..\mono\metadata\socket-io.c" />
+    <ClCompile Include="..\mono\metadata\w32socket.c" />
     <ClCompile Include="..\mono\metadata\sre.c" />
     <ClCompile Include="..\mono\metadata\sre-encode.c" />
     <ClCompile Include="..\mono\metadata\sre-save.c" />
@@ -154,7 +154,7 @@
     <ClInclude Include="..\mono\metadata\seq-points-data.h" />
     <ClInclude Include="..\mono\metadata\sgen-bridge-internals.h" />
     <ClInclude Include="..\mono\metadata\sgen-client-mono.h" />
-    <ClInclude Include="..\mono\metadata\socket-io-windows-internals.h" />
+    <ClInclude Include="..\mono\metadata\w32socket-internals.h" />
     <ClInclude Include="..\mono\metadata\threadpool-io.h" />
     <ClInclude Include="..\mono\metadata\threadpool.h" />
     <ClInclude Include="..\mono\metadata\threadpool-worker.h" />
@@ -199,7 +199,7 @@
     <ClInclude Include="..\mono\metadata\security.h" />
     <ClInclude Include="..\mono\metadata\sgen-bridge.h" />
     <ClInclude Include="..\mono\metadata\sgen-toggleref.h" />
-    <ClInclude Include="..\mono\metadata\socket-io.h" />
+    <ClInclude Include="..\mono\metadata\w32socket.h" />
     <ClInclude Include="..\mono\metadata\sre-internals.h" />
     <ClInclude Include="..\mono\metadata\string-icalls.h" />
     <ClInclude Include="..\mono\metadata\sysmath.h" />

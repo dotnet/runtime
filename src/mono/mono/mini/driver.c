@@ -33,7 +33,6 @@
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/threads.h>
 #include <mono/metadata/marshal.h>
-#include <mono/metadata/socket-io.h>
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/debug-helpers.h>
 #include <mono/io-layer/io-layer.h>

@@ -81,7 +81,6 @@ G_BEGIN_DECLS
 
 guint32 GetLastError (void);
 void SetLastError (guint32 code);
-guint32 errno_to_WSA (guint32 code, const char *function_name);
 gint _wapi_get_win32_file_error (gint err);
 void _wapi_error_cleanup (void);
 

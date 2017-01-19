@@ -234,7 +234,7 @@
     <ClCompile Include="..\mono\metadata\rand.c" />
     <ClCompile Include="..\mono\metadata\reflection.c" />
     <ClCompile Include="..\mono\metadata\security-manager.c" />
-    <ClCompile Include="..\mono\metadata\socket-io.c" />
+    <ClCompile Include="..\mono\metadata\w32socket.c" />
     <ClCompile Include="..\mono\metadata\string-icalls.c" />
     <ClCompile Include="..\mono\metadata\sysmath.c" />
     <ClCompile Include="..\mono\metadata\threads.c" />

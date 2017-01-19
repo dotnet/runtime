@@ -43,7 +43,6 @@
 #include <mono/metadata/exception-internals.h>
 #include <mono/metadata/threads.h>
 #include <mono/metadata/threadpool.h>
-#include <mono/metadata/socket-io.h>
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/gc-internals.h>
 #include <mono/metadata/mono-gc.h>
@@ -60,6 +59,7 @@
 #include <mono/metadata/profiler-private.h>
 #include <mono/metadata/reflection-internals.h>
 #include <mono/metadata/abi-details.h>
+#include <mono/metadata/w32socket.h>
 #include <mono/utils/mono-uri.h>
 #include <mono/utils/mono-logger-internals.h>
 #include <mono/utils/mono-path.h>

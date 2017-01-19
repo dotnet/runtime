@@ -14,7 +14,6 @@
 
 #define GetLastError wapi_GetLastError
 #define SetLastError wapi_SetLastError
-#define TransmitFile wapi_TransmitFile
 #define CloseHandle wapi_CloseHandle 
 #define CreateFile wapi_CreateFile
 #define DeleteFile wapi_DeleteFile
@@ -51,11 +50,6 @@
 #define GetVolumeInformation wapi_GetVolumeInformation 
 #define ImpersonateLoggedOnUser wapi_ImpersonateLoggedOnUser 
 #define RevertToSelf wapi_RevertToSelf 
-#define WSASetLastError wapi_WSASetLastError
-#define WSAGetLastError wapi_WSAGetLastError
-#define WSAIoctl wapi_WSAIoctl 
-#define WSARecv wapi_WSARecv 
-#define WSASend wapi_WSASend 
 #define GetSystemInfo wapi_GetSystemInfo
 
 #endif /* __WAPI_REMAP_H__ */

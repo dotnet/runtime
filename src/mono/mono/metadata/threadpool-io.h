@@ -6,7 +6,6 @@
 #include <glib.h>
 
 #include <mono/metadata/object-internals.h>
-#include <mono/metadata/socket-io.h>
 
 typedef struct _MonoIOSelectorJob MonoIOSelectorJob;
 
