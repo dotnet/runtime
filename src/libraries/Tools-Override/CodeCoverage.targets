@@ -45,6 +45,7 @@
     </ItemGroup>
     <PropertyGroup>
       <CoverageFilter>@(_CodeCoverageAssemblies->'+[%(Identity)]*', ' ')</CoverageFilter>
+      <CoverageFilter Condition="'$(CodeCoverageAssemblies)' == 'all'">[*]*</CoverageFilter>
     </PropertyGroup>
   </Target>
 
@@ -61,8 +62,8 @@
 
   <!-- Report Generator Properties -->
   <PropertyGroup>
-    <CoverageReportAssemblyFilters>@(_CodeCoverageAssemblies->'+%(Identity)', ';')</CoverageReportAssemblyFilters>
-    <CoverageReportGeneratorOptions>-targetdir:$(CoverageReportDir) -reporttypes:Html;Badges "-assemblyfilters:$(CoverageReportAssemblyFilters)"</CoverageReportGeneratorOptions>
+    <CoverageReportAssemblyFilters Condition="'$(CodeCoverageAssemblies)' != 'all'">"-assemblyfilters:@(_CodeCoverageAssemblies->'+%(Identity)', ';')"</CoverageReportAssemblyFilters>
+    <CoverageReportGeneratorOptions>-targetdir:$(CoverageReportDir) -reporttypes:Html;Badges $(CoverageReportAssemblyFilters)</CoverageReportGeneratorOptions>
     <CoverageReportGeneratorCommandLine>$(PackagesDir)ReportGenerator\$(ReportGeneratorVersion)\tools\ReportGenerator.exe $(CoverageReportGeneratorOptions)</CoverageReportGeneratorCommandLine>
   </PropertyGroup>
 
