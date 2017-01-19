@@ -15,7 +15,7 @@
         "PB_ConfigurationGroup": "Release",
         "PB_BuildArguments": "-buildArch=x64 -Release",
         "PB_BuildTestsArguments": "-buildArch=x64 -Release -SkipTests -- /p:ArchiveTests=true",
-        "PB_CreateHelixArguments": "/t:CloudBuild /p:ArchGroup=x64 /p:ConfigurationGroup=Release /p:\"EnableCloudTest=true /p:\"TestProduct=corefx /p:\"TimeoutInSeconds=1200\" /p:\"TargetOS=Linux\" /p:FilterToOSGroup=Linux /p:\"BuildMoniker=none\"",
+        "PB_CreateHelixArguments": "/t:CloudBuild /p:ArchGroup=x64 /p:ConfigurationGroup=Release /p:\"EnableCloudTest=true\" /p:\"TestProduct=corefx /p:\"TimeoutInSeconds=1200\" /p:\"TargetOS=Linux\" /p:FilterToOSGroup=Linux /p:\"BuildMoniker=none\"",
         "PB_SyncArguments": "-p -- /p:ArchGroup=x64"
       },
       "Definitions": [
@@ -71,7 +71,7 @@
           "Name": "DotNet-CoreFx-Trusted-Linux",
           "Parameters": {
             "PB_DockerTag": "opensuse421_prereqs_v3",
-            "PB_CreateHelixArguments": "/t:CloudBuild /p:ArchGroup=x64 /p:ConfigurationGroup=Release /p:\"EnableCloudTest=false /p:\"TestProduct=corefx /p:\"TimeoutInSeconds=1200\" /p:\"TargetOS=Linux\" /p:FilterToOSGroup=Linux /p:\"BuildMoniker=none\""
+            "PB_CreateHelixArguments": "/t:CloudBuild /p:ArchGroup=x64 /p:ConfigurationGroup=Release /p:\"EnableCloudTest=false\" /p:\"TestProduct=corefx /p:\"TimeoutInSeconds=1200\" /p:\"TargetOS=Linux\" /p:FilterToOSGroup=Linux /p:\"BuildMoniker=none\""
           },
           "ReportingParameters": {
             "OperatingSystem": "openSUSE 42.1",
@@ -145,7 +145,7 @@
           "Name": "DotNet-CoreFx-Trusted-Linux",
           "Parameters": {
             "PB_DockerTag": "alpine_prereqs",
-            "PB_CreateHelixArguments": "/t:CloudBuild /p:ArchGroup=x64 /p:ConfigurationGroup=Release /p:\"EnableCloudTest=false /p:\"TestProduct=corefx /p:\"TimeoutInSeconds=1200\" /p:\"TargetOS=Linux\" /p:FilterToOSGroup=Linux /p:\"BuildMoniker=none\""
+            "PB_CreateHelixArguments": "/t:CloudBuild /p:ArchGroup=x64 /p:ConfigurationGroup=Release /p:\"EnableCloudTest=false\" /p:\"TestProduct=corefx /p:\"TimeoutInSeconds=1200\" /p:\"TargetOS=Linux\" /p:FilterToOSGroup=Linux /p:\"BuildMoniker=none\""
           },
           "ReportingParameters": {
             "OperatingSystem": "Alpine 3.4.3",
@@ -164,7 +164,7 @@
         "PB_BuildArguments": "-buildArch=x64 -Release",
         "PB_BuildTestsArguments": "-buildArch=x64 -Release -SkipTests -- /p:ArchiveTests=true",
         "PB_SyncArguments": "-p -- /p:ArchGroup=x64",
-        "PB_CreateHelixArguments": "/t:CloudBuild /p:ArchGroup=x64 /p:ConfigurationGroup=Release /p:\"EnableCloudTest=true /p:\"TestProduct=corefx /p:\"TimeoutInSeconds=1200\" /p:\"TargetOS=OSX\" /p:FilterToOSGroup=OSX /p:\"BuildMoniker=none\""
+        "PB_CreateHelixArguments": "/t:CloudBuild /p:ArchGroup=x64 /p:ConfigurationGroup=Release /p:\"EnableCloudTest=true\" /p:\"TestProduct=corefx /p:\"TimeoutInSeconds=1200\" /p:\"TargetOS=OSX\" /p:FilterToOSGroup=OSX /p:\"BuildMoniker=none\""
       },
       "Definitions": [
         {
@@ -259,7 +259,7 @@
         "PB_ConfigurationGroup": "Debug",
         "PB_BuildArguments": "-buildArch=x64 -Debug",
         "PB_BuildTestsArguments": "-buildArch=x64 -Debug -SkipTests -- /p:ArchiveTests=true",
-        "PB_CreateHelixArguments": "/t:CloudBuild /p:ArchGroup=x64 /p:ConfigurationGroup=Debug /p:\"EnableCloudTest=true /p:\"TestProduct=corefx /p:\"TimeoutInSeconds=1200\" /p:\"TargetOS=Linux\" /p:FilterToOSGroup=Linux /p:\"BuildMoniker=none\"",
+        "PB_CreateHelixArguments": "/t:CloudBuild /p:ArchGroup=x64 /p:ConfigurationGroup=Debug /p:\"EnableCloudTest=true\" /p:\"TestProduct=corefx /p:\"TimeoutInSeconds=1200\" /p:\"TargetOS=Linux\" /p:FilterToOSGroup=Linux /p:\"BuildMoniker=none\"",
         "PB_SyncArguments": "-p -- /p:ArchGroup=x64"
       },
       "Definitions": [
@@ -315,7 +315,7 @@
           "Name": "DotNet-CoreFx-Trusted-Linux",
           "Parameters": {
             "PB_DockerTag": "opensuse421_prereqs_v3",
-            "PB_CreateHelixArguments": "/t:CloudBuild /p:ArchGroup=x64 /p:ConfigurationGroup=Debug /p:\"EnableCloudTest=false /p:\"TestProduct=corefx /p:\"TimeoutInSeconds=1200\" /p:\"TargetOS=Linux\" /p:FilterToOSGroup=Linux /p:\"BuildMoniker=none\""
+            "PB_CreateHelixArguments": "/t:CloudBuild /p:ArchGroup=x64 /p:ConfigurationGroup=Debug /p:\"EnableCloudTest=false\" /p:\"TestProduct=corefx /p:\"TimeoutInSeconds=1200\" /p:\"TargetOS=Linux\" /p:FilterToOSGroup=Linux /p:\"BuildMoniker=none\""
           },
           "ReportingParameters": {
             "OperatingSystem": "openSUSE 42.1",
@@ -389,7 +389,7 @@
           "Name": "DotNet-CoreFx-Trusted-Linux",
           "Parameters": {
             "PB_DockerTag": "alpine_prereqs",
-            "PB_CreateHelixArguments": "/t:CloudBuild /p:ArchGroup=x64 /p:ConfigurationGroup=Debug /p:\"EnableCloudTest=false /p:\"TestProduct=corefx /p:\"TimeoutInSeconds=1200\" /p:\"TargetOS=Linux\" /p:FilterToOSGroup=Linux /p:\"BuildMoniker=none\""
+            "PB_CreateHelixArguments": "/t:CloudBuild /p:ArchGroup=x64 /p:ConfigurationGroup=Debug /p:\"EnableCloudTest=false\" /p:\"TestProduct=corefx /p:\"TimeoutInSeconds=1200\" /p:\"TargetOS=Linux\" /p:FilterToOSGroup=Linux /p:\"BuildMoniker=none\""
           },
           "ReportingParameters": {
             "OperatingSystem": "Alpine 3.4.3",
@@ -408,7 +408,7 @@
         "PB_BuildArguments": "-buildArch=x64 -Debug",
         "PB_BuildTestsArguments": "-buildArch=x64 -Debug -SkipTests -- /p:ArchiveTests=true",
         "PB_SyncArguments": "-p -- /p:ArchGroup=x64",
-        "PB_CreateHelixArguments": "/t:CloudBuild /p:ArchGroup=x64 /p:ConfigurationGroup=Debug /p:\"EnableCloudTest=true /p:\"TestProduct=corefx /p:\"TimeoutInSeconds=1200\" /p:\"TargetOS=OSX\" /p:FilterToOSGroup=OSX /p:\"BuildMoniker=none\""
+        "PB_CreateHelixArguments": "/t:CloudBuild /p:ArchGroup=x64 /p:ConfigurationGroup=Debug /p:\"EnableCloudTest=true\" /p:\"TestProduct=corefx /p:\"TimeoutInSeconds=1200\" /p:\"TargetOS=OSX\" /p:FilterToOSGroup=OSX /p:\"BuildMoniker=none\""
       },
       "Definitions": [
         {
