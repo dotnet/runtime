@@ -211,7 +211,7 @@ namespace System.Net.Sockets.Tests
                 if (!willRaiseEvent)
                 {
                     _log.WriteLine(this.GetHashCode() + " ProcessAccept -> ProcessReceive");
-                    ProcessReceive(readEventArgs);
+                    IO_Completed(null, readEventArgs);
                 }
             }
 
@@ -228,20 +228,37 @@ namespace System.Net.Sockets.Tests
             switch (e.LastOperation)
             {
                 case SocketAsyncOperation.Receive:
-                    ProcessReceive(e);
+                    if (ProcessReceive(e))
+                    {
+                        return; // resume in callback
+                    }
                     break;
                 case SocketAsyncOperation.Send:
-                    ProcessSend(e);
+                    // Fall through to loop below
                     break;
                 default:
                     throw new ArgumentException("The last operation completed on the socket was not a receive or send");
+            }
+
+            // Loop until some operation pends
+            while (true)
+            {
+                if (ProcessSend(e))
+                {
+                    return;
+                }
+
+                if (ProcessReceive(e))
+                {
+                    return;
+                }
             }
         }
 
         // This method is invoked when an asynchronous receive operation completes.  
         // If the remote host closed the connection, then the socket is closed.   
         // If data was received then the data is echoed back to the client. 
-        private void ProcessReceive(SocketAsyncEventArgs e)
+        private bool ProcessReceive(SocketAsyncEventArgs e)
         {
             _log.WriteLine(
                 this.GetHashCode() + " ProcessReceive(bytesTransferred={0}, SocketError={1}, _numConnectedSockets={2})",
@@ -259,15 +276,12 @@ namespace System.Net.Sockets.Tests
 
                 // Echo the data received back to the client.
                 e.SetBuffer(e.Offset, e.BytesTransferred);
-                bool willRaiseEvent = token.Socket.SendAsync(e);
-                if (!willRaiseEvent)
-                {
-                    ProcessSend(e);
-                }
+                return token.Socket.SendAsync(e);
             }
             else
             {
                 CloseClientSocket(e);
+                return true;        // meaning, no callback will happen
             }
         }
 
@@ -276,7 +290,7 @@ namespace System.Net.Sockets.Tests
         // data sent from the client.
         // 
         // <param name="e"></param>
-        private void ProcessSend(SocketAsyncEventArgs e)
+        private bool ProcessSend(SocketAsyncEventArgs e)
         {
             _log.WriteLine(
                 this.GetHashCode() + " ProcessSend(SocketError={0}, _numConnectedSockets={1})",
@@ -293,13 +307,14 @@ namespace System.Net.Sockets.Tests
                 if (!willRaiseEvent)
                 {
                     _log.WriteLine(this.GetHashCode() + " ProcessSend -> ProcessReceive");
-                    ProcessReceive(e);
                 }
+                return willRaiseEvent;
             }
             else
             {
                 _log.WriteLine(this.GetHashCode() + " ProcessSend -> CloseClientSocket");
                 CloseClientSocket(e);
+                return true;        // meaning, no callback will happen
             }
         }
 
