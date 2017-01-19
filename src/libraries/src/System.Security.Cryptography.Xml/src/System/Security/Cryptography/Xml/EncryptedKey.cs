@@ -65,7 +65,7 @@ namespace System.Security.Cryptography.Xml
         public override void LoadXml(XmlElement value)
         {
             if (value == null)
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
 
             XmlNamespaceManager nsm = new XmlNamespaceManager(value.OwnerDocument.NameTable);
             nsm.AddNamespace("enc", EncryptedXml.XmlEncNamespaceUrl);
@@ -93,7 +93,7 @@ namespace System.Security.Cryptography.Xml
             // CipherData
             XmlNode cipherDataNode = value.SelectSingleNode("enc:CipherData", nsm);
             if (cipherDataNode == null)
-                throw new CryptographicException(SecurityResources.GetResourceString("Cryptography_Xml_MissingCipherData"));
+                throw new CryptographicException(SR.Cryptography_Xml_MissingCipherData);
 
             CipherData = new CipherData();
             CipherData.LoadXml(cipherDataNode as XmlElement);
@@ -190,7 +190,7 @@ namespace System.Security.Cryptography.Xml
 
             // CipherData
             if (CipherData == null)
-                throw new CryptographicException(SecurityResources.GetResourceString("Cryptography_Xml_MissingCipherData"));
+                throw new CryptographicException(SR.Cryptography_Xml_MissingCipherData);
             encryptedKeyElement.AppendChild(CipherData.GetXml(document));
 
             // EncryptionProperties

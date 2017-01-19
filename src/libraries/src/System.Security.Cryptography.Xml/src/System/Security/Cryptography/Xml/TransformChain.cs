@@ -19,7 +19,6 @@ using System.Collections;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Security;
-using System.Security.Policy;
 using System.Text;
 using System.Xml;
 using System.Xml.XPath;
@@ -59,7 +58,7 @@ namespace System.Security.Cryptography.Xml
             get
             {
                 if (index >= _transforms.Count)
-                    throw new ArgumentException(SecurityResources.GetResourceString("ArgumentOutOfRange_Index"), "index");
+                    throw new ArgumentException(SR.ArgumentOutOfRange_Index, nameof(index));
                 return (Transform)_transforms[index];
             }
         }
@@ -99,7 +98,7 @@ namespace System.Security.Cryptography.Xml
                         }
                         else
                         {
-                            throw new CryptographicException(SecurityResources.GetResourceString("Cryptography_Xml_TransformIncorrectInputType"));
+                            throw new CryptographicException(SR.Cryptography_Xml_TransformIncorrectInputType);
                         }
                     }
                     if (currentInput is XmlNodeList)
@@ -115,7 +114,7 @@ namespace System.Security.Cryptography.Xml
                         }
                         else
                         {
-                            throw new CryptographicException(SecurityResources.GetResourceString("Cryptography_Xml_TransformIncorrectInputType"));
+                            throw new CryptographicException(SR.Cryptography_Xml_TransformIncorrectInputType);
                         }
                     }
                     if (currentInput is XmlDocument)
@@ -131,10 +130,10 @@ namespace System.Security.Cryptography.Xml
                         }
                         else
                         {
-                            throw new CryptographicException(SecurityResources.GetResourceString("Cryptography_Xml_TransformIncorrectInputType"));
+                            throw new CryptographicException(SR.Cryptography_Xml_TransformIncorrectInputType);
                         }
                     }
-                    throw new CryptographicException(SecurityResources.GetResourceString("Cryptography_Xml_TransformIncorrectInputType"));
+                    throw new CryptographicException(SR.Cryptography_Xml_TransformIncorrectInputType);
                 }
             }
 
@@ -155,7 +154,7 @@ namespace System.Security.Cryptography.Xml
                 MemoryStream ms = new MemoryStream(c14n.GetBytes());
                 return ms;
             }
-            throw new CryptographicException(SecurityResources.GetResourceString("Cryptography_Xml_TransformIncorrectInputType"));
+            throw new CryptographicException(SR.Cryptography_Xml_TransformIncorrectInputType);
         }
 
         internal Stream TransformToOctetStream(Stream input, XmlResolver resolver, string baseUri)
@@ -187,14 +186,14 @@ namespace System.Security.Cryptography.Xml
         internal void LoadXml(XmlElement value)
         {
             if (value == null)
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
 
             XmlNamespaceManager nsm = new XmlNamespaceManager(value.OwnerDocument.NameTable);
             nsm.AddNamespace("ds", SignedXml.XmlDsigNamespaceUrl);
 
             XmlNodeList transformNodes = value.SelectNodes("ds:Transform", nsm);
             if (transformNodes.Count == 0)
-                throw new CryptographicException(SecurityResources.GetResourceString("Cryptography_Xml_InvalidElement"), "Transforms");
+                throw new CryptographicException(SR.Cryptography_Xml_InvalidElement, "Transforms");
 
             _transforms.Clear();
             for (int i = 0; i < transformNodes.Count; ++i)
@@ -203,7 +202,7 @@ namespace System.Security.Cryptography.Xml
                 string algorithm = Utils.GetAttribute(transformElement, "Algorithm", SignedXml.XmlDsigNamespaceUrl);
                 Transform transform = CryptoConfig.CreateFromName(algorithm) as Transform;
                 if (transform == null)
-                    throw new CryptographicException(SecurityResources.GetResourceString("Cryptography_Xml_UnknownTransform"));
+                    throw new CryptographicException(SR.Cryptography_Xml_UnknownTransform);
                 // let the transform read the children of the transformElement for data
                 transform.LoadInnerXml(transformElement.ChildNodes);
                 _transforms.Add(transform);
