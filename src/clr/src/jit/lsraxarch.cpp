@@ -160,6 +160,7 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
 #ifdef _TARGET_X86_
             if (tree->gtGetOp1()->OperGet() == GT_LONG)
             {
+                tree->gtGetOp1()->SetContained();
                 info->srcCount = 2;
             }
             else
@@ -281,12 +282,12 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
 
                 if (cmpOp1->IsSIMDEqualityOrInequality() && (cmpOp2->IsIntegralConst(0) || cmpOp2->IsIntegralConst(1)))
                 {
-                    // We always generate code for a SIMD equality comparison, but the compare
-                    // is contained (evaluated as part of the GT_JTRUE).
+                    // We always generate code for a SIMD equality comparison, but the compare itself produces no value.
                     // Neither the SIMD node nor the immediate need to be evaluated into a register.
                     l->clearOperandCounts(cmp);
                     l->clearDstCount(cmpOp1);
                     l->clearOperandCounts(cmpOp2);
+                    cmpOp2->SetContained();
 
                     // Codegen of SIMD (in)Equality uses target integer reg only for setting flags.
                     // A target reg is not needed on AVX when comparing against Vector Zero.
@@ -1000,6 +1001,7 @@ void Lowering::TreeNodeInfoInitReturn(GenTree* tree)
     {
         GenTree* op1 = tree->gtGetOp1();
         noway_assert(op1->OperGet() == GT_LONG);
+        op1->SetContained();
         GenTree* loVal = op1->gtGetOp1();
         GenTree* hiVal = op1->gtGetOp2();
         info->srcCount = 2;
@@ -1103,6 +1105,7 @@ void Lowering::TreeNodeInfoInitShiftRotate(GenTree* tree)
     if (tree->OperGet() == GT_LSH_HI || tree->OperGet() == GT_RSH_LO)
     {
         assert(source->OperGet() == GT_LONG);
+        source->SetContained();
 
         info->srcCount++;
 
@@ -1353,6 +1356,7 @@ void Lowering::TreeNodeInfoInitCall(GenTreeCall* call)
         if (thisPtrNode->gtOper == GT_PUTARG_REG)
         {
             l->clearOperandCounts(thisPtrNode);
+            thisPtrNode->SetContained();
             l->clearDstCount(thisPtrNode->gtOp.gtOp1);
         }
         else
@@ -1411,6 +1415,7 @@ void Lowering::TreeNodeInfoInitCall(GenTreeCall* call)
 #ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
         if (argNode->OperGet() == GT_FIELD_LIST)
         {
+            argNode->SetContained();
             assert(varTypeIsStruct(argNode) || curArgTabEntry->isStruct);
 
             unsigned eightbyte = 0;
@@ -1529,6 +1534,7 @@ void Lowering::TreeNodeInfoInitBlockStore(GenTreeBlk* blkNode)
         GenTree* initVal = source;
         if (initVal->OperIsInitVal())
         {
+            initVal->SetContained();
             initVal = initVal->gtGetOp1();
         }
         srcAddrOrFill = initVal;
@@ -1606,6 +1612,8 @@ void Lowering::TreeNodeInfoInitBlockStore(GenTreeBlk* blkNode)
                 srcAddrOrFill->gtLsraInfo.setSrcCount(source->gtLsraInfo.srcCount);
             }
             m_lsra->clearOperandCounts(source);
+            source->SetContained();
+            source->AsIndir()->Addr()->ClearContained();
         }
         else if (!source->IsMultiRegCall() && !source->OperIsSIMD())
         {
@@ -2216,6 +2224,8 @@ void Lowering::TreeNodeInfoInitModDiv(GenTree* tree)
 #ifdef _TARGET_X86_
     if (op1->OperGet() == GT_LONG)
     {
+        op1->SetContained();
+
         // To avoid reg move would like to have op1's low part in RAX and high part in RDX.
         GenTree* loVal = op1->gtGetOp1();
         GenTree* hiVal = op1->gtGetOp2();
@@ -2358,6 +2368,7 @@ void Lowering::TreeNodeInfoInitSIMD(GenTree* tree)
             if (op1->OperGet() == GT_LONG)
             {
                 info->srcCount = 2;
+                op1->SetContained();
             }
             else
 #endif // !defined(_TARGET_64BIT_)
@@ -2375,6 +2386,7 @@ void Lowering::TreeNodeInfoInitSIMD(GenTree* tree)
 #if !defined(_TARGET_64BIT_)
             if (op1->OperGet() == GT_LONG)
             {
+                op1->SetContained();
                 GenTree* op1lo = op1->gtGetOp1();
                 GenTree* op1hi = op1->gtGetOp2();
 
@@ -2389,8 +2401,10 @@ void Lowering::TreeNodeInfoInitSIMD(GenTree* tree)
                     assert(op1hi->gtLsraInfo.dstCount == 1);
 
                     op1lo->gtLsraInfo.dstCount = 0;
+                    op1lo->SetContained();
                     op1hi->gtLsraInfo.dstCount = 0;
-                    info->srcCount             = 0;
+                    op1hi->SetContained();
+                    info->srcCount = 0;
                 }
                 else
                 {
@@ -2585,6 +2599,10 @@ void Lowering::TreeNodeInfoInitSIMD(GenTree* tree)
             {
                 MakeSrcContained(tree, op1);
 
+                if (op1->OperGet() == GT_IND)
+                {
+                    op1->AsIndir()->Addr()->ClearContained();
+                }
                 // Although GT_IND of TYP_SIMD12 reserves an internal float
                 // register for reading 4 and 8 bytes from memory and
                 // assembling them into target XMM reg, it is not required
@@ -2822,6 +2840,7 @@ void Lowering::TreeNodeInfoInitCast(GenTree* tree)
     if (varTypeIsLong(castOpType))
     {
         noway_assert(castOp->OperGet() == GT_LONG);
+        castOp->SetContained();
         info->srcCount = 2;
     }
 #endif // !defined(_TARGET_64BIT_)
@@ -3259,8 +3278,14 @@ bool Lowering::TreeNodeInfoInitIfRMWMemOp(GenTreePtr storeInd)
 
     if (GenTree::OperIsBinary(oper))
     {
-        // On Xarch RMW operations require that the source memory-op be in a register.
-        assert(!IsContainableMemoryOp(indirOpSource) || indirOpSource->gtLsraInfo.dstCount == 1);
+        // On Xarch RMW operations require that the non-rmw operand be an immediate or in a register.
+        // Therefore, if we have previously marked the indirOpSource as a contained memory op while lowering
+        // the binary node, we need to reset that now.
+        if (IsContainableMemoryOp(indirOpSource))
+        {
+            indirOpSource->ClearContained();
+        }
+        assert(!indirOpSource->isContained() || indirOpSource->OperIsConst());
         JITDUMP("Lower succesfully detected an assignment of the form: *addrMode BinOp= source\n");
         info->srcCount = indirOpSource->gtLsraInfo.dstCount;
     }
@@ -3273,7 +3298,9 @@ bool Lowering::TreeNodeInfoInitIfRMWMemOp(GenTreePtr storeInd)
     DISPTREERANGE(BlockRange(), storeInd);
 
     m_lsra->clearOperandCounts(indirSrc);
+    indirSrc->SetContained();
     m_lsra->clearOperandCounts(indirCandidate);
+    indirCandidate->SetContained();
 
     GenTreePtr indirCandidateChild = indirCandidate->gtGetOp1();
     if (indirCandidateChild->OperGet() == GT_LEA)
@@ -3284,6 +3311,7 @@ bool Lowering::TreeNodeInfoInitIfRMWMemOp(GenTreePtr storeInd)
         {
             assert(addrMode->Base()->OperIsLeaf());
             m_lsra->clearOperandCounts(addrMode->Base());
+            addrMode->Base()->SetContained();
             info->srcCount++;
         }
 
@@ -3291,10 +3319,12 @@ bool Lowering::TreeNodeInfoInitIfRMWMemOp(GenTreePtr storeInd)
         {
             assert(addrMode->Index()->OperIsLeaf());
             m_lsra->clearOperandCounts(addrMode->Index());
+            addrMode->Index()->SetContained();
             info->srcCount++;
         }
 
         m_lsra->clearOperandCounts(indirDst);
+        indirDst->SetContained();
     }
     else
     {
@@ -3308,10 +3338,12 @@ bool Lowering::TreeNodeInfoInitIfRMWMemOp(GenTreePtr storeInd)
         if (indirCandidateChild->OperGet() == GT_LCL_VAR_ADDR || indirCandidateChild->OperGet() == GT_CLS_VAR_ADDR)
         {
             m_lsra->clearOperandCounts(indirDst);
+            indirDst->SetContained();
         }
         else if (indirCandidateChild->IsCnsIntOrI() && indirCandidateChild->AsIntConCommon()->FitsInAddrBase(comp))
         {
             m_lsra->clearOperandCounts(indirDst);
+            indirDst->SetContained();
         }
         else
         {
@@ -3320,6 +3352,7 @@ bool Lowering::TreeNodeInfoInitIfRMWMemOp(GenTreePtr storeInd)
         }
     }
     m_lsra->clearOperandCounts(indirCandidateChild);
+    indirCandidateChild->SetContained();
 
 #ifdef _TARGET_X86_
     if (varTypeIsByte(storeInd))

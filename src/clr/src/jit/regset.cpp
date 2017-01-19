@@ -842,7 +842,7 @@ void RegSet::rsMarkRegUsed(GenTreePtr tree, GenTreePtr addr)
     /* The value must be sitting in a register */
 
     assert(tree);
-    assert(tree->gtFlags & GTF_REG_VAL);
+    assert(tree->InReg());
 
     type   = tree->TypeGet();
     regNum = tree->gtRegNum;
@@ -979,7 +979,7 @@ void RegSet::rsMarkRegPairUsed(GenTreePtr tree)
 #else
     assert(tree->gtType == TYP_LONG || tree->gtType == TYP_DOUBLE);
 #endif
-    assert(tree->gtFlags & GTF_REG_VAL);
+    assert(tree->InReg());
 
     regPair = tree->gtRegPair;
     regMask = genRegPairMask(regPair);
@@ -1600,11 +1600,10 @@ void RegSet::rsSpillTree(regNumber reg, GenTreePtr tree, unsigned regIdx /* =0 *
     }
     else
     {
-        assert(tree->gtFlags & GTF_REG_VAL);
+        assert(tree->InReg());
         assert(tree->gtRegNum == reg);
     }
 #else
-    assert(tree->InReg());
     assert(tree->gtRegNum == reg || (call != nullptr && call->GetRegNumByIdx(regIdx) == reg));
 #endif // CPU_LONG_USES_REGPAIR
 
@@ -2429,7 +2428,9 @@ void RegSet::rsUnspillReg(GenTreePtr tree, regMaskTP needReg, KeepReg keepReg)
 
 void RegSet::rsMarkSpill(GenTreePtr tree, regNumber reg)
 {
-    tree->gtFlags &= ~GTF_REG_VAL;
+#ifdef LEGACY_BACKEND
+    tree->SetInReg(false);
+#endif
     tree->gtFlags |= GTF_SPILLED;
 }
 
@@ -2441,9 +2442,9 @@ void RegSet::rsMarkUnspill(GenTreePtr tree, regNumber reg)
     assert(tree->gtType != TYP_LONG);
 #endif // _TARGET_AMD64_
 
-    tree->gtFlags |= GTF_REG_VAL;
     tree->gtFlags &= ~GTF_SPILLED;
     tree->gtRegNum = reg;
+    tree->SetInReg();
 }
 
 /*****************************************************************************
@@ -2684,7 +2685,7 @@ void RegSet::rsUnspillRegPair(GenTreePtr tree, regMaskTP needReg, KeepReg keepRe
 
     /* The value is now residing in the new register */
 
-    tree->gtFlags |= GTF_REG_VAL;
+    tree->SetInReg();
     tree->gtFlags &= ~GTF_SPILLED;
     tree->gtRegPair = gen2regs2pair(regLo, regHi);
 

@@ -598,9 +598,9 @@ private:
 
 private:
     union {
-        // NOTE: After LSRA, one of these values may be valid even if GTF_REG_VAL is not set in gtFlags.
-        // They store the register assigned to the node. If a register is not assigned, _gtRegNum is set to REG_NA
+        // These store the register assigned to the node. If a register is not assigned, _gtRegNum is set to REG_NA
         // or _gtRegPair is set to REG_PAIR_NONE, depending on the node type.
+        // For the LEGACY_BACKEND,these are valid only if GTF_REG_VAL is set in gtFlags.
         regNumberSmall _gtRegNum;  // which register      the value is in
         regPairNoSmall _gtRegPair; // which register pair the value is in
     };
@@ -837,7 +837,13 @@ public:
     (((flags) & (GTF_CALL | GTF_EXCEPT)) || (((flags) & (GTF_ASG | GTF_GLOB_REF)) == (GTF_ASG | GTF_GLOB_REF)))
 
 #define GTF_REVERSE_OPS 0x00000020 // operand op2 should be evaluated before op1 (normally, op1 is evaluated first and op2 is evaluated second)
+
+#ifdef LEGACY_BACKEND
 #define GTF_REG_VAL     0x00000040 // operand is sitting in a register (or part of a TYP_LONG operand is sitting in a register)
+#else  // !LEGACY_BACKEND
+#define GTF_CONTAINED   0x00000040 // This node is contained (executed as part of its parent)
+#endif // !LEGACY_BACKEND
+
 #define GTF_SPILLED     0x00000080 // the value has been spilled
 
 #ifdef LEGACY_BACKEND
@@ -1690,14 +1696,14 @@ public:
 
     // Given a tree node, if this is a child of that node, return the pointer to the child node so that it
     // can be modified; otherwise, return null.
-    GenTreePtr* gtGetChildPointer(GenTreePtr parent);
+    GenTreePtr* gtGetChildPointer(GenTreePtr parent) const;
 
     // Given a tree node, if this node uses that node, return the use as an out parameter and return true.
     // Otherwise, return false.
     bool TryGetUse(GenTree* def, GenTree*** use);
 
     // Get the parent of this node, and optionally capture the pointer to the child so that it can be modified.
-    GenTreePtr gtGetParent(GenTreePtr** parentChildPtrPtr);
+    GenTreePtr gtGetParent(GenTreePtr** parentChildPtrPtr) const;
 
     void ReplaceOperand(GenTree** useEdge, GenTree* replacement);
 
@@ -1901,6 +1907,7 @@ public:
     // sets "*pIsEntire" to true if this assignment writes the full width of the local.
     bool DefinesLocalAddr(Compiler* comp, unsigned width, GenTreeLclVarCommon** pLclVarTree, bool* pIsEntire);
 
+#ifdef LEGACY_BACKEND
     bool IsRegVar() const
     {
         return OperGet() == GT_REG_VAR ? true : false;
@@ -1909,15 +1916,56 @@ public:
     {
         return (gtFlags & GTF_REG_VAL) ? true : false;
     }
-    void SetInReg()
+    void SetInReg(bool value = true)
     {
-        gtFlags |= GTF_REG_VAL;
+        if (value == true)
+        {
+            gtFlags |= GTF_REG_VAL;
+        }
+        else
+        {
+            gtFlags &= ~GTF_REG_VAL;
+        }
     }
-
     regNumber GetReg() const
     {
         return InReg() ? gtRegNum : REG_NA;
     }
+
+#else // !LEGACY_BACKEND
+    // For the non-legacy backend, these are only used for dumping.
+    // The gtRegNum is only valid in LIR, but the dumping methods are not easily
+    // modified to check this.
+    CLANG_FORMAT_COMMENT_ANCHOR;
+#ifdef DEBUG
+    bool InReg() const
+    {
+        return (GetRegTag() != GT_REGTAG_NONE) ? true : false;
+    }
+    regNumber GetReg() const
+    {
+        return (GetRegTag() != GT_REGTAG_NONE) ? gtRegNum : REG_NA;
+    }
+#endif
+
+    static bool IsContained(unsigned flags)
+    {
+        return ((flags & GTF_CONTAINED) != 0);
+    }
+
+    void SetContained()
+    {
+        gtFlags |= GTF_CONTAINED;
+    }
+
+    void ClearContained()
+    {
+        gtFlags &= ~GTF_CONTAINED;
+        gtLsraInfo.regOptional = false;
+    }
+
+#endif // !LEGACY_BACKEND
+
     bool IsRegVarDeath() const
     {
         assert(OperGet() == GT_REG_VAR);
