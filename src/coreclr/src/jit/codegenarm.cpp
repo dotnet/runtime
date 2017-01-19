@@ -870,10 +870,8 @@ void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
 #endif // DEBUG
 
     // Consume the operands and get them into the right registers.
-    // They may now contain gc pointers (depending on their type; gcMarkRegPtrVal will "do the right thing").
+    // They may now contain gc pointers; genConsumeBlockOp will take care of that.
     genConsumeBlockOp(cpObjNode, REG_WRITE_BARRIER_DST_BYREF, REG_WRITE_BARRIER_SRC_BYREF, REG_NA);
-    gcInfo.gcMarkRegPtrVal(REG_WRITE_BARRIER_SRC_BYREF, srcAddrType);
-    gcInfo.gcMarkRegPtrVal(REG_WRITE_BARRIER_DST_BYREF, dstAddr->TypeGet());
 
     // Temp register used to perform the sequence of loads and stores.
     regNumber tmpReg = cpObjNode->ExtractTempReg();
@@ -1010,17 +1008,11 @@ void CodeGen::genCodeForLclVar(GenTreeLclVar* tree)
 
     bool isRegCandidate = compiler->lvaTable[tree->gtLclNum].lvIsRegCandidate();
 
-    if (isRegCandidate && !(tree->gtFlags & GTF_VAR_DEATH))
-    {
-        assert((tree->InReg()) || (tree->gtFlags & GTF_SPILLED));
-    }
-
     // If this is a register candidate that has been spilled, genConsumeReg() will
     // reload it at the point of use.  Otherwise, if it's not in a register, we load it here.
 
-    if (!tree->InReg() && !(tree->gtFlags & GTF_SPILLED))
+    if (!isRegCandidate && !(tree->gtFlags & GTF_SPILLED))
     {
-        assert(!isRegCandidate);
         getEmitter()->emitIns_R_S(ins_Load(tree->TypeGet()), emitTypeSize(tree), tree->gtRegNum, tree->gtLclNum, 0);
         genProduceReg(tree);
     }
@@ -1044,7 +1036,6 @@ void CodeGen::genCodeForStoreLclFld(GenTreeLclFld* tree)
     unsigned offset = tree->gtLclOffs;
 
     // We must have a stack store with GT_STORE_LCL_FLD
-    noway_assert(!tree->InReg());
     noway_assert(targetReg == REG_NA);
 
     unsigned varNum = tree->gtLclNum;
@@ -1310,6 +1301,7 @@ void CodeGen::genCodeForReturnTrap(GenTreeOp* tree)
     GenTree* data = tree->gtOp1->gtEffectiveVal();
     genConsumeIfReg(data);
     GenTreeIntCon cns = intForm(TYP_INT, 0);
+    cns.SetContained();
     getEmitter()->emitInsBinary(INS_cmp, emitTypeSize(TYP_INT), data, &cns);
 
     BasicBlock* skipLabel = genCreateTempLabel();
@@ -1779,7 +1771,7 @@ void CodeGen::genStoreLongLclVar(GenTree* treeNode)
     if (op1->OperGet() == GT_LONG)
     {
         // Definitions of register candidates will have been lowered to 2 int lclVars.
-        assert(!treeNode->InReg());
+        assert(!treeNode->gtHasReg());
 
         GenTreePtr loVal = op1->gtGetOp1();
         GenTreePtr hiVal = op1->gtGetOp2();
