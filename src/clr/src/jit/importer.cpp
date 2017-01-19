@@ -5582,7 +5582,7 @@ void Compiler::impCheckForPInvokeCall(
         // profitability checks
         if (!(opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB) && IsTargetAbi(CORINFO_CORERT_ABI)))
         {
-            if (impCanPInvokeInline())
+            if (!impCanPInvokeInline())
             {
                 return;
             }
