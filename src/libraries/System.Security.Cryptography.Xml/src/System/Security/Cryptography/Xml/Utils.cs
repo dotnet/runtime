@@ -20,6 +20,17 @@ namespace System.Security.Cryptography.Xml
 {
     internal class Utils
     {
+        // The maximum number of characters in an XML document (0 means no limit).
+        internal const int MaxCharactersInDocument = 0;
+
+        // The entity expansion limit. This is used to prevent entity expansion denial of service attacks.
+        internal const long MaxCharactersFromEntities = (long)1e7;
+
+        // The default XML Dsig recursion limit.
+        // This should be within limits of real world scenarios.
+        // Keeping this number low will preserve some stack space
+        internal const int XmlDsigSearchDepth = 20;
+
         private Utils() { }
 
         private static bool HasNamespace(XmlElement element, string prefix, string value)
@@ -33,7 +44,7 @@ namespace System.Security.Cryptography.Xml
         internal static bool IsCommittedNamespace(XmlElement element, string prefix, string value)
         {
             if (element == null)
-                throw new ArgumentNullException("element");
+                throw new ArgumentNullException(nameof(element));
 
             string name = ((prefix.Length > 0) ? "xmlns:" + prefix : "xmlns");
             if (element.HasAttribute(name) && element.GetAttribute(name) == value) return true;
@@ -43,7 +54,7 @@ namespace System.Security.Cryptography.Xml
         internal static bool IsRedundantNamespace(XmlElement element, string prefix, string value)
         {
             if (element == null)
-                throw new ArgumentNullException("element");
+                throw new ArgumentNullException(nameof(element));
 
             XmlNode ancestorNode = ((XmlNode)element).ParentNode;
             while (ancestorNode != null)
@@ -167,163 +178,15 @@ namespace System.Security.Cryptography.Xml
             XmlReaderSettings settings = new XmlReaderSettings();
             settings.XmlResolver = xmlResolver;
             settings.DtdProcessing = DtdProcessing.Parse;
-            settings.MaxCharactersFromEntities = GetMaxCharactersFromEntities();
-            settings.MaxCharactersInDocument = GetMaxCharactersInDocument();
+            settings.MaxCharactersFromEntities = MaxCharactersFromEntities;
+            settings.MaxCharactersInDocument = MaxCharactersInDocument;
             return settings;
-        }
-
-        private static int? s_xmlDsigSearchDepth = null;
-        /// <summary>
-        /// Function get the XML Dsig recursion limit. This function defines the
-        /// default limit in case, limit is not defined by developer or admin then
-        /// it returns the default value.
-        /// </summary>
-        [RegistryPermission(SecurityAction.Assert, Unrestricted = true)]
-        internal static int GetXmlDsigSearchDepth()
-        {
-            if (s_xmlDsigSearchDepth.HasValue)
-            {
-                return s_xmlDsigSearchDepth.Value;
-            }
-            //Keeping the default recursion limit to 20. It should be
-            //within limits of real world scenarios. Keeping this number low
-            //will preserve some stack space
-            long maxXmlDsigSearchDepth = GetNetFxSecurityRegistryValue("SignedDigitalSignatureXmlMaxDepth", 20);
-
-            s_xmlDsigSearchDepth = (int)maxXmlDsigSearchDepth;
-            return s_xmlDsigSearchDepth.Value;
-        }
-
-        private static long? s_maxCharactersFromEntities = null;
-        // Allow machine admins to specify an entity expansion limit. This is used to prevent
-        // entity expansion denial of service attacks.
-        // Falls back to a default if none is specified.
-        [RegistryPermission(SecurityAction.Assert, Unrestricted = true)]
-        internal static long GetMaxCharactersFromEntities()
-        {
-            if (s_maxCharactersFromEntities.HasValue)
-            {
-                return s_maxCharactersFromEntities.Value;
-            }
-
-            long maxCharacters = GetNetFxSecurityRegistryValue("SignedXmlMaxCharactersFromEntities", (long)1e7);
-
-            s_maxCharactersFromEntities = maxCharacters;
-            return s_maxCharactersFromEntities.Value;
-        }
-
-        private static bool s_readMaxCharactersInDocument = false;
-        private static long s_maxCharactersInDocument = 0;
-
-        [RegistryPermission(SecurityAction.Assert, Unrestricted = true)]
-        internal static long GetMaxCharactersInDocument()
-        {
-            // Allow machine administrators to specify a maximum document load size for SignedXml.
-            if (s_readMaxCharactersInDocument)
-            {
-                return s_maxCharactersInDocument;
-            }
-
-            // The default value, 0, is "no limit"
-            long maxCharacters = GetNetFxSecurityRegistryValue("SignedXmlMaxCharactersInDocument", 0);
-
-            s_maxCharactersInDocument = maxCharacters;
-            Thread.MemoryBarrier();
-            s_readMaxCharactersInDocument = true;
-
-            return s_maxCharactersInDocument;
-        }
-
-        private static bool? s_allowAmbiguousReferenceTarget = null;
-
-        [RegistryPermission(SecurityAction.Assert, Unrestricted = true)]
-        internal static bool AllowAmbiguousReferenceTargets()
-        {
-            // Allow machine administrators to specify that the legacy behavior of matching the first element
-            // in an ambiguous reference situation should be persisted. The default behavior is to throw in that
-            // situation, but a REG_DWORD or REG_QWORD value of 1 will revert.
-            if (s_allowAmbiguousReferenceTarget.HasValue)
-            {
-                return s_allowAmbiguousReferenceTarget.Value;
-            }
-
-            long numericValue = GetNetFxSecurityRegistryValue("SignedXmlAllowAmbiguousReferenceTargets", 0);
-            bool allowAmbiguousReferenceTarget = numericValue != 0;
-
-            s_allowAmbiguousReferenceTarget = allowAmbiguousReferenceTarget;
-            return s_allowAmbiguousReferenceTarget.Value;
-        }
-
-        private static bool? s_allowDetachedSignature = null;
-
-        [RegistryPermission(SecurityAction.Assert, Unrestricted = true)]
-        internal static bool AllowDetachedSignature()
-        {
-            // Allow machine administrators to specify that detached signatures can be processed.
-            // The default behavior is to throw when processing a detached signature,
-            // but a REG_DWORD or REG_QWORD value of 1 will revert.
-            if (s_allowDetachedSignature.HasValue)
-            {
-                return s_allowDetachedSignature.Value;
-            }
-
-            long numericValue = GetNetFxSecurityRegistryValue("SignedXmlAllowDetachedSignature", 0);
-            bool allowDetachedSignature = numericValue != 0;
-
-            s_allowDetachedSignature = allowDetachedSignature;
-            return s_allowDetachedSignature.Value;
-        }
-
-        private static bool s_readRequireNCNameIdentifier = false;
-        private static bool s_requireNCNameIdentifier = true;
-
-        [RegistryPermission(SecurityAction.Assert, Unrestricted = true)]
-        internal static bool RequireNCNameIdentifier()
-        {
-            if (s_readRequireNCNameIdentifier)
-            {
-                return s_requireNCNameIdentifier;
-            }
-
-            long numericValue = GetNetFxSecurityRegistryValue("SignedXmlRequireNCNameIdentifier", 1);
-            bool requireNCName = numericValue != 0;
-
-            s_requireNCNameIdentifier = requireNCName;
-            Thread.MemoryBarrier();
-            s_readRequireNCNameIdentifier = true;
-
-            return s_requireNCNameIdentifier;
-        }
-
-        private static long GetNetFxSecurityRegistryValue(string regValueName, long defaultValue)
-        {
-            try
-            {
-                using (RegistryKey securityRegKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\.NETFramework\Security", false))
-                {
-                    if (securityRegKey != null)
-                    {
-                        object regValue = securityRegKey.GetValue(regValueName);
-                        if (regValue != null)
-                        {
-                            RegistryValueKind valueKind = securityRegKey.GetValueKind(regValueName);
-                            if (valueKind == RegistryValueKind.DWord || valueKind == RegistryValueKind.QWord)
-                            {
-                                return Convert.ToInt64(regValue, CultureInfo.InvariantCulture);
-                            }
-                        }
-                    }
-                }
-            }
-            catch (SecurityException) { /* we could not open the key - that's fine, we can proceed with the default value */ }
-
-            return defaultValue;
         }
 
         internal static XmlDocument PreProcessDocumentInput(XmlDocument document, XmlResolver xmlResolver, string baseUri)
         {
             if (document == null)
-                throw new ArgumentNullException("document");
+                throw new ArgumentNullException(nameof(document));
 
             MyXmlDocument doc = new MyXmlDocument();
             doc.PreserveWhitespace = document.PreserveWhitespace;
@@ -334,8 +197,8 @@ namespace System.Security.Cryptography.Xml
                 XmlReaderSettings settings = new XmlReaderSettings();
                 settings.XmlResolver = xmlResolver;
                 settings.DtdProcessing = DtdProcessing.Parse;
-                settings.MaxCharactersFromEntities = GetMaxCharactersFromEntities();
-                settings.MaxCharactersInDocument = GetMaxCharactersInDocument();
+                settings.MaxCharactersFromEntities = MaxCharactersFromEntities;
+                settings.MaxCharactersInDocument = MaxCharactersInDocument;
                 XmlReader reader = XmlReader.Create(stringReader, settings, baseUri);
                 doc.Load(reader);
             }
@@ -345,7 +208,7 @@ namespace System.Security.Cryptography.Xml
         internal static XmlDocument PreProcessElementInput(XmlElement elem, XmlResolver xmlResolver, string baseUri)
         {
             if (elem == null)
-                throw new ArgumentNullException("elem");
+                throw new ArgumentNullException(nameof(elem));
 
             MyXmlDocument doc = new MyXmlDocument();
             doc.PreserveWhitespace = true;
@@ -355,8 +218,8 @@ namespace System.Security.Cryptography.Xml
                 XmlReaderSettings settings = new XmlReaderSettings();
                 settings.XmlResolver = xmlResolver;
                 settings.DtdProcessing = DtdProcessing.Parse;
-                settings.MaxCharactersFromEntities = GetMaxCharactersFromEntities();
-                settings.MaxCharactersInDocument = GetMaxCharactersInDocument();
+                settings.MaxCharactersFromEntities = MaxCharactersFromEntities;
+                settings.MaxCharactersInDocument = MaxCharactersInDocument;
                 XmlReader reader = XmlReader.Create(stringReader, settings, baseUri);
                 doc.Load(reader);
             }
@@ -452,7 +315,7 @@ namespace System.Security.Cryptography.Xml
                 int startId = idref.IndexOf("id(", StringComparison.Ordinal);
                 int endId = idref.IndexOf(")", StringComparison.Ordinal);
                 if (endId < 0 || endId < startId + 3)
-                    throw new CryptographicException(SecurityResources.GetResourceString("Cryptography_Xml_InvalidReference"));
+                    throw new CryptographicException(SR.Cryptography_Xml_InvalidReference);
                 idref = idref.Substring(startId + 3, endId - startId - 3);
                 idref = idref.Replace("\'", "");
                 idref = idref.Replace("\"", "");
@@ -471,7 +334,7 @@ namespace System.Security.Cryptography.Xml
                 int startId = idref.IndexOf("id(", StringComparison.Ordinal);
                 int endId = idref.IndexOf(")", StringComparison.Ordinal);
                 if (endId < 0 || endId < startId + 3)
-                    throw new CryptographicException(SecurityResources.GetResourceString("Cryptography_Xml_InvalidReference"));
+                    throw new CryptographicException(SR.Cryptography_Xml_InvalidReference);
                 idref = idref.Substring(startId + 3, endId - startId - 3);
                 idref = idref.Replace("\'", "");
                 idref = idref.Replace("\"", "");
@@ -757,10 +620,6 @@ namespace System.Security.Cryptography.Xml
 
             // Open LocalMachine and CurrentUser "Other People"/"My" stores.
 
-            // Assert OpenStore since we are not giving back any certificates to the user.
-            StorePermission sp = new StorePermission(StorePermissionFlags.OpenStore);
-            sp.Assert();
-
             X509Store[] stores = new X509Store[2];
             string storeName = (certUsageType == CertUsageType.Verification ? "AddressBook" : "My");
             stores[0] = new X509Store(storeName, StoreLocation.CurrentUser);
@@ -796,7 +655,7 @@ namespace System.Security.Cryptography.Xml
                         {
                             foreach (byte[] ski in keyInfoX509Data.SubjectKeyIds)
                             {
-                                string hex = X509Utils.EncodeHexString(ski);
+                                string hex = EncodeHexString(ski);
                                 filters = filters.Find(X509FindType.FindBySubjectKeyIdentifier, hex, false);
                             }
                         }
@@ -817,6 +676,74 @@ namespace System.Security.Cryptography.Xml
             }
 
             return collection;
+        }
+
+        private static readonly char[] s_hexValues = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
+        internal static string EncodeHexString(byte[] sArray)
+        {
+            return EncodeHexString(sArray, 0, (uint)sArray.Length);
+        }
+
+        internal static string EncodeHexString(byte[] sArray, uint start, uint end)
+        {
+            string result = null;
+            if (sArray != null)
+            {
+                char[] hexOrder = new char[(end - start) * 2];
+                uint digit;
+                for (uint i = start, j = 0; i < end; i++)
+                {
+                    digit = (uint)((sArray[i] & 0xf0) >> 4);
+                    hexOrder[j++] = s_hexValues[digit];
+                    digit = (uint)(sArray[i] & 0x0f);
+                    hexOrder[j++] = s_hexValues[digit];
+                }
+                result = new String(hexOrder);
+            }
+            return result;
+        }
+
+        internal static byte[] DecodeHexString(string s)
+        {
+            string hexString = Utils.DiscardWhiteSpaces(s);
+            uint cbHex = (uint)hexString.Length / 2;
+            byte[] hex = new byte[cbHex];
+            int i = 0;
+            for (int index = 0; index < cbHex; index++)
+            {
+                hex[index] = (byte)((HexToByte(hexString[i]) << 4) | HexToByte(hexString[i + 1]));
+                i += 2;
+            }
+            return hex;
+        }
+
+        internal static byte HexToByte(char val)
+        {
+            if (val <= '9' && val >= '0')
+                return (byte)(val - '0');
+            else if (val >= 'a' && val <= 'f')
+                return (byte)((val - 'a') + 10);
+            else if (val >= 'A' && val <= 'F')
+                return (byte)((val - 'A') + 10);
+            else
+                return 0xFF;
+        }
+
+        internal static bool IsSelfSigned(X509Chain chain)
+        {
+            X509ChainElementCollection elements = chain.ChainElements;
+            if (elements.Count != 1)
+                return false;
+            X509Certificate2 certificate = elements[0].Certificate;
+            if (String.Compare(certificate.SubjectName.Name, certificate.IssuerName.Name, StringComparison.OrdinalIgnoreCase) == 0)
+                return true;
+            return false;
+        }
+
+        internal static AsymmetricAlgorithm GetAnyPublicKey(X509Certificate2 certificate)
+        {
+            // TODO: Add ?? certificate.GetDSAPublicKey(), when available (dotnet/corefx#11802).
+            return certificate.GetRSAPublicKey();
         }
     }
 }

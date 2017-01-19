@@ -21,9 +21,9 @@ namespace System.Security.Cryptography.Xml
         public EncryptionProperty(XmlElement elementProperty)
         {
             if (elementProperty == null)
-                throw new ArgumentNullException("elementProperty");
+                throw new ArgumentNullException(nameof(elementProperty));
             if (elementProperty.LocalName != "EncryptionProperty" || elementProperty.NamespaceURI != EncryptedXml.XmlEncNamespaceUrl)
-                throw new CryptographicException(SecurityResources.GetResourceString("Cryptography_Xml_InvalidEncryptionProperty"));
+                throw new CryptographicException(SR.Cryptography_Xml_InvalidEncryptionProperty);
 
             _elemProp = elementProperty;
             _cachedXml = null;
@@ -45,9 +45,9 @@ namespace System.Security.Cryptography.Xml
             set
             {
                 if (value == null)
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException(nameof(value));
                 if (value.LocalName != "EncryptionProperty" || value.NamespaceURI != EncryptedXml.XmlEncNamespaceUrl)
-                    throw new CryptographicException(SecurityResources.GetResourceString("Cryptography_Xml_InvalidEncryptionProperty"));
+                    throw new CryptographicException(SR.Cryptography_Xml_InvalidEncryptionProperty);
 
                 _elemProp = value;
                 _cachedXml = null;
@@ -79,9 +79,9 @@ namespace System.Security.Cryptography.Xml
         public void LoadXml(XmlElement value)
         {
             if (value == null)
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
             if (value.LocalName != "EncryptionProperty" || value.NamespaceURI != EncryptedXml.XmlEncNamespaceUrl)
-                throw new CryptographicException(SecurityResources.GetResourceString("Cryptography_Xml_InvalidEncryptionProperty"));
+                throw new CryptographicException(SR.Cryptography_Xml_InvalidEncryptionProperty);
 
             // cache the Xml
             _cachedXml = value;
