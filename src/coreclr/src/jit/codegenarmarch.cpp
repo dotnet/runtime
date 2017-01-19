@@ -1203,6 +1203,7 @@ GenTreeIndir CodeGen::indirForm(var_types type, GenTree* base)
 {
     GenTreeIndir i(GT_IND, type, base, nullptr);
     i.gtRegNum = REG_NA;
+    i.SetContained();
     // has to be nonnull (because contained nodes can't be the last in block)
     // but don't want it to be a valid pointer
     i.gtNext = (GenTree*)(-1);
@@ -1274,11 +1275,8 @@ void CodeGen::genCodeForLclAddr(GenTree* tree)
     var_types targetType = tree->TypeGet();
     regNumber targetReg  = tree->gtRegNum;
 
-    // Address of a local var.  This by itself should never be allocated a register.
-    // If it is worth storing the address in a register then it should be cse'ed into
-    // a temp and that would be allocated a register.
+    // Address of a local var.
     noway_assert(targetType == TYP_BYREF);
-    noway_assert(!tree->InReg());
 
     inst_RV_TT(INS_lea, targetReg, tree, 0, EA_BYREF);
     genProduceReg(tree);
@@ -1299,7 +1297,7 @@ void CodeGen::genCodeForLclFld(GenTreeLclFld* tree)
     emitter*  emit       = getEmitter();
 
     NYI_IF(targetType == TYP_STRUCT, "GT_LCL_FLD: struct load local field not supported");
-    NYI_IF(targetReg == REG_NA, "GT_LCL_FLD: load local field not into a register is not supported");
+    assert(targetReg != REG_NA);
 
     emitAttr size   = emitTypeSize(targetType);
     unsigned offs   = tree->gtLclOffs;
@@ -1308,21 +1306,14 @@ void CodeGen::genCodeForLclFld(GenTreeLclFld* tree)
 
     if (varTypeIsFloating(targetType))
     {
-        if (tree->InReg())
-        {
-            NYI("GT_LCL_FLD with register to register Floating point move");
-        }
-        else
-        {
-            emit->emitIns_R_S(ins_Load(targetType), size, targetReg, varNum, offs);
-        }
+        emit->emitIns_R_S(ins_Load(targetType), size, targetReg, varNum, offs);
     }
     else
     {
 #ifdef _TARGET_ARM64_
         size = EA_SET_SIZE(size, EA_8BYTE);
 #endif // _TARGET_ARM64_
-        emit->emitIns_R_S(ins_Move_Extend(targetType, tree->InReg()), size, targetReg, varNum, offs);
+        emit->emitIns_R_S(ins_Move_Extend(targetType, false), size, targetReg, varNum, offs);
     }
 
     genProduceReg(tree);
@@ -1551,8 +1542,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
 
                 if (putArgRegNode->gtRegNum != argReg)
                 {
-                    inst_RV_RV(ins_Move_Extend(putArgRegNode->TypeGet(), putArgRegNode->InReg()), argReg,
-                               putArgRegNode->gtRegNum);
+                    inst_RV_RV(ins_Move_Extend(putArgRegNode->TypeGet(), true), argReg, putArgRegNode->gtRegNum);
                 }
 
                 argReg = genRegArgNext(argReg);
@@ -1572,7 +1562,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
             genConsumeReg(argNode);
             if (argNode->gtRegNum != argReg)
             {
-                inst_RV_RV(ins_Move_Extend(argNode->TypeGet(), argNode->InReg()), argReg, argNode->gtRegNum);
+                inst_RV_RV(ins_Move_Extend(argNode->TypeGet(), true), argReg, argNode->gtRegNum);
             }
         }
 
@@ -2279,7 +2269,7 @@ void CodeGen::genIntToIntCast(GenTreePtr treeNode)
 #endif // _TARGET_*
             }
 
-            ins = ins_Move_Extend(extendType, castOp->InReg());
+            ins = ins_Move_Extend(extendType, true);
         }
     }
 

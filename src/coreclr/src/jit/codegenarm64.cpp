@@ -1595,18 +1595,11 @@ void CodeGen::genCodeForLclVar(GenTreeLclVar* tree)
     // lcl_vars are not defs
     assert((tree->gtFlags & GTF_VAR_DEF) == 0);
 
-    if (isRegCandidate && !(tree->gtFlags & GTF_VAR_DEATH))
-    {
-        assert((tree->InReg()) || (tree->gtFlags & GTF_SPILLED));
-    }
-
     // If this is a register candidate that has been spilled, genConsumeReg() will
     // reload it at the point of use.  Otherwise, if it's not in a register, we load it here.
 
-    if (!tree->InReg() && !(tree->gtFlags & GTF_SPILLED))
+    if (!isRegCandidate && !(tree->gtFlags & GTF_SPILLED))
     {
-        assert(!isRegCandidate);
-
         // targetType must be a normal scalar type and not a TYP_STRUCT
         assert(targetType != TYP_STRUCT);
 
@@ -1637,7 +1630,6 @@ void CodeGen::genCodeForStoreLclFld(GenTreeLclFld* tree)
     unsigned offset = tree->gtLclOffs;
 
     // We must have a stack store with GT_STORE_LCL_FLD
-    noway_assert(!tree->InReg());
     noway_assert(targetReg == REG_NA);
 
     unsigned varNum = tree->gtLclNum;
@@ -2013,8 +2005,6 @@ void CodeGen::genReturn(GenTreePtr treeNode)
                 bool                 isRegCandidate = compiler->lvaTable[lcl->gtLclNum].lvIsRegCandidate();
                 if (isRegCandidate && ((op1->gtFlags & GTF_SPILLED) == 0))
                 {
-                    assert(op1->InReg());
-
                     // We may need to generate a zero-extending mov instruction to load the value from this GT_LCL_VAR
 
                     unsigned   lclNum  = lcl->gtLclNum;

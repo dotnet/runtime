@@ -9697,15 +9697,15 @@ int cTreeFlagsIR(Compiler* comp, GenTree* tree)
                 chars += printf("[REVERSE_OPS]");
             }
         }
-        if (tree->gtFlags & GTF_REG_VAL)
-        {
-            chars += printf("[REG_VAL]");
-        }
         if (tree->gtFlags & GTF_SPILLED)
         {
             chars += printf("[SPILLED_OPER]");
         }
 #if defined(LEGACY_BACKEND)
+        if (tree->InReg())
+        {
+            chars += printf("[REG_VAL]");
+        }
         if (tree->gtFlags & GTF_SPILLED_OP2)
         {
             chars += printf("[SPILLED_OP2]");
