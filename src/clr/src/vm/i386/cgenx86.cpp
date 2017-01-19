@@ -533,11 +533,11 @@ void FaultingExceptionFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
     }
     CONTRACT_END;
 
-#ifndef WIN64EXCEPTIONS
-    CalleeSavedRegisters* regs = GetCalleeSavedRegisters();
-
     // reset pContext; it's only valid for active (top-most) frame
     pRD->pContext = NULL;
+
+#ifndef WIN64EXCEPTIONS
+    CalleeSavedRegisters* regs = GetCalleeSavedRegisters();
 
 #define CALLEE_SAVED_REGISTER(regname) pRD->p##regname = (DWORD*) &regs->regname;
     ENUM_CALLEE_SAVED_REGISTERS();
@@ -545,21 +545,30 @@ void FaultingExceptionFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
     pRD->Esp = m_Esp;
     pRD->PCTAddr = GetReturnAddressPtr();
     pRD->ControlPC = *PTR_PCODE(pRD->PCTAddr);
-#else
-    memcpy(pRD->pCurrentContext, &m_ctx, sizeof(CONTEXT));
 
-    pRD->ControlPC = m_ctx.Eip;
-
-    pRD->Esp = m_ctx.Esp;
-
-    pRD->pCurrentContextPointers->Ebx = &m_ctx.Ebx;
-    pRD->pCurrentContextPointers->Edi = &m_ctx.Edi;
-    pRD->pCurrentContextPointers->Esi = &m_ctx.Esi;
-    pRD->pCurrentContextPointers->Ebp = &m_ctx.Ebp;
+#else // WIN64EXCEPTIONS
 
     pRD->IsCallerContextValid = FALSE;
-    pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
+    pRD->IsCallerSPValid = FALSE;        // Don't add usage of this field.  This is only temporary.
+
+    memcpy(pRD->pCurrentContext, &m_ctx, sizeof(CONTEXT));
+
+#define CALLEE_SAVED_REGISTER(regname) pRD->pCurrentContextPointers->regname = &m_ctx.regname;
+    ENUM_CALLEE_SAVED_REGISTERS();
+#undef CALLEE_SAVED_REGISTER
+
+#define CALLEE_SAVED_REGISTER(regname) pRD->p##regname = &m_ctx.regname;
+    ENUM_CALLEE_SAVED_REGISTERS();
+#undef CALLEE_SAVED_REGISTER
+
+    pRD->Esp = m_ctx.Esp;
+    pRD->PCTAddr = GetReturnAddressPtr();
+    pRD->ControlPC = m_ctx.Eip;
+
 #endif // WIN64EXCEPTIONS
+
+    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    FaultingExceptionFrame::UpdateRegDisplay(ip:%p, sp:%p)\n", pRD->ControlPC, pRD->Esp));
+
     RETURN;
 }
 
