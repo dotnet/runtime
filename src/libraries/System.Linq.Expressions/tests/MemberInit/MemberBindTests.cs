@@ -254,7 +254,6 @@ namespace System.Linq.Expressions.Tests
             Assert.Throws<InvalidProgramException>(() => exp.Compile(useInterpreter));
         }
 
-
         [Fact]
         public void GlobalMethod()
         {

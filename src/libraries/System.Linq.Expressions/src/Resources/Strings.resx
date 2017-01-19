@@ -366,6 +366,9 @@
   <data name="NotAMemberOfType" xml:space="preserve">
     <value>'{0}' is not a member of type '{1}'</value>
   </data>
+  <data name="NotAMemberOfAnyType" xml:space="preserve">
+    <value>'{0}' is not a member of any type</value>
+  </data>
   <data name="ExpressionNotSupportedForType" xml:space="preserve">
     <value>The expression '{0}' is not supported for type '{1}'</value>
   </data>

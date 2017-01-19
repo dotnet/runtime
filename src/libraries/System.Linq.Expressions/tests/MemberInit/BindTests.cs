@@ -267,5 +267,15 @@ namespace System.Linq.Expressions.Tests
             MethodInfo globalMethodInfo = module.GetMethod(globalMethod.Name);
             Assert.Throws<ArgumentException>("propertyAccessor", () => Expression.Bind(globalMethodInfo, Expression.Constant(2)));
         }
+
+        [Fact]
+        public void GlobalField()
+        {
+            ModuleBuilder module = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Name"), AssemblyBuilderAccess.Run).DefineDynamicModule("Module");
+            FieldBuilder fieldBuilder = module.DefineInitializedData("GlobalField", new byte[4], FieldAttributes.Public);
+            module.CreateGlobalFunctions();
+            FieldInfo globalField = module.GetField(fieldBuilder.Name);
+            Assert.Throws<ArgumentException>("member", () => Expression.Bind(globalField, Expression.Default(globalField.FieldType)));
+        }
     }
 }
