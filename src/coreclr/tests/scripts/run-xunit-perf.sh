@@ -213,7 +213,7 @@ function create_core_overlay {
     if [ -z "$coreFxNativeBinDir" ]; then
         exit_with_error "$errorSource" "One of --coreOverlayDir or --coreFxBinDir must be specified." "$printUsage"
     fi
-    if [ ! -d "$coreFxNativeBinDir/Native" ]; then
+    if [ ! -d "$coreFxNativeBinDir/Native" -a ! -d "$coreFxNativeBinDir/native" ]; then
         exit_with_error "$errorSource" "Directory specified by --coreNativeFxBinDir does not exist: $coreFxNativeBinDir/Native"
     fi
 
