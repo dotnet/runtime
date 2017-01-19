@@ -4,7 +4,10 @@
 
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
+using LinqError = System.Linq.Expressions.Error;
 
 namespace System.Dynamic.Utils
 {
@@ -35,11 +38,13 @@ namespace System.Dynamic.Utils
             return -1;
         }
 
+        [ExcludeFromCodeCoverage] // Unreachable
         public void Insert(int index, T item)
         {
             throw ContractUtils.Unreachable;
         }
 
+        [ExcludeFromCodeCoverage] // Unreachable
         public void RemoveAt(int index)
         {
             throw ContractUtils.Unreachable;
@@ -56,6 +61,7 @@ namespace System.Dynamic.Utils
 
                 return GetElement(index);
             }
+            [ExcludeFromCodeCoverage] // Unreachable
             set
             {
                 throw ContractUtils.Unreachable;
@@ -66,11 +72,13 @@ namespace System.Dynamic.Utils
 
         #region ICollection<T> Members
 
+        [ExcludeFromCodeCoverage] // Unreachable
         public void Add(T item)
         {
             throw ContractUtils.Unreachable;
         }
 
+        [ExcludeFromCodeCoverage] // Unreachable
         public void Clear()
         {
             throw ContractUtils.Unreachable;
@@ -78,19 +86,34 @@ namespace System.Dynamic.Utils
 
         public bool Contains(T item) => IndexOf(item) != -1;
 
-        public void CopyTo(T[] array, int arrayIndex)
+        public void CopyTo(T[] array, int index)
         {
-            array[arrayIndex++] = First;
-            for (int i = 1, n = ElementCount; i < n; i++)
+            ContractUtils.RequiresNotNull(array, nameof(array));
+            if (index < 0)
             {
-                array[arrayIndex++] = GetElement(i);
+                throw LinqError.ArgumentOutOfRange(nameof(index));
+            }
+
+            int n = ElementCount;
+            Debug.Assert(n > 0);
+            if (index + n > array.Length)
+            {
+                throw new ArgumentException();
+            }
+
+            array[index++] = First;
+            for (int i = 1; i < n; i++)
+            {
+                array[index++] = GetElement(i);
             }
         }
 
         public int Count => ElementCount;
 
+        [ExcludeFromCodeCoverage] // Unreachable
         public bool IsReadOnly => true;
 
+        [ExcludeFromCodeCoverage] // Unreachable
         public bool Remove(T item)
         {
             throw ContractUtils.Unreachable;

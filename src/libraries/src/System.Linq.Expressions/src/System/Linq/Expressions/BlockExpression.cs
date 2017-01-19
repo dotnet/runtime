@@ -775,12 +775,25 @@ namespace System.Linq.Expressions
             return IndexOf(item) != -1;
         }
 
-        public void CopyTo(Expression[] array, int arrayIndex)
+        public void CopyTo(Expression[] array, int index)
         {
-            array[arrayIndex++] = _arg0;
-            for (int i = 1; i < _block.ExpressionCount; i++)
+            ContractUtils.RequiresNotNull(array, nameof(array));
+            if (index < 0)
             {
-                array[arrayIndex++] = _block.GetExpression(i);
+                throw Error.ArgumentOutOfRange(nameof(index));
+            }
+
+            int n = _block.ExpressionCount;
+            Debug.Assert(n > 0);
+            if (index + n > array.Length)
+            {
+                throw new ArgumentException();
+            }
+
+            array[index++] = _arg0;
+            for (int i = 1; i < n; i++)
+            {
+                array[index++] = _block.GetExpression(i);
             }
         }
 
