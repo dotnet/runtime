@@ -5,7 +5,7 @@
     "emitEntryPoint": true
   },
   "dependencies": {
-    "Microsoft.NETCore.Platforms": "2.0.0-beta-24918-13",
+    "Microsoft.NETCore.Platforms": "2.0.0-beta-24919-02",
     "Microsoft.NETCore.Targets": "1.2.0-beta-24913-02",
     "System.Threading.Thread": "4.4.0-beta-24913-02",
     "System.Collections": "4.4.0-beta-24913-02",
@@ -64,7 +64,7 @@
   "frameworks": {
     "netcoreapp1.1": {
       "dependencies": {
-        "Microsoft.NETCore.Runtime.CoreCLR": "1.2.0-beta-24919-01"
+        "Microsoft.NETCore.Runtime.CoreCLR": "1.2.0-beta-24919-03"
       }
     }
   },
