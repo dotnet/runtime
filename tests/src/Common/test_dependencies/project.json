@@ -9,7 +9,7 @@
     "Microsoft.DotNet.xunit.performance.runner.Windows": "1.0.0-alpha-build0040",
     "Microsoft.Win32.Primitives": "4.4.0-beta-24913-02",
     "Newtonsoft.Json": "8.0.3",
-    "Microsoft.NETCore.Platforms": "2.0.0-beta-24918-13",
+    "Microsoft.NETCore.Platforms": "2.0.0-beta-24919-02",
     "Microsoft.NETCore.Targets": "1.2.0-beta-24913-02",
     "System.Collections.Immutable": "1.4.0-beta-24913-02",
     "System.Threading.Thread": "4.4.0-beta-24913-02",
