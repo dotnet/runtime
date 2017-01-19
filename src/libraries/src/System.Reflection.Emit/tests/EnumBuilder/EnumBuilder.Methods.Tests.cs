@@ -215,7 +215,7 @@ namespace System.Reflection.Emit.Tests
             ConstructorInfo attributeConstructor = typeof(BoolAttribute).GetConstructor(new Type[] { typeof(bool) });
             enumBuilder.SetCustomAttribute(attributeConstructor, new byte[] { 01, 00, 01 });
 
-            Attribute[] objVals = enumBuilder.GetCustomAttributes(true).ToArray();
+            Attribute[] objVals = (Attribute[])CustomAttributeExtensions.GetCustomAttributes(enumBuilder, true).ToArray();
             Assert.Equal(new BoolAttribute(true), objVals[0]);
         }
 

@@ -195,25 +195,25 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public TypeArray GetDelegateParameters(SymbolLoader pSymbolLoader)
         {
             Debug.Assert(isDelegateType());
-            MethodSymbol invoke = pSymbolLoader.LookupInvokeMeth(this.getAggregate());
+            MethodSymbol invoke = pSymbolLoader.LookupInvokeMeth(getAggregate());
             if (invoke == null || !invoke.isInvoke())
             {
                 // This can happen if the delegate is internal to another assembly. 
                 return null;
             }
-            return this.getAggregate().GetTypeManager().SubstTypeArray(invoke.Params, this);
+            return getAggregate().GetTypeManager().SubstTypeArray(invoke.Params, this);
         }
 
         public CType GetDelegateReturnType(SymbolLoader pSymbolLoader)
         {
             Debug.Assert(isDelegateType());
-            MethodSymbol invoke = pSymbolLoader.LookupInvokeMeth(this.getAggregate());
+            MethodSymbol invoke = pSymbolLoader.LookupInvokeMeth(getAggregate());
             if (invoke == null || !invoke.isInvoke())
             {
                 // This can happen if the delegate is internal to another assembly. 
                 return null;
             }
-            return this.getAggregate().GetTypeManager().SubstType(invoke.RetType, this);
+            return getAggregate().GetTypeManager().SubstType(invoke.RetType, this);
         }
     }
 }

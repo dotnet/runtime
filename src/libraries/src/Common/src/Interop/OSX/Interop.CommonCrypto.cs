@@ -13,6 +13,6 @@ internal static partial class Interop
     internal static partial class CommonCrypto
     {
         [DllImport(Libraries.LibSystemCommonCrypto)]
-        internal static unsafe extern int CCRandomGenerateBytes(byte* bytes, int byteCount);
+        internal static extern unsafe int CCRandomGenerateBytes(byte* bytes, int byteCount);
     }
 }

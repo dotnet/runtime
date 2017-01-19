@@ -17,7 +17,7 @@ namespace System.Linq.Expressions
     /// classes whose functionality requires traversing, examining or copying
     /// an expression tree.
     /// </remarks>
-    public abstract class ExpressionVisitor
+    public abstract partial class ExpressionVisitor
     {
         /// <summary>
         /// Initializes a new instance of <see cref="ExpressionVisitor"/>.
@@ -32,14 +32,7 @@ namespace System.Linq.Expressions
         /// <param name="node">The expression to visit.</param>
         /// <returns>The modified expression, if it or any subexpression was modified;
         /// otherwise, returns the original expression.</returns>
-        public virtual Expression Visit(Expression node)
-        {
-            if (node != null)
-            {
-                return node.Accept(this);
-            }
-            return null;
-        }
+        public virtual Expression Visit(Expression node) => node?.Accept(this);
 
         /// <summary>
         /// Dispatches the list of expressions to one of the more specialized visit methods in this class.
@@ -79,6 +72,11 @@ namespace System.Linq.Expressions
         private Expression[] VisitArguments(IArgumentProvider nodes)
         {
             return ExpressionVisitorUtils.VisitArguments(this, nodes);
+        }
+
+        private ParameterExpression[] VisitParameters(IParameterProvider nodes, string callerName)
+        {
+            return ExpressionVisitorUtils.VisitParameters(this, nodes, callerName);
         }
 
         /// <summary>
@@ -343,7 +341,15 @@ namespace System.Linq.Expressions
         /// otherwise, returns the original expression.</returns>
         protected internal virtual Expression VisitLambda<T>(Expression<T> node)
         {
-            return node.Update(Visit(node.Body), VisitAndConvert(node.Parameters, nameof(VisitLambda)));
+            Expression body = Visit(node.Body);
+            ParameterExpression[] parameters = VisitParameters(node, nameof(VisitLambda));
+
+            if (body == node.Body && parameters == null)
+            {
+                return node;
+            }
+
+            return node.Rewrite(body, parameters);
         }
 
         /// <summary>

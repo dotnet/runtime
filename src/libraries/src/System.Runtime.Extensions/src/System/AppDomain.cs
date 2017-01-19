@@ -10,6 +10,7 @@ using System;
 using System.Reflection;
 using System.Runtime.ExceptionServices;
 using System.Runtime.Loader;
+using System.IO;
 
 namespace System
 {
@@ -37,6 +38,9 @@ namespace System
         }
 
         public string DynamicDirectory => null;
+
+        [ObsoleteAttribute("AppDomain.SetDynamicBase has been deprecated. Please investigate the use of AppDomainSetup.DynamicBase instead. http://go.microsoft.com/fwlink/?linkid=14202")]
+        public void SetDynamicBase(string path) { }
 
         public string FriendlyName
         {
@@ -95,8 +99,8 @@ namespace System
             {
                 throw new ArgumentNullException(nameof(assemblyFile));
             }
-
-            Assembly assembly = Assembly.LoadFrom(assemblyFile);
+            string fullPath = Path.GetFullPath(assemblyFile);
+            Assembly assembly = Assembly.LoadFile(fullPath);
             return ExecuteAssembly(assembly, args);
         }
 
@@ -204,20 +208,27 @@ namespace System
 
         private static Exception CreateResMonNotAvailException() => new InvalidOperationException(SR.AppDomain_ResMonNotAvail);
 
+        [ObsoleteAttribute("AppDomain.GetCurrentThreadId has been deprecated because it does not provide a stable Id when managed threads are running on fibers (aka lightweight threads). To get a stable identifier for a managed thread, use the ManagedThreadId property on Thread.  http://go.microsoft.com/fwlink/?linkid=14202", false)]
         public static int GetCurrentThreadId() => Environment.CurrentManagedThreadId;
 
         public bool ShadowCopyFiles => false;
 
+        [ObsoleteAttribute("AppDomain.AppendPrivatePath has been deprecated. Please investigate the use of AppDomainSetup.PrivateBinPath instead. http://go.microsoft.com/fwlink/?linkid=14202")]
         public void AppendPrivatePath(string path) { }
 
+        [ObsoleteAttribute("AppDomain.ClearPrivatePath has been deprecated. Please investigate the use of AppDomainSetup.PrivateBinPath instead. http://go.microsoft.com/fwlink/?linkid=14202")]
         public void ClearPrivatePath() { }
 
+        [ObsoleteAttribute("AppDomain.ClearShadowCopyPath has been deprecated. Please investigate the use of AppDomainSetup.ShadowCopyDirectories instead. http://go.microsoft.com/fwlink/?linkid=14202")]
         public void ClearShadowCopyPath() { }
 
+        [ObsoleteAttribute("AppDomain.SetCachePath has been deprecated. Please investigate the use of AppDomainSetup.CachePath instead. http://go.microsoft.com/fwlink/?linkid=14202")]
         public void SetCachePath(string path) { }
 
+        [ObsoleteAttribute("AppDomain.SetShadowCopyFiles has been deprecated. Please investigate the use of AppDomainSetup.ShadowCopyFiles instead. http://go.microsoft.com/fwlink/?linkid=14202")]
         public void SetShadowCopyFiles() { }
 
+        [ObsoleteAttribute("AppDomain.SetShadowCopyPath has been deprecated. Please investigate the use of AppDomainSetup.ShadowCopyDirectories instead. http://go.microsoft.com/fwlink/?linkid=14202")]
         public void SetShadowCopyPath(string path) { }
 
         public Assembly[] GetAssemblies() => AssemblyLoadContext.GetLoadedAssemblies();
@@ -260,7 +271,12 @@ namespace System
             }
         }
 
-        // TODO: #9327
-        public event ResolveEventHandler AssemblyResolve;
+        public event ResolveEventHandler AssemblyResolve
+        {
+            add { AssemblyLoadContext.AssemblyResolve += value; }
+            remove { AssemblyLoadContext.AssemblyResolve -= value; }
+        }
+
+        public event ResolveEventHandler ReflectionOnlyAssemblyResolve;
     }
 }

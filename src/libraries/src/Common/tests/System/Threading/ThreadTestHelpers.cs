@@ -39,7 +39,7 @@ namespace System.Threading.Tests
                     Interlocked.MemoryBarrier();
                     if (backgroundEx != null)
                     {
-                        throw new Exception("Background thread exception", backgroundEx);
+                        throw new AggregateException(backgroundEx);
                     }
                 };
             waitForThread =
@@ -79,7 +79,7 @@ namespace System.Threading.Tests
                     Interlocked.MemoryBarrier();
                     if (backgroundEx != null)
                     {
-                        throw new Exception("Background thread exception", backgroundEx);
+                        throw new AggregateException(backgroundEx);
                     }
                 };
             waitForThread =
@@ -123,6 +123,11 @@ namespace System.Threading.Tests
         public static void CheckedWait(this WaitHandle wh)
         {
             Assert.True(wh.WaitOne(UnexpectedTimeoutMilliseconds));
+        }
+
+        public static void CheckedWait(this ManualResetEventSlim e)
+        {
+            Assert.True(e.Wait(UnexpectedTimeoutMilliseconds));
         }
     }
 }

@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using Xunit;
 
 namespace System.Linq.Expressions.Tests
@@ -897,7 +896,7 @@ namespace System.Linq.Expressions.Tests
             Func<Func<ulong?, ulong?, ulong?>> f4 = e4.Compile(useInterpreter);
 
             Assert.Equal(expected, f4()(a, b));
-            
+
             // verify with currying
             Expression<Func<ulong?, Func<ulong?, ulong?>>> e5 =
                 Expression.Lambda<Func<ulong?, Func<ulong?, ulong?>>>(

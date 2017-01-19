@@ -58,6 +58,16 @@ namespace System.Net.Sockets.Tests
             socket.BeginSend(buffers, flags, callback, socket);
         }
 
+        public static void SendFileAPM(this Socket socket, string filename, byte[] preBuffer, byte[] postBuffer, TransmitFileOptions flags, Action handler)
+        {
+            var callback = new AsyncCallback(asyncResult =>
+            {
+                ((Socket)asyncResult.AsyncState).EndSendFile(asyncResult);
+                handler();
+            });
+            socket.BeginSendFile(filename, preBuffer, postBuffer, flags, callback, socket);
+        }
+
         public static void SendToAPM(this Socket socket, byte[] buffer, int offset, int count, SocketFlags flags, EndPoint remoteEndpoint, Action<int> handler)
         {
             var callback = new AsyncCallback(asyncResult => handler(((Socket)asyncResult.AsyncState).EndSendTo(asyncResult)));

@@ -75,7 +75,7 @@ namespace System.Linq.Expressions
         /// </summary>
         /// <param name="value">An <see cref="Object"/> to set the <see cref="ConstantExpression.Value"/> property equal to.</param>
         /// <returns>
-        /// A <see cref="ConstantExpression"/> that has the <see cref="NodeType"/> property equal to 
+        /// A <see cref="ConstantExpression"/> that has the <see cref="NodeType"/> property equal to
         /// <see cref="ExpressionType.Constant"/> and the <see cref="ConstantExpression.Value"/> property set to the specified value.
         /// </returns>
         public static ConstantExpression Constant(object value)
@@ -84,14 +84,14 @@ namespace System.Linq.Expressions
         }
 
         /// <summary>
-        /// Creates a <see cref="ConstantExpression"/> that has the <see cref="ConstantExpression.Value"/> 
+        /// Creates a <see cref="ConstantExpression"/> that has the <see cref="ConstantExpression.Value"/>
         /// and <see cref="ConstantExpression.Type"/> properties set to the specified values. .
         /// </summary>
         /// <param name="value">An <see cref="Object"/> to set the <see cref="ConstantExpression.Value"/> property equal to.</param>
         /// <param name="type">A <see cref="Type"/> to set the <see cref="Type"/> property equal to.</param>
         /// <returns>
-        /// A <see cref="ConstantExpression"/> that has the <see cref="NodeType"/> property equal to 
-        /// <see cref="ExpressionType.Constant"/> and the <see cref="ConstantExpression.Value"/> and 
+        /// A <see cref="ConstantExpression"/> that has the <see cref="NodeType"/> property equal to
+        /// <see cref="ExpressionType.Constant"/> and the <see cref="ConstantExpression.Value"/> and
         /// <see cref="Type"/> properties set to the specified values.
         /// </returns>
         public static ConstantExpression Constant(object value, Type type)

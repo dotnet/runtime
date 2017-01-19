@@ -2,10 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections;
 using System.IO;
-using System.Xml;
 using System.Xml.Schema;
 using Xunit;
 using Xunit.Abstractions;
@@ -17,9 +15,12 @@ namespace System.Xml.Tests
     public class TCValidateElement : CXmlSchemaValidatorTestCase
     {
         private ITestOutputHelper _output;
+        private ExceptionVerifier _exVerifier;
+
         public TCValidateElement(ITestOutputHelper output): base(output)
         {
             _output = output;
+            _exVerifier = new ExceptionVerifier("System.Xml", _output);
         }
 
         [Theory]
@@ -87,9 +88,9 @@ namespace System.Xml.Tests
                 else
                     val.ValidateElement("$$##", "", null, null, null, null, null);
             }
-            catch (XmlSchemaValidationException)
+            catch (XmlSchemaValidationException e)
             {
-                //XmlExceptionVerifier.IsExceptionOk(e, "Sch_UndeclaredElement", new string[] { "$$##" });
+                _exVerifier.IsExceptionOk(e, "Sch_UndeclaredElement", new string[] { "$$##" });
                 return;
             }
 
@@ -112,7 +113,7 @@ namespace System.Xml.Tests
             XmlSchemaInfo info = new XmlSchemaInfo();
             string name = elemType;
 
-            schemas.Add("", TestData + XSDFILE_VALIDATE_TEXT);
+            schemas.Add("", Path.Combine(TestData, XSDFILE_VALIDATE_TEXT));
             schemas.Compile();
             val = CreateValidator(schemas);
 
@@ -142,7 +143,7 @@ namespace System.Xml.Tests
             XmlSchemaSet schemas = new XmlSchemaSet();
             XmlSchemaInfo info = new XmlSchemaInfo();
 
-            schemas.Add("", TestData + XSDFILE_VALIDATE_END_ELEMENT);
+            schemas.Add("", Path.Combine(TestData, XSDFILE_VALIDATE_END_ELEMENT));
             schemas.Compile();
             val = CreateValidator(schemas);
 
@@ -188,7 +189,7 @@ namespace System.Xml.Tests
             ns.AddNamespace("t", "uri:tempuri");
 
             val.Initialize();
-            val.ValidateElement("root", "", info, "t:type1", null, "uri:tempuri " + TestData + XSDFILE_TARGET_NAMESPACE, null);
+            val.ValidateElement("root", "", info, "t:type1", null, "uri:tempuri " + Path.Combine(TestData, XSDFILE_TARGET_NAMESPACE), null);
 
             if ((int)allFlags == (int)AllFlags)
             {
@@ -198,7 +199,7 @@ namespace System.Xml.Tests
             else
             {
                 Assert.True(holder.IsCalledA);
-                //XmlExceptionVerifier.IsExceptionOk(holder.lastException);
+                _exVerifier.IsExceptionOk(holder.lastException, "Sch_XsiTypeNotFound", new string[] { "uri:tempuri:type1" });
             }
 
             return;
@@ -223,7 +224,7 @@ namespace System.Xml.Tests
             val.ValidationEventHandler += new ValidationEventHandler(holder.CallbackA);
 
             val.Initialize();
-            val.ValidateElement("root", "", info, "type1", null, null, TestData + XSDFILE_NO_TARGET_NAMESPACE);
+            val.ValidateElement("root", "", info, "type1", null, null, Path.Combine(TestData, XSDFILE_NO_TARGET_NAMESPACE));
 
             if ((int)allFlags == (int)AllFlags)
             {
@@ -233,7 +234,7 @@ namespace System.Xml.Tests
             else
             {
                 Assert.True(holder.IsCalledA);
-                //XmlExceptionVerifier.IsExceptionOk(holder.lastException);
+                _exVerifier.IsExceptionOk(holder.lastException, "Sch_XsiTypeNotFound", new string[] { "type1" });
             }
 
             return;
@@ -257,11 +258,11 @@ namespace System.Xml.Tests
             {
                 val.ValidateEndElement(info);
             }
-            catch (XmlSchemaValidationException)
+            catch (XmlSchemaValidationException e)
             {
-                //XmlExceptionVerifier.IsExceptionOk(e, new object[] { "Sch_IncompleteContentExpecting",
-																//	new object[] { "Sch_ElementName", "NillableElement" },
-																//	new object[] { "Sch_ElementName", "foo" } });
+                _exVerifier.IsExceptionOk(e, new object[] { "Sch_IncompleteContentExpecting",
+                    new object[] { "Sch_ElementName", "NillableElement" },
+                    new object[] { "Sch_ElementName", "foo" } });
                 return;
             }
 
@@ -294,7 +295,7 @@ namespace System.Xml.Tests
             XmlNamespaceManager ns = new XmlNamespaceManager(new NameTable());
             XmlSchemaSet schemas = new XmlSchemaSet();
 
-            schemas.Add("uri:tempuri", TestData + XSDFILE_TARGET_NAMESPACE);
+            schemas.Add("uri:tempuri", Path.Combine(TestData, XSDFILE_TARGET_NAMESPACE));
             val = CreateValidator(schemas, ns, 0);
             ns.AddNamespace("t", "uri:tempuri");
 
@@ -312,7 +313,7 @@ namespace System.Xml.Tests
             XmlNamespaceManager ns = new XmlNamespaceManager(new NameTable());
             XmlSchemaSet schemas = new XmlSchemaSet();
 
-            schemas.Add("uri:tempuri", TestData + XSDFILE_TARGET_NAMESPACE);
+            schemas.Add("uri:tempuri", Path.Combine(TestData, XSDFILE_TARGET_NAMESPACE));
             val = CreateValidator(schemas, ns, 0);
             ns.AddNamespace("t", "uri:tempuri");
 
@@ -322,9 +323,9 @@ namespace System.Xml.Tests
             {
                 val.ValidateElement("foo", "uri:tempuri", null, "type1", null, null, null);
             }
-            catch (XmlSchemaValidationException)
+            catch (XmlSchemaValidationException e)
             {
-                //XmlExceptionVerifier.IsExceptionOk(e, "Sch_XsiTypeNotFound", new string[] { "type1" });
+                _exVerifier.IsExceptionOk(e, "Sch_XsiTypeNotFound", new string[] { "type1" });
                 return;
             }
             Assert.True(false);
@@ -352,11 +353,11 @@ namespace System.Xml.Tests
             ns.AddNamespace("t", "uri:tempuri");
 
             val.Initialize();
-            val.ValidateElement("root", "", info, "t:rootType", null, "uri:tempuri " + TestData + "__NonExistingFile__.xsd", null);
+            val.ValidateElement("root", "", info, "t:rootType", null, "uri:tempuri " + Path.Combine(TestData, "__NonExistingFile__.xsd"), null);
 
             Assert.True(holder.IsCalledA);
             Assert.Equal(holder.lastSeverity, XmlSeverityType.Warning);
-            //XmlExceptionVerifier.IsExceptionOk(holder.lastException, "Sch_CannotLoadSchema", new string[] { "uri:tempuri", null });
+            _exVerifier.IsExceptionOk(holder.lastException, "Sch_CannotLoadSchema", new string[] { "uri:tempuri", null });
 
             return;
         }
@@ -380,11 +381,11 @@ namespace System.Xml.Tests
             val.ValidationEventHandler += new ValidationEventHandler(holder.CallbackA);
 
             val.Initialize();
-            val.ValidateElement("root", "", info, "rootType", null, null, TestData + "__NonExistingFile__.xsd");
+            val.ValidateElement("root", "", info, "rootType", null, null, Path.Combine(TestData, "__NonExistingFile__.xsd"));
 
             Assert.True(holder.IsCalledA);
             Assert.Equal(holder.lastSeverity, XmlSeverityType.Warning);
-            //XmlExceptionVerifier.IsExceptionOk(holder.lastException, "Sch_CannotLoadSchema", new string[] { "", null });
+            _exVerifier.IsExceptionOk(holder.lastException, "Sch_CannotLoadSchema", new string[] { "", null });
 
             return;
         }
@@ -405,7 +406,7 @@ namespace System.Xml.Tests
 
             Assert.True(holder.IsCalledA);
             Assert.Equal(holder.lastSeverity, XmlSeverityType.Warning);
-            //XmlExceptionVerifier.IsExceptionOk(holder.lastException, "Sch_NoElementSchemaFound", new string[] { "undefined" });
+            _exVerifier.IsExceptionOk(holder.lastException, "Sch_NoElementSchemaFound", new string[] { "undefined" });
 
             return;
         }
@@ -438,7 +439,7 @@ namespace System.Xml.Tests
             XmlSchemaParticle[] actualParticles;
             string[] expectedParticles = { "eleA", "eleB", "eleC" };
 
-            schemas.Add("", TestData + @"\Bug342447.xsd");
+            schemas.Add("", Path.Combine(TestData, "Bug342447.xsd"));
             schemas.Compile();
             val = CreateValidator(schemas);
             val.Initialize();

@@ -12,7 +12,7 @@ namespace System.IO
     {
         public static string[] GetLogicalDrives()
         {
-            int drives = Interop.mincore.GetLogicalDrives();
+            int drives = Interop.Kernel32.GetLogicalDrives();
             if (drives == 0)
                 throw Win32Marshal.GetExceptionForLastWin32Error();
 

@@ -11,7 +11,7 @@ namespace System.Linq.Expressions
 {
     /// <summary>
     /// Represents a try/catch/finally/fault block.
-    /// 
+    ///
     /// The body is protected by the try block.
     /// The handlers consist of a set of <see cref="CatchBlock"/>s that can either be catch or filters.
     /// The fault runs if an exception is thrown.
@@ -83,11 +83,15 @@ namespace System.Linq.Expressions
         /// <returns>This expression if no children changed, or an expression with the updated children.</returns>
         public TryExpression Update(Expression body, IEnumerable<CatchBlock> handlers, Expression @finally, Expression fault)
         {
-            if (body == Body && handlers == Handlers && @finally == Finally && fault == Fault)
+            if (body == Body & @finally == Finally & fault == Fault)
             {
-                return this;
+                if (ExpressionUtils.SameElements(ref handlers, Handlers))
+                {
+                    return this;
+                }
             }
-            return Expression.MakeTry(Type, body, @finally, fault, handlers);
+
+            return MakeTry(Type, body, @finally, fault, handlers);
         }
     }
 

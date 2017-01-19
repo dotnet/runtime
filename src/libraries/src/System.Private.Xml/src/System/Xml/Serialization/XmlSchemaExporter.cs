@@ -597,7 +597,7 @@ namespace System.Xml.Serialization
             }
             else
             {
-                throw new InvalidOperationException(SR.Format(SR.XmlInternalErrorDetails, "Unsuported anonymous mapping type: " + mapping.ToString()));
+                throw new InvalidOperationException(SR.Format(SR.XmlInternalErrorDetails, "Unsupported anonymous mapping type: " + mapping.ToString()));
             }
         }
 
@@ -900,7 +900,7 @@ namespace System.Xml.Serialization
             }
         }
 
-        static internal string ExportDefaultValue(TypeMapping mapping, object value)
+        internal static string ExportDefaultValue(TypeMapping mapping, object value)
         {
             if (!(mapping is PrimitiveMapping))
                 // should throw, but it will be a breaking change;

@@ -138,6 +138,9 @@
   <data name="ArgumentOutOfRange_NeedNonNegNum" xml:space="preserve">
     <value>Non-negative number required.</value>
   </data>
+  <data name="ArgumentOutOfRange_NeedPosNum" xml:space="preserve">
+    <value>Positive number required.</value>
+  </data>
   <data name="CryptDecrypt_Failed" xml:space="preserve">
     <value>CryptDecrypt failed with error code </value>
   </data>
@@ -227,6 +230,18 @@
   </data>
   <data name="Cryptography_PartialBlock" xml:space="preserve">
     <value>The input data is not a complete block.</value>
+  </data>
+  <data name="Cryptography_PasswordDerivedBytes_InvalidAlgorithm" xml:space="preserve">
+    <value>Algorithm is unavailable or is not supported for this operation.</value>
+  </data>
+  <data name="Cryptography_PasswordDerivedBytes_InvalidIV" xml:space="preserve">
+    <value>The Initialization vector should have the same length as the algorithm block size in bytes.</value>
+  </data>
+  <data name="Cryptography_PasswordDerivedBytes_TooManyBytes" xml:space="preserve">
+    <value>Requested number of bytes exceeds the maximum.</value>
+  </data>
+  <data name="Cryptography_PasswordDerivedBytes_ValuesFixed" xml:space="preserve">
+    <value> Value of '{0}' cannot be changed after the bytes have been retrieved.</value>
   </data>
   <data name="Cryptography_RC2_EKSKS2" xml:space="preserve">
     <value>EffectiveKeySize must be the same as KeySize in this implementation.</value>

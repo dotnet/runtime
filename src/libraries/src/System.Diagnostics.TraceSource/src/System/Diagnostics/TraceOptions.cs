@@ -8,9 +8,11 @@ namespace System.Diagnostics
     public enum TraceOptions
     {
         None = 0,
+        LogicalOperationStack = 0x01,
         DateTime = 0x02,
         Timestamp = 0x04,
         ProcessId = 0x08,
-        ThreadId = 0x10
+        ThreadId = 0x10,
+        Callstack = 0x20,
     }
 }

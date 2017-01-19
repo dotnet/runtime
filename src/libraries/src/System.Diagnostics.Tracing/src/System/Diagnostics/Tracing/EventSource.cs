@@ -2060,7 +2060,7 @@ namespace System.Diagnostics.Tracing
         }
 
         [SecurityCritical]
-        unsafe private object[] SerializeEventArgs(int eventId, object[] args)
+        private unsafe object[] SerializeEventArgs(int eventId, object[] args)
         {
             TraceLoggingEventTypes eventTypes = m_eventData[eventId].TraceLoggingEventTypes;
             if (eventTypes == null)
@@ -2136,7 +2136,7 @@ namespace System.Diagnostics.Tracing
         }
 
         [SecurityCritical]
-        unsafe private void WriteToAllListeners(int eventId, Guid* childActivityID, int eventDataCount, EventSource.EventData* data)
+        private unsafe void WriteToAllListeners(int eventId, Guid* childActivityID, int eventDataCount, EventSource.EventData* data)
         {
             // We represent a byte[] as a integer denoting the length  and then a blob of bytes in the data pointer. This causes a spurious
             // warning because eventDataCount is off by one for the byte[] case since a byte[] has 2 items associated it. So we want to check
@@ -2160,7 +2160,7 @@ namespace System.Diagnostics.Tracing
 
         // helper for writing to all EventListeners attached the current eventSource.  
         [SecurityCritical]
-        unsafe private void WriteToAllListeners(int eventId, Guid* childActivityID, params object[] args)
+        private unsafe void WriteToAllListeners(int eventId, Guid* childActivityID, params object[] args)
         {
             EventWrittenEventArgs eventCallbackArgs = new EventWrittenEventArgs(this);
             eventCallbackArgs.EventId = eventId;
@@ -2311,7 +2311,7 @@ namespace System.Diagnostics.Tracing
 
 #if FEATURE_ACTIVITYSAMPLING
         [SecurityCritical]
-        unsafe private SessionMask GetEtwSessionMask(int eventId, Guid* childActivityID)
+        private unsafe SessionMask GetEtwSessionMask(int eventId, Guid* childActivityID)
         {
             SessionMask etwSessions = new SessionMask();
 
@@ -3823,7 +3823,7 @@ namespace System.Diagnostics.Tracing
         /// <returns>The literal value or -1 if the value could not be determined. </returns>
         [SecuritySafeCritical]
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity", Justification = "Switch statement is clearer than alternatives")]
-        static private int GetHelperCallFirstArg(MethodInfo method)
+        private static int GetHelperCallFirstArg(MethodInfo method)
         {
 #if (!ES_BUILD_PCL && !PROJECTN)
             // Currently searches for the following pattern
@@ -3934,7 +3934,7 @@ namespace System.Diagnostics.Tracing
                             goto default;
                         break;
                     default:
-                        /* Contract.Assert(false, "Warning: User validation code sub-optimial: Unsuported opcode " + instrs[idx] +
+                        /* Contract.Assert(false, "Warning: User validation code sub-optimial: Unsupported opcode " + instrs[idx] +
                             " at " + idx + " in method " + method.Name); */
                         return -1;
                 }
@@ -4125,7 +4125,7 @@ namespace System.Diagnostics.Tracing
         private List<EtwSession> m_legacySessions;      // the legacy ETW sessions listening to this source
         internal long m_keywordTriggers;                // a bit is set if it corresponds to a keyword that's part of an enabled triggering event
         internal SessionMask m_activityFilteringForETWEnabled; // does THIS EventSource have activity filtering turned on for each ETW session
-        static internal Action<Guid> s_activityDying;   // Fires when something calls SetCurrentThreadToActivity()
+        internal static Action<Guid> s_activityDying;   // Fires when something calls SetCurrentThreadToActivity()
         // Also used to mark that activity tracing is on for some case
 #endif // FEATURE_ACTIVITYSAMPLING
 
@@ -4395,7 +4395,7 @@ namespace System.Diagnostics.Tracing
         /// for a particular eventSource to occur BEFORE the OnEventSourceCreated is issued.
         /// </summary>
         /// <param name="eventSource"></param>
-        internal protected virtual void OnEventSourceCreated(EventSource eventSource)
+        protected internal virtual void OnEventSourceCreated(EventSource eventSource)
         {
             EventHandler<EventSourceCreatedEventArgs> callBack = this._EventSourceCreated;
             if(callBack != null)
@@ -4411,7 +4411,7 @@ namespace System.Diagnostics.Tracing
         /// the EventListener has enabled events.  
         /// </summary>
         /// <param name="eventData"></param>
-        internal protected virtual void OnEventWritten(EventWrittenEventArgs eventData)
+        protected internal virtual void OnEventWritten(EventWrittenEventArgs eventData)
         {
             EventHandler<EventWrittenEventArgs> callBack = this.EventWritten;
             if (callBack != null)
@@ -5434,7 +5434,7 @@ namespace System.Diagnostics.Tracing
         /// current activity is active.  
         /// </summary>
         [SecurityCritical]
-        unsafe public static bool PassesActivityFilter(
+        public static unsafe bool PassesActivityFilter(
                                     ActivityFilter filterList,
                                     Guid* childActivityID,
                                     bool triggeringEvent,
@@ -5532,7 +5532,7 @@ namespace System.Diagnostics.Tracing
         /// that the current activity is active.
         /// </summary>
         [SecurityCritical]
-        unsafe public static void FlowActivityIfNeeded(ActivityFilter filterList, Guid* currentActivityId, Guid* childActivityID)
+        public static unsafe void FlowActivityIfNeeded(ActivityFilter filterList, Guid* currentActivityId, Guid* childActivityID)
         {
             Contract.Assert(childActivityID != null);
 

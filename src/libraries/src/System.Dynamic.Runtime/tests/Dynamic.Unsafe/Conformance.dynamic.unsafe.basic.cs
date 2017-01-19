@@ -146,7 +146,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.unsfe.basic.attribute01
     }
 
     [MyAttr]
-    unsafe public class US
+    public unsafe class US
     {
         public int* p;
     }
@@ -184,7 +184,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.unsfe.basic.collection0
     //<Expects Status=warning>\(14,17\).*CS0649</Expects>
     using System.Collections.Generic;
 
-    unsafe public class US
+    public unsafe class US
     {
         public int* p;
     }
@@ -225,7 +225,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.unsfe.basic.collection0
     //<Expects Status=warning>\(14,17\).*CS0649</Expects>
     using System.Collections.Generic;
 
-    unsafe public class US
+    public unsafe class US
     {
         public int* p;
     }
@@ -271,7 +271,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.unsfe.basic.collection0
     using System.Collections.Generic;
     using Microsoft.CSharp.RuntimeBinder;
 
-    unsafe public class US
+    public unsafe class US
     {
         public int* p;
     }
@@ -445,7 +445,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.unsfe.basic.dlgate01.dl
     //<Expects Status=success></Expects>
     // <Code>
     internal unsafe delegate void Foo(int* p);
-    unsafe public class Test
+    public unsafe class Test
     {
         [Fact]
         public static void DynamicCSharpRunTest()
@@ -518,7 +518,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.unsfe.basic.evnt01.evnt
     //<Expects Status=success></Expects>
     // <Code>
     internal unsafe delegate void Foo(int* p);
-    unsafe public class Test
+    public unsafe class Test
     {
         [Fact]
         public static void DynamicCSharpRunTest()
@@ -610,7 +610,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.unsfe.basic.expressiont
         public int* p;
     }
 
-    unsafe public class Test
+    public unsafe class Test
     {
         [Fact]
         public static void DynamicCSharpRunTest()
@@ -645,7 +645,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.unsfe.basic.field01.fie
     public class C
     {
         public unsafe int* p;
-        public unsafe static char* q;
+        public static unsafe char* q;
     }
 
     public unsafe class Test
@@ -765,7 +765,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.unsfe.basic.indexer02.i
     public class C
     {
         public const int field = 10;
-        unsafe public int* this[int[] index]
+        public unsafe int* this[int[] index]
         {
             get
             {
@@ -777,7 +777,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.unsfe.basic.indexer02.i
         }
     }
 
-    static public class D
+    public static class D
     {
         public static int field = 1;
     }
@@ -821,7 +821,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.unsfe.basic.indexer04.i
     // <Code>
     public class Unsafe
     {
-        unsafe public int* this[int index]
+        public unsafe int* this[int index]
         {
             get
             {
@@ -882,14 +882,14 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.unsfe.basic.integereger
         void Foo(dynamic p);
     }
 
-    unsafe public class C : IF
+    public unsafe class C : IF
     {
         public void Foo(dynamic p)
         {
         }
     }
 
-    unsafe public class Test
+    public unsafe class Test
     {
         [Fact]
         public static void DynamicCSharpRunTest()
@@ -923,12 +923,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.unsfe.basic.lambda01.la
     //<Expects Status=warning>\(14,17\).*CS0649</Expects>
     using System;
 
-    unsafe public class UC
+    public unsafe class UC
     {
         public int* p;
     }
 
-    unsafe public class Test
+    public unsafe class Test
     {
         [Fact]
         public static void DynamicCSharpRunTest()
@@ -963,12 +963,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.unsfe.basic.lambda02.la
     //<Expects Status=warning>\(14,17\).*CS0649</Expects>
     using System;
 
-    unsafe public class UC
+    public unsafe class UC
     {
         public int* p;
     }
 
-    unsafe public class Test
+    public unsafe class Test
     {
         [Fact]
         public static void DynamicCSharpRunTest()
@@ -1010,12 +1010,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.unsfe.basic.method02.me
     // <Code>
     public class C
     {
-        unsafe public int Foo(dynamic p)
+        public unsafe int Foo(dynamic p)
         {
             return 1;
         }
 
-        unsafe public static int Bar(dynamic p)
+        public static unsafe int Bar(dynamic p)
         {
             return 2;
         }
@@ -1057,12 +1057,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.unsfe.basic.method05.me
     public class C
     {
         public static int field = 10;
-        unsafe public dynamic Foo()
+        public unsafe dynamic Foo()
         {
             return 1;
         }
 
-        unsafe public static dynamic Bar()
+        public static unsafe dynamic Bar()
         {
             return 2;
         }
@@ -1105,7 +1105,7 @@ public class US
         public int* ptr;
     }
 
-    static public class Ext
+    public static class Ext
     {
         public static void Foo(this US u, dynamic d)
         {
@@ -1193,12 +1193,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.unsfe.basic.objinit01.o
     // <Code>
     using System.Collections.Generic;
 
-    unsafe public class US
+    public unsafe class US
     {
         public int* p;
     }
 
-    unsafe public class Test
+    public unsafe class Test
     {
         [Fact]
         public static void DynamicCSharpRunTest()

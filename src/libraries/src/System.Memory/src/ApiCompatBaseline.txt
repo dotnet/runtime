@@ -1,0 +1,5 @@
+Compat issues with assembly System.Memory:
+MembersMustExist : Member 'System.Span<T>.GetItem(System.Int32)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Span<T>.Clear()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Span<T>.Fill(T)' does not exist in the implementation but it does exist in the contract.
+Total Issues: 3

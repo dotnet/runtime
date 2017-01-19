@@ -1,22 +1,20 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
-
   <ItemGroup>
     <ProjectReference Include="..\ref\System.Runtime.WindowsRuntime.UI.Xaml.csproj">
       <SupportedFramework>netcore45;wpa81</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.Runtime.WindowsRuntime.UI.Xaml.builds" />
     <!-- Not supported for desktop -->
-
-    <InboxOnTargetFramework Include="win8"/>
-    <InboxOnTargetFramework Include="wpa81"/>
+    <InboxOnTargetFramework Include="win8" />
+    <InboxOnTargetFramework Include="wpa81" />
     <InboxOnTargetFramework Include="portable-win8+wpa81" />
   </ItemGroup>
   <ItemGroup>
     <!-- This package is only supported on win8 and later RIDs -->
     <ValidatePackageSuppression Include="PermitImplementation">
-      <Value>.NETCoreApp,Version=v1.1/win10-arm64</Value>
+      <Value>.NETCoreApp,Version=v1.1/win10-arm64;.NETCoreApp,Version=v2.0/win10-arm64</Value>
     </ValidatePackageSuppression>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

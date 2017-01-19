@@ -8,6 +8,7 @@ namespace System.Security.Cryptography
     {
         private byte[] ParameterValue;
         private RSA _rsaKey;
+        private RandomNumberGenerator RngValue;
 
         public RSAOAEPKeyExchangeFormatter() { }
         public RSAOAEPKeyExchangeFormatter(AsymmetricAlgorithm key)
@@ -45,6 +46,11 @@ namespace System.Security.Cryptography
         public override string Parameters
         {
             get {return null;}
+        }
+
+        public RandomNumberGenerator Rng {
+            get { return RngValue; }
+            set { RngValue = value; }
         }
 
         public override void SetKey(AsymmetricAlgorithm key)

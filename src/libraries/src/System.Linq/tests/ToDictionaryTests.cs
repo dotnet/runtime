@@ -79,7 +79,13 @@ namespace System.Linq.Tests
                 });
         }
 
-
+        [Fact]
+        public void RunOnce()
+        {
+            Assert.Equal(
+                new Dictionary<int, string> {{1, "0"}, {2, "1"}, {3, "2"}, {4, "3"}},
+                Enumerable.Range(0, 4).RunOnce().ToDictionary(i => i + 1, i => i.ToString()));
+        }
 
         [Fact]
         public void ToDictionary_PassCustomComparer()

@@ -106,8 +106,8 @@ namespace System.Text
     {
         // This is the table of 4 byte conversions.
         private const int GBLast4ByteCode = 0x99FB;
-        unsafe internal char* map4BytesToUnicode = null;       // new char[GBLast4ByteCode + 1]; // Need to map all 4 byte sequences to Unicode
-        unsafe internal byte* mapUnicodeTo4BytesFlags = null;  // new byte[0x10000 / 8];         // Need 1 bit for each code point to say if its 4 byte or not
+        internal unsafe char* map4BytesToUnicode = null;       // new char[GBLast4ByteCode + 1]; // Need to map all 4 byte sequences to Unicode
+        internal unsafe byte* mapUnicodeTo4BytesFlags = null;  // new byte[0x10000 / 8];         // Need 1 bit for each code point to say if its 4 byte or not
 
         private const int GB18030 = 54936;
 

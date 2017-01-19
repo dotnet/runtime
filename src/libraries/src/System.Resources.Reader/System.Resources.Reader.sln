@@ -1,8 +1,13 @@
-﻿
+
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
 VisualStudioVersion = 14.0.24711.0
 MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Resources.Reader.Tests", "tests\System.Resources.Reader.Tests.csproj", "{8D7202E8-084A-4C20-AB93-3BF70D2E0651}"
+	ProjectSection(ProjectDependencies) = postProject
+		{16EE5522-F387-4C9E-9EF2-B5134B043F37} = {16EE5522-F387-4C9E-9EF2-B5134B043F37}
+	EndProjectSection
+EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Resources.Reader", "src\System.Resources.Reader.csproj", "{16EE5522-F387-4C9E-9EF2-B5134B043F37}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{F1123D80-2297-4958-B2D6-8261DBCBC223}"
@@ -10,22 +15,30 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{F1123D
 		..\.nuget\packages.Windows_NT.config = ..\.nuget\packages.Windows_NT.config
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Resources.Reader.Tests", "tests\System.Resources.Reader.Tests.csproj", "{8D7202E8-084A-4C20-AB93-3BF70D2E0651}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
-		Debug|Any CPU = Debug|Any CPU
-		Release|Any CPU = Release|Any CPU
+		DebugNETCoreAppnetstandardnetstandard1.3|AnyCPU = DebugNETCoreAppnetstandardnetstandard1.3|AnyCPU
+		ReleaseNETCoreAppnetstandardnetstandard1.3|AnyCPU = ReleaseNETCoreAppnetstandardnetstandard1.3|AnyCPU
+		DebugNETCoreAppnetstandardnetstandard|AnyCPU = DebugNETCoreAppnetstandardnetstandard|AnyCPU
+		ReleaseNETCoreAppnetstandardnetstandard|AnyCPU = ReleaseNETCoreAppnetstandardnetstandard|AnyCPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{16EE5522-F387-4C9E-9EF2-B5134B043F37}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{16EE5522-F387-4C9E-9EF2-B5134B043F37}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{16EE5522-F387-4C9E-9EF2-B5134B043F37}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{16EE5522-F387-4C9E-9EF2-B5134B043F37}.Release|Any CPU.Build.0 = Release|Any CPU
-		{8D7202E8-084A-4C20-AB93-3BF70D2E0651}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{8D7202E8-084A-4C20-AB93-3BF70D2E0651}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{8D7202E8-084A-4C20-AB93-3BF70D2E0651}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{8D7202E8-084A-4C20-AB93-3BF70D2E0651}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8D7202E8-084A-4C20-AB93-3BF70D2E0651}.DebugNETCoreAppnetstandardnetstandard1.3|AnyCPU.ActiveCfg = netstandard1.3-Debug|Any CPU
+		{8D7202E8-084A-4C20-AB93-3BF70D2E0651}.DebugNETCoreAppnetstandardnetstandard1.3|AnyCPU.Build.0 = netstandard1.3-Debug|Any CPU
+		{8D7202E8-084A-4C20-AB93-3BF70D2E0651}.ReleaseNETCoreAppnetstandardnetstandard1.3|AnyCPU.ActiveCfg = netstandard1.3-Release|Any CPU
+		{8D7202E8-084A-4C20-AB93-3BF70D2E0651}.ReleaseNETCoreAppnetstandardnetstandard1.3|AnyCPU.Build.0 = netstandard1.3-Release|Any CPU
+		{8D7202E8-084A-4C20-AB93-3BF70D2E0651}.DebugNETCoreAppnetstandardnetstandard|AnyCPU.ActiveCfg = netstandard-Debug|Any CPU
+		{8D7202E8-084A-4C20-AB93-3BF70D2E0651}.DebugNETCoreAppnetstandardnetstandard|AnyCPU.Build.0 = netstandard-Debug|Any CPU
+		{8D7202E8-084A-4C20-AB93-3BF70D2E0651}.ReleaseNETCoreAppnetstandardnetstandard|AnyCPU.ActiveCfg = netstandard-Release|Any CPU
+		{8D7202E8-084A-4C20-AB93-3BF70D2E0651}.ReleaseNETCoreAppnetstandardnetstandard|AnyCPU.Build.0 = netstandard-Release|Any CPU
+		{16EE5522-F387-4C9E-9EF2-B5134B043F37}.DebugNETCoreAppnetstandardnetstandard1.3|AnyCPU.ActiveCfg = netstandard-Debug|Any CPU
+		{16EE5522-F387-4C9E-9EF2-B5134B043F37}.DebugNETCoreAppnetstandardnetstandard1.3|AnyCPU.Build.0 = netstandard-Debug|Any CPU
+		{16EE5522-F387-4C9E-9EF2-B5134B043F37}.ReleaseNETCoreAppnetstandardnetstandard1.3|AnyCPU.ActiveCfg = netstandard-Release|Any CPU
+		{16EE5522-F387-4C9E-9EF2-B5134B043F37}.ReleaseNETCoreAppnetstandardnetstandard1.3|AnyCPU.Build.0 = netstandard-Release|Any CPU
+		{16EE5522-F387-4C9E-9EF2-B5134B043F37}.DebugNETCoreAppnetstandardnetstandard|AnyCPU.ActiveCfg = netstandard-Debug|Any CPU
+		{16EE5522-F387-4C9E-9EF2-B5134B043F37}.DebugNETCoreAppnetstandardnetstandard|AnyCPU.Build.0 = netstandard-Debug|Any CPU
+		{16EE5522-F387-4C9E-9EF2-B5134B043F37}.ReleaseNETCoreAppnetstandardnetstandard|AnyCPU.ActiveCfg = netstandard-Release|Any CPU
+		{16EE5522-F387-4C9E-9EF2-B5134B043F37}.ReleaseNETCoreAppnetstandardnetstandard|AnyCPU.Build.0 = netstandard-Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

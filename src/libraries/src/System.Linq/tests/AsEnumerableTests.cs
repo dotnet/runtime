@@ -53,5 +53,13 @@ namespace System.Linq.Tests
 
             Assert.Equal(source, source.AsEnumerable());
         }
+
+        [Fact]
+        public void SomeElementsRunOnce()
+        {
+            int?[] source = { -5, 0, 1, -4, 3, null, 10 };
+
+            Assert.Equal(source, source.RunOnce().AsEnumerable());
+        }
     }
 }

@@ -33,7 +33,7 @@ namespace System.Net
 
         public static string HtmlEncode(string value)
         {
-            if (String.IsNullOrEmpty(value))
+            if (string.IsNullOrEmpty(value))
             {
                 return value;
             }
@@ -48,6 +48,11 @@ namespace System.Net
             StringBuilder sb = StringBuilderCache.Acquire(value.Length);
             HtmlEncode(value, index, sb);
             return StringBuilderCache.GetStringAndRelease(sb);
+        }
+
+        public static void HtmlEncode(string value, TextWriter output)
+        {
+            output.Write(HtmlEncode(value));
         }
 
         private static unsafe void HtmlEncode(string value, int index, StringBuilder output)
@@ -138,7 +143,7 @@ namespace System.Net
 
         public static string HtmlDecode(string value)
         {
-            if (String.IsNullOrEmpty(value))
+            if (string.IsNullOrEmpty(value))
             {
                 return value;
             }
@@ -152,6 +157,11 @@ namespace System.Net
             StringBuilder sb = StringBuilderCache.Acquire(value.Length);
             HtmlDecode(value, sb);
             return StringBuilderCache.GetStringAndRelease(sb);
+        }
+
+        public static void HtmlDecode(string value, TextWriter output)
+        {
+            output.Write(HtmlDecode(value));
         }
 
         [SuppressMessage("Microsoft.Usage", "CA1806:DoNotIgnoreMethodResults", MessageId = "System.UInt16.TryParse(System.String,System.Globalization.NumberStyles,System.IFormatProvider,System.UInt16@)", Justification = "UInt16.TryParse guarantees that result is zero if the parse fails.")]

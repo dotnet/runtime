@@ -296,7 +296,7 @@ namespace System.Globalization
                 return (((ch) == 0x20) || ((ch) >= 0x09 && (ch) <= 0x0D));
             }
 
-            private unsafe static char* MatchChars(char* p, string str)
+            private static unsafe char* MatchChars(char* p, string str)
             {
                 fixed (char* stringPointer = str)
                 {
@@ -304,7 +304,7 @@ namespace System.Globalization
                 }
             }
 
-            private unsafe static char* MatchChars(char* p, char* str)
+            private static unsafe char* MatchChars(char* p, char* str)
             {
                 Debug.Assert(p != null && str != null);
 
@@ -325,7 +325,7 @@ namespace System.Globalization
                 return null;
             }
 
-            private unsafe static bool ParseNumber(ref char* str, NumberStyles options, ref NumberBuffer number, StringBuilder sb, NumberFormatInfo numfmt, bool parseDecimal)
+            private static unsafe bool ParseNumber(ref char* str, NumberStyles options, ref NumberBuffer number, StringBuilder sb, NumberFormatInfo numfmt, bool parseDecimal)
             {
                 const int StateSign = 0x0001;
                 const int StateParens = 0x0002;
@@ -555,7 +555,7 @@ namespace System.Globalization
                 return true;
             }
 
-            internal unsafe static bool TryStringToNumber(string str, NumberStyles options, ref NumberBuffer number, StringBuilder sb, NumberFormatInfo numfmt, bool parseDecimal)
+            internal static unsafe bool TryStringToNumber(string str, NumberStyles options, ref NumberBuffer number, StringBuilder sb, NumberFormatInfo numfmt, bool parseDecimal)
             {
                 if (str == null)
                 {
@@ -622,7 +622,7 @@ namespace System.Globalization
 
             private static string s_posNumberFormat = "#";
 
-            internal unsafe static void Int32ToDecChars(char* buffer, ref int index, uint value, int digits)
+            internal static unsafe void Int32ToDecChars(char* buffer, ref int index, uint value, int digits)
             {
                 while (--digits >= 0 || value != 0)
                 {

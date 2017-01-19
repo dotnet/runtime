@@ -75,12 +75,12 @@ namespace System.Net.Security
         // This method switches between three non-interruptible helper methods.  (This method can't be both non-interruptible and
         // reference imports from all three DLLs - doing so would cause all three DLLs to try to be bound to.)
         //
-        public unsafe static int QueryContextAttributes(SafeDeleteContext phContext, Interop.SspiCli.ContextAttribute contextAttribute, byte* buffer, SafeHandle refHandle)
+        public static unsafe int QueryContextAttributes(SafeDeleteContext phContext, Interop.SspiCli.ContextAttribute contextAttribute, byte* buffer, SafeHandle refHandle)
         {
             return QueryContextAttributes_SECURITY(phContext, contextAttribute, buffer, refHandle);
         }
 
-        private unsafe static int QueryContextAttributes_SECURITY(
+        private static unsafe int QueryContextAttributes_SECURITY(
             SafeDeleteContext phContext,
             Interop.SspiCli.ContextAttribute contextAttribute,
             byte* buffer,
@@ -220,7 +220,7 @@ namespace System.Net.Security
         }
 #endif
 
-        public unsafe static int AcquireCredentialsHandle(
+        public static unsafe int AcquireCredentialsHandle(
             string package,
             Interop.SspiCli.CredentialUse intent,
             ref Interop.SspiCli.SEC_WINNT_AUTH_IDENTITY_W authdata,
@@ -255,7 +255,7 @@ namespace System.Net.Security
             return errorCode;
         }
 
-        public unsafe static int AcquireDefaultCredential(
+        public static unsafe int AcquireDefaultCredential(
             string package,
             Interop.SspiCli.CredentialUse intent,
             out SafeFreeCredentials outCredential)
@@ -290,7 +290,7 @@ namespace System.Net.Security
             return errorCode;
         }
 
-        public unsafe static int AcquireCredentialsHandle(
+        public static unsafe int AcquireCredentialsHandle(
             string package,
             Interop.SspiCli.CredentialUse intent,
             ref SafeSspiAuthDataHandle authdata,
@@ -319,7 +319,7 @@ namespace System.Net.Security
             return errorCode;
         }
 
-        public unsafe static int AcquireCredentialsHandle(
+        public static unsafe int AcquireCredentialsHandle(
             string package,
             Interop.SspiCli.CredentialUse intent,
             ref Interop.SspiCli.SCHANNEL_CRED authdata,
@@ -436,51 +436,19 @@ namespace System.Net.Security
     // Implementation of handles that are dependent on DeleteSecurityContext
     //
 #if DEBUG
-    internal abstract class SafeDeleteContext : DebugSafeHandle
+    internal abstract partial class SafeDeleteContext : DebugSafeHandle
     {
 #else
-    internal abstract class SafeDeleteContext : SafeHandle
+    internal abstract partial class SafeDeleteContext : SafeHandle
     {
 #endif
         private const string dummyStr = " ";
         private static readonly byte[] s_dummyBytes = new byte[] { 0 };
 
-        //
-        // ATN: _handle is internal since it is used on PInvokes by other wrapper methods.
-        //      However all such wrappers MUST manually and reliably adjust refCounter of SafeDeleteContext handle.
-        //
-        internal Interop.SspiCli.CredHandle _handle;
-
         protected SafeFreeCredentials _EffectiveCredential;
 
-        protected SafeDeleteContext() : base(IntPtr.Zero, true)
-        {
-            _handle = new Interop.SspiCli.CredHandle();
-        }
-
-        public override bool IsInvalid
-        {
-            get
-            {
-                return IsClosed || _handle.IsZero;
-            }
-        }
-
-        public override string ToString()
-        {
-            return _handle.ToString();
-        }
-
-#if DEBUG
-        //This method should never be called for this type
-        public new IntPtr DangerousGetHandle()
-        {
-            throw new InvalidOperationException();
-        }
-#endif
-
         //-------------------------------------------------------------------
-        internal unsafe static int InitializeSecurityContext(
+        internal static unsafe int InitializeSecurityContext(
             ref SafeFreeCredentials inCredentials,
             ref SafeDeleteContext refContext,
             string targetName,
@@ -772,7 +740,7 @@ namespace System.Net.Security
         }
 
         //-------------------------------------------------------------------
-        internal unsafe static int AcceptSecurityContext(
+        internal static unsafe int AcceptSecurityContext(
             ref SafeFreeCredentials inCredentials,
             ref SafeDeleteContext refContext,
             Interop.SspiCli.ContextFlags inFlags,
@@ -925,7 +893,7 @@ namespace System.Net.Security
                                         outFreeContextBuffer);
 
                         if (NetEventSource.IsEnabled) NetEventSource.Info(null, "Marshaling OUT buffer");
-                        
+
                         // Get unmanaged buffer with index 0 as the only one passed into PInvoke.
                         outSecBuffer.size = outUnmanagedBuffer[0].cbBuffer;
                         outSecBuffer.type = outUnmanagedBuffer[0].BufferType;
@@ -1053,7 +1021,7 @@ namespace System.Net.Security
             return errorCode;
         }
 
-        internal unsafe static int CompleteAuthToken(
+        internal static unsafe int CompleteAuthToken(
             ref SafeDeleteContext refContext,
             SecurityBuffer[] inSecBuffers)
         {
@@ -1152,7 +1120,7 @@ namespace System.Net.Security
             return errorCode;
         }
 
-        internal unsafe static int ApplyControlToken(
+        internal static unsafe int ApplyControlToken(
             ref SafeDeleteContext refContext,
             SecurityBuffer[] inSecBuffers)
         {
@@ -1209,7 +1177,7 @@ namespace System.Net.Security
 #endif
                     }
                 }
-                
+
                 // TODO: (#3114): Optimizations to remove the unnecesary allocation of a CredHandle, remove the AddRef
                 // if refContext was previously null, refactor the code to unify CompleteAuthToken and ApplyControlToken.
                 Interop.SspiCli.CredHandle contextHandle = new Interop.SspiCli.CredHandle();
@@ -1296,12 +1264,12 @@ namespace System.Net.Security
             return new SafeFreeContextBufferChannelBinding_SECURITY();
         }
 
-        public unsafe static int QueryContextChannelBinding(SafeDeleteContext phContext, Interop.SspiCli.ContextAttribute contextAttribute, SecPkgContext_Bindings* buffer, SafeFreeContextBufferChannelBinding refHandle)
+        public static unsafe int QueryContextChannelBinding(SafeDeleteContext phContext, Interop.SspiCli.ContextAttribute contextAttribute, SecPkgContext_Bindings* buffer, SafeFreeContextBufferChannelBinding refHandle)
         {
             return QueryContextChannelBinding_SECURITY(phContext, contextAttribute, buffer, refHandle);
         }
 
-        private unsafe static int QueryContextChannelBinding_SECURITY(SafeDeleteContext phContext, Interop.SspiCli.ContextAttribute contextAttribute, SecPkgContext_Bindings* buffer, SafeFreeContextBufferChannelBinding refHandle)
+        private static unsafe int QueryContextChannelBinding_SECURITY(SafeDeleteContext phContext, Interop.SspiCli.ContextAttribute contextAttribute, SecPkgContext_Bindings* buffer, SafeFreeContextBufferChannelBinding refHandle)
         {
             int status = (int)Interop.SECURITY_STATUS.InvalidHandle;
 

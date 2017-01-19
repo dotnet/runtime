@@ -79,6 +79,9 @@ namespace System.Diagnostics
             }
         }
 
+        [CLSCompliant(false)]
+        public SecureString Password { get; set; }
+
         // CoreCLR can't correctly support UseShellExecute=true for the following reasons
         // 1. ShellExecuteEx is not supported on onecore.
         // 2. ShellExecuteEx needs to run as STA but managed code runs as MTA by default and Thread.SetApartmentState() is not supported on all platforms.

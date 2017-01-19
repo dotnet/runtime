@@ -12,6 +12,7 @@ internal static partial class Interop
 {
     internal static partial class CoreFoundation
     {
+#if HAVE_PTRTOSTRINGUTF8
         /// <summary>
         /// Returns the interior pointer of the cfString if it has the specified encoding.
         /// If it has the wrong encoding, or if the interior pointer isn't being shared for some reason, returns NULL
@@ -20,6 +21,7 @@ internal static partial class Interop
         private static extern IntPtr CFStringGetCStringPtr(
             SafeCFStringHandle cfString,
             CFStringBuiltInEncodings encoding);
+#endif
 
         [DllImport(Libraries.CoreFoundationLibrary)]
         private static extern SafeCFDataHandle CFStringCreateExternalRepresentation(
@@ -34,6 +36,7 @@ internal static partial class Interop
             Debug.Assert(!cfString.IsInvalid);
             Debug.Assert(!cfString.IsClosed);
 
+#if HAVE_PTRTOSTRINGUTF8
             IntPtr interiorPointer = CFStringGetCStringPtr(
                 cfString,
                 CFStringBuiltInEncodings.kCFStringEncodingUTF8);
@@ -42,6 +45,7 @@ internal static partial class Interop
             {
                 return Marshal.PtrToStringUTF8(interiorPointer);
             }
+#endif
 
             SafeCFDataHandle cfData = CFStringCreateExternalRepresentation(
                 IntPtr.Zero,

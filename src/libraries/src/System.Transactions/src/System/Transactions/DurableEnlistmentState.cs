@@ -4,7 +4,6 @@
 
 using System.Diagnostics;
 using System.Threading;
-using System.Transactions.Diagnostics;
 
 namespace System.Transactions
 {
@@ -195,10 +194,10 @@ namespace System.Transactions
             Monitor.Exit(enlistment.Transaction);
             try
             {
-                if (DiagnosticTrace.Verbose)
+                TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+                if (etwLog.IsEnabled())
                 {
-                    EnlistmentNotificationCallTraceRecord.Trace(SR.TraceSourceLtm,
-                        enlistment.EnlistmentTraceId, NotificationCall.Rollback);
+                    etwLog.EnlistmentStatus(enlistment, NotificationCall.Rollback);
                 }
 
                 // Send the Rollback notification to the enlistment
@@ -249,10 +248,10 @@ namespace System.Transactions
             Monitor.Exit(enlistment.Transaction);
             try
             {
-                if (DiagnosticTrace.Verbose)
+                TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+                if (etwLog.IsEnabled())
                 {
-                    EnlistmentNotificationCallTraceRecord.Trace(SR.TraceSourceLtm,
-                        enlistment.EnlistmentTraceId, NotificationCall.SinglePhaseCommit);
+                    etwLog.EnlistmentStatus(enlistment, NotificationCall.SinglePhaseCommit);
                 }
 
                 // Send the Commit notification to the enlistment

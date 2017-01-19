@@ -16,15 +16,25 @@
     <XmlDocFileRoot>$(PackagesDir)Microsoft.Private.Intellisense/1.0.0-rc4-24206-00/xmldocs</XmlDocFileRoot>
     <!-- We're currently not building a "live" baseline, instead we're using .NETCore 1.0 RTM stable versions as the baseline -->
     <SkipBaseLineCheck>true</SkipBaseLineCheck>
-    <LineupPackageVersion Condition="'$(LineupPackageVersion)' == ''">1.2.0</LineupPackageVersion>
-    <PlatformPackageVersion Condition="'$(PlatformPackageVersion)' == ''">1.2.0</PlatformPackageVersion>
+    <LineupPackageVersion Condition="'$(LineupPackageVersion)' == ''">2.0.0</LineupPackageVersion>
+    <PlatformPackageVersion Condition="'$(PlatformPackageVersion)' == ''">2.0.0</PlatformPackageVersion>
 
     <!-- by default all packages will use the same version which revs with respect to product version -->
     <PackageVersion Condition="'$(PackageVersion)' == ''">4.4.0</PackageVersion>
     <SkipValidatePackageTargetFramework>true</SkipValidatePackageTargetFramework>
+    <SkipGenerationCheck>true</SkipGenerationCheck>
+    <!-- disable layout creation in favor of binplacing -->
+    <ShouldCreateLayout>false</ShouldCreateLayout>
   </PropertyGroup>
 
   <Import Condition="Exists('pkg/baseline/baseline.props') AND '$(MSBuildProjectExtension)' == '.pkgproj'" Project="pkg/baseline/baseline.props" />
+
+  <ItemGroup Condition="'$(MSBuildProjectExtension)' == '.pkgproj'">
+    <ValidatePackageSuppression Include="SuppressNETStandardInference">
+      <!-- desktop assemblies must version past NETStandard refs -->
+      <Value>.NETFramework,Version=v4.6;.NETFramework,Version=v4.6.1;.NETFramework,Version=v4.6.2;.NETFramework,Version=v4.6.3</Value>
+    </ValidatePackageSuppression>
+  </ItemGroup>
 
   <PropertyGroup Condition="'$(OsEnvironment)'=='Unix'">
     <!--
@@ -49,6 +59,12 @@
     <!-- Add version file to packages -->
     <File Condition="Exists('$(SyncInfoFile)')"
           Include="$(SyncInfoFile)" >
+        <SkipPackageFileCheck>true</SkipPackageFileCheck>
+    </File>
+    
+    <!-- Add a marker to help the designer optimize & share .NET Core packages -->
+    <File Condition="'$(IncludeDesignerMarker)' != 'false'"
+          Include="$(ProjectDir)pkg/useSharedDesignerContext.txt">
         <SkipPackageFileCheck>true</SkipPackageFileCheck>
     </File>
   </ItemGroup>

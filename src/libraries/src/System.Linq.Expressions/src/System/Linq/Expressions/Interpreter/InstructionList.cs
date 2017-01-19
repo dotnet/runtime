@@ -46,6 +46,7 @@ namespace System.Linq.Expressions.Interpreter
 
             public DebugView(InstructionArray array)
             {
+                ContractUtils.RequiresNotNull(array, nameof(array));
                 _array = array;
             }
 
@@ -90,6 +91,7 @@ namespace System.Linq.Expressions.Interpreter
 
             public DebugView(InstructionList list)
             {
+                ContractUtils.RequiresNotNull(list, nameof(list));
                 _list = list;
             }
 
@@ -299,7 +301,7 @@ namespace System.Linq.Expressions.Interpreter
                 _maxStackDepth,
                 _maxContinuationDepth,
                 _instructions.ToArray(),
-                (_objects != null) ? _objects.ToArray() : null,
+                _objects?.ToArray(),
                 BuildRuntimeLabels(),
                 _debugCookies
             );
@@ -316,7 +318,7 @@ namespace System.Linq.Expressions.Interpreter
         private static Instruction s_null;
         private static Instruction s_true;
         private static Instruction s_false;
-        private static Instruction[] s_ints;
+        private static Instruction[] s_Ints;
         private static Instruction[] s_loadObjectCached;
 
         public void EmitLoad(object value)
@@ -326,13 +328,13 @@ namespace System.Linq.Expressions.Interpreter
 
         public void EmitLoad(bool value)
         {
-            if ((bool)value)
+            if (value)
             {
-                Emit(s_true ?? (s_true = new LoadObjectInstruction(value)));
+                Emit(s_true ?? (s_true = new LoadObjectInstruction(Utils.BoxedTrue)));
             }
             else
             {
-                Emit(s_false ?? (s_false = new LoadObjectInstruction(value)));
+                Emit(s_false ?? (s_false = new LoadObjectInstruction(Utils.BoxedFalse)));
             }
         }
 
@@ -357,12 +359,12 @@ namespace System.Linq.Expressions.Interpreter
                     int i = (int)value;
                     if (i >= PushIntMinCachedValue && i <= PushIntMaxCachedValue)
                     {
-                        if (s_ints == null)
+                        if (s_Ints == null)
                         {
-                            s_ints = new Instruction[PushIntMaxCachedValue - PushIntMinCachedValue + 1];
+                            s_Ints = new Instruction[PushIntMaxCachedValue - PushIntMinCachedValue + 1];
                         }
                         i -= PushIntMinCachedValue;
-                        Emit(s_ints[i] ?? (s_ints[i] = new LoadObjectInstruction(value)));
+                        Emit(s_Ints[i] ?? (s_Ints[i] = new LoadObjectInstruction(value)));
                         return;
                     }
                 }
@@ -656,12 +658,12 @@ namespace System.Linq.Expressions.Interpreter
 
         public void EmitGetArrayItem()
         {
-            Emit(GetArrayItemInstruction.Instruction);
+            Emit(GetArrayItemInstruction.Instance);
         }
 
         public void EmitSetArrayItem()
         {
-            Emit(new SetArrayItemInstruction());
+            Emit(SetArrayItemInstruction.Instance);
         }
 
         public void EmitNewArray(Type elementType)
@@ -695,7 +697,6 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters")]
         public void EmitSub(Type type, bool @checked)
         {
             if (@checked)
@@ -708,7 +709,6 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters")]
         public void EmitMul(Type type, bool @checked)
         {
             if (@checked)
@@ -816,6 +816,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public void EmitCastReferenceToEnum(Type toType)
         {
+            Debug.Assert(_instructions[_instructions.Count - 1] == NullCheckInstruction.Instance);
             Emit(new CastReferenceToEnumInstruction(toType));
         }
 
@@ -839,7 +840,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public void EmitNew(ConstructorInfo constructorInfo)
         {
-            EmitNew(constructorInfo, constructorInfo.GetParameters());
+            EmitNew(constructorInfo, constructorInfo.GetParametersCached());
         }
 
         public void EmitNew(ConstructorInfo constructorInfo, ParameterInfo[] parameters)
@@ -849,7 +850,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public void EmitByRefNew(ConstructorInfo constructorInfo, ByRefUpdater[] updaters)
         {
-            EmitByRefNew(constructorInfo, constructorInfo.GetParameters(), updaters);
+            EmitByRefNew(constructorInfo, constructorInfo.GetParametersCached(), updaters);
         }
 
         public void EmitByRefNew(ConstructorInfo constructorInfo, ParameterInfo[] parameters, ByRefUpdater[] updaters)
@@ -958,7 +959,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public void EmitCall(MethodInfo method)
         {
-            EmitCall(method, method.GetParameters());
+            EmitCall(method, method.GetParametersCached());
         }
 
         public void EmitCall(MethodInfo method, ParameterInfo[] parameters)

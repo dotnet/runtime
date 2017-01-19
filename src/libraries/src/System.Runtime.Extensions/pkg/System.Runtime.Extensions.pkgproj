@@ -3,13 +3,13 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
     <ProjectReference Include="..\ref\System.Runtime.Extensions.builds">
-      <SupportedFramework>netcoreapp1.1;uap10.1;net463;$(AllXamarinFrameworks)</SupportedFramework>
+      <SupportedFramework>netcoreapp2.0;uap10.1;net461;$(AllXamarinFrameworks)</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.Runtime.Extensions.csproj">
-      <TargetGroup>net462</TargetGroup>
+      <TargetGroup>net461</TargetGroup>
     </ProjectReference>
     <ProjectReference Include="..\src\System.Runtime.Extensions.csproj">
-      <TargetGroup>net463</TargetGroup>
+      <TargetGroup>uap101aot</TargetGroup>
     </ProjectReference>
     <ProjectReference Include="win\System.Runtime.Extensions.pkgproj" />
     <ProjectReference Include="unix\System.Runtime.Extensions.pkgproj" />
@@ -26,6 +26,10 @@
     <InboxOnTargetFramework Include="xamarinmac20" />
     <InboxOnTargetFramework Include="xamarintvos10" />
     <InboxOnTargetFramework Include="xamarinwatchos10" />
+    <!-- the previous version of this package supported a different API version for 
+         net462, but since netstandard2.0 supports the latest and net461 supports 
+         netstandard2.0 we need to suppress the old net462 assembly.  -->
+    <HarvestSuppressPaths Include="ref/net462;lib/net462" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

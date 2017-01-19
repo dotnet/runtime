@@ -52,6 +52,17 @@ namespace System.Security.Cryptography.Encryption.Tests.Asymmetric
             }
         }
 
+#if netcoreapp11
+        [Fact]
+        public static void ClearCallsDispose()
+        {
+            Trivial s = new Trivial();
+            Assert.False(s.IsDisposed);
+            s.Clear();
+            Assert.True(s.IsDisposed);
+        }
+#endif
+
         [Fact]
         public static void TestInvalidAlgorithm()
         {
@@ -81,6 +92,8 @@ namespace System.Security.Cryptography.Encryption.Tests.Asymmetric
 
         private class Trivial : AsymmetricAlgorithm
         {
+            bool _disposed;
+
             public Trivial()
             {
                 LegalKeySizesValue = new KeySizes[]
@@ -96,6 +109,17 @@ namespace System.Security.Cryptography.Encryption.Tests.Asymmetric
             {
                 KeySizeValue = keySize;
             }
+
+            protected override void Dispose(bool disposing)
+            {
+                base.Dispose(disposing);
+                if (disposing)
+                {
+                    _disposed = true;
+                }
+            }
+
+            public bool IsDisposed => _disposed;
         }
     }
 }

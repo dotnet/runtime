@@ -234,8 +234,8 @@ namespace System.Security.AccessControl
 
             error = Win32.ConvertSdToSddl(binaryForm, 1, flags, out resultSddl);
 
-            if (error == Interop.mincore.Errors.ERROR_INVALID_PARAMETER ||
-                error == Interop.mincore.Errors.ERROR_UNKNOWN_REVISION)
+            if (error == Interop.Errors.ERROR_INVALID_PARAMETER ||
+                error == Interop.Errors.ERROR_UNKNOWN_REVISION)
             {
                 //
                 // Indicates that the marshaling logic in GetBinaryForm is busted
@@ -244,7 +244,7 @@ namespace System.Security.AccessControl
                 Debug.Assert(false, "binaryForm produced invalid output");
                 throw new InvalidOperationException();
             }
-            else if (error != Interop.mincore.Errors.ERROR_SUCCESS)
+            else if (error != Interop.Errors.ERROR_SUCCESS)
             {
                 Debug.Assert(false, string.Format(CultureInfo.InvariantCulture, "Win32.ConvertSdToSddl returned {0}", error));
                 throw new InvalidOperationException();
@@ -641,7 +641,7 @@ nameof(binaryForm));
 
             try
             {
-                if (!Interop.mincore.ConvertStringSdToSd(
+                if (!Interop.Advapi32.ConvertStringSdToSd(
                         sddlForm,
                         GenericSecurityDescriptor.Revision,
                         out byteArray,
@@ -649,26 +649,26 @@ nameof(binaryForm));
                 {
                     error = Marshal.GetLastWin32Error();
 
-                    if (error == Interop.mincore.Errors.ERROR_INVALID_PARAMETER ||
-                        error == Interop.mincore.Errors.ERROR_INVALID_ACL ||
-                        error == Interop.mincore.Errors.ERROR_INVALID_SECURITY_DESCR ||
-                        error == Interop.mincore.Errors.ERROR_UNKNOWN_REVISION)
+                    if (error == Interop.Errors.ERROR_INVALID_PARAMETER ||
+                        error == Interop.Errors.ERROR_INVALID_ACL ||
+                        error == Interop.Errors.ERROR_INVALID_SECURITY_DESCR ||
+                        error == Interop.Errors.ERROR_UNKNOWN_REVISION)
                     {
                         throw new ArgumentException(
                              SR.ArgumentException_InvalidSDSddlForm,
 nameof(sddlForm));
                     }
-                    else if (error == Interop.mincore.Errors.ERROR_NOT_ENOUGH_MEMORY)
+                    else if (error == Interop.Errors.ERROR_NOT_ENOUGH_MEMORY)
                     {
                         throw new OutOfMemoryException();
                     }
-                    else if (error == Interop.mincore.Errors.ERROR_INVALID_SID)
+                    else if (error == Interop.Errors.ERROR_INVALID_SID)
                     {
                         throw new ArgumentException(
                              SR.AccessControl_InvalidSidInSDDLString,
 nameof(sddlForm));
                     }
-                    else if (error != Interop.mincore.Errors.ERROR_SUCCESS)
+                    else if (error != Interop.Errors.ERROR_SUCCESS)
                     {
                         Debug.Assert(false, string.Format(CultureInfo.InvariantCulture, "Unexpected error out of Win32.ConvertStringSdToSd: {0}", error));
                         // TODO : This should be a Win32Exception once that type is available
@@ -691,7 +691,7 @@ nameof(sddlForm));
                 //
                 if (byteArray != IntPtr.Zero)
                 {
-                    Interop.mincore_obsolete.LocalFree(byteArray);
+                    Interop.Kernel32.LocalFree(byteArray);
                 }
             }
 

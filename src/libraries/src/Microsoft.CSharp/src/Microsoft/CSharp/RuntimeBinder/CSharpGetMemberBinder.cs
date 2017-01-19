@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Dynamic;
 
 namespace Microsoft.CSharp.RuntimeBinder
@@ -15,18 +14,17 @@ namespace Microsoft.CSharp.RuntimeBinder
     /// </summary>
     internal sealed class CSharpGetMemberBinder : GetMemberBinder, IInvokeOnGetBinder
     {
-        internal Type CallingContext { get { return _callingContext; } }
-        private Type _callingContext;
+        internal Type CallingContext { get; }
 
         internal IList<CSharpArgumentInfo> ArgumentInfo { get { return _argumentInfo.AsReadOnly(); } }
-        private List<CSharpArgumentInfo> _argumentInfo;
+        private readonly List<CSharpArgumentInfo> _argumentInfo;
 
         bool IInvokeOnGetBinder.InvokeOnGet { get { return !_bResultIndexed; } }
 
         internal bool ResultIndexed { get { return _bResultIndexed; } }
-        private bool _bResultIndexed;
+        private readonly bool _bResultIndexed;
 
-        private RuntimeBinder _binder;
+        private readonly RuntimeBinder _binder;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CSharpGetMemberBinder" />.
@@ -43,7 +41,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             base(name, false /*caseInsensitive*/)
         {
             _bResultIndexed = resultIndexed;
-            _callingContext = callingContext;
+            CallingContext = callingContext;
             _argumentInfo = BinderHelper.ToList(argumentInfo);
             _binder = RuntimeBinder.GetInstance();
         }

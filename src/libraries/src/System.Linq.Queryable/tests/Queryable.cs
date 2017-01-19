@@ -96,6 +96,7 @@ namespace System.Linq.Tests
                      "LeftJoin",
                      "Append",
                      "Prepend",
+                     "ToHashSet"
                  }
                 );
 

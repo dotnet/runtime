@@ -23,6 +23,7 @@ namespace System.Security.Cryptography
         public RC2CryptoServiceProvider()
         {
             LegalKeySizesValue = s_legalKeySizes.CloneKeySizesArray();
+            FeedbackSizeValue = 8;
         }
 
         public override int EffectiveKeySize

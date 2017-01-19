@@ -2,10 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using Xunit;
 
 namespace System.Linq.Expressions.Tests
@@ -90,11 +88,11 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void Binary_Arithmetic()
         {
-            var a = Expression.Parameter(typeof(int), "a");
-            var b = Expression.Parameter(typeof(int), "b");
+            ParameterExpression a = Expression.Parameter(typeof(int), "a");
+            ParameterExpression b = Expression.Parameter(typeof(int), "b");
 
-            var x = Expression.Parameter(typeof(double), "x");
-            var y = Expression.Parameter(typeof(double), "y");
+            ParameterExpression x = Expression.Parameter(typeof(double), "x");
+            ParameterExpression y = Expression.Parameter(typeof(double), "y");
 
             Check("$a + $b", Expression.Add(a, b));
             Check("$a #+ $b", Expression.AddChecked(a, b));
@@ -112,8 +110,8 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void Binary_Logical()
         {
-            var a = Expression.Parameter(typeof(int), "a");
-            var b = Expression.Parameter(typeof(int), "b");
+            ParameterExpression a = Expression.Parameter(typeof(int), "a");
+            ParameterExpression b = Expression.Parameter(typeof(int), "b");
 
             Check("$a & $b", Expression.And(a, b));
             Check("$a | $b", Expression.Or(a, b));
@@ -123,8 +121,8 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void Binary_Comparison()
         {
-            var a = Expression.Parameter(typeof(int), "a");
-            var b = Expression.Parameter(typeof(int), "b");
+            ParameterExpression a = Expression.Parameter(typeof(int), "a");
+            ParameterExpression b = Expression.Parameter(typeof(int), "b");
 
             Check("$a < $b", Expression.LessThan(a, b));
             Check("$a <= $b", Expression.LessThanOrEqual(a, b));
@@ -137,8 +135,8 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void Binary_Coalesce()
         {
-            var n = Expression.Parameter(typeof(int?), "n");
-            var b = Expression.Parameter(typeof(int), "b");
+            ParameterExpression n = Expression.Parameter(typeof(int?), "n");
+            ParameterExpression b = Expression.Parameter(typeof(int), "b");
 
             Check("$n ?? $b", Expression.Coalesce(n, b));
         }
@@ -146,8 +144,8 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void Binary_Shortcircuiting()
         {
-            var a = Expression.Parameter(typeof(bool), "a");
-            var b = Expression.Parameter(typeof(bool), "b");
+            ParameterExpression a = Expression.Parameter(typeof(bool), "a");
+            ParameterExpression b = Expression.Parameter(typeof(bool), "b");
 
             Check("$a && $b", Expression.AndAlso(a, b));
             Check("$a || $b", Expression.OrElse(a, b));
@@ -156,11 +154,11 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void Binary_Assign()
         {
-            var a = Expression.Parameter(typeof(int), "a");
-            var b = Expression.Parameter(typeof(int), "b");
+            ParameterExpression a = Expression.Parameter(typeof(int), "a");
+            ParameterExpression b = Expression.Parameter(typeof(int), "b");
 
-            var x = Expression.Parameter(typeof(double), "x");
-            var y = Expression.Parameter(typeof(double), "y");
+            ParameterExpression x = Expression.Parameter(typeof(double), "x");
+            ParameterExpression y = Expression.Parameter(typeof(double), "y");
 
             Check("$a = $b",   Expression.Assign(a, b));
             Check("$a += $b",  Expression.AddAssign(a, b));
@@ -183,8 +181,8 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void Binary_ArrayIndex()
         {
-            var xs = Expression.Parameter(typeof(int[]), "xs");
-            var a = Expression.Parameter(typeof(int), "a");
+            ParameterExpression xs = Expression.Parameter(typeof(int[]), "xs");
+            ParameterExpression a = Expression.Parameter(typeof(int), "a");
 
             Check("$xs[$a]", Expression.ArrayIndex(xs, a));
         }
@@ -192,7 +190,7 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void Unary_Arithmetic()
         {
-            var a = Expression.Parameter(typeof(int), "a");
+            ParameterExpression a = Expression.Parameter(typeof(int), "a");
 
             Check("+$a", Expression.UnaryPlus(a));
             Check("-$a", Expression.Negate(a));
@@ -206,7 +204,7 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void Unary_Boolean()
         {
-            var b = Expression.Parameter(typeof(bool), "b");
+            ParameterExpression b = Expression.Parameter(typeof(bool), "b");
 
             Check("!$b", Expression.Not(b));
             Check(".IsTrue($b)", Expression.IsTrue(b));
@@ -216,7 +214,7 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void Unary_Assign()
         {
-            var a = Expression.Parameter(typeof(int), "a");
+            ParameterExpression a = Expression.Parameter(typeof(int), "a");
 
             Check("++$a", Expression.PreIncrementAssign(a));
             Check("$a++", Expression.PostIncrementAssign(a));
@@ -227,8 +225,8 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void Unary_Convert()
         {
-            var o = Expression.Parameter(typeof(object), "o");
-            var x = Expression.Parameter(typeof(long), "x");
+            ParameterExpression o = Expression.Parameter(typeof(object), "o");
+            ParameterExpression x = Expression.Parameter(typeof(long), "x");
 
             Check("(System.Int32)$o", Expression.Convert(o, typeof(int)));
             Check("(System.Int32)$o", Expression.ConvertChecked(o, typeof(int)));
@@ -240,8 +238,8 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void Unary_Exceptions()
         {
-            var e = Expression.Parameter(typeof(Exception), "e");
-            var xs = Expression.Parameter(typeof(int[]), "xs");
+            ParameterExpression e = Expression.Parameter(typeof(Exception), "e");
+            ParameterExpression xs = Expression.Parameter(typeof(int[]), "xs");
 
             Check(".Rethrow", Expression.Rethrow());
             Check(".Throw $e", Expression.Throw(e));
@@ -250,7 +248,7 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void Unary_ArrayLength()
         {
-            var xs = Expression.Parameter(typeof(int[]), "xs");
+            ParameterExpression xs = Expression.Parameter(typeof(int[]), "xs");
 
             Check("$xs.Length", Expression.ArrayLength(xs));
         }
@@ -258,7 +256,7 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void Unary_Quote()
         {
-            var expr = Expression.Lambda<Action>(Expression.Empty());
+            Expression<Action> expr = Expression.Lambda<Action>(Expression.Empty());
 
             Check("'(.Lambda #Lambda1<System.Action>)\\r\\n\\r\\n.Lambda #Lambda1<System.Action>() {\\r\\n    .Default(System.Void)\\r\\n}", Expression.Quote(expr));
         }
@@ -266,9 +264,9 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void Conditional()
         {
-            var a = Expression.Parameter(typeof(bool), "a");
-            var s1 = Expression.Parameter(typeof(bool), "ifTrue");
-            var s2 = Expression.Parameter(typeof(bool), "ifFalse");
+            ParameterExpression a = Expression.Parameter(typeof(bool), "a");
+            ParameterExpression s1 = Expression.Parameter(typeof(bool), "ifTrue");
+            ParameterExpression s2 = Expression.Parameter(typeof(bool), "ifFalse");
 
             Check(".If (\\r\\n    $a\\r\\n) {\\r\\n    $ifTrue\\r\\n} .Else {\\r\\n    .Default(System.Void)\\r\\n}", Expression.IfThen(a, s1));
             Check(".If (\\r\\n    $a\\r\\n) {\\r\\n    $ifTrue\\r\\n} .Else {\\r\\n    $ifFalse\\r\\n}", Expression.IfThenElse(a, s1, s2));
@@ -277,8 +275,8 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void RuntimeVariables()
         {
-            var a = Expression.Parameter(typeof(bool), "a");
-            var b = Expression.Parameter(typeof(bool), "b");
+            ParameterExpression a = Expression.Parameter(typeof(bool), "a");
+            ParameterExpression b = Expression.Parameter(typeof(bool), "b");
 
             Check(".RuntimeVariables()", Expression.RuntimeVariables());
             Check(".RuntimeVariables($a)", Expression.RuntimeVariables(a));
@@ -288,7 +286,7 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void Member()
         {
-            var s = Expression.Parameter(typeof(string), "s");
+            ParameterExpression s = Expression.Parameter(typeof(string), "s");
 
             Check("$s.Length", Expression.Property(s, "Length"));
             Check("System.DateTime.Now", Expression.Property(null, typeof(DateTime).GetProperty("Now")));
@@ -297,11 +295,11 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void Invoke()
         {
-            var f0 = Expression.Parameter(typeof(Func<int>), "f");
-            var f1 = Expression.Parameter(typeof(Func<int, int>), "f");
-            var f2 = Expression.Parameter(typeof(Func<int, int, int>), "f");
-            var x = Expression.Parameter(typeof(int), "x");
-            var y = Expression.Parameter(typeof(int), "y");
+            ParameterExpression f0 = Expression.Parameter(typeof(Func<int>), "f");
+            ParameterExpression f1 = Expression.Parameter(typeof(Func<int, int>), "f");
+            ParameterExpression f2 = Expression.Parameter(typeof(Func<int, int, int>), "f");
+            ParameterExpression x = Expression.Parameter(typeof(int), "x");
+            ParameterExpression y = Expression.Parameter(typeof(int), "y");
 
             Check(".Invoke $f()", Expression.Invoke(f0));
             Check(".Invoke $f($x)", Expression.Invoke(f1, x));
@@ -311,10 +309,10 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void Call()
         {
-            var x = Expression.Parameter(typeof(int), "x");
-            var y = Expression.Parameter(typeof(int), "y");
-            var d = Expression.Parameter(typeof(double), "d");
-            var s = Expression.Parameter(typeof(string), "s");
+            ParameterExpression x = Expression.Parameter(typeof(int), "x");
+            ParameterExpression y = Expression.Parameter(typeof(int), "y");
+            ParameterExpression d = Expression.Parameter(typeof(double), "d");
+            ParameterExpression s = Expression.Parameter(typeof(string), "s");
 
             Check(".Call $x.ToString()", Expression.Call(x, typeof(int).GetMethod("ToString", Type.EmptyTypes)));
             Check(".Call $s.Substring($x)", Expression.Call(s, typeof(string).GetMethod("Substring", new[] { typeof(int) }), x));
@@ -325,8 +323,8 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void NewArray()
         {
-            var x = Expression.Parameter(typeof(int), "x");
-            var y = Expression.Parameter(typeof(int), "y");
+            ParameterExpression x = Expression.Parameter(typeof(int), "x");
+            ParameterExpression y = Expression.Parameter(typeof(int), "y");
 
             Check(".NewArray System.Int32[$x]", Expression.NewArrayBounds(typeof(int), x));
             Check(".NewArray System.Int32[\\r\\n    $x,\\r\\n    $y]", Expression.NewArrayBounds(typeof(int), x, y));
@@ -338,7 +336,7 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void TypeBinary()
         {
-            var o = Expression.Parameter(typeof(object), "o");
+            ParameterExpression o = Expression.Parameter(typeof(object), "o");
 
             Check("$o .Is System.Int32", Expression.TypeIs(o, typeof(int)));
             Check("$o .TypeEqual System.Int32", Expression.TypeEqual(o, typeof(int)));
@@ -347,10 +345,10 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void New()
         {
-            var l = Expression.Parameter(typeof(long), "l");
-            var x = Expression.Parameter(typeof(int), "x");
-            var y = Expression.Parameter(typeof(int), "y");
-            var z = Expression.Parameter(typeof(int), "z");
+            ParameterExpression l = Expression.Parameter(typeof(long), "l");
+            ParameterExpression x = Expression.Parameter(typeof(int), "x");
+            ParameterExpression y = Expression.Parameter(typeof(int), "y");
+            ParameterExpression z = Expression.Parameter(typeof(int), "z");
 
             Check(".New System.TimeSpan($l)", Expression.New(typeof(TimeSpan).GetConstructor(new[] { typeof(long) }), l));
             Check(".New System.TimeSpan(\\r\\n    $x,\\r\\n    $y,\\r\\n    $z)", Expression.New(typeof(TimeSpan).GetConstructor(new[] { typeof(int), typeof(int), typeof(int) }), x, y, z));
@@ -359,8 +357,8 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void Block()
         {
-            var x = Expression.Parameter(typeof(int), "x");
-            var y = Expression.Parameter(typeof(int), "y");
+            ParameterExpression x = Expression.Parameter(typeof(int), "x");
+            ParameterExpression y = Expression.Parameter(typeof(int), "y");
 
             Check(".Block() {\\r\\n    $x\\r\\n}", Expression.Block(x));
             Check(".Block() {\\r\\n    $x;\\r\\n    $y\\r\\n}", Expression.Block(x, y));
@@ -373,10 +371,10 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void Label()
         {
-            var t1 = Expression.Label(typeof(void), "l1");
-            var t2 = Expression.Label(typeof(int), "l2");
+            LabelTarget t1 = Expression.Label(typeof(void), "l1");
+            LabelTarget t2 = Expression.Label(typeof(int), "l2");
 
-            var x = Expression.Parameter(typeof(int), "x");
+            ParameterExpression x = Expression.Parameter(typeof(int), "x");
 
             Check(".Label\\r\\n.LabelTarget l1:", Expression.Label(t1));
             Check(".Label\\r\\n    $x\\r\\n.LabelTarget l2:", Expression.Label(t2, x));
@@ -385,10 +383,10 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void Goto()
         {
-            var t1 = Expression.Label(typeof(void), "l1");
-            var t2 = Expression.Label(typeof(int), "l2");
+            LabelTarget t1 = Expression.Label(typeof(void), "l1");
+            LabelTarget t2 = Expression.Label(typeof(int), "l2");
 
-            var x = Expression.Parameter(typeof(int), "x");
+            ParameterExpression x = Expression.Parameter(typeof(int), "x");
 
             Check(".Break l1 { }", Expression.Break(t1));
             Check(".Break l2 { $x }", Expression.Break(t2, x));
@@ -400,8 +398,8 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void Loop()
         {
-            var t1 = Expression.Label(typeof(void), "l1");
-            var t2 = Expression.Label(typeof(int), "l2");
+            LabelTarget t1 = Expression.Label(typeof(void), "l1");
+            LabelTarget t2 = Expression.Label(typeof(int), "l2");
 
             Check(".Loop  {\\r\\n    .Default(System.Void)\\r\\n}", Expression.Loop(Expression.Empty()));
             Check(".Loop  {\\r\\n    .Default(System.Void)\\r\\n}\\r\\n.LabelTarget l2:", Expression.Loop(Expression.Empty(), t2));
@@ -411,12 +409,12 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void Switch()
         {
-            var x = Expression.Parameter(typeof(int), "x");
-            var y = Expression.Parameter(typeof(int), "y");
-            var z = Expression.Parameter(typeof(int), "z");
+            ParameterExpression x = Expression.Parameter(typeof(int), "x");
+            ParameterExpression y = Expression.Parameter(typeof(int), "y");
+            ParameterExpression z = Expression.Parameter(typeof(int), "z");
 
-            var a = Expression.Parameter(typeof(int), "a");
-            var b = Expression.Parameter(typeof(int), "b");
+            ParameterExpression a = Expression.Parameter(typeof(int), "a");
+            ParameterExpression b = Expression.Parameter(typeof(int), "b");
 
             Check(".Switch ($x) {\\r\\n.Case ($y):\\r\\n        .Default(System.Void)\\r\\n}", Expression.Switch(x, Expression.SwitchCase(Expression.Empty(), y)));
             Check(".Switch ($x) {\\r\\n.Case ($y):\\r\\n.Case ($z):\\r\\n        .Default(System.Void)\\r\\n}", Expression.Switch(x, Expression.SwitchCase(Expression.Empty(), y, z)));
@@ -428,14 +426,14 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void Try()
         {
-            var a = Expression.Parameter(typeof(int), "a");
-            var b = Expression.Parameter(typeof(int), "b");
-            var c = Expression.Parameter(typeof(int), "c");
+            ParameterExpression a = Expression.Parameter(typeof(int), "a");
+            ParameterExpression b = Expression.Parameter(typeof(int), "b");
+            ParameterExpression c = Expression.Parameter(typeof(int), "c");
 
-            var e = Expression.Parameter(typeof(Exception), "e");
-            var i = Expression.Parameter(typeof(InvalidOperationException), "i");
+            ParameterExpression e = Expression.Parameter(typeof(Exception), "e");
+            ParameterExpression i = Expression.Parameter(typeof(InvalidOperationException), "i");
 
-            var f = Expression.Parameter(typeof(bool), "f");
+            ParameterExpression f = Expression.Parameter(typeof(bool), "f");
 
             Check(".Try {\\r\\n    $a\\r\\n} .Finally {\\r\\n    .Default(System.Void)\\r\\n}", Expression.TryFinally(a, Expression.Empty()));
             Check(".Try {\\r\\n    $a\\r\\n} .Fault {\\r\\n    .Default(System.Void)\\r\\n}", Expression.TryFault(a, Expression.Empty()));
@@ -448,9 +446,9 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void Index()
         {
-            var xs = Expression.Parameter(typeof(int[]), "xs");
-            var a = Expression.Parameter(typeof(int), "a");
-            var d = Expression.Parameter(typeof(Dictionary<int, int>), "d");
+            ParameterExpression xs = Expression.Parameter(typeof(int[]), "xs");
+            ParameterExpression a = Expression.Parameter(typeof(int), "a");
+            ParameterExpression d = Expression.Parameter(typeof(Dictionary<int, int>), "d");
 
             Check("$xs[$a]", Expression.ArrayAccess(xs, a));
             Check("$d.Item[$a]", Expression.MakeIndex(d, typeof(Dictionary<int, int>).GetProperty("Item"), new[] { a }));
@@ -459,8 +457,8 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void ListInit()
         {
-            var a = Expression.Parameter(typeof(int), "a");
-            var b = Expression.Parameter(typeof(int), "b");
+            ParameterExpression a = Expression.Parameter(typeof(int), "a");
+            ParameterExpression b = Expression.Parameter(typeof(int), "b");
 
             Check(".New System.Collections.Generic.List`1[System.Int32](){\\r\\n    $a\\r\\n}", Expression.ListInit(Expression.New(typeof(List<int>)), a));
             Check(".New System.Collections.Generic.List`1[System.Int32](){\\r\\n    $a,\\r\\n    $b\\r\\n}", Expression.ListInit(Expression.New(typeof(List<int>)), a, b));
@@ -470,9 +468,9 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void MemberInit()
         {
-            var a = Expression.Parameter(typeof(int), "a");
-            var b = Expression.Parameter(typeof(int), "b");
-            var c = Expression.Parameter(typeof(int), "c");
+            ParameterExpression a = Expression.Parameter(typeof(int), "a");
+            ParameterExpression b = Expression.Parameter(typeof(int), "b");
+            ParameterExpression c = Expression.Parameter(typeof(int), "c");
 
             Check(".New System.Linq.Expressions.Tests.Bar(){\\r\\n    Foo = $a,\\r\\n    Qux = {\\r\\n        Baz = $b,\\r\\n        XS = {\\r\\n            $c\\r\\n        }\\r\\n    }\\r\\n}", Expression.MemberInit(Expression.New(typeof(Bar)), Expression.Bind(typeof(Bar).GetProperty("Foo"), a), Expression.MemberBind(typeof(Bar).GetProperty("Qux"), Expression.Bind(typeof(Qux).GetProperty("Baz"), b), Expression.ListBind(typeof(Qux).GetProperty("XS"), Expression.ElementInit(typeof(List<int>).GetMethod("Add"), c)))));
         }

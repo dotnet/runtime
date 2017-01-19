@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
@@ -10,7 +10,7 @@
     </Project>
     <Project Include="System.IO.Pipes.Tests.csproj">
       <TargetGroup>netstandard1.3</TargetGroup>
-      <OSGroup>Unix</OSGroup>      
+      <OSGroup>Unix</OSGroup>
       <TestTFMs>netcoreapp1.0</TestTFMs>
     </Project>
     <Project Include="System.IO.Pipes.Tests.csproj">

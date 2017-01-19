@@ -4982,9 +4982,9 @@ namespace System.Xml
                 if (tmpch3 == quoteChar)
                 {
 #if DEBUG
-                    if (normalize)
+                    if (_normalize)
                     {
-                        string val = new string(chars, ps.charPos, pos - ps.charPos);
+                        string val = new string(chars, _ps.charPos, pos - _ps.charPos);
                         Debug.Assert(val == XmlComplianceUtil.CDataNormalize(val), "The attribute value is not CDATA normalized!"); 
                     }
 #endif
@@ -9645,7 +9645,7 @@ namespace System.Xml
         }
 
         [System.Security.SecuritySafeCritical]
-        static internal unsafe void AdjustLineInfo(char[] chars, int startPos, int endPos, bool isNormalized, ref LineInfo lineInfo)
+        internal static unsafe void AdjustLineInfo(char[] chars, int startPos, int endPos, bool isNormalized, ref LineInfo lineInfo)
         {
             Debug.Assert(startPos >= 0);
             Debug.Assert(endPos < chars.Length);
@@ -9658,7 +9658,7 @@ namespace System.Xml
         }
 
         [System.Security.SecuritySafeCritical]
-        static internal unsafe void AdjustLineInfo(string str, int startPos, int endPos, bool isNormalized, ref LineInfo lineInfo)
+        internal static unsafe void AdjustLineInfo(string str, int startPos, int endPos, bool isNormalized, ref LineInfo lineInfo)
         {
             Debug.Assert(startPos >= 0);
             Debug.Assert(endPos < str.Length);
@@ -9671,7 +9671,7 @@ namespace System.Xml
         }
 
         [System.Security.SecurityCritical]
-        static internal unsafe void AdjustLineInfo(char* pChars, int length, bool isNormalized, ref LineInfo lineInfo)
+        internal static unsafe void AdjustLineInfo(char* pChars, int length, bool isNormalized, ref LineInfo lineInfo)
         {
             int lastNewLinePos = -1;
             for (int i = 0; i < length; i++)

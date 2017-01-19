@@ -184,9 +184,34 @@ namespace System.Runtime.Serialization.Json
             _serializer.WriteObject(stream, graph);
         }
 
+        public override void WriteObject(XmlWriter writer, object graph)
+        {
+            _serializer.WriteObject(writer, graph);
+        }
+
+        public override void WriteObject(XmlDictionaryWriter writer, object graph)
+        {
+            _serializer.WriteObject(writer, graph);
+        }
+
         public override object ReadObject(Stream stream)
         {
             return _serializer.ReadObject(stream);
+        }
+
+        public override object ReadObject(XmlReader reader)
+        {
+            return _serializer.ReadObject(reader);
+        }
+
+        public override object ReadObject(XmlReader reader, bool verifyObjectName)
+        {
+            return _serializer.ReadObject(reader, verifyObjectName);
+        }
+
+        public override object ReadObject(XmlDictionaryReader reader)
+        {
+            return _serializer.ReadObject(reader);
         }
 
         private List<Type> GetKnownTypesFromContext(XmlObjectSerializerContext context, IList<Type> serializerKnownTypeList)
@@ -222,7 +247,7 @@ namespace System.Runtime.Serialization.Json
             return knownTypesList;
         }
 
-        static internal void InvokeOnSerializing(Object value, DataContract contract, XmlObjectSerializerWriteContextComplexJson context)
+        internal static void InvokeOnSerializing(Object value, DataContract contract, XmlObjectSerializerWriteContextComplexJson context)
         {
             if (contract is ClassDataContract)
             {
@@ -260,7 +285,7 @@ namespace System.Runtime.Serialization.Json
             }
         }
 
-        static internal void InvokeOnSerialized(Object value, DataContract contract, XmlObjectSerializerWriteContextComplexJson context)
+        internal static void InvokeOnSerialized(Object value, DataContract contract, XmlObjectSerializerWriteContextComplexJson context)
         {
             if (contract is ClassDataContract)
             {
@@ -298,7 +323,7 @@ namespace System.Runtime.Serialization.Json
             }
         }
 
-        static internal void InvokeOnDeserializing(Object value, DataContract contract, XmlObjectSerializerReadContextComplexJson context)
+        internal static void InvokeOnDeserializing(Object value, DataContract contract, XmlObjectSerializerReadContextComplexJson context)
         {
             if (contract is ClassDataContract)
             {
@@ -336,7 +361,7 @@ namespace System.Runtime.Serialization.Json
             }
         }
 
-        static internal void InvokeOnDeserialized(object value, DataContract contract, XmlObjectSerializerReadContextComplexJson context)
+        internal static void InvokeOnDeserialized(object value, DataContract contract, XmlObjectSerializerReadContextComplexJson context)
         {
             if (contract is ClassDataContract)
             {
@@ -425,14 +450,29 @@ namespace System.Runtime.Serialization.Json
             contract.WriteJsonValue(writer, graph, context, declaredTypeHandle);
         }
 
+        public override void WriteStartObject(XmlWriter writer, object graph)
+        {
+            _serializer.WriteStartObject(writer, graph);
+        }
+
         public override void WriteStartObject(XmlDictionaryWriter writer, object graph)
         {
             _serializer.WriteStartObject(writer, graph);
         }
 
+        public override void WriteObjectContent(XmlWriter writer, object graph)
+        {
+            _serializer.WriteObjectContent(writer, graph);
+        }
+
         public override void WriteObjectContent(XmlDictionaryWriter writer, object graph)
         {
             _serializer.WriteObjectContent(writer, graph);
+        }
+
+        public override void WriteEndObject(XmlWriter writer)
+        {
+            _serializer.WriteEndObject(writer);
         }
 
         public override void WriteEndObject(XmlDictionaryWriter writer)
@@ -443,6 +483,11 @@ namespace System.Runtime.Serialization.Json
         public override object ReadObject(XmlDictionaryReader reader, bool verifyObjectName)
         {
             return _serializer.ReadObject(reader, verifyObjectName);
+        }
+
+        public override bool IsStartObject(XmlReader reader)
+        {
+            return _serializer.IsStartObject(reader);
         }
 
         public override bool IsStartObject(XmlDictionaryReader reader)

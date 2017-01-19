@@ -4,10 +4,17 @@
 
 namespace System.IO.Compression
 {
-    internal enum ZipVersionNeededValues : ushort { Default = 10, ExplicitDirectory = 20, Deflate = 20, Deflate64 = 21, Zip64 = 45 }
+    internal enum ZipVersionNeededValues : ushort
+    {
+        Default = 10,
+        ExplicitDirectory = 20,
+        Deflate = 20,
+        Deflate64 = 21,
+        Zip64 = 45
+    }
 
     /// <summary>
-    /// The upper byte of the "version made by" flag in the central directory header of a zip file represents the 
+    /// The upper byte of the "version made by" flag in the central directory header of a zip file represents the
     /// OS of the system on which the zip was created. Any zip created with an OS byte not equal to Windows (0)
     /// or Unix (3) will be treated as equal to the current OS.
     /// </summary>

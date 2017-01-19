@@ -1618,8 +1618,8 @@ namespace System.Tests
             yield return new object[] { null, new object[] { "Foo", "Bar", "Baz" }, "FooBarBaz" };
             yield return new object[] { "$$", new object[] { "Foo", null, "Baz" }, "Foo$$$$Baz" };
 
-            // Join does nothing if array[0] is null
-            yield return new object[] { "$$", new object[] { null, "Bar", "Baz" }, "" };
+            // Test join when first value is null
+            yield return new object[] { "$$", new object[] { null, "Bar", "Baz" }, "$$Bar$$Baz" };
 
             // Join should ignore objects that have a null ToString() value
             yield return new object[] { "|", new object[] { new ObjectWithNullToString(), "Foo", new ObjectWithNullToString(), "Bar", new ObjectWithNullToString() }, "|Foo||Bar|" };
@@ -1627,13 +1627,23 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Join_ObjectArray_TestData))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework | TargetFrameworkMonikers.NetcoreUwp | TargetFrameworkMonikers.Netcoreapp1_0)]
         public static void Join_ObjectArray(string separator, object[] values, string expected)
         {
             Assert.Equal(expected, string.Join(separator, values));
-            if (!(values.Length > 0 && values[0] == null))
-            {
-                Assert.Equal(expected, string.Join(separator, (IEnumerable<object>)values));
-            }
+            Assert.Equal(expected, string.Join(separator, (IEnumerable<object>)values));
+        }
+
+        [Theory]
+        [MemberData(nameof(Join_ObjectArray_TestData))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Netcoreapp1_1)]
+        public static void Join_ObjectArray_WithNullIssue(string separator, object[] values, string expected)
+        {
+            string enumerableExpected = expected;
+            if (values.Length > 0 && values[0] == null) // Join return nothing when first value is null
+                expected = "";
+            Assert.Equal(expected, string.Join(separator, values));
+            Assert.Equal(enumerableExpected, string.Join(separator, (IEnumerable<object>)values));
         }
 
         [Fact]

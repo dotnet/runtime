@@ -12,6 +12,7 @@ namespace System.Net.Sockets
 #if !netcore50
     [Serializable]
 #endif
+    [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
     public struct SocketInformation
     {
         private byte[] _protocolInformation;

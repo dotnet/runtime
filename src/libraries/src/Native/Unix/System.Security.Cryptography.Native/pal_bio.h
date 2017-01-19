@@ -3,8 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 #include "pal_types.h"
-
-#include <openssl/bio.h>
+#include "opensslshim.h"
 
 /*
 Creates a new memory-backed BIO instance.

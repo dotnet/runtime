@@ -151,8 +151,8 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void BasicAssignmentExpressionTest()
         {
-            var left = Expression.Parameter(typeof(int));
-            var right = Expression.Parameter(typeof(int));
+            ParameterExpression left = Expression.Parameter(typeof(int));
+            ParameterExpression right = Expression.Parameter(typeof(int));
 
             BinaryExpression actual = Expression.Assign(left, right);
 
@@ -224,7 +224,7 @@ namespace System.Linq.Expressions.Tests
         {
             Assert.Throws<ArgumentNullException>("right", () => Expression.Assign(Expression.Variable(typeof(int)), null));
         }
-        
+
         [Theory]
         [InlineData(typeof(int), "Hello", typeof(string))]
         [InlineData(typeof(long), 1, typeof(int))]
@@ -284,7 +284,8 @@ namespace System.Linq.Expressions.Tests
 
         [Theory]
         [ClassData(typeof(CompilationTypes))]
-        public static void Left_ValueTypeContainsChildTryExpression_ThrowsNotSupportedExceptionOnCompilation(bool useInterpreter)
+        [ActiveIssue(13007)]
+        public static void Left_ValueTypeContainsChildTryExpression(bool useInterpreter)
         {
             Expression tryExpression = Expression.TryFinally(
                 Expression.Constant(1),
@@ -299,14 +300,24 @@ namespace System.Linq.Expressions.Tests
                     )
                 );
 
-            if (useInterpreter)
-            {
-                Assert.True(func.Compile(useInterpreter)());
-            }
-            else
-            {
-                Assert.Throws<NotSupportedException>(() => func.Compile(useInterpreter));
-            }
+            Assert.True(func.Compile(useInterpreter)());
+        }
+
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        [ActiveIssue(13007)]
+        public static void ValueTypeIndexAssign(bool useInterpreter)
+        {
+            Expression index = Expression.Property(Expression.Constant(new StructWithPropertiesAndFields()), typeof(StructWithPropertiesAndFields).GetProperty("Item"), new Expression[] { Expression.Constant(1) });
+
+            Expression<Func<bool>> func = Expression.Lambda<Func<bool>>(
+                Expression.Block(
+                    Expression.Assign(index, Expression.Constant(123)),
+                    Expression.Equal(index, Expression.Constant(123))
+                    )
+                );
+
+            Assert.True(func.Compile(useInterpreter)());
         }
 
         [Theory]
@@ -332,7 +343,7 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void ToStringTest()
         {
-            var e = Expression.Assign(Expression.Parameter(typeof(int), "a"), Expression.Parameter(typeof(int), "b"));
+            BinaryExpression e = Expression.Assign(Expression.Parameter(typeof(int), "a"), Expression.Parameter(typeof(int), "b"));
             Assert.Equal("(a = b)", e.ToString());
         }
 

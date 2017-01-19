@@ -182,9 +182,6 @@ namespace System.ComponentModel.Design.Serialization
     /// </summary>
     public struct MemberRelationship
     {
-        private object _owner;
-        private MemberDescriptor _member;
-
         public static readonly MemberRelationship Empty = new MemberRelationship();
 
         /// <summary>
@@ -195,42 +192,24 @@ namespace System.ComponentModel.Design.Serialization
             if (owner == null) throw new ArgumentNullException(nameof(owner));
             if (member == null) throw new ArgumentNullException(nameof(member));
 
-            _owner = owner;
-            _member = member;
+            Owner = owner;
+            Member = member;
         }
 
         /// <summary>
         ///    Returns true if this relationship is empty.
         /// </summary>
-        public bool IsEmpty
-        {
-            get
-            {
-                return _owner == null;
-            }
-        }
+        public bool IsEmpty => Owner == null;
 
         /// <summary>
         ///    The member in this relationship.
         /// </summary>
-        public MemberDescriptor Member
-        {
-            get
-            {
-                return _member;
-            }
-        }
+        public MemberDescriptor Member { get; }
 
         /// <summary>
         ///    The object owning the member.
         /// </summary>
-        public object Owner
-        {
-            get
-            {
-                return _owner;
-            }
-        }
+        public object Owner { get; }
 
         /// <summary>
         ///    Infrastructure support to make this a first class struct
@@ -249,8 +228,8 @@ namespace System.ComponentModel.Design.Serialization
         /// </summary>
         public override int GetHashCode()
         {
-            if (_owner == null) return base.GetHashCode();
-            return _owner.GetHashCode() ^ _member.GetHashCode();
+            if (Owner == null) return base.GetHashCode();
+            return Owner.GetHashCode() ^ Member.GetHashCode();
         }
         /// <summary>
         ///    Infrastructure support to make this a first class struct

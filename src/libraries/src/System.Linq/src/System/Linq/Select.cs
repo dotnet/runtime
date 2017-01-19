@@ -86,6 +86,11 @@ namespace System.Linq
             }
         }
 
+        /// <summary>
+        /// An iterator that maps each item of an <see cref="IEnumerable{TSource}"/>.
+        /// </summary>
+        /// <typeparam name="TSource">The type of the source enumerable.</typeparam>
+        /// <typeparam name="TResult">The type of the mapped items.</typeparam>
         internal sealed class SelectEnumerableIterator<TSource, TResult> : Iterator<TResult>, IIListProvider<TResult>
         {
             private readonly IEnumerable<TSource> _source;
@@ -155,11 +160,48 @@ namespace System.Linq
                 return builder.ToArray();
             }
 
-            public List<TResult> ToList() => new List<TResult>(this);
+            public List<TResult> ToList()
+            {
+                var list = new List<TResult>();
 
-            public int GetCount(bool onlyIfCheap) => onlyIfCheap ? -1 : _source.Count();
+                foreach (TSource item in _source)
+                {
+                    list.Add(_selector(item));
+                }
+
+                return list;
+            }
+
+            public int GetCount(bool onlyIfCheap)
+            {
+                // In case someone uses Count() to force evaluation of
+                // the selector, run it provided `onlyIfCheap` is false.
+
+                if (onlyIfCheap)
+                {
+                    return -1;
+                }
+
+                int count = 0;
+
+                foreach (TSource item in _source)
+                {
+                    _selector(item);
+                    checked
+                    {
+                        count++;
+                    }
+                }
+
+                return count;
+            }
         }
 
+        /// <summary>
+        /// An iterator that maps each item of a <see cref="T:TSource[]"/>.
+        /// </summary>
+        /// <typeparam name="TSource">The type of the source array.</typeparam>
+        /// <typeparam name="TResult">The type of the mapped items.</typeparam>
         internal sealed class SelectArrayIterator<TSource, TResult> : Iterator<TResult>, IPartition<TResult>
         {
             private readonly TSource[] _source;
@@ -226,6 +268,17 @@ namespace System.Linq
 
             public int GetCount(bool onlyIfCheap)
             {
+                // In case someone uses Count() to force evaluation of
+                // the selector, run it provided `onlyIfCheap` is false.
+
+                if (!onlyIfCheap)
+                {
+                    foreach (TSource item in _source)
+                    {
+                        _selector(item);
+                    }
+                }
+
                 return _source.Length;
             }
 
@@ -274,6 +327,11 @@ namespace System.Linq
             }
         }
 
+        /// <summary>
+        /// An iterator that maps each item of a <see cref="List{TSource}"/>.
+        /// </summary>
+        /// <typeparam name="TSource">The type of the source list.</typeparam>
+        /// <typeparam name="TResult">The type of the mapped items.</typeparam>
         internal sealed class SelectListIterator<TSource, TResult> : Iterator<TResult>, IPartition<TResult>
         {
             private readonly List<TSource> _source;
@@ -351,7 +409,20 @@ namespace System.Linq
 
             public int GetCount(bool onlyIfCheap)
             {
-                return _source.Count;
+                // In case someone uses Count() to force evaluation of
+                // the selector, run it provided `onlyIfCheap` is false.
+
+                int count = _source.Count;
+
+                if (!onlyIfCheap)
+                {
+                    for (int i = 0; i < count; i++)
+                    {
+                        _selector(_source[i]);
+                    }
+                }
+
+                return count;
             }
 
             public IPartition<TResult> Skip(int count)
@@ -403,6 +474,11 @@ namespace System.Linq
             }
         }
 
+        /// <summary>
+        /// An iterator that maps each item of an <see cref="IList{TSource}"/>.
+        /// </summary>
+        /// <typeparam name="TSource">The type of the source list.</typeparam>
+        /// <typeparam name="TResult">The type of the mapped items.</typeparam>
         internal sealed class SelectIListIterator<TSource, TResult> : Iterator<TResult>, IPartition<TResult>
         {
             private readonly IList<TSource> _source;
@@ -491,7 +567,20 @@ namespace System.Linq
 
             public int GetCount(bool onlyIfCheap)
             {
-                return _source.Count;
+                // In case someone uses Count() to force evaluation of
+                // the selector, run it provided `onlyIfCheap` is false.
+
+                int count = _source.Count;
+
+                if (!onlyIfCheap)
+                {
+                    for (int i = 0; i < count; i++)
+                    {
+                        _selector(_source[i]);
+                    }
+                }
+
+                return count;
             }
 
             public IPartition<TResult> Skip(int count)
@@ -543,6 +632,11 @@ namespace System.Linq
             }
         }
 
+        /// <summary>
+        /// An iterator that maps each item of an <see cref="IPartition{TSource}"/>.
+        /// </summary>
+        /// <typeparam name="TSource">The type of the source partition.</typeparam>
+        /// <typeparam name="TResult">The type of the mapped items.</typeparam>
         internal sealed class SelectIPartitionIterator<TSource, TResult> : Iterator<TResult>, IPartition<TResult>
         {
             private readonly IPartition<TSource> _source;
@@ -703,10 +797,26 @@ namespace System.Linq
 
             public int GetCount(bool onlyIfCheap)
             {
+                // In case someone uses Count() to force evaluation of
+                // the selector, run it provided `onlyIfCheap` is false.
+
+                if (!onlyIfCheap)
+                {
+                    foreach (TSource item in _source)
+                    {
+                        _selector(item);
+                    }
+                }
+
                 return _source.GetCount(onlyIfCheap);
             }
         }
 
+        /// <summary>
+        /// An iterator that maps each item of part of an <see cref="IList{TSource}"/>.
+        /// </summary>
+        /// <typeparam name="TSource">The type of the source list.</typeparam>
+        /// <typeparam name="TResult">The type of the mapped items.</typeparam>
         private sealed class SelectListPartitionIterator<TSource, TResult> : Iterator<TResult>, IPartition<TResult>
         {
             private readonly IList<TSource> _source;
@@ -852,7 +962,21 @@ namespace System.Linq
 
             public int GetCount(bool onlyIfCheap)
             {
-                return Count;
+                // In case someone uses Count() to force evaluation of
+                // the selector, run it provided `onlyIfCheap` is false.
+
+                int count = Count;
+
+                if (!onlyIfCheap)
+                {
+                    int end = _minIndexInclusive + count;
+                    for (int i = _minIndexInclusive; i != end; ++i)
+                    {
+                        _selector(_source[i]);
+                    }
+                }
+
+                return count;
             }
         }
     }

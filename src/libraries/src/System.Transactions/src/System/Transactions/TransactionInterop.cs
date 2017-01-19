@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Runtime.InteropServices;
-using System.Transactions.Diagnostics;
 using System.Transactions.Distributed;
 
 namespace System.Transactions
@@ -36,7 +35,7 @@ namespace System.Transactions
 
             if (transaction._complete)
             {
-                throw TransactionException.CreateTransactionCompletedException(SR.TraceSourceLtm, transaction.DistributedTxId);
+                throw TransactionException.CreateTransactionCompletedException(transaction.DistributedTxId);
             }
 
             DistributedTransaction distributedTx = transaction.Promote();
@@ -74,9 +73,10 @@ namespace System.Transactions
                 throw new ArgumentNullException(nameof(whereabouts));
             }
 
-            if (DiagnosticTrace.Verbose)
+            TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+            if (etwLog.IsEnabled())
             {
-                MethodEnteredTraceRecord.Trace(SR.TraceSourceDistributed, "TransactionInterop.GetExportCookie");
+                etwLog.MethodEnter(TraceSourceType.TraceSourceDistributed, "TransactionInterop.GetExportCookie");
             }
 
             // Copy the whereabouts so that it cannot be modified later.
@@ -86,9 +86,9 @@ namespace System.Transactions
             DistributedTransaction dTx = ConvertToDistributedTransaction(transaction);
             byte[] cookie = dTx.GetExportCookie(whereaboutsCopy);
 
-            if (DiagnosticTrace.Verbose)
+            if (etwLog.IsEnabled())
             {
-                MethodExitedTraceRecord.Trace(SR.TraceSourceDistributed, "TransactionInterop.GetExportCookie");
+                etwLog.MethodExit(TraceSourceType.TraceSourceDistributed, "TransactionInterop.GetExportCookie");
             }
 
             return cookie;
@@ -106,9 +106,10 @@ namespace System.Transactions
                 throw new ArgumentException(SR.InvalidArgument, nameof(cookie));
             }
 
-            if (DiagnosticTrace.Verbose)
+            TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+            if (etwLog.IsEnabled())
             {
-                MethodEnteredTraceRecord.Trace(SR.TraceSourceDistributed, "TransactionInterop.GetTransactionFromExportCookie");
+                etwLog.MethodEnter(TraceSourceType.TraceSourceDistributed, "TransactionInterop.GetTransactionFromExportCookie");
             }
 
             var cookieCopy = new byte[cookie.Length];
@@ -130,10 +131,11 @@ namespace System.Transactions
             Transaction transaction = TransactionManager.FindPromotedTransaction(txId);
             if (transaction != null)
             {
-                if (DiagnosticTrace.Verbose)
+                if (etwLog.IsEnabled())
                 {
-                    MethodExitedTraceRecord.Trace(SR.TraceSourceDistributed, "TransactionInterop.GetTransactionFromExportCookie");
+                    etwLog.MethodExit(TraceSourceType.TraceSourceDistributed, "TransactionInterop.GetTransactionFromExportCookie");
                 }
+
                 return transaction;
             }
 
@@ -141,9 +143,9 @@ namespace System.Transactions
             DistributedTransaction dTx = DistributedTransactionManager.GetTransactionFromExportCookie(cookieCopy, txId);
             transaction = TransactionManager.FindOrCreatePromotedTransaction(txId, dTx);
 
-            if (DiagnosticTrace.Verbose)
+            if (etwLog.IsEnabled())
             {
-                MethodExitedTraceRecord.Trace(SR.TraceSourceDistributed, "TransactionInterop.GetTransactionFromExportCookie");
+                etwLog.MethodExit(TraceSourceType.TraceSourceDistributed, "TransactionInterop.GetTransactionFromExportCookie");
             }
 
             return transaction;
@@ -156,17 +158,18 @@ namespace System.Transactions
                 throw new ArgumentNullException(nameof(transaction));
             }
 
-            if (DiagnosticTrace.Verbose)
+            TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+            if (etwLog.IsEnabled())
             {
-                MethodEnteredTraceRecord.Trace(SR.TraceSourceDistributed, "TransactionInterop.GetTransmitterPropagationToken");
+                etwLog.MethodEnter(TraceSourceType.TraceSourceDistributed, "TransactionInterop.GetTransmitterPropagationToken");
             }
 
             DistributedTransaction dTx = ConvertToDistributedTransaction(transaction);
             byte[] token = dTx.GetTransmitterPropagationToken();
 
-            if (DiagnosticTrace.Verbose)
+            if (etwLog.IsEnabled())
             {
-                MethodExitedTraceRecord.Trace(SR.TraceSourceDistributed, "TransactionInterop.GetTransmitterPropagationToken");
+                etwLog.MethodExit(TraceSourceType.TraceSourceDistributed, "TransactionInterop.GetTransmitterPropagationToken");
             }
 
             return token;
@@ -184,9 +187,10 @@ namespace System.Transactions
                 throw new ArgumentException(SR.InvalidArgument, nameof(propagationToken));
             }
 
-            if (DiagnosticTrace.Verbose)
+            TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+            if (etwLog.IsEnabled())
             {
-                MethodEnteredTraceRecord.Trace(SR.TraceSourceDistributed, "TransactionInterop.GetTransactionFromTransmitterPropagationToken");
+                etwLog.MethodEnter(TraceSourceType.TraceSourceDistributed, "TransactionInterop.GetTransactionFromTransmitterPropagationToken");
             }
 
             // Extract the transaction guid from the propagation token to see if we already have a
@@ -204,10 +208,11 @@ namespace System.Transactions
             Transaction tx = TransactionManager.FindPromotedTransaction(txId);
             if (null != tx)
             {
-                if (DiagnosticTrace.Verbose)
+                if (etwLog.IsEnabled())
                 {
-                    MethodExitedTraceRecord.Trace(SR.TraceSourceDistributed, "TransactionInterop.GetTransactionFromTransmitterPropagationToken");
+                    etwLog.MethodExit(TraceSourceType.TraceSourceDistributed, "TransactionInterop.GetTransactionFromTransmitterPropagationToken");
                 }
+
                 return tx;
             }
 
@@ -216,9 +221,9 @@ namespace System.Transactions
             // If a transaction is found then FindOrCreate will Dispose the distributed transaction created.
             Transaction returnValue = TransactionManager.FindOrCreatePromotedTransaction(txId, dTx);
 
-            if (DiagnosticTrace.Verbose)
+            if (etwLog.IsEnabled())
             {
-                MethodExitedTraceRecord.Trace(SR.TraceSourceDistributed, "TransactionInterop.GetTransactionFromTransmitterPropagationToken");
+                etwLog.MethodExit(TraceSourceType.TraceSourceDistributed, "TransactionInterop.GetTransactionFromTransmitterPropagationToken");
             }
             return returnValue;
         }
@@ -230,17 +235,18 @@ namespace System.Transactions
                 throw new ArgumentNullException(nameof(transaction));
             }
 
-            if (DiagnosticTrace.Verbose)
+            TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+            if (etwLog.IsEnabled())
             {
-                MethodEnteredTraceRecord.Trace(SR.TraceSourceDistributed, "TransactionInterop.GetDtcTransaction");
+                etwLog.MethodEnter(TraceSourceType.TraceSourceDistributed, "TransactionInterop.GetDtcTransaction");
             }
 
             DistributedTransaction dTx = ConvertToDistributedTransaction(transaction);
             IDtcTransaction transactionNative = dTx.GetDtcTransaction();
 
-            if (DiagnosticTrace.Verbose)
+            if (etwLog.IsEnabled())
             {
-                MethodExitedTraceRecord.Trace(SR.TraceSourceDistributed, "TransactionInterop.GetDtcTransaction");
+                etwLog.MethodExit(TraceSourceType.TraceSourceDistributed, "TransactionInterop.GetDtcTransaction");
             }
 
             return transactionNative;
@@ -253,33 +259,35 @@ namespace System.Transactions
                 throw new ArgumentNullException(nameof(transactionNative));
             }
 
-            if (DiagnosticTrace.Verbose)
+            TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+            if (etwLog.IsEnabled())
             {
-                MethodEnteredTraceRecord.Trace(SR.TraceSourceDistributed, "TransactionInterop.GetTransactionFromDtc");
+                etwLog.MethodEnter(TraceSourceType.TraceSourceDistributed, "TransactionInterop.GetTransactionFromDtcTransaction");
             }
 
             Transaction transaction = DistributedTransactionManager.GetTransactionFromDtcTransaction(transactionNative);
 
-            if (DiagnosticTrace.Verbose)
+            if (etwLog.IsEnabled())
             {
-                MethodExitedTraceRecord.Trace(SR.TraceSourceDistributed, "TransactionInterop.GetTransactionFromDtc");
+                etwLog.MethodExit(TraceSourceType.TraceSourceDistributed, "TransactionInterop.GetTransactionFromDtcTransaction");
             }
             return transaction;
         }
 
         public static byte[] GetWhereabouts()
         {
-            if (DiagnosticTrace.Verbose)
+            TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+            if (etwLog.IsEnabled())
             {
-                MethodEnteredTraceRecord.Trace(SR.TraceSourceDistributed, "TransactionInterop.GetWhereabouts");
+                etwLog.MethodEnter(TraceSourceType.TraceSourceDistributed, "TransactionInterop.GetWhereabouts");
             }
 
             DistributedTransactionManager dTm = TransactionManager.DistributedTransactionManager;
             byte[] returnValue = dTm.GetWhereabouts();
 
-            if (DiagnosticTrace.Verbose)
+            if (etwLog.IsEnabled())
             {
-                MethodExitedTraceRecord.Trace(SR.TraceSourceDistributed, "TransactionInterop.GetWhereabouts");
+                etwLog.MethodExit(TraceSourceType.TraceSourceDistributed, "TransactionInterop.GetWhereabouts");
             }
             return returnValue;
         }

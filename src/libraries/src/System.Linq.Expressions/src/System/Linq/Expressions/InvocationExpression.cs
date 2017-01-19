@@ -56,12 +56,15 @@ namespace System.Linq.Expressions
         /// <returns>This expression if no children changed, or an expression with the updated children.</returns>
         public InvocationExpression Update(Expression expression, IEnumerable<Expression> arguments)
         {
-            if (expression == Expression && arguments == Arguments)
+            if (expression == Expression & arguments != null)
             {
-                return this;
+                if (ExpressionUtils.SameElements(ref arguments, Arguments))
+                {
+                    return this;
+                }
             }
 
-            return Expression.Invoke(expression, arguments);
+            return Invoke(expression, arguments);
         }
 
         [ExcludeFromCodeCoverage] // Unreachable
@@ -162,7 +165,7 @@ namespace System.Linq.Expressions
 
         public override Expression GetArgument(int index)
         {
-            throw new InvalidOperationException();
+            throw new ArgumentOutOfRangeException(nameof(index));
         }
 
         public override int ArgumentCount => 0;
@@ -178,7 +181,7 @@ namespace System.Linq.Expressions
 
     internal sealed class InvocationExpression1 : InvocationExpression
     {
-        private object _arg0;       // storage for the 1st argument or a readonly collection.  See IArgumentProvider
+        private object _arg0;       // storage for the 1st argument or a read-only collection.  See IArgumentProvider
 
         public InvocationExpression1(Expression lambda, Type returnType, Expression arg0)
             : base(lambda, returnType)
@@ -196,7 +199,7 @@ namespace System.Linq.Expressions
             switch (index)
             {
                 case 0: return ReturnObject<Expression>(_arg0);
-                default: throw new InvalidOperationException();
+                default: throw new ArgumentOutOfRangeException(nameof(index));
             }
         }
 
@@ -217,8 +220,8 @@ namespace System.Linq.Expressions
 
     internal sealed class InvocationExpression2 : InvocationExpression
     {
-        private object _arg0;               // storage for the 1st argument or a readonly collection.  See IArgumentProvider
-        private readonly Expression _arg1;  // storage for the 2nd arg
+        private object _arg0;               // storage for the 1st argument or a read-only collection.  See IArgumentProvider
+        private readonly Expression _arg1;  // storage for the 2nd argument
 
         public InvocationExpression2(Expression lambda, Type returnType, Expression arg0, Expression arg1)
             : base(lambda, returnType)
@@ -238,7 +241,7 @@ namespace System.Linq.Expressions
             {
                 case 0: return ReturnObject<Expression>(_arg0);
                 case 1: return _arg1;
-                default: throw new InvalidOperationException();
+                default: throw new ArgumentOutOfRangeException(nameof(index));
             }
         }
 
@@ -259,9 +262,9 @@ namespace System.Linq.Expressions
 
     internal sealed class InvocationExpression3 : InvocationExpression
     {
-        private object _arg0;               // storage for the 1st argument or a readonly collection.  See IArgumentProvider
-        private readonly Expression _arg1;  // storage for the 2nd arg
-        private readonly Expression _arg2;  // storage for the 3rd arg
+        private object _arg0;               // storage for the 1st argument or a read-only collection.  See IArgumentProvider
+        private readonly Expression _arg1;  // storage for the 2nd argument
+        private readonly Expression _arg2;  // storage for the 3rd argument
 
         public InvocationExpression3(Expression lambda, Type returnType, Expression arg0, Expression arg1, Expression arg2)
             : base(lambda, returnType)
@@ -283,7 +286,7 @@ namespace System.Linq.Expressions
                 case 0: return ReturnObject<Expression>(_arg0);
                 case 1: return _arg1;
                 case 2: return _arg2;
-                default: throw new InvalidOperationException();
+                default: throw new ArgumentOutOfRangeException(nameof(index));
             }
         }
 
@@ -304,10 +307,10 @@ namespace System.Linq.Expressions
 
     internal sealed class InvocationExpression4 : InvocationExpression
     {
-        private object _arg0;               // storage for the 1st argument or a readonly collection.  See IArgumentProvider
-        private readonly Expression _arg1;  // storage for the 2nd arg
-        private readonly Expression _arg2;  // storage for the 3rd arg
-        private readonly Expression _arg3;  // storage for the 4th arg
+        private object _arg0;               // storage for the 1st argument or a read-only collection.  See IArgumentProvider
+        private readonly Expression _arg1;  // storage for the 2nd argument
+        private readonly Expression _arg2;  // storage for the 3rd argument
+        private readonly Expression _arg3;  // storage for the 4th argument
 
         public InvocationExpression4(Expression lambda, Type returnType, Expression arg0, Expression arg1, Expression arg2, Expression arg3)
             : base(lambda, returnType)
@@ -331,7 +334,7 @@ namespace System.Linq.Expressions
                 case 1: return _arg1;
                 case 2: return _arg2;
                 case 3: return _arg3;
-                default: throw new InvalidOperationException();
+                default: throw new ArgumentOutOfRangeException(nameof(index));
             }
         }
 
@@ -352,11 +355,11 @@ namespace System.Linq.Expressions
 
     internal sealed class InvocationExpression5 : InvocationExpression
     {
-        private object _arg0;               // storage for the 1st argument or a readonly collection.  See IArgumentProvider
-        private readonly Expression _arg1;  // storage for the 2nd arg
-        private readonly Expression _arg2;  // storage for the 3rd arg
-        private readonly Expression _arg3;  // storage for the 4th arg
-        private readonly Expression _arg4;  // storage for the 5th arg
+        private object _arg0;               // storage for the 1st argument or a read-only collection.  See IArgumentProvider
+        private readonly Expression _arg1;  // storage for the 2nd argument
+        private readonly Expression _arg2;  // storage for the 3rd argument
+        private readonly Expression _arg3;  // storage for the 4th argument
+        private readonly Expression _arg4;  // storage for the 5th argument
 
         public InvocationExpression5(Expression lambda, Type returnType, Expression arg0, Expression arg1, Expression arg2, Expression arg3, Expression arg4)
             : base(lambda, returnType)
@@ -382,7 +385,7 @@ namespace System.Linq.Expressions
                 case 2: return _arg2;
                 case 3: return _arg3;
                 case 4: return _arg4;
-                default: throw new InvalidOperationException();
+                default: throw new ArgumentOutOfRangeException(nameof(index));
             }
         }
 
@@ -406,11 +409,11 @@ namespace System.Linq.Expressions
     public partial class Expression
     {
         /// <summary>
-        /// Creates an <see cref="InvocationExpression"/> that 
+        /// Creates an <see cref="InvocationExpression"/> that
         /// applies a delegate or lambda expression with no arguments.
         /// </summary>
         /// <returns>
-        /// An <see cref="InvocationExpression"/> that 
+        /// An <see cref="InvocationExpression"/> that
         /// applies the specified delegate or lambda expression.
         /// </returns>
         /// <param name="expression">
@@ -439,11 +442,11 @@ namespace System.Linq.Expressions
         }
 
         /// <summary>
-        /// Creates an <see cref="InvocationExpression"/> that 
+        /// Creates an <see cref="InvocationExpression"/> that
         /// applies a delegate or lambda expression to one argument expression.
         /// </summary>
         /// <returns>
-        /// An <see cref="InvocationExpression"/> that 
+        /// An <see cref="InvocationExpression"/> that
         /// applies the specified delegate or lambda expression to the provided arguments.
         /// </returns>
         /// <param name="expression">
@@ -477,11 +480,11 @@ namespace System.Linq.Expressions
         }
 
         /// <summary>
-        /// Creates an <see cref="InvocationExpression"/> that 
+        /// Creates an <see cref="InvocationExpression"/> that
         /// applies a delegate or lambda expression to two argument expressions.
         /// </summary>
         /// <returns>
-        /// An <see cref="InvocationExpression"/> that 
+        /// An <see cref="InvocationExpression"/> that
         /// applies the specified delegate or lambda expression to the provided arguments.
         /// </returns>
         /// <param name="expression">
@@ -518,11 +521,11 @@ namespace System.Linq.Expressions
         }
 
         /// <summary>
-        /// Creates an <see cref="InvocationExpression"/> that 
+        /// Creates an <see cref="InvocationExpression"/> that
         /// applies a delegate or lambda expression to three argument expressions.
         /// </summary>
         /// <returns>
-        /// An <see cref="InvocationExpression"/> that 
+        /// An <see cref="InvocationExpression"/> that
         /// applies the specified delegate or lambda expression to the provided arguments.
         /// </returns>
         /// <param name="expression">
@@ -564,11 +567,11 @@ namespace System.Linq.Expressions
         }
 
         /// <summary>
-        /// Creates an <see cref="InvocationExpression"/> that 
+        /// Creates an <see cref="InvocationExpression"/> that
         /// applies a delegate or lambda expression to four argument expressions.
         /// </summary>
         /// <returns>
-        /// An <see cref="InvocationExpression"/> that 
+        /// An <see cref="InvocationExpression"/> that
         /// applies the specified delegate or lambda expression to the provided arguments.
         /// </returns>
         /// <param name="expression">
@@ -614,11 +617,11 @@ namespace System.Linq.Expressions
         }
 
         /// <summary>
-        /// Creates an <see cref="InvocationExpression"/> that 
+        /// Creates an <see cref="InvocationExpression"/> that
         /// applies a delegate or lambda expression to five argument expressions.
         /// </summary>
         /// <returns>
-        /// An <see cref="InvocationExpression"/> that 
+        /// An <see cref="InvocationExpression"/> that
         /// applies the specified delegate or lambda expression to the provided arguments.
         /// </returns>
         /// <param name="expression">
@@ -668,11 +671,11 @@ namespace System.Linq.Expressions
         }
 
         /// <summary>
-        /// Creates an <see cref="InvocationExpression"/> that 
+        /// Creates an <see cref="InvocationExpression"/> that
         /// applies a delegate or lambda expression to a list of argument expressions.
         /// </summary>
         /// <returns>
-        /// An <see cref="InvocationExpression"/> that 
+        /// An <see cref="InvocationExpression"/> that
         /// applies the specified delegate or lambda expression to the provided arguments.
         /// </returns>
         /// <param name="expression">
@@ -695,11 +698,11 @@ namespace System.Linq.Expressions
         }
 
         /// <summary>
-        /// Creates an <see cref="InvocationExpression"/> that 
+        /// Creates an <see cref="InvocationExpression"/> that
         /// applies a delegate or lambda expression to a list of argument expressions.
         /// </summary>
         /// <returns>
-        /// An <see cref="InvocationExpression"/> that 
+        /// An <see cref="InvocationExpression"/> that
         /// applies the specified delegate or lambda expression to the provided arguments.
         /// </returns>
         /// <param name="expression">

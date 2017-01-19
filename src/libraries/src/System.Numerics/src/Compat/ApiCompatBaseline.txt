@@ -1,3 +1,0 @@
-Compat issues with assembly System.Numerics:
-MembersMustExist : Member 'System.Numerics.BigInteger.CompareTo(System.Object)' does not exist in the implementation but it does exist in the contract.
-Total Issues: 1

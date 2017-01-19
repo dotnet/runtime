@@ -676,7 +676,7 @@ namespace Microsoft.Win32
             }
         }
 
-        static private void ValidateKeyOptions(RegistryOptions options)
+        private static void ValidateKeyOptions(RegistryOptions options)
         {
             if (options < RegistryOptions.None || options > RegistryOptions.Volatile)
             {
@@ -684,7 +684,7 @@ namespace Microsoft.Win32
             }
         }
 
-        static private void ValidateKeyView(RegistryView view)
+        private static void ValidateKeyView(RegistryView view)
         {
             if (view != RegistryView.Default && view != RegistryView.Registry32 && view != RegistryView.Registry64)
             {

@@ -4,13 +4,13 @@
 
 using Xunit;
 using Xunit.Abstractions;
-using System.Xml;
+using System.IO;
 using System.Xml.Schema;
 
 namespace System.Xml.Tests
 {
     //[TestCase(Name = "TC_SchemaSet_Imports", Desc = "")]
-    public class TC_SchemaSet_Imports
+    public class TC_SchemaSet_Imports : TC_SchemaSetBase
     {
         private ITestOutputHelper _output;
 
@@ -33,15 +33,15 @@ namespace System.Xml.Tests
             XmlSchemaSet sc = new XmlSchemaSet();
             sc.XmlResolver = new XmlUrlResolver();
 
-            XmlSchema parent = sc.Add(null, TestData._Root + param0.ToString());
+            XmlSchema parent = sc.Add(null, Path.Combine(TestData._Root, param0.ToString()));
             CError.Compare(sc.Count, param2, "Count");
 
             CError.Compare(sc.IsCompiled, false, "IsCompiled");
             sc.Compile();
             CError.Compare(sc.IsCompiled, true, "IsCompiled");
             CError.Compare(sc.Count, param2, "Count");
-            // check that schema is present in parent.Includes and its NS correct.
 
+            // check that schema is present in parent.Includes and its NS correct.
             foreach (XmlSchemaImport imp in parent.Includes)
                 if (imp.SchemaLocation.Equals(param1.ToString()) && imp.Schema.TargetNamespace == (string)param3)
                     return;
@@ -60,7 +60,7 @@ namespace System.Xml.Tests
             XmlSchemaSet sc = new XmlSchemaSet();
             sc.XmlResolver = new XmlUrlResolver();
 
-            sc.Add((string)param3, TestData._Root + param1.ToString());
+            sc.Add((string)param3, Path.Combine(TestData._Root, param1.ToString()));
             CError.Compare(sc.Count, 1, "AddCount");
             CError.Compare(sc.IsCompiled, false, "AddIsCompiled");
 
@@ -68,7 +68,7 @@ namespace System.Xml.Tests
             CError.Compare(sc.Count, 1, "CompileCount");
             CError.Compare(sc.IsCompiled, true, "CompileIsCompiled");
 
-            XmlSchema parent = sc.Add(null, TestData._Root + param0.ToString());
+            XmlSchema parent = sc.Add(null, Path.Combine(TestData._Root, param0.ToString()));
 
             CError.Compare(sc.Count, param2, "Add2Count");
             CError.Compare(sc.IsCompiled, false, "Add2IsCompiled");
@@ -90,7 +90,7 @@ namespace System.Xml.Tests
             XmlSchemaSet sc = new XmlSchemaSet();
             sc.XmlResolver = new XmlUrlResolver();
 
-            XmlSchema parent = sc.Add(null, TestData._Root + "import_v5_a.xsd");
+            XmlSchema parent = sc.Add(null, Path.Combine(TestData._Root, "import_v5_a.xsd"));
             CError.Compare(sc.IsCompiled, false, "AddIsCompiled");
             CError.Compare(sc.Count, 2, "AddCount");
 
@@ -98,11 +98,12 @@ namespace System.Xml.Tests
             CError.Compare(sc.IsCompiled, true, "CompileIsCompiled");
             CError.Compare(sc.Count, 2, "CompileCount");
 
-            XmlSchema orig = sc.Add(null, TestData._Root + "import_v4_b.xsd"); // should be already present in the set
+            XmlSchema orig = sc.Add(null, Path.Combine(TestData._Root, "import_v4_b.xsd")); // should be already present in the set
 
             CError.Compare(sc.IsCompiled, true, "Add2IsCompiled");
             CError.Compare(sc.Count, 2, "Add2Count");
             CError.Compare(orig.SourceUri.Contains("import_v4_b.xsd"), true, "Compare the schema object");
+
             // check that schema is present in parent.Includes and its NS correct.
             foreach (XmlSchemaImport imp in parent.Includes)
                 if (imp.SchemaLocation.Equals("import_v4_b.xsd") && imp.Schema.TargetNamespace == null)
@@ -119,7 +120,7 @@ namespace System.Xml.Tests
         {
             XmlSchemaSet sc = new XmlSchemaSet();
             sc.XmlResolver = new XmlUrlResolver();
-            XmlSchema parent = sc.Add(null, TestData._Root + "import_v5_a.xsd");
+            XmlSchema parent = sc.Add(null, Path.Combine(TestData._Root, "import_v5_a.xsd"));
             CError.Compare(sc.IsCompiled, false, "AddIsCompiled");
             CError.Compare(sc.Count, 2, "AddCount");
 
@@ -127,7 +128,7 @@ namespace System.Xml.Tests
             CError.Compare(sc.IsCompiled, true, "CompileIsCompiled");
             CError.Compare(sc.Count, 2, "CompileCount");
 
-            sc.Add("ns-b", TestData._Root + "import_v4_b.xsd"); // should be already present in the set
+            sc.Add("ns-b", Path.Combine(TestData._Root, "import_v4_b.xsd")); // should be already present in the set
 
             CError.Compare(sc.Count, 3, "Count");
             CError.Compare(sc.IsCompiled, false, "IsCompiled");
@@ -148,7 +149,7 @@ namespace System.Xml.Tests
         {
             XmlSchemaSet sc = new XmlSchemaSet();
             sc.XmlResolver = new XmlUrlResolver();
-            XmlSchema parent = sc.Add(null, TestData._Root + "import_v2_a.xsd");
+            XmlSchema parent = sc.Add(null, Path.Combine(TestData._Root, "import_v2_a.xsd"));
             CError.Compare(sc.IsCompiled, false, "AddIsCompiled");
             CError.Compare(sc.Count, 2, "AddCount");
 
@@ -156,7 +157,7 @@ namespace System.Xml.Tests
             CError.Compare(sc.IsCompiled, true, "CompileIsCompiled");
             CError.Compare(sc.Count, 2, "CompileCount");
 
-            sc.Add("ns-b", TestData._Root + "import_v2_b.xsd"); // should be already present in the set
+            sc.Add("ns-b", Path.Combine(TestData._Root, "import_v2_b.xsd")); // should be already present in the set
             CError.Compare(sc.Count, 2, "Count");
             CError.Compare(sc.IsCompiled, true, "IsCompiled");
 
@@ -177,7 +178,7 @@ namespace System.Xml.Tests
             bool found = false;
             XmlSchemaSet sc = new XmlSchemaSet();
             sc.XmlResolver = new XmlUrlResolver();
-            XmlSchema parent = sc.Add(null, TestData._Root + "import_v9_a.xsd");
+            XmlSchema parent = sc.Add(null, Path.Combine(TestData._Root, "import_v9_a.xsd"));
             CError.Compare(sc.IsCompiled, false, "AddIsCompiled");
             CError.Compare(sc.Count, 3, "AddCount");
 
@@ -185,8 +186,8 @@ namespace System.Xml.Tests
             CError.Compare(sc.Count, 3, "CompileCount");
             CError.Compare(sc.IsCompiled, true, "CompileIsCompiled");
 
-            XmlSchema sch_B = sc.Add(null, TestData._Root + "import_v9_b.xsd"); // should be already present in the set
-            sc.Add(null, TestData._Root + "import_v9_c.xsd");				   // should be already present in the set
+            XmlSchema sch_B = sc.Add(null, Path.Combine(TestData._Root, "import_v9_b.xsd")); // should be already present in the set
+            sc.Add(null, Path.Combine(TestData._Root, "import_v9_c.xsd"));				   // should be already present in the set
 
             CError.Compare(sc.Count, 3, "Count");
             CError.Compare(sc.IsCompiled, true, "IsCompiled");
@@ -196,6 +197,7 @@ namespace System.Xml.Tests
                 if (imp.SchemaLocation.Equals("import_v9_b.xsd") && imp.Schema.TargetNamespace.Equals("ns-b"))
                     found = true;
             if (!found) Assert.True(false);
+
             // check that schema C in sch_b.Includes and its NS correct.
             foreach (XmlSchemaImport imp in sch_B.Includes)
                 if (imp.SchemaLocation.Equals("import_v9_c.xsd") && imp.Schema.TargetNamespace.Equals("ns-c"))
@@ -213,7 +215,7 @@ namespace System.Xml.Tests
             bool found = false;
             XmlSchemaSet sc = new XmlSchemaSet();
             sc.XmlResolver = new XmlUrlResolver();
-            XmlSchema parent = sc.Add(null, TestData._Root + "import_v10_a.xsd");
+            XmlSchema parent = sc.Add(null, Path.Combine(TestData._Root, "import_v10_a.xsd"));
             CError.Compare(sc.IsCompiled, false, "AddIsCompiled");
             CError.Compare(sc.Count, 3, "AddCount");
 
@@ -221,8 +223,8 @@ namespace System.Xml.Tests
             CError.Compare(sc.Count, 3, "CompileCount");
             CError.Compare(sc.IsCompiled, true, "CompileIsCompiled");
 
-            XmlSchema sch_B = sc.Add(null, TestData._Root + "import_v10_b.xsd"); // should be already present in the set
-            sc.Add(null, TestData._Root + "import_v10_c.xsd");				   // should be already present in the set
+            XmlSchema sch_B = sc.Add(null, Path.Combine(TestData._Root, "import_v10_b.xsd")); // should be already present in the set
+            sc.Add(null, Path.Combine(TestData._Root, "import_v10_c.xsd"));				   // should be already present in the set
 
             CError.Compare(sc.Count, 3, "Count");
             CError.Compare(sc.IsCompiled, true, "IsCompiled");
@@ -242,7 +244,7 @@ namespace System.Xml.Tests
             if (!found) Assert.True(false);
 
             // try adding no ns schema with an ns
-            sc.Add("ns-b", TestData._Root + "import_v10_b.xsd");
+            sc.Add("ns-b", Path.Combine(TestData._Root, "import_v10_b.xsd"));
             CError.Compare(sc.Count, 4, "Count");
 
             return;
@@ -256,7 +258,7 @@ namespace System.Xml.Tests
         {
             XmlSchemaSet sc = new XmlSchemaSet();
             sc.XmlResolver = new XmlUrlResolver();
-            XmlSchema parent = sc.Add(null, TestData._Root + "import_v11_a.xsd");
+            XmlSchema parent = sc.Add(null, Path.Combine(TestData._Root, "import_v11_a.xsd"));
             CError.Compare(sc.IsCompiled, false, "AddIsCompiled");
             CError.Compare(sc.Count, 3, "AddCount");
 
@@ -275,7 +277,7 @@ namespace System.Xml.Tests
         {
             XmlSchemaSet sc = new XmlSchemaSet();
             sc.XmlResolver = new XmlUrlResolver();
-            XmlSchema parent = sc.Add(null, TestData._Root + "import_v12_a.xsd");
+            XmlSchema parent = sc.Add(null, Path.Combine(TestData._Root, "import_v12_a.xsd"));
             CError.Compare(sc.IsCompiled, false, "AddIsCompiled");
             CError.Compare(sc.Count, 3, "AddCount");
 
@@ -294,7 +296,7 @@ namespace System.Xml.Tests
         {
             XmlSchemaSet sc = new XmlSchemaSet();
             sc.XmlResolver = new XmlUrlResolver();
-            XmlSchema parent = sc.Add(null, TestData._Root + "import_v13_a.xsd");
+            XmlSchema parent = sc.Add(null, Path.Combine(TestData._Root, "import_v13_a.xsd"));
             CError.Compare(sc.IsCompiled, false, "AddIsCompiled");
             CError.Compare(sc.Count, 4, "AddCount");
 
@@ -312,7 +314,7 @@ namespace System.Xml.Tests
         {
             XmlSchemaSet sc = new XmlSchemaSet();
             sc.XmlResolver = new XmlUrlResolver();
-            XmlSchema parent = sc.Add(null, TestData._Root + "import_v14_a.xsd");
+            XmlSchema parent = sc.Add(null, Path.Combine(TestData._Root, "import_v14_a.xsd"));
             CError.Compare(sc.IsCompiled, false, "AddIsCompiled");
             CError.Compare(sc.Count, 3, "AddCount");
 
@@ -331,7 +333,7 @@ namespace System.Xml.Tests
         {
             XmlSchemaSet sc = new XmlSchemaSet();
             sc.XmlResolver = new XmlUrlResolver();
-            XmlSchema parent = sc.Add(null, TestData._Root + "import_v15_a.xsd");
+            XmlSchema parent = sc.Add(null, Path.Combine(TestData._Root, "import_v15_a.xsd"));
             CError.Compare(sc.IsCompiled, false, "AddIsCompiled");
             CError.Compare(sc.Count, 2, "AddCount");
 
@@ -348,11 +350,11 @@ namespace System.Xml.Tests
         public void v16()
         {
             XmlSchemaSet sc = new XmlSchemaSet();
-            sc.Add(null, TestData._Root + "import_v16_b.xsd");
+            sc.Add(null, Path.Combine(TestData._Root, "import_v16_b.xsd"));
             CError.Compare(sc.IsCompiled, false, "Add1IsCompiled");
             CError.Compare(sc.Count, 1, "Add1Count");
 
-            XmlSchema parent = sc.Add(null, TestData._Root + "import_v16_a.xsd");
+            XmlSchema parent = sc.Add(null, Path.Combine(TestData._Root, "import_v16_a.xsd"));
             CError.Compare(sc.IsCompiled, false, "Add2IsCompiled");
             CError.Compare(sc.Count, 2, "Add2Count");
 
@@ -370,7 +372,7 @@ namespace System.Xml.Tests
         {
             XmlSchemaSet sc = new XmlSchemaSet();
             sc.XmlResolver = new XmlUrlResolver();
-            XmlSchema parent = sc.Add(null, TestData._Root + "import_v17_a.xsd");
+            XmlSchema parent = sc.Add(null, Path.Combine(TestData._Root, "import_v17_a.xsd"));
 
             CError.Compare(sc.Count, 2, "Count");
             CError.Compare(sc.IsCompiled, false, "IsCompiled");
@@ -394,7 +396,7 @@ namespace System.Xml.Tests
         {
             XmlSchemaSet sc = new XmlSchemaSet();
             sc.XmlResolver = new XmlUrlResolver();
-            XmlSchema parent = sc.Add(null, TestData._Root + "import_v18_a.xsd");
+            XmlSchema parent = sc.Add(null, Path.Combine(TestData._Root, "import_v18_a.xsd"));
 
             CError.Compare(sc.Count, 2, "Count");
             CError.Compare(sc.IsCompiled, false, "IsCompiled");
@@ -418,7 +420,7 @@ namespace System.Xml.Tests
         {
             XmlSchemaSet sc = new XmlSchemaSet();
             sc.XmlResolver = new XmlUrlResolver();
-            XmlSchema parent = sc.Add(null, TestData._Root + "import_v19_a.xsd");
+            XmlSchema parent = sc.Add(null, Path.Combine(TestData._Root, "import_v19_a.xsd"));
             CError.Compare(sc.Count, 3, "Count");
 
             sc.Compile();
@@ -438,14 +440,14 @@ namespace System.Xml.Tests
         {
             XmlSchemaSet sc = new XmlSchemaSet();
             sc.XmlResolver = new XmlUrlResolver();
-            XmlSchema parent = sc.Add(null, TestData._Root + "import_v20_a.xsd");
+            XmlSchema parent = sc.Add(null, Path.Combine(TestData._Root, "import_v20_a.xsd"));
             CError.Compare(sc.Count, 4, "Count");
 
             sc.Compile();
             // try to add each individually
-            XmlSchema b = sc.Add(null, TestData._Root + "import_v20_b.xsd");
-            XmlSchema c = sc.Add(null, TestData._Root + "import_v20_c.xsd");
-            XmlSchema d = sc.Add(null, TestData._Root + "import_v20_d.xsd");
+            XmlSchema b = sc.Add(null, Path.Combine(TestData._Root, "import_v20_b.xsd"));
+            XmlSchema c = sc.Add(null, Path.Combine(TestData._Root, "import_v20_c.xsd"));
+            XmlSchema d = sc.Add(null, Path.Combine(TestData._Root, "import_v20_d.xsd"));
 
             CError.Compare(sc.Count, 4, "Count");
             CError.Compare(sc.IsCompiled, true, "IsCompiled");
@@ -466,10 +468,10 @@ namespace System.Xml.Tests
         public void v21(object param0, object param1, object param2, object param3)
         {
             XmlSchemaSet ss = new XmlSchemaSet();
-            ss.Add(null, TestData._Root + param0.ToString());
-            ss.Add(null, TestData._Root + param1.ToString());
-            ss.Add(null, TestData._Root + param2.ToString());
-            ss.Add(null, TestData._Root + param3.ToString());
+            ss.Add(null, Path.Combine(TestData._Root, param0.ToString()));
+            ss.Add(null, Path.Combine(TestData._Root, param1.ToString()));
+            ss.Add(null, Path.Combine(TestData._Root, param2.ToString()));
+            ss.Add(null, Path.Combine(TestData._Root, param3.ToString()));
             CError.Compare(ss.Count, 4, "AddCount");
             CError.Compare(ss.IsCompiled, false, "AddIsCompiled");
 
@@ -488,10 +490,10 @@ namespace System.Xml.Tests
         {
             XmlSchemaSet ss = new XmlSchemaSet();
 
-            ss.Add(null, TestData._Root + param0.ToString());
-            ss.Add(null, TestData._Root + param1.ToString());
-            ss.Add(null, TestData._Root + param2.ToString());
-            ss.Add(null, TestData._Root + param3.ToString());
+            ss.Add(null, Path.Combine(TestData._Root, param0.ToString()));
+            ss.Add(null, Path.Combine(TestData._Root, param1.ToString()));
+            ss.Add(null, Path.Combine(TestData._Root, param2.ToString()));
+            ss.Add(null, Path.Combine(TestData._Root, param3.ToString()));
             CError.Compare(ss.Count, 4, "AddCount");
             CError.Compare(ss.IsCompiled, false, "AddIsCompiled");
 
@@ -509,8 +511,8 @@ namespace System.Xml.Tests
         {
             XmlSchemaSet ss = new XmlSchemaSet();
             ss.XmlResolver = new XmlUrlResolver();
-            ss.Add(null, TestData._Root + "105897.xsd");
-            ss.Add(null, TestData._Root + "105897_a.xsd");
+            ss.Add(null, Path.Combine(TestData._Root, "105897.xsd"));
+            ss.Add(null, Path.Combine(TestData._Root, "105897_a.xsd"));
             CError.Compare(ss.Count, 3, "AddCount");
             CError.Compare(ss.IsCompiled, false, "AddIsCompiled");
 
@@ -526,7 +528,7 @@ namespace System.Xml.Tests
             settings.Schemas = new XmlSchemaSet();
             settings.Schemas.Add(ss);
 
-            using (XmlReader vr = XmlReader.Create(TestData._Root + "105897.xml", settings))
+            using (XmlReader vr = XmlReader.Create(Path.Combine(TestData._Root, "105897.xml"), settings))
             {
                 while (vr.Read()) ;
             }
@@ -547,7 +549,7 @@ namespace System.Xml.Tests
             XmlSchemaSet sc = new XmlSchemaSet();
             sc.XmlResolver = new XmlUrlResolver();
 
-            XmlSchema parent = sc.Add(null, TestData._Root + param0.ToString());
+            XmlSchema parent = sc.Add(null, Path.Combine(TestData._Root, param0.ToString()));
             CError.Compare(sc.Count, param2, "Count");
             CError.Compare(sc.IsCompiled, false, "IsCompiled");
 
@@ -577,7 +579,7 @@ namespace System.Xml.Tests
             XmlSchemaSet sc = new XmlSchemaSet();
             sc.XmlResolver = new XmlUrlResolver();
 
-            XmlSchema sch = sc.Add((string)param3, TestData._Root + param1.ToString());
+            XmlSchema sch = sc.Add((string)param3, Path.Combine(TestData._Root, param1.ToString()));
             CError.Compare(sc.Count, 1, "AddCount");
             CError.Compare(sc.IsCompiled, false, "AddIsCompiled");
 
@@ -589,7 +591,7 @@ namespace System.Xml.Tests
             CError.Compare(sc.Count, 1, "CompileCount");
             CError.Compare(sc.IsCompiled, true, "CompileIsCompiled");
 
-            XmlSchema parent = sc.Add(null, TestData._Root + param0.ToString());
+            XmlSchema parent = sc.Add(null, Path.Combine(TestData._Root, param0.ToString()));
             CError.Compare(sc.Count, param2, "Add2Count");
             CError.Compare(sc.IsCompiled, false, "Add2IsCompiled");
 
@@ -617,7 +619,7 @@ namespace System.Xml.Tests
             XmlSchemaSet sc = new XmlSchemaSet();
             sc.XmlResolver = new XmlUrlResolver();
 
-            XmlSchema sch = sc.Add((string)param3, TestData._Root + param1.ToString());
+            XmlSchema sch = sc.Add((string)param3, Path.Combine(TestData._Root, param1.ToString()));
             CError.Compare(sc.Count, 1, "AddCount");
             CError.Compare(sc.IsCompiled, false, "AddIsCompiled");
 
@@ -631,7 +633,7 @@ namespace System.Xml.Tests
 
             try
             {
-                XmlSchema parent = sc.Add(null, TestData._Root + param0.ToString());
+                XmlSchema parent = sc.Add(null, Path.Combine(TestData._Root, param0.ToString()));
                 Assert.True(false);
             }
             catch (XmlSchemaException) { }
@@ -658,7 +660,7 @@ namespace System.Xml.Tests
             XmlSchemaSet sc = new XmlSchemaSet();
             sc.XmlResolver = new XmlUrlResolver();
 
-            XmlSchema parent = sc.Add(null, TestData._Root + "import_v5_a.xsd");
+            XmlSchema parent = sc.Add(null, Path.Combine(TestData._Root, "import_v5_a.xsd"));
             CError.Compare(sc.IsCompiled, false, "AddIsCompiled");
             CError.Compare(sc.Count, 2, "AddCount");
 
@@ -670,7 +672,7 @@ namespace System.Xml.Tests
             CError.Compare(sc.IsCompiled, true, "CompileIsCompiled");
             CError.Compare(sc.Count, 2, "CompileCount");
 
-            XmlSchema orig = sc.Add(null, TestData._Root + "import_v4_b.xsd"); // should be already present in the set
+            XmlSchema orig = sc.Add(null, Path.Combine(TestData._Root, "import_v4_b.xsd")); // should be already present in the set
             CError.Compare(sc.IsCompiled, true, "Add2IsCompiled");
             CError.Compare(sc.Count, 2, "Add2Count");
             CError.Compare(orig.SourceUri.Contains("import_v4_b.xsd"), true, "Compare the schema object");
@@ -699,7 +701,7 @@ namespace System.Xml.Tests
         {
             XmlSchemaSet sc = new XmlSchemaSet();
             sc.XmlResolver = new XmlUrlResolver();
-            XmlSchema parent = sc.Add(null, TestData._Root + "import_v5_a.xsd");
+            XmlSchema parent = sc.Add(null, Path.Combine(TestData._Root, "import_v5_a.xsd"));
             CError.Compare(sc.IsCompiled, false, "AddIsCompiled");
             CError.Compare(sc.Count, 2, "AddCount");
 
@@ -711,7 +713,7 @@ namespace System.Xml.Tests
             CError.Compare(sc.IsCompiled, true, "CompileIsCompiled");
             CError.Compare(sc.Count, 2, "CompileCount");
 
-            XmlSchema sch_B = sc.Add("ns-b", TestData._Root + "import_v4_b.xsd"); // should be already present in the set
+            XmlSchema sch_B = sc.Add("ns-b", Path.Combine(TestData._Root, "import_v4_b.xsd")); // should be already present in the set
             CError.Compare(sc.Count, 3, "Count");
             CError.Compare(sc.IsCompiled, false, "IsCompiled");
 
@@ -739,7 +741,7 @@ namespace System.Xml.Tests
         {
             XmlSchemaSet sc = new XmlSchemaSet();
             sc.XmlResolver = new XmlUrlResolver();
-            XmlSchema parent = sc.Add(null, TestData._Root + "import_v2_a.xsd");
+            XmlSchema parent = sc.Add(null, Path.Combine(TestData._Root, "import_v2_a.xsd"));
             CError.Compare(sc.IsCompiled, false, "AddIsCompiled");
             CError.Compare(sc.Count, 2, "AddCount");
 
@@ -751,7 +753,7 @@ namespace System.Xml.Tests
             CError.Compare(sc.IsCompiled, true, "CompileIsCompiled");
             CError.Compare(sc.Count, 2, "CompileCount");
 
-            XmlSchema sch_B = sc.Add("ns-b", TestData._Root + "import_v2_b.xsd"); // should be already present in the set
+            XmlSchema sch_B = sc.Add("ns-b", Path.Combine(TestData._Root, "import_v2_b.xsd")); // should be already present in the set
             CError.Compare(sc.Count, 2, "Count");
             CError.Compare(sc.IsCompiled, true, "IsCompiled");
 
@@ -780,7 +782,7 @@ namespace System.Xml.Tests
             bool found = false;
             XmlSchemaSet sc = new XmlSchemaSet();
             sc.XmlResolver = new XmlUrlResolver();
-            XmlSchema parent = sc.Add(null, TestData._Root + "import_v9_a.xsd");
+            XmlSchema parent = sc.Add(null, Path.Combine(TestData._Root, "import_v9_a.xsd"));
             CError.Compare(sc.IsCompiled, false, "AddIsCompiled");
             CError.Compare(sc.Count, 3, "AddCount");
 
@@ -792,8 +794,8 @@ namespace System.Xml.Tests
             CError.Compare(sc.Count, 3, "CompileCount");
             CError.Compare(sc.IsCompiled, true, "CompileIsCompiled");
 
-            XmlSchema sch_B = sc.Add(null, TestData._Root + "import_v9_b.xsd"); // should be already present in the set
-            sc.Add(null, TestData._Root + "import_v9_c.xsd");				   // should be already present in the set
+            XmlSchema sch_B = sc.Add(null, Path.Combine(TestData._Root, "import_v9_b.xsd")); // should be already present in the set
+            sc.Add(null, Path.Combine(TestData._Root, "import_v9_c.xsd"));				   // should be already present in the set
             CError.Compare(sc.Count, 3, "Count");
             CError.Compare(sc.IsCompiled, true, "IsCompiled");
 
@@ -827,7 +829,7 @@ namespace System.Xml.Tests
             bool found = false;
             XmlSchemaSet sc = new XmlSchemaSet();
             sc.XmlResolver = new XmlUrlResolver();
-            XmlSchema parent = sc.Add(null, TestData._Root + "import_v10_a.xsd");
+            XmlSchema parent = sc.Add(null, Path.Combine(TestData._Root, "import_v10_a.xsd"));
             CError.Compare(sc.IsCompiled, false, "AddIsCompiled");
             CError.Compare(sc.Count, 3, "AddCount");
 
@@ -839,8 +841,8 @@ namespace System.Xml.Tests
             CError.Compare(sc.Count, 3, "CompileCount");
             CError.Compare(sc.IsCompiled, true, "CompileIsCompiled");
 
-            XmlSchema sch_B = sc.Add(null, TestData._Root + "import_v10_b.xsd"); // should be already present in the set
-            sc.Add(null, TestData._Root + "import_v10_c.xsd");				   // should be already present in the set
+            XmlSchema sch_B = sc.Add(null, Path.Combine(TestData._Root, "import_v10_b.xsd")); // should be already present in the set
+            sc.Add(null, Path.Combine(TestData._Root, "import_v10_c.xsd"));				   // should be already present in the set
             CError.Compare(sc.Count, 3, "Count");
             CError.Compare(sc.IsCompiled, true, "IsCompiled");
 
@@ -867,7 +869,7 @@ namespace System.Xml.Tests
             if (!found) Assert.True(false);
 
             // try adding no ns schema with an ns
-            sch_B = sc.Add("ns-b", TestData._Root + "import_v10_b.xsd");
+            sch_B = sc.Add("ns-b", Path.Combine(TestData._Root, "import_v10_b.xsd"));
             CError.Compare(sc.Count, 4, "Count");
 
             sc.Reprocess(sch_B);
@@ -889,7 +891,7 @@ namespace System.Xml.Tests
         {
             XmlSchemaSet sc = new XmlSchemaSet();
             sc.XmlResolver = new XmlUrlResolver();
-            XmlSchema parent = sc.Add(null, TestData._Root + "import_v11_a.xsd");
+            XmlSchema parent = sc.Add(null, Path.Combine(TestData._Root, "import_v11_a.xsd"));
             CError.Compare(sc.IsCompiled, false, "AddIsCompiled");
             CError.Compare(sc.Count, 3, "AddCount");
 
@@ -913,7 +915,7 @@ namespace System.Xml.Tests
         {
             XmlSchemaSet sc = new XmlSchemaSet();
             sc.XmlResolver = new XmlUrlResolver();
-            XmlSchema parent = sc.Add(null, TestData._Root + "import_v12_a.xsd");
+            XmlSchema parent = sc.Add(null, Path.Combine(TestData._Root, "import_v12_a.xsd"));
             CError.Compare(sc.IsCompiled, false, "AddIsCompiled");
             CError.Compare(sc.Count, 3, "AddCount");
 
@@ -937,7 +939,7 @@ namespace System.Xml.Tests
         {
             XmlSchemaSet sc = new XmlSchemaSet();
             sc.XmlResolver = new XmlUrlResolver();
-            XmlSchema parent = sc.Add(null, TestData._Root + "import_v13_a.xsd");
+            XmlSchema parent = sc.Add(null, Path.Combine(TestData._Root, "import_v13_a.xsd"));
             CError.Compare(sc.IsCompiled, false, "AddIsCompiled");
             CError.Compare(sc.Count, 4, "AddCount");
 
@@ -959,7 +961,7 @@ namespace System.Xml.Tests
         {
             XmlSchemaSet sc = new XmlSchemaSet();
             sc.XmlResolver = new XmlUrlResolver();
-            XmlSchema parent = sc.Add(null, TestData._Root + "import_v14_a.xsd");
+            XmlSchema parent = sc.Add(null, Path.Combine(TestData._Root, "import_v14_a.xsd"));
             CError.Compare(sc.IsCompiled, false, "AddIsCompiled");
             CError.Compare(sc.Count, 3, "AddCount");
 
@@ -982,7 +984,7 @@ namespace System.Xml.Tests
         {
             XmlSchemaSet sc = new XmlSchemaSet();
             sc.XmlResolver = new XmlUrlResolver();
-            XmlSchema parent = sc.Add(null, TestData._Root + "import_v15_a.xsd");
+            XmlSchema parent = sc.Add(null, Path.Combine(TestData._Root, "import_v15_a.xsd"));
             CError.Compare(sc.IsCompiled, false, "AddIsCompiled");
             CError.Compare(sc.Count, 2, "AddCount");
 
@@ -1003,11 +1005,11 @@ namespace System.Xml.Tests
         public void v113()
         {
             XmlSchemaSet sc = new XmlSchemaSet();
-            sc.Add(null, TestData._Root + "import_v16_b.xsd");
+            sc.Add(null, Path.Combine(TestData._Root, "import_v16_b.xsd"));
             CError.Compare(sc.IsCompiled, false, "Add1IsCompiled");
             CError.Compare(sc.Count, 1, "Add1Count");
 
-            XmlSchema parent = sc.Add(null, TestData._Root + "import_v16_a.xsd");
+            XmlSchema parent = sc.Add(null, Path.Combine(TestData._Root, "import_v16_a.xsd"));
             CError.Compare(sc.IsCompiled, false, "Add2IsCompiled");
             CError.Compare(sc.Count, 2, "Add2Count");
 
@@ -1029,7 +1031,7 @@ namespace System.Xml.Tests
         {
             XmlSchemaSet sc = new XmlSchemaSet();
             sc.XmlResolver = new XmlUrlResolver();
-            XmlSchema parent = sc.Add(null, TestData._Root + "import_v17_a.xsd");
+            XmlSchema parent = sc.Add(null, Path.Combine(TestData._Root, "import_v17_a.xsd"));
 
             CError.Compare(sc.Count, 2, "Count");
             CError.Compare(sc.IsCompiled, false, "IsCompiled");
@@ -1057,7 +1059,7 @@ namespace System.Xml.Tests
         {
             XmlSchemaSet sc = new XmlSchemaSet();
             sc.XmlResolver = new XmlUrlResolver();
-            XmlSchema parent = sc.Add(null, TestData._Root + "import_v18_a.xsd");
+            XmlSchema parent = sc.Add(null, Path.Combine(TestData._Root, "import_v18_a.xsd"));
 
             CError.Compare(sc.Count, 2, "Count");
             CError.Compare(sc.IsCompiled, false, "IsCompiled");
@@ -1085,7 +1087,7 @@ namespace System.Xml.Tests
         {
             XmlSchemaSet sc = new XmlSchemaSet();
             sc.XmlResolver = new XmlUrlResolver();
-            XmlSchema parent = sc.Add(null, TestData._Root + "import_v19_a.xsd");
+            XmlSchema parent = sc.Add(null, Path.Combine(TestData._Root, "import_v19_a.xsd"));
             CError.Compare(sc.Count, 3, "Count");
 
             sc.Reprocess(parent);
@@ -1109,7 +1111,7 @@ namespace System.Xml.Tests
         {
             XmlSchemaSet sc = new XmlSchemaSet();
             sc.XmlResolver = new XmlUrlResolver();
-            XmlSchema parent = sc.Add(null, TestData._Root + "import_v20_a.xsd");
+            XmlSchema parent = sc.Add(null, Path.Combine(TestData._Root, "import_v20_a.xsd"));
             CError.Compare(sc.Count, 4, "Count");
 
             sc.Reprocess(parent);
@@ -1120,9 +1122,9 @@ namespace System.Xml.Tests
             CError.Compare(sc.IsCompiled, true, "IsCompiled");
             CError.Compare(sc.Count, 4, "CompileCount");
 
-            XmlSchema b = sc.Add(null, TestData._Root + "import_v20_b.xsd");
-            XmlSchema c = sc.Add(null, TestData._Root + "import_v20_c.xsd");
-            XmlSchema d = sc.Add(null, TestData._Root + "import_v20_d.xsd");
+            XmlSchema b = sc.Add(null, Path.Combine(TestData._Root, "import_v20_b.xsd"));
+            XmlSchema c = sc.Add(null, Path.Combine(TestData._Root, "import_v20_c.xsd"));
+            XmlSchema d = sc.Add(null, Path.Combine(TestData._Root, "import_v20_d.xsd"));
 
             CError.Compare(sc.Count, 4, "Count");
             CError.Compare(sc.IsCompiled, true, "IsCompiled");
@@ -1154,10 +1156,10 @@ namespace System.Xml.Tests
         public void v118(object param0, object param1, object param2, object param3)
         {
             XmlSchemaSet ss = new XmlSchemaSet();
-            XmlSchema Schema1 = ss.Add(null, TestData._Root + param0.ToString());
-            XmlSchema Schema2 = ss.Add(null, TestData._Root + param1.ToString());
-            XmlSchema Schema3 = ss.Add(null, TestData._Root + param2.ToString());
-            XmlSchema Schema4 = ss.Add(null, TestData._Root + param3.ToString());
+            XmlSchema Schema1 = ss.Add(null, Path.Combine(TestData._Root, param0.ToString()));
+            XmlSchema Schema2 = ss.Add(null, Path.Combine(TestData._Root, param1.ToString()));
+            XmlSchema Schema3 = ss.Add(null, Path.Combine(TestData._Root, param2.ToString()));
+            XmlSchema Schema4 = ss.Add(null, Path.Combine(TestData._Root, param3.ToString()));
             CError.Compare(ss.Count, 4, "AddCount");
             CError.Compare(ss.IsCompiled, false, "AddIsCompiled");
 
@@ -1186,10 +1188,10 @@ namespace System.Xml.Tests
         {
             XmlSchemaSet ss = new XmlSchemaSet();
 
-            XmlSchema Schema1 = ss.Add(null, TestData._Root + param0.ToString());
-            XmlSchema Schema2 = ss.Add(null, TestData._Root + param1.ToString());
-            XmlSchema Schema3 = ss.Add(null, TestData._Root + param2.ToString());
-            XmlSchema Schema4 = ss.Add(null, TestData._Root + param3.ToString());
+            XmlSchema Schema1 = ss.Add(null, Path.Combine(TestData._Root, param0.ToString()));
+            XmlSchema Schema2 = ss.Add(null, Path.Combine(TestData._Root, param1.ToString()));
+            XmlSchema Schema3 = ss.Add(null, Path.Combine(TestData._Root, param2.ToString()));
+            XmlSchema Schema4 = ss.Add(null, Path.Combine(TestData._Root, param3.ToString()));
             CError.Compare(ss.Count, 4, "AddCount");
             CError.Compare(ss.IsCompiled, false, "AddIsCompiled");
 
@@ -1217,8 +1219,8 @@ namespace System.Xml.Tests
         {
             XmlSchemaSet ss = new XmlSchemaSet();
             ss.XmlResolver = new XmlUrlResolver();
-            XmlSchema Schema1 = ss.Add(null, TestData._Root + "105897.xsd");
-            XmlSchema Schema2 = ss.Add(null, TestData._Root + "105897_a.xsd");
+            XmlSchema Schema1 = ss.Add(null, Path.Combine(TestData._Root, "105897.xsd"));
+            XmlSchema Schema2 = ss.Add(null, Path.Combine(TestData._Root, "105897_a.xsd"));
             CError.Compare(ss.Count, 3, "AddCount");
             CError.Compare(ss.IsCompiled, false, "AddIsCompiled");
 
@@ -1240,7 +1242,7 @@ namespace System.Xml.Tests
             settings.Schemas = new XmlSchemaSet();
             settings.Schemas.Add(ss);
 
-            using (XmlReader vr = XmlReader.Create(TestData._Root + "105897.xml", settings))
+            using (XmlReader vr = XmlReader.Create(Path.Combine(TestData._Root, "105897.xml"), settings))
             {
                 while (vr.Read()) ;
             }
@@ -1261,7 +1263,7 @@ namespace System.Xml.Tests
             XmlSchemaSet sc = new XmlSchemaSet();
             sc.XmlResolver = new XmlUrlResolver();
 
-            XmlSchema parent = sc.Add(null, TestData._Root + param0.ToString());
+            XmlSchema parent = sc.Add(null, Path.Combine(TestData._Root, param0.ToString()));
             CError.Compare(sc.Count, param2, "Count");
             CError.Compare(sc.IsCompiled, false, "IsCompiled");
 
@@ -1289,7 +1291,7 @@ namespace System.Xml.Tests
             XmlSchemaSet sc = new XmlSchemaSet();
             sc.XmlResolver = new XmlUrlResolver();
 
-            XmlSchema sch = sc.Add((string)param3, TestData._Root + param1.ToString());
+            XmlSchema sch = sc.Add((string)param3, Path.Combine(TestData._Root, param1.ToString()));
             CError.Compare(sc.Count, 1, "AddCount");
             CError.Compare(sc.IsCompiled, false, "AddIsCompiled");
 
@@ -1301,7 +1303,7 @@ namespace System.Xml.Tests
             CError.Compare(sc.IsCompiled, false, "ReprocessIsCompiled");
             CError.Compare(sc.Count, 1, "ReprocessCount");
 
-            XmlSchema parent = sc.Add(null, TestData._Root + param0.ToString());
+            XmlSchema parent = sc.Add(null, Path.Combine(TestData._Root, param0.ToString()));
             CError.Compare(sc.Count, param2, "Add2Count");
             CError.Compare(sc.IsCompiled, false, "Add2IsCompiled");
 
@@ -1329,7 +1331,7 @@ namespace System.Xml.Tests
             XmlSchemaSet sc = new XmlSchemaSet();
             sc.XmlResolver = new XmlUrlResolver();
 
-            XmlSchema sch = sc.Add((string)param3, TestData._Root + param1.ToString());
+            XmlSchema sch = sc.Add((string)param3, Path.Combine(TestData._Root, param1.ToString()));
             CError.Compare(sc.Count, 1, "AddCount");
             CError.Compare(sc.IsCompiled, false, "AddIsCompiled");
 
@@ -1342,7 +1344,7 @@ namespace System.Xml.Tests
             CError.Compare(sc.Count, 1, "ReprocessCount");
             try
             {
-                XmlSchema parent = sc.Add(null, TestData._Root + param0.ToString());
+                XmlSchema parent = sc.Add(null, Path.Combine(TestData._Root, param0.ToString()));
                 Assert.True(false);
             }
             catch (XmlSchemaException) { }
@@ -1373,7 +1375,7 @@ namespace System.Xml.Tests
             XmlSchemaSet sc = new XmlSchemaSet();
             sc.XmlResolver = new XmlUrlResolver();
 
-            XmlSchema parent = sc.Add(null, TestData._Root + "import_v5_a.xsd");
+            XmlSchema parent = sc.Add(null, Path.Combine(TestData._Root, "import_v5_a.xsd"));
             CError.Compare(sc.IsCompiled, false, "AddIsCompiled");
             CError.Compare(sc.Count, 2, "AddCount");
 
@@ -1385,7 +1387,7 @@ namespace System.Xml.Tests
             CError.Compare(sc.IsCompiled, false, "ReprocessIsCompiled");
             CError.Compare(sc.Count, 2, "ReprocessCount");
 
-            XmlSchema orig = sc.Add(null, TestData._Root + "import_v4_b.xsd"); // should be already present in the set
+            XmlSchema orig = sc.Add(null, Path.Combine(TestData._Root, "import_v4_b.xsd")); // should be already present in the set
             CError.Compare(sc.IsCompiled, false, "Add2IsCompiled");
             CError.Compare(sc.Count, 2, "Add2Count");
             CError.Compare(orig.SourceUri.Contains("import_v4_b.xsd"), true, "Compare the schema object");
@@ -1414,7 +1416,7 @@ namespace System.Xml.Tests
         {
             XmlSchemaSet sc = new XmlSchemaSet();
             sc.XmlResolver = new XmlUrlResolver();
-            XmlSchema parent = sc.Add(null, TestData._Root + "import_v5_a.xsd");
+            XmlSchema parent = sc.Add(null, Path.Combine(TestData._Root, "import_v5_a.xsd"));
             CError.Compare(sc.IsCompiled, false, "AddIsCompiled");
             CError.Compare(sc.Count, 2, "AddCount");
 
@@ -1426,7 +1428,7 @@ namespace System.Xml.Tests
             CError.Compare(sc.IsCompiled, false, "ReprocessIsCompiled");
             CError.Compare(sc.Count, 2, "ReprocessCount");
 
-            XmlSchema sch_B = sc.Add("ns-b", TestData._Root + "import_v4_b.xsd"); // should be already present in the set
+            XmlSchema sch_B = sc.Add("ns-b", Path.Combine(TestData._Root, "import_v4_b.xsd")); // should be already present in the set
             CError.Compare(sc.Count, 3, "Count");
             CError.Compare(sc.IsCompiled, false, "IsCompiled");
 
@@ -1454,7 +1456,7 @@ namespace System.Xml.Tests
         {
             XmlSchemaSet sc = new XmlSchemaSet();
             sc.XmlResolver = new XmlUrlResolver();
-            XmlSchema parent = sc.Add(null, TestData._Root + "import_v2_a.xsd");
+            XmlSchema parent = sc.Add(null, Path.Combine(TestData._Root, "import_v2_a.xsd"));
             CError.Compare(sc.IsCompiled, false, "AddIsCompiled");
             CError.Compare(sc.Count, 2, "AddCount");
 
@@ -1466,7 +1468,7 @@ namespace System.Xml.Tests
             CError.Compare(sc.IsCompiled, false, "ReprocessIsCompiled");
             CError.Compare(sc.Count, 2, "ReprocessCount");
 
-            XmlSchema sch_B = sc.Add("ns-b", TestData._Root + "import_v2_b.xsd"); // should be already present in the set
+            XmlSchema sch_B = sc.Add("ns-b", Path.Combine(TestData._Root, "import_v2_b.xsd")); // should be already present in the set
             CError.Compare(sc.Count, 2, "Count");
             CError.Compare(sc.IsCompiled, false, "IsCompiled");
 
@@ -1495,7 +1497,7 @@ namespace System.Xml.Tests
             bool found = false;
             XmlSchemaSet sc = new XmlSchemaSet();
             sc.XmlResolver = new XmlUrlResolver();
-            XmlSchema parent = sc.Add(null, TestData._Root + "import_v9_a.xsd");
+            XmlSchema parent = sc.Add(null, Path.Combine(TestData._Root, "import_v9_a.xsd"));
             CError.Compare(sc.IsCompiled, false, "AddIsCompiled");
             CError.Compare(sc.Count, 3, "AddCount");
 
@@ -1507,8 +1509,8 @@ namespace System.Xml.Tests
             CError.Compare(sc.IsCompiled, false, "ReprocessIsCompiled");
             CError.Compare(sc.Count, 3, "ReprocessCount");
 
-            XmlSchema sch_B = sc.Add(null, TestData._Root + "import_v9_b.xsd"); // should be already present in the set
-            sc.Add(null, TestData._Root + "import_v9_c.xsd");				   // should be already present in the set
+            XmlSchema sch_B = sc.Add(null, Path.Combine(TestData._Root, "import_v9_b.xsd")); // should be already present in the set
+            sc.Add(null, Path.Combine(TestData._Root, "import_v9_c.xsd"));				   // should be already present in the set
             CError.Compare(sc.Count, 3, "Count");
             CError.Compare(sc.IsCompiled, false, "IsCompiled");
 
@@ -1525,6 +1527,7 @@ namespace System.Xml.Tests
                 if (imp.SchemaLocation.Equals("import_v9_b.xsd") && imp.Schema.TargetNamespace.Equals("ns-b"))
                     found = true;
             if (!found) Assert.True(false);
+
             // check that schema C in sch_b.Includes and its NS correct.
             foreach (XmlSchemaImport imp in sch_B.Includes)
                 if (imp.SchemaLocation.Equals("import_v9_c.xsd") && imp.Schema.TargetNamespace.Equals("ns-c"))
@@ -1542,7 +1545,7 @@ namespace System.Xml.Tests
             bool found = false;
             XmlSchemaSet sc = new XmlSchemaSet();
             sc.XmlResolver = new XmlUrlResolver();
-            XmlSchema parent = sc.Add(null, TestData._Root + "import_v10_a.xsd");
+            XmlSchema parent = sc.Add(null, Path.Combine(TestData._Root, "import_v10_a.xsd"));
             CError.Compare(sc.IsCompiled, false, "AddIsCompiled");
             CError.Compare(sc.Count, 3, "AddCount");
 
@@ -1554,8 +1557,8 @@ namespace System.Xml.Tests
             CError.Compare(sc.IsCompiled, false, "ReprocessIsCompiled");
             CError.Compare(sc.Count, 3, "ReprocessCount");
 
-            XmlSchema sch_B = sc.Add(null, TestData._Root + "import_v10_b.xsd"); // should be already present in the set
-            sc.Add(null, TestData._Root + "import_v10_c.xsd");				   // should be already present in the set
+            XmlSchema sch_B = sc.Add(null, Path.Combine(TestData._Root, "import_v10_b.xsd")); // should be already present in the set
+            sc.Add(null, Path.Combine(TestData._Root, "import_v10_c.xsd"));				   // should be already present in the set
             CError.Compare(sc.Count, 3, "Count");
             CError.Compare(sc.IsCompiled, false, "IsCompiled");
 
@@ -1582,7 +1585,7 @@ namespace System.Xml.Tests
             if (!found) Assert.True(false);
 
             // try adding no ns schema with an ns
-            sch_B = sc.Add("ns-b", TestData._Root + "import_v10_b.xsd");
+            sch_B = sc.Add("ns-b", Path.Combine(TestData._Root, "import_v10_b.xsd"));
             CError.Compare(sc.Count, 4, "Count");
 
             sc.Compile();
@@ -1603,7 +1606,7 @@ namespace System.Xml.Tests
         {
             XmlSchemaSet sc = new XmlSchemaSet();
             sc.XmlResolver = new XmlUrlResolver();
-            XmlSchema parent = sc.Add(null, TestData._Root + "import_v11_a.xsd");
+            XmlSchema parent = sc.Add(null, Path.Combine(TestData._Root, "import_v11_a.xsd"));
             CError.Compare(sc.IsCompiled, false, "AddIsCompiled");
             CError.Compare(sc.Count, 3, "AddCount");
 
@@ -1626,7 +1629,7 @@ namespace System.Xml.Tests
         {
             XmlSchemaSet sc = new XmlSchemaSet();
             sc.XmlResolver = new XmlUrlResolver();
-            XmlSchema parent = sc.Add(null, TestData._Root + "import_v12_a.xsd");
+            XmlSchema parent = sc.Add(null, Path.Combine(TestData._Root, "import_v12_a.xsd"));
             CError.Compare(sc.IsCompiled, false, "AddIsCompiled");
             CError.Compare(sc.Count, 3, "AddCount");
 
@@ -1649,7 +1652,7 @@ namespace System.Xml.Tests
         {
             XmlSchemaSet sc = new XmlSchemaSet();
             sc.XmlResolver = new XmlUrlResolver();
-            XmlSchema parent = sc.Add(null, TestData._Root + "import_v13_a.xsd");
+            XmlSchema parent = sc.Add(null, Path.Combine(TestData._Root, "import_v13_a.xsd"));
             CError.Compare(sc.IsCompiled, false, "AddIsCompiled");
             CError.Compare(sc.Count, 4, "AddCount");
 
@@ -1671,7 +1674,7 @@ namespace System.Xml.Tests
         {
             XmlSchemaSet sc = new XmlSchemaSet();
             sc.XmlResolver = new XmlUrlResolver();
-            XmlSchema parent = sc.Add(null, TestData._Root + "import_v14_a.xsd");
+            XmlSchema parent = sc.Add(null, Path.Combine(TestData._Root, "import_v14_a.xsd"));
             CError.Compare(sc.IsCompiled, false, "AddIsCompiled");
             CError.Compare(sc.Count, 3, "AddCount");
 
@@ -1694,7 +1697,7 @@ namespace System.Xml.Tests
         {
             XmlSchemaSet sc = new XmlSchemaSet();
             sc.XmlResolver = new XmlUrlResolver();
-            XmlSchema parent = sc.Add(null, TestData._Root + "import_v15_a.xsd");
+            XmlSchema parent = sc.Add(null, Path.Combine(TestData._Root, "import_v15_a.xsd"));
             CError.Compare(sc.IsCompiled, false, "AddIsCompiled");
             CError.Compare(sc.Count, 2, "AddCount");
 
@@ -1715,11 +1718,11 @@ namespace System.Xml.Tests
         public void v213()
         {
             XmlSchemaSet sc = new XmlSchemaSet();
-            sc.Add(null, TestData._Root + "import_v16_b.xsd");
+            sc.Add(null, Path.Combine(TestData._Root, "import_v16_b.xsd"));
             CError.Compare(sc.IsCompiled, false, "Add1IsCompiled");
             CError.Compare(sc.Count, 1, "Add1Count");
 
-            XmlSchema parent = sc.Add(null, TestData._Root + "import_v16_a.xsd");
+            XmlSchema parent = sc.Add(null, Path.Combine(TestData._Root, "import_v16_a.xsd"));
             CError.Compare(sc.IsCompiled, false, "Add2IsCompiled");
             CError.Compare(sc.Count, 2, "Add2Count");
 
@@ -1741,7 +1744,7 @@ namespace System.Xml.Tests
         {
             XmlSchemaSet sc = new XmlSchemaSet();
             sc.XmlResolver = new XmlUrlResolver();
-            XmlSchema parent = sc.Add(null, TestData._Root + "import_v17_a.xsd");
+            XmlSchema parent = sc.Add(null, Path.Combine(TestData._Root, "import_v17_a.xsd"));
 
             CError.Compare(sc.Count, 2, "Count");
             CError.Compare(sc.IsCompiled, false, "IsCompiled");
@@ -1768,7 +1771,7 @@ namespace System.Xml.Tests
         {
             XmlSchemaSet sc = new XmlSchemaSet();
             sc.XmlResolver = new XmlUrlResolver();
-            XmlSchema parent = sc.Add(null, TestData._Root + "import_v18_a.xsd");
+            XmlSchema parent = sc.Add(null, Path.Combine(TestData._Root, "import_v18_a.xsd"));
 
             CError.Compare(sc.Count, 2, "Count");
             CError.Compare(sc.IsCompiled, false, "IsCompiled");
@@ -1795,7 +1798,7 @@ namespace System.Xml.Tests
         {
             XmlSchemaSet sc = new XmlSchemaSet();
             sc.XmlResolver = new XmlUrlResolver();
-            XmlSchema parent = sc.Add(null, TestData._Root + "import_v19_a.xsd");
+            XmlSchema parent = sc.Add(null, Path.Combine(TestData._Root, "import_v19_a.xsd"));
             CError.Compare(sc.Count, 3, "Count");
 
             sc.Compile();
@@ -1818,7 +1821,7 @@ namespace System.Xml.Tests
         {
             XmlSchemaSet sc = new XmlSchemaSet();
             sc.XmlResolver = new XmlUrlResolver();
-            XmlSchema parent = sc.Add(null, TestData._Root + "import_v20_a.xsd");
+            XmlSchema parent = sc.Add(null, Path.Combine(TestData._Root, "import_v20_a.xsd"));
             CError.Compare(sc.Count, 4, "Count");
 
             sc.Reprocess(parent);
@@ -1829,9 +1832,9 @@ namespace System.Xml.Tests
             CError.Compare(sc.IsCompiled, true, "IsCompiled");
             CError.Compare(sc.Count, 4, "CompileCount");
 
-            XmlSchema b = sc.Add(null, TestData._Root + "import_v20_b.xsd");
-            XmlSchema c = sc.Add(null, TestData._Root + "import_v20_c.xsd");
-            XmlSchema d = sc.Add(null, TestData._Root + "import_v20_d.xsd");
+            XmlSchema b = sc.Add(null, Path.Combine(TestData._Root, "import_v20_b.xsd"));
+            XmlSchema c = sc.Add(null, Path.Combine(TestData._Root, "import_v20_c.xsd"));
+            XmlSchema d = sc.Add(null, Path.Combine(TestData._Root, "import_v20_d.xsd"));
 
             CError.Compare(sc.Count, 4, "Count");
             CError.Compare(sc.IsCompiled, true, "IsCompiled");
@@ -1863,10 +1866,10 @@ namespace System.Xml.Tests
         public void v218(object param0, object param1, object param2, object param3)
         {
             XmlSchemaSet ss = new XmlSchemaSet();
-            XmlSchema Schema1 = ss.Add(null, TestData._Root + param0.ToString());
-            XmlSchema Schema2 = ss.Add(null, TestData._Root + param1.ToString());
-            XmlSchema Schema3 = ss.Add(null, TestData._Root + param2.ToString());
-            XmlSchema Schema4 = ss.Add(null, TestData._Root + param3.ToString());
+            XmlSchema Schema1 = ss.Add(null, Path.Combine(TestData._Root, param0.ToString()));
+            XmlSchema Schema2 = ss.Add(null, Path.Combine(TestData._Root, param1.ToString()));
+            XmlSchema Schema3 = ss.Add(null, Path.Combine(TestData._Root, param2.ToString()));
+            XmlSchema Schema4 = ss.Add(null, Path.Combine(TestData._Root, param3.ToString()));
             CError.Compare(ss.Count, 4, "AddCount");
             CError.Compare(ss.IsCompiled, false, "AddIsCompiled");
 
@@ -1895,10 +1898,10 @@ namespace System.Xml.Tests
         {
             XmlSchemaSet ss = new XmlSchemaSet();
 
-            XmlSchema Schema1 = ss.Add(null, TestData._Root + param0.ToString());
-            XmlSchema Schema2 = ss.Add(null, TestData._Root + param1.ToString());
-            XmlSchema Schema3 = ss.Add(null, TestData._Root + param2.ToString());
-            XmlSchema Schema4 = ss.Add(null, TestData._Root + param3.ToString());
+            XmlSchema Schema1 = ss.Add(null, Path.Combine(TestData._Root, param0.ToString()));
+            XmlSchema Schema2 = ss.Add(null, Path.Combine(TestData._Root, param1.ToString()));
+            XmlSchema Schema3 = ss.Add(null, Path.Combine(TestData._Root, param2.ToString()));
+            XmlSchema Schema4 = ss.Add(null, Path.Combine(TestData._Root, param3.ToString()));
             CError.Compare(ss.Count, 4, "AddCount");
             CError.Compare(ss.IsCompiled, false, "AddIsCompiled");
 
@@ -1926,8 +1929,8 @@ namespace System.Xml.Tests
         {
             XmlSchemaSet ss = new XmlSchemaSet();
             ss.XmlResolver = new XmlUrlResolver();
-            XmlSchema Schema1 = ss.Add(null, TestData._Root + "105897.xsd");
-            XmlSchema Schema2 = ss.Add(null, TestData._Root + "105897_a.xsd");
+            XmlSchema Schema1 = ss.Add(null, Path.Combine(TestData._Root, "105897.xsd"));
+            XmlSchema Schema2 = ss.Add(null, Path.Combine(TestData._Root, "105897_a.xsd"));
             CError.Compare(ss.Count, 3, "AddCount");
             CError.Compare(ss.IsCompiled, false, "AddIsCompiled");
 
@@ -1949,7 +1952,7 @@ namespace System.Xml.Tests
             settings.Schemas = new XmlSchemaSet();
             settings.Schemas.Add(ss);
 
-            using (XmlReader vr = XmlReader.Create(TestData._Root + "105897.xml", settings))
+            using (XmlReader vr = XmlReader.Create(Path.Combine(TestData._Root, "105897.xml"), settings))
             {
                 while (vr.Read()) ;
             }

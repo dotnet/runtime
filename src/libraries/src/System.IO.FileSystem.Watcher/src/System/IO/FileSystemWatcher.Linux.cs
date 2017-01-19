@@ -19,6 +19,13 @@ namespace System.IO
         /// <summary>Starts a new watch operation if one is not currently running.</summary>
         private void StartRaisingEvents()
         {
+            // If we're called when "Initializing" is true, set enabled to true
+            if (IsSuspended())
+            {
+                _enabled = true;
+                return;
+            }
+
             // If we already have a cancellation object, we're already running.
             if (_cancellation != null)
             {
@@ -87,6 +94,9 @@ namespace System.IO
         private void StopRaisingEvents()
         {
             _enabled = false;
+
+            if (IsSuspended())
+                return;
 
             // If there's an active cancellation token, cancel and release it.
             // The cancellation token and the processing task respond to cancellation

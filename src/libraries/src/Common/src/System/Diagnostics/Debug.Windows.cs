@@ -69,7 +69,7 @@ namespace System.Diagnostics
                 }
                 else
                 {
-                    Interop.mincore.OutputDebugString(message ?? string.Empty);
+                    Interop.Kernel32.OutputDebugString(message ?? string.Empty);
                 }
             }
         }

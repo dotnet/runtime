@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Reflection.Emit;
@@ -516,7 +515,7 @@ namespace System.Linq.Expressions.Tests
             // Does not return bool
             TypeBuilder typeBuilder1 = GetTypeBuilder();
             yield return new object[] { typeBuilder1, typeof(void), new Type[] { typeBuilder1.AsType() } };
-            
+
             // Parameter is not assignable from left
             yield return new object[] { GetTypeBuilder(), typeof(bool), new Type[] { typeof(int) } };
 
@@ -724,7 +723,7 @@ namespace System.Linq.Expressions.Tests
             MethodBuilder method = builder.DefineMethod("op_BitwiseOr", MethodAttributes.Public | MethodAttributes.Static, typeof(int), new Type[] { typeof(int), typeof(int) });
             method.GetILGenerator().Emit(OpCodes.Ret);
 
-            TypeInfo createdType = builder.CreateTypeInfo();            
+            TypeInfo createdType = builder.CreateTypeInfo();
             Assert.Throws<InvalidOperationException>(() => Expression.OrElse(Expression.Constant(5), Expression.Constant(5)));
         }
 
@@ -769,13 +768,13 @@ namespace System.Linq.Expressions.Tests
         {
             // NB: These were && and || in .NET 3.5 but shipped as AndAlso and OrElse in .NET 4.0; we kept the latter.
 
-            var e1 = Expression.AndAlso(Expression.Parameter(typeof(bool), "a"), Expression.Parameter(typeof(bool), "b"));
+            BinaryExpression e1 = Expression.AndAlso(Expression.Parameter(typeof(bool), "a"), Expression.Parameter(typeof(bool), "b"));
             Assert.Equal("(a AndAlso b)", e1.ToString());
 
-            var e2 = Expression.OrElse(Expression.Parameter(typeof(bool), "a"), Expression.Parameter(typeof(bool), "b"));
+            BinaryExpression e2 = Expression.OrElse(Expression.Parameter(typeof(bool), "a"), Expression.Parameter(typeof(bool), "b"));
             Assert.Equal("(a OrElse b)", e2.ToString());
         }
-        
+
         private static TypeBuilder GetTypeBuilder()
         {
             AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Name"), AssemblyBuilderAccess.Run);

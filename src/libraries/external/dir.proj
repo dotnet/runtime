@@ -1,0 +1,13 @@
+<Project ToolsVersion="14.0" DefaultTargets="BuildAndTest" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="../dir.props" />
+
+  <!-- Build for all configurations -->
+  <ItemGroup>
+    <Project Include="coreclr/coreclr.depproj" />
+    <Project Include="netstandard20/netstandard20.depproj" />
+    <Project Include="net461/net461.depproj" />
+    <Project Include="test-runtime/XUnit.Runtime.depproj" />
+  </ItemGroup>
+
+  <Import Project="../dir.traversal.targets" />
+</Project>

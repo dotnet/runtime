@@ -64,7 +64,7 @@ namespace System.Xml.Xsl.Qil
                     SetError(parent, "Type information missing");
                 }
                 else {
-                    XmlQueryType type = this.typeCheck.Check(parent);
+                    XmlQueryType type = this._typeCheck.Check(parent);
 
                     // BUGBUG: Hack to account for Xslt compiler type fixups
                     if (!type.IsSubtypeOf(parent.XmlType))

@@ -2,12 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
+using System.Collections.Generic;
+using System.Reflection;
 using Xunit;
 
 namespace System.Linq.Expressions.Tests
 {
-    public static class UnaryDecrementTests
+    public class UnaryDecrementTests : IncrementDecrementTests
     {
         #region Test methods
 
@@ -94,8 +95,54 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void ToStringTest()
         {
-            var e = Expression.Decrement(Expression.Parameter(typeof(int), "x"));
+            UnaryExpression e = Expression.Decrement(Expression.Parameter(typeof(int), "x"));
             Assert.Equal("Decrement(x)", e.ToString());
+        }
+
+        [Theory, MemberData(nameof(NonArithmeticObjects), true)]
+        public static void DecrementNonArithmetic(object value)
+        {
+            Expression ex = Expression.Constant(value);
+            Assert.Throws<InvalidOperationException>(() => Expression.Decrement(ex));
+        }
+
+        [Theory, PerCompilationType(nameof(DecrementableValues), false)]
+        public static void CustomOpDecrement(Decrementable operand, Decrementable expected, bool useInterpreter)
+        {
+            Func<Decrementable> func = Expression.Lambda<Func<Decrementable>>(
+                Expression.Decrement(Expression.Constant(operand))).Compile(useInterpreter);
+            Assert.Equal(expected.Value, func().Value);
+        }
+
+        [Theory, PerCompilationType(nameof(DoublyDecrementedDecrementableValues), false)]
+        public static void UserDefinedOpDecrement(Decrementable operand, Decrementable expected, bool useInterpreter)
+        {
+            MethodInfo method = typeof(IncrementDecrementTests).GetMethod(nameof(DoublyDecrement));
+            Func<Decrementable> func = Expression.Lambda<Func<Decrementable>>(
+                Expression.Decrement(Expression.Constant(operand), method)).Compile(useInterpreter);
+            Assert.Equal(expected.Value, func().Value);
+        }
+
+        [Theory, PerCompilationType(nameof(DoublyDecrementedInt32s), false)]
+        public static void UserDefinedOpDecrementArithmeticType(int operand, int expected, bool useInterpreter)
+        {
+            MethodInfo method = typeof(IncrementDecrementTests).GetMethod(nameof(DoublyDecrementInt32));
+            Func<int> func = Expression.Lambda<Func<int>>(
+                Expression.Decrement(Expression.Constant(operand), method)).Compile(useInterpreter);
+            Assert.Equal(expected, func());
+        }
+
+        [Fact]
+        public static void NullOperand()
+        {
+            Assert.Throws<ArgumentNullException>("expression", () => Expression.Decrement(null));
+        }
+
+        [Fact]
+        public static void UnreadableOperand()
+        {
+            Expression operand = Expression.Property(null, typeof(Unreadable<int>), nameof(Unreadable<int>.WriteOnly));
+            Assert.Throws<ArgumentException>("expression", () => Expression.Decrement(operand));
         }
 
         #endregion

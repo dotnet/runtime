@@ -211,6 +211,15 @@ namespace System.Linq.Tests
         }
 
         [Fact]
+        public void EmptySourceRunOnce()
+        {
+            string[] key = { };
+            int[] element = { };
+            Record[] source = { };
+            Assert.Empty(new Record[] { }.RunOnce().GroupBy(e => e.Name, e => e.Score, new AnagramEqualityComparer()));
+        }
+
+        [Fact]
         public void SourceIsNull()
         {
             Record[] source = null;
@@ -427,6 +436,24 @@ namespace System.Linq.Tests
         }
 
         [Fact]
+        public void DuplicateKeysCustomComparerRunOnce()
+        {
+            string[] key = { "Tim", "Tim", "Chris", "Chris", "Robert", "Prakash" };
+            int[] element = { 55, 25, 49, 24, -100, 9 };
+            Record[] source = {
+                new Record { Name = "Tim", Score = 55 },
+                new Record { Name = "Chris", Score = 49 },
+                new Record { Name = "Robert", Score = -100 },
+                new Record { Name = "Chris", Score = 24 },
+                new Record { Name = "Prakash", Score = 9 },
+                new Record { Name = "miT", Score = 25 }
+            };
+            long[] expected = { 240, 365, -600, 63 };
+
+            Assert.Equal(expected, source.RunOnce().GroupBy(e => e.Name, e => e.Score, (k, es) => (long)(k ?? " ").Length * es.Sum(), new AnagramEqualityComparer()));
+        }
+
+        [Fact]
         public void NullComparer()
         {
             string[] key = { "Tim", null, null, "Robert", "Chris", "miT" };
@@ -442,6 +469,24 @@ namespace System.Linq.Tests
             long[] expected = { 165, 58, -600, 120, 75 };
 
             Assert.Equal(expected, source.GroupBy(e => e.Name, e => e.Score, (k, es) => (long)(k ?? " ").Length * es.Sum(), null));
+        }
+
+        [Fact]
+        public void NullComparerRunOnce()
+        {
+            string[] key = { "Tim", null, null, "Robert", "Chris", "miT" };
+            int[] element = { 55, 49, 9, -100, 24, 25 };
+            Record[] source = {
+                new Record { Name = "Tim", Score = 55 },
+                new Record { Name = null, Score = 49 },
+                new Record { Name = "Robert", Score = -100 },
+                new Record { Name = "Chris", Score = 24 },
+                new Record { Name = null, Score = 9 },
+                new Record { Name = "miT", Score = 25 }
+            };
+            long[] expected = { 165, 58, -600, 120, 75 };
+
+            Assert.Equal(expected, source.RunOnce().GroupBy(e => e.Name, e => e.Score, (k, es) => (long)(k ?? " ").Length * es.Sum(), null));
         }
 
         [Fact]

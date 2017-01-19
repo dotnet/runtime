@@ -243,9 +243,6 @@
   <data name="Async_NullDelegate" xml:space="preserve">
     <value>A non-null SendOrPostCallback must be supplied.</value>
   </data>
-  <data name="ISupportInitializeDescr" xml:space="preserve">
-    <value>Specifies support for transacted initialization.</value>
-  </data>
   <data name="BackgroundWorker_Desc" xml:space="preserve">
     <value>Executes an operation on a separate thread.</value>
   </data>

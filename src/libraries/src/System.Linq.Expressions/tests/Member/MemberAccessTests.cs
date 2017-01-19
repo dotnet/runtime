@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Reflection.Emit;
@@ -256,7 +255,7 @@ namespace System.Linq.Expressions.Tests
 
             Assert.Throws<ArgumentException>(null, () => Expression.MakeMemberAccess(expression, typeof(FC).GetField(nameof(FC.II))));
         }
-        
+
         [Fact]
         public static void Field_NoSuchFieldName_ThrowsArgumentException()
         {
@@ -395,7 +394,7 @@ namespace System.Linq.Expressions.Tests
         {
             Assert.Throws<ArgumentException>("property", () => Expression.Property(Expression.Default(typeof(UnreadableIndexableClass)), typeof(UnreadableIndexableClass).GetProperty("Item")));
         }
-        
+
         [Fact]
         public static void Property_NullProperty_ThrowsArgumentNullException()
         {
@@ -453,7 +452,7 @@ namespace System.Linq.Expressions.Tests
 
             Assert.Throws<ArgumentException>("property", () => Expression.MakeMemberAccess(expression, typeof(PC).GetProperty(nameof(PC.II))));
         }
-        
+
         [Fact]
         public static void Property_NoSuchPropertyName_ThrowsArgumentException()
         {
@@ -540,10 +539,10 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void ToStringTest()
         {
-            var e1 = Expression.Property(null, typeof(DateTime).GetProperty(nameof(DateTime.Now)));
+            MemberExpression e1 = Expression.Property(null, typeof(DateTime).GetProperty(nameof(DateTime.Now)));
             Assert.Equal("DateTime.Now", e1.ToString());
 
-            var e2 = Expression.Property(Expression.Parameter(typeof(DateTime), "d"), typeof(DateTime).GetProperty(nameof(DateTime.Year)));
+            MemberExpression e2 = Expression.Property(Expression.Parameter(typeof(DateTime), "d"), typeof(DateTime).GetProperty(nameof(DateTime.Year)));
             Assert.Equal("d.Year", e2.ToString());
         }
     }

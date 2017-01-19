@@ -56,19 +56,6 @@ Namespace Global.Microsoft.VisualBasic.CompilerServices
 
     Friend Module ReflectionExtensions
 
-        Public Enum MemberTypes
-            ' The following are the known classes which extend MemberInfo
-            Constructor = &H1
-            [Event] = &H2
-            Field = &H4
-            Method = &H8
-            [Property] = &H10
-            TypeInfo = &H20
-            Custom = &H40
-            NestedType = &H80
-            All = Constructor Or [Event] Or Field Or Method Or [Property] Or TypeInfo Or NestedType
-        End Enum
-
         <System.Runtime.CompilerServices.ExtensionAttribute()>
         Public Function MemberType(ByVal memberInfo As MemberInfo) As MemberTypes
             If TypeOf memberInfo Is ConstructorInfo Then

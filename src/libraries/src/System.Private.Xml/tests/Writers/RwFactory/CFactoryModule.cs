@@ -11,7 +11,7 @@ namespace System.Xml.Tests
     {
         [Fact]
         [OuterLoop]
-        static public void RunTests()
+        public static void RunTests()
         {
             CModInfo.CommandLine = "";
             var module = new CFactoryModule();
@@ -22,7 +22,7 @@ namespace System.Xml.Tests
 
         [Fact]
         [OuterLoop]
-        static public void RunTestsAsync()
+        public static void RunTestsAsync()
         {
             CModInfo.CommandLine = "/async";
             var module = new CFactoryModule();

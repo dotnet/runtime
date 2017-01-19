@@ -90,9 +90,12 @@ namespace System.Linq.Expressions
         /// <returns>This expression if no children changed, or an expression with the updated children.</returns>
         public SwitchExpression Update(Expression switchValue, IEnumerable<SwitchCase> cases, Expression defaultBody)
         {
-            if (switchValue == SwitchValue && cases == Cases && defaultBody == DefaultBody)
+            if (switchValue == SwitchValue & defaultBody == DefaultBody & cases != null)
             {
-                return this;
+                if (ExpressionUtils.SameElements(ref cases, Cases))
+                {
+                    return this;
+                }
             }
             return Expression.Switch(Type, switchValue, defaultBody, Comparison, cases);
         }
@@ -199,7 +202,7 @@ namespace System.Linq.Expressions
                 {
                     throw Error.IncorrectNumberOfMethodCallArguments(comparison, nameof(comparison));
                 }
-                // Validate that the switch value's type matches the comparison method's 
+                // Validate that the switch value's type matches the comparison method's
                 // left hand side parameter type.
                 ParameterInfo leftParam = pms[0];
                 bool liftedCall = false;
@@ -217,7 +220,7 @@ namespace System.Linq.Expressions
                 {
                     ContractUtils.RequiresNotNull(c, nameof(cases));
                     ValidateSwitchCaseType(c.Body, customType, resultType, nameof(cases));
-                    for (int i = 0; i < c.TestValues.Count; i++)
+                    for (int i = 0, n = c.TestValues.Count; i < n; i++)
                     {
                         // When a comparison method is provided, test values can have different type but have to
                         // be reference assignable to the right hand side parameter of the method.
@@ -253,7 +256,7 @@ namespace System.Linq.Expressions
                     ContractUtils.RequiresNotNull(c, nameof(cases));
                     ValidateSwitchCaseType(c.Body, customType, resultType, nameof(cases));
                     // When no comparison method is provided, require all test values to have the same type.
-                    for (int i = 0; i < c.TestValues.Count; i++)
+                    for (int i = 0, n = c.TestValues.Count; i < n; i++)
                     {
                         if (!TypeUtils.AreEquivalent(firstTestValue.Type, c.TestValues[i].Type))
                         {

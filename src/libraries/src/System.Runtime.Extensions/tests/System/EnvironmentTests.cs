@@ -206,6 +206,12 @@ namespace System.Tests
             Assert.Equal(Environment.GetEnvironmentVariable("HOME"), Environment.GetFolderPath(Environment.SpecialFolder.UserProfile));
         }
 
+        [Fact]
+        public void GetSystemDirectory()
+        {
+            Assert.Equal(Environment.GetFolderPath(Environment.SpecialFolder.System), Environment.SystemDirectory);
+        }
+
         [Theory]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         [InlineData(Environment.SpecialFolder.UserProfile, Environment.SpecialFolderOption.None)]
@@ -217,6 +223,8 @@ namespace System.Tests
         [InlineData(Environment.SpecialFolder.LocalApplicationData, Environment.SpecialFolderOption.DoNotVerify)]
         [InlineData(Environment.SpecialFolder.Desktop, Environment.SpecialFolderOption.DoNotVerify)]
         [InlineData(Environment.SpecialFolder.DesktopDirectory, Environment.SpecialFolderOption.DoNotVerify)]
+        // Not set on Unix (amongst others)
+        //[InlineData(Environment.SpecialFolder.System, Environment.SpecialFolderOption.DoNotVerify)]
         [InlineData(Environment.SpecialFolder.Templates, Environment.SpecialFolderOption.DoNotVerify)]
         [InlineData(Environment.SpecialFolder.MyVideos, Environment.SpecialFolderOption.DoNotVerify)]
         [InlineData(Environment.SpecialFolder.MyMusic, Environment.SpecialFolderOption.DoNotVerify)]
@@ -337,11 +345,11 @@ namespace System.Tests
             }
         }
 
-        [DllImport("api-ms-win-core-file-l1-1-0.dll", SetLastError = true)]
+        [DllImport("kernel32.dll", SetLastError = true)]
         internal static extern int GetLogicalDrives();
 
         [DllImport("shell32.dll", SetLastError = false, BestFitMapping = false, ExactSpelling = true)]
-        internal unsafe static extern int SHGetFolderPathW(
+        internal static extern unsafe int SHGetFolderPathW(
             IntPtr hwndOwner,
             int nFolder,
             IntPtr hToken,

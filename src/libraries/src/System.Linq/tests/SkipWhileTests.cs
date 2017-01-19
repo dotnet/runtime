@@ -43,12 +43,19 @@ namespace System.Linq.Tests
                 Assert.Throws<DivideByZeroException>(() => en.MoveNext());
             }
         }
-        
+
         [Fact]
         public void SkipWhileHalf()
         {
             Assert.Equal(Enumerable.Range(10, 10), Enumerable.Range(0, 20).SkipWhile(i => i < 10));
             Assert.Equal(Enumerable.Range(10, 10), Enumerable.Range(0, 20).SkipWhile((i, idx) => idx < 10));
+        }
+
+        [Fact]
+        public void RunOnce()
+        {
+            Assert.Equal(Enumerable.Range(10, 10), Enumerable.Range(0, 20).RunOnce().SkipWhile(i => i < 10));
+            Assert.Equal(Enumerable.Range(10, 10), Enumerable.Range(0, 20).RunOnce().SkipWhile((i, idx) => idx < 10));
         }
 
         [Fact]

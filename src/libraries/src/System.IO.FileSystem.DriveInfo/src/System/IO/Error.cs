@@ -26,8 +26,8 @@ namespace System.IO
         {
             switch (errorCode)
             {
-                case Interop.mincore.Errors.ERROR_PATH_NOT_FOUND:
-                case Interop.mincore.Errors.ERROR_INVALID_DRIVE:
+                case Interop.Errors.ERROR_PATH_NOT_FOUND:
+                case Interop.Errors.ERROR_INVALID_DRIVE:
                     return new DriveNotFoundException(SR.Format(SR.IO_DriveNotFound_Drive, driveName));
 
                 default:

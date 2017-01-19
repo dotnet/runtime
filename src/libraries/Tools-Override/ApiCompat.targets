@@ -1,0 +1,120 @@
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <UsingTask TaskName="PrereleaseResolveNuGetPackageAssets" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll"/>
+  <UsingTask TaskName="LocatePreviousContract" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll"/>
+
+  <PropertyGroup>
+    <ApiCompatBaseline Condition="!Exists('$(ApiCompatBaseline)')">$(MSBuildProjectDirectory)\ApiCompatBaseline.$(TargetGroup).txt</ApiCompatBaseline>
+    <ApiCompatBaseline Condition="!Exists('$(ApiCompatBaseline)')">$(MSBuildProjectDirectory)\ApiCompatBaseline.txt</ApiCompatBaseline>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <RunApiCompatForSrc Condition="$(MSBuildProjectDirectory.EndsWith('src'))">true</RunApiCompatForSrc>
+    <!-- TODO: Disable the version over version ref compat checks for now because
+    we don't have a great way to get the previous version -->
+    <RunApiCompatForRef Condition="$(MSBuildProjectDirectory.EndsWith('ref'))">false</RunApiCompatForRef>
+    <RunApiCompat Condition="'$(RunApiCompat)'==''">false</RunApiCompat>
+
+    <ResolveMatchingContract Condition="'$(RunApiCompatForSrc)'=='true'">true</ResolveMatchingContract>
+    <TargetsTriggeredByCompilation Condition="'$(RunApiCompatForSrc)'=='true'">$(TargetsTriggeredByCompilation);ValidateApiCompatForSrc</TargetsTriggeredByCompilation>
+    <TargetsTriggeredByCompilation Condition="'$(RunApiCompatForRef)'=='true'">$(TargetsTriggeredByCompilation);ValidateApiCompatForRef</TargetsTriggeredByCompilation>
+  </PropertyGroup>
+
+  <!-- ApiCompat for Implementation Assemblies  -->
+  <Target Name="ValidateApiCompatForSrc"
+          Condition="'$(RunApiCompatForSrc)' == 'true' AND '$(RunApiCompat)' == 'true' and '@(ResolvedMatchingContract)' != ''">
+
+    <PropertyGroup>
+      <ReferenceAssembly>@(ResolvedMatchingContract)</ReferenceAssembly>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <_DependencyDirectoriesTemp Include="@(ReferencePath->'%(RootDir)%(Directory)')" />
+      <!-- Remove duplicate directories by batching over them -->
+      <_DependencyDirectories Include="%(_DependencyDirectoriesTemp.Identity)" />
+      <_ContractDependencyDirectories Include="@(ResolvedMatchingContract->'%(RootDir)%(Directory)')" />
+    </ItemGroup>
+
+    <PropertyGroup>
+      <ApiCompatArgs>$(ApiCompatArgs) "$(ReferenceAssembly)"</ApiCompatArgs>
+      <ApiCompatArgs>$(ApiCompatArgs) -contractDepends:"@(_ContractDependencyDirectories, ','),"</ApiCompatArgs>
+      <ApiCompatArgs>$(ApiCompatArgs) -implDirs:"$(IntermediateOutputPath),@(_DependencyDirectories, ','),"</ApiCompatArgs>
+      <ApiCompatArgs Condition="'$(BaselineAllAPICompatError)'!='true' and Exists('$(ApiCompatBaseline)')">$(ApiCompatArgs) -baseline:"$(ApiCompatBaseline)"</ApiCompatArgs>
+      <ApiCompatBaselineAll Condition="'$(BaselineAllAPICompatError)'=='true'">&gt; $(ApiCompatBaseline)</ApiCompatBaselineAll>
+      <ApiCompatExitCode>0</ApiCompatExitCode>
+
+      <ApiCompatResponseFile>$(IntermediateOutputPath)apicompat.rsp</ApiCompatResponseFile>
+      <ApiCompatCmd>$(ToolHostCmd) "$(ToolsDir)ApiCompat.exe"</ApiCompatCmd>
+    </PropertyGroup>
+
+    <MakeDir Directories="$(IntermediateOutputPath)" />
+    <WriteLinesToFile File="$(ApiCompatResponseFile)" Lines="$(ApiCompatArgs)" Overwrite="true" />
+
+    <Exec Condition="Exists('$(ReferenceAssembly)')"
+          Command="$(ApiCompatCmd) @&quot;$(ApiCompatResponseFile)&quot; $(ApiCompatBaselineAll)"
+          CustomErrorRegularExpression="^[a-zA-Z]+ :"
+          StandardOutputImportance="Low"
+          IgnoreExitCode="true"
+    >
+      <Output TaskParameter="ExitCode" PropertyName="ApiCompatExitCode" />
+    </Exec>
+
+    <!--
+      To force incremental builds to show failures again we are invalidating
+       one compile input by touching the assembly info file
+    -->
+    <Touch Condition="'$(ApiCompatExitCode)'!='0'" Files="$(AssemblyInfoFile)" />
+    <Error Condition="'$(ApiCompatExitCode)'!='0'" Text="ApiCompat failed for '$(TargetPath)'" />
+  </Target>
+
+  <!-- ApiCompat for Contract Assemblies -->
+  <Target Name="ValidateApiCompatForRef"
+          Condition="'$(RunApiCompatForRef)' == 'true' AND '$(RunApiCompat)' == 'true'" >
+
+    <!--
+      This target is opportunistic in the sense it only runs if the previous contract version
+      has been built. If it doesn't find and older version then it will not run. This is because
+      we don't have a great way to always force that the older contract exists and has been built.
+    -->
+    <LocatePreviousContract CurrentContractProjectPath="$(ReferenceAssemblyOutputPath)$(AssemblyName)" AssemblyVersion="$(AssemblyVersion)">
+      <Output TaskParameter="PreviousContractVersion" PropertyName="PreviousContractVersion" />
+    </LocatePreviousContract>
+
+    <PropertyGroup Condition="'$(PreviousContractVersion)'!=''">
+      <PreviousContractAssembly>$(ReferenceAssemblyOutputPath)$(AssemblyName)\$(PreviousContractVersion)\$(AssemblyName).dll</PreviousContractAssembly>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <_CurrentContractDependencies Include="@(ReferencePath->'%(RootDir)%(Directory)')" />
+      <!--
+        Use the current contract dependencies for the previous contacts. While this isn't
+        100% correct it is the best way to ensure we have them all and it current version
+        should purely be a subset of the previous one.
+      -->
+      <_PreviousContractDependencyDirectories Include="@(_CurrentContractDependencies)" />
+    </ItemGroup>
+
+    <PropertyGroup>
+      <_ApiCompatCmd>$(ToolHostCmd) "$(ToolsDir)ApiCompat.exe" "$(PreviousContractAssembly)"</_ApiCompatCmd>
+      <_ApiCompatCmd>$(_ApiCompatCmd) -contractDepends:"@(_PreviousContractDependencyDirectories);"</_ApiCompatCmd>
+      <_ApiCompatCmd>$(_ApiCompatCmd) -implDirs:"$(IntermediateOutputPath);@(_CurrentContractDependencies);"</_ApiCompatCmd>
+      <_ApiCompatCmd Condition="Exists('$(ApiCompatBaseline)')">$(_ApiCompatCmd) -baseline:"$(ApiCompatBaseline)"</_ApiCompatCmd>
+      <ApiCompatExitCode>0</ApiCompatExitCode>
+    </PropertyGroup>
+
+    <Exec Condition="Exists('$(PreviousContractAssembly)')"
+          Command="$(_ApiCompatCmd)"
+          CustomErrorRegularExpression="^[a-zA-Z]+ :"
+          StandardOutputImportance="Low"
+          IgnoreExitCode="true"
+    >
+      <Output TaskParameter="ExitCode" PropertyName="ApiCompatExitCode" />
+    </Exec>
+
+    <!--
+      To force incremental builds to show failures again we are invaliding
+       one compile input by touching the assembly info file
+    -->
+    <Touch Condition="'$(ApiCompatExitCode)'!='0'" Files="$(AssemblyInfoFile)" />
+    <Error Condition="'$(ApiCompatExitCode)'!='0'" Text="ApiCompat failed for '$(TargetPath)'" />
+  </Target>
+</Project>

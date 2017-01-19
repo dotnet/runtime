@@ -15,7 +15,7 @@ namespace Microsoft.Win32.SafeHandles
 
         internal static SafeLocalAllocHandle LocalAlloc(int cb)
         {
-            SafeLocalAllocHandle result = Interop.mincore_obsolete.LocalAlloc(Interop.mincore_obsolete.LMEM_FIXED, (UIntPtr)cb);
+            SafeLocalAllocHandle result = Interop.Kernel32.LocalAlloc(Interop.Kernel32.LMEM_FIXED, (UIntPtr)cb);
             if (result.IsInvalid)
             {
                 result.SetHandleAsInvalid();
@@ -40,7 +40,7 @@ namespace Microsoft.Win32.SafeHandles
 
         override protected bool ReleaseHandle()
         {
-            return Interop.mincore_obsolete.LocalFree(handle) == IntPtr.Zero;
+            return Interop.Kernel32.LocalFree(handle) == IntPtr.Zero;
         }
     }
 }

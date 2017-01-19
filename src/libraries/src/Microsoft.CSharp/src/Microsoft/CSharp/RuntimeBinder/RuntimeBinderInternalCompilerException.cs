@@ -19,7 +19,6 @@ namespace Microsoft.CSharp.RuntimeBinder
         /// Initializes a new instance of the <see cref="RuntimeBinderInternalCompilerException"/> class.
         /// </summary>
         public RuntimeBinderInternalCompilerException()
-            : base()
         {
         }
 

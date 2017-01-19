@@ -184,6 +184,26 @@ namespace System.Threading.Tasks.Tests
             Assert.False(WrapsTask(vt));
         }
 
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(10)]
+        public static async Task UsedWithAsyncMethod_CompletesSuccessfully(int yields)
+        {
+            Assert.Equal(42, await ValueTaskReturningAsyncMethod(42));
+
+            ValueTask<int> vt = ValueTaskReturningAsyncMethod(84);
+            Assert.Equal(yields > 0, WrapsTask(vt));
+            Assert.Equal(84, await vt);
+
+            async ValueTask<int> ValueTaskReturningAsyncMethod(int result)
+            {
+                for (int i = 0; i < yields; i++) await Task.Yield();
+                return result;
+            }
+        }
+
         /// <summary>Gets whether the ValueTask has a non-null Task.</summary>
         private static bool WrapsTask<T>(ValueTask<T> vt) => ReferenceEquals(vt.AsTask(), vt.AsTask());
 

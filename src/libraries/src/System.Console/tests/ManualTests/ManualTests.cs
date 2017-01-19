@@ -145,6 +145,14 @@ namespace System
             AssertUserExpectedResults("the arrow keys move around the screen as expected with no other bad artificts");
         }
 
+        [ConditionalFact(nameof(ManualTestsEnabled))]
+        public static void EncodingTest()
+        {
+            Console.WriteLine(Console.OutputEncoding);
+            Console.WriteLine("'\u03A0\u03A3'.");
+            AssertUserExpectedResults("Pi and Segma or question marks");
+        }
+
         private static void AssertUserExpectedResults(string expected)
         {
             Console.Write($"Did you see {expected}? [y/n] ");

@@ -35,10 +35,12 @@ Code coverage runs are performed by Jenkins approximately twice a day.  The resu
 You can perform code coverage runs locally on your own machine.  Normally to build your entire CoreFX repo, from the root of your repo you'd run:
 
     build
+    build-tests
 
-To include code coverage in this run, augment it with the `coverage` argument:
+To include code coverage in this run, augment the `build-tests` call with the `coverage` argument:
 
-    build -coverage
+    build
+    build-tests -coverage
 
 This will do the build and testing as with the normal ```build```, but it will run the tests using the OpenCover tool.  A resulting index.htm file providing the results of the run will be available at:
 

@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Specialized;
-using System.Security.Policy;
 
 namespace System.CodeDom.Compiler
 {
@@ -16,8 +15,6 @@ namespace System.CodeDom.Compiler
 
         [NonSerialized]
         private TempFileCollection _tempFiles;
-        [NonSerialized]
-        private Evidence _evidence;
 
         public CompilerParameters() : this(null, null)
         {
@@ -90,21 +87,5 @@ namespace System.CodeDom.Compiler
         public StringCollection LinkedResources => _linkedResources;
 
         public IntPtr UserToken { get; set; }
-
-        [Obsolete("CAS policy is obsolete and will be removed in a future release of the .NET Framework."
-                + " Please see http://go2.microsoft.com/fwlink/?LinkId=131738 for more information.")]
-        public Evidence Evidence
-        {
-            get
-            {
-                Evidence e = null;
-                if (_evidence != null)
-                {
-                    e = _evidence.Clone();
-                }
-                return e;
-            }
-            set { _evidence = value?.Clone(); }
-        }
     }
 }

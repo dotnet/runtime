@@ -36,30 +36,5 @@ namespace System.Net.Sockets
             base.InternalWaitForCompletion();
             return _numBytes;
         }
-
-        // This method is called after an asynchronous call is made for the user.
-        // It checks and acts accordingly if the IO:
-        // 1) completed synchronously.
-        // 2) was pended.
-        // 3) failed.
-        internal unsafe SocketError CheckAsyncCallOverlappedResult(SocketError errorCode)
-        {
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, errorCode);
-
-            if (errorCode == SocketError.Success || errorCode == SocketError.IOPending)
-            {
-                // Ignore cases in which a completion packet will be queued:
-                // we'll deal with this IO in the callback.
-                return SocketError.Success;
-            }
-
-            // In the remaining cases a completion packet will NOT be queued:
-            // we have to call the callback explicitly signaling an error.
-            ErrorCode = (int)errorCode;
-            Result = -1;
-
-            ReleaseUnmanagedStructures();  // Additional release for the completion that won't happen.
-            return errorCode;
-        }
     }
 }

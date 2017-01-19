@@ -9,22 +9,21 @@
 
 namespace System.Runtime.CompilerServices
 {
-    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
+    public static class CompilerMarshalOverride
+    {
+    }
     public partial class CallConvCdecl
     {
         public CallConvCdecl() { }
     }
-    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public partial class CallConvFastcall
     {
         public CallConvFastcall() { }
     }
-    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public partial class CallConvStdcall
     {
         public CallConvStdcall() { }
     }
-    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public partial class CallConvThiscall
     {
         public CallConvThiscall() { }
@@ -35,7 +34,6 @@ namespace System.Runtime.CompilerServices
     public static partial class IsByValue
     {
     }
-    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public static partial class IsCopyConstructed
     {
     }
@@ -58,13 +56,11 @@ namespace System.Runtime.CompilerServices
     {
     }
     [System.AttributeUsageAttribute((System.AttributeTargets)(8), Inherited = true)]
-    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public sealed partial class NativeCppClassAttribute : System.Attribute
     {
         public NativeCppClassAttribute() { }
     }
     [System.AttributeUsageAttribute((System.AttributeTargets)(1052), AllowMultiple = true, Inherited = false)]
-    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public sealed partial class RequiredAttributeAttribute : System.Attribute
     {
         public RequiredAttributeAttribute(System.Type requiredContract) { }

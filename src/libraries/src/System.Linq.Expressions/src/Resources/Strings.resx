@@ -1,17 +1,17 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
-  <!-- 
-    Microsoft ResX Schema 
-    
+  <!--
+    Microsoft ResX Schema
+
     Version 2.0
-    
-    The primary goals of this format is to allow a simple XML format 
-    that is mostly human readable. The generation and parsing of the 
-    various data types are done through the TypeConverter classes 
+
+    The primary goals of this format is to allow a simple XML format
+    that is mostly human readable. The generation and parsing of the
+    various data types are done through the TypeConverter classes
     associated with the data types.
-    
+
     Example:
-    
+
     ... ado.net/XML headers & schema ...
     <resheader name="resmimetype">text/microsoft-resx</resheader>
     <resheader name="version">2.0</resheader>
@@ -26,36 +26,36 @@
         <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
         <comment>This is a comment</comment>
     </data>
-                
-    There are any number of "resheader" rows that contain simple 
+
+    There are any number of "resheader" rows that contain simple
     name/value pairs.
-    
-    Each data row contains a name, and value. The row also contains a 
-    type or mimetype. Type corresponds to a .NET class that support 
-    text/value conversion through the TypeConverter architecture. 
-    Classes that don't support this are serialized and stored with the 
+
+    Each data row contains a name, and value. The row also contains a
+    type or mimetype. Type corresponds to a .NET class that support
+    text/value conversion through the TypeConverter architecture.
+    Classes that don't support this are serialized and stored with the
     mimetype set.
-    
-    The mimetype is used for serialized objects, and tells the 
-    ResXResourceReader how to depersist the object. This is currently not 
+
+    The mimetype is used for serialized objects, and tells the
+    ResXResourceReader how to depersist the object. This is currently not
     extensible. For a given mimetype the value must be set accordingly:
-    
-    Note - application/x-microsoft.net.object.binary.base64 is the format 
-    that the ResXResourceWriter will generate, however the reader can 
+
+    Note - application/x-microsoft.net.object.binary.base64 is the format
+    that the ResXResourceWriter will generate, however the reader can
     read any of the formats listed below.
-    
+
     mimetype: application/x-microsoft.net.object.binary.base64
-    value   : The object must be serialized with 
+    value   : The object must be serialized with
             : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
             : and then encoded with base64 encoding.
-    
+
     mimetype: application/x-microsoft.net.object.soap.base64
-    value   : The object must be serialized with 
+    value   : The object must be serialized with
             : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
             : and then encoded with base64 encoding.
 
     mimetype: application/x-microsoft.net.object.bytearray.base64
-    value   : The object must be serialized into a byte array 
+    value   : The object must be serialized into a byte array
             : using a System.ComponentModel.TypeConverter
             : and then encoded with base64 encoding.
     -->
@@ -155,6 +155,9 @@
   </data>
   <data name="SetterMustBeVoid" xml:space="preserve">
     <value>Setter should have void type.</value>
+  </data>
+  <data name="PropertyTypeMustMatchGetter" xml:space="preserve">
+    <value>Property type must match the value type of getter</value>
   </data>
   <data name="PropertyTypeMustMatchSetter" xml:space="preserve">
     <value>Property type must match the value type of setter</value>
@@ -277,7 +280,7 @@
     <value>Argument for array index must be of type Int32</value>
   </data>
   <data name="ArgumentMustBeSingleDimensionalArrayType" xml:space="preserve">
-    <value>Argument must be single dimensional array type</value>
+    <value>Argument must be single-dimensional, zero-based array type</value>
   </data>
   <data name="ArgumentTypesMustMatch" xml:space="preserve">
     <value>Argument types do not match</value>
@@ -366,9 +369,6 @@
   <data name="ExpressionNotSupportedForType" xml:space="preserve">
     <value>The expression '{0}' is not supported for type '{1}'</value>
   </data>
-  <data name="ExpressionNotSupportedForNullableType" xml:space="preserve">
-    <value>The expression '{0}' is not supported for nullable type '{1}'</value>
-  </data>
   <data name="UnsupportedExpressionType" xml:space="preserve">
     <value>The expression type '{0}' is not supported</value>
   </data>
@@ -447,9 +447,6 @@
   <data name="LogicalOperatorMustHaveBooleanOperators" xml:space="preserve">
     <value>The user-defined operator method '{1}' for operator '{0}' must have associated boolean True and False operators.</value>
   </data>
-  <data name="MethodDoesNotExistOnType" xml:space="preserve">
-    <value>No method '{0}' exists on type '{1}'.</value>
-  </data>
   <data name="MethodWithArgsDoesNotExistOnType" xml:space="preserve">
     <value>No method '{0}' on type '{1}' is compatible with the supplied arguments.</value>
   </data>
@@ -463,10 +460,10 @@
     <value>More than one property '{0}' on type '{1}' is compatible with the supplied arguments.</value>
   </data>
   <data name="IncorrectNumberOfTypeArgsForFunc" xml:space="preserve">
-    <value>An incorrect number of type args were specified for the declaration of a Func type.</value>
+    <value>An incorrect number of type arguments were specified for the declaration of a Func type.</value>
   </data>
   <data name="IncorrectNumberOfTypeArgsForAction" xml:space="preserve">
-    <value>An incorrect number of type args were specified for the declaration of an Action type.</value>
+    <value>An incorrect number of type arguments were specified for the declaration of an Action type.</value>
   </data>
   <data name="ArgumentCannotBeOfTypeVoid" xml:space="preserve">
     <value>Argument type cannot be System.Void.</value>
@@ -512,9 +509,6 @@
   </data>
   <data name="UnknownLiftType" xml:space="preserve">
     <value>unknown lift type: '{0}'.</value>
-  </data>
-  <data name="IllegalNewGenericParams" xml:space="preserve">
-    <value>Cannot create instance of {0} because it contains generic parameters</value>
   </data>
   <data name="UndefinedVariable" xml:space="preserve">
     <value>variable '{0}' of type '{1}' referenced from scope '{2}', but it is not defined</value>
@@ -638,9 +632,6 @@
   </data>
   <data name="InvalidMetaObjectCreated" xml:space="preserve">
     <value>An IDynamicMetaObjectProvider {0} created an invalid DynamicMetaObject instance.</value>
-  </data>
-  <data name="MethodPreconditionViolated" xml:space="preserve">
-    <value>Method precondition violated</value>
   </data>
   <data name="AmbiguousMatchInExpandoObject" xml:space="preserve">
     <value>More than one key matching '{0}' was found in the ExpandoObject.</value>

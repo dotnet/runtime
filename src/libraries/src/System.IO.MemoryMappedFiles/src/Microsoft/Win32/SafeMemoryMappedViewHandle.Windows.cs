@@ -13,7 +13,7 @@ namespace Microsoft.Win32.SafeHandles
         {
             IntPtr h = handle;
             handle = IntPtr.Zero;
-            return Interop.mincore.UnmapViewOfFile(h) != 0;
+            return Interop.Kernel32.UnmapViewOfFile(h) != 0;
         }
     }
 }

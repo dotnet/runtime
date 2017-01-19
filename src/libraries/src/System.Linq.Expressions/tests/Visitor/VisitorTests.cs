@@ -85,9 +85,9 @@ namespace System.Linq.Expressions.Tests
 
             public override Expression Reduce()
             {
-                var enType = typeof(IEnumerator<>).MakeGenericType(ItemVariable.Type);
-                var enumerator = Variable(enType);
-                var breakLabel = Label();
+                Type enType = typeof(IEnumerator<>).MakeGenericType(ItemVariable.Type);
+                ParameterExpression enumerator = Variable(enType);
+                LabelTarget breakLabel = Label();
                 return Block(
                     new[] {ItemVariable, enumerator},
                     Assign(enumerator, Call(Enumerable, typeof(IEnumerable<>).MakeGenericType(ItemVariable.Type).GetMethod(nameof(IEnumerable.GetEnumerator)))),
@@ -197,7 +197,7 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public void VisitCollectionReturnSameIfChildrenUnchanged()
         {
-            var collection = new List<Expression> { Expression.Constant(0), Expression.Constant(2), Expression.DebugInfo(Expression.SymbolDocument("fileName"), 1, 1, 1, 1) }.AsReadOnly();
+            ReadOnlyCollection<Expression> collection = new List<Expression> { Expression.Constant(0), Expression.Constant(2), Expression.DebugInfo(Expression.SymbolDocument("fileName"), 1, 1, 1, 1) }.AsReadOnly();
             Assert.Same(collection, new DefaultVisitor().Visit(collection));
         }
 
@@ -205,8 +205,8 @@ namespace System.Linq.Expressions.Tests
         public void VisitCollectionDifferOnFirst()
         {
             string value = new string(new[] { 'a', 'b', 'c' });
-            var collection = new List<Expression> { Expression.Constant(value) }.AsReadOnly();
-            var visited = new ConstantRefreshingVisitor().Visit(collection);
+            ReadOnlyCollection<Expression> collection = new List<Expression> { Expression.Constant(value) }.AsReadOnly();
+            ReadOnlyCollection<Expression> visited = new ConstantRefreshingVisitor().Visit(collection);
             Assert.NotSame(collection, visited);
             Assert.NotSame(collection[0], visited[0]);
             Assert.Same(value, ((ConstantExpression)visited[0]).Value);
@@ -216,8 +216,8 @@ namespace System.Linq.Expressions.Tests
         public void VisitCollectionDifferOnLater()
         {
             string value = new string(new[] { 'a', 'b', 'c' });
-            var collection = new List<Expression> { Expression.Empty(), Expression.Constant(value) }.AsReadOnly();
-            var visited = new ConstantRefreshingVisitor().Visit(collection);
+            ReadOnlyCollection<Expression> collection = new List<Expression> { Expression.Empty(), Expression.Constant(value) }.AsReadOnly();
+            ReadOnlyCollection<Expression> visited = new ConstantRefreshingVisitor().Visit(collection);
             Assert.NotSame(collection, visited);
             Assert.Same(collection[0], visited[0]);
             Assert.NotSame(collection[1], visited[1]);
@@ -227,22 +227,22 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public void VisitCollectionNullNodes()
         {
-            var collection = new List<Expression> { null, null, null }.AsReadOnly();
+            ReadOnlyCollection<Expression> collection = new List<Expression> { null, null, null }.AsReadOnly();
             Assert.Same(collection, new DefaultVisitor().Visit(collection));
         }
 
         [Fact]
         public void VisitCollectionWithElementVisitorReturnSameIfChildrenUnchanged()
         {
-            var collection = new List<string> { "ABC", "DEF" }.AsReadOnly();
+            ReadOnlyCollection<string> collection = new List<string> { "ABC", "DEF" }.AsReadOnly();
             Assert.Same(collection, ExpressionVisitor.Visit(collection, UpperCaseIfNotAlready));
         }
 
         [Fact]
         public void VisitCollectionWithElementVisitorDifferOnFirst()
         {
-            var collection = new List<string> { "abc" }.AsReadOnly();
-            var visited = ExpressionVisitor.Visit(collection, UpperCaseIfNotAlready);
+            ReadOnlyCollection<string> collection = new List<string> { "abc" }.AsReadOnly();
+            ReadOnlyCollection<string> visited = ExpressionVisitor.Visit(collection, UpperCaseIfNotAlready);
             Assert.NotSame(collection, visited);
             Assert.NotSame(collection[0], visited[0]);
         }
@@ -250,8 +250,8 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public void VisitCollectionWithElementVisitorDifferOnLater()
         {
-            var collection = new List<string> { "ABC", "def", "GHI", "jkl" }.AsReadOnly();
-            var visited = ExpressionVisitor.Visit(collection, UpperCaseIfNotAlready);
+            ReadOnlyCollection<string> collection = new List<string> { "ABC", "def", "GHI", "jkl" }.AsReadOnly();
+            ReadOnlyCollection<string> visited = ExpressionVisitor.Visit(collection, UpperCaseIfNotAlready);
             Assert.NotSame(collection, visited);
             Assert.Same(collection[0], visited[0]);
             Assert.NotSame(collection[1], visited[1]);
@@ -262,14 +262,14 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public void VisitCollectionWithElementVisitorNullNodes()
         {
-            var collection = new List<string> { null, null, null }.AsReadOnly();
+            ReadOnlyCollection<string> collection = new List<string> { null, null, null }.AsReadOnly();
             Assert.Same(collection, ExpressionVisitor.Visit(collection, UpperCaseIfNotAlready));
         }
 
         [Fact]
         public void VisitAndConvertReturnsSameIfVisitDoes()
         {
-            var constant = Expression.Constant(0);
+            ConstantExpression constant = Expression.Constant(0);
             Assert.Same(constant, new DefaultVisitor().Visit(constant));
             Assert.Same(constant, new DefaultVisitor().VisitAndConvert(constant, "foo"));
         }
@@ -306,8 +306,8 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public void VisitAndConvertSameResultAsVisit()
         {
-            var constant = Expression.Constant(0);
-            var visited = new ConstantRefreshingVisitor().VisitAndConvert(constant, "");
+            ConstantExpression constant = Expression.Constant(0);
+            ConstantExpression visited = new ConstantRefreshingVisitor().VisitAndConvert(constant, "");
             Assert.NotSame(constant, visited);
             Assert.Equal(0, visited.Value);
         }
@@ -315,7 +315,7 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public void ReduceChildrenCascades()
         {
-            var intVar = Expression.Variable(typeof(int));
+            ParameterExpression intVar = Expression.Variable(typeof(int));
             List<int> list = new List<int>();
             var foreachExp = new ForEachExpression(
                 intVar,
@@ -330,7 +330,7 @@ namespace System.Linq.Expressions.Tests
 
             // Check that not only has the visitor reduced the foreach into a block
             // but the using within that block into a try…finally.
-            var reduced = new DefaultVisitor().Visit(foreachExp);
+            Expression reduced = new DefaultVisitor().Visit(foreachExp);
             var block = (BlockExpression)reduced;
             var tryExp = (TryExpression)block.Expressions[1];
             var loop = (LoopExpression)tryExp.Body;

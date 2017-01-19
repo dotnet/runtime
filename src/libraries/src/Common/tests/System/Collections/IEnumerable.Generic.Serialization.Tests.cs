@@ -18,7 +18,6 @@ namespace System.Collections.Tests
         public void IGenericSharedAPI_SerializeDeserialize(int count)
         {
             IEnumerable<T> expected = GenericIEnumerableFactory(count);
-
             var bf = new BinaryFormatter();
             using (var ms = new MemoryStream())
             {

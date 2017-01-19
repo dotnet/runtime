@@ -11,7 +11,7 @@ namespace System.Security.Cryptography
 {
     public partial class RSA : AsymmetricAlgorithm
     {
-        public static RSA Create()
+        public static new RSA Create()
         {
             return new RSAImplementation.RSASecurityTransforms();
         }

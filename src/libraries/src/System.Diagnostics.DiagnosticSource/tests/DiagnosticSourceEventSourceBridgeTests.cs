@@ -46,7 +46,8 @@ namespace System.Diagnostics.Tests
                 Assert.Equal(1, eventSourceListener.EventCount); // Exactly one more event has been emitted.
                 Assert.Equal("TestSpecificEventsSource", eventSourceListener.LastEvent.SourceName);
                 Assert.Equal("TestEvent1", eventSourceListener.LastEvent.EventName);
-                Assert.Equal(4, eventSourceListener.LastEvent.Arguments.Count);
+                Assert.Equal(5, eventSourceListener.LastEvent.Arguments.Count);
+                Assert.Equal(val.GetType().FullName, eventSourceListener.LastEvent.Arguments["cls"]);  // ToString on cls is the class name
                 Assert.Equal("hi", eventSourceListener.LastEvent.Arguments["propStr"]);
                 Assert.Equal("4", eventSourceListener.LastEvent.Arguments["propInt"]);
                 Assert.Equal("3", eventSourceListener.LastEvent.Arguments["cls_Point_X"]);
@@ -61,7 +62,8 @@ namespace System.Diagnostics.Tests
                 Assert.Equal(1, eventSourceListener.EventCount); // Exactly one more event has been emitted.  
                 Assert.Equal("TestSpecificEventsSource", eventSourceListener.LastEvent.SourceName);
                 Assert.Equal("TestEvent2", eventSourceListener.LastEvent.EventName);
-                Assert.Equal(3, eventSourceListener.LastEvent.Arguments.Count);
+                Assert.Equal(4, eventSourceListener.LastEvent.Arguments.Count);
+                Assert.Equal(val.GetType().FullName, eventSourceListener.LastEvent.Arguments["cls"]);  // ToString on cls is the class name
                 Assert.Equal("hello", eventSourceListener.LastEvent.Arguments["prop2Str"]);
                 Assert.Equal("8", eventSourceListener.LastEvent.Arguments["prop2Int"]);
                 Assert.Equal("MyUrl", eventSourceListener.LastEvent.Arguments["cls_Url"]);
@@ -238,7 +240,8 @@ namespace System.Diagnostics.Tests
                 Assert.Equal(1, eventSourceListener.EventCount); // Exactly one more event has been emitted.
                 Assert.Equal("TestWildCardEventNameSource", eventSourceListener.LastEvent.SourceName);
                 Assert.Equal("TestEvent1", eventSourceListener.LastEvent.EventName);
-                Assert.Equal(2, eventSourceListener.LastEvent.Arguments.Count);
+                Assert.Equal(3, eventSourceListener.LastEvent.Arguments.Count);
+                Assert.Equal(val.GetType().FullName, eventSourceListener.LastEvent.Arguments["cls"]);  // ToString on cls is the class name
                 Assert.Equal("hi", eventSourceListener.LastEvent.Arguments["propStr"]);
                 Assert.Equal("4", eventSourceListener.LastEvent.Arguments["propInt"]);
                 eventSourceListener.ResetEventCountAndLastEvent();
@@ -251,7 +254,8 @@ namespace System.Diagnostics.Tests
                 Assert.Equal(1, eventSourceListener.EventCount); // Exactly one more event has been emitted.
                 Assert.Equal("TestWildCardEventNameSource", eventSourceListener.LastEvent.SourceName);
                 Assert.Equal("TestEvent1", eventSourceListener.LastEvent.EventName);
-                Assert.Equal(1, eventSourceListener.LastEvent.Arguments.Count);
+                Assert.Equal(2, eventSourceListener.LastEvent.Arguments.Count);
+                Assert.Equal(val.GetType().FullName, eventSourceListener.LastEvent.Arguments["cls"]);  // ToString on cls is the class name
                 Assert.Equal("hi2", eventSourceListener.LastEvent.Arguments["propStr2"]);
                 eventSourceListener.ResetEventCountAndLastEvent();
 
@@ -306,7 +310,8 @@ namespace System.Diagnostics.Tests
                 Assert.Equal(1, eventSourceListener.EventCount); // Exactly one more event has been emitted.
                 Assert.Equal("TestNullsTestSource", eventSourceListener.LastEvent.SourceName);
                 Assert.Equal("TestEvent1", eventSourceListener.LastEvent.EventName);
-                Assert.Equal(2, eventSourceListener.LastEvent.Arguments.Count);
+                Assert.Equal(3, eventSourceListener.LastEvent.Arguments.Count);
+                Assert.Equal("", eventSourceListener.LastEvent.Arguments["cls"]);           // Tostring() on a null end up as an empty string. 
                 Assert.Equal("propVal1", eventSourceListener.LastEvent.Arguments["propStr"]);
                 Assert.Equal("", eventSourceListener.LastEvent.Arguments["propStrNull"]);   // null strings get turned into empty strings
                 eventSourceListener.ResetEventCountAndLastEvent();
@@ -321,7 +326,8 @@ namespace System.Diagnostics.Tests
                 Assert.Equal(1, eventSourceListener.EventCount); // Exactly one more event has been emitted.
                 Assert.Equal("TestNullsTestSource", eventSourceListener.LastEvent.SourceName);
                 Assert.Equal("TestEvent1", eventSourceListener.LastEvent.EventName);
-                Assert.Equal(2, eventSourceListener.LastEvent.Arguments.Count);
+                Assert.Equal(3, eventSourceListener.LastEvent.Arguments.Count);
+                Assert.Equal(val1.GetType().FullName, eventSourceListener.LastEvent.Arguments["cls"]);  // ToString on cls is the class name
                 Assert.Equal("propVal1", eventSourceListener.LastEvent.Arguments["propStr"]);
                 Assert.Equal("myUrlVal", eventSourceListener.LastEvent.Arguments["Url"]);
                 eventSourceListener.ResetEventCountAndLastEvent();
@@ -336,7 +342,8 @@ namespace System.Diagnostics.Tests
                 Assert.Equal(1, eventSourceListener.EventCount); // Exactly one more event has been emitted.
                 Assert.Equal("TestNullsTestSource", eventSourceListener.LastEvent.SourceName);
                 Assert.Equal("TestEvent1", eventSourceListener.LastEvent.EventName);
-                Assert.Equal(2, eventSourceListener.LastEvent.Arguments.Count);
+                Assert.Equal(3, eventSourceListener.LastEvent.Arguments.Count);
+                Assert.Equal(val2.GetType().FullName, eventSourceListener.LastEvent.Arguments["cls"]);  // ToString on cls is the class name
                 Assert.Equal("propVal1", eventSourceListener.LastEvent.Arguments["propStr"]);
                 Assert.Equal("8", eventSourceListener.LastEvent.Arguments["cls_Point_X"]);
                 eventSourceListener.ResetEventCountAndLastEvent();
@@ -397,7 +404,8 @@ namespace System.Diagnostics.Tests
                 Assert.Equal(1, eventSourceListener.EventCount); // Exactly one more event has been emitted.
                 Assert.Equal("TestBadPropertiesSource", eventSourceListener.LastEvent.SourceName);
                 Assert.Equal("TestEvent1", eventSourceListener.LastEvent.EventName);
-                Assert.Equal(2, eventSourceListener.LastEvent.Arguments.Count);
+                Assert.Equal(3, eventSourceListener.LastEvent.Arguments.Count);
+                Assert.Equal(val.GetType().FullName, eventSourceListener.LastEvent.Arguments["cls"]);  // ToString on cls is the class name
                 Assert.Equal("hi", eventSourceListener.LastEvent.Arguments["propStr"]);
                 Assert.Equal("4", eventSourceListener.LastEvent.Arguments["propInt"]);
                 eventSourceListener.ResetEventCountAndLastEvent();
@@ -586,11 +594,25 @@ namespace System.Diagnostics.Tests
                 eventSourceListener.ResetEventCountAndLastEvent();
 
                 // Stop the ASP.NET reqeust.  
-                aspNetCoreSource.Write("Microsoft.AspNetCore.Hosting.EndRequest", null);
+                aspNetCoreSource.Write("Microsoft.AspNetCore.Hosting.EndRequest", 
+                    new
+                    {
+                        httpContext = new
+                        {
+                            Response = new
+                            {
+                                StatusCode = "200"
+                            },
+                            TraceIdentifier = "MyTraceId"
+                        }
+                    });
                 Assert.Equal(1, eventSourceListener.EventCount); // Exactly one more event has been emitted.
                 Assert.Equal("Activity1Stop", eventSourceListener.LastEvent.EventSourceEventName);
                 Assert.Equal("Microsoft.AspNetCore", eventSourceListener.LastEvent.SourceName);
                 Assert.Equal("Microsoft.AspNetCore.Hosting.EndRequest", eventSourceListener.LastEvent.EventName);
+                Assert.True(2 <= eventSourceListener.LastEvent.Arguments.Count);
+                Assert.Equal("MyTraceId", eventSourceListener.LastEvent.Arguments["TraceIdentifier"]);
+                Assert.Equal("200", eventSourceListener.LastEvent.Arguments["StatusCode"]);
                 eventSourceListener.ResetEventCountAndLastEvent();
             }
         }

@@ -1,17 +1,9 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <MinimumVisualStudioVersion>11.0</MinimumVisualStudioVersion>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>System.Runtime.Serialization.Xml.Performance.Tests</RootNamespace>
-    <AssemblyName>System.Runtime.Serialization.Xml.Performance.Tests</AssemblyName>
     <IncludePerformanceTests>true</IncludePerformanceTests>
-    <NugetTargetMoniker>.NETStandard,Version=v1.7</NugetTargetMoniker>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(UseContractReferences)' == 'true'" >
-    <ProjectJson>ContractReferences/project.json</ProjectJson>
-    <ProjectLockJson>ContractReferences/project.lock.json</ProjectLockJson>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="..\Utils.cs" />
@@ -23,10 +15,6 @@
     <Compile Include="$(CommonTestPath)\System\PerfUtils.cs">
       <Link>Common\System\PerfUtils.cs</Link>
     </Compile>
-  </ItemGroup>
-  <ItemGroup Condition="'$(UseContractReferences)' == ''">
-    <ProjectReference Include="..\..\..\System.Private.DataContractSerialization\src\System.Private.DataContractSerialization.csproj" />
-    <ProjectReference Include="..\..\..\System.Runtime.Serialization.Xml\src\System.Runtime.Serialization.Xml.csproj" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

@@ -45,7 +45,7 @@ namespace System.IO.Compression
         /// relative or absolute path information. Relative path information is interpreted as relative to the current working directory.</param>
         /// <param name="entryName">The name of the entry to be created.</param>
         /// <returns>A wrapper for the newly created entry.</returns>
-        public static ZipArchiveEntry CreateEntryFromFile(this ZipArchive destination, String sourceFileName, String entryName)
+        public static ZipArchiveEntry CreateEntryFromFile(this ZipArchive destination, string sourceFileName, string entryName)
         {
             Contract.Ensures(Contract.Result<ZipArchiveEntry>() != null);
             Contract.EndContractBlock();
@@ -82,7 +82,7 @@ namespace System.IO.Compression
         /// <param name="compressionLevel">The level of the compression (speed/memory vs. compressed size trade-off).</param>
         /// <returns>A wrapper for the newly created entry.</returns>   
         public static ZipArchiveEntry CreateEntryFromFile(this ZipArchive destination,
-                                                          String sourceFileName, String entryName, CompressionLevel compressionLevel)
+                                                          string sourceFileName, string entryName, CompressionLevel compressionLevel)
         {
             // Checking of compressionLevel is passed down to DeflateStream and the IDeflater implementation
             // as it is a pluggable component that completely encapsulates the meaning of compressionLevel.
@@ -121,7 +121,40 @@ namespace System.IO.Compression
         /// <param name="destinationDirectoryName">The path to the directory on the file system.
         /// The directory specified must not exist. The path is permitted to specify relative or absolute path information.
         /// Relative path information is interpreted as relative to the current working directory.</param>
-        public static void ExtractToDirectory(this ZipArchive source, String destinationDirectoryName)
+        public static void ExtractToDirectory(this ZipArchive source, string destinationDirectoryName)
+        {
+            ExtractToDirectory(source, destinationDirectoryName, overwrite: false);
+        }
+
+        /// <summary>
+        /// Extracts all of the files in the archive to a directory on the file system. The specified directory may already exist.
+        /// This method will create all subdirectories and the specified directory if necessary.
+        /// If there is an error while extracting the archive, the archive will remain partially extracted.
+        /// Each entry will be extracted such that the extracted file has the same relative path to destinationDirectoryName as the
+        /// entry has to the root of the archive. If a file to be archived has an invalid last modified time, the first datetime
+        /// representable in the Zip timestamp format (midnight on January 1, 1980) will be used.
+        /// </summary>
+        /// 
+        /// <exception cref="ArgumentException">destinationDirectoryName is a zero-length string, contains only white space,
+        /// or contains one or more invalid characters as defined by InvalidPathChars.</exception>
+        /// <exception cref="ArgumentNullException">destinationDirectoryName is null.</exception>
+        /// <exception cref="PathTooLongException">The specified path, file name, or both exceed the system-defined maximum length.
+        /// For example, on Windows-based platforms, paths must be less than 248 characters, and file names must be less than 260 characters.</exception>
+        /// <exception cref="DirectoryNotFoundException">The specified path is invalid, (for example, it is on an unmapped drive).</exception>
+        /// <exception cref="IOException">An archive entry?s name is zero-length, contains only white space, or contains one or more invalid
+        /// characters as defined by InvalidPathChars. -or- Extracting an archive entry would have resulted in a destination
+        /// file that is outside destinationDirectoryName (for example, if the entry name contains parent directory accessors).
+        /// -or- An archive entry has the same name as an already extracted entry from the same archive.</exception>
+        /// <exception cref="UnauthorizedAccessException">The caller does not have the required permission.</exception>
+        /// <exception cref="NotSupportedException">destinationDirectoryName is in an invalid format. </exception>
+        /// <exception cref="InvalidDataException">An archive entry was not found or was corrupt.
+        /// -or- An archive entry has been compressed using a compression method that is not supported.</exception>
+        /// 
+        /// <param name="destinationDirectoryName">The path to the directory on the file system.
+        /// The directory specified must not exist. The path is permitted to specify relative or absolute path information.
+        /// Relative path information is interpreted as relative to the current working directory.</param>
+        /// <param name="overwrite">True to indicate overwrite.</param>
+        public static void ExtractToDirectory(this ZipArchive source, string destinationDirectoryName, bool overwrite)
         {
             if (source == null)
                 throw new ArgumentNullException(nameof(source));
@@ -135,11 +168,11 @@ namespace System.IO.Compression
 
             // Note that this will give us a good DirectoryInfo even if destinationDirectoryName exists:
             DirectoryInfo di = Directory.CreateDirectory(destinationDirectoryName);
-            String destinationDirectoryFullPath = di.FullName;
+            string destinationDirectoryFullPath = di.FullName;
 
             foreach (ZipArchiveEntry entry in source.Entries)
             {
-                String fileDestinationPath = Path.GetFullPath(Path.Combine(destinationDirectoryFullPath, entry.FullName));
+                string fileDestinationPath = Path.GetFullPath(Path.Combine(destinationDirectoryFullPath, entry.FullName));
 
                 if (!fileDestinationPath.StartsWith(destinationDirectoryFullPath, PathInternal.StringComparison))
                     throw new IOException(SR.IO_ExtractingResultsInOutside);
@@ -158,14 +191,13 @@ namespace System.IO.Compression
                     // If it is a file:
                     // Create containing directory:
                     Directory.CreateDirectory(Path.GetDirectoryName(fileDestinationPath));
-                    entry.ExtractToFile(fileDestinationPath, overwrite: false);
+                    entry.ExtractToFile(fileDestinationPath, overwrite: overwrite);
                 }
             }
         }
 
-
         internal static ZipArchiveEntry DoCreateEntryFromFile(ZipArchive destination,
-                                                              String sourceFileName, String entryName, CompressionLevel? compressionLevel)
+                                                              string sourceFileName, string entryName, CompressionLevel? compressionLevel)
         {
             if (destination == null)
                 throw new ArgumentNullException(nameof(destination));
@@ -236,7 +268,7 @@ namespace System.IO.Compression
         /// <param name="destinationFileName">The name of the file that will hold the contents of the entry.
         /// The path is permitted to specify relative or absolute path information.
         /// Relative path information is interpreted as relative to the current working directory.</param>
-        public static void ExtractToFile(this ZipArchiveEntry source, String destinationFileName)
+        public static void ExtractToFile(this ZipArchiveEntry source, string destinationFileName)
         {
             ExtractToFile(source, destinationFileName, false);
         }
@@ -269,7 +301,7 @@ namespace System.IO.Compression
         /// The path is permitted to specify relative or absolute path information.
         /// Relative path information is interpreted as relative to the current working directory.</param>
         /// <param name="overwrite">True to indicate overwrite.</param>
-        public static void ExtractToFile(this ZipArchiveEntry source, String destinationFileName, Boolean overwrite)
+        public static void ExtractToFile(this ZipArchiveEntry source, string destinationFileName, bool overwrite)
         {
             if (source == null)
                 throw new ArgumentNullException(nameof(source));

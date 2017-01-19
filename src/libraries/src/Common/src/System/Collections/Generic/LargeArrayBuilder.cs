@@ -15,6 +15,7 @@ namespace System.Collections.Generic
         private const int StartingCapacity = 4;
         private const int ResizeLimit = 32;
 
+        private readonly int _maxCapacity;  // The maximum capacity this builder can have.
         private T[] _first;                 // The first buffer we store items in. Resized until ResizeLimit.
         private ArrayBuilder<T[]> _buffers; // After ResizeLimit * 2, we store previous buffers we've filled out here.
         private T[] _current;               // Current buffer we're reading into. If _count <= ResizeLimit, this is _first.
@@ -26,15 +27,29 @@ namespace System.Collections.Generic
         /// </summary>
         /// <param name="initialize">Pass <c>true</c>.</param>
         public LargeArrayBuilder(bool initialize)
+            : this(maxCapacity: int.MaxValue)
         {
             // This is a workaround for C# not having parameterless struct constructors yet.
             // Once it gets them, replace this with a parameterless constructor.
             Debug.Assert(initialize);
+        }
+
+        /// <summary>
+        /// Constructs a new builder with the specified maximum capacity.
+        /// </summary>
+        /// <param name="maxCapacity">The maximum capacity this builder can have.</param>
+        /// <remarks>
+        /// Do not add more than <paramref name="maxCapacity"/> items to this builder.
+        /// </remarks>
+        public LargeArrayBuilder(int maxCapacity)
+        {
+            Debug.Assert(maxCapacity >= 0);
 
             _first = _current = Array.Empty<T>();
             _buffers = default(ArrayBuilder<T[]>);
             _index = 0;
             _count = 0;
+            _maxCapacity = maxCapacity;
         }
 
         /// <summary>
@@ -53,6 +68,8 @@ namespace System.Collections.Generic
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Add(T item)
         {
+            Debug.Assert(_maxCapacity > _count);
+
             if (_index == _current.Length)
             {
                 AllocateBuffer();
@@ -66,6 +83,10 @@ namespace System.Collections.Generic
         /// Adds a range of items to this builder.
         /// </summary>
         /// <param name="items">The sequence to add.</param>
+        /// <remarks>
+        /// It is the caller's responsibility to ensure that adding <paramref name="items"/>
+        /// does not cause the builder to exceed its maximum capacity.
+        /// </remarks>
         public void AddRange(IEnumerable<T> items)
         {
             Debug.Assert(items != null);
@@ -107,16 +128,15 @@ namespace System.Collections.Generic
         /// <param name="count">The number of items to copy.</param>
         public void CopyTo(T[] array, int arrayIndex, int count)
         {
-            Debug.Assert(array != null);
             Debug.Assert(arrayIndex >= 0);
             Debug.Assert(count >= 0 && count <= Count);
-            Debug.Assert(array.Length - arrayIndex >= count);
-            
+            Debug.Assert(array?.Length - arrayIndex >= count);
+
             for (int i = -1; count > 0; i++)
             {
                 // Find the buffer we're copying from.
                 T[] buffer = i < 0 ? _first : i < _buffers.Count ? _buffers[i] : _current;
-                
+
                 // Copy until we satisfy count, or we reach the end of the buffer.
                 int toCopy = Math.Min(count, buffer.Length);
                 Array.Copy(buffer, 0, array, arrayIndex, toCopy);
@@ -153,7 +173,7 @@ namespace System.Collections.Generic
             CopyTo(array, 0, _count);
             return array;
         }
-        
+
         private void AllocateBuffer()
         {
             // - On the first few adds, simply resize _first.
@@ -161,7 +181,9 @@ namespace System.Collections.Generic
             //   and start reading into _current. Set _index to 0.
             // - When _current runs out of space, add it to _buffers and repeat the
             //   above step, except with _current.Length * 2.
+            // - Make sure we never pass _maxCapacity in all of the above steps.
 
+            Debug.Assert((uint)_maxCapacity > (uint)_count);
             Debug.Assert(_index == _current.Length, $"{nameof(AllocateBuffer)} was called, but there's more space.");
 
             // If _count is int.MinValue, we want to go down the other path which will raise an exception.
@@ -170,7 +192,7 @@ namespace System.Collections.Generic
                 // We haven't passed ResizeLimit. Resize _first, copying over the previous items.
                 Debug.Assert(_current == _first && _count == _first.Length);
 
-                int nextCapacity = _count == 0 ? StartingCapacity : _count * 2;
+                int nextCapacity = Math.Min(_count == 0 ? StartingCapacity : _count * 2, _maxCapacity);
 
                 _current = new T[nextCapacity];
                 Array.Copy(_first, 0, _current, 0, _count);
@@ -178,6 +200,7 @@ namespace System.Collections.Generic
             }
             else
             {
+                Debug.Assert(_maxCapacity > ResizeLimit);
                 Debug.Assert(_count == ResizeLimit ^ _current != _first);
 
                 int nextCapacity;
@@ -187,8 +210,18 @@ namespace System.Collections.Generic
                 }
                 else
                 {
+                    // Example scenario: Let's say _count == 256.
+                    // Then our buffers look like this: | 32 | 32 | 64 | 128 |
+                    // As you can see, our count will be just double the last buffer.
+                    // Now, say _maxCapacity is 500. We will find the right amount to allocate by
+                    // doing min(256, 500 - 256). The lhs represents double the last buffer,
+                    // the rhs the limit minus the amount we've already allocated.
+
+                    Debug.Assert(_count >= ResizeLimit * 2);
+                    Debug.Assert(_count == _current.Length * 2);
+
                     _buffers.Add(_current);
-                    nextCapacity = _current.Length * 2;
+                    nextCapacity = Math.Min(_count, _maxCapacity - _count);
                 }
 
                 _current = new T[nextCapacity];

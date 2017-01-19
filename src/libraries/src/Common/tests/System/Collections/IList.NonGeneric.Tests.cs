@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using Xunit;
 
 namespace System.Collections.Tests
@@ -72,6 +73,17 @@ namespace System.Collections.Tests
         protected virtual Type IList_NonGeneric_Item_InvalidIndex_ThrowType => typeof(ArgumentOutOfRangeException);
 
         protected virtual bool IList_NonGeneric_RemoveNonExistent_Throws => false;
+
+        /// <summary>
+        /// When calling Current of the enumerator after the end of the list and list is extended by new items.
+        /// Tests are included to cover two behavioral scenarios:
+        ///   - Throwing an InvalidOperationException
+        ///   - Returning an undefined value.
+        /// 
+        /// If this property is set to true, the tests ensure that the exception is thrown. The default value is
+        /// the same as Enumerator_Current_UndefinedOperation_Throws.
+        /// </summary>
+        protected virtual bool IList_CurrentAfterAdd_Throws => Enumerator_Current_UndefinedOperation_Throws;
 
         #endregion
 
@@ -1045,6 +1057,48 @@ namespace System.Collections.Tests
                     list.RemoveAt(0);
                     Assert.Equal(count - index - 1, list.Count);
                 });
+            }
+        }
+
+        #endregion
+
+        #region Enumerator.Current
+
+        // Test Enumerator.Current at end after new elements was added
+        [Theory]
+        [MemberData(nameof(ValidCollectionSizes))]
+        public void IList_NonGeneric_CurrentAtEnd_AfterAdd(int count)
+        {
+            if (!IsReadOnly && !ExpectedFixedSize)
+            {
+                IList collection = NonGenericIListFactory(count);
+                IEnumerator enumerator = collection.GetEnumerator();
+                while (enumerator.MoveNext()) ; // Go to end of enumerator
+
+                if (Enumerator_Current_UndefinedOperation_Throws)
+                {
+                    Assert.Throws<InvalidOperationException>(() => enumerator.Current); // Enumerator.Current should fail
+                }
+                else
+                {
+                    var current = enumerator.Current; // Enumerator.Current should not fail
+                }
+
+                // Test after add
+                int seed = 523561;
+                for (int i = 0; i < 3; i++)
+                {
+                    collection.Add(CreateT(seed++));
+
+                    if (IList_CurrentAfterAdd_Throws)
+                    {
+                        Assert.Throws<InvalidOperationException>(() => enumerator.Current); // Enumerator.Current should fail
+                    }
+                    else
+                    {
+                        var current = enumerator.Current; // Enumerator.Current should not fail
+                    }
+                }
             }
         }
 

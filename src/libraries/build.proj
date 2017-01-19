@@ -1,13 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <PropertyGroup>
-    <!-- Capture OSGroup passed to command line for setting default FilterToOSGroup value below -->
-    <_OriginalOSGroup>$(OSGroup)</_OriginalOSGroup>
-  </PropertyGroup>
-  <PropertyGroup>
-    <InputOSGroup>$(OSGroup)</InputOSGroup>
-    <InputOSGroup Condition="'$(InputOSGroup)'==''">$(FilterToOSGroup)</InputOSGroup>
-  </PropertyGroup>
   <Import Project="dir.props" />
 
   <!-- required to build the projects in their specified order -->
@@ -15,44 +7,31 @@
     <SerializeProjects>true</SerializeProjects>
   </PropertyGroup>
 
-  <!-- The following properties are in place to keep the behavior of build.cmd while we work on the dev workflow steps. -->
-  <PropertyGroup>
-    <!-- To disable the restoration of packages, set RestoreDuringBuild=false or pass /p:RestoreDuringBuild=false.-->
-    <RestoreDuringBuild Condition="'$(RestoreDuringBuild)'==''">true</RestoreDuringBuild>
-    <!-- To disable building packages, set BuildPackages=false or pass /p:BuildPackages=false.-->
-    <BuildPackages Condition="'$(BuildPackages)'==''">true</BuildPackages>
-    <!-- To disable building tests, set BuildTests=false or pass /p:BuildTests=false.-->
-    <BuildTests Condition="'$(BuildTests)'==''">true</BuildTests>
-  </PropertyGroup>
-
   <PropertyGroup>
     <GenerateCodeCoverageReportForAll>true</GenerateCodeCoverageReportForAll>
   </PropertyGroup>
+
+  <PropertyGroup>
+    <BuildPackages Condition="'$(BuildPackages)'==''">true</BuildPackages>
+  </PropertyGroup>
+
   <Import Project="$(ToolsDir)CodeCoverage.targets" Condition="Exists('$(ToolsDir)CodeCoverage.targets')" />
   <Import Project="$(ToolsDir)PerfTesting.targets" Condition="Exists('$(ToolsDir)PerfTesting.targets') and '$(Performance)' == 'true'"/>
   <Import Project="$(ToolsDir)VersionTools.targets" Condition="Exists('$(ToolsDir)VersionTools.targets')" />
 
   <ItemGroup>
-    <Project Include="src\dirs.proj">
-      <!-- For the root traversal default filter the OSGroup to the OSEnvironment which is the OS we are running on -->
-      <FilterToOSGroup Condition="'$(_OriginalOSGroup)' == ''">$(OSEnvironment)</FilterToOSGroup>
-      <InputOSGroup>$(InputOSGroup)</InputOSGroup>
-    </Project>
-    <Project Include="src\tests.builds" Condition="$(BuildTests)=='true'">
-      <InputOSGroup>$(InputOSGroup)</InputOSGroup>
-    </Project>
+    <Project Include="external\dir.proj" />
+    <Project Include="src\dirs.proj" />
     <!-- signing must happen before packaging -->
     <Project Include="src\sign.builds" />
-    <Project Include="src\packages.builds" Condition="'$(BuildPackages)'=='true'">
-      <InputOSGroup>$(InputOSGroup)</InputOSGroup>
-    </Project>
-    <Project Include="layout\Microsoft.Private.CoreFx.NETCoreApp\Microsoft.Private.CoreFx.NETCoreApp.builds" Condition="'$(BuildPackages)'=='true'">
-      <InputOSGroup>$(InputOSGroup)</InputOSGroup>
-    </Project>
+    <Project Include="src\packages.builds" Condition="'$(BuildPackages)'=='true'" />
+
+    <!--
     <Project Include="src\post.builds">
-      <!-- For the root traversal default filter the OSGroup to the OSEnvironment which is the OS we are running on -->
+      <!- For the root traversal default filter the OSGroup to the OSEnvironment which is the OS we are running on -!>
       <FilterToOSGroup Condition="'$(_OriginalOSGroup)' == ''">$(OSEnvironment)</FilterToOSGroup>
     </Project>
+    -->
   </ItemGroup>
 
   <Import Project="dir.targets" />
@@ -61,149 +40,69 @@
 
   <Import Project="$(ToolsDir)clean.targets" />
 
-  <PropertyGroup Condition="'$(RestoreDuringBuild)'=='true'">
+  <PropertyGroup>
     <TraversalBuildDependsOn>
-      BatchRestorePackages;
-      ValidateExactRestore;
+      BuildCoreFxTools;
       CreateOrUpdateCurrentVersionFile;
       $(TraversalBuildDependsOn);
     </TraversalBuildDependsOn>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(BuildTestsAgainstPackages)' == 'true'">
-    <TraversalBuildDependsOn>
-      UpdateVersionsOnTestProjectJson;
-      BatchGenerateTestProjectJsons;
-      $(TraversalBuildDependsOn);
-    </TraversalBuildDependsOn>
-  </PropertyGroup>
-  
-  <ItemGroup>
-    <TestProjectJsons Include="$(MSBuildThisFileDirectory)src/Common/test-runtime/project.json" />
-  </ItemGroup>
 
-  <UsingTask TaskName="GatherDirectoriesToRestore" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll" />
-
-  <!-- Create a collection of all project.json files for dependency updates. -->
-  <ItemGroup>
-    <ProjectJsonFiles Include="$(SourceDir)**/project.json" />
-    <ProjectJsonFiles Include="$(MSBuildThisFileDirectory)pkg/**/project.json" />
-    <ProjectJsonFiles Condition="'$(BuildTestsAgainstPackages)' == 'true'" Include="$(GeneratedProjectJsonDir)/**/project.json" />
-  </ItemGroup>
-  
-  <Target Name="BatchRestorePackages" DependsOnTargets="AddGeneratedProjectJsons;VerifyDependencies">
-    <MakeDir Directories="$(PackagesDir)" Condition="!Exists('$(PackagesDir)')" /> 
-
-    <Message Importance="High" Text="[$([System.DateTime]::Now.ToString('HH:mm:ss.ff'))] Restoring all packages..." />
-
-    <IsRestoreRequired ProjectJsons="@(ProjectJsonFiles)" PackagesFolder="$(PackagesDir)">
-      <Output TaskParameter="RestoreRequired" PropertyName="RestoreRequired" />
-    </IsRestoreRequired>
-    
-    <!-- This is to restore the test-runtime project.json up front which contains the latest packages to be tested to avoid download contention within nuget. -->
-    <Exec Command="$(DnuRestoreCommand) @(TestProjectJsons->'&quot;%(Identity)&quot;', ' ')"
-          Condition="'$(RestoreRequired)' == 'true'"
-          StandardOutputImportance="Low"
-          CustomErrorRegularExpression="(^Unable to locate .*)|(^Updating the invalid lock file with .*)"
-          ContinueOnError="ErrorAndContinue" />
-    
-    <Exec Command="$(DnuRestoreCommand) @(DnuRestoreDir->'&quot;%(Identity)&quot;', ' ')"
-          Condition="'$(RestoreRequired)' == 'true'"
-          StandardOutputImportance="Low"
-          CustomErrorRegularExpression="(^Unable to locate .*)|(^Updating the invalid lock file with .*)"
-          ContinueOnError="ErrorAndContinue" />
-
-    <!-- Given we ErrorAndContinue we need to propagate the error if the overall task failed -->
-    <Error Condition="'$(MSBuildLastTaskResult)'=='false'" />
-    
-    <Message Importance="High" Text="[$([System.DateTime]::Now.ToString('HH:mm:ss.ff'))] Restoring all packages...Done." />
-  </Target>
-  
-  <!-- Generated project.json's may not exist when the "ProjectJsonFiles"" item group is defined (in dir.props), This target
-       ensures those files are added to the itemgroup. -->
-  <Target Name="AddGeneratedProjectJsons">
+  <Target Name="BuildCoreFxTools">
     <ItemGroup>
-      <ProjectJsonFiles Condition="'$(BuildTestsAgainstPackages)' == 'true'" Include="$(GeneratedProjectJsonDir)/**/project.json" />
+      <BuildToolsProject Include="src\Tools\CoreFx.Tools\CoreFx.Tools.csproj" />
+      <BuildToolsProject Include="src\Tools\CoreFx.Tools\CoreFx.Tools.csproj">
+        <TargetGroup>net46</TargetGroup>
+      </BuildToolsProject>
+      <BuildToolsProject Include="src\Tools\GenerateProps\GenerateProps.proj" />
     </ItemGroup>
+    <MSBuild Projects="@(BuildToolsProject)"
+             ContinueOnError="ErrorAndContinue"
+             Condition="'%(Identity)' != ''"
+             Properties="Configuration=%(BuildToolsProject.TargetGroup);TargetGroup=%(BuildToolsProject.TargetGroup)" />
   </Target>
-  
-  <UsingTask TaskName="AddDependenciesToProjectJson" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll"/>
-  <Target Name="UpdateVersionsOnTestProjectJson" >
-  
-  <!-- Duplicate properties to be removed in future -->
-    <PropertyGroup>
-        <PackageNameRegex Condition="'$(PackageNameRegex)' == ''">(?%3Cname%3E.*)\.(?%3Cversion%3E\d+\.\d+\.\d+)(-(?%3Cprerelease%3E.*)?)?</PackageNameRegex>
-    </PropertyGroup>
+
+  <Target Name="Sync" DependsOnTargets="BuildCoreFxTools">
     <ItemGroup>
-      <_PackagesDropsForCommonProjectJson Include="$(PackagesDrops)" />
+      <ExternalProject Include="external\dir.proj" />
     </ItemGroup>
+
+    <MSBuild Projects="@(ExternalProject)"
+             ContinueOnError="ErrorAndContinue" />
+  </Target>
   
-    <AddDependenciesToProjectJson AdditionalDependencies="@(ExternalDependencies)"
-                                  PackagesDrops="@(_PackagesDropsForCommonProjectJson)"
-                                  PackageNameRegex="$(PackageNameRegex)"
-                                  VersionsFiles="@(_VersionsFiles)"
-                                  ProjectJson="$(CommonTestProjectJson)"
-                                  OutputProjectJson="$(CommonOutputTestProjectJson)"
-                                  UseNewestAvailablePackages="$(UseNewestAvailablePackages)"
-                                   />
-  </Target>
+ <UsingTask TaskName="ValidateVSConfigurations" AssemblyFile="$(CoreFxToolsTaskDir)CoreFx.Tools.dll"/>
+ <Target Name="ValidateVSConfigurations" DependsOnTargets="BuildCoreFxTools" Condition="'$(CheckProjectConfiguration)'=='true'">
+    <Message Importance="High" Text="Validating configurations for projects ..." />
+    <ItemGroup>
+      <ProjectsToCheckHeaders Include="$(MSBuildThisFileDirectory)src/**/*.*proj" Exclude="@(ProjectExclusions)" />
+    </ItemGroup>
+    <ValidateVSConfigurations ProjectsToValidate="@(ProjectsToCheckHeaders)" />
+    <Message Importance="High" Text="Validating configurations for projects ... Done." />
+ </Target>
 
-  <!-- Evaluate our test projects (in src\tests.builds) -->
-  <Target Name="BatchGenerateTestProjectJsons"
-          Condition="'$(BuildTestsAgainstPackages)' == 'true'" 
-          DependsOnTargets="FilterProjects;UpdateVersionsOnTestProjectJson"
-          BeforeTargets="RestorePackages">
-      <Message Importance="High" Text="[$([System.DateTime]::Now.ToString('HH:mm:ss.ff'))] Generating Test project.json's..." />
-      <MSBuild Targets="GenerateAllTestProjectJsons"
-               Projects="src\tests.builds" />
-      <Message Importance="High" Text="[$([System.DateTime]::Now.ToString('HH:mm:ss.ff'))] Generating Test project.json's...done" />
-  </Target>
-
-  <!-- Task from buildtools that uses lockfiles to validate that packages restored are exactly what were specified. -->
-  <UsingTask TaskName="ValidateExactRestore" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll" />
-  
-  <Target Name="ValidateExactRestore"
-          Condition="'$(AllowInexactRestore)'!='true'">
-    <ValidateExactRestore ProjectLockJsons="@(ProjectJsonFiles->'%(RootDir)%(Directory)%(Filename).lock.json')" />
-  </Target>
-
-  <!-- Tasks from buildtools for easy project.json dependency updates -->
-  <UsingTask TaskName="UpdatePackageDependencyVersion" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll" />
-
-  <Target Name="UpdatePackageDependencyVersion">
-    <UpdatePackageDependencyVersion ProjectJsons="@(ProjectJsonFiles)"
-                                    PackageId="$(PackageId)"
-                                    OldVersion="$(OldVersion)"
-                                    NewVersion="$(NewVersion)" />
-  </Target>
-
-  <!-- Packages.zip creation -->
-  <UsingTask TaskName="ZipFileCreateFromDependencyLists" Condition="'$(ArchiveTests)' == 'true'" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll"/>
-  <Target Name="ArchiveTestBuild" Condition="'$(ArchiveTests)' == 'true'" AfterTargets="Build" >
+  <!-- TODO: Can we move this archive test build to BuildTools -->
+  <UsingTask TaskName="ZipFileCreateFromDependencyLists" Condition="'$(Platform)' == 'ARM64' and '$(ArchiveTests)' == 'true'" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll"/>
+  <Target Name="ArchiveTestBuild" Condition="'$(Platform)' == 'ARM64' and '$(ArchiveTests)' == 'true'" AfterTargets="Build" >
     <ItemGroup>
       <ExcludeFromArchive Include="nupkg$" />
       <ExcludeFromArchive Include="Microsoft.DotNet.BuildTools" />
       <ExcludeFromArchive Include="TestData" />
       <TestDependencyListFile Include="$(BinDir)/TestDependencies/*.dependencylist.txt" />
     </ItemGroup>
-    
-    <PropertyGroup>
-      <TestArchiveDir>$(TestWorkingDir)$(OSPlatformConfig)/archive/tests/</TestArchiveDir>
-      <TestArchiveDir Condition="'$(TestTFM)' != ''">$(TestArchiveDir)$(TestTFM)/</TestArchiveDir>
-    </PropertyGroup>
 
     <ZipFileCreateFromDependencyLists
       DependencyListFiles="@(TestDependencyListFile)"
-      DestinationArchive="$(TestArchiveDir)\Packages.zip"
+      DestinationArchive="$(TestWorkingDir)$(OSPlatformConfig)/archive/Packages.zip"
       RelativePathBaseDirectory="$(PackagesDir)"
       OverwriteDestination="true" />
   </Target>
-  
-  <!-- Override RestorePackages from dir.traversal.targets and do a batch restore -->
-  <Target Name="RestorePackages" DependsOnTargets="BatchRestorePackages" />
 
   <!-- Override CleanAllProjects from dir.traversal.targets and just remove the full BinDir -->
   <Target Name="CleanAllProjects">
     <RemoveDir Directories="$(BinDir)" />
+    <!-- Temporarily outside BinDir -->
+    <RemoveDir Directories="$(PackageInstallPath)" />
   </Target>
 
   <!-- Hook that can be used to insert custom build tasks to the build process such as setup and/or cleanup tasks -->

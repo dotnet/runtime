@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <NuGetTargetMoniker>.NETStandard,Version=v2.0</NuGetTargetMoniker>
+    <IsRuntimeAssembly>false</IsRuntimeAssembly>
+    <!-- Given that xunit packages bring with them part of the framework, we need to specify a runtime in order to get the assets
+         This RID value doesn't really matter, since the assets we are copying are not RID specific, so defaulting to Windows here
+    -->
+    <NugetRuntimeIdentifier>win7-x64</NugetRuntimeIdentifier>
+    <OutputPath>$(RuntimePath)</OutputPath>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="project.json" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+  <Target Name="FilterNugetPackage" AfterTargets="ResolveNuGetPackages">
+    <!-- Filter down to just xunit assets -->
+    <ItemGroup>
+      <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)" Condition="'%(ReferenceCopyLocalPaths.NuGetPackageId)'!='xunit.abstractions' And 
+                                                                              '%(ReferenceCopyLocalPaths.NuGetPackageId)'!='xunit.assert' And 
+                                                                              '%(ReferenceCopyLocalPaths.NuGetPackageId)'!='xunit.extensibility.core' And 
+                                                                              '%(ReferenceCopyLocalPaths.NuGetPackageId)'!='xunit.extensibility.execution' And 
+                                                                              '%(ReferenceCopyLocalPaths.NuGetPackageId)'!='xunit.console.netcore' And 
+                                                                              '%(ReferenceCopyLocalPaths.NuGetPackageId)'!='xunit.runner.utility' And 
+                                                                              '%(ReferenceCopyLocalPaths.NuGetPackageId)'!='Microsoft.xunit.netcore.extensions' And
+                                                                              '%(ReferenceCopyLocalPaths.NuGetPackageId)'!='Microsoft.DotNet.xunit.performance.run.core' And
+                                                                              '%(ReferenceCopyLocalPaths.NuGetPackageId)'!='Newtonsoft.Json'
+                                                                              " />
+    </ItemGroup>
+  </Target>
+</Project>

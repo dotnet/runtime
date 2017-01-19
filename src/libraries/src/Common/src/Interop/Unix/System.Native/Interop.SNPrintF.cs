@@ -28,7 +28,7 @@ internal static partial class Interop
         /// On failure, returns a negative value.
         /// </returns>
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_SNPrintF", SetLastError = true)]
-        internal static unsafe extern int SNPrintF(byte* str, int size, string format, string arg1);
+        internal static extern unsafe int SNPrintF(byte* str, int size, string format, string arg1);
 
         /// <summary>
         /// Takes a string and applies a formatting to it to transform
@@ -49,6 +49,6 @@ internal static partial class Interop
         /// On failure, returns a negative value.
         /// </returns>
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_SNPrintF", SetLastError = true)]
-        internal static unsafe extern int SNPrintF(byte* str, int size, string format, int arg1);
+        internal static extern unsafe int SNPrintF(byte* str, int size, string format, int arg1);
     }
 }

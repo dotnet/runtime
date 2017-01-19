@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Reflection;
 using Xunit;
 
@@ -112,6 +111,19 @@ namespace System.Linq.Expressions.Tests
                 for (int j = 0; j < values.Length; j++)
                 {
                     VerifyBitwiseExclusiveOrNullableUShort(values[i], values[j], useInterpreter);
+                }
+            }
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckLiftedBitwiseExclusiveOrNullableNumberTest(bool useInterpreter)
+        {
+            Number?[] values = new Number?[] { null, new Number(0), new Number(1), Number.MaxValue };
+            for (int i = 0; i < values.Length; i++)
+            {
+                for (int j = 0; j < values.Length; j++)
+                {
+                    VerifyBitwiseExclusiveOrNullableNumber(values[i], values[j], useInterpreter);
                 }
             }
         }
@@ -266,6 +278,20 @@ namespace System.Linq.Expressions.Tests
             Func<ushort?> f = e.Compile(useInterpreter);
 
             Assert.Equal(a ^ b, f());
+        }
+
+        private static void VerifyBitwiseExclusiveOrNullableNumber(Number? a, Number? b, bool useInterpreter)
+        {
+            Expression<Func<Number?>> e =
+                Expression.Lambda<Func<Number?>>(
+                    Expression.ExclusiveOr(
+                        Expression.Constant(a, typeof(Number?)),
+                        Expression.Constant(b, typeof(Number?))));
+            Assert.Equal(typeof(Number?), e.Body.Type);
+            Func<Number?> f = e.Compile(useInterpreter);
+
+            Number? expected = a ^ b;
+            Assert.Equal(expected, f());
         }
 
         #endregion

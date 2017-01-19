@@ -6,21 +6,12 @@ using System.Runtime.ConstrainedExecution;
 
 namespace System.Threading
 {
-    public sealed partial class Thread : CriticalFinalizerObject
+    public sealed partial class Thread
     {
-        public ApartmentState GetApartmentState()
-        {
-            return ApartmentState.Unknown;
-        }
+        public ApartmentState GetApartmentState() => ApartmentState.Unknown;
+        private static Exception GetApartmentStateChangeFailedException() => new PlatformNotSupportedException();
+        private bool TrySetApartmentStateUnchecked(ApartmentState state) => state == GetApartmentState();
 
-        private static Exception GetApartmentStateChangeFailedException()
-        {
-            return new PlatformNotSupportedException();
-        }
-
-        private bool TrySetApartmentStateUnchecked(ApartmentState state)
-        {
-            return state == GetApartmentState();
-        }
+        public void DisableComObjectEagerCleanup() { }
     }
 }

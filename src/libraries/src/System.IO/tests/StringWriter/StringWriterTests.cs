@@ -391,5 +391,25 @@ namespace System.IO.Tests
 
             Assert.Equal("Hello" + Environment.NewLine, sw.ToString());
         }
+
+        [Fact]
+        public async Task NullNewLineAsync()
+        {
+            using (MemoryStream ms = new MemoryStream())
+            {
+                string newLine;
+                using (StreamWriter sw = new StreamWriter(ms, Encoding.UTF8, 16, true))
+                {
+                    newLine = sw.NewLine;
+                    await sw.WriteLineAsync(default(string));
+                    await sw.WriteLineAsync(default(string));
+                }
+                ms.Seek(0, SeekOrigin.Begin);
+                using (StreamReader sr = new StreamReader(ms))
+                {
+                    Assert.Equal(newLine + newLine, await sr.ReadToEndAsync());
+                }
+            }
+        }
     }
 }

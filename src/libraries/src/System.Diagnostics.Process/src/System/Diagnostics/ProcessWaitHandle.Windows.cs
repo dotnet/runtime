@@ -13,15 +13,15 @@ namespace System.Diagnostics
         internal ProcessWaitHandle(SafeProcessHandle processHandle)
         {
             SafeWaitHandle waitHandle = null;
-            SafeProcessHandle currentProcHandle = Interop.mincore.GetCurrentProcess();
-            bool succeeded = Interop.mincore.DuplicateHandle(
+            SafeProcessHandle currentProcHandle = Interop.Kernel32.GetCurrentProcess();
+            bool succeeded = Interop.Kernel32.DuplicateHandle(
                 currentProcHandle,
                 processHandle,
                 currentProcHandle,
                 out waitHandle,
                 0,
                 false,
-                Interop.mincore.HandleOptions.DUPLICATE_SAME_ACCESS);
+                Interop.Kernel32.HandleOptions.DUPLICATE_SAME_ACCESS);
 
             if (!succeeded)
             {

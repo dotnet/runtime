@@ -52,10 +52,10 @@ namespace System.Diagnostics.Tests
             public int Attributes;
         }
 
-        [DllImport("api-ms-win-core-memory-l1-1-1.dll")]
+        [DllImport("kernel32.dll")]
         public static extern bool GetProcessWorkingSetSizeEx(SafeProcessHandle hProcess, out IntPtr lpMinimumWorkingSetSize, out IntPtr lpMaximumWorkingSetSize, out uint flags);
         
-        [DllImport("api-ms-win-core-processthreads-l1-1-0.dll")]
+        [DllImport("kernel32.dll")]
         internal static extern int GetCurrentProcessId();
 
         [DllImport("libc")]
@@ -64,22 +64,22 @@ namespace System.Diagnostics.Tests
         [DllImport("libc")]
         internal static extern int getsid(int pid);
 
-        [DllImport("api-ms-win-core-processthreads-l1-1-0.dll")]
+        [DllImport("kernel32.dll")]
         internal static extern bool ProcessIdToSessionId(uint dwProcessId, out uint pSessionId);
 
-        [DllImport("api-ms-win-core-processthreads-l1-1-0.dll")]
+        [DllImport("kernel32.dll")]
         public static extern int GetProcessId(SafeProcessHandle nativeHandle);
 
-        [DllImport("api-ms-win-core-console-l1-1-0.dll")]
+        [DllImport("kernel32.dll")]
         internal extern static int GetConsoleCP();
 
-        [DllImport("api-ms-win-core-console-l1-1-0.dll")]
+        [DllImport("kernel32.dll")]
         internal extern static int GetConsoleOutputCP();
 
-        [DllImport("api-ms-win-core-console-l1-1-0.dll")]
+        [DllImport("kernel32.dll")]
         internal extern static int SetConsoleCP(int codePage);
 
-        [DllImport("api-ms-win-core-console-l1-1-0.dll")]
+        [DllImport("kernel32.dll")]
         internal extern static int SetConsoleOutputCP(int codePage);
 
         [DllImport("netapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]

@@ -629,7 +629,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
                 case TypeKind.TK_ArrayType:
                     {
                         CType elementType = pType.AsArrayType().GetBaseElementType();
-                        int rank;
 
                         if (null == elementType)
                         {
@@ -643,7 +642,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
                                 elementType != null && elementType.IsArrayType();
                                 elementType = elementType.AsArrayType().GetElementType())
                         {
-                            rank = elementType.AsArrayType().rank;
+                            int rank = elementType.AsArrayType().rank;
 
                             // Add [] with (rank-1) commas inside
                             ErrAppendChar('[');

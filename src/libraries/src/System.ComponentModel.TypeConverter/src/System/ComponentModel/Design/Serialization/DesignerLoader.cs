@@ -30,13 +30,7 @@ namespace System.ComponentModel.Design.Serialization
         ///     sinking notifications from the designer often want to ignore them while the desingner is loading
         ///     and only respond to them if they result from user interatcions.
         /// </summary>
-        public virtual bool Loading
-        {
-            get
-            {
-                return false;
-            }
-        }
+        public virtual bool Loading => false;
 
         /// <summary>
         ///     Called by the designer host to begin the loading process.  The designer

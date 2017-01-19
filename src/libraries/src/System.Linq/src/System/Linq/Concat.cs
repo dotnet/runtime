@@ -44,6 +44,10 @@ namespace System.Linq
             return new Concat2EnumerableIterator<TSource>(first, second);
         }
 
+        /// <summary>
+        /// Represents the concatenation of two <see cref="IEnumerable{TSource}"/>.
+        /// </summary>
+        /// <typeparam name="TSource">The type of the source enumerables.</typeparam>
         private sealed class Concat2EnumerableIterator<TSource> : ConcatIterator<TSource>
         {
             private readonly IEnumerable<TSource> _first;
@@ -83,6 +87,11 @@ namespace System.Linq
         // only have to traverse all of the previous sources once per chained enumerable.  An
         // alternative would be to use an array to store all of the enumerables, but this has
         // a much better memory profile and without much additional run-time cost.
+
+        /// <summary>
+        /// Represents the concatenation of three or more <see cref="IEnumerable{TSource}"/>.
+        /// </summary>
+        /// <typeparam name="TSource">The type of the source enumerables.</typeparam>
         private sealed class ConcatNEnumerableIterator<TSource> : ConcatIterator<TSource>
         {
             private readonly ConcatIterator<TSource> _previousConcat;
@@ -162,6 +171,10 @@ namespace System.Linq
             }
         }
 
+        /// <summary>
+        /// Represents the concatenation of two <see cref="ICollection{TSource}"/>.
+        /// </summary>
+        /// <typeparam name="TSource">The type of the source collections.</typeparam>
         private sealed class Concat2CollectionIterator<TSource> : ConcatIterator<TSource>
         {
             private readonly ICollection<TSource> _first;
@@ -232,6 +245,10 @@ namespace System.Linq
             public override int GetCount(bool onlyIfCheap) => Count; // Getting the count is always cheap.
         }
 
+        /// <summary>
+        /// Represents the concatenation of three or more <see cref="ICollection{TSource}"/>.
+        /// </summary>
+        /// <typeparam name="TSource">The type of the source collections.</typeparam>
         private sealed class ConcatNCollectionIterator<TSource> : ConcatIterator<TSource>
         {
             private readonly ConcatIterator<TSource> _previous;
@@ -387,6 +404,10 @@ namespace System.Linq
             public override int GetCount(bool onlyIfCheap) => Count; // Getting the count is always cheap relative to manually iterating.
         }
 
+        /// <summary>
+        /// Represents the concatenation of two or more <see cref="IEnumerable{TSource}"/>.
+        /// </summary>
+        /// <typeparam name="TSource">The type of the source enumerables.</typeparam>
         private abstract class ConcatIterator<TSource> : Iterator<TSource>, IIListProvider<TSource>
         {
             private IEnumerator<TSource> _enumerator;

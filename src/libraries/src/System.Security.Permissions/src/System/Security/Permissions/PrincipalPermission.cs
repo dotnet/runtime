@@ -280,9 +280,9 @@ namespace System.Security.Permissions
             if (version == null || (version != null && !version.Equals("1")))
                 throw new ArgumentException(SR.Argument_InvalidXMLBadVersion);
 
-            if (elem.InternalChildren != null && elem.InternalChildren.Count != 0)
+            if (elem.Children != null && elem.Children.Count != 0)
             {
-                int numChildren = elem.InternalChildren.Count;
+                int numChildren = elem.Children.Count;
                 int count = 0;
 
                 _idArray = new IDRole[numChildren];

@@ -16,6 +16,13 @@ namespace System.Security.Cryptography
         {
             // This class wraps TripleDES
             _impl = TripleDES.Create();
+            _impl.FeedbackSize = 8;
+        }
+
+        public override int FeedbackSize
+        {
+            get { return _impl.FeedbackSize; }
+            set { _impl.FeedbackSize = value; }
         }
 
         public override int BlockSize

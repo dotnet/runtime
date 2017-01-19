@@ -8,13 +8,17 @@ namespace System.Threading
 {
     // Thread.Abort() is not supported in .NET core, so this is currently just a stub to make the type available at compile time
     [Serializable]
-    public sealed class ThreadAbortException : SystemException 
+#if !NETNATIVE
+    public sealed class ThreadAbortException : SystemException
+#else
+    public sealed class ThreadAbortException : Exception
+#endif
     {
         private ThreadAbortException()
         {
         }
 
-        internal ThreadAbortException(SerializationInfo info, StreamingContext context) : base(info, context)
+        private ThreadAbortException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
         }
 

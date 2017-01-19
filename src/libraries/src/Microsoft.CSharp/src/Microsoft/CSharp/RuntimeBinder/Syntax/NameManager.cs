@@ -6,7 +6,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Syntax
 {
     internal partial class NameManager
     {
-        private NameTable _names;
+        private readonly NameTable _names;
 
         internal NameManager()
             : this(new NameTable())
@@ -16,7 +16,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Syntax
         internal NameManager(NameTable nameTable)
         {
             _names = nameTable;
-            this.InitKnownNames();
+            InitKnownNames();
         }
 
         internal Name Add(string key)

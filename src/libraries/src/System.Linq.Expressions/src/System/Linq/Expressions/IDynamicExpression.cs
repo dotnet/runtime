@@ -15,11 +15,11 @@ namespace System.Linq.Expressions
         Type DelegateType { get; }
 
         /// <summary>
-        /// Rewrite this node replacing the args with the provided values.  The 
+        /// Rewrite this node replacing the args with the provided values.  The
         /// number of the args needs to match the number of the current block.
-        /// 
-        /// This helper is provided to allow re-writing of nodes to not depend on the specific 
-        /// class of DynamicExpression which is being used. 
+        ///
+        /// This helper is provided to allow re-writing of nodes to not depend on the specific
+        /// class of DynamicExpression which is being used.
         /// </summary>
         Expression Rewrite(Expression[] args);
 

@@ -14,9 +14,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
     internal sealed class ConstValFactory
     {
-        public ConstValFactory()
-        { }
-
         public CONSTVAL Copy(ConstValKind kind, CONSTVAL value)
         {
             return new CONSTVAL(value.objectVal);
@@ -70,7 +67,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public static CONSTVAL GetInt(int value)
         {
-            CONSTVAL result = new CONSTVAL(); ;
+            CONSTVAL result = new CONSTVAL();
             result.iVal = value;
             return result;
         }

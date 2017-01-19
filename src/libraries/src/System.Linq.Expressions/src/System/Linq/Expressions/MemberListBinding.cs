@@ -11,7 +11,7 @@ using System.Reflection;
 namespace System.Linq.Expressions
 {
     /// <summary>
-    /// Represents initializing the elements of a collection member of a newly created object. 
+    /// Represents initializing the elements of a collection member of a newly created object.
     /// </summary>
     public sealed class MemberListBinding : MemberBinding
     {
@@ -37,10 +37,14 @@ namespace System.Linq.Expressions
         /// <returns>This expression if no children changed, or an expression with the updated children.</returns>
         public MemberListBinding Update(IEnumerable<ElementInit> initializers)
         {
-            if (initializers == Initializers)
+            if (initializers != null)
             {
-                return this;
+                if (ExpressionUtils.SameElements(ref initializers, Initializers))
+                {
+                    return this;
+                }
             }
+
             return Expression.ListBind(Member, initializers);
         }
     }

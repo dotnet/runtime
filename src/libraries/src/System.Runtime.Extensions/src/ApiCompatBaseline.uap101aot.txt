@@ -1,0 +1,77 @@
+Compat issues with assembly System.Runtime.Extensions:
+TypesMustExist : Type 'System.AppDomain' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.AssemblyLoadEventArgs' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.AssemblyLoadEventHandler' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Base64FormattingOptions' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Object System.Convert.DBNull' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Convert.ChangeType(System.Object, System.TypeCode)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Convert.IsDBNull(System.Object)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Convert.ToBase64CharArray(System.Byte[], System.Int32, System.Int32, System.Char[], System.Int32, System.Base64FormattingOptions)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Convert.ToBase64String(System.Byte[], System.Base64FormattingOptions)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Convert.ToBase64String(System.Byte[], System.Int32, System.Int32, System.Base64FormattingOptions)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Convert.ToBoolean(System.Char)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Convert.ToBoolean(System.DateTime)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Convert.ToByte(System.DateTime)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Convert.ToChar(System.Boolean)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Convert.ToChar(System.Char)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Convert.ToChar(System.DateTime)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Convert.ToChar(System.Decimal)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Convert.ToChar(System.Double)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Convert.ToChar(System.Single)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Convert.ToDateTime(System.Boolean)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Convert.ToDateTime(System.Byte)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Convert.ToDateTime(System.Char)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Convert.ToDateTime(System.DateTime)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Convert.ToDateTime(System.Decimal)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Convert.ToDateTime(System.Double)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Convert.ToDateTime(System.Int16)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Convert.ToDateTime(System.Int32)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Convert.ToDateTime(System.Int64)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Convert.ToDateTime(System.SByte)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Convert.ToDateTime(System.Single)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Convert.ToDateTime(System.UInt16)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Convert.ToDateTime(System.UInt32)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Convert.ToDateTime(System.UInt64)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Convert.ToDecimal(System.Char)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Convert.ToDecimal(System.DateTime)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Convert.ToDouble(System.Char)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Convert.ToDouble(System.DateTime)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Convert.ToInt16(System.DateTime)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Convert.ToInt32(System.DateTime)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Convert.ToInt64(System.DateTime)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Convert.ToSByte(System.DateTime)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Convert.ToSingle(System.Char)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Convert.ToSingle(System.DateTime)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Convert.ToString(System.String)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Convert.ToString(System.String, System.IFormatProvider)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Convert.ToUInt16(System.DateTime)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Convert.ToUInt32(System.DateTime)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Convert.ToUInt64(System.DateTime)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Math.BigMul(System.Int32, System.Int32)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Math.Clamp(System.Byte, System.Byte, System.Byte)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Math.Clamp(System.Decimal, System.Decimal, System.Decimal)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Math.Clamp(System.Double, System.Double, System.Double)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Math.Clamp(System.Int16, System.Int16, System.Int16)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Math.Clamp(System.Int32, System.Int32, System.Int32)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Math.Clamp(System.Int64, System.Int64, System.Int64)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Math.Clamp(System.SByte, System.SByte, System.SByte)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Math.Clamp(System.Single, System.Single, System.Single)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Math.Clamp(System.UInt16, System.UInt16, System.UInt16)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Math.Clamp(System.UInt32, System.UInt32, System.UInt32)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Math.Clamp(System.UInt64, System.UInt64, System.UInt64)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Math.DivRem(System.Int32, System.Int32, System.Int32)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Math.DivRem(System.Int64, System.Int64, System.Int64)' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.MathF' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Progress<T>' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.ResolveEventHandler' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.StringComparer.Compare(System.Object, System.Object)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.StringComparer.Create(System.Globalization.CultureInfo, System.Boolean)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.StringComparer.GetHashCode(System.Object)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.StringComparer.InvariantCulture.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.StringComparer.InvariantCultureIgnoreCase.get()' does not exist in the implementation but it does exist in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.IO.BufferedStream' does not inherit from base type 'System.MarshalByRefObject' in the implementation but it does in the contract.
+MembersMustExist : Member 'System.IO.EndOfStreamException..ctor(System.Runtime.Serialization.SerializationInfo, System.Runtime.Serialization.StreamingContext)' does not exist in the implementation but it does exist in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.IO.MemoryStream' does not inherit from base type 'System.MarshalByRefObject' in the implementation but it does in the contract.
+MembersMustExist : Member 'System.IO.TextReader.Synchronized(System.IO.TextReader)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.IO.TextWriter.Synchronized(System.IO.TextWriter)' does not exist in the implementation but it does exist in the contract.
+Total Issues: 75

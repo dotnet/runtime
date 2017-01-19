@@ -453,10 +453,24 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 il.Add(c2);
 
                 Assert.Throws<ArgumentNullException>(() => il[0] = null);
+            }
+        }
+
+        [Fact]
+        // On Desktop, list is untyped so it allows arbitrary types in it
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        public static void X509CertificateCollectionAsIListBogusEntry()
+        {
+            using (X509Certificate2 c = new X509Certificate2())
+            {
+                IList il = new X509CertificateCollection();
+                il.Add(c);
 
                 string bogus = "Bogus";
+
                 Assert.Throws<ArgumentException>(() => il[0] = bogus);
                 Assert.Throws<ArgumentException>(() => il.Add(bogus));
+                Assert.Throws<ArgumentException>(() => il.Remove(bogus));
                 Assert.Throws<ArgumentException>(() => il.Insert(0, bogus));
             }
         }

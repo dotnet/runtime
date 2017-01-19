@@ -1,2 +1,2 @@
 <!-- Not a bug, this API was recently added to the allowed list -->
-ext-ms-win-ntuser-keyboard-l1-2-1.dll!GetKeyState
+user32.dll!GetKeyState

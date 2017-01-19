@@ -36,13 +36,7 @@ namespace System.ComponentModel
             ///     This method returns true if the data cache in this reflection 
             ///     type descriptor has data in it.
             /// </summary>
-            internal bool IsPopulated
-            {
-                get
-                {
-                    return (_attributes != null) | (_events != null) | (_properties != null);
-                }
-            }
+            internal bool IsPopulated => (_attributes != null) | (_events != null) | (_properties != null);
 
             /// <summary>
             ///     Retrieves custom attributes.
@@ -173,21 +167,11 @@ namespace System.ComponentModel
             internal string GetComponentName(object instance)
             {
                 IComponent comp = instance as IComponent;
-                if (comp != null)
+                ISite site = comp?.Site;
+                if (site != null)
                 {
-                    ISite site = comp.Site;
-                    if (site != null)
-                    {
-                        INestedSite nestedSite = site as INestedSite;
-                        if (nestedSite != null)
-                        {
-                            return nestedSite.FullName;
-                        }
-                        else
-                        {
-                            return site.Name;
-                        }
-                    }
+                    INestedSite nestedSite = site as INestedSite;
+                    return (nestedSite?.FullName) ?? site.Name;
                 }
 
                 return null;
@@ -387,7 +371,7 @@ namespace System.ComponentModel
                     //
                     if (editor != null && !editorBaseType.GetTypeInfo().IsInstanceOfType(editor))
                     {
-                        Debug.Fail("Editor " + editor.GetType().FullName + " is not an instance of " + editorBaseType.FullName + " but it is in that base types table.");
+                        Debug.Fail($"Editor {editor.GetType().FullName} is not an instance of {editorBaseType.FullName} but it is in that base types table.");
                         editor = null;
                     }
                 }

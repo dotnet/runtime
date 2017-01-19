@@ -17,18 +17,18 @@
        These ref versions are pulled from https://github.com/dotnet/versions.
   -->
   <PropertyGroup>
-    <CoreFxCurrentRef>708a3bbb495cad9211fbc9b47dad6d8ec503199a</CoreFxCurrentRef>
-    <CoreClrCurrentRef>9ce367ccebf5c20112d128ab913fc2300257628c</CoreClrCurrentRef>
-    <ExternalCurrentRef>07e3c027ff06a836186c40e6a366d145b40b6a64</ExternalCurrentRef>
-    <ProjectNTfsCurrentRef>07e3c027ff06a836186c40e6a366d145b40b6a64</ProjectNTfsCurrentRef>
+    <CoreFxCurrentRef>672d0a712539e1903a903424edad85fd649b456c</CoreFxCurrentRef>
+    <CoreClrCurrentRef>672d0a712539e1903a903424edad85fd649b456c</CoreClrCurrentRef>
+    <ExternalCurrentRef>4e2952b5114bfa90cc45eef908204006a771a62b</ExternalCurrentRef>
+    <ProjectNTfsCurrentRef>3ae2fce20a0a2c098ad787baf1353034d1d0e393</ProjectNTfsCurrentRef>
   </PropertyGroup>
 
   <!-- Auto-upgraded properties for each build info dependency. -->
   <PropertyGroup>
-    <CoreFxExpectedPrerelease>beta-24709-02</CoreFxExpectedPrerelease>
-    <CoreClrExpectedPrerelease>beta-24709-03</CoreClrExpectedPrerelease>
-    <ExternalExpectedPrerelease>beta-24709-00</ExternalExpectedPrerelease>
-    <ProjectNTfsExpectedPrerelease>beta-24709-00</ProjectNTfsExpectedPrerelease>
+    <CoreFxExpectedPrerelease>beta-24917-02</CoreFxExpectedPrerelease>
+    <CoreClrExpectedPrerelease>beta-24917-03</CoreClrExpectedPrerelease>
+    <ExternalExpectedPrerelease>beta-24727-00</ExternalExpectedPrerelease>
+    <ProjectNTfsExpectedPrerelease>beta-24917-00</ProjectNTfsExpectedPrerelease>
   </PropertyGroup>
 
   <!-- Full package version strings that are used in other parts of the build. -->
@@ -101,7 +101,7 @@
     </StaticDependency>
 
     <StaticDependency Include="Microsoft.TargetingPack.Private.WinRT">
-      <Version>1.0.2</Version>
+      <Version>1.0.3</Version>
     </StaticDependency>
 
     <XUnitDependency Include="xunit"/>
@@ -110,7 +110,7 @@
     <StaticDependency Include="@(XUnitDependency)">
       <Version>2.2.0-beta2-build3300</Version>
     </StaticDependency>
-   
+
     <StaticDependency Include="Microsoft.xunit.netcore.extensions;Microsoft.DotNet.BuildTools.TestSuite">
       <Version>1.0.1-prerelease-01001-04</Version>
     </StaticDependency>
@@ -133,6 +133,10 @@
       <PackageId>microsoft.xunit.runner.uwp</PackageId>
       <Version>$(AppXRunnerVersion)</Version>
     </DependencyBuildInfo>
+
+    <!-- project.json files to update -->
+    <ProjectJsonFiles Include="external\**\project.json" />
+    <ProjectJsonFiles Include="external\**\project.json.template" />
 
   </ItemGroup>
 </Project>

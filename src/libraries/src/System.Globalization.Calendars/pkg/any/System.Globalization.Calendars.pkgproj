@@ -5,19 +5,15 @@
     <PackageTargetRuntime>any</PackageTargetRuntime>
     <PreventImplementationReference>true</PreventImplementationReference>
   </PropertyGroup>
-
   <ItemGroup>
     <ProjectReference Include="..\..\src\System.Globalization.Calendars.csproj" />
-
     <!-- desktop facade is in the ref package -->
-    <ExternalOnTargetFramework Include="net"/>
-
+    <ExternalOnTargetFramework Include="net" />
     <!-- AOT implementation comes from AOT package -->
     <File Include="$(PlaceholderFile)">
       <TargetPath>runtimes/aot/lib/netcore50</TargetPath>
       <TargetFramework>aot</TargetFramework>
     </File>
-
     <InboxOnTargetFramework Include="MonoAndroid10" />
     <InboxOnTargetFramework Include="MonoTouch10" />
     <InboxOnTargetFramework Include="xamarinios10" />

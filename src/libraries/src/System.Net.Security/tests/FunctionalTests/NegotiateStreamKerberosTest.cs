@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Sockets;
 using System.Net.Test.Common;
+using System.Security;
 using System.Security.Authentication;
 using System.Text;
 using System.Threading.Tasks;
@@ -30,17 +31,33 @@ namespace System.Net.Security.Tests
                     Configuration.Security.ActiveDirectoryUserName,
                     Configuration.Security.ActiveDirectoryUserPassword,
                     Configuration.Security.ActiveDirectoryName) };
+
+                yield return new object[] { new NetworkCredential(
+                    Configuration.Security.ActiveDirectoryUserName,
+                    AsSecureString(Configuration.Security.ActiveDirectoryUserPassword),
+                    Configuration.Security.ActiveDirectoryName) };
+                
                 
                 // Anonymous (with domain name).
                 yield return new object[] { new NetworkCredential(
                     Configuration.Security.ActiveDirectoryUserName,
-                    null,
+                    (string)null,
+                    Configuration.Security.ActiveDirectoryName) };
+
+                yield return new object[] { new NetworkCredential(
+                    Configuration.Security.ActiveDirectoryUserName,
+                    (SecureString)null,
                     Configuration.Security.ActiveDirectoryName) };
                 
                 // Anonymous (without domain).
                 yield return new object[] { new NetworkCredential(
                     Configuration.Security.ActiveDirectoryUserName,
-                    null,
+                    (string)null,
+                    null) };
+
+                yield return new object[] { new NetworkCredential(
+                    Configuration.Security.ActiveDirectoryUserName,
+                    (SecureString)null,
                     null) };
             }
         }
@@ -49,15 +66,25 @@ namespace System.Net.Security.Tests
         {
             get
             {
-                yield return new object[] { new NetworkCredential(null, null, Configuration.Security.ActiveDirectoryName) };
-                yield return new object[] { new NetworkCredential(null, null, null) };
+                yield return new object[] { new NetworkCredential(null, (string)null, Configuration.Security.ActiveDirectoryName) };
+                yield return new object[] { new NetworkCredential(null, (SecureString)null, Configuration.Security.ActiveDirectoryName) };
+
+                yield return new object[] { new NetworkCredential(null, (string)null, null) };
+                yield return new object[] { new NetworkCredential(null, (SecureString)null, null) };
+
                 yield return new object[] { new NetworkCredential(
                     "baduser", 
-                    null, 
+                    (string)null, 
                     Configuration.Security.ActiveDirectoryName) };
+
                 yield return new object[] { new NetworkCredential(
                     "baduser", 
-                    "badpassword", 
+                    (SecureString)null, 
+                    Configuration.Security.ActiveDirectoryName) };
+
+                yield return new object[] { new NetworkCredential(
+                    "baduser", 
+                    AsSecureString("badpassword"), 
                     Configuration.Security.ActiveDirectoryName) };
             }
         }
@@ -141,6 +168,23 @@ namespace System.Net.Security.Tests
             int isLoopback = hostAddresses.Intersect(loopbackAddresses).Count();
 
             return isLocalHost + isLoopback > 0;
+        }
+
+        private static SecureString AsSecureString(string str)
+        {
+            SecureString secureString = new SecureString();
+
+            if (string.IsNullOrEmpty(str))
+            {
+                return secureString;
+            }
+
+            foreach (char ch in str)
+            {
+                secureString.AppendChar(ch);
+            }
+
+            return secureString;
         }
     }
 }
