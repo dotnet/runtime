@@ -30,11 +30,16 @@ GetTypeInfoFromTypeHandle(TypeHandle typeHandle, NotifyGdb::PTK_TypeInfoMap pTyp
     CorElementType corType = typeHandle.GetSignatureCorElementType();
     switch (corType)
     {
-        case ELEMENT_TYPE_VOID:
-        case ELEMENT_TYPE_BOOLEAN:
-        case ELEMENT_TYPE_CHAR:
         case ELEMENT_TYPE_I1:
         case ELEMENT_TYPE_U1:
+        case ELEMENT_TYPE_CHAR:
+            typeInfo = new (nothrow) ByteTypeInfo(typeHandle, CorElementTypeToDWEncoding[corType]);
+            if (typeInfo == nullptr)
+                return nullptr;
+            typeInfo->m_type_size = CorTypeInfo::Size(corType);
+            break;
+        case ELEMENT_TYPE_VOID:
+        case ELEMENT_TYPE_BOOLEAN:
         case ELEMENT_TYPE_I2:
         case ELEMENT_TYPE_U2:
         case ELEMENT_TYPE_I4:
@@ -678,8 +683,7 @@ const unsigned char AbbrevTable[] = {
     2, DW_TAG_base_type, DW_CHILDREN_no,
         DW_AT_name, DW_FORM_strp, DW_AT_encoding, DW_FORM_data1, DW_AT_byte_size, DW_FORM_data1, 0, 0,
 
-    3, DW_TAG_typedef, DW_CHILDREN_no,
-        DW_AT_name, DW_FORM_strp, DW_AT_decl_file, DW_FORM_data1, DW_AT_decl_line, DW_FORM_data1,
+    3, DW_TAG_typedef, DW_CHILDREN_no, DW_AT_name, DW_FORM_strp,
         DW_AT_type, DW_FORM_ref4, 0, 0,
 
     4, DW_TAG_subprogram, DW_CHILDREN_yes,
@@ -893,6 +897,13 @@ struct __attribute__((packed)) DebugInfoVar
     uint32_t m_var_type;
 };
 
+struct __attribute__((packed)) DebugInfoTypeDef
+{
+    uint8_t m_typedef_abbrev;
+    uint32_t m_typedef_name;
+    uint32_t m_typedef_type;
+};
+
 struct __attribute__((packed)) DebugInfoClassType
 {
     uint8_t m_type_abbrev;
@@ -962,6 +973,56 @@ TypeHandle TypeInfoBase::GetTypeHandle()
 TypeKey* TypeInfoBase::GetTypeKey()
 {
     return &typeKey;
+}
+
+void TypeDefInfo::DumpStrings(char *ptr, int &offset)
+{
+    if (ptr != nullptr)
+    {
+        strcpy(ptr + offset, m_typedef_name);
+        m_typedef_name_offset = offset;
+    }
+    offset += strlen(m_typedef_name) + 1;
+}
+
+void TypeDefInfo::DumpDebugInfo(char *ptr, int &offset)
+{
+    if (ptr != nullptr)
+    {
+        DebugInfoTypeDef buf;
+        buf.m_typedef_abbrev = 3;
+        buf.m_typedef_name = m_typedef_name_offset;
+        buf.m_typedef_type = offset + sizeof(DebugInfoTypeDef);
+        m_typedef_type_offset = offset;
+
+        memcpy(ptr + offset,
+               &buf,
+               sizeof(DebugInfoTypeDef));
+    }
+
+    offset += sizeof(DebugInfoTypeDef);
+}
+
+void ByteTypeInfo::DumpStrings(char* ptr, int& offset)
+{
+    PrimitiveTypeInfo::DumpStrings(ptr, offset);
+    m_typedef_info->m_typedef_name = new (nothrow) char[strlen(m_type_name) + 1];
+    if (strcmp(m_type_name, "System.Byte") == 0)
+        strcpy(m_typedef_info->m_typedef_name, "byte");
+    else if (strcmp(m_type_name, "System.SByte") == 0)
+        strcpy(m_typedef_info->m_typedef_name, "sbyte");
+    else if (strcmp(m_type_name, "char16_t") == 0)
+        strcpy(m_typedef_info->m_typedef_name, "char");
+    else
+        strcpy(m_typedef_info->m_typedef_name, m_type_name);
+    m_typedef_info->DumpStrings(ptr, offset);
+}
+
+void ByteTypeInfo::DumpDebugInfo(char *ptr, int &offset)
+{
+    m_typedef_info->DumpDebugInfo(ptr, offset);
+    m_type_offset = m_typedef_info->m_typedef_type_offset;
+    PrimitiveTypeInfo::DumpDebugInfo(ptr, offset);
 }
 
 void PrimitiveTypeInfo::DumpDebugInfo(char* ptr, int& offset)
