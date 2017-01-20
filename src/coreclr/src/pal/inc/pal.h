@@ -50,7 +50,6 @@ Abstract:
 extern "C" {
 #endif
 
-#if defined (PLATFORM_UNIX)
 // This macro is used to standardize the wide character string literals between UNIX and Windows.
 // Unix L"" is UTF32, and on windows it's UTF16.  Because of built-in assumptions on the size
 // of string literals, it's important to match behaviour between Unix and Windows.  Unix will be defined
@@ -64,8 +63,6 @@ extern "C" {
 #define QUOTE_MACRO_L(x) QUOTE_MACRO_u(x)
 #define QUOTE_MACRO_u_HELPER(x)     u###x
 #define QUOTE_MACRO_u(x)            QUOTE_MACRO_u_HELPER(x)
-
-#endif
 
 #include <pal_char16.h>
 #include <pal_error.h>
@@ -2526,8 +2523,6 @@ PALIMPORT BOOL PALAPI PAL_VirtualUnwindOutOfProc(CONTEXT *context,
 
 #define GetLogicalProcessorCacheSizeFromOS PAL_GetLogicalProcessorCacheSizeFromOS
 
-#ifdef PLATFORM_UNIX
-
 /* PAL_CS_NATIVE_DATA_SIZE is defined as sizeof(PAL_CRITICAL_SECTION_NATIVE_DATA) */
 
 #if defined(__APPLE__) && defined(__i386__)
@@ -2557,8 +2552,6 @@ PALIMPORT BOOL PALAPI PAL_VirtualUnwindOutOfProc(CONTEXT *context,
 #error  PAL_CS_NATIVE_DATA_SIZE is not defined for this architecture
 #endif
     
-#endif // PLATFORM_UNIX
-
 // 
 typedef struct _CRITICAL_SECTION {
     PVOID DebugInfo;
@@ -2568,7 +2561,6 @@ typedef struct _CRITICAL_SECTION {
     HANDLE LockSemaphore;
     ULONG_PTR SpinCount;
 
-#ifdef PLATFORM_UNIX
     BOOL bInternal;
     volatile DWORD dwInitState;
     union CSNativeDataStorage
@@ -2576,7 +2568,6 @@ typedef struct _CRITICAL_SECTION {
         BYTE rgNativeDataStorage[PAL_CS_NATIVE_DATA_SIZE]; 
         VOID * pvAlign; // make sure the storage is machine-pointer-size aligned
     } csnds;    
-#endif // PLATFORM_UNIX    
 } CRITICAL_SECTION, *PCRITICAL_SECTION, *LPCRITICAL_SECTION;
 
 PALIMPORT VOID PALAPI EnterCriticalSection(IN OUT LPCRITICAL_SECTION lpCriticalSection);
@@ -4859,7 +4850,6 @@ CoCreateGuid(OUT GUID * pguid);
 /* Some C runtime functions needs to be reimplemented by the PAL.
    To avoid name collisions, those functions have been renamed using
    defines */
-#ifdef PLATFORM_UNIX
 #ifndef PAL_STDCPP_COMPAT
 #define exit          PAL_exit
 #define atexit        PAL_atexit
@@ -4962,7 +4952,6 @@ CoCreateGuid(OUT GUID * pguid);
 #endif // _AMD64_
 
 #endif // !PAL_STDCPP_COMPAT
-#endif // PLATFORM_UNIX
 
 #ifndef _CONST_RETURN
 #ifdef  __cplusplus
@@ -5241,17 +5230,11 @@ PALIMPORT char * __cdecl _strdup(const char *);
 
 #if defined(_MSC_VER)
 #define alloca _alloca
-#elif defined(PLATFORM_UNIX)
-#define _alloca alloca
 #else
-// MingW
-#define _alloca __builtin_alloca
-#define alloca __builtin_alloca
+#define _alloca alloca
 #endif //_MSC_VER
 
-#if defined(__GNUC__) && defined(PLATFORM_UNIX)
 #define alloca  __builtin_alloca
-#endif // __GNUC__
 
 #define max(a, b) (((a) > (b)) ? (a) : (b))
 #define min(a, b) (((a) < (b)) ? (a) : (b))
@@ -6012,7 +5995,6 @@ public:
 
 // Platform-specific library naming
 // 
-#ifdef PLATFORM_UNIX
 #ifdef __APPLE__
 #define MAKEDLLNAME_W(name) u"lib" name u".dylib"
 #define MAKEDLLNAME_A(name)  "lib" name  ".dylib"
@@ -6020,10 +6002,6 @@ public:
 #define MAKEDLLNAME_W(name) u"lib" name u".so"
 #define MAKEDLLNAME_A(name)  "lib" name  ".so"
 #endif
-#else // PLATFORM_UNIX
-#define MAKEDLLNAME_W(name) name L".dll"
-#define MAKEDLLNAME_A(name) name  ".dll"
-#endif // PLATFORM_UNIX
 
 #ifdef UNICODE
 #define MAKEDLLNAME(x) MAKEDLLNAME_W(x)

@@ -37,7 +37,7 @@ int __cdecl main(int argc, char *argv[])
 /*
 **  Run only on 64 bit platforms
 */
-#if defined(BIT64) && defined(PLATFORM_UNIX)
+#if defined(BIT64)
 
     InterlockedIncrement64(&TheValue);
     TheReturn = InterlockedIncrement64(&TheValue);
@@ -45,28 +45,18 @@ int __cdecl main(int argc, char *argv[])
     /* Incremented twice, it should be 2 now */
     if(TheValue != 2) 
     {
-#ifdef PLATFORM_UNIX
         Fail("ERROR: The value was incremented twice and shoud now be 2, "
              "but it is really %ll",TheValue); 
-#else
-        Fail("ERROR: The value was incremented twice and shoud now be 2, "
-             "but it is really %I64",TheValue); 
-#endif
     }
   
     /* Check to make sure it returns itself */
     if(TheReturn != TheValue) 
     {
-#ifdef PLATFORM_UNIX
         Fail("ERROR: The function should return the new value, which shoud "
              "have been %d, but it returned %ll.",TheValue,TheReturn);          
-#else
-        Fail("ERROR: The function should return the new value, which shoud "
-             "have been %d, but it returned %I64.",TheValue,TheReturn);          
-#endif
     }
 
-#endif  //defined(BIT64) && defined(PLATFORM_UNIX)
+#endif  //defined(BIT64)
     PAL_Terminate();
     return PASS; 
 } 

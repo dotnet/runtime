@@ -75,7 +75,7 @@ int __cdecl main(int argc, char *argv[])
 /*
 **  Run only on 64 bit platforms
 */
-#if defined(BIT64) && defined(PLATFORM_UNIX)
+#if defined(BIT64)
 	Trace("Testing for 64 Bit Platforms \n");
 	DoTest("%p", NULL, "NULL", "0000000000000000", "0x0");
     DoTest("%p", ptr, "pointer to 0x123456", "0000000000123456", "0x123456");
