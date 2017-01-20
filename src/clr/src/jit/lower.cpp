@@ -1928,11 +1928,11 @@ GenTree* Lowering::LowerTailCallViaHelper(GenTreeCall* call, GenTree* callTarget
 //    cmp - the compare node
 //
 // Notes:
+//    - Decomposes long comparisons that feed a GT_JTRUE (32 bit specific).
+//    - Ensures that we don't have a mix of int/long operands (XARCH specific).
 //    - Narrow operands to enable memory operand containment (XARCH specific).
 //    - Transform cmp(and(x, y), 0) into test(x, y) (XARCH specific but could
 //      be used for ARM as well if support for GT_TEST_EQ/GT_TEST_NE is added).
-//    - Ensures that we don't have a mix of int/long operands (XARCH specific).
-//    - Decomposes long comparisons that feed a GT_JTRUE (32 bit specific).
 
 void Lowering::LowerCompare(GenTree* cmp)
 {
@@ -1942,9 +1942,9 @@ void Lowering::LowerCompare(GenTree* cmp)
     if ((cmp->gtGetOp1()->TypeGet() == TYP_LONG) && BlockRange().TryGetUse(cmp, &cmpUse) &&
         cmpUse.User()->OperIs(GT_JTRUE))
     {
-        // For 32-bit targets any comparison that feeds a `GT_JTRUE` node must be lowered
-        // such that the liveness of the operands to the is properly visible to the rest
-        // of the backend. As such, a 64-bit comparison is lowered from something like this:
+        // For 32-bit targets any comparison that feeds a `GT_JTRUE` node must be lowered such that
+        // the liveness of the operands to the comparison is properly visible to the rest of the
+        // backend. As such, a 64-bit comparison is lowered from something like this:
         //
         //    ------------ BB02 [004..014) -> BB02 (cond), preds={BB02,BB01} succs={BB03,BB02}
         //    N001 (  1,  1) [000006] ------------        t6 =    lclVar    int    V02 loc0         u:5 $148
