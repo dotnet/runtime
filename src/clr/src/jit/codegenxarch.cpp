@@ -6190,7 +6190,7 @@ void CodeGen::genCompareInt(GenTreePtr treeNode)
     // If op2 is smaller then it cannot be in memory, we're probably missing a cast
     assert((genTypeSize(op2Type) >= genTypeSize(type)) || !op2->isUsedFromMemory());
     // If op2 is a constant then it should fit in the common type
-    assert(!op2->IsCnsIntOrI() || genTypeValueFitsIn(op2->AsIntCon()->IconValue(), type));
+    assert(!op2->IsCnsIntOrI() || genTypeCanRepresentValue(type, op2->AsIntCon()->IconValue()));
 
     getEmitter()->emitInsBinary(ins, emitTypeSize(type), op1, op2);
 
