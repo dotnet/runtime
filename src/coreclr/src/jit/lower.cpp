@@ -2198,23 +2198,24 @@ void Lowering::LowerCompare(GenTree* cmp)
             // below is only necessary to prevent worse code generation for switches and loop cloning.
             //
 
-            GenTree*& longOp    = op1Is64Bit ? cmp->gtOp.gtOp1 : cmp->gtOp.gtOp2;
-            GenTree*& smallerOp = op2Is64Bit ? cmp->gtOp.gtOp1 : cmp->gtOp.gtOp2;
+            GenTree*  longOp       = op1Is64Bit ? cmp->gtOp.gtOp1 : cmp->gtOp.gtOp2;
+            GenTree** smallerOpUse = op2Is64Bit ? &cmp->gtOp.gtOp1 : &cmp->gtOp.gtOp2;
+            var_types smallerType  = (*smallerOpUse)->TypeGet();
 
-            assert(genTypeSize(smallerOp) < 8);
+            assert(genTypeSize(smallerType) < 8);
 
-            if (longOp->IsCnsIntOrI() && genTypeValueFitsIn(longOp->AsIntCon()->IconValue(), smallerOp->TypeGet()))
+            if (longOp->IsCnsIntOrI() && genTypeCanRepresentValue(smallerType, longOp->AsIntCon()->IconValue()))
             {
-                longOp->gtType = smallerOp->TypeGet();
+                longOp->gtType = smallerType;
             }
-            else if (smallerOp->IsCnsIntOrI())
+            else if ((*smallerOpUse)->IsCnsIntOrI())
             {
-                smallerOp->gtType = TYP_LONG;
+                (*smallerOpUse)->gtType = TYP_LONG;
             }
             else
             {
-                GenTree* cast = comp->gtNewCastNode(TYP_LONG, smallerOp, TYP_LONG);
-                smallerOp     = cast;
+                GenTree* cast = comp->gtNewCastNode(TYP_LONG, *smallerOpUse, TYP_LONG);
+                *smallerOpUse = cast;
                 BlockRange().InsertAfter(cast->gtGetOp1(), cast);
             }
         }
@@ -2228,7 +2229,7 @@ void Lowering::LowerCompare(GenTree* cmp)
         GenTreeIntCon* op2      = cmp->gtGetOp2()->AsIntCon();
         ssize_t        op2Value = op2->IconValue();
 
-        if (op1->isMemoryOp() && varTypeIsSmall(op1Type) && genTypeValueFitsIn(op2Value, op1Type))
+        if (op1->isMemoryOp() && varTypeIsSmall(op1Type) && genTypeCanRepresentValue(op1Type, op2Value))
         {
             //
             // If op1's type is small then try to narrow op2 so it has the same type as op1.
