@@ -248,8 +248,7 @@
 
     <RuntimePath Condition="'$(RuntimePath)' == ''">$(BinDir)runtime/$(BuildConfiguration)/</RuntimePath>
     <RefRootPath>$(BinDir)ref/</RefRootPath>
-    <!-- TODO: We need to compute this based on the TargetGroup of the BuildConfiguration -->
-    <RefPath>$(RefRootPath)netcoreapp/</RefPath>
+    <RefPath>$(RefRootPath)$(_bc_TargetGroup)/</RefPath>
     <NetStandardRefPath>$(RefRootPath)netstandard/</NetStandardRefPath>
     <NetFxRefPath>$(RefRootPath)netfx/</NetFxRefPath>
 

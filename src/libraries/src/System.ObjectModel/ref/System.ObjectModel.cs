@@ -19,9 +19,7 @@ namespace System.Collections.ObjectModel
         protected void ChangeItemKey(TItem item, TKey newKey) { }
         protected override void ClearItems() { }
         public bool Contains(TKey key) { throw null; }
-#if netcoreapp11
         public bool TryGetValue(TKey key, out TItem item) { throw null; }
-#endif
         protected abstract TKey GetKeyForItem(TItem item);
         protected override void InsertItem(int index, TItem item) { }
         public bool Remove(TKey key) { throw null; }
