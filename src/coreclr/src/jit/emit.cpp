@@ -1643,12 +1643,10 @@ void emitter::emitCreatePlaceholderIG(insGroupPlaceholderType igType,
     {
         igPh->igFlags |= IGF_FUNCLET_PROLOG;
     }
-#ifdef DEBUG
     else if (igType == IGPT_FUNCLET_EPILOG)
     {
         igPh->igFlags |= IGF_FUNCLET_EPILOG;
     }
-#endif // DEBUG
 #endif // FEATURE_EH_FUNCLETS
 
     /* Link it into the placeholder list */
