@@ -510,22 +510,9 @@ sgen_add_to_global_remset (gpointer ptr, GCObject *obj)
 gboolean
 sgen_drain_gray_stack (ScanCopyContext ctx)
 {
-	ScanObjectFunc scan_func = ctx.ops->scan_object;
-	SgenGrayQueue *queue = ctx.queue;
+	SGEN_ASSERT (0, ctx.ops->drain_gray_stack, "Why do we have a scan/copy context with a missing drain gray stack function?");
 
-	if (ctx.ops->drain_gray_stack)
-		return ctx.ops->drain_gray_stack (queue);
-
-	for (;;) {
-		GCObject *obj;
-		SgenDescriptor desc;
-		GRAY_OBJECT_DEQUEUE_PARALLEL (queue, &obj, &desc);
-		if (!obj)
-			return TRUE;
-		SGEN_LOG (9, "Precise gray object scan %p (%s)", obj, sgen_client_vtable_get_name (SGEN_LOAD_VTABLE (obj)));
-		scan_func (obj, desc, queue);
-	}
-	return FALSE;
+	return ctx.ops->drain_gray_stack (ctx.queue);
 }
 
 /*
