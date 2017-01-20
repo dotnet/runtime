@@ -1480,6 +1480,16 @@ private:
     };
     typedef SHash<JumpStubTraits> JumpStubTable;
 
+    static unsigned m_normal_JumpStubLookup;
+    static unsigned m_normal_JumpStubUnique;
+    static unsigned m_normal_JumpStubBlockAllocCount;
+    static unsigned m_normal_JumpStubBlockFullCount;
+
+    static unsigned m_LCG_JumpStubLookup;
+    static unsigned m_LCG_JumpStubUnique;
+    static unsigned m_LCG_JumpStubBlockAllocCount;
+    static unsigned m_LCG_JumpStubBlockFullCount;
+
     struct JumpStubCache
     {
         JumpStubCache() 
