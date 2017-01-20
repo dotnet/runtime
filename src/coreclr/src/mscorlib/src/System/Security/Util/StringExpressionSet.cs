@@ -33,8 +33,8 @@ namespace System.Security.Util {
         protected String[] m_expressionsArray;
 
         protected bool m_throwOnRelative;
-        
-        protected static readonly char[] m_separators = { ';' };
+
+        private const char Separator = ';';
         protected static readonly char[] m_trimChars = { ' ' };
 #if !PLATFORM_UNIX
         protected static readonly char m_directorySeparator = '\\';
@@ -127,7 +127,7 @@ namespace System.Security.Util {
             if (m_expressions == null)
                 m_expressions = str;
             else
-                m_expressions = m_expressions + m_separators[0] + str;
+                m_expressions = m_expressions + Separator + str;
 
             m_expressionsArray = null;
 
@@ -289,7 +289,7 @@ namespace System.Security.Util {
             }
             else
             {
-                return expressions.Split( m_separators );
+                return expressions.Split(Separator);
             }
         }
 
@@ -475,14 +475,14 @@ namespace System.Security.Util {
                 while (enumerator.MoveNext())
                 {
                     if (!first)
-                        sb.Append( m_separators[0] );
+                        sb.Append(Separator);
                     else
                         first = false;
                             
                     String currentString = (String)enumerator.Current;
                     if (currentString != null)
                     {
-                        int indexOfSeparator = currentString.IndexOf( m_separators[0] );
+                        int indexOfSeparator = currentString.IndexOf(Separator);
 
                         if (indexOfSeparator != -1)
                             sb.Append( '\"' );
