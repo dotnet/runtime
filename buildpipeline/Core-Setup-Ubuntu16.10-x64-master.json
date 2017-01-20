@@ -1,0 +1,164 @@
+{
+  "build": [
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Shell Script build.sh",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "6c731c3c-3c68-459a-a5c9-bde6e6595b5b",
+        "versionSpec": "2.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "scriptPath": "build.sh",
+        "args": "$(BuildArguments)",
+        "disableAutoCwd": "false",
+        "cwd": "",
+        "failOnStandardError": "false"
+      }
+    }
+  ],
+  "options": [
+    {
+      "enabled": false,
+      "definition": {
+        "id": "5bc3cfb7-6b54-4a4b-b5d2-a3905949f8a6"
+      },
+      "inputs": {
+        "additionalFields": "{}"
+      }
+    },
+    {
+      "enabled": false,
+      "definition": {
+        "id": "7c555368-ca64-4199-add6-9ebaf0b0137d"
+      },
+      "inputs": {
+        "multipliers": "[]",
+        "parallel": "false",
+        "continueOnError": "true",
+        "additionalFields": "{}"
+      }
+    },
+    {
+      "enabled": false,
+      "definition": {
+        "id": "a9db38f9-9fdc-478c-b0f9-464221e58316"
+      },
+      "inputs": {
+        "workItemType": "4777",
+        "assignToRequestor": "true",
+        "additionalFields": "{}"
+      }
+    },
+    {
+      "enabled": false,
+      "definition": {
+        "id": "57578776-4c22-4526-aeb0-86b6da17ee9c"
+      },
+      "inputs": {
+        "additionalFields": "{}"
+      }
+    }
+  ],
+  "variables": {
+    "BuildConfiguration": {
+      "value": "Release"
+    },
+    "BuildArguments": {
+      "value": "--skip-prereqs --configuration $(BuildConfiguration)  --docker ubuntu.16.10 --targets Default"
+    },
+    "CONNECTION_STRING": {
+      "value": "PassedViaPipeBuild"
+    },
+    "PUBLISH_TO_AZURE_BLOB": {
+      "value": "true",
+      "allowOverride": true
+    },
+    "NUGET_FEED_URL": {
+      "value": "https://dotnet.myget.org/F/dotnet-core"
+    },
+    "NUGET_API_KEY": {
+      "value": "PassedViaPipeBuild"
+    },
+    "GITHUB_PASSWORD": {
+      "value": "PassedViaPipeBuild"
+    },
+    "REPO_ID": {
+      "value": "575f40f3797ef7280505232f"
+    },
+    "REPO_USER": {
+      "value": "dotnet"
+    },
+    "REPO_SERVER": {
+      "value": "azure-apt-cat.cloudapp.net"
+    },
+    "REPO_PASS": {
+      "value": "PassedViaPipeBuild"
+    }
+  },
+  "demands": [
+    "Agent.OS -equals linux"
+  ],
+  "retentionRules": [
+    {
+      "branches": [
+        "+refs/heads/*"
+      ],
+      "artifactTypesToDelete": [
+        "FilePath",
+        "SymbolStore"
+      ],
+      "daysToKeep": 7,
+      "minimumToKeep": 1,
+      "deleteBuildRecord": true,
+      "deleteTestResults": true
+    }
+  ],
+  "buildNumberFormat": "$(Date:yyyMMdd)$(Rev:.r)",
+  "jobAuthorizationScope": "projectCollection",
+  "jobTimeoutInMinutes": 90,
+  "badgeEnabled": true,
+  "repository": {
+    "properties": {
+      "connectedServiceId": "f4c31735-42d2-4c3a-bc47-7ac06fd0dccc",
+      "apiUrl": "https://api.github.com/repos/dotnet/core-setup",
+      "branchesUrl": "https://api.github.com/repos/dotnet/core-setup/branches",
+      "cloneUrl": "https://github.com/dotnet/core-setup.git",
+      "refsUrl": "https://api.github.com/repos/dotnet/core-setup/git/refs",
+      "gitLfsSupport": "false",
+      "fetchDepth": "0"
+    },
+    "id": "https://github.com/dotnet/core-setup.git",
+    "type": "GitHub",
+    "name": "dotnet/core-setup",
+    "url": "https://github.com/dotnet/core-setup.git",
+    "defaultBranch": "master",
+    "clean": "true",
+    "checkoutSubmodules": false
+  },
+  "quality": "definition",
+  "defaultBranch": "master",
+  "queue": {
+    "pool": {
+      "id": 39,
+      "name": "DotNet-Build"
+    },
+    "id": 36,
+    "name": "DotNet-Build"
+  },
+  "path": "\\",
+  "type": "build",
+  "id": 4149,
+  "name": "Core-Setup-Ubuntu16.10-x64-master",
+  "project": {
+    "id": "0bdbc590-a062-4c3f-b0f6-9383f67865ee",
+    "name": "DevDiv",
+    "description": "Visual Studio and DevDiv team project for git source code repositories.  Work items will be added for Adams, Dev14 work items are tracked in vstfdevdiv.  ",
+    "url": "https://devdiv.visualstudio.com/DefaultCollection/_apis/projects/0bdbc590-a062-4c3f-b0f6-9383f67865ee",
+    "state": "wellFormed",
+    "revision": 418097459
+  }
+}
