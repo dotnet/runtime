@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "Microsoft.NETCore.Platforms": "2.0.0-beta-24919-02",
+    "Microsoft.NETCore.Platforms": "2.0.0-beta-24919-06",
     "System.Console": "4.4.0-beta-24913-02",
     "System.Runtime": "4.4.0-beta-24913-02",
     "System.Runtime.Extensions": "4.4.0-beta-24913-02",
