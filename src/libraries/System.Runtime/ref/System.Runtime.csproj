@@ -5,7 +5,6 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsCoreAssembly>true</IsCoreAssembly>
     <ProjectGuid>{ADBCF120-3454-4A3C-9D1D-AC4293E795D6}</ProjectGuid>
-    <DefineConstants Condition="'$(TargetGroup)' == 'netcoreapp'">$(DefineConstants);netcoreapp11</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Runtime.cs" />

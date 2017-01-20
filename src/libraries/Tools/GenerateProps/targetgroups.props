@@ -13,6 +13,27 @@
       <Imports>netcore50</Imports>
       <CompatibleWith>netstandard1.4</CompatibleWith>
     </TargetGroups>
+    <TargetGroups Include="uap101aot">
+      <PackageTargetRuntime>aot</PackageTargetRuntime>
+      <NuGetTargetMoniker>UAP,Version=v10.1</NuGetTargetMoniker>
+      <Imports>uap101</Imports>
+      <CompatibleWith>netstandard2.0</CompatibleWith>
+    </TargetGroups>
+    <TargetGroups Include="uap101">
+      <NuGetTargetMoniker>UAP,Version=v10.1</NuGetTargetMoniker>
+      <Imports>netcore50aot</Imports>
+      <CompatibleWith>netstandard2.0</CompatibleWith>
+    </TargetGroups>
+    <TargetGroups Include="uap">
+      <NuGetTargetMoniker>UAP,Version=v10.1</NuGetTargetMoniker>
+      <Imports>uap101</Imports>
+      <CompatibleWith>netstandard</CompatibleWith>
+    </TargetGroups>
+    <TargetGroups Include="uapaot">
+      <PackageTargetRuntime>aot</PackageTargetRuntime>
+      <NuGetTargetMoniker>UAP,Version=v10.1</NuGetTargetMoniker>
+      <Imports>uap101aot</Imports>
+    </TargetGroups>
     <TargetGroups Include="netstandard1.0">
       <NuGetTargetMoniker>.NETStandard,Version=v1.0</NuGetTargetMoniker>
     </TargetGroups>
@@ -114,13 +135,6 @@
     </TargetGroups>
     <TargetGroups Include="wpa81">
       <NuGetTargetMoniker>WindowsPhoneApp,Version=v8.1</NuGetTargetMoniker>
-    </TargetGroups>
-    <TargetGroups Include="uap101aot">
-      <PackageTargetRuntime>aot</PackageTargetRuntime>
-      <NuGetTargetMoniker>UAP,Version=v10.1</NuGetTargetMoniker>
-    </TargetGroups>
-    <TargetGroups Include="uap101">
-      <NuGetTargetMoniker>UAP,Version=v10.1</NuGetTargetMoniker>
     </TargetGroups>
     <TargetGroups Include="portable_net45+win8+sl5">
       <NuGetTargetMoniker>.NETPortable,Version=v0.0,Profile=Profile47</NuGetTargetMoniker>

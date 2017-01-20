@@ -602,10 +602,8 @@ namespace System.Runtime.InteropServices
         public static string PtrToStringBSTR(System.IntPtr ptr) { throw null; }
         public static string PtrToStringUni(System.IntPtr ptr) { throw null; }
         public static string PtrToStringUni(System.IntPtr ptr, int len) { throw null; }
-#if netcoreapp11
         public static string PtrToStringUTF8(System.IntPtr ptr) { throw null; }
         public static string PtrToStringUTF8(System.IntPtr ptr, int byteLen) { throw null; }
-#endif
         [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
         public static void PtrToStructure(System.IntPtr ptr, object structure) { }
         [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
@@ -663,9 +661,7 @@ namespace System.Runtime.InteropServices
         public static System.IntPtr StringToCoTaskMemAnsi(string s) { throw null; }
         public static System.IntPtr StringToCoTaskMemAuto(string s) { throw null; }
         public static System.IntPtr StringToCoTaskMemUni(string s) { throw null; }
-#if netcoreapp11
         public static System.IntPtr StringToCoTaskMemUTF8(string s) { throw null; }
-#endif
         public static System.IntPtr StringToHGlobalAnsi(string s) { throw null; }
         public static System.IntPtr StringToHGlobalAuto(string s) { throw null; }
         public static System.IntPtr StringToHGlobalUni(string s) { throw null; }
@@ -712,9 +708,7 @@ namespace System.Runtime.InteropServices
         public static void ZeroFreeCoTaskMemUnicode(System.IntPtr s) { }
         public static void ZeroFreeGlobalAllocAnsi(System.IntPtr s) { }
         public static void ZeroFreeGlobalAllocUnicode(System.IntPtr s) { }
-#if netcoreapp11
         public static void ZeroFreeCoTaskMemUTF8(System.IntPtr s) { }
-#endif
     }
     [System.AttributeUsageAttribute((System.AttributeTargets)(64), Inherited=false)]
     public sealed partial class ManagedToNativeComInteropStubAttribute : System.Attribute
@@ -882,9 +876,7 @@ namespace System.Runtime.InteropServices
         LPStruct = 43,
         LPTStr = 22,
         LPWStr = 21,
-#if netcoreapp11
         LPUTF8Str = 48,
-#endif
         R4 = 11,
         R8 = 12,
         [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
