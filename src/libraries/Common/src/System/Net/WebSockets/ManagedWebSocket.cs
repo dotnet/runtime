@@ -277,7 +277,7 @@ namespace System.Net.WebSockets
 
             try
             {
-                ClientWebSocket.ThrowIfInvalidState(_state, _disposed, s_validSendStates);
+               WebSocketValidate.ThrowIfInvalidState(_state, _disposed, s_validSendStates);
                 ThrowIfOperationInProgress(_lastSendAsync);
             }
             catch (Exception exc)
@@ -302,7 +302,7 @@ namespace System.Net.WebSockets
 
             try
             {
-                ClientWebSocket.ThrowIfInvalidState(_state, _disposed, s_validReceiveStates);
+                WebSocketValidate.ThrowIfInvalidState(_state, _disposed, s_validReceiveStates);
 
                 Debug.Assert(!Monitor.IsEntered(StateUpdateLock), $"{nameof(StateUpdateLock)} must never be held when acquiring {nameof(ReceiveAsyncLock)}");
                 lock (ReceiveAsyncLock) // synchronize with receives in CloseAsync
@@ -325,7 +325,7 @@ namespace System.Net.WebSockets
 
             try
             {
-                ClientWebSocket.ThrowIfInvalidState(_state, _disposed, s_validCloseStates);
+                WebSocketValidate.ThrowIfInvalidState(_state, _disposed, s_validCloseStates);
             }
             catch (Exception exc)
             {
@@ -341,7 +341,7 @@ namespace System.Net.WebSockets
 
             try
             {
-                ClientWebSocket.ThrowIfInvalidState(_state, _disposed, s_validCloseOutputStates);
+                WebSocketValidate.ThrowIfInvalidState(_state, _disposed, s_validCloseOutputStates);
             }
             catch (Exception exc)
             {

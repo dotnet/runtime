@@ -18,12 +18,12 @@ namespace System.Net.WebSockets
         {
             if (!WebSocketProtocolComponent.IsSupported)
             {
-                WebSocketValidate.ThrowPlatformNotSupportedException_WSPC();
+                HttpWebSocket.ThrowPlatformNotSupportedException_WSPC();
             }
 
-            WebSocketValidate.ValidateInnerStream(innerStream);
-            WebSocketValidate.ValidateOptions(subProtocol, receiveBufferSize, WebSocketBuffer.MinSendBufferSize, keepAliveInterval);
-            WebSocketValidate.ValidateArraySegment<byte>(internalBuffer, nameof(internalBuffer));
+            HttpWebSocket.ValidateInnerStream(innerStream);
+            HttpWebSocket.ValidateOptions(subProtocol, receiveBufferSize, WebSocketBuffer.MinSendBufferSize, keepAliveInterval);
+            WebSocketValidate.ValidateArraySegment(internalBuffer, nameof(internalBuffer));
             WebSocketBuffer.Validate(internalBuffer.Count, receiveBufferSize, WebSocketBuffer.MinSendBufferSize, true);
 
             return new ServerWebSocket(innerStream,
@@ -50,7 +50,7 @@ namespace System.Net.WebSockets
 
             if (_sessionHandle == null || _sessionHandle.IsInvalid)
             {
-                WebSocketValidate.ThrowPlatformNotSupportedException_WSPC();
+                HttpWebSocket.ThrowPlatformNotSupportedException_WSPC();
             }
 
             StartKeepAliveTimer();

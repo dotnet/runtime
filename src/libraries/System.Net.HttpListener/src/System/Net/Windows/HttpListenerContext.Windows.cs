@@ -2,21 +2,18 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Security.Principal;
-using System.Runtime.InteropServices;
-using System.Security.Authentication.ExtendedProtection;
 using System.ComponentModel;
 using System.Net.WebSockets;
-using System.Threading.Tasks;
+using System.Runtime.InteropServices;
+using System.Security.Authentication.ExtendedProtection;
+using System.Security.Principal;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.Net
 {
     public sealed unsafe partial class HttpListenerContext
     {
-        private HttpListener _listener;
-        private HttpListenerResponse _response;
-        private IPrincipal _user;
         private string _mutualAuthentication;
 
         internal HttpListenerContext(HttpListener httpListener, RequestContextBase memoryBlob)
@@ -37,25 +34,6 @@ namespace System.Net
             if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"mutual: {(mutualAuthentication == null ? "<null>" : mutualAuthentication)}, Principal: {principal}");
         }
 
-        public HttpListenerRequest Request { get; }
-
-        public HttpListenerResponse Response
-        {
-            get
-            {
-                if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
-                if (_response == null)
-                {
-                    _response = new HttpListenerResponse(this);
-                    if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"HttpListener: {_listener}, HttpListenerRequest: {Request}, HttpListenerResponse: {_response}");
-                }
-                if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
-                return _response;
-            }
-        }
-
-        public IPrincipal User => _user;
-
         // This can be used to cache the results of HttpListener.AuthenticationSchemeSelectorDelegate.
         internal AuthenticationSchemes AuthenticationSchemes { get; set; }
 
@@ -75,14 +53,14 @@ namespace System.Net
         public Task<HttpListenerWebSocketContext> AcceptWebSocketAsync(string subProtocol)
         {
             return this.AcceptWebSocketAsync(subProtocol,
-                WebSocketValidate.DefaultReceiveBufferSize,
+                HttpWebSocket.DefaultReceiveBufferSize,
                 WebSocket.DefaultKeepAliveInterval);
         }
 
         public Task<HttpListenerWebSocketContext> AcceptWebSocketAsync(string subProtocol, TimeSpan keepAliveInterval)
         {
             return this.AcceptWebSocketAsync(subProtocol,
-                WebSocketValidate.DefaultReceiveBufferSize,
+                HttpWebSocket.DefaultReceiveBufferSize,
                 keepAliveInterval);
         }
 
@@ -90,7 +68,7 @@ namespace System.Net
             int receiveBufferSize,
             TimeSpan keepAliveInterval)
         {
-            WebSocketValidate.ValidateOptions(subProtocol, receiveBufferSize, WebSocketBuffer.MinSendBufferSize, keepAliveInterval);
+            HttpWebSocket.ValidateOptions(subProtocol, receiveBufferSize, WebSocketBuffer.MinSendBufferSize, keepAliveInterval);
 
             ArraySegment<byte> internalBuffer = WebSocketBuffer.CreateInternalBufferArraySegment(receiveBufferSize, WebSocketBuffer.MinSendBufferSize, true);
             return this.AcceptWebSocketAsync(subProtocol,
@@ -105,7 +83,7 @@ namespace System.Net
             TimeSpan keepAliveInterval,
             ArraySegment<byte> internalBuffer)
         {
-            return WebSocketValidate.AcceptWebSocketAsync(this,
+            return HttpWebSocket.AcceptWebSocketAsync(this,
                 subProtocol,
                 receiveBufferSize,
                 keepAliveInterval,

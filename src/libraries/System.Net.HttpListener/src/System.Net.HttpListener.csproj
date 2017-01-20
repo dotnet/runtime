@@ -27,6 +27,7 @@
     <Reference Include="System.Net.Security" />
     <Reference Include="System.Net.WebHeaderCollection" />
     <Reference Include="System.Net.WebSockets" />
+    <Reference Include="System.Net.WebSockets.Client" />
     <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
@@ -55,6 +56,7 @@
     <Compile Include="System\Net\HttpListenerResponse.cs" />
     <Compile Include="System\Net\NetEventSource.HttpListener.cs" />
     <Compile Include="System\Net\WebSockets\HttpListenerWebSocketContext.cs" />
+    <Compile Include="System\Net\WebSockets\HttpWebSocket.cs" />
     <Compile Include="$(CommonPath)\System\Net\Logging\NetEventSource.Common.cs">
       <Link>Common\System\Net\Logging\NetEventSource.Common.cs</Link>
     </Compile>
@@ -63,6 +65,9 @@
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\HttpKnownHeaderNames.cs">
       <Link>Common\System\Net\HttpKnownHeaderNames.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\WebSockets\WebSocketValidate.cs">
+      <Link>Common\System\Net\WebSockets\WebSocketValidate.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true' AND '$(TargetGroup)' == 'netstandard'">
@@ -88,9 +93,6 @@
     <Compile Include="$(CommonPath)\System\Net\CaseInsensitiveAscii.cs">
       <Link>Common\System\Net\CaseInsensitiveAscii.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\WebSockets\WebSocketValidate.cs">
-      <Link>Common\System\Net\WebSockets\WebSocketValidate.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\System\Net\DebugSafeHandle.cs">
       <Link>Common\System\Net\DebugSafeHandle.cs</Link>
     </Compile>
@@ -111,14 +113,14 @@
     </Compile>
     <Compile Include="System\Net\Windows\HttpResponseStream.Windows.cs" />
     <Compile Include="System\Net\Windows\HttpResponseStreamAsyncResult.cs" />
-    <Compile Include="System\Net\WebSockets\ServerWebSocket.cs" />
-    <Compile Include="System\Net\WebSockets\WebSocketBase.cs" />
-    <Compile Include="System\Net\WebSockets\WebSocketBuffer.cs" />
-    <Compile Include="System\Net\WebSockets\SafeWebSocketHandle.cs" />
-    <Compile Include="System\Net\WebSockets\WebSocketHelpers.cs" />
+    <Compile Include="System\Net\Windows\WebSockets\ServerWebSocket.cs" />
+    <Compile Include="System\Net\Windows\WebSockets\HttpWebSocket.Windows.cs" />
+    <Compile Include="System\Net\Windows\WebSockets\WebSocketBase.cs" />
+    <Compile Include="System\Net\Windows\WebSockets\WebSocketBuffer.cs" />
+    <Compile Include="System\Net\Windows\WebSockets\SafeWebSocketHandle.cs" />
     <Compile Include="System\Net\Windows\HttpRequestStream.Windows.cs" />
-    <Compile Include="System\Net\WebSockets\WebSocketHttpListenerDuplexStream.cs" />
-    <Compile Include="System\Net\WebSockets\WebSocketProtocolComponent.cs" />
+    <Compile Include="System\Net\Windows\WebSockets\WebSocketHttpListenerDuplexStream.cs" />
+    <Compile Include="System\Net\Windows\WebSockets\WebSocketProtocolComponent.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
       <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
     </Compile>
@@ -332,18 +334,15 @@
     <Compile Include="System\Net\Managed\ChunkedInputStream.cs" />
     <Compile Include="System\Net\Managed\ChunkStream.cs" />
     <Compile Include="System\Net\Managed\HttpResponseStream.Managed.cs" />
+    <Compile Include="System\Net\Managed\WebSockets\HttpWebSocket.Managed.cs" />
+    <Compile Include="$(CommonPath)\System\Net\WebSockets\ManagedWebSocket.cs">
+      <Link>Common\System\Net\WebSockets\ManagedWebSocket.cs</Link>
+    </Compile>
+    <Reference Include="System.Buffers" />
     <Reference Include="System.Net.Sockets" />
     <Reference Include="System.Threading.ThreadPool" />
     <Reference Include="System.Net.ServicePoint" />
   </ItemGroup>
-  <PropertyGroup Condition=" '$(TargetsWindows)' == 'true' AND '$(ProjectJson)' == '' ">
-    <ProjectJson>win/project.json</ProjectJson>
-    <ProjectLockJson>win/project.lock.json</ProjectLockJson>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(TargetsUnix)' == 'true' and '$(ProjectJson)' == '' ">
-    <ProjectJson>unix/project.json</ProjectJson>
-    <ProjectLockJson>unix/project.lock.json</ProjectLockJson>
-  </PropertyGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'net461'">
     <TargetingPackReference Include="mscorlib" />
     <TargetingPackReference Include="System" />
