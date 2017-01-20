@@ -36,7 +36,7 @@ int __cdecl main(int argc, char *argv[])
 
 
 
-#if defined(BIT64) && defined(PLATFORM_UNIX)
+#if defined(BIT64)
     ptrValue = (LONG *) malloc(sizeof(LONG));
 
     if(ptrValue == NULL)
