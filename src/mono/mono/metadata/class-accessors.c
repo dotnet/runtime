@@ -374,3 +374,13 @@ mono_class_set_declsec_flags (MonoClass *class, guint32 value)
 	prop->value = value;
 	mono_property_bag_add (&class->infrequent_data, prop);
 }
+
+void
+mono_class_set_is_com_object (MonoClass *klass)
+{
+#ifndef DISABLE_COM
+	mono_loader_lock ();
+	klass->is_com_object = 1;
+	mono_loader_unlock ();
+#endif
+}

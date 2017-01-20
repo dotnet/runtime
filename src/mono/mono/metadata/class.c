@@ -1651,6 +1651,7 @@ static void
 init_sizes_with_info (MonoClass *klass, MonoCachedClassInfo *cached_info)
 {
 	if (cached_info) {
+		mono_loader_lock ();
 		klass->instance_size = cached_info->instance_size;
 		klass->sizes.class_size = cached_info->class_size;
 		klass->packing_size = cached_info->packing_size;
@@ -1659,6 +1660,7 @@ init_sizes_with_info (MonoClass *klass, MonoCachedClassInfo *cached_info)
 		klass->has_references = cached_info->has_references;
 		klass->has_static_refs = cached_info->has_static_refs;
 		klass->no_special_static_fields = cached_info->no_special_static_fields;
+		mono_loader_unlock ();
 	}
 	else {
 		if (!klass->size_inited)
@@ -5080,16 +5082,14 @@ mono_class_has_finalizer (MonoClass *klass)
 		}
 	}
 
-	mono_image_lock (klass->image);
-
+	mono_loader_lock ();
 	if (!klass->has_finalize_inited) {
 		klass->has_finalize = has_finalize ? 1 : 0;
 
 		mono_memory_barrier ();
 		klass->has_finalize_inited = TRUE;
 	}
-
-	mono_image_unlock (klass->image);
+	mono_loader_unlock ();
 
 	return klass->has_finalize;
 }
@@ -5742,6 +5742,7 @@ mono_generic_class_setup_parent (MonoClass *klass, MonoClass *gtd)
 			mono_error_cleanup (&error);
 		}
 	}
+	mono_loader_lock ();
 	if (klass->parent)
 		mono_class_setup_parent (klass, klass->parent);
 
@@ -5749,6 +5750,7 @@ mono_generic_class_setup_parent (MonoClass *klass, MonoClass *gtd)
 		klass->cast_class = gtd->cast_class;
 		klass->element_class = gtd->element_class;
 	}
+	mono_loader_unlock ();
 }
 
 gboolean
@@ -9215,8 +9217,12 @@ setup_nested_types (MonoClass *klass)
 	if (klass->nested_classes_inited)
 		return;
 
-	if (!klass->type_token)
+	if (!klass->type_token) {
+		mono_loader_lock ();
 		klass->nested_classes_inited = TRUE;
+		mono_loader_unlock ();
+		return;
+	}
 
 	i = mono_metadata_nesting_typedef (klass->image, klass->type_token, 1);
 	classes = NULL;
@@ -10435,8 +10441,7 @@ mono_class_setup_interfaces (MonoClass *klass, MonoError *error)
 		interfaces = NULL;
 	}
 
-	mono_image_lock (klass->image);
-
+	mono_loader_lock ();
 	if (!klass->interfaces_inited) {
 		klass->interface_count = interface_count;
 		klass->interfaces = interfaces;
@@ -10445,8 +10450,7 @@ mono_class_setup_interfaces (MonoClass *klass, MonoError *error)
 
 		klass->interfaces_inited = TRUE;
 	}
-
-	mono_image_unlock (klass->image);
+	mono_loader_unlock ();
 }
 
 static void
@@ -10526,7 +10530,6 @@ mono_field_resolve_flags (MonoClassField *field)
 	MonoImage *image = klass->image;
 	MonoClass *gtd = mono_class_is_ginst (klass) ? mono_class_get_generic_type_definition (klass) : NULL;
 	int field_idx = field - klass->fields;
-
 
 	if (gtd) {
 		MonoClassField *gfield = &gtd->fields [field_idx];
