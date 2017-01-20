@@ -37,11 +37,13 @@ namespace Microsoft.DotNet.Host.Build
             { "centos.7-x64", "rhel.7-x64" },
             { "rhel.7-x64", "rhel.7-x64" },
             { "rhel.7.2-x64", "rhel.7-x64" },
+            { "debian.8-armel", "debian.8-armel" },
             { "debian.8-x64", "debian.8-x64" },
             { "fedora.23-x64", "fedora.23-x64" },
             { "fedora.24-x64", "fedora.24-x64" },
             { "opensuse.13.2-x64", "opensuse.13.2-x64" },
-            { "opensuse.42.1-x64", "opensuse.42.1-x64" }
+            { "opensuse.42.1-x64", "opensuse.42.1-x64" },
+            { "tizen.4.0.0-armel", "tizen.4.0.0-armel" }
         };
 
         [Target(nameof(PrepareTargets.Init),
@@ -292,6 +294,9 @@ namespace Microsoft.DotNet.Host.Build
                         break;
                     case "arm":
                         arch = "arm";
+                        break;
+                    case "armel":
+                        arch = "armel";
                         break;
                     default:
                         throw new PlatformNotSupportedException("Target Architecture: " + platform + " is not currently supported.");
