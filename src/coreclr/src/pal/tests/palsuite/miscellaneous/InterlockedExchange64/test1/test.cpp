@@ -39,7 +39,7 @@ int __cdecl main(int argc, char *argv[]) {
 /*
 **  Run only on 64 bit platforms
 */
-#if defined(BIT64) && defined(PLATFORM_UNIX)
+#if defined(BIT64)
 
     TheReturn = InterlockedExchange64(&TheValue,NewValue);
   
@@ -48,13 +48,8 @@ int __cdecl main(int argc, char *argv[]) {
     */  
     if(TheValue != NewValue) 
     {
-#ifdef PLATFORM_UNIX
         Fail("ERROR: The value which was exchanged should now be %ll, but "
              "instead it is %ll.",NewValue,TheValue);    
-#else
-        Fail("ERROR: The value which was exchanged should now be %I64, but "
-             "instead it is %I64.",NewValue,TheValue);    
-#endif
     }
   
     /* Check to make sure it returns the origional number which 'TheValue' was 
@@ -63,18 +58,12 @@ int __cdecl main(int argc, char *argv[]) {
   
     if(TheReturn != START_VALUE) 
     {
-#ifdef PLATFORM_UNIX
         Fail("ERROR: The value returned should be the value before the "
              "exchange happened, which was %ll, but %ll was returned.",
              START_VALUE,TheReturn);
-#else
-        Fail("ERROR: The value returned should be the value before the "
-             "exchange happened, which was %I64, but %I64 was returned.",
-             START_VALUE,TheReturn);
-#endif
     }
 
-#endif  // BIT64 && PLATFORM_UNIX
+#endif  // BIT64
     PAL_Terminate();
     return PASS; 
 } 

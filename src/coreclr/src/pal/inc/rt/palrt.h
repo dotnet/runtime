@@ -1186,7 +1186,6 @@ typedef VOID (__stdcall *WAITORTIMERCALLBACK)(PVOID, BOOLEAN);
 
 #define _ReturnAddress() __builtin_return_address(0)
 
-#ifdef PLATFORM_UNIX
 #define DIRECTORY_SEPARATOR_CHAR_A '/'
 #define DIRECTORY_SEPARATOR_CHAR_W W('/')
 #define DIRECTORY_SEPARATOR_STR_A "/"
@@ -1194,15 +1193,6 @@ typedef VOID (__stdcall *WAITORTIMERCALLBACK)(PVOID, BOOLEAN);
 #define PATH_SEPARATOR_CHAR_W W(':')
 #define PATH_SEPARATOR_STR_W W(":")
 #define VOLUME_SEPARATOR_CHAR_W W('/')
-#else // PLATFORM_UNIX
-#define DIRECTORY_SEPARATOR_CHAR_A '\\'
-#define DIRECTORY_SEPARATOR_CHAR_W W('\\')
-#define DIRECTORY_SEPARATOR_STR_A "\\"
-#define DIRECTORY_SEPARATOR_STR_W W("\\")
-#define PATH_SEPARATOR_CHAR_W W(';')
-#define PATH_SEPARATOR_STR_W W(";")
-#define VOLUME_SEPARATOR_CHAR_W W(':')
-#endif // PLATFORM_UNIX
 
 #ifndef IMAGE_IMPORT_DESC_FIELD
 #define IMAGE_IMPORT_DESC_FIELD(img, f)     ((img).u.f)
