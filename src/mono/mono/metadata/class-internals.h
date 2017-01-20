@@ -1327,6 +1327,9 @@ int
 mono_method_get_vtable_index (MonoMethod *method);
 
 MonoMethod*
+mono_method_get_base_method (MonoMethod *method, gboolean definition, MonoError *error);
+
+MonoMethod*
 mono_method_search_in_array_class (MonoClass *klass, const char *name, MonoMethodSignature *sig);
 
 void

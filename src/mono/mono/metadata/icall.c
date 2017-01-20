@@ -2965,11 +2965,12 @@ ves_icall_System_RuntimeType_IsWindowsRuntimeObjectType (MonoError *error)
 }
 
 ICALL_EXPORT void
-ves_icall_MonoMethod_GetPInvoke (MonoReflectionMethod *method, int* flags, MonoString** entry_point, MonoString** dll_name)
+ves_icall_MonoMethod_GetPInvoke (MonoReflectionMethodHandle ref_method, int* flags, MonoStringHandleOut entry_point, MonoStringHandleOut dll_name, MonoError *error)
 {
 	MonoDomain *domain = mono_domain_get ();
-	MonoImage *image = method->method->klass->image;
-	MonoMethodPInvoke *piinfo = (MonoMethodPInvoke *)method->method;
+	MonoMethod *method = MONO_HANDLE_GETVAL (ref_method, method);
+	MonoImage *image = method->klass->image;
+	MonoMethodPInvoke *piinfo = (MonoMethodPInvoke *)method;
 	MonoTableInfo *tables = image->tables;
 	MonoTableInfo *im = &tables [MONO_TABLE_IMPLMAP];
 	MonoTableInfo *mr = &tables [MONO_TABLE_MODULEREF];
@@ -2978,16 +2979,18 @@ ves_icall_MonoMethod_GetPInvoke (MonoReflectionMethod *method, int* flags, MonoS
 	const char *import = NULL;
 	const char *scope = NULL;
 
+	mono_error_init (error);
+
 	if (image_is_dynamic (image)) {
 		MonoReflectionMethodAux *method_aux = 
-			(MonoReflectionMethodAux *)g_hash_table_lookup (((MonoDynamicImage*)image)->method_aux_hash, method->method);
+			(MonoReflectionMethodAux *)g_hash_table_lookup (((MonoDynamicImage*)image)->method_aux_hash, method);
 		if (method_aux) {
 			import = method_aux->dllentry;
 			scope = method_aux->dll;
 		}
 
 		if (!import || !scope) {
-			mono_set_pending_exception (mono_get_exception_argument ("method", "System.Reflection.Emit method with invalid pinvoke information"));
+			mono_error_set_argument (error, "method", "System.Refleciton.Emit method with invalid pinvoke information");
 			return;
 		}
 	}
@@ -3003,44 +3006,42 @@ ves_icall_MonoMethod_GetPInvoke (MonoReflectionMethod *method, int* flags, MonoS
 	}
 	
 	*flags = piinfo->piflags;
-	*entry_point = mono_string_new (domain, import);
-	*dll_name = mono_string_new (domain, scope);
+	MONO_HANDLE_ASSIGN (entry_point,  mono_string_new_handle (domain, import, error));
+	return_if_nok (error);
+	MONO_HANDLE_ASSIGN (dll_name, mono_string_new_handle (domain, scope, error));
 }
 
-ICALL_EXPORT MonoReflectionMethod *
-ves_icall_MonoMethod_GetGenericMethodDefinition (MonoReflectionMethod *method)
+ICALL_EXPORT MonoReflectionMethodHandle
+ves_icall_MonoMethod_GetGenericMethodDefinition (MonoReflectionMethodHandle ref_method, MonoError *error)
 {
-	MonoMethodInflated *imethod;
-	MonoMethod *result;
-	MonoReflectionMethod *ret = NULL;
-	MonoError error;
+	mono_error_init (error);
+	MonoMethod *method = MONO_HANDLE_GETVAL (ref_method, method);
 
-	if (method->method->is_generic)
-		return method;
+	if (method->is_generic)
+		return ref_method;
 
-	if (!method->method->is_inflated)
-		return NULL;
+	if (!method->is_inflated)
+		return MONO_HANDLE_CAST (MonoReflectionMethod, NULL_HANDLE);
 
-	imethod = (MonoMethodInflated *) method->method;
+	MonoMethodInflated *imethod = (MonoMethodInflated *) method;
 
-	result = imethod->declaring;
+	MonoMethod *result = imethod->declaring;
 	/* Not a generic method.  */
 	if (!result->is_generic)
-		return NULL;
+		return MONO_HANDLE_CAST (MonoReflectionMethod, NULL_HANDLE);
 
-	if (image_is_dynamic (method->method->klass->image)) {
-		MonoDynamicImage *image = (MonoDynamicImage*)method->method->klass->image;
-		MonoReflectionMethod *res;
+	if (image_is_dynamic (method->klass->image)) {
+		MonoDynamicImage *image = (MonoDynamicImage*)method->klass->image;
 
 		/*
 		 * FIXME: Why is this stuff needed at all ? Why can't the code below work for
 		 * the dynamic case as well ?
 		 */
 		mono_image_lock ((MonoImage*)image);
-		res = (MonoReflectionMethod *)mono_g_hash_table_lookup (image->generic_def_objects, imethod);
+		MonoReflectionMethodHandle res = MONO_HANDLE_NEW (MonoReflectionMethod, mono_g_hash_table_lookup (image->generic_def_objects, imethod));
 		mono_image_unlock ((MonoImage*)image);
 
-		if (res)
+		if (!MONO_HANDLE_IS_NULL (res))
 			return res;
 	}
 
@@ -3048,80 +3049,90 @@ ves_icall_MonoMethod_GetGenericMethodDefinition (MonoReflectionMethod *method)
 		MonoClass *klass = ((MonoMethod *) imethod)->klass;
 		/*Generic methods gets the context of the GTD.*/
 		if (mono_class_get_context (klass)) {
-			result = mono_class_inflate_generic_method_full_checked (result, klass, mono_class_get_context (klass), &error);
-			if (!mono_error_ok (&error))
-				goto leave;
+			result = mono_class_inflate_generic_method_full_checked (result, klass, mono_class_get_context (klass), error);
+			return_val_if_nok (error, MONO_HANDLE_CAST (MonoReflectionMethod, NULL_HANDLE));
 		}
 	}
 
-	ret = mono_method_get_object_checked (mono_object_domain (method), result, NULL, &error);
+	return mono_method_get_object_handle (MONO_HANDLE_DOMAIN (ref_method), result, NULL, error);
+}
+
+ICALL_EXPORT gboolean
+ves_icall_MonoMethod_get_IsGenericMethod (MonoReflectionMethodHandle ref_method, MonoError *erro)
+{
+	MonoMethod *method = MONO_HANDLE_GETVAL (ref_method, method);
+	return mono_method_signature (method)->generic_param_count != 0;
+}
+
+ICALL_EXPORT gboolean
+ves_icall_MonoMethod_get_IsGenericMethodDefinition (MonoReflectionMethodHandle ref_method, MonoError *Error)
+{
+	MonoMethod *method = MONO_HANDLE_GETVAL (ref_method, method);
+	return method->is_generic;
+}
+
+static gboolean
+set_array_generic_argument_handle_inflated (MonoDomain *domain, MonoGenericInst *inst, int i, MonoArrayHandle arr, MonoError *error)
+{
+	HANDLE_FUNCTION_ENTER ();
+	mono_error_init (error);
+	MonoReflectionTypeHandle rt = mono_type_get_object_handle (domain, inst->type_argv [i], error);
+	if (!is_ok (error))
+		goto leave;
+	MONO_HANDLE_ARRAY_SETREF (arr, i, rt);
 leave:
-	if (!mono_error_ok (&error))
-		mono_error_set_pending_exception (&error);
-	return ret;
+	HANDLE_FUNCTION_RETURN_VAL (is_ok (error));
 }
 
-ICALL_EXPORT gboolean
-ves_icall_MonoMethod_get_IsGenericMethod (MonoReflectionMethod *method)
+static gboolean
+set_array_generic_argument_handle_gparam (MonoDomain *domain, MonoGenericContainer *container, int i, MonoArrayHandle arr, MonoError *error)
 {
-	return mono_method_signature (method->method)->generic_param_count != 0;
+	HANDLE_FUNCTION_ENTER ();
+	mono_error_init (error);
+	MonoGenericParam *param = mono_generic_container_get_param (container, i);
+	MonoClass *pklass = mono_class_from_generic_parameter_internal (param);
+	MonoReflectionTypeHandle rt = mono_type_get_object_handle (domain, &pklass->byval_arg, error);
+	if (!is_ok (error))
+		goto leave;
+	MONO_HANDLE_ARRAY_SETREF (arr, i, rt);
+leave:
+	HANDLE_FUNCTION_RETURN_VAL (is_ok (error));
 }
 
-ICALL_EXPORT gboolean
-ves_icall_MonoMethod_get_IsGenericMethodDefinition (MonoReflectionMethod *method)
+ICALL_EXPORT MonoArrayHandle
+ves_icall_MonoMethod_GetGenericArguments (MonoReflectionMethodHandle ref_method, MonoError *error)
 {
-	return method->method->is_generic;
-}
+	mono_error_init (error);
+	MonoDomain *domain = MONO_HANDLE_DOMAIN (ref_method);
+	MonoMethod *method = MONO_HANDLE_GETVAL (ref_method, method);
 
-ICALL_EXPORT MonoArray*
-ves_icall_MonoMethod_GetGenericArguments (MonoReflectionMethod *method)
-{
-	MonoError error;
-	MonoReflectionType *rt;
-	MonoArray *res;
-	MonoDomain *domain;
-	int count, i;
-
-	domain = mono_object_domain (method);
-
-	if (method->method->is_inflated) {
-		MonoGenericInst *inst = mono_method_get_context (method->method)->method_inst;
+	if (method->is_inflated) {
+		MonoGenericInst *inst = mono_method_get_context (method)->method_inst;
 
 		if (inst) {
-			count = inst->type_argc;
-			res = mono_array_new_checked (domain, mono_defaults.systemtype_class, count, &error);
-			if (mono_error_set_pending_exception (&error))
-				return NULL;
+			int count = inst->type_argc;
+			MonoArrayHandle res = mono_array_new_handle (domain, mono_defaults.systemtype_class, count, error);
+			return_val_if_nok (error, MONO_HANDLE_CAST (MonoArray, NULL_HANDLE));
 
-			for (i = 0; i < count; i++) {
-				rt = mono_type_get_object_checked (domain, inst->type_argv [i], &error);
-				if (mono_error_set_pending_exception (&error))
-					return NULL;
-
-				mono_array_setref (res, i, rt);
+			for (int i = 0; i < count; i++) {
+				if (!set_array_generic_argument_handle_inflated (domain, inst, i, res, error))
+					break;
 			}
-
+			return_val_if_nok (error, MONO_HANDLE_CAST (MonoArray, NULL_HANDLE));
 			return res;
 		}
 	}
 
-	count = mono_method_signature (method->method)->generic_param_count;
-	res = mono_array_new_checked (domain, mono_defaults.systemtype_class, count, &error);
-	if (mono_error_set_pending_exception (&error))
-		return NULL;
+	int count = mono_method_signature (method)->generic_param_count;
+	MonoArrayHandle res = mono_array_new_handle (domain, mono_defaults.systemtype_class, count, error);
+	return_val_if_nok (error, MONO_HANDLE_CAST (MonoArray, NULL_HANDLE));
 
-	for (i = 0; i < count; i++) {
-		MonoGenericContainer *container = mono_method_get_generic_container (method->method);
-		MonoGenericParam *param = mono_generic_container_get_param (container, i);
-		MonoClass *pklass = mono_class_from_generic_parameter_internal (param);
-
-		rt = mono_type_get_object_checked (domain, &pklass->byval_arg, &error);
-		if (mono_error_set_pending_exception (&error))
-			return NULL;
-
-		mono_array_setref (res, i, rt);
+	MonoGenericContainer *container = mono_method_get_generic_container (method);
+	for (int i = 0; i < count; i++) {
+		if (!set_array_generic_argument_handle_gparam (domain, container, i, res, error))
+			break;
 	}
-
+	return_val_if_nok (error, MONO_HANDLE_CAST (MonoArray, NULL_HANDLE));
 	return res;
 }
 
@@ -5236,9 +5247,10 @@ ves_icall_MonoField_get_core_clr_security_level (MonoReflectionField *rfield)
 }
 
 ICALL_EXPORT int
-ves_icall_MonoMethod_get_core_clr_security_level (MonoReflectionMethod *rfield)
+ves_icall_MonoMethod_get_core_clr_security_level (MonoReflectionMethodHandle rfield, MonoError *error)
 {
-	MonoMethod *method = rfield->method;
+	mono_error_init (error);
+	MonoMethod *method = MONO_HANDLE_GETVAL (rfield, method);
 	return mono_security_core_clr_method_level (method, TRUE);
 }
 
@@ -7257,168 +7269,31 @@ ves_icall_System_Activator_CreateInstanceInternal (MonoReflectionTypeHandle ref_
 	return MONO_HANDLE_NEW (MonoObject, mono_object_new_checked (domain, klass, error));
 }
 
-ICALL_EXPORT MonoReflectionMethod *
-ves_icall_MonoMethod_get_base_method (MonoReflectionMethod *m, gboolean definition)
+ICALL_EXPORT MonoReflectionMethodHandle
+ves_icall_MonoMethod_get_base_method (MonoReflectionMethodHandle m, gboolean definition, MonoError *error)
 {
-	MonoReflectionMethod *ret = NULL;
-	MonoError error;
+	mono_error_init (error);
+	MonoMethod *method = MONO_HANDLE_GETVAL (m, method);
 
-	MonoClass *klass, *parent;
-	MonoGenericContext *generic_inst = NULL;
-	MonoMethod *method = m->method;
-	MonoMethod *result = NULL;
-	int slot;
-
-	if (method->klass == NULL)
+	MonoMethod *base = mono_method_get_base_method (method, definition, error);
+	return_val_if_nok (error, MONO_HANDLE_CAST (MonoReflectionMethod, NULL_HANDLE));
+	if (base == method)
 		return m;
-
-	if (!(method->flags & METHOD_ATTRIBUTE_VIRTUAL) ||
-	    MONO_CLASS_IS_INTERFACE (method->klass) ||
-	    method->flags & METHOD_ATTRIBUTE_NEW_SLOT)
-		return m;
-
-	slot = mono_method_get_vtable_slot (method);
-	if (slot == -1)
-		return m;
-
-	klass = method->klass;
-	if (mono_class_is_ginst (klass)) {
-		generic_inst = mono_class_get_context (klass);
-		klass = mono_class_get_generic_class (klass)->container_class;
-	}
-
-retry:
-	if (definition) {
-		/* At the end of the loop, klass points to the eldest class that has this virtual function slot. */
-		for (parent = klass->parent; parent != NULL; parent = parent->parent) {
-			/* on entry, klass is either a plain old non-generic class and generic_inst == NULL
-			   or klass is the generic container class and generic_inst is the instantiation.
-
-			   when we go to the parent, if the parent is an open constructed type, we need to
-			   replace the type parameters by the definitions from the generic_inst, and then take it
-			   apart again into the klass and the generic_inst.
-
-			   For cases like this:
-			   class C<T> : B<T, int> {
-			       public override void Foo () { ... }
-			   }
-			   class B<U,V> : A<HashMap<U,V>> {
-			       public override void Foo () { ... }
-			   }
-			   class A<X> {
-			       public virtual void Foo () { ... }
-			   }
-
-			   if at each iteration the parent isn't open, we can skip inflating it.  if at some
-			   iteration the parent isn't generic (after possible inflation), we set generic_inst to
-			   NULL;
-			*/
-			MonoGenericContext *parent_inst = NULL;
-			if (mono_class_is_open_constructed_type (mono_class_get_type (parent))) {
-				parent = mono_class_inflate_generic_class_checked (parent, generic_inst, &error);
-				if (!mono_error_ok (&error)) {
-					mono_error_set_pending_exception (&error);
-					return NULL;
-				}
-			}
-			if (mono_class_is_ginst (parent)) {
-				parent_inst = mono_class_get_context (parent);
-				parent = mono_class_get_generic_class (parent)->container_class;
-			}
-
-			mono_class_setup_vtable (parent);
-			if (parent->vtable_size <= slot)
-				break;
-			klass = parent;
-			generic_inst = parent_inst;
-		}
-	} else {
-		klass = klass->parent;
-		if (!klass)
-			return m;
-		if (mono_class_is_open_constructed_type (mono_class_get_type (klass))) {
-			klass = mono_class_inflate_generic_class_checked (klass, generic_inst, &error);
-			if (!mono_error_ok (&error)) {
-				mono_error_set_pending_exception (&error);
-				return NULL;
-			}
-
-			generic_inst = NULL;
-		}
-		if (mono_class_is_ginst (klass)) {
-			generic_inst = mono_class_get_context (klass);
-			klass = mono_class_get_generic_class (klass)->container_class;
-		}
-
-	}
-
-	if (generic_inst) {
-		klass = mono_class_inflate_generic_class_checked (klass, generic_inst, &error);
-		if (!mono_error_ok (&error)) {
-			mono_error_set_pending_exception (&error);
-			return NULL;
-		}
-	}
-
-	if (klass == method->klass)
-		return m;
-
-	/*This is possible if definition == FALSE.
-	 * Do it here to be really sure we don't read invalid memory.
-	 */
-	if (slot >= klass->vtable_size)
-		return m;
-
-	mono_class_setup_vtable (klass);
-
-	result = klass->vtable [slot];
-	if (result == NULL) {
-		/* It is an abstract method */
-		gboolean found = FALSE;
-		gpointer iter = NULL;
-		while ((result = mono_class_get_methods (klass, &iter))) {
-			if (result->slot == slot) {
-				found = TRUE;
-				break;
-			}
-		}
-		/* found might be FALSE if we looked in an abstract class
-		 * that doesn't override an abstract method of its
-		 * parent: 
-		 *   abstract class Base {
-		 *     public abstract void Foo ();
-		 *   }
-		 *   abstract class Derived : Base { }
-		 *   class Child : Derived {
-		 *     public override void Foo () { }
-		 *  }
-		 *
-		 *  if m was Child.Foo and we ask for the base method,
-		 *  then we get here with klass == Derived and found == FALSE
-		 */
-		/* but it shouldn't be the case that if we're looking
-		 * for the definition and didn't find a result; the
-		 * loop above should've taken us as far as we could
-		 * go! */
-		g_assert (!(definition && !found));
-		if (!found)
-			goto retry;
-	}
-
-	g_assert (result != NULL);
-
-	ret = mono_method_get_object_checked (mono_domain_get (), result, NULL, &error);
-	mono_error_set_pending_exception (&error);
-	return ret;
+	else
+		return mono_method_get_object_handle (mono_domain_get (), base, NULL, error);
 }
 
-ICALL_EXPORT MonoString*
-ves_icall_MonoMethod_get_name (MonoReflectionMethod *m)
+ICALL_EXPORT MonoStringHandle
+ves_icall_MonoMethod_get_name (MonoReflectionMethodHandle m, MonoError *error)
 {
-	MonoMethod *method = m->method;
+	mono_error_init (error);
+	MonoMethod *method = MONO_HANDLE_GETVAL (m, method);
 
-	MONO_OBJECT_SETREF (m, name, mono_string_new (mono_object_domain (m), method->name));
-	return m->name;
+	MonoStringHandle s = mono_string_new_handle (MONO_HANDLE_DOMAIN (m), method->name, error);
+	if (!is_ok (error))
+		return NULL_HANDLE_STRING;
+	MONO_HANDLE_SET (m, name, s);
+	return s;
 }
 
 ICALL_EXPORT void
