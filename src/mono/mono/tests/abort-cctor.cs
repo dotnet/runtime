@@ -44,7 +44,7 @@ class Driver
 		if (!StaticConstructor1.gotToEnd) /* the TAE must not land during a .cctor */
 			Environment.Exit (1);
 		if (StaticConstructor1.caughtException)
-			Environment.Exit (1);
+			Environment.Exit (2);
 			
 	}
 
@@ -83,7 +83,7 @@ class Driver
 			Console.WriteLine ("StaticConstructor1 is viable"); /* a TAE doesn't make a type unusable */
 		} catch (TypeInitializationException  e) {
 			Console.WriteLine ("StaticConstructor1 not viable");
-			Environment.Exit (1);
+			Environment.Exit (3);
 		}
 	}
 
@@ -141,7 +141,7 @@ class Driver
 
 		if (Driver.mre2.WaitOne (500)) {
 			/* We shouldn't reach Driver.mre.Set () in StaticConstructor2.cctor */
-			Environment.Exit (1);
+			Environment.Exit (4);
 		}
 
 		thread.Join ();
@@ -151,7 +151,7 @@ class Driver
 			IsStaticConstructor2Viable ();
 			Console.WriteLine ("StaticConstructor2 is viable");
 			/* A regular exception escaping the .cctor makes the type not usable */
-			Environment.Exit (1);
+			Environment.Exit (5);
 		} catch (TypeInitializationException e) {
 			Console.WriteLine ("StaticConstructor2 not viable");
 		}
@@ -168,7 +168,7 @@ class Driver
 			/* Unreachable */
 			Driver.mre2.Set ();
 			Console.WriteLine ("StaticConstructor3.StaticConstructor3 (2)");
-			Environment.Exit (1);
+			Environment.Exit (6);
 		}
 
 		public static void Init ()
@@ -194,7 +194,7 @@ class Driver
 				StaticConstructor3.Init ();
 				Console.WriteLine ("cctor3 didn't throw?!?!");
 				/* StaticConstructor3 self aborted */
-				Environment.Exit (1);
+				Environment.Exit (7);
 			} catch (ThreadAbortException e) {
 				Console.WriteLine ("TEST 3: aborted {0}", e);
 			}
@@ -215,7 +215,7 @@ class Driver
 			IsStaticConstructor3Viable ();
 			Console.WriteLine ("StaticConstructor3 is viable");
 			/* A regular exception escaping the .cctor makes the type not usable */
-			Environment.Exit (1);
+			Environment.Exit (8);
 		} catch (TypeInitializationException e) {
 			Console.WriteLine ("StaticConstructor3 not viable");
 		}
@@ -262,9 +262,9 @@ class Driver
 		new StaticConstructor4 ();
 		Console.WriteLine ("IsStaticConstructor4Viable: Did it get to the end? {0} Did it catch an exception {1} and end of the finally block {2}", StaticConstructor4.gotToEnd, StaticConstructor4.caughtException, got_to_the_end_of_the_finally);
 		if (!StaticConstructor4.gotToEnd) /* the TAE must not land during a .cctor */
-			Environment.Exit (1);
+			Environment.Exit (9);
 		if (StaticConstructor4.caughtException)
-			Environment.Exit (1);
+			Environment.Exit (10);
 	}
 
 	static void Test4 ()
@@ -305,7 +305,7 @@ class Driver
 
 		if (!got_to_the_end_of_the_finally) { 
 			Console.WriteLine ("Did not get to the end of test 4 cctor");
-			Environment.Exit (1);
+			Environment.Exit (11);
 		}
 
 		//is StaticConstructor4viable?
@@ -314,7 +314,7 @@ class Driver
 			Console.WriteLine ("StaticConstructor4 is viable"); /* a TAE doesn't make a type unusable */
 		} catch (TypeInitializationException  e) {
 			Console.WriteLine ("StaticConstructor4 not viable");
-			Environment.Exit (1);
+			Environment.Exit (12);
 		}
 	}
 
