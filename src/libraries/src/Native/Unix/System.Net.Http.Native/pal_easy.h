@@ -34,6 +34,7 @@ enum PAL_CURLoption : int32_t
     PAL_CURLOPT_NOSIGNAL = CurlOptionLongBase + 99,
     PAL_CURLOPT_PROXYTYPE = CurlOptionLongBase + 101,
     PAL_CURLOPT_HTTPAUTH = CurlOptionLongBase + 107,
+    PAL_CURLOPT_TCP_NODELAY = CurlOptionLongBase + 121,
     PAL_CURLOPT_CONNECTTIMEOUT_MS = CurlOptionLongBase + 156,
     PAL_CURLOPT_ADDRESS_SCOPE = CurlOptionLongBase + 171,
     PAL_CURLOPT_PROTOCOLS = CurlOptionLongBase + 181,
