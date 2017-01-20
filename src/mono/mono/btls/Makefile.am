@@ -1,4 +1,4 @@
-EXTRA_DIST = \
+MONO_BTLS_SOURCES_FILES = \
 	btls-bio.c \
 	btls-bio.h \
 	btls-error.c \
@@ -36,6 +36,8 @@ EXTRA_DIST = \
 	btls-x509-verify-param.h \
 	CMakeLists.txt
 
+EXTRA_DIST = $(MONO_BTLS_SOURCES_FILES)
+
 CMAKE_VERBOSE=$(if $(V),VERBOSE=1,)
 
 CMAKE_ARGS = -D CMAKE_INSTALL_PREFIX:PATH=$(prefix) -D BTLS_ROOT:PATH=$(BTLS_ROOT) \
@@ -47,7 +49,7 @@ build-shared/Makefile:
 	-mkdir -p build-shared
 	(cd build-shared && CC="$(CC)" CXX="$(CXX)" $(CMAKE) $(CMAKE_ARGS) $(BTLS_CMAKE_ARGS) -DBUILD_SHARED_LIBS=1 $(abs_top_srcdir)/mono/btls)
 
-build-shared/libmono-btls-shared$(libsuffix): build-shared/Makefile
+build-shared/libmono-btls-shared$(libsuffix): build-shared/Makefile $(MONO_BTLS_SOURCES_FILES)
 	$(MAKE) -C build-shared $(CMAKE_VERBOSE)
 
 build-static/Makefile:
