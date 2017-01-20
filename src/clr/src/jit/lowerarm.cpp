@@ -172,10 +172,8 @@ void Lowering::LowerCast(GenTree* tree)
     var_types  srcType = op1->TypeGet();
     var_types  tmpType = TYP_UNDEF;
 
-    // TODO-ARM-Cleanup: Remove following NYI assertions.
     if (varTypeIsFloating(srcType))
     {
-        NYI_ARM("Lowering for cast from float"); // Not tested yet.
         noway_assert(!tree->gtOverflow());
     }
 
@@ -893,7 +891,12 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
 #ifdef DEBUG
             if (!tree->gtOverflow() && (varTypeIsFloating(castToType) || varTypeIsFloating(castOpType)))
             {
-                NYI_ARM("float cast");
+                // If converting to float/double, the operand must be 4 or 8 byte in size.
+                if (varTypeIsFloating(castToType))
+                {
+                    unsigned opSize = genTypeSize(castOpType);
+                    assert(opSize == 4 || opSize == 8);
+                }
             }
 #endif // DEBUG
 

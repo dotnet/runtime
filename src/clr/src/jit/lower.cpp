@@ -4620,13 +4620,8 @@ bool Lowering::NodesAreEquivalentLeaves(GenTreePtr tree1, GenTreePtr tree2)
     }
 }
 
-#ifdef _TARGET_64BIT_
 /**
  * Get common information required to handle a cast instruction
- *
- * Right now only supports 64 bit targets. In order to support 32 bit targets the
- * switch statement needs work.
- *
  */
 void Lowering::getCastDescription(GenTreePtr treeNode, CastInfo* castInfo)
 {
@@ -4662,7 +4657,6 @@ void Lowering::getCastDescription(GenTreePtr treeNode, CastInfo* castInfo)
         bool    signCheckOnly = false;
 
         // Do we need to compare the value, or just check masks
-
         switch (dstType)
         {
             default:
@@ -4696,9 +4690,13 @@ void Lowering::getCastDescription(GenTreePtr treeNode, CastInfo* castInfo)
                 }
                 else
                 {
+#ifdef _TARGET_64BIT_
                     typeMask = 0xFFFFFFFF80000000LL;
-                    typeMin  = INT_MIN;
-                    typeMax  = INT_MAX;
+#else
+                    typeMask = 0x80000000;
+#endif
+                    typeMin = INT_MIN;
+                    typeMax = INT_MAX;
                 }
                 break;
 
@@ -4709,7 +4707,11 @@ void Lowering::getCastDescription(GenTreePtr treeNode, CastInfo* castInfo)
                 }
                 else
                 {
+#ifdef _TARGET_64BIT_
                     typeMask = 0xFFFFFFFF00000000LL;
+#else
+                    typeMask = 0x00000000;
+#endif
                 }
                 break;
 
@@ -4732,8 +4734,6 @@ void Lowering::getCastDescription(GenTreePtr treeNode, CastInfo* castInfo)
         castInfo->typeMask = typeMask;
     }
 }
-
-#endif // _TARGET_64BIT_
 
 #ifdef DEBUG
 void Lowering::DumpNodeInfoMap()
