@@ -48,7 +48,7 @@ usage()
     echo "Usage: $0 --arch <Architecture> --rid <Runtime Identifier> --hostver <Dotnet exe version> --apphostver <app host exe version> --fxrver <HostFxr library version> --policyver <HostPolicy library version> --commithash <Git commit hash> [--xcompiler <Cross C++ Compiler>]"
     echo ""
     echo "Options:"
-    echo "  --arch <Architecture>             Target Architecture (x64, x86, arm)"
+    echo "  --arch <Architecture>             Target Architecture (x64, x86, arm, armel)"
     echo "  --rid <Runtime Identifier>        Target Runtime Identifier"
     echo "  --hostver <Dotnet host version>   Version of the dotnet executable"
     echo "  --apphostver <app host version>   Version of the apphost executable"
@@ -138,7 +138,7 @@ case $__build_arch in
     x86)
         __arch_define=-DCLI_CMAKE_PLATFORM_ARCH_I386=1
         ;;
-    arm)
+    arm|armel)
         __arch_define=-DCLI_CMAKE_PLATFORM_ARCH_ARM=1
         ;;
     *)

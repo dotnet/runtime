@@ -38,7 +38,7 @@ namespace Microsoft.DotNet.Cli.Build
             string rid = Environment.GetEnvironmentVariable("TARGETRID") ?? RuntimeEnvironment.GetRuntimeIdentifier();
 
             // Look for expected RIDs, including Portable one, for Linux
-            if (rid.StartsWith("linux-") || rid == "ubuntu.16.04-x64" || rid == "ubuntu.16.10-x64" || rid == "fedora.23-x64" || rid == "fedora.24-x64" || rid == "opensuse.13.2-x64" || rid == "opensuse.42.1-x64")
+            if (rid.StartsWith("linux-") || rid == "ubuntu.16.04-x64" || rid == "ubuntu.16.10-x64" || rid == "fedora.23-x64" || rid == "fedora.24-x64" || rid == "opensuse.13.2-x64" || rid == "opensuse.42.1-x64" || rid == "debian.8-armel" || rid == "tizen.4.0.0-armel")
             {
                 return $"{artifactPrefix}-{rid}.{version}";
             }
@@ -59,7 +59,7 @@ namespace Microsoft.DotNet.Cli.Build
                 return $"Linux_{Environment.GetEnvironmentVariable("TARGETPLATFORM") ?? CurrentArchitecture.Current.ToString()}";
             }
 
-            switch (RuntimeEnvironment.GetRuntimeIdentifier())
+            switch (rid)
             {
                 case "ubuntu.16.04-x64":
                      return "Ubuntu_16_04_x64";
@@ -73,6 +73,10 @@ namespace Microsoft.DotNet.Cli.Build
                      return "openSUSE_13_2_x64";
                 case "opensuse.42.1-x64":
                      return "openSUSE_42_1_x64";
+                case "debian.8-armel":
+                     return "Debian_8_armel";
+                case "tizen.4.0.0-armel":
+                     return "Tizen_4_0_0_armel";
             }
 
             return $"{CurrentPlatform.Current}_{Environment.GetEnvironmentVariable("TARGETPLATFORM") ?? CurrentArchitecture.Current.ToString()}";
