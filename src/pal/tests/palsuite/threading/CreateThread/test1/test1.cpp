@@ -15,11 +15,7 @@
 
 #include <palsuite.h>
 
-#ifndef PLATFORM_UNIX
-#define LLFORMAT "%I64u"
-#else
 #define LLFORMAT "%llu"
-#endif
 
 ULONGLONG dwCreateThreadTestParameter = 0;
 

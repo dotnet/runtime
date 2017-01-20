@@ -335,7 +335,7 @@ function_name() to call the system's implementation
 #undef va_arg
 #endif
 
-#if !defined(_MSC_VER) && defined(FEATURE_PAL) && defined(_WIN64)
+#if !defined(_MSC_VER) && defined(_WIN64)
 #undef _BitScanForward64
 #endif 
 
