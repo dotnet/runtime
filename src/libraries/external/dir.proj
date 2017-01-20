@@ -6,6 +6,7 @@
     <Project Include="coreclr/coreclr.depproj" />
     <Project Include="netstandard/netstandard.depproj" />
     <Project Include="netfx/netfx.depproj" />
+    <Project Include="NETNative/NETNative.depproj" />
     <Project Include="test-runtime/XUnit.Runtime.depproj" />
   </ItemGroup>
 

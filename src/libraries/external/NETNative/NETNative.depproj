@@ -1,0 +1,18 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <OutputPath>$(RuntimePath)</OutputPath>
+    <DisableReferenceCopyLocal>true</DisableReferenceCopyLocal>
+    <NuGetDeploySourceItem>Reference</NuGetDeploySourceItem>
+  </PropertyGroup>
+  <ItemGroup>
+    <TargetingPackReference Include="System.Private.CoreLib" />
+    <TargetingPackReference Include="System.Private.CoreLib.Augments" />
+    <TargetingPackReference Include="System.Private.CoreLib.DynamicDelegate" />
+    <TargetingPackReference Include="System.Private.CoreLib.WinRTInterop" />
+    <TargetingPackReference Include="System.Private.Interop" />
+    <TargetingPackReference Include="System.Private.Threading" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>
