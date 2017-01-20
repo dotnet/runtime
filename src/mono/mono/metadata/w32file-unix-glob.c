@@ -32,7 +32,7 @@
  */
 
 /*
- * _wapi_glob(3) -- a subset of the one defined in POSIX 1003.2.
+ * mono_w32file_unix_glob(3) -- a subset of the one defined in POSIX 1003.2.
  *
  * Optional extra services, controlled by flags not defined by POSIX:
  *
@@ -50,7 +50,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "wapi_glob.h"
+#include "w32file-unix-glob.h"
 
 #define	EOS		'\0'
 #define	NOT		'!'
@@ -86,33 +86,41 @@ typedef char Char;
 #define	ismeta(c)	(((c)&M_QUOTE) != 0)
 
 
-static int	 g_Ctoc(const gchar *, char *, unsigned int);
-static int	 glob0(GDir *dir, const gchar *, wapi_glob_t *, gboolean,
-		       gboolean);
-static int	 glob1(GDir *dir, gchar *, gchar *, wapi_glob_t *, size_t *,
-		       gboolean, gboolean);
-static int	 glob3(GDir *dir, gchar *, gchar *, wapi_glob_t *, size_t *,
-		       gboolean, gboolean);
-static int	 globextend(const gchar *, wapi_glob_t *, size_t *);
-static int	 match(const gchar *, gchar *, gchar *, gboolean);
+static int
+g_Ctoc(const gchar *, char *, unsigned int);
+
+static int
+glob0(GDir *dir, const gchar *, mono_w32file_unix_glob_t *, gboolean, gboolean);
+static int
+glob1(GDir *dir, gchar *, gchar *, mono_w32file_unix_glob_t *, size_t *, gboolean, gboolean);
+
+static int
+glob3(GDir *dir, gchar *, gchar *, mono_w32file_unix_glob_t *, size_t *, gboolean, gboolean);
+
+static int
+globextend(const gchar *, mono_w32file_unix_glob_t *, size_t *);
+
+static int
+match(const gchar *, gchar *, gchar *, gboolean);
+
 #ifdef DEBUG_ENABLED
 static void	 qprintf(const char *, Char *);
 #endif
 
 int
-_wapi_glob(GDir *dir, const char *pattern, int flags, wapi_glob_t *pglob)
+mono_w32file_unix_glob(GDir *dir, const char *pattern, int flags, mono_w32file_unix_glob_t *pglob)
 {
 	const unsigned char *patnext;
 	int c;
 	gchar *bufnext, *bufend, patbuf[PATH_MAX];
 
 	patnext = (unsigned char *) pattern;
-	if (!(flags & WAPI_GLOB_APPEND)) {
+	if (!(flags & W32FILE_UNIX_GLOB_APPEND)) {
 		pglob->gl_pathc = 0;
 		pglob->gl_pathv = NULL;
 		pglob->gl_offs = 0;
 	}
-	pglob->gl_flags = flags & ~WAPI_GLOB_MAGCHAR;
+	pglob->gl_flags = flags & ~W32FILE_UNIX_GLOB_MAGCHAR;
 
 	bufnext = patbuf;
 	bufend = bufnext + PATH_MAX - 1;
@@ -130,8 +138,8 @@ _wapi_glob(GDir *dir, const char *pattern, int flags, wapi_glob_t *pglob)
 
 	*bufnext = EOS;
 
-	return glob0(dir, patbuf, pglob, flags & WAPI_GLOB_IGNORECASE,
-		     flags & WAPI_GLOB_UNIQUE);
+	return glob0(dir, patbuf, pglob, flags & W32FILE_UNIX_GLOB_IGNORECASE,
+		     flags & W32FILE_UNIX_GLOB_UNIQUE);
 }
 
 /*
@@ -142,7 +150,7 @@ _wapi_glob(GDir *dir, const char *pattern, int flags, wapi_glob_t *pglob)
  * to find no matches.
  */
 static int
-glob0(GDir *dir, const gchar *pattern, wapi_glob_t *pglob, gboolean ignorecase,
+glob0(GDir *dir, const gchar *pattern, mono_w32file_unix_glob_t *pglob, gboolean ignorecase,
 	gboolean unique)
 {
 	const gchar *qpatnext;
@@ -158,11 +166,11 @@ glob0(GDir *dir, const gchar *pattern, wapi_glob_t *pglob, gboolean ignorecase,
 	while ((c = *qpatnext++) != EOS) {
 		switch (c) {
 		case QUESTION:
-			pglob->gl_flags |= WAPI_GLOB_MAGCHAR;
+			pglob->gl_flags |= W32FILE_UNIX_GLOB_MAGCHAR;
 			*bufnext++ = M_ONE;
 			break;
 		case STAR:
-			pglob->gl_flags |= WAPI_GLOB_MAGCHAR;
+			pglob->gl_flags |= W32FILE_UNIX_GLOB_MAGCHAR;
 			/* collapse adjacent stars to one,
 			 * to avoid exponential behavior
 			 */
@@ -184,14 +192,14 @@ glob0(GDir *dir, const gchar *pattern, wapi_glob_t *pglob, gboolean ignorecase,
 		return(err);
 
 	if (pglob->gl_pathc == oldpathc) {
-		return(WAPI_GLOB_NOMATCH);
+		return(W32FILE_UNIX_GLOB_NOMATCH);
 	}
 
 	return(0);
 }
 
 static int
-glob1(GDir *dir, gchar *pattern, gchar *pattern_last, wapi_glob_t *pglob,
+glob1(GDir *dir, gchar *pattern, gchar *pattern_last, mono_w32file_unix_glob_t *pglob,
       size_t *limitp, gboolean ignorecase, gboolean unique)
 {
 	/* A null pathname is invalid -- POSIX 1003.1 sect. 2.4. */
@@ -201,7 +209,7 @@ glob1(GDir *dir, gchar *pattern, gchar *pattern_last, wapi_glob_t *pglob,
 		     unique));
 }
 
-static gboolean contains (wapi_glob_t *pglob, const gchar *name)
+static gboolean contains (mono_w32file_unix_glob_t *pglob, const gchar *name)
 {
 	int i;
 	char **pp;
@@ -221,7 +229,7 @@ static gboolean contains (wapi_glob_t *pglob, const gchar *name)
 }
 
 static int
-glob3(GDir *dir, gchar *pattern, gchar *pattern_last, wapi_glob_t *pglob,
+glob3(GDir *dir, gchar *pattern, gchar *pattern_last, mono_w32file_unix_glob_t *pglob,
       size_t *limitp, gboolean ignorecase, gboolean unique)
 {
 	const gchar *name;
@@ -243,7 +251,7 @@ glob3(GDir *dir, gchar *pattern, gchar *pattern_last, wapi_glob_t *pglob,
 
 
 /*
- * Extend the gl_pathv member of a wapi_glob_t structure to accommodate a new item,
+ * Extend the gl_pathv member of a mono_w32file_unix_glob_t structure to accommodate a new item,
  * add the new item, and update gl_pathc.
  *
  * This assumes the BSD realloc, which only copies the block when its size
@@ -252,12 +260,12 @@ glob3(GDir *dir, gchar *pattern, gchar *pattern_last, wapi_glob_t *pglob,
  *
  * Return 0 if new item added, error code if memory couldn't be allocated.
  *
- * Invariant of the wapi_glob_t structure:
+ * Invariant of the mono_w32file_unix_glob_t structure:
  *	Either gl_pathc is zero and gl_pathv is NULL; or gl_pathc > 0 and
  *	gl_pathv points to (gl_offs + gl_pathc + 1) items.
  */
 static int
-globextend(const gchar *path, wapi_glob_t *pglob, size_t *limitp)
+globextend(const gchar *path, mono_w32file_unix_glob_t *pglob, size_t *limitp)
 {
 	char **pathv;
 	int i;
@@ -274,7 +282,7 @@ globextend(const gchar *path, wapi_glob_t *pglob, size_t *limitp)
 			g_free (pglob->gl_pathv);
 			pglob->gl_pathv = NULL;
 		}
-		return(WAPI_GLOB_NOSPACE);
+		return(W32FILE_UNIX_GLOB_NOSPACE);
 	}
 
 	if (pglob->gl_pathv == NULL && pglob->gl_offs > 0) {
@@ -292,7 +300,7 @@ globextend(const gchar *path, wapi_glob_t *pglob, size_t *limitp)
 	if ((copy = (char *)malloc(len)) != NULL) {
 		if (g_Ctoc(path, copy, len)) {
 			g_free (copy);
-			return(WAPI_GLOB_NOSPACE);
+			return(W32FILE_UNIX_GLOB_NOSPACE);
 		}
 		pathv[pglob->gl_offs + pglob->gl_pathc++] = copy;
 	}
@@ -300,14 +308,14 @@ globextend(const gchar *path, wapi_glob_t *pglob, size_t *limitp)
 
 #if 0
 	/* Broken on opensuse 11 */
-	if ((pglob->gl_flags & WAPI_GLOB_LIMIT) &&
+	if ((pglob->gl_flags & W32FILE_UNIX_GLOB_LIMIT) &&
 	    newsize + *limitp >= ARG_MAX) {
 		errno = 0;
-		return(WAPI_GLOB_NOSPACE);
+		return(W32FILE_UNIX_GLOB_NOSPACE);
 	}
 #endif
 
-	return(copy == NULL ? WAPI_GLOB_NOSPACE : 0);
+	return(copy == NULL ? W32FILE_UNIX_GLOB_NOSPACE : 0);
 }
 
 
@@ -350,9 +358,9 @@ match(const gchar *name, gchar *pat, gchar *patend, gboolean ignorecase)
 	return(*name == EOS);
 }
 
-/* Free allocated data belonging to a wapi_glob_t structure. */
+/* Free allocated data belonging to a mono_w32file_unix_glob_t structure. */
 void
-_wapi_globfree(wapi_glob_t *pglob)
+mono_w32file_unix_globfree(mono_w32file_unix_glob_t *pglob)
 {
 	int i;
 	char **pp;

@@ -3,8 +3,8 @@ win32_sources = \
 	console-win32.c \
 	console-win32-internals.h \
 	cominterop-win32-internals.h \
-	file-io-windows.c \
-	file-io-windows-internals.h \
+	w32file-win32.c \
+	w32file-win32-internals.h \
 	icall-windows.c \
 	icall-windows-internals.h \
 	marshal-windows.c \
@@ -49,7 +49,10 @@ unix_sources = \
 	w32process-unix-bsd.c \
 	w32process-unix-haiku.c \
 	w32process-unix-default.c \
-	w32socket-unix.c
+	w32socket-unix.c \
+	w32file-unix.c \
+	w32file-unix-glob.c \
+	w32file-unix-glob.h
 
 platform_sources = $(unix_sources)
 endif
@@ -151,9 +154,9 @@ common_sources = \
 	exception.c		\
 	exception.h		\
 	exception-internals.h	\
-	file-io.c		\
-	file-io.h		\
-	file-io-internals.h \
+	w32file.c		\
+	w32file.h		\
+	w32file-internals.h \
 	filewatcher.c		\
 	filewatcher.h		\
 	gc-internals.h		\

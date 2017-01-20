@@ -1,5 +1,5 @@
 /*
- * file-io.h: File IO internal calls
+ * w32file.h: File IO internal calls
  *
  * Authors:
  *	Dick Porter (dick@ximian.com)
@@ -10,12 +10,13 @@
  * Licensed under the MIT license. See LICENSE file in the project root for full license information.
  */
 
-#ifndef _MONO_METADATA_FILEIO_H_
-#define _MONO_METADATA_FILEIO_H_
+#ifndef _MONO_METADATA_W32FILE_H_
+#define _MONO_METADATA_W32FILE_H_
 
 #include <config.h>
 #include <glib.h>
 
+#include "io-layer/io-layer.h"
 #include <mono/metadata/object-internals.h>
 #include <mono/utils/mono-compiler.h>
 
@@ -262,6 +263,8 @@ ves_icall_System_IO_MonoIO_ReplaceFile (MonoString *sourceFileName, MonoString *
 					MonoString *destinationBackupFileName, MonoBoolean ignoreMetadataErrors,
 					gint32 *error);
 
+#if defined (TARGET_IOS) || defined (TARGET_ANDROID)
+
 MONO_RT_EXTERNAL_ONLY
 extern gint64
 mono_filesize_from_path (MonoString *path);
@@ -269,9 +272,226 @@ mono_filesize_from_path (MonoString *path);
 extern gint64
 mono_filesize_from_fd (int fd);
 
+#endif
+
 void
 ves_icall_System_IO_MonoIO_DumpHandles (void);
 
+#if !defined(HOST_WIN32)
+
+#define GENERIC_READ    0x80000000
+#define GENERIC_WRITE   0x40000000
+#define GENERIC_EXECUTE 0x20000000
+#define GENERIC_ALL     0x10000000
+
+#define FILE_SHARE_READ   0x00000001
+#define FILE_SHARE_WRITE  0x00000002
+#define FILE_SHARE_DELETE 0x00000004
+
+#define CREATE_NEW        1
+#define CREATE_ALWAYS     2
+#define OPEN_EXISTING     3
+#define OPEN_ALWAYS       4
+#define TRUNCATE_EXISTING 5
+
+#define FILE_ATTRIBUTE_READONLY            0x00000001
+#define FILE_ATTRIBUTE_HIDDEN              0x00000002
+#define FILE_ATTRIBUTE_SYSTEM              0x00000004
+#define FILE_ATTRIBUTE_DIRECTORY           0x00000010
+#define FILE_ATTRIBUTE_ARCHIVE             0x00000020
+#define FILE_ATTRIBUTE_ENCRYPTED           0x00000040
+#define FILE_ATTRIBUTE_NORMAL              0x00000080
+#define FILE_ATTRIBUTE_TEMPORARY           0x00000100
+#define FILE_ATTRIBUTE_SPARSE_FILE         0x00000200
+#define FILE_ATTRIBUTE_REPARSE_POINT       0x00000400
+#define FILE_ATTRIBUTE_COMPRESSED          0x00000800
+#define FILE_ATTRIBUTE_OFFLINE             0x00001000
+#define FILE_ATTRIBUTE_NOT_CONTENT_INDEXED 0x00002000
+#define FILE_FLAG_OPEN_NO_RECALL           0x00100000
+#define FILE_FLAG_OPEN_REPARSE_POINT       0x00200000
+#define FILE_FLAG_POSIX_SEMANTICS          0x01000000
+#define FILE_FLAG_BACKUP_SEMANTICS         0x02000000
+#define FILE_FLAG_DELETE_ON_CLOSE          0x04000000
+#define FILE_FLAG_SEQUENTIAL_SCAN          0x08000000
+#define FILE_FLAG_RANDOM_ACCESS            0x10000000
+#define FILE_FLAG_NO_BUFFERING             0x20000000
+#define FILE_FLAG_OVERLAPPED               0x40000000
+#define FILE_FLAG_WRITE_THROUGH            0x80000000
+
+#define REPLACEFILE_WRITE_THROUGH       0x00000001
+#define REPLACEFILE_IGNORE_MERGE_ERRORS 0x00000002
+
+#define MAX_PATH 260
+
+#define INVALID_SET_FILE_POINTER ((guint32) 0xFFFFFFFF)
+#define INVALID_FILE_SIZE        ((guint32) 0xFFFFFFFF)
+#define INVALID_FILE_ATTRIBUTES  ((guint32) 0xFFFFFFFF)
+
+#define FILE_TYPE_UNKNOWN 0x0000
+#define FILE_TYPE_DISK    0x0001
+#define FILE_TYPE_CHAR    0x0002
+#define FILE_TYPE_PIPE    0x0003
+#define FILE_TYPE_REMOTE  0x8000
+
+#define FILE_BEGIN   0
+#define FILE_CURRENT 1
+#define FILE_END     2
+
+#define DRIVE_UNKNOWN     0
+#define DRIVE_NO_ROOT_DIR 1
+#define DRIVE_REMOVABLE   2
+#define DRIVE_FIXED       3
+#define DRIVE_REMOTE      4
+#define DRIVE_CDROM       5
+#define DRIVE_RAMDISK     6
+
+typedef struct {
+	guint16 wYear;
+	guint16 wMonth;
+	guint16 wDayOfWeek;
+	guint16 wDay;
+	guint16 wHour;
+	guint16 wMinute;
+	guint16 wSecond;
+	guint16 wMilliseconds;
+} SYSTEMTIME;
+
+typedef struct {
+#if G_BYTE_ORDER == G_BIG_ENDIAN
+	guint32 dwHighDateTime;
+	guint32 dwLowDateTime;
+#else
+	guint32 dwLowDateTime;
+	guint32 dwHighDateTime;
+#endif
+} FILETIME;
+
+typedef struct {
+	guint32 dwFileAttributes;
+	FILETIME ftCreationTime;
+	FILETIME ftLastAccessTime;
+	FILETIME ftLastWriteTime;
+	guint32 nFileSizeHigh;
+	guint32 nFileSizeLow;
+	guint32 dwReserved0;
+	guint32 dwReserved1;
+	gunichar2 cFileName [MAX_PATH];
+	gunichar2 cAlternateFileName [14];
+} WIN32_FIND_DATA;
+
+#endif /* !defined(HOST_WIN32) */
+
+void
+mono_w32file_init (void);
+
+void
+mono_w32file_cleanup (void);
+
+gpointer
+mono_w32file_create(const gunichar2 *name, guint32 fileaccess, guint32 sharemode, guint32 createmode, guint32 attrs);
+
+gboolean
+mono_w32file_delete (const gunichar2 *name);
+
+gboolean
+mono_w32file_read (gpointer handle, gpointer buffer, guint32 numbytes, guint32 *bytesread);
+
+gboolean
+mono_w32file_write (gpointer handle, gconstpointer buffer, guint32 numbytes, guint32 *byteswritten);
+
+gboolean
+mono_w32file_flush (gpointer handle);
+
+gboolean
+mono_w32file_truncate (gpointer handle);
+
+guint32
+mono_w32file_seek (gpointer handle, gint32 movedistance, gint32 *highmovedistance, guint32 method);
+
+gboolean
+mono_w32file_move (gunichar2 *path, gunichar2 *dest, gint32 *error);
+
+gboolean
+mono_w32file_copy (gunichar2 *path, gunichar2 *dest, gboolean overwrite, gint32 *error);
+
+gboolean
+mono_w32file_lock (gpointer handle, gint64 position, gint64 length, gint32 *error);
+
+gboolean
+mono_w32file_replace (gunichar2 *destinationFileName, gunichar2 *sourceFileName, gunichar2 *destinationBackupFileName, guint32 flags, gint32 *error);
+
+gboolean
+mono_w32file_unlock (gpointer handle, gint64 position, gint64 length, gint32 *error);
+
+gpointer
+mono_w32file_get_console_output (void);
+
+gpointer
+mono_w32file_get_console_error (void);
+
+gpointer
+mono_w32file_get_console_input (void);
+
+gint64
+mono_w32file_get_file_size (gpointer handle, gint32 *error);
+
+gint
+mono_w32file_get_type (gpointer handle);
+
+gboolean
+mono_w32file_get_times (gpointer handle, FILETIME *create_time, FILETIME *access_time, FILETIME *write_time);
+
+gboolean
+mono_w32file_set_times (gpointer handle, const FILETIME *create_time, const FILETIME *access_time, const FILETIME *write_time);
+
+gboolean
+mono_w32file_filetime_to_systemtime (const FILETIME *file_time, SYSTEMTIME *system_time);
+
+gpointer
+mono_w32file_find_first (const gunichar2 *pattern, WIN32_FIND_DATA *find_data);
+
+gboolean
+mono_w32file_find_next (gpointer handle, WIN32_FIND_DATA *find_data);
+
+gboolean
+mono_w32file_find_close (gpointer handle);
+
+gboolean
+mono_w32file_create_directory (const gunichar2 *name);
+
+gboolean
+mono_w32file_remove_directory (const gunichar2 *name);
+
+guint32
+mono_w32file_get_attributes (const gunichar2 *name);
+
+gboolean
+mono_w32file_get_attributes_ex (const gunichar2 *name, MonoIOStat *stat);
+
+gboolean
+mono_w32file_set_attributes (const gunichar2 *name, guint32 attrs);
+
+guint32
+mono_w32file_get_cwd (guint32 length, gunichar2 *buffer);
+
+gboolean
+mono_w32file_set_cwd (const gunichar2 *path);
+
+gboolean
+mono_w32file_create_pipe (gpointer *readpipe, gpointer *writepipe, guint32 size);
+
+gint32
+mono_w32file_get_logical_drive (guint32 len, gunichar2 *buf);
+
+gboolean
+mono_w32file_get_disk_free_space (const gunichar2 *path_name, guint64 *free_bytes_avail, guint64 *total_number_of_bytes, guint64 *total_number_of_free_bytes);
+
+guint32
+mono_w32file_get_drive_type (const gunichar2 *root_path_name);
+
+gboolean
+mono_w32file_get_volume_information (const gunichar2 *path, gunichar2 *volumename, gint volumesize, gint *outserial, gint *maxcomp, gint *fsflags, gunichar2 *fsbuffer, gint fsbuffersize);
+
 G_END_DECLS
 
-#endif /* _MONO_METADATA_FILEIO_H_ */
+#endif /* _MONO_METADATA_W32FILE_H_ */

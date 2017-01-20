@@ -250,7 +250,7 @@ mono_w32handle_unlock_handle (gpointer handle)
 }
 
 /*
- * wapi_init:
+ * mono_w32handle_init:
  *
  *   Initialize the io-layer.
  */

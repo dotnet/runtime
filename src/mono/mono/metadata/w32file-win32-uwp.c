@@ -1,5 +1,5 @@
 /*
- * file-io-windows-uwp.c: UWP file-io support for Mono.
+ * w32file-win32-uwp.c: UWP w32file support for Mono.
  *
  * Copyright 2016 Microsoft
  * Licensed under the MIT license. See LICENSE file in the project root for full license information.
@@ -10,10 +10,10 @@
 
 #if G_HAVE_API_SUPPORT(HAVE_UWP_WINAPI_SUPPORT)
 #include <windows.h>
-#include "mono/metadata/file-io-windows-internals.h"
+#include "mono/metadata/w32file-win32-internals.h"
 
 gboolean
-mono_file_io_move_file (gunichar2 *path, gunichar2 *dest, gint32 *error)
+mono_w32file_move (gunichar2 *path, gunichar2 *dest, gint32 *error)
 {
 	gboolean result = FALSE;
 	MONO_ENTER_GC_SAFE;
@@ -28,7 +28,7 @@ mono_file_io_move_file (gunichar2 *path, gunichar2 *dest, gint32 *error)
 }
 
 gboolean
-mono_file_io_replace_file (gunichar2 *destinationFileName, gunichar2 *sourceFileName,
+mono_w32file_replace (gunichar2 *destinationFileName, gunichar2 *sourceFileName,
 			   gunichar2 *destinationBackupFileName, guint32 flags, gint32 *error)
 {
 	gboolean result = FALSE;
@@ -44,7 +44,7 @@ mono_file_io_replace_file (gunichar2 *destinationFileName, gunichar2 *sourceFile
 }
 
 gboolean
-mono_file_io_copy_file (gunichar2 *path, gunichar2 *dest, gboolean overwrite, gint32 *error)
+mono_w32file_copy (gunichar2 *path, gunichar2 *dest, gboolean overwrite, gint32 *error)
 {
 	gboolean						result = FALSE;
 	COPYFILE2_EXTENDED_PARAMETERS	copy_param = {0};
@@ -64,7 +64,7 @@ mono_file_io_copy_file (gunichar2 *path, gunichar2 *dest, gboolean overwrite, gi
 }
 
 gint64
-mono_file_io_get_file_size (HANDLE handle, gint32 *error)
+mono_w32file_get_file_size (HANDLE handle, gint32 *error)
 {
 	LARGE_INTEGER length;
 
@@ -80,7 +80,7 @@ mono_file_io_get_file_size (HANDLE handle, gint32 *error)
 }
 
 gboolean
-mono_file_io_lock_file (HANDLE handle, gint64 position, gint64 length, gint32 *error)
+mono_w32file_lock (HANDLE handle, gint64 position, gint64 length, gint32 *error)
 {
 	gboolean result = FALSE;
 	MONO_ENTER_GC_SAFE;
@@ -97,7 +97,7 @@ mono_file_io_lock_file (HANDLE handle, gint64 position, gint64 length, gint32 *e
 }
 
 gboolean
-mono_file_io_unlock_file (HANDLE handle, gint64 position, gint64 length, gint32 *error)
+mono_w32file_unlock (HANDLE handle, gint64 position, gint64 length, gint32 *error)
 {
 	gboolean result = FALSE;
 	MONO_ENTER_GC_SAFE;
@@ -114,7 +114,7 @@ mono_file_io_unlock_file (HANDLE handle, gint64 position, gint64 length, gint32 
 }
 
 HANDLE
-mono_file_io_get_console_output (void)
+mono_w32file_get_console_output (void)
 {
 	MonoError mono_error;
 	mono_error_init (&mono_error);
@@ -130,7 +130,7 @@ mono_file_io_get_console_output (void)
 }
 
 HANDLE
-mono_file_io_get_console_input (void)
+mono_w32file_get_console_input (void)
 {
 	MonoError mono_error;
 	mono_error_init (&mono_error);
@@ -146,7 +146,7 @@ mono_file_io_get_console_input (void)
 }
 
 HANDLE
-mono_file_io_get_console_error (void)
+mono_w32file_get_console_error (void)
 {
 	MonoError mono_error;
 	mono_error_init (&mono_error);

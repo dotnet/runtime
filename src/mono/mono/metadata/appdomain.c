@@ -51,7 +51,7 @@
 #include <mono/metadata/mono-debug.h>
 #include <mono/metadata/mono-debug-debugger.h>
 #include <mono/metadata/attach.h>
-#include <mono/metadata/file-io.h>
+#include <mono/metadata/w32file.h>
 #include <mono/metadata/lock-tracer.h>
 #include <mono/metadata/console-io.h>
 #include <mono/metadata/threads-types.h>
@@ -1398,6 +1398,7 @@ shadow_copy_sibling (gchar *src, gint srclen, const char *extension, gchar *targ
 {
 	guint16 *orig, *dest;
 	gboolean copy_result;
+	gint32 copy_error;
 	
 	strcpy (src + srclen - tail_len, extension);
 
@@ -1417,18 +1418,14 @@ shadow_copy_sibling (gchar *src, gint srclen, const char *extension, gchar *targ
 	strcpy (target + targetlen - tail_len, extension);
 	dest = g_utf8_to_utf16 (target, strlen (target), NULL, NULL, NULL);
 	
-	DeleteFile (dest);
+	mono_w32file_delete (dest);
 
-#if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)
-	copy_result = CopyFile (orig, dest, FALSE);
-#else
-	copy_result = SUCCEEDED (CopyFile2 (orig, dest, NULL));
-#endif
+	copy_result = mono_w32file_copy (orig, dest, TRUE, &copy_error);
 
 	/* Fix for bug #556884 - make sure the files have the correct mode so that they can be
 	 * overwritten when updated in their original locations. */
 	if (copy_result)
-		copy_result = SetFileAttributes (dest, FILE_ATTRIBUTE_NORMAL);
+		copy_result = mono_w32file_set_attributes (dest, FILE_ATTRIBUTE_NORMAL);
 
 	g_free (orig);
 	g_free (dest);
@@ -1592,15 +1589,14 @@ shadow_copy_create_ini (const char *shadow, const char *filename)
 	if (!u16_ini) {
 		return FALSE;
 	}
-	handle = (void **)CreateFile (u16_ini, GENERIC_WRITE, FILE_SHARE_READ|FILE_SHARE_WRITE,
-				NULL, CREATE_NEW, FileAttributes_Normal, NULL);
+	handle = (void **)mono_w32file_create (u16_ini, GENERIC_WRITE, FILE_SHARE_READ|FILE_SHARE_WRITE, CREATE_NEW, FileAttributes_Normal);
 	g_free (u16_ini);
 	if (handle == INVALID_HANDLE_VALUE) {
 		return FALSE;
 	}
 
 	full_path = mono_path_resolve_symlinks (filename);
-	result = WriteFile (handle, full_path, strlen (full_path), &n, NULL);
+	result = mono_w32file_write (handle, full_path, strlen (full_path), &n);
 	g_free (full_path);
 	CloseHandle (handle);
 	return result;
@@ -1695,6 +1691,7 @@ mono_make_shadow_copy (const char *filename, MonoError *oerror)
 	char *dir_name = g_path_get_dirname (filename);
 	MonoDomain *domain = mono_domain_get ();
 	char *shadow_dir;
+	gint32 copy_error;
 
 	mono_error_init (oerror);
 
@@ -1740,27 +1737,23 @@ mono_make_shadow_copy (const char *filename, MonoError *oerror)
 
 	orig = g_utf8_to_utf16 (filename, strlen (filename), NULL, NULL, NULL);
 	dest = g_utf8_to_utf16 (shadow, strlen (shadow), NULL, NULL, NULL);
-	DeleteFile (dest);
+	mono_w32file_delete (dest);
 
 	/* Fix for bug #17066 - make sure we can read the file. if not then don't error but rather 
 	 * let the assembly fail to load. This ensures you can do Type.GetType("NS.T, NonExistantAssembly)
 	 * and not have it runtime error" */
-	attrs = GetFileAttributes (orig);
+	attrs = mono_w32file_get_attributes (orig);
 	if (attrs == INVALID_FILE_ATTRIBUTES) {
 		g_free (shadow);
 		return (char *)filename;
 	}
 
-#if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)
-	copy_result = CopyFile (orig, dest, FALSE);
-#else
-	copy_result = SUCCEEDED (CopyFile2 (orig, dest, NULL));
-#endif
+	copy_result = mono_w32file_copy (orig, dest, TRUE, &copy_error);
 
 	/* Fix for bug #556884 - make sure the files have the correct mode so that they can be
 	 * overwritten when updated in their original locations. */
 	if (copy_result)
-		copy_result = SetFileAttributes (dest, FILE_ATTRIBUTE_NORMAL);
+		copy_result = mono_w32file_set_attributes (dest, FILE_ATTRIBUTE_NORMAL);
 
 	g_free (dest);
 	g_free (orig);
@@ -1772,7 +1765,7 @@ mono_make_shadow_copy (const char *filename, MonoError *oerror)
 		if (GetLastError() == ERROR_FILE_NOT_FOUND || GetLastError() == ERROR_PATH_NOT_FOUND)
 			return NULL; /* file not found, shadow copy failed */
 
-		mono_error_set_execution_engine (oerror, "Failed to create shadow copy (CopyFile).");
+		mono_error_set_execution_engine (oerror, "Failed to create shadow copy (mono_w32file_copy).");
 		return NULL;
 	}
 
@@ -1791,7 +1784,7 @@ mono_make_shadow_copy (const char *filename, MonoError *oerror)
 	
 	if (!copy_result)  {
 		g_free (shadow);
-		mono_error_set_execution_engine (oerror, "Failed to create shadow copy of sibling data (CopyFile).");
+		mono_error_set_execution_engine (oerror, "Failed to create shadow copy of sibling data (mono_w32file_copy).");
 		return NULL;
 	}
 

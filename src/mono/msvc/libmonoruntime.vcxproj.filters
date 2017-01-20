@@ -46,7 +46,7 @@
     <ClCompile Include="..\mono\metadata\exception.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\mono\metadata\file-io.c">
+    <ClCompile Include="..\mono\metadata\w32file.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\mono\metadata\file-mmap-windows.c">
@@ -250,7 +250,7 @@
     <ClCompile Include="..\mono\metadata\w32socket-win32.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\mono\metadata\file-io-windows.c">
+    <ClCompile Include="..\mono\metadata\w32file-win32.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\mono\metadata\icall-windows.c">
@@ -321,7 +321,7 @@
     <ClInclude Include="..\mono\metadata\exception.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\mono\metadata\file-io.h">
+    <ClInclude Include="..\mono\metadata\w32file.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\mono\metadata\filewatcher.h">
@@ -534,10 +534,10 @@
     <ClInclude Include="..\mono\metadata\console-win32-internals.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\mono\metadata\file-io-windows-internals.h">
+    <ClInclude Include="..\mono\metadata\w32file-win32-internals.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\mono\metadata\file-io-internals.h">
+    <ClInclude Include="..\mono\metadata\w32file-internals.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\mono\metadata\icall-internals.h">

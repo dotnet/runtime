@@ -24,6 +24,7 @@
 #include "mono/metadata/security-manager.h"
 #include "mono/metadata/tabledefs.h"
 #include "mono/metadata/tokentype.h"
+#include "mono/metadata/w32file.h"
 
 #include "mono/utils/checked-build.h"
 #include "mono/utils/mono-digest.h"
@@ -2737,8 +2738,8 @@ static void
 checked_write_file (HANDLE f, gconstpointer buffer, guint32 numbytes)
 {
 	guint32 dummy;
-	if (!WriteFile (f, buffer, numbytes, &dummy, NULL))
-		g_error ("WriteFile returned %d\n", GetLastError ());
+	if (!mono_w32file_write (f, buffer, numbytes, &dummy))
+		g_error ("mono_w32file_write returned %d\n", GetLastError ());
 }
 
 /*
@@ -3032,8 +3033,8 @@ mono_image_create_pefile (MonoReflectionModuleBuilder *mb, HANDLE file, MonoErro
 		if (!assembly->sections [i].size)
 			continue;
 		
-		if (SetFilePointer (file, assembly->sections [i].offset, NULL, FILE_BEGIN) == INVALID_SET_FILE_POINTER)
-			g_error ("SetFilePointer returned %d\n", GetLastError ());
+		if (mono_w32file_seek (file, assembly->sections [i].offset, NULL, FILE_BEGIN) == INVALID_SET_FILE_POINTER)
+			g_error ("mono_w32file_seek returned %d\n", GetLastError ());
 		
 		switch (i) {
 		case MONO_SECTION_TEXT:
@@ -3092,10 +3093,10 @@ mono_image_create_pefile (MonoReflectionModuleBuilder *mb, HANDLE file, MonoErro
 	}
 	
 	/* check that the file is properly padded */
-	if (SetFilePointer (file, file_offset, NULL, FILE_BEGIN) == INVALID_SET_FILE_POINTER)
-		g_error ("SetFilePointer returned %d\n", GetLastError ());
-	if (! SetEndOfFile (file))
-		g_error ("SetEndOfFile returned %d\n", GetLastError ());
+	if (mono_w32file_seek (file, file_offset, NULL, FILE_BEGIN) == INVALID_SET_FILE_POINTER)
+		g_error ("mono_w32file_seek returned %d\n", GetLastError ());
+	if (! mono_w32file_truncate (file))
+		g_error ("mono_w32file_truncate returned %d\n", GetLastError ());
 	
 	mono_dynamic_stream_reset (&assembly->code);
 	mono_dynamic_stream_reset (&assembly->us);

@@ -44,6 +44,7 @@
 #include <mono/metadata/w32semaphore.h>
 #include <mono/metadata/w32event.h>
 #include <mono/metadata/w32process.h>
+#include <mono/metadata/w32file.h>
 #include <metadata/threads.h>
 #include <metadata/profiler-private.h>
 #include <mono/metadata/coree.h>
@@ -484,13 +485,13 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 #ifndef HOST_WIN32
 	mono_w32handle_init ();
 	mono_w32handle_namespace_init ();
-	wapi_init ();
 #endif
 
 	mono_w32mutex_init ();
 	mono_w32semaphore_init ();
 	mono_w32event_init ();
 	mono_w32process_init ();
+	mono_w32file_init ();
 
 #ifndef DISABLE_PERFCOUNTERS
 	mono_perfcounters_init ();
@@ -852,10 +853,7 @@ mono_cleanup (void)
 	mono_coop_mutex_destroy (&appdomains_mutex);
 
 	mono_w32process_cleanup ();
-
-#ifndef HOST_WIN32
-	wapi_cleanup ();
-#endif
+	mono_w32file_cleanup ();
 }
 
 void

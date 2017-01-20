@@ -14,6 +14,8 @@
 #include "mono/utils/mono-logger-internals.h"
 #include "mono/metadata/w32handle.h"
 
+#define MAX_PATH 260
+
 typedef struct {
 	gboolean manual;
 	guint32 set_count;

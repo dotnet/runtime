@@ -50,7 +50,7 @@
 #include <mono/metadata/exception.h>
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/appdomain.h>
-#include <mono/metadata/file-io.h>
+#include <mono/metadata/w32file.h>
 #include <mono/metadata/threads.h>
 #include <mono/metadata/threads-types.h>
 #include <mono/metadata/threadpool-io.h>

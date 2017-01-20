@@ -35,8 +35,8 @@
  *	@(#)glob.h	8.1 (Berkeley) 6/2/93
  */
 
-#ifndef _WAPI_GLOB_H_
-#define	_WAPI_GLOB_H_
+#ifndef __MONO_METADATA_W32FILE_UNIX_GLOB_H__
+#define	__MONO_METADATA_W32FILE_UNIX_GLOB_H__
 
 #include <glib.h>
 
@@ -46,23 +46,28 @@ typedef struct {
 	int gl_offs;		/* Reserved at beginning of gl_pathv. */
 	int gl_flags;		/* Copy of flags parameter to glob. */
 	char **gl_pathv;	/* List of paths matching pattern. */
-} wapi_glob_t;
+} mono_w32file_unix_glob_t;
 
-#define WAPI_GLOB_APPEND	0x0001	/* Append to output from previous call. */
-#define WAPI_GLOB_UNIQUE	0x0040	/* When appending only add items that aren't already in the list */
-#define	WAPI_GLOB_NOSPACE	(-1)	/* Malloc call failed. */
-#define	WAPI_GLOB_ABORTED	(-2)	/* Unignored error. */
-#define	WAPI_GLOB_NOMATCH	(-3)	/* No match and WAPI_GLOB_NOCHECK not set. */
-#define	WAPI_GLOB_NOSYS	(-4)	/* Function not supported. */
+#define W32FILE_UNIX_GLOB_APPEND	0x0001	/* Append to output from previous call. */
+#define W32FILE_UNIX_GLOB_UNIQUE	0x0040	/* When appending only add items that aren't already in the list */
+#define	W32FILE_UNIX_GLOB_NOSPACE	(-1)	/* Malloc call failed. */
+#define	W32FILE_UNIX_GLOB_ABORTED	(-2)	/* Unignored error. */
+#define	W32FILE_UNIX_GLOB_NOMATCH	(-3)	/* No match and W32FILE_UNIX_GLOB_NOCHECK not set. */
+#define	W32FILE_UNIX_GLOB_NOSYS	(-4)	/* Function not supported. */
 
-#define	WAPI_GLOB_MAGCHAR	0x0100	/* Pattern had globbing characters. */
-#define WAPI_GLOB_LIMIT	0x2000	/* Limit pattern match output to ARG_MAX */
-#define WAPI_GLOB_IGNORECASE 0x4000	/* Ignore case when matching */
-#define WAPI_GLOB_ABEND	WAPI_GLOB_ABORTED /* backward compatibility */
+#define	W32FILE_UNIX_GLOB_MAGCHAR	0x0100	/* Pattern had globbing characters. */
+#define W32FILE_UNIX_GLOB_LIMIT	0x2000	/* Limit pattern match output to ARG_MAX */
+#define W32FILE_UNIX_GLOB_IGNORECASE 0x4000	/* Ignore case when matching */
+#define W32FILE_UNIX_GLOB_ABEND	W32FILE_UNIX_GLOB_ABORTED /* backward compatibility */
 
 G_BEGIN_DECLS
-int	_wapi_glob(GDir *dir, const char *, int, wapi_glob_t *);
-void	_wapi_globfree(wapi_glob_t *);
+
+int
+mono_w32file_unix_glob (GDir *dir, const char *, int, mono_w32file_unix_glob_t *);
+
+void
+mono_w32file_unix_globfree (mono_w32file_unix_glob_t *);
+
 G_END_DECLS
 
-#endif /* !_WAPI_GLOB_H_ */
+#endif /* !__MONO_METADATA_W32FILE_UNIX_GLOB_H__ */

@@ -47,7 +47,6 @@ typedef struct pollfd {
 
 #else	/* EVERYONE ELSE */
 #include "mono/io-layer/wapi.h"
-#include "mono/io-layer/uglify.h"
 #endif /* HOST_WIN32 */
 
 #ifdef __native_client__

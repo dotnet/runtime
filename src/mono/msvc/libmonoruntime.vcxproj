@@ -29,7 +29,7 @@
     <ClCompile Include="..\mono\metadata\console-win32.c" />
     <ClCompile Include="..\mono\metadata\property-bag.c" />
     <ClCompile Include="..\mono\metadata\w32socket-win32.c" />
-    <ClCompile Include="..\mono\metadata\file-io-windows.c" />
+    <ClCompile Include="..\mono\metadata\w32file-win32.c" />
     <ClCompile Include="..\mono\metadata\icall-windows.c" />
     <ClCompile Include="..\mono\metadata\marshal-windows.c" />
     <ClCompile Include="..\mono\metadata\mono-security-windows.c" />
@@ -49,7 +49,7 @@
     <ClCompile Include="..\mono\metadata\domain.c" />
     <ClCompile Include="..\mono\metadata\environment.c" />
     <ClCompile Include="..\mono\metadata\exception.c" />
-    <ClCompile Include="..\mono\metadata\file-io.c" />
+    <ClCompile Include="..\mono\metadata\w32file.c" />
     <ClCompile Include="..\mono\metadata\file-mmap-windows.c" />
     <ClCompile Include="..\mono\metadata\filewatcher.c" />
     <ClCompile Include="..\mono\metadata\gc-stats.c" />
@@ -134,9 +134,9 @@
     <ClInclude Include="..\mono\metadata\dynamic-stream-internals.h" />
     <ClInclude Include="..\mono\metadata\environment.h" />
     <ClInclude Include="..\mono\metadata\exception.h" />
-    <ClInclude Include="..\mono\metadata\file-io-internals.h" />
-    <ClInclude Include="..\mono\metadata\file-io-windows-internals.h" />
-    <ClInclude Include="..\mono\metadata\file-io.h" />
+    <ClInclude Include="..\mono\metadata\w32file-internals.h" />
+    <ClInclude Include="..\mono\metadata\w32file-win32-internals.h" />
+    <ClInclude Include="..\mono\metadata\w32file.h" />
     <ClInclude Include="..\mono\metadata\filewatcher.h" />
     <ClInclude Include="..\mono\metadata\gc-internals.h" />
     <ClInclude Include="..\mono\metadata\handle.h" />

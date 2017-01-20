@@ -53,10 +53,6 @@ typedef enum {
 #define SPECIAL_STATIC_THREAD 1
 #define SPECIAL_STATIC_CONTEXT 2
 
-#ifdef HOST_WIN32
-typedef SECURITY_ATTRIBUTES WapiSecurityAttributes;
-#endif
-
 typedef struct _MonoInternalThread MonoInternalThread;
 
 typedef void (*MonoThreadCleanupFunc) (MonoNativeThreadId tid);

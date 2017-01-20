@@ -1,29 +1,8 @@
 
 #include "wapi.h"
 
-#include "io-trace.h"
-#include "io.h"
-
 #include "mono/utils/mono-lazy-init.h"
 #include "mono/metadata/w32handle.h"
-
-gboolean _wapi_has_shut_down = FALSE;
-
-void
-wapi_init (void)
-{
-	_wapi_io_init ();
-}
-
-void
-wapi_cleanup (void)
-{
-	g_assert (_wapi_has_shut_down == FALSE);
-	_wapi_has_shut_down = TRUE;
-
-	_wapi_error_cleanup ();
-	_wapi_io_cleanup ();
-}
 
 /* Use this instead of getpid(), to cope with linuxthreads.  It's a
  * function rather than a variable lookup because we need to get at

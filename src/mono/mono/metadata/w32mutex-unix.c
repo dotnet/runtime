@@ -18,6 +18,8 @@
 #include "mono/utils/mono-threads.h"
 #include "mono/metadata/w32handle.h"
 
+#define MAX_PATH 260
+
 typedef struct {
 	MonoNativeThreadId tid;
 	guint32 recursion;
