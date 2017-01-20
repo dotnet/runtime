@@ -310,6 +310,39 @@ bool fx_muxer_t::resolve_hostpolicy_dir(host_mode_t mode,
     return false;
 }
 
+void fx_muxer_t::resolve_roll_forward(pal::string_t& fx_dir, const pal::string_t& fx_ver, const fx_ver_t& specified)
+{
+    trace::verbose(_X("Attempting FX roll forward starting from [%s]"), fx_ver.c_str());
+
+    std::vector<pal::string_t> list;
+    pal::readdir(fx_dir, &list);
+    fx_ver_t most_compatible = specified;
+    for (const auto& version : list)
+    {
+        trace::verbose(_X("Inspecting version... [%s]"), version.c_str());
+        fx_ver_t ver(-1, -1, -1);
+        if (!specified.is_prerelease() && fx_ver_t::parse(version, &ver, true) && // true -- only prod. prevents roll forward to prerelease.
+            ver.get_major() == specified.get_major() &&
+            ver.get_minor() == specified.get_minor())
+        {
+            // Pick the greatest production that differs only in patch.
+            most_compatible = std::max(ver, most_compatible);
+        }
+        if (specified.is_prerelease() && fx_ver_t::parse(version, &ver, false) && // false -- implies both production and prerelease.
+            ver.is_prerelease() && // prevent roll forward to production.
+            ver.get_major() == specified.get_major() &&
+            ver.get_minor() == specified.get_minor() &&
+            ver.get_patch() == specified.get_patch() &&
+            ver > specified)
+        {
+            // Pick the smallest prerelease that is greater than specified.
+            most_compatible = (most_compatible == specified) ? ver : std::min(ver, most_compatible);
+        }
+    }
+    pal::string_t most_compatible_str = most_compatible.as_str();
+    append_path(&fx_dir, most_compatible_str.c_str());
+}
+
 pal::string_t fx_muxer_t::resolve_fx_dir(host_mode_t mode, const pal::string_t& own_dir, const runtime_config_t& config, const pal::string_t& specified_fx_version)
 {
     // No FX resolution for standalone apps.
@@ -322,7 +355,7 @@ pal::string_t fx_muxer_t::resolve_fx_dir(host_mode_t mode, const pal::string_t& 
     }
     assert(mode == host_mode_t::muxer);
 
-    trace::verbose(_X("--- Resolving FX directory from muxer dir '%s', specified '%s'"), own_dir.c_str(), specified_fx_version.c_str());
+    trace::verbose(_X("--- Resolving FX directory, specified '%s'"), specified_fx_version.c_str());
     const auto fx_name = config.get_fx_name();
     const auto fx_ver = specified_fx_version.empty() ? config.get_fx_version() : specified_fx_version;
 
@@ -333,67 +366,90 @@ pal::string_t fx_muxer_t::resolve_fx_dir(host_mode_t mode, const pal::string_t& 
         return pal::string_t();
     }
 
-    auto fx_dir = own_dir;
-    append_path(&fx_dir, _X("shared"));
-    append_path(&fx_dir, fx_name.c_str());
+    // Multi-level SharedFX lookup will look for the most appropriate version in several locations
+    // by following the priority rank below (from 1 to 4):
+    // 1. Current working directory
+    // 2. User directory
+    // 3. .exe directory
+    // 4. Global .NET directory
+    // If it is not activated, then only .exe directory will be considered
 
-    bool do_roll_forward = false;
-    if (specified_fx_version.empty())
+    std::vector<pal::string_t> hive_dir;
+    pal::string_t env_lookup;
+
+    // Multi-level SharedFX lookup can be disabled by setting DOTNET_MULTILEVEL_LOOKUP env var to zero
+    bool multilevel_lookup = true;
+    if (pal::getenv(_X("DOTNET_MULTILEVEL_LOOKUP"), &env_lookup))
     {
-        if (!specified.is_prerelease())
+        auto env_val = pal::xtoi(env_lookup.c_str());
+        multilevel_lookup = (env_val != 0);
+    }
+
+    pal::string_t cwd;
+    pal::string_t local_dir;
+    pal::string_t global_dir;
+
+    if (multilevel_lookup)
+    {
+        if (pal::getcwd(&cwd))
         {
-            // If production and no roll forward use given version.
-            do_roll_forward = config.get_patch_roll_fwd();
+            hive_dir.push_back(cwd);
+        }
+        if (pal::get_local_dotnet_dir(&local_dir))
+        {
+            hive_dir.push_back(local_dir);
+        }
+    }
+    hive_dir.push_back(own_dir);
+    if (multilevel_lookup && pal::get_global_dotnet_dir(&global_dir))
+    {
+        hive_dir.push_back(global_dir);
+    }
+
+    for (pal::string_t dir : hive_dir)
+    {
+        auto fx_dir = dir;
+        trace::verbose(_X("Searching FX directory in [%s]"), fx_dir.c_str());
+
+        append_path(&fx_dir, _X("shared"));
+        append_path(&fx_dir, fx_name.c_str());
+
+        bool do_roll_forward = false;
+        if (specified_fx_version.empty())
+        {
+            if (!specified.is_prerelease())
+            {
+                // If production and no roll forward use given version.
+                do_roll_forward = config.get_patch_roll_fwd();
+            }
+            else
+            {
+                // Prerelease, but roll forward only if version doesn't exist.
+                pal::string_t ver_dir = fx_dir;
+                append_path(&ver_dir, fx_ver.c_str());
+                do_roll_forward = !pal::directory_exists(ver_dir);
+            }
+        }
+
+        if (!do_roll_forward)
+        {
+            trace::verbose(_X("Did not roll forward because specified version='%s', patch_roll_fwd=%d, chose [%s]"), specified_fx_version.c_str(), config.get_patch_roll_fwd(), fx_ver.c_str());
+            append_path(&fx_dir, fx_ver.c_str());
         }
         else
         {
-            // Prerelease, but roll forward only if version doesn't exist.
-            pal::string_t ver_dir = fx_dir;
-            append_path(&ver_dir, fx_ver.c_str());
-            do_roll_forward = !pal::directory_exists(ver_dir);
+            resolve_roll_forward(fx_dir, fx_ver, specified);
         }
-    }
 
-    if (!do_roll_forward)
-    {
-        trace::verbose(_X("Did not roll forward because specified version='%s', patch_roll_fwd=%d, chose [%s]"), specified_fx_version.c_str(), config.get_patch_roll_fwd(), fx_ver.c_str());
-        append_path(&fx_dir, fx_ver.c_str());
-    }
-    else
-    {
-        trace::verbose(_X("Attempting FX roll forward starting from [%s]"), fx_ver.c_str());
-
-        std::vector<pal::string_t> list;
-        pal::readdir(fx_dir, &list);
-        fx_ver_t most_compatible = specified;
-        for (const auto& version : list)
+        if (pal::directory_exists(fx_dir))
         {
-            trace::verbose(_X("Inspecting version... [%s]"), version.c_str());
-            fx_ver_t ver(-1, -1, -1);
-            if (!specified.is_prerelease() && fx_ver_t::parse(version, &ver, true) && // true -- only prod. prevents roll forward to prerelease.
-                ver.get_major() == specified.get_major() &&
-                ver.get_minor() == specified.get_minor())
-            {
-                // Pick the greatest production that differs only in patch.
-                most_compatible = std::max(ver, most_compatible);
-            }
-            if (specified.is_prerelease() && fx_ver_t::parse(version, &ver, false) && // false -- implies both production and prerelease.
-                ver.is_prerelease() && // prevent roll forward to production.
-                ver.get_major() == specified.get_major() &&
-                ver.get_minor() == specified.get_minor() &&
-                ver.get_patch() == specified.get_patch() &&
-                ver > specified)
-            {
-                // Pick the smallest prerelease that is greater than specified.
-                most_compatible = (most_compatible == specified) ? ver : std::min(ver, most_compatible);
-            }
+            trace::verbose(_X("Chose FX version [%s]"), fx_dir.c_str());
+            return fx_dir;
         }
-        pal::string_t most_compatible_str = most_compatible.as_str();
-        append_path(&fx_dir, most_compatible_str.c_str());
     }
 
-    trace::verbose(_X("Chose FX version [%s]"), fx_dir.c_str());
-    return fx_dir;
+    trace::error(_X("It was not possible to find any compatible framework version"));
+    return pal::string_t();
 }
 
 pal::string_t fx_muxer_t::resolve_cli_version(const pal::string_t& global_json)
