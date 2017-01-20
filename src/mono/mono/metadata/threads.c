@@ -5175,33 +5175,14 @@ mono_threads_detach_coop (gpointer cookie, gpointer *dummy)
 	}
 }
 
-void
-mono_threads_begin_abort_protected_block (void)
-{
-	MonoInternalThread *thread;
-
-	thread = mono_thread_internal_current ();
-	mono_thread_inc_abort_prot_block_count (thread);
-	mono_memory_barrier ();
-}
-
-void
-mono_threads_end_abort_protected_block (void)
-{
-	MonoInternalThread *thread;
-
-	thread = mono_thread_internal_current ();
-
-	mono_memory_barrier ();
-	mono_thread_dec_abort_prot_block_count (thread);
-}
-
 MonoException*
 mono_thread_try_resume_interruption (void)
 {
 	MonoInternalThread *thread;
 
 	thread = mono_thread_internal_current ();
+	if (!mono_get_eh_callbacks ()->mono_above_abort_threshold ())
+		return NULL;
 	if (mono_thread_get_abort_prot_block_count (thread) > 0 || mono_get_eh_callbacks ()->mono_current_thread_has_handle_block_guard ())
 		return NULL;
 
