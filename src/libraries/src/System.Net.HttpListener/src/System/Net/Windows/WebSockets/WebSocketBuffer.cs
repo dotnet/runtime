@@ -296,7 +296,7 @@ namespace System.Net.WebSockets
                 _pinnedSendBufferHandle.Free();
             }
 
-            _pinnedSendBuffer = WebSocketValidate.EmptyPayload;
+            _pinnedSendBuffer = HttpWebSocket.EmptyPayload;
         }
 
         internal void BufferPayload(ArraySegment<byte> payload,
@@ -374,7 +374,7 @@ namespace System.Net.WebSockets
 
             if (bufferData == IntPtr.Zero)
             {
-                return WebSocketValidate.EmptyPayload;
+                return HttpWebSocket.EmptyPayload;
             }
 
             if (this.IsNativeBuffer(bufferData, bufferLength))

@@ -56,7 +56,7 @@ namespace System.Net
 
             public Chunk(byte[] chunk)
             {
-                this.Bytes = chunk;
+                Bytes = chunk;
             }
 
             public int Read(byte[] buffer, int offset, int size)
@@ -68,7 +68,7 @@ namespace System.Net
             }
         }
 
-        internal WebHeaderCollection headers;
+        internal WebHeaderCollection _headers;
         private int _chunkSize;
         private int _chunkRead;
         private int _totalWritten;
@@ -87,7 +87,7 @@ namespace System.Net
 
         public ChunkStream(WebHeaderCollection headers)
         {
-            this.headers = headers;
+            _headers = headers;
             _saved = new StringBuilder();
             _chunks = new List<Chunk>();
             _chunkSize = -1;
@@ -391,7 +391,7 @@ namespace System.Net
             StringReader reader = new StringReader(_saved.ToString());
             string line;
             while ((line = reader.ReadLine()) != null && line != "")
-                headers.Add(line);
+                _headers.Add(line);
 
             return State.None;
         }

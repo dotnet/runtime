@@ -130,7 +130,7 @@ namespace System.Net.WebSockets
         {
             if (NetEventSource.IsEnabled)
             {
-                NetEventSource.Enter(this, WebSocketValidate.GetTraceMsgForParameters(offset, count, cancellationToken));
+                NetEventSource.Enter(this, HttpWebSocket.GetTraceMsgForParameters(offset, count, cancellationToken));
             }
 
             CancellationTokenRegistration cancellationTokenRegistration = new CancellationTokenRegistration();
@@ -416,7 +416,7 @@ namespace System.Net.WebSockets
         {
             if (NetEventSource.IsEnabled)
             {
-                NetEventSource.Enter(this, WebSocketValidate.GetTraceMsgForParameters(offset, count, cancellationToken));
+                NetEventSource.Enter(this, HttpWebSocket.GetTraceMsgForParameters(offset, count, cancellationToken));
             }
 
             CancellationTokenRegistration cancellationTokenRegistration = new CancellationTokenRegistration();

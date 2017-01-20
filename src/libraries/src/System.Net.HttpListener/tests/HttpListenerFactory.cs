@@ -2,19 +2,18 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Diagnostics;
-using Xunit;
+using System.Net.Sockets;
 
 namespace System.Net.Tests
 {
     // Utilities for generating URL prefixes for HttpListener
-    internal static class UrlPrefix
+    internal class HttpListenerFactory : IDisposable
     {
-        private static readonly HttpListener s_processPrefixListener;
-        private static readonly Exception s_processPrefixException;
-        private static readonly string s_processPrefix;
+        private readonly HttpListener _processPrefixListener;
+        private readonly Exception _processPrefixException;
+        private readonly string _processPrefix;
 
-        static UrlPrefix()
+        internal HttpListenerFactory()
         {
             // Find a URL prefix that is not in use on this machine *and* uses a port that's not in use.
             // Once we find this prefix, keep a listener on it for the duration of the process, so other processes
@@ -32,8 +31,8 @@ namespace System.Net.Tests
                     listener.Prefixes.Add(prefix);
                     listener.Start();
 
-                    s_processPrefixListener = listener;
-                    s_processPrefix = prefix;
+                    _processPrefixListener = listener;
+                    _processPrefix = prefix;
                     break;
                 }
                 catch (Exception e)
@@ -42,11 +41,11 @@ namespace System.Net.Tests
                     listener.Close();
 
                     // Remember the exception for later
-                    s_processPrefixException = e;
+                    _processPrefixException = e;
 
-                    // If this is not an HttpListenerException, something very wrong has happened, and there's no point
+                    // If this is not an HttpListenerException or SocketException, something very wrong has happened, and there's no point
                     // in trying again.
-                    if (!(e is HttpListenerException))
+                    if (!(e is HttpListenerException) && !(e is SocketException))
                         break;
                 }
             }
@@ -56,21 +55,21 @@ namespace System.Net.Tests
             // asks for the prefix, because dealing with a type initialization exception is not nice in xunit.
         }
 
-        private static string ProcessPrefix
+        public string ListeningUrl
         {
             get
             {
-                if (s_processPrefix == null)
+                if (_processPrefix == null)
                 {
-                    throw new Exception("Could not reserve a port for HttpListener", s_processPrefixException);
+                    throw new Exception("Could not reserve a port for HttpListener", _processPrefixException);
                 }
-                return s_processPrefix;
+
+                return _processPrefix;
             }
         }
 
-        public static string CreateLocal()
-        {
-            return $"{ProcessPrefix}{Guid.NewGuid():N}/";
-        }
+        public HttpListener GetListener() => _processPrefixListener;
+
+        public void Dispose() => _processPrefixListener.Close();
     }
 }

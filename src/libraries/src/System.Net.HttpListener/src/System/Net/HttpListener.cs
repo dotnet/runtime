@@ -178,7 +178,7 @@ namespace System.Net
         {
             if (_state == State.Closed)
             {
-                throw new ObjectDisposedException(this.GetType().FullName);
+                throw new ObjectDisposedException(GetType().FullName);
             }
         }
 
