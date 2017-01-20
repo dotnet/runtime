@@ -70,6 +70,16 @@ SVAL_IMPL(LONG, ExecutionManager, m_dwWriterLock);
 CrstStatic ExecutionManager::m_JumpStubCrst;
 CrstStatic ExecutionManager::m_RangeCrst;
 
+unsigned   ExecutionManager::m_normal_JumpStubLookup;
+unsigned   ExecutionManager::m_normal_JumpStubUnique;
+unsigned   ExecutionManager::m_normal_JumpStubBlockAllocCount;
+unsigned   ExecutionManager::m_normal_JumpStubBlockFullCount;
+
+unsigned   ExecutionManager::m_LCG_JumpStubLookup;
+unsigned   ExecutionManager::m_LCG_JumpStubUnique;
+unsigned   ExecutionManager::m_LCG_JumpStubBlockAllocCount;
+unsigned   ExecutionManager::m_LCG_JumpStubBlockFullCount;
+
 #endif // DACCESS_COMPILE
 
 #if defined(_TARGET_AMD64_) && !defined(DACCESS_COMPILE) // We don't do this on ARM just amd64
@@ -4930,6 +4940,49 @@ void ExecutionManager::Unload(LoaderAllocator *pLoaderAllocator)
     GetEEJitManager()->Unload(pLoaderAllocator);
 }
 
+// This method is used by the JIT and the runtime for PreStubs. It will return
+// the address of a short jump thunk that will jump to the 'target' address.
+// It is only needed when the target architecture has a perferred call instruction
+// that doesn't actually span the full address space.  This is true for x64 where
+// the preferred call instruction is a 32-bit pc-rel call instruction. 
+// (This is also true on ARM64, but it not true for x86)
+//
+// For these architectures, in JITed code and in the prestub, we encode direct calls
+// using the preferred call instruction and we also try to insure that the Jitted
+// code is within the 32-bit pc-rel range of clr.dll to allow direct JIT helper calls.
+//
+// When the call target is too far away to encode using the preferred call instruction.
+// We will create a short code thunk that uncoditionally jumps to the target address. 
+// We call this jump thunk a "jumpStub" in the CLR code.
+// We have the requirement that the "jumpStub" that we create on demand be usable by
+// the preferred call instruction, this requires that on x64 the location in memory
+// where we create the "jumpStub" be within the 32-bit pc-rel range of the call that
+// needs it.
+//
+// The arguments to this method:
+//  pMD    - the MethodDesc for the currenty managed method in Jitted code 
+//           or for the target method for a PreStub
+//           It is required if calling from or to a dynamic method (LCG method)
+//  target - The call target address (this is the address that was too far to encode)
+//  loAddr
+//  hiAddr - The range of the address that we must place the jumpStub in, so that it
+//           can be used to encode the preferred call instruction.
+//  pLoaderAllocator 
+//         - The Loader allocator to use for allocations, this can be null.
+//           When it is null, then the pMD must be valid and is used to obtain
+//           the allocator.
+//
+// This method will either locate and return an existing jumpStub thunk that can be 
+// reused for this request, because it meets all of the requirements necessary.
+// Or it will allocate memory in the required region and create a new jumpStub that
+// meets all of the requirements necessary.
+//
+// Note that for dynamic methods (LCG methods) we cannot share the jumpStubs between
+// different methods. This is because we allow for the unloading (reclaiming) of
+// individual dynamic methods. And we associate the jumpStub memory allocated with 
+// the dynamic method that requested the jumpStub.
+//
+
 PCODE ExecutionManager::jumpStub(MethodDesc* pMD, PCODE target,
                                  BYTE * loAddr,   BYTE * hiAddr,
                                  LoaderAllocator *pLoaderAllocator)
@@ -4949,6 +5002,8 @@ PCODE ExecutionManager::jumpStub(MethodDesc* pMD, PCODE target,
         pLoaderAllocator = pMD->GetLoaderAllocatorForCode();
     _ASSERTE(pLoaderAllocator != NULL);
 
+    bool isLCG = pMD && pMD->IsLCGMethod();
+
     CrstHolder ch(&m_JumpStubCrst);
 
     JumpStubCache * pJumpStubCache = (JumpStubCache *)pLoaderAllocator->m_pJumpStubCache;
@@ -4958,6 +5013,19 @@ PCODE ExecutionManager::jumpStub(MethodDesc* pMD, PCODE target,
         pLoaderAllocator->m_pJumpStubCache = pJumpStubCache;
     }
 
+    if (isLCG)
+    {
+        // Increment counter of LCG jump stub lookup attempts
+        m_LCG_JumpStubLookup++;
+    }
+    else
+    {
+        // Increment counter of normal jump stub lookup attempts
+        m_normal_JumpStubLookup++;
+    }
+
+    // search for a matching jumpstub in the jumpStubCache 
+    //
     for (JumpStubTable::KeyIterator i = pJumpStubCache->m_Table.Begin(target), 
         end = pJumpStubCache->m_Table.End(target); i != end; i++)
     {
@@ -5000,6 +5068,8 @@ PCODE ExecutionManager::getNextJumpStub(MethodDesc* pMD, PCODE target,
     JumpStubBlockHeader ** ppHead   = isLCG ? &(pMD->AsDynamicMethodDesc()->GetLCGMethodResolver()->m_jumpStubBlock) : &(((JumpStubCache *)(pLoaderAllocator->m_pJumpStubCache))->m_pBlocks);
     JumpStubBlockHeader *  curBlock = *ppHead;
     
+    // allocate a new jumpstub from 'curBlock' if it is not fully allocated
+    //
     while (curBlock)
     {
         _ASSERTE(pLoaderAllocator == (isLCG ? curBlock->GetHostCodeHeap()->GetAllocator() : curBlock->GetLoaderAllocator()));
@@ -5019,6 +5089,17 @@ PCODE ExecutionManager::getNextJumpStub(MethodDesc* pMD, PCODE target,
     }
 
     // If we get here then we need to allocate a new JumpStubBlock
+
+    if (isLCG)
+    {
+        // Increment counter of LCG jump stub block allocations
+        m_LCG_JumpStubBlockAllocCount++;
+    }
+    else
+    {
+        // Increment counter of normal jump stub block allocations
+        m_normal_JumpStubBlockAllocCount++;
+    }
 
     // allocJumpStubBlock will allocate from the LoaderCodeHeap for normal methods and HostCodeHeap for LCG methods
     // this can throw an OM exception
@@ -5062,8 +5143,54 @@ DONE:
         pJumpStubCache->m_Table.Add(entry);
     }
 
-    curBlock->m_used++;
+    curBlock->m_used++;    // record that we have used up one more jumpStub in the block
 
+    // Every time we create a new jumpStub thunk one of these counters is incremented
+    if (isLCG)
+    {
+        // Increment counter of LCG unique jump stubs
+        m_LCG_JumpStubUnique++;
+    }
+    else
+    {
+        // Increment counter of normal unique jump stubs 
+        m_normal_JumpStubUnique++;
+    }
+
+    // Is the 'curBlock' now completely full?
+    if (curBlock->m_used == curBlock->m_allocated)
+    {
+        if (isLCG)
+        {
+            // Increment counter of LCG jump stub blocks that are full
+            m_LCG_JumpStubBlockFullCount++;
+
+            // Log this "LCG JumpStubBlock filled" along with the four counter values
+            STRESS_LOG4(LF_JIT, LL_INFO1000, "LCG JumpStubBlock filled - (%u, %u, %u, %u)\n",
+                        m_LCG_JumpStubLookup, m_LCG_JumpStubUnique, 
+                        m_LCG_JumpStubBlockAllocCount, m_LCG_JumpStubBlockFullCount);
+        }
+        else
+        {
+            // Increment counter of normal jump stub blocks that are full
+            m_normal_JumpStubBlockFullCount++;
+
+            // Log this "normal JumpStubBlock filled" along with the four counter values
+            STRESS_LOG4(LF_JIT, LL_INFO1000, "Normal JumpStubBlock filled - (%u, %u, %u, %u)\n",
+                        m_normal_JumpStubLookup, m_normal_JumpStubUnique, 
+                        m_normal_JumpStubBlockAllocCount, m_normal_JumpStubBlockFullCount);
+
+            if ((m_LCG_JumpStubLookup > 0) && ((m_normal_JumpStubBlockFullCount % 5) == 1))
+            {
+                // Every 5 occurance of the above we also 
+                // Log "LCG JumpStubBlock status" along with the four counter values
+                STRESS_LOG4(LF_JIT, LL_INFO1000, "LCG JumpStubBlock status - (%u, %u, %u, %u)\n",
+                            m_LCG_JumpStubLookup, m_LCG_JumpStubUnique, 
+                            m_LCG_JumpStubBlockAllocCount, m_LCG_JumpStubBlockFullCount);
+            }
+        }
+    }
+    
     RETURN((PCODE)jumpStub);
 }
 #endif // !DACCESS_COMPILE && !CROSSGEN_COMPILE
