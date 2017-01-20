@@ -14,8 +14,6 @@ namespace System.Security.Util {
         protected String m_site;
         protected ArrayList m_separatedSite;
 
-        protected static char[] m_separators = { '.' };
-        
         protected internal SiteString()
         {
             // Only call this in derived classes when you know what you're doing.
@@ -58,7 +56,7 @@ namespace System.Security.Util {
 
             // Regular hostnames or IPv4 addresses
             // We dont need to do this for IPv4 addresses, but it's easier to do it anyway
-            String[] separatedArray = site.Split( m_separators );
+            String[] separatedArray = site.Split('.');
             
             for (int index = separatedArray.Length-1; index > -1; --index)
             {

@@ -784,7 +784,7 @@ namespace System
             // filePath   = "C:\Windows\System32\tzres.dll"
             // resourceId = -100
             //
-            string[] resources = resource.Split(',', StringSplitOptions.None);
+            string[] resources = resource.Split(',');
             if (resources.Length != 2)
             {
                 return string.Empty;
