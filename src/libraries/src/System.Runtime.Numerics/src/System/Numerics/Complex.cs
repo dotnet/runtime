@@ -123,7 +123,6 @@ namespace System.Numerics
             // |value| == sqrt(a^2 + b^2)
             // sqrt(a^2 + b^2) == a/a * sqrt(a^2 + b^2) = a * sqrt(a^2/a^2 + b^2/a^2)
             // Using the above we can factor out the square of the larger component to dodge overflow.
-            // Really this should be public on Math; it is a very standard numerical method.
 
             double c = Math.Abs(a);
             double d = Math.Abs(b);
