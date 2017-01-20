@@ -1414,9 +1414,16 @@ void Compiler::lvaCanPromoteStructType(CORINFO_CLASS_HANDLE    typeHnd,
 
     if (typeHnd != StructPromotionInfo->typeHnd)
     {
-        // sizeof(double) represents the size of the largest primitive type that we can struct promote
-        // In the future this may be changing to XMM_REGSIZE_BYTES
-        const int MaxOffset = MAX_NumOfFieldsInPromotableStruct * sizeof(double); // must be a compile time constant
+        // sizeof(double) represents the size of the largest primitive type that we can struct promote.
+        // In the future this may be changing to XMM_REGSIZE_BYTES.
+        // Note: MaxOffset is used below to declare a local array, and therefore must be a compile-time constant.
+        CLANG_FORMAT_COMMENT_ANCHOR;
+#ifdef FEATURE_SIMD
+        // This will allow promotion of 2 Vector<T> fields on AVX2, or 4 Vector<T> fields on SSE2.
+        const int MaxOffset = MAX_NumOfFieldsInPromotableStruct * XMM_REGSIZE_BYTES;
+#else  // !FEATURE_SIMD
+        const int MaxOffset = MAX_NumOfFieldsInPromotableStruct * sizeof(double);
+#endif // !FEATURE_SIMD
 
         assert((BYTE)MaxOffset == MaxOffset); // because lvaStructFieldInfo.fldOffset is byte-sized
         assert((BYTE)MAX_NumOfFieldsInPromotableStruct ==
@@ -1507,12 +1514,30 @@ void Compiler::lvaCanPromoteStructType(CORINFO_CLASS_HANDLE    typeHnd,
             CorInfoType corType    = info.compCompHnd->getFieldType(pFieldInfo->fldHnd, &pFieldInfo->fldTypeHnd);
             var_types   varType    = JITtype2varType(corType);
             pFieldInfo->fldType    = varType;
-            pFieldInfo->fldSize    = genTypeSize(varType);
+            unsigned size          = genTypeSize(varType);
+            pFieldInfo->fldSize    = size;
 
             if (varTypeIsGC(varType))
             {
                 containsGCpointers = true;
             }
+
+#ifdef FEATURE_SIMD
+            // Check to see if this is a SIMD type.
+            // We will only check this if we have already found a SIMD type, which will be true if
+            // we have encountered any SIMD intrinsics.
+            if (usesSIMDTypes() && (pFieldInfo->fldSize == 0) && isSIMDClass(pFieldInfo->fldTypeHnd))
+            {
+                unsigned  simdSize;
+                var_types simdBaseType = getBaseTypeAndSizeOfSIMDType(pFieldInfo->fldTypeHnd, &simdSize);
+                if (simdBaseType != TYP_UNKNOWN)
+                {
+                    varType             = getSIMDTypeForSize(simdSize);
+                    pFieldInfo->fldType = varType;
+                    pFieldInfo->fldSize = simdSize;
+                }
+            }
+#endif // FEATURE_SIMD
 
             if (pFieldInfo->fldSize == 0)
             {
@@ -1683,7 +1708,7 @@ void Compiler::lvaPromoteStructVar(unsigned lclNum, lvaStructPromotionInfo* Stru
     {
         lvaStructFieldInfo* pFieldInfo = &StructPromotionInfo->fields[index];
 
-        if (varTypeIsFloating(pFieldInfo->fldType))
+        if (varTypeIsFloating(pFieldInfo->fldType) || varTypeIsSIMD(pFieldInfo->fldType))
         {
             lvaTable[lclNum].lvContainsFloatingFields = 1;
             // Whenever we promote a struct that contains a floating point field
@@ -1727,11 +1752,31 @@ void Compiler::lvaPromoteStructVar(unsigned lclNum, lvaStructPromotionInfo* Stru
             fieldVarDsc->lvIsRegArg = true;
             fieldVarDsc->lvArgReg   = varDsc->lvArgReg;
             fieldVarDsc->setPrefReg(varDsc->lvArgReg, this); // Set the preferred register
+#if FEATURE_MULTIREG_ARGS && defined(FEATURE_SIMD)
+            if (varTypeIsSIMD(fieldVarDsc))
+            {
+                // This field is a SIMD type, and will be considered to be passed in multiple registers
+                // if the parent struct was. Note that this code relies on the fact that if there is
+                // a SIMD field of an enregisterable struct, it is the only field.
+                // We will assert that, in case future changes are made to the ABI.
+                assert(varDsc->lvFieldCnt == 1);
+                fieldVarDsc->lvOtherArgReg = varDsc->lvOtherArgReg;
+            }
+#endif // FEATURE_MULTIREG_ARGS && defined(FEATURE_SIMD)
 
             lvaMarkRefsWeight = BB_UNITY_WEIGHT;            // incRefCnts can use this compiler global variable
             fieldVarDsc->incRefCnts(BB_UNITY_WEIGHT, this); // increment the ref count for prolog initialization
         }
 #endif
+
+#ifdef FEATURE_SIMD
+        if (varTypeIsSIMD(pFieldInfo->fldType))
+        {
+            // Set size to zero so that lvaSetStruct will appropriately set the SIMD-relevant fields.
+            fieldVarDsc->lvExactSize = 0;
+            lvaSetStruct(varNum, pFieldInfo->fldTypeHnd, false, true);
+        }
+#endif // FEATURE_SIMD
 
 #ifdef DEBUG
         // This temporary should not be converted to a double in stress mode,
@@ -2029,7 +2074,6 @@ void Compiler::lvaSetStruct(unsigned varNum, CORINFO_CLASS_HANDLE typeHnd, bool 
     }
     else
     {
-        assert(varDsc->lvExactSize != 0);
 #if FEATURE_SIMD
         assert(!varTypeIsSIMD(varDsc) || (varDsc->lvBaseType != TYP_UNKNOWN));
 #endif // FEATURE_SIMD
