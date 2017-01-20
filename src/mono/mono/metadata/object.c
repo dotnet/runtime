@@ -152,7 +152,9 @@ typedef struct
 	MonoNativeThreadId initializing_tid;
 	guint32 waiting_count;
 	gboolean done;
-	MonoCoopMutex initialization_section;
+	MonoCoopMutex mutex;
+	/* condvar used to wait for 'done' becoming TRUE */
+	MonoCoopCond cond;
 } TypeInitializationLock;
 
 /* for locking access to type_initialization_hash and blocked_thread_hash */
@@ -176,13 +178,13 @@ mono_type_init_lock (TypeInitializationLock *lock)
 {
 	MONO_REQ_GC_NEUTRAL_MODE;
 
-	mono_coop_mutex_lock (&lock->initialization_section);
+	mono_coop_mutex_lock (&lock->mutex);
 }
 
 static void
 mono_type_init_unlock (TypeInitializationLock *lock)
 {
-	mono_coop_mutex_unlock (&lock->initialization_section);
+	mono_coop_mutex_unlock (&lock->mutex);
 }
 
 /* from vtable to lock */
@@ -314,6 +316,24 @@ mono_runtime_class_init (MonoVTable *vtable)
 	mono_error_assert_ok (&error);
 }
 
+/*
+ * Returns TRUE if the lock was freed.
+ * LOCKING: Caller should hold type_initialization_lock.
+ */
+static gboolean
+unref_type_lock (TypeInitializationLock *lock)
+{
+	--lock->waiting_count;
+	if (lock->waiting_count == 0) {
+		mono_coop_mutex_destroy (&lock->mutex);
+		mono_coop_cond_destroy (&lock->cond);
+		g_free (lock);
+		return TRUE;
+	} else {
+		return FALSE;
+	}
+}
+
 /**
  * mono_runtime_class_init_full:
  * @vtable that neeeds to be initialized
@@ -370,6 +390,13 @@ mono_runtime_class_init_full (MonoVTable *vtable, MonoError *error)
 
 	tid = mono_native_thread_id_get ();
 
+	/*
+	 * Due some preprocessing inside a global lock. If we are the first thread
+	 * trying to initialize this class, create a separate lock+cond var, and
+	 * acquire it before leaving the global lock. The other threads will wait
+	 * on this cond var.
+	 */
+
 	mono_type_initialization_lock ();
 	/* double check... */
 	if (vtable->initialized) {
@@ -396,8 +423,9 @@ mono_runtime_class_init_full (MonoVTable *vtable, MonoError *error)
 				return FALSE;
 			}
 		}
-		lock = (TypeInitializationLock *)g_malloc (sizeof (TypeInitializationLock));
-		mono_coop_mutex_init_recursive (&lock->initialization_section);
+		lock = (TypeInitializationLock *)g_malloc0 (sizeof (TypeInitializationLock));
+		mono_coop_mutex_init_recursive (&lock->mutex);
+		mono_coop_cond_init (&lock->cond);
 		lock->initializing_tid = tid;
 		lock->waiting_count = 1;
 		lock->done = FALSE;
@@ -410,7 +438,7 @@ mono_runtime_class_init_full (MonoVTable *vtable, MonoError *error)
 		gpointer blocked;
 		TypeInitializationLock *pending_lock;
 
-		if (mono_native_thread_id_equals (lock->initializing_tid, tid) || lock->done) {
+		if (mono_native_thread_id_equals (lock->initializing_tid, tid)) {
 			mono_type_initialization_unlock ();
 			return TRUE;
 		}
@@ -438,6 +466,8 @@ mono_runtime_class_init_full (MonoVTable *vtable, MonoError *error)
 
 	if (do_initialization) {
 		MonoException *exc = NULL;
+
+		/* We are holding the per-vtable lock, do the actual initialization */
 
 		mono_threads_begin_abort_protected_block ();
 		mono_runtime_try_invoke (method, NULL, NULL, (MonoObject**) &exc, error);
@@ -482,7 +512,10 @@ mono_runtime_class_init_full (MonoVTable *vtable, MonoError *error)
 
 		if (last_domain)
 			mono_domain_set (last_domain, TRUE);
+		/* Signal to the other threads that we are done */
 		lock->done = TRUE;
+		mono_coop_cond_broadcast (&lock->cond);
+
 		mono_type_init_unlock (lock);
 
 		//This can happen if the cctor self-aborts
@@ -495,20 +528,20 @@ mono_runtime_class_init_full (MonoVTable *vtable, MonoError *error)
 	} else {
 		/* this just blocks until the initializing thread is done */
 		mono_type_init_lock (lock);
+		while (!lock->done)
+			mono_coop_cond_wait (&lock->cond, &lock->mutex);
 		mono_type_init_unlock (lock);
 	}
 
+	/* Do cleanup and setting vtable->initialized inside the global lock again */
 	mono_type_initialization_lock ();
-	if (!mono_native_thread_id_equals (lock->initializing_tid, tid))
+	if (!do_initialization)
 		g_hash_table_remove (blocked_thread_hash, GUINT_TO_POINTER (tid));
-	--lock->waiting_count;
-	if (lock->waiting_count == 0) {
-		mono_coop_mutex_destroy (&lock->initialization_section);
+	gboolean deleted = unref_type_lock (lock);
+	if (deleted)
 		g_hash_table_remove (type_initialization_hash, vtable);
-		g_free (lock);
-	}
-	mono_memory_barrier ();
-	if (!vtable->init_failed)
+	/* Have to set this here since we check it inside the global lock */
+	if (do_initialization && !vtable->init_failed)
 		vtable->initialized = 1;
 	mono_type_initialization_unlock ();
 
@@ -539,13 +572,11 @@ gboolean release_type_locks (gpointer key, gpointer value, gpointer user)
 		 * and get_type_init_exception_for_class () needs to be aware of this.
 		 */
 		vtable->init_failed = 1;
+		mono_coop_cond_broadcast (&lock->cond);
 		mono_type_init_unlock (lock);
-		--lock->waiting_count;
-		if (lock->waiting_count == 0) {
-			mono_coop_mutex_destroy (&lock->initialization_section);
-			g_free (lock);
+		gboolean deleted = unref_type_lock (lock);
+		if (deleted)
 			return TRUE;
-		}
 	}
 	return FALSE;
 }
