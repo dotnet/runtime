@@ -63,6 +63,10 @@
       <OSGroup>Linux</OSGroup>
       <Platform>amd64</Platform>
     </Project>
+    <Project Condition="'$(TargetsLinux)' == 'true' and '$(DistroRid)' == 'debian.8-armel'" Include="debian/Microsoft.NETCore.DotNetAppHost.pkgproj">
+      <OSGroup>Linux</OSGroup>
+      <Platform>armel</Platform>
+    </Project>
     <Project Condition="'$(TargetsLinux)' == 'true' and '$(DistroRid)' == 'debian.8-x64'" Include="debian/Microsoft.NETCore.DotNetAppHost.pkgproj">
       <OSGroup>Linux</OSGroup>
       <Platform>amd64</Platform>
@@ -74,6 +78,10 @@
     <Project Condition="'$(TargetsLinux)' == 'true' and '$(DistroRid)' == 'opensuse.42.1-x64'" Include="opensuse.42.1/Microsoft.NETCore.DotNetAppHost.pkgproj">
       <OSGroup>Linux</OSGroup>
       <Platform>amd64</Platform>
+    </Project>
+    <Project Condition="'$(TargetsLinux)' == 'true' and '$(DistroRid)' == 'tizen.4.0.0-armel'" Include="tizen.4.0.0/Microsoft.NETCore.DotNetAppHost.pkgproj">
+      <OSGroup>Linux</OSGroup>
+      <Platform>armel</Platform>
     </Project>
     <Project Condition="'$(TargetsOSX)' == 'true'" Include="osx/Microsoft.NETCore.DotNetAppHost.pkgproj">
       <OSGroup>OSX</OSGroup>

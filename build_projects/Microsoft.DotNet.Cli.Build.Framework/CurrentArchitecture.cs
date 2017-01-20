@@ -40,6 +40,15 @@ namespace Microsoft.DotNet.Cli.Build.Framework
             }
         }
 
+        public static bool Isarmel
+        {
+            get
+            {
+                var archName = Environment.GetEnvironmentVariable("TARGETPLATFORM");
+                return string.Equals(archName, "armel", StringComparison.OrdinalIgnoreCase);
+            }
+        }
+
         public static bool Isarm64
         {
             get
@@ -54,6 +63,10 @@ namespace Microsoft.DotNet.Cli.Build.Framework
             if (Isarm)
             {
                 return BuildArchitecture.arm;
+            }
+            else if (Isarmel)
+            {
+                return BuildArchitecture.armel;
             }
             else if (Isarm64)
             {
