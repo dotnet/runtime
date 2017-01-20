@@ -2505,7 +2505,23 @@ namespace System.Threading.Tasks
                     checkArgsOnly = true;
                 }
                 // Otherwise, add the completion action and keep going.
-                else task.AddCompletionAction(promise);
+                else
+                {
+                    task.AddCompletionAction(promise);
+                    if (promise.IsCompleted)
+                    {
+                        // One of the previous tasks that already had its continuation registered may have
+                        // raced to complete with our adding the continuation to this task.  The completion
+                        // routine would have gone through and removed the continuation from all of the tasks
+                        // with which it was already registered, but if the race causes this continuation to
+                        // be added after that, it'll never be removed.  As such, after adding the continuation,
+                        // we check to see whether the promise has already completed, and if it has, we try to
+                        // manually remove the continuation from this task.  If it was already removed, it'll be
+                        // a nop, and if we race to remove it, the synchronization in RemoveContinuation will
+                        // keep things consistent.
+                        task.RemoveContinuation(promise);
+                    }
+                }
             }
 
             return promise;
