@@ -1,0 +1,134 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <!--
+    Code coverage package versions go here and in the test-runtime-packages.config
+  -->
+  <PropertyGroup>
+    <OpenCoverVersion>4.6.519</OpenCoverVersion>
+    <ReportGeneratorVersion>2.5.0</ReportGeneratorVersion>
+    <CoverallsUploaderVersion>1.4</CoverallsUploaderVersion>
+  </PropertyGroup>
+  
+  <!-- Coverage options -->
+  <PropertyGroup>
+    <CodeCoverageEnabled>false</CodeCoverageEnabled>
+    <CodeCoverageEnabled Condition="'$(SkipTests)' != 'true' and '$(OS)' == 'Windows_NT' and '$(Coverage)' == 'true' and '$(Performance)' != 'true'">true</CodeCoverageEnabled>
+    <CoverageReportDir Condition="'$(CoverageReportDir)' == ''">$(TestWorkingDir)coverage\</CoverageReportDir>
+
+    <!-- This targets file has two modes one for individual projects and one for all -->
+    <GenerateCodeCoverageReportForAll Condition="'$(GenerateCodeCoverageReportForAll)'==''">false</GenerateCodeCoverageReportForAll>
+    <CoverageEnabledForProject Condition="'$(GenerateCodeCoverageReportForAll)'=='true'">false</CoverageEnabledForProject>
+    <CoverageEnabledForProject Condition="'$(CoverageEnabledForProject)'=='' and '$(IsTestProject)'=='true'">$(CodeCoverageEnabled)</CoverageEnabledForProject>
+
+    <GenerateIndividualCoverageReport Condition="'$(BuildAllProjects)'!='true' and '$(CoverageEnabledForProject)'=='true'">true</GenerateIndividualCoverageReport>
+    <GenerateFullCoverageReport Condition="'$(GenerateCodeCoverageReportForAll)'=='true' and '$(CodeCoverageEnabled)'=='true' and '$(SkipFullCoverageReport)' != 'true'">true</GenerateFullCoverageReport>
+    <GenerateVisitedMethodsReport Condition="'$(GenerateCodeCoverageReportForAll)'=='true' and '$(CodeCoverageEnabled)'=='true' and '$(GenerateVisitedReport)' == 'true'">true</GenerateVisitedMethodsReport>
+
+    <!-- We need to filter the data to only the assembly being tested. Otherwise we will gather tons of data about other assemblies. -->
+    <_ProjectDirectoryUnderSourceDir Condition="'$(IsTestProject)' == 'true'">$(MSBuildProjectDirectory.SubString($(SourceDir.Length)))</_ProjectDirectoryUnderSourceDir>
+    <AssemblyBeingTestedName Condition="'$(IsTestProject)' == 'true'">$(_ProjectDirectoryUnderSourceDir.SubString(0, $(_ProjectDirectoryUnderSourceDir.IndexOfAny("\\/"))))</AssemblyBeingTestedName>
+
+    <!-- 
+      When coverage is enabled, we disallow building projects in parallel. 
+      There appear to be issues with the OpenCover tool in these scenarios. 
+    -->
+    <SerializeProjects Condition="'$(CodeCoverageEnabled)'=='true'">true</SerializeProjects>
+  </PropertyGroup>
+
+  <Target Name="CreateCoverageFilter" BeforeTargets="GenerateTestExecutionScripts">
+    <!-- By default, code coverage data is only gathered for the assembly being tested. 
+         CodeCoverageAssemblies can be passed in to the build to gather coverage on additional assemblies. -->
+    <ItemGroup>
+      <_CodeCoverageAssemblies Include="$(AssemblyBeingTestedName)" /> 
+      <_CodeCoverageAssemblies Include="$(CodeCoverageAssemblies)" Condition="'$(CodeCoverageAssemblies)' != ''" />
+    </ItemGroup>
+    <PropertyGroup>
+      <CoverageFilter>@(_CodeCoverageAssemblies->'+[%(Identity)]*', ' ')</CoverageFilter>
+      <CoverageFilter Condition="'$(CodeCoverageAssemblies)' == 'all'">[*]*</CoverageFilter>
+    </PropertyGroup>
+  </Target>
+
+  <!-- xUnit command line with coverage enabled -->
+  <PropertyGroup Condition="'$(CoverageEnabledForProject)'=='true'">
+    <CoverageHost>$(PackagesDir)OpenCover\$(OpenCoverVersion)\tools\OpenCover.Console.exe</CoverageHost>
+    <CoverageOutputFilePath>$(CoverageReportDir)$(MSBuildProjectName).coverage.xml</CoverageOutputFilePath>
+    <CoverageOptions>-oldStyle -filter:"{CoverageFilter}" -excludebyfile:"*\Common\src\System\SR.*" -nodefaultfilters -excludebyattribute:*.ExcludeFromCodeCoverage* -skipautoprops -hideskipped:All -threshold:1</CoverageOptions>
+    <CoverageCommandLine>$(CoverageOptions) -returntargetcode -register:user -target:$(TestProgram) -output:$(CoverageOutputFilePath)</CoverageCommandLine>
+    <TestHost>$(CoverageHost)</TestHost>
+    <XunitOptions>$(XunitOptions) -parallel none</XunitOptions>
+    <TestCommandLine>$(TestHost) $(CoverageCommandLine) -targetargs:"$(TestArguments) {XunitTraitOptions}"</TestCommandLine>
+  </PropertyGroup>
+
+  <!-- Report Generator Properties -->
+  <PropertyGroup>
+    <CoverageReportAssemblyFilters Condition="'$(CodeCoverageAssemblies)' != 'all'">"-assemblyfilters:@(_CodeCoverageAssemblies->'+%(Identity)', ';')"</CoverageReportAssemblyFilters>
+    <CoverageReportGeneratorOptions>-targetdir:$(CoverageReportDir) -reporttypes:Html;Badges $(CoverageReportAssemblyFilters)</CoverageReportGeneratorOptions>
+    <CoverageReportGeneratorCommandLine>$(PackagesDir)ReportGenerator\$(ReportGeneratorVersion)\tools\ReportGenerator.exe $(CoverageReportGeneratorOptions)</CoverageReportGeneratorCommandLine>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(GenerateIndividualCoverageReport)'=='true'">
+    <GenerateIndividualCoverageReportAfterTargets Condition="'$(GenerateIndividualCoverageReportAfterTargets)'==''">RunTestsForProject</GenerateIndividualCoverageReportAfterTargets>
+  </PropertyGroup>
+
+  <!-- Generate coverage reports for individual projects. -->
+  <Target Name="GenerateIndividualCoverageReport"
+          AfterTargets="$(GenerateIndividualCoverageReportAfterTargets)"
+          Inputs="$(CoverageOutputFilePath)"
+          Outputs="$(CoverageReportDir)index.htm"
+          Condition="'$(GenerateIndividualCoverageReport)'=='true'">
+
+    <Exec Command="$(CoverageReportGeneratorCommandLine) -reports:$(CoverageOutputFilePath)"
+          ContinueOnError="ErrorAndContinue" />
+
+    <Exec Command="start $(CoverageReportDir)index.htm"
+          Condition="'$(PopCoverageReport)' == 'true'" />
+
+  </Target>
+
+  <PropertyGroup Condition="'$(GenerateFullCoverageReport)'=='true'">
+    <GenerateFullCoverageReportAfterTargets Condition="'$(GenerateFullCoverageReportAfterTargets)'==''">TestAllProjects</GenerateFullCoverageReportAfterTargets>
+  </PropertyGroup>
+
+  <!-- Generate coverage report for all the projects. -->
+  <Target Name="GenerateFullCoverageReport"
+         AfterTargets="$(GenerateFullCoverageReportAfterTargets)"
+         Inputs="$(CoverageReportDir)\*.coverage.xml"
+         Outputs="$(CoverageReportDir)index.htm"
+         Condition="'$(GenerateFullCoverageReport)'=='true'">
+
+    <Exec Command="$(CoverageReportGeneratorCommandLine) -reports:$(CoverageReportDir)\*.coverage.xml"
+          ContinueOnError="ErrorAndContinue"
+          WorkingDirectory="$(ProjectDir)" />
+
+    <Exec Command="start $(CoverageReportDir)index.htm"
+          Condition="'$(PopCoverageReport)' == 'true'" />          
+
+    <PropertyGroup>
+      <CoverallsUploaderCommandLine>$(PackagesDir)coveralls.io.$(CoverallsUploaderVersion)\tools\coveralls.net.exe</CoverallsUploaderCommandLine>
+      <CoverallsUploaderOptions>--opencover $(CoverageReportDir)\*.coverage.xml --repo-token $(CoverallsToken)</CoverallsUploaderOptions>
+    </PropertyGroup>
+
+    <Exec Command="$(CoverallsUploaderCommandLine) $(CoverallsUploaderOptions)"
+          ContinueOnError="ErrorAndContinue"
+          WorkingDirectory="$(ProjectDir)"
+          Condition="'$(UploadCoverallsData)'=='true'" />
+
+  </Target>
+
+  <UsingTask TaskName="ParseTestCoverageInfo" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll"/>
+
+  <!-- Generates VisitedMethodsReport.xml -->
+  <Target Name="GenerateVisitedReport"
+          AfterTargets="Test"
+          Condition="'$(GenerateVisitedMethodsReport)' == 'true'"
+          Inputs="$(CoverageReportDir)*.coverage.xml"
+          Outputs="$(CoverageReportDir)\VisitedMethodsReport.xml">
+    <ItemGroup>
+      <Reports Include="$(CoverageReportDir)*.coverage.xml"/>
+    </ItemGroup>
+    <ParseTestCoverageInfo CoverageReports="@(Reports)"
+                           OutputReport="$(CoverageReportDir)\VisitedMethodsReport.xml"/>
+  </Target>
+  
+</Project>
