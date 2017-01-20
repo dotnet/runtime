@@ -6,5 +6,22 @@
     <NugetRuntimeIdentifier>None</NugetRuntimeIdentifier>
     <OutputPath>$(NetStandardRefPath)</OutputPath>
   </PropertyGroup>
+  
+  <Target Name="AddNETStandardRefs" AfterTargets="ResolveReferences"
+          Condition="'$(NuGetTargetMoniker)' == '.NETStandard,Version=v2.0'">
+    <PropertyGroup>
+      <_NETStandardPackageId>NETStandard.Library</_NETStandardPackageId>
+      <_NETStandardPackageVersion>2.0.0-$(StandardExpectedPrerelease)</_NETStandardPackageVersion>
+      <_NETStandardRefFolder>$(PackagesDir)$(_NETStandardPackageId)\$(_NETStandardPackageVersion)\build\netstandard2.0\ref</_NETStandardRefFolder>
+    </PropertyGroup>
+    <ItemGroup>
+      <Reference Include="$(_NETStandardRefFolder)\*.dll">
+        <Private>False</Private>
+        <NuGetPackageId>NETStandard.Library</NuGetPackageId>
+        <NuGetPackageVersion>$(_NETStandardPackageVersion)</NuGetPackageVersion>
+      </Reference>
+    </ItemGroup>
+  </Target>
+  
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
