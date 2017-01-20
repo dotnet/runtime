@@ -4,6 +4,5 @@
   <PropertyGroup>
     <AssemblyVersion>4.1.0.0</AssemblyVersion>
     <IsNETCoreApp>true</IsNETCoreApp>
-    <IsNETCoreAppRef>false</IsNETCoreAppRef>
   </PropertyGroup>
 </Project>
