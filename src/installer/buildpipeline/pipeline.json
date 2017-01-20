@@ -1,0 +1,135 @@
+{
+  "Repository": "core-setup",
+  "Definitions": {
+    "Path": ".",
+    "Type": "VSTS",
+    "BaseUrl": "https://devdiv.visualstudio.com/DefaultCollection"
+  },
+  "Pipelines": [
+    {
+      "Name": "Trusted-All-Release",
+      "Parameters": {
+        "TreatWarningsAsErrors": "false"
+      },
+      "BuildParameters": {
+        "BuildConfiguration": "Release"
+      },
+      "Definitions": [
+        {
+          "Name": "Core-Setup-CentOS-x64-master",
+          "ReportingParameters": {
+            "OperatingSystem": "CentOS 7.1",
+            "Type": "build/product/",
+            "Platform": "x64"
+          }
+        },
+        {
+          "Name": "Core-Setup-Debian8-x64-master",
+          "ReportingParameters": {
+            "OperatingSystem": "Debian 8.2",
+            "Type": "build/product/",
+            "Platform": "x64"
+          }
+        },
+        {
+          "Name": "Core-Setup-Fedora23-x64-master",
+          "ReportingParameters": {
+            "OperatingSystem": "Fedora 23",
+            "Type": "build/product/",
+            "Platform": "x64"
+          }
+        },
+        {
+          "Name": "Core-Setup-Fedora24-x64-master",
+          "ReportingParameters": {
+            "OperatingSystem": "Fedora 24",
+            "Type": "build/product/",
+            "Platform": "x64"
+          }
+        },
+        {
+          "Name": "Core-Setup-OpenSuse13.2-x64-master",
+          "ReportingParameters": {
+            "OperatingSystem": "OpenSuse 13.2",
+            "Type": "build/product/",
+            "Platform": "x64"
+          }
+        },
+        {
+          "Name": "Core-Setup-OpenSuse42.1-x64-master",
+          "ReportingParameters": {
+            "OperatingSystem": "OpenSuse 42.1",
+            "Type": "build/product/",
+            "Platform": "x64"
+          }
+        },
+        {
+          "Name": "Core-Setup-OSX-x64-master",
+          "ReportingParameters": {
+            "OperatingSystem": "OSX",
+            "Type": "build/product/",
+            "Platform": "x64"
+          }
+        },
+        {
+          "Name": "Core-Setup-PortableLinux-x64-master",
+          "ReportingParameters": {
+            "SubType": "PortableLinux",
+            "OperatingSystem": "RedHat 7",
+            "Type": "build/product/",
+            "Platform": "x64"
+          }
+        },
+        {
+          "Name": "Core-Setup-RHEL7-x64-master",
+          "ReportingParameters": {
+            "SubType": "Native",
+            "OperatingSystem": "RedHat 7",
+            "Type": "build/product/",
+            "Platform": "x64"
+          }
+        },
+        {
+          "Name": "Core-Setup-Ubuntu14.04-x64-master",
+          "ReportingParameters": {
+            "OperatingSystem": "Ubuntu 14.04",
+            "Type": "build/product/",
+            "Platform": "x64"
+          }
+        },
+        {
+          "Name": "Core-Setup-Ubuntu16.04-x64-master",
+          "ReportingParameters": {
+            "OperatingSystem": "Ubuntu 16.04",
+            "Type": "build/product/",
+            "Platform": "x64"
+          }
+        },
+        {
+          "Name": "Core-Setup-Ubuntu16.10-x64-master",
+          "ReportingParameters": {
+            "OperatingSystem": "Ubuntu 16.10",
+            "Type": "build/product/",
+            "Platform": "x64"
+          }
+        },
+        {
+          "Name": "Core-Setup-Windows-arm32-master",
+          "ReportingParameters": {
+            "OperatingSystem": "Windows",
+            "Type": "build/product/",
+            "Platform": "arm"
+          }
+        },
+        {
+          "Name": "Core-Setup-Windows-arm64-master",
+          "ReportingParameters": {
+            "OperatingSystem": "Windows",
+            "Type": "build/product/",
+            "Platform": "arm64"
+          }
+        }
+      ]
+    }
+  ]
+}
