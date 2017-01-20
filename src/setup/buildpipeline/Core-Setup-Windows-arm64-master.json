@@ -1,0 +1,167 @@
+{
+  "build": [
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Run script build.cmd",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "bfc8bf76-e7ac-4a8c-9a55-a944a9f632fd",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "build.cmd",
+        "arguments": "-Configuration Release -Targets Init,Compile,Package,Publish -Architecure x64 -TargetArch arm64 -ToolsetDir c:\\tools\\clr -Framework netcoreapp2.0",
+        "modifyEnvironment": "false",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    }
+  ],
+  "options": [
+    {
+      "enabled": false,
+      "definition": {
+        "id": "5bc3cfb7-6b54-4a4b-b5d2-a3905949f8a6"
+      },
+      "inputs": {
+        "additionalFields": "{}"
+      }
+    },
+    {
+      "enabled": false,
+      "definition": {
+        "id": "7c555368-ca64-4199-add6-9ebaf0b0137d"
+      },
+      "inputs": {
+        "multipliers": "[]",
+        "parallel": "false",
+        "continueOnError": "true",
+        "additionalFields": "{}"
+      }
+    },
+    {
+      "enabled": false,
+      "definition": {
+        "id": "a9db38f9-9fdc-478c-b0f9-464221e58316"
+      },
+      "inputs": {
+        "workItemType": "4777",
+        "assignToRequestor": "true",
+        "additionalFields": "{}"
+      }
+    },
+    {
+      "enabled": false,
+      "definition": {
+        "id": "57578776-4c22-4526-aeb0-86b6da17ee9c"
+      },
+      "inputs": {
+        "additionalFields": "{}"
+      }
+    }
+  ],
+  "variables": {
+    "RID": {
+      "value": "win10-arm64"
+    },
+    "NUGET_FEED_URL": {
+      "value": "https://dotnet.myget.org/F/dotnet-core"
+    },
+    "NUGET_API_KEY": {
+      "value": "PassedViaPipeBuild"
+    },
+    "GITHUB_PASSWORD": {
+      "value": "PassedViaPipeBuild"
+    },
+    "COREHOST_TRACE": {
+      "value": "0"
+    },
+    "SASTOKEN": {
+      "value": "PassedViaPipeBuild"
+    },
+    "STORAGE_ACCOUNT": {
+      "value": "dotnetcli"
+    },
+    "STORAGE_CONTAINER": {
+      "value": "dotnet"
+    },
+    "CONNECTION_STRING": {
+      "value": "PassedViaPipeBuild"
+    },
+    "CERTIFICATE_ID": {
+      "value": "400"
+    },
+    "PUBLISH_TO_AZURE_BLOB": {
+      "value": "true",
+      "allowOverride": true
+    }
+  },
+  "demands": [
+    "Agent.OS -equals Windows_NT",
+    "DotNetFramework",
+    "Cmd"
+  ],
+  "retentionRules": [
+    {
+      "branches": [
+        "+refs/heads/*"
+      ],
+      "artifacts": [],
+      "artifactTypesToDelete": [
+        "FilePath",
+        "SymbolStore"
+      ],
+      "daysToKeep": 2,
+      "minimumToKeep": 1,
+      "deleteBuildRecord": true,
+      "deleteTestResults": true
+    }
+  ],
+  "buildNumberFormat": "$(Date:yyyMMdd)$(Rev:.r)",
+  "jobAuthorizationScope": "projectCollection",
+  "jobTimeoutInMinutes": 90,
+  "badgeEnabled": true,
+  "repository": {
+    "properties": {
+      "connectedServiceId": "f4c31735-42d2-4c3a-bc47-7ac06fd0dccc",
+      "apiUrl": "https://api.github.com/repos/dotnet/core-setup",
+      "branchesUrl": "https://api.github.com/repos/dotnet/core-setup/branches",
+      "cloneUrl": "https://github.com/dotnet/core-setup.git",
+      "refsUrl": "https://api.github.com/repos/dotnet/core-setup/git/refs",
+      "gitLfsSupport": "false",
+      "fetchDepth": "0"
+    },
+    "id": "https://github.com/dotnet/core-setup.git",
+    "type": "GitHub",
+    "name": "dotnet/core-setup",
+    "url": "https://github.com/dotnet/core-setup.git",
+    "defaultBranch": "master",
+    "clean": "true",
+    "checkoutSubmodules": false
+  },
+  "quality": "definition",
+  "defaultBranch": "master",
+  "queue": {
+    "pool": {
+      "id": 39,
+      "name": "DotNet-Build"
+    },
+    "id": 36,
+    "name": "DotNet-Build"
+  },
+  "path": "\\",
+  "type": "build",
+  "id": 4010,
+  "name": "Core-Setup-Windows-arm64-master",
+  "project": {
+    "id": "0bdbc590-a062-4c3f-b0f6-9383f67865ee",
+    "name": "DevDiv",
+    "description": "Visual Studio and DevDiv team project for git source code repositories.  Work items will be added for Adams, Dev14 work items are tracked in vstfdevdiv.  ",
+    "url": "https://devdiv.visualstudio.com/DefaultCollection/_apis/projects/0bdbc590-a062-4c3f-b0f6-9383f67865ee",
+    "state": "wellFormed",
+    "revision": 418097459
+  }
+}
