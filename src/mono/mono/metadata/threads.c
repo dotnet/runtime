@@ -230,7 +230,8 @@ get_next_managed_thread_id (void)
 
 enum {
 	INTERRUPT_REQUESTED_BIT = 0x1,
-	ABORT_PROT_BLOCK_SHIFT = 1,
+	INTERRUPT_REQUEST_DEFERRED_BIT = 0x2,
+	ABORT_PROT_BLOCK_SHIFT = 2,
 	ABORT_PROT_BLOCK_BITS = 8,
 	ABORT_PROT_BLOCK_MASK = (((1 << ABORT_PROT_BLOCK_BITS) - 1) << ABORT_PROT_BLOCK_SHIFT)
 };
@@ -242,6 +243,71 @@ mono_thread_get_abort_prot_block_count (MonoInternalThread *thread)
 	return (state & ABORT_PROT_BLOCK_MASK) >> ABORT_PROT_BLOCK_SHIFT;
 }
 
+static void
+verify_thread_state (gsize state)
+{
+	//can't have both INTERRUPT_REQUESTED_BIT and INTERRUPT_REQUEST_DEFERRED_BIT set at the same time
+	g_assert ((state & (INTERRUPT_REQUESTED_BIT | INTERRUPT_REQUEST_DEFERRED_BIT)) != (INTERRUPT_REQUESTED_BIT | INTERRUPT_REQUEST_DEFERRED_BIT));
+
+	//XXX This would be nice to be true, but can happen due to self-aborts (and possibly set-pending-exception)
+	//if prot_count > 0, INTERRUPT_REQUESTED_BIT must never be set
+	// int prot_count = (state & ABORT_PROT_BLOCK_MASK) >> ABORT_PROT_BLOCK_SHIFT;
+	// g_assert (!(prot_count > 0 && (state & INTERRUPT_REQUESTED_BIT)));
+}
+
+void
+mono_threads_begin_abort_protected_block (void)
+{
+	MonoInternalThread *thread = mono_thread_internal_current ();
+	gsize old_state, new_state;
+	do {
+		old_state = thread->thread_state;
+		verify_thread_state (old_state);
+
+		int new_val = ((old_state & ABORT_PROT_BLOCK_MASK) >> ABORT_PROT_BLOCK_SHIFT) + 1;
+
+		new_state = 0;
+		if (old_state & (INTERRUPT_REQUESTED_BIT | INTERRUPT_REQUEST_DEFERRED_BIT)) {
+			if (old_state & INTERRUPT_REQUESTED_BIT)
+				printf ("begin prot happy as it demoted interrupt to deferred interrupt\n");
+			new_state |= INTERRUPT_REQUEST_DEFERRED_BIT;
+		}
+
+		//bounds check abort_prot_count
+		g_assert (new_val > 0);
+		g_assert (new_val < (1 << ABORT_PROT_BLOCK_BITS));
+		new_state |= new_val << ABORT_PROT_BLOCK_SHIFT;
+
+	} while (InterlockedCompareExchangePointer ((volatile gpointer)&thread->thread_state, (gpointer)new_state, (gpointer)old_state) != (gpointer)old_state);
+}
+
+gboolean
+mono_threads_end_abort_protected_block (void)
+{
+	MonoInternalThread *thread = mono_thread_internal_current ();
+	gsize old_state, new_state;
+	do {
+		old_state = thread->thread_state;
+		verify_thread_state (old_state);
+
+		int new_val = ((old_state & ABORT_PROT_BLOCK_MASK) >> ABORT_PROT_BLOCK_SHIFT) - 1;
+		new_state = 0;
+
+		if ((old_state & INTERRUPT_REQUEST_DEFERRED_BIT) && new_val == 0) {
+			printf ("end abort on alert, promoted deferred to pront interrupt\n");
+			new_state |= INTERRUPT_REQUESTED_BIT;
+		}
+
+		//bounds check abort_prot_count
+		g_assert (new_val >= 0);
+		g_assert (new_val < (1 << ABORT_PROT_BLOCK_BITS));
+		new_state |= new_val << ABORT_PROT_BLOCK_SHIFT;
+
+	} while (InterlockedCompareExchangePointer ((volatile gpointer)&thread->thread_state, (gpointer)new_state, (gpointer)old_state) != (gpointer)old_state);
+	return (new_state & INTERRUPT_REQUESTED_BIT) == INTERRUPT_REQUESTED_BIT;
+}
+
+
 //Don't use this function, use inc/dec below
 static void
 mono_thread_abort_prot_block_count_add (MonoInternalThread *thread, int val)
@@ -249,6 +315,8 @@ mono_thread_abort_prot_block_count_add (MonoInternalThread *thread, int val)
 	gsize old_state, new_state;
 	do {
 		old_state = thread->thread_state;
+		verify_thread_state (old_state);
+
 		int new_val = val + ((old_state & ABORT_PROT_BLOCK_MASK) >> ABORT_PROT_BLOCK_SHIFT);
 		//bounds check abort_prot_count
 		g_assert (new_val >= 0);
@@ -284,10 +352,12 @@ mono_thread_clear_interruption_requested (MonoInternalThread *thread)
 	gsize old_state, new_state;
 	do {
 		old_state = thread->thread_state;
+		verify_thread_state (old_state);
+
 		//Already cleared
-		if (!(old_state & INTERRUPT_REQUESTED_BIT))
+		if (!(old_state & (INTERRUPT_REQUESTED_BIT | INTERRUPT_REQUEST_DEFERRED_BIT)))
 			return FALSE;
-		new_state = old_state & ~INTERRUPT_REQUESTED_BIT;
+		new_state = old_state & ~(INTERRUPT_REQUESTED_BIT | INTERRUPT_REQUEST_DEFERRED_BIT);
 	} while (InterlockedCompareExchangePointer ((volatile gpointer)&thread->thread_state, (gpointer)new_state, (gpointer)old_state) != (gpointer)old_state);
 	return TRUE;
 }
@@ -296,15 +366,27 @@ mono_thread_clear_interruption_requested (MonoInternalThread *thread)
 static gboolean
 mono_thread_set_interruption_requested (MonoInternalThread *thread)
 {
+	//always force when the current thread is doing it to itself.
+	gboolean force_interrupt = thread == mono_thread_internal_current ();
 	gsize old_state, new_state;
 	do {
 		old_state = thread->thread_state;
+		verify_thread_state (old_state);
+
+		int prot_count = ((old_state & ABORT_PROT_BLOCK_MASK) >> ABORT_PROT_BLOCK_SHIFT);
 		//Already set
-		if (old_state & INTERRUPT_REQUESTED_BIT)
+		if (old_state & (INTERRUPT_REQUESTED_BIT | INTERRUPT_REQUEST_DEFERRED_BIT))
 			return FALSE;
-		new_state = old_state | INTERRUPT_REQUESTED_BIT;
+
+		//If there's an outstanding prot block, we queue it
+		if (prot_count && !force_interrupt) {
+			printf ("set interrupt unhappy, as it's only putting a deferred req %d\n", force_interrupt);
+			new_state = old_state | INTERRUPT_REQUEST_DEFERRED_BIT;
+		} else
+			new_state = old_state | INTERRUPT_REQUESTED_BIT;
 	} while (InterlockedCompareExchangePointer ((volatile gpointer)&thread->thread_state, (gpointer)new_state, (gpointer)old_state) != (gpointer)old_state);
-	return TRUE;
+
+	return (new_state & INTERRUPT_REQUESTED_BIT) == INTERRUPT_REQUESTED_BIT;
 }
 
 static inline MonoNativeThreadId
