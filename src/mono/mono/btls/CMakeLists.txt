@@ -22,13 +22,9 @@ if (NOT "${BTLS_ARCH}" STREQUAL "")
 	message (WARNING "SET ARCH: ${BTLS_ARCH}")
 	set (CMAKE_SYSTEM_PROCESSOR "${BTLS_ARCH}")
 endif ()
-if (BUILD_DYNAMIC_BTLS)
+
 set (C_CXX_FLAGS "-Wall -Wsign-compare -Wmissing-field-initializers -fPIC -ggdb -fvisibility=hidden")
-elseif (BUILD_SHARED_LIBS)
-set (C_CXX_FLAGS "-Wall -Wsign-compare -Wmissing-field-initializers -fPIC -ggdb -fvisibility=hidden")
-else ()
-set (C_CXX_FLAGS "-Wall -Wsign-compare -Wmissing-field-initializers -ggdb -fvisibility=hidden")
-endif()
+
 set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${C_CXX_FLAGS} ${BTLS_CFLAGS}")
 set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${C_CXX_FLAGS} ${BTLS_CFLAGS}")
 set (CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} ${BTLS_CFLAGS}")
@@ -84,8 +80,4 @@ set (
 	${BORINGSSL_OBJECTS}
 )
 
-if (BUILD_SHARED_LIBS)
-	add_library (mono-btls-shared SHARED ${MONO_BTLS_SOURCES})
-else ()
-	add_library (mono-btls-static STATIC ${MONO_BTLS_SOURCES})
-endif ()
+add_library (mono-btls-shared SHARED ${MONO_BTLS_SOURCES})
