@@ -76,6 +76,7 @@ namespace System.Net.Http
 
                 // Configure the handle
                 SetUrl();
+                SetNetworkingOptions();
                 SetMultithreading();
                 SetTimeouts();
                 SetRedirection();
@@ -245,6 +246,14 @@ namespace System.Net.Http
 
                 scopeId = 0;
                 return false;
+            }
+
+            private void SetNetworkingOptions()
+            {
+                // Disable the TCP Nagle algorithm.  It's disabled by default starting with libcurl 7.50.2,
+                // and when enabled has a measurably negative impact on latency in key scenarios
+                // (e.g. POST'ing small-ish data).
+                SetCurlOption(CURLoption.CURLOPT_TCP_NODELAY, 1L);
             }
 
             private void SetMultithreading()
