@@ -80,7 +80,7 @@ recursively_make_pred_seq_points (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 	} 
 
-	g_free (predecessors);
+	g_array_free (predecessors, TRUE);
 }
 
 static void
