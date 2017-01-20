@@ -501,7 +501,7 @@ inline regNumber genRegNumFromMask(regMaskTP mask)
 }
 
 //------------------------------------------------------------------------------
-// genTypeValueFitsIn : Checks if a value can be represented by a given type.
+// genTypeCanRepresentValue: Checks if a value can be represented by a given type.
 //
 // Arguments:
 //    value - the value to check
@@ -515,7 +515,7 @@ inline regNumber genRegNumFromMask(regMaskTP mask)
 //    always returned.
 
 template <typename TValue>
-inline bool genTypeValueFitsIn(TValue value, var_types type)
+inline bool genTypeCanRepresentValue(var_types type, TValue value)
 {
     switch (type)
     {
