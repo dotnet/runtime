@@ -61,6 +61,9 @@ __dotnet=$__toolsDir/dotnetcli/dotnet
 __packagesDir=$__scriptpath/../packages
 __sharedFxDir=$__toolsDir/dotnetcli/shared/Microsoft.NETCore.App/$__CoreClrVersion/
 __rid=$($__dotnet --info | sed -n -e 's/^.*RID:[[:space:]]*//p')
+if [[ $__rid == *"osx"* ]]; then
+    __rid="osx.10.10-x64"
+fi
 
 restore_crossgen
 crossgen_everything
