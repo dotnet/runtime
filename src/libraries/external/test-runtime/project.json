@@ -19,7 +19,12 @@
     "System.Net.TestData": "1.0.0-prerelease"
   },
   "frameworks": {
-    "netstandard2.0": {}
+    "netstandard2.0": {},
+    "net463": {
+      "dependencies": {
+        "xunit.runner.console": "2.2.0-beta2-build3300"
+      }
+    }
   },
   "runtimes": {
     "win7-x64": {}
