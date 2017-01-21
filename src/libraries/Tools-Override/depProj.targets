@@ -90,5 +90,20 @@ See the LICENSE file in the project root for more information.
 
   <!-- Required by Common.Targets but not used for depproj -->
   <Target Name="CreateManifestResourceNames" />
+  
+  <!-- Support filtering to a subset of packages -->
+  <Target Name="FilterNugetPackages" AfterTargets="ResolveNuGetPackages">
+    <ItemGroup>
+      <_referenceCopyLocalByPackageId Include="@(ReferenceCopyLocalPaths->'%(NuGetPackageId)')">
+        <OriginalItemSpec>%(Identity)</OriginalItemSpec>
+      </_referenceCopyLocalByPackageId>
+
+      <_referenceCopyLocalByPackageIdToRemove Include="@(_referenceCopyLocalByPackageId)" Exclude="@(PackageToInclude)" Condition="'@(PackageToInclude)' != ''" />
+      <_filteredReferenceCopyLocalByPackageId Include="@(_referenceCopyLocalByPackageId)" Exclude="@(_referenceCopyLocalByPackageIdToRemove);@(PackageToExclude)" />
+
+      <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)"/>
+      <ReferenceCopyLocalPaths Include="@(_filteredReferenceCopyLocalByPackageId->'%(OriginalItemSpec)')" />
+    </ItemGroup>
+  </Target>
 
 </Project>

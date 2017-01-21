@@ -30,7 +30,7 @@
     <Compile Include="Fakes\HostInformation.cs" />
     <Compile Include="Fakes\IPAddressPal.cs" />
     <Compile Include="Fakes\CookieException.cs" />
-    <Compile Include="Fakes\Serialization.cs" Condition="'$(TargetGroup)' != 'netstandard'" />
+    <Compile Include="Fakes\Serialization.cs" Condition="'$(TargetGroup)' != 'netstandard' And '$(TargetGroup)' != 'netstandard1.3'" />
     <Compile Include="..\..\src\System\Net\Cookie.cs">
       <Link>ProductionCode\System\Net\Cookie.cs</Link>
     </Compile>
