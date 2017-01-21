@@ -128,8 +128,7 @@ def static getOSGroup(def os) {
                 --testNativeBinDir=\"\${WORKSPACE}/bin/obj/${osGroup}.${architecture}.${configuration}/tests\" \\
                 --coreClrBinDir=\"\${WORKSPACE}/bin/Product/${osGroup}.${architecture}.${configuration}\" \\
                 --mscorlibDir=\"\${WORKSPACE}/bin/Product/${osGroup}.${architecture}.${configuration}\" \\
-                --coreFxBinDir=\"\${WORKSPACE}/corefx/bin/${osGroup}.AnyCPU.${configuration};\${WORKSPACE}/corefx/bin/Unix.AnyCPU.${configuration};\${WORKSPACE}/corefx/bin/AnyOS.AnyCPU.${configuration}\" \\
-                --coreFxNativeBinDir=\"\${WORKSPACE}/corefx/bin/${osGroup}.${architecture}.${configuration}\" \\
+                --coreFxBinDir=\"\${WORKSPACE}/corefx\" \\
 				--runType=\"${runType}\" \\
 				--benchViewOS=\"${os}\" \\
 				--uploadToBenchview""")

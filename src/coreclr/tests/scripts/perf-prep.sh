@@ -68,6 +68,7 @@ curl https://ci.dot.net/job/dotnet_corefx/job/master/job/ubuntu14.04_release/las
 # Unpack the corefx binaries
 pushd corefx > /dev/null
 tar -xf build.tar.gz
+rm build.tar.gz
 popd > /dev/null
 
 # Unzip the tests first.  Exit with 0
