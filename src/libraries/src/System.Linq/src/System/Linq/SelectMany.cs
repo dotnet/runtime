@@ -245,7 +245,7 @@ namespace System.Linq
                     builder.AddRange(_selector(element));
                 }
 
-                TSource[] array = builder.ToArray();
+                TResult[] array = builder.ToArray();
 
                 ArrayBuilder<Marker> markers = builder.Markers;
                 for (int i = 0; i < markers.Count; i++)
