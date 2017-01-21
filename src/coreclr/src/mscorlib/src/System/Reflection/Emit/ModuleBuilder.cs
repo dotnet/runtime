@@ -1142,47 +1142,6 @@ namespace System.Reflection.Emit
                 parameterTypes, requiredParameterTypeCustomModifiers, optionalParameterTypeCustomModifiers);
         }
         
-        public MethodBuilder DefinePInvokeMethod(String name, String dllName, MethodAttributes attributes, 
-            CallingConventions callingConvention, Type returnType, Type[] parameterTypes, 
-            CallingConvention nativeCallConv, CharSet nativeCharSet)
-        {
-            Contract.Ensures(Contract.Result<MethodBuilder>() != null);
-
-            return DefinePInvokeMethod(name, dllName, name, attributes, callingConvention, returnType, parameterTypes, nativeCallConv, nativeCharSet);
-        }
-
-        public MethodBuilder DefinePInvokeMethod(String name, String dllName, String entryName, MethodAttributes attributes, 
-            CallingConventions callingConvention, Type returnType, Type[] parameterTypes, CallingConvention nativeCallConv, 
-            CharSet nativeCharSet)
-        {
-            Contract.Ensures(Contract.Result<MethodBuilder>() != null);
-
-            lock(SyncRoot)
-            {
-                return DefinePInvokeMethodNoLock(name, dllName, entryName, attributes, callingConvention, 
-                                                 returnType, parameterTypes, nativeCallConv, nativeCharSet);
-            }
-        }
-
-        private MethodBuilder DefinePInvokeMethodNoLock(String name, String dllName, String entryName, MethodAttributes attributes, 
-            CallingConventions callingConvention, Type returnType, Type[] parameterTypes, CallingConvention nativeCallConv, 
-            CharSet nativeCharSet)
-        {
-            //Global methods must be static.        
-            if ((attributes & MethodAttributes.Static) == 0)
-            {
-                throw new ArgumentException(Environment.GetResourceString("Argument_GlobalFunctionHasToBeStatic"));
-            }
-            Contract.Ensures(Contract.Result<MethodBuilder>() != null);
-            Contract.EndContractBlock();
-
-            CheckContext(returnType);
-            CheckContext(parameterTypes);
-
-            m_moduleData.m_fHasGlobal = true;
-            return m_moduleData.m_globalTypeBuilder.DefinePInvokeMethod(name, dllName, entryName, attributes, callingConvention, returnType, parameterTypes, nativeCallConv, nativeCharSet);
-        }
-        
         public void CreateGlobalFunctions()
         {
             lock(SyncRoot)
