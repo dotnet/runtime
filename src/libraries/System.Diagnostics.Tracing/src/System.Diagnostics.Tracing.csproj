@@ -29,7 +29,7 @@
     <Reference Include="System.Diagnostics.Tools">
       <Aliases>System_Diagnostics_Tools</Aliases>
     </Reference>
-    <Reference Include="System.Private.CoreLib" />
+    <ReferenceFromRuntime Include="System.Private.CoreLib" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

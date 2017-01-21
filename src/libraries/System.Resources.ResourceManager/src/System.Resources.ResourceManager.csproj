@@ -37,7 +37,7 @@
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Diagnostics.Tools" />
-    <Reference Include="System.Private.CoreLib" />
+    <ReferenceFromRuntime Include="System.Private.CoreLib" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
