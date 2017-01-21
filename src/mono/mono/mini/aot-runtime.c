@@ -3958,14 +3958,17 @@ load_method (MonoDomain *domain, MonoAotModule *amodule, MonoImage *image, MonoM
 
 	amodule_lock (amodule);
 
-	InterlockedIncrement (&mono_jit_stats.methods_aot);
-
-	amodule->methods_loaded [method_index / 32] |= 1 << (method_index % 32);
-
 	init_plt (amodule);
+
+	InterlockedIncrement (&mono_jit_stats.methods_aot);
 
 	if (method && method->wrapper_type)
 		g_hash_table_insert (amodule->method_to_code, method, code);
+
+	/* Commit changes since methods_loaded is accessed outside the lock */
+	mono_memory_barrier ();
+
+	amodule->methods_loaded [method_index / 32] |= 1 << (method_index % 32);
 
 	amodule_unlock (amodule);
 
