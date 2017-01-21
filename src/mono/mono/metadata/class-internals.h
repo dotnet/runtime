@@ -956,7 +956,7 @@ mono_class_get_overrides_full (MonoImage *image, guint32 type_token, MonoMethod 
 			       MonoGenericContext *generic_context);
 
 MonoMethod*
-mono_class_get_cctor (MonoClass *klass);
+mono_class_get_cctor (MonoClass *klass) MONO_LLVM_INTERNAL;
 
 MonoMethod*
 mono_class_get_finalizer (MonoClass *klass);

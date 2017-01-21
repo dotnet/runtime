@@ -14,7 +14,7 @@ gboolean mono_aot_is_linkonce_method        (MonoMethod *method) MONO_LLVM_INTER
 gboolean mono_aot_is_direct_callable        (MonoJumpInfo *patch_info) MONO_LLVM_INTERNAL;
 void     mono_aot_mark_unused_llvm_plt_entry(MonoJumpInfo *patch_info) MONO_LLVM_INTERNAL;
 char*    mono_aot_get_plt_symbol            (MonoJumpInfoType type, gconstpointer data) MONO_LLVM_INTERNAL;
-char*    mono_aot_get_direct_call_symbol    (MonoJumpInfoType type, gconstpointer data);
+char*    mono_aot_get_direct_call_symbol    (MonoJumpInfoType type, gconstpointer data) MONO_LLVM_INTERNAL;
 int      mono_aot_get_method_index          (MonoMethod *method) MONO_LLVM_INTERNAL;
 MonoJumpInfo* mono_aot_patch_info_dup       (MonoJumpInfo* ji) MONO_LLVM_INTERNAL;
 
