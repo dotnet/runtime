@@ -809,8 +809,8 @@ struct BasicBlock : private LIR::Range
     VARSET_TP bbLiveOut; // variables live on exit
 
     // Use, def, live in/out information for the implicit "Heap" variable.
-    unsigned bbHeapUse : 1;
-    unsigned bbHeapDef : 1;
+    unsigned bbHeapUse : 1; // must be set to true for any block that references the global Heap
+    unsigned bbHeapDef : 1; // must be set to true for any block that mutates the global Heap
     unsigned bbHeapLiveIn : 1;
     unsigned bbHeapLiveOut : 1;
     unsigned bbHeapHavoc : 1; // If true, at some point the block does an operation that leaves the heap
