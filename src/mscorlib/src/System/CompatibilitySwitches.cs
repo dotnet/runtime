@@ -20,39 +20,9 @@ namespace System
             }
         }
 
-        private static bool IsCompatibilitySwitchSet(string compatibilitySwitch)
-        {
-            bool? result = AppDomain.CurrentDomain.IsCompatibilitySwitchSet(compatibilitySwitch);
-            return (result.HasValue && result.Value);
-        }
-
         internal static void InitializeSwitches()
         {
             s_AreSwitchesSet = true;
-        }
-
-        public static bool IsNetFx40TimeSpanLegacyFormatMode
-        {
-            get
-            {
-                return false;
-            }
-        }
-
-        public static bool IsNetFx40LegacySecurityPolicy
-        {
-            get
-            {
-                return false;
-            }
-        }
-
-        public static bool IsNetFx45LegacyManagedDeflateStream
-        {
-            get
-            {
-                return false;
-            }
         }
     }
 }

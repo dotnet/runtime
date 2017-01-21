@@ -28,8 +28,7 @@ namespace System
     [Serializable]
     [ClassInterface(ClassInterfaceType.None)]
     [System.Runtime.InteropServices.ComVisible(true)]
-    public sealed class AppDomainSetup :
-        IAppDomainSetup
+    public sealed class AppDomainSetup
     {
         [Serializable]
         internal enum LoaderInformation
@@ -439,22 +438,6 @@ namespace System
             return path;
         }
 
-        private bool IsFilePath(String path)
-        {
-#if !PLATFORM_UNIX
-            return (path[1] == ':') || ( (path[0] == '\\') && (path[1] == '\\') );
-#else
-            return (path[0] == '/');
-#endif // !PLATFORM_UNIX
-        }
-
-        internal static String ApplicationBaseKey
-        {
-            get {
-                return ACTAG_APP_BASE_URL;
-            }
-        }
-
         public String ConfigurationFile
         {
             get {
@@ -466,40 +449,12 @@ namespace System
             }
         }
 
-        // Used by the ResourceManager internally.  This must not do any 
-        // security checks to avoid infinite loops.
-        internal String ConfigurationFileInternal
-        {
-            get {
-                return NormalizePath(Value[(int) LoaderInformation.ConfigurationFileValue], true);
-            }
-        }
-
-        internal static String ConfigurationFileKey
-        {
-            get {
-                return ACTAG_APP_CONFIG_FILE;
-            }
-        }
-
         public byte[] GetConfigurationBytes()
         {
             if (_ConfigurationBytes == null)
                 return null;
 
             return (byte[]) _ConfigurationBytes.Clone();
-        }
-
-        public void SetConfigurationBytes(byte[] value)
-        {
-            _ConfigurationBytes = value;
-        }
-
-        private static String ConfigurationBytesKey
-        {
-            get {
-                return ACTAG_APP_CONFIG_BLOB;
-            }
         }
 
         // only needed by AppDomain.Setup(). Not really needed by users. 
@@ -543,105 +498,6 @@ namespace System
             }
         }
 
-        internal bool CheckedForTargetFrameworkName
-        {
-            get { return _CheckedForTargetFrameworkName; }
-            set { _CheckedForTargetFrameworkName = value; }
-        }
-
-        public String DynamicBase
-        {
-            get {
-                return VerifyDir(Value[(int) LoaderInformation.DynamicBaseValue], true);
-            }
-
-            set {
-                if (value == null)
-                    Value[(int) LoaderInformation.DynamicBaseValue] = null;
-                else {
-                    if(ApplicationName == null)
-                        throw new MemberAccessException(Environment.GetResourceString("AppDomain_RequireApplicationName"));
-                    
-                    StringBuilder s = new StringBuilder( NormalizePath(value, false) );
-                    s.Append('\\');
-                    string h = ParseNumbers.IntToString(ApplicationName.GetLegacyNonRandomizedHashCode(),
-                                                        16, 8, '0', ParseNumbers.PrintAsI4);
-                    s.Append(h);
-                    
-                    Value[(int) LoaderInformation.DynamicBaseValue] = s.ToString();
-                }
-            }
-        }
-
-        internal static String DynamicBaseKey
-        {
-            get {
-                return ACTAG_APP_DYNAMIC_BASE;
-            }
-        }
-
-        public bool DisallowPublisherPolicy
-        {
-            get 
-            {
-                return (Value[(int) LoaderInformation.DisallowPublisherPolicyValue] != null);
-            }
-            set
-            {
-                if (value)
-                    Value[(int) LoaderInformation.DisallowPublisherPolicyValue]="true";
-                else
-                    Value[(int) LoaderInformation.DisallowPublisherPolicyValue]=null;
-            }
-        }
-
-
-        public bool DisallowBindingRedirects
-        {
-            get 
-            {
-                return (Value[(int) LoaderInformation.DisallowBindingRedirectsValue] != null);
-            }
-            set
-            {
-                if (value)
-                    Value[(int) LoaderInformation.DisallowBindingRedirectsValue] = "true";
-                else
-                    Value[(int) LoaderInformation.DisallowBindingRedirectsValue] = null;
-            }
-        }
-
-        public bool DisallowCodeDownload
-        {
-            get 
-            {
-                return (Value[(int) LoaderInformation.DisallowCodeDownloadValue] != null);
-            }
-            set
-            {
-                if (value)
-                    Value[(int) LoaderInformation.DisallowCodeDownloadValue] = "true";
-                else
-                    Value[(int) LoaderInformation.DisallowCodeDownloadValue] = null;
-            }
-        }
-
-
-        public bool DisallowApplicationBaseProbing
-        {
-            get 
-            {
-                return (Value[(int) LoaderInformation.DisallowAppBaseProbingValue] != null);
-            }
-            set
-            {
-                if (value)
-                    Value[(int) LoaderInformation.DisallowAppBaseProbingValue] = "true";
-                else
-                    Value[(int) LoaderInformation.DisallowAppBaseProbingValue] = null;
-            }
-        }
-
         private String VerifyDir(String dir, bool normalize)
         {
             if (dir != null) {
@@ -656,93 +512,6 @@ namespace System
             return dir;
         }
 
-        private void VerifyDirList(String dirs)
-        {
-            if (dirs != null) {
-                String[] dirArray = dirs.Split(';');
-                int len = dirArray.Length;
-                
-                for (int i = 0; i < len; i++)
-                    VerifyDir(dirArray[i], true);
-            }
-        }
-
-        internal String DeveloperPath
-        {
-            get {
-                String dirs = Value[(int) LoaderInformation.DevPathValue];
-                VerifyDirList(dirs);
-                return dirs;
-            }
-
-            set {
-                if(value == null)
-                    Value[(int) LoaderInformation.DevPathValue] = null;
-                else {
-                    String[] directories = value.Split(';');
-                    int size = directories.Length;
-                    StringBuilder newPath = StringBuilderCache.Acquire();
-                    bool fDelimiter = false;
-                        
-                    for(int i = 0; i < size; i++) {
-                        if(directories[i].Length != 0) {
-                            if(fDelimiter) 
-                                newPath.Append(";");
-                            else
-                                fDelimiter = true;
-                            
-                            newPath.Append(Path.GetFullPath(directories[i]));
-                        }
-                    }
-                    
-                    String newString = StringBuilderCache.GetStringAndRelease(newPath);
-                    if (newString.Length == 0)
-                        Value[(int) LoaderInformation.DevPathValue] = null;
-                    else
-                        Value[(int) LoaderInformation.DevPathValue] = newString;
-                }
-            }
-        }
-        
-        internal static String DisallowPublisherPolicyKey
-        {
-            get
-            {
-                return ACTAG_DISALLOW_APPLYPUBLISHERPOLICY;
-            }
-        }
-
-        internal static String DisallowCodeDownloadKey
-        {
-            get
-            {
-                return ACTAG_CODE_DOWNLOAD_DISABLED;
-            }
-        }
-
-        internal static String DisallowBindingRedirectsKey
-        {
-            get
-            {
-                return ACTAG_DISALLOW_APP_BINDING_REDIRECTS;
-            }
-        }
-
-        internal static String DeveloperPathKey
-        {
-            get {
-                return ACTAG_DEV_PATH;
-            }
-        }
-
-        internal static String DisallowAppBaseProbingKey
-        {
-            get
-            {
-                return ACTAG_DISALLOW_APP_BASE_PROBING;
-            }
-        }
-
         public String ApplicationName
         {
             get {
@@ -751,13 +520,6 @@ namespace System
 
             set {
                 Value[(int) LoaderInformation.ApplicationNameValue] = value;
-            }
-        }
-
-        internal static String ApplicationNameKey
-        {
-            get {
-                return ACTAG_APP_NAME;
             }
         }
 
@@ -804,115 +566,6 @@ namespace System
             }
         }
 
-        public String PrivateBinPath
-        {
-            get {
-                String dirs = Value[(int) LoaderInformation.PrivateBinPathValue];
-                VerifyDirList(dirs);
-                return dirs;
-            }
-
-            set {
-                Value[(int) LoaderInformation.PrivateBinPathValue] = value;
-            }
-        }
-
-        internal static String PrivateBinPathKey
-        {
-            get {
-                return ACTAG_APP_PRIVATE_BINPATH;
-            }
-        }
-
-        public String PrivateBinPathProbe
-        {
-            get {
-                return Value[(int) LoaderInformation.PrivateBinPathProbeValue];
-            }
-
-            set {
-                Value[(int) LoaderInformation.PrivateBinPathProbeValue] = value;
-            }
-        }
-
-        internal static String PrivateBinPathProbeKey
-        {
-            get {
-                return ACTAG_BINPATH_PROBE_ONLY;
-            }
-        }
-
-        public String ShadowCopyDirectories
-        {
-            get {
-                String dirs = Value[(int) LoaderInformation.ShadowCopyDirectoriesValue];
-                VerifyDirList(dirs);
-                return dirs;
-            }
-
-            set {
-                Value[(int) LoaderInformation.ShadowCopyDirectoriesValue] = value;
-            }
-        }
-
-        internal static String ShadowCopyDirectoriesKey
-        {
-            get {
-                return ACTAG_APP_SHADOW_COPY_DIRS;
-            }
-        }
-
-        public String ShadowCopyFiles
-        {
-            get {
-                return Value[(int) LoaderInformation.ShadowCopyFilesValue];
-            }
-
-            set {
-                if((value != null) && 
-                   (String.Compare(value, "true", StringComparison.OrdinalIgnoreCase) == 0))
-                    Value[(int) LoaderInformation.ShadowCopyFilesValue] = value;
-                else
-                    Value[(int) LoaderInformation.ShadowCopyFilesValue] = null;
-            }
-        }
-
-        internal static String ShadowCopyFilesKey
-        {
-            get {
-                return ACTAG_FORCE_CACHE_INSTALL;
-            }
-        }
-
-        public String CachePath
-        {
-            get {
-                return VerifyDir(Value[(int) LoaderInformation.CachePathValue], false);
-            }
-
-            set {
-                Value[(int) LoaderInformation.CachePathValue] = NormalizePath(value, false);
-            }
-        }
-
-        internal static String CachePathKey
-        {
-            get {
-                return ACTAG_APP_CACHE_BASE;
-            }
-        }
-
-        public String LicenseFile
-        {
-            get {
-                return VerifyDir(Value[(int) LoaderInformation.LicenseFileValue], true);
-            }
-
-            set {
-                Value[(int) LoaderInformation.LicenseFileValue] = value;
-            }
-        }
-
         public LoaderOptimization LoaderOptimization
         {
             get {
@@ -935,34 +588,6 @@ namespace System
         {
             get {
                 return CONFIGURATION_EXTENSION;
-            }
-        }
-
-        internal static String PrivateBinPathEnvironmentVariable
-        {
-            get {
-                return APPENV_RELATIVEPATH;
-            }
-        }
-
-        internal static string RuntimeConfigurationFile
-        {
-            get {
-                return MACHINE_CONFIGURATION_FILE;
-            }
-        }
-
-        internal static string MachineConfigKey
-        {
-            get {
-                return ACTAG_MACHINE_CONFIG;
-            }
-        }
-
-        internal static string HostBindingKey
-        {
-            get {
-                return ACTAG_HOST_CONFIG_FILE;
             }
         }
 
