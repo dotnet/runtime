@@ -659,28 +659,6 @@ namespace System.Reflection.Emit {
         #endregion
 
         #region Private Members
-        private MethodBuilder DefinePInvokeMethodHelper(
-            String name, String dllName, String importName, MethodAttributes attributes, CallingConventions callingConvention, 
-            Type returnType, Type[] returnTypeRequiredCustomModifiers, Type[] returnTypeOptionalCustomModifiers,
-            Type[] parameterTypes, Type[][] parameterTypeRequiredCustomModifiers, Type[][] parameterTypeOptionalCustomModifiers,
-            CallingConvention nativeCallConv, CharSet nativeCharSet)
-        {
-            CheckContext(returnType);
-            CheckContext(returnTypeRequiredCustomModifiers, returnTypeOptionalCustomModifiers, parameterTypes);
-            CheckContext(parameterTypeRequiredCustomModifiers);
-            CheckContext(parameterTypeOptionalCustomModifiers);
-
-            AppDomain.CheckDefinePInvokeSupported();
-
-            lock (SyncRoot)
-            {
-                return DefinePInvokeMethodHelperNoLock(name, dllName, importName, attributes, callingConvention, 
-                                                       returnType, returnTypeRequiredCustomModifiers, returnTypeOptionalCustomModifiers,
-                                                       parameterTypes, parameterTypeRequiredCustomModifiers, parameterTypeOptionalCustomModifiers,
-                                                       nativeCallConv, nativeCharSet);
-            }
-        }
-
         private MethodBuilder DefinePInvokeMethodHelperNoLock(
             String name, String dllName, String importName, MethodAttributes attributes, CallingConventions callingConvention, 
             Type returnType, Type[] returnTypeRequiredCustomModifiers, Type[] returnTypeOptionalCustomModifiers,
@@ -1782,41 +1760,6 @@ namespace System.Reflection.Emit {
             m_constructorCount++;
 
             return constBuilder;
-        }
-
-        #endregion
-
-        #region Define PInvoke
-        public MethodBuilder DefinePInvokeMethod(String name, String dllName, MethodAttributes attributes,
-            CallingConventions callingConvention, Type returnType, Type[] parameterTypes,
-            CallingConvention nativeCallConv, CharSet nativeCharSet)
-        {
-            MethodBuilder method = DefinePInvokeMethodHelper(
-                name, dllName, name, attributes, callingConvention, returnType, null, null, 
-                parameterTypes, null, null, nativeCallConv, nativeCharSet);
-            return method;
-        }
-
-        public MethodBuilder DefinePInvokeMethod(String name, String dllName, String entryName, MethodAttributes attributes, 
-            CallingConventions callingConvention, Type returnType, Type[] parameterTypes, 
-            CallingConvention nativeCallConv, CharSet nativeCharSet)
-        {
-            MethodBuilder method = DefinePInvokeMethodHelper(
-                name, dllName, entryName, attributes, callingConvention, returnType, null, null, 
-                parameterTypes, null, null, nativeCallConv, nativeCharSet);
-            return method;
-        }
-
-        public MethodBuilder DefinePInvokeMethod(String name, String dllName, String entryName, MethodAttributes attributes,
-            CallingConventions callingConvention, 
-            Type returnType, Type[] returnTypeRequiredCustomModifiers, Type[] returnTypeOptionalCustomModifiers,
-            Type[] parameterTypes, Type[][] parameterTypeRequiredCustomModifiers, Type[][] parameterTypeOptionalCustomModifiers,
-            CallingConvention nativeCallConv, CharSet nativeCharSet)
-        {
-            MethodBuilder method = DefinePInvokeMethodHelper(
-            name, dllName, entryName, attributes, callingConvention, returnType, returnTypeRequiredCustomModifiers, returnTypeOptionalCustomModifiers, 
-            parameterTypes, parameterTypeRequiredCustomModifiers, parameterTypeOptionalCustomModifiers, nativeCallConv, nativeCharSet);
-            return method;
         }
 
         #endregion

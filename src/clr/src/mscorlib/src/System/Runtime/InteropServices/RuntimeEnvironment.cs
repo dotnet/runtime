@@ -58,21 +58,6 @@ namespace System.Runtime.InteropServices
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern String GetRuntimeDirectoryImpl();
         
-        // Returns the system ConfigurationFile
-        public static String SystemConfigurationFile {
-            get {
-                StringBuilder sb = new StringBuilder(Path.MaxPath);
-                sb.Append(GetRuntimeDirectory());
-                sb.Append(AppDomainSetup.RuntimeConfigurationFile);
-                String path = sb.ToString();
-                
-                // Do security check
-                new FileIOPermission(FileIOPermissionAccess.PathDiscovery, path).Demand();
-
-                return path;
-            }
-        }
-
 #if FEATURE_COMINTEROP
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
