@@ -55,6 +55,27 @@
     <Compile Include="UnionTests.cs" />
     <Compile Include="WhereTests.cs" />
     <Compile Include="ZipTests.cs" />
+    <Compile Include="$(CommonTestPath)\System\Linq\SkipTakeData.cs">
+      <Link>Common\System\Linq\SkipTakeData.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
+    <Compile Include="SkipLastTests.netcoreapp.cs" />
+    <Compile Include="TakeLastTests.netcoreapp.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- TODO: Remove or keep.
+    <ProjectReference Include="..\pkg\System.Linq.Queryable.pkgproj">
+      <Project>{be12b753-c130-4b68-86e3-877f1aee52c0}</Project>
+      <Name>System.Linq.Queryable</Name>
+      <Private>true</Private>
+    </ProjectReference>
+    -->
+    <ProjectReference Include="..\..\System.Linq\src\System.Linq.csproj">
+      <Project>{CA488507-3B6E-4494-B7BE-7B4EEEB2C4D1}</Project>
+      <Name>System.Linq</Name>
+      <Private>true</Private>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

@@ -73,9 +73,23 @@
     <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
       <Link>Common\System\PlatformDetection.cs</Link>
     </Compile>
+    <Compile Include="$(CommonTestPath)\System\Linq\SkipTakeData.cs">
+      <Link>Common\System\Linq\SkipTakeData.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
     <Compile Include="ToHashSetTests.netcoreapp.cs" />
+    <Compile Include="SkipLastTests.netcoreapp.cs" />
+    <Compile Include="TakeLastTests.netcoreapp.cs" />
   </ItemGroup>
+  <!-- TODO: Remove or keep.
+  <ItemGroup>
+    <ProjectReference Include="..\pkg\System.Linq.pkgproj">
+      <Project>{ca488507-3b6e-4494-b7be-7b4eeeb2c4d1}</Project>
+      <Name>System.Linq</Name>
+      <Private>True</Private>
+    </ProjectReference>
+  </ItemGroup>
+  -->
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
