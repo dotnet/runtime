@@ -12677,7 +12677,6 @@
       <Member Name="#ctor(T[],System.Int32,System.Int32)" />
       <Member Name="#ctor(System.Void*,System.Int32)" />
       <Member Name="DangerousGetPinnableReference" />
-      <Member Name="op_Implicit(System.Span&lt;T&gt;)" ReturnType="System.ReadOnlySpan&lt;T&gt;" />
       <Member Name="op_Implicit(T[])" ReturnType="System.ReadOnlySpan&lt;T&gt;" />
       <Member Name="op_Implicit(System.ArraySegment&lt;T&gt;)" ReturnType="System.ReadOnlySpan&lt;T&gt;" />
       <Member Name="op_Equality(System.ReadOnlySpan&lt;T&gt;,System.ReadOnlySpan&lt;T&gt;)" />
