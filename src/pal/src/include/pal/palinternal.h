@@ -601,11 +601,7 @@ function_name() to call the system's implementation
 #define INFTIM  -1
 #endif // !HAVE_INFTIM
 
-#if (__GNUC__ >= 4)
 #define OffsetOf(TYPE, MEMBER) __builtin_offsetof(TYPE, MEMBER)
-#else
-#define OffsetOf(s, f) (INT)(SIZE_T)&(((s*)0)->f)
-#endif /* __GNUC__ version check*/
 
 #undef assert
 #define assert (Use__ASSERTE_instead_of_assert) assert
