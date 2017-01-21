@@ -55,9 +55,11 @@
     <Compile Include="Shuffler.cs" />
     <Compile Include="SingleOrDefaultTests.cs" />
     <Compile Include="SingleTests.cs" />
+    <Compile Include="SkipLastTests.cs" />
     <Compile Include="SkipTests.cs" />
     <Compile Include="SkipWhileTests.cs" />
     <Compile Include="SumTests.cs" />
+    <Compile Include="TakeLastTests.cs" />
     <Compile Include="TakeTests.cs" />
     <Compile Include="TakeWhileTests.cs" />
     <Compile Include="TestExtensions.cs" />
@@ -65,6 +67,7 @@
     <Compile Include="ThenByTests.cs" />
     <Compile Include="ToArrayTests.cs" />
     <Compile Include="ToDictionaryTests.cs" />
+    <Compile Include="ToHashSetTests.cs" />
     <Compile Include="ToListTests.cs" />
     <Compile Include="ToLookupTests.cs" />
     <Compile Include="UnionTests.cs" />
@@ -77,19 +80,5 @@
       <Link>Common\System\Linq\SkipTakeData.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
-    <Compile Include="ToHashSetTests.netcoreapp.cs" />
-    <Compile Include="SkipLastTests.netcoreapp.cs" />
-    <Compile Include="TakeLastTests.netcoreapp.cs" />
-  </ItemGroup>
-  <!-- TODO: Remove or keep.
-  <ItemGroup>
-    <ProjectReference Include="..\pkg\System.Linq.pkgproj">
-      <Project>{ca488507-3b6e-4494-b7be-7b4eeeb2c4d1}</Project>
-      <Name>System.Linq</Name>
-      <Private>True</Private>
-    </ProjectReference>
-  </ItemGroup>
-  -->
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
