@@ -264,7 +264,6 @@
     <SystemSources Include="$(BclSourcesRoot)\System\AppDomainManager.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\IAppDomainPauseManager.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\IAppDomain.cs" />
-    <SystemSources Include="$(BclSourcesRoot)\System\IAppDomainSetup.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\AppDomainAttributes.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\AppDomainUnloadedException.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\ApplicationId.cs" />
