@@ -41,7 +41,7 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'=='netstandard' AND '$(TargetsWindows)' == 'true'">
     <TargetingPackReference Include="System.Private.CoreLib" />
-    <Reference Include="System.Private.CoreLib" />
+    <ReferenceFromRuntime Include="System.Private.CoreLib" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'=='netstandard' AND '$(TargetsWindows)' != 'true'">
     <Reference Include="System.Resources.ResourceManager" />

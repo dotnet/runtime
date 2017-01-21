@@ -22,7 +22,7 @@
     <TargetingPackReference Include="System.Private.CoreLib" Condition="'$(TargetGroup)' != 'net462'" />
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="System.Private.CoreLib" />
+    <ReferenceFromRuntime Include="System.Private.CoreLib" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
