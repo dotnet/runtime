@@ -1879,7 +1879,7 @@ Parameters:
     None
 
 Return value:
-    TRUE - succeeded, FALSE - failed
+    TRUE - successfully launched by debugger, FALSE - not launched or some failure in the handshake
 --*/
 BOOL
 PALAPI
@@ -1889,7 +1889,7 @@ PAL_NotifyRuntimeStarted()
     char continueSemName[CLR_SEM_MAX_NAMELEN];
     sem_t *startupSem = SEM_FAILED;
     sem_t *continueSem = SEM_FAILED;
-    BOOL result = TRUE;
+    BOOL launched = FALSE;
 
     UINT64 processIdDisambiguationKey = 0;
     GetProcessIdDisambiguationKey(gPID, &processIdDisambiguationKey);
@@ -1899,9 +1899,7 @@ PAL_NotifyRuntimeStarted()
 
     TRACE("PAL_NotifyRuntimeStarted opening continue '%s' startup '%s'\n", continueSemName, startupSemName);
 
-
-    // Open the debugger startup semaphore. If it doesn't exists, then we do nothing and
-    // the function is successful.
+    // Open the debugger startup semaphore. If it doesn't exists, then we do nothing and return
     startupSem = sem_open(startupSemName, 0);
     if (startupSem == SEM_FAILED)
     {
@@ -1913,7 +1911,6 @@ PAL_NotifyRuntimeStarted()
     if (continueSem == SEM_FAILED)
     {
         ASSERT("sem_open(%s) failed: %d (%s)\n", continueSemName, errno, strerror(errno));
-        result = FALSE;
         goto exit;
     }
 
@@ -1921,7 +1918,6 @@ PAL_NotifyRuntimeStarted()
     if (sem_post(startupSem) != 0)
     {
         ASSERT("sem_post(startupSem) failed: errno is %d (%s)\n", errno, strerror(errno));
-        result = FALSE;
         goto exit;
     }
 
@@ -1929,9 +1925,11 @@ PAL_NotifyRuntimeStarted()
     if (sem_wait(continueSem) != 0)
     {
         ASSERT("sem_wait(continueSem) failed: errno is %d (%s)\n", errno, strerror(errno));
-        result = FALSE;
         goto exit;
     }
+
+    // Returns that the runtime was successfully launched for debugging
+    launched = TRUE;
 
 exit:
     if (startupSem != SEM_FAILED)
@@ -1942,7 +1940,7 @@ exit:
     {
         sem_close(continueSem);
     }
-    return result;
+    return launched;
 }
 
 /*++
