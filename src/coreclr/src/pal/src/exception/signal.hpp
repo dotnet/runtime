@@ -46,13 +46,6 @@ Function :
 --*/
 void SEHCleanupSignals();
 
-#if (__GNUC__ > 3 ||                                            \
-     (__GNUC__ == 3 && __GNUC_MINOR__ > 2))
-// For gcc > 3.2, sjlj exceptions semantics are no longer available
-// Therefore we need to hijack out of signal handlers before second pass
-#define HIJACK_ON_SIGNAL 1
-#endif
-
 #endif // !HAVE_MACH_EXCEPTIONS
 
 #endif /* _PAL_SIGNAL_HPP_ */
