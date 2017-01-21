@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
@@ -82,12 +82,16 @@
     <Compile Include="FileStream\ctor_str_fm_fa.cs" />
     <Compile Include="FileStream\ctor_str_fm.cs" />
     <Compile Include="File\Append.cs" />
+    <Compile Include="File\AppendAsync.cs" />
     <Compile Include="File\Create.cs" />
     <Compile Include="File\Delete.cs" />
     <Compile Include="File\GetSetAttributes.cs" />
     <Compile Include="File\Move.cs" />
+    <Compile Include="File\ReadWriteAllBytesAsync.cs" />
+    <Compile Include="File\ReadWriteAllLinesAsync.cs" />
     <Compile Include="File\ReadWriteAllText.cs" />
     <Compile Include="File\ReadWriteAllLines.cs" />
+    <Compile Include="File\ReadWriteAllTextAsync.cs" />
     <Compile Include="PathFeatures.cs" />
     <Compile Include="TestData.cs" />
     <Compile Include="Tfm.cs" />

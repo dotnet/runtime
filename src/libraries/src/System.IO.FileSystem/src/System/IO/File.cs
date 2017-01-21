@@ -2,18 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Runtime.InteropServices;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
-using System.Globalization;
-using System.Runtime.Versioning;
 using System.Security;
 using System.Text;
 using System.Threading;
-
-using Microsoft.Win32.SafeHandles;
+using System.Threading.Tasks;
 
 namespace System.IO
 {
@@ -21,6 +17,8 @@ namespace System.IO
     // routines such as Delete, etc.
     public static class File
     {
+        private static Encoding s_UTF8NoBOM;
+
         internal const int DefaultBufferSize = 4096;
 
         public static StreamReader OpenText(String path)
@@ -724,6 +722,353 @@ namespace System.IO
             // properly for Win32.
 
             throw new PlatformNotSupportedException();
+        }
+
+        // UTF-8 without BOM and with error detection. Same as the default encoding for StreamWriter.
+        private static Encoding UTF8NoBOM => s_UTF8NoBOM ?? (s_UTF8NoBOM = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true));
+
+        // If we use the path-taking constructors we will not have FileOptions.Asynchronous set and
+        // we will have asynchronous file access faked by the thread pool. We want the real thing.
+        private static StreamReader AsyncStreamReader(string path, Encoding encoding)
+        {
+            FileStream stream = new FileStream(
+                path, FileMode.Open, FileAccess.Read, FileShare.Read, DefaultBufferSize,
+                FileOptions.Asynchronous | FileOptions.SequentialScan);
+
+            return new StreamReader(stream, encoding, detectEncodingFromByteOrderMarks: true);
+        }
+
+        private static StreamWriter AsyncStreamWriter(string path, Encoding encoding, bool append)
+        {
+            FileStream stream = new FileStream(
+                path, append ? FileMode.Append : FileMode.Create, FileAccess.Write, FileShare.Read, DefaultBufferSize,
+                FileOptions.Asynchronous | FileOptions.SequentialScan);
+
+            return new StreamWriter(stream, encoding);
+        }
+
+        public static Task<string> ReadAllTextAsync(string path, CancellationToken cancellationToken = default(CancellationToken))
+            => ReadAllTextAsync(path, Encoding.UTF8, cancellationToken);
+
+        public static Task<string> ReadAllTextAsync(string path, Encoding encoding, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            if (path == null)
+                throw new ArgumentNullException(nameof(path));
+            if (encoding == null)
+                throw new ArgumentNullException(nameof(encoding));
+            if (path.Length == 0)
+                throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
+
+            return cancellationToken.IsCancellationRequested
+                ? Task.FromCanceled<string>(cancellationToken)
+                : InternalReadAllTextAsync(path, encoding, cancellationToken);
+        }
+
+        private static async Task<string> InternalReadAllTextAsync(string path, Encoding encoding, CancellationToken cancellationToken)
+        {
+            Debug.Assert(!string.IsNullOrEmpty(path));
+            Debug.Assert(encoding != null);
+
+            char[] buffer = null;
+            StringBuilder sb = null;
+            StreamReader sr = AsyncStreamReader(path, encoding);
+            try
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                sb = StringBuilderCache.Acquire();
+                buffer = ArrayPool<char>.Shared.Rent(sr.CurrentEncoding.GetMaxCharCount(DefaultBufferSize));
+                for (;;)
+                {
+                    int read = await sr.ReadAsync(buffer, 0, buffer.Length).ConfigureAwait(false);
+                    if (read == 0)
+                    {
+                        return sb.ToString();
+                    }
+
+                    sb.Append(buffer, 0, read);
+                    cancellationToken.ThrowIfCancellationRequested();
+                }
+            }
+            finally
+            {
+                sr.Dispose();
+                if (buffer != null)
+                {
+                    ArrayPool<char>.Shared.Return(buffer);
+                }
+
+                if (sb != null)
+                {
+                    StringBuilderCache.Release(sb);
+                }
+            }
+        }
+
+        public static Task WriteAllTextAsync(string path, string contents, CancellationToken cancellationToken = default(CancellationToken))
+            => WriteAllTextAsync(path, contents, UTF8NoBOM, cancellationToken);
+
+        public static Task WriteAllTextAsync(string path, string contents, Encoding encoding, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            if (path == null)
+                throw new ArgumentNullException(nameof(path));
+            if (encoding == null)
+                throw new ArgumentNullException(nameof(encoding));
+            if (path.Length == 0)
+                throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
+
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return Task.FromCanceled(cancellationToken);
+            }
+
+            if (string.IsNullOrEmpty(contents))
+            {
+                new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.Read).Dispose();
+                return Task.CompletedTask;
+            }
+
+            return InternalWriteAllTextAsync(AsyncStreamWriter(path, encoding, append: false), contents, cancellationToken);
+        }
+
+        public static Task<byte[]> ReadAllBytesAsync(string path, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return Task.FromCanceled<byte[]>(cancellationToken);
+            }
+
+            FileStream fs = new FileStream(
+                path, FileMode.Open, FileAccess.Read, FileShare.Read, DefaultBufferSize,
+                FileOptions.Asynchronous | FileOptions.SequentialScan);
+
+            bool returningInternalTask = false;
+            try
+            {
+                long fileLength = fs.Length;
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    return Task.FromCanceled<byte[]>(cancellationToken);
+                }
+
+                if (fileLength > int.MaxValue)
+                {
+                    return Task.FromException<byte[]>(new IOException(SR.IO_FileTooLong2GB));
+                }
+
+                if (fileLength == 0)
+                {
+                    return Task.FromResult(Array.Empty<byte>());
+                }
+
+                returningInternalTask = true;
+                return InternalReadAllBytesAsync(fs, (int)fileLength, cancellationToken);
+            }
+            finally
+            {
+                if (!returningInternalTask)
+                {
+                    fs.Dispose();
+                }
+            }
+        }
+
+        private static async Task<byte[]> InternalReadAllBytesAsync(FileStream fs, int count, CancellationToken cancellationToken)
+        {
+            using (fs)
+            {
+                int index = 0;
+                byte[] bytes = new byte[count];
+                do
+                {
+                    int n = await fs.ReadAsync(bytes, index, count - index, cancellationToken).ConfigureAwait(false);
+                    if (n == 0)
+                    {
+                        throw Error.GetEndOfFile();
+                    }
+
+                    index += n;
+                } while (index < count);
+
+                return bytes;
+            }
+        }
+
+        public static Task WriteAllBytesAsync(string path, byte[] bytes, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            if (path == null)
+                throw new ArgumentNullException(nameof(path), SR.ArgumentNull_Path);
+            if (path.Length == 0)
+                throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
+            if (bytes == null)
+                throw new ArgumentNullException(nameof(bytes));
+
+            return cancellationToken.IsCancellationRequested
+                ? Task.FromCanceled(cancellationToken)
+                : InternalWriteAllBytesAsync(path, bytes, cancellationToken);
+        }
+
+        private static async Task InternalWriteAllBytesAsync(String path, byte[] bytes, CancellationToken cancellationToken)
+        {
+            Debug.Assert(!string.IsNullOrEmpty(path));
+            Debug.Assert(bytes != null);
+
+            using (FileStream fs = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.Read, DefaultBufferSize, FileOptions.Asynchronous | FileOptions.SequentialScan))
+            {
+                await fs.WriteAsync(bytes, 0, bytes.Length, cancellationToken).ConfigureAwait(false);
+                await fs.FlushAsync(cancellationToken).ConfigureAwait(false);
+            }
+        }
+
+        public static Task<string[]> ReadAllLinesAsync(string path, CancellationToken cancellationToken = default(CancellationToken))
+            => ReadAllLinesAsync(path, Encoding.UTF8, cancellationToken);
+
+        public static Task<string[]> ReadAllLinesAsync(string path, Encoding encoding, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            if (path == null)
+                throw new ArgumentNullException(nameof(path));
+            if (encoding == null)
+                throw new ArgumentNullException(nameof(encoding));
+            if (path.Length == 0)
+                throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
+
+            return cancellationToken.IsCancellationRequested
+                ? Task.FromCanceled<string[]>(cancellationToken)
+                : InternalReadAllLinesAsync(path, encoding, cancellationToken);
+        }
+
+        private static async Task<string[]> InternalReadAllLinesAsync(string path, Encoding encoding, CancellationToken cancellationToken)
+        {
+            Debug.Assert(!string.IsNullOrEmpty(path));
+            Debug.Assert(encoding != null);
+
+            using (StreamReader sr = AsyncStreamReader(path, encoding))
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                string line;
+                List<string> lines = new List<string>();
+                while ((line = await sr.ReadLineAsync().ConfigureAwait(false)) != null)
+                {
+                    lines.Add(line);
+                    cancellationToken.ThrowIfCancellationRequested();
+                }
+
+                return lines.ToArray();
+            }
+        }
+
+        public static Task WriteAllLinesAsync(string path, IEnumerable<string> contents, CancellationToken cancellationToken = default(CancellationToken))
+            => WriteAllLinesAsync(path, contents, UTF8NoBOM, cancellationToken);
+
+        public static Task WriteAllLinesAsync(string path, IEnumerable<string> contents, Encoding encoding, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            if (path == null)
+                throw new ArgumentNullException(nameof(path));
+            if (contents == null)
+                throw new ArgumentNullException(nameof(contents));
+            if (encoding == null)
+                throw new ArgumentNullException(nameof(encoding));
+            if (path.Length == 0)
+                throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
+
+            return cancellationToken.IsCancellationRequested
+                ? Task.FromCanceled(cancellationToken)
+                : InternalWriteAllLinesAsync(AsyncStreamWriter(path, encoding, append: false), contents, cancellationToken);
+        }
+
+        private static async Task InternalWriteAllLinesAsync(TextWriter writer, IEnumerable<string> contents, CancellationToken cancellationToken)
+        {
+            Debug.Assert(writer != null);
+            Debug.Assert(contents != null);
+
+            using (writer)
+            {
+                foreach (string line in contents)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    // Note that this working depends on the fix to #14563, and cannot be ported without
+                    // either also porting that fix, or explicitly checking for line being null.
+                    await writer.WriteLineAsync(line).ConfigureAwait(false);
+                }
+
+                cancellationToken.ThrowIfCancellationRequested();
+                await writer.FlushAsync().ConfigureAwait(false);
+            }
+        }
+
+        private static async Task InternalWriteAllTextAsync(StreamWriter sw, string contents, CancellationToken cancellationToken)
+        {
+            char[] buffer = null;
+            try
+            {
+                buffer = ArrayPool<char>.Shared.Rent(DefaultBufferSize);
+                int count = contents.Length;
+                int index = 0;
+                while (index < count)
+                {
+                    int batchSize = Math.Min(DefaultBufferSize, count);
+                    contents.CopyTo(index, buffer, 0, batchSize);
+                    cancellationToken.ThrowIfCancellationRequested();
+                    await sw.WriteAsync(buffer, 0, batchSize).ConfigureAwait(false);
+                    index += batchSize;
+                }
+
+                cancellationToken.ThrowIfCancellationRequested();
+                await sw.FlushAsync().ConfigureAwait(false);
+            }
+            finally
+            {
+                sw.Dispose();
+                if (buffer != null)
+                {
+                    ArrayPool<char>.Shared.Return(buffer);
+                }
+            }
+        }
+
+        public static Task AppendAllTextAsync(string path, string contents, CancellationToken cancellationToken = default(CancellationToken))
+            => AppendAllTextAsync(path, contents, UTF8NoBOM, cancellationToken);
+
+        public static Task AppendAllTextAsync(string path, string contents, Encoding encoding, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            if (path == null)
+                throw new ArgumentNullException(nameof(path));
+            if (encoding == null)
+                throw new ArgumentNullException(nameof(encoding));
+            if (path.Length == 0)
+                throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
+
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return Task.FromCanceled(cancellationToken);
+            }
+
+            if (string.IsNullOrEmpty(contents))
+            {
+                // Just to throw exception if there is a problem opening the file.
+                new FileStream(path, FileMode.Append, FileAccess.Write, FileShare.Read).Dispose();
+                return Task.CompletedTask;
+            }
+
+            return InternalWriteAllTextAsync(AsyncStreamWriter(path, encoding, append: true), contents, cancellationToken);
+        }
+
+        public static Task AppendAllLinesAsync(string path, IEnumerable<string> contents, CancellationToken cancellationToken = default(CancellationToken))
+            => AppendAllLinesAsync(path, contents, UTF8NoBOM, cancellationToken);
+
+        public static Task AppendAllLinesAsync(string path, IEnumerable<string> contents, Encoding encoding, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            if (path == null)
+                throw new ArgumentNullException(nameof(path));
+            if (contents == null)
+                throw new ArgumentNullException(nameof(contents));
+            if (encoding == null)
+                throw new ArgumentNullException(nameof(encoding));
+            if (path.Length == 0)
+                throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
+
+            return cancellationToken.IsCancellationRequested
+                ? Task.FromCanceled(cancellationToken)
+                : InternalWriteAllLinesAsync(AsyncStreamWriter(path, encoding, append: true), contents, cancellationToken);
         }
     }
 }
