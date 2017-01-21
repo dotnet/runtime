@@ -9,8 +9,8 @@
 
 #include "w32semaphore.h"
 
+#include "w32error.h"
 #include "w32handle-namespace.h"
-#include "mono/io-layer/io-layer.h"
 #include "mono/utils/mono-logger-internals.h"
 #include "mono/metadata/w32handle.h"
 
@@ -150,7 +150,7 @@ sem_handle_create (MonoW32HandleSemaphore *sem_handle, MonoW32HandleType type, g
 	if (handle == INVALID_HANDLE_VALUE) {
 		g_warning ("%s: error creating %s handle",
 			__func__, mono_w32handle_get_typename (type));
-		SetLastError (ERROR_GEN_FAILURE);
+		mono_w32error_set_last (ERROR_GEN_FAILURE);
 		return NULL;
 	}
 
@@ -196,10 +196,10 @@ namedsem_create (gint32 initial, gint32 max, const gunichar2 *name)
 	if (handle == INVALID_HANDLE_VALUE) {
 		/* The name has already been used for a different object. */
 		handle = NULL;
-		SetLastError (ERROR_INVALID_HANDLE);
+		mono_w32error_set_last (ERROR_INVALID_HANDLE);
 	} else if (handle) {
 		/* Not an error, but this is how the caller is informed that the semaphore wasn't freshly created */
-		SetLastError (ERROR_ALREADY_EXISTS);
+		mono_w32error_set_last (ERROR_ALREADY_EXISTS);
 
 		/* mono_w32handle_namespace_search_handle already adds a ref to the handle */
 	} else {
@@ -242,14 +242,14 @@ ves_icall_System_Threading_Semaphore_CreateSemaphore_internal (gint32 initialCou
 	 * for ERROR_ALREADY_EXISTS on success (!) to see if a
 	 * semaphore was freshly created
 	 */
-	SetLastError (ERROR_SUCCESS);
+	mono_w32error_set_last (ERROR_SUCCESS);
 
 	if (!name)
 		sem = sem_create (initialCount, maximumCount);
 	else
 		sem = namedsem_create (initialCount, maximumCount, mono_string_chars (name));
 
-	*error = GetLastError ();
+	*error = mono_w32error_get_last ();
 
 	return sem;
 }
@@ -262,7 +262,7 @@ ves_icall_System_Threading_Semaphore_ReleaseSemaphore_internal (gpointer handle,
 	MonoBoolean ret;
 
 	if (!handle) {
-		SetLastError (ERROR_INVALID_HANDLE);
+		mono_w32error_set_last (ERROR_INVALID_HANDLE);
 		return FALSE;
 	}
 
@@ -271,7 +271,7 @@ ves_icall_System_Threading_Semaphore_ReleaseSemaphore_internal (gpointer handle,
 	case MONO_W32HANDLE_NAMEDSEM:
 		break;
 	default:
-		SetLastError (ERROR_INVALID_HANDLE);
+		mono_w32error_set_last (ERROR_INVALID_HANDLE);
 		return FALSE;
 	}
 

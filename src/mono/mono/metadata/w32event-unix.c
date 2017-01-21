@@ -9,8 +9,8 @@
 
 #include "w32event.h"
 
+#include "w32error.h"
 #include "w32handle-namespace.h"
-#include "mono/io-layer/io-layer.h"
 #include "mono/utils/mono-logger-internals.h"
 #include "mono/metadata/w32handle.h"
 
@@ -158,6 +158,12 @@ mono_w32event_create (gboolean manual, gboolean initial)
 	return handle;
 }
 
+gboolean
+mono_w32event_close (gpointer handle)
+{
+	return mono_w32handle_close (handle);
+}
+
 void
 mono_w32event_set (gpointer handle)
 {
@@ -181,7 +187,7 @@ static gpointer event_handle_create (MonoW32HandleEvent *event_handle, MonoW32Ha
 	if (handle == INVALID_HANDLE_VALUE) {
 		g_warning ("%s: error creating %s handle",
 			__func__, mono_w32handle_get_typename (type));
-		SetLastError (ERROR_GEN_FAILURE);
+		mono_w32error_set_last (ERROR_GEN_FAILURE);
 		return NULL;
 	}
 
@@ -223,10 +229,10 @@ static gpointer namedevent_create (gboolean manual, gboolean initial, const guni
 	if (handle == INVALID_HANDLE_VALUE) {
 		/* The name has already been used for a different object. */
 		handle = NULL;
-		SetLastError (ERROR_INVALID_HANDLE);
+		mono_w32error_set_last (ERROR_INVALID_HANDLE);
 	} else if (handle) {
 		/* Not an error, but this is how the caller is informed that the event wasn't freshly created */
-		SetLastError (ERROR_ALREADY_EXISTS);
+		mono_w32error_set_last (ERROR_ALREADY_EXISTS);
 
 		/* mono_w32handle_namespace_search_handle already adds a ref to the handle */
 	} else {
@@ -254,11 +260,11 @@ ves_icall_System_Threading_Events_CreateEvent_internal (MonoBoolean manual, Mono
 	/* Need to blow away any old errors here, because code tests
 	 * for ERROR_ALREADY_EXISTS on success (!) to see if an event
 	 * was freshly created */
-	SetLastError (ERROR_SUCCESS);
+	mono_w32error_set_last (ERROR_SUCCESS);
 
 	event = name ? namedevent_create (manual, initial, mono_string_chars (name)) : event_create (manual, initial);
 
-	*error = GetLastError ();
+	*error = mono_w32error_get_last ();
 
 	return event;
 }
@@ -270,7 +276,7 @@ ves_icall_System_Threading_Events_SetEvent_internal (gpointer handle)
 	MonoW32HandleEvent *event_handle;
 
 	if (handle == NULL) {
-		SetLastError (ERROR_INVALID_HANDLE);
+		mono_w32error_set_last (ERROR_INVALID_HANDLE);
 		return(FALSE);
 	}
 
@@ -279,7 +285,7 @@ ves_icall_System_Threading_Events_SetEvent_internal (gpointer handle)
 	case MONO_W32HANDLE_NAMEDEVENT:
 		break;
 	default:
-		SetLastError (ERROR_INVALID_HANDLE);
+		mono_w32error_set_last (ERROR_INVALID_HANDLE);
 		return FALSE;
 	}
 
@@ -312,10 +318,10 @@ ves_icall_System_Threading_Events_ResetEvent_internal (gpointer handle)
 	MonoW32HandleType type;
 	MonoW32HandleEvent *event_handle;
 
-	SetLastError (ERROR_SUCCESS);
+	mono_w32error_set_last (ERROR_SUCCESS);
 
 	if (handle == NULL) {
-		SetLastError (ERROR_INVALID_HANDLE);
+		mono_w32error_set_last (ERROR_INVALID_HANDLE);
 		return(FALSE);
 	}
 
@@ -324,7 +330,7 @@ ves_icall_System_Threading_Events_ResetEvent_internal (gpointer handle)
 	case MONO_W32HANDLE_NAMEDEVENT:
 		break;
 	default:
-		SetLastError (ERROR_INVALID_HANDLE);
+		mono_w32error_set_last (ERROR_INVALID_HANDLE);
 		return FALSE;
 	}
 
@@ -359,7 +365,7 @@ ves_icall_System_Threading_Events_ResetEvent_internal (gpointer handle)
 void
 ves_icall_System_Threading_Events_CloseEvent_internal (gpointer handle)
 {
-	CloseHandle (handle);
+	mono_w32handle_close (handle);
 }
 
 gpointer

@@ -11,8 +11,8 @@
 
 #include <pthread.h>
 
+#include "w32error.h"
 #include "w32handle-namespace.h"
-#include "mono/io-layer/io-layer.h"
 #include "mono/metadata/object-internals.h"
 #include "mono/utils/mono-logger-internals.h"
 #include "mono/utils/mono-threads.h"
@@ -276,7 +276,7 @@ static gpointer mutex_handle_create (MonoW32HandleMutex *mutex_handle, MonoW32Ha
 	if (handle == INVALID_HANDLE_VALUE) {
 		g_warning ("%s: error creating %s handle",
 			__func__, mono_w32handle_get_typename (type));
-		SetLastError (ERROR_GEN_FAILURE);
+		mono_w32error_set_last (ERROR_GEN_FAILURE);
 		return NULL;
 	}
 
@@ -320,10 +320,10 @@ static gpointer namedmutex_create (gboolean owned, const gunichar2 *name)
 	if (handle == INVALID_HANDLE_VALUE) {
 		/* The name has already been used for a different object. */
 		handle = NULL;
-		SetLastError (ERROR_INVALID_HANDLE);
+		mono_w32error_set_last (ERROR_INVALID_HANDLE);
 	} else if (handle) {
 		/* Not an error, but this is how the caller is informed that the mutex wasn't freshly created */
-		SetLastError (ERROR_ALREADY_EXISTS);
+		mono_w32error_set_last (ERROR_ALREADY_EXISTS);
 
 		/* mono_w32handle_namespace_search_handle already adds a ref to the handle */
 	} else {
@@ -353,14 +353,14 @@ ves_icall_System_Threading_Mutex_CreateMutex_internal (MonoBoolean owned, MonoSt
 	/* Need to blow away any old errors here, because code tests
 	 * for ERROR_ALREADY_EXISTS on success (!) to see if a mutex
 	 * was freshly created */
-	SetLastError (ERROR_SUCCESS);
+	mono_w32error_set_last (ERROR_SUCCESS);
 
 	if (!name) {
 		mutex = mutex_create (owned);
 	} else {
 		mutex = namedmutex_create (owned, mono_string_chars (name));
 
-		if (GetLastError () == ERROR_ALREADY_EXISTS)
+		if (mono_w32error_get_last () == ERROR_ALREADY_EXISTS)
 			*created = FALSE;
 	}
 
@@ -376,7 +376,7 @@ ves_icall_System_Threading_Mutex_ReleaseMutex_internal (gpointer handle)
 	gboolean ret;
 
 	if (handle == NULL) {
-		SetLastError (ERROR_INVALID_HANDLE);
+		mono_w32error_set_last (ERROR_INVALID_HANDLE);
 		return FALSE;
 	}
 
@@ -385,7 +385,7 @@ ves_icall_System_Threading_Mutex_ReleaseMutex_internal (gpointer handle)
 	case MONO_W32HANDLE_NAMEDMUTEX:
 		break;
 	default:
-		SetLastError (ERROR_INVALID_HANDLE);
+		mono_w32error_set_last (ERROR_INVALID_HANDLE);
 		return FALSE;
 	}
 

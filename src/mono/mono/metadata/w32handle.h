@@ -113,6 +113,9 @@ mono_w32handle_new (MonoW32HandleType type, gpointer handle_specific);
 gpointer
 mono_w32handle_new_fd (MonoW32HandleType type, int fd, gpointer handle_specific);
 
+gboolean
+mono_w32handle_close (gpointer handle);
+
 MonoW32HandleType
 mono_w32handle_get_type (gpointer handle);
 

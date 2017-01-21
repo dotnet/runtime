@@ -16,7 +16,6 @@
 #include "w32mutex.h"
 #include "w32semaphore.h"
 #include "w32event.h"
-#include "mono/io-layer/io-layer.h"
 #include "mono/utils/mono-logger-internals.h"
 #include "mono/utils/mono-coop-mutex.h"
 

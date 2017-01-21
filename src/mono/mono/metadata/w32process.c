@@ -11,7 +11,7 @@
 #include "class-internals.h"
 #include "image.h"
 #include "utils/mono-proclib.h"
-#include "io-layer/io-layer.h"
+#include "utils/w32api.h"
 
 #define LOGDEBUG(...)
 /* define LOGDEBUG(...) g_message(__VA_ARGS__)  */

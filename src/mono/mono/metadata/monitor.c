@@ -18,7 +18,6 @@
 #include <mono/metadata/threads-types.h>
 #include <mono/metadata/exception.h>
 #include <mono/metadata/threads.h>
-#include <mono/io-layer/io-layer.h>
 #include <mono/metadata/object-internals.h>
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/gc-internals.h>
@@ -31,6 +30,7 @@
 #include <mono/metadata/profiler-private.h>
 #include <mono/utils/mono-time.h>
 #include <mono/utils/atomic.h>
+#include <mono/utils/w32api.h>
 
 /*
  * Pull the list of opcodes
@@ -396,7 +396,7 @@ mon_new (gsize id)
 						/* Orphaned events left by aborted threads */
 						while (new_->wait_list) {
 							LOCK_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ": (%d): Closing orphaned event %d", mono_thread_info_get_small_id (), new_->wait_list->data));
-							CloseHandle (new_->wait_list->data);
+							mono_w32event_close (new_->wait_list->data);
 							new_->wait_list = g_slist_remove (new_->wait_list, new_->wait_list->data);
 						}
 					}
@@ -1352,7 +1352,7 @@ ves_icall_System_Threading_Monitor_Monitor_wait (MonoObject *obj, guint32 ms)
 
 	/* This looks superfluous */
 	if (mono_thread_current_check_pending_interrupt ()) {
-		CloseHandle (event);
+		mono_w32event_close (event);
 		return FALSE;
 	}
 	
@@ -1431,7 +1431,7 @@ ves_icall_System_Threading_Monitor_Monitor_wait (MonoObject *obj, guint32 ms)
 		 */
 		mon->wait_list = g_slist_remove (mon->wait_list, event);
 	}
-	CloseHandle (event);
+	mono_w32event_close (event);
 	
 	return success;
 }

@@ -28,10 +28,10 @@
 #include <mono/metadata/threadpool-io.h>
 #include <mono/utils/strenc.h>
 #include <mono/utils/mono-proclib.h>
-#include <mono/io-layer/io-layer.h>
 /* FIXME: fix this code to not depend so much on the internals */
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/w32handle.h>
+#include <mono/utils/w32api.h>
 
 #if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)
 #include <shellapi.h>

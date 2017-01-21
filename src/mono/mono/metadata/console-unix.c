@@ -37,7 +37,7 @@
 #include <mono/metadata/threadpool.h>
 #include <mono/utils/mono-signal-handler.h>
 #include <mono/utils/mono-proclib.h>
-#include <mono/io-layer/io-layer.h>
+#include <mono/utils/w32api.h>
 
 /* On solaris, curses.h must come before both termios.h and term.h */
 #ifdef HAVE_CURSES_H

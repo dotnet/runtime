@@ -48,7 +48,6 @@
 #include <metadata/threads.h>
 #include <metadata/profiler-private.h>
 #include <mono/metadata/coree.h>
-#include <mono/io-layer/io-layer.h>
 
 //#define DEBUG_DOMAIN_UNLOAD 1
 

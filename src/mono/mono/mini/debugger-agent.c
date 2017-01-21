@@ -75,7 +75,7 @@
 #include "debugger-agent.h"
 #include "mini.h"
 #include "seq-points.h"
-#include <mono/io-layer/io-layer.h>
+#include <mono/utils/w32api.h>
 
 /*
  * On iOS we can't use System.Environment.Exit () as it will do the wrong

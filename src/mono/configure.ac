@@ -4349,7 +4349,6 @@ mono/tests/assemblyresolve/Makefile
 mono/tests/gc-descriptors/Makefile
 mono/unit-tests/Makefile
 mono/benchmark/Makefile
-mono/io-layer/Makefile
 mono/mini/Makefile
 mono/profiler/Makefile
 m4/Makefile

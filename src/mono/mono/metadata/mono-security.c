@@ -19,7 +19,6 @@
 #include <mono/metadata/object-internals.h>
 #include <mono/metadata/metadata-internals.h>
 #include <mono/metadata/security.h>
-#include <mono/io-layer/io-layer.h>
 #include <mono/utils/strenc.h>
 
 #ifndef HOST_WIN32

@@ -23,7 +23,6 @@
 #include <mono/utils/mono-mmap.h>
 #include <mono/utils/mono-threads.h>
 #include <mono/utils/mono-counters.h>
-#include <mono/io-layer/io-layer.h>
 #endif
 
 typedef struct {

@@ -34,7 +34,7 @@ typedef struct
 {
 	gpointer process_handle;
 	gpointer thread_handle;
-	guint32 pid; /* Contains GetLastError () on failure */
+	guint32 pid; /* Contains mono_w32error_get_last () on failure */
 	guint32 tid;
 	MonoArray *env_variables;
 	MonoString *username;

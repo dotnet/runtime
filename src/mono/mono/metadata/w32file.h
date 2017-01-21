@@ -16,7 +16,6 @@
 #include <config.h>
 #include <glib.h>
 
-#include "io-layer/io-layer.h"
 #include <mono/metadata/object-internals.h>
 #include <mono/utils/mono-compiler.h>
 
@@ -389,6 +388,9 @@ mono_w32file_cleanup (void);
 
 gpointer
 mono_w32file_create(const gunichar2 *name, guint32 fileaccess, guint32 sharemode, guint32 createmode, guint32 attrs);
+
+gboolean
+mono_w32file_close (gpointer handle);
 
 gboolean
 mono_w32file_delete (const gunichar2 *name);

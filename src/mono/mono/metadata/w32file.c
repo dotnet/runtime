@@ -27,8 +27,8 @@
 #endif
 
 #include <mono/metadata/object.h>
-#include <mono/io-layer/io-layer.h>
 #include <mono/metadata/w32file.h>
+#include <mono/metadata/w32error.h>
 #include <mono/metadata/w32file-internals.h>
 #include <mono/metadata/exception.h>
 #include <mono/metadata/appdomain.h>
@@ -36,6 +36,7 @@
 #include <mono/utils/strenc.h>
 #include <utils/mono-io-portability.h>
 #include <mono/metadata/w32handle.h>
+#include <mono/utils/w32api.h>
 
 #undef DEBUG
 
@@ -205,7 +206,7 @@ get_file_attributes (const gunichar2 *path)
 	if (res != -1)
 		return res;
 
-	error = GetLastError ();
+	error = mono_w32error_get_last ();
 
 	if (error != ERROR_SHARING_VIOLATION)
 		return res;
@@ -232,7 +233,7 @@ get_file_attributes_ex (const gunichar2 *path, MonoIOStat *stat)
 	if (res)
 		return TRUE;
 
-	error = GetLastError ();
+	error = mono_w32error_get_last ();
 	if (error != ERROR_SHARING_VIOLATION)
 		return FALSE;
 
@@ -263,7 +264,7 @@ ves_icall_System_IO_MonoIO_CreateDirectory (MonoString *path, gint32 *error)
 	
 	ret=mono_w32file_create_directory (mono_string_chars (path));
 	if(ret==FALSE) {
-		*error=GetLastError ();
+		*error=mono_w32error_get_last ();
 	}
 
 	MONO_EXIT_GC_SAFE;
@@ -280,7 +281,7 @@ ves_icall_System_IO_MonoIO_RemoveDirectory (MonoString *path, gint32 *error)
 	
 	ret=mono_w32file_remove_directory (mono_string_chars (path));
 	if(ret==FALSE) {
-		*error=GetLastError ();
+		*error=mono_w32error_get_last ();
 	}
 
 	MONO_EXIT_GC_SAFE;
@@ -320,13 +321,13 @@ get_filesystem_entries (const gunichar2 *path,
 			goto fail;
 		}
 	} else {
-		*error = GetLastError ();
+		*error = mono_w32error_get_last ();
 		goto fail;
 	}
 	
 	find_handle = mono_w32file_find_first (path_with_pattern, &data);
 	if (find_handle == INVALID_HANDLE_VALUE) {
-		gint32 find_error = GetLastError ();
+		gint32 find_error = mono_w32error_get_last ();
 		
 		if (find_error == ERROR_FILE_NOT_FOUND || find_error == ERROR_NO_MORE_FILES) {
 			/* No files, so just return an empty array */
@@ -360,7 +361,7 @@ get_filesystem_entries (const gunichar2 *path,
 	} while(mono_w32file_find_next (find_handle, &data));
 
 	if (mono_w32file_find_close (find_handle) == FALSE) {
-		*error = GetLastError ();
+		*error = mono_w32error_get_last ();
 		goto fail;
 	}
 
@@ -456,7 +457,7 @@ ves_icall_System_IO_MonoIO_FindFirstFile (MonoString *path_with_pattern, MonoStr
 	if (hnd == INVALID_HANDLE_VALUE) {
 		*file_name = NULL;
 		*file_attr = 0;
-		*ioerror = GetLastError ();
+		*ioerror = mono_w32error_get_last ();
 		return hnd;
 	}
 
@@ -481,7 +482,7 @@ ves_icall_System_IO_MonoIO_FindNextFile (HANDLE hnd, MonoString **file_name, gin
 	if (res == FALSE) {
 		*file_name = NULL;
 		*file_attr = 0;
-		*ioerror = GetLastError ();
+		*ioerror = mono_w32error_get_last ();
 		return res;
 	}
 
@@ -518,7 +519,7 @@ ves_icall_System_IO_MonoIO_FindFirst (MonoString *path,
 	find_handle = mono_w32file_find_first (mono_string_chars (path_with_pattern), &data);
 	
 	if (find_handle == INVALID_HANDLE_VALUE) {
-		gint32 find_error = GetLastError ();
+		gint32 find_error = mono_w32error_get_last ();
 		*handle = NULL;
 		
 		if (find_error == ERROR_FILE_NOT_FOUND) 
@@ -543,7 +544,7 @@ ves_icall_System_IO_MonoIO_FindFirst (MonoString *path,
 
 	while (incremental_find_check_match (ifh, &data, &result) == 0){
 		if (mono_w32file_find_next (find_handle, &data) == FALSE){
-			int e = GetLastError ();
+			int e = mono_w32error_get_last ();
 			if (e != ERROR_NO_MORE_FILES)
 				*ioerror = e;
 			return NULL;
@@ -565,7 +566,7 @@ ves_icall_System_IO_MonoIO_FindNext (gpointer handle, gint32 *result_attr, gint3
 	*error = ERROR_SUCCESS;
 	do {
 		if (mono_w32file_find_next (ifh->find_handle, &data) == FALSE){
-			int e = GetLastError ();
+			int e = mono_w32error_get_last ();
 			if (e != ERROR_NO_MORE_FILES)
 				*error = e;
 			return NULL;
@@ -584,7 +585,7 @@ ves_icall_System_IO_MonoIO_FindClose (gpointer handle)
 
 	MONO_ENTER_GC_SAFE;
 	if (mono_w32file_find_close (ifh->find_handle) == FALSE){
-		error = GetLastError ();
+		error = mono_w32error_get_last ();
 	} else
 		error = ERROR_SUCCESS;
 	g_free (ifh->utf8_path);
@@ -624,7 +625,7 @@ ves_icall_System_IO_MonoIO_GetCurrentDirectory (gint32 *io_error)
 
 		result = mono_string_new_utf16_checked (mono_domain_get (), buf, len, &error);
 	} else {
-		*io_error=GetLastError ();
+		*io_error=mono_w32error_get_last ();
 	}
 
 	g_free (buf);
@@ -642,7 +643,7 @@ ves_icall_System_IO_MonoIO_SetCurrentDirectory (MonoString *path,
 	
 	ret=mono_w32file_set_cwd (mono_string_chars (path));
 	if(ret==FALSE) {
-		*error=GetLastError ();
+		*error=mono_w32error_get_last ();
 	}
 	
 	return(ret);
@@ -697,7 +698,7 @@ ves_icall_System_IO_MonoIO_DeleteFile (MonoString *path, gint32 *error)
 	
 	ret=mono_w32file_delete (mono_string_chars (path));
 	if(ret==FALSE) {
-		*error=GetLastError ();
+		*error=mono_w32error_get_last ();
 	}
 	
 	MONO_EXIT_GC_SAFE;
@@ -722,7 +723,7 @@ ves_icall_System_IO_MonoIO_GetFileAttributes (MonoString *path, gint32 *error)
 	 */
 	if (ret==-1) {
 	  /* if(ret==INVALID_FILE_ATTRIBUTES) { */
-		*error=GetLastError ();
+		*error=mono_w32error_get_last ();
 	}
 	
 	MONO_EXIT_GC_SAFE;
@@ -741,7 +742,7 @@ ves_icall_System_IO_MonoIO_SetFileAttributes (MonoString *path, gint32 attrs,
 	ret=mono_w32file_set_attributes (mono_string_chars (path),
 		convert_attrs ((MonoFileAttributes)attrs));
 	if(ret==FALSE) {
-		*error=GetLastError ();
+		*error=mono_w32error_get_last ();
 	}
 
 	MONO_EXIT_GC_SAFE;
@@ -761,7 +762,7 @@ ves_icall_System_IO_MonoIO_GetFileType (HANDLE handle, gint32 *error)
 		/* Not necessarily an error, but the caller will have
 		 * to decide based on the error value.
 		 */
-		*error=GetLastError ();
+		*error=mono_w32error_get_last ();
 	}
 	
 	MONO_EXIT_GC_SAFE;
@@ -779,7 +780,7 @@ ves_icall_System_IO_MonoIO_GetFileStat (MonoString *path, MonoIOStat *stat, gint
 	result = get_file_attributes_ex (mono_string_chars (path), stat);
 
 	if (!result) {
-		*error=GetLastError ();
+		*error=mono_w32error_get_last ();
 		memset (stat, 0, sizeof (MonoIOStat));
 	}
 
@@ -831,7 +832,7 @@ ves_icall_System_IO_MonoIO_Open (MonoString *filename, gint32 mode,
 	
 	ret=mono_w32file_create (chars, convert_access ((MonoFileAccess)access_mode), convert_share ((MonoFileShare)share), convert_mode ((MonoFileMode)mode), attributes);
 	if(ret==INVALID_HANDLE_VALUE) {
-		*error=GetLastError ();
+		*error=mono_w32error_get_last ();
 	} 
 	
 	MONO_EXIT_GC_SAFE;
@@ -846,9 +847,9 @@ ves_icall_System_IO_MonoIO_Close (HANDLE handle, gint32 *error)
 
 	*error=ERROR_SUCCESS;
 	
-	ret=CloseHandle (handle);
+	ret=mono_w32file_close (handle);
 	if(ret==FALSE) {
-		*error=GetLastError ();
+		*error=mono_w32error_get_last ();
 	}
 	
 	MONO_EXIT_GC_SAFE;
@@ -880,7 +881,7 @@ ves_icall_System_IO_MonoIO_Read (HANDLE handle, MonoArray *dest,
 	MONO_EXIT_GC_SAFE;
 
 	if (!result) {
-		*error=GetLastError ();
+		*error=mono_w32error_get_last ();
 		return -1;
 	}
 
@@ -911,7 +912,7 @@ ves_icall_System_IO_MonoIO_Write (HANDLE handle, MonoArray *src,
 	MONO_EXIT_GC_SAFE;
 
 	if (!result) {
-		*error=GetLastError ();
+		*error=mono_w32error_get_last ();
 		return -1;
 	}
 
@@ -932,7 +933,7 @@ ves_icall_System_IO_MonoIO_Seek (HANDLE handle, gint64 offset, gint32 origin,
 				 convert_seekorigin ((MonoSeekOrigin)origin));
 
 	if(offset==INVALID_SET_FILE_POINTER) {
-		*error=GetLastError ();
+		*error=mono_w32error_get_last ();
 	}
 
 	MONO_EXIT_GC_SAFE;
@@ -949,7 +950,7 @@ ves_icall_System_IO_MonoIO_Flush (HANDLE handle, gint32 *error)
 	
 	ret=mono_w32file_flush (handle);
 	if(ret==FALSE) {
-		*error=GetLastError ();
+		*error=mono_w32error_get_last ();
 	}
 	
 	MONO_EXIT_GC_SAFE;
@@ -980,7 +981,7 @@ ves_icall_System_IO_MonoIO_SetLength (HANDLE handle, gint64 length,
 	offset_hi = 0;
 	offset = mono_w32file_seek (handle, 0, &offset_hi, FILE_CURRENT);
 	if(offset==INVALID_SET_FILE_POINTER) {
-		*error=GetLastError ();
+		*error=mono_w32error_get_last ();
 		return(FALSE);
 	}
 
@@ -990,13 +991,13 @@ ves_icall_System_IO_MonoIO_SetLength (HANDLE handle, gint64 length,
 	offset_set=mono_w32file_seek (handle, length & 0xFFFFFFFF, &length_hi,
 				   FILE_BEGIN);
 	if(offset_set==INVALID_SET_FILE_POINTER) {
-		*error=GetLastError ();
+		*error=mono_w32error_get_last ();
 		return(FALSE);
 	}
 
 	result = mono_w32file_truncate (handle);
 	if(result==FALSE) {
-		*error=GetLastError ();
+		*error=mono_w32error_get_last ();
 		return(FALSE);
 	}
 
@@ -1005,7 +1006,7 @@ ves_icall_System_IO_MonoIO_SetLength (HANDLE handle, gint64 length,
 	offset_set=mono_w32file_seek (handle, offset & 0xFFFFFFFF, &offset_hi,
 				   FILE_BEGIN);
 	if(offset_set==INVALID_SET_FILE_POINTER) {
-		*error=GetLastError ();
+		*error=mono_w32error_get_last ();
 		return(FALSE);
 	}
 
@@ -1042,7 +1043,7 @@ ves_icall_System_IO_MonoIO_SetFileTime (HANDLE handle, gint64 creation_time,
 
 	ret=mono_w32file_set_times (handle, creation_filetime, access_filetime, write_filetime);
 	if(ret==FALSE) {
-		*error=GetLastError ();
+		*error=mono_w32error_get_last ();
 	}
 
 	MONO_EXIT_GC_SAFE;
@@ -1077,7 +1078,7 @@ ves_icall_System_IO_MonoIO_CreatePipe (HANDLE *read_handle, HANDLE *write_handle
 	MONO_EXIT_GC_SAFE;
 
 	if(ret==FALSE) {
-		*error = GetLastError ();
+		*error = mono_w32error_get_last ();
 		/* FIXME: throw an exception? */
 		return(FALSE);
 	}
@@ -1103,7 +1104,7 @@ ves_icall_System_IO_MonoIO_DuplicateHandle (HANDLE source_process_handle, HANDLE
 	MONO_EXIT_GC_SAFE;
 
 	if(ret==FALSE) {
-		*error = GetLastError ();
+		*error = mono_w32error_get_last ();
 		/* FIXME: throw an exception? */
 		return(FALSE);
 	}

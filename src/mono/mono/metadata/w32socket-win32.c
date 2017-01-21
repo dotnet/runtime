@@ -21,6 +21,8 @@
 #include "w32socket.h"
 #include "w32socket-internals.h"
 
+#include "utils/w32api.h"
+
 #define LOGDEBUG(...)  
 
 void

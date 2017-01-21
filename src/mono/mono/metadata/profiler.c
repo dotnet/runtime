@@ -22,7 +22,6 @@
 #include "mono/metadata/domain-internals.h"
 #include "mono/metadata/gc-internals.h"
 #include "mono/metadata/mono-config-dirs.h"
-#include "mono/io-layer/io-layer.h"
 #include "mono/utils/mono-dl.h"
 #include <mono/utils/mono-logger-internals.h>
 #include <string.h>

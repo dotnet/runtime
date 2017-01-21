@@ -249,11 +249,6 @@ mono_w32handle_unlock_handle (gpointer handle)
 	mono_w32handle_unref (handle);
 }
 
-/*
- * mono_w32handle_init:
- *
- *   Initialize the io-layer.
- */
 void
 mono_w32handle_init (void)
 {
@@ -480,6 +475,24 @@ gpointer mono_w32handle_new_fd (MonoW32HandleType type, int fd,
 	mono_w32handle_init_handle (handle_data, type, handle_specific);
 
 	return(GUINT_TO_POINTER(fd));
+}
+
+gboolean
+mono_w32handle_close (gpointer handle)
+{
+	if (handle == INVALID_HANDLE_VALUE)
+		return FALSE;
+	if (handle == (gpointer) 0 && mono_w32handle_get_type (handle) != MONO_W32HANDLE_CONSOLE) {
+		/* Problem: because we map file descriptors to the
+		 * same-numbered handle we can't tell the difference
+		 * between a bogus handle and the handle to stdin.
+		 * Assume that it's the console handle if that handle
+		 * exists... */
+		return FALSE;
+	}
+
+	mono_w32handle_unref (handle);
+	return TRUE;
 }
 
 gboolean

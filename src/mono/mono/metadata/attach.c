@@ -42,7 +42,7 @@
 #include <mono/utils/mono-threads.h>
 #include "attach.h"
 
-#include <mono/io-layer/io-layer.h>
+#include <mono/utils/w32api.h>
 
 /*
  * This module enables other processes to attach to a running mono process and

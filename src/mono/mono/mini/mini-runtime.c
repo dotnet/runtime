@@ -66,7 +66,6 @@
 #include <mono/utils/mono-threads-coop.h>
 #include <mono/utils/checked-build.h>
 #include <mono/metadata/w32handle.h>
-#include <mono/io-layer/io-layer.h>
 
 #include "mini.h"
 #include "seq-points.h"

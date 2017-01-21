@@ -34,7 +34,7 @@
 #include "mono/metadata/tokentype.h"
 #include "mono/utils/checked-build.h"
 #include "mono/utils/mono-digest.h"
-#include "mono/io-layer/io-layer.h"
+#include "mono/utils/w32api.h"
 
 static GENERATE_GET_CLASS_WITH_CACHE (marshal_as_attribute, System.Runtime.InteropServices, MarshalAsAttribute);
 static GENERATE_GET_CLASS_WITH_CACHE (module_builder, System.Reflection.Emit, ModuleBuilder);

@@ -45,9 +45,11 @@
 #ifdef HAVE_SYS_SENDFILE_H
 #include <sys/sendfile.h>
 #endif
+#include <sys/stat.h>
 
 #include "w32socket.h"
 #include "w32socket-internals.h"
+#include "w32error.h"
 #include "w32handle.h"
 #include "utils/mono-logger-internals.h"
 #include "utils/mono-poll.h"
@@ -606,7 +608,7 @@ mono_w32socket_transmit_file (SOCKET sock, gpointer file_handle, TRANSMIT_FILE_B
 	}
 
 	if ((flags & TF_DISCONNECT) == TF_DISCONNECT)
-		CloseHandle (handle);
+		mono_w32handle_close (handle);
 
 	return TRUE;
 }
@@ -1123,6 +1125,12 @@ mono_w32socket_ioctl (SOCKET sock, gint32 command, gchar *input, gint inputlen, 
 	return 0;
 }
 
+gboolean
+mono_w32socket_close (SOCKET sock)
+{
+	return mono_w32handle_close (GINT_TO_POINTER (sock));
+}
+
 gint
 mono_w32socket_set_blocking (SOCKET socket, gboolean blocking)
 {
@@ -1196,13 +1204,13 @@ mono_w32socket_get_available (SOCKET socket, guint64 *amount)
 void
 mono_w32socket_set_last_error (gint32 error)
 {
-	SetLastError (error);
+	mono_w32error_set_last (error);
 }
 
 gint32
 mono_w32socket_get_last_error (void)
 {
-	return GetLastError ();
+	return mono_w32error_get_last ();
 }
 
 gint32

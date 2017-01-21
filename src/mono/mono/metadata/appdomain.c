@@ -70,7 +70,8 @@
 #include <mono/utils/mono-memory-model.h>
 #include <mono/utils/mono-threads.h>
 #include <mono/metadata/w32handle.h>
-#include <mono/io-layer/io-layer.h>
+#include <mono/metadata/w32error.h>
+#include <mono/utils/w32api.h>
 #ifdef HOST_WIN32
 #include <direct.h>
 #endif
@@ -1598,7 +1599,7 @@ shadow_copy_create_ini (const char *shadow, const char *filename)
 	full_path = mono_path_resolve_symlinks (filename);
 	result = mono_w32file_write (handle, full_path, strlen (full_path), &n);
 	g_free (full_path);
-	CloseHandle (handle);
+	mono_w32file_close (handle);
 	return result;
 }
 
@@ -1762,7 +1763,7 @@ mono_make_shadow_copy (const char *filename, MonoError *oerror)
 		g_free (shadow);
 
 		/* Fix for bug #17251 - if file not found try finding assembly by other means (it is not fatal error) */
-		if (GetLastError() == ERROR_FILE_NOT_FOUND || GetLastError() == ERROR_PATH_NOT_FOUND)
+		if (mono_w32error_get_last() == ERROR_FILE_NOT_FOUND || mono_w32error_get_last() == ERROR_PATH_NOT_FOUND)
 			return NULL; /* file not found, shadow copy failed */
 
 		mono_error_set_execution_engine (oerror, "Failed to create shadow copy (mono_w32file_copy).");

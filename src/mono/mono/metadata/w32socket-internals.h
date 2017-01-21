@@ -17,7 +17,7 @@
 #include <sys/socket.h>
 #endif
 
-#include <mono/io-layer/io-layer.h>
+#include <mono/utils/w32api.h>
 
 #ifndef HAVE_SOCKLEN_T
 #define socklen_t int
@@ -31,14 +31,14 @@
 typedef struct {
 	guint32 len;
 	gpointer buf;
-} WSABUF;
+} WSABUF, *LPWSABUF;
 
 typedef struct {
 	gpointer Head;
 	guint32 HeadLength;
 	gpointer Tail;
 	guint32 TailLength;
-} TRANSMIT_FILE_BUFFERS;
+} TRANSMIT_FILE_BUFFERS, *LPTRANSMIT_FILE_BUFFERS;
 
 typedef struct {
 	guint32 Data1;
@@ -56,9 +56,6 @@ typedef struct {
 	gpointer handle1;
 	gpointer handle2;
 } OVERLAPPED;
-
-typedef BOOL (WINAPI *LPFN_DISCONNECTEX)(SOCKET, OVERLAPPED*, guint32, guint32);
-typedef BOOL (WINAPI *LPFN_TRANSMITFILE)(SOCKET, HANDLE, guint32, guint32, OVERLAPPED*, TRANSMIT_FILE_BUFFERS*, guint32);
 
 #endif
 
@@ -81,7 +78,7 @@ int
 mono_w32socket_recvfrom (SOCKET s, char *buf, int len, int flags, struct sockaddr *from, socklen_t *fromlen, gboolean blocking);
 
 int
-mono_w32socket_recvbuffers (SOCKET s, WSABUF *lpBuffers, guint32 dwBufferCount, guint32 *lpNumberOfBytesRecvd, guint32 *lpFlags, gpointer lpOverlapped, gpointer lpCompletionRoutine, gboolean blocking);
+mono_w32socket_recvbuffers (SOCKET s, LPWSABUF lpBuffers, guint32 dwBufferCount, guint32 *lpNumberOfBytesRecvd, guint32 *lpFlags, gpointer lpOverlapped, gpointer lpCompletionRoutine, gboolean blocking);
 
 int
 mono_w32socket_send (SOCKET s, char *buf, int len, int flags, gboolean blocking);
@@ -90,12 +87,12 @@ int
 mono_w32socket_sendto (SOCKET s, const char *buf, int len, int flags, const struct sockaddr *to, int tolen, gboolean blocking);
 
 int
-mono_w32socket_sendbuffers (SOCKET s, WSABUF *lpBuffers, guint32 dwBufferCount, guint32 *lpNumberOfBytesRecvd, guint32 lpFlags, gpointer lpOverlapped, gpointer lpCompletionRoutine, gboolean blocking);
+mono_w32socket_sendbuffers (SOCKET s, LPWSABUF lpBuffers, guint32 dwBufferCount, guint32 *lpNumberOfBytesRecvd, guint32 lpFlags, gpointer lpOverlapped, gpointer lpCompletionRoutine, gboolean blocking);
 
 #if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT | HAVE_UWP_WINAPI_SUPPORT)
 
 BOOL
-mono_w32socket_transmit_file (SOCKET hSocket, gpointer hFile, TRANSMIT_FILE_BUFFERS *lpTransmitBuffers, guint32 dwReserved, gboolean blocking);
+mono_w32socket_transmit_file (SOCKET hSocket, gpointer hFile, LPTRANSMIT_FILE_BUFFERS lpTransmitBuffers, guint32 dwReserved, gboolean blocking);
 
 #endif
 
@@ -127,6 +124,9 @@ mono_w32socket_shutdown (SOCKET sock, gint how);
 
 gint
 mono_w32socket_ioctl (SOCKET sock, gint32 command, gchar *input, gint inputlen, gchar *output, gint outputlen, glong *written);
+
+gboolean
+mono_w32socket_close (SOCKET sock);
 
 #endif /* HOST_WIN32 */
 

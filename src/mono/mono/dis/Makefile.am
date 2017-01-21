@@ -15,7 +15,6 @@ endif
 runtime_lib=	\
 	$(metadata_lib) \
 	$(gc_lib)	\
-	$(top_builddir)/mono/io-layer/libwapi.la	\
 	$(top_builddir)/mono/utils/libmonoutils.la \
 	$(GLIB_LIBS) $(LIBICONV)
 

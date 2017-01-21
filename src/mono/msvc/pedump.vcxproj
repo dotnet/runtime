@@ -214,6 +214,7 @@
     <ClCompile Include="..\mono\metadata\environment.c" />
     <ClCompile Include="..\mono\metadata\w32file-win32.c" />
     <ClCompile Include="..\mono\metadata\w32file.c" />
+    <ClCompile Include="..\mono\metadata\w32error-win32.c" />
     <ClCompile Include="..\mono\metadata\filewatcher.c" />
     <ClCompile Include="..\mono\metadata\gc.c" />
     <ClCompile Include="..\mono\metadata\icall-windows.c" />

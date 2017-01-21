@@ -23,6 +23,12 @@ mono_w32event_create (gboolean manual, gboolean initial)
 	return CreateEvent (NULL, manual, initial, NULL);
 }
 
+gboolean
+mono_w32event_close (gpointer handle)
+{
+	return CloseHandle (handle);
+}
+
 void
 mono_w32event_set (gpointer handle)
 {

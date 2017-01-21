@@ -31,8 +31,7 @@
 #include <mono/utils/mono-threads-coop.h>
 #include <mono/utils/mono-threads-debug.h>
 #include <mono/utils/os-event.h>
-
-#include <mono/io-layer/io-layer.h>
+#include <mono/utils/w32api.h>
 
 #include <errno.h>
 

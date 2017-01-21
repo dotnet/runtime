@@ -13,7 +13,7 @@ if SUPPORT_BOEHM
 
 noinst_LTLIBRARIES = libtestlib.la
 libtestlib_la_SOURCES =
-libtestlib_la_LIBADD = ../metadata/libmonoruntimesgen.la ../sgen/libmonosgen.la ../utils/libmonoutils.la ../io-layer/libwapi.la 
+libtestlib_la_LIBADD = ../metadata/libmonoruntimesgen.la ../sgen/libmonosgen.la ../utils/libmonoutils.la
 
 test_sgen_qsort_SOURCES = test-sgen-qsort.c
 test_sgen_qsort_CFLAGS = $(test_cflags)

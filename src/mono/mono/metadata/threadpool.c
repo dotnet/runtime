@@ -45,7 +45,6 @@
 #include <mono/utils/mono-threads.h>
 #include <mono/utils/mono-time.h>
 #include <mono/utils/refcount.h>
-#include <mono/io-layer/io-layer.h>
 
 typedef struct {
 	MonoDomain *domain;
@@ -567,7 +566,7 @@ mono_threadpool_end_invoke (MonoAsyncResult *ares, MonoArray **out_args, MonoObj
 			g_assert(wait_event);
 			MonoWaitHandle *wait_handle = mono_wait_handle_new (mono_object_domain (ares), wait_event, error);
 			if (!is_ok (error)) {
-				CloseHandle (wait_event);
+				mono_w32event_close (wait_event);
 				return NULL;
 			}
 			MONO_OBJECT_SETREF (ares, handle, (MonoObject*) wait_handle);

@@ -16,7 +16,8 @@ win32_sources = \
 	w32event-win32.c \
 	w32process-win32.c \
 	w32process-win32-internals.h \
-	w32socket-win32.c
+	w32socket-win32.c \
+	w32error-win32.c
 
 platform_sources = $(win32_sources)
 
@@ -52,7 +53,8 @@ unix_sources = \
 	w32socket-unix.c \
 	w32file-unix.c \
 	w32file-unix-glob.c \
-	w32file-unix-glob.h
+	w32file-unix-glob.h \
+	w32error-unix.c
 
 platform_sources = $(unix_sources)
 endif
@@ -267,7 +269,8 @@ common_sources = \
 	w32handle-namespace.h	\
 	w32handle-namespace.c	\
 	w32handle.h	\
-	w32handle.c
+	w32handle.c	\
+	w32error.h
 
 # These source files have compile time dependencies on GC code
 gc_dependent_sources = \
