@@ -120,14 +120,23 @@ namespace System.Linq
 
             var queue = new Queue<TSource>();
 
-            foreach (TSource item in source)
+            using (IEnumerator<TSource> e = source.GetEnumerator())
             {
-                if (queue.Count == count)
+                while (queue.Count < count)
                 {
-                    queue.Dequeue();
+                    if (!e.MoveNext())
+                    {
+                        yield break;
+                    }
+
+                    queue.Enqueue(e.Current);
                 }
 
-                queue.Enqueue(item);
+                while (e.MoveNext())
+                {
+                    queue.Dequeue();
+                    queue.Enqueue(e.Current);
+                }
             }
 
             while (queue.Count > 0)
