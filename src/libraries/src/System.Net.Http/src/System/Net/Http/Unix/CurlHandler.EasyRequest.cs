@@ -38,6 +38,7 @@ namespace System.Net.Http
             internal readonly CancellationToken _cancellationToken;
             internal Stream _requestContentStream;
             internal long? _requestContentStreamStartingPosition;
+            internal bool _inMemoryPostContent;
 
             internal SafeCurlHandle _easyHandle;
             private SafeCurlSListHandle _requestHeaders;
@@ -362,6 +363,7 @@ namespace System.Net.Http
                             lengthOption == CURLoption.CURLOPT_INFILESIZE ? CURLoption.CURLOPT_INFILESIZE_LARGE : CURLoption.CURLOPT_POSTFIELDSIZE_LARGE,
                             contentLength);
                     }
+                    EventSourceTrace("Set content length: {0}", contentLength);
                     return;
                 }
 
@@ -384,7 +386,51 @@ namespace System.Net.Http
                 else if (_requestMessage.Method == HttpMethod.Post)
                 {
                     SetCurlOption(CURLoption.CURLOPT_POST, 1L);
+
+                    // Set the content length if we have one available. We must set POSTFIELDSIZE before setting
+                    // COPYPOSTFIELDS, as the setting of COPYPOSTFIELDS uses the size to know how much data to read
+                    // out; if POSTFIELDSIZE is not done before, COPYPOSTFIELDS will look for a null terminator, and
+                    // we don't necessarily have one.
                     SetContentLength(CURLoption.CURLOPT_POSTFIELDSIZE);
+
+                    // For most content types and most HTTP methods, we use a callback that lets libcurl
+                    // get data from us if/when it wants it.  However, as an optimization, for POSTs that
+                    // use content already known to be entirely in memory, we hand that data off to libcurl
+                    // ahead of time.  This not only saves on costs associated with all of the async transfer
+                    // between the content and libcurl, it also lets libcurl do larger writes that can, for
+                    // example, enable fewer packets to be sent on the wire.
+                    var inMemContent = _requestMessage.Content as ByteArrayContent;
+                    ArraySegment<byte> contentSegment;
+                    if (inMemContent != null && inMemContent.TryGetBuffer(out contentSegment))
+                    {
+                        // Only pre-provide the content if the content still has its ContentLength
+                        // and if that length matches the segment.  If it doesn't, something has been overridden,
+                        // and we should rely on reading from the content stream to get the data.
+                        long? contentLength = inMemContent.Headers.ContentLength;
+                        if (contentLength.HasValue && contentLength.GetValueOrDefault() == contentSegment.Count)
+                        {
+                            _inMemoryPostContent = true;
+
+                            // Debug double-check array segment; this should all have been validated by the ByteArrayContent
+                            Debug.Assert(contentSegment.Array != null, "Expected non-null byte content array");
+                            Debug.Assert(contentSegment.Count >= 0, $"Expected non-negative byte content count {contentSegment.Count}");
+                            Debug.Assert(contentSegment.Offset >= 0, $"Expected non-negative byte content offset {contentSegment.Offset}");
+                            Debug.Assert(contentSegment.Array.Length - contentSegment.Offset >= contentSegment.Count,
+                                $"Expected offset {contentSegment.Offset} + count {contentSegment.Count} to be within array length {contentSegment.Array.Length}");
+
+                            // Hand the data off to libcurl with COPYPOSTFIELDS for it to copy out the data. (The alternative
+                            // is to use POSTFIELDS, which would mean we'd need to pin the array in the ByteArrayContent for the
+                            // duration of the request.  Often with a ByteArrayContent, the data will be small and the copy cheap.)
+                            unsafe
+                            {
+                                fixed (byte* inMemContentPtr = contentSegment.Array)
+                                {
+                                    SetCurlOption(CURLoption.CURLOPT_COPYPOSTFIELDS, new IntPtr(inMemContentPtr + contentSegment.Offset));
+                                    EventSourceTrace("Set post fields rather than using send content callback");
+                                }
+                            }
+                        }
+                    }
                 }
                 else if (_requestMessage.Method == HttpMethod.Trace)
                 {
@@ -684,8 +730,9 @@ namespace System.Net.Http
                     ref _callbackHandle);
                 ThrowOOMIfInvalid(_callbackHandle);
 
-                // If we're sending data as part of the request, add callbacks for sending request data
-                if (_requestMessage.Content != null)
+                // If we're sending data as part of the request and it wasn't already added as
+                // in-memory data, add callbacks for sending request data.
+                if (!_inMemoryPostContent && _requestMessage.Content != null)
                 {
                     Interop.Http.RegisterReadWriteCallback(
                         _easyHandle,
