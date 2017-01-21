@@ -2522,31 +2522,33 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         SoapAttributeOverrides soapOverrides = new SoapAttributeOverrides();
         SoapElementAttribute soapElement1 = new SoapElementAttribute("Truck");
         soapAttrs.SoapElement = soapElement1;
-        soapOverrides.Add(typeof(Transportation), "Vehicle", soapAttrs);
+        soapOverrides.Add(typeof(SoapEncodedTestType2), "Vehicle", soapAttrs);
     }
 
-    [ActiveIssue(12799)]
     [Fact]
-    public static void XmlTypeMappingTest()
+    public static void SoapEncodedSerializationTest_ComplexField()
     {
-        SoapAttributes soapAttrs = new SoapAttributes();
-        SoapAttributeOverrides soapOverrides = new SoapAttributeOverrides();
-        SoapElementAttribute soapElement1 = new SoapElementAttribute("Truck");
-        soapAttrs.SoapElement = soapElement1;
-        soapOverrides.Add(typeof(Transportation), "Vehicle", soapAttrs);
-        XmlTypeMapping myTypeMapping = (new SoapReflectionImporter(soapOverrides)).ImportTypeMapping(typeof(Transportation));
-        XmlSerializer ser = new XmlSerializer(myTypeMapping);
-        Transportation myTransportation = new Transportation();
-        myTransportation.Vehicle = "MyCar";
-        myTransportation.CreationDate = DateTime.Now;
-        myTransportation.thing = new Thing();
-        using (MemoryStream ms = new MemoryStream())
+        XmlTypeMapping typeMapping = new SoapReflectionImporter().ImportTypeMapping(typeof(SoapEncodedTestType2));
+        var ser = new XmlSerializer(typeMapping);
+        var value = new SoapEncodedTestType2();
+        value.TestType3 = new SoapEncodedTestType3() { StringValue = "foo" };
+
+        using (var ms = new MemoryStream())
         {
-            ser.Serialize(ms, myTransportation);
+            var writer = new XmlTextWriter(ms, Encoding.UTF8);
+            writer.WriteStartElement("root");
+            ser.Serialize(writer, value);
+            writer.WriteEndElement();
+            ms.Position = 0;
+
+            string expectedOutput = "<root><SoapEncodedTestType2 xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" id=\"id1\"><TestType3 href=\"#id2\" /></SoapEncodedTestType2><SoapEncodedTestType3 id=\"id2\" d2p1:type=\"SoapEncodedTestType3\" xmlns:d2p1=\"http://www.w3.org/2001/XMLSchema-instance\"><StringValue xmlns:q1=\"http://www.w3.org/2001/XMLSchema\" d2p1:type=\"q1:string\">foo</StringValue></SoapEncodedTestType3>";
+            string actualOutput = new StreamReader(ms).ReadToEnd();
+            Utils.CompareResult result = Utils.Compare(expectedOutput, actualOutput);
+            Assert.True(result.Equal, string.Format("{1}{0}Test failed for input: {2}{0}Expected: {3}{0}Actual: {4}",
+                Environment.NewLine, result.ErrorMessage, value, expectedOutput, actualOutput));
         }
     }
 
-    [ActiveIssue(12799)]
     [Fact]
     public static void SoapEncodedSerializationTest_Basic()
     {
@@ -2572,7 +2574,6 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         Assert.Equal(value.DateTimeValue, actual.DateTimeValue);
     }
 
-    [ActiveIssue(12799)]
     [Fact]
     public static void SoapEncodedSerializationTest_With_SoapIgnore()
     {
@@ -2604,7 +2605,6 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         Assert.Equal(value.DateTimeValue, actual.DateTimeValue);
     }
 
-    [ActiveIssue(12799)]
     [Fact]
     public static void SoapEncodedSerializationTest_With_SoapElement()
     {
@@ -2637,7 +2637,6 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         Assert.Equal(value.DateTimeValue, actual.DateTimeValue);
     }
 
-    [ActiveIssue(12799)]
     [Fact]
     public static void SoapEncodedSerializationTest_With_SoapType()
     {
@@ -2671,7 +2670,6 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         Assert.Equal(value.DateTimeValue, actual.DateTimeValue);
     }
 
-    [ActiveIssue(12799)]
     [Fact]
     public static void SoapEncodedSerializationTest_Enum()
     {
@@ -2687,7 +2685,6 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         Assert.Equal(value, actual);
     }
 
-    [ActiveIssue(12799)]
     [Fact]
     public static void SoapEncodedSerializationTest_Enum_With_SoapEnumOverrides()
     {

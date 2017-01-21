@@ -1901,17 +1901,7 @@ namespace System.Xml.Serialization
         protected object ReadReferencingElement(string name, string ns, bool elementCanBeType, out string fixupReference)
         {
             object o = null;
-
-            if (_callbacks == null)
-            {
-                _callbacks = new Hashtable();
-                _types = new Hashtable();
-                XmlQualifiedName urType = new XmlQualifiedName(_urTypeID, _r.NameTable.Add(XmlSchema.Namespace));
-                _types.Add(urType, typeof(object));
-                _typesReverse = new Hashtable();
-                _typesReverse.Add(typeof(object), urType);
-                InitCallbacks();
-            }
+            EnsureCallbackTables();
 
             _r.MoveToContent();
 
@@ -1943,6 +1933,20 @@ namespace System.Xml.Serialization
             AddTarget(id, o);
 
             return o;
+        }
+
+        internal void EnsureCallbackTables()
+        {
+            if (_callbacks == null)
+            {
+                _callbacks = new Hashtable();
+                _types = new Hashtable();
+                XmlQualifiedName urType = new XmlQualifiedName(_urTypeID, _r.NameTable.Add(XmlSchema.Namespace));
+                _types.Add(urType, typeof(object));
+                _typesReverse = new Hashtable();
+                _typesReverse.Add(typeof(object), urType);
+                InitCallbacks();
+            }
         }
 
         protected void AddReadCallback(string name, string ns, Type type, XmlSerializationReadCallback read)

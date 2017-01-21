@@ -332,13 +332,22 @@ namespace System.Xml.Serialization
 
         internal static TempAssembly GenerateTempAssembly(XmlMapping xmlMapping, Type type, string defaultNamespace)
         {
-            if (xmlMapping == null)
-                throw new ArgumentNullException(nameof(xmlMapping));
-            return new TempAssembly(new XmlMapping[] { xmlMapping }, new Type[] { type }, defaultNamespace, null);
+            return GenerateTempAssembly(xmlMapping, type, defaultNamespace, null);
         }
 
         internal static TempAssembly GenerateTempAssembly(XmlMapping xmlMapping, Type type, string defaultNamespace, string location)
         {
+            if (xmlMapping == null)
+            {
+                throw new ArgumentNullException(nameof(xmlMapping));
+            }
+
+            xmlMapping.CheckShallow();
+            if (xmlMapping.IsSoap)
+            {
+                return null;
+            }
+
             return new TempAssembly(new XmlMapping[] { xmlMapping }, new Type[] { type }, defaultNamespace, location);
         }
 
@@ -421,7 +430,7 @@ namespace System.Xml.Serialization
                     SerializePrimitive(xmlWriter, o, namespaces);
                 }
 #if !NET_NATIVE
-                else if (Mode == SerializationMode.ReflectionOnly)
+                else if (ShouldUseReflectionBasedSerialization())
                 {
                     XmlMapping mapping;
                     if (_mapping != null && _mapping.GenerateSerializer)
@@ -568,7 +577,7 @@ namespace System.Xml.Serialization
                     return DeserializePrimitive(xmlReader, events);
                 }
 #if !NET_NATIVE
-                else if (Mode == SerializationMode.ReflectionOnly)
+                else if (ShouldUseReflectionBasedSerialization())
                 {
                     XmlMapping mapping;
                     if (_mapping != null && _mapping.GenerateSerializer)
@@ -661,6 +670,12 @@ namespace System.Xml.Serialization
                     throw new InvalidOperationException(SR.XmlSerializeError, e);
                 }
             }
+        }
+
+        private bool ShouldUseReflectionBasedSerialization()
+        {
+            return Mode == SerializationMode.ReflectionOnly
+                || (_mapping != null && _mapping.IsSoap);
         }
 
         /// <include file='doc\XmlSerializer.uex' path='docs/doc[@for="XmlSerializer.CanDeserialize"]/*' />
