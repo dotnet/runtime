@@ -223,19 +223,11 @@ inline void *__cdecl operator new(size_t, void *_P)
 // PAL_safe_offsetof is a version of offsetof that protects against an
 // overridden operator&
 
-#if defined(__GNUC__) && (__GNUC__ == 3 && __GNUC_MINOR__ >= 5 || __GNUC__ > 3)
 #define FIELD_OFFSET(type, field) __builtin_offsetof(type, field)
 #ifndef offsetof
 #define offsetof(type, field) __builtin_offsetof(type, field)
 #endif
 #define PAL_safe_offsetof(type, field) __builtin_offsetof(type, field)
-#else
-#define FIELD_OFFSET(type, field) (((LONG)(LONG_PTR)&(((type *)64)->field)) - 64)
-#ifndef offsetof
-#define offsetof(s,m)          ((size_t)((ptrdiff_t)&(((s *)64)->m)) - 64)
-#endif
-#define PAL_safe_offsetof(s,m) ((size_t)((ptrdiff_t)&(char&)(((s *)64)->m))-64)
-#endif
 
 #define CONTAINING_RECORD(address, type, field) \
     ((type *)((LONG_PTR)(address) - FIELD_OFFSET(type, field)))
