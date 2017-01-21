@@ -122,20 +122,19 @@ namespace System.Linq
 
             using (IEnumerator<TSource> e = source.GetEnumerator())
             {
-                while (queue.Count < count)
+                while (queue.Count < count && e.MoveNext())
                 {
-                    if (!e.MoveNext())
-                    {
-                        yield break;
-                    }
-
                     queue.Enqueue(e.Current);
                 }
 
-                while (e.MoveNext())
+                if (queue.Count == count)
                 {
-                    queue.Dequeue();
-                    queue.Enqueue(e.Current);
+                    do
+                    {
+                        queue.Dequeue();
+                        queue.Enqueue(e.Current);
+                    }
+                    while (e.MoveNext());
                 }
             }
 
