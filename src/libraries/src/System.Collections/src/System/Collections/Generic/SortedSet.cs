@@ -1794,11 +1794,6 @@ namespace System.Collections.Generic
         [Serializable]
         internal sealed class Node
         {
-            private readonly T _item;
-            private Node _left;
-            private Node _right;
-            private bool _isRed;
-
             public Node(T item, bool isRed = true)
             {
                 // The default color is red since we usually don't need to create a black node directly.
@@ -1806,6 +1801,14 @@ namespace System.Collections.Generic
                 Item = item;
                 IsRed = isRed;
             }
+
+            public T Item { get; set; }
+
+            public Node Left { get; set; }
+
+            public Node Right { get; set; }
+
+            public bool IsRed { get; set; }
         }
 
         [SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes", Justification = "not an expected scenario")]
@@ -2011,7 +2014,7 @@ namespace System.Collections.Generic
 
             internal bool NotStartedOrEnded => _current == null;
 
-            void IEnumerator.Reset()
+            internal void Reset()
             {
                 if (_version != _tree._version)
                 {
@@ -2021,6 +2024,8 @@ namespace System.Collections.Generic
                 _stack.Clear();
                 Intialize();
             }
+
+            void IEnumerator.Reset() => Reset();
         }
 
         internal struct ElementCount

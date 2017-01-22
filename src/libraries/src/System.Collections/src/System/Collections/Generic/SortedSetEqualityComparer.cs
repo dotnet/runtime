@@ -13,7 +13,9 @@ namespace System.Collections.Generic
         private readonly IEqualityComparer<T> _memberEqualityComparer;
 
         // TODO: This is the only constructor ever called. `comparer` will always be null.
-        public SortedSetEqualityComparer(IEqualityComparer<T> memberEqualityComparer) : this(comparer: null, memberEqualityComparer) { }
+        public SortedSetEqualityComparer(IEqualityComparer<T> memberEqualityComparer)
+            : this(comparer: null, memberEqualityComparer: memberEqualityComparer)
+        { }
 
         /// <summary>
         /// Create a new SetEqualityComparer, given a comparer for member order and another for member equality (these
