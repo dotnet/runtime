@@ -13,14 +13,14 @@ namespace System.Collections.Generic
     // 2. Every leaf (nil node) is black
     // 3. If a node is red, the both its children are black
     // 4. Every simple path from a node to a descendant leaf contains the same number of black nodes
-    // 
-    // The basic idea of red-black tree is to represent 2-3-4 trees as standard BSTs but to add one extra bit of information  
-    // per node to encode 3-nodes and 4-nodes. 
+    //
+    // The basic idea of red-black tree is to represent 2-3-4 trees as standard BSTs but to add one extra bit of information
+    // per node to encode 3-nodes and 4-nodes.
     // 4-nodes will be represented as:          B
     //                                                              R            R
-    // 3 -node will be represented as:           B             or         B     
+    // 3 -node will be represented as:           B             or         B
     //                                                              R          B               B       R
-    // 
+    //
     // For a detailed description of the algorithm, take a look at "Algorithm" by Rebert Sedgewick.
 
     internal delegate bool TreeWalkPredicate<T>(SortedSet<T>.Node node);
@@ -56,9 +56,14 @@ namespace System.Collections.Generic
         // Needed for enumerator
         private const string TreeName = "Tree";
         private const string NodeValueName = "Item";
-        private const string EnumStartName = "EnumStarted";        
+        private const string EnumStartName = "EnumStarted";
         private const string ReverseName = "Reverse";
         private const string EnumVersionName = "EnumVersion";
+        // Needed for TreeSubset
+        private const string MinName = "Min";
+        private const string MaxName = "Max";
+        private const string LowerBoundActiveName = "lBoundActive";
+        private const string UpperBoundActiveName = "uBoundActive";
 
         internal const int StackAllocThreshold = 100;
 
@@ -203,13 +208,12 @@ namespace System.Collections.Generic
 
         // Do a in order walk on tree and calls the delegate for each node.
         // If the action delegate returns false, stop the walk.
-        // 
-        // Return true if the entire tree has been walked. 
+        // Return true if the entire tree has been walked.
         // Otherwise returns false.
 
         internal bool InOrderTreeWalk(TreeWalkPredicate<T> action) => InOrderTreeWalk(action, reverse: false);
 
-        // Allows for the change in traversal direction. Reverse visits nodes in descending order 
+        // Allows for the change in traversal direction. Reverse visits nodes in descending order
         internal virtual bool InOrderTreeWalk(TreeWalkPredicate<T> action, bool reverse)
         {
             if (_root == null)
@@ -219,7 +223,7 @@ namespace System.Collections.Generic
 
             // The maximum height of a red-black tree is 2*lg(n+1).
             // See page 264 of "Introduction to algorithms" by Thomas H. Cormen
-            // note: this should be logbase2, but since the stack grows itself, we 
+            // note: this should be logbase2, but since the stack grows itself, we
             // don't want the extra cost
             Stack<Node> stack = new Stack<Node>(2 * (int)(SortedSet<T>.Log2(Count + 1)));
             Node current = _root;
@@ -246,11 +250,10 @@ namespace System.Collections.Generic
             return true;
         }
 
-        // Do a left to right breadth first walk on tree and 
+        // Do a left to right breadth first walk on tree and
         // calls the delegate for each node.
         // If the action delegate returns false, stop the walk.
-        // 
-        // Return true if the entire tree has been walked. 
+        // Return true if the entire tree has been walked.
         // Otherwise returns false.
         internal virtual bool BreadthFirstTreeWalk(TreeWalkPredicate<T> action)
         {
@@ -341,7 +344,7 @@ namespace System.Collections.Generic
                 return true;
             }
 
-            // Search for a node at bottom to insert the new node. 
+            // Search for a node at bottom to insert the new node.
             // If we can guarantee the node we found is not a 4-node, it would be easy to do insertion.
             // We split 4-nodes along the search path.
             Node current = _root;
@@ -365,7 +368,7 @@ namespace System.Collections.Generic
                     return false;
                 }
 
-                // split a 4-node into two 2-nodes                
+                // split a 4-node into two 2-nodes
                 if (Is4Node(current))
                 {
                     Split4Node(current);
@@ -414,13 +417,13 @@ namespace System.Collections.Generic
                 return false;
             }
 
-            // Search for a node and then find its successor. 
-            // Then copy the item from the successor to the matching node and delete the successor. 
-            // If a node doesn't have a successor, we can replace it with its left child (if not empty.) 
+            // Search for a node and then find its successor.
+            // Then copy the item from the successor to the matching node and delete the successor.
+            // If a node doesn't have a successor, we can replace it with its left child (if not empty.)
             // or delete the matching node.
-            // 
+            //
             // In top-down implementation, it is important to make sure the node to be deleted is not a 2-node.
-            // Following code will make sure the node on the path is not a 2 Node. 
+            // Following code will make sure the node on the path is not a 2-node.
 
             // even if we don't actually remove from the set, we may be altering its structure (by doing rotations
             // and such). so update version to disable any enumerators/subsets working on it
@@ -447,8 +450,8 @@ namespace System.Collections.Generic
                         Node sibling = GetSibling(current, parent);
                         if (sibling.IsRed)
                         {
-                            // If parent is a 3-node, flip the orientation of the red link. 
-                            // We can achieve this by a single rotation        
+                            // If parent is a 3-node, flip the orientation of the red link.
+                            // We can achieve this by a single rotation
                             // This case is converted to one of other cased below.
                             Debug.Assert(!parent.IsRed);
                             if (parent.Right == sibling)
@@ -464,7 +467,7 @@ namespace System.Collections.Generic
                             sibling.IsRed = false; // parent's color
                             // sibling becomes child of grandParent or root after rotation. Update link from grandParent or root
                             ReplaceChildOfNodeOrRoot(grandParent, parent, sibling);
-                            // sibling will become grandParent of current node 
+                            // sibling will become grandParent of current node
                             grandParent = sibling;
                             if (parent == match)
                             {
@@ -680,7 +683,7 @@ namespace System.Collections.Generic
         private static Node GetSibling(Node node, Node parent) => parent.Left == node ? parent.Right : parent.Left;
 
         // After calling InsertionBalance, we need to make sure current and parent up-to-date.
-        // It doesn't matter if we keep grandParent and greatGrantParent up-to-date 
+        // It doesn't matter if we keep grandParent and greatGrantParent up-to-date
         // because we won't need to split again in the next node.
         // By the time we need to split again, everything will be correctly set.
         private void InsertionBalance(Node current, ref Node parent, Node grandParent, Node greatGrandParent)
@@ -699,7 +702,7 @@ namespace System.Collections.Generic
             {
                 // different orientation, double rotation
                 newChildOfGreatGrandParent = currentIsOnRight ? RotateLeftRight(grandParent) : RotateRightLeft(grandParent);
-                // current node now becomes the child of greatgrandparent 
+                // current node now becomes the child of greatgrandparent
                 parent = greatGrandParent;
             }
             // grand parent will become a child of either parent of current.
@@ -732,8 +735,8 @@ namespace System.Collections.Generic
             child2.IsRed = true;
         }
 
-        // Replace the child of a parent node. 
-        // If the parent node is null, replace the root.        
+        // Replace the child of a parent node.
+        // If the parent node is null, replace the root.
         private void ReplaceChildOfNodeOrRoot(Node parent, Node child, Node newChild)
         {
             if (parent != null)
@@ -808,7 +811,7 @@ namespace System.Collections.Generic
             return null;
         }
 
-        // Used for bithelpers. Note that this implementation is completely different 
+        // Used for bithelpers. Note that this implementation is completely different
         // from the Subset's. The two should not be mixed. This indexes as if the tree were an array.
         // http://en.wikipedia.org/wiki/Binary_Tree#Methods_for_storing_binary_trees
         internal virtual int InternalIndexOf(T item)
@@ -1064,7 +1067,7 @@ namespace System.Collections.Generic
 
         private static Node ConstructRootFromSortedArray(T[] arr, int startIndex, int endIndex, Node redNode)
         {
-            // You're given a sorted array... say 1 2 3 4 5 6 
+            // You're given a sorted array... say 1 2 3 4 5 6
             // There are 2 cases:
             // -  If there are odd # of elements, pick the middle element (in this case 4), and compute
             //    its left and right branches
@@ -1074,7 +1077,7 @@ namespace System.Collections.Generic
             //    now add 4 as a red node to the lowest element on the right branch
             //             3                       3
             //         1       5       ->     1        5
-            //           2       6             2     4   6            
+            //           2       6             2     4   6
             //    As we're adding to the leftmost of the right branch, nesting will not hurt the red-black properties
             //    Leaf nodes are red if they have no sibling (if there are 2 nodes or if a node trickles
             //    down to the bottom
@@ -1231,7 +1234,7 @@ namespace System.Collections.Generic
 
             if (asSorted != null && AreComparersEqual(this, asSorted))
             {
-                // outside range, no point doing anything               
+                // outside range, no point doing anything
                 if (!(_comparer.Compare(asSorted.Max, Min) < 0 || _comparer.Compare(asSorted.Min, Max) > 0))
                 {
                     T min = Min;
@@ -1483,7 +1486,7 @@ namespace System.Collections.Generic
             }
 
             // worst case: mark every element in my set and see if I've counted all
-            // O(N) by size of other            
+            // O(N) by size of other
             ElementCount result = CheckUniqueAndUnfoundElements(other, true);
             return (result.UniqueCount == Count && result.UnfoundCount == 0);
         }
@@ -1521,14 +1524,14 @@ namespace System.Collections.Generic
         /// <summary>
         /// This works similar to HashSet's CheckUniqueAndUnfound (description below), except that the bit
         /// array maps differently than in the HashSet. We can only use this for the bulk boolean checks.
-        /// 
+        ///
         /// Determines counts that can be used to determine equality, subset, and superset. This
         /// is only used when other is an IEnumerable and not a HashSet. If other is a HashSet
-        /// these properties can be checked faster without use of marking because we can assume 
+        /// these properties can be checked faster without use of marking because we can assume
         /// other has no duplicates.
-        /// 
+        ///
         /// The following count checks are performed by callers:
-        /// 1. Equals: checks if UnfoundCount = 0 and uniqueFoundCount = Count; i.e. everything 
+        /// 1. Equals: checks if UnfoundCount = 0 and uniqueFoundCount = Count; i.e. everything
         /// in other is in this and everything in this is in other
         /// 2. Subset: checks if UnfoundCount >= 0 and uniqueFoundCount = Count; i.e. other may
         /// have elements not in this and everything in this is in other
@@ -1537,7 +1540,7 @@ namespace System.Collections.Generic
         /// 4. Proper superset: checks if unfound count = 0 and uniqueFoundCount strictly less
         /// than Count; i.e. everything in other was in this and this had at least one element
         /// not contained in other.
-        /// 
+        ///
         /// An earlier implementation used delegates to perform these checks rather than returning
         /// an ElementCount struct; however this was changed due to the perf overhead of delegates.
         /// </summary>
@@ -1545,7 +1548,7 @@ namespace System.Collections.Generic
         {
             ElementCount result;
 
-            // need special case in case this has no elements. 
+            // need special case in case this has no elements.
             if (Count == 0)
             {
                 int numElementsInOther = 0;
