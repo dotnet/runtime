@@ -40,7 +40,7 @@ namespace System.Collections.Generic
                 _max = Max;
                 _lBoundActive = lowerBoundActive;
                 _uBoundActive = upperBoundActive;
-                _root = _underlying.FindRange(_min, _max, _lBoundActive, _uBoundActive); // root is first element within range                                
+                _root = _underlying.FindRange(_min, _max, _lBoundActive, _uBoundActive); // root is first element within range
                 _count = 0;
                 _version = -1;
                 VersionCheckImpl();
@@ -296,10 +296,10 @@ namespace System.Collections.Generic
                     throw new ArgumentNullException(nameof(info));
                 }
 
-                info.AddValue(maxName, _max, typeof(T));
-                info.AddValue(minName, _min, typeof(T));
-                info.AddValue(lBoundActiveName, _lBoundActive);
-                info.AddValue(uBoundActiveName, _uBoundActive);
+                info.AddValue(MaxName, _max, typeof(T));
+                info.AddValue(MinName, _min, typeof(T));
+                info.AddValue(LowerBoundActiveName, _lBoundActive);
+                info.AddValue(UpperBoundActiveName, _uBoundActive);
 
                 base.GetObjectData(info, context);
             }
@@ -320,10 +320,10 @@ namespace System.Collections.Generic
 
                 _comparer = (IComparer<T>)_siInfo.GetValue(ComparerName, typeof(IComparer<T>));
                 int savedCount = _siInfo.GetInt32(CountName);
-                _max = (T)_siInfo.GetValue(maxName, typeof(T));
-                _min = (T)_siInfo.GetValue(minName, typeof(T));
-                _lBoundActive = _siInfo.GetBoolean(lBoundActiveName);
-                _uBoundActive = _siInfo.GetBoolean(uBoundActiveName);
+                _max = (T)_siInfo.GetValue(MaxName, typeof(T));
+                _min = (T)_siInfo.GetValue(MinName, typeof(T));
+                _lBoundActive = _siInfo.GetBoolean(LowerBoundActiveName);
+                _uBoundActive = _siInfo.GetBoolean(UpperBoundActiveName);
                 _underlying = new SortedSet<T>();
 
                 if (savedCount != 0)
