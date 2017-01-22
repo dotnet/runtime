@@ -6646,6 +6646,10 @@ ves_icall_System_Environment_Exit (int result)
 	/* Suspend all managed threads since the runtime is going away */
 	mono_thread_suspend_all_other_threads ();
 
+	//FIXME shutdown is, weirdly enough, abortible in gc.c so we add this hack for now, see https://bugzilla.xamarin.com/show_bug.cgi?id=51653
+	mono_threads_begin_abort_protected_block ();
+	mono_thread_info_clear_self_interrupt ();
+
 	mono_runtime_quit ();
 #endif
 

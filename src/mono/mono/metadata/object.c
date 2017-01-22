@@ -441,7 +441,7 @@ mono_runtime_class_init_full (MonoVTable *vtable, MonoError *error)
 
 		mono_threads_begin_abort_protected_block ();
 		mono_runtime_try_invoke (method, NULL, NULL, (MonoObject**) &exc, error);
-		mono_threads_end_abort_protected_block ();
+		gboolean got_pending_interrupt = mono_threads_end_abort_protected_block ();
 
 		//exception extracted, error will be set to the right value later
 		if (exc == NULL && !mono_error_ok (error))//invoking failed but exc was not set
@@ -484,10 +484,13 @@ mono_runtime_class_init_full (MonoVTable *vtable, MonoError *error)
 			mono_domain_set (last_domain, TRUE);
 		lock->done = TRUE;
 		mono_type_init_unlock (lock);
+
+		//This can happen if the cctor self-aborts
 		if (exc && mono_object_class (exc) == mono_defaults.threadabortexception_class)
 			pending_tae = exc;
+
 		//TAEs are blocked around .cctors, they must escape as soon as no cctor is left to run.
-		if (!pending_tae && mono_get_eh_callbacks ()->mono_above_abort_threshold ())
+		if (!pending_tae && got_pending_interrupt)
 			pending_tae = mono_thread_try_resume_interruption ();
 	} else {
 		/* this just blocks until the initializing thread is done */
