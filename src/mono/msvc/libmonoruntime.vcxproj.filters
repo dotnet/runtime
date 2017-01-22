@@ -330,7 +330,7 @@
     <ClInclude Include="..\mono\metadata\w32error.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\mono\metadata\w32api.h">
+    <ClInclude Include="..\mono\utils\w32api.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\mono\metadata\filewatcher.h">

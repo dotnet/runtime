@@ -139,7 +139,7 @@
     <ClInclude Include="..\mono\metadata\w32file-win32-internals.h" />
     <ClInclude Include="..\mono\metadata\w32file.h" />
     <ClInclude Include="..\mono\metadata\w32error.h" />
-    <ClInclude Include="..\mono\metadata\w32api.h" />
+    <ClInclude Include="..\mono\utils\w32api.h" />
     <ClInclude Include="..\mono\metadata\filewatcher.h" />
     <ClInclude Include="..\mono\metadata\gc-internals.h" />
     <ClInclude Include="..\mono\metadata\handle.h" />
