@@ -59,12 +59,6 @@ namespace System.Collections.Generic
         private const string EnumStartName = "EnumStarted";        
         private const string ReverseName = "Reverse";
         private const string EnumVersionName = "EnumVersion";
-        // Needed for TreeSubset
-        // TODO: Make these capital.
-        private const string minName = "Min";
-        private const string maxName = "Max";
-        private const string lBoundActiveName = "lBoundActive";
-        private const string uBoundActiveName = "uBoundActive";
 
         internal const int StackAllocThreshold = 100;
 
@@ -1299,9 +1293,6 @@ namespace System.Collections.Generic
 
             foreach (T item in other)
             {
-                // Checking for Contains first saves on rotations compared to attempting to
-                // Remove first, then Add.
-                // TODO: Is that really true?
                 bool result = Contains(item) ? Remove(item) : Add(item);
                 Debug.Assert(result);
             }
@@ -1706,7 +1697,6 @@ namespace System.Collections.Generic
             return new TreeSubSet(this, lowerValue, upperValue, true, true);
         }
 
-        // TODO: Remove this method.
 #if DEBUG
         /// <summary>
         /// debug status to be checked whenever any operation is called
@@ -1718,7 +1708,6 @@ namespace System.Collections.Generic
         }
 #endif
 
-        // TODO: How can there be multiple defs of these methods?
         void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
         {
             GetObjectData(info, context);
@@ -1797,7 +1786,6 @@ namespace System.Collections.Generic
             public Node(T item, bool isRed = true)
             {
                 // The default color is red since we usually don't need to create a black node directly.
-                // TODO: Is that actually true? Use enum for better readability?
                 Item = item;
                 IsRed = isRed;
             }

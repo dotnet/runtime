@@ -12,7 +12,6 @@ namespace System.Collections.Generic
         private readonly IComparer<T> _comparer;
         private readonly IEqualityComparer<T> _memberEqualityComparer;
 
-        // TODO: This is the only constructor ever called. `comparer` will always be null.
         public SortedSetEqualityComparer(IEqualityComparer<T> memberEqualityComparer)
             : this(comparer: null, memberEqualityComparer: memberEqualityComparer)
         { }
@@ -28,8 +27,6 @@ namespace System.Collections.Generic
         }
 
         // Use _comparer to keep equals properties intact; don't want to choose one of the comparers.
-        // TODO: This seems like a bug? _comparer will always be the default comparer. _memberEqualityComparer
-        // is never taken into account.
         public bool Equals(SortedSet<T> x, SortedSet<T> y) => SortedSet<T>.SortedSetEquals(x, y, _comparer);
 
         // IMPORTANT: this part uses the fact that GetHashCode() is consistent with the notion of equality in the set.
