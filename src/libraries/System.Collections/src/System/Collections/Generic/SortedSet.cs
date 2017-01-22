@@ -387,7 +387,7 @@ namespace System.Collections.Generic
                 current = (order < 0) ? current.Left : current.Right;
             }
 
-            Debug.Assert(parent != null, "Parent node cannot be null here!");
+            Debug.Assert(parent != null);
             // ready to insert the new node
             Node node = new Node(item);
             if (order > 0)
@@ -480,7 +480,7 @@ namespace System.Collections.Generic
                             // update sibling, this is necessary for following processing
                             sibling = (parent.Left == current) ? parent.Right : parent.Left;
                         }
-                        Debug.Assert(sibling != null && sibling.IsRed == false, "sibling must not be null and it must be black!");
+                        Debug.Assert(sibling != null && !sibling.IsRed);
 
                         if (Is2Node(sibling))
                         {
@@ -910,7 +910,7 @@ namespace System.Collections.Generic
         /// </summary>
         private static TreeRotation RotationNeeded(Node parent, Node current, Node sibling)
         {
-            Debug.Assert(IsRed(sibling.Left) || IsRed(sibling.Right), "The sibling must have at least one red child.");
+            Debug.Assert(IsRed(sibling.Left) || IsRed(sibling.Right));
             bool currentIsLeft = parent.Left == current;
             return IsRed(sibling.Left) ?
                 (currentIsLeft ? TreeRotation.RightLeft : TreeRotation.Right) :
