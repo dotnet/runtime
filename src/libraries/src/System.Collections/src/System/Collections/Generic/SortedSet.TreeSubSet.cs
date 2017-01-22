@@ -25,7 +25,6 @@ namespace System.Collections.Generic
             private bool _lBoundActive, _uBoundActive;
             // used to see if the count is out of date
 
-            // TODO: Remove.
 #if DEBUG
             internal override bool versionUpToDate()
             {
@@ -80,7 +79,6 @@ namespace System.Collections.Generic
 
             internal override bool DoRemove(T item)
             {
-                // todo: uppercase this and others
                 if (!IsWithinRange(item))
                 {
                     return false;
@@ -289,7 +287,6 @@ namespace System.Collections.Generic
             }
 #endif
 
-            // TODO: Does GetObjectData really need to be made virtual?
             void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context) => GetObjectData(info, context);
 
             protected override void GetObjectData(SerializationInfo info, StreamingContext context)
