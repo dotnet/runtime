@@ -56,7 +56,7 @@
   <ItemGroup>
     <RuntimeSources Include="$(BclSourcesRoot)\System\Runtime\MemoryFailPoint.cs" />
     <RuntimeSources Include="$(BclSourcesRoot)\System\Runtime\GcSettings.cs" />
-    <RuntimeSources Condition="'$(FeatureMulticoreJIT)' == 'true'" Include="$(BclSourcesRoot)\System\Runtime\ProfileOptimization.cs" />
+    <RuntimeSources Include="$(BclSourcesRoot)\System\Runtime\ProfileOptimization.cs" />
   </ItemGroup>
   <ItemGroup>
     <CollectionsSources Include="$(BclSourcesRoot)\System\Collections\CollectionBase.cs" />

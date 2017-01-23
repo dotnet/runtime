@@ -106,7 +106,6 @@
         <CDefines Condition="'$(ProfilingSupportedBuild)' == 'true'">$(CDefines);PROFILING_SUPPORTED</CDefines>
         <CDefines Condition="'$(UefChainingSupported)' == 'true'">$(CDefines);UEF_CHAINING_SUPPORTED</CDefines>
         <CDefines Condition="'$(UseStl)' == 'true'">$(CDefines);USE_STL</CDefines>
-        <CDefines Condition="'$(FeatureMulticoreJIT)' == 'true'">$(CDefines);FEATURE_MULTICOREJIT</CDefines>
         <CDefines Condition="'$(FeatureUseAsmGCWriteBarriers)' == 'true'">$(CDefines);FEATURE_USE_ASM_GC_WRITE_BARRIERS</CDefines>
         <CDefines Condition="'$(BinderDebugLog)' == 'true'">$(CDefines);BINDER_DEBUG_LOG</CDefines>
         <CDefines Condition="'$(FeatureSymDiff)' == 'true'">$(CDefines);FEATURE_SYMDIFF</CDefines>
@@ -178,7 +177,6 @@
         <DefineConstants Condition="'$(FeatureX509)' == 'true'">$(DefineConstants);FEATURE_X509</DefineConstants>
         <DefineConstants Condition="'$(FeatureX509Securestrings)' == 'true'">$(DefineConstants);FEATURE_X509_SECURESTRINGS</DefineConstants>
         <DefineConstants Condition="'$(ProfilingSupportedBuild)' == 'true'">$(DefineConstants);PROFILING_SUPPORTED</DefineConstants>
-        <DefineConstants Condition="'$(FeatureMulticoreJIT)' == 'true'">$(DefineConstants);FEATURE_MULTICOREJIT</DefineConstants>
         <DefineConstants Condition="'$(FeatureReJIT)' == 'true'">$(DefineConstants);FEATURE_REJIT</DefineConstants>
         <DefineConstants Condition="'$(FeatureUseAsmGCWriteBarriers)' == 'true'">$(DefineConstants);FEATURE_USE_ASM_GC_WRITE_BARRIERS</DefineConstants>
         <DefineConstants Condition="'$(BinderDebugLog)' == 'true'">$(DefineConstants);BINDER_DEBUG_LOG</DefineConstants>
