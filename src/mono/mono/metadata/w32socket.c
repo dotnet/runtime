@@ -2638,6 +2638,8 @@ ves_icall_System_Net_Sockets_Socket_SendFile_internal (gsize sock, MonoString *f
 	gboolean interrupted;
 	TRANSMIT_FILE_BUFFERS buffers;
 
+	*werror = 0;
+
 	if (filename == NULL)
 		return FALSE;
 
