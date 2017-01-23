@@ -61,7 +61,6 @@
         <CDefines Condition="'$(FeatureMultiModuleAssemblies)' == 'true'">$(CDefines);FEATURE_MULTIMODULE_ASSEMBLIES</CDefines>
         <CDefines Condition="'$(FeatureNativeImageGeneration)' == 'true'">$(CDefines);FEATURE_NATIVE_IMAGE_GENERATION</CDefines>
         <CDefines Condition="'$(FeatureNongenericCollections)' == 'true'">$(CDefines);FEATURE_NONGENERIC_COLLECTIONS</CDefines>
-        <CDefines Condition="'$(FeatureNormIdnaOnly)' == 'true'">$(CDefines);FEATURE_NORM_IDNA_ONLY</CDefines>
         <CDefines Condition="'$(FeaturePal)' == 'true'">$(CDefines);FEATURE_PAL</CDefines>
         <CDefines Condition="'$(FeaturePerfmon)' == 'true'">$(CDefines);FEATURE_PERFMON</CDefines>
         <CDefines Condition="'$(FeaturePls)' == 'true'">$(CDefines);FEATURE_PLS</CDefines>
@@ -131,7 +130,6 @@
         <DefineConstants Condition="'$(FeatureManagedEtw)' == 'true'">$(DefineConstants);FEATURE_MANAGED_ETW</DefineConstants>
         <DefineConstants Condition="'$(FeatureMultiModuleAssemblies)' == 'true'">$(DefineConstants);FEATURE_MULTIMODULE_ASSEMBLIES</DefineConstants>
         <DefineConstants Condition="'$(FeatureNongenericCollections)' == 'true'">$(DefineConstants);FEATURE_NONGENERIC_COLLECTIONS</DefineConstants>
-        <DefineConstants Condition="'$(FeatureNormIdnaOnly)' == 'true'">$(DefineConstants);FEATURE_NORM_IDNA_ONLY</DefineConstants>
         <DefineConstants Condition="'$(FeaturePal)' == 'true'">$(DefineConstants);FEATURE_PAL</DefineConstants>
         <DefineConstants Condition="'$(FeaturePathCompat)' == 'true'">$(DefineConstants);FEATURE_PATHCOMPAT</DefineConstants>
         <DefineConstants Condition="'$(FeatureXplatEventSource)' == 'true'">$(DefineConstants);FEATURE_EVENTSOURCE_XPLAT</DefineConstants>
