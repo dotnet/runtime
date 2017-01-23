@@ -48,9 +48,6 @@ namespace System {
             // Initialize the watson bucketing IP
             _ipForWatsonBuckets = UIntPtr.Zero;
 
-#if FEATURE_SERIALIZATION
-             _safeSerializationManager = new SafeSerializationManager();
-#endif // FEATURE_SERIALIZATION
         }
 
         public Exception() {
@@ -100,9 +97,6 @@ namespace System {
             // get null.
             _watsonBuckets = (Object)info.GetValueNoThrow("WatsonBuckets", typeof(byte[]));
 
-#if FEATURE_SERIALIZATION
-            _safeSerializationManager = info.GetValueNoThrow("SafeSerializationManager", typeof(SafeSerializationManager)) as SafeSerializationManager;
-#endif // FEATURE_SERIALIZATION
 
             if (_className == null || HResult==0)
                 throw new SerializationException(Environment.GetResourceString("Serialization_InsufficientState"));
@@ -493,19 +487,11 @@ namespace System {
             return result;
         }
 
-#if FEATURE_SERIALIZATION
-        protected event EventHandler<SafeSerializationEventArgs> SerializeObjectState
-        {
-            add { _safeSerializationManager.SerializeObjectState += value; }
-            remove { _safeSerializationManager.SerializeObjectState -= value; }
-        }
-#else
         protected event EventHandler<SafeSerializationEventArgs> SerializeObjectState
         {
             add    { throw new PlatformNotSupportedException();}
             remove { throw new PlatformNotSupportedException();}
         }
-#endif // FEATURE_SERIALIZATION
 
         public virtual void GetObjectData(SerializationInfo info, StreamingContext context) 
         {
@@ -549,23 +535,6 @@ namespace System {
             // Serialize the Watson bucket details as well
             info.AddValue("WatsonBuckets", _watsonBuckets, typeof(byte[]));
 
-#if FEATURE_SERIALIZATION
-            if (_safeSerializationManager != null && _safeSerializationManager.IsActive)
-            {
-                info.AddValue("SafeSerializationManager", _safeSerializationManager, typeof(SafeSerializationManager));
-
-                // User classes derived from Exception must have a valid _safeSerializationManager.
-                // Exceptions defined in mscorlib don't use this field might not have it initalized (since they are 
-                // often created in the VM with AllocateObject instead if the managed construtor)
-                // If you are adding code to use a SafeSerializationManager from an mscorlib exception, update
-                // this assert to ensure that it fails when that exception's _safeSerializationManager is NULL 
-                Debug.Assert(((_safeSerializationManager != null) || (this.GetType().Assembly == typeof(object).Assembly)), 
-                                "User defined exceptions must have a valid _safeSerializationManager");
-            
-                // Handle serializing any transparent or partial trust subclass data
-                _safeSerializationManager.CompleteSerialization(this, info, context);
-            }
-#endif // FEATURE_SERIALIZATION
         }
 
         // This is used by remoting to preserve the server side stack trace
@@ -610,16 +579,6 @@ namespace System {
             // Hence, we set it to zero when deserialization takes place. 
             _ipForWatsonBuckets = UIntPtr.Zero;
 
-#if FEATURE_SERIALIZATION
-            if (_safeSerializationManager == null)
-            {
-                _safeSerializationManager = new SafeSerializationManager();
-            }
-            else
-            {
-                _safeSerializationManager.CompleteDeserialization(this);
-            }
-#endif // FEATURE_SERIALIZATION
         }
 
         // This is used by the runtime when re-throwing a managed exception.  It will
@@ -830,10 +789,6 @@ namespace System {
         [OptionalField]
         private UIntPtr _ipForWatsonBuckets; // Used to persist the IP for Watson Bucketing
 
-#if FEATURE_SERIALIZATION
-        [OptionalField(VersionAdded = 4)]
-        private SafeSerializationManager _safeSerializationManager;
-#endif // FEATURE_SERIALIZATION
 
         // See src\inc\corexcep.h's EXCEPTION_COMPLUS definition:
         private const int _COMPlusExceptionCode = unchecked((int)0xe0434352);   // Win32 exception code for COM+ exceptions
@@ -913,9 +868,6 @@ namespace System {
     // The Message field is set to the ToString() output of the original exception.
     //--------------------------------------------------------------------------
 
-#if FEATURE_SERIALIZATION
-    [Serializable]
-#endif
     internal sealed class CrossAppDomainMarshaledException : SystemException 
     {
         public CrossAppDomainMarshaledException(String message, int errorCode) 
