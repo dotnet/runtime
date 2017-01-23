@@ -70,7 +70,6 @@
     <FeatureStackProbe Condition="'$(TargetArch)' != 'arm'">true</FeatureStackProbe>
     <FeatureStrongnameDelaySigningAllowed>true</FeatureStrongnameDelaySigningAllowed>
     <FeatureSvrGc>true</FeatureSvrGc>
-    <FeatureSynchronizationcontextWait>true</FeatureSynchronizationcontextWait>
     <FeatureSyntheticCultures>true</FeatureSyntheticCultures>
     <FeatureTypeEquivalence>true</FeatureTypeEquivalence>
     <FeatureUefChainmanager>true</FeatureUefChainmanager>
