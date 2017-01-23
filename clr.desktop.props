@@ -12,7 +12,6 @@
     <FeatureCasPolicy>true</FeatureCasPolicy>
     <FeatureTraceLogging>true</FeatureTraceLogging>
     <FeatureClassicCominterop>true</FeatureClassicCominterop>
-    <FeatureLegacySurface>true</FeatureLegacySurface>
     <FeatureClickonce>true</FeatureClickonce>
     <FeatureCominterop>true</FeatureCominterop>
     <FeatureCominteropApartmentSupport>true</FeatureCominteropApartmentSupport>
