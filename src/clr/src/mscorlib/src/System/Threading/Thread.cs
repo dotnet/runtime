@@ -334,29 +334,6 @@ namespace System.Threading {
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private extern void StartInternal(IPrincipal principal, ref StackCrawlMark stackMark);
-#if FEATURE_COMPRESSEDSTACK
-        /// <internalonly/>
-        [DynamicSecurityMethodAttribute()]
-        [Obsolete("Thread.SetCompressedStack is no longer supported. Please use the System.Threading.CompressedStack class")]         
-        public void SetCompressedStack( CompressedStack stack )
-        {
-            throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_ThreadAPIsNotSupported"));
-        }
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall), ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
-        internal extern IntPtr SetAppDomainStack( SafeCompressedStackHandle csHandle);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall), ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
-        internal extern void RestoreAppDomainStack( IntPtr appDomainStack);
-        
-
-        /// <internalonly/>
-        [Obsolete("Thread.GetCompressedStack is no longer supported. Please use the System.Threading.CompressedStack class")]
-        public CompressedStack GetCompressedStack()
-        {
-            throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_ThreadAPIsNotSupported"));
-        }
-#endif // #if FEATURE_COMPRESSEDSTACK
 
 
         // Helper method to get a logical thread ID for StringBuilder (for

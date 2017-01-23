@@ -22,7 +22,6 @@
         <CDefines Condition="'$(FeatureCominteropTlbSupport)' == 'true'">$(CDefines);FEATURE_COMINTEROP_TLB_SUPPORT</CDefines>
         <CDefines Condition="'$(FeatureCominteropUnmanagedActivation)' == 'true'">$(CDefines);FEATURE_COMINTEROP_UNMANAGED_ACTIVATION</CDefines>
         <CDefines Condition="'$(FeatureCominteropWinRTManagedActivation)' == 'true'">$(CDefines);FEATURE_COMINTEROP_WINRT_MANAGED_ACTIVATION</CDefines>  <!-- Enables code required to activate managed winrt from native-->
-        <CDefines Condition="'$(FeatureCompressedstack)' == 'true'">$(CDefines);FEATURE_COMPRESSEDSTACK</CDefines>
         <CDefines Condition="'$(FeatureCoreFxGlobalization)' == 'true'">$(CDefines);FEATURE_COREFX_GLOBALIZATION</CDefines>
         <CDefines Condition="'$(FeatureCrypto)' == 'true'">$(CDefines);FEATURE_CRYPTO</CDefines>
         <CDefines Condition="'$(FeatureDbgipcTransportDI)' == 'true'">$(CDefines);FEATURE_DBGIPC_TRANSPORT_DI</CDefines>
@@ -119,7 +118,6 @@
         <DefineConstants Condition="'$(FeatureCominteropApartmentSupport)' == 'true'">$(DefineConstants);FEATURE_COMINTEROP_APARTMENT_SUPPORT</DefineConstants>
         <DefineConstants Condition="'$(FeatureCominteropUnmanagedActivation)' == 'true'">$(DefineConstants);FEATURE_COMINTEROP_UNMANAGED_ACTIVATION</DefineConstants>
         <DefineConstants Condition="'$(FeatureCominteropWinRTManagedActivation)' == 'true'">$(DefineConstants);FEATURE_COMINTEROP_WINRT_MANAGED_ACTIVATION</DefineConstants>
-        <DefineConstants Condition="'$(FeatureCompressedstack)' == 'true'">$(DefineConstants);FEATURE_COMPRESSEDSTACK</DefineConstants>
         <DefineConstants Condition="'$(FeatureCoreFxGlobalization)' == 'true'">$(DefineConstants);FEATURE_COREFX_GLOBALIZATION</DefineConstants>
         <DefineConstants Condition="'$(FeatureCrypto)' == 'true'">$(DefineConstants);FEATURE_CRYPTO</DefineConstants>
         <DefineConstants Condition="'$(FeatureDisplayCultureInfo)' == 'true'">$(DefineConstants);FEATURE_DISPLAY_CULTURE_INFO</DefineConstants>
