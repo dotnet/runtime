@@ -24,7 +24,7 @@
     <CompilerServicesSources Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\TypeDependencyAttribute.cs" />
     <CompilerServicesSources Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\CompilerMarshalOverride.cs" />
     <CompilerServicesSources Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\jithelpers.cs" />
-    <CompilerServicesSources Condition="'$(FeatureSpanOfT)' == 'true'" Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\Unsafe.cs" />
+    <CompilerServicesSources Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\Unsafe.cs" />
     <CompilerServicesSources Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\SpecialNameAttribute.cs" />
     <CompilerServicesSources Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\SuppressMergeCheckAttribute.cs" />
     <CompilerServicesSources Condition="'$(FeatureICastable)' == 'true'" Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\ICastable.cs" />
@@ -411,9 +411,9 @@
     <SystemSources Condition="'$(FeatureCominterop)' == 'true'" Include="$(BclSourcesRoot)\System\__ComObject.cs" />
     <SystemSources Condition="'$(FeatureCominterop)' == 'true'" Include="$(BclSourcesRoot)\System\Variant.cs" />
     <SystemSources Condition="'$(FeatureClassicCominterop)' == 'true'" Include="$(BclSourcesRoot)\System\OleAutBinder.cs" />
-    <SystemSources Condition="'$(FeatureSpanOfT)' == 'true'" Include="$(BclSourcesRoot)\System\ByReference.cs" />
-    <SystemSources Condition="'$(FeatureSpanOfT)' == 'true'" Include="$(BclSourcesRoot)\System\Span.cs" />
-    <SystemSources Condition="'$(FeatureSpanOfT)' == 'true'" Include="$(BclSourcesRoot)\System\ReadOnlySpan.cs" />
+    <SystemSources Include="$(BclSourcesRoot)\System\ByReference.cs" />
+    <SystemSources Include="$(BclSourcesRoot)\System\Span.cs" />
+    <SystemSources Include="$(BclSourcesRoot)\System\ReadOnlySpan.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <SystemSources Include="$(BclSourcesRoot)\System\TimeZoneInfo.Unix.cs" />

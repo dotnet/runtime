@@ -590,10 +590,8 @@ Argument_PreAllocatedAlreadyAllocated = 'preAllocated' is already in use.
 Argument_NativeOverlappedWrongBoundHandle = 'overlapped' was not allocated by this ThreadPoolBoundHandle instance.
 Argument_NativeOverlappedAlreadyFree = 'overlapped' has already been freed.
 Argument_AlreadyBoundOrSyncHandle = 'handle' has already been bound to the thread pool, or was not opened for asynchronous I/O.
-#if FEATURE_SPAN_OF_T
 Argument_InvalidTypeWithPointersNotSupported = Cannot use type '{0}'. Only value types without pointers or references are supported.
 Argument_DestinationTooShort = Destination is too short.
-#endif // FEATURE_SPAN_OF_T
 
 ;
 ; =====================================================
@@ -1432,10 +1430,8 @@ NotSupported_WindowsPhone = {0} is not supported.
 NotSupported_AssemblyLoadCodeBase = Assembly.Load with a Codebase is not supported.
 NotSupported_AssemblyLoadFromHash = Assembly.LoadFrom with hashValue is not supported.
 #endif
-#if FEATURE_SPAN_OF_T
 NotSupported_CannotCallEqualsOnSpan = Equals() on Span and ReadOnlySpan is not supported. Use operator== instead.
 NotSupported_CannotCallGetHashCodeOnSpan = GetHashCode() on Span and ReadOnlySpan is not supported.
-#endif // FEATURE_SPAN_OF_T
 
 ; TypeLoadException
 TypeLoad_ResolveType = Could not resolve type '{0}'.
