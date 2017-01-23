@@ -671,11 +671,7 @@ namespace Microsoft.Win32 {
         internal const String SHIM     = "mscoree.dll";
         internal const String CRYPT32  = "crypt32.dll";
         internal const String SECUR32  = "secur32.dll";
-#if FEATURE_MAIN_CLR_MODULE_USES_CORE_NAME
         internal const String MSCORWKS = "coreclr.dll";
-#else //FEATURE_MAIN_CLR_MODULE_USES_CORE_NAME
-        internal const String MSCORWKS = "clr.dll";
-#endif //FEATURE_MAIN_CLR_MODULE_USES_CORE_NAME
 
         // From WinBase.h
         internal const int SEM_FAILCRITICALERRORS = 1;
