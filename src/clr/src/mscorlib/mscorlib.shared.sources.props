@@ -688,7 +688,6 @@
     <ThreadingSources Include="$(BclSourcesRoot)\System\Threading\Mutex.cs" />
     <ThreadingSources Include="$(BclSourcesRoot)\System\Threading\Overlapped.cs" />
     <ThreadingSources Include="$(BclSourcesRoot)\System\Threading\ParameterizedThreadStart.cs" />
-    <ThreadingSources Include="$(BclSourcesRoot)\System\Threading\ReaderWriterLock.cs" />
     <ThreadingSources Include="$(BclSourcesRoot)\System\Threading\Semaphore.cs" />
     <ThreadingSources Include="$(BclSourcesRoot)\System\Threading\SemaphoreFullException.cs" />
     <ThreadingSources Include="$(BclSourcesRoot)\System\Threading\SynchronizationLockException.cs" />
