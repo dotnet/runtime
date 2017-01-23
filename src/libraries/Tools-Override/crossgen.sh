@@ -55,6 +55,11 @@ crossgen_single()
     fi
 }
 
+if [ ! -z $BUILDTOOLS_SKIP_CROSSGEN ]; then
+    echo "BUILDTOOLS_SKIP_CROSSGEN is set. Skipping crossgen step."
+    exit 0
+fi
+
 if [[ -z "$1" || "$1" == "-?" || "$1" == "--help" || "$1" == "-h" ]]; then
     usage
 fi
