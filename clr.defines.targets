@@ -4,7 +4,6 @@
         <CDefines Condition="'$(DebuggingSupported)' == 'true'">$(CDefines);DEBUGGING_SUPPORTED</CDefines>
         <CDefines Condition="'$(EnCSupported)' == 'true'">$(CDefines);EnC_SUPPORTED</CDefines>
         <CDefines Condition="'$(EnableDownlevelForNls)' == 'true'">$(CDefines);ENABLE_DOWNLEVEL_FOR_NLS</CDefines>
-        <CDefines Condition="'$(FeatureAppdomainmanagerInitoptions)' == 'true'">$(CDefines);FEATURE_APPDOMAINMANAGER_INITOPTIONS</CDefines>
         <CDefines Condition="'$(FeatureAppX)' == 'true'">$(CDefines);FEATURE_APPX</CDefines>
         <CDefines Condition="'$(FeatureAptca)' == 'true'">$(CDefines);FEATURE_APTCA</CDefines>
         <CDefines Condition="'$(FeatureArrayStubAsIL)' == 'true'">$(CDefines);FEATURE_ARRAYSTUB_AS_IL</CDefines>
@@ -95,7 +94,6 @@
         <CDefines Condition="'$(FeatureReadyToRunCompiler)' == 'true'">$(CDefines);FEATURE_READYTORUN_COMPILER</CDefines>
 
         <DefineConstants Condition="'$(BuildTypeRet)' == 'true'">$(DefineConstants);BUILDTYPE_RET</DefineConstants>
-        <DefineConstants Condition="'$(FeatureAppdomainmanagerInitoptions)' == 'true'">$(DefineConstants);FEATURE_APPDOMAINMANAGER_INITOPTIONS</DefineConstants>
         <DefineConstants Condition="'$(FeatureAppX)' == 'true'">$(DefineConstants);FEATURE_APPX</DefineConstants>
         <DefineConstants Condition="'$(FeatureAptca)' == 'true'">$(DefineConstants);FEATURE_APTCA</DefineConstants>
         <DefineConstants Condition="'$(FeatureArrayStubAsIL)' == 'true'">$(DefineConstants);FEATURE_ARRAYSTUB_AS_IL</DefineConstants>
