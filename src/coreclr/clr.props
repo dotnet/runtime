@@ -244,7 +244,6 @@
     <PogoExePhase>1</PogoExePhase>
     
     <ResgenDefines Condition="'$(FeatureImpersonation)' == '1'">$(ResgenDefines) /define:FEATURE_IMPERSONATION</ResgenDefines> 
-    <ResgenDefines Condition="'$(FeatureCrypto)' == '1'">$(ResgenDefines) /define:FEATURE_CRYPTO</ResgenDefines> 
     <ResgenDefines Condition="'$(FeatureIsostore)' == '1'">$(ResgenDefines) /define:FEATURE_ISOSTORE</ResgenDefines> 
     <ResgenDefines Condition="'$(FeatureMacl)' == '1'">$(ResgenDefines) /define:FEATURE_MACL</ResgenDefines> 
     <ResgenDefines Condition="'$(FeatureCasPolicy)' == '1'">$(ResgenDefines) /define:FEATURE_CAS_POLICY</ResgenDefines> 
