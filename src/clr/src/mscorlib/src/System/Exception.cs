@@ -642,11 +642,9 @@ namespace System {
             }
             else
 #else // FEATURE_APPX
-#if FEATURE_CORESYSTEM
             // Preinitialize _source on CoreSystem as well. The legacy behavior is not ideal and
             // we keep it for back compat but we can afford to make the change on the Phone.
             string source = Source;
-#endif // FEATURE_CORESYSTEM
 #endif // FEATURE_APPX
             {
                 // Call the StackTrace getter in classic for compat.
@@ -662,7 +660,6 @@ namespace System {
             _stackTraceString = null;
         }
         
-#if FEATURE_EXCEPTIONDISPATCHINFO
 
         // This is the object against which a lock will be taken
         // when attempt to restore the EDI. Since its static, its possible
@@ -786,7 +783,6 @@ namespace System {
                 }
             }
         }
-#endif // FEATURE_EXCEPTIONDISPATCHINFO
 
         private String _className;  //Needed for serialization.  
         private MethodBase _exceptionMethod;  //Needed for serialization.  

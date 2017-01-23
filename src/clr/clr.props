@@ -133,10 +133,8 @@
     <FeatureEventTrace>false</FeatureEventTrace>
     <FeatureFusion>false</FeatureFusion>
     <FeatureIncludeAllInterfaces>false</FeatureIncludeAllInterfaces>
-    <FeatureLoaderOptimization>false</FeatureLoaderOptimization>
     <FeatureMdaSupported>false</FeatureMdaSupported>
     <FeatureMergeJitAndEngine>true</FeatureMergeJitAndEngine>
-    <FeatureMulticoreJIT>false</FeatureMulticoreJIT>
     <FeatureRandomizedStringHashing>false</FeatureRandomizedStringHashing>
     <FeatureReflectionOnlyLoad>false</FeatureReflectionOnlyLoad>
     <FeatureStackProbe>false</FeatureStackProbe>
@@ -162,14 +160,7 @@
             <LinkUseCMT>true</LinkUseCMT>
     -->
   </PropertyGroup>
-  
-  <PropertyGroup>
-    <MainClrModuleName Condition="'$(FeatureCoreclr)'=='true'">coreclr</MainClrModuleName>
-    <MainClrModuleName Condition="'$(FeatureCoreclr)'!='true'">clr</MainClrModuleName>
-    <MainDacMouleName Condition="'$(FeatureCoreclr)'=='true'">mscordaccore</MainDacMouleName>
-    <MainDacMouleName Condition="'$(FeatureCoreclr)'!='true'">mscordacwks</MainDacMouleName>
-  </PropertyGroup>
-
+ 
   <PropertyGroup>
     <DebugBuild Condition="'$(NTDEBUG)' == '' or '$(NTDEBUG)'=='ntsdnodbg'">false</DebugBuild>
     <DebugBuild Condition="'$(NTDEBUG)' != '' and '$(NTDEBUG)'!='ntsdnodbg'">true</DebugBuild>

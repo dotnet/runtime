@@ -44,7 +44,6 @@ namespace System {
 
     [Pure]
     internal static class ThrowHelper {    
-#if FEATURE_SPAN_OF_T
         internal static void ThrowArrayTypeMismatchException() {
             throw new ArrayTypeMismatchException();
         }
@@ -72,7 +71,6 @@ namespace System {
         internal static void ThrowNotSupportedException_CannotCallGetHashCodeOnSpan() {
             throw new NotSupportedException(Environment.GetResourceString("NotSupported_CannotCallGetHashCodeOnSpan"));
         }
-#endif
 
         internal static void ThrowArgumentOutOfRange_IndexException() {
             throw GetArgumentOutOfRangeException(ExceptionArgument.index, 
