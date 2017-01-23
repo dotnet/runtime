@@ -27,7 +27,6 @@
         <CDefines Condition="'$(FeatureCominteropWinRTDesktopHost)' == 'true'">$(CDefines);FEATURE_COMINTEROP_WINRT_DESKTOP_HOST</CDefines>
         <CDefines Condition="'$(FeatureCompressedstack)' == 'true'">$(CDefines);FEATURE_COMPRESSEDSTACK</CDefines>
         <CDefines Condition="'$(FeatureCoreFxGlobalization)' == 'true'">$(CDefines);FEATURE_COREFX_GLOBALIZATION</CDefines>
-        <CDefines Condition="'$(FeatureCoreSystem)' == 'true'">$(CDefines);FEATURE_CORESYSTEM</CDefines>       
         <CDefines Condition="'$(FeatureCorruptingExceptions)' == 'true'">$(CDefines);FEATURE_CORRUPTING_EXCEPTIONS</CDefines>
         <CDefines Condition="'$(FeatureCrypto)' == 'true'">$(CDefines);FEATURE_CRYPTO</CDefines>
         <CDefines Condition="'$(FeatureDbgipcTransportDI)' == 'true'">$(CDefines);FEATURE_DBGIPC_TRANSPORT_DI</CDefines>
@@ -142,7 +141,6 @@
         <DefineConstants Condition="'$(FeatureCominteropWinRTDesktopHost)' == 'true'">$(DefineConstants);FEATURE_COMINTEROP_WINRT_DESKTOP_HOST</DefineConstants>
         <DefineConstants Condition="'$(FeatureCompressedstack)' == 'true'">$(DefineConstants);FEATURE_COMPRESSEDSTACK</DefineConstants>
         <DefineConstants Condition="'$(FeatureCoreFxGlobalization)' == 'true'">$(DefineConstants);FEATURE_COREFX_GLOBALIZATION</DefineConstants>
-        <DefineConstants Condition="'$(FeatureCoreSystem)' == 'true'">$(DefineConstants);FEATURE_CORESYSTEM</DefineConstants>
         <DefineConstants Condition="'$(FeatureCorruptingExceptions)' == 'true'">$(DefineConstants);FEATURE_CORRUPTING_EXCEPTIONS</DefineConstants>
         <DefineConstants Condition="'$(FeatureCrypto)' == 'true'">$(DefineConstants);FEATURE_CRYPTO</DefineConstants>
         <DefineConstants Condition="'$(FeatureDisplayCultureInfo)' == 'true'">$(DefineConstants);FEATURE_DISPLAY_CULTURE_INFO</DefineConstants>

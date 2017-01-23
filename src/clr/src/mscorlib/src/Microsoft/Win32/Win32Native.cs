@@ -1145,7 +1145,6 @@ namespace Microsoft.Win32 {
             internal String   cAlternateFileName = null;
         }
 
-#if FEATURE_CORESYSTEM
         [DllImport(KERNEL32, SetLastError=true, CharSet=CharSet.Auto, BestFitMapping=false)]
         private static extern bool CopyFileEx(String src,
                                               String dst,
@@ -1159,11 +1158,6 @@ namespace Microsoft.Win32 {
             uint cancel = 0;
             return CopyFileEx(src, dst, IntPtr.Zero, IntPtr.Zero, ref cancel, failIfExists ? 1U : 0U);
         }
-#else // FEATURE_CORESYSTEM
-        [DllImport(KERNEL32, SetLastError=true, CharSet=CharSet.Auto, BestFitMapping=false)]
-        internal static extern bool CopyFile(
-                    String src, String dst, bool failIfExists);
-#endif // FEATURE_CORESYSTEM
 
         [DllImport(KERNEL32, SetLastError=true, CharSet=CharSet.Auto, BestFitMapping=false)]
         internal static extern bool CreateDirectory(
@@ -1214,7 +1208,6 @@ namespace Microsoft.Win32 {
         [DllImport(KERNEL32, CharSet=CharSet.Auto, SetLastError=true, BestFitMapping=false)]
         internal static extern uint GetTempFileName(String tmpPath, String prefix, uint uniqueIdOrZero, [Out]StringBuilder tmpFileName);
 
-#if FEATURE_CORESYSTEM
         [DllImport(KERNEL32, SetLastError=true, CharSet=CharSet.Auto, BestFitMapping=false)]
         private static extern bool MoveFileEx(String src, String dst, uint flags);
 
@@ -1222,10 +1215,6 @@ namespace Microsoft.Win32 {
         {
             return MoveFileEx(src, dst, 2 /* MOVEFILE_COPY_ALLOWED */);
         }
-#else // FEATURE_CORESYSTEM
-        [DllImport(KERNEL32, SetLastError=true, CharSet=CharSet.Auto, BestFitMapping=false)]
-        internal static extern bool MoveFile(String src, String dst);
-#endif // FEATURE_CORESYSTEM
 
         [DllImport(KERNEL32, SetLastError=true, CharSet=CharSet.Auto, BestFitMapping=false)]
         internal static extern bool DeleteVolumeMountPoint(String mountPoint);
@@ -1248,14 +1237,6 @@ namespace Microsoft.Win32 {
         // this method uses the thread-safe version of SetErrorMode on Windows 7 / Windows Server 2008 R2 operating systems.
         internal static int SetErrorMode(int newMode)
         {
-#if !FEATURE_CORESYSTEM // ARMSTUB
-            if (Environment.OSVersion.Version >= ThreadErrorModeMinOsVersion)
-            {
-                int oldMode;
-                SetErrorMode_Win7AndNewer(newMode, out oldMode);
-                return oldMode;
-            }
-#endif
             return SetErrorMode_VistaAndOlder(newMode);
         }
 

@@ -49,8 +49,6 @@
     <FeatureSymDiff>true</FeatureSymDiff>
     <FeatureSynchronizationContextWait>true</FeatureSynchronizationContextWait>
     <FeatureReadyToRun Condition="'$(TargetArch)'!='arm64'">true</FeatureReadyToRun>
-
-    <FeatureCoreSystem>true</FeatureCoreSystem>
     <FeatureClassicCominterop>true</FeatureClassicCominterop>
     <FeatureCominterop>true</FeatureCominterop>
     <FeatureICastable>true</FeatureICastable>
