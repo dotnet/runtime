@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Text;
 
 namespace System.Net.Http.Headers
@@ -162,20 +163,6 @@ namespace System.Net.Http.Headers
                 }
                 destination.Append(value.ToString());
             }
-        }
-
-        internal static string ToString(ObjectCollection<NameValueHeaderValue> values, char separator, bool leadingSeparator)
-        {
-            if ((values == null) || (values.Count == 0))
-            {
-                return null;
-            }
-
-            StringBuilder sb = new StringBuilder();
-
-            ToString(values, separator, leadingSeparator, sb);
-
-            return sb.ToString();
         }
 
         internal static int GetHashCode(ObjectCollection<NameValueHeaderValue> values)
