@@ -15,7 +15,7 @@ restore_crossgen()
 {
     __pjDir=$__toolsDir/crossgen
     mkdir -p $__pjDir
-    echo "{\"frameworks\":{\"netcoreapp1.1\":{\"dependencies\":{\"Microsoft.NETCore.Runtime.CoreCLR\":\"$__CoreClrVersion\"}}},\"runtimes\":{\"$__rid\":{}}}" > "$__pjDir/project.json"
+    echo "{\"frameworks\":{\"netcoreapp1.1\":{\"dependencies\":{\"Microsoft.NETCore.Runtime.CoreCLR\":\"$__CoreClrVersion\", \"Microsoft.NETCore.Platforms\": \"$__CoreClrVersion\"}}},\"runtimes\":{\"$__rid\":{}}}" > "$__pjDir/project.json"
     $__dotnet restore $__pjDir/project.json --packages $__packagesDir
     __crossgenInPackage=$__packagesDir/runtime.$__packageRid.Microsoft.NETCore.Runtime.CoreCLR/$__CoreClrVersion/tools/crossgen
     if [ ! -e $__crossgenInPackage ]; then
