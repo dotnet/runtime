@@ -55,7 +55,6 @@
     <!-- The rejit feature is available only on supported architectures (Windows x86 & Windows x64) -->
     <FeatureReJIT Condition="('$(TargetArch)' == 'i386') or ('$(TargetArch)' == 'amd64')">true</FeatureReJIT>
     <FeatureRemoting>true</FeatureRemoting>
-    <FeatureRwlock>true</FeatureRwlock>
     <FeatureSerialization>true</FeatureSerialization>
     <FeatureSortTables>true</FeatureSortTables>
     <FeatureStackProbe Condition="'$(TargetArch)' != 'arm'">true</FeatureStackProbe>
