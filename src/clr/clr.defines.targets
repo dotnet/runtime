@@ -84,7 +84,6 @@
         <CDefines Condition="'$(FeatureWatson)' == 'true'">$(CDefines);FEATURE_WATSON</CDefines>
         <CDefines Condition="'$(FeatureWin32Registry)' == 'true'">$(CDefines);FEATURE_WIN32_REGISTRY</CDefines>
         <CDefines Condition="'$(FeatureWinMDResilient)' == 'true'">$(CDefines);FEATURE_WINMD_RESILIENT</CDefines>
-        <CDefines Condition="'$(FeatureX509)' == 'true'">$(CDefines);FEATURE_X509</CDefines>
         <CDefines Condition="'$(FeatureX509Securestrings)' == 'true'">$(CDefines);FEATURE_X509_SECURESTRINGS</CDefines>
         <CDefines Condition="'$(ProfilingSupportedBuild)' == 'true'">$(CDefines);PROFILING_SUPPORTED</CDefines>
         <CDefines Condition="'$(UefChainingSupported)' == 'true'">$(CDefines);UEF_CHAINING_SUPPORTED</CDefines>
@@ -141,7 +140,6 @@
         <DefineConstants Condition="'$(FeatureValidator)' == 'true'">$(DefineConstants);FEATURE_VALIDATOR</DefineConstants>
         <DefineConstants Condition="'$(FeatureWin32Registry)' == 'true'">$(DefineConstants);FEATURE_WIN32_REGISTRY</DefineConstants>
         <DefineConstants Condition="'$(FeatureWinMDResilient)' == 'true'">$(DefineConstants);FEATURE_WINMD_RESILIENT</DefineConstants>
-        <DefineConstants Condition="'$(FeatureX509)' == 'true'">$(DefineConstants);FEATURE_X509</DefineConstants>
         <DefineConstants Condition="'$(FeatureX509Securestrings)' == 'true'">$(DefineConstants);FEATURE_X509_SECURESTRINGS</DefineConstants>
         <DefineConstants Condition="'$(ProfilingSupportedBuild)' == 'true'">$(DefineConstants);PROFILING_SUPPORTED</DefineConstants>
         <DefineConstants Condition="'$(FeatureReJIT)' == 'true'">$(DefineConstants);FEATURE_REJIT</DefineConstants>
