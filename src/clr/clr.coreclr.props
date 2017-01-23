@@ -15,7 +15,6 @@
     <FeatureDbiOopDebugging_HostOneCorex86 Condition="'$(TargetArch)' == 'i386' or '$(TargetArch)' == 'arm'">true</FeatureDbiOopDebugging_HostOneCorex86>
     <FeatureDbiOopDebugging_HostOneCoreamd64 Condition="'$(TargetArch)' == 'amd64'">true</FeatureDbiOopDebugging_HostOneCoreamd64>
     <FeatureEventTrace>true</FeatureEventTrace>
-    <FeatureExceptionNotifications>true</FeatureExceptionNotifications>
     <FeatureFrameworkInternal>true</FeatureFrameworkInternal>
     <FeatureHijack>true</FeatureHijack>
     <FeatureInteropDebugging Condition="('$(TargetArch)' == 'i386') or ('$(TargetArch)' == 'amd64')">true</FeatureInteropDebugging>

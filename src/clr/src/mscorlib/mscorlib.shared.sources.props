@@ -911,7 +911,7 @@
   <ItemGroup>
     <ExceptionservicesSources Include="$(BclSourcesRoot)\System\Runtime\ExceptionServices\CorruptingExceptionCommon.cs" />
     <ExceptionservicesSources Include="$(BclSourcesRoot)\System\Runtime\ExceptionServices\ExceptionServicesCommon.cs" />
-    <ExceptionservicesSources Condition="'$(FeatureExceptionNotifications)' == 'true'" Include="$(BclSourcesRoot)\System\Runtime\ExceptionServices\ExceptionNotification.cs" />
+    <ExceptionservicesSources Include="$(BclSourcesRoot)\System\Runtime\ExceptionServices\ExceptionNotification.cs" />
   </ItemGroup>
   <ItemGroup>
     <HostingSources Condition="'$(FeatureHostAssemblyResolver)' == 'true'" Include="$(BclSourcesRoot)\System\Runtime\Loader\AssemblyLoadContext.cs" />

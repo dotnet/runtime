@@ -37,9 +37,7 @@ namespace System
     using System.Runtime.Versioning;
     using System.Diagnostics;
     using System.Diagnostics.Contracts;
-#if FEATURE_EXCEPTION_NOTIFICATIONS
     using System.Runtime.ExceptionServices;
-#endif // FEATURE_EXCEPTION_NOTIFICATIONS
 
     [ComVisible(true)]
     public class ResolveEventArgs : EventArgs
@@ -279,10 +277,8 @@ namespace System
         // keys, the vhe values are ignored.
         private Dictionary<String, object>  _compatFlags;
 
-#if FEATURE_EXCEPTION_NOTIFICATIONS
         // Delegate that will hold references to FirstChance exception notifications
         private EventHandler<FirstChanceExceptionEventArgs> _firstChanceException;
-#endif // FEATURE_EXCEPTION_NOTIFICATIONS
 
         private IntPtr           _pDomain;                      // this is an unmanaged pointer (AppDomain * m_pDomain)` used from the VM.
 
@@ -1066,7 +1062,6 @@ namespace System
             }
         }
 
-#if FEATURE_EXCEPTION_NOTIFICATIONS
         // This is the event managed code can wireup against to be notified
         // about first chance exceptions. 
         //
@@ -1088,7 +1083,6 @@ namespace System
                     _firstChanceException -= value;
             }
         }
-#endif // FEATURE_EXCEPTION_NOTIFICATIONS
 
         private void OnAssemblyLoadEvent(RuntimeAssembly LoadedAssembly)
         {
