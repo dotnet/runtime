@@ -499,20 +499,4 @@ namespace System.Security {
         }
     }
 
-#if FEATURE_COMPRESSEDSTACK
-    // Used by the stack compressor to communicate a DynamicResolver to managed code during a stackwalk.
-    // The JIT will not actually place these on frames.
-    internal class FrameSecurityDescriptorWithResolver : FrameSecurityDescriptor
-    {
-        private System.Reflection.Emit.DynamicResolver m_resolver;
-
-        public System.Reflection.Emit.DynamicResolver Resolver
-        {
-            get
-            {
-                return m_resolver;
-            }
-        }
-    }
-#endif // FEATURE_COMPRESSEDSTACK
 }
