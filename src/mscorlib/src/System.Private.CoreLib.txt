@@ -590,10 +590,8 @@ Argument_PreAllocatedAlreadyAllocated = 'preAllocated' is already in use.
 Argument_NativeOverlappedWrongBoundHandle = 'overlapped' was not allocated by this ThreadPoolBoundHandle instance.
 Argument_NativeOverlappedAlreadyFree = 'overlapped' has already been freed.
 Argument_AlreadyBoundOrSyncHandle = 'handle' has already been bound to the thread pool, or was not opened for asynchronous I/O.
-#if FEATURE_SPAN_OF_T
 Argument_InvalidTypeWithPointersNotSupported = Cannot use type '{0}'. Only value types without pointers or references are supported.
 Argument_DestinationTooShort = Destination is too short.
-#endif // FEATURE_SPAN_OF_T
 
 ;
 ; =====================================================
@@ -1410,10 +1408,9 @@ NotSupported_NativeCallableTarget = Methods with NativeCallableAttribute cannot 
 NotSupported_GenericMethod = Generic methods with NativeCallableAttribute are not supported.
 NotSupported_NonBlittableTypes = Non-blittable parameter types are not supported for NativeCallable methods.
 
-#if FEATURE_WINDOWSPHONE
 NotSupported_UserDllImport = DllImport cannot be used on user-defined methods.
 NotSupported_UserCOM = COM Interop is not supported for user-defined types.
-#endif //FEATURE_WINDOWSPHONE
+
 #if FEATURE_APPX
 NotSupported_AppX = {0} is not supported in AppX.
 LoadOfFxAssemblyNotSupported_AppX = {0} of .NET Framework assemblies is not supported in AppX.
@@ -1426,16 +1423,10 @@ ReflectionTypeLoad_LoadFailed = Unable to load one or more of the requested type
 #if FEATURE_COMINTEROP
 NotSupported_PIAInAppxProcess = A Primary Interop Assembly is not supported in AppX.
 #endif
-#if FEATURE_WINDOWSPHONE
-; Not referring to "Windows Phone" in the messages, as FEATURE_WINDOWSPHONE is defined for .NET Core as well.
-NotSupported_WindowsPhone = {0} is not supported.
 NotSupported_AssemblyLoadCodeBase = Assembly.Load with a Codebase is not supported.
 NotSupported_AssemblyLoadFromHash = Assembly.LoadFrom with hashValue is not supported.
-#endif
-#if FEATURE_SPAN_OF_T
 NotSupported_CannotCallEqualsOnSpan = Equals() on Span and ReadOnlySpan is not supported. Use operator== instead.
 NotSupported_CannotCallGetHashCodeOnSpan = GetHashCode() on Span and ReadOnlySpan is not supported.
-#endif // FEATURE_SPAN_OF_T
 
 ; TypeLoadException
 TypeLoad_ResolveType = Could not resolve type '{0}'.
@@ -2007,11 +1998,9 @@ Loader_ContextPolicies = Context Policies:
 ; AppDomain Exceptions
 AppDomain_RequireApplicationName = ApplicationName must be set before the DynamicBase can be set.
 AppDomain_AppBaseNotSet = The ApplicationBase must be set before retrieving this property.
-
-#if FEATURE_HOST_ASSEMBLY_RESOLVER
 AppDomain_BindingModelIsLocked = Binding model is already locked for the AppDomain and cannot be reset.
 Argument_CustomAssemblyLoadContextRequestedNameMismatch = Resolved assembly's simple name should be the same as of the requested assembly.
-#endif // FEATURE_HOST_ASSEMBLY_RESOLVER
+
 ;
 ; XMLSyntaxExceptions
 XMLSyntax_UnexpectedEndOfFile = Unexpected end of file.

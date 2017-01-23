@@ -37,9 +37,7 @@ namespace System
     using System.Runtime.Versioning;
     using System.Diagnostics;
     using System.Diagnostics.Contracts;
-#if FEATURE_EXCEPTION_NOTIFICATIONS
     using System.Runtime.ExceptionServices;
-#endif // FEATURE_EXCEPTION_NOTIFICATIONS
 
     [ComVisible(true)]
     public class ResolveEventArgs : EventArgs
@@ -279,10 +277,8 @@ namespace System
         // keys, the vhe values are ignored.
         private Dictionary<String, object>  _compatFlags;
 
-#if FEATURE_EXCEPTION_NOTIFICATIONS
         // Delegate that will hold references to FirstChance exception notifications
         private EventHandler<FirstChanceExceptionEventArgs> _firstChanceException;
-#endif // FEATURE_EXCEPTION_NOTIFICATIONS
 
         private IntPtr           _pDomain;                      // this is an unmanaged pointer (AppDomain * m_pDomain)` used from the VM.
 
@@ -395,7 +391,6 @@ namespace System
             Debug.Assert(_domainManager == null, "_domainManager == null");
 
             AppDomainSetup adSetup = FusionStore;
-#if FEATURE_VERSIONING
             String trustedPlatformAssemblies = (String)(GetData("TRUSTED_PLATFORM_ASSEMBLIES"));
             if (trustedPlatformAssemblies != null)
             {
@@ -424,7 +419,6 @@ namespace System
                 }
                 SetupBindingPaths(trustedPlatformAssemblies, platformResourceRoots, appPaths, appNiPaths, appLocalWinMD);
             }
-#endif // FEATURE_VERSIONING
 
             string domainManagerAssembly;
             string domainManagerType;
@@ -945,11 +939,9 @@ namespace System
             int key = AppDomainSetup.Locate(name);
             if(key == -1) 
             {
-#if FEATURE_LOADER_OPTIMIZATION
                 if(name.Equals(AppDomainSetup.LoaderOptimizationKey))
                     return FusionStore.LoaderOptimization;
                 else 
-#endif // FEATURE_LOADER_OPTIMIZATION                    
                 {
                     object[] data;
                     lock (((ICollection)LocalStore).SyncRoot) {
@@ -987,7 +979,6 @@ namespace System
             throw new NotSupportedException(Environment.GetResourceString(ResId.NotSupported_Constructor));
         }
 
-#if FEATURE_VERSIONING
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal extern void nCreateContext();
 
@@ -999,7 +990,6 @@ namespace System
         {
             nSetupBindingPaths(trustedPlatformAssemblies, platformResourceRoots, appPath, appNiPaths, appLocalWinMD);
         }
-#endif // FEATURE_VERSIONING
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private extern String nGetFriendlyName();
@@ -1066,7 +1056,6 @@ namespace System
             }
         }
 
-#if FEATURE_EXCEPTION_NOTIFICATIONS
         // This is the event managed code can wireup against to be notified
         // about first chance exceptions. 
         //
@@ -1088,7 +1077,6 @@ namespace System
                     _firstChanceException -= value;
             }
         }
-#endif // FEATURE_EXCEPTION_NOTIFICATIONS
 
         private void OnAssemblyLoadEvent(RuntimeAssembly LoadedAssembly)
         {
@@ -1217,14 +1205,10 @@ namespace System
                 info.SetupDefaults(RuntimeEnvironment.GetModuleFileName(), imageLocationAlreadyNormalized : true);
             }
 
-#if FEATURE_VERSIONING
             nCreateContext();
-#endif // FEATURE_VERSIONING
 
-#if FEATURE_LOADER_OPTIMIZATION
             if (info.LoaderOptimization != LoaderOptimization.NotSpecified || (oldInfo != null && info.LoaderOptimization != oldInfo.LoaderOptimization))
                 UpdateLoaderOptimization(info.LoaderOptimization);
-#endif
             // This must be the last action taken
             _FusionStore = info;
         }
@@ -1359,7 +1343,6 @@ namespace System
 
                         newSetup.ApplicationBase = NormalizePath(propertyValues[i], fullCheck: true);
                     }
-#if FEATURE_LOADER_OPTIMIZATION
                     else if(propertyNames[i]=="LOADER_OPTIMIZATION")
                     {
                         if(propertyValues[i]==null)
@@ -1374,7 +1357,6 @@ namespace System
                             default: throw new ArgumentException(Environment.GetResourceString("Argument_UnrecognizedLoaderOptimization"), "LOADER_OPTIMIZATION");
                         }
                     }
-#endif // FEATURE_LOADER_OPTIMIZATION
                     else if(propertyNames[i]=="TRUSTED_PLATFORM_ASSEMBLIES" ||
                        propertyNames[i]=="PLATFORM_RESOURCE_ROOTS" ||
                        propertyNames[i]=="APP_PATHS" ||
@@ -1526,10 +1508,8 @@ namespace System
         private extern void nSetDisableInterfaceCache();
 #endif // FEATURE_COMINTEROP
 
-#if FEATURE_LOADER_OPTIMIZATION
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal extern void UpdateLoaderOptimization(LoaderOptimization optimization);
-#endif
 
         public AppDomainSetup SetupInformation
         {
@@ -1581,112 +1561,6 @@ namespace System
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]              
         internal extern Int32 GetId();
 
-#if FEATURE_APPDOMAIN_RESOURCE_MONITORING
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern void nEnableMonitoring();
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern bool nMonitoringIsEnabled();
-
-        // return -1 if ARM is not supported.
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private extern Int64 nGetTotalProcessorTime();
-
-        // return -1 if ARM is not supported.
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private extern Int64 nGetTotalAllocatedMemorySize();
-
-        // return -1 if ARM is not supported.
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private extern Int64 nGetLastSurvivedMemorySize();
-
-        // return -1 if ARM is not supported.
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern Int64 nGetLastSurvivedProcessMemorySize();
-
-        public static bool MonitoringIsEnabled
-        {
-            get {
-                return nMonitoringIsEnabled();
-            }
-            
-            set {
-                if (value == false)
-                {
-                    throw new ArgumentException(Environment.GetResourceString("Arg_MustBeTrue"));
-                }
-                else
-                {
-                    nEnableMonitoring();
-                }
-            }
-        }
-
-        // Gets the total processor time for this AppDomain.
-        // Throws NotSupportedException if ARM is not enabled.
-        public TimeSpan MonitoringTotalProcessorTime 
-        {
-            get {
-                Int64 i64ProcessorTime = nGetTotalProcessorTime();
-                if (i64ProcessorTime == -1)
-                {
-                    throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_WithoutARM"));
-                }
-                return new TimeSpan(i64ProcessorTime);
-            }
-        }
-
-        // Gets the number of bytes allocated in this AppDomain since
-        // the AppDomain was created.
-        // Throws NotSupportedException if ARM is not enabled.
-        public Int64 MonitoringTotalAllocatedMemorySize 
-        {
-            get {
-                Int64 i64AllocatedMemory = nGetTotalAllocatedMemorySize();
-                if (i64AllocatedMemory == -1)
-                {
-                    throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_WithoutARM"));
-                }
-                return i64AllocatedMemory;
-            }
-        }
-
-        // Gets the number of bytes survived after the last collection
-        // that are known to be held by this AppDomain. After a full 
-        // collection this number is accurate and complete. After an 
-        // ephemeral collection this number is potentially incomplete.
-        // Throws NotSupportedException if ARM is not enabled.
-        public Int64 MonitoringSurvivedMemorySize
-        {
-            get {
-                Int64 i64LastSurvivedMemory = nGetLastSurvivedMemorySize();
-                if (i64LastSurvivedMemory == -1)
-                {
-                    throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_WithoutARM"));
-                }
-                return i64LastSurvivedMemory;
-            }
-        }
-
-        // Gets the total bytes survived from the last collection. After 
-        // a full collection this number represents the number of the bytes 
-        // being held live in managed heaps. (This number should be close 
-        // to the number obtained from GC.GetTotalMemory for a full collection.)
-        // After an ephemeral collection this number represents the number 
-        // of bytes being held live in ephemeral generations.
-        // Throws NotSupportedException if ARM is not enabled.
-        public static Int64 MonitoringSurvivedProcessMemorySize
-        {
-            get {
-                Int64 i64LastSurvivedProcessMemory = nGetLastSurvivedProcessMemorySize();
-                if (i64LastSurvivedProcessMemory == -1)
-                {
-                    throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_WithoutARM"));
-                }
-                return i64LastSurvivedProcessMemory;
-            }
-        }
-#endif
     }
 
     /// <summary>

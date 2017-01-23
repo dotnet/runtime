@@ -257,9 +257,7 @@ namespace System.Reflection.Emit
 #if FEATURE_REFLECTION_ONLY_LOAD
                 && access != AssemblyBuilderAccess.ReflectionOnly
 #endif // FEATURE_REFLECTION_ONLY_LOAD
-#if FEATURE_COLLECTIBLE_TYPES
                 && access != AssemblyBuilderAccess.RunAndCollect
-#endif // FEATURE_COLLECTIBLE_TYPES
                 )
             {
                 throw new ArgumentException(Environment.GetResourceString("Arg_EnumIllegalVal", (int)access), nameof(access));

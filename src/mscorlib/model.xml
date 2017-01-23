@@ -87,17 +87,6 @@
     </Type>
     <Type Status="ImplRoot" Name="System.AppDomain">
       <Member Status="ImplRoot" Name="get_CurrentDomain" />
-      <Member Status="ImplRoot" Name="get_MonitoringIsEnabled" />
-      <Member Status="ImplRoot" Name="set_MonitoringIsEnabled(System.Boolean)" />
-      <Member Status="ImplRoot" Name="get_MonitoringTotalProcessorTime" />
-      <Member Status="ImplRoot" Name="get_MonitoringTotalAllocatedMemorySize" />
-      <Member Status="ImplRoot" Name="get_MonitoringSurvivedMemorySize" />
-      <Member Status="ImplRoot" Name="get_MonitoringSurvivedProcessMemorySize" />
-      <Member Status="ImplRoot" MemberType="Property" Name="MonitoringIsEnabled" />
-      <Member Status="ImplRoot" MemberType="Property" Name="MonitoringTotalProcessorTime" />
-      <Member Status="ImplRoot" MemberType="Property" Name="MonitoringTotalAllocatedMemorySize" />
-      <Member Status="ImplRoot" MemberType="Property" Name="MonitoringSurvivedMemorySize" />
-      <Member Status="ImplRoot" MemberType="Property" Name="MonitoringSurvivedProcessMemorySize" />
       <Member Status="ImplRoot" MemberType="Property" Name="IsFullyTrusted" />
       <Member Status="ImplRoot" Name="GetData(System.String)" />
       <Member Status="ImplRoot" Name="ToString" />
@@ -1011,7 +1000,7 @@
       <Member Name="EndInvoke(System.IAsyncResult)" />
       <Member Name="Invoke(T,T)" />
     </Type>
-    <Type Name="System.Runtime.Loader.AssemblyLoadContext" condition="FEATURE_HOST_ASSEMBLY_RESOLVER">
+    <Type Name="System.Runtime.Loader.AssemblyLoadContext">
       <Member Name="#ctor" />
       <Member MemberType="Property" Name="Default" />
       <Member Name="GetAssemblyName(System.String)" />
@@ -4016,8 +4005,8 @@
       <Member Status="ImplRoot" MemberType="Field" Name="m_assembly" />
       <Member Status="ImplRoot" Name="OnModuleResolveEvent(System.String)" /> <!-- EE -->
       <Member Status="ImplRoot" MemberType="Property" Name="DefinedTypes" />
-      <!-- On Windows Phone Assembly.LoadFrom throws a NotSupportedException.  Prevent this internal helper from being stripped by the rewriter so that tests may reflect and call it since they need LoadFrom functionality -->
-      <Member Status="ImplRoot" Name="InternalLoadFrom(System.String,System.Security.Policy.Evidence,System.Byte[],System.Configuration.Assemblies.AssemblyHashAlgorithm,System.Boolean,System.Boolean,System.Threading.StackCrawlMark@)" Condition="FEATURE_WINDOWSPHONE" />
+      <!-- Assembly.LoadFrom throws a NotSupportedException.  Prevent this internal helper from being stripped by the rewriter so that tests may reflect and call it since they need LoadFrom functionality -->
+      <Member Status="ImplRoot" Name="InternalLoadFrom(System.String,System.Security.Policy.Evidence,System.Byte[],System.Configuration.Assemblies.AssemblyHashAlgorithm,System.Boolean,System.Boolean,System.Threading.StackCrawlMark@)" />
     </Type>
     <Type Name="System.Reflection.TypeInfo">
       <Member Name="#ctor" />
@@ -6435,11 +6424,9 @@
     <Type Name="System.Runtime.CompilerServices.SuppressIldasmAttribute">
       <Member Name="#ctor" />
     </Type>
-    <!-- #if FEATURE_CORRUPTING_EXCEPTIONS -->
     <Type Name="System.Runtime.ExceptionServices.HandleProcessCorruptedStateExceptionsAttribute">
       <Member Name="#ctor" />
     </Type>
-    <!-- #endif FEATURE_CORRUPTING_EXCEPTIONS -->
     <!-- #if FEATURE_EXCEPTIONDISPATCHINFO -->
     <Type Status="ApiRoot" Name="System.Runtime.ExceptionServices.ExceptionDispatchInfo">
       <Member Status="ApiRoot" Name="Capture(System.Exception)" />
@@ -12646,7 +12633,7 @@
       <Member Name="WriteLine(System.String)" />
       <Member Name="WriteLine" />
     </Type>
-    <Type Name="System.Span&lt;T&gt;" Condition="FEATURE_SPAN_OF_T">
+    <Type Name="System.Span&lt;T&gt;">
       <Member Name="#ctor(T[])" />
       <Member Name="#ctor(T[],System.Int32)" />
       <Member Name="#ctor(T[],System.Int32,System.Int32)" />
@@ -12671,7 +12658,7 @@
       <Member Name="CopyTo(System.Span&lt;T&gt;)" />
       <Member Name="TryCopyTo(System.Span&lt;T&gt;)" />
     </Type>
-    <Type Name="System.ReadOnlySpan&lt;T&gt;" Condition="FEATURE_SPAN_OF_T">
+    <Type Name="System.ReadOnlySpan&lt;T&gt;">
       <Member Name="#ctor(T[])" />
       <Member Name="#ctor(T[],System.Int32)" />
       <Member Name="#ctor(T[],System.Int32,System.Int32)" />
@@ -12694,13 +12681,13 @@
       <Member Name="TryCopyTo(System.Span&lt;T&gt;)" />
       <Member Name="CopyTo(System.Span&lt;T&gt;)" />
     </Type>
-    <Type Name="System.SpanExtensions" Condition="FEATURE_SPAN_OF_T">
+    <Type Name="System.SpanExtensions">
       <Member Name="AsBytes&lt;T&gt;(System.Span&lt;T&gt;)" />
       <Member Name="AsBytes&lt;T&gt;(System.ReadOnlySpan&lt;T&gt;)" />
       <Member Name="NonPortableCast&lt;TFrom,TTo&gt;(System.Span&lt;TFrom&gt;)" />
       <Member Name="NonPortableCast&lt;TFrom,TTo&gt;(System.ReadOnlySpan&lt;TFrom&gt;)" />
     </Type>
-    <Type Name="System.ReadOnlySpanExtensions" Condition="FEATURE_SPAN_OF_T">
+    <Type Name="System.ReadOnlySpanExtensions">
       <Member Name="Slice(System.String)" />
       <Member Name="Slice(System.String,System.Int32)" />
       <Member Name="Slice(System.String,System.Int32,System.Int32)" />

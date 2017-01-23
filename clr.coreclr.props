@@ -5,13 +5,9 @@
     <DebuggingSupportedBuild>true</DebuggingSupportedBuild>
     <EnCSupported Condition="('$(TargetArch)' == 'i386') or ('$(TargetArch)' == 'amd64')">true</EnCSupported>
     <EnableDownlevelForNls Condition="'$(CrossTargetArchitecture)' != ''">true</EnableDownlevelForNls>
-    <FeatureAppdomainResourceMonitoring>true</FeatureAppdomainResourceMonitoring>
     <FeatureArrayStubAsIL Condition="('$(TargetArch)' == 'arm') or ('$(TargetArch)' == 'amd64') or ('$(TargetArch)' == 'arm64')">true</FeatureArrayStubAsIL>
     <FeatureStubsAsIL Condition="'$(TargetArch)' == 'arm64'">true</FeatureStubsAsIL>
-    <FeatureCollectibleTypes>true</FeatureCollectibleTypes>
     <FeatureCominteropApartmentSupport>true</FeatureCominteropApartmentSupport>
-    <FeatureCoreclr>true</FeatureCoreclr>
-    <FeatureCorruptingExceptions>true</FeatureCorruptingExceptions>
     <FeatureDbiDebugging>true</FeatureDbiDebugging>
     <FeatureDbiOopDebugging_HostLocal>false</FeatureDbiOopDebugging_HostLocal>
     <FeatureDbiOopDebugging_HostWindowsx86 Condition="'$(TargetArch)' == 'i386' or '$(TargetArch)' == 'arm'">true</FeatureDbiOopDebugging_HostWindowsx86>
@@ -19,27 +15,19 @@
     <FeatureDbiOopDebugging_HostOneCorex86 Condition="'$(TargetArch)' == 'i386' or '$(TargetArch)' == 'arm'">true</FeatureDbiOopDebugging_HostOneCorex86>
     <FeatureDbiOopDebugging_HostOneCoreamd64 Condition="'$(TargetArch)' == 'amd64'">true</FeatureDbiOopDebugging_HostOneCoreamd64>
     <FeatureEventTrace>true</FeatureEventTrace>
-    <FeatureExceptionDispatchInfo>true</FeatureExceptionDispatchInfo>
-    <FeatureExceptionNotifications>true</FeatureExceptionNotifications>
     <FeatureFrameworkInternal>true</FeatureFrameworkInternal>
     <FeatureHijack>true</FeatureHijack>
     <FeatureInteropDebugging Condition="('$(TargetArch)' == 'i386') or ('$(TargetArch)' == 'amd64')">true</FeatureInteropDebugging>
     <FeatureIsymReader>true</FeatureIsymReader>
     <!-- This is here for testing purposes only, and only on checked builds for x86/ARM -->
     <FeatureLazyCOWPages Condition="'$(_BuildType)'!='ret' and (('$(TargetArch)' == 'i386') or ('$(TargetArch)' == 'arm'))">true</FeatureLazyCOWPages>
-    <FeatureLoaderOptimization>true</FeatureLoaderOptimization>
-    <FeatureMainClrModuleUsesCoreName>true</FeatureMainClrModuleUsesCoreName>
     <FeatureMergeCultureSupportAndEngine>true</FeatureMergeCultureSupportAndEngine>
     <FeatureMergeJitAndEngine>true</FeatureMergeJitAndEngine>
-    <FeatureMulticoreJIT>true</FeatureMulticoreJIT>
     <FeaturePrejit>true</FeaturePrejit>
-    <FeatureSpanOfT Condition="'$(UseLegacyCompiler)'!='true'">true</FeatureSpanOfT>
     <FeatureStandaloneSn>true</FeatureStandaloneSn>
     <FeatureStrongnameDelaySigningAllowed>true</FeatureStrongnameDelaySigningAllowed>
-    <FeatureStrongnameMigration>true</FeatureStrongnameMigration>
     <FeatureStrongnameTestkeyAllowed>true</FeatureStrongnameTestkeyAllowed>
     <FeatureSyntheticCultures>true</FeatureSyntheticCultures>
-    <FeatureVersioning>true</FeatureVersioning>
     <FeatureVersioningLog>true</FeatureVersioningLog>
     <FeatureWin32Registry>true</FeatureWin32Registry>
     <FeatureXPlatDacDebugging_HostWindowsx86 Condition="'$(TargetArch)' == 'i386' or '$(TargetArch)' == 'arm'">true</FeatureXPlatDacDebugging_HostWindowsx86>
@@ -50,24 +38,18 @@
     <FeatureUseAsmGCWriteBarriers>true</FeatureUseAsmGCWriteBarriers>
     <!-- Setting this to "false" works only for workstation GC, not server. -->
     <FeatureSymDiff>true</FeatureSymDiff>
-    <FeatureSynchronizationContextWait>true</FeatureSynchronizationContextWait>
     <FeatureReadyToRun Condition="'$(TargetArch)'!='arm64'">true</FeatureReadyToRun>
-
-    <FeatureCoreSystem>true</FeatureCoreSystem>
     <FeatureClassicCominterop>true</FeatureClassicCominterop>
     <FeatureCominterop>true</FeatureCominterop>
     <FeatureICastable>true</FeatureICastable>
     <FeatureCominteropUnmanagedActivation>true</FeatureCominteropUnmanagedActivation>
     <FeatureCominteropWinRTManagedActivation>true</FeatureCominteropWinRTManagedActivation>
-    <FeatureHostAssemblyResolver>true</FeatureHostAssemblyResolver>
     <FeatureLazyCOWPages Condition="('$(TargetArch)' == 'i386') or ('$(TargetArch)' == 'arm')">true</FeatureLazyCOWPages>
     <FeatureLegacyNetCFDbgHostControl>true</FeatureLegacyNetCFDbgHostControl>
     <FeatureRandomizedStringHashing>true</FeatureRandomizedStringHashing>
     <!-- The rejit feature is available only on supported architectures (x86 & x64) -->
     <FeatureReJIT Condition="('$(TargetArch)' == 'i386') or ('$(TargetArch)' == 'amd64')">true</FeatureReJIT>
-    <FeatureWindowsPhone>true</FeatureWindowsPhone>
     <FeatureManagedEtw>true</FeatureManagedEtw>
-    <FeatureManagedEtwChannels>true</FeatureManagedEtwChannels>
     <BinderDebugLog Condition="'$(_BuildType)'=='dbg'">true</BinderDebugLog>
     <FeatureAppX>true</FeatureAppX>
     <FeatureWinMDResilient>true</FeatureWinMDResilient>

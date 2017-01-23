@@ -15,7 +15,6 @@
 #endif // !PLATFORM_UNIX
 
 #if ES_BUILD_STANDALONE
-#define FEATURE_MANAGED_ETW_CHANNELS
 // #define FEATURE_ADVANCED_MANAGED_ETW_CHANNELS
 #endif
 
@@ -2347,11 +2346,7 @@ namespace System.Diagnostics.Tracing
             EventLevel eventLevel = (EventLevel)m_eventData[eventNum].Descriptor.Level;
             EventKeywords eventKeywords = unchecked((EventKeywords)((ulong)m_eventData[eventNum].Descriptor.Keywords & (~(SessionMask.All.ToEventKeywords()))));
 
-#if FEATURE_MANAGED_ETW_CHANNELS
             EventChannel channel = unchecked((EventChannel)m_eventData[eventNum].Descriptor.Channel);
-#else
-            EventChannel channel = EventChannel.None;
-#endif
 
             return IsEnabledCommon(enable, currentLevel, currentMatchAnyKeyword, eventLevel, eventKeywords, channel);
         }
@@ -2369,7 +2364,6 @@ namespace System.Diagnostics.Tracing
             // if yes, does it pass the keywords test?
             if (currentMatchAnyKeyword != 0 && eventKeywords != 0)
             {
-#if FEATURE_MANAGED_ETW_CHANNELS
                 // is there a channel with keywords that match currentMatchAnyKeyword?
                 if (eventChannel != EventChannel.None && this.m_channelData != null && this.m_channelData.Length > (int)eventChannel)
                 {
@@ -2378,7 +2372,6 @@ namespace System.Diagnostics.Tracing
                         return false;
                 }
                 else
-#endif
                 {
                     if ((unchecked((ulong)eventKeywords & (ulong)currentMatchAnyKeyword)) == 0)
                         return false;
@@ -3329,7 +3322,7 @@ namespace System.Diagnostics.Tracing
                 }
 
                 // Collect task, opcode, keyword and channel information
-#if FEATURE_MANAGED_ETW_CHANNELS && FEATURE_ADVANCED_MANAGED_ETW_CHANNELS
+#if FEATURE_ADVANCED_MANAGED_ETW_CHANNELS
                 foreach (var providerEnumKind in new string[] { "Keywords", "Tasks", "Opcodes", "Channels" })
 #else
                 foreach (var providerEnumKind in new string[] { "Keywords", "Tasks", "Opcodes" })
@@ -3495,7 +3488,6 @@ namespace System.Diagnostics.Tracing
                             // Do checking for user errors (optional, but not a big deal so we do it).  
                             DebugCheckEvent(ref eventsByName, eventData, method, eventAttribute, manifest, flags);
 
-#if FEATURE_MANAGED_ETW_CHANNELS
                             // add the channel keyword for Event Viewer channel based filters. This is added for creating the EventDescriptors only
                             // and is not required for the manifest
                             if (eventAttribute.Channel != EventChannel.None)
@@ -3505,7 +3497,6 @@ namespace System.Diagnostics.Tracing
                                     eventAttribute.Keywords |= (EventKeywords)manifest.GetChannelKeyword(eventAttribute.Channel, (ulong)eventAttribute.Keywords);
                                 }
                             }
-#endif
                             string eventKey = "event_" + eventName;
                             string msg = manifest.GetLocalizedMessage(eventKey, CultureInfo.CurrentUICulture, etwFormat: false);
                             // overwrite inline message with the localized message
@@ -3523,18 +3514,14 @@ namespace System.Diagnostics.Tracing
                 {
                     TrimEventDescriptors(ref eventData);
                     source.m_eventData = eventData;     // officially initialize it. We do this at most once (it is racy otherwise). 
-#if FEATURE_MANAGED_ETW_CHANNELS
                     source.m_channelData = manifest.GetChannelData();
-#endif
                 }
 
                 // if this is an abstract event source we've already performed all the validation we can
                 if (!eventSourceType.IsAbstract() && (source == null || !source.SelfDescribingEvents))
                 {
                     bNeedsManifest = (flags & EventManifestOptions.OnlyIfNeededForRegistration) == 0
-#if FEATURE_MANAGED_ETW_CHANNELS
                                             || manifest.GetChannelData().Length > 0
-#endif
 ;
 
                     // if the manifest is not needed and we're not requested to validate the event source return early
@@ -3616,7 +3603,7 @@ namespace System.Diagnostics.Tracing
                 ulong value = unchecked((ulong)(long)staticField.GetRawConstantValue());
                 manifest.AddKeyword(staticField.Name, value);
             }
-#if FEATURE_MANAGED_ETW_CHANNELS && FEATURE_ADVANCED_MANAGED_ETW_CHANNELS
+#if FEATURE_ADVANCED_MANAGED_ETW_CHANNELS
             else if (!reflectionOnly && (staticFieldType == typeof(EventChannel)) || AttributeTypeNamesMatch(staticFieldType, typeof(EventChannel)))
             {
                 if (providerEnumKind != "Channels") goto Error;
@@ -3646,11 +3633,7 @@ namespace System.Diagnostics.Tracing
             eventData[eventAttribute.EventId].Descriptor = new EventDescriptor(
                     eventAttribute.EventId,
                     eventAttribute.Version,
-#if FEATURE_MANAGED_ETW_CHANNELS
                     (byte)eventAttribute.Channel,
-#else
-                    (byte)0,
-#endif
                     (byte)eventAttribute.Level,
                     (byte)eventAttribute.Opcode,
                     (int)eventAttribute.Task,
@@ -4070,9 +4053,7 @@ namespace System.Diagnostics.Tracing
         [ThreadStatic]
         private static bool m_EventSourceInDecodeObject = false;
 
-#if FEATURE_MANAGED_ETW_CHANNELS
         internal volatile ulong[] m_channelData;
-#endif
 
 #if FEATURE_ACTIVITYSAMPLING
         private SessionMask m_curLiveSessions;          // the activity-tracing aware sessions' bits
@@ -4894,7 +4875,6 @@ namespace System.Diagnostics.Tracing
         }
 
 
-#if FEATURE_MANAGED_ETW_CHANNELS
         /// <summary>
         /// Gets the channel for the event.
         /// </summary>
@@ -4907,7 +4887,6 @@ namespace System.Diagnostics.Tracing
                 return (EventChannel)m_eventSource.m_eventData[EventId].Descriptor.Channel;
             }
         }
-#endif
 
         /// <summary>
         /// Gets the version of the event.
@@ -5035,10 +5014,8 @@ namespace System.Diagnostics.Tracing
 
         /// <summary>Event's task: allows logical grouping of events</summary>
         public EventTask Task { get; set; }
-#if FEATURE_MANAGED_ETW_CHANNELS
         /// <summary>Event's channel: defines an event log as an additional destination for the event</summary>
         public EventChannel Channel { get; set; }
-#endif
         /// <summary>Event's version</summary>
         public byte Version { get; set; }
 
@@ -5081,7 +5058,6 @@ namespace System.Diagnostics.Tracing
     }
 
     // FUTURE we may want to expose this at some point once we have a partner that can help us validate the design.
-#if FEATURE_MANAGED_ETW_CHANNELS
     /// <summary>
     /// EventChannelAttribute allows customizing channels supported by an EventSource. This attribute must be
     /// applied to an member of type EventChannel defined in a Channels class nested in the EventSource class:
@@ -5176,7 +5152,6 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         Custom,
     }
-#endif
 #endif
 
     /// <summary>
@@ -5995,9 +5970,7 @@ namespace System.Diagnostics.Tracing
         public ManifestBuilder(string providerName, Guid providerGuid, string dllName, ResourceManager resources,
                                EventManifestOptions flags)
         {
-#if FEATURE_MANAGED_ETW_CHANNELS
             this.providerName = providerName;
-#endif
             this.flags = flags;
 
             this.resources = resources;
@@ -6079,7 +6052,6 @@ namespace System.Diagnostics.Tracing
             keywordTab[value] = name;
         }
 
-#if FEATURE_MANAGED_ETW_CHANNELS
         /// <summary>
         /// Add a channel.  channelAttribute can be null
         /// </summary>
@@ -6149,7 +6121,6 @@ namespace System.Diagnostics.Tracing
             return channelMask;
         }
 
-#endif
         public void StartEvent(string eventName, EventAttribute eventAttribute)
         {
             Debug.Assert(numParams == 0);
@@ -6175,12 +6146,10 @@ namespace System.Diagnostics.Tracing
                 events.Append(" opcode=\"").Append(GetOpcodeName(eventAttribute.Opcode, eventName)).Append("\"");
             if (eventAttribute.Task != 0)
                 events.Append(" task=\"").Append(GetTaskName(eventAttribute.Task, eventName)).Append("\"");
-#if FEATURE_MANAGED_ETW_CHANNELS
             if (eventAttribute.Channel != 0)
             {
                 events.Append(" channel=\"").Append(GetChannelName(eventAttribute.Channel, eventName, eventAttribute.Message)).Append("\"");
             }
-#endif
         }
 
         public void AddEventParameter(Type type, string name)
@@ -6246,7 +6215,6 @@ namespace System.Diagnostics.Tracing
             byteArrArgIndices = null;
         }
 
-#if FEATURE_MANAGED_ETW_CHANNELS
         // Channel keywords are generated one per channel to allow channel based filtering in event viewer. These keywords are autogenerated
         // by mc.exe for compiling a manifest and are based on the order of the channels (fields) in the Channels inner class (when advanced
         // channel support is enabled), or based on the order the predefined channels appear in the EventAttribute properties (for simple 
@@ -6286,7 +6254,6 @@ namespace System.Diagnostics.Tracing
 
             return channelKeyword;
         }
-#endif
 
         public byte[] CreateManifest()
         {
@@ -6314,7 +6281,6 @@ namespace System.Diagnostics.Tracing
         private string CreateManifestString()
         {
 
-#if FEATURE_MANAGED_ETW_CHANNELS
             // Write out the channels
             if (channelTab != null)
             {
@@ -6376,7 +6342,6 @@ namespace System.Diagnostics.Tracing
                 }
                 sb.Append(" </channels>").AppendLine();
             }
-#endif
 
             // Write out the tasks
             if (taskTab != null)
@@ -6599,7 +6564,6 @@ namespace System.Diagnostics.Tracing
             return (((int)level >= 16) ? "" : "win:") + level.ToString();
         }
 
-#if FEATURE_MANAGED_ETW_CHANNELS
         private string GetChannelName(EventChannel channel, string eventName, string eventMessage)
         {
             ChannelInfo info = null;
@@ -6628,7 +6592,6 @@ namespace System.Diagnostics.Tracing
                 ManifestError(Resources.GetResourceString("EventSource_EventWithAdminChannelMustHaveMessage", eventName, info.Name));
             return info.Name;
         }
-#endif
         private string GetTaskName(EventTask task, string eventName)
         {
             if (task == EventTask.None)
@@ -6824,26 +6787,21 @@ namespace System.Diagnostics.Tracing
             return idx + 1;
         }
 
-#if FEATURE_MANAGED_ETW_CHANNELS
         class ChannelInfo
         {
             public string Name;
             public ulong Keywords;
             public EventChannelAttribute Attribs;
         }
-#endif
 
         Dictionary<int, string> opcodeTab;
         Dictionary<int, string> taskTab;
-#if FEATURE_MANAGED_ETW_CHANNELS
         Dictionary<int, ChannelInfo> channelTab;
-#endif
         Dictionary<ulong, string> keywordTab;
         Dictionary<string, Type> mapsTab;
 
         Dictionary<string, string> stringTab;       // Maps unlocalized strings to localized ones  
 
-#if FEATURE_MANAGED_ETW_CHANNELS
         // WCF used EventSource to mimic a existing ETW manifest.   To support this
         // in just their case, we allowed them to specify the keywords associated 
         // with their channels explicitly.   ValidPredefinedChannelKeywords is 
@@ -6852,15 +6810,12 @@ namespace System.Diagnostics.Tracing
         internal const ulong ValidPredefinedChannelKeywords = 0xF000000000000000;
         ulong nextChannelKeywordBit = 0x8000000000000000;   // available Keyword bit to be used for next channel definition, grows down
         const int MaxCountChannels = 8; // a manifest can defined at most 8 ETW channels
-#endif
 
         StringBuilder sb;               // Holds the provider information. 
         StringBuilder events;           // Holds the events. 
         StringBuilder templates;
 
-#if FEATURE_MANAGED_ETW_CHANNELS
         string providerName;
-#endif
         ResourceManager resources;      // Look up localized strings here.  
         EventManifestOptions flags;
         IList<string> errors;           // list of currently encountered errors
