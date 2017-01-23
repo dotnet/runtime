@@ -5,7 +5,6 @@
     <EnCSupported Condition="('$(TargetArch)' == 'i386') or ('$(TargetArch)' == 'amd64')">true</EnCSupported>
     <EnableDownlevelForNls>true</EnableDownlevelForNls>
     <FeatureAppX>true</FeatureAppX>
-    <FeatureAptca>true</FeatureAptca>
     <FeatureArrayStubAsIL Condition="('$(TargetArch)' == 'arm')">true</FeatureArrayStubAsIL>
     <FeatureCasPolicy>true</FeatureCasPolicy>
     <FeatureTraceLogging>true</FeatureTraceLogging>
