@@ -22,9 +22,6 @@ namespace System.Security.Util {
     using System.IO;
     using System.Diagnostics.Contracts;
 
-#if FEATURE_SERIALIZATION
-    [Serializable]
-#endif
     internal sealed class URLString : SiteString
     {
         private String m_protocol;

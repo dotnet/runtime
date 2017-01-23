@@ -75,44 +75,6 @@ namespace System.Security
             return secDesc.CheckDemand((CodeAccessPermission) demandIn, permToken, rmh);
         }
 
-#if FEATURE_COMPRESSEDSTACK
-        private static bool CheckDynamicMethodSetHelper(System.Reflection.Emit.DynamicResolver dynamicResolver,
-                                                     PermissionSet demandSet,
-                                                     out PermissionSet alteredDemandSet,
-                                                     RuntimeMethodHandleInternal rmh)
-        {
-            System.Threading.CompressedStack creationStack = dynamicResolver.GetSecurityContext();
-            bool result;
-            try
-            {
-                result = creationStack.CheckSetDemandWithModificationNoHalt(demandSet, out alteredDemandSet, rmh);
-            }
-            catch (SecurityException ex)
-            {
-                throw new SecurityException(Environment.GetResourceString("Security_AnonymouslyHostedDynamicMethodCheckFailed"), ex);
-            }
-            
-            return result;
-        }
-
-        private static bool CheckDynamicMethodHelper(System.Reflection.Emit.DynamicResolver dynamicResolver,
-                                             IPermission demandIn, 
-                                             PermissionToken permToken,
-                                             RuntimeMethodHandleInternal rmh)
-        {
-            System.Threading.CompressedStack creationStack = dynamicResolver.GetSecurityContext();
-            bool result;
-            try
-            {
-                result = creationStack.CheckDemandNoHalt((CodeAccessPermission)demandIn, permToken, rmh);
-            }
-            catch (SecurityException ex)
-            {
-                throw new SecurityException(Environment.GetResourceString("Security_AnonymouslyHostedDynamicMethodCheckFailed"), ex);
-            }
-            return result;
-        }
-#endif // FEATURE_COMPRESSEDSTACK
 
         //
         // API for PermissionSets

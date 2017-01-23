@@ -5,10 +5,6 @@
 namespace System.Security.Policy
 {
     using System.Runtime.InteropServices;
-#if FEATURE_SERIALIZATION
-    using System.Runtime.Serialization;
-    using System.Runtime.Serialization.Formatters.Binary;
-#endif // FEATURE_SERIALIZATION
 
     /// <summary>
     ///     The Evidence class keeps track of information that can be used to make security decisions about
@@ -28,9 +24,6 @@ namespace System.Security.Policy
     ///     not contain any evidence data or null.  As requests come in for that evidence, we'll populate the
     ///     EvidenceTypeDescriptor appropriately.
     /// </summary>
-#if FEATURE_SERIALIZATION
-    [Serializable]
-#endif
     [ComVisible(true)]
     public sealed class Evidence
     {
