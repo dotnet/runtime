@@ -48,22 +48,18 @@ as follows:
    `dotnet.exe` would infer your current architecture but it currently doesn't)
 2. Update package reference to match version selected above, as below
 
-*Note:* We're currently still using `netcoreapp1.2`. Eventually this will be
-renamed to `netcoreapp2.0`. So if `netcoreapp1.2` doesn't work, try
-`netcoreapp2.0`.
-
 ```xml
 <Project Sdk="Microsoft.NET.Sdk" ToolsVersion="15.0">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>netcoreapp1.2</TargetFramework>
+    <TargetFramework>netcoreapp2.0</TargetFramework>
     <RuntimeIdentifier>win10-x64</RuntimeIdentifier>
   </PropertyGroup>
 
   <!-- Make sure to use Update, not Include! -->
   <ItemGroup>
-    <PackageReference Update="Microsoft.NETCore.App" Version="1.2.0-beta-001285-00" />
+    <PackageReference Update="Microsoft.NETCore.App" Version="2.0.0-beta-001386-00" />
   </ItemGroup>
 
 </Project>
