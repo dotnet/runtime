@@ -96,7 +96,7 @@ namespace System.Net.Http
                 CheckResponseMsgFormat(index < _span.Length);
                 CheckResponseMsgFormat(_span[index] == ':');
                 HeaderBufferSpan headerNameSpan = _span.Substring(0, headerNameLength);
-                if (!HttpKnownHeaderNames.TryGetHeaderName(_span.Buffer, _span.Length, out headerName))
+                if (!HttpKnownHeaderNames.TryGetHeaderName(headerNameSpan.Buffer, headerNameSpan.Length, out headerName))
                 {
                     headerName = headerNameSpan.ToString();
                 }
