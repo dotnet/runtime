@@ -49,22 +49,6 @@ namespace System.Security
             }
         }
 
-#if FEATURE_PLS
-        internal void UpdateDomainPLS (PermissionListSet adPLS) {
-            if (adPLS != null && adPLS.m_firstPermSetTriple != null)
-                UpdateDomainPLS(adPLS.m_firstPermSetTriple.GrantSet, adPLS.m_firstPermSetTriple.RefusedSet);
-        }
-
-        internal void UpdateDomainPLS (PermissionSet grantSet, PermissionSet deniedSet) {
-            Debug.Assert(m_permSetTriples == null, "m_permSetTriples != null");
-            if (m_firstPermSetTriple == null)
-                m_firstPermSetTriple = new PermissionSetTriple();
-
-            // update the grant and denied sets
-            m_firstPermSetTriple.UpdateGrant(grantSet);
-            m_firstPermSetTriple.UpdateRefused(deniedSet);
-        }
-#endif // FEATURE_PLS
 
         private void Terminate(PermissionSetTriple currentTriple)
         {

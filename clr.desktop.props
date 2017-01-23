@@ -49,7 +49,6 @@
     <FeatureNongenericCollections>true</FeatureNongenericCollections>
     <FeaturePathCompat>true</FeaturePathCompat>
     <FeaturePerfmon>true</FeaturePerfmon>
-    <FeaturePls>true</FeaturePls>
     <FeaturePrejit>true</FeaturePrejit>
     <FeatureRandomizedStringHashing>true</FeatureRandomizedStringHashing>
     <FeatureReflectionOnlyLoad>true</FeatureReflectionOnlyLoad>
