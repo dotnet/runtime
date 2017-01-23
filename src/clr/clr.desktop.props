@@ -4,6 +4,7 @@
     <DebuggingSupportedBuild>true</DebuggingSupportedBuild>
     <EnCSupported Condition="('$(TargetArch)' == 'i386') or ('$(TargetArch)' == 'amd64')">true</EnCSupported>
     <EnableDownlevelForNls>true</EnableDownlevelForNls>
+    <FeatureAppdomainResourceMonitoring>true</FeatureAppdomainResourceMonitoring>
     <FeatureAppdomainmanagerInitoptions>true</FeatureAppdomainmanagerInitoptions>
     <FeatureAppX>true</FeatureAppX>
     <FeatureAppXBinder>true</FeatureAppXBinder>
