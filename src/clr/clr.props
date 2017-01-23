@@ -133,7 +133,6 @@
     <FeatureEventTrace>false</FeatureEventTrace>
     <FeatureFusion>false</FeatureFusion>
     <FeatureIncludeAllInterfaces>false</FeatureIncludeAllInterfaces>
-    <FeatureLoaderOptimization>false</FeatureLoaderOptimization>
     <FeatureMdaSupported>false</FeatureMdaSupported>
     <FeatureMergeJitAndEngine>true</FeatureMergeJitAndEngine>
     <FeatureMulticoreJIT>false</FeatureMulticoreJIT>

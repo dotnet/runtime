@@ -941,11 +941,9 @@ namespace System
             int key = AppDomainSetup.Locate(name);
             if(key == -1) 
             {
-#if FEATURE_LOADER_OPTIMIZATION
                 if(name.Equals(AppDomainSetup.LoaderOptimizationKey))
                     return FusionStore.LoaderOptimization;
                 else 
-#endif // FEATURE_LOADER_OPTIMIZATION                    
                 {
                     object[] data;
                     lock (((ICollection)LocalStore).SyncRoot) {
@@ -1215,10 +1213,8 @@ namespace System
             nCreateContext();
 #endif // FEATURE_VERSIONING
 
-#if FEATURE_LOADER_OPTIMIZATION
             if (info.LoaderOptimization != LoaderOptimization.NotSpecified || (oldInfo != null && info.LoaderOptimization != oldInfo.LoaderOptimization))
                 UpdateLoaderOptimization(info.LoaderOptimization);
-#endif
             // This must be the last action taken
             _FusionStore = info;
         }
@@ -1353,7 +1349,6 @@ namespace System
 
                         newSetup.ApplicationBase = NormalizePath(propertyValues[i], fullCheck: true);
                     }
-#if FEATURE_LOADER_OPTIMIZATION
                     else if(propertyNames[i]=="LOADER_OPTIMIZATION")
                     {
                         if(propertyValues[i]==null)
@@ -1368,7 +1363,6 @@ namespace System
                             default: throw new ArgumentException(Environment.GetResourceString("Argument_UnrecognizedLoaderOptimization"), "LOADER_OPTIMIZATION");
                         }
                     }
-#endif // FEATURE_LOADER_OPTIMIZATION
                     else if(propertyNames[i]=="TRUSTED_PLATFORM_ASSEMBLIES" ||
                        propertyNames[i]=="PLATFORM_RESOURCE_ROOTS" ||
                        propertyNames[i]=="APP_PATHS" ||
@@ -1520,10 +1514,8 @@ namespace System
         private extern void nSetDisableInterfaceCache();
 #endif // FEATURE_COMINTEROP
 
-#if FEATURE_LOADER_OPTIMIZATION
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal extern void UpdateLoaderOptimization(LoaderOptimization optimization);
-#endif
 
         public AppDomainSetup SetupInformation
         {
