@@ -56,7 +56,6 @@
     <FeatureReJIT Condition="('$(TargetArch)' == 'i386') or ('$(TargetArch)' == 'amd64')">true</FeatureReJIT>
     <FeatureWindowsPhone>true</FeatureWindowsPhone>
     <FeatureManagedEtw>true</FeatureManagedEtw>
-    <FeatureManagedEtwChannels>true</FeatureManagedEtwChannels>
     <BinderDebugLog Condition="'$(_BuildType)'=='dbg'">true</BinderDebugLog>
     <FeatureAppX>true</FeatureAppX>
     <FeatureWinMDResilient>true</FeatureWinMDResilient>

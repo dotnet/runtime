@@ -49,7 +49,6 @@
         <CDefines Condition="'$(FeatureLegacyNetCFDbgHostControl)' == 'true'">$(CDefines);FEATURE_LEGACYNETCF_DBG_HOST_CONTROL</CDefines> 
         <CDefines Condition="'$(FeatureMacl)' == 'true'">$(CDefines);FEATURE_MACL</CDefines>
         <CDefines Condition="'$(FeatureManagedEtw)' == 'true'">$(CDefines);FEATURE_MANAGED_ETW</CDefines>
-        <CDefines Condition="'$(FeatureManagedEtwChannels)' == 'true'">$(CDefines);FEATURE_MANAGED_ETW_CHANNELS</CDefines>
         <CDefines Condition="'$(FeatureMdaSupported)' == 'true'">$(CDefines);MDA_SUPPORTED</CDefines>
         <CDefines Condition="'$(FeatureMergeCultureSupportAndEngine)' == 'true'">$(CDefines);FEATURE_MERGE_CULTURE_SUPPORT_AND_ENGINE</CDefines>
         <CDefines Condition="'$(FeatureMergeJitAndEngine)' == 'true'">$(CDefines);FEATURE_MERGE_JIT_AND_ENGINE</CDefines>
@@ -150,7 +149,6 @@
         <DefineConstants Condition="'$(FeatureLeakCultureInfo)' == 'true'">$(DefineConstants);FEATURE_LEAK_CULTURE_INFO</DefineConstants>
         <DefineConstants Condition="'$(FeatureMacl)' == 'true'">$(DefineConstants);FEATURE_MACL</DefineConstants>
         <DefineConstants Condition="'$(FeatureManagedEtw)' == 'true'">$(DefineConstants);FEATURE_MANAGED_ETW</DefineConstants>
-        <DefineConstants Condition="'$(FeatureManagedEtwChannels)' == 'true'">$(DefineConstants);FEATURE_MANAGED_ETW_CHANNELS</DefineConstants>
         <DefineConstants Condition="'$(FeatureMethodRental)' == 'true'">$(DefineConstants);FEATURE_METHOD_RENTAL</DefineConstants>
         <DefineConstants Condition="'$(FeatureMultiModuleAssemblies)' == 'true'">$(DefineConstants);FEATURE_MULTIMODULE_ASSEMBLIES</DefineConstants>
         <DefineConstants Condition="'$(FeatureNongenericCollections)' == 'true'">$(DefineConstants);FEATURE_NONGENERIC_COLLECTIONS</DefineConstants>
