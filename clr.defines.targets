@@ -26,7 +26,6 @@
         <CDefines Condition="'$(FeatureCominteropWinRTManagedActivation)' == 'true'">$(CDefines);FEATURE_COMINTEROP_WINRT_MANAGED_ACTIVATION</CDefines>  <!-- Enables code required to activate managed winrt from native-->
         <CDefines Condition="'$(FeatureCominteropWinRTDesktopHost)' == 'true'">$(CDefines);FEATURE_COMINTEROP_WINRT_DESKTOP_HOST</CDefines>
         <CDefines Condition="'$(FeatureCompressedstack)' == 'true'">$(CDefines);FEATURE_COMPRESSEDSTACK</CDefines>
-        <CDefines Condition="'$(FeatureCoreclr)' == 'true'">$(CDefines);FEATURE_CORECLR</CDefines>
         <CDefines Condition="'$(FeatureCoreFxGlobalization)' == 'true'">$(CDefines);FEATURE_COREFX_GLOBALIZATION</CDefines>
         <CDefines Condition="'$(FeatureCoreSystem)' == 'true'">$(CDefines);FEATURE_CORESYSTEM</CDefines>       
         <CDefines Condition="'$(FeatureCorruptingExceptions)' == 'true'">$(CDefines);FEATURE_CORRUPTING_EXCEPTIONS</CDefines>
@@ -142,7 +141,6 @@
         <DefineConstants Condition="'$(FeatureCominteropWinRTManagedActivation)' == 'true'">$(DefineConstants);FEATURE_COMINTEROP_WINRT_MANAGED_ACTIVATION</DefineConstants>
         <DefineConstants Condition="'$(FeatureCominteropWinRTDesktopHost)' == 'true'">$(DefineConstants);FEATURE_COMINTEROP_WINRT_DESKTOP_HOST</DefineConstants>
         <DefineConstants Condition="'$(FeatureCompressedstack)' == 'true'">$(DefineConstants);FEATURE_COMPRESSEDSTACK</DefineConstants>
-        <DefineConstants Condition="'$(FeatureCoreclr)' == 'true'">$(DefineConstants);FEATURE_CORECLR</DefineConstants>
         <DefineConstants Condition="'$(FeatureCoreFxGlobalization)' == 'true'">$(DefineConstants);FEATURE_COREFX_GLOBALIZATION</DefineConstants>
         <DefineConstants Condition="'$(FeatureCoreSystem)' == 'true'">$(DefineConstants);FEATURE_CORESYSTEM</DefineConstants>
         <DefineConstants Condition="'$(FeatureCorruptingExceptions)' == 'true'">$(DefineConstants);FEATURE_CORRUPTING_EXCEPTIONS</DefineConstants>

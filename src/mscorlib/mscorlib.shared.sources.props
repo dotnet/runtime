@@ -119,7 +119,7 @@
     <InteropSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\InvalidComObjectException.cs" />
     <InteropSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\SafeArrayRankMismatchException.cs" />
     <InteropSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\SafeArrayTypeMismatchException.cs" />
-    <InteropSources Condition="'$(FeatureCoreClr)'=='true'"  Include="$(BclSourcesRoot)\System\Runtime\InteropServices\NativeCallableAttribute.cs" />
+    <InteropSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\NativeCallableAttribute.cs" />
     <InteropSources Condition="'$(FeatureCominterop)' != 'true'" Include="$(BclSourcesRoot)\System\Runtime\InteropServices\NonPortable.cs" />
     <InteropSources Condition="'$(FeatureCominterop)' == 'true'" Include="$(BclSourcesRoot)\System\Runtime\InteropServices\DispatchWrapper.cs" />
     <InteropSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ICustomFactory.cs" />
@@ -217,7 +217,7 @@
     <SystemSources Include="$(BclSourcesRoot)\System\AppContext\AppContext.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\AppContext\AppContextSwitches.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\AppContext\AppContextDefaultValues.cs" />
-    <SystemSources Condition="'$(FeatureCoreClr)'=='true'" Include="$(BclSourcesRoot)\System\AppContext\AppContextDefaultValues.CoreClrOverrides.cs" />
+    <SystemSources Include="$(BclSourcesRoot)\System\AppContext\AppContextDefaultValues.CoreClrOverrides.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\AppContext\AppContextDefaultValues.Defaults.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\AppContext\AppContextDefaultValues.Defaults.Central.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\CurrentTimeZone.cs" />
@@ -290,7 +290,7 @@
     <SystemSources Include="$(BclSourcesRoot)\System\TypeUnloadedException.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\cominterfaces.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\CompatibilitySwitches.cs" />
-    <SystemSources Condition="'$(FeatureCoreClr)'=='true'" Include="$(BclSourcesRoot)\System\LowLevelConsole.cs" />
+    <SystemSources Include="$(BclSourcesRoot)\System\LowLevelConsole.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\ContextMarshalException.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\Convert.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\StringFreezingAttribute.cs" />
@@ -422,7 +422,7 @@
     <SystemSources Include="$(BclSourcesRoot)\System\TimeZoneInfo.Win32.cs" />
   </ItemGroup>
   <ItemGroup>
-    <InternalSources Condition="'$(FeatureCoreclr)' == 'true'" Include="$(BclSourcesRoot)\Internal\Runtime\Augments\EnvironmentAugments.cs" />
+    <InternalSources Include="$(BclSourcesRoot)\Internal\Runtime\Augments\EnvironmentAugments.cs" />
     <InternalSources Include="$(BclSourcesRoot)\Internal\Runtime\Augments\RuntimeThread.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -537,7 +537,7 @@
     <ReflectionEmitSources Include="$(BclSourcesRoot)\System\Reflection\Emit\XXXOnTypeBuilderInstantiation.cs" />
     <ReflectionEmitSources Include="$(BclSourcesRoot)\System\Reflection\Emit\UnmanagedMarshal.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(FeatureCoreclr)' == 'true'">
+  <ItemGroup>
     <ReflectionMetadataSources Include="$(BclSourcesRoot)\System\Reflection\Metadata\AssemblyExtensions.cs" />
   </ItemGroup>
   <ItemGroup>
