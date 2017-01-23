@@ -910,7 +910,7 @@
   </ItemGroup>
   <ItemGroup>
     <ExceptionservicesSources Include="$(BclSourcesRoot)\System\Runtime\ExceptionServices\CorruptingExceptionCommon.cs" />
-    <ExceptionservicesSources Condition="'$(FeatureExceptionDispatchInfo)' == 'true'" Include="$(BclSourcesRoot)\System\Runtime\ExceptionServices\ExceptionServicesCommon.cs" />
+    <ExceptionservicesSources Include="$(BclSourcesRoot)\System\Runtime\ExceptionServices\ExceptionServicesCommon.cs" />
     <ExceptionservicesSources Condition="'$(FeatureExceptionNotifications)' == 'true'" Include="$(BclSourcesRoot)\System\Runtime\ExceptionServices\ExceptionNotification.cs" />
   </ItemGroup>
   <ItemGroup>
