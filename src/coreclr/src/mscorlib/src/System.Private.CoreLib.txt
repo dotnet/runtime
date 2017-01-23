@@ -1982,10 +1982,6 @@ WeakReference_NoLongerValid = The weak reference is no longer valid.
 Interop.COM_TypeMismatch = Type mismatch between source and destination types.
 Interop_Marshal_Unmappable_Char = Cannot marshal: Encountered unmappable character.
 
-#if FEATURE_COMINTEROP_WINRT_DESKTOP_HOST
-WinRTHostDomainName = Windows Runtime Object Host Domain for '{0}'
-#endif
-
 ;
 ; Loader Exceptions
 ;
