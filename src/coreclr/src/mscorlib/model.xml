@@ -7394,9 +7394,12 @@
       <Member Name="ToUpper(System.Globalization.CultureInfo)" />
       <Member Name="ToUpperInvariant" />
       <Member Name="Trim" />
+      <Member Name="Trim(System.Char)" />
       <Member Name="Trim(System.Char[])" />
+      <Member Name="TrimEnd(System.Char)" />
       <Member Name="TrimEnd(System.Char[])" />
       <Member Name="TrimEnd" />
+      <Member Name="TrimStart(System.Char)" />
       <Member Name="TrimStart(System.Char[])" />
       <Member Name="TrimStart" />
       <Member MemberType="Property" Name="Chars(System.Int32)" />
