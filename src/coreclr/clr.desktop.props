@@ -16,7 +16,6 @@
     <FeatureClickonce>true</FeatureClickonce>
     <FeatureCominterop>true</FeatureCominterop>
     <FeatureCominteropApartmentSupport>true</FeatureCominteropApartmentSupport>
-    <FeatureCominteropManagedActivation>true</FeatureCominteropManagedActivation>
     <FeatureCominteropRegistration>true</FeatureCominteropRegistration>
     <FeatureCominteropTlbSupport>true</FeatureCominteropTlbSupport>
     <FeatureCominteropUnmanagedActivation>true</FeatureCominteropUnmanagedActivation>
