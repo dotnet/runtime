@@ -26,7 +26,6 @@
     <FeaturePrejit>true</FeaturePrejit>
     <FeatureStandaloneSn>true</FeatureStandaloneSn>
     <FeatureStrongnameDelaySigningAllowed>true</FeatureStrongnameDelaySigningAllowed>
-    <FeatureStrongnameMigration>true</FeatureStrongnameMigration>
     <FeatureStrongnameTestkeyAllowed>true</FeatureStrongnameTestkeyAllowed>
     <FeatureSyntheticCultures>true</FeatureSyntheticCultures>
     <FeatureVersioning>true</FeatureVersioning>
