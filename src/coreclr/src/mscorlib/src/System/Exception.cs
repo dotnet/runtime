@@ -660,7 +660,6 @@ namespace System {
             _stackTraceString = null;
         }
         
-#if FEATURE_EXCEPTIONDISPATCHINFO
 
         // This is the object against which a lock will be taken
         // when attempt to restore the EDI. Since its static, its possible
@@ -784,7 +783,6 @@ namespace System {
                 }
             }
         }
-#endif // FEATURE_EXCEPTIONDISPATCHINFO
 
         private String _className;  //Needed for serialization.  
         private MethodBase _exceptionMethod;  //Needed for serialization.  
