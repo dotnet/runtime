@@ -372,23 +372,6 @@ namespace System.Text
             return dstEncoding.GetBytes(srcEncoding.GetChars(bytes, index, count));
         }
 
-#if FEATURE_CODEPAGES_FILE
-        // Private object for locking instead of locking on a public type for SQL reliability work.
-        private static Object s_InternalSyncObject;
-        private static Object InternalSyncObject {
-            get {
-                if (s_InternalSyncObject == null) {
-                    Object o = new Object();
-                    Interlocked.CompareExchange<Object>(ref s_InternalSyncObject, o, null);
-                }
-                return s_InternalSyncObject;
-            }
-        }
-
-        // On Desktop, encoding instances that aren't cached in a static field are cached in
-        // a hash table by codepage.
-        private static volatile Hashtable encodings;
-#endif
 
         public static void RegisterProvider(EncodingProvider provider) 
         {
@@ -441,45 +424,6 @@ namespace System.Text
                         "Argument_CodepageNotSupported", codepage), nameof(codepage));
             }
 
-#if FEATURE_CODEPAGES_FILE
-            object key = codepage; // Box once
-
-            // See if we have a hash table with our encoding in it already.
-            if (encodings != null) {
-                result = (Encoding)encodings[key];
-            }
-
-            if (result == null)
-            {
-                // Don't conflict with ourselves
-                lock (InternalSyncObject)
-                {
-                    // Need a new hash table
-                    // in case another thread beat us to creating the Dictionary
-                    if (encodings == null) {
-                        encodings = new Hashtable();
-                    }
-
-                    // Double check that we don't have one in the table (in case another thread beat us here)
-                    if ((result = (Encoding)encodings[key]) != null)
-                        return result;
-
-                    if (codepage == CodePageWindows1252)
-                    {
-                        result = new SBCSCodePageEncoding(codepage);
-                    }
-                    else
-                    {
-                        result = GetEncodingCodePage(codepage) ?? GetEncodingRare(codepage);
-                    }
-
-                    Debug.Assert(result != null, "result != null");
-
-                    encodings.Add(key, result);
-                }
-            }
-            return result;
-#else
             // Is it a valid code page?
             if (EncodingTable.GetCodePageDataItem(codepage) == null)
             {
@@ -488,7 +432,6 @@ namespace System.Text
             }
 
             return UTF8;
-#endif // FEATURE_CODEPAGES_FILE
         }
 
         [Pure]
@@ -510,86 +453,6 @@ namespace System.Text
 
             return fallbackEncoding;
         }
-#if FEATURE_CODEPAGES_FILE
-        private static Encoding GetEncodingRare(int codepage)
-        {
-            Debug.Assert(codepage != 0 && codepage != 1200 && codepage != 1201 && codepage != 65001,
-                "[Encoding.GetEncodingRare]This code page (" + codepage + ") isn't supported by GetEncodingRare!");
-            Encoding result;
-            switch (codepage)
-            {
-                case ISCIIAssemese:
-                case ISCIIBengali:
-                case ISCIIDevanagari:
-                case ISCIIGujarathi:
-                case ISCIIKannada:
-                case ISCIIMalayalam:
-                case ISCIIOriya:
-                case ISCIIPanjabi:
-                case ISCIITamil:
-                case ISCIITelugu:
-                    result = new ISCIIEncoding(codepage);
-                    break;
-                // GB2312-80 uses same code page for 20936 and mac 10008
-                case CodePageMacGB2312:
-          //     case CodePageGB2312:
-          //        result = new DBCSCodePageEncoding(codepage, EUCCN);
-                    result = new DBCSCodePageEncoding(CodePageMacGB2312, CodePageGB2312);
-                    break;
-
-                // Mac Korean 10003 and 20949 are the same
-                case CodePageMacKorean:
-                    result = new DBCSCodePageEncoding(CodePageMacKorean, CodePageDLLKorean);
-                    break;
-                // GB18030 Code Pages
-                case GB18030:
-                    result = new GB18030Encoding();
-                    break;
-                // ISO2022 Code Pages
-                case ISOKorean:
-            //    case ISOSimplifiedCN
-                case ChineseHZ:
-                case ISO2022JP:         // JIS JP, full-width Katakana mode (no half-width Katakana)
-                case ISO2022JPESC:      // JIS JP, esc sequence to do Katakana.
-                case ISO2022JPSISO:     // JIS JP with Shift In/ Shift Out Katakana support
-                    result = new ISO2022Encoding(codepage);
-                    break;
-                // Duplicate EUC-CN (51936) just calls a base code page 936,
-                // so does ISOSimplifiedCN (50227), which's gotta be broken
-                case DuplicateEUCCN:
-                case ISOSimplifiedCN:
-                    result = new DBCSCodePageEncoding(codepage, EUCCN);    // Just maps to 936
-                    break;
-                case EUCJP:
-                    result = new EUCJPEncoding();
-                    break;
-                case EUCKR:
-                    result = new DBCSCodePageEncoding(codepage, CodePageDLLKorean);    // Maps to 20949
-                    break;
-                case ENC50229:
-                    throw new NotSupportedException(Environment.GetResourceString("NotSupported_CodePage50229"));
-                case ISO_8859_8I:
-                    result = new SBCSCodePageEncoding(codepage, ISO_8859_8_Visual);        // Hebrew maps to a different code page
-                    break;
-                default:
-                    // Not found, already tried codepage table code pages in GetEncoding()
-                    throw new NotSupportedException(
-                        Environment.GetResourceString("NotSupported_NoCodepageData", codepage));
-            }
-            return result;
-        }
-
-        private static Encoding GetEncodingCodePage(int CodePage)
-        {
-            // Single Byte or Double Byte Code Page? (0 if not found)
-            int i = BaseCodePageEncoding.GetCodePageByteSize(CodePage);
-            if (i == 1) return new SBCSCodePageEncoding(CodePage);
-            else if (i == 2) return new DBCSCodePageEncoding(CodePage);
-
-            // Return null if we didn't find one.
-            return null;
-        }
-#endif // FEATURE_CODEPAGES_FILE
         // Returns an Encoding object for a given name or a given code page value.
         //
         [Pure]
@@ -1323,11 +1186,7 @@ namespace System.Text
         [System.Runtime.InteropServices.ComVisible(false)]
         public bool IsAlwaysNormalized()
         {
-#if !FEATURE_NORM_IDNA_ONLY        
             return this.IsAlwaysNormalized(NormalizationForm.FormC);
-#else
-            return this.IsAlwaysNormalized((NormalizationForm)ExtendedNormalizationForms.FormIdna);
-#endif
         }
 
         [Pure]
@@ -1364,23 +1223,10 @@ namespace System.Text
 
             Encoding enc;
 
-#if FEATURE_CODEPAGES_FILE            
-            int codePage = Win32Native.GetACP();
-
-            // For US English, we can save some startup working set by not calling
-            // GetEncoding(int codePage) since JITting GetEncoding will force us to load
-            // all the Encoding classes for ASCII, UTF7 & UTF8, & UnicodeEncoding.
-
-            if (codePage == 1252)
-                enc = new SBCSCodePageEncoding(codePage);
-            else
-                enc = GetEncoding(codePage);
-#else // FEATURE_CODEPAGES_FILE            
 
             // For silverlight we use UTF8 since ANSI isn't available
             enc = UTF8;
 
-#endif // FEATURE_CODEPAGES_FILE
 
             // This method should only ever return one Encoding instance
             return Interlocked.CompareExchange(ref defaultEncoding, enc, null) ?? enc;

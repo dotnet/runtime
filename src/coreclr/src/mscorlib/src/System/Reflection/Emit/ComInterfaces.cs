@@ -85,16 +85,6 @@ namespace System.Runtime.InteropServices
     {
     }
 
-#if FEATURE_METHOD_RENTAL
-    [GuidAttribute("C2323C25-F57F-3880-8A4D-12EBEA7A5852")]
-    [InterfaceTypeAttribute(ComInterfaceType.InterfaceIsIUnknown)]
-    [CLSCompliant(false)]
-    [TypeLibImportClassAttribute(typeof(System.Reflection.Emit.MethodRental))]
-    [System.Runtime.InteropServices.ComVisible(true)]
-    public interface _MethodRental
-    {
-    }
-#endif
 
     [GuidAttribute("D05FFA9A-04AF-3519-8EE1-8D93AD73430B")]
     [InterfaceTypeAttribute(ComInterfaceType.InterfaceIsIUnknown)]

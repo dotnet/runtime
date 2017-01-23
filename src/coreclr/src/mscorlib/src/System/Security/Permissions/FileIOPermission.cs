@@ -866,11 +866,7 @@ namespace System.Security.Permissions
     [Serializable]
     internal sealed class FileIOAccess
     {
-#if !FEATURE_CASE_SENSITIVE_FILESYSTEM
         private bool m_ignoreCase = true;
-#else
-        private bool m_ignoreCase = false;
-#endif // !FEATURE_CASE_SENSITIVE_FILESYSTEM
         
         private StringExpressionSet m_set;
         private bool m_allFiles;

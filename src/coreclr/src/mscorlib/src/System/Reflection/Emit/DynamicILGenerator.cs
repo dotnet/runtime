@@ -807,17 +807,6 @@ namespace System.Reflection.Emit
 
             typeOwner = m_method.m_typeOwner;
 
-#if FEATURE_COMPRESSEDSTACK
-            if (m_method.m_creationContext != null)
-            {
-                flags |= SecurityControlFlags.HasCreationContext;
-                if(m_method.m_creationContext.CanSkipEvaluation)
-                {
-                    flags |= SecurityControlFlags.CanSkipCSEvaluation;
-                }
-            }
-            
-#endif // FEATURE_COMPRESSEDSTACK
 
             securityControlFlags = (int)flags;
 
@@ -900,12 +889,6 @@ namespace System.Reflection.Emit
 
         internal override String GetStringLiteral(int token) { return m_scope.GetString(token); }
 
-#if FEATURE_COMPRESSEDSTACK
-        internal override CompressedStack GetSecurityContext()
-        {
-            return m_method.m_creationContext;
-        }
-#endif // FEATURE_COMPRESSEDSTACK
 
         internal override void ResolveToken(int token, out IntPtr typeHandle, out IntPtr methodHandle, out IntPtr fieldHandle)
         {

@@ -33,10 +33,6 @@ namespace System.Security
         // Scroll down to the end to see them.
         private PermissionSetTriple m_firstPermSetTriple;
         private ArrayList m_permSetTriples;
-#if FEATURE_COMPRESSEDSTACK
-        private ArrayList m_zoneList;
-        private ArrayList m_originList;
-#endif // FEATURE_COMPRESSEDSTACK
 
         internal PermissionListSet() {}
 
@@ -53,22 +49,6 @@ namespace System.Security
             }
         }
 
-#if FEATURE_PLS
-        internal void UpdateDomainPLS (PermissionListSet adPLS) {
-            if (adPLS != null && adPLS.m_firstPermSetTriple != null)
-                UpdateDomainPLS(adPLS.m_firstPermSetTriple.GrantSet, adPLS.m_firstPermSetTriple.RefusedSet);
-        }
-
-        internal void UpdateDomainPLS (PermissionSet grantSet, PermissionSet deniedSet) {
-            Debug.Assert(m_permSetTriples == null, "m_permSetTriples != null");
-            if (m_firstPermSetTriple == null)
-                m_firstPermSetTriple = new PermissionSetTriple();
-
-            // update the grant and denied sets
-            m_firstPermSetTriple.UpdateGrant(grantSet);
-            m_firstPermSetTriple.UpdateRefused(deniedSet);
-        }
-#endif // FEATURE_PLS
 
         private void Terminate(PermissionSetTriple currentTriple)
         {
@@ -77,30 +57,17 @@ namespace System.Security
 
         private void Terminate(PermissionSetTriple currentTriple, PermissionListSet pls)
         {
-#if FEATURE_COMPRESSEDSTACK
-            this.UpdateZoneAndOrigin(pls);
-#endif // FEATURE_COMPRESSEDSTACK
             this.UpdatePermissions(currentTriple, pls);
             this.UpdateTripleListAndCreateNewTriple(currentTriple, null);
         }
 
         private bool Update(PermissionSetTriple currentTriple, PermissionListSet pls)
         {
-#if FEATURE_COMPRESSEDSTACK
-            this.UpdateZoneAndOrigin(pls);
-#endif // FEATURE_COMPRESSEDSTACK
             return this.UpdatePermissions(currentTriple, pls);
         }
 
         private bool Update(PermissionSetTriple currentTriple, FrameSecurityDescriptor fsd)
         {
-#if FEATURE_COMPRESSEDSTACK
-           FrameSecurityDescriptorWithResolver fsdWithResolver = fsd as FrameSecurityDescriptorWithResolver;
-           if (fsdWithResolver != null)
-           {
-               return Update2(currentTriple, fsdWithResolver);
-           }
-#endif // FEATURE_COMPRESSEDSTACK
 
            // check imperative
            bool fHalt = Update2(currentTriple, fsd, false);
@@ -112,15 +79,6 @@ namespace System.Security
            return fHalt;
         }
 
-#if FEATURE_COMPRESSEDSTACK
-        private bool Update2(PermissionSetTriple currentTriple, FrameSecurityDescriptorWithResolver fsdWithResolver)
-        {
-            System.Reflection.Emit.DynamicResolver resolver = fsdWithResolver.Resolver;
-            CompressedStack dynamicCompressedStack = resolver.GetSecurityContext();
-            dynamicCompressedStack.CompleteConstruction(null);
-            return this.Update(currentTriple, dynamicCompressedStack.PLS);
-        }
-#endif // FEATURE_COMPRESSEDSTACK
 
         private bool Update2(PermissionSetTriple currentTriple, FrameSecurityDescriptor fsd, bool fDeclarative)
         {
@@ -183,16 +141,8 @@ namespace System.Security
         }
         private void Update(PermissionSetTriple currentTriple, PermissionSet in_g, PermissionSet in_r)
         {
-#if FEATURE_COMPRESSEDSTACK
-            ZoneIdentityPermission z;
-            UrlIdentityPermission u;
-            currentTriple.UpdateGrant(in_g, out z, out u);
-            currentTriple.UpdateRefused(in_r);
-            AppendZoneOrigin(z, u);
-#else // !FEATURE_COMPRESEDSTACK
             currentTriple.UpdateGrant(in_g);
             currentTriple.UpdateRefused(in_r);
-#endif // FEATURE_COMPRESSEDSTACK
         }
 
         // Called from the VM for HG CS construction        
@@ -203,20 +153,6 @@ namespace System.Security
             Update(m_firstPermSetTriple, in_g, null);
         }
         
-#if FEATURE_COMPRESSEDSTACK
-        private void UpdateZoneAndOrigin(PermissionListSet pls)
-        {
-            if (pls != null)
-            {
-                if (this.m_zoneList == null && pls.m_zoneList != null && pls.m_zoneList.Count > 0)
-                    this.m_zoneList = new ArrayList();
-                UpdateArrayList(this.m_zoneList, pls.m_zoneList);
-                if (this.m_originList == null && pls.m_originList != null && pls.m_originList.Count > 0)
-                    this.m_originList = new ArrayList();                                
-                UpdateArrayList(this.m_originList, pls.m_originList);
-            }
-        }
-#endif // FEATURE_COMPRESSEDSTACK
 
         private bool UpdatePermissions(PermissionSetTriple currentTriple, PermissionListSet pls)
         {
@@ -294,119 +230,6 @@ namespace System.Security
 
         }
 
-#if FEATURE_COMPRESSEDSTACK
-        private void AppendZoneOrigin(ZoneIdentityPermission z, UrlIdentityPermission u)
-        {
-
-            if (z != null)
-            {
-                if (m_zoneList == null)
-                    m_zoneList = new ArrayList();
-                z.AppendZones(m_zoneList);
-            }
-
-            if (u != null)
-            {
-                if (m_originList == null)
-                    m_originList = new ArrayList();
-                u.AppendOrigin(m_originList);
-            }
-        }
-
-[System.Runtime.InteropServices.ComVisible(true)]
-        // public(internal) interface begins...
-        // Creation functions
-        static internal PermissionListSet CreateCompressedState(CompressedStack cs, CompressedStack innerCS)
-        {
-            // function that completes the construction of the compressed stack if not done so already (bottom half for demand evaluation)
-            
-            bool bHaltConstruction = false;
-            if (cs.CompressedStackHandle == null)
-                return null; //  FT case or Security off
-   
-            PermissionListSet pls = new PermissionListSet();
-            PermissionSetTriple currentTriple = new PermissionSetTriple();
-            int numDomains = CompressedStack.GetDCSCount(cs.CompressedStackHandle);
-            for (int i=numDomains-1; (i >= 0 && !bHaltConstruction) ; i--)
-            {
-                DomainCompressedStack dcs = CompressedStack.GetDomainCompressedStack(cs.CompressedStackHandle, i);
-                if (dcs == null)
-                    continue; // we hit a FT Domain
-                if (dcs.PLS == null)
-                {
-                    // We failed on some DCS
-                    throw new SecurityException(String.Format(CultureInfo.InvariantCulture, Environment.GetResourceString("Security_Generic")));
-                }
-                pls.UpdateZoneAndOrigin(dcs.PLS);
-                pls.Update(currentTriple, dcs.PLS); 
-                bHaltConstruction = dcs.ConstructionHalted;
-            }
-            if (!bHaltConstruction)
-            {
-                PermissionListSet tmp_pls = null;
-                // Construction did not halt. 
-                if (innerCS != null)
-                {
-                    innerCS.CompleteConstruction(null);
-                    tmp_pls = innerCS.PLS;
-                }
-                pls.Terminate(currentTriple, tmp_pls);
-            }
-            else
-            {
-                pls.Terminate(currentTriple);
-            }
-
-            return pls;
-        }
-
-        static internal PermissionListSet CreateCompressedState(IntPtr unmanagedDCS, out bool bHaltConstruction)
-        {
-            PermissionListSet pls = new PermissionListSet();
-            PermissionSetTriple currentTriple = new PermissionSetTriple();
-
-            PermissionSet tmp_g, tmp_r;
-            // Construct the descriptor list
-            int descCount = DomainCompressedStack.GetDescCount(unmanagedDCS);
-            bHaltConstruction = false;
-            for(int i=0; (i < descCount && !bHaltConstruction); i++)
-            {
-                FrameSecurityDescriptor fsd;
-                Assembly assembly;
-                if (DomainCompressedStack.GetDescriptorInfo(unmanagedDCS, i, out tmp_g, out tmp_r, out assembly, out fsd))
-                {
-                    // Got an FSD
-                    bHaltConstruction = pls.Update(currentTriple, fsd);
-                }
-                else
-                {
-                    pls.Update(currentTriple, tmp_g, tmp_r);
-                }
-                
-            }
-            if (!bHaltConstruction)
-            {
-                // domain
-                if (!DomainCompressedStack.IgnoreDomain(unmanagedDCS))
-                {
-                    DomainCompressedStack.GetDomainPermissionSets(unmanagedDCS, out tmp_g, out tmp_r);
-                    pls.Update(currentTriple, tmp_g, tmp_r);
-                }
-            }
-            pls.Terminate(currentTriple);
-
-
-            // return the created object
-            return pls;
-            
-        }
-        static internal PermissionListSet CreateCompressedState_HG()
-        {
-            PermissionListSet pls = new PermissionListSet();
-            CompressedStack.GetHomogeneousPLS(pls);
-            return pls;
-        }
-#endif // #if FEATURE_COMPRESSEDSTACK
         // Private Demand evaluation functions - only called from the VM
         internal bool CheckDemandNoThrow(CodeAccessPermission demand)
         {
@@ -521,15 +344,6 @@ namespace System.Security
             CheckSetDemand(grantSet, RuntimeMethodHandleInternal.EmptyHandle);
         }
 
-#if FEATURE_COMPRESSEDSTACK
-        internal void GetZoneAndOrigin(ArrayList zoneList, ArrayList originList, PermissionToken zoneToken, PermissionToken originToken)
-        {
-            if (m_zoneList != null)
-                zoneList.AddRange(m_zoneList);
-            if (m_originList != null)
-                originList.AddRange(m_originList);
-        }
-#endif
     }
 
 }
