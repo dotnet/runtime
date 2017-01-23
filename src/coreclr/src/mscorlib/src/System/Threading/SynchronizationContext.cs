@@ -27,14 +27,12 @@ namespace System.Threading
     using System.Diagnostics.CodeAnalysis;
 
 
-#if FEATURE_SYNCHRONIZATIONCONTEXT_WAIT
     [Flags]
     enum SynchronizationContextProperties
     {
         None = 0,
         RequireWaitNotification = 0x1
     };
-#endif
 
 #if FEATURE_COMINTEROP && FEATURE_APPX
     //
@@ -50,15 +48,12 @@ namespace System.Threading
 
     public class SynchronizationContext
     {
-#if FEATURE_SYNCHRONIZATIONCONTEXT_WAIT
         SynchronizationContextProperties _props = SynchronizationContextProperties.None;
-#endif
         
         public SynchronizationContext()
         {
         }
                         
-#if FEATURE_SYNCHRONIZATIONCONTEXT_WAIT
 
         // helper delegate to statically bind to Wait method
         private delegate int WaitDelegate(IntPtr[] waitHandles, bool waitAll, int millisecondsTimeout);
@@ -107,7 +102,6 @@ namespace System.Threading
         {
             return ((_props & SynchronizationContextProperties.RequireWaitNotification) != 0);  
         }
-#endif
 
     
         public virtual void Send(SendOrPostCallback d, Object state)
@@ -135,7 +129,6 @@ namespace System.Threading
         {
         }
 
-#if FEATURE_SYNCHRONIZATIONCONTEXT_WAIT
         // Method called when the CLR does a wait operation
         [CLSCompliant(false)]
         [PrePrepareMethod]
@@ -166,7 +159,6 @@ namespace System.Threading
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
         private static extern int WaitHelperNative(IntPtr[] waitHandles, bool waitAll, int millisecondsTimeout);
-#endif
 
         public static void SetSynchronizationContext(SynchronizationContext syncContext)
         {
@@ -258,11 +250,9 @@ namespace System.Threading
             return new SynchronizationContext();
         }
 
-#if FEATURE_SYNCHRONIZATIONCONTEXT_WAIT
         private static int InvokeWaitMethodHelper(SynchronizationContext syncContext, IntPtr[] waitHandles, bool waitAll, int millisecondsTimeout)
         {
             return syncContext.Wait(waitHandles, waitAll, millisecondsTimeout);
         }
-#endif
     }
 }
