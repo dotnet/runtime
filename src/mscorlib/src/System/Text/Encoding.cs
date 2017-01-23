@@ -1186,11 +1186,7 @@ namespace System.Text
         [System.Runtime.InteropServices.ComVisible(false)]
         public bool IsAlwaysNormalized()
         {
-#if !FEATURE_NORM_IDNA_ONLY        
             return this.IsAlwaysNormalized(NormalizationForm.FormC);
-#else
-            return this.IsAlwaysNormalized((NormalizationForm)ExtendedNormalizationForms.FormIdna);
-#endif
         }
 
         [Pure]
