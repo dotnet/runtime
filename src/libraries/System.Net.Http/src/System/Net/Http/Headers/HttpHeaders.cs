@@ -1194,10 +1194,11 @@ namespace System.Net.Http.Headers
             Contract.Ensures(Contract.Result<string[]>() != null);
 
             int length = GetValueCount(info);
-            string[] values = new string[length];
+            string[] values;
 
             if (length > 0)
             {
+                values = new string[length];
                 int currentIndex = 0;
 
                 ReadStoreValues<string>(values, info.RawValue, null, null, ref currentIndex);
@@ -1215,6 +1216,11 @@ namespace System.Net.Http.Headers
                     values = trimmedValues;
                 }
             }
+            else
+            {
+                values = Array.Empty<string>();
+            }
+
             return values;
         }
 
