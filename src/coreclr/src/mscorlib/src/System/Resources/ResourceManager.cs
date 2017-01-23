@@ -738,48 +738,9 @@ namespace System.Resources {
             }
             Contract.EndContractBlock();
 
-#if !FEATURE_WINDOWSPHONE
-            String v = null;
-            if (a.ReflectionOnly) {
-                foreach (CustomAttributeData data in CustomAttributeData.GetCustomAttributes(a)) {
-                    if (data.Constructor.DeclaringType == typeof(SatelliteContractVersionAttribute)) {
-                        v = (String)data.ConstructorArguments[0].Value;
-                        break;
-                    }
-                }
-
-                if (v == null)
-                    return null;
-            }
-            else {
-                Object[] attrs = a.GetCustomAttributes(typeof(SatelliteContractVersionAttribute), false);
-                if (attrs.Length == 0)
-                    return null;
-                Debug.Assert(attrs.Length == 1, "Cannot have multiple instances of SatelliteContractVersionAttribute on an assembly!");
-                v = ((SatelliteContractVersionAttribute)attrs[0]).Version;
-            }
-            Version ver;
-            try {
-                ver = new Version(v);
-            }
-            catch(ArgumentOutOfRangeException e) {
-                // Note we are prone to hitting infinite loops if mscorlib's
-                // SatelliteContractVersionAttribute contains bogus values.
-                // If this assert fires, please fix the build process for the
-                // BCL directory.
-                if (a == typeof(Object).Assembly) {
-                    Debug.Assert(false, System.CoreLib.Name+"'s SatelliteContractVersionAttribute is a malformed version string!");
-                    return null;
-                }
-
-                throw new ArgumentException(Environment.GetResourceString("Arg_InvalidSatelliteContract_Asm_Ver", a.ToString(), v), e);
-            }
-            return ver;
-#else
-            // On the phone return null. The calling code will use the assembly version instead to avoid potential type
+            // Return null. The calling code will use the assembly version instead to avoid potential type
             // and library loads caused by CA lookup. NetCF uses the assembly version always.
             return null;
-#endif
         }
 
         protected static CultureInfo GetNeutralResourcesLanguage(Assembly a)

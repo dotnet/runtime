@@ -22,7 +22,6 @@ namespace System.Runtime {
     using System.Runtime.Versioning;
     using System.Runtime.CompilerServices;
 
-#if FEATURE_MULTICOREJIT
 
     public static class ProfileOptimization
     {
@@ -45,6 +44,5 @@ namespace System.Runtime {
         }
     }
 
-#endif
 }
 

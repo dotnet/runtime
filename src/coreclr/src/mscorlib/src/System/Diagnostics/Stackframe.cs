@@ -23,10 +23,8 @@ namespace System.Diagnostics {
         private int            iLineNumber;
         private int            iColumnNumber;
     
-#if FEATURE_EXCEPTIONDISPATCHINFO
         [System.Runtime.Serialization.OptionalField]
         private bool            fIsLastFrameFromForeignExceptionStackTrace;
-#endif // FEATURE_EXCEPTIONDISPATCHINFO
 
         internal void InitMembers()
         {
@@ -36,9 +34,7 @@ namespace System.Diagnostics {
             strFileName = null;
             iLineNumber = 0;
             iColumnNumber = 0;
-#if FEATURE_EXCEPTIONDISPATCHINFO
             fIsLastFrameFromForeignExceptionStackTrace = false;
-#endif // FEATURE_EXCEPTIONDISPATCHINFO
 
         }
 
@@ -142,7 +138,6 @@ namespace System.Diagnostics {
             iColumnNumber = iCol;
         }
 
-#if FEATURE_EXCEPTIONDISPATCHINFO
         internal virtual void SetIsLastFrameFromForeignExceptionStackTrace (bool fIsLastFrame)
         {
             fIsLastFrameFromForeignExceptionStackTrace = fIsLastFrame;
@@ -152,7 +147,6 @@ namespace System.Diagnostics {
         {
             return fIsLastFrameFromForeignExceptionStackTrace;
         }
-#endif // FEATURE_EXCEPTIONDISPATCHINFO
 
         // Returns the method the frame is executing
         // 

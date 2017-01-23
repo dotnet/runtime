@@ -22,9 +22,7 @@ namespace System.Security
     using System.Security.Permissions;
     using System.Runtime.InteropServices;
     using System.Runtime.CompilerServices;
-#if FEATURE_CORRUPTING_EXCEPTIONS
     using System.Runtime.ExceptionServices;
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
     using System.Runtime.ConstrainedExecution;
     using System.Runtime.Versioning;
     using System.Diagnostics;
@@ -58,9 +56,7 @@ namespace System.Security
         }
 
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
-#if FEATURE_CORRUPTING_EXCEPTIONS
         [HandleProcessCorruptedStateExceptions] 
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
         internal bool UndoNoThrow()
         {
             try
@@ -75,9 +71,7 @@ namespace System.Security
         }
 
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
-#if FEATURE_CORRUPTING_EXCEPTIONS
         [HandleProcessCorruptedStateExceptions] 
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
         public void Undo()
         {        
             if (currSC == null) 
@@ -351,9 +345,7 @@ namespace System.Security
             return SetSecurityContext(sc, prevSecurityContext, modifyCurrentExecutionContext, ref stackMark);
         }
 
-#if FEATURE_CORRUPTING_EXCEPTIONS
         [HandleProcessCorruptedStateExceptions] 
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
         internal static SecurityContextSwitcher SetSecurityContext(SecurityContext sc, SecurityContext.Reader prevSecurityContext, bool modifyCurrentExecutionContext, ref StackCrawlMark stackMark)
         {
             // Save the flow state at capture and reset it in the SC.

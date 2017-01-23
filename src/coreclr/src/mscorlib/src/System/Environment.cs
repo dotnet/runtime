@@ -636,7 +636,6 @@ namespace System {
             }
         }
 
-#if FEATURE_CORESYSTEM
 
         internal static bool IsWindows8OrAbove {
             get {
@@ -652,47 +651,6 @@ namespace System {
         }
 #endif // FEATURE_COMINTEROP
 
-#else // FEATURE_CORESYSTEM
-
-        private static volatile bool s_IsWindows8OrAbove;
-        private static volatile bool s_CheckedOSWin8OrAbove;
-
-        // Windows 8 version is 6.2
-        internal static bool IsWindows8OrAbove {
-            get {
-                if (!s_CheckedOSWin8OrAbove) {
-                    OperatingSystem OS = Environment.OSVersion;
-                    s_IsWindows8OrAbove = (OS.Platform == PlatformID.Win32NT && 
-                                   ((OS.Version.Major == 6 && OS.Version.Minor >= 2) || (OS.Version.Major > 6)));
-                    s_CheckedOSWin8OrAbove = true;
-                }
-                return s_IsWindows8OrAbove;
-            }
-        }
-
-#if FEATURE_COMINTEROP
-        private static volatile bool s_WinRTSupported;
-        private static volatile bool s_CheckedWinRT;
-
-        // Does the current version of Windows have Windows Runtime suppport?
-        internal static bool IsWinRTSupported {
-            get {
-                if (!s_CheckedWinRT) {
-                    s_WinRTSupported = WinRTSupported();
-                    s_CheckedWinRT = true;
-                }
-
-                return s_WinRTSupported;
-            }
-        }
-
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        private static extern bool WinRTSupported();
-#endif // FEATURE_COMINTEROP
-
-#endif // FEATURE_CORESYSTEM
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern bool GetVersion(Microsoft.Win32.Win32Native.OSVERSIONINFO  osVer);
@@ -915,7 +873,6 @@ namespace System {
 
         private static string InternalGetFolderPath(SpecialFolder folder, SpecialFolderOption option, bool suppressSecurityChecks = false)
         {
-#if FEATURE_CORESYSTEM
             // This is currently customized for Windows Phone since CoreSystem doesn't support
             // SHGetFolderPath. The allowed folder values are based on the version of .NET CF WP7 was using.
             switch (folder)
@@ -932,56 +889,6 @@ namespace System {
                 default:
                     throw new PlatformNotSupportedException();
             }
-#else // FEATURE_CORESYSTEM
-
-            StringBuilder sb = new StringBuilder(Path.MaxPath);
-            int hresult = Win32Native.SHGetFolderPath(IntPtr.Zero,                    /* hwndOwner: [in] Reserved */
-                                                      ((int)folder | (int)option),    /* nFolder:   [in] CSIDL    */
-                                                      IntPtr.Zero,                    /* hToken:    [in] access token */
-                                                      Win32Native.SHGFP_TYPE_CURRENT, /* dwFlags:   [in] retrieve current path */
-                                                      sb);                            /* pszPath:   [out]resultant path */
-            String s;
-            if (hresult < 0)
-            {
-                switch (hresult)
-                {
-                default:
-                    // The previous incarnation threw away all errors. In order to limit
-                    // breaking changes, we will be permissive about these errors
-                    // instead of calling ThowExceptionForHR.
-                    //Runtime.InteropServices.Marshal.ThrowExceptionForHR(hresult);
-                    break;
-                case __HResults.COR_E_PLATFORMNOTSUPPORTED:
-                    // This one error is the one we do want to throw.
-
-                    throw new PlatformNotSupportedException();
-                }
-
-                // SHGetFolderPath does not initialize the output buffer on error
-                s = String.Empty;
-            }
-            else
-            {
-                s = sb.ToString();
-            }
-
-            if (!suppressSecurityChecks)
-            {
-                // On CoreCLR we can check with the host if we're not trying to use any special options.
-                // Otherwise, we need to do a full demand since hosts aren't expecting to handle requests to
-                // create special folders.
-                if (option == SpecialFolderOption.None)
-                {
-                    FileSecurityState state = new FileSecurityState(FileSecurityStateAccess.PathDiscovery, String.Empty, s);
-                    state.EnsureState();
-                }
-                else
-                {
-                    new FileIOPermission(FileIOPermissionAccess.PathDiscovery, s).Demand();
-                }
-            }
-            return s;
-#endif // FEATURE_CORESYSTEM
         }
 
         public static string UserDomainName

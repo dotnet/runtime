@@ -4,7 +4,6 @@
     <DebuggingSupportedBuild>true</DebuggingSupportedBuild>
     <EnCSupported Condition="('$(TargetArch)' == 'i386') or ('$(TargetArch)' == 'amd64')">true</EnCSupported>
     <EnableDownlevelForNls>true</EnableDownlevelForNls>
-    <FeatureAppdomainResourceMonitoring>true</FeatureAppdomainResourceMonitoring>
     <FeatureAppdomainmanagerInitoptions>true</FeatureAppdomainmanagerInitoptions>
     <FeatureAppX>true</FeatureAppX>
     <FeatureAppXBinder>true</FeatureAppXBinder>
@@ -16,7 +15,6 @@
     <FeatureLegacySurface>true</FeatureLegacySurface>
     <FeatureClickonce>true</FeatureClickonce>
     <FeatureCodepagesFile>true</FeatureCodepagesFile>
-    <FeatureCollectibleTypes>true</FeatureCollectibleTypes>
     <FeatureCominterop>true</FeatureCominterop>
     <FeatureCominteropApartmentSupport>true</FeatureCominteropApartmentSupport>
     <FeatureCominteropManagedActivation>true</FeatureCominteropManagedActivation>
@@ -26,7 +24,6 @@
     <FeatureCominteropWinRTManagedActivation>true</FeatureCominteropWinRTManagedActivation>
     <FeatureCominteropWinRTDesktopHost>true</FeatureCominteropWinRTDesktopHost>
     <FeatureCompressedstack>true</FeatureCompressedstack>
-    <FeatureCorruptingExceptions>true</FeatureCorruptingExceptions>
     <FeatureCrypto>true</FeatureCrypto>
     <FeatureDbgPublish>true</FeatureDbgPublish>
     <FeatureDbiDebugging>true</FeatureDbiDebugging>
@@ -35,8 +32,6 @@
     <FeatureDisplayCultureInfo>true</FeatureDisplayCultureInfo>
     <FeatureDisplayRegionInfo>true</FeatureDisplayRegionInfo>
     <FeatureEventTrace>true</FeatureEventTrace>
-    <FeatureExceptionDispatchInfo>true</FeatureExceptionDispatchInfo>
-    <FeatureExceptionNotifications>true</FeatureExceptionNotifications>
     <FeatureFullNGen>true</FeatureFullNGen>
     <FeatureFusion>true</FeatureFusion>
     <FeatureHijack>true</FeatureHijack>
@@ -52,14 +47,11 @@
     <!-- This is here for testing purposes only, and only on checked builds for x86/ARM -->
     <FeatureLazyCOWPages Condition="'$(_BuildType)'!='ret' and (('$(TargetArch)' == 'i386') or ('$(TargetArch)' == 'arm'))">true</FeatureLazyCOWPages>
     <FeatureLeakCultureInfo>true</FeatureLeakCultureInfo>
-    <FeatureLoaderOptimization>true</FeatureLoaderOptimization>
     <FeatureMacl>true</FeatureMacl>
     <FeatureManagedEtw>true</FeatureManagedEtw>
-    <FeatureManagedEtwChannels>true</FeatureManagedEtwChannels>
     <FeatureMdaSupported>true</FeatureMdaSupported>
     <FeatureMethodRental>true</FeatureMethodRental>
     <FeatureMixedMode>true</FeatureMixedMode>
-    <FeatureMulticoreJIT>true</FeatureMulticoreJIT>
     <FeatureMultiModuleAssemblies>true</FeatureMultiModuleAssemblies>
     <FeatureNativeImageGeneration>true</FeatureNativeImageGeneration>
     <FeatureNongenericCollections>true</FeatureNongenericCollections>
@@ -77,9 +69,7 @@
     <FeatureSortTables>true</FeatureSortTables>
     <FeatureStackProbe Condition="'$(TargetArch)' != 'arm'">true</FeatureStackProbe>
     <FeatureStrongnameDelaySigningAllowed>true</FeatureStrongnameDelaySigningAllowed>
-    <FeatureStrongnameMigration>true</FeatureStrongnameMigration>
     <FeatureSvrGc>true</FeatureSvrGc>
-    <FeatureSynchronizationcontextWait>true</FeatureSynchronizationcontextWait>
     <FeatureSyntheticCultures>true</FeatureSyntheticCultures>
     <FeatureTypeEquivalence>true</FeatureTypeEquivalence>
     <FeatureUefChainmanager>true</FeatureUefChainmanager>

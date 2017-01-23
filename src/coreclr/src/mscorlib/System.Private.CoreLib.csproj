@@ -2,7 +2,7 @@
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
   <!-- Always use latest Roslyn compiler -->
-  <Import Project="..\..\Tools\net45\roslyn\build\Microsoft.Net.Compilers.props" Condition="'$(OS)'=='Windows_NT' and '$(UseLegacyCompiler)'!='true'" />
+  <Import Project="..\..\Tools\net45\roslyn\build\Microsoft.Net.Compilers.props" Condition="'$(OS)'=='Windows_NT'" />
 
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   
