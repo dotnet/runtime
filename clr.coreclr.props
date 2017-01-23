@@ -23,7 +23,6 @@
     <FeatureLazyCOWPages Condition="'$(_BuildType)'!='ret' and (('$(TargetArch)' == 'i386') or ('$(TargetArch)' == 'arm'))">true</FeatureLazyCOWPages>
     <FeatureMergeCultureSupportAndEngine>true</FeatureMergeCultureSupportAndEngine>
     <FeatureMergeJitAndEngine>true</FeatureMergeJitAndEngine>
-    <FeatureMulticoreJIT>true</FeatureMulticoreJIT>
     <FeaturePrejit>true</FeaturePrejit>
     <FeatureSpanOfT Condition="'$(UseLegacyCompiler)'!='true'">true</FeatureSpanOfT>
     <FeatureStandaloneSn>true</FeatureStandaloneSn>

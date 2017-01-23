@@ -38,7 +38,6 @@ namespace System.Runtime.Loader
         [SuppressUnmanagedCodeSecurity]
         private static extern IntPtr LoadFromStream(IntPtr ptrNativeAssemblyLoadContext, IntPtr ptrAssemblyArray, int iAssemblyArrayLen, IntPtr ptrSymbols, int iSymbolArrayLen, ObjectHandleOnStack retAssembly);
         
-#if FEATURE_MULTICOREJIT
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
         internal static extern void InternalSetProfileRoot(string directoryPath);
@@ -46,7 +45,6 @@ namespace System.Runtime.Loader
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
         internal static extern void InternalStartProfile(string profile, IntPtr ptrNativeAssemblyLoadContext);
-#endif // FEATURE_MULTICOREJIT
 
         protected AssemblyLoadContext()
         {
@@ -432,17 +430,13 @@ namespace System.Runtime.Loader
         // Set the root directory path for profile optimization.
         public void SetProfileOptimizationRoot(string directoryPath)
         {
-#if FEATURE_MULTICOREJIT
             InternalSetProfileRoot(directoryPath);
-#endif // FEATURE_MULTICOREJIT
         }
 
         // Start profile optimization for the specified profile name.
         public void StartProfileOptimization(string profile)
         {
-#if FEATURE_MULTICOREJIT
             InternalStartProfile(profile, m_pNativeAssemblyLoadContext);
-#endif // FEATURE_MULTICOREJI
         }
 
         private void OnAppContextUnloading(object sender, EventArgs e)
