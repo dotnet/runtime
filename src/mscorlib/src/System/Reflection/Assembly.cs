@@ -1321,13 +1321,11 @@ namespace System.Reflection
             }
 
             assemblyRef = (AssemblyName)assemblyRef.Clone();
-#if FEATURE_VERSIONING
             if (!forIntrospection &&
                 (assemblyRef.ProcessorArchitecture != ProcessorArchitecture.None)) {
                 // PA does not have a semantics for by-name binds for execution
                 assemblyRef.ProcessorArchitecture = ProcessorArchitecture.None;
             }
-#endif
 
             if (assemblySecurity != null)
             {
