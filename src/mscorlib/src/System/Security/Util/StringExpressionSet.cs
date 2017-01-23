@@ -35,7 +35,6 @@ namespace System.Security.Util {
         protected bool m_throwOnRelative;
 
         private const char Separator = ';';
-        protected static readonly char[] m_trimChars = { ' ' };
 #if !PLATFORM_UNIX
         protected static readonly char m_directorySeparator = '\\';
         protected static readonly char m_alternateDirectorySeparator = '/';
@@ -101,7 +100,7 @@ namespace System.Security.Util {
 
         private static String StaticProcessSingleString( String str )
         {
-            return str.Trim( m_trimChars );
+            return str.Trim(' ');
         }
 
         protected virtual String ProcessWholeString( String str )

@@ -269,7 +269,7 @@ namespace System.Reflection
                 // Why don't we just use "&"?
                 if (t.IsByRef && !serialization)
                 {
-                    sbParamList.Append(typeName.TrimEnd(new char[] { '&' }));
+                    sbParamList.Append(typeName.TrimEnd('&'));
                     sbParamList.Append(" ByRef");
                 }
                 else
