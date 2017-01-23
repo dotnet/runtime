@@ -6,9 +6,6 @@ namespace System.Security.Permissions {
     using System;
     using System.Collections;
     using System.Collections.Generic;
-#if FEATURE_CRYPTO
-    using System.Security.Cryptography;
-#endif
     using System.Security.Util;
     using System.Globalization;
     using System.Diagnostics;
@@ -55,16 +52,6 @@ namespace System.Security.Permissions {
             this (null, null, -1, keyContainerName, -1, flags) {
         }
 
-#if FEATURE_CRYPTO
-        public KeyContainerPermissionAccessEntry(CspParameters parameters, KeyContainerPermissionFlags flags) :
-            this((parameters.Flags & CspProviderFlags.UseMachineKeyStore) == CspProviderFlags.UseMachineKeyStore ? "Machine" : "User",
-                 parameters.ProviderName,
-                 parameters.ProviderType,
-                 parameters.KeyContainerName,
-                 parameters.KeyNumber,
-                 flags) {
-        }
-#endif
 
         public KeyContainerPermissionAccessEntry(string keyStore, string providerName, int providerType, 
                         string keyContainerName, int keySpec, KeyContainerPermissionFlags flags) {
