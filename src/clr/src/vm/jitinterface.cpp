@@ -2294,6 +2294,15 @@ static unsigned ComputeGCLayout(MethodTable * pMT, BYTE* gcPtrs)
 
     _ASSERTE(pMT->IsValueType());
 
+    // TODO: TypedReference should ideally be implemented as a by-ref-like struct containing a ByReference<T> field, in which
+    // case the check for g_TypedReferenceMT below would not be necessary
+    if (pMT == g_TypedReferenceMT)
+    {
+        gcPtrs[0] = TYPE_GC_BYREF;
+        gcPtrs[1] = TYPE_GC_NONE;
+        return 1;
+    }
+
     ApproxFieldDescIterator fieldIterator(pMT, ApproxFieldDescIterator::INSTANCE_FIELDS);
     for (FieldDesc *pFD = fieldIterator.Next(); pFD != NULL; pFD = fieldIterator.Next())
     {
@@ -2357,6 +2366,8 @@ unsigned CEEInfo::getClassGClayout (CORINFO_CLASS_HANDLE clsHnd, BYTE* gcPtrs)
 
     if (pMT->IsByRefLike())
     {
+        // TODO: TypedReference should ideally be implemented as a by-ref-like struct containing a ByReference<T> field, in
+        // which case the check for g_TypedReferenceMT below would not be necessary
         if (pMT == g_TypedReferenceMT)
         {
             gcPtrs[0] = TYPE_GC_BYREF;
