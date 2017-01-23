@@ -93,13 +93,3 @@ FaultingExceptionFrame *GetFrameFromRedirectedStubStackFrame(DISPATCHER_CONTEXT 
     PORTABILITY_ASSERT("GetFrameFromRedirectedStubStackFrame");
     return NULL;
 }
-
-EXTERN_C ULONG
-RtlpGetFunctionEndAddress (
-    __in PT_RUNTIME_FUNCTION FunctionEntry,
-    __in ULONG ImageBase
-    )
-{
-    PORTABILITY_ASSERT("RtlpGetFunctionEndAddress");
-    return 0;
-}
