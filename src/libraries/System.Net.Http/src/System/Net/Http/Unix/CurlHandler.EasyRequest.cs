@@ -798,10 +798,25 @@ namespace System.Net.Http
                         continue;
                     }
 
-                    string headerValue = headers.GetHeaderString(header.Key);
-                    string headerKeyAndValue = string.IsNullOrEmpty(headerValue) ?
-                        header.Key + ";" : // semicolon used by libcurl to denote empty value that should be sent
-                        header.Key + ": " + headerValue;
+                    string headerKeyAndValue;
+                    string[] values = header.Value as string[];
+                    Debug.Assert(values != null, "Implementation detail, but expected Value to be a string[]");
+                    if (values != null && values.Length < 2)
+                    {
+                        // 0 or 1 values
+                        headerKeyAndValue = values.Length == 0 || string.IsNullOrEmpty(values[0]) ?
+                            header.Key + ";" : // semicolon used by libcurl to denote empty value that should be sent
+                            header.Key + ": " + values[0];
+                    }
+                    else
+                    {
+                        // Either Values wasn't a string[], or it had 2 or more items. Both are handled by GetHeaderString.
+                        string headerValue = headers.GetHeaderString(header.Key);
+                        headerKeyAndValue = string.IsNullOrEmpty(headerValue) ?
+                            header.Key + ";" : // semicolon needed by libcurl; see above
+                            header.Key + ": " + headerValue;
+                    }
+
                     ThrowOOMIfFalse(Interop.Http.SListAppend(handle, headerKeyAndValue));
                 }
             }

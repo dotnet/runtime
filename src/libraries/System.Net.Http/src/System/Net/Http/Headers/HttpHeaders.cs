@@ -286,7 +286,7 @@ namespace System.Net.Http.Headers
 
         private string GetHeaderString(HeaderStoreItemInfo info, object exclude)
         {
-            string stringValue = string.Empty; // returned if values.Length == 0
+            string stringValue;
 
             string[] values = GetValuesAsStrings(info, exclude);
 
