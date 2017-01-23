@@ -24,7 +24,6 @@
     <FeatureCominteropWinRTManagedActivation>true</FeatureCominteropWinRTManagedActivation>
     <FeatureCominteropWinRTDesktopHost>true</FeatureCominteropWinRTDesktopHost>
     <FeatureCompressedstack>true</FeatureCompressedstack>
-    <FeatureCorruptingExceptions>true</FeatureCorruptingExceptions>
     <FeatureCrypto>true</FeatureCrypto>
     <FeatureDbgPublish>true</FeatureDbgPublish>
     <FeatureDbiDebugging>true</FeatureDbiDebugging>
