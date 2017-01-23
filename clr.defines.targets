@@ -47,7 +47,6 @@
         <CDefines Condition="'$(FeatureLazyCOWPages)' == 'true'">$(CDefines);FEATURE_LAZY_COW_PAGES</CDefines>
         <CDefines Condition="'$(FeatureLeakCultureInfo)' == 'true'">$(CDefines);FEATURE_LEAK_CULTURE_INFO</CDefines>
         <CDefines Condition="'$(FeatureLegacyNetCFDbgHostControl)' == 'true'">$(CDefines);FEATURE_LEGACYNETCF_DBG_HOST_CONTROL</CDefines> 
-        <CDefines Condition="'$(FeatureLoaderOptimization)' == 'true'">$(CDefines);FEATURE_LOADER_OPTIMIZATION</CDefines>
         <CDefines Condition="'$(FeatureMacl)' == 'true'">$(CDefines);FEATURE_MACL</CDefines>
         <CDefines Condition="'$(FeatureManagedEtw)' == 'true'">$(CDefines);FEATURE_MANAGED_ETW</CDefines>
         <CDefines Condition="'$(FeatureManagedEtwChannels)' == 'true'">$(CDefines);FEATURE_MANAGED_ETW_CHANNELS</CDefines>
@@ -150,7 +149,6 @@
         <DefineConstants Condition="'$(FeatureIsostore)' == 'true'">$(DefineConstants);FEATURE_ISOSTORE</DefineConstants>
         <DefineConstants Condition="'$(FeatureIsostoreLight)' == 'true'">$(DefineConstants);FEATURE_ISOSTORE_LIGHT</DefineConstants>
         <DefineConstants Condition="'$(FeatureLeakCultureInfo)' == 'true'">$(DefineConstants);FEATURE_LEAK_CULTURE_INFO</DefineConstants>
-        <DefineConstants Condition="'$(FeatureLoaderOptimization)' == 'true'">$(DefineConstants);FEATURE_LOADER_OPTIMIZATION</DefineConstants>
         <DefineConstants Condition="'$(FeatureMacl)' == 'true'">$(DefineConstants);FEATURE_MACL</DefineConstants>
         <DefineConstants Condition="'$(FeatureManagedEtw)' == 'true'">$(DefineConstants);FEATURE_MANAGED_ETW</DefineConstants>
         <DefineConstants Condition="'$(FeatureManagedEtwChannels)' == 'true'">$(DefineConstants);FEATURE_MANAGED_ETW_CHANNELS</DefineConstants>
