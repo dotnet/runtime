@@ -63,7 +63,6 @@
         <CDefines Condition="'$(FeatureNongenericCollections)' == 'true'">$(CDefines);FEATURE_NONGENERIC_COLLECTIONS</CDefines>
         <CDefines Condition="'$(FeaturePal)' == 'true'">$(CDefines);FEATURE_PAL</CDefines>
         <CDefines Condition="'$(FeaturePerfmon)' == 'true'">$(CDefines);FEATURE_PERFMON</CDefines>
-        <CDefines Condition="'$(FeaturePls)' == 'true'">$(CDefines);FEATURE_PLS</CDefines>
         <CDefines Condition="'$(FeaturePrejit)' == 'true'">$(CDefines);FEATURE_PREJIT</CDefines>
         <CDefines Condition="'$(FeatureRandomizedStringHashing)' == 'true'">$(CDefines);FEATURE_RANDOMIZED_STRING_HASHING</CDefines>
         <CDefines Condition="'$(FeatureReflectionOnlyLoad)' == 'true'">$(CDefines);FEATURE_REFLECTION_ONLY_LOAD</CDefines>
@@ -134,7 +133,6 @@
         <DefineConstants Condition="'$(FeaturePathCompat)' == 'true'">$(DefineConstants);FEATURE_PATHCOMPAT</DefineConstants>
         <DefineConstants Condition="'$(FeatureXplatEventSource)' == 'true'">$(DefineConstants);FEATURE_EVENTSOURCE_XPLAT</DefineConstants>
         <DefineConstants Condition="'$(FeaturePerfmon)' == 'true'">$(DefineConstants);FEATURE_PERFMON</DefineConstants>
-        <DefineConstants Condition="'$(FeaturePls)' == 'true'">$(DefineConstants);FEATURE_PLS</DefineConstants>
         <DefineConstants Condition="'$(FeatureRandomizedStringHashing)' == 'true'">$(DefineConstants);FEATURE_RANDOMIZED_STRING_HASHING</DefineConstants>
         <DefineConstants Condition="'$(FeatureReflectionOnlyLoad)' == 'true'">$(DefineConstants);FEATURE_REFLECTION_ONLY_LOAD</DefineConstants>
         <DefineConstants Condition="'$(FeatureRemoting)' == 'true'">$(DefineConstants);FEATURE_REMOTING</DefineConstants>

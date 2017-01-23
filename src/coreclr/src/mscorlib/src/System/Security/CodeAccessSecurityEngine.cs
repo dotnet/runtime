@@ -348,20 +348,5 @@ namespace System.Security {
         {
         }
 
-#if FEATURE_PLS
-        // Update the PLS used for optimization in the AppDomain: called from the VM
-        private static PermissionListSet UpdateAppDomainPLS(PermissionListSet adPLS, PermissionSet grantedPerms, PermissionSet refusedPerms) {
-            if (adPLS == null) {
-                adPLS = new PermissionListSet();
-                adPLS.UpdateDomainPLS(grantedPerms, refusedPerms);
-                return adPLS;
-            } else {
-                PermissionListSet newPLS = new PermissionListSet();
-                newPLS.UpdateDomainPLS(adPLS);
-                newPLS.UpdateDomainPLS(grantedPerms, refusedPerms);
-                return newPLS;
-            }
-        }
-#endif //FEATURE_PLS
     }
 }
