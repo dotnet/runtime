@@ -120,14 +120,15 @@ namespace System.Net.Http.Functional.Tests
         [OuterLoop("Avoid www.ssllabs.com dependency in innerloop.")]
         [Theory]
         [MemberData(nameof(SupportedSSLVersionServers))]
-        public async Task GetAsync_SupportedSSLVersion_Succeeds(SslProtocols name, string url)
+        public async Task GetAsync_SupportedSSLVersion_Succeeds(SslProtocols sslProtocols, string url)
         {
             using (HttpClientHandler handler = new HttpClientHandler())
             {
-                // Default protocol selection is always TLSv1 on Centos7 libcurl 7.29.0
                 if (PlatformDetection.IsCentos7)
                 {
-                    handler.SslProtocols = name;
+                    // Default protocol selection is always TLSv1 on Centos7 libcurl 7.29.0
+                    // Hence, set the specific protocol on HttpClient that is required by test
+                    handler.SslProtocols = sslProtocols;
                 }
                 using (var client = new HttpClient(handler))
                 {
