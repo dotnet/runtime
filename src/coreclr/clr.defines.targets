@@ -33,7 +33,6 @@
         <CDefines Condition="'$(FeatureDbgPublish)' == 'true'">$(CDefines);FEATURE_DBG_PUBLISH</CDefines>
         <CDefines Condition="'$(FeatureEventTrace)' == 'true'">$(CDefines);FEATURE_EVENT_TRACE</CDefines>
         <CDefines Condition="'$(FeatureXplatEventSource)' == 'true'">$(CDefines);FEATURE_EVENTSOURCE_XPLAT</CDefines>
-        <CDefines Condition="'$(FeatureExceptionNotifications)' == 'true'">$(CDefines);FEATURE_EXCEPTION_NOTIFICATIONS</CDefines>
         <CDefines Condition="'$(FeatureFullNGen)' == 'true'">$(CDefines);FEATURE_FULL_NGEN</CDefines>
         <CDefines Condition="'$(FeatureFusion)' == 'true'">$(CDefines);FEATURE_FUSION</CDefines>
         <CDefines Condition="'$(FeatureHijack)' == 'true'">$(CDefines);FEATURE_HIJACK</CDefines>
@@ -142,7 +141,6 @@
         <DefineConstants Condition="'$(FeatureCrypto)' == 'true'">$(DefineConstants);FEATURE_CRYPTO</DefineConstants>
         <DefineConstants Condition="'$(FeatureDisplayCultureInfo)' == 'true'">$(DefineConstants);FEATURE_DISPLAY_CULTURE_INFO</DefineConstants>
         <DefineConstants Condition="'$(FeatureDisplayRegionInfo)' == 'true'">$(DefineConstants);FEATURE_DISPLAY_REGION_INFO</DefineConstants>
-        <DefineConstants Condition="'$(FeatureExceptionNotifications)' == 'true'">$(DefineConstants);FEATURE_EXCEPTION_NOTIFICATIONS</DefineConstants>
         <DefineConstants Condition="'$(FeatureFusion)' == 'true'">$(DefineConstants);FEATURE_FUSION</DefineConstants>
         <DefineConstants Condition="'$(FeatureHostAssemblyResolver)' == 'true'">$(DefineConstants);FEATURE_HOST_ASSEMBLY_RESOLVER</DefineConstants>
         <DefineConstants Condition="'$(FeatureHosting)' == 'true'">$(DefineConstants);FEATURE_HOSTING</DefineConstants>

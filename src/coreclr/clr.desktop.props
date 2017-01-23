@@ -32,7 +32,6 @@
     <FeatureDisplayCultureInfo>true</FeatureDisplayCultureInfo>
     <FeatureDisplayRegionInfo>true</FeatureDisplayRegionInfo>
     <FeatureEventTrace>true</FeatureEventTrace>
-    <FeatureExceptionNotifications>true</FeatureExceptionNotifications>
     <FeatureFullNGen>true</FeatureFullNGen>
     <FeatureFusion>true</FeatureFusion>
     <FeatureHijack>true</FeatureHijack>
