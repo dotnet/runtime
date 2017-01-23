@@ -1184,10 +1184,10 @@ BOOL StackFrameIterator::Init(Thread *    pThread,
     _ASSERTE(CanThisThreadCallIntoHost() || (flags & LIGHTUNWIND) == 0);
 #endif // DACCESS_COMPILE
 
-#if !defined(_TARGET_X86_)
+#ifdef WIN64EXCEPTIONS
     _ASSERTE(!(flags & POPFRAMES));
     _ASSERTE(pRegDisp->pCurrentContext);
-#endif // !_TARGET_X86_
+#endif // WIN64EXCEPTIONS
 
     BEGIN_FORBID_TYPELOAD();
 
