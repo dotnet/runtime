@@ -56,7 +56,7 @@ DECL_SIZE(gpointer)
 DECL_OFFSET(MonoObject, vtable)
 DECL_OFFSET(MonoObject, synchronisation)
 
-DECL_OFFSET(MonoObjectHandlePayload, __obj)
+DECL_OFFSET(MonoObjectHandlePayload, __raw)
 
 DECL_OFFSET(MonoClass, interface_bitmap)
 DECL_OFFSET(MonoClass, byval_arg)

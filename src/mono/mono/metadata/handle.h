@@ -56,7 +56,8 @@ typedef struct _HandleChunk HandleChunk;
 /* #define MONO_HANDLE_TRACK_OWNER */
 
 typedef struct {
-	MonoObject *o;
+	MonoObject *o; /* handle chunk ptr */
+	guint8 chunk_ptr; /* HANDLE_CHUNK_PTR_XXX */
 #ifdef MONO_HANDLE_TRACK_OWNER
 	const char *owner;
 #endif
@@ -85,11 +86,14 @@ typedef void (*GcScanFunc) (gpointer*, gpointer);
 
 #ifndef MONO_HANDLE_TRACK_OWNER
 MonoRawHandle mono_handle_new (MonoObject *object);
+MonoRawHandle mono_handle_new_full (gpointer rawptr, gboolean interior);
 #else
 MonoRawHandle mono_handle_new (MonoObject *object, const char* owner);
+MonoRawHandle mono_handle_new_full (gpointer rawptr, gboolean interior, const char *owner);
 #endif
 
-void mono_handle_stack_scan (HandleStack *stack, GcScanFunc func, gpointer gc_data);
+
+void mono_handle_stack_scan (HandleStack *stack, GcScanFunc func, gpointer gc_data, gboolean precise);
 gboolean mono_handle_stack_is_empty (HandleStack *stack);
 HandleStack* mono_handle_stack_alloc (void);
 void mono_handle_stack_free (HandleStack *handlestack);
@@ -254,25 +258,37 @@ void mono_handle_verify (MonoRawHandle handle);
  * For example, TYPED_HANDLE_DECL(MonoObject) (see below) expands to:
  *
  * typedef struct {
- *   MonoObject *__obj;
+ *   MonoObject *__raw;
  * } MonoObjectHandlePayload;
  *
  * typedef MonoObjectHandlePayload* MonoObjectHandle;
  * typedef MonoObjectHandlePayload* MonoObjectHandleOut;
  */
 #define TYPED_HANDLE_DECL(TYPE)						\
-	typedef struct { TYPE *__obj; } TYPED_HANDLE_PAYLOAD_NAME (TYPE) ; \
+	typedef struct { TYPE *__raw; } TYPED_HANDLE_PAYLOAD_NAME (TYPE) ; \
 	typedef TYPED_HANDLE_PAYLOAD_NAME (TYPE) * TYPED_HANDLE_NAME (TYPE); \
 	typedef TYPED_HANDLE_PAYLOAD_NAME (TYPE) * TYPED_OUT_HANDLE_NAME (TYPE)
+/*
+ * TYPED_VALUE_HANDLE_DECL(SomeType):
+ *   Expands to a decl for handles to SomeType (which is a managed valuetype (likely a struct) of some sort) and to an internal payload struct.
+ * For example TYPED_HANDLE_DECL(MonoMethodInfo) expands to:
+ *
+ * typedef struct {
+ *   MonoMethodInfo *__raw;
+ * } MonoMethodInfoHandlePayload;
+ * typedef MonoMethodInfoHandlePayload* MonoMethodInfoHandle;
+ */
+#define TYPED_VALUE_HANDLE_DECL(TYPE) TYPED_HANDLE_DECL(TYPE)
+
 /* Have to double expand because MONO_STRUCT_OFFSET is doing token pasting on cross-compilers. */
-#define MONO_HANDLE_PAYLOAD_OFFSET_(PayloadType) MONO_STRUCT_OFFSET(PayloadType, __obj)
+#define MONO_HANDLE_PAYLOAD_OFFSET_(PayloadType) MONO_STRUCT_OFFSET(PayloadType, __raw)
 #define MONO_HANDLE_PAYLOAD_OFFSET(TYPE) MONO_HANDLE_PAYLOAD_OFFSET_(TYPED_HANDLE_PAYLOAD_NAME (TYPE))
 
 #define MONO_HANDLE_INIT ((void*) mono_null_value_handle)
 #define NULL_HANDLE mono_null_value_handle
 
 //XXX add functions to get/set raw, set field, set field to null, set array, set array to null
-#define MONO_HANDLE_RAW(HANDLE) (HANDLE_INVARIANTS (HANDLE), ((HANDLE)->__obj))
+#define MONO_HANDLE_RAW(HANDLE) (HANDLE_INVARIANTS (HANDLE), ((HANDLE)->__raw))
 #define MONO_HANDLE_DCL(TYPE, NAME) TYPED_HANDLE_NAME(TYPE) NAME = MONO_HANDLE_NEW (TYPE, (NAME ## _raw))
 
 #ifndef MONO_HANDLE_TRACK_OWNER
@@ -308,7 +324,7 @@ This is why we evaluate index and value before any call to MONO_HANDLE_RAW or ot
 /* N.B. RESULT is evaluated before HANDLE */
 #define MONO_HANDLE_GET(RESULT, HANDLE, FIELD) do {			\
 		MonoObjectHandle __dest = MONO_HANDLE_CAST(MonoObject, RESULT);	\
-		mono_gc_wbarrier_generic_store (&__dest->__obj,  (MonoObject*)(MONO_HANDLE_RAW(HANDLE)->FIELD)); \
+		mono_gc_wbarrier_generic_store (&__dest->__raw,  (MonoObject*)(MONO_HANDLE_RAW(HANDLE)->FIELD)); \
 	} while (0)
 
 #define MONO_HANDLE_NEW_GET(TYPE,HANDLE,FIELD) (MONO_HANDLE_NEW(TYPE,MONO_HANDLE_RAW(HANDLE)->FIELD))
@@ -351,10 +367,25 @@ This is why we evaluate index and value before any call to MONO_HANDLE_RAW or ot
 		mono_handle_array_getref (MONO_HANDLE_CAST(MonoObject, (DEST)), (HANDLE), (IDX)); \
 	} while (0)
 
+/* Handles into the interior of objects.
+ *
+ * Typically when working with value types, we pass them by reference.  In the case where the value type
+ * is a field in a managed class, the reference will be a pointer into the middle of a managed object.
+ * We need to identify such pointers in order for SGen to scan them correctly.
+ */
+
+#ifndef MONO_HANDLE_TRACK_OWNER
+#define MONO_HANDLE_NEW_GET_VALPTR(HANDLE,TYPE,FIELD) (TYPE_VALUE_HANDLE_NAME(TYPE))(mono_handle_new_full (&(HANDLE)->__raw->FIELD), TRUE))
+#else
+#define MONO_HANDLE_NEW_GET_VALPTR(HANDLE,TYPE,FIELD) (TYPE_VALUE_HANDLE_NAME(TYPE))(mono_handle_new_full (&(HANDLE)->__raw->FIELD), TRUE, HANDLE_OWNER_STRINGIFY(__FILE__, __LINE__))
+#endif
+
+
 #define MONO_HANDLE_ASSIGN(DESTH, SRCH)				\
 	mono_handle_assign (MONO_HANDLE_CAST (MonoObject, (DESTH)), MONO_HANDLE_CAST(MonoObject, (SRCH)))
 
 #define MONO_HANDLE_DOMAIN(HANDLE) (mono_object_domain (MONO_HANDLE_RAW (MONO_HANDLE_CAST (MonoObject, HANDLE))))
+
 
 /* Baked typed handles we all want */
 TYPED_HANDLE_DECL (MonoString);
@@ -373,7 +404,7 @@ extern const MonoObjectHandle mono_null_value_handle;
 static inline void
 mono_handle_assign (MonoObjectHandleOut dest, MonoObjectHandle src)
 {
-	mono_gc_wbarrier_generic_store (&dest->__obj, src ? MONO_HANDLE_RAW(src) : NULL);
+	mono_gc_wbarrier_generic_store (&dest->__raw, src ? MONO_HANDLE_RAW(src) : NULL);
 }
 
 //FIXME this should go somewhere else
@@ -388,7 +419,7 @@ uintptr_t mono_array_handle_length (MonoArrayHandle arr);
 static inline void
 mono_handle_array_getref (MonoObjectHandleOut dest, MonoArrayHandle array, uintptr_t index)
 {
-	mono_gc_wbarrier_generic_store (&dest->__obj, mono_array_get (MONO_HANDLE_RAW (array),gpointer, index));
+	mono_gc_wbarrier_generic_store (&dest->__raw, mono_array_get (MONO_HANDLE_RAW (array),gpointer, index));
 }
 
 #define mono_handle_class(o) mono_object_class (MONO_HANDLE_RAW (o))

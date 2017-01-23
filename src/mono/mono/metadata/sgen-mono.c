@@ -2331,6 +2331,22 @@ mono_gc_scan_object (void *obj, void *gc_data)
 	return obj;
 }
 
+typedef struct {
+	void **start_nursery;
+	void **end_nursery;
+} PinHandleStackInteriorPtrData;
+
+/* Called when we're scanning the handle stack imprecisely and we encounter a pointer into the
+   middle of an object.
+ */
+static void
+pin_handle_stack_interior_ptrs (void **ptr_slot, void *user_data)
+{
+	PinHandleStackInteriorPtrData *ud = (PinHandleStackInteriorPtrData *)user_data;
+	sgen_conservatively_pin_objects_from (ptr_slot, ptr_slot+1, ud->start_nursery, ud->end_nursery, PIN_TYPE_STACK);
+}
+
+
 /*
  * Mark from thread stacks and registers.
  */
@@ -2420,8 +2436,21 @@ sgen_client_scan_thread_data (void *start_nursery, void *end_nursery, gboolean p
 				}
 			}
 		}
-		if (precise && info->client_info.info.handle_stack) {
-			mono_handle_stack_scan ((HandleStack*)info->client_info.info.handle_stack, (GcScanFunc)ctx.ops->copy_or_mark_object, ctx.queue);
+		if (info->client_info.info.handle_stack) {
+			/*
+			  Make two passes over the handle stack.  On the imprecise pass, pin all
+			  objects where the handle points into the interior of the object. On the
+			  precise pass, copy or mark all the objects that have handles to the
+			  beginning of the object.
+			*/
+			if (precise)
+				mono_handle_stack_scan ((HandleStack*)info->client_info.info.handle_stack, (GcScanFunc)ctx.ops->copy_or_mark_object, ctx.queue, precise);
+			else {
+				PinHandleStackInteriorPtrData ud = { .start_nursery = start_nursery,
+								     .end_nursery = end_nursery,
+				};
+				mono_handle_stack_scan ((HandleStack*)info->client_info.info.handle_stack, pin_handle_stack_interior_ptrs, &ud, precise);
+			}
 		}
 	} FOREACH_THREAD_END
 }

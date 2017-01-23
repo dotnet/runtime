@@ -72,10 +72,33 @@ const MonoObjectHandle mono_null_value_handle = NULL;
 
 #define THIS_IS_AN_OK_NUMBER_OF_HANDLES 100
 
-static MonoObject**
-chunk_element_objslot (HandleChunk *chunk, int idx)
+enum {
+	HANDLE_CHUNK_PTR_OBJ = 0x0, /* chunk element points to beginning of a managed object */
+	HANDLE_CHUNK_PTR_INTERIOR = 0x1, /* chunk element points into the middle of a managed object */
+	HANDLE_CHUNK_PTR_MASK = 0x1
+};
+
+#define HANDLE_CHUNK_IS_PTR_OBJ(ch) ((ch->chunk_ptr & HANDLE_CHUNK_PTR_MASK) == HANDLE_CHUNK_PTR_OBJ)
+
+#define HANDLE_CHUNK_IS_PTR_INTERIOR(ch) ((ch->chunk_ptr & HANDLE_CHUNK_PTR_MASK) == HANDLE_CHUNK_PTR_INTERIOR)
+
+static gpointer*
+chunk_element_objslot_init (HandleChunk *chunk, int idx, gboolean interior)
 {
-	return &chunk->objects[idx].o;
+	chunk->objects[idx].chunk_ptr = interior ? HANDLE_CHUNK_PTR_INTERIOR : HANDLE_CHUNK_PTR_OBJ;
+	return (gpointer*)&chunk->objects[idx].o;
+}
+
+static HandleChunkElem*
+chunk_element (HandleChunk *chunk, int idx)
+{
+	return &chunk->objects[idx];
+}
+
+static HandleChunkElem*
+handle_to_chunk (MonoObjectHandle o)
+{
+	return (HandleChunkElem*)o;
 }
 
 #ifdef MONO_HANDLE_TRACK_OWNER
@@ -84,12 +107,25 @@ chunk_element_objslot (HandleChunk *chunk, int idx)
 #define SET_OWNER(chunk,idx) do { } while (0)
 #endif
 
-/* Actual handles implementation */
 MonoRawHandle
 #ifndef MONO_HANDLE_TRACK_OWNER
 mono_handle_new (MonoObject *object)
 #else
-mono_handle_new (MonoObject *object, const char *owner)
+mono_handle_new (MonoObject *object const char *owner)
+#endif
+{
+#ifndef MONO_HANDLE_TRACK_OWNER
+	return mono_handle_new_full (object, FALSE);
+#else
+	return mono_handle_new_full (object, FALSE, owner);
+#endif
+}
+/* Actual handles implementation */
+MonoRawHandle
+#ifndef MONO_HANDLE_TRACK_OWNER
+mono_handle_new_full (gpointer rawptr, gboolean interior)
+#else
+mono_handle_new_full (gpointer rawptr, gboolean interior, const char *owner)
 #endif
 {
 	MonoThreadInfo *info = mono_thread_info_current ();
@@ -99,7 +135,7 @@ mono_handle_new (MonoObject *object, const char *owner)
 retry:
 	if (G_LIKELY (top->size < OBJECTS_PER_HANDLES_CHUNK)) {
 		int idx = top->size;
-		MonoObject** objslot = chunk_element_objslot (top, idx);
+		gpointer* objslot = chunk_element_objslot_init (top, idx, interior);
 		/* can be interrupted anywhere here, so:
 		 * 1. make sure the new slot is null
 		 * 2. make the new slot scannable (increment size)
@@ -112,7 +148,7 @@ retry:
 		mono_memory_write_barrier ();
 		top->size++;
 		mono_memory_write_barrier ();
-		*objslot = object;
+		*objslot = rawptr;
 		SET_OWNER (top,idx);
 		return objslot;
 	}
@@ -168,10 +204,16 @@ mono_handle_stack_free (HandleStack *stack)
 }
 
 void
-mono_handle_stack_scan (HandleStack *stack, GcScanFunc func, gpointer gc_data)
+mono_handle_stack_scan (HandleStack *stack, GcScanFunc func, gpointer gc_data, gboolean precise)
 {
-	/* if we're running, we know the world is stopped.
-	 */
+	/*
+	  We're called twice - on the imprecise pass we call func to pin the
+	  objects where the handle points to its interior.  On the precise
+	  pass, we scan all the objects where the handles point to the start of
+	  the object.
+
+	  Note that if we're running, we know the world is stopped.
+	*/
 	HandleChunk *cur = stack->bottom;
 	HandleChunk *last = stack->top;
 
@@ -181,9 +223,13 @@ mono_handle_stack_scan (HandleStack *stack, GcScanFunc func, gpointer gc_data)
 	while (cur) {
 		int i;
 		for (i = 0; i < cur->size; ++i) {
-			MonoObject **obj_slot = chunk_element_objslot (cur, i);
-			if (*obj_slot != NULL)
-				func ((gpointer*)obj_slot, gc_data);
+			HandleChunkElem* chunk = chunk_element (cur, i);
+			if ((precise && HANDLE_CHUNK_IS_PTR_OBJ (chunk)) ||
+			    (!precise && HANDLE_CHUNK_IS_PTR_INTERIOR (chunk))) {
+				MonoObject** obj_slot = &chunk->o;
+				if (*obj_slot != NULL)
+					func ((gpointer*)obj_slot, gc_data);
+			}
 		}
 		if (cur == last)
 			break;
@@ -265,7 +311,10 @@ mono_array_handle_length (MonoArrayHandle arr)
 uint32_t
 mono_gchandle_from_handle (MonoObjectHandle handle, mono_bool pinned)
 {
-	return mono_gchandle_new (MONO_HANDLE_RAW(handle), pinned);
+	/* If the handle is an interior pointer, we have to always make a pinned gchandle. */
+	HandleChunkElem* chunk = handle_to_chunk (handle);
+	pinned |= HANDLE_CHUNK_IS_PTR_INTERIOR (chunk);
+	return mono_gchandle_new (chunk->o, pinned);
 }
 
 MonoObjectHandle
