@@ -254,12 +254,10 @@ namespace System.Reflection
             Contract.Ensures(Contract.Result<Assembly>() != null);
             Contract.Ensures(!Contract.Result<Assembly>().ReflectionOnly);
 
-#if FEATURE_WINDOWSPHONE
             if (assemblyRef != null && assemblyRef.CodeBase != null)
             {
                 throw new NotSupportedException(Environment.GetResourceString("NotSupported_AssemblyLoadCodeBase"));
             }
-#endif
 
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
             return RuntimeAssembly.InternalLoadAssemblyName(assemblyRef, null, null, ref stackMark, true /*thrownOnFileNotFound*/, false /*forIntrospection*/, false /*suppressSecurityChecks*/);
@@ -273,12 +271,10 @@ namespace System.Reflection
             Contract.Ensures(Contract.Result<Assembly>() != null);
             Contract.Ensures(!Contract.Result<Assembly>().ReflectionOnly);
 
-#if FEATURE_WINDOWSPHONE
             if (assemblyRef != null && assemblyRef.CodeBase != null)
             {
                 throw new NotSupportedException(Environment.GetResourceString("NotSupported_AssemblyLoadCodeBase"));
             }
-#endif
 
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
             return RuntimeAssembly.InternalLoadAssemblyName(assemblyRef, null, null, ref stackMark, true /*thrownOnFileNotFound*/, false /*forIntrospection*/, false /*suppressSecurityChecks*/, ptrLoadContextBinder);
@@ -1321,13 +1317,11 @@ namespace System.Reflection
             }
 
             assemblyRef = (AssemblyName)assemblyRef.Clone();
-#if FEATURE_VERSIONING
             if (!forIntrospection &&
                 (assemblyRef.ProcessorArchitecture != ProcessorArchitecture.None)) {
                 // PA does not have a semantics for by-name binds for execution
                 assemblyRef.ProcessorArchitecture = ProcessorArchitecture.None;
             }
-#endif
 
             if (assemblySecurity != null)
             {

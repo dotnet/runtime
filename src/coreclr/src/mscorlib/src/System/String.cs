@@ -842,10 +842,8 @@ namespace System {
             }
         }
 
-#if FEATURE_SPAN_OF_T
         internal ref char GetFirstCharRef() {
             return ref m_firstChar;
         }
-#endif
     }
 }
