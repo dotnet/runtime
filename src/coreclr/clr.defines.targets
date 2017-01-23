@@ -68,7 +68,6 @@
         <CDefines Condition="'$(FeatureReflectionOnlyLoad)' == 'true'">$(CDefines);FEATURE_REFLECTION_ONLY_LOAD</CDefines>
         <CDefines Condition="'$(FeatureReJIT)' == 'true'">$(CDefines);FEATURE_REJIT</CDefines>
         <CDefines Condition="'$(FeatureRemoting)' == 'true'">$(CDefines);FEATURE_REMOTING</CDefines>
-        <CDefines Condition="'$(FeatureSerialization)' == 'true'">$(CDefines);FEATURE_SERIALIZATION</CDefines>
         <CDefines Condition="'$(FeatureSortTables)' == 'true'">$(CDefines);FEATURE_SORT_TABLES</CDefines>
         <CDefines Condition="'$(FeatureStackProbe)' == 'true'">$(CDefines);FEATURE_STACK_PROBE</CDefines>
         <CDefines Condition="'$(FeatureStandaloneSn)' == 'true'">$(CDefines);FEATURE_STANDALONE_SN</CDefines>
@@ -135,7 +134,6 @@
         <DefineConstants Condition="'$(FeatureRandomizedStringHashing)' == 'true'">$(DefineConstants);FEATURE_RANDOMIZED_STRING_HASHING</DefineConstants>
         <DefineConstants Condition="'$(FeatureReflectionOnlyLoad)' == 'true'">$(DefineConstants);FEATURE_REFLECTION_ONLY_LOAD</DefineConstants>
         <DefineConstants Condition="'$(FeatureRemoting)' == 'true'">$(DefineConstants);FEATURE_REMOTING</DefineConstants>
-        <DefineConstants Condition="'$(FeatureSerialization)' == 'true'">$(DefineConstants);FEATURE_SERIALIZATION</DefineConstants>
         <DefineConstants Condition="'$(FeatureSortTables)' == 'true'">$(DefineConstants);FEATURE_SORT_TABLES</DefineConstants>
         <DefineConstants Condition="'$(FeatureSyntheticCultures)' == 'true'">$(DefineConstants);FEATURE_SYNTHETIC_CULTURES</DefineConstants>
         <DefineConstants Condition="'$(FeatureTypeEquivalence)' == 'true'">$(DefineConstants);FEATURE_TYPEEQUIVALENCE</DefineConstants>

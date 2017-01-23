@@ -247,7 +247,6 @@
     <ResgenDefines Condition="'$(FeatureMacl)' == '1'">$(ResgenDefines) /define:FEATURE_MACL</ResgenDefines> 
     <ResgenDefines Condition="'$(FeatureCasPolicy)' == '1'">$(ResgenDefines) /define:FEATURE_CAS_POLICY</ResgenDefines> 
     <ResgenDefines Condition="'$(FeatureRemoting)' == '1'">$(ResgenDefines) /define:FEATURE_REMOTING</ResgenDefines> 
-    <ResgenDefines Condition="'$(FeatureSerialization)' == '1'">$(ResgenDefines) /define:FEATURE_SERIALIZATION</ResgenDefines> 
     <ResgenDefines Condition="'$(FeatureIdentityReference)' == '1'">$(ResgenDefines) /define:FEATURE_IDENTITY_REFERENCE</ResgenDefines> 
     <ResgenDefines Condition="'$(FeatureDisplayCultureInfo)' == '1'">$(ResgenDefines) /define:FEATURE_DISPLAY_CULTURE_INFO</ResgenDefines> 
     <ResgenDefines Condition="'$(FeatureDisplayRegionInfo)' == '1'">$(ResgenDefines) /define:FEATURE_DISPLAY_REGION_INFO</ResgenDefines> 

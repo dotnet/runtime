@@ -13,10 +13,6 @@ namespace System.Security.Policy
     using System.Globalization;
     using System.IO;
     using System.Runtime.InteropServices;
-#if FEATURE_SERIALIZATION
-    using System.Runtime.Serialization;
-    using System.Runtime.Serialization.Formatters.Binary;
-#endif // FEATURE_SERIALIZATION
     using System.Runtime.Versioning;
     using System.Security.Permissions;
     using System.Security.Util;
