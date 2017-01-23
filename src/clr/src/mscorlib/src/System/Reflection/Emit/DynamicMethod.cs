@@ -58,9 +58,6 @@ namespace System.Reflection.Emit
         // We capture the creation context so that we can do the checks against the same context,
         // irrespective of when the method gets compiled. Note that the DynamicMethod does not know when
         // it is ready for use since there is not API which indictates that IL generation has completed.
-#if FEATURE_COMPRESSEDSTACK
-        internal CompressedStack m_creationContext;
-#endif // FEATURE_COMPRESSEDSTACK
         private static volatile InternalModuleBuilder s_anonymouslyHostedDynamicMethodsModule;
         private static readonly object s_anonymouslyHostedDynamicMethodsModuleLock = new object();
         
@@ -330,9 +327,6 @@ namespace System.Reflection.Emit
                     m_restrictedSkipVisibility = true;
                 }
 
-#if FEATURE_COMPRESSEDSTACK
-                m_creationContext = CompressedStack.Capture();
-#endif // FEATURE_COMPRESSEDSTACK
             }
             else
             {

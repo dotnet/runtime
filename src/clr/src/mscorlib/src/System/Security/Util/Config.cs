@@ -12,9 +12,6 @@ namespace System.Security.Util {
     using System.Reflection;
     using System.Globalization;
     using System.Text;
-#if FEATURE_SERIALIZATION
-    using System.Runtime.Serialization.Formatters.Binary;
-#endif // FEATURE_SERIALIZATION
     using System.Threading;
     using System.Runtime.CompilerServices;
     using System.Runtime.InteropServices;

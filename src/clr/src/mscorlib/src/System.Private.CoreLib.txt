@@ -893,44 +893,6 @@ Cryptography_PasswordDerivedBytes_FewBytesSalt = Salt is not at least eight byte
 Cryptography_PKCS7_InvalidPadding = Padding is invalid and cannot be removed.
 Cryptography_UnknownHashAlgorithm='{0}' is not a known hash algorithm.
 
-#if FEATURE_CRYPTO
-Cryptography_Config_EncodedOIDError = Encoded OID length is too large (greater than 0x7f bytes).
-Cryptography_CSP_AlgKeySizeNotAvailable = Algorithm implementation does not support a key size of {0}.
-Cryptography_CSP_AlgorithmNotAvailable = Cryptographic service provider (CSP) could not be found for this algorithm.
-Cryptography_CSP_CFBSizeNotSupported = Feedback size for the cipher feedback mode (CFB) must be 8 bits.
-Cryptography_CSP_NotFound = The requested key container was not found.
-Cryptography_CSP_NoPrivateKey = Object contains only the public half of a key pair. A private key must also be provided.
-Cryptography_CSP_OFBNotSupported = Output feedback mode (OFB) is not supported by this implementation.
-Cryptography_CSP_WrongKeySpec = The specified cryptographic service provider (CSP) does not support this key algorithm.
-Cryptography_HashNameSet = Hash name cannot be changed after the first write to the stream.
-Cryptography_HashAlgorithmNameNullOrEmpty = The hash algorithm name cannot be null or empty.
-Cryptography_InvalidHashSize = {0} algorithm hash size is {1} bytes.
-Cryptography_InvalidKey_Weak = Specified key is a known weak key for '{0}' and cannot be used.
-Cryptography_InvalidKey_SemiWeak = Specified key is a known semi-weak key for '{0}' and cannot be used.
-Cryptography_InvalidKeyParameter = Parameter '{0}' is not a valid key parameter.
-Cryptography_InvalidFeedbackSize = Specified feedback size is invalid.
-Cryptography_InvalidOperation = This operation is not supported for this class.
-Cryptography_InvalidPaddingMode = Specified padding mode is not valid for this algorithm.
-Cryptography_InvalidFromXmlString = Input string does not contain a valid encoding of the '{0}' '{1}' parameter.
-Cryptography_MissingKey = No asymmetric key object has been associated with this formatter object.
-Cryptography_MissingOID = Required object identifier (OID) cannot be found.
-Cryptography_NotInteractive = The current session is not interactive.
-Cryptography_NonCompliantFIPSAlgorithm = This implementation is not part of the Windows Platform FIPS validated cryptographic algorithms.
-Cryptography_Padding_Win2KEnhOnly = Direct Encryption and decryption using RSA are not available on this platform.
-Cryptography_Padding_EncDataTooBig = The data to be encrypted exceeds the maximum for this modulus of {0} bytes.
-Cryptography_Padding_DecDataTooBig = The data to be decrypted exceeds the maximum for this modulus of {0} bytes.
-Cryptography_PasswordDerivedBytes_ValuesFixed = Value of '{0}' cannot be changed after the bytes have been retrieved.
-Cryptography_PasswordDerivedBytes_TooManyBytes = Requested number of bytes exceeds the maximum.
-Cryptography_PasswordDerivedBytes_InvalidAlgorithm = Algorithm is unavailable or is not supported for this operation.
-Cryptography_PKCS1Decoding = Error occurred while decoding PKCS1 padding.
-Cryptography_RC2_EKSKS = EffectiveKeySize value must be at least as large as the KeySize value.
-Cryptography_RC2_EKSKS2 = EffectiveKeySize must be the same as KeySize in this implementation.
-Cryptography_RC2_EKS40 = EffectiveKeySize value must be at least 40 bits.
-Cryptography_SSD_InvalidDataSize = Length of the data to decrypt is invalid.
-Cryptography_AddNullOrEmptyName = CryptoConfig cannot add a mapping for a null or empty name.
-Cryptography_AlgorithmTypesMustBeVisible = Algorithms added to CryptoConfig must be accessable from outside their assembly.
-#endif  // FEATURE_CRYPTO
-
 ; EventSource
 EventSource_ToString = EventSource({0}, {1})
 EventSource_EventSourceGuidInUse = An instance of EventSource with Guid {0} already exists.
@@ -1981,10 +1943,6 @@ WeakReference_NoLongerValid = The weak reference is no longer valid.
 ;
 Interop.COM_TypeMismatch = Type mismatch between source and destination types.
 Interop_Marshal_Unmappable_Char = Cannot marshal: Encountered unmappable character.
-
-#if FEATURE_COMINTEROP_WINRT_DESKTOP_HOST
-WinRTHostDomainName = Windows Runtime Object Host Domain for '{0}'
-#endif
 
 ;
 ; Loader Exceptions

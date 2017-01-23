@@ -120,15 +120,11 @@ namespace System.Diagnostics.Contracts {
         /// </summary>
         public static event EventHandler<ContractFailedEventArgs> ContractFailed {
 #if FEATURE_UNTRUSTED_CALLERS
-#if FEATURE_LINK_DEMAND
-#endif
 #endif
             add {
                 System.Runtime.CompilerServices.ContractHelper.InternalContractFailed += value;
             }
 #if FEATURE_UNTRUSTED_CALLERS
-#if FEATURE_LINK_DEMAND
-#endif
 #endif
             remove {
                 System.Runtime.CompilerServices.ContractHelper.InternalContractFailed -= value;
@@ -171,8 +167,6 @@ namespace System.Diagnostics.Contracts {
         }
 
 #if FEATURE_UNTRUSTED_CALLERS
-#if FEATURE_LINK_DEMAND
-#endif
 #endif
         public void SetHandled()
         {
@@ -184,8 +178,6 @@ namespace System.Diagnostics.Contracts {
         }
 
 #if FEATURE_UNTRUSTED_CALLERS
-#if FEATURE_LINK_DEMAND
-#endif
 #endif
         public void SetUnwind()
         {
@@ -233,10 +225,6 @@ namespace System.Diagnostics.Contracts {
             _Condition = info.GetString("Condition");
         }
 
-#if FEATURE_UNTRUSTED_CALLERS && FEATURE_SERIALIZATION
-#if FEATURE_LINK_DEMAND && FEATURE_SERIALIZATION
-#endif // FEATURE_LINK_DEMAND
-#endif // FEATURE_UNTRUSTED_CALLERS
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
         {
             base.GetObjectData(info, context);

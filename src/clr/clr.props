@@ -93,7 +93,6 @@
 
     <!-- Note: ClrProduct can be set prior to this file to 'Standalone'. -->
     <ClrProduct Condition="(('$(BuildProjectName)' == 'CoreCLR' or '$(BuildProjectName)' == 'CoreSys')) and ('$(ClrProduct)' == '' or '$(CoreTarget)' == 'true')">core_clr</ClrProduct>
-    <ClrProduct Condition="('$(BuildProjectName)' == '') and ('$(ClrProduct)' == '')">desktop_clr</ClrProduct>
 
     <ClAdditionalOptions>$(ClAdditionalOptions) /Zm200</ClAdditionalOptions>
     <TargetDefines Condition="'$(BuildArchitecture)'=='i386'">$(BuildArchitecture);_X86_</TargetDefines>
@@ -120,7 +119,6 @@
   <!-- CLR Feature Settings.  We set the default values here, allow leaf projects to override, and then
        set the CDefines based on these properties in clr.targets
   -->
-  <Import Project="$(MSBuildThisFileDirectory)clr.desktop.props" />
   <Import Project="$(MSBuildThisFileDirectory)clr.coreclr.props" />
 
   <PropertyGroup Condition="'$(CrossGenCompile)'=='true'">
@@ -128,7 +126,6 @@
     <!-- If you add new features to this list make sure that they are not affecting codegen or content of datastructures persisted in NGen image -->
     <EnCSupported>false</EnCSupported>
     <PerfcountersSupportedBuild>false</PerfcountersSupportedBuild>
-    <FeatureAppXBinder>false</FeatureAppXBinder>
     <FeatureCasPolicy>false</FeatureCasPolicy>
     <FeatureEventTrace>false</FeatureEventTrace>
     <FeatureFusion>false</FeatureFusion>
@@ -139,7 +136,6 @@
     <FeatureReflectionOnlyLoad>false</FeatureReflectionOnlyLoad>
     <FeatureStackProbe>false</FeatureStackProbe>
     <FeatureReJIT>false</FeatureReJIT>
-    <FeaturePls>false</FeaturePls>
     <FeatureVersioningLog>false</FeatureVersioningLog>
     <FeatureNativeImageGeneration>true</FeatureNativeImageGeneration>
     <FeatureReadyToRunCompiler Condition="'$(FeatureReadyToRun)' == 'true'">true</FeatureReadyToRunCompiler>
@@ -244,12 +240,10 @@
     <PogoExePhase>1</PogoExePhase>
     
     <ResgenDefines Condition="'$(FeatureImpersonation)' == '1'">$(ResgenDefines) /define:FEATURE_IMPERSONATION</ResgenDefines> 
-    <ResgenDefines Condition="'$(FeatureCrypto)' == '1'">$(ResgenDefines) /define:FEATURE_CRYPTO</ResgenDefines> 
     <ResgenDefines Condition="'$(FeatureIsostore)' == '1'">$(ResgenDefines) /define:FEATURE_ISOSTORE</ResgenDefines> 
     <ResgenDefines Condition="'$(FeatureMacl)' == '1'">$(ResgenDefines) /define:FEATURE_MACL</ResgenDefines> 
     <ResgenDefines Condition="'$(FeatureCasPolicy)' == '1'">$(ResgenDefines) /define:FEATURE_CAS_POLICY</ResgenDefines> 
     <ResgenDefines Condition="'$(FeatureRemoting)' == '1'">$(ResgenDefines) /define:FEATURE_REMOTING</ResgenDefines> 
-    <ResgenDefines Condition="'$(FeatureSerialization)' == '1'">$(ResgenDefines) /define:FEATURE_SERIALIZATION</ResgenDefines> 
     <ResgenDefines Condition="'$(FeatureIdentityReference)' == '1'">$(ResgenDefines) /define:FEATURE_IDENTITY_REFERENCE</ResgenDefines> 
     <ResgenDefines Condition="'$(FeatureDisplayCultureInfo)' == '1'">$(ResgenDefines) /define:FEATURE_DISPLAY_CULTURE_INFO</ResgenDefines> 
     <ResgenDefines Condition="'$(FeatureDisplayRegionInfo)' == '1'">$(ResgenDefines) /define:FEATURE_DISPLAY_REGION_INFO</ResgenDefines> 
