@@ -84,9 +84,7 @@
         <CDefines Condition="'$(FeatureStandaloneSn)' == 'true'">$(CDefines);FEATURE_STANDALONE_SN</CDefines>
         <CDefines Condition="'$(FeatureStrongnameDelaySigningAllowed)' == 'true'">$(CDefines);FEATURE_STRONGNAME_DELAY_SIGNING_ALLOWED</CDefines>
         <CDefines Condition="'$(FeatureSvrGc)' == 'true'">$(CDefines);FEATURE_SVR_GC</CDefines>
-        <CDefines Condition="'$(FeatureSynchronizationContextWait)' == 'true'">$(CDefines);FEATURE_SYNCHRONIZATIONCONTEXT_WAIT</CDefines>
         <CDefines Condition="'$(FeaturePerfMap)' == 'true'">$(CDefines);FEATURE_PERFMAP</CDefines>
-        <CDefines Condition="'$(FeatureSynchronizationcontextWait)' == 'true'">$(CDefines);FEATURE_SYNCHRONIZATIONCONTEXT_WAIT</CDefines>
         <CDefines Condition="'$(FeatureSyntheticCultures)' == 'true'">$(CDefines);FEATURE_SYNTHETIC_CULTURES</CDefines>
         <CDefines Condition="'$(FeatureTypeEquivalence)' == 'true'">$(CDefines);FEATURE_TYPEEQUIVALENCE</CDefines>
         <CDefines Condition="'$(FeatureUefChainmanager)' == 'true'">$(CDefines);FEATURE_UEF_CHAINMANAGER</CDefines>
@@ -161,7 +159,6 @@
         <DefineConstants Condition="'$(FeatureRwlock)' == 'true'">$(DefineConstants);FEATURE_RWLOCK</DefineConstants>
         <DefineConstants Condition="'$(FeatureSerialization)' == 'true'">$(DefineConstants);FEATURE_SERIALIZATION</DefineConstants>
         <DefineConstants Condition="'$(FeatureSortTables)' == 'true'">$(DefineConstants);FEATURE_SORT_TABLES</DefineConstants>
-        <DefineConstants Condition="'$(FeatureSynchronizationcontextWait)' == 'true'">$(DefineConstants);FEATURE_SYNCHRONIZATIONCONTEXT_WAIT</DefineConstants>
         <DefineConstants Condition="'$(FeatureSyntheticCultures)' == 'true'">$(DefineConstants);FEATURE_SYNTHETIC_CULTURES</DefineConstants>
         <DefineConstants Condition="'$(FeatureTypeEquivalence)' == 'true'">$(DefineConstants);FEATURE_TYPEEQUIVALENCE</DefineConstants>
         <DefineConstants Condition="'$(FeatureUseLcid)' == 'true'">$(DefineConstants);FEATURE_USE_LCID</DefineConstants>
