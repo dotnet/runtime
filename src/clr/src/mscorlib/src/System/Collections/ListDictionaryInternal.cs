@@ -49,13 +49,6 @@ namespace System.Collections {
                 }
                 Contract.EndContractBlock();
 
-#if FEATURE_SERIALIZATION
-                if (!key.GetType().IsSerializable)                 
-                    throw new ArgumentException(Environment.GetResourceString("Argument_NotSerializable"), nameof(key));                    
-
-                if( (value != null) && (!value.GetType().IsSerializable ) )
-                    throw new ArgumentException(Environment.GetResourceString("Argument_NotSerializable"), nameof(value));                    
-#endif
                 
                 version++;
                 DictionaryNode last = null;
@@ -136,13 +129,6 @@ namespace System.Collections {
             }
             Contract.EndContractBlock();
 
-#if FEATURE_SERIALIZATION
-            if (!key.GetType().IsSerializable)                 
-                throw new ArgumentException(Environment.GetResourceString("Argument_NotSerializable"), nameof(key) );                    
-
-            if( (value != null) && (!value.GetType().IsSerializable) )
-                throw new ArgumentException(Environment.GetResourceString("Argument_NotSerializable"), nameof(value));                    
-#endif
             
             version++;
             DictionaryNode last = null;

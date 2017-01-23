@@ -11,9 +11,6 @@ using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.IO;
 using System.Runtime.InteropServices;
-#if FEATURE_SERIALIZATION
-using System.Runtime.Serialization.Formatters.Binary;
-#endif // FEATURE_SERIALIZATION
 using System.Security.Permissions;
 
 namespace System.Security.Policy
@@ -27,15 +24,6 @@ namespace System.Security.Policy
     {
         protected EvidenceBase()
         {
-#if FEATURE_SERIALIZATION
-            // All objects to be used as evidence must be serializable.  Make sure that any derived types
-            // are marked serializable to enforce this, since the attribute does not inherit down to derived
-            // classes.
-            if (!GetType().IsSerializable)
-            {
-                throw new InvalidOperationException(Environment.GetResourceString("Policy_EvidenceMustBeSerializable"));
-            }
-#endif // FEATURE_SERIALIZATION
         }
 
         /// <remarks>
@@ -44,18 +32,7 @@ namespace System.Security.Policy
         /// </remarks>
         public virtual EvidenceBase Clone()
         {
-#if FEATURE_SERIALIZATION
-            using (MemoryStream memoryStream = new MemoryStream())
-            {
-                BinaryFormatter formatter = new BinaryFormatter();
-                formatter.Serialize(memoryStream, this);
-
-                memoryStream.Position = 0;
-                return formatter.Deserialize(memoryStream) as EvidenceBase;
-            }
-#else // !FEATURE_SERIALIZATION
             throw new NotImplementedException();
-#endif // FEATURE_SERIALIZATION
         }
     }
 
