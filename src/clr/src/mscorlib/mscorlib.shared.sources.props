@@ -954,7 +954,6 @@
   </ItemGroup>
   <ItemGroup>
     <TextSources Include="$(BclSourcesRoot)\System\Text\ASCIIEncoding.cs" />
-    <TextSources Include="$(BclSourcesRoot)\System\Text\BaseCodePageEncoding.cs" />
     <TextSources Include="$(BclSourcesRoot)\System\Text\CodePageEncoding.cs" />
     <TextSources Include="$(BclSourcesRoot)\System\Text\Decoder.cs" />
     <TextSources Include="$(BclSourcesRoot)\System\Text\DecoderNLS.cs" />
@@ -978,16 +977,11 @@
     <TextSources Include="$(BclSourcesRoot)\System\Text\MLangCodePageEncoding.cs" />
     <TextSources Include="$(BclSourcesRoot)\System\Text\Normalization.cs" />
     <TextSources Include="$(BclSourcesRoot)\System\Text\Normalization.Windows.cs" Condition="'$(TargetsUnix)' != 'true'"/>
-    <TextSources Include="$(BclSourcesRoot)\System\Text\DBCSCodePageEncoding.cs" />
-    <TextSources Include="$(BclSourcesRoot)\System\Text\SBCSCodePageEncoding.cs" />
     <TextSources Include="$(BclSourcesRoot)\System\Text\SurrogateEncoder.cs" />
     <TextSources Include="$(BclSourcesRoot)\System\Text\UnicodeEncoding.cs" />
     <TextSources Include="$(BclSourcesRoot)\System\Text\UTF7Encoding.cs" />
     <TextSources Include="$(BclSourcesRoot)\System\Text\UTF8Encoding.cs" />
     <TextSources Include="$(BclSourcesRoot)\System\Text\UTF32Encoding.cs" />
-    <TextSources Include="$(BclSourcesRoot)\System\Text\GB18030Encoding.cs" />
-    <TextSources Include="$(BclSourcesRoot)\System\Text\ISO2022Encoding.cs" />
-    <TextSources Include="$(BclSourcesRoot)\System\Text\EUCJPEncoding.cs" />
   </ItemGroup>
   <ItemGroup>
     <SecurityAclSources Include="$(BclSourcesRoot)\System\Security\AccessControl\Enums.cs" />
