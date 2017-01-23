@@ -80,7 +80,6 @@
         <CDefines Condition="'$(FeatureRwlock)' == 'true'">$(CDefines);FEATURE_RWLOCK</CDefines>
         <CDefines Condition="'$(FeatureSerialization)' == 'true'">$(CDefines);FEATURE_SERIALIZATION</CDefines>
         <CDefines Condition="'$(FeatureSortTables)' == 'true'">$(CDefines);FEATURE_SORT_TABLES</CDefines>
-        <CDefines Condition="'$(FeatureSpanOfT)' == 'true'">$(CDefines);FEATURE_SPAN_OF_T</CDefines>
         <CDefines Condition="'$(FeatureStackProbe)' == 'true'">$(CDefines);FEATURE_STACK_PROBE</CDefines>
         <CDefines Condition="'$(FeatureStandaloneSn)' == 'true'">$(CDefines);FEATURE_STANDALONE_SN</CDefines>
         <CDefines Condition="'$(FeatureStrongnameDelaySigningAllowed)' == 'true'">$(CDefines);FEATURE_STRONGNAME_DELAY_SIGNING_ALLOWED</CDefines>
@@ -163,7 +162,6 @@
         <DefineConstants Condition="'$(FeatureRwlock)' == 'true'">$(DefineConstants);FEATURE_RWLOCK</DefineConstants>
         <DefineConstants Condition="'$(FeatureSerialization)' == 'true'">$(DefineConstants);FEATURE_SERIALIZATION</DefineConstants>
         <DefineConstants Condition="'$(FeatureSortTables)' == 'true'">$(DefineConstants);FEATURE_SORT_TABLES</DefineConstants>
-        <DefineConstants Condition="'$(FeatureSpanOfT)' == 'true'">$(DefineConstants);FEATURE_SPAN_OF_T</DefineConstants>
         <DefineConstants Condition="'$(FeatureStrongnameMigration)' == 'true'">$(DefineConstants);FEATURE_STRONGNAME_MIGRATION</DefineConstants>
         <DefineConstants Condition="'$(FeatureSynchronizationcontextWait)' == 'true'">$(DefineConstants);FEATURE_SYNCHRONIZATIONCONTEXT_WAIT</DefineConstants>
         <DefineConstants Condition="'$(FeatureSyntheticCultures)' == 'true'">$(DefineConstants);FEATURE_SYNTHETIC_CULTURES</DefineConstants>

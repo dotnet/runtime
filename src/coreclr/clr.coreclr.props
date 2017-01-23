@@ -24,7 +24,6 @@
     <FeatureMergeCultureSupportAndEngine>true</FeatureMergeCultureSupportAndEngine>
     <FeatureMergeJitAndEngine>true</FeatureMergeJitAndEngine>
     <FeaturePrejit>true</FeaturePrejit>
-    <FeatureSpanOfT Condition="'$(UseLegacyCompiler)'!='true'">true</FeatureSpanOfT>
     <FeatureStandaloneSn>true</FeatureStandaloneSn>
     <FeatureStrongnameDelaySigningAllowed>true</FeatureStrongnameDelaySigningAllowed>
     <FeatureStrongnameMigration>true</FeatureStrongnameMigration>
