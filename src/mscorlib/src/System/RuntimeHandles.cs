@@ -1836,9 +1836,6 @@ namespace System
         internal abstract byte[] ResolveSignature(int token, int fromMethod);
         // 
         internal abstract MethodInfo GetDynamicMethod();
-#if FEATURE_COMPRESSEDSTACK
-        internal abstract CompressedStack GetSecurityContext();
-#endif
     }
 
 }
