@@ -1408,10 +1408,9 @@ NotSupported_NativeCallableTarget = Methods with NativeCallableAttribute cannot 
 NotSupported_GenericMethod = Generic methods with NativeCallableAttribute are not supported.
 NotSupported_NonBlittableTypes = Non-blittable parameter types are not supported for NativeCallable methods.
 
-#if FEATURE_WINDOWSPHONE
 NotSupported_UserDllImport = DllImport cannot be used on user-defined methods.
 NotSupported_UserCOM = COM Interop is not supported for user-defined types.
-#endif //FEATURE_WINDOWSPHONE
+
 #if FEATURE_APPX
 NotSupported_AppX = {0} is not supported in AppX.
 LoadOfFxAssemblyNotSupported_AppX = {0} of .NET Framework assemblies is not supported in AppX.
@@ -1424,12 +1423,8 @@ ReflectionTypeLoad_LoadFailed = Unable to load one or more of the requested type
 #if FEATURE_COMINTEROP
 NotSupported_PIAInAppxProcess = A Primary Interop Assembly is not supported in AppX.
 #endif
-#if FEATURE_WINDOWSPHONE
-; Not referring to "Windows Phone" in the messages, as FEATURE_WINDOWSPHONE is defined for .NET Core as well.
-NotSupported_WindowsPhone = {0} is not supported.
 NotSupported_AssemblyLoadCodeBase = Assembly.Load with a Codebase is not supported.
 NotSupported_AssemblyLoadFromHash = Assembly.LoadFrom with hashValue is not supported.
-#endif
 NotSupported_CannotCallEqualsOnSpan = Equals() on Span and ReadOnlySpan is not supported. Use operator== instead.
 NotSupported_CannotCallGetHashCodeOnSpan = GetHashCode() on Span and ReadOnlySpan is not supported.
 
