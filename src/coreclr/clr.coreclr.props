@@ -28,7 +28,6 @@
     <FeatureStrongnameDelaySigningAllowed>true</FeatureStrongnameDelaySigningAllowed>
     <FeatureStrongnameTestkeyAllowed>true</FeatureStrongnameTestkeyAllowed>
     <FeatureSyntheticCultures>true</FeatureSyntheticCultures>
-    <FeatureVersioning>true</FeatureVersioning>
     <FeatureVersioningLog>true</FeatureVersioningLog>
     <FeatureWin32Registry>true</FeatureWin32Registry>
     <FeatureXPlatDacDebugging_HostWindowsx86 Condition="'$(TargetArch)' == 'i386' or '$(TargetArch)' == 'arm'">true</FeatureXPlatDacDebugging_HostWindowsx86>
