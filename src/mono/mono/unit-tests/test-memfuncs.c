@@ -89,5 +89,9 @@ main (void)
 		}
 	}
 
+	free (random_mem);
+	free (reference);
+	free (playground);
+
 	return 0;
 }

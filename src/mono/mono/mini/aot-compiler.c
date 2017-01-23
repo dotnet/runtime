@@ -10325,6 +10325,7 @@ load_profile_file (MonoAotCompile *acfg, char *filename)
 		}
 	}
 
+	fclose (infile);
 	acfg->profile_data = g_list_append (acfg->profile_data, data);
 }
 
