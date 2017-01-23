@@ -195,6 +195,9 @@
     <Compile Include="$(CommonPath)\System\Net\Security\CertificateValidation.Unix.cs">
       <Link>Common\System\Net\Security\CertificateValidation.Unix.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Threading\Tasks\TaskToApm.cs">
+      <Link>Common\System\Threading\Tasks\TaskToApm.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.Errors.cs">
       <Link>Common\Interop\Unix\Interop.Errors.cs</Link>
     </Compile>
