@@ -927,7 +927,9 @@ namespace System.Collections.Generic {
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_InvalidOffLen);
             Contract.EndContractBlock();
 
-            Array.Reverse(_items, index, count);
+            if (count > 1) {
+                Array.Reverse(_items, index, count);
+            }
             _version++;
         }
         
@@ -966,7 +968,9 @@ namespace System.Collections.Generic {
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_InvalidOffLen);
             Contract.EndContractBlock();
 
-            Array.Sort<T>(_items, index, count, comparer);
+            if (count > 1) {
+                Array.Sort<T>(_items, index, count, comparer);
+            }
             _version++;
         }
 
@@ -976,10 +980,10 @@ namespace System.Collections.Generic {
             }
             Contract.EndContractBlock();
 
-            if (_size > 0) {
+            if (_size > 1) {
                 ArraySortHelper<T>.Sort(_items, 0, _size, comparison);
-                _version++;
             }
+            _version++;
         }
 
         // ToArray returns an array containing the contents of the List.
