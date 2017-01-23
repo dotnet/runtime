@@ -20,7 +20,6 @@
     <FeatureCominteropTlbSupport>true</FeatureCominteropTlbSupport>
     <FeatureCominteropUnmanagedActivation>true</FeatureCominteropUnmanagedActivation>
     <FeatureCominteropWinRTManagedActivation>true</FeatureCominteropWinRTManagedActivation>
-    <FeatureCompressedstack>true</FeatureCompressedstack>
     <FeatureCrypto>true</FeatureCrypto>
     <FeatureDbgPublish>true</FeatureDbgPublish>
     <FeatureDbiDebugging>true</FeatureDbiDebugging>
