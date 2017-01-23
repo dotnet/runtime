@@ -43,7 +43,6 @@
     <FeatureMacl>true</FeatureMacl>
     <FeatureManagedEtw>true</FeatureManagedEtw>
     <FeatureMdaSupported>true</FeatureMdaSupported>
-    <FeatureMethodRental>true</FeatureMethodRental>
     <FeatureMixedMode>true</FeatureMixedMode>
     <FeatureMultiModuleAssemblies>true</FeatureMultiModuleAssemblies>
     <FeatureNativeImageGeneration>true</FeatureNativeImageGeneration>
