@@ -13,9 +13,6 @@ namespace System.Security.Permissions
     using System.Runtime.InteropServices;
     using System.Runtime.Remoting;
     using System.Runtime.Serialization;
-#if FEATURE_X509
-    using System.Security.Cryptography.X509Certificates;
-#endif
     using System.Runtime.Versioning;
     using System.Diagnostics.Contracts;
     

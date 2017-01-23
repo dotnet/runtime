@@ -23,9 +23,6 @@ namespace System.Security
     using System.Text;
     using System.Security.Policy;
     using System.IO;
-#if FEATURE_SERIALIZATION
-    using System.Runtime.Serialization.Formatters.Binary;
-#endif // FEATURE_SERIALIZATION
     using System.Globalization;
     using System.Security.Util;
     using System.Diagnostics.Contracts;

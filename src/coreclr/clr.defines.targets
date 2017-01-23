@@ -4,30 +4,22 @@
         <CDefines Condition="'$(DebuggingSupported)' == 'true'">$(CDefines);DEBUGGING_SUPPORTED</CDefines>
         <CDefines Condition="'$(EnCSupported)' == 'true'">$(CDefines);EnC_SUPPORTED</CDefines>
         <CDefines Condition="'$(EnableDownlevelForNls)' == 'true'">$(CDefines);ENABLE_DOWNLEVEL_FOR_NLS</CDefines>
-        <CDefines Condition="'$(FeatureAppdomainmanagerInitoptions)' == 'true'">$(CDefines);FEATURE_APPDOMAINMANAGER_INITOPTIONS</CDefines>
         <CDefines Condition="'$(FeatureAppX)' == 'true'">$(CDefines);FEATURE_APPX</CDefines>
-        <CDefines Condition="'$(FeatureAppXBinder)' == 'true'">$(CDefines);FEATURE_APPX_BINDER</CDefines>
-        <CDefines Condition="'$(FeatureAptca)' == 'true'">$(CDefines);FEATURE_APTCA</CDefines>
         <CDefines Condition="'$(FeatureArrayStubAsIL)' == 'true'">$(CDefines);FEATURE_ARRAYSTUB_AS_IL</CDefines>
         <CDefines Condition="'$(FeatureStubsAsIL)' == 'true'">$(CDefines);FEATURE_STUBS_AS_IL</CDefines>
         <CDefines Condition="'$(FeatureCasPolicy)' == 'true'">$(CDefines);FEATURE_CAS_POLICY</CDefines>
         <CDefines Condition="'$(FeatureClassicCominterop)' == 'true'">$(CDefines);FEATURE_CLASSIC_COMINTEROP</CDefines>
         <CDefines Condition="'$(FeatureClickonce)' == 'true'">$(CDefines);FEATURE_CLICKONCE</CDefines>
         <CDefines Condition="'$(FeatureTraceLogging)' == 'true'">$(CDefines);FEATURE_TRACELOGGING</CDefines>
-        <CDefines Condition="'$(FeatureCodepagesFile)' == 'true'">$(CDefines);FEATURE_CODEPAGES_FILE</CDefines>
         <CDefines Condition="'$(FeatureCollectibleTypes)' == 'true'">$(CDefines);FEATURE_COLLECTIBLE_TYPES</CDefines>
         <CDefines Condition="'$(FeatureCominterop)' == 'true'">$(CDefines);FEATURE_COMINTEROP</CDefines>
         <CDefines Condition="'$(FeatureICastable)' == 'true'">$(CDefines);FEATURE_ICASTABLE</CDefines>
         <CDefines Condition="'$(FeatureCominteropApartmentSupport)' == 'true'">$(CDefines);FEATURE_COMINTEROP_APARTMENT_SUPPORT</CDefines>
-        <CDefines Condition="'$(FeatureCominteropManagedActivation)' == 'true'">$(CDefines);FEATURE_COMINTEROP_MANAGED_ACTIVATION</CDefines>
         <CDefines Condition="'$(FeatureCominteropRegistration)' == 'true'">$(CDefines);FEATURE_COMINTEROP_REGISTRATION</CDefines>
         <CDefines Condition="'$(FeatureCominteropTlbSupport)' == 'true'">$(CDefines);FEATURE_COMINTEROP_TLB_SUPPORT</CDefines>
         <CDefines Condition="'$(FeatureCominteropUnmanagedActivation)' == 'true'">$(CDefines);FEATURE_COMINTEROP_UNMANAGED_ACTIVATION</CDefines>
         <CDefines Condition="'$(FeatureCominteropWinRTManagedActivation)' == 'true'">$(CDefines);FEATURE_COMINTEROP_WINRT_MANAGED_ACTIVATION</CDefines>  <!-- Enables code required to activate managed winrt from native-->
-        <CDefines Condition="'$(FeatureCominteropWinRTDesktopHost)' == 'true'">$(CDefines);FEATURE_COMINTEROP_WINRT_DESKTOP_HOST</CDefines>
-        <CDefines Condition="'$(FeatureCompressedstack)' == 'true'">$(CDefines);FEATURE_COMPRESSEDSTACK</CDefines>
         <CDefines Condition="'$(FeatureCoreFxGlobalization)' == 'true'">$(CDefines);FEATURE_COREFX_GLOBALIZATION</CDefines>
-        <CDefines Condition="'$(FeatureCrypto)' == 'true'">$(CDefines);FEATURE_CRYPTO</CDefines>
         <CDefines Condition="'$(FeatureDbgipcTransportDI)' == 'true'">$(CDefines);FEATURE_DBGIPC_TRANSPORT_DI</CDefines>
         <CDefines Condition="'$(FeatureDbgipcTransportVM)' == 'true'">$(CDefines);FEATURE_DBGIPC_TRANSPORT_VM</CDefines>
         <CDefines Condition="'$(FeatureDbgPublish)' == 'true'">$(CDefines);FEATURE_DBG_PUBLISH</CDefines>
@@ -45,7 +37,6 @@
         <CDefines Condition="'$(FeatureIsostoreLight)' == 'true'">$(CDefines);FEATURE_ISOSTORE_LIGHT</CDefines>
         <CDefines Condition="'$(FeatureIsymReader)' == 'true'">$(CDefines);FEATURE_ISYM_READER</CDefines>
         <CDefines Condition="'$(FeatureLazyCOWPages)' == 'true'">$(CDefines);FEATURE_LAZY_COW_PAGES</CDefines>
-        <CDefines Condition="'$(FeatureLeakCultureInfo)' == 'true'">$(CDefines);FEATURE_LEAK_CULTURE_INFO</CDefines>
         <CDefines Condition="'$(FeatureLegacyNetCFDbgHostControl)' == 'true'">$(CDefines);FEATURE_LEGACYNETCF_DBG_HOST_CONTROL</CDefines> 
         <CDefines Condition="'$(FeatureMacl)' == 'true'">$(CDefines);FEATURE_MACL</CDefines>
         <CDefines Condition="'$(FeatureManagedEtw)' == 'true'">$(CDefines);FEATURE_MANAGED_ETW</CDefines>
@@ -63,22 +54,17 @@
         <CDefines Condition="'$(FeatureMetadataCustomDataSource)' == 'true'">$(CDefines);FEATURE_METADATA_CUSTOM_DATA_SOURCE</CDefines>
         <CDefines Condition="'$(FeatureMetadataDebuggeeDataSource)' == 'true'">$(CDefines);FEATURE_METADATA_DEBUGGEE_DATA_SOURCE</CDefines>
         <CDefines Condition="'$(FeatureMetadataVerifyLayouts)' == 'true'">$(CDefines);FEATURE_METADATA_VERIFY_LAYOUTS</CDefines>
-        <CDefines Condition="'$(FeatureMethodRental)' == 'true'">$(CDefines);FEATURE_METHOD_RENTAL</CDefines>
         <CDefines Condition="'$(FeatureMixedMode)' == 'true'">$(CDefines);FEATURE_MIXEDMODE</CDefines>
         <CDefines Condition="'$(FeatureMultiModuleAssemblies)' == 'true'">$(CDefines);FEATURE_MULTIMODULE_ASSEMBLIES</CDefines>
         <CDefines Condition="'$(FeatureNativeImageGeneration)' == 'true'">$(CDefines);FEATURE_NATIVE_IMAGE_GENERATION</CDefines>
         <CDefines Condition="'$(FeatureNongenericCollections)' == 'true'">$(CDefines);FEATURE_NONGENERIC_COLLECTIONS</CDefines>
-        <CDefines Condition="'$(FeatureNormIdnaOnly)' == 'true'">$(CDefines);FEATURE_NORM_IDNA_ONLY</CDefines>
         <CDefines Condition="'$(FeaturePal)' == 'true'">$(CDefines);FEATURE_PAL</CDefines>
         <CDefines Condition="'$(FeaturePerfmon)' == 'true'">$(CDefines);FEATURE_PERFMON</CDefines>
-        <CDefines Condition="'$(FeaturePls)' == 'true'">$(CDefines);FEATURE_PLS</CDefines>
         <CDefines Condition="'$(FeaturePrejit)' == 'true'">$(CDefines);FEATURE_PREJIT</CDefines>
         <CDefines Condition="'$(FeatureRandomizedStringHashing)' == 'true'">$(CDefines);FEATURE_RANDOMIZED_STRING_HASHING</CDefines>
         <CDefines Condition="'$(FeatureReflectionOnlyLoad)' == 'true'">$(CDefines);FEATURE_REFLECTION_ONLY_LOAD</CDefines>
         <CDefines Condition="'$(FeatureReJIT)' == 'true'">$(CDefines);FEATURE_REJIT</CDefines>
         <CDefines Condition="'$(FeatureRemoting)' == 'true'">$(CDefines);FEATURE_REMOTING</CDefines>
-        <CDefines Condition="'$(FeatureRwlock)' == 'true'">$(CDefines);FEATURE_RWLOCK</CDefines>
-        <CDefines Condition="'$(FeatureSerialization)' == 'true'">$(CDefines);FEATURE_SERIALIZATION</CDefines>
         <CDefines Condition="'$(FeatureSortTables)' == 'true'">$(CDefines);FEATURE_SORT_TABLES</CDefines>
         <CDefines Condition="'$(FeatureStackProbe)' == 'true'">$(CDefines);FEATURE_STACK_PROBE</CDefines>
         <CDefines Condition="'$(FeatureStandaloneSn)' == 'true'">$(CDefines);FEATURE_STANDALONE_SN</CDefines>
@@ -95,8 +81,6 @@
         <CDefines Condition="'$(FeatureWatson)' == 'true'">$(CDefines);FEATURE_WATSON</CDefines>
         <CDefines Condition="'$(FeatureWin32Registry)' == 'true'">$(CDefines);FEATURE_WIN32_REGISTRY</CDefines>
         <CDefines Condition="'$(FeatureWinMDResilient)' == 'true'">$(CDefines);FEATURE_WINMD_RESILIENT</CDefines>
-        <CDefines Condition="'$(FeatureX509)' == 'true'">$(CDefines);FEATURE_X509</CDefines>
-        <CDefines Condition="'$(FeatureX509Securestrings)' == 'true'">$(CDefines);FEATURE_X509_SECURESTRINGS</CDefines>
         <CDefines Condition="'$(ProfilingSupportedBuild)' == 'true'">$(CDefines);PROFILING_SUPPORTED</CDefines>
         <CDefines Condition="'$(UefChainingSupported)' == 'true'">$(CDefines);UEF_CHAINING_SUPPORTED</CDefines>
         <CDefines Condition="'$(UseStl)' == 'true'">$(CDefines);USE_STL</CDefines>
@@ -109,25 +93,17 @@
         <CDefines Condition="'$(FeatureReadyToRunCompiler)' == 'true'">$(CDefines);FEATURE_READYTORUN_COMPILER</CDefines>
 
         <DefineConstants Condition="'$(BuildTypeRet)' == 'true'">$(DefineConstants);BUILDTYPE_RET</DefineConstants>
-        <DefineConstants Condition="'$(FeatureAppdomainmanagerInitoptions)' == 'true'">$(DefineConstants);FEATURE_APPDOMAINMANAGER_INITOPTIONS</DefineConstants>
         <DefineConstants Condition="'$(FeatureAppX)' == 'true'">$(DefineConstants);FEATURE_APPX</DefineConstants>
-        <DefineConstants Condition="'$(FeatureAppXBinder)' == 'true'">$(DefineConstants);FEATURE_APPX_BINDER</DefineConstants>
-        <DefineConstants Condition="'$(FeatureAptca)' == 'true'">$(DefineConstants);FEATURE_APTCA</DefineConstants>
         <DefineConstants Condition="'$(FeatureArrayStubAsIL)' == 'true'">$(DefineConstants);FEATURE_ARRAYSTUB_AS_IL</DefineConstants>
         <DefineConstants Condition="'$(FeatureStubsAsIL)' == 'true'">$(DefineConstants);FEATURE_STUBS_AS_IL</DefineConstants>
         <DefineConstants Condition="'$(FeatureCasPolicy)' == 'true'">$(DefineConstants);FEATURE_CAS_POLICY</DefineConstants>
         <DefineConstants Condition="'$(FeatureClassicCominterop)' == 'true'">$(DefineConstants);FEATURE_CLASSIC_COMINTEROP</DefineConstants>
         <DefineConstants Condition="'$(FeatureClickonce)' == 'true'">$(DefineConstants);FEATURE_CLICKONCE</DefineConstants>
-        <DefineConstants Condition="'$(FeatureCodepagesFile)' == 'true'">$(DefineConstants);FEATURE_CODEPAGES_FILE</DefineConstants>
         <DefineConstants Condition="'$(FeatureCominterop)' == 'true'">$(DefineConstants);FEATURE_COMINTEROP</DefineConstants>
         <DefineConstants Condition="'$(FeatureCominteropApartmentSupport)' == 'true'">$(DefineConstants);FEATURE_COMINTEROP_APARTMENT_SUPPORT</DefineConstants>
-        <DefineConstants Condition="'$(FeatureCominteropManagedActivation)' == 'true'">$(DefineConstants);FEATURE_COMINTEROP_MANAGED_ACTIVATION</DefineConstants>
         <DefineConstants Condition="'$(FeatureCominteropUnmanagedActivation)' == 'true'">$(DefineConstants);FEATURE_COMINTEROP_UNMANAGED_ACTIVATION</DefineConstants>
         <DefineConstants Condition="'$(FeatureCominteropWinRTManagedActivation)' == 'true'">$(DefineConstants);FEATURE_COMINTEROP_WINRT_MANAGED_ACTIVATION</DefineConstants>
-        <DefineConstants Condition="'$(FeatureCominteropWinRTDesktopHost)' == 'true'">$(DefineConstants);FEATURE_COMINTEROP_WINRT_DESKTOP_HOST</DefineConstants>
-        <DefineConstants Condition="'$(FeatureCompressedstack)' == 'true'">$(DefineConstants);FEATURE_COMPRESSEDSTACK</DefineConstants>
         <DefineConstants Condition="'$(FeatureCoreFxGlobalization)' == 'true'">$(DefineConstants);FEATURE_COREFX_GLOBALIZATION</DefineConstants>
-        <DefineConstants Condition="'$(FeatureCrypto)' == 'true'">$(DefineConstants);FEATURE_CRYPTO</DefineConstants>
         <DefineConstants Condition="'$(FeatureDisplayCultureInfo)' == 'true'">$(DefineConstants);FEATURE_DISPLAY_CULTURE_INFO</DefineConstants>
         <DefineConstants Condition="'$(FeatureDisplayRegionInfo)' == 'true'">$(DefineConstants);FEATURE_DISPLAY_REGION_INFO</DefineConstants>
         <DefineConstants Condition="'$(FeatureFusion)' == 'true'">$(DefineConstants);FEATURE_FUSION</DefineConstants>
@@ -139,23 +115,17 @@
         <DefineConstants Condition="'$(FeatureIsolatedStorageQuotaEnforcement)' == 'true'">$(DefineConstants);FEATURE_ISOLATED_STORAGE_QUOTA_ENFORCEMENT</DefineConstants>
         <DefineConstants Condition="'$(FeatureIsostore)' == 'true'">$(DefineConstants);FEATURE_ISOSTORE</DefineConstants>
         <DefineConstants Condition="'$(FeatureIsostoreLight)' == 'true'">$(DefineConstants);FEATURE_ISOSTORE_LIGHT</DefineConstants>
-        <DefineConstants Condition="'$(FeatureLeakCultureInfo)' == 'true'">$(DefineConstants);FEATURE_LEAK_CULTURE_INFO</DefineConstants>
         <DefineConstants Condition="'$(FeatureMacl)' == 'true'">$(DefineConstants);FEATURE_MACL</DefineConstants>
         <DefineConstants Condition="'$(FeatureManagedEtw)' == 'true'">$(DefineConstants);FEATURE_MANAGED_ETW</DefineConstants>
-        <DefineConstants Condition="'$(FeatureMethodRental)' == 'true'">$(DefineConstants);FEATURE_METHOD_RENTAL</DefineConstants>
         <DefineConstants Condition="'$(FeatureMultiModuleAssemblies)' == 'true'">$(DefineConstants);FEATURE_MULTIMODULE_ASSEMBLIES</DefineConstants>
         <DefineConstants Condition="'$(FeatureNongenericCollections)' == 'true'">$(DefineConstants);FEATURE_NONGENERIC_COLLECTIONS</DefineConstants>
-        <DefineConstants Condition="'$(FeatureNormIdnaOnly)' == 'true'">$(DefineConstants);FEATURE_NORM_IDNA_ONLY</DefineConstants>
         <DefineConstants Condition="'$(FeaturePal)' == 'true'">$(DefineConstants);FEATURE_PAL</DefineConstants>
         <DefineConstants Condition="'$(FeaturePathCompat)' == 'true'">$(DefineConstants);FEATURE_PATHCOMPAT</DefineConstants>
         <DefineConstants Condition="'$(FeatureXplatEventSource)' == 'true'">$(DefineConstants);FEATURE_EVENTSOURCE_XPLAT</DefineConstants>
         <DefineConstants Condition="'$(FeaturePerfmon)' == 'true'">$(DefineConstants);FEATURE_PERFMON</DefineConstants>
-        <DefineConstants Condition="'$(FeaturePls)' == 'true'">$(DefineConstants);FEATURE_PLS</DefineConstants>
         <DefineConstants Condition="'$(FeatureRandomizedStringHashing)' == 'true'">$(DefineConstants);FEATURE_RANDOMIZED_STRING_HASHING</DefineConstants>
         <DefineConstants Condition="'$(FeatureReflectionOnlyLoad)' == 'true'">$(DefineConstants);FEATURE_REFLECTION_ONLY_LOAD</DefineConstants>
         <DefineConstants Condition="'$(FeatureRemoting)' == 'true'">$(DefineConstants);FEATURE_REMOTING</DefineConstants>
-        <DefineConstants Condition="'$(FeatureRwlock)' == 'true'">$(DefineConstants);FEATURE_RWLOCK</DefineConstants>
-        <DefineConstants Condition="'$(FeatureSerialization)' == 'true'">$(DefineConstants);FEATURE_SERIALIZATION</DefineConstants>
         <DefineConstants Condition="'$(FeatureSortTables)' == 'true'">$(DefineConstants);FEATURE_SORT_TABLES</DefineConstants>
         <DefineConstants Condition="'$(FeatureSyntheticCultures)' == 'true'">$(DefineConstants);FEATURE_SYNTHETIC_CULTURES</DefineConstants>
         <DefineConstants Condition="'$(FeatureTypeEquivalence)' == 'true'">$(DefineConstants);FEATURE_TYPEEQUIVALENCE</DefineConstants>
@@ -163,8 +133,6 @@
         <DefineConstants Condition="'$(FeatureValidator)' == 'true'">$(DefineConstants);FEATURE_VALIDATOR</DefineConstants>
         <DefineConstants Condition="'$(FeatureWin32Registry)' == 'true'">$(DefineConstants);FEATURE_WIN32_REGISTRY</DefineConstants>
         <DefineConstants Condition="'$(FeatureWinMDResilient)' == 'true'">$(DefineConstants);FEATURE_WINMD_RESILIENT</DefineConstants>
-        <DefineConstants Condition="'$(FeatureX509)' == 'true'">$(DefineConstants);FEATURE_X509</DefineConstants>
-        <DefineConstants Condition="'$(FeatureX509Securestrings)' == 'true'">$(DefineConstants);FEATURE_X509_SECURESTRINGS</DefineConstants>
         <DefineConstants Condition="'$(ProfilingSupportedBuild)' == 'true'">$(DefineConstants);PROFILING_SUPPORTED</DefineConstants>
         <DefineConstants Condition="'$(FeatureReJIT)' == 'true'">$(DefineConstants);FEATURE_REJIT</DefineConstants>
         <DefineConstants Condition="'$(FeatureUseAsmGCWriteBarriers)' == 'true'">$(DefineConstants);FEATURE_USE_ASM_GC_WRITE_BARRIERS</DefineConstants>

@@ -120,10 +120,6 @@ namespace System.Threading {
         private String          m_Name;
         private Delegate        m_Delegate;             // Delegate
 
-#if FEATURE_LEAK_CULTURE_INFO 
-        private CultureInfo     m_CurrentCulture;
-        private CultureInfo     m_CurrentUICulture;
-#endif
         private Object          m_ThreadStartArg;
 
         /*=========================================================================
@@ -164,32 +160,22 @@ namespace System.Threading {
         // Do not move! Order of above fields needs to be preserved for alignment
         // with native code
         // See code:#threadCultureInfo
-#if !FEATURE_LEAK_CULTURE_INFO
         [ThreadStatic]
         internal static CultureInfo     m_CurrentCulture;
         [ThreadStatic]
         internal static CultureInfo     m_CurrentUICulture;
-#endif
 
         static AsyncLocal<CultureInfo> s_asyncLocalCurrentCulture; 
         static AsyncLocal<CultureInfo> s_asyncLocalCurrentUICulture;
 
         static void AsyncLocalSetCurrentCulture(AsyncLocalValueChangedArgs<CultureInfo> args)
         {
-#if FEATURE_LEAK_CULTURE_INFO 
-            Thread.CurrentThread.m_CurrentCulture = args.CurrentValue;
-#else
             m_CurrentCulture = args.CurrentValue;
-#endif // FEATURE_LEAK_CULTURE_INFO
         }
 
         static void AsyncLocalSetCurrentUICulture(AsyncLocalValueChangedArgs<CultureInfo> args)
         {
-#if FEATURE_LEAK_CULTURE_INFO 
-            Thread.CurrentThread.m_CurrentUICulture = args.CurrentValue;
-#else
             m_CurrentUICulture = args.CurrentValue;
-#endif // FEATURE_LEAK_CULTURE_INFO
         }
 
         // Adding an empty default ctor for annotation purposes
@@ -334,29 +320,6 @@ namespace System.Threading {
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private extern void StartInternal(IPrincipal principal, ref StackCrawlMark stackMark);
-#if FEATURE_COMPRESSEDSTACK
-        /// <internalonly/>
-        [DynamicSecurityMethodAttribute()]
-        [Obsolete("Thread.SetCompressedStack is no longer supported. Please use the System.Threading.CompressedStack class")]         
-        public void SetCompressedStack( CompressedStack stack )
-        {
-            throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_ThreadAPIsNotSupported"));
-        }
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall), ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
-        internal extern IntPtr SetAppDomainStack( SafeCompressedStackHandle csHandle);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall), ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
-        internal extern void RestoreAppDomainStack( IntPtr appDomainStack);
-        
-
-        /// <internalonly/>
-        [Obsolete("Thread.GetCompressedStack is no longer supported. Please use the System.Threading.CompressedStack class")]
-        public CompressedStack GetCompressedStack()
-        {
-            throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_ThreadAPIsNotSupported"));
-        }
-#endif // #if FEATURE_COMPRESSEDSTACK
 
 
         // Helper method to get a logical thread ID for StringBuilder (for
@@ -623,10 +586,6 @@ namespace System.Threading {
         // - thread instance member cultures (CurrentCulture and CurrentUICulture) 
         //   confined within AppDomains
         // - changes to these properties don't affect the underlying native thread
-        //
-        // Ifdef:
-        // FEATURE_LEAK_CULTURE_INFO      : CultureInfos can leak across AppDomains, not
-        //                                  enabled in Silverlight
         // 
         // Implementation notes:
         // In Silverlight, culture members thread static (per Thread, per AppDomain). 
@@ -636,10 +595,6 @@ namespace System.Threading {
         // now need to special case resource lookup for mscorlib, which transitions to the 
         // default domain to lookup resources. See Environment.cs for more details.
         // 
-#if FEATURE_LEAK_CULTURE_INFO
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        static extern private bool nativeGetSafeCulture(Thread t, int appDomainId, bool isUI, ref CultureInfo safeCulture);
-#endif // FEATURE_LEAK_CULTURE_INFO
 
         // As the culture can be customized object then we cannot hold any 
         // reference to it before we check if it is safe because the app domain 
@@ -680,16 +635,8 @@ namespace System.Threading {
                 // If you add more pre-conditions to this method, check to see if you also need to 
                 // add them to CultureInfo.DefaultThreadCurrentUICulture.set.
 
-#if FEATURE_LEAK_CULTURE_INFO
-                if (nativeSetThreadUILocale(value.SortName) == false)
-                {
-                    throw new ArgumentException(Environment.GetResourceString("Argument_InvalidResourceCultureName", value.Name));
-                }
-                value.StartCrossDomainTracking();
-#else
                 if (m_CurrentUICulture == null && m_CurrentCulture == null)
                     nativeInitCultureAccessors();
-#endif
 
                 if (!AppContextSwitches.NoAsyncCurrentCulture)
                 {
@@ -708,8 +655,6 @@ namespace System.Threading {
             }
         }
 
-#if FEATURE_LEAK_CULTURE_INFO
-#endif
         internal CultureInfo GetCurrentUICultureNoAppX() {
 
             Contract.Ensures(Contract.Result<CultureInfo>() != null);
@@ -725,25 +670,11 @@ namespace System.Threading {
                 return (appDomainDefaultUICulture != null ? appDomainDefaultUICulture : CultureInfo.UserDefaultUICulture);
             }
 
-#if FEATURE_LEAK_CULTURE_INFO
-            CultureInfo culture = null;
-
-            if (!nativeGetSafeCulture(this, GetDomainID(), true, ref culture) || culture == null) {
-                return CultureInfo.UserDefaultUICulture;
-            }
-                
-            return culture;
-#else
             return m_CurrentUICulture;
-#endif
 #endif
         }
 
         // This returns the exposed context for a given context ID.
-#if FEATURE_LEAK_CULTURE_INFO
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        static extern private bool nativeSetThreadUILocale(String locale);
-#endif
 
         // As the culture can be customized object then we cannot hold any 
         // reference to it before we check if it is safe because the app domain 
@@ -772,8 +703,6 @@ namespace System.Threading {
                 }
             }
 
-#if FEATURE_LEAK_CULTURE_INFO
-#endif
             set {
                 if (null==value) {
                     throw new ArgumentNullException(nameof(value));
@@ -783,16 +712,8 @@ namespace System.Threading {
                 // If you add more pre-conditions to this method, check to see if you also need to 
                 // add them to CultureInfo.DefaultThreadCurrentCulture.set.
 
-#if FEATURE_LEAK_CULTURE_INFO
-                //If we can't set the nativeThreadLocale, we'll just let it stay
-                //at whatever value it had before.  This allows people who use
-                //just managed code not to be limited by the underlying OS.
-                CultureInfo.nativeSetThreadLocale(value.SortName);
-                value.StartCrossDomainTracking();
-#else
                 if (m_CurrentCulture == null && m_CurrentUICulture == null)
                     nativeInitCultureAccessors();
-#endif
 
                 if (!AppContextSwitches.NoAsyncCurrentCulture)
                 {
@@ -810,8 +731,6 @@ namespace System.Threading {
             }
         }
 
-#if FEATURE_LEAK_CULTURE_INFO
-#endif
         private CultureInfo GetCurrentCultureNoAppX() {
 
 #if FEATURE_COREFX_GLOBALIZATION
@@ -826,25 +745,13 @@ namespace System.Threading {
                 return (appDomainDefaultCulture != null ? appDomainDefaultCulture : CultureInfo.UserDefaultCulture);
             }
 
-#if FEATURE_LEAK_CULTURE_INFO
-            CultureInfo culture = null;
-              
-            if (!nativeGetSafeCulture(this, GetDomainID(), false, ref culture) || culture == null) {
-                return CultureInfo.UserDefaultCulture;
-            }
-                
-            return culture;
-#else
             return m_CurrentCulture;
-#endif
 #endif
         }
 
-#if !FEATURE_LEAK_CULTURE_INFO
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
         private static extern void nativeInitCultureAccessors();
-#endif
 
         /*======================================================================
         ** Returns the current domain in which current thread is running.

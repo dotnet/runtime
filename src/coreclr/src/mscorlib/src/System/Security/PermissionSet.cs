@@ -13,9 +13,6 @@ namespace System.Security {
     using System.Security.Permissions;
     using System.Runtime.CompilerServices;
     using System.Security.Policy;
-#if FEATURE_SERIALIZATION
-    using System.Runtime.Serialization.Formatters.Binary;
-#endif // FEATURE_SERIALIZATION
     using BindingFlags = System.Reflection.BindingFlags;
     using System.Runtime.Serialization;
     using System.Text;
@@ -34,14 +31,8 @@ namespace System.Security {
         SkipVerification = 3
     }
 
-#if FEATURE_SERIALIZATION
-    [Serializable]
-#endif
     [System.Runtime.InteropServices.ComVisible(true)]
     public class PermissionSet : ISecurityEncodable, ICollection, IStackWalk
-#if FEATURE_SERIALIZATION
-        , IDeserializationCallback
-#endif
     {
 #if _DEBUG
         internal static readonly bool debug;
@@ -1458,14 +1449,6 @@ namespace System.Security {
             return null;
         }
 
-#if FEATURE_SERIALIZATION
-        /// <internalonly/>
-        void IDeserializationCallback.OnDeserialization(Object sender)        
-        {
-            NormalizePermissionSet();
-            m_CheckedForNonCas = false;
-        }
-#endif
 
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
         public static void RevertAssert()
