@@ -1164,32 +1164,16 @@ namespace System.Net.Http
                 if (easy._requestContentStream == null)
                 {
                     multi.EventSourceTrace("Calling ReadAsStreamAsync to get new request stream", easy: easy);
-                    asyncRead = easy._requestMessage.Content.ReadAsStreamAsync().ContinueWith((readStream, s) =>
-                    {
-                        var stateAndRequest = (Tuple<EasyRequest.SendTransferState, EasyRequest>)s;
-                        EasyRequest.SendTransferState innerSts = stateAndRequest.Item1;
-                        EasyRequest innerEasy = stateAndRequest.Item2;
-                        MultiAgent innerMulti = innerEasy._associatedMultiAgent;
-
-                        innerMulti.EventSourceTrace("ReadAsStreamAsync completed: {0}", readStream.Status, easy: innerEasy);
-
-                        // Get and store the resulting stream
-                        innerEasy._requestContentStream = readStream.GetAwaiter().GetResult();
-                        innerMulti.EventSourceTrace("Got stream: {0}", innerEasy._requestContentStream.GetType(), easy: innerEasy);
-
-                        // If the stream is seekable, store its original position.  We'll use this any time we need to seek
-                        // back to the "beginning", as it's possible the stream isn't at position 0.
-                        if (innerEasy._requestContentStream.CanSeek)
+                    Task<Stream> readStreamTask = easy._requestMessage.Content.ReadAsStreamAsync();
+                    asyncRead = readStreamTask.IsCompleted ?
+                        StoreRetrievedContentStreamAndReadAsync(readStreamTask, easy, sts, length) :
+                        easy._requestMessage.Content.ReadAsStreamAsync().ContinueWith((readStream, s) =>
                         {
-                            long startingPos = innerEasy._requestContentStream.Position;
-                            innerEasy._requestContentStreamStartingPosition = startingPos;
-                            CurlHandler.EventSourceTrace("Stream starting position: {0}", startingPos, easy: innerEasy);
-                        }
-
-                        // Now that we have a stream, do the desired read
-                        innerMulti.EventSourceTrace("Starting async read", easy: innerEasy);
-                        return innerEasy._requestContentStream.ReadAsync(innerSts._buffer, 0, Math.Min(innerSts._buffer.Length, length), innerEasy._cancellationToken);
-                    }, Tuple.Create(sts, easy), easy._cancellationToken, TaskContinuationOptions.ExecuteSynchronously | TaskContinuationOptions.DenyChildAttach, TaskScheduler.Default).Unwrap();
+                            var stateAndRequest = (Tuple<int, EasyRequest.SendTransferState, EasyRequest>)s;
+                            return StoreRetrievedContentStreamAndReadAsync(readStream,
+                                stateAndRequest.Item3, stateAndRequest.Item2, stateAndRequest.Item1);
+                        }, Tuple.Create(length, sts, easy), CancellationToken.None,
+                        TaskContinuationOptions.ExecuteSynchronously | TaskContinuationOptions.DenyChildAttach, TaskScheduler.Default).Unwrap();
                 }
                 else
                 {
@@ -1242,6 +1226,48 @@ namespace System.Net.Http
                 // Then pause the connection.
                 multi.EventSourceTrace("Pausing transfer from request stream", easy: easy);
                 return Interop.Http.CURL_READFUNC_PAUSE;
+            }
+
+            /// <summary>
+            /// Given a completed task used to retrieve the content stream asynchronously, extracts the stream,
+            /// stores it into <see cref="EasyRequest._requestContentStream"/>, and does an initial read on it.
+            /// </summary>
+            private static Task<int> StoreRetrievedContentStreamAndReadAsync(
+                Task<Stream> readStream, EasyRequest easy, EasyRequest.SendTransferState sts, int length)
+            {
+                Debug.Assert(readStream.IsCompleted, $"Expected readStream to be completed, got {readStream.Status}");
+                try
+                {
+                    MultiAgent multi = easy._associatedMultiAgent;
+                    multi.EventSourceTrace("ReadAsStreamAsync completed: {0}", readStream.Status, easy: easy);
+
+                    // Get and store the resulting stream
+                    easy._requestContentStream = readStream.GetAwaiter().GetResult();
+                    multi.EventSourceTrace("Got stream: {0}", easy._requestContentStream.GetType(), easy: easy);
+
+                    // If the stream is seekable, store its original position.  We'll use this any time we need to seek
+                    // back to the "beginning", as it's possible the stream isn't at position 0.
+                    if (easy._requestContentStream.CanSeek)
+                    {
+                        long startingPos = easy._requestContentStream.Position;
+                        easy._requestContentStreamStartingPosition = startingPos;
+                        CurlHandler.EventSourceTrace("Stream starting position: {0}", startingPos, easy: easy);
+                    }
+
+                    // Now that we have a stream, do the desired read
+                    multi.EventSourceTrace("Starting async read", easy: easy);
+                    return easy._requestContentStream.ReadAsync(sts._buffer, 0, Math.Min(sts._buffer.Length, length), easy._cancellationToken);
+                }
+                catch (OperationCanceledException oce)
+                {
+                    return oce.CancellationToken.IsCancellationRequested ?
+                        Task.FromCanceled<int>(oce.CancellationToken) :
+                        Task.FromCanceled<int>(new CancellationToken(true));
+                }
+                catch (Exception exc)
+                {
+                    return Task.FromException<int>(exc);
+                }
             }
 
             /// <summary>Callback invoked by libcurl to seek to a position within the request stream.</summary>
