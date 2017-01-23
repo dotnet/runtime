@@ -139,7 +139,6 @@
     <FeatureReflectionOnlyLoad>false</FeatureReflectionOnlyLoad>
     <FeatureStackProbe>false</FeatureStackProbe>
     <FeatureReJIT>false</FeatureReJIT>
-    <FeaturePls>false</FeaturePls>
     <FeatureVersioningLog>false</FeatureVersioningLog>
     <FeatureNativeImageGeneration>true</FeatureNativeImageGeneration>
     <FeatureReadyToRunCompiler Condition="'$(FeatureReadyToRun)' == 'true'">true</FeatureReadyToRunCompiler>
