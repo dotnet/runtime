@@ -4016,8 +4016,8 @@
       <Member Status="ImplRoot" MemberType="Field" Name="m_assembly" />
       <Member Status="ImplRoot" Name="OnModuleResolveEvent(System.String)" /> <!-- EE -->
       <Member Status="ImplRoot" MemberType="Property" Name="DefinedTypes" />
-      <!-- On Windows Phone Assembly.LoadFrom throws a NotSupportedException.  Prevent this internal helper from being stripped by the rewriter so that tests may reflect and call it since they need LoadFrom functionality -->
-      <Member Status="ImplRoot" Name="InternalLoadFrom(System.String,System.Security.Policy.Evidence,System.Byte[],System.Configuration.Assemblies.AssemblyHashAlgorithm,System.Boolean,System.Boolean,System.Threading.StackCrawlMark@)" Condition="FEATURE_WINDOWSPHONE" />
+      <!-- Assembly.LoadFrom throws a NotSupportedException.  Prevent this internal helper from being stripped by the rewriter so that tests may reflect and call it since they need LoadFrom functionality -->
+      <Member Status="ImplRoot" Name="InternalLoadFrom(System.String,System.Security.Policy.Evidence,System.Byte[],System.Configuration.Assemblies.AssemblyHashAlgorithm,System.Boolean,System.Boolean,System.Threading.StackCrawlMark@)" />
     </Type>
     <Type Name="System.Reflection.TypeInfo">
       <Member Name="#ctor" />
