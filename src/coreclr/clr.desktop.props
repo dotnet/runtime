@@ -49,7 +49,6 @@
     <FeatureLeakCultureInfo>true</FeatureLeakCultureInfo>
     <FeatureMacl>true</FeatureMacl>
     <FeatureManagedEtw>true</FeatureManagedEtw>
-    <FeatureManagedEtwChannels>true</FeatureManagedEtwChannels>
     <FeatureMdaSupported>true</FeatureMdaSupported>
     <FeatureMethodRental>true</FeatureMethodRental>
     <FeatureMixedMode>true</FeatureMixedMode>
