@@ -87,17 +87,6 @@
     </Type>
     <Type Status="ImplRoot" Name="System.AppDomain">
       <Member Status="ImplRoot" Name="get_CurrentDomain" />
-      <Member Status="ImplRoot" Name="get_MonitoringIsEnabled" />
-      <Member Status="ImplRoot" Name="set_MonitoringIsEnabled(System.Boolean)" />
-      <Member Status="ImplRoot" Name="get_MonitoringTotalProcessorTime" />
-      <Member Status="ImplRoot" Name="get_MonitoringTotalAllocatedMemorySize" />
-      <Member Status="ImplRoot" Name="get_MonitoringSurvivedMemorySize" />
-      <Member Status="ImplRoot" Name="get_MonitoringSurvivedProcessMemorySize" />
-      <Member Status="ImplRoot" MemberType="Property" Name="MonitoringIsEnabled" />
-      <Member Status="ImplRoot" MemberType="Property" Name="MonitoringTotalProcessorTime" />
-      <Member Status="ImplRoot" MemberType="Property" Name="MonitoringTotalAllocatedMemorySize" />
-      <Member Status="ImplRoot" MemberType="Property" Name="MonitoringSurvivedMemorySize" />
-      <Member Status="ImplRoot" MemberType="Property" Name="MonitoringSurvivedProcessMemorySize" />
       <Member Status="ImplRoot" MemberType="Property" Name="IsFullyTrusted" />
       <Member Status="ImplRoot" Name="GetData(System.String)" />
       <Member Status="ImplRoot" Name="ToString" />

@@ -4,7 +4,6 @@
         <CDefines Condition="'$(DebuggingSupported)' == 'true'">$(CDefines);DEBUGGING_SUPPORTED</CDefines>
         <CDefines Condition="'$(EnCSupported)' == 'true'">$(CDefines);EnC_SUPPORTED</CDefines>
         <CDefines Condition="'$(EnableDownlevelForNls)' == 'true'">$(CDefines);ENABLE_DOWNLEVEL_FOR_NLS</CDefines>
-        <CDefines Condition="'$(FeatureAppdomainResourceMonitoring)' == 'true'">$(CDefines);FEATURE_APPDOMAIN_RESOURCE_MONITORING</CDefines>
         <CDefines Condition="'$(FeatureAppdomainmanagerInitoptions)' == 'true'">$(CDefines);FEATURE_APPDOMAINMANAGER_INITOPTIONS</CDefines>
         <CDefines Condition="'$(FeatureAppX)' == 'true'">$(CDefines);FEATURE_APPX</CDefines>
         <CDefines Condition="'$(FeatureAppXBinder)' == 'true'">$(CDefines);FEATURE_APPX_BINDER</CDefines>
@@ -111,7 +110,6 @@
 
         <DefineConstants Condition="'$(BuildTypeRet)' == 'true'">$(DefineConstants);BUILDTYPE_RET</DefineConstants>
         <DefineConstants Condition="'$(FeatureAppdomainmanagerInitoptions)' == 'true'">$(DefineConstants);FEATURE_APPDOMAINMANAGER_INITOPTIONS</DefineConstants>
-        <DefineConstants Condition="'$(FeatureAppdomainResourceMonitoring)' == 'true'">$(DefineConstants);FEATURE_APPDOMAIN_RESOURCE_MONITORING</DefineConstants>
         <DefineConstants Condition="'$(FeatureAppX)' == 'true'">$(DefineConstants);FEATURE_APPX</DefineConstants>
         <DefineConstants Condition="'$(FeatureAppXBinder)' == 'true'">$(DefineConstants);FEATURE_APPX_BINDER</DefineConstants>
         <DefineConstants Condition="'$(FeatureAptca)' == 'true'">$(DefineConstants);FEATURE_APTCA</DefineConstants>
