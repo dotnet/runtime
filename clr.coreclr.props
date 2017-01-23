@@ -5,7 +5,6 @@
     <DebuggingSupportedBuild>true</DebuggingSupportedBuild>
     <EnCSupported Condition="('$(TargetArch)' == 'i386') or ('$(TargetArch)' == 'amd64')">true</EnCSupported>
     <EnableDownlevelForNls Condition="'$(CrossTargetArchitecture)' != ''">true</EnableDownlevelForNls>
-    <FeatureAppdomainResourceMonitoring>true</FeatureAppdomainResourceMonitoring>
     <FeatureArrayStubAsIL Condition="('$(TargetArch)' == 'arm') or ('$(TargetArch)' == 'amd64') or ('$(TargetArch)' == 'arm64')">true</FeatureArrayStubAsIL>
     <FeatureStubsAsIL Condition="'$(TargetArch)' == 'arm64'">true</FeatureStubsAsIL>
     <FeatureCominteropApartmentSupport>true</FeatureCominteropApartmentSupport>
