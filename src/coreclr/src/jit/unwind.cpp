@@ -132,37 +132,7 @@ void Compiler::unwindGetFuncLocations(FuncInfoDsc*             func,
 
 #elif defined(_TARGET_X86_)
 
-// Stub routines that do nothing
-void Compiler::unwindBegProlog()
-{
-}
-void Compiler::unwindEndProlog()
-{
-}
-void Compiler::unwindBegEpilog()
-{
-}
-void Compiler::unwindEndEpilog()
-{
-}
-void Compiler::unwindReserve()
-{
-}
-void Compiler::unwindEmit(void* pHotCode, void* pColdCode)
-{
-}
-void Compiler::unwindPush(regNumber reg)
-{
-}
-void Compiler::unwindAllocStack(unsigned size)
-{
-}
-void Compiler::unwindSetFrameReg(regNumber reg, unsigned offset)
-{
-}
-void Compiler::unwindSaveReg(regNumber reg, unsigned offset)
-{
-}
+// See unwindX86.cpp
 
 #else // _TARGET_*
 

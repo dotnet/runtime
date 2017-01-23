@@ -1769,7 +1769,11 @@ public:
     // a PSPSym for functions with any EH.
     bool ehNeedsPSPSym() const
     {
+#ifdef _TARGET_X86_
+        return false;
+#else  // _TARGET_X86_
         return compHndBBtabCount > 0;
+#endif // _TARGET_X86_
     }
 
     bool     ehAnyFunclets();  // Are there any funclets in this function?
@@ -6848,10 +6852,15 @@ private:
     void unwindReserveFunc(FuncInfoDsc* func);
     void unwindEmitFunc(FuncInfoDsc* func, void* pHotCode, void* pColdCode);
 
-#if defined(_TARGET_AMD64_)
+#if defined(_TARGET_AMD64_) || (defined(_TARGET_X86_) && FEATURE_EH_FUNCLETS)
 
     void unwindReserveFuncHelper(FuncInfoDsc* func, bool isHotCode);
     void unwindEmitFuncHelper(FuncInfoDsc* func, void* pHotCode, void* pColdCode, bool isHotCode);
+
+#endif // _TARGET_AMD64_ || (_TARGET_X86_ && FEATURE_EH_FUNCLETS)
+
+#if defined(_TARGET_AMD64_)
+
     UNATIVE_OFFSET unwindGetCurrentOffset(FuncInfoDsc* func);
 
     void unwindBegPrologWindows();
