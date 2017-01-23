@@ -368,7 +368,12 @@ prof_shutdown (MonoProfiler *prof)
 
 	printf ("Creating output file: %s\n", prof->outfile_name);
 
-	outfile = fopen (prof->outfile_name, "w+");
+	if (prof->outfile_name [0] == '#') {
+		int fd = strtol (prof->outfile_name + 1, NULL, 10);
+		outfile = fdopen (fd, "a");
+	} else {
+		outfile = fopen (prof->outfile_name, "w+");
+	}
 	if (!outfile) {
 		fprintf (stderr, "Unable to create output file '%s': %s.\n", prof->outfile_name, strerror (errno));
 		return;
