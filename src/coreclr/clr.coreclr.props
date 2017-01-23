@@ -21,7 +21,6 @@
     <FeatureIsymReader>true</FeatureIsymReader>
     <!-- This is here for testing purposes only, and only on checked builds for x86/ARM -->
     <FeatureLazyCOWPages Condition="'$(_BuildType)'!='ret' and (('$(TargetArch)' == 'i386') or ('$(TargetArch)' == 'arm'))">true</FeatureLazyCOWPages>
-    <FeatureLoaderOptimization>true</FeatureLoaderOptimization>
     <FeatureMainClrModuleUsesCoreName>true</FeatureMainClrModuleUsesCoreName>
     <FeatureMergeCultureSupportAndEngine>true</FeatureMergeCultureSupportAndEngine>
     <FeatureMergeJitAndEngine>true</FeatureMergeJitAndEngine>
