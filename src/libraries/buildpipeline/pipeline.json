@@ -14,7 +14,7 @@
       "BuildParameters": {
         "PB_ConfigurationGroup": "Release",
         "PB_BuildArguments": "-buildArch=x64 -Release",
-        "PB_BuildTestsArguments": "-buildArch=x64 -Release -SkipTests -- /p:ArchiveTests=true",
+        "PB_BuildTestsArguments": "-buildArch=x64 -Release -SkipTests -- /p:ArchiveTests=true /p:EnableDumpling=true",
         "PB_CreateHelixArguments": "/t:CloudBuild /p:ArchGroup=x64 /p:ConfigurationGroup=Release /p:\"EnableCloudTest=true\" /p:\"TestProduct=corefx /p:\"TimeoutInSeconds=1200\" /p:\"TargetOS=Linux\" /p:FilterToOSGroup=Linux /p:\"BuildMoniker=none\"",
         "PB_SyncArguments": "-p -- /p:ArchGroup=x64"
       },
@@ -259,7 +259,7 @@
       "BuildParameters": {
         "PB_ConfigurationGroup": "Debug",
         "PB_BuildArguments": "-buildArch=x64 -Debug",
-        "PB_BuildTestsArguments": "-buildArch=x64 -Debug -SkipTests -- /p:ArchiveTests=true",
+        "PB_BuildTestsArguments": "-buildArch=x64 -Debug -SkipTests -- /p:ArchiveTests=true /p:EnableDumpling=true",
         "PB_CreateHelixArguments": "/t:CloudBuild /p:ArchGroup=x64 /p:ConfigurationGroup=Debug /p:\"EnableCloudTest=true\" /p:\"TestProduct=corefx /p:\"TimeoutInSeconds=1200\" /p:\"TargetOS=Linux\" /p:FilterToOSGroup=Linux /p:\"BuildMoniker=none\"",
         "PB_SyncArguments": "-p -- /p:ArchGroup=x64"
       },
