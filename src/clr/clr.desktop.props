@@ -41,7 +41,6 @@
     <FeatureIsymReader>true</FeatureIsymReader>
     <!-- This is here for testing purposes only, and only on checked builds for x86/ARM -->
     <FeatureLazyCOWPages Condition="'$(_BuildType)'!='ret' and (('$(TargetArch)' == 'i386') or ('$(TargetArch)' == 'arm'))">true</FeatureLazyCOWPages>
-    <FeatureLeakCultureInfo>true</FeatureLeakCultureInfo>
     <FeatureMacl>true</FeatureMacl>
     <FeatureManagedEtw>true</FeatureManagedEtw>
     <FeatureMdaSupported>true</FeatureMdaSupported>
