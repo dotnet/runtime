@@ -57,7 +57,6 @@
         <CDefines Condition="'$(FeatureMetadataCustomDataSource)' == 'true'">$(CDefines);FEATURE_METADATA_CUSTOM_DATA_SOURCE</CDefines>
         <CDefines Condition="'$(FeatureMetadataDebuggeeDataSource)' == 'true'">$(CDefines);FEATURE_METADATA_DEBUGGEE_DATA_SOURCE</CDefines>
         <CDefines Condition="'$(FeatureMetadataVerifyLayouts)' == 'true'">$(CDefines);FEATURE_METADATA_VERIFY_LAYOUTS</CDefines>
-        <CDefines Condition="'$(FeatureMethodRental)' == 'true'">$(CDefines);FEATURE_METHOD_RENTAL</CDefines>
         <CDefines Condition="'$(FeatureMixedMode)' == 'true'">$(CDefines);FEATURE_MIXEDMODE</CDefines>
         <CDefines Condition="'$(FeatureMultiModuleAssemblies)' == 'true'">$(CDefines);FEATURE_MULTIMODULE_ASSEMBLIES</CDefines>
         <CDefines Condition="'$(FeatureNativeImageGeneration)' == 'true'">$(CDefines);FEATURE_NATIVE_IMAGE_GENERATION</CDefines>
@@ -130,7 +129,6 @@
         <DefineConstants Condition="'$(FeatureIsostoreLight)' == 'true'">$(DefineConstants);FEATURE_ISOSTORE_LIGHT</DefineConstants>
         <DefineConstants Condition="'$(FeatureMacl)' == 'true'">$(DefineConstants);FEATURE_MACL</DefineConstants>
         <DefineConstants Condition="'$(FeatureManagedEtw)' == 'true'">$(DefineConstants);FEATURE_MANAGED_ETW</DefineConstants>
-        <DefineConstants Condition="'$(FeatureMethodRental)' == 'true'">$(DefineConstants);FEATURE_METHOD_RENTAL</DefineConstants>
         <DefineConstants Condition="'$(FeatureMultiModuleAssemblies)' == 'true'">$(DefineConstants);FEATURE_MULTIMODULE_ASSEMBLIES</DefineConstants>
         <DefineConstants Condition="'$(FeatureNongenericCollections)' == 'true'">$(DefineConstants);FEATURE_NONGENERIC_COLLECTIONS</DefineConstants>
         <DefineConstants Condition="'$(FeatureNormIdnaOnly)' == 'true'">$(DefineConstants);FEATURE_NORM_IDNA_ONLY</DefineConstants>
