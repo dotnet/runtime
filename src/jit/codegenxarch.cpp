@@ -263,10 +263,14 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block, BasicBlock* lblk)
     }
     else
     {
+// TODO-Linux-x86: Do we need to handle the GC information for this NOP or JMP specially, as is done for other
+// architectures?
+#ifndef JIT32_GCENCODER
         // Because of the way the flowgraph is connected, the liveness info for this one instruction
         // after the call is not (can not be) correct in cases where a variable has a last use in the
         // handler.  So turn off GC reporting for this single instruction.
         getEmitter()->emitDisableGC();
+#endif // JIT32_GCENCODER
 
         // Now go to where the finally funclet needs to return to.
         if (block->bbNext->bbJumpDest == block->bbNext->bbNext)
@@ -282,7 +286,9 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block, BasicBlock* lblk)
             inst_JMP(EJ_jmp, block->bbNext->bbJumpDest);
         }
 
+#ifndef JIT32_GCENCODER
         getEmitter()->emitEnableGC();
+#endif // JIT32_GCENCODER
     }
 
 #else // !FEATURE_EH_FUNCLETS
