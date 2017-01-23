@@ -82,10 +82,6 @@ namespace System.Globalization {
         [NonSerialized]internal CultureData m_cultureData;
         
         [NonSerialized]internal bool m_isInherited;
-#if FEATURE_LEAK_CULTURE_INFO
-        [NonSerialized]private bool m_isSafeCrossDomain;
-        [NonSerialized]private int m_createdDomainID;
-#endif // !FEATURE_LEAK_CULTURE_INFO
         [NonSerialized]private CultureInfo m_consoleFallbackCulture;
 
         // Names are confusing.  Here are 3 names we have:
@@ -472,42 +468,6 @@ namespace System.Globalization {
         }
 #endregion Serialization
 
-#if FEATURE_LEAK_CULTURE_INFO
-        // Is it safe to send this CultureInfo as an instance member of a Thread cross AppDomain boundaries?
-        // For Silverlight, the answer is always no.
-        internal bool IsSafeCrossDomain {
-            get {
-                Debug.Assert(m_createdDomainID != 0, "[CultureInfo.IsSafeCrossDomain] m_createdDomainID != 0");
-                return m_isSafeCrossDomain;
-            }
-        }
-
-        internal int CreatedDomainID {
-            get {
-                Debug.Assert(m_createdDomainID != 0,  "[CultureInfo.CreatedDomain] m_createdDomainID != 0");
-                return m_createdDomainID;
-            }
-        }
-
-        internal void StartCrossDomainTracking() {
-        
-            // If we have decided about cross domain safety of this instance, we are done
-            if (m_createdDomainID != 0)
-                return;
-
-            // If FEATURE_LEAK_CULTURE_INFO isn't enabled, we never want to pass
-            // CultureInfo as an instance member of a Thread. 
-            if (CanSendCrossDomain())
-            {
-                m_isSafeCrossDomain = true;
-            }
-
-            // m_createdDomainID has to be assigned last. We use it to signal that we have
-            // completed the check.
-            System.Threading.Thread.MemoryBarrier();
-            m_createdDomainID = Thread.GetDomainID();
-        }
-#endif // FEATURE_LEAK_CULTURE_INFO
 
         // Is it safe to pass the CultureInfo cross AppDomain boundaries, not necessarily as an instance
         // member of Thread. This is different from IsSafeCrossDomain, which implies passing the CultureInfo
