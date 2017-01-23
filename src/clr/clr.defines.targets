@@ -18,7 +18,6 @@
         <CDefines Condition="'$(FeatureCominterop)' == 'true'">$(CDefines);FEATURE_COMINTEROP</CDefines>
         <CDefines Condition="'$(FeatureICastable)' == 'true'">$(CDefines);FEATURE_ICASTABLE</CDefines>
         <CDefines Condition="'$(FeatureCominteropApartmentSupport)' == 'true'">$(CDefines);FEATURE_COMINTEROP_APARTMENT_SUPPORT</CDefines>
-        <CDefines Condition="'$(FeatureCominteropManagedActivation)' == 'true'">$(CDefines);FEATURE_COMINTEROP_MANAGED_ACTIVATION</CDefines>
         <CDefines Condition="'$(FeatureCominteropRegistration)' == 'true'">$(CDefines);FEATURE_COMINTEROP_REGISTRATION</CDefines>
         <CDefines Condition="'$(FeatureCominteropTlbSupport)' == 'true'">$(CDefines);FEATURE_COMINTEROP_TLB_SUPPORT</CDefines>
         <CDefines Condition="'$(FeatureCominteropUnmanagedActivation)' == 'true'">$(CDefines);FEATURE_COMINTEROP_UNMANAGED_ACTIVATION</CDefines>
@@ -119,7 +118,6 @@
         <DefineConstants Condition="'$(FeatureClickonce)' == 'true'">$(DefineConstants);FEATURE_CLICKONCE</DefineConstants>
         <DefineConstants Condition="'$(FeatureCominterop)' == 'true'">$(DefineConstants);FEATURE_COMINTEROP</DefineConstants>
         <DefineConstants Condition="'$(FeatureCominteropApartmentSupport)' == 'true'">$(DefineConstants);FEATURE_COMINTEROP_APARTMENT_SUPPORT</DefineConstants>
-        <DefineConstants Condition="'$(FeatureCominteropManagedActivation)' == 'true'">$(DefineConstants);FEATURE_COMINTEROP_MANAGED_ACTIVATION</DefineConstants>
         <DefineConstants Condition="'$(FeatureCominteropUnmanagedActivation)' == 'true'">$(DefineConstants);FEATURE_COMINTEROP_UNMANAGED_ACTIVATION</DefineConstants>
         <DefineConstants Condition="'$(FeatureCominteropWinRTManagedActivation)' == 'true'">$(DefineConstants);FEATURE_COMINTEROP_WINRT_MANAGED_ACTIVATION</DefineConstants>
         <DefineConstants Condition="'$(FeatureCominteropWinRTDesktopHost)' == 'true'">$(DefineConstants);FEATURE_COMINTEROP_WINRT_DESKTOP_HOST</DefineConstants>
