@@ -909,7 +909,7 @@
     <DiagnosticsSymbolstoreSources Include="$(BclSourcesRoot)\System\Diagnostics\SymbolStore\Token.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ExceptionservicesSources Condition="'$(FeatureCorruptingExceptions)' == 'true'" Include="$(BclSourcesRoot)\System\Runtime\ExceptionServices\CorruptingExceptionCommon.cs" />
+    <ExceptionservicesSources Include="$(BclSourcesRoot)\System\Runtime\ExceptionServices\CorruptingExceptionCommon.cs" />
     <ExceptionservicesSources Condition="'$(FeatureExceptionDispatchInfo)' == 'true'" Include="$(BclSourcesRoot)\System\Runtime\ExceptionServices\ExceptionServicesCommon.cs" />
     <ExceptionservicesSources Condition="'$(FeatureExceptionNotifications)' == 'true'" Include="$(BclSourcesRoot)\System\Runtime\ExceptionServices\ExceptionNotification.cs" />
   </ItemGroup>

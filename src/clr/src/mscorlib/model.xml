@@ -6435,11 +6435,9 @@
     <Type Name="System.Runtime.CompilerServices.SuppressIldasmAttribute">
       <Member Name="#ctor" />
     </Type>
-    <!-- #if FEATURE_CORRUPTING_EXCEPTIONS -->
     <Type Name="System.Runtime.ExceptionServices.HandleProcessCorruptedStateExceptionsAttribute">
       <Member Name="#ctor" />
     </Type>
-    <!-- #endif FEATURE_CORRUPTING_EXCEPTIONS -->
     <!-- #if FEATURE_EXCEPTIONDISPATCHINFO -->
     <Type Status="ApiRoot" Name="System.Runtime.ExceptionServices.ExceptionDispatchInfo">
       <Member Status="ApiRoot" Name="Capture(System.Exception)" />
