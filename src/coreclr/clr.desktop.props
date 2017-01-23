@@ -52,7 +52,6 @@
     <FeatureMdaSupported>true</FeatureMdaSupported>
     <FeatureMethodRental>true</FeatureMethodRental>
     <FeatureMixedMode>true</FeatureMixedMode>
-    <FeatureMulticoreJIT>true</FeatureMulticoreJIT>
     <FeatureMultiModuleAssemblies>true</FeatureMultiModuleAssemblies>
     <FeatureNativeImageGeneration>true</FeatureNativeImageGeneration>
     <FeatureNongenericCollections>true</FeatureNongenericCollections>

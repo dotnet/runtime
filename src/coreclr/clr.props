@@ -135,7 +135,6 @@
     <FeatureIncludeAllInterfaces>false</FeatureIncludeAllInterfaces>
     <FeatureMdaSupported>false</FeatureMdaSupported>
     <FeatureMergeJitAndEngine>true</FeatureMergeJitAndEngine>
-    <FeatureMulticoreJIT>false</FeatureMulticoreJIT>
     <FeatureRandomizedStringHashing>false</FeatureRandomizedStringHashing>
     <FeatureReflectionOnlyLoad>false</FeatureReflectionOnlyLoad>
     <FeatureStackProbe>false</FeatureStackProbe>
