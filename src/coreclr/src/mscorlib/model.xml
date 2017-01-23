@@ -1011,7 +1011,7 @@
       <Member Name="EndInvoke(System.IAsyncResult)" />
       <Member Name="Invoke(T,T)" />
     </Type>
-    <Type Name="System.Runtime.Loader.AssemblyLoadContext" condition="FEATURE_HOST_ASSEMBLY_RESOLVER">
+    <Type Name="System.Runtime.Loader.AssemblyLoadContext">
       <Member Name="#ctor" />
       <Member MemberType="Property" Name="Default" />
       <Member Name="GetAssemblyName(System.String)" />

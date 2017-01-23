@@ -13,7 +13,6 @@ using System.Runtime.InteropServices;
 using System.Security;
 using System.Threading;
 
-#if FEATURE_HOST_ASSEMBLY_RESOLVER
 
 namespace System.Runtime.Loader
 {
@@ -526,4 +525,3 @@ namespace System.Runtime.Loader
     }
 }
 
-#endif // FEATURE_HOST_ASSEMBLY_RESOLVER

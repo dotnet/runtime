@@ -914,7 +914,7 @@
     <ExceptionservicesSources Include="$(BclSourcesRoot)\System\Runtime\ExceptionServices\ExceptionNotification.cs" />
   </ItemGroup>
   <ItemGroup>
-    <HostingSources Condition="'$(FeatureHostAssemblyResolver)' == 'true'" Include="$(BclSourcesRoot)\System\Runtime\Loader\AssemblyLoadContext.cs" />
+    <HostingSources Include="$(BclSourcesRoot)\System\Runtime\Loader\AssemblyLoadContext.cs" />
   </ItemGroup>
   <ItemGroup>
     <SerializationSources Include="$(BclSourcesRoot)\System\Runtime\Serialization\FormatterConverter.cs" />

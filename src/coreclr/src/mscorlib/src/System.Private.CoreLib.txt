@@ -2007,11 +2007,9 @@ Loader_ContextPolicies = Context Policies:
 ; AppDomain Exceptions
 AppDomain_RequireApplicationName = ApplicationName must be set before the DynamicBase can be set.
 AppDomain_AppBaseNotSet = The ApplicationBase must be set before retrieving this property.
-
-#if FEATURE_HOST_ASSEMBLY_RESOLVER
 AppDomain_BindingModelIsLocked = Binding model is already locked for the AppDomain and cannot be reset.
 Argument_CustomAssemblyLoadContextRequestedNameMismatch = Resolved assembly's simple name should be the same as of the requested assembly.
-#endif // FEATURE_HOST_ASSEMBLY_RESOLVER
+
 ;
 ; XMLSyntaxExceptions
 XMLSyntax_UnexpectedEndOfFile = Unexpected end of file.
