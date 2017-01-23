@@ -153,8 +153,6 @@ monoutils_sources = \
 	mono-signal-handler.h	\
 	mono-conc-hashtable.h	\
 	mono-conc-hashtable.c	\
-	sha1.h		\
-	sha1.c	\
 	json.h	\
 	json.c	\
 	networking.c	\
