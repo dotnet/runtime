@@ -83,7 +83,6 @@
         <CDefines Condition="'$(FeatureStackProbe)' == 'true'">$(CDefines);FEATURE_STACK_PROBE</CDefines>
         <CDefines Condition="'$(FeatureStandaloneSn)' == 'true'">$(CDefines);FEATURE_STANDALONE_SN</CDefines>
         <CDefines Condition="'$(FeatureStrongnameDelaySigningAllowed)' == 'true'">$(CDefines);FEATURE_STRONGNAME_DELAY_SIGNING_ALLOWED</CDefines>
-        <CDefines Condition="'$(FeatureStrongnameMigration)' == 'true'">$(CDefines);FEATURE_STRONGNAME_MIGRATION</CDefines>
         <CDefines Condition="'$(FeatureSvrGc)' == 'true'">$(CDefines);FEATURE_SVR_GC</CDefines>
         <CDefines Condition="'$(FeatureSynchronizationContextWait)' == 'true'">$(CDefines);FEATURE_SYNCHRONIZATIONCONTEXT_WAIT</CDefines>
         <CDefines Condition="'$(FeaturePerfMap)' == 'true'">$(CDefines);FEATURE_PERFMAP</CDefines>
@@ -162,7 +161,6 @@
         <DefineConstants Condition="'$(FeatureRwlock)' == 'true'">$(DefineConstants);FEATURE_RWLOCK</DefineConstants>
         <DefineConstants Condition="'$(FeatureSerialization)' == 'true'">$(DefineConstants);FEATURE_SERIALIZATION</DefineConstants>
         <DefineConstants Condition="'$(FeatureSortTables)' == 'true'">$(DefineConstants);FEATURE_SORT_TABLES</DefineConstants>
-        <DefineConstants Condition="'$(FeatureStrongnameMigration)' == 'true'">$(DefineConstants);FEATURE_STRONGNAME_MIGRATION</DefineConstants>
         <DefineConstants Condition="'$(FeatureSynchronizationcontextWait)' == 'true'">$(DefineConstants);FEATURE_SYNCHRONIZATIONCONTEXT_WAIT</DefineConstants>
         <DefineConstants Condition="'$(FeatureSyntheticCultures)' == 'true'">$(DefineConstants);FEATURE_SYNTHETIC_CULTURES</DefineConstants>
         <DefineConstants Condition="'$(FeatureTypeEquivalence)' == 'true'">$(DefineConstants);FEATURE_TYPEEQUIVALENCE</DefineConstants>
