@@ -12644,7 +12644,7 @@
       <Member Name="WriteLine(System.String)" />
       <Member Name="WriteLine" />
     </Type>
-    <Type Name="System.Span&lt;T&gt;" Condition="FEATURE_SPAN_OF_T">
+    <Type Name="System.Span&lt;T&gt;">
       <Member Name="#ctor(T[])" />
       <Member Name="#ctor(T[],System.Int32)" />
       <Member Name="#ctor(T[],System.Int32,System.Int32)" />
@@ -12669,7 +12669,7 @@
       <Member Name="CopyTo(System.Span&lt;T&gt;)" />
       <Member Name="TryCopyTo(System.Span&lt;T&gt;)" />
     </Type>
-    <Type Name="System.ReadOnlySpan&lt;T&gt;" Condition="FEATURE_SPAN_OF_T">
+    <Type Name="System.ReadOnlySpan&lt;T&gt;">
       <Member Name="#ctor(T[])" />
       <Member Name="#ctor(T[],System.Int32)" />
       <Member Name="#ctor(T[],System.Int32,System.Int32)" />
@@ -12692,13 +12692,13 @@
       <Member Name="TryCopyTo(System.Span&lt;T&gt;)" />
       <Member Name="CopyTo(System.Span&lt;T&gt;)" />
     </Type>
-    <Type Name="System.SpanExtensions" Condition="FEATURE_SPAN_OF_T">
+    <Type Name="System.SpanExtensions">
       <Member Name="AsBytes&lt;T&gt;(System.Span&lt;T&gt;)" />
       <Member Name="AsBytes&lt;T&gt;(System.ReadOnlySpan&lt;T&gt;)" />
       <Member Name="NonPortableCast&lt;TFrom,TTo&gt;(System.Span&lt;TFrom&gt;)" />
       <Member Name="NonPortableCast&lt;TFrom,TTo&gt;(System.ReadOnlySpan&lt;TFrom&gt;)" />
     </Type>
-    <Type Name="System.ReadOnlySpanExtensions" Condition="FEATURE_SPAN_OF_T">
+    <Type Name="System.ReadOnlySpanExtensions">
       <Member Name="Slice(System.String)" />
       <Member Name="Slice(System.String,System.Int32)" />
       <Member Name="Slice(System.String,System.Int32,System.Int32)" />
