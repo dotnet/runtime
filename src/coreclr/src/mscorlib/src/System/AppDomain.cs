@@ -391,7 +391,6 @@ namespace System
             Debug.Assert(_domainManager == null, "_domainManager == null");
 
             AppDomainSetup adSetup = FusionStore;
-#if FEATURE_VERSIONING
             String trustedPlatformAssemblies = (String)(GetData("TRUSTED_PLATFORM_ASSEMBLIES"));
             if (trustedPlatformAssemblies != null)
             {
@@ -420,7 +419,6 @@ namespace System
                 }
                 SetupBindingPaths(trustedPlatformAssemblies, platformResourceRoots, appPaths, appNiPaths, appLocalWinMD);
             }
-#endif // FEATURE_VERSIONING
 
             string domainManagerAssembly;
             string domainManagerType;
@@ -981,7 +979,6 @@ namespace System
             throw new NotSupportedException(Environment.GetResourceString(ResId.NotSupported_Constructor));
         }
 
-#if FEATURE_VERSIONING
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal extern void nCreateContext();
 
@@ -993,7 +990,6 @@ namespace System
         {
             nSetupBindingPaths(trustedPlatformAssemblies, platformResourceRoots, appPath, appNiPaths, appLocalWinMD);
         }
-#endif // FEATURE_VERSIONING
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private extern String nGetFriendlyName();
@@ -1209,9 +1205,7 @@ namespace System
                 info.SetupDefaults(RuntimeEnvironment.GetModuleFileName(), imageLocationAlreadyNormalized : true);
             }
 
-#if FEATURE_VERSIONING
             nCreateContext();
-#endif // FEATURE_VERSIONING
 
             if (info.LoaderOptimization != LoaderOptimization.NotSpecified || (oldInfo != null && info.LoaderOptimization != oldInfo.LoaderOptimization))
                 UpdateLoaderOptimization(info.LoaderOptimization);

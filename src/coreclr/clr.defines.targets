@@ -91,7 +91,6 @@
         <CDefines Condition="'$(FeatureUseLcid)' == 'true'">$(CDefines);FEATURE_USE_LCID</CDefines>
         <CDefines Condition="'$(FeatureUtilcodeNoDependencies)' == 'true'">$(CDefines);FEATURE_UTILCODE_NO_DEPENDENCIES</CDefines>
         <CDefines Condition="'$(FeatureValidator)' == 'true'">$(CDefines);FEATURE_VALIDATOR</CDefines>
-        <CDefines Condition="'$(FeatureVersioning)' == 'true'">$(CDefines);FEATURE_VERSIONING</CDefines>
         <CDefines Condition="'$(FeatureVersioningLog)' == 'true'">$(CDefines);FEATURE_VERSIONING_LOG</CDefines>
         <CDefines Condition="'$(FeatureWatson)' == 'true'">$(CDefines);FEATURE_WATSON</CDefines>
         <CDefines Condition="'$(FeatureWin32Registry)' == 'true'">$(CDefines);FEATURE_WIN32_REGISTRY</CDefines>
@@ -163,7 +162,6 @@
         <DefineConstants Condition="'$(FeatureTypeEquivalence)' == 'true'">$(DefineConstants);FEATURE_TYPEEQUIVALENCE</DefineConstants>
         <DefineConstants Condition="'$(FeatureUseLcid)' == 'true'">$(DefineConstants);FEATURE_USE_LCID</DefineConstants>
         <DefineConstants Condition="'$(FeatureValidator)' == 'true'">$(DefineConstants);FEATURE_VALIDATOR</DefineConstants>
-        <DefineConstants Condition="'$(FeatureVersioning)' == 'true'">$(DefineConstants);FEATURE_VERSIONING</DefineConstants>
         <DefineConstants Condition="'$(FeatureWin32Registry)' == 'true'">$(DefineConstants);FEATURE_WIN32_REGISTRY</DefineConstants>
         <DefineConstants Condition="'$(FeatureWindowsPhone)' == 'true'">$(DefineConstants);FEATURE_WINDOWSPHONE</DefineConstants>
         <DefineConstants Condition="'$(FeatureWinMDResilient)' == 'true'">$(DefineConstants);FEATURE_WINMD_RESILIENT</DefineConstants>
