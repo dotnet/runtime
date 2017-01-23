@@ -93,7 +93,6 @@
 
     <!-- Note: ClrProduct can be set prior to this file to 'Standalone'. -->
     <ClrProduct Condition="(('$(BuildProjectName)' == 'CoreCLR' or '$(BuildProjectName)' == 'CoreSys')) and ('$(ClrProduct)' == '' or '$(CoreTarget)' == 'true')">core_clr</ClrProduct>
-    <ClrProduct Condition="('$(BuildProjectName)' == '') and ('$(ClrProduct)' == '')">desktop_clr</ClrProduct>
 
     <ClAdditionalOptions>$(ClAdditionalOptions) /Zm200</ClAdditionalOptions>
     <TargetDefines Condition="'$(BuildArchitecture)'=='i386'">$(BuildArchitecture);_X86_</TargetDefines>
@@ -120,7 +119,6 @@
   <!-- CLR Feature Settings.  We set the default values here, allow leaf projects to override, and then
        set the CDefines based on these properties in clr.targets
   -->
-  <Import Project="$(MSBuildThisFileDirectory)clr.desktop.props" />
   <Import Project="$(MSBuildThisFileDirectory)clr.coreclr.props" />
 
   <PropertyGroup Condition="'$(CrossGenCompile)'=='true'">
