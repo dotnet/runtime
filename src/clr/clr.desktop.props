@@ -69,7 +69,6 @@
     <FeatureSortTables>true</FeatureSortTables>
     <FeatureStackProbe Condition="'$(TargetArch)' != 'arm'">true</FeatureStackProbe>
     <FeatureStrongnameDelaySigningAllowed>true</FeatureStrongnameDelaySigningAllowed>
-    <FeatureStrongnameMigration>true</FeatureStrongnameMigration>
     <FeatureSvrGc>true</FeatureSvrGc>
     <FeatureSynchronizationcontextWait>true</FeatureSynchronizationcontextWait>
     <FeatureSyntheticCultures>true</FeatureSyntheticCultures>
