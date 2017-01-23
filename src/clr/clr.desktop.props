@@ -6,7 +6,6 @@
     <EnableDownlevelForNls>true</EnableDownlevelForNls>
     <FeatureAppdomainmanagerInitoptions>true</FeatureAppdomainmanagerInitoptions>
     <FeatureAppX>true</FeatureAppX>
-    <FeatureAppXBinder>true</FeatureAppXBinder>
     <FeatureAptca>true</FeatureAptca>
     <FeatureArrayStubAsIL Condition="('$(TargetArch)' == 'arm')">true</FeatureArrayStubAsIL>
     <FeatureCasPolicy>true</FeatureCasPolicy>

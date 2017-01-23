@@ -128,7 +128,6 @@
     <!-- If you add new features to this list make sure that they are not affecting codegen or content of datastructures persisted in NGen image -->
     <EnCSupported>false</EnCSupported>
     <PerfcountersSupportedBuild>false</PerfcountersSupportedBuild>
-    <FeatureAppXBinder>false</FeatureAppXBinder>
     <FeatureCasPolicy>false</FeatureCasPolicy>
     <FeatureEventTrace>false</FeatureEventTrace>
     <FeatureFusion>false</FeatureFusion>
