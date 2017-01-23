@@ -115,12 +115,13 @@ namespace System
             string versionId = ret.VersionId;
             if (versionId.Length >= 2 && versionId[0] == '"' && versionId[versionId.Length - 1] == '"')
             {
-                // Remove Quotes.
+                // Remove quotes.
                 ret.VersionId = versionId.Substring(1, versionId.Length - 2);
             }
 
-            if (ret.Id[0] == '"' && ret.Id[ret.Id.Length - 1] == '"')
+            if (ret.Id.Length >= 2 && ret.Id[0] == '"' && ret.Id[ret.Id.Length - 1] == '"')
             {
+                // Remove quotes.
                 ret.Id = ret.Id.Substring(1, ret.Id.Length - 2);
             }
 
