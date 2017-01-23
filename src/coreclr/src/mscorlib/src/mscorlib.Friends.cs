@@ -8,7 +8,6 @@ using System.Runtime.CompilerServices;
 
 // For now we are only moving to using this file over AssemblyAttributes.cspp in CoreSys, ideally we would move away from the centralized 
 // AssemblyAttributes.cspp model for the other build types at a future point in time.
-#if FEATURE_CORESYSTEM
 
 // Depends on things like SuppressUnmanagedCodeAttribute and WindowsRuntimeImportAttribute
 [assembly: InternalsVisibleTo("System.Runtime.WindowsRuntime, PublicKey=" + _InternalsVisibleToKeys.EcmaPublicKeyFull, AllInternalsVisible=false)]
@@ -22,4 +21,3 @@ internal class _InternalsVisibleToKeys
   internal const string EcmaPublicKeyFull = "00000000000000000400000000000000";
 }
 
-#endif // FEATURE_CORESYS
