@@ -66,7 +66,6 @@
     <FeatureValidator>true</FeatureValidator>
     <FeatureWatson>true</FeatureWatson>
     <FeatureWin32Registry>true</FeatureWin32Registry>
-    <FeatureX509>true</FeatureX509>
     <FeatureX509Securestrings>true</FeatureX509Securestrings>
     <FeatureXPlatDacDebugging_HostWindowsx86 Condition="'$(TargetArch)' == 'arm'">true</FeatureXPlatDacDebugging_HostWindowsx86>
     <PerfcountersSupportedBuild>true</PerfcountersSupportedBuild>
