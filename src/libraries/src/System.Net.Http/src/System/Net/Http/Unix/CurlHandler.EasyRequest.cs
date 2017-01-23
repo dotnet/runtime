@@ -894,12 +894,15 @@ namespace System.Net.Http
                 if (urlResult == CURLcode.CURLE_OK && urlCharPtr != IntPtr.Zero)
                 {
                     string url = Marshal.PtrToStringAnsi(urlCharPtr);
-                    Uri finalUri;
-                    if (Uri.TryCreate(url, UriKind.Absolute, out finalUri))
+                    if (url != _requestMessage.RequestUri.OriginalString)
                     {
-                        _requestMessage.RequestUri = finalUri;
-                        return;
+                        Uri finalUri;
+                        if (Uri.TryCreate(url, UriKind.Absolute, out finalUri))
+                        {
+                            _requestMessage.RequestUri = finalUri;
+                        }
                     }
+                    return;
                 }
 
                 Debug.Fail("Expected to be able to get the last effective Uri from libcurl");
