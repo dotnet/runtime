@@ -28,6 +28,13 @@ namespace System.Net.Tests
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
         public async Task AcceptWebSocketAsync_NullSubProtocol_Succeeds()
         {
+            if (PlatformDetection.IsWindows7)
+            {
+                // Websockets in WinHttp 5.1 is only supported from Windows 8+
+                Assert.Throws<PlatformNotSupportedException>(() => new ClientWebSocket());
+                return;
+            }
+
             UriBuilder uriBuilder = new UriBuilder(_url);
             uriBuilder.Scheme = "ws";
 
