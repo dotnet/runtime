@@ -225,8 +225,6 @@ namespace System.Diagnostics.Contracts {
             _Condition = info.GetString("Condition");
         }
 
-#if FEATURE_UNTRUSTED_CALLERS && FEATURE_SERIALIZATION
-#endif // FEATURE_UNTRUSTED_CALLERS
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
         {
             base.GetObjectData(info, context);
