@@ -17,7 +17,12 @@ restore_crossgen()
     mkdir -p $__pjDir
     echo "{\"frameworks\":{\"netcoreapp1.1\":{\"dependencies\":{\"Microsoft.NETCore.Runtime.CoreCLR\":\"$__CoreClrVersion\"}}},\"runtimes\":{\"$__rid\":{}}}" > "$__pjDir/project.json"
     $__dotnet restore $__pjDir/project.json --packages $__packagesDir
-    cp $__packagesDir/runtime.$__rid.Microsoft.NETCore.Runtime.CoreCLR/$__CoreClrVersion/tools/crossgen $__sharedFxDir
+    __crossgenInPackage=$__packagesDir/runtime.$__packageRid.Microsoft.NETCore.Runtime.CoreCLR/$__CoreClrVersion/tools/crossgen
+    if [ ! -e $__crossgenInPackage ]; then
+        echo "The crossgen executable could not be found at "$__crossgenInPackage". Aborting crossgen.sh."
+        exit 1
+    fi
+    cp $__crossgenInPackage $__sharedFxDir
     __crossgen=$__sharedFxDir/crossgen
 }
 
@@ -50,7 +55,7 @@ crossgen_single()
     fi
 }
 
-if [ -z "$1" ]; then
+if [[ -z "$1" || "$1" == "-?" || "$1" == "--help" || "$1" == "-h" ]]; then
     usage
 fi
 
@@ -61,8 +66,13 @@ __dotnet=$__toolsDir/dotnetcli/dotnet
 __packagesDir=$__scriptpath/../packages
 __sharedFxDir=$__toolsDir/dotnetcli/shared/Microsoft.NETCore.App/$__CoreClrVersion/
 __rid=$($__dotnet --info | sed -n -e 's/^.*RID:[[:space:]]*//p')
+
 if [[ $__rid == *"osx"* ]]; then
-    __rid="osx.10.10-x64"
+    __packageRid="osx.10.10-x64"
+elif [[ $__rid == *"rhel.7"* || $__rid == *"centos.7"* ]]; then
+    __packageRid="rhel.7-x64"
+else
+    __packageRid=$__rid
 fi
 
 restore_crossgen
