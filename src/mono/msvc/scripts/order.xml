@@ -594,6 +594,17 @@
       <resources></resources>
       <response>System.Runtime.InteropServices.RuntimeInformation.dll.sources</response>
     </project>
+    <project dir="class/System.IO.Compression" library="System.IO.Compression-build">
+      <boot>false</boot>
+      <flags>/codepage:65001 /nologo /noconfig /deterministic -d:NET_4_0 -d:NET_4_5 -d:MONO -d:WIN_PLATFORM -nowarn:1699 -nostdlib -r:./../../class/lib/build/mscorlib.dll -optimize -r:./../../class/lib/build/System.dll</flags>
+      <output>System.IO.Compression.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../class/lib/build/System.IO.Compression.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>build</profile>
+      <resources></resources>
+      <response>System.IO.Compression.dll.sources</response>
+    </project>
     <project dir="class/Mono.Cecil" library="Mono.Cecil-build">
       <boot>false</boot>
       <flags>/codepage:65001 /nologo /noconfig /deterministic -d:NET_4_0 -d:NET_4_5 -d:MONO -d:WIN_PLATFORM -nowarn:1699 -nostdlib -r:./../../class/lib/build/mscorlib.dll -optimize -keyfile:../mono.snk -d:NET_4_0 /publicsign -r:./../../class/lib/build/System.Core.dll</flags>
