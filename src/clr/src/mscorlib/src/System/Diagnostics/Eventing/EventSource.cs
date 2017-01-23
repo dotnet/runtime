@@ -3322,11 +3322,7 @@ namespace System.Diagnostics.Tracing
                 }
 
                 // Collect task, opcode, keyword and channel information
-#if FEATURE_ADVANCED_MANAGED_ETW_CHANNELS
-                foreach (var providerEnumKind in new string[] { "Keywords", "Tasks", "Opcodes", "Channels" })
-#else
                 foreach (var providerEnumKind in new string[] { "Keywords", "Tasks", "Opcodes" })
-#endif
                 {
                     Type nestedType = eventSourceType.GetNestedType(providerEnumKind);
                     if (nestedType != null)
@@ -3603,14 +3599,6 @@ namespace System.Diagnostics.Tracing
                 ulong value = unchecked((ulong)(long)staticField.GetRawConstantValue());
                 manifest.AddKeyword(staticField.Name, value);
             }
-#if FEATURE_ADVANCED_MANAGED_ETW_CHANNELS
-            else if (!reflectionOnly && (staticFieldType == typeof(EventChannel)) || AttributeTypeNamesMatch(staticFieldType, typeof(EventChannel)))
-            {
-                if (providerEnumKind != "Channels") goto Error;
-                var channelAttribute = (EventChannelAttribute)GetCustomAttributeHelper(staticField, typeof(EventChannelAttribute));
-                manifest.AddChannel(staticField.Name, (byte)staticField.GetRawConstantValue(), channelAttribute);
-            }
-#endif
             return;
             Error:
             manifest.ManifestError(Resources.GetResourceString("EventSource_EnumKindMismatch", staticField.Name, staticField.FieldType.Name, providerEnumKind));
@@ -5073,9 +5061,6 @@ namespace System.Diagnostics.Tracing
     /// </code>
     /// </summary>
     [AttributeUsage(AttributeTargets.Field)]
-#if FEATURE_ADVANCED_MANAGED_ETW_CHANNELS
-    public 
-#endif
     class EventChannelAttribute : Attribute
     {
         /// <summary>
@@ -5088,23 +5073,6 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         public EventChannelType EventChannelType { get; set; }
 
-#if FEATURE_ADVANCED_MANAGED_ETW_CHANNELS
-        /// <summary>
-        /// Specifies the isolation for the channel
-        /// </summary>
-        public EventChannelIsolation Isolation { get; set; }
-
-        /// <summary>
-        /// Specifies an SDDL access descriptor that controls access to the log file that backs the channel.
-        /// See MSDN ((http://msdn.microsoft.com/en-us/library/windows/desktop/aa382741.aspx) for details.
-        /// </summary>
-        public string Access { get; set; } 
-
-        /// <summary>
-        /// Allows importing channels defined in external manifests
-        /// </summary>
-        public string ImportChannel { get; set; }
-#endif
 
         // TODO: there is a convention that the name is the Provider/Type   Should we provide an override?
         // public string Name { get; set; }
@@ -5113,9 +5081,6 @@ namespace System.Diagnostics.Tracing
     /// <summary>
     /// Allowed channel types
     /// </summary>
-#if FEATURE_ADVANCED_MANAGED_ETW_CHANNELS
-    public 
-#endif
     enum EventChannelType
     {
         /// <summary>The admin channel</summary>
@@ -5128,31 +5093,6 @@ namespace System.Diagnostics.Tracing
         Debug,
     }
 
-#if FEATURE_ADVANCED_MANAGED_ETW_CHANNELS
-    /// <summary>
-    /// Allowed isolation levels. See MSDN (http://msdn.microsoft.com/en-us/library/windows/desktop/aa382741.aspx) 
-    /// for the default permissions associated with each level. EventChannelIsolation and Access allows control over the 
-    /// access permissions for the channel and backing file.
-    /// </summary>
-    public 
-    enum EventChannelIsolation
-    {
-        /// <summary>
-        /// This is the default isolation level. All channels that specify Application isolation use the same ETW session
-        /// </summary>
-        Application = 1,
-        /// <summary>
-        /// All channels that specify System isolation use the same ETW session
-        /// </summary>
-        System,
-        /// <summary>
-        /// Use sparingly! When specifying Custom isolation, a separate ETW session is created for the channel.
-        /// Using Custom isolation lets you control the access permissions for the channel and backing file.
-        /// Because there are only 64 ETW sessions available, you should limit your use of Custom isolation.
-        /// </summary>
-        Custom,
-    }
-#endif
 
     /// <summary>
     /// Describes the pre-defined command (EventCommandEventArgs.Command property) that is passed to the OnEventCommand callback.
@@ -6297,26 +6237,12 @@ namespace System.Diagnostics.Tracing
                     string elementName = "channel";
                     bool enabled = false;
                     string fullName = null;
-#if FEATURE_ADVANCED_MANAGED_ETW_CHANNELS
-                    string isolation = null;
-                    string access = null;
-#endif
                     if (channelInfo.Attribs != null)
                     {
                         var attribs = channelInfo.Attribs;
                         if (Enum.IsDefined(typeof(EventChannelType), attribs.EventChannelType))
                             channelType = attribs.EventChannelType.ToString();
                         enabled = attribs.Enabled;
-#if FEATURE_ADVANCED_MANAGED_ETW_CHANNELS
-                        if (attribs.ImportChannel != null)
-                        {
-                            fullName = attribs.ImportChannel;
-                            elementName = "importChannel";
-                        }
-                        if (Enum.IsDefined(typeof(EventChannelIsolation), attribs.Isolation))
-                            isolation = attribs.Isolation.ToString();
-                        access = attribs.Access;
-#endif
                     }
                     if (fullName == null)
                         fullName = providerName + "/" + channelInfo.Name;
@@ -6331,12 +6257,6 @@ namespace System.Diagnostics.Tracing
                         if (channelType != null)
                             sb.Append(" type=\"").Append(channelType).Append("\"");
                         sb.Append(" enabled=\"").Append(enabled.ToString().ToLower()).Append("\"");
-#if FEATURE_ADVANCED_MANAGED_ETW_CHANNELS
-                        if (access != null)
-                            sb.Append(" access=\"").Append(access).Append("\"");
-                        if (isolation != null)
-                            sb.Append(" isolation=\"").Append(isolation).Append("\"");
-#endif
                     }
                     sb.Append("/>").AppendLine();
                 }
