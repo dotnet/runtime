@@ -322,7 +322,7 @@ isMSBuildOnNETCoreSupported()
                 "opensuse.42.1-x64")
                     __isMSBuildOnNETCoreSupported=1
                     ;;
-                "rhel.7.2-x64")
+                "rhel.7"*"-x64")
                     __isMSBuildOnNETCoreSupported=1
                     ;;
                 "ubuntu.14.04-x64")
