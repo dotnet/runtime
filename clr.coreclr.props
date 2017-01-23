@@ -8,7 +8,6 @@
     <FeatureArrayStubAsIL Condition="('$(TargetArch)' == 'arm') or ('$(TargetArch)' == 'amd64') or ('$(TargetArch)' == 'arm64')">true</FeatureArrayStubAsIL>
     <FeatureStubsAsIL Condition="'$(TargetArch)' == 'arm64'">true</FeatureStubsAsIL>
     <FeatureCominteropApartmentSupport>true</FeatureCominteropApartmentSupport>
-    <FeatureCorruptingExceptions>true</FeatureCorruptingExceptions>
     <FeatureDbiDebugging>true</FeatureDbiDebugging>
     <FeatureDbiOopDebugging_HostLocal>false</FeatureDbiOopDebugging_HostLocal>
     <FeatureDbiOopDebugging_HostWindowsx86 Condition="'$(TargetArch)' == 'i386' or '$(TargetArch)' == 'arm'">true</FeatureDbiOopDebugging_HostWindowsx86>

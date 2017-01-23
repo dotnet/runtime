@@ -16,9 +16,7 @@ namespace System.Threading
     using System.Security.Permissions;
     using System.Runtime.InteropServices;
     using System.Runtime.CompilerServices;
-#if FEATURE_CORRUPTING_EXCEPTIONS
     using System.Runtime.ExceptionServices;
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
     using System.Runtime;
     using System.Runtime.Versioning;
     using System.Runtime.ConstrainedExecution;
