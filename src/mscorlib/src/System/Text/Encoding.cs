@@ -752,20 +752,14 @@ namespace System.Text
         [Pure]
         public int GetByteCount(string s, int index, int count)
         {
-            if (s == null)
-                throw new ArgumentNullException(nameof(s), 
-                    Environment.GetResourceString("ArgumentNull_String"));
-            if (index < 0)
-                throw new ArgumentOutOfRangeException(nameof(index),
-                      Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
-            if (count < 0)
-                throw new ArgumentOutOfRangeException(nameof(count),
-                      Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
-            if (index > s.Length - count)
-                throw new ArgumentOutOfRangeException(nameof(index),
-                      Environment.GetResourceString("ArgumentOutOfRange_IndexCount"));
+            if ((s == null) ||
+                (index < 0) ||
+                (count < 0) ||
+                (index > s.Length - count))
+            {
+                EncodingForwarder.ThrowValidationFailed(s, index, count);
+            }
             Contract.EndContractBlock();
-
             unsafe
             {
                 fixed (char* pChar = s)
@@ -873,39 +867,37 @@ namespace System.Text
         // string range.
         //
         [Pure]
-        public byte[] GetBytes(string s, int index, int count)
+        public unsafe byte[] GetBytes(string s, int index, int count)
         {
-            if (s == null)
-                throw new ArgumentNullException(nameof(s),
-                    Environment.GetResourceString("ArgumentNull_String"));
-            if (index < 0)
-                throw new ArgumentOutOfRangeException(nameof(index),
-                      Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
-            if (count < 0)
-                throw new ArgumentOutOfRangeException(nameof(count),
-                      Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
-            if (index > s.Length - count)
-                throw new ArgumentOutOfRangeException(nameof(index),
-                      Environment.GetResourceString("ArgumentOutOfRange_IndexCount"));
+            if ((s == null) ||
+                (index < 0) ||
+                (count < 0) ||
+                (index > s.Length - count))
+            {
+                EncodingForwarder.ThrowValidationFailed(s, index, count);
+            }
             Contract.EndContractBlock();
 
-            unsafe
+            byte[] bytes;
+            fixed (char* pChar = s)
             {
-                fixed (char* pChar = s)
+                int byteCount = GetByteCount(pChar + index, count);
+                if (byteCount == 0)
                 {
-                    int byteCount = GetByteCount(pChar + index, count);
-                    if (byteCount == 0)
-                        return Array.Empty<byte>();
-
-                    byte[] bytes = new byte[byteCount];
+                    bytes = Array.Empty<byte>();
+                }
+                else
+                {
+                    bytes = new byte[byteCount];
                     fixed (byte* pBytes = &bytes[0])
                     {
                         int bytesReceived = GetBytes(pChar + index, count, pBytes, byteCount);
                         Debug.Assert(byteCount == bytesReceived);
                     }
-                    return bytes;
                 }
             }
+            
+            return bytes;
         }
 
         public virtual int GetBytes(String s, int charIndex, int charCount,
@@ -923,6 +915,14 @@ namespace System.Text
                                                 byte* bytes, int byteCount, EncoderNLS encoder)
         {
             return GetBytes(chars, charCount, bytes, byteCount);
+        }
+
+        internal virtual unsafe int GetBytesFallback(char* chars, int charCount,
+                                                byte* bytes, int byteCount, EncoderNLS encoder)
+        {
+            // Used for fallback for internal GetBytes(..., EncoderNLS encoder) 
+            // where it shares a common path.
+            throw new NotSupportedException();
         }
 
         // We expect this to be the workhorse for NLS Encodings, but for existing
