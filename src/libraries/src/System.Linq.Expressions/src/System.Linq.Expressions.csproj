@@ -40,9 +40,6 @@
     <Compile Include="$(CommonPath)\System\Collections\Generic\LargeArrayBuilder.cs">
       <Link>Common\System\Collections\Generic\LargeArrayBuilder.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Diagnostics\CodeAnalysis\ExcludeFromCodeCoverageAttribute.cs" Condition="'$(TargetGroup)'=='net463' or '$(TargetGroup)' == 'netcore50' or '$(TargetGroup)' == 'netcore50aot'">
-      <Link>Common\System\Diagnostics\CodeAnalysis\ExcludeFromCodeCoverageAttribute.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\System\Dynamic\Utils\CacheDict.cs">
       <Link>Common\System\Dynamic\Utils\CacheDict.cs</Link>
     </Compile>
