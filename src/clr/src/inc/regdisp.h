@@ -8,7 +8,7 @@
 
 #ifdef DEBUG_REGDISPLAY
 class Thread;
-
+struct REGDISPLAY;
 void CheckRegDisplaySP (REGDISPLAY *pRD);
 #endif // DEBUG_REGDISPLAY
 
