@@ -3135,17 +3135,17 @@ void EECodeManager::QuickUnwindStackFrame(PREGDISPLAY pRD, StackwalkCacheEntry *
         _ASSERTE(pCacheEntry->fUseEbp);
         // EBP frame, update ESP through EBP, since ESPOffset may vary
         pRD->pEbp = PTR_DWORD((TADDR)*pRD->pEbp);
-        pRD->Esp  = (TADDR)pRD->pEbp + sizeof(void*);
+        pRD->SP = (TADDR)pRD->pEbp + sizeof(void*);
     }
     else
     {
         _ASSERTE(!pCacheEntry->fUseEbp);
         // ESP frame, update up to retAddr using ESPOffset
-        pRD->Esp += pCacheEntry->ESPOffset;
+        pRD->SP += pCacheEntry->ESPOffset;
     }
-    pRD->PCTAddr  = (TADDR)pRD->Esp;
+    pRD->PCTAddr  = (TADDR)pRD->SP;
     pRD->ControlPC = *PTR_PCODE(pRD->PCTAddr);
-    pRD->Esp     += sizeof(void*) + pCacheEntry->argSize;
+    pRD->SP     += sizeof(void*) + pCacheEntry->argSize;
 
 #elif defined(_TARGET_AMD64_)
     if (pRD->IsCallerContextValid)
@@ -3234,7 +3234,7 @@ void UnwindEspFrameEpilog(
     _ASSERTE(info->epilogOffs > 0);
     
     int offset = 0;
-    unsigned ESP = pContext->Esp;
+    unsigned ESP = pContext->SP;
 
     if (info->rawStkSize)
     {
@@ -3302,7 +3302,7 @@ void UnwindEspFrameEpilog(
     pContext->PCTAddr = (TADDR)ESP;
     pContext->ControlPC = *PTR_PCODE(pContext->PCTAddr);
 
-    pContext->Esp = ESP;
+    pContext->SP = ESP;
 }
 
 /*****************************************************************************/
@@ -3326,7 +3326,7 @@ void UnwindEbpDoubleAlignFrameEpilog(
       have already been popped */
     int offset = 0;
    
-    unsigned ESP = pContext->Esp;
+    unsigned ESP = pContext->SP;
 
     bool needMovEspEbp = false;
 
@@ -3434,7 +3434,7 @@ void UnwindEbpDoubleAlignFrameEpilog(
     pContext->PCTAddr = (TADDR)ESP;
     pContext->ControlPC = *PTR_PCODE(pContext->PCTAddr);
 
-    pContext->Esp = ESP;
+    pContext->SP = ESP;
 }
 
 //****************************************************************************
@@ -3478,7 +3478,7 @@ void UnwindEpilog(
 
     /* Now adjust stack pointer */
 
-    pContext->Esp += ESPIncrOnReturn(info);
+    pContext->SP += ESPIncrOnReturn(info);
 }
 
 /*****************************************************************************/
@@ -3508,7 +3508,7 @@ void UnwindEspFrameProlog(
 #endif
 
     const DWORD curOffs = info->prologOffs;
-    unsigned ESP = pContext->Esp;
+    unsigned ESP = pContext->SP;
     
     // Find out how many callee-saved regs have already been pushed
 
@@ -3580,7 +3580,7 @@ void UnwindEspFrameProlog(
     _ASSERTE(offset == info->prologOffs);
 #endif
 
-    pContext->Esp = ESP;
+    pContext->SP = ESP;
 }
 
 /*****************************************************************************/
@@ -3599,7 +3599,7 @@ void UnwindEspFrame(
     _ASSERTE(!info->ebpFrame && !info->doubleAlign);
     _ASSERTE(info->epilogOffs == hdrInfo::NOT_IN_EPILOG);
 
-    unsigned ESP = pContext->Esp;
+    unsigned ESP = pContext->SP;
 
     
     if (info->prologOffs != hdrInfo::NOT_IN_PROLOG)
@@ -3607,7 +3607,7 @@ void UnwindEspFrame(
         if (info->prologOffs != 0) // Do nothing for the very start of the method
         {
             UnwindEspFrameProlog(pContext, info, methodStart, flags);
-            ESP = pContext->Esp;
+            ESP = pContext->SP;
         }
     }
     else
@@ -3643,7 +3643,7 @@ void UnwindEspFrame(
 
     /* Now adjust stack pointer */
 
-    pContext->Esp = ESP + ESPIncrOnReturn(info);
+    pContext->SP = ESP + ESPIncrOnReturn(info);
 }
 
 
@@ -3687,11 +3687,11 @@ void UnwindEbpDoubleAlignFrameProlog(
         /* If we're past the "push ebp", adjust ESP to pop EBP off */
 
         if  (curOffs == (offset + 1))
-            pContext->Esp += sizeof(TADDR);
+            pContext->SP += sizeof(TADDR);
 
         /* Stack pointer points to return address */
 
-        pContext->PCTAddr = (TADDR)pContext->Esp;
+        pContext->PCTAddr = (TADDR)pContext->SP;
         pContext->ControlPC = *PTR_PCODE(pContext->PCTAddr);
 
         /* EBP and callee-saved registers still have the correct value */
@@ -3755,11 +3755,11 @@ void UnwindEbpDoubleAlignFrameProlog(
     /* The caller's saved EBP is pointed to by our EBP */
 
     pContext->pEbp = PTR_DWORD((TADDR)curEBP);
-    pContext->Esp = DWORD((TADDR)(curEBP + sizeof(void *)));
+    pContext->SP = DWORD((TADDR)(curEBP + sizeof(void *)));
     
     /* Stack pointer points to return address */
 
-    pContext->PCTAddr = (TADDR)pContext->Esp;
+    pContext->PCTAddr = (TADDR)pContext->SP;
     pContext->ControlPC = *PTR_PCODE(pContext->PCTAddr);
 }
 
@@ -3777,7 +3777,7 @@ bool UnwindEbpDoubleAlignFrame(
 
     _ASSERTE(info->ebpFrame || info->doubleAlign);
 
-    const unsigned curESP =  pContext->Esp;
+    const unsigned curESP =  pContext->SP;
     const unsigned curEBP = *pContext->pEbp;
 
     /* First check if we are in a filter (which is obviously after the prolog) */
@@ -3808,7 +3808,7 @@ bool UnwindEbpDoubleAlignFrame(
             pContext->PCTAddr = baseSP;
             pContext->ControlPC = *PTR_PCODE(pContext->PCTAddr);
 
-            pContext->Esp = (DWORD)(baseSP + sizeof(TADDR));
+            pContext->SP = (DWORD)(baseSP + sizeof(TADDR));
 
          // pContext->pEbp = same as before;
 
@@ -3847,7 +3847,7 @@ bool UnwindEbpDoubleAlignFrame(
         
         /* Now adjust stack pointer. */
 
-        pContext->Esp += ESPIncrOnReturn(info);
+        pContext->SP += ESPIncrOnReturn(info);
         return true;
     }
 
@@ -3872,7 +3872,7 @@ bool UnwindEbpDoubleAlignFrame(
 
     /* The caller's ESP will be equal to EBP + retAddrSize + argSize. */
 
-    pContext->Esp = (DWORD)(curEBP + sizeof(curEBP) + ESPIncrOnReturn(info));
+    pContext->SP = (DWORD)(curEBP + sizeof(curEBP) + ESPIncrOnReturn(info));
 
     /* The caller's saved EIP is right after our EBP */
 
@@ -4125,7 +4125,7 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pContext,
     unsigned  curOffs = pCodeInfo->GetRelOffset();
 
     unsigned  EBP     = *pContext->pEbp;
-    unsigned  ESP     =  pContext->Esp;
+    unsigned  ESP     =  pContext->SP;
 
     unsigned  ptrOffs;
 
@@ -5171,7 +5171,7 @@ OBJECTREF EECodeManager::GetInstance( PREGDISPLAY    pContext,
     }
     else
     {
-        taArgBase =  pContext->Esp + stackDepth;
+        taArgBase =  pContext->SP + stackDepth;
     }
 
     // Only synchronized methods and generic code that accesses
@@ -5477,7 +5477,7 @@ void * EECodeManager::GetGSCookieAddr(PREGDISPLAY     pContext,
         PTR_CBYTE table = PTR_CBYTE(gcInfoToken.Info) + stateBuf->hdrInfoSize;       
         unsigned argSize = GetPushedArgSize(info, table, relOffset);
         
-        return PVOID(SIZE_T(pContext->Esp + argSize + info->gsCookieOffset));
+        return PVOID(SIZE_T(pContext->SP + argSize + info->gsCookieOffset));
     }
 
 #elif defined(USE_GC_INFO_DECODER) && !defined(CROSSGEN_COMPILE)

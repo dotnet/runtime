@@ -1163,7 +1163,7 @@ void DacDbiInterfaceImpl::UpdateContextFromRegDisp(REGDISPLAY * pRegDisp,
     pContext->Eax = *pRegDisp->pEax;
     pContext->Ecx = *pRegDisp->pEcx;
     pContext->Edx = *pRegDisp->pEdx;
-    pContext->Esp = pRegDisp->Esp;
+    pContext->Esp = pRegDisp->SP;
     pContext->Eip = pRegDisp->ControlPC;
 
     // If we still have the pointer to the leaf CONTEXT, and the leaf CONTEXT is the same as the CONTEXT for
