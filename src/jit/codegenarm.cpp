@@ -93,7 +93,8 @@ void CodeGen::genIntrinsic(GenTreePtr treeNode)
             break;
 
         case CORINFO_INTRINSIC_Sqrt:
-            NYI_ARM("genIntrinsic for sqrt - not implementd yet");
+            genConsumeOperands(treeNode->AsOp());
+            getEmitter()->emitInsBinary(INS_vsqrt, emitTypeSize(treeNode), treeNode, srcNode);
             break;
 
         default:
