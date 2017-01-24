@@ -15363,7 +15363,10 @@ void gc_heap::gc1()
     if (!settings.concurrent)
 #endif //BACKGROUND_GC
     {
+#ifndef FEATURE_REDHAWK
+        // IsGCThread() always returns false on CoreRT, but this assert is useful in CoreCLR.
         assert(!!IsGCThread());
+#endif // FEATURE_REDHAWK
         adjust_ephemeral_limits();
     }
 
@@ -16204,7 +16207,10 @@ BOOL gc_heap::expand_soh_with_minimal_gc()
         dd_gc_new_allocation (dynamic_data_of (max_generation)) -= ephemeral_size;
         dd_new_allocation (dynamic_data_of (max_generation)) = dd_gc_new_allocation (dynamic_data_of (max_generation));
 
+#ifndef FEATURE_REDHAWK
+        // IsGCThread() always returns false on CoreRT, but this assert is useful in CoreCLR.
         assert(!!IsGCThread());
+#endif // FEATURE_REDHAWK
         adjust_ephemeral_limits();
         return TRUE;
     }
@@ -36478,11 +36484,13 @@ void GCHeap::DiagScanFinalizeQueue (fq_scan_fn fn, ScanContext* sc)
 
 void GCHeap::DiagScanHandles (handle_scan_fn fn, int gen_number, ScanContext* context)
 {
+    UNREFERENCED_PARAMETER(gen_number);
     GCScan::GcScanHandlesForProfilerAndETW (max_generation, context, fn);
 }
 
 void GCHeap::DiagScanDependentHandles (handle_scan_fn fn, int gen_number, ScanContext* context)
 {
+    UNREFERENCED_PARAMETER(gen_number);
     GCScan::GcScanDependentHandlesForProfilerAndETW (max_generation, context, fn);
 }
 
