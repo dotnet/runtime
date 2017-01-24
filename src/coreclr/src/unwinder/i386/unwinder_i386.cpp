@@ -92,7 +92,7 @@ OOPStackUnwinderX86::VirtualUnwind(
     {
         rd.pEbp = &(ContextRecord->Ebp);
     }
-    rd.Esp = ContextRecord->Esp;
+    rd.SP = ContextRecord->Esp;
     rd.ControlPC = (PCODE)(ContextRecord->Eip);
     rd.PCTAddr = (UINT_PTR)&(ContextRecord->Eip);
 
@@ -118,7 +118,7 @@ OOPStackUnwinderX86::VirtualUnwind(
 #undef CALLEE_SAVED_REGISTER
     }
 
-    ContextRecord->Esp = rd.Esp;
+    ContextRecord->Esp = rd.SP;
     ContextRecord->Eip = rd.ControlPC;
     ContextRecord->Ebp = *rd.pEbp;
 
