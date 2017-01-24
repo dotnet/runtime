@@ -3,9 +3,9 @@
   <PropertyGroup>
     <BuildConfigurations>
       net463-Windows_NT;
-      netstandard-Unix;
-      netstandard-OSX;
-      netstandard-Windows_NT;
+      netcoreapp-Unix;
+      netcoreapp-OSX;
+      netcoreapp-Windows_NT;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>
