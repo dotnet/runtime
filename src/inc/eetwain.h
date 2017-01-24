@@ -192,6 +192,7 @@ virtual TADDR GetAmbientSP(PREGDISPLAY     pContext,
 */
 virtual ULONG32 GetStackParameterSize(EECodeInfo* pCodeInfo) = 0;
 
+#ifndef CROSSGEN_COMPILE
 /*
     Unwind the current stack frame, i.e. update the virtual register
     set in pContext. This will be similar to the state after the function
@@ -205,6 +206,7 @@ virtual bool UnwindStackFrame(PREGDISPLAY     pContext,
                               unsigned        flags,
                               CodeManState   *pState,
                               StackwalkCacheUnwindInfo  *pUnwindInfo) = 0;
+#endif // CROSSGEN_COMPILE
 
 /*
     Is the function currently at a "GC safe point" ?
@@ -410,6 +412,7 @@ TADDR GetAmbientSP(PREGDISPLAY     pContext,
 virtual 
 ULONG32 GetStackParameterSize(EECodeInfo* pCodeInfo);
 
+#ifndef CROSSGEN_COMPILE
 /*
     Unwind the current stack frame, i.e. update the virtual register
     set in pContext. This will be similar to the state after the function
@@ -425,6 +428,7 @@ bool UnwindStackFrame(
                 unsigned        flags,
                 CodeManState   *pState,
                 StackwalkCacheUnwindInfo  *pUnwindInfo);
+#endif // CROSSGEN_COMPILE
 
 enum QuickUnwindFlag
 {

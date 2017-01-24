@@ -3982,7 +3982,8 @@ bool UnwindStackFrame(PREGDISPLAY     pContext,
 
 #endif // _TARGET_X86_
 
-#if defined(_TARGET_X86_) && !defined(WIN64EXCEPTIONS)
+#ifndef CROSSGEN_COMPILE
+#ifndef WIN64EXCEPTIONS
 
 /*****************************************************************************
  *
@@ -4000,11 +4001,16 @@ bool EECodeManager::UnwindStackFrame(PREGDISPLAY     pContext,
                                      CodeManState   *pState,
                                      StackwalkCacheUnwindInfo  *pUnwindInfo /* out-only, perf improvement */)
 {
+#ifdef _TARGET_X86_
     return ::UnwindStackFrame(pContext, pCodeInfo, flags, pState, pUnwindInfo);
+#else // _TARGET_X86_
+    PORTABILITY_ASSERT("EECodeManager::UnwindStackFrame");
+    return false;
+#endif // _TARGET_???_
 }
 
 /*****************************************************************************/
-#elif !defined(CROSSGEN_COMPILE) // _TARGET_X86_ - UnwindStackFrame
+#else // !WIN64EXCEPTIONS
 /*****************************************************************************/
 
 bool EECodeManager::UnwindStackFrame(PREGDISPLAY     pContext,
@@ -4034,19 +4040,9 @@ bool EECodeManager::UnwindStackFrame(PREGDISPLAY     pContext,
 }
 
 /*****************************************************************************/
-#else // _TARGET_X86_ - UnwindStackFrame
+#endif // WIN64EXCEPTIONS
+#endif // !CROSSGEN_COMPILE
 
-bool EECodeManager::UnwindStackFrame(PREGDISPLAY     pContext,
-                                     EECodeInfo     *pCodeInfo,
-                                     unsigned        flags,
-                                     CodeManState   *pState,
-                                     StackwalkCacheUnwindInfo  *pUnwindInfo /* out-only, perf improvement */)
-{
-    _ASSERTE(!"EECodeManager::UnwindStackFrame not supported in this build configuration");
-    return true;
-}
-
-#endif // _TARGET_X86_ - UnwindStackFrame
 /*****************************************************************************/
 
 /* report args in 'msig' to the GC.
