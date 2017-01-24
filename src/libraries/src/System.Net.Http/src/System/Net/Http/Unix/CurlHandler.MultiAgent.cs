@@ -1164,13 +1164,13 @@ namespace System.Net.Http
                 if (easy._requestContentStream == null)
                 {
                     multi.EventSourceTrace("Calling ReadAsStreamAsync to get new request stream", easy: easy);
-                    Task<Stream> readStreamTask = easy._requestMessage.Content.ReadAsStreamAsync();
-                    asyncRead = readStreamTask.IsCompleted ?
-                        StoreRetrievedContentStreamAndReadAsync(readStreamTask, easy, sts, length) :
-                        easy._requestMessage.Content.ReadAsStreamAsync().ContinueWith((readStream, s) =>
+                    Task<Stream> readAsStreamTask = easy._requestMessage.Content.ReadAsStreamAsync();
+                    asyncRead = readAsStreamTask.IsCompleted ?
+                        StoreRetrievedContentStreamAndReadAsync(readAsStreamTask, easy, sts, length) :
+                        easy._requestMessage.Content.ReadAsStreamAsync().ContinueWith((t, s) =>
                         {
                             var stateAndRequest = (Tuple<int, EasyRequest.SendTransferState, EasyRequest>)s;
-                            return StoreRetrievedContentStreamAndReadAsync(readStream,
+                            return StoreRetrievedContentStreamAndReadAsync(t,
                                 stateAndRequest.Item3, stateAndRequest.Item2, stateAndRequest.Item1);
                         }, Tuple.Create(length, sts, easy), CancellationToken.None,
                         TaskContinuationOptions.ExecuteSynchronously | TaskContinuationOptions.DenyChildAttach, TaskScheduler.Default).Unwrap();
@@ -1233,16 +1233,16 @@ namespace System.Net.Http
             /// stores it into <see cref="EasyRequest._requestContentStream"/>, and does an initial read on it.
             /// </summary>
             private static Task<int> StoreRetrievedContentStreamAndReadAsync(
-                Task<Stream> readStream, EasyRequest easy, EasyRequest.SendTransferState sts, int length)
+                Task<Stream> readAsStreamTask, EasyRequest easy, EasyRequest.SendTransferState sts, int length)
             {
-                Debug.Assert(readStream.IsCompleted, $"Expected readStream to be completed, got {readStream.Status}");
+                Debug.Assert(readAsStreamTask.IsCompleted, $"Expected {nameof(readAsStreamTask)} to be completed, got {readAsStreamTask.Status}");
                 try
                 {
                     MultiAgent multi = easy._associatedMultiAgent;
-                    multi.EventSourceTrace("ReadAsStreamAsync completed: {0}", readStream.Status, easy: easy);
+                    multi.EventSourceTrace("Async operation completed: {0}", readAsStreamTask.Status, easy: easy);
 
                     // Get and store the resulting stream
-                    easy._requestContentStream = readStream.GetAwaiter().GetResult();
+                    easy._requestContentStream = readAsStreamTask.GetAwaiter().GetResult();
                     multi.EventSourceTrace("Got stream: {0}", easy._requestContentStream.GetType(), easy: easy);
 
                     // If the stream is seekable, store its original position.  We'll use this any time we need to seek
