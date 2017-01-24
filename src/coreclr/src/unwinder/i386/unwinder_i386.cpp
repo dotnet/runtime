@@ -118,6 +118,8 @@ OOPStackUnwinderX86::VirtualUnwind(
 #undef CALLEE_SAVED_REGISTER
     }
 
+    ContextRecord->ContextFlags |= CONTEXT_UNWOUND_TO_CALL;
+
     ContextRecord->Esp = rd.SP;
     ContextRecord->Eip = rd.ControlPC;
     ContextRecord->Ebp = *rd.pEbp;

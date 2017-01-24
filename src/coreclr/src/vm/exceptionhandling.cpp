@@ -1376,6 +1376,8 @@ void ExceptionTracker::InitializeCrawlFrame(CrawlFrame* pcfThisFrame, Thread* pT
     // </ARM and ARM64>
     pThread->InitRegDisplay(pcfThisFrame->pRD, pDispatcherContext->ContextRecord, true);
 
+    bool fAdjustRegdisplayControlPC = false;
+
     // The "if" check below is trying to determine when we have a valid current context in DC->ContextRecord and whether, or not,
     // RegDisplay needs to be fixed up to set SP and ControlPC to have the values for the current frame for which personality routine
     // is invoked.
@@ -1421,7 +1423,6 @@ void ExceptionTracker::InitializeCrawlFrame(CrawlFrame* pcfThisFrame, Thread* pT
     // However, we do this *only* when "ControlPCForEHSearch" is the same as "DispatcherContext->ControlPC",
     // indicating we are not using the thread-abort reraise loop prevention logic.
     //
-    bool fAdjustRegdisplayControlPC = false;
     if (pDispatcherContext->ControlPc == ControlPCForEHSearch)
     {
         // Since DispatcherContext->ControlPc is used to initialize the
@@ -1437,7 +1438,9 @@ void ExceptionTracker::InitializeCrawlFrame(CrawlFrame* pcfThisFrame, Thread* pT
     // Remove the Thumb bit
     ControlPCForEHSearch = ThumbCodeToDataPointer<DWORD_PTR, DWORD_PTR>(ControlPCForEHSearch);
 #endif
+#endif // _TARGET_ARM_ || _TARGET_ARM64_
 
+#if defined(_TARGET_ARM_) || defined(_TARGET_ARM64_) || defined(_TARGET_X86_)
     // If the OS indicated that the IP is a callsite, then adjust the ControlPC by decrementing it
     // by two. This is done because unwinding at callsite will make ControlPC point to the
     // instruction post the callsite. If a protected region ends "at" the callsite, then
@@ -1460,7 +1463,7 @@ void ExceptionTracker::InitializeCrawlFrame(CrawlFrame* pcfThisFrame, Thread* pT
             pcfThisFrame->isIPadjusted = true;
         }
     }
-#endif // _TARGET_ARM_ || _TARGET_ARM64_
+#endif // _TARGET_ARM_ || _TARGET_ARM64_ || _TARGET_X86_
 
     pcfThisFrame->codeInfo.Init(ControlPCForEHSearch);
     
@@ -4337,7 +4340,7 @@ VOID UnwindManagedExceptionPass2(PAL_SEHException& ex, CONTEXT* unwindStartConte
         dispatcherContext.FunctionEntry = codeInfo.GetFunctionEntry();
         dispatcherContext.ControlPc = controlPc;
         dispatcherContext.ImageBase = codeInfo.GetModuleBase();
-#if defined(_TARGET_ARM_)
+#if defined(_TARGET_ARM_) || defined(_TARGET_X86_)
         dispatcherContext.ControlPcIsUnwound = !!(currentFrameContext->ContextFlags & CONTEXT_UNWOUND_TO_CALL);
 #endif
         // Check whether we have a function table entry for the current controlPC.
@@ -4488,7 +4491,7 @@ VOID DECLSPEC_NORETURN UnwindManagedExceptionPass1(PAL_SEHException& ex, CONTEXT
         dispatcherContext.FunctionEntry = codeInfo.GetFunctionEntry();
         dispatcherContext.ControlPc = controlPc;
         dispatcherContext.ImageBase = codeInfo.GetModuleBase();
-#if defined(_TARGET_ARM_) 
+#if defined(_TARGET_ARM_) || defined(_TARGET_X86_)
         dispatcherContext.ControlPcIsUnwound = !!(frameContext->ContextFlags & CONTEXT_UNWOUND_TO_CALL);
 #endif
 
