@@ -3,9 +3,9 @@
   <PropertyGroup>
     <BuildConfigurations>
       uap101-Windows_NT;
-      netstandard-Linux;
-      netstandard-OSX;
-      netstandard-Windows_NT;
+      netcoreapp-Linux;
+      netcoreapp-OSX;
+      netcoreapp-Windows_NT;
       net463-Windows_NT;
     </BuildConfigurations>
   </PropertyGroup>

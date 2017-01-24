@@ -13,7 +13,7 @@
       <ReferenceFromRuntime Include="xunit.assert" />
       <ReferenceFromRuntime Include="xunit.abstractions" />
       <ReferenceFromRuntime Include="xunit.performance.core" />
-      <ReferenceFromRuntime Include="xunit.execution.dotnet" />
+      <ReferenceFromRuntime Include="xunit.execution.dotnet" Condition="'$(_bc_TargetGroup)'!='netfx'"/>
       <ReferenceFromRuntime Include="Newtonsoft.Json" Condition="'$(SkipIncludeNewtonsoftJson)'!='true'" />
 
       <!-- Add Reference's to all files in the targeting pack folder, and to whitelisted items from the group above in the runtime folder. -->

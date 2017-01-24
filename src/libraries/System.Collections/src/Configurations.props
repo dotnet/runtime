@@ -5,7 +5,7 @@
       net463-Windows_NT;
       uap101aot-Windows_NT;
       netcoreapp1.2corert;
-      netstandard;
+      netcoreapp;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>
