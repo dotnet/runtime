@@ -312,7 +312,7 @@ def buildArchConfiguration = ['Debug': 'x86',
                             shell("HOME=\$WORKSPACE/tempHome ./build.sh -${configurationGroup.toLowerCase()} -framework:${targetGroup} -os:${osGroup}")
                             shell("HOME=\$WORKSPACE/tempHome ./build-tests.sh -${configurationGroup.toLowerCase()} -framework:${targetGroup} -os:${osGroup} -- ${useServerGC} /p:WithoutCategories=IgnoreForCI")
                             // Tar up the appropriate bits.
-                            shell('tar -czf bin/build.tar.gz --directory="bin/runtime/${targetGroup}-${osGroup}-${configurationGroup}-x64" .')
+                            shell("tar -czf bin/build.tar.gz --directory=\"bin/runtime/${targetGroup}-${osGroup}-${configurationGroup}-x64\" .")
                         }
                     }
                 }
