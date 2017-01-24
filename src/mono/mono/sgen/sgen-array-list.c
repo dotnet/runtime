@@ -177,24 +177,6 @@ retry:
 }
 
 /*
- * Removes all NULL pointers from the array. Not thread safe
- */
-void
-sgen_array_list_remove_nulls (SgenArrayList *array)
-{
-	guint32 start = 0;
-	volatile gpointer *slot;
-
-	SGEN_ARRAY_LIST_FOREACH_SLOT (array, slot) {
-		if (*slot)
-			*sgen_array_list_get_slot (array, start++) = *slot;
-	} SGEN_ARRAY_LIST_END_FOREACH_SLOT;
-
-	mono_memory_write_barrier ();
-	array->next_slot = start;
-}
-
-/*
  * Does a linear search through the pointer array to find `ptr`.  Returns the index if
  * found, otherwise (guint32)-1.
  */
@@ -208,6 +190,20 @@ sgen_array_list_find (SgenArrayList *array, gpointer ptr)
 			return __index;
 	} SGEN_ARRAY_LIST_END_FOREACH_SLOT;
 	return (guint32)-1;
+}
+
+gboolean
+sgen_array_list_default_cas_setter (volatile gpointer *slot, gpointer ptr, int data)
+{
+	if (InterlockedCompareExchangePointer (slot, ptr, NULL) == NULL)
+		return TRUE;
+	return FALSE;
+}
+
+gboolean
+sgen_array_list_default_is_slot_set (volatile gpointer *slot)
+{
+	return *slot != NULL;
 }
 
 #endif

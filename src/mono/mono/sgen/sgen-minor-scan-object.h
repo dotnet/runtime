@@ -13,6 +13,7 @@ extern guint64 stat_scan_object_called_nursery;
 #undef SERIAL_SCAN_OBJECT
 #undef SERIAL_SCAN_VTYPE
 #undef SERIAL_SCAN_PTR_FIELD
+#undef SERIAL_DRAIN_GRAY_STACK
 
 #if defined(SGEN_SIMPLE_NURSERY)
 
@@ -20,10 +21,12 @@ extern guint64 stat_scan_object_called_nursery;
 #define SERIAL_SCAN_OBJECT simple_nursery_serial_with_concurrent_major_scan_object
 #define SERIAL_SCAN_VTYPE simple_nursery_serial_with_concurrent_major_scan_vtype
 #define SERIAL_SCAN_PTR_FIELD simple_nursery_serial_with_concurrent_major_scan_ptr_field
+#define SERIAL_DRAIN_GRAY_STACK simple_nursery_serial_with_concurrent_major_drain_gray_stack
 #else
 #define SERIAL_SCAN_OBJECT simple_nursery_serial_scan_object
 #define SERIAL_SCAN_VTYPE simple_nursery_serial_scan_vtype
 #define SERIAL_SCAN_PTR_FIELD simple_nursery_serial_scan_ptr_field
+#define SERIAL_DRAIN_GRAY_STACK simple_nursery_serial_drain_gray_stack
 #endif
 
 #elif defined (SGEN_SPLIT_NURSERY)
@@ -32,10 +35,12 @@ extern guint64 stat_scan_object_called_nursery;
 #define SERIAL_SCAN_OBJECT split_nursery_serial_with_concurrent_major_scan_object
 #define SERIAL_SCAN_VTYPE split_nursery_serial_with_concurrent_major_scan_vtype
 #define SERIAL_SCAN_PTR_FIELD split_nursery_serial_with_concurrent_major_scan_ptr_field
+#define SERIAL_DRAIN_GRAY_STACK split_nursery_serial_with_concurrent_major_drain_gray_stack
 #else
 #define SERIAL_SCAN_OBJECT split_nursery_serial_scan_object
 #define SERIAL_SCAN_VTYPE split_nursery_serial_scan_vtype
 #define SERIAL_SCAN_PTR_FIELD split_nursery_serial_scan_ptr_field
+#define SERIAL_DRAIN_GRAY_STACK split_nursery_serial_drain_gray_stack
 #endif
 
 #else
@@ -95,8 +100,24 @@ SERIAL_SCAN_PTR_FIELD (GCObject *full_object, GCObject **ptr, SgenGrayQueue *que
 	HANDLE_PTR (ptr, NULL);
 }
 
+static gboolean
+SERIAL_DRAIN_GRAY_STACK (SgenGrayQueue *queue)
+{
+        for (;;) {
+                GCObject *obj;
+                SgenDescriptor desc;
+
+                GRAY_OBJECT_DEQUEUE_SERIAL (queue, &obj, &desc);
+                if (!obj)
+                        return TRUE;
+
+                SERIAL_SCAN_OBJECT (obj, desc, queue);
+        }
+}
+
 #define FILL_MINOR_COLLECTOR_SCAN_OBJECT(ops)	do {			\
 		(ops)->scan_object = SERIAL_SCAN_OBJECT;			\
 		(ops)->scan_vtype = SERIAL_SCAN_VTYPE;			\
 		(ops)->scan_ptr_field = SERIAL_SCAN_PTR_FIELD;		\
+		(ops)->drain_gray_stack = SERIAL_DRAIN_GRAY_STACK;	\
 	} while (0)

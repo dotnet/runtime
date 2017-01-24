@@ -22,9 +22,10 @@ struct _SgenThreadPoolJob {
 
 typedef void (*SgenThreadPoolThreadInitFunc) (void*);
 typedef void (*SgenThreadPoolIdleJobFunc) (void*);
-typedef gboolean (*SgenThreadPoolContinueIdleJobFunc) (void);
+typedef gboolean (*SgenThreadPoolContinueIdleJobFunc) (void*);
+typedef gboolean (*SgenThreadPoolShouldWorkFunc) (void*);
 
-void sgen_thread_pool_init (int num_threads, SgenThreadPoolThreadInitFunc init_func, SgenThreadPoolIdleJobFunc idle_func, SgenThreadPoolContinueIdleJobFunc continue_idle_func, void **thread_datas);
+void sgen_thread_pool_init (int num_threads, SgenThreadPoolThreadInitFunc init_func, SgenThreadPoolIdleJobFunc idle_func, SgenThreadPoolContinueIdleJobFunc continue_idle_func, SgenThreadPoolShouldWorkFunc should_work_func, void **thread_datas);
 
 void sgen_thread_pool_shutdown (void);
 
@@ -41,6 +42,6 @@ void sgen_thread_pool_idle_wait (void);
 
 void sgen_thread_pool_wait_for_all_jobs (void);
 
-gboolean sgen_thread_pool_is_thread_pool_thread (MonoNativeThreadId thread);
+int sgen_thread_pool_is_thread_pool_thread (MonoNativeThreadId thread);
 
 #endif

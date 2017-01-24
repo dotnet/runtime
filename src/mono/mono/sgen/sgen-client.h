@@ -94,7 +94,7 @@ void sgen_client_ensure_weak_gchandles_accessible (void);
  * parts of the object based on which cards are marked, do so and return TRUE.  Otherwise,
  * return FALSE.
  */
-gboolean sgen_client_cardtable_scan_object (GCObject *obj, mword block_obj_size, guint8 *cards, ScanCopyContext ctx);
+gboolean sgen_client_cardtable_scan_object (GCObject *obj, guint8 *cards, ScanCopyContext ctx);
 
 /*
  * Called after nursery objects have been pinned.  No action is necessary.

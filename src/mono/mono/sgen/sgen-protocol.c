@@ -340,13 +340,12 @@ static void
 protocol_entry (unsigned char type, gpointer data, int size)
 {
 	int index;
+	gboolean include_worker_index = type != PROTOCOL_ID (binary_protocol_header);
+	int entry_size = size + 1 + (include_worker_index ? 1 : 0); // type + worker_index + size
 	BinaryProtocolBuffer *buffer;
 
 	if (binary_protocol_file == invalid_file_value)
 		return;
-
-	if (sgen_thread_pool_is_thread_pool_thread (mono_native_thread_id_get ()))
-		type |= 0x80;
 
 	lock_recursive ();
 
@@ -354,16 +353,24 @@ protocol_entry (unsigned char type, gpointer data, int size)
 	buffer = binary_protocol_get_buffer (size + 1);
  retry_same_buffer:
 	index = buffer->index;
-	if (index + 1 + size > BINARY_PROTOCOL_BUFFER_SIZE)
+	if (index + entry_size > BINARY_PROTOCOL_BUFFER_SIZE)
 		goto retry;
 
-	if (InterlockedCompareExchange (&buffer->index, index + 1 + size, index) != index)
+	if (InterlockedCompareExchange (&buffer->index, index + entry_size, index) != index)
 		goto retry_same_buffer;
 
 	/* FIXME: if we're interrupted at this point, we have a buffer
 	   entry that contains random data. */
 
 	buffer->buffer [index++] = type;
+	/* We should never change the header format */
+	if (include_worker_index) {
+		/*
+		 * If the thread is not a worker thread we insert 0, which is interpreted
+		 * as gc thread. Worker indexes are 1 based.
+		 */
+		buffer->buffer [index++] = (unsigned char) sgen_thread_pool_is_thread_pool_thread (mono_native_thread_id_get ());
+	}
 	memcpy (buffer->buffer + index, data, size);
 	index += size;
 

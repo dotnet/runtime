@@ -57,7 +57,7 @@
 
 #define MS_BLOCK_FREE	(MS_BLOCK_SIZE - MS_BLOCK_SKIP)
 
-#define MS_NUM_MARK_WORDS	((MS_BLOCK_SIZE / SGEN_ALLOC_ALIGN + sizeof (mword) * 8 - 1) / (sizeof (mword) * 8))
+#define MS_NUM_MARK_WORDS	(MS_BLOCK_SIZE / SGEN_ALLOC_ALIGN + sizeof (guint32) * 8 - 1) / (sizeof (guint32) * 8)
 
 /*
  * Blocks progress from one state to the next:
@@ -107,7 +107,7 @@ struct _MSBlockInfo {
 	void ** volatile free_list;
 	MSBlockInfo * volatile next_free;
 	guint8 * volatile cardtable_mod_union;
-	mword mark_words [MS_NUM_MARK_WORDS];
+	guint32 mark_words [MS_NUM_MARK_WORDS];
 };
 
 #define MS_BLOCK_FOR_BLOCK_INFO(b)	((char*)(b))
@@ -128,17 +128,26 @@ typedef struct {
 //casting to int is fine since blocks are 32k
 #define MS_CALC_MARK_BIT(w,b,o) 	do {				\
 		int i = ((int)((char*)(o) - MS_BLOCK_DATA_FOR_OBJ ((o)))) >> SGEN_ALLOC_ALIGN_BITS; \
-		if (sizeof (mword) == 4) {				\
-			(w) = i >> 5;					\
-			(b) = i & 31;					\
-		} else {						\
-			(w) = i >> 6;					\
-			(b) = i & 63;					\
-		}							\
+		(w) = i >> 5;						\
+		(b) = i & 31;						\
 	} while (0)
 
 #define MS_MARK_BIT(bl,w,b)	((bl)->mark_words [(w)] & (ONE_P << (b)))
 #define MS_SET_MARK_BIT(bl,w,b)	((bl)->mark_words [(w)] |= (ONE_P << (b)))
+#define MS_SET_MARK_BIT_PAR(bl,w,b,first)	do {			\
+		guint32 tmp_mark_word = (bl)->mark_words [(w)];		\
+		guint32 old_mark_word;					\
+		first = FALSE;						\
+		while (!(tmp_mark_word & (ONE_P << (b)))) {		\
+			old_mark_word = tmp_mark_word;			\
+			tmp_mark_word = InterlockedCompareExchange ((volatile gint32*)&(bl)->mark_words [w], old_mark_word | (ONE_P << (b)), old_mark_word); \
+			if (tmp_mark_word == old_mark_word) {		\
+				first = TRUE;				\
+				break;					\
+			}						\
+		}							\
+	} while (0)
+
 
 #define MS_OBJ_ALLOCED(o,b)	(*(void**)(o) && (*(char**)(o) < MS_BLOCK_FOR_BLOCK_INFO (b) || *(char**)(o) >= MS_BLOCK_FOR_BLOCK_INFO (b) + MS_BLOCK_SIZE))
 
@@ -188,7 +197,7 @@ static gboolean concurrent_sweep = TRUE;
 #define BLOCK_TAG(bl)				((bl)->has_references ? BLOCK_TAG_HAS_REFERENCES ((bl)) : (bl))
 
 /* all allocated blocks in the system */
-static SgenArrayList allocated_blocks = SGEN_ARRAY_LIST_INIT (NULL, NULL, NULL, INTERNAL_MEM_PIN_QUEUE);
+static SgenArrayList allocated_blocks = SGEN_ARRAY_LIST_INIT (NULL, sgen_array_list_default_is_slot_set, sgen_array_list_default_cas_setter, INTERNAL_MEM_PIN_QUEUE);
 
 /* non-allocated block free-list */
 static void *empty_blocks = NULL;
@@ -235,6 +244,7 @@ static volatile size_t num_major_sections = 0;
  * thread only ever adds blocks to the free list, so the ABA problem can't occur.
  */
 static MSBlockInfo * volatile *free_block_lists [MS_BLOCK_TYPE_MAX];
+static MonoNativeTlsKey worker_block_free_list_key;
 
 static guint64 stat_major_blocks_alloced = 0;
 static guint64 stat_major_blocks_freed = 0;
@@ -284,6 +294,7 @@ ms_find_block_obj_size_index (size_t size)
 
 #define FREE_BLOCKS_FROM(lists,p,r)	(lists [((p) ? MS_BLOCK_FLAG_PINNED : 0) | ((r) ? MS_BLOCK_FLAG_REFS : 0)])
 #define FREE_BLOCKS(p,r)		(FREE_BLOCKS_FROM (free_block_lists, (p), (r)))
+#define FREE_BLOCKS_LOCAL(p,r)		(FREE_BLOCKS_FROM (((MSBlockInfo***)mono_native_tls_get_value (worker_block_free_list_key)), (p), (r)))
 
 #define MS_BLOCK_OBJ_SIZE_INDEX(s)				\
 	(((s)+7)>>3 < MS_NUM_FAST_BLOCK_OBJ_SIZE_INDEXES ?	\
@@ -680,6 +691,56 @@ static GCObject*
 major_alloc_object (GCVTable vtable, size_t size, gboolean has_references)
 {
 	return alloc_obj (vtable, size, FALSE, has_references);
+}
+
+/*
+ * This can only be called by sgen workers. While this is called we assume
+ * that no other thread is accessing the block free lists. The world should
+ * be stopped and the gc thread should be waiting for workers to finish.
+ */
+static GCObject*
+major_alloc_object_par (GCVTable vtable, size_t size, gboolean has_references)
+{
+	int size_index = MS_BLOCK_OBJ_SIZE_INDEX (size);
+	MSBlockInfo * volatile * free_blocks = FREE_BLOCKS (FALSE, has_references);
+	MSBlockInfo **free_blocks_local = FREE_BLOCKS_LOCAL (FALSE, has_references);
+	void *obj;
+
+	if (free_blocks_local [size_index]) {
+get_slot:
+		obj = unlink_slot_from_free_list_uncontested (free_blocks_local, size_index);
+	} else {
+		MSBlockInfo *block;
+get_block:
+		block = free_blocks [size_index];
+		if (!block) {
+			if (G_UNLIKELY (!ms_alloc_block (size_index, FALSE, has_references)))
+				return NULL;
+			goto get_block;
+		} else {
+			MSBlockInfo *next_free = block->next_free;
+			/*
+			 * Once a block is removed from the main list, it cannot return on the list until
+			 * all the workers are finished and sweep is starting. This means we don't need
+			 * to account for ABA problems.
+			 */
+			if (SGEN_CAS_PTR ((volatile gpointer *)&free_blocks [size_index], next_free, block) != block)
+				goto get_block;
+			g_assert (block->free_list);
+			block->next_free = free_blocks_local [size_index];
+			free_blocks_local [size_index] = block;
+
+			goto get_slot;
+		}
+	}
+
+	/* FIXME: assumes object layout */
+	*(GCVTable*)obj = vtable;
+
+	/* FIXME is it worth CAS-ing here */
+	total_allocated_major += block_obj_sizes [size_index]; 
+
+	return (GCObject *)obj;
 }
 
 /*
@@ -1084,11 +1145,26 @@ major_block_is_evacuating (MSBlockInfo *block)
 		if (!MS_MARK_BIT ((block), __word, __bit)) {		\
 			MS_SET_MARK_BIT ((block), __word, __bit);	\
 			if (sgen_gc_descr_has_references (desc))			\
-				GRAY_OBJECT_ENQUEUE ((queue), (obj), (desc)); \
+				GRAY_OBJECT_ENQUEUE_SERIAL ((queue), (obj), (desc)); \
 			binary_protocol_mark ((obj), (gpointer)SGEN_LOAD_VTABLE ((obj)), sgen_safe_object_get_size ((obj))); \
 			INC_NUM_MAJOR_OBJECTS_MARKED ();		\
 		}							\
 	} while (0)
+#define MS_MARK_OBJECT_AND_ENQUEUE_PAR(obj,desc,block,queue) do {	\
+		int __word, __bit;					\
+		gboolean first;						\
+		MS_CALC_MARK_BIT (__word, __bit, (obj));		\
+		SGEN_ASSERT (9, MS_OBJ_ALLOCED ((obj), (block)), "object %p not allocated", obj); \
+		MS_SET_MARK_BIT_PAR ((block), __word, __bit, first);	\
+		if (first) {						\
+			if (sgen_gc_descr_has_references (desc))	\
+				GRAY_OBJECT_ENQUEUE_PARALLEL ((queue), (obj), (desc)); \
+			binary_protocol_mark ((obj), (gpointer)SGEN_LOAD_VTABLE ((obj)), sgen_safe_object_get_size ((obj))); \
+			INC_NUM_MAJOR_OBJECTS_MARKED ();		\
+		}							\
+	} while (0)
+
+
 
 static void
 pin_major_object (GCObject *obj, SgenGrayQueue *queue)
@@ -1103,6 +1179,7 @@ pin_major_object (GCObject *obj, SgenGrayQueue *queue)
 	MS_MARK_OBJECT_AND_ENQUEUE (obj, sgen_obj_get_descriptor (obj), block, queue);
 }
 
+#define COPY_OR_MARK_PARALLEL
 #include "sgen-major-copy-object.h"
 
 static long long
@@ -1153,6 +1230,12 @@ static guint64 stat_drain_loops;
 #define DRAIN_GRAY_STACK_FUNCTION_NAME	drain_gray_stack_no_evacuation
 #include "sgen-marksweep-drain-gray-stack.h"
 
+#define COPY_OR_MARK_PARALLEL
+#define COPY_OR_MARK_FUNCTION_NAME	major_copy_or_mark_object_par_no_evacuation
+#define SCAN_OBJECT_FUNCTION_NAME	major_scan_object_par_no_evacuation
+#define DRAIN_GRAY_STACK_FUNCTION_NAME	drain_gray_stack_par_no_evacuation
+#include "sgen-marksweep-drain-gray-stack.h"
+
 #define COPY_OR_MARK_WITH_EVACUATION
 #define COPY_OR_MARK_FUNCTION_NAME	major_copy_or_mark_object_with_evacuation
 #define SCAN_OBJECT_FUNCTION_NAME	major_scan_object_with_evacuation
@@ -1161,10 +1244,26 @@ static guint64 stat_drain_loops;
 #define SCAN_PTR_FIELD_FUNCTION_NAME	major_scan_ptr_field_with_evacuation
 #include "sgen-marksweep-drain-gray-stack.h"
 
+#define COPY_OR_MARK_PARALLEL
+#define COPY_OR_MARK_WITH_EVACUATION
+#define COPY_OR_MARK_FUNCTION_NAME	major_copy_or_mark_object_par_with_evacuation
+#define SCAN_OBJECT_FUNCTION_NAME	major_scan_object_par_with_evacuation
+#define SCAN_VTYPE_FUNCTION_NAME	major_scan_vtype_par_with_evacuation
+#define DRAIN_GRAY_STACK_FUNCTION_NAME	drain_gray_stack_par_with_evacuation
+#define SCAN_PTR_FIELD_FUNCTION_NAME	major_scan_ptr_field_par_with_evacuation
+#include "sgen-marksweep-drain-gray-stack.h"
+
 #define COPY_OR_MARK_CONCURRENT
 #define COPY_OR_MARK_FUNCTION_NAME	major_copy_or_mark_object_concurrent_no_evacuation
 #define SCAN_OBJECT_FUNCTION_NAME	major_scan_object_concurrent_no_evacuation
 #define DRAIN_GRAY_STACK_FUNCTION_NAME	drain_gray_stack_concurrent_no_evacuation
+#include "sgen-marksweep-drain-gray-stack.h"
+
+#define COPY_OR_MARK_PARALLEL
+#define COPY_OR_MARK_CONCURRENT
+#define COPY_OR_MARK_FUNCTION_NAME	major_copy_or_mark_object_concurrent_par_no_evacuation
+#define SCAN_OBJECT_FUNCTION_NAME	major_scan_object_concurrent_par_no_evacuation
+#define DRAIN_GRAY_STACK_FUNCTION_NAME	drain_gray_stack_concurrent_par_no_evacuation
 #include "sgen-marksweep-drain-gray-stack.h"
 
 #define COPY_OR_MARK_CONCURRENT_WITH_EVACUATION
@@ -1173,6 +1272,15 @@ static guint64 stat_drain_loops;
 #define SCAN_VTYPE_FUNCTION_NAME	major_scan_vtype_concurrent_with_evacuation
 #define SCAN_PTR_FIELD_FUNCTION_NAME	major_scan_ptr_field_concurrent_with_evacuation
 #define DRAIN_GRAY_STACK_FUNCTION_NAME	drain_gray_stack_concurrent_with_evacuation
+#include "sgen-marksweep-drain-gray-stack.h"
+
+#define COPY_OR_MARK_PARALLEL
+#define COPY_OR_MARK_CONCURRENT_WITH_EVACUATION
+#define COPY_OR_MARK_FUNCTION_NAME	major_copy_or_mark_object_concurrent_par_with_evacuation
+#define SCAN_OBJECT_FUNCTION_NAME	major_scan_object_concurrent_par_with_evacuation
+#define SCAN_VTYPE_FUNCTION_NAME	major_scan_vtype_concurrent_par_with_evacuation
+#define SCAN_PTR_FIELD_FUNCTION_NAME	major_scan_ptr_field_concurrent_par_with_evacuation
+#define DRAIN_GRAY_STACK_FUNCTION_NAME	drain_gray_stack_concurrent_par_with_evacuation
 #include "sgen-marksweep-drain-gray-stack.h"
 
 static inline gboolean
@@ -1198,12 +1306,30 @@ drain_gray_stack (SgenGrayQueue *queue)
 }
 
 static gboolean
+drain_gray_stack_par (SgenGrayQueue *queue)
+{
+	if (major_is_evacuating ())
+		return drain_gray_stack_par_with_evacuation (queue);
+	else
+		return drain_gray_stack_par_no_evacuation (queue);
+}
+
+static gboolean
 drain_gray_stack_concurrent (SgenGrayQueue *queue)
 {
 	if (major_is_evacuating ())
 		return drain_gray_stack_concurrent_with_evacuation (queue);
 	else
 		return drain_gray_stack_concurrent_no_evacuation (queue);
+}
+
+static gboolean
+drain_gray_stack_concurrent_par (SgenGrayQueue *queue)
+{
+	if (major_is_evacuating ())
+		return drain_gray_stack_concurrent_par_with_evacuation (queue);
+	else
+		return drain_gray_stack_concurrent_par_no_evacuation (queue);
 }
 
 static void
@@ -1219,9 +1345,21 @@ major_copy_or_mark_object_concurrent_canonical (GCObject **ptr, SgenGrayQueue *q
 }
 
 static void
+major_copy_or_mark_object_concurrent_par_canonical (GCObject **ptr, SgenGrayQueue *queue)
+{
+	major_copy_or_mark_object_concurrent_par_with_evacuation (ptr, *ptr, queue);
+}
+
+static void
 major_copy_or_mark_object_concurrent_finish_canonical (GCObject **ptr, SgenGrayQueue *queue)
 {
 	major_copy_or_mark_object_with_evacuation (ptr, *ptr, queue);
+}
+
+static void
+major_copy_or_mark_object_concurrent_par_finish_canonical (GCObject **ptr, SgenGrayQueue *queue)
+{
+	major_copy_or_mark_object_par_with_evacuation (ptr, *ptr, queue);
 }
 
 static void
@@ -1356,7 +1494,7 @@ sweep_block (MSBlockInfo *block)
 	}
 
 	/* reset mark bits */
-	memset (block->mark_words, 0, sizeof (mword) * MS_NUM_MARK_WORDS);
+	memset (block->mark_words, 0, sizeof (guint32) * MS_NUM_MARK_WORDS);
 
 	/* Reverse free list so that it's in address order */
 	reversed = NULL;
@@ -1403,6 +1541,21 @@ static volatile size_t num_major_sections_before_sweep;
 static volatile size_t num_major_sections_freed_in_sweep;
 
 static void
+sgen_worker_clear_free_block_lists (WorkerData *worker)
+{
+	int i, j;
+
+	if (!worker->free_block_lists)
+		return;
+
+	for (i = 0; i < MS_BLOCK_TYPE_MAX; i++) {
+		for (j = 0; j < num_block_obj_sizes; j++) {
+			((MSBlockInfo***) worker->free_block_lists) [i][j] = NULL;
+		}
+	}
+}
+
+static void
 sweep_start (void)
 {
 	int i;
@@ -1418,7 +1571,7 @@ sweep_start (void)
 			free_blocks [j] = NULL;
 	}
 
-	sgen_array_list_remove_nulls (&allocated_blocks);
+	sgen_workers_foreach (sgen_worker_clear_free_block_lists);
 }
 
 static void sweep_finish (void);
@@ -1560,6 +1713,7 @@ ensure_block_is_checked_for_sweeping (guint32 block_index, gboolean wait, gboole
 		ms_free_block (block);
 
 		SGEN_ATOMIC_ADD_P (num_major_sections, -1);
+		SGEN_ATOMIC_ADD_P (num_major_sections_freed_in_sweep, 1);
 
 		tagged_block = NULL;
 	}
@@ -1606,13 +1760,8 @@ sweep_job_func (void *thread_data_untyped, SgenThreadPoolJob *job)
 	 * cooperate with the sweep thread to finish sweeping, and they will traverse from
 	 * low to high, to avoid constantly colliding on the same blocks.
 	 */
-	for (block_index = num_blocks; block_index-- > 0;) {
-		/*
-		 * The block might have been freed by another thread doing some checking
-		 * work.
-		 */
-		if (!ensure_block_is_checked_for_sweeping (block_index, TRUE, NULL))
-			++num_major_sections_freed_in_sweep;
+	for (block_index = allocated_blocks.next_slot; block_index-- > 0;) {
+		ensure_block_is_checked_for_sweeping (block_index, TRUE, NULL);
 	}
 
 	while (!try_set_sweep_state (SWEEP_STATE_COMPACTING, SWEEP_STATE_SWEEPING)) {
@@ -1680,8 +1829,6 @@ major_sweep (void)
 	set_sweep_state (SWEEP_STATE_SWEEPING, SWEEP_STATE_NEED_SWEEPING);
 
 	sweep_start ();
-
-	SGEN_ASSERT (0, num_major_sections == allocated_blocks.next_slot, "We don't know how many blocks we have?");
 
 	num_major_sections_before_sweep = num_major_sections;
 	num_major_sections_freed_in_sweep = 0;
@@ -2418,7 +2565,7 @@ scan_card_table_for_block (MSBlockInfo *block, CardTableScanType scan_type, Scan
 }
 
 static void
-major_scan_card_table (CardTableScanType scan_type, ScanCopyContext ctx)
+major_scan_card_table (CardTableScanType scan_type, ScanCopyContext ctx, int job_index, int job_split_count)
 {
 	MSBlockInfo *block;
 	gboolean has_references, was_sweeping, skip_scan;
@@ -2432,8 +2579,10 @@ major_scan_card_table (CardTableScanType scan_type, ScanCopyContext ctx)
 
 	binary_protocol_major_card_table_scan_start (sgen_timestamp (), scan_type & CARDTABLE_SCAN_MOD_UNION);
 	FOREACH_BLOCK_HAS_REFERENCES_NO_LOCK (block, has_references) {
+		if (__index % job_split_count != job_index)
+			continue;
 #ifdef PREFETCH_CARDS
-		int prefetch_index = __index + 6;
+		int prefetch_index = __index + 6 * job_split_count;
 		if (prefetch_index < allocated_blocks.next_slot) {
 			MSBlockInfo *prefetch_block = BLOCK_UNTAG (*sgen_array_list_get_slot (&allocated_blocks, prefetch_index));
 			PREFETCH_READ (prefetch_block);
@@ -2546,8 +2695,24 @@ post_param_init (SgenMajorCollector *collector)
 	collector->needs_thread_pool = concurrent_mark || concurrent_sweep;
 }
 
+/* We are guaranteed to be called by the worker in question */
 static void
-sgen_marksweep_init_internal (SgenMajorCollector *collector, gboolean is_concurrent)
+sgen_worker_init_callback (gpointer worker_untyped)
+{
+	int i;
+	WorkerData *worker = (WorkerData*) worker_untyped;
+	MSBlockInfo ***worker_free_blocks = (MSBlockInfo ***) sgen_alloc_internal_dynamic (sizeof (MSBlockInfo**) * MS_BLOCK_TYPE_MAX, INTERNAL_MEM_MS_TABLES, TRUE);
+
+	for (i = 0; i < MS_BLOCK_TYPE_MAX; i++)
+		worker_free_blocks [i] = (MSBlockInfo **) sgen_alloc_internal_dynamic (sizeof (MSBlockInfo*) * num_block_obj_sizes, INTERNAL_MEM_MS_TABLES, TRUE);
+
+	worker->free_block_lists = worker_free_blocks;
+
+	mono_native_tls_set_value (worker_block_free_list_key, worker_free_blocks);
+}
+
+static void
+sgen_marksweep_init_internal (SgenMajorCollector *collector, gboolean is_concurrent, gboolean is_parallel)
 {
 	int i;
 
@@ -2594,6 +2759,7 @@ sgen_marksweep_init_internal (SgenMajorCollector *collector, gboolean is_concurr
 
 	concurrent_mark = is_concurrent;
 	collector->is_concurrent = is_concurrent;
+	collector->is_parallel = is_parallel;
 	collector->needs_thread_pool = is_concurrent || concurrent_sweep;
 	collector->get_and_reset_num_major_objects_marked = major_get_and_reset_num_major_objects_marked;
 	collector->supports_cardtable = TRUE;
@@ -2604,6 +2770,7 @@ sgen_marksweep_init_internal (SgenMajorCollector *collector, gboolean is_concurr
 	collector->alloc_degraded = major_alloc_degraded;
 
 	collector->alloc_object = major_alloc_object;
+	collector->alloc_object_par = major_alloc_object_par;
 	collector->free_pinned_object = free_pinned_object;
 	collector->iterate_objects = major_iterate_objects;
 	collector->free_non_pinned_object = major_free_non_pinned_object;
@@ -2655,6 +2822,24 @@ sgen_marksweep_init_internal (SgenMajorCollector *collector, gboolean is_concurr
 		collector->major_ops_concurrent_finish.scan_vtype = major_scan_vtype_with_evacuation;
 		collector->major_ops_concurrent_finish.scan_ptr_field = major_scan_ptr_field_with_evacuation;
 		collector->major_ops_concurrent_finish.drain_gray_stack = drain_gray_stack;
+
+		if (is_parallel) {
+			collector->major_ops_conc_par_start.copy_or_mark_object = major_copy_or_mark_object_concurrent_par_canonical;
+			collector->major_ops_conc_par_start.scan_object = major_scan_object_concurrent_par_with_evacuation;
+			collector->major_ops_conc_par_start.scan_vtype = major_scan_vtype_concurrent_par_with_evacuation;
+			collector->major_ops_conc_par_start.scan_ptr_field = major_scan_ptr_field_concurrent_par_with_evacuation;
+			collector->major_ops_conc_par_start.drain_gray_stack = drain_gray_stack_concurrent_par;
+
+			collector->major_ops_conc_par_finish.copy_or_mark_object = major_copy_or_mark_object_concurrent_par_finish_canonical;
+			collector->major_ops_conc_par_finish.scan_object = major_scan_object_par_with_evacuation;
+			collector->major_ops_conc_par_finish.scan_vtype = major_scan_vtype_par_with_evacuation;
+			collector->major_ops_conc_par_finish.scan_ptr_field = major_scan_ptr_field_par_with_evacuation;
+			collector->major_ops_conc_par_finish.drain_gray_stack = drain_gray_stack_par;
+
+			collector->worker_init_cb = sgen_worker_init_callback;
+
+			mono_native_tls_alloc (&worker_block_free_list_key, NULL);
+		}
 	}
 
 #ifdef HEAVY_STATISTICS
@@ -2688,13 +2873,19 @@ sgen_marksweep_init_internal (SgenMajorCollector *collector, gboolean is_concurr
 void
 sgen_marksweep_init (SgenMajorCollector *collector)
 {
-	sgen_marksweep_init_internal (collector, FALSE);
+	sgen_marksweep_init_internal (collector, FALSE, FALSE);
 }
 
 void
 sgen_marksweep_conc_init (SgenMajorCollector *collector)
 {
-	sgen_marksweep_init_internal (collector, TRUE);
+	sgen_marksweep_init_internal (collector, TRUE, FALSE);
+}
+
+void
+sgen_marksweep_conc_par_init (SgenMajorCollector *collector)
+{
+	sgen_marksweep_init_internal (collector, TRUE, TRUE);
 }
 
 #endif

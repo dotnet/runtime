@@ -624,20 +624,27 @@ get_cardtable_mod_union_for_object (LOSObject *obj)
 }
 
 void
-sgen_los_scan_card_table (CardTableScanType scan_type, ScanCopyContext ctx)
+sgen_los_scan_card_table (CardTableScanType scan_type, ScanCopyContext ctx, int job_index, int job_split_count)
 {
 	LOSObject *obj;
+	int i = 0;
 
 	binary_protocol_los_card_table_scan_start (sgen_timestamp (), scan_type & CARDTABLE_SCAN_MOD_UNION);
-	for (obj = los_object_list; obj; obj = obj->next) {
+	for (obj = los_object_list; obj; obj = obj->next, i++) {
 		mword num_cards = 0;
 		guint8 *cards;
+
+		if (i % job_split_count != job_index)
+			continue;
 
 		if (!SGEN_OBJECT_HAS_REFERENCES (obj->data))
 			continue;
 
 		if (scan_type & CARDTABLE_SCAN_MOD_UNION) {
 			if (!sgen_los_object_is_pinned (obj->data))
+				continue;
+
+			if (!obj->cardtable_mod_union)
 				continue;
 
 			cards = get_cardtable_mod_union_for_object (obj);
@@ -720,6 +727,24 @@ sgen_los_pin_object (GCObject *data)
 	LOSObject *obj = sgen_los_header_for_object (data);
 	obj->size = obj->size | 1;
 	binary_protocol_pin (data, (gpointer)SGEN_LOAD_VTABLE (data), sgen_safe_object_get_size (data));
+}
+
+gboolean
+sgen_los_pin_object_par (GCObject *data)
+{
+	LOSObject *obj = sgen_los_header_for_object (data);
+	mword old_size = obj->size;
+	if (old_size & 1)
+		return FALSE;
+#if SIZEOF_VOID_P == 4
+	old_size = InterlockedCompareExchange ((volatile gint32*)&obj->size, old_size | 1, old_size);
+#else
+	old_size = InterlockedCompareExchange64 ((volatile gint64*)&obj->size, old_size | 1, old_size);
+#endif
+	if (old_size & 1)
+		return FALSE;
+	binary_protocol_pin (data, (gpointer)SGEN_LOAD_VTABLE (data), sgen_safe_object_get_size (data));
+	return TRUE;
 }
 
 static void
