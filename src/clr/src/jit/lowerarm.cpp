@@ -882,11 +882,12 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
             switch (tree->gtIntrinsic.gtIntrinsicId)
             {
                 case CORINFO_INTRINSIC_Abs:
+                case CORINFO_INTRINSIC_Sqrt:
                     info->srcCount = 1;
                     info->dstCount = 1;
                     break;
                 default:
-                    NYI_ARM("Lowering::TreeNodeInfoInit for GT_INRINSIC");
+                    NYI_ARM("Lowering::TreeNodeInfoInit for GT_INTRINSIC");
                     break;
             }
         }
