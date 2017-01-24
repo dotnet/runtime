@@ -5729,6 +5729,7 @@ BOOL EECodeManager::IsInFilter(GCInfoToken gcInfoToken,
 }
 
 
+#ifndef WIN64EXCEPTIONS
 BOOL EECodeManager::LeaveFinally(GCInfoToken gcInfoToken,
                                 unsigned offset,
                                 PCONTEXT pCtx)
@@ -5738,7 +5739,6 @@ BOOL EECodeManager::LeaveFinally(GCInfoToken gcInfoToken,
         GC_NOTRIGGER;
     } CONTRACTL_END;
 
-#ifdef _TARGET_X86_
 
     hdrInfo info;
 
@@ -5762,10 +5762,6 @@ BOOL EECodeManager::LeaveFinally(GCInfoToken gcInfoToken,
 
     pCtx->Esp += sizeof(TADDR); // Pop the return value off the stack
     return TRUE;
-#else
-    PORTABILITY_ASSERT("EEJitManager::LeaveFinally is not implemented on this platform.");
-    return FALSE;
-#endif
 }
 
 void EECodeManager::LeaveCatch(GCInfoToken gcInfoToken,
@@ -5776,8 +5772,6 @@ void EECodeManager::LeaveCatch(GCInfoToken gcInfoToken,
         NOTHROW;
         GC_NOTRIGGER;
     } CONTRACTL_END;
-
-#ifdef _TARGET_X86_
 
 #ifdef _DEBUG
     TADDR       baseSP;
@@ -5793,13 +5787,8 @@ void EECodeManager::LeaveCatch(GCInfoToken gcInfoToken,
 #endif
 
     return;
-
-#else // !_TARGET_X86_
-    PORTABILITY_ASSERT("EECodeManager::LeaveCatch is not implemented on this platform.");
-    return;
-#endif // _TARGET_X86_
 }
-
+#endif // !WIN64EXCEPTIONS
 #endif // #ifndef DACCESS_COMPILE
 
 #ifdef DACCESS_COMPILE
