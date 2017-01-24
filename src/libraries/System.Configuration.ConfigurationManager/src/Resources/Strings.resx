@@ -790,7 +790,4 @@
   <data name="Config_base_no_child_nodes" xml:space="preserve">
     <value>Child nodes not allowed.</value>
   </data>
-  <data name="Config_base_unrecognized_element" xml:space="preserve">
-    <value>Unrecognized element.</value>
-  </data>
 </root>
