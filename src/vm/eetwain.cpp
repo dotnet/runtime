@@ -693,6 +693,7 @@ inline size_t GetSizeOfFrameHeaderForEnC(hdrInfo * info)
 #endif // !USE_GC_INFO_DECODER
 
 #ifndef DACCESS_COMPILE
+#ifndef WIN64EXCEPTIONS
 
 /*****************************************************************************
  *
@@ -717,8 +718,6 @@ void EECodeManager::FixContext( ContextType     ctxType,
     } CONTRACTL_END;
 
     _ASSERTE((ctxType == FINALLY_CONTEXT) == (thrownObject == NULL));
-
-#ifdef _TARGET_X86_
 
     _ASSERTE(sizeof(CodeManStateBuf) <= sizeof(pState->stateBuf));
     CodeManStateBuf * stateBuf = (CodeManStateBuf*)pState->stateBuf;
@@ -773,11 +772,9 @@ void EECodeManager::FixContext( ContextType     ctxType,
      */
 
     *((OBJECTREF*)&(ctx->Eax)) = thrownObject;
-
-#else // !_TARGET_X86_
-    _ASSERTE(!"@NYI - EECodeManager::FixContext (EETwain.cpp)");
-#endif // _TARGET_X86_
 }
+
+#endif // !WIN64EXCEPTIONS
 
 
 
