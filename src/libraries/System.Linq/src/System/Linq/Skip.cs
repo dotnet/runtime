@@ -157,6 +157,7 @@ namespace System.Linq
                             queue.Enqueue(e.Current);
                         }
                         while (e.MoveNext());
+                        break;
                     }
                     else
                     {
