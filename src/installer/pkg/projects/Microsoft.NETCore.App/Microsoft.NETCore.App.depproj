@@ -24,6 +24,10 @@
 
   <Target Name="GetFilesToPackage" DependsOnTargets="ResolveNuGetPackages" Returns="@(FilesToPackage)">
     <!-- start with all the files resolved -->
+    <PropertyGroup Condition="'$(NuGetRuntimeIdentifier)' != ''">
+      <_runtimePackagePath Condition="'%(ReferenceCopyLocalPaths.FileName)' == 'coreclr' OR '%(ReferenceCopyLocalPaths.FileName)' == 'libcoreclr'">$(PackagesDir)%(ReferenceCopyLocalPaths.NuGetPackageId)/%(ReferenceCopyLocalPaths.NuGetPackageVersion)</_runtimePackagePath>
+    </PropertyGroup>
+
     <ItemGroup Condition="'$(NuGetRuntimeIdentifier)' != ''">
       <!-- RID-specific: include all runtime files -->
       <_FilesToPackage Include="@(ReferenceCopyLocalPaths)">
@@ -35,6 +39,9 @@
         <TargetPath Condition="'%(_FilesToPackage.IsNative)' != 'true'">runtimes/$(NuGetRuntimeIdentifier)/lib/$(PackageTargetFramework)</TargetPath>
         <TargetPath Condition="'%(_FilesToPackage.IsNative)' == 'true'">runtimes/$(NuGetRuntimeIdentifier)/native</TargetPath>
       </_FilesToPackage>
+      <_FileToPackage Include="$(_runtimePackagePath)/tools/*.*">
+        <TargetPath>tools</TargetPath>
+      </_FileToPackage>
     </ItemGroup>
 
     <ItemGroup Condition="'$(NuGetRuntimeIdentifier)' == ''">
