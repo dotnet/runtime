@@ -13,7 +13,7 @@ namespace System.Drawing
     ///    </para>
     /// </summary>
     [Serializable]
-    public struct Rectangle
+    public struct Rectangle : IEquatable<Rectangle>
     {
         public static readonly Rectangle Empty = new Rectangle();
 
@@ -172,15 +172,9 @@ namespace System.Drawing
         ///       the same location and size of this Rectangle.
         ///    </para>
         /// </summary>
-        public override bool Equals(object obj)
-        {
-            if (!(obj is Rectangle))
-                return false;
+        public override bool Equals(object obj) => obj is Rectangle && Equals((Rectangle)obj);
 
-            Rectangle comp = (Rectangle)obj;
-
-            return (comp.X == X) && (comp.Y == Y) && (comp.Width == Width) && (comp.Height == Height);
-        }
+        public bool Equals(Rectangle other) => this == other;
 
         /// <summary>
         ///    <para>

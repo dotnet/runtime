@@ -117,6 +117,7 @@ namespace System.Drawing.PrimitivesTest
             Assert.True(rect1 != rect2);
             Assert.False(rect1 == rect2);
             Assert.False(rect1.Equals(rect2));
+            Assert.False(rect1.Equals((object)rect2));
         }
 
         [Fact]
@@ -125,7 +126,8 @@ namespace System.Drawing.PrimitivesTest
             var rectangle = new RectangleF(0, 0, 0, 0);
             Assert.False(rectangle.Equals(null));
             Assert.False(rectangle.Equals(0));
-            Assert.False(rectangle.Equals(new Rectangle(0, 0, 0, 0)));
+            Assert.True(rectangle.Equals(new Rectangle(0, 0, 0, 0))); // Implicit cast
+            Assert.False(rectangle.Equals((object)new Rectangle(0, 0, 0, 0))); // No implicit cast
         }
 
         [Fact]

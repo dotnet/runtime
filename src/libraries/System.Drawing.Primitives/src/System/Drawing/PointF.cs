@@ -11,7 +11,7 @@ namespace System.Drawing
     ///    define a point in a two-dimensional plane.
     /// </summary>
     [Serializable]
-    public struct PointF
+    public struct PointF : IEquatable<PointF>
     {
         /// <summary>
         ///    <para>
@@ -139,14 +139,9 @@ namespace System.Drawing
         /// </summary>
         public static PointF Subtract(PointF pt, SizeF sz) => new PointF(pt.X - sz.Width, pt.Y - sz.Height);
 
-        public override bool Equals(object obj)
-        {
-            if (!(obj is PointF))
-                return false;
+        public override bool Equals(object obj) => obj is PointF && Equals((PointF)obj);
 
-            PointF comp = (PointF)obj;
-            return comp.X == X && comp.Y == Y;
-        }
+        public bool Equals(PointF other) => this == other;
 
         public override int GetHashCode() => HashHelpers.Combine(X.GetHashCode(), Y.GetHashCode());
 
