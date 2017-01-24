@@ -908,8 +908,6 @@ public:
 #define GTF_RELOP_NAN_UN 0x80000000   // GT_<relop> -- Is branch taken if ops are NaN?
 #define GTF_RELOP_JMP_USED 0x40000000 // GT_<relop> -- result of compare used for jump or ?:
 #define GTF_RELOP_QMARK 0x20000000    // GT_<relop> -- the node is the condition for ?:
-#define GTF_RELOP_SMALL 0x10000000    // GT_<relop> -- We should use a byte or short sized compare (op1->gtType
-                                      //               is the small type)
 #define GTF_RELOP_ZTT 0x08000000      // GT_<relop> -- Loop test cloned for converting while-loops into do-while
                                       //               with explicit "loop test" in the header block.
 
@@ -1076,6 +1074,17 @@ public:
                 // All other nodes are assumed to be correct.
                 return true;
         }
+    }
+
+    bool OperIs(genTreeOps oper)
+    {
+        return OperGet() == oper;
+    }
+
+    template <typename... T>
+    bool OperIs(genTreeOps oper, T... rest)
+    {
+        return OperIs(oper) || OperIs(rest...);
     }
 
     static bool OperIsConst(genTreeOps gtOper)
