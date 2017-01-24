@@ -9164,10 +9164,6 @@ int cTreeFlagsIR(Compiler* comp, GenTree* tree)
                 {
                     chars += printf("[RELOP_QMARK]");
                 }
-                if (tree->gtFlags & GTF_RELOP_SMALL)
-                {
-                    chars += printf("[RELOP_SMALL]");
-                }
                 break;
 
             case GT_QMARK:

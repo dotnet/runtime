@@ -1785,6 +1785,8 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
         case GT_LE:
         case GT_GE:
         case GT_GT:
+        case GT_TEST_EQ:
+        case GT_TEST_NE:
         {
             // TODO-XArch-CQ: Check if we can use the currently set flags.
             // TODO-XArch-CQ: Check for the case where we can simply transfer the carry bit to a register
@@ -6076,7 +6078,7 @@ void CodeGen::genCompareInt(GenTreePtr treeNode)
     GenTreePtr op2       = tree->gtOp2;
     var_types  op1Type   = op1->TypeGet();
     var_types  op2Type   = op2->TypeGet();
-    regNumber  targetReg = treeNode->gtRegNum;
+    regNumber  targetReg = tree->gtRegNum;
 
     // Case of op1 == 0 or op1 != 0:
     // Optimize generation of 'test' instruction if op1 sets flags.
@@ -6093,7 +6095,7 @@ void CodeGen::genCompareInt(GenTreePtr treeNode)
         assert(realOp1->gtSetZSFlags());
 
         // Must be (in)equality against zero.
-        assert(tree->OperGet() == GT_EQ || tree->OperGet() == GT_NE);
+        assert(tree->OperIs(GT_EQ, GT_NE));
         assert(op2->IsIntegralConst(0));
         assert(op2->isContained());
 
@@ -6117,7 +6119,7 @@ void CodeGen::genCompareInt(GenTreePtr treeNode)
     // If we have GT_JTRUE(GT_EQ/NE(GT_SIMD((in)Equality, v1, v2), true/false)),
     // then we don't need to generate code for GT_EQ/GT_NE, since SIMD (in)Equality intrinsic
     // would set or clear Zero flag.
-    if ((targetReg == REG_NA) && (tree->OperGet() == GT_EQ || tree->OperGet() == GT_NE))
+    if ((targetReg == REG_NA) && tree->OperIs(GT_EQ, GT_NE))
     {
         // Is it a SIMD (in)Equality that doesn't need to materialize result into a register?
         if ((op1->gtRegNum == REG_NA) && op1->IsSIMDEqualityOrInequality())
@@ -6136,128 +6138,67 @@ void CodeGen::genCompareInt(GenTreePtr treeNode)
 
     genConsumeOperands(tree);
 
-    instruction ins;
-    emitAttr    cmpAttr;
-
     // TODO-CQ: We should be able to support swapping op1 and op2 to generate cmp reg, imm.
     // https://github.com/dotnet/coreclr/issues/7270
     assert(!op1->isContainedIntOrIImmed()); // We no longer support
     assert(!varTypeIsFloating(op2Type));
 
-#ifdef _TARGET_X86_
-    assert(!varTypeIsLong(op1Type) && !varTypeIsLong(op2Type));
-#endif // _TARGET_X86_
+    instruction ins;
 
-    // By default we use an int32 sized cmp instruction
-    //
-    ins               = INS_cmp;
-    var_types cmpType = TYP_INT;
-
-    // In the if/then/else statement below we may change the
-    // 'cmpType' and/or 'ins' to generate a smaller instruction
-
-    // Are we comparing two values that are the same size?
-    //
-    if (genTypeSize(op1Type) == genTypeSize(op2Type))
+    if (tree->OperIs(GT_TEST_EQ, GT_TEST_NE))
     {
-        if (op1Type == op2Type)
-        {
-            // If both types are exactly the same we can use that type
-            cmpType = op1Type;
-        }
-        else if (genTypeSize(op1Type) == 8)
-        {
-            // If we have two different int64 types we need to use a long compare
-            cmpType = TYP_LONG;
-        }
-
-        cmpAttr = emitTypeSize(cmpType);
+        ins = INS_test;
     }
-    else // Here we know that (op1Type != op2Type)
+    else if (op1->isUsedFromReg() && op2->IsIntegralConst(0))
     {
-        // Do we have a short compare against a constant in op2?
-        //
-        // We checked for this case in TreeNodeInfoInitCmp() and if we can perform a small
-        // compare immediate we labeled this compare with a GTF_RELOP_SMALL
-        // and for unsigned small non-equality compares the GTF_UNSIGNED flag.
-        //
-        if (op2->isContainedIntOrIImmed() && ((tree->gtFlags & GTF_RELOP_SMALL) != 0))
-        {
-            assert(varTypeIsSmall(op1Type));
-            cmpType = op1Type;
-        }
-#ifdef _TARGET_AMD64_
-        else // compare two different sized operands
-        {
-            // For this case we don't want any memory operands, only registers or immediates
-            //
-            assert(!op1->isUsedFromMemory());
-            assert(!op2->isUsedFromMemory());
-
-            // Check for the case where one operand is an int64 type
-            // Lower should have placed 32-bit operand in a register
-            // for signed comparisons we will sign extend the 32-bit value in place.
-            //
-            bool op1Is64Bit = (genTypeSize(op1Type) == 8);
-            bool op2Is64Bit = (genTypeSize(op2Type) == 8);
-            if (op1Is64Bit)
-            {
-                cmpType = TYP_LONG;
-                if (!(tree->gtFlags & GTF_UNSIGNED) && !op2Is64Bit)
-                {
-                    assert(op2->gtRegNum != REG_NA);
-                    inst_RV_RV(INS_movsxd, op2->gtRegNum, op2->gtRegNum, op2Type);
-                }
-            }
-            else if (op2Is64Bit)
-            {
-                cmpType = TYP_LONG;
-                if (!(tree->gtFlags & GTF_UNSIGNED) && !op1Is64Bit)
-                {
-                    assert(op1->gtRegNum != REG_NA);
-                }
-            }
-        }
-#endif // _TARGET_AMD64_
-
-        cmpAttr = emitTypeSize(cmpType);
+        // We're comparing a register to 0 so we can generate "test reg1, reg1"
+        // instead of the longer "cmp reg1, 0"
+        ins = INS_test;
+        op2 = op1;
+    }
+    else
+    {
+        ins = INS_cmp;
     }
 
-    // See if we can generate a "test" instruction instead of a "cmp".
-    // For this to generate the correct conditional branch we must have
-    // a compare against zero.
-    //
-    if (op2->IsIntegralConst(0))
-    {
-        if (!op1->isUsedFromReg())
-        {
-            // op1 can be a contained memory op
-            // or the special contained GT_AND that we created in Lowering::TreeNodeInfoInitCmp()
-            //
-            if ((op1->OperGet() == GT_AND) && op1->gtGetOp2()->isContainedIntOrIImmed() &&
-                ((tree->OperGet() == GT_EQ) || (tree->OperGet() == GT_NE)))
-            {
-                ins = INS_test;        // we will generate "test andOp1, andOp2CnsVal"
-                op2 = op1->gtOp.gtOp2; // must assign op2 before we overwrite op1
-                op1 = op1->gtOp.gtOp1; // overwrite op1
+    var_types type;
 
-                if (op1->isUsedFromMemory())
-                {
-                    // use the size andOp1 if it is a contained memoryop.
-                    cmpAttr = emitTypeSize(op1->TypeGet());
-                }
-                // fallthrough to emit->emitInsBinary(ins, cmpAttr, op1, op2);
-            }
-        }
-        else // op1 is not contained thus it must be in a register
-        {
-            ins = INS_test;
-            op2 = op1; // we will generate "test reg1,reg1"
-            // fallthrough to emit->emitInsBinary(ins, cmpAttr, op1, op2);
-        }
+    if (op1Type == op2Type)
+    {
+        type = op1Type;
+    }
+    else if (genTypeSize(op1Type) == genTypeSize(op2Type))
+    {
+        // If the types are different but have the same size then we'll use TYP_INT or TYP_LONG.
+        // This primarily deals with small type mixes (e.g. byte/ubyte) that need to be widened
+        // and compared as int. We should not get long type mixes here but handle that as well
+        // just in case.
+        type = genTypeSize(op1Type) == 8 ? TYP_LONG : TYP_INT;
+    }
+    else
+    {
+        // In the types are different simply use TYP_INT. This deals with small type/int type
+        // mixes (e.g. byte/short ubyte/int) that need to be widened and compared as int.
+        // Lowering is expected to handle any mixes that involve long types (e.g. int/long).
+        type = TYP_INT;
     }
 
-    getEmitter()->emitInsBinary(ins, cmpAttr, op1, op2);
+    // The common type cannot be larger than the machine word size
+    assert(genTypeSize(type) <= genTypeSize(TYP_I_IMPL));
+    // The common type cannot be smaller than any of the operand types, we're probably mixing int/long
+    assert(genTypeSize(type) >= max(genTypeSize(op1Type), genTypeSize(op2Type)));
+    // TYP_UINT and TYP_ULONG should not appear here, only small types can be unsigned
+    assert(!varTypeIsUnsigned(type) || varTypeIsSmall(type));
+    // Small unsigned int types (TYP_BOOL can use anything) should use unsigned comparisons
+    assert(!(varTypeIsSmallInt(type) && varTypeIsUnsigned(type)) || ((tree->gtFlags & GTF_UNSIGNED) != 0));
+    // If op1 is smaller then it cannot be in memory, we're probably missing a cast
+    assert((genTypeSize(op1Type) >= genTypeSize(type)) || !op1->isUsedFromMemory());
+    // If op2 is smaller then it cannot be in memory, we're probably missing a cast
+    assert((genTypeSize(op2Type) >= genTypeSize(type)) || !op2->isUsedFromMemory());
+    // If op2 is a constant then it should fit in the common type
+    assert(!op2->IsCnsIntOrI() || genTypeCanRepresentValue(type, op2->AsIntCon()->IconValue()));
+
+    getEmitter()->emitInsBinary(ins, emitTypeSize(type), op1, op2);
 
     // Are we evaluating this into a register?
     if (targetReg != REG_NA)
