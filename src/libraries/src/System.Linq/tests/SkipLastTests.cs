@@ -50,9 +50,9 @@ namespace System.Linq.Tests
             int limit = count * 2;
             
             var source = new DelegateIterator<int>(
-                moveNext: () => ++index <= limit, // Stop once we go past the limit.
+                moveNext: () => index++ != limit, // Stop once we go past the limit.
                 current: () => index, // Yield from 1 up to the limit, inclusive.
-                dispose: () => index = -1);
+                dispose: () => index ^= int.MinValue);
 
             IEnumerator<int> iterator = source.SkipLast(count).GetEnumerator();
             Assert.Equal(0, index); // Nothing should be done before MoveNext is called.

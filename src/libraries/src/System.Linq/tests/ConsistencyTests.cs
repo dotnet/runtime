@@ -31,9 +31,7 @@ namespace System.Linq.Tests
                      "LeftJoin",
                      nameof(Enumerable.Append),
                      nameof(Enumerable.Prepend),
-                     "ToHashSet",
-                     "SkipLast",
-                     "TakeLast"
+                     "ToHashSet"
                  }
                 );
 
