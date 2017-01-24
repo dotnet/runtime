@@ -35,6 +35,10 @@ namespace CoreclrTestLib
 
             string gcstressVar = Environment.GetEnvironmentVariable(GC_STRESS_LEVEL);
 
+            // Check if we are running in Windows
+            string operatingSystem = System.Environment.GetEnvironmentVariable("OS");
+            bool runningInWindows = (operatingSystem != null && operatingSystem.StartsWith("Windows"));
+
             var outputStream = new FileStream(outputFile, FileMode.Create);
             var errorStream = new FileStream(errorFile, FileMode.Create);
 
@@ -49,7 +53,18 @@ namespace CoreclrTestLib
                     process.StartInfo.EnvironmentVariables["COMPlus_GCStress"] = gcstressVar;
                 }
 
-                process.StartInfo.FileName = executable;
+                // Windows can run the executable implicitly
+                if (runningInWindows)
+                {
+                    process.StartInfo.FileName = executable;
+                }
+                // Non-windows needs to be told explicitly to run through /bin/bash shell
+                else
+                {
+                    process.StartInfo.FileName = "/bin/bash";
+                    process.StartInfo.Arguments = executable;
+                }
+
                 process.StartInfo.UseShellExecute = false;
                 process.StartInfo.RedirectStandardOutput = true;
                 process.StartInfo.RedirectStandardError = true;
