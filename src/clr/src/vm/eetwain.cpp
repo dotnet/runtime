@@ -5812,6 +5812,7 @@ void EECodeManager::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 #endif // #ifdef DACCESS_COMPILE
 
 
+#ifdef _TARGET_X86_
 /*
  *  GetAmbientSP
  *
@@ -5834,7 +5835,6 @@ TADDR EECodeManager::GetAmbientSP(PREGDISPLAY     pContext,
         SUPPORTS_DAC;
     } CONTRACTL_END;
 
-#ifdef _TARGET_X86_
     GCInfoToken gcInfoToken = pCodeInfo->GetGCInfoToken();
 
     _ASSERTE(sizeof(CodeManStateBuf) <= sizeof(pState->stateBuf));
@@ -5907,12 +5907,8 @@ TADDR EECodeManager::GetAmbientSP(PREGDISPLAY     pContext,
     }
 
     return baseSP;
-
-#else // !_TARGET_X86_
-    PORTABILITY_ASSERT("EECodeManager::GetAmbientSP is not implemented on this platform.");
-    return 0;
-#endif // _TARGET_X86_
 }
+#endif // _TARGET_X86_
 
 /*
     Get the number of bytes used for stack parameters.
