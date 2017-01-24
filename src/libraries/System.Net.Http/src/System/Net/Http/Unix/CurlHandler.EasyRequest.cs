@@ -32,6 +32,8 @@ namespace System.Net.Http
         /// <summary>Provides all of the state associated with a single request/response, referred to as an "easy" request in libcurl parlance.</summary>
         private sealed class EasyRequest : TaskCompletionSource<HttpResponseMessage>
         {
+            /// <summary>Maximum content length where we'll use COPYPOSTFIELDS to let libcurl dup the content.</summary>
+            private const int InMemoryPostContentLimit = 32 * 1024; // arbitrary limit; could be tweaked in the future based on experimentation
             /// <summary>Debugging flag used to enable CURLOPT_VERBOSE to dump to stderr when not redirecting it to the event source.</summary>
             private static readonly bool s_curlDebugLogging = Environment.GetEnvironmentVariable("CURLHANDLER_DEBUG_VERBOSE") == "true";
 
@@ -412,7 +414,9 @@ namespace System.Net.Http
                     // example, enable fewer packets to be sent on the wire.
                     var inMemContent = _requestMessage.Content as ByteArrayContent;
                     ArraySegment<byte> contentSegment;
-                    if (inMemContent != null && inMemContent.TryGetBuffer(out contentSegment))
+                    if (inMemContent != null &&
+                        inMemContent.TryGetBuffer(out contentSegment) &&
+                        contentSegment.Count <= InMemoryPostContentLimit) // skip if we'd be forcing libcurl to allocate/copy a large buffer
                     {
                         // Only pre-provide the content if the content still has its ContentLength
                         // and if that length matches the segment.  If it doesn't, something has been overridden,
