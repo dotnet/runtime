@@ -32,6 +32,9 @@ namespace System.Net.Http
         /// <summary>Provides all of the state associated with a single request/response, referred to as an "easy" request in libcurl parlance.</summary>
         private sealed class EasyRequest : TaskCompletionSource<HttpResponseMessage>
         {
+            /// <summary>Debugging flag used to enable CURLOPT_VERBOSE to dump to stderr when not redirecting it to the event source.</summary>
+            private static readonly bool s_curlDebugLogging = Environment.GetEnvironmentVariable("CURLHANDLER_DEBUG_VERBOSE") == "true";
+
             internal readonly CurlHandler _handler;
             internal readonly HttpRequestMessage _requestMessage;
             internal readonly CurlResponseMessage _responseMessage;
@@ -74,6 +77,14 @@ namespace System.Net.Http
                     throw new OutOfMemoryException();
                 }
                 _easyHandle = easyHandle;
+
+                // Before setting any other options, turn on curl's debug tracing
+                // if desired.  CURLOPT_VERBOSE may also be set subsequently if
+                // EventSource tracing is enabled.
+                if (s_curlDebugLogging)
+                {
+                    SetCurlOption(CURLoption.CURLOPT_VERBOSE, 1L);
+                }
 
                 // Configure the handle
                 SetUrl();
