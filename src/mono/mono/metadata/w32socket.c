@@ -2645,7 +2645,7 @@ ves_icall_System_Net_Sockets_Socket_SendFile_internal (gsize sock, MonoString *f
 
 	/* FIXME: replace file by a proper fd that we can call open and close on, as they are interruptible */
 
-	file = mono_w32file_create (mono_string_chars (filename), OPEN_EXISTING, GENERIC_READ, FILE_SHARE_READ, 0);
+	file = mono_w32file_create (mono_string_chars (filename), GENERIC_READ, FILE_SHARE_READ, OPEN_EXISTING, 0);
 	if (file == INVALID_HANDLE_VALUE) {
 		*werror = mono_w32error_get_last ();
 		return FALSE;
