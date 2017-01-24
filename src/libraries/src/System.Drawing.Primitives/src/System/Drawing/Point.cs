@@ -11,7 +11,7 @@ namespace System.Drawing
     ///    define a point in a two-dimensional plane.
     /// </summary>
     [Serializable]
-    public struct Point
+    public struct Point : IEquatable<Point>
     {
         /// <summary>
         ///    Creates a new instance of the <see cref='System.Drawing.Point'/> class
@@ -167,13 +167,9 @@ namespace System.Drawing
         ///       the same coordinates as the specified <see cref='System.Object'/>.
         ///    </para>
         /// </summary>
-        public override bool Equals(object obj)
-        {
-            if (!(obj is Point)) return false;
-            Point comp = (Point)obj;
+        public override bool Equals(object obj) => obj is Point && Equals((Point)obj);
 
-            return comp.X == X && comp.Y == Y;
-        }
+        public bool Equals(Point other) => this == other;
 
         /// <summary>
         ///    <para>
