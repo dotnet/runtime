@@ -1281,14 +1281,14 @@ BOOL FinalizerThread::FinalizerThreadWatchDog()
             pThread->EnablePreemptiveGC();
         }
         
-        g_fFinalizerRunOnShutDown = TRUE;
+        GCHeapUtilities::GetGCHeap()->SetFinalizeRunOnShutdown(true);
         
         // Wait for finalizer thread to finish finalizing all objects.
         hEventShutDownToFinalizer->Set();
         BOOL fTimeOut = FinalizerThreadWatchDogHelper();
 
         if (!fTimeOut) {
-            g_fFinalizerRunOnShutDown = FALSE;
+            GCHeapUtilities::GetGCHeap()->SetFinalizeRunOnShutdown(false);
         }
         
         // Can not call ExitProcess here if we are in a hosting environment.
@@ -1313,7 +1313,8 @@ BOOL FinalizerThread::FinalizerThreadWatchDog()
         {
             pThread->EnablePreemptiveGC();
         }
-        g_fFinalizerRunOnShutDown = TRUE;
+
+        GCHeapUtilities::GetGCHeap()->SetFinalizeRunOnShutdown(true);
         
         hEventShutDownToFinalizer->Set();
         DWORD status = WAIT_OBJECT_0;
