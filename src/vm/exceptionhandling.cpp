@@ -7028,8 +7028,10 @@ void ExceptionTracker::ResetThreadAbortStatus(PTR_Thread pThread, CrawlFrame *pC
         GC_NOTRIGGER;
         MODE_ANY;
         PRECONDITION(pThread != NULL);
-        WIN64_ONLY(PRECONDITION(pCf != NULL);)
-        WIN64_ONLY(PRECONDITION(!sfCurrentStackFrame.IsNull());)
+#ifdef WIN64EXCEPTIONS
+        PRECONDITION(pCf != NULL);
+        PRECONDITION(!sfCurrentStackFrame.IsNull());
+#endif // WIN64EXCEPTIONS
     }
     CONTRACTL_END;
 
