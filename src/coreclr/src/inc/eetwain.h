@@ -161,7 +161,7 @@ enum
 };
 
 #ifndef DACCESS_COMPILE
-
+#ifndef WIN64EXCEPTIONS
 virtual void FixContext(ContextType     ctxType,
                         EHContext      *ctx,
                         EECodeInfo     *pCodeInfo,
@@ -171,7 +171,7 @@ virtual void FixContext(ContextType     ctxType,
                         CodeManState   *pState,
                         size_t       ** ppShadowSP,             // OUT
                         size_t       ** ppEndRegion) = 0;       // OUT
-
+#endif // !WIN64EXCEPTIONS
 #endif // #ifndef DACCESS_COMPILE
 
 #ifdef _TARGET_X86_
@@ -372,7 +372,7 @@ public:
 
 
 #ifndef DACCESS_COMPILE
-
+#ifndef WIN64EXCEPTIONS
 /*
     Last chance for the runtime support to do fixups in the context
     before execution continues inside a filter, catch handler, or finally
@@ -387,7 +387,7 @@ void FixContext(ContextType     ctxType,
                 CodeManState   *pState,
                 size_t       ** ppShadowSP,             // OUT
                 size_t       ** ppEndRegion);           // OUT
-
+#endif // !WIN64EXCEPTIONS
 #endif // #ifndef DACCESS_COMPILE
 
 #ifdef _TARGET_X86_
