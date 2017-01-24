@@ -31,9 +31,6 @@
     <Compile Include="$(CommonPath)\System\Collections\Generic\LargeArrayBuilder.cs">
       <Link>System\Collections\Generic\LargeArrayBuilder.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Diagnostics\CodeAnalysis\ExcludeFromCodeCoverageAttribute.cs">
-      <Link>System\Diagnostics\CodeAnalysis\ExcludeFromCodeCoverageAttribute.cs</Link>
-    </Compile>
     <Compile Include="System\Linq\Aggregate.cs" />
     <Compile Include="System\Linq\AnyAll.cs" />
     <Compile Include="System\Linq\AppendPrepend.cs" />
@@ -90,6 +87,7 @@
   <ItemGroup>
     <Reference Include="System.Collections" />
     <Reference Include="System.Diagnostics.Debug" />
+    <Reference Include="System.Diagnostics.Tools" />
     <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
