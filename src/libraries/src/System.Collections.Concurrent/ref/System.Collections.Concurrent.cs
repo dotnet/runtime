@@ -64,6 +64,7 @@ namespace System.Collections.Concurrent
         bool System.Collections.ICollection.IsSynchronized { get { throw null; } }
         object System.Collections.ICollection.SyncRoot { get { throw null; } }
         public void Add(T item) { }
+        public void Clear() { }
         public void CopyTo(T[] array, int index) { }
         public System.Collections.Generic.IEnumerator<T> GetEnumerator() { throw null; }
         bool System.Collections.Concurrent.IProducerConsumerCollection<T>.TryAdd(T item) { throw null; }
@@ -132,6 +133,7 @@ namespace System.Collections.Concurrent
         public bool IsEmpty { get { throw null; } }
         bool System.Collections.ICollection.IsSynchronized { get { throw null; } }
         object System.Collections.ICollection.SyncRoot { get { throw null; } }
+        public void Clear() { }
         public void CopyTo(T[] array, int index) { }
         public void Enqueue(T item) { }
         public System.Collections.Generic.IEnumerator<T> GetEnumerator() { throw null; }
