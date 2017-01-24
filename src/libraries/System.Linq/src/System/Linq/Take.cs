@@ -141,10 +141,12 @@ namespace System.Linq
                 }
             }
 
-            while (queue.Count > 0)
+            Debug.Assert(queue.Count == count);
+            do
             {
                 yield return queue.Dequeue();
             }
+            while (queue.Count > 0);
         }
     }
 }
