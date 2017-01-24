@@ -1726,6 +1726,15 @@ QueueUserAPC(
 #define CONTEXT_EXCEPTION_REQUEST 0x40000000L
 #define CONTEXT_EXCEPTION_REPORTING 0x80000000L
 
+//
+// This flag is set by the unwinder if it has unwound to a call
+// site, and cleared whenever it unwinds through a trap frame.
+// It is used by language-specific exception handlers to help
+// differentiate exception scopes during dispatching.
+//
+
+#define CONTEXT_UNWOUND_TO_CALL 0x20000000
+
 typedef struct _FLOATING_SAVE_AREA {
     DWORD   ControlWord;
     DWORD   StatusWord;

@@ -322,14 +322,14 @@ BOOL PAL_VirtualUnwind(CONTEXT *context, KNONVOLATILE_CONTEXT_POINTERS *contextP
     if (unw_is_signal_frame(&cursor) > 0)
     {
         context->ContextFlags |= CONTEXT_EXCEPTION_ACTIVE;
-#if defined(_ARM_) || defined(_ARM64_)
+#if defined(_ARM_) || defined(_ARM64_) || defined(_X86_)
         context->ContextFlags &= ~CONTEXT_UNWOUND_TO_CALL;
 #endif // _ARM_ || _ARM64_
     }
     else
     {
         context->ContextFlags &= ~CONTEXT_EXCEPTION_ACTIVE;
-#if defined(_ARM_) || defined(_ARM64_)
+#if defined(_ARM_) || defined(_ARM64_) || defined(_X86_)
         context->ContextFlags |= CONTEXT_UNWOUND_TO_CALL;
 #endif // _ARM_ || _ARM64_
     }
