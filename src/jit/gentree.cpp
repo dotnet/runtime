@@ -2686,6 +2686,8 @@ bool Compiler::gtHasLocalsWithAddrOp(GenTreePtr tree)
     return desc.hasAddrTakenLcl;
 }
 
+#ifdef DEBUG
+
 /*****************************************************************************
  *
  *  Helper used to compute hash values for trees.
@@ -2699,11 +2701,6 @@ inline unsigned genTreeHashAdd(unsigned old, unsigned add)
 inline unsigned genTreeHashAdd(unsigned old, void* add)
 {
     return genTreeHashAdd(old, (unsigned)(size_t)add);
-}
-
-inline unsigned genTreeHashAdd(unsigned old, unsigned add1, unsigned add2)
-{
-    return (old + old / 2) ^ add1 ^ add2;
 }
 
 /*****************************************************************************
@@ -2900,18 +2897,6 @@ AGAIN:
 
         unsigned hsh1 = gtHashValue(op1);
 
-        /* Special case: addition of two values */
-
-        if (GenTree::OperIsCommutative(oper))
-        {
-            unsigned hsh2 = gtHashValue(op2);
-
-            /* Produce a hash that allows swapping the operands */
-
-            hash = genTreeHashAdd(hash, hsh1, hsh2);
-            goto DONE;
-        }
-
         /* Add op1's hash to the running value and continue with op2 */
 
         hash = genTreeHashAdd(hash, hsh1);
@@ -3026,6 +3011,8 @@ DONE:
 
     return hash;
 }
+
+#endif // DEBUG
 
 /*****************************************************************************
  *
