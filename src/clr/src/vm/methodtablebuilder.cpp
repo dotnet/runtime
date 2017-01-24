@@ -4222,6 +4222,17 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
                 // Inherit IsByRefLike characteristic from fields
                 if (!IsSelfRef(pByValueClass) && pByValueClass->IsByRefLike())
                 {
+                    if (fIsStatic)
+                    {
+                        // By-ref-like types cannot be used for static fields
+                        BuildMethodTableThrowException(IDS_CLASSLOAD_BYREFLIKE_STATICFIELD);
+                    }
+                    if (!IsValueClass())
+                    {
+                        // Non-value-classes cannot contain by-ref-like instance fields
+                        BuildMethodTableThrowException(IDS_CLASSLOAD_BYREFLIKE_NOTVALUECLASSFIELD);
+                    }
+
                     bmtFP->fIsByRefLikeType = true;
                 }
 
