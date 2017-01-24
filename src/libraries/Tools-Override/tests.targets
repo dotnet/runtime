@@ -11,6 +11,7 @@
     <TestDisabled>false</TestDisabled>
     <TestDisabled Condition="'$(IsTestProject)'!='true' Or '$(SkipTests)'=='true' Or '$(RunTestsForProject)'=='false'">true</TestDisabled>
     <TestsSuccessfulSemaphore>tests.passed</TestsSuccessfulSemaphore>
+    <RunningOnNetFx Condition="'$(_bc_TargetGroup)' == 'netfx'">true</RunningOnNetFx>
   </PropertyGroup>
 
   <!-- In case that TestPath is not yet set, default it here -->
@@ -26,7 +27,7 @@
     <UnsupportedPlatformsItems Include="$(UnsupportedPlatforms)"/>
   </ItemGroup>
 
-  <PropertyGroup>
+  <PropertyGroup Condition="'$(RunningOnNetFx)' != 'true'">
     <XunitRuntimeConfig>$(ToolsDir)\xunit.console.netcore.runtimeconfig.json</XunitRuntimeConfig>
     <TestRuntimeEnvVar Condition="'$(OS)' == 'Windows_NT'">%RUNTIME_PATH%\</TestRuntimeEnvVar>
     <TestRuntimeEnvVar Condition="'$(OS)' != 'Windows_NT'">$RUNTIME_PATH/</TestRuntimeEnvVar>
@@ -38,18 +39,24 @@
     <DebugEngines>{2E36F1D4-B23C-435D-AB41-18E608940038}</DebugEngines>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(RunningOnNetFx)' == 'true'">
+    <XunitExecutable Condition="'$(XunitExecutable)' == ''">xunit.console.exe</XunitExecutable>
+  </PropertyGroup>
+
   <!-- General xunit options -->
   <PropertyGroup>
     <XunitResultsFileName>testResults.xml</XunitResultsFileName>
 
-    <XunitOptions Condition="'$(TestWithCore)' != 'true'">$(XunitOptions) -noshadow </XunitOptions>
+    <XunitOptions Condition="'$(RunningOnNetFx)' == 'true'">$(XunitOptions) -noshadow </XunitOptions>
     <XunitOptions>$(XunitOptions) -xml $(XunitResultsFileName)</XunitOptions>
 
     <XunitOptions Condition="'$(Performance)'!='true'">$(XunitOptions) -notrait Benchmark=true</XunitOptions>
 
     <XunitOptions Condition="'$(UseDotNetNativeToolchain)'=='true'">$(XunitOptions) -redirectoutput</XunitOptions>
 
-    <XunitOptions Condition="'$(TestTFM)'!=''">$(XunitOptions) -notrait category=non$(TestTFM)tests</XunitOptions>
+    <!-- Temporary till we fix the whole filtering with  TargetGroup -->
+    <XunitOptions Condition="'$(RunningOnNetFx)' != 'true'">$(XunitOptions) -notrait category=nonnetcoreapp1.1tests</XunitOptions>
+
     <XunitOptions Condition="'$(XunitMaxThreads)'!=''">$(XunitOptions) -maxthreads $(XunitMaxThreads)</XunitOptions>
     <XunitTestAssembly Condition="'$(XunitTestAssembly)' == ''">$(TargetFileName)</XunitTestAssembly>
     <XunitArguments>$(XunitTestAssembly) $(XunitOptions)</XunitArguments>
@@ -82,9 +89,13 @@
       <RunTestsForProjectInputs Include="@(_DebugSymbolsIntermediatePath)" />
       <RunTestsForProjectInputs Include="@(AllItemsFullPathWithTargetPath)" />
     </ItemGroup>
-    <ItemGroup>
+    <ItemGroup Condition="'$(RunningOnNetFx)' != 'true'">
       <SupplementalTestData Include="$(XunitRuntimeConfig)" />
       <SupplementalTestData Include="$(RuntimePath)xunit.console.netcore.exe" />
+    </ItemGroup>
+    <ItemGroup Condition="'$(RunningOnNetFx)' == 'true'">
+      <SupplementalTestData Include="$(RuntimePath)xunit*.*" />
+      <SupplementalTestData Include="$(RuntimePath)*.xslt" />
     </ItemGroup>
   </Target>
 

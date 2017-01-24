@@ -10,19 +10,10 @@ sure to consult this document often.
 
 ## Install prerequisites
 
-1. Install CLI preview 4 SDK
-    - [Win 64-bit Latest](https://dotnetcli.blob.core.windows.net/dotnet/Sdk/rel-1.0.0/dotnet-dev-win-x64.latest.exe)
-    - [macOS 64-bit Latest](https://dotnetcli.blob.core.windows.net/dotnet/Sdk/rel-1.0.0/dotnet-dev-osx-x64.latest.pkg)
-    - [Others](https://github.com/dotnet/cli)
-2. Install 1.0.3 SDK from here:
-    - [Win 64-bit](https://go.microsoft.com/fwlink/?LinkID=836281)
-    - [macOS 64-bit](https://go.microsoft.com/fwlink/?LinkID=836275)
-    - [Others](https://www.microsoft.com/net/download/core?v=lts)
-    - Currently necessary for the CLI itself to run.
-    - Eventually it will be chained-in by the SDK making this step
-      unncessary.
-    - The issue tracking this work is filed
-      [here](https://github.com/dotnet/cli/issues/5194).
+1. Install CLI 2.0.0-alpha SDK
+    - [Win 64-bit Latest](https://dotnetcli.blob.core.windows.net/dotnet/Sdk/master/dotnet-dev-win-x64.latest.exe)
+    - [macOS 64-bit Latest](https://dotnetcli.blob.core.windows.net/dotnet/Sdk/master/dotnet-dev-osx-x64.latest.pkg)
+    - [Others](https://github.com/dotnet/cli/blob/master/README.md)
 
 ## Setup the project
 
@@ -57,22 +48,18 @@ as follows:
    `dotnet.exe` would infer your current architecture but it currently doesn't)
 2. Update package reference to match version selected above, as below
 
-*Note:* We're currently still using `netcoreapp1.2`. Eventually this will be
-renamed to `netcoreapp2.0`. So if `netcoreapp1.2` doesn't work, try
-`netcoreapp2.0`.
-
 ```xml
 <Project Sdk="Microsoft.NET.Sdk" ToolsVersion="15.0">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>netcoreapp1.2</TargetFramework>
+    <TargetFramework>netcoreapp2.0</TargetFramework>
     <RuntimeIdentifier>win10-x64</RuntimeIdentifier>
   </PropertyGroup>
 
   <!-- Make sure to use Update, not Include! -->
   <ItemGroup>
-    <PackageReference Update="Microsoft.NETCore.App" Version="1.2.0-beta-001285-00" />
+    <PackageReference Update="Microsoft.NETCore.App" Version="2.0.0-beta-001386-00" />
   </ItemGroup>
 
 </Project>

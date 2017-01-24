@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
@@ -11,13 +11,13 @@
   <!-- Default configurations to help VS understand the options -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='net461-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='net461-Windows_NT-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netcoreapp-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netcoreapp-Release|AnyCPU'" />
   <ItemGroup Condition="'$(EnableWinRT)' == 'true'">
     <ProjectReference Include="$(SourceDir)mscorlib.WinRT-Facade\mscorlib.WinRT-Facade.csproj" />
     <TargetingPackReference Include="Windows" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
     <Compile Include="System\IO\IsolatedStorage\IsolatedStorageException.cs" />
     <Compile Include="System\IO\IsolatedStorage\IsolatedStorageFile.cs" />
     <Compile Include="System\IO\IsolatedStorage\IsolatedStorageFileStream.cs" />
@@ -29,13 +29,13 @@
       <Link>Common\System\Security\IdentityHelper.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
     <Compile Include="System\IO\IsolatedStorage\IsolatedStorageException.Serialization.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard' and '$(EnableWinRT)' != 'true'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp' and '$(EnableWinRT)' != 'true'">
     <Compile Include="System\IO\IsolatedStorage\Helper.Win32.Unix.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard' and '$(EnableWinRT)' == 'true'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp' and '$(EnableWinRT)' == 'true'">
     <Compile Include="System\IO\IsolatedStorage\Helper.WinRT.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'net461'">

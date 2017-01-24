@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
@@ -7,15 +7,15 @@
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net463'">true</IsPartialFacadeAssembly>
   </PropertyGroup>
   <!-- Help VS understand available configurations -->
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Linux-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Linux-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-OSX-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-OSX-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Windows_NT-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Windows_NT-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netcoreapp-Linux-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netcoreapp-Linux-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netcoreapp-OSX-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netcoreapp-OSX-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netcoreapp-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netcoreapp-Windows_NT-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='net463-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='net463-Windows_NT-Release|AnyCPU'" />
-  <ItemGroup Condition=" '$(TargetGroup)' == 'netstandard' ">
+  <ItemGroup Condition=" '$(TargetGroup)' == 'netcoreapp' ">
     <Compile Include="System\HResults.cs" />
     <Compile Include="System\IO\ErrorEventArgs.cs" />
     <Compile Include="System\IO\ErrorEventHandler.cs" />
@@ -36,7 +36,7 @@
       <Link>Common\System\IO\PathInternal.CaseSensitivity.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' And '$(TargetGroup)' == 'netstandard' ">
+  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' And '$(TargetGroup)' == 'netcoreapp' ">
     <Compile Include="$(CommonPath)\System\IO\PathInternal.Windows.cs">
       <Link>Common\System\IO\PathInternal.Windows.cs</Link>
     </Compile>
@@ -60,7 +60,7 @@
     </Compile>
     <Compile Include="System\IO\FileSystemWatcher.Win32.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' And '$(TargetGroup)' == 'netstandard' ">
+  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' And '$(TargetGroup)' == 'netcoreapp' ">
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
       <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
     </Compile>
@@ -80,7 +80,7 @@
       <Link>Common\Interop\Unix\Interop.PathConf.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsLinux)' == 'true' And '$(TargetGroup)' == 'netstandard' ">
+  <ItemGroup Condition=" '$(TargetsLinux)' == 'true' And '$(TargetGroup)' == 'netcoreapp' ">
     <Compile Include="System\IO\FileSystemWatcher.Linux.cs" />
     <Compile Include="$(CommonPath)\Interop\Linux\System.Native\Interop.INotify.cs">
       <Link>Common\Interop\Linux\Interop.inotify.cs</Link>
@@ -92,7 +92,7 @@
       <Link>Common\Interop\Unix\Interop.Stat.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsOSX)' == 'true' And '$(TargetGroup)' == 'netstandard' ">
+  <ItemGroup Condition=" '$(TargetsOSX)' == 'true' And '$(TargetGroup)' == 'netcoreapp' ">
     <Compile Include="System\IO\FileSystemWatcher.OSX.cs" />
     <Compile Include="$(CommonPath)\Interop\OSX\Interop.EventStream.cs">
       <Link>Common\Interop\OSX\Interop.EventStream.cs</Link>
@@ -119,7 +119,7 @@
       <Link>Common\Microsoft\Win32\SafeHandles\SafeEventStreamHandle.OSX.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition=" ('$(TargetsFreeBSD)' == 'true' OR '$(TargetsUnknownUnix)' == 'true') And '$(TargetGroup)' == 'netstandard' ">
+  <ItemGroup Condition=" ('$(TargetsFreeBSD)' == 'true' OR '$(TargetsUnknownUnix)' == 'true') And '$(TargetGroup)' == 'netcoreapp' ">
     <Compile Include="System\IO\FileSystemWatcher.UnknownUnix.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'net463'">

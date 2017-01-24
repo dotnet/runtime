@@ -65,6 +65,7 @@ namespace System
         public static bool IsUbuntu1610 { get; } = IsDistroAndVersion("ubuntu", "16.10");
         public static bool IsFedora23 { get; } = IsDistroAndVersion("fedora", "23");
         public static bool IsFedora24 { get; } = IsDistroAndVersion("fedora", "24");
+        public static bool IsCentos7 { get; } = IsDistroAndVersion("centos", "7");
 
         /// <summary>
         /// Get whether the OS platform matches the given Linux distro and optional version.
@@ -114,8 +115,14 @@ namespace System
             string versionId = ret.VersionId;
             if (versionId.Length >= 2 && versionId[0] == '"' && versionId[versionId.Length - 1] == '"')
             {
-                // Remove Quotes.
+                // Remove quotes.
                 ret.VersionId = versionId.Substring(1, versionId.Length - 2);
+            }
+
+            if (ret.Id.Length >= 2 && ret.Id[0] == '"' && ret.Id[ret.Id.Length - 1] == '"')
+            {
+                // Remove quotes.
+                ret.Id = ret.Id.Substring(1, ret.Id.Length - 2);
             }
 
             return ret;

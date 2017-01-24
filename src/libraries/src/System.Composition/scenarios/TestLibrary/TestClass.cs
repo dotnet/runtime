@@ -5,7 +5,7 @@
 using System;
 using System.Composition;
 
-[assembly: System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
+[assembly: System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverageAssembly]
 
 namespace TestLibrary
 {

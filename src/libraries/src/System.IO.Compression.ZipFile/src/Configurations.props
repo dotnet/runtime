@@ -3,7 +3,7 @@
   <PropertyGroup>
     <BuildConfigurations>
       net46-Windows_NT;
-      netstandard1.3;
+      netcoreapp;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>

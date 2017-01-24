@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
@@ -10,9 +10,9 @@
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='net463-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='net463-Windows_NT-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Release|AnyCPU'" />
-  <ItemGroup Condition="'$(TargetGroup)'=='netstandard'">
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netcoreapp-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netcoreapp-Release|AnyCPU'" />
+  <ItemGroup Condition="'$(TargetGroup)'=='netcoreapp'">
     <Compile Include="System\ComponentModel\ArrayConverter.cs" />
     <Compile Include="System\ComponentModel\BaseNumberConverter.cs" />
     <Compile Include="System\ComponentModel\BooleanConverter.cs" />
@@ -94,7 +94,7 @@
     <Compile Include="System\Drawing\RectangleConverter.cs" />
     <Compile Include="System\Drawing\SizeConverter.cs" />
     <Compile Include="System\Drawing\SizeFConverter.cs" />
-    <!-- New code introduced for netstandard 2.0 -->
+    <!-- New code introduced for netcoreapp 2.0 -->
     <Compile Include="System\ComponentModel\AddingNewEventArgs.cs" />
     <Compile Include="System\ComponentModel\AddingNewEventHandler.cs" />
     <Compile Include="System\ComponentModel\AmbientValueAttribute.cs" />
