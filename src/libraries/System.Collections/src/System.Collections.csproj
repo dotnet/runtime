@@ -53,6 +53,8 @@
     <Compile Include="System\Collections\Generic\SortedDictionary.cs" />
     <Compile Include="System\Collections\Generic\SortedList.cs" />
     <Compile Include="System\Collections\Generic\SortedSet.cs" />
+    <Compile Include="System\Collections\Generic\SortedSet.TreeSubSet.cs" />
+    <Compile Include="System\Collections\Generic\SortedSetEqualityComparer.cs" />
     <Compile Include="System\Collections\Generic\Stack.cs" />
     <Compile Include="System\Collections\Generic\StackDebugView.cs" />
     <Compile Include="System\Collections\StructuralComparisons.cs" />
