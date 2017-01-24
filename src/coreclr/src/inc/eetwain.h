@@ -174,6 +174,7 @@ virtual void FixContext(ContextType     ctxType,
 
 #endif // #ifndef DACCESS_COMPILE
 
+#ifdef _TARGET_X86_
 /*
     Gets the ambient stack pointer value at the given nesting level within
     the method.
@@ -183,6 +184,7 @@ virtual TADDR GetAmbientSP(PREGDISPLAY     pContext,
                            DWORD           dwRelOffset,
                            DWORD           nestingLevel,
                            CodeManState   *pState) = 0;
+#endif // _TARGET_X86_
 
 /*
     Get the number of bytes used for stack parameters.
@@ -386,6 +388,7 @@ void FixContext(ContextType     ctxType,
 
 #endif // #ifndef DACCESS_COMPILE
 
+#ifdef _TARGET_X86_
 /*
     Gets the ambient stack pointer value at the given nesting level within
     the method.
@@ -396,6 +399,7 @@ TADDR GetAmbientSP(PREGDISPLAY     pContext,
                    DWORD           dwRelOffset,
                    DWORD           nestingLevel,
                    CodeManState   *pState);
+#endif // _TARGET_X86_
 
 /*
     Get the number of bytes used for stack parameters.
