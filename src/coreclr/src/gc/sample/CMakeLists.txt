@@ -22,7 +22,7 @@ set(SOURCES
 
 if(WIN32)
     list(APPEND SOURCES
-        ../gcenv.windows.cpp)
+        ../windows/gcenv.windows.cpp)
     add_definitions(-DUNICODE=1)
 else()
     list(APPEND SOURCES
