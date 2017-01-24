@@ -76,7 +76,11 @@
     <Compile Include="System\Collections\Immutable\ImmutableSortedDictionary_2.Node.cs" />
     <Compile Include="System\Collections\Immutable\ImmutableSortedSet.cs" />
     <Compile Include="System\Collections\Immutable\ImmutableSortedSet_1.Builder.cs" />
+    <Compile Include="System\Collections\Immutable\ImmutableSortedSet_1.Builder.DebuggerProxy.cs" />
     <Compile Include="System\Collections\Immutable\ImmutableSortedSet_1.cs" />
+    <Compile Include="System\Collections\Immutable\ImmutableSortedSet_1.DebuggerProxy.cs" />
+    <Compile Include="System\Collections\Immutable\ImmutableSortedSet_1.Enumerator.cs" />
+    <Compile Include="System\Collections\Immutable\ImmutableSortedSet_1.Node.cs" />
     <Compile Include="System\Collections\Immutable\ImmutableStack.cs" />
     <Compile Include="System\Collections\Immutable\ImmutableStack_1.cs" />
     <Compile Include="System\Collections\Immutable\KeysOrValuesCollectionAccessor.cs" />
