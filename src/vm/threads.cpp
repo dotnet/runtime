@@ -8230,7 +8230,7 @@ void Thread::FillRegDisplay(const PREGDISPLAY pRD, PT_CONTEXT pctx)
 }
 
 
-#if defined(DEBUG_REGDISPLAY) && !defined(_TARGET_X86_)
+#ifdef DEBUG_REGDISPLAY
 
 void CheckRegDisplaySP (REGDISPLAY *pRD)
 {
@@ -8243,7 +8243,7 @@ void CheckRegDisplaySP (REGDISPLAY *pRD)
     }
 }
 
-#endif // defined(DEBUG_REGDISPLAY) && !defined(_TARGET_X86_)
+#endif // DEBUG_REGDISPLAY
 
 //                      Trip Functions
 //                      ==============
