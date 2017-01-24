@@ -145,6 +145,17 @@ GTNODE(LT               , "<"            ,GenTreeOp          ,0,GTK_BINOP|GTK_RE
 GTNODE(LE               , "<="           ,GenTreeOp          ,0,GTK_BINOP|GTK_RELOP)
 GTNODE(GE               , ">="           ,GenTreeOp          ,0,GTK_BINOP|GTK_RELOP)
 GTNODE(GT               , ">"            ,GenTreeOp          ,0,GTK_BINOP|GTK_RELOP)
+#ifndef LEGACY_BACKEND
+// These are similar to GT_EQ/GT_NE but they generate "test" instead of "cmp" instructions.
+// Currently these are generated during lowering for code like ((x & y) eq|ne 0) only on 
+// XArch but ARM could too use these for the same purpose as there is a "tst" instruction.
+// Note that the general case of comparing a register against 0 is handled directly by 
+// codegen which emits a "test reg, reg" instruction, that would be more difficult to do
+// during lowering because the source operand is used twice so it has to be a lclvar. 
+// Because of this there is no need to also add GT_TEST_LT/LE/GE/GT opers.
+GTNODE(TEST_EQ          , "testEQ"       ,GenTreeOp          ,0,GTK_BINOP|GTK_RELOP)
+GTNODE(TEST_NE          , "testNE"       ,GenTreeOp          ,0,GTK_BINOP|GTK_RELOP)
+#endif
 
 GTNODE(COMMA            , "comma"        ,GenTreeOp          ,0,GTK_BINOP|GTK_NOTLIR)
 
