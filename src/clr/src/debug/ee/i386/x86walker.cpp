@@ -304,7 +304,7 @@ DWORD NativeWalker::GetRegisterValue(int registerNumber)
         return *m_registers->pEbx;
         break;
     case 4:
-        return m_registers->Esp;
+        return m_registers->SP;
         break;
     case 5:
         return *m_registers->pEbp;

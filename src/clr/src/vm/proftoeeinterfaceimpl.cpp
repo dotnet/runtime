@@ -7412,7 +7412,7 @@ Loop:
                 ZeroMemory(&rd, sizeof(rd));
 
                 rd.pEbp = &ctxCur.Ebp;
-                rd.Esp = ctxCur.Esp;
+                rd.SP = ctxCur.Esp;
                 rd.ControlPC = ctxCur.Eip;
 
                 codeInfo.GetCodeManager()->UnwindStackFrame(
@@ -7423,7 +7423,7 @@ Loop:
                     NULL);
 
                 ctxCur.Ebp = *(rd.pEbp);
-                ctxCur.Esp = rd.Esp;
+                ctxCur.Esp = rd.SP;
                 ctxCur.Eip = rd.ControlPC;
             }
             else

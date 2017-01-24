@@ -113,7 +113,7 @@ void SetDebuggerREGDISPLAYFromREGDISPLAY(DebuggerREGDISPLAY* pDRD, REGDISPLAY* p
     pDRD->pEax = NULL;
 #endif // !USE_REMOTE_REGISTER_ADDRESS
 
-    pDRD->SP   = pRD->Esp;
+    pDRD->SP   = pRD->SP;
     pDRD->PC   = pRD->ControlPC;
 
     // Please leave EBP, ESP, EIP at the front so I don't have to scroll
