@@ -1308,3 +1308,11 @@ void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
         assert(!"unknown WriteBarrierOp enum");
     }
 }
+
+void GCToEEInterface::EnableFinalization(bool foundFinalizers)
+{
+    if (foundFinalizers || FinalizerThread::HaveExtraWorkForFinalizer())
+    {
+        FinalizerThread::EnableFinalization();
+    }
+}

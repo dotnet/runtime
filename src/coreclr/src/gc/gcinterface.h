@@ -313,6 +313,10 @@ public:
     // Gets the next finalizable object.
     virtual Object* GetNextFinalizable() = 0;
 
+    // Sets whether or not the GC should report all finalizable objects as
+    // ready to be finalized, instead of only collectable objects.
+    virtual void SetFinalizeRunOnShutdown(bool value) = 0;
+
     /*
     ===========================================================================
     BCL routines. These are routines that are directly exposed by mscorlib
