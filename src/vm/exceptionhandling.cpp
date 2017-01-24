@@ -90,8 +90,8 @@ bool FixNonvolatileRegisters(UINT_PTR  uOriginalSP,
 MethodDesc * GetUserMethodForILStub(Thread * pThread, UINT_PTR uStubSP, MethodDesc * pILStubMD, Frame ** ppFrameOut);
 
 #ifdef FEATURE_PAL
-BOOL PALAPI HandleHardwareException(PAL_SEHException* ex);
-BOOL PALAPI IsSafeToHandleHardwareException(PCONTEXT contextRecord, PEXCEPTION_RECORD exceptionRecord);
+BOOL HandleHardwareException(PAL_SEHException* ex);
+BOOL IsSafeToHandleHardwareException(PCONTEXT contextRecord, PEXCEPTION_RECORD exceptionRecord);
 #endif // FEATURE_PAL
 
 static ExceptionTracker* GetTrackerMemory()
@@ -5031,7 +5031,7 @@ BOOL IsSafeToCallExecutionManager()
            GCStress<cfg_instr_ngen>::IsEnabled();
 }
 
-BOOL PALAPI IsSafeToHandleHardwareException(PCONTEXT contextRecord, PEXCEPTION_RECORD exceptionRecord)
+BOOL IsSafeToHandleHardwareException(PCONTEXT contextRecord, PEXCEPTION_RECORD exceptionRecord)
 {
     PCODE controlPc = GetIP(contextRecord);
     return g_fEEStarted && (
@@ -5044,7 +5044,7 @@ BOOL PALAPI IsSafeToHandleHardwareException(PCONTEXT contextRecord, PEXCEPTION_R
         IsIPInMarkedJitHelper(controlPc));
 }
 
-BOOL PALAPI HandleHardwareException(PAL_SEHException* ex)
+BOOL HandleHardwareException(PAL_SEHException* ex)
 {
     _ASSERTE(IsSafeToHandleHardwareException(ex->GetContextRecord(), ex->GetExceptionRecord()));
 
