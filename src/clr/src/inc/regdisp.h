@@ -8,6 +8,8 @@
 
 #ifdef DEBUG_REGDISPLAY
 class Thread;
+
+void CheckRegDisplaySP (REGDISPLAY *pRD);
 #endif // DEBUG_REGDISPLAY
 
 
@@ -40,11 +42,11 @@ struct REGDISPLAY {
 
     T_KNONVOLATILE_CONTEXT_POINTERS ctxPtrsOne;  // used by stackwalk
     T_KNONVOLATILE_CONTEXT_POINTERS ctxPtrsTwo;  // used by stackwalk
+#endif // !WIN64EXCEPTIONS
 
 #ifdef DEBUG_REGDISPLAY
     Thread *_pThread;
 #endif // DEBUG_REGDISPLAY
-#endif // !WIN64EXCEPTIONS
 
     DWORD * pEdi;
     DWORD * pEsi;
@@ -185,9 +187,6 @@ inline PCODE GetControlPC(REGDISPLAY *display) {
     return (PCODE)(display->ControlPC);
 }
 
-#ifdef DEBUG_REGDISPLAY
-void CheckRegDisplaySP (REGDISPLAY *pRD);
-#endif // DEBUG_REGDISPLAY
 
 
 // This function tells us if the given stack pointer is in one of the frames of the functions called by the given frame
@@ -275,10 +274,6 @@ struct REGDISPLAY {
 #endif // DEBUG_REGDISPLAY
 
 };
-
-#ifdef DEBUG_REGDISPLAY
-void CheckRegDisplaySP (REGDISPLAY *pRD);
-#endif // DEBUG_REGDISPLAY
 
 inline TADDR GetRegdisplaySP(REGDISPLAY *display) {
     LIMITED_METHOD_DAC_CONTRACT;
@@ -369,11 +364,6 @@ inline void SyncRegDisplayToCurrentContext(REGDISPLAY* pRD)
 
 #if defined(_WIN64)
     pRD->SP         = (INT_PTR)GetSP(pRD->pCurrentContext);
-
-#ifdef DEBUG_REGDISPLAY
-    CheckRegDisplaySP(pRD);
-#endif // DEBUG_REGDISPLAY
-
     pRD->ControlPC  = INT_PTR(GetIP(pRD->pCurrentContext));
 #elif defined(_TARGET_ARM_) // _WIN64
     pRD->SP         = (DWORD)GetSP(pRD->pCurrentContext);
@@ -384,6 +374,10 @@ inline void SyncRegDisplayToCurrentContext(REGDISPLAY* pRD)
 #else // _TARGET_X86_
     PORTABILITY_ASSERT("SyncRegDisplayToCurrentContext");
 #endif // _TARGET_ARM_ || _TARGET_X86_
+
+#ifdef DEBUG_REGDISPLAY
+    CheckRegDisplaySP(pRD);
+#endif // DEBUG_REGDISPLAY
 }
 #endif // _WIN64 || _TARGET_ARM_ || (_TARGET_X86_ && WIN64EXCEPTIONS)
 
