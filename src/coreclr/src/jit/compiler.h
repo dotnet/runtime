@@ -2070,13 +2070,13 @@ public:
 
     bool gtHasLocalsWithAddrOp(GenTreePtr tree);
 
-    unsigned gtHashValue(GenTree* tree);
-
     unsigned gtSetListOrder(GenTree* list, bool regs, bool isListCallArgs);
 
     void gtWalkOp(GenTree** op1, GenTree** op2, GenTree* adr, bool constOnly);
 
 #ifdef DEBUG
+    unsigned gtHashValue(GenTree* tree);
+
     GenTreePtr gtWalkOpEffectiveVal(GenTreePtr op);
 #endif
 
