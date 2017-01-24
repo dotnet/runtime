@@ -26,6 +26,8 @@ CompPhaseNameMacro(PHASE_POST_IMPORT,            "Post-import",                 
 CompPhaseNameMacro(PHASE_MORPH_INIT,             "Morph - Init",                   "MOR-INIT" ,false, -1)
 CompPhaseNameMacro(PHASE_MORPH_INLINE,           "Morph - Inlining",               "MOR-INL",  false, -1)
 CompPhaseNameMacro(PHASE_MORPH_IMPBYREF,         "Morph - ByRefs",                 "MOR-BYREF",false, -1)
+CompPhaseNameMacro(PHASE_EMPTY_FINALLY,          "Remove empty finally",           "EMPTYFIN", false, -1)
+CompPhaseNameMacro(PHASE_CLONE_FINALLY,          "Clone finally",                  "CLONEFIN", false, -1)
 CompPhaseNameMacro(PHASE_STR_ADRLCL,             "Morph - Structs/AddrExp",        "MOR-STRAL",false, -1)
 CompPhaseNameMacro(PHASE_MORPH_GLOBAL,           "Morph - Global",                 "MOR-GLOB", false, -1)
 CompPhaseNameMacro(PHASE_MORPH_END,              "Morph - Finish",                 "MOR-END",  false, -1)
@@ -98,9 +100,6 @@ CompPhaseNameMacro(PHASE_EMIT_GCEH,              "Emit GC+EH tables",           
 // for calls through ICorJitInfo across all "real" phases.
 CompPhaseNameMacro(PHASE_CLR_API,                "CLR API calls",                  "CLR-API",  false, -1)
 #endif
-
-CompPhaseNameMacro(PHASE_EMPTY_FINALLY,          "Remove empty finally",           "EMPTYFIN",  false, -1)
-CompPhaseNameMacro(PHASE_CLONE_FINALLY,          "Clone finally",                  "CLONEFIN",  false, -1)
 // clang-format on
 
 #undef CompPhaseNameMacro
