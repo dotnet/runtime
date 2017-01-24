@@ -392,4 +392,1335 @@
             <Issue>needs triage</Issue>
         </ExcludeList>
     </ItemGroup>
+
+    <!-- The following are tests that fail when building tests against packages -->
+
+    <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(BuildTestsAgainstPackages)' == 'true'">
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\superpmi\superpmicollect\superpmicollect.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+    </ItemGroup>
+
+    <!-- The following are tests that fail on non-Windows, which we must not run when building against packages -->
+
+    <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(BuildTestsAgainstPackages)' == 'true' and '$(RuntimeID)' != ''">
+        <ExcludeList Include="$(XunitTestBinBase)\CoreMangLib\cti\system\byte\ByteToString3\ByteToString3.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\CoreMangLib\cti\system\convert\ConvertToInt32_4\ConvertToInt32_4.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\CoreMangLib\cti\system\datetime\DateTimeParseExact1\DateTimeParseExact1.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\CoreMangLib\cti\system\datetime\DateTimeParseExact2\DateTimeParseExact2.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\CoreMangLib\cti\system\datetime\DateTimeParseExact3\DateTimeParseExact3.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\CoreMangLib\cti\system\decimal\DecimalToInt32\DecimalToInt32.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\CoreMangLib\cti\system\double\DoubleToString3\DoubleToString3.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\CoreMangLib\cti\system\double\DoubleToString4\DoubleToString4.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\CoreMangLib\cti\system\int64\Int64ToString3\Int64ToString3.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\CoreMangLib\cti\system\int\Int32ToString3\Int32ToString3.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\CoreMangLib\cti\system\multicastdelegate\MulticastDelegateCtor\MulticastDelegateCtor.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\CoreMangLib\cti\system\runtime\interopservices\marshal\MarshalGetLastWin32Error_PSC\MarshalGetLastWin32Error_PSC.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\CoreMangLib\cti\system\string\StringCompare15\StringCompare15.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\CoreMangLib\cti\system\string\StringCompare1\StringCompare1.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\CoreMangLib\cti\system\string\StringCompare2\StringCompare2.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\CoreMangLib\cti\system\uint16\UInt16ToString3\UInt16ToString3.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\CoreMangLib\cti\system\uint16\UInt16ToString4\UInt16ToString4.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\CoreMangLib\cti\system\uint32\UInt32ToString2\UInt32ToString2.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\CoreMangLib\system\collections\generic\hashset\Regression_Dev10_609271\Regression_Dev10_609271.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\CoreMangLib\system\collections\generic\hashset\Regression_Dev10_624201\Regression_Dev10_624201.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\GC\Coverage\271010\271010.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\GC\Coverage\smalloom\smalloom.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\GC\Features\BackgroundGC\foregroundgc\foregroundgc.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\GC\Features\LOHFragmentation\lohfragmentation\lohfragmentation.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\GC\Features\SustainedLowLatency\scenario\scenario.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\GC\LargeMemory\API\gc\collect\collect.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\GC\LargeMemory\API\gc\getgeneration\getgeneration.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\GC\LargeMemory\API\gc\reregisterforfinalize\reregisterforfinalize.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\GC\LargeMemory\Allocation\finalizertest\finalizertest.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\GC\Regressions\dev10bugs\536168\536168\536168.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\BaseFinal\basefinal\basefinal.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\DoublinkList\doublinknoleak\doublinknoleak.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\GC\Stress\Framework\ReliabilityFramework\ReliabilityFramework.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\Interop\MarshalAPI\GetNativeVariantForObject\GetNativeVariantForObject\GetNativeVariantForObject.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\Interop\MarshalAPI\GetObjectForNativeVariant\GetObjectForNativeVariant\GetObjectForNativeVariant.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\Interop\MarshalAPI\GetObjectsForNativeVariants\GetObjectsForNativeVariants\GetObjectsForNativeVariants.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\Interop\MarshalAPI\IUnknown\IUnknownTest\IUnknownTest.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\Interop\SizeConst\SizeConstTest\SizeConstTest.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\Interop\StructMarshalling\PInvoke\MarshalStructAsLayoutExp\MarshalStructAsLayoutExp.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\IL\PInvokeTail\PInvokeTail\PInvokeTail.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\IL\PInvokeTail\TailWinApi\TailWinApi.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\PREFIX\unaligned\1\arglist\arglist.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\PREFIX\unaligned\2\arglist\arglist.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\PREFIX\unaligned\4\arglist\arglist.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\PREFIX\volatile\1\arglist\arglist.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\RVAInit\extended\extended.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\RVAInit\overlap\overlap.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\StructABI\StructABI\StructABI.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\UnrollLoop\loop2_cs_d\loop2_cs_d.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\UnrollLoop\loop2_cs_do\loop2_cs_do.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\UnrollLoop\loop2_cs_r\loop2_cs_r.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\UnrollLoop\loop2_cs_ro\loop2_cs_ro.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\UnrollLoop\loop6_cs_d\loop6_cs_d.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\UnrollLoop\loop6_cs_do\loop6_cs_do.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\UnrollLoop\loop6_cs_r\loop6_cs_r.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\UnrollLoop\loop6_cs_ro\loop6_cs_ro.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\coverage\importer\Desktop\bleref_il_d\bleref_il_d.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\coverage\importer\Desktop\bleref_il_r\bleref_il_r.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\coverage\importer\Desktop\ldelemnullarr1_il_d\ldelemnullarr1_il_d.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\coverage\importer\Desktop\ldelemnullarr1_il_r\ldelemnullarr1_il_r.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\coverage\importer\Desktop\nonrefsdarr_il_d\nonrefsdarr_il_d.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\coverage\importer\Desktop\nonrefsdarr_il_r\nonrefsdarr_il_r.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\coverage\oldtests\Desktop\callipinvoke_il_d\callipinvoke_il_d.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\coverage\oldtests\Desktop\callipinvoke_il_r\callipinvoke_il_r.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\coverage\oldtests\callipinvoke\callipinvoke.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\intrinsic\interlocked\rva_rvastatic1\rva_rvastatic1.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\intrinsic\interlocked\rva_rvastatic2\rva_rvastatic2.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\intrinsic\interlocked\rva_rvastatic3\rva_rvastatic3.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\intrinsic\interlocked\rva_rvastatic4\rva_rvastatic4.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\pinning\object-pin\object-pin\object-pin.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\pinvoke\calli_excep\calli_excep.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\pinvoke\jump\jump.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\pinvoke\pinvoke-bug\pinvoke-bug.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\pinvoke\preemptive_cooperative\preemptive_cooperative.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\pinvoke\sin\sin.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\pinvoke\sysinfo_cs\sysinfo_cs.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\pinvoke\sysinfo_il\sysinfo_il.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\pinvoke\tail\tail.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\rvastatics\rvastatic1\rvastatic1.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\rvastatics\rvastatic2\rvastatic2.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\rvastatics\rvastatic3\rvastatic3.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\rvastatics\rvastatic4\rvastatic4.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\rvastatics\rvastatic5\rvastatic5.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\tls\mutualrecurthd-tls\mutualrecurthd-tls.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\tls\test-tls\test-tls.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Generics\Fields\getclassfrommethodparam\getclassfrommethodparam.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Generics\pinvoke\instance01\instance01.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Generics\pinvoke\instance02\instance02.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Generics\pinvoke\instance03\instance03.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Generics\pinvoke\static01\static01.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Generics\pinvoke\static02\static02.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\Boxing\xlang\_dbgsin_cs_il\_dbgsin_cs_il.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\Boxing\xlang\_dbgsin_il_cs\_dbgsin_il_cs.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\Boxing\xlang\_dbgsin_il_il\_dbgsin_il_il.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\Boxing\xlang\_odbgsin_cs_il\_odbgsin_cs_il.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\Boxing\xlang\_odbgsin_il_cs\_odbgsin_il_cs.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\Boxing\xlang\_odbgsin_il_il\_odbgsin_il_il.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\Boxing\xlang\_orelsin_cs_il\_orelsin_cs_il.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\Boxing\xlang\_orelsin_il_cs\_orelsin_il_cs.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\Boxing\xlang\_orelsin_il_il\_orelsin_il_il.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\Boxing\xlang\_relsin_cs_il\_relsin_cs_il.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\Boxing\xlang\_relsin_il_cs\_relsin_il_cs.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\Boxing\xlang\_relsin_il_il\_relsin_il_il.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\Coverage\arglist_pos\arglist_pos.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\cctor\misc\global_il_d\global_il_d.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\cctor\misc\global_il_r\global_il_r.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\cctor\xassem\xprecise3_cs_d\xprecise3_cs_d.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\cctor\xassem\xprecise3_cs_do\xprecise3_cs_do.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\cctor\xassem\xprecise3_cs_r\xprecise3_cs_r.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\cctor\xassem\xprecise3_cs_ro\xprecise3_cs_ro.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\delegate\_XModuledeleg1_d\_XModuledeleg1_d.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\delegate\_XModuledeleg1_do\_XModuledeleg1_do.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\delegate\_XModuledeleg1_r\_XModuledeleg1_r.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\delegate\_XModuledeleg1_ro\_XModuledeleg1_ro.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\delegate\_XModuledeleg2_d\_XModuledeleg2_d.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\delegate\_XModuledeleg2_do\_XModuledeleg2_do.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\delegate\_XModuledeleg2_r\_XModuledeleg2_r.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\delegate\_XModuledeleg2_ro\_XModuledeleg2_ro.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\deadcode\badcodeafterfinally_d\badcodeafterfinally_d.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\deadcode\badcodeafterfinally_r\badcodeafterfinally_r.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\explicit\coverage\expl_byte_1_d\expl_byte_1_d.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\explicit\coverage\expl_byte_1_r\expl_byte_1_r.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\explicit\coverage\expl_double_1_d\expl_double_1_d.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\explicit\coverage\expl_double_1_r\expl_double_1_r.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\explicit\coverage\expl_float_1_d\expl_float_1_d.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\explicit\coverage\expl_float_1_r\expl_float_1_r.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\explicit\coverage\expl_gc_byte_1_d\expl_gc_byte_1_d.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\explicit\coverage\expl_gc_byte_1_r\expl_gc_byte_1_r.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\explicit\coverage\expl_gc_double_1_d\expl_gc_double_1_d.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\explicit\coverage\expl_gc_double_1_r\expl_gc_double_1_r.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\explicit\coverage\expl_gc_float_1_d\expl_gc_float_1_d.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\explicit\coverage\expl_gc_float_1_r\expl_gc_float_1_r.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\explicit\coverage\expl_gc_int_1_d\expl_gc_int_1_d.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\explicit\coverage\expl_gc_int_1_r\expl_gc_int_1_r.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\explicit\coverage\expl_gc_long_1_d\expl_gc_long_1_d.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\explicit\coverage\expl_gc_long_1_r\expl_gc_long_1_r.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\explicit\coverage\expl_gc_obj_1_d\expl_gc_obj_1_d.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\explicit\coverage\expl_gc_obj_1_r\expl_gc_obj_1_r.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\explicit\coverage\expl_gc_short_1_d\expl_gc_short_1_d.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\explicit\coverage\expl_gc_short_1_r\expl_gc_short_1_r.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\explicit\coverage\expl_gc_val_1_d\expl_gc_val_1_d.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\explicit\coverage\expl_gc_val_1_r\expl_gc_val_1_r.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\explicit\coverage\expl_int_1_d\expl_int_1_d.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\explicit\coverage\expl_int_1_r\expl_int_1_r.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\explicit\coverage\expl_long_1_d\expl_long_1_d.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\explicit\coverage\expl_long_1_r\expl_long_1_r.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\explicit\coverage\expl_obj_1_d\expl_obj_1_d.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\explicit\coverage\expl_obj_1_r\expl_obj_1_r.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\explicit\coverage\expl_short_1_d\expl_short_1_d.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\explicit\coverage\expl_short_1_r\expl_short_1_r.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\explicit\coverage\expl_val_1_d\expl_val_1_d.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\explicit\coverage\expl_val_1_r\expl_val_1_r.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\explicit\coverage\seq_byte_1_d\seq_byte_1_d.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\explicit\coverage\seq_byte_1_r\seq_byte_1_r.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\explicit\coverage\seq_double_1_d\seq_double_1_d.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\explicit\coverage\seq_double_1_r\seq_double_1_r.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\explicit\coverage\seq_float_1_d\seq_float_1_d.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\explicit\coverage\seq_float_1_r\seq_float_1_r.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\explicit\coverage\seq_gc_byte_1_d\seq_gc_byte_1_d.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\explicit\coverage\seq_gc_byte_1_r\seq_gc_byte_1_r.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\explicit\coverage\seq_gc_double_1_d\seq_gc_double_1_d.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\explicit\coverage\seq_gc_double_1_r\seq_gc_double_1_r.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\explicit\coverage\seq_gc_float_1_d\seq_gc_float_1_d.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\explicit\coverage\seq_gc_float_1_r\seq_gc_float_1_r.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\explicit\coverage\seq_gc_int_1_d\seq_gc_int_1_d.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\explicit\coverage\seq_gc_int_1_r\seq_gc_int_1_r.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\explicit\coverage\seq_gc_long_1_d\seq_gc_long_1_d.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\explicit\coverage\seq_gc_long_1_r\seq_gc_long_1_r.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\explicit\coverage\seq_gc_obj_1_d\seq_gc_obj_1_d.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\explicit\coverage\seq_gc_obj_1_r\seq_gc_obj_1_r.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\explicit\coverage\seq_gc_short_1_d\seq_gc_short_1_d.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\explicit\coverage\seq_gc_short_1_r\seq_gc_short_1_r.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\explicit\coverage\seq_gc_val_1_d\seq_gc_val_1_d.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\explicit\coverage\seq_gc_val_1_r\seq_gc_val_1_r.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\explicit\coverage\seq_int_1_d\seq_int_1_d.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\explicit\coverage\seq_int_1_r\seq_int_1_r.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\explicit\coverage\seq_long_1_d\seq_long_1_d.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\explicit\coverage\seq_long_1_r\seq_long_1_r.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\explicit\coverage\seq_obj_1_d\seq_obj_1_d.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\explicit\coverage\seq_obj_1_r\seq_obj_1_r.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\explicit\coverage\seq_short_1_d\seq_short_1_d.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\explicit\coverage\seq_short_1_r\seq_short_1_r.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\explicit\coverage\seq_val_1_d\seq_val_1_d.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\explicit\coverage\seq_val_1_r\seq_val_1_r.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\refany\_dbgstress1\_dbgstress1.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\refany\_dbgstress3\_dbgstress3.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\refany\_il_dbgseq\_il_dbgseq.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\refany\_il_relseq\_il_relseq.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\refany\_relstress1\_relstress1.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\refany\_relstress3\_relstress3.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\refany\_speed_dbgstress1\_speed_dbgstress1.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\refany\_speed_dbgstress3\_speed_dbgstress3.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\refany\_speed_relstress1\_speed_relstress1.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\refany\_speed_relstress3\_speed_relstress3.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\tailcall\_il_dbgpointer\_il_dbgpointer.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\tailcall\_il_dbgpointer_i\_il_dbgpointer_i.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\tailcall\_il_relpointer\_il_relpointer.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\tailcall\_il_relpointer_i\_il_relpointer_i.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\varargs\callconv\gc_ctor_il_d\gc_ctor_il_d.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\varargs\callconv\gc_ctor_il_r\gc_ctor_il_r.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\varargs\callconv\val_ctor_il_d\val_ctor_il_d.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\varargs\callconv\val_ctor_il_r\val_ctor_il_r.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\varargs\misc\Dev10_615402\Dev10_615402.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\varargs\seh\fault_il_d\fault_il_d.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\varargs\seh\fault_il_r\fault_il_r.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\varargs\seh\filter_il_d\filter_il_d.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\varargs\seh\filter_il_r\filter_il_r.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\xxobj\operand\_il_dbglocalloc\_il_dbglocalloc.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\xxobj\operand\_il_rellocalloc\_il_rellocalloc.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-EJIT\V1-M12-Beta2\b26323\b26323\b26323.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-EJIT\v1-m10\b07847\b07847\b07847.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1-M09.5-PDC\b16423\b16423\b16423.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1-M09.5-PDC\b26324\b26324a\b26324a.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1-M09.5-PDC\b26324\b26324b\b26324b.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1-M09.5-PDC\b28901\b28901\b28901.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1-M09.5-PDC\b30838\b30838\b30838.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1-M09.5-PDC\b30864\b30864\b30864.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1-M09.5-PDC\b32374\b32374\b32374.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1-M11-Beta1\b35784\b35784\b35784.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1-M11-Beta1\b36472\b36472\b36472.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1-M11-Beta1\b37598\b37598\b37598.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1-M11-Beta1\b41391\b41391\b41391.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1-M11-Beta1\b46867\b46867\b46867.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1-M11-Beta1\b49644\b49644\b49644.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1-M12-Beta2\b31745\b31745\b31745.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1-M12-Beta2\b31746\b31746\b31746.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1-M12-Beta2\b37646\b37646\b37646.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1-M12-Beta2\b41852\b41852\b41852.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1-M12-Beta2\b66533\b66533\b66533.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1-M12-Beta2\b79250\b79250\b79250.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1-M13-RTM\b88793\b88793\b88793.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1-M13-RTM\b91248\b91248\b91248.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1.2-Beta1\b102637\b102637\b102637.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1.2-M01\b03689\b03689\b03689.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1.2-M01\b07493\b07493\b07493.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1.2-M01\b08046\b08046\b08046.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1.2-M02\b20785\b20785\b20785.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V2.0-Beta2\b409748\b409748\b409748.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V2.0-Beta2\b427411\Desktop\b427411\b427411.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\Dev11\dev10_865840\dev10_865840\dev10_865840.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\VS-ia64-JIT\V1.2-Beta1\b302509\b302509\b302509.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\VS-ia64-JIT\V1.2-M01\b15632\b15632\b15632.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\VS-ia64-JIT\V1.2-M02\b12011\b12011\b12011.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\VS-ia64-JIT\V2.0-Beta2\b410474\b410474\b410474.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\VS-ia64-JIT\V2.0-RTM\b286991\b286991\b286991.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\clr-x64-JIT\v2.1\b173569\b173569\b173569.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\clr-x64-JIT\v4.0\devdiv374539\DevDiv_374539\DevDiv_374539.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\gc\misc\funclet\funclet.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\localloc\verify\verify01_dynamic\verify01_dynamic.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\localloc\verify\verify01_large\verify01_large.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\localloc\verify\verify01_small\verify01_small.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\mcc\interop\mcc_i00\mcc_i00.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\mcc\interop\mcc_i01\mcc_i01.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\mcc\interop\mcc_i02\mcc_i02.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\mcc\interop\mcc_i03\mcc_i03.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\mcc\interop\mcc_i04\mcc_i04.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\mcc\interop\mcc_i05\mcc_i05.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\mcc\interop\mcc_i06\mcc_i06.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\mcc\interop\mcc_i07\mcc_i07.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\mcc\interop\mcc_i10\mcc_i10.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\mcc\interop\mcc_i11\mcc_i11.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\mcc\interop\mcc_i12\mcc_i12.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\mcc\interop\mcc_i13\mcc_i13.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\mcc\interop\mcc_i14\mcc_i14.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\mcc\interop\mcc_i15\mcc_i15.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\mcc\interop\mcc_i16\mcc_i16.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\mcc\interop\mcc_i17\mcc_i17.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\mcc\interop\mcc_i30\mcc_i30.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\mcc\interop\mcc_i31\mcc_i31.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\mcc\interop\mcc_i32\mcc_i32.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\mcc\interop\mcc_i33\mcc_i33.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\mcc\interop\mcc_i34\mcc_i34.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\mcc\interop\mcc_i35\mcc_i35.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\mcc\interop\mcc_i36\mcc_i36.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\mcc\interop\mcc_i37\mcc_i37.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\mcc\interop\mcc_i50\mcc_i50.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\mcc\interop\mcc_i51\mcc_i51.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\mcc\interop\mcc_i52\mcc_i52.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\mcc\interop\mcc_i53\mcc_i53.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\mcc\interop\mcc_i54\mcc_i54.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\mcc\interop\mcc_i55\mcc_i55.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\mcc\interop\mcc_i56\mcc_i56.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\mcc\interop\mcc_i57\mcc_i57.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\mcc\interop\mcc_i60\mcc_i60.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\mcc\interop\mcc_i61\mcc_i61.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\mcc\interop\mcc_i62\mcc_i62.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\mcc\interop\mcc_i63\mcc_i63.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\mcc\interop\mcc_i64\mcc_i64.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\mcc\interop\mcc_i65\mcc_i65.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\mcc\interop\mcc_i66\mcc_i66.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\mcc\interop\mcc_i67\mcc_i67.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\mcc\interop\mcc_i70\mcc_i70.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\mcc\interop\mcc_i71\mcc_i71.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\mcc\interop\mcc_i72\mcc_i72.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\mcc\interop\mcc_i73\mcc_i73.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\mcc\interop\mcc_i74\mcc_i74.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\mcc\interop\mcc_i75\mcc_i75.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\mcc\interop\mcc_i76\mcc_i76.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\mcc\interop\mcc_i77\mcc_i77.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\mcc\interop\mcc_i80\mcc_i80.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\mcc\interop\mcc_i81\mcc_i81.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\mcc\interop\mcc_i82\mcc_i82.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\mcc\interop\mcc_i83\mcc_i83.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\mcc\interop\mcc_i84\mcc_i84.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\mcc\interop\mcc_i85\mcc_i85.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\mcc\interop\mcc_i86\mcc_i86.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\mcc\interop\mcc_i87\mcc_i87.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\regress\ndpw\21220\b21220\b21220.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\regress\vsw\286991\test\test.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\opt\Inline\tests\security\security.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\opt\Inline\tests\xmodb\xmodb.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\opt\Tailcall\TailcallVerifyWithPrefix\TailcallVerifyWithPrefix.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\opt\perf\doublealign\Locals\Locals.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\Loader\NativeLibs\FromNativePaths\FromNativePaths.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\TypeGeneratorTests\TypeGeneratorTest612\Generated612\Generated612.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\TypeGeneratorTests\TypeGeneratorTest613\Generated613\Generated613.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\TypeGeneratorTests\TypeGeneratorTest614\Generated614\Generated614.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\TypeGeneratorTests\TypeGeneratorTest681\Generated681\Generated681.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\TypeGeneratorTests\TypeGeneratorTest682\Generated682\Generated682.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\TypeGeneratorTests\TypeGeneratorTest683\Generated683\Generated683.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\Regressions\coreclr\0584\Test584\Test584.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\exceptions\regressions\Dev11\147911\test147911\test147911.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\exceptions\regressions\V1\SEH\VJ\UnmanagedToManaged\UnmanagedToManaged.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\commitstackonlyasneeded\DefaultStackCommit\DefaultStackCommit.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\interlocked\compareexchange\compareexchangetneg\compareexchangetneg.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\monitor\pulse\monitorpulse02\monitorpulse02.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\monitor\tryenter\negativetestharness\negativetestharness.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\mutex\abandonedmutex\am04waitany\am04waitany.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\mutex\abandonedmutex\am05waitanymutex\am05waitanymutex.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\mutex\abandonedmutex\am06abandonall\am06abandonall.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\mutex\abandonedmutex\am07abandonmultiplemutex\am07abandonmultiplemutex.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\mutex\abandonedmutex\am08mixedarray\am08mixedarray.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\mutex\abandonedmutex\am09threadabort\am09threadabort.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\mutex\openexisting\openmutexneg1\openmutexneg1.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\mutex\openexisting\openmutexneg2\openmutexneg2.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\mutex\openexisting\openmutexneg3\openmutexneg3.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\mutex\openexisting\openmutexneg4\openmutexneg4.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\mutex\openexisting\openmutexneg5\openmutexneg5.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\mutex\openexisting\openmutexneg6\openmutexneg6.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\mutex\openexisting\openmutexneg7\openmutexneg7.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\mutex\openexisting\openmutexneg8\openmutexneg8.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\mutex\openexisting\openmutexpos1\openmutexpos1.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\mutex\openexisting\openmutexpos2\openmutexpos2.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\mutex\openexisting\openmutexpos3\openmutexpos3.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\mutex\openexisting\openmutexpos4\openmutexpos4.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\paramthreadstart\ThreadStartString_1\ThreadStartString_1.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\readerwriterlockslim\ensurelockordering\ensurelockordering.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\regressions\135972\oswaitinlock\oswaitinlock.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\regressions\135972\oswaitinsleep\oswaitinsleep.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\regressions\beta1\322338\322338.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\regressions\beta2\417296_abort\417296_abort.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\regressions\m2\91848\91848.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\regressions\m2\tastaticconst\tastaticconst.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\regressions\whidbey_m3\105019\105019.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\semaphore\ctoropen\semaphorector2\semaphorector2.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\semaphore\ctoropen\semaphorector3\semaphorector3.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\semaphore\ctoropen\semaphorector4\semaphorector4.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\semaphore\ctoropen\semaphorector5\semaphorector5.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\semaphore\ctoropen\semaphoreopenneg1\semaphoreopenneg1.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\semaphore\ctoropen\semaphoreopenneg2\semaphoreopenneg2.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\semaphore\ctoropen\semaphoreopenneg3\semaphoreopenneg3.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\semaphore\ctoropen\semaphoreopenneg4\semaphoreopenneg4.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\semaphore\ctoropen\semaphoreopenneg5\semaphoreopenneg5.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\semaphore\ctoropen\semaphoreopenneg6\semaphoreopenneg6.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\semaphore\ctoropen\semaphoreopenneg7\semaphoreopenneg7.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\semaphore\unit\semtest\semtest.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\threadabort\exceptioninfinally\argumentexception\argumentexception.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\threadabort\exceptioninfinally\dividebyzero\dividebyzero.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\threadabort\exceptioninfinally\nullrefexception\nullrefexception.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\threadabort\rudeposnonhosted\rudenonhostedone\rudenonhostedone.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\threadabort\rudeposnonhosted\rudenonhostedthree\rudenonhostedthree.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\threadabort\rudeposnonhosted\rudenonhostedtwo\rudenonhostedtwo.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\threadabort\rudethreadpool\rudeabortrepeat\rudeabortrepeat.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\threadabort\tasuite\ta001a\ta001a.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\threadabort\tasuite\ta001b\ta001b.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\threadabort\tasuite\ta002a\ta002a.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\threadabort\tasuite\ta002b\ta002b.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\threadabort\tasuite\ta003a\ta003a.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\threadabort\tasuite\ta003b\ta003b.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\threadabort\tasuite\ta004a\ta004a.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\threadabort\tasuite\ta004b\ta004b.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\threadabort\tasuite\ta005a\ta005a.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\threadabort\tasuite\ta005b\ta005b.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\threadabort\tasuite\ta006a\ta006a.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\threadabort\tasuite\ta007a\ta007a.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\threadabort\tasuite\ta007b\ta007b.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\threadabort\tasuite\ta008a\ta008a.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\threadabort\tasuite\ta009a\ta009a.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\threadabort\tasuite\ta010a\ta010a.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\threadabort\tasuite\ta011a\ta011a.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\threadabort\tasuite\ta012a\ta012a.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\threadabort\tasuite\ta012b\ta012b.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\threadabort\tasuite\ta013a\ta013a.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\threadabort\tasuite\ta014a\ta014a.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\threadabort\tasuite\ta015a\ta015a.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\threadabort\tasuite\ta016a\ta016a.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\threadabort\tasuite\ta017a\ta017a.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\threadabort\tasuite\ta017b\ta017b.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\threadabort\tasuite\ta018a\ta018a.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\threadabort\tasuite\ta019a\ta019a.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\threadabort\tasuite\ta020a\ta020a.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\threadabort\tasuite\threadabort\threadabort.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\threadabort\tasuite\threadstarttwice\threadstarttwice.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\threadpool\bindhandle\bindhandle1\bindhandle1.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\threadpool\bindhandle\bindhandleinvalid3\bindhandleinvalid3.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\threadpool\bindhandle\bindhandleinvalid4\bindhandleinvalid4.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\threadpool\bindhandle\bindhandleinvalid5\bindhandleinvalid5.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\threadpool\bindhandle\bindhandleinvalid6\bindhandleinvalid6.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\threadpool\bindhandle\bindhandleinvalid\bindhandleinvalid.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\volatile\atomictest\atomictest.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\waithandle\abandonedmutexscenarios\threadabort\threadabort.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\waithandle\waitall\waitallex10\waitallex10.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\waithandle\waitall\waitallex11\waitallex11.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\waithandle\waitall\waitallex1\waitallex1.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\waithandle\waitall\waitallex2\waitallex2.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\waithandle\waitall\waitallex3\waitallex3.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\waithandle\waitall\waitallex4\waitallex4.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\waithandle\waitall\waitallex5\waitallex5.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\waithandle\waitall\waitallex6\waitallex6.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\waithandle\waitall\waitallex7\waitallex7.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\waithandle\waitall\waitallex8\waitallex8.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\waithandle\waitall\waitallex8a\waitallex8a.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\waithandle\waitall\waitallex9\waitallex9.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\waithandle\waitany\waitanyex10\waitanyex10.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\waithandle\waitany\waitanyex1\waitanyex1.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\waithandle\waitany\waitanyex2\waitanyex2.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\waithandle\waitany\waitanyex3\waitanyex3.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\waithandle\waitany\waitanyex4\waitanyex4.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\waithandle\waitany\waitanyex5\waitanyex5.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\waithandle\waitany\waitanyex6\waitanyex6.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\waithandle\waitany\waitanyex7\waitanyex7.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\waithandle\waitany\waitanyex8\waitanyex8.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\waithandle\waitany\waitanyex8a\waitanyex8a.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\waithandle\waitany\waitanyex9\waitanyex9.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\waithandle\waitone\waitoneex1\waitoneex1.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\waithandle\waitone\waitoneex2\waitoneex2.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\waithandle\waitone\waitoneex3\waitoneex3.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\waithandle\waitone\waitoneex4\waitoneex4.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\managed\Compilation\Compilation\Compilation.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+    </ItemGroup>
+    
 </Project>
