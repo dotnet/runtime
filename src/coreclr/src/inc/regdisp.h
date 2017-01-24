@@ -54,7 +54,7 @@ struct REGDISPLAY {
     DWORD * pEax;
 
     DWORD * pEbp;
-    DWORD   Esp;                // (Esp) Stack Pointer
+    DWORD   SP;                // Stack Pointer
     PCODE   ControlPC;
     TADDR   PCTAddr;
 
@@ -63,13 +63,13 @@ struct REGDISPLAY {
 inline TADDR GetRegdisplaySP(REGDISPLAY *display) {
     LIMITED_METHOD_DAC_CONTRACT;
 
-    return (TADDR)display->Esp;
+    return (TADDR)display->SP;
 }
 
 inline void SetRegdisplaySP(REGDISPLAY *display, LPVOID sp ) {
     LIMITED_METHOD_DAC_CONTRACT;
 
-    (display->Esp) = (DWORD)(size_t)sp;
+    (display->SP) = (DWORD)(size_t)sp;
 }
 
 inline TADDR GetRegdisplayFP(REGDISPLAY *display) {
@@ -379,7 +379,7 @@ inline void SyncRegDisplayToCurrentContext(REGDISPLAY* pRD)
     pRD->SP         = (DWORD)GetSP(pRD->pCurrentContext);
     pRD->ControlPC  = (DWORD)GetIP(pRD->pCurrentContext);
 #elif defined(_TARGET_X86_) // _TARGET_ARM_
-    pRD->Esp        = (DWORD)GetSP(pRD->pCurrentContext);
+    pRD->SP         = (DWORD)GetSP(pRD->pCurrentContext);
     pRD->ControlPC  = (DWORD)GetIP(pRD->pCurrentContext);
 #else // _TARGET_X86_
     PORTABILITY_ASSERT("SyncRegDisplayToCurrentContext");
@@ -407,7 +407,7 @@ inline void FillRegDisplay(const PREGDISPLAY pRD, PT_CONTEXT pctx, PT_CONTEXT pC
     pRD->pEax = &(pctx->Eax);
     pRD->pEcx = &(pctx->Ecx);
     pRD->pEdx = &(pctx->Edx);
-    pRD->Esp  = pctx->Esp;
+    pRD->SP   = pctx->Esp;
     pRD->ControlPC = (PCODE)(pctx->Eip);
     pRD->PCTAddr = (UINT_PTR)&(pctx->Eip);
 #else // _TARGET_X86_
@@ -499,7 +499,7 @@ inline void CopyRegDisplay(const PREGDISPLAY pInRD, PREGDISPLAY pOutRD, T_CONTEX
     if (pInRD->pEax != NULL) {pOutCtx->Eax = *pInRD->pEax;} else {pInRD->pEax = NULL;}
     if (pInRD->pEcx != NULL) {pOutCtx->Ecx = *pInRD->pEcx;} else {pInRD->pEcx = NULL;}
     if (pInRD->pEdx != NULL) {pOutCtx->Edx = *pInRD->pEdx;} else {pInRD->pEdx = NULL;}
-    pOutCtx->Esp = pInRD->Esp;
+    pOutCtx->Esp = pInRD->SP;
     pOutCtx->Eip = pInRD->ControlPC;
 #else // _TARGET_X86_
     PORTABILITY_ASSERT("CopyRegDisplay");
@@ -591,7 +591,7 @@ inline void UpdateContextFromRegDisp(PREGDISPLAY pRegDisp, PT_CONTEXT pContext)
     pContext->Eax = *pRegDisp->pEax;
     pContext->Ecx = *pRegDisp->pEcx;
     pContext->Edx = *pRegDisp->pEdx;
-    pContext->Esp = pRegDisp->Esp;
+    pContext->Esp = pRegDisp->SP;
     pContext->Eip = pRegDisp->ControlPC;
 #else // _TARGET_X86_
     PORTABILITY_ASSERT("UpdateContextFromRegDisp");

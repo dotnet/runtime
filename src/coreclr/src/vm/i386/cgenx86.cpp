@@ -213,7 +213,7 @@ void EHContext::Setup(PCODE resumePC, PREGDISPLAY regs)
     LIMITED_METHOD_DAC_CONTRACT;
 
     // EAX ECX EDX are scratch
-    this->Esp  = regs->Esp;
+    this->Esp  = regs->SP;
     this->Ebx = *regs->pEbx;
     this->Esi = *regs->pEsi;
     this->Edi = *regs->pEdi;
@@ -275,7 +275,7 @@ void TransitionFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
     _ASSERTE(pFunc != NULL);
     UpdateRegDisplayHelper(pRD, pFunc->CbStackPop());
 
-    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    TransitionFrame::UpdateRegDisplay(ip:%p, sp:%p)\n", pRD->ControlPC, pRD->Esp));
+    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    TransitionFrame::UpdateRegDisplay(ip:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
 
     RETURN;
 }
@@ -326,7 +326,7 @@ void TransitionFrame::UpdateRegDisplayHelper(const PREGDISPLAY pRD, UINT cbStack
 #else // WIN64EXCEPTIONS
 
     pRD->ControlPC = *PTR_PCODE(pRD->PCTAddr);
-    pRD->Esp  = (DWORD)(pRD->PCTAddr + sizeof(TADDR) + cbStackPop);
+    pRD->SP  = (DWORD)(pRD->PCTAddr + sizeof(TADDR) + cbStackPop);
 
 #endif // WIN64EXCEPTIONS
 
@@ -368,7 +368,7 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
         InsureInit(false, &unwindState);
         pRD->PCTAddr = dac_cast<TADDR>(unwindState.pRetAddr());
         pRD->ControlPC = unwindState.GetRetAddr();
-        pRD->Esp = unwindState._esp;
+        pRD->SP = unwindState._esp;
 
         // Get some special host instance memory
         // so we have a place to point to.
@@ -409,7 +409,7 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
     pRD->pEbp = (DWORD*) m_MachState.pEbp();
     pRD->PCTAddr = dac_cast<TADDR>(m_MachState.pRetAddr());
     pRD->ControlPC = m_MachState.GetRetAddr();
-    pRD->Esp  = (DWORD) m_MachState.esp();
+    pRD->SP  = (DWORD) m_MachState.esp();
 
 #ifdef WIN64EXCEPTIONS
     pRD->IsCallerContextValid = FALSE;
@@ -419,7 +419,7 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
     // Copy the saved state from the frame to the current context.
     //
     pRD->pCurrentContext->Eip = pRD->ControlPC;
-    pRD->pCurrentContext->Esp = pRD->Esp;
+    pRD->pCurrentContext->Esp = pRD->SP;
 
 #define CALLEE_SAVED_REGISTER(regname) pRD->pCurrentContext->regname = *pRD->p##regname;
     ENUM_CALLEE_SAVED_REGISTERS();
@@ -569,7 +569,7 @@ void FaultingExceptionFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
 #define CALLEE_SAVED_REGISTER(regname) pRD->p##regname = (DWORD*) &regs->regname;
     ENUM_CALLEE_SAVED_REGISTERS();
 #undef CALLEE_SAVED_REGISTER
-    pRD->Esp = m_Esp;
+    pRD->SP = m_Esp;
     pRD->PCTAddr = GetReturnAddressPtr();
     pRD->ControlPC = *PTR_PCODE(pRD->PCTAddr);
 
@@ -588,13 +588,13 @@ void FaultingExceptionFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
     ENUM_CALLEE_SAVED_REGISTERS();
 #undef CALLEE_SAVED_REGISTER
 
-    pRD->Esp = m_ctx.Esp;
+    pRD->SP = m_ctx.Esp;
     pRD->PCTAddr = GetReturnAddressPtr();
     pRD->ControlPC = m_ctx.Eip;
 
 #endif // WIN64EXCEPTIONS
 
-    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    FaultingExceptionFrame::UpdateRegDisplay(ip:%p, sp:%p)\n", pRD->ControlPC, pRD->Esp));
+    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    FaultingExceptionFrame::UpdateRegDisplay(ip:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
 
     RETURN;
 }
@@ -650,14 +650,14 @@ void InlinedCallFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
     pRD->ControlPC = *PTR_PCODE(pRD->PCTAddr);
 
     /* Now we need to pop off the outgoing arguments */
-    pRD->Esp  = (DWORD) dac_cast<TADDR>(m_pCallSiteSP) + stackArgSize;
+    pRD->SP  = (DWORD) dac_cast<TADDR>(m_pCallSiteSP) + stackArgSize;
 
 #ifdef WIN64EXCEPTIONS
     pRD->IsCallerContextValid = FALSE;
     pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
 
     pRD->pCurrentContext->Eip = pRD->ControlPC;
-    pRD->pCurrentContext->Esp = pRD->Esp;
+    pRD->pCurrentContext->Esp = pRD->SP;
     pRD->pCurrentContext->Ebp = *pRD->pEbp;
 
 #define CALLEE_SAVED_REGISTER(regname) pRD->pCurrentContextPointers->regname = NULL;
@@ -669,7 +669,7 @@ void InlinedCallFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
     SyncRegDisplayToCurrentContext(pRD);
 #endif
 
-    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    InlinedCallFrame::UpdateRegDisplay(ip:%p, sp:%p)\n", pRD->ControlPC, pRD->Esp));
+    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    InlinedCallFrame::UpdateRegDisplay(ip:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
 
     RETURN;
 }
@@ -735,7 +735,7 @@ void ResumableFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
     pRD->ControlPC = pUnwoundContext->Eip;
     pRD->PCTAddr = dac_cast<TADDR>(m_Regs) + offsetof(CONTEXT, Eip);
 
-    pRD->Esp  = m_Regs->Esp;
+    pRD->SP  = m_Regs->Esp;
 
     RETURN;
 }
@@ -764,7 +764,7 @@ void HijackFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
     pRD->pEbp = &m_Args->Ebp;
     pRD->PCTAddr = dac_cast<TADDR>(m_Args) + offsetof(HijackArgs, Eip);
     pRD->ControlPC = *PTR_PCODE(pRD->PCTAddr);
-    pRD->Esp  = (DWORD)(pRD->PCTAddr + sizeof(TADDR));
+    pRD->SP  = (DWORD)(pRD->PCTAddr + sizeof(TADDR));
 }
 
 #endif  // FEATURE_HIJACK
@@ -808,7 +808,7 @@ void TailCallFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
 
     pRD->PCTAddr = GetReturnAddressPtr();
     pRD->ControlPC = *PTR_PCODE(pRD->PCTAddr);
-    pRD->Esp  = (DWORD)(pRD->PCTAddr + sizeof(TADDR));
+    pRD->SP  = (DWORD)(pRD->PCTAddr + sizeof(TADDR));
 
     RETURN;
 }

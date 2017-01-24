@@ -242,7 +242,7 @@ inline void FuncEvalFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
     pRD->pEcx = &(pDE->m_context.Ecx);
     pRD->pEax = &(pDE->m_context.Eax);
     pRD->pEbp = &(pDE->m_context.Ebp);
-    pRD->Esp  = (DWORD)GetSP(&pDE->m_context);
+    pRD->SP   = (DWORD)GetSP(&pDE->m_context);
     pRD->PCTAddr = GetReturnAddressPtr();
     pRD->ControlPC = *PTR_PCODE(pRD->PCTAddr);
 
