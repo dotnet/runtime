@@ -5,8 +5,4 @@
     <AssemblyVersion>4.1.2.0</AssemblyVersion>
     <IsNETCoreApp>true</IsNETCoreApp>
   </PropertyGroup>
-  <ItemGroup>
-    <!-- Temporarily suppress the message until we get a nuget version that knows about the mapping between netstandard1.7 and uap10.1 -->
-    <SuppressPackageTargetFrameworkCompatibility Include="uap10.1" />
-  </ItemGroup>
 </Project>

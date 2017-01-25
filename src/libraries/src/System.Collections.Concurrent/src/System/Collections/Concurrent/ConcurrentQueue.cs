@@ -822,6 +822,26 @@ namespace System.Collections.Concurrent
         }
 
         /// <summary>
+        /// Removes all objects from the <see cref="ConcurrentQueue{T}"/>.
+        /// </summary>
+        public void Clear()
+        {
+            lock (_crossSegmentLock)
+            {
+                // Simply substitute a new segment for the existing head/tail,
+                // as is done in the constructor.  Operations currently in flight
+                // may still read from or write to an existing segment that's
+                // getting dropped, meaning that in flight operations may not be
+                // linear with regards to this clear operation.  To help mitigate
+                // in-flight operations enqueuing onto the tail that's about to
+                // be dropped, we first freeze it; that'll force enqueuers to take
+                // this lock to synchronize and see the new tail.
+                _tail.EnsureFrozenForEnqueues();
+                _tail = _head = new Segment(InitialSegmentLength);
+            }
+        }
+
+        /// <summary>
         /// Provides a multi-producer, multi-consumer thread-safe bounded segment.  When the queue is full,
         /// enqueues fail and return false.  When the queue is empty, dequeues fail and return null.
         /// These segments are linked together to form the unbounded <see cref="ConcurrentQueue{T}"/>. 

@@ -39,7 +39,7 @@ namespace System.Security.Cryptography.Xml
             set
             {
                 if (value <= 0)
-                    throw new ArgumentOutOfRangeException(SecurityResources.GetResourceString("Cryptography_Xml_InvalidKeySize"));
+                    throw new ArgumentOutOfRangeException(SR.Cryptography_Xml_InvalidKeySize);
                 _keySize = value;
                 _cachedXml = null;
             }
@@ -83,7 +83,7 @@ namespace System.Security.Cryptography.Xml
         public void LoadXml(XmlElement value)
         {
             if (value == null)
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
 
             XmlNamespaceManager nsm = new XmlNamespaceManager(value.OwnerDocument.NameTable);
             nsm.AddNamespace("enc", EncryptedXml.XmlEncNamespaceUrl);

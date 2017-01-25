@@ -165,6 +165,10 @@ namespace System.Drawing.PrimitivesTests
             Assert.False(p1.Equals(p2));
             Assert.False(p2.Equals(p3));
 
+            Assert.True(p1.Equals((object)p3));
+            Assert.False(p1.Equals((object)p2));
+            Assert.False(p2.Equals((object)p3));
+
             Assert.Equal(p1.GetHashCode(), p3.GetHashCode());
         }
 

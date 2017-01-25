@@ -2,8 +2,8 @@
 <Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
   <!-- Adds test references to the targeting pack and runtime assemblies. -->
-  <Target Name="AddTestTargetingPackReferences" BeforeTargets="ResolveAssemblyReferences" Condition="'$(IsTestProject)' == 'true'">
-    <ItemGroup>
+  <Target Name="AddTestTargetingPackReferences" BeforeTargets="ResolveAssemblyReferences">
+    <ItemGroup Condition="'$(IsTestProject)'=='true'">
       <TargetingPackExclusions Include="System.Private.CoreLib" />
       <TargetingPackExclusions Include="System.Runtime.WindowsRuntime.UI.Xaml" /> <!-- Harmless, but causes PRI targets to run -->
 
@@ -13,11 +13,14 @@
       <ReferenceFromRuntime Include="xunit.assert" />
       <ReferenceFromRuntime Include="xunit.abstractions" />
       <ReferenceFromRuntime Include="xunit.performance.core" />
-      <ReferenceFromRuntime Include="xunit.execution.dotnet" />
+      <ReferenceFromRuntime Include="xunit.execution.dotnet" Condition="'$(_bc_TargetGroup)'!='netfx'"/>
       <ReferenceFromRuntime Include="Newtonsoft.Json" Condition="'$(SkipIncludeNewtonsoftJson)'!='true'" />
 
       <!-- Add Reference's to all files in the targeting pack folder, and to whitelisted items from the group above in the runtime folder. -->
       <TargetingPackItems Include="%(TargetingPackDirs.Identity)/*" Condition="'$(NoTargetingPackReferences)' != 'true'" />
+    </ItemGroup>
+
+    <ItemGroup>
       <Reference Include="%(TargetingPackItems.Filename)" Exclude="@(TargetingPackExclusions)"> <!-- TODO: System.Private.CoreLib shouldn't even be in the targeting pack. -->
         <Private>false</Private>
       </Reference>

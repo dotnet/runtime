@@ -34,7 +34,7 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         /////////////////////////////////////////////////////////////////////////////////
 
-        private sealed class NameHashKey
+        private sealed class NameHashKey : IEquatable<NameHashKey>
         {
             internal readonly Type type;
             internal readonly string name;
@@ -45,11 +45,9 @@ namespace Microsoft.CSharp.RuntimeBinder
                 this.name = name;
             }
 
-            public override bool Equals(object obj)
-            {
-                NameHashKey h = obj as NameHashKey;
-                return h != null && type.Equals(h.type) && name.Equals(h.name);
-            }
+            public bool Equals(NameHashKey other) => other != null && type.Equals(other.type) && name.Equals(other.name);
+
+            public override bool Equals(object obj) => Equals(obj as NameHashKey);
 
             public override int GetHashCode()
             {

@@ -249,7 +249,7 @@
           "description": "Builds the tests that are in the repository, doesn't restore packages.",
           "settings": {
             "RestoreDuringBuild": "false",
-            "Project": "tests.builds",
+            "Project": "src/tests.builds",
             "MsBuildLogging":"/flp:v=normal;LogFile=build-tests.log"
           }
         },
@@ -500,6 +500,12 @@
           "description": "To download a specific group of product packages, specify build number. The value for -BuildMajor required.",
           "settings": {
             "BuildNumberMinor": "default"
+          }
+        },
+        "portableLinux":{
+          "description": "Download packages that are portable over glibc based Linux distros.",
+          "settings": {
+            "RuntimeOS":"linux"
           }
         },
         "verbose": {

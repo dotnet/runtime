@@ -16,6 +16,34 @@ namespace System.Net.WebSockets
         private const int InvalidCloseStatusCodesTo = 999;
         private const string Separators = "()<>@,;:\\\"/[]?={} ";
 
+        internal static void ThrowIfInvalidState(WebSocketState currentState, bool isDisposed, WebSocketState[] validStates)
+        {
+            string validStatesText = string.Empty;
+
+            if (validStates != null && validStates.Length > 0)
+            {
+                foreach (WebSocketState validState in validStates)
+                {
+                    if (currentState == validState)
+                    {
+                        // Ordering is important to maintain .NET 4.5 WebSocket implementation exception behavior.
+                        if (isDisposed)
+                        {
+                            throw new ObjectDisposedException(nameof(ClientWebSocket));
+                        }
+
+                        return;
+                    }
+                }
+
+                validStatesText = string.Join(", ", validStates);
+            }
+
+            throw new WebSocketException(
+                WebSocketError.InvalidState,
+                SR.Format(SR.net_WebSockets_InvalidState, currentState, validStatesText));
+        }
+
         internal static void ValidateSubprotocol(string subProtocol)
         {
             if (string.IsNullOrWhiteSpace(subProtocol))
@@ -98,6 +126,24 @@ namespace System.Net.WebSockets
             if (arraySegment.Array == null)
             {
                 throw new ArgumentNullException(parameterName + ".Array");
+            }
+        }
+
+        internal static void ValidateBuffer(byte[] buffer, int offset, int count)
+        {
+            if (buffer == null)
+            {
+                throw new ArgumentNullException(nameof(buffer));
+            }
+
+            if (offset < 0 || offset > buffer.Length)
+            {
+                throw new ArgumentOutOfRangeException(nameof(offset));
+            }
+
+            if (count < 0 || count > (buffer.Length - offset))
+            {
+                throw new ArgumentOutOfRangeException(nameof(count));
             }
         }
     }

@@ -31,7 +31,7 @@ namespace System.Security.Cryptography.Xml
         int IList.Add(object value)
         {
             if (!(value is EncryptionProperty))
-                throw new ArgumentException(SecurityResources.GetResourceString("Cryptography_Xml_IncorrectObjectType"), "value");
+                throw new ArgumentException(SR.Cryptography_Xml_IncorrectObjectType, nameof(value));
 
             return _props.Add(value);
         }
@@ -50,7 +50,7 @@ namespace System.Security.Cryptography.Xml
         bool IList.Contains(object value)
         {
             if (!(value is EncryptionProperty))
-                throw new ArgumentException(SecurityResources.GetResourceString("Cryptography_Xml_IncorrectObjectType"), "value");
+                throw new ArgumentException(SR.Cryptography_Xml_IncorrectObjectType, nameof(value));
 
             return _props.Contains(value);
         }
@@ -64,7 +64,7 @@ namespace System.Security.Cryptography.Xml
         int IList.IndexOf(object value)
         {
             if (!(value is EncryptionProperty))
-                throw new ArgumentException(SecurityResources.GetResourceString("Cryptography_Xml_IncorrectObjectType"), "value");
+                throw new ArgumentException(SR.Cryptography_Xml_IncorrectObjectType, nameof(value));
 
             return _props.IndexOf(value);
         }
@@ -78,7 +78,7 @@ namespace System.Security.Cryptography.Xml
         void IList.Insert(int index, object value)
         {
             if (!(value is EncryptionProperty))
-                throw new ArgumentException(SecurityResources.GetResourceString("Cryptography_Xml_IncorrectObjectType"), "value");
+                throw new ArgumentException(SR.Cryptography_Xml_IncorrectObjectType, nameof(value));
 
             _props.Insert(index, value);
         }
@@ -92,7 +92,7 @@ namespace System.Security.Cryptography.Xml
         void IList.Remove(object value)
         {
             if (!(value is EncryptionProperty))
-                throw new ArgumentException(SecurityResources.GetResourceString("Cryptography_Xml_IncorrectObjectType"), "value");
+                throw new ArgumentException(SR.Cryptography_Xml_IncorrectObjectType, nameof(value));
 
             _props.Remove(value);
         }
@@ -142,7 +142,7 @@ namespace System.Security.Cryptography.Xml
             set
             {
                 if (!(value is EncryptionProperty))
-                    throw new ArgumentException(SecurityResources.GetResourceString("Cryptography_Xml_IncorrectObjectType"), "value");
+                    throw new ArgumentException(SR.Cryptography_Xml_IncorrectObjectType, nameof(value));
 
                 _props[index] = value;
             }

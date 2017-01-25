@@ -21,6 +21,14 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Fact]
+        public static void CheckCallFactoryOptimisedInstanceNullArgumentList()
+        {
+            var instance = Expression.Constant(new MS());
+            var expr = Expression.Call(instance, typeof(MS).GetMethod(nameof(MS.I0)), default(Expression[]));
+            AssertInstanceMethodCall(0, expr);
+        }
+
+        [Fact]
         public static void CheckCallFactoryOptimizationInstance2()
         {
             MethodCallExpression expr = Expression.Call(Expression.Parameter(typeof(MS)), typeof(MS).GetMethod("I2"), Expression.Constant(0), Expression.Constant(1));
@@ -93,6 +101,10 @@ namespace System.Linq.Expressions.Tests
         {
             AssertCallIsOptimizedStatic(arity);
         }
+
+        [Fact]
+        public static void CheckCallFactoryOptimisedStaticNullArgumentList() =>
+            AssertStaticMethodCall(0, Expression.Call(typeof(MS).GetMethod(nameof(MS.S0)), default(Expression[])));
 
         [Fact]
         public static void CheckCallFactoryOptimizationStatic1()

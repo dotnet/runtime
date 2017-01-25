@@ -30,15 +30,14 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-using System.Collections;
 using System.Collections.Specialized;
 using System.Globalization;
 using System.IO;
+using System.Net.WebSockets;
+using System.Security.Authentication.ExtendedProtection;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
-using System.Security.Authentication.ExtendedProtection;
 using System.Threading.Tasks;
-using System.Net;
 
 namespace System.Net
 {
@@ -240,7 +239,7 @@ namespace System.Net
             if (_version >= HttpVersion.Version11)
             {
                 string t_encoding = Headers["Transfer-Encoding"];
-                _is_chunked = (t_encoding != null && String.Compare(t_encoding, "chunked", StringComparison.OrdinalIgnoreCase) == 0);
+                _is_chunked = (t_encoding != null && string.Equals(t_encoding, "chunked", StringComparison.OrdinalIgnoreCase));
                 // 'identity' is not valid!
                 if (t_encoding != null && !_is_chunked)
                 {
@@ -251,8 +250,8 @@ namespace System.Net
 
             if (!_is_chunked && !_cl_set)
             {
-                if (String.Compare(_method, "POST", StringComparison.OrdinalIgnoreCase) == 0 ||
-                    String.Compare(_method, "PUT", StringComparison.OrdinalIgnoreCase) == 0)
+                if (string.Equals(_method, "POST", StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(_method, "PUT", StringComparison.OrdinalIgnoreCase))
                 {
                     _context.Connection.SendError(null, 411);
                     return;
@@ -414,7 +413,7 @@ namespace System.Net
                 }
             }
         }
-
+        
         public string[] AcceptTypes
         {
             get { return _accept_types; }
@@ -643,6 +642,34 @@ namespace System.Net
         {
             get
             {
+                if (string.IsNullOrEmpty(Headers[HttpKnownHeaderNames.Connection]) || string.IsNullOrEmpty(Headers[HttpKnownHeaderNames.Upgrade]))
+                {
+                    return false;
+                }
+
+                bool foundConnectionUpgradeHeader = false;
+                foreach (string connection in Headers.GetValues(HttpKnownHeaderNames.Connection))
+                {
+                    if (string.Equals(connection, HttpKnownHeaderNames.Upgrade, StringComparison.OrdinalIgnoreCase))
+                    {
+                        foundConnectionUpgradeHeader = true;
+                        break;
+                    }
+                }
+
+                if (!foundConnectionUpgradeHeader)
+                {
+                    return false;
+                }
+
+                foreach (string upgrade in Headers.GetValues(HttpKnownHeaderNames.Upgrade))
+                {
+                    if (string.Equals(upgrade, HttpWebSocket.WebSocketUpgradeToken, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return true;
+                    }
+                }
+
                 return false;
             }
         }

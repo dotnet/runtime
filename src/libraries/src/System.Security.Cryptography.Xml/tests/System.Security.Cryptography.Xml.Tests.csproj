@@ -9,7 +9,6 @@
     <OutputType>Library</OutputType>
     <AssemblyName>System.Security.Cryptography.Xml.Tests</AssemblyName>
     <RootNamespace>System.Security.Cryptography.Xml.Tests</RootNamespace>
-    <NugetTargetMoniker Condition="'$(TargetGroup)'==''">.NETStandard,Version=v1.7</NugetTargetMoniker>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\pkg\System.Security.Cryptography.Xml.pkgproj">

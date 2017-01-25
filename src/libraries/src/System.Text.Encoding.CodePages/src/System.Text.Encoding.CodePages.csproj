@@ -8,14 +8,6 @@
     <AssemblyName>System.Text.Encoding.CodePages</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
-    <PackageTargetFramework Include="netstandard2.0" />
-    <!-- need to support rid-less restore for packages.config -->
-    <PackageTargetFramework Include="net461">
-      <TargetRuntime>
-      </TargetRuntime>
-    </PackageTargetFramework>
-  </ItemGroup>
   <!-- Help VS understand available configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Unix-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Unix-Release|AnyCPU'" />

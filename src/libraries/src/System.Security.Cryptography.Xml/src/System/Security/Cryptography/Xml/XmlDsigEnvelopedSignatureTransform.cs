@@ -7,7 +7,6 @@ using System.Collections;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Security;
-using System.Security.Policy;
 using System.Text;
 using System.Xml;
 using System.Xml.XPath;
@@ -89,7 +88,7 @@ namespace System.Security.Cryptography.Xml
             doc.Load(xmlReader);
             _containingDocument = doc;
             if (_containingDocument == null)
-                throw new CryptographicException(SecurityResources.GetResourceString("Cryptography_Xml_EnvelopedSignatureRequiresContext"));
+                throw new CryptographicException(SR.Cryptography_Xml_EnvelopedSignatureRequiresContext);
             _nsm = new XmlNamespaceManager(_containingDocument.NameTable);
             _nsm.AddNamespace("dsig", SignedXml.XmlDsigNamespaceUrl);
         }
@@ -98,10 +97,10 @@ namespace System.Security.Cryptography.Xml
         {
             // Empty node list is not acceptable
             if (nodeList == null)
-                throw new ArgumentNullException("nodeList");
+                throw new ArgumentNullException(nameof(nodeList));
             _containingDocument = Utils.GetOwnerDocument(nodeList);
             if (_containingDocument == null)
-                throw new CryptographicException(SecurityResources.GetResourceString("Cryptography_Xml_EnvelopedSignatureRequiresContext"));
+                throw new CryptographicException(SR.Cryptography_Xml_EnvelopedSignatureRequiresContext);
 
             _nsm = new XmlNamespaceManager(_containingDocument.NameTable);
             _nsm.AddNamespace("dsig", SignedXml.XmlDsigNamespaceUrl);
@@ -111,7 +110,7 @@ namespace System.Security.Cryptography.Xml
         private void LoadXmlDocumentInput(XmlDocument doc)
         {
             if (doc == null)
-                throw new ArgumentNullException("doc");
+                throw new ArgumentNullException(nameof(doc));
             _containingDocument = doc;
             _nsm = new XmlNamespaceManager(_containingDocument.NameTable);
             _nsm.AddNamespace("dsig", SignedXml.XmlDsigNamespaceUrl);
@@ -120,7 +119,7 @@ namespace System.Security.Cryptography.Xml
         public override object GetOutput()
         {
             if (_containingDocument == null)
-                throw new CryptographicException(SecurityResources.GetResourceString("Cryptography_Xml_EnvelopedSignatureRequiresContext"));
+                throw new CryptographicException(SR.Cryptography_Xml_EnvelopedSignatureRequiresContext);
 
             // If we have received an XmlNodeList as input
             if (_inputNodeList != null)
@@ -187,12 +186,12 @@ namespace System.Security.Cryptography.Xml
             }
             else if (type == typeof(XmlDocument) || type.IsSubclassOf(typeof(XmlDocument)))
             {
-                if (_inputNodeList != null) throw new ArgumentException(SecurityResources.GetResourceString("Cryptography_Xml_TransformIncorrectInputType"), "type");
+                if (_inputNodeList != null) throw new ArgumentException(SR.Cryptography_Xml_TransformIncorrectInputType, nameof(type));
                 return (XmlDocument)GetOutput();
             }
             else
             {
-                throw new ArgumentException(SecurityResources.GetResourceString("Cryptography_Xml_TransformIncorrectInputType"), "type");
+                throw new ArgumentException(SR.Cryptography_Xml_TransformIncorrectInputType, nameof(type));
             }
         }
     }

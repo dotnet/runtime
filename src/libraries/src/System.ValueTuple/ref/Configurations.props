@@ -1,8 +1,9 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <BuildConfigurations>
       netcoreapp;
+      uap;
       netstandard1.0;
       <!-- portable_net40+sl4+win8+wp8-Windows_NT; Looks like our filtering mechanism doesn't understand this targetgroup. Do we even need it? -->
     </BuildConfigurations>

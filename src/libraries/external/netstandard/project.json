@@ -1,0 +1,9 @@
+﻿{
+  "frameworks": {
+    "netstandard2.0": {
+      "dependencies": {
+        "NETStandard.Library": "2.0.0-beta-24919-01"
+      }
+    }
+  }
+}

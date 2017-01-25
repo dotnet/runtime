@@ -13,7 +13,7 @@ namespace System.Drawing
     ///    </para>
     /// </summary>
     [Serializable]
-    public struct RectangleF
+    public struct RectangleF : IEquatable<RectangleF>
     {
         /// <summary>
         ///    Initializes a new instance of the <see cref='System.Drawing.RectangleF'/>
@@ -188,15 +188,9 @@ namespace System.Drawing
         ///    <see cref='System.Drawing.RectangleF'/>.
         ///    </para>
         /// </summary>
-        public override bool Equals(object obj)
-        {
-            if (!(obj is RectangleF))
-                return false;
+        public override bool Equals(object obj) => obj is RectangleF && Equals((RectangleF)obj);
 
-            RectangleF comp = (RectangleF)obj;
-
-            return (comp.X == X) && (comp.Y == Y) && (comp.Width == Width) && (comp.Height == Height);
-        }
+        public bool Equals(RectangleF other) => this == other;
 
         /// <summary>
         ///    <para>

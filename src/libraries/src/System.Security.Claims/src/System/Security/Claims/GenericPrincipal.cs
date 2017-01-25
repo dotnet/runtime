@@ -2,9 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
+using System.Runtime.Serialization;
 using System.Security.Claims;
 
 namespace System.Security.Principal
@@ -12,8 +12,8 @@ namespace System.Security.Principal
     [Serializable]
     public class GenericPrincipal : ClaimsPrincipal
     {
-        private IIdentity m_identity;
-        private string[] m_roles;
+        private readonly IIdentity m_identity;
+        private readonly string[] m_roles;
 
         public GenericPrincipal(IIdentity identity, string[] roles)
         {
@@ -24,11 +24,7 @@ namespace System.Security.Principal
             m_identity = identity;
             if (roles != null)
             {
-                m_roles = new string[roles.Length];
-                for (int i = 0; i < roles.Length; ++i)
-                {
-                    m_roles[i] = roles[i];
-                }
+                m_roles = (string[])roles.Clone();
             }
             else
             {
@@ -38,10 +34,53 @@ namespace System.Security.Principal
             AddIdentityWithRoles(m_identity, m_roles);
         }
 
+        [OnDeserialized]
+        private void OnDeserializedMethod(StreamingContext context)
+        {
+            // Here it the matrix of possible serializations
+            //
+            // Version From  |  Version To | ClaimsIdentities | Roles
+            // ============     ==========   ================   ========================================================
+            // 4.0               4.5         None               We always need to add a ClaimsIdentity, if Roles add them
+            //
+            // 4.5               4.5         Yes                There should be a ClaimsIdentity, DebugAssert if this is not the case
+            //                                                  If there are roles, attach them to the first ClaimsIdentity.
+            //                                                  If there is no non-null ClaimsIdentity, add one.  However, this is unusual and may be a 
+
+            ClaimsIdentity firstNonNullIdentity = null;
+            foreach (var identity in base.Identities)
+            {
+                if (identity != null)
+                {
+                    firstNonNullIdentity = identity;
+                    break;
+                }
+            }
+
+            if (m_roles != null && m_roles.Length > 0 && firstNonNullIdentity != null)
+            {
+                List<Claim> roleClaims = new List<Claim>(m_roles.Length);
+
+                foreach (string role in m_roles)
+                {
+                    if (!string.IsNullOrWhiteSpace(role))
+                    {
+                        roleClaims.Add(new Claim(firstNonNullIdentity.RoleClaimType, role, ClaimValueTypes.String, ClaimsIdentity.DefaultIssuer, ClaimsIdentity.DefaultIssuer, firstNonNullIdentity));
+                    }
+                }
+
+                firstNonNullIdentity.ExternalClaims.Add(roleClaims);
+            }
+            else if (firstNonNullIdentity == null)
+            {
+                AddIdentityWithRoles(m_identity, m_roles);
+            }
+        }
+
         /// <summary>
         /// helper method to add roles 
         /// </summary>
-        void AddIdentityWithRoles(IIdentity identity, string[] roles)
+        private void AddIdentityWithRoles(IIdentity identity, string[] roles)
         {
             ClaimsIdentity claimsIdentity = identity as ClaimsIdentity;
 
@@ -55,11 +94,10 @@ namespace System.Security.Principal
             }
 
             // Add 'roles' as external claims so they are not serialized
-            // TODO - brentsch, we should be able to replace GenericPrincipal and GenericIdentity with ClaimsPrincipal and ClaimsIdentity
-            // hence I am not too concerned about perf.
-            List<Claim> roleClaims = new List<Claim>();
             if (roles != null && roles.Length > 0)
             {
+                List<Claim> roleClaims = new List<Claim>(roles.Length);
+
                 foreach (string role in roles)
                 {
                     if (!string.IsNullOrWhiteSpace(role))
@@ -86,7 +124,7 @@ namespace System.Security.Principal
 
             for (int i = 0; i < m_roles.Length; ++i)
             {
-                if (m_roles[i] != null && String.Compare(m_roles[i], role, StringComparison.OrdinalIgnoreCase) == 0)
+                if (string.Equals(m_roles[i], role, StringComparison.OrdinalIgnoreCase))
                     return true;
             }
 
