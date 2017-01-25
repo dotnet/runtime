@@ -1793,46 +1793,36 @@ vell_icall_get_method_attributes (MonoMethod *method)
 }
 
 ICALL_EXPORT void
-ves_icall_get_method_info (MonoMethod *method, MonoMethodInfo *info)
+ves_icall_get_method_info (MonoMethod *method, MonoMethodInfo *info, MonoError *error)
 {
-	MonoError error;
-	MonoReflectionType *rt;
 	MonoDomain *domain = mono_domain_get ();
-	MonoMethodSignature* sig;
 
-	sig = mono_method_signature_checked (method, &error);
-	if (!mono_error_ok (&error)) {
-		mono_error_set_pending_exception (&error);
-		return;
-	}
+	MonoMethodSignature* sig = mono_method_signature_checked (method, error);
+	return_if_nok (error);
 
-	rt = mono_type_get_object_checked (domain, &method->klass->byval_arg, &error);
-	if (!mono_error_ok (&error)) {
-		mono_error_set_pending_exception (&error);
-		return;
-	}
+	MonoReflectionTypeHandle rt = mono_type_get_object_handle (domain, &method->klass->byval_arg, error);
+	return_if_nok (error);
 
-	MONO_STRUCT_SETREF (info, parent, rt);
+	MONO_STRUCT_SETREF (info, parent, MONO_HANDLE_RAW (rt));
 
-	rt = mono_type_get_object_checked (domain, sig->ret, &error);
-	if (!mono_error_ok (&error)) {
-		mono_error_set_pending_exception (&error);
-		return;
-	}
+	MONO_HANDLE_ASSIGN (rt, mono_type_get_object_handle (domain, sig->ret, error));
+	return_if_nok (error);
 
-	MONO_STRUCT_SETREF (info, ret, rt);
+	MONO_STRUCT_SETREF (info, ret, MONO_HANDLE_RAW (rt));
 
 	info->attrs = method->flags;
 	info->implattrs = method->iflags;
+	guint32 callconv;
 	if (sig->call_convention == MONO_CALL_DEFAULT)
-		info->callconv = sig->sentinelpos >= 0 ? 2 : 1;
+		callconv = sig->sentinelpos >= 0 ? 2 : 1;
 	else {
 		if (sig->call_convention == MONO_CALL_VARARG || sig->sentinelpos >= 0)
-			info->callconv = 2;
+			callconv = 2;
 		else
-			info->callconv = 1;
+			callconv = 1;
 	}
-	info->callconv |= (sig->hasthis << 5) | (sig->explicit_this << 6); 
+	callconv |= (sig->hasthis << 5) | (sig->explicit_this << 6);
+	info->callconv = callconv;
 }
 
 ICALL_EXPORT MonoArrayHandle
@@ -2173,60 +2163,63 @@ typedef enum {
 } PInfo;
 
 ICALL_EXPORT void
-ves_icall_MonoPropertyInfo_get_property_info (const MonoReflectionProperty *property, MonoPropertyInfo *info, PInfo req_info)
+ves_icall_MonoPropertyInfo_get_property_info (MonoReflectionPropertyHandle property, MonoPropertyInfo *info, PInfo req_info, MonoError *error)
 {
-	MonoError error;
-	MonoReflectionType *rt;
-	MonoReflectionMethod *rm;
-	MonoDomain *domain = mono_object_domain (property); 
-	const MonoProperty *pproperty = property->property;
+	mono_error_init (error);
+	MonoDomain *domain = MONO_HANDLE_DOMAIN (property); 
+	const MonoProperty *pproperty = MONO_HANDLE_GETVAL (property, property);
 
 	if ((req_info & PInfo_ReflectedType) != 0) {
-		rt = mono_type_get_object_checked (domain, &property->klass->byval_arg, &error);
-		if (mono_error_set_pending_exception (&error))
-			return;
+		MonoClass *klass = MONO_HANDLE_GETVAL (property, klass);
+		MonoReflectionTypeHandle rt = mono_type_get_object_handle (domain, &klass->byval_arg, error);
+		return_if_nok (error);
 
-		MONO_STRUCT_SETREF (info, parent, rt);
+		MONO_STRUCT_SETREF (info, parent, MONO_HANDLE_RAW (rt));
 	}
 	if ((req_info & PInfo_DeclaringType) != 0) {
-		rt = mono_type_get_object_checked (domain, &pproperty->parent->byval_arg, &error);
-		if (mono_error_set_pending_exception (&error))
-			return;
+		MonoReflectionTypeHandle rt = mono_type_get_object_handle (domain, &pproperty->parent->byval_arg, error);
+		return_if_nok (error);
 
-		MONO_STRUCT_SETREF (info, declaring_type, rt);
+		MONO_STRUCT_SETREF (info, declaring_type, MONO_HANDLE_RAW (rt));
 	}
 
-	if ((req_info & PInfo_Name) != 0)
-		MONO_STRUCT_SETREF (info, name, mono_string_new (domain, pproperty->name));
+	if ((req_info & PInfo_Name) != 0) {
+		MonoStringHandle name = mono_string_new_handle (domain, pproperty->name, error);
+		return_if_nok (error);
+
+		MONO_STRUCT_SETREF (info, name, MONO_HANDLE_RAW (name));
+	}
 
 	if ((req_info & PInfo_Attributes) != 0)
 		info->attrs = pproperty->attrs;
 
 	if ((req_info & PInfo_GetMethod) != 0) {
+		MonoClass *property_klass = MONO_HANDLE_GETVAL (property, klass);
+		MonoReflectionMethodHandle rm;
 		if (pproperty->get &&
 		    (((pproperty->get->flags & METHOD_ATTRIBUTE_MEMBER_ACCESS_MASK) != METHOD_ATTRIBUTE_PRIVATE) ||
-		     pproperty->get->klass == property->klass)) {
-			rm = mono_method_get_object_checked (domain, pproperty->get, property->klass, &error);
-			if (mono_error_set_pending_exception (&error))
-				return;
+		     pproperty->get->klass == property_klass)) {
+			rm = mono_method_get_object_handle (domain, pproperty->get, property_klass, error);
+			return_if_nok (error);
 		} else {
-			rm = NULL;
+			rm = MONO_HANDLE_NEW (MonoReflectionMethod, NULL);
 		}
 
-		MONO_STRUCT_SETREF (info, get, rm);
+		MONO_STRUCT_SETREF (info, get, MONO_HANDLE_RAW (rm));
 	}
 	if ((req_info & PInfo_SetMethod) != 0) {
+		MonoClass *property_klass = MONO_HANDLE_GETVAL (property, klass);
+		MonoReflectionMethodHandle rm;
 		if (pproperty->set &&
 		    (((pproperty->set->flags & METHOD_ATTRIBUTE_MEMBER_ACCESS_MASK) != METHOD_ATTRIBUTE_PRIVATE) ||
-		     pproperty->set->klass == property->klass)) {
-			rm =  mono_method_get_object_checked (domain, pproperty->set, property->klass, &error);
-			if (mono_error_set_pending_exception (&error))
-				return;
+		     pproperty->set->klass == property_klass)) {
+			rm =  mono_method_get_object_handle (domain, pproperty->set, property_klass, error);
+			return_if_nok (error);
 		} else {
-			rm = NULL;
+			rm = MONO_HANDLE_NEW (MonoReflectionMethod, NULL);
 		}
 
-		MONO_STRUCT_SETREF (info, set, rm);
+		MONO_STRUCT_SETREF (info, set, MONO_HANDLE_RAW (rm));
 	}
 	/* 
 	 * There may be other methods defined for properties, though, it seems they are not exposed 
