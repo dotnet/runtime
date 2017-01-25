@@ -118,7 +118,7 @@ namespace System.Numerics
             return Hypot(value._real, value._imaginary);
         }
 
-        private static double Hypot (double a, double b)
+        private static double Hypot(double a, double b)
         {
             // |value| == sqrt(a^2 + b^2)
             // sqrt(a^2 + b^2) == a/a * sqrt(a^2 + b^2) = a * sqrt(a^2/a^2 + b^2/a^2)
@@ -323,7 +323,7 @@ namespace System.Numerics
                 // symmetries, such as that the square root of a pure negative is a pure imaginary, and that the
                 // square root of a pure imaginary has exactly equal real and imaginary parts. This all goes
                 // back to the fact that Math.PI is not stored with infinite precision, so taking half of Math.PI
-                // does not land us on an argument with sine exactly equal to zero.
+                // does not land us on an argument with cosine exactly equal to zero.
 
                 // To find a fast and symmetry-respecting formula for complex square root,
                 // note x + i y = \sqrt{a + i b} implies x^2 + 2 i x y - y^2 = a + i b,
@@ -339,18 +339,46 @@ namespace System.Numerics
                 // symmetries. Much better than atan + cos + sin!
 
                 // The signs are a matter of choice of branch cut, which is traditionally taken so x > 0 and sign(y) = sign(b).
-
+      
+                // If the components are too large, Hypot will overflow, even though the subsequent sqrt would
+                // make the result representable. To avoid this, we re-scale (by exact powers of 2 for accuracy)
+                // when we encounter very large components to avoid intermediate infinities.
+                bool rescale = false;
+                const double max = Double.MaxValue / 2.0;
+                if ((Math.Abs(value._real) >= max) || (Math.Abs(value._imaginary) >= max))
+                {
+                    value._real *= 0.25;
+                    value._imaginary *= 0.25;
+                    rescale = true;
+                }
+                // 1. Note that, if one component is very large and the other is very small, this re-scale could cause
+                // the very small component to underflow. This is not a problem, though, because the neglected term
+                // is ~ (very small) / (very large), which would underflow anyway.
+                // 2. Note that our test for re-scaling requires two abs and two floating point comparisons.
+                // For the typical non-overflowng case, it might be faster to just test for IsInfinity after Hypot,
+                // then re-scale and re-do Hypot if overflow is detected. That version makes the code more
+                // complicated and simple profiling experiments show no discernible perf improvement, so
+                // stick with this version for now.
+ 
                 double x, y;
                 if (value._real >= 0.0)
                 {
-                    x = Math.Sqrt((Hypot(value._real, value._imaginary) + value._real) / 2.0);
-                    y = value._imaginary / x / 2.0;
+                    x = Math.Sqrt((Hypot(value._real, value._imaginary) + value._real) * 0.5);
+                    y = value._imaginary / (2.0 * x);
                 }
                 else
                 {
-                    y = Math.Sqrt((Hypot(value._real, value._imaginary) - value._real) / 2.0);
+                    y = Math.Sqrt((Hypot(value._real, value._imaginary) - value._real) * 0.5);
                     if (value._imaginary < 0.0) y = -y;
-                    x = value._imaginary / y / 2.0;
+                    x = value._imaginary / (2.0 * y);
+                }
+                // Note that, because we have re-scaled when any components are very large,
+                // (2.0 * x) and (2.0 * y) are guaranteed not to overflow.
+
+                if (rescale)
+                {
+                    x *= 2.0;
+                    y *= 2.0;
                 }
 
                 return new Complex(x, y);

@@ -357,8 +357,20 @@ namespace System.Numerics.Tests
 
         public static IEnumerable<object[]> ASin_Advanced_TestData()
         {
+            // Simple values
+            yield return new object[] { 0.0, 0.0, 0.0, 0.0 };
+            yield return new object[] { 1.0, 0.0, Math.PI / 2.0, 0.0 };
+            yield return new object[] { -1.0, 0.0, -Math.PI / 2.0, 0.0 };
+            yield return new object[] { 0.0, 1.0, 0.0, Math.Log(1.0 + Math.Sqrt(2.0)) };
+            yield return new object[] { 0.0, -1.0, 0.0, -Math.Log(1.0 + Math.Sqrt(2.0)) };
+
             yield return new object[] { -1234000000, 0, -1.5707963267948966, 21.62667394298955 }; // Real part is negative, imaginary part is 0
             yield return new object[] { 0, 1234000000, 0, 21.62667394298955 }; // Imaginary part is positive
+
+            // Extreme values
+            yield return new object[] { Double.MaxValue, 0.0, Math.PI / 2.0, Math.Log(2.0) + Math.Log(Double.MaxValue) };
+            yield return new object[] { 0.0, Double.MaxValue, 0.0, Math.Log(2.0) + Math.Log(Double.MaxValue) };
+            yield return new object[] { Double.MaxValue, Double.MaxValue, Math.PI / 4.0, Math.Log(2.0 * Math.Sqrt(2.0)) + Math.Log(Double.MaxValue) };
 
             // Invalid values
             foreach (double invalidReal in s_invalidDoubleValues)
@@ -372,6 +384,7 @@ namespace System.Numerics.Tests
             }
         }
 
+        [ActiveIssue(15455)]
         [Theory, MemberData("ASin_Advanced_TestData")]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public static void ASin_Advanced(double real, double imaginary, double expectedReal, double expectedImaginary)
@@ -1248,9 +1261,11 @@ namespace System.Numerics.Tests
             yield return new object[] { 0, 1, 0.707106781186547, 0.707106781186547 };
             yield return new object[] { 0, -1, 0.707106781186547, -0.707106781186547 };
 
-            yield return new object[] { double.MaxValue, 0, 1.34078079299426E+154, 0 };
+            yield return new object[] { double.MaxValue, 0.0, Math.Sqrt(double.MaxValue), 0.0 };
+            yield return new object[] { -double.MaxValue, 0.0, 0.0, Math.Sqrt(double.MaxValue) };
             yield return new object[] { 0, double.MaxValue, 9.48075190810917E+153, 9.48075190810917E+153 };
             yield return new object[] { 0, double.MinValue, 9.48075190810917E+153, -9.48075190810917E+153 };
+            yield return new object[] { double.MaxValue, double.MaxValue, Math.Sqrt(Math.Sqrt(2.0)) * Math.Sqrt(double.MaxValue) * Math.Cos(Math.PI / 8.0), Math.Sqrt(Math.Sqrt(2.0)) * Math.Sqrt(double.MaxValue) * Math.Sin(Math.PI / 8.0) };
         }
 
         [Theory, MemberData("Sqrt_TestData")]
