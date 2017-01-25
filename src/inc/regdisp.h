@@ -12,20 +12,16 @@ struct REGDISPLAY;
 void CheckRegDisplaySP (REGDISPLAY *pRD);
 #endif // DEBUG_REGDISPLAY
 
+struct REGDISPLAY_BASE {
+    PT_CONTEXT pContext;    // This is the context of the active call frame;
+                            // either returned by GetContext or provided at
+                            // exception time.
+                            //
+                            // This will be used to resume execution, so
+                            // do NOT trash it! But DO update any static
+                            // registers here.
 
-#if defined(_TARGET_X86_)
-
-struct REGDISPLAY {
-    PCONTEXT pContext;    // points to current Context; either
-                          // returned by GetContext or provided
-                          // at exception time.
-
-#ifndef WIN64EXCEPTIONS
-    // TODO: Unify with pCurrentContext / pCallerContext used on 64-bit
-    PCONTEXT pContextForUnwind; // scratch context for unwinding
-                                // used to preserve context saved in the frame that 
-                                // could be otherwise wiped by the unwinding
-#else // !WIN64EXCEPTIONS
+#ifdef WIN64EXCEPTIONS
     PT_CONTEXT pCurrentContext;   // [trashed] points to current Context of stackwalk
     PT_CONTEXT pCallerContext;    // [trashed] points to the Context of the caller during stackwalk -- used for GC crawls
 
@@ -42,11 +38,31 @@ struct REGDISPLAY {
 
     T_KNONVOLATILE_CONTEXT_POINTERS ctxPtrsOne;  // used by stackwalk
     T_KNONVOLATILE_CONTEXT_POINTERS ctxPtrsTwo;  // used by stackwalk
-#endif // !WIN64EXCEPTIONS
+#endif // WIN64EXCEPTIONS
 
 #ifdef DEBUG_REGDISPLAY
     Thread *_pThread;
 #endif // DEBUG_REGDISPLAY
+
+#if defined(_TARGET_X86_) || defined(_TARGET_ARM_)
+    DWORD   SP;                // Stack Pointer
+    PCODE   ControlPC;
+#else // _TARGET_X86_ || _TARGET_ARM_
+    size_t  SP;
+    size_t  ControlPC;
+#endif // !_TARGET_X86_ && !_TARGET_ARM
+};
+
+#if defined(_TARGET_X86_)
+
+struct REGDISPLAY : public REGDISPLAY_BASE {
+
+#ifndef WIN64EXCEPTIONS
+    // TODO: Unify with pCurrentContext / pCallerContext used on 64-bit
+    PCONTEXT pContextForUnwind; // scratch context for unwinding
+                                // used to preserve context saved in the frame that
+                                // could be otherwise wiped by the unwinding
+#endif // !WIN64EXCEPTIONS
 
     DWORD * pEdi;
     DWORD * pEsi;
@@ -56,10 +72,7 @@ struct REGDISPLAY {
     DWORD * pEax;
 
     DWORD * pEbp;
-    DWORD   SP;                // Stack Pointer
-    PCODE   ControlPC;
     TADDR   PCTAddr;
-
 };
 
 inline TADDR GetRegdisplaySP(REGDISPLAY *display) {
@@ -135,36 +148,16 @@ typedef struct _Arm64VolatileContextPointer
     };
 } Arm64VolatileContextPointer;
 #endif //_TARGET_ARM64_
-struct REGDISPLAY {
-    PT_CONTEXT pContext;          // This is the context of the active call frame.  This
-                                // will be used to resume execution, so do not use trash it!
-                                // But DO update any static registers here.
-
-    PT_CONTEXT pCurrentContext;   // [trashed] points to current Context of stackwalk
-    PT_CONTEXT pCallerContext;    // [trashed] points to the Context of the caller during stackwalk -- used for GC crawls
-
-    size_t  ControlPC;
-
-    size_t  SP;
-
-    T_KNONVOLATILE_CONTEXT_POINTERS *pCurrentContextPointers;  // [trashed] points to current context pointers of stackwalk
-    T_KNONVOLATILE_CONTEXT_POINTERS *pCallerContextPointers;   // [trashed] points to the context pointers of the caller during stackwalk -- used for GC crawls
+struct REGDISPLAY : public REGDISPLAY_BASE {
 #ifdef _TARGET_ARM64_
     Arm64VolatileContextPointer     volatileCurrContextPointers;
 #endif
 
-    BOOL IsCallerContextValid;  // TRUE if pCallerContext really contains the caller's context
-    BOOL IsCallerSPValid;       // Don't add usage of this field.  This is only temporary.
-
-    T_CONTEXT  ctxOne;    // used by stackwalk
-    T_CONTEXT  ctxTwo;    // used by stackwalk
-
-    T_KNONVOLATILE_CONTEXT_POINTERS ctxPtrsOne;  // used by stackwalk
-    T_KNONVOLATILE_CONTEXT_POINTERS ctxPtrsTwo;  // used by stackwalk
-
-#ifdef DEBUG_REGDISPLAY
-    Thread *_pThread;
-#endif // DEBUG_REGDISPLAY
+    REGDISPLAY()
+    {
+        // Initialize
+        memset(this, 0, sizeof(REGDISPLAY));
+    }
 };
 
 inline TADDR GetRegdisplaySP(REGDISPLAY *display) {
@@ -235,30 +228,10 @@ typedef struct _ArmVolatileContextPointer
     PDWORD R12;
 } ArmVolatileContextPointer;
 
-struct REGDISPLAY {
-    PT_CONTEXT pContext;          // points to current Context; either
-                                // returned by GetContext or provided
-                                // at exception time.
-
-    PT_CONTEXT pCurrentContext;   // [trashed] points to current Context of stackwalk
-    PT_CONTEXT pCallerContext;    // [trashed] points to the Context of the caller during stackwalk -- used for GC crawls
-
-    T_KNONVOLATILE_CONTEXT_POINTERS ctxPtrsOne;  // used by stackwalk
-    T_KNONVOLATILE_CONTEXT_POINTERS ctxPtrsTwo;  // used by stackwalk
-
-    PT_KNONVOLATILE_CONTEXT_POINTERS pCurrentContextPointers;
-    PT_KNONVOLATILE_CONTEXT_POINTERS pCallerContextPointers;
+struct REGDISPLAY : public REGDISPLAY_BASE {
     ArmVolatileContextPointer     volatileCurrContextPointers;
 
-    BOOL IsCallerContextValid;  // TRUE if pCallerContext really contains the caller's context
-    BOOL IsCallerSPValid;       // Don't add usage of this field.  This is only temporary.
-
-    DWORD     SP;
-    DWORD     ControlPC; 
     DWORD *  pPC;                // processor neutral name
-
-    T_CONTEXT  ctxOne;    // used by stackwalk
-    T_CONTEXT  ctxTwo;    // used in ExceptionTracker::InitializeCrawlFrame
 
     REGDISPLAY()
     {
@@ -268,11 +241,6 @@ struct REGDISPLAY {
         // Setup the pointer to ControlPC field
         pPC = &ControlPC;
     }
-
-#ifdef DEBUG_REGDISPLAY
-    Thread *_pThread;
-#endif // DEBUG_REGDISPLAY
-
 };
 
 inline TADDR GetRegdisplaySP(REGDISPLAY *display) {
@@ -299,15 +267,11 @@ inline TADDR GetRegdisplayStackMark(REGDISPLAY *display) {
     return GetSP(display->pCallerContext);
 }
 
-
-
 #else // none of the above processors
 
 PORTABILITY_WARNING("RegDisplay functions are not implemented on this platform.")
 
-struct REGDISPLAY {
-    PCONTEXT pContext;          // points to current Context
-    size_t   SP;
+struct REGDISPLAY : public REGDISPLAY_BASE {
     size_t * FramePtr;
     SLOT   * pPC;
 };
