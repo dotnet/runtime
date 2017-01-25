@@ -344,21 +344,12 @@ namespace System.Numerics
                 // make the result representable. To avoid this, we re-scale (by exact powers of 2 for accuracy)
                 // when we encounter very large components to avoid intermediate infinities.
                 bool rescale = false;
-                const double max = Double.MaxValue / 2.0;
-                if ((Math.Abs(value._real) >= max) || (Math.Abs(value._imaginary) >= max))
+                if ((Math.Abs(value._real) >= sqrtLimit) || (Math.Abs(value._imaginary) >= sqrtLimit))
                 {
                     value._real *= 0.25;
                     value._imaginary *= 0.25;
                     rescale = true;
                 }
-                // 1. Note that, if one component is very large and the other is very small, this re-scale could cause
-                // the very small component to underflow. This is not a problem, though, because the neglected term
-                // is ~ (very small) / (very large), which would underflow anyway.
-                // 2. Note that our test for re-scaling requires two abs and two floating point comparisons.
-                // For the typical non-overflowng case, it might be faster to just test for IsInfinity after Hypot,
-                // then re-scale and re-do Hypot if overflow is detected. That version makes the code more
-                // complicated and simple profiling experiments show no discernible perf improvement, so
-                // stick with this version for now.
  
                 double x, y;
                 if (value._real >= 0.0)
@@ -372,8 +363,6 @@ namespace System.Numerics
                     if (value._imaginary < 0.0) y = -y;
                     x = value._imaginary / (2.0 * y);
                 }
-                // Note that, because we have re-scaled when any components are very large,
-                // (2.0 * x) and (2.0 * y) are guaranteed not to overflow.
 
                 if (rescale)
                 {
@@ -386,6 +375,9 @@ namespace System.Numerics
             }
             
         }
+
+        // This is the largest x for which (Hypot(x,x) + x) will not overflow. It is used for branching inside Sqrt.
+        private static readonly double sqrtLimit = Double.MaxValue / (Math.Sqrt(2.0) + 1.0);
 
         public static Complex Pow(Complex value, Complex power)
         {
