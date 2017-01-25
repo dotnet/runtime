@@ -93,7 +93,8 @@ void CodeGen::genIntrinsic(GenTreePtr treeNode)
             break;
 
         case CORINFO_INTRINSIC_Sqrt:
-            NYI_ARM("genIntrinsic for sqrt - not implementd yet");
+            genConsumeOperands(treeNode->AsOp());
+            getEmitter()->emitInsBinary(INS_vsqrt, emitTypeSize(treeNode), treeNode, srcNode);
             break;
 
         default:
@@ -294,7 +295,14 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
             // The src must be a register.
             regNumber operandReg = genConsumeReg(operand);
 
-            getEmitter()->emitIns_R_R_I(ins, emitTypeSize(treeNode), targetReg, operandReg, 0);
+            if (ins == INS_vneg)
+            {
+                getEmitter()->emitIns_R_R(ins, emitTypeSize(treeNode), targetReg, operandReg);
+            }
+            else
+            {
+                getEmitter()->emitIns_R_R_I(ins, emitTypeSize(treeNode), targetReg, operandReg, 0);
+            }
         }
             genProduceReg(treeNode);
             break;
