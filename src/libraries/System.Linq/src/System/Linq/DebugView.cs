@@ -110,16 +110,14 @@ namespace System.Linq
         public TKey Key => _grouping.Key;
 
         // The name of this property must alphabetically follow `Key` so the elements appear last in the display.
-        // TODO: Does it matter if the contents are cached here? AFAICT Groupings are immutable after they are populated,
-        // so we could save the debugger some work if the Grouping contains a huge number of elements, right? Same for the
-        // Lookup proxy.
         [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
-        public TElement[] Values => _grouping.ToArray();
+        public TElement[] Values => _grouping._elements;
     }
 
     internal sealed class LookupDebuggerProxy<TKey, TElement>
     {
         private readonly Lookup<TKey, TElement> _lookup;
+        private IGrouping<TKey, TElement>[] _cachedGroupings;
 
         public LookupDebuggerProxy(Lookup<TKey, TElement> lookup)
         {
@@ -127,6 +125,6 @@ namespace System.Linq
         }
 
         [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
-        public IGrouping<TKey, TElement>[] Groupings => _lookup.ToArray();
+        public IGrouping<TKey, TElement>[] Groupings => _cachedGroupings ?? (_cachedGroupings = _lookup.ToArray());
     }
 }
