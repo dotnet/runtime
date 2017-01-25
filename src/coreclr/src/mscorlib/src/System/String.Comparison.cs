@@ -29,35 +29,28 @@ namespace System
             {
                 char* a = ap;
                 char* b = bp;
-                int charA;
-                int charB;
 
                 while (length != 0) 
                 {
-                    charA = *a;
-                    charB = *b;
+                    int charA = *a;
+                    int charB = *b;
 
                     Debug.Assert((charA | charB) <= 0x7F, "strings have to be ASCII");
 
-                    // Ordinal equals or lowercase equals if the result ends up in the a-z range
-                    if (charA == charB ||
-                       ((charA | 0x20) == (charB | 0x20) &&
-                          (uint)((charA | 0x20) - 'a') <= (uint)('z' - 'a')))
-                    {
-                        a++;
-                        b++;
-                        length--;
-                    }
-                    else
-                    {
-                        goto ReturnDiff;
-                    }
+                    // uppercase both chars - notice that we need just one compare per char
+                    if ((uint)(charA - 'a') <= (uint)('z' - 'a')) charA -= 0x20;
+                    if ((uint)(charB - 'a') <= (uint)('z' - 'a')) charB -= 0x20;
+
+                    //Return the (case-insensitive) difference between them.
+                    if (charA != charB)
+                        return charA - charB;
+
+                    // Next char
+                    a++; b++;
+                    length--;
                 }
 
                 return strA.Length - strB.Length;
-
-                ReturnDiff:
-                return charA - charB;
             }
         }
 
