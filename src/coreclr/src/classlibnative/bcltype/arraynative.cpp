@@ -1054,10 +1054,10 @@ FCIMPL6(void, ArrayNative::ArrayCopy, ArrayBase* m_pSrc, INT32 m_iSrcIndex, Arra
         FCThrowArgumentOutOfRangeVoid(W("destinationIndex"), W("ArgumentOutOfRange_ArrayLB"));
 
     if ((DWORD)(m_iSrcIndex - srcLB + m_iLength) > srcLen)
-        FCThrowResVoid(kArgumentException, W("Arg_LongerThanSrcArray"));
+        FCThrowArgumentVoid(W("sourceArray"), W("Arg_LongerThanSrcArray"));
         
     if ((DWORD)(m_iDstIndex - destLB + m_iLength) > destLen)
-        FCThrowResVoid(kArgumentException, W("Arg_LongerThanDestArray"));
+        FCThrowArgumentVoid(W("destinationArray"), W("Arg_LongerThanDestArray"));
 
     int r = 0;
 
