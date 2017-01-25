@@ -2861,8 +2861,9 @@ combinedScenarios.each { scenario ->
                                     }
                                 }
                         
+                                shell ("mkdir ./bin/CoreFxBinDir")
                                 // Unpack the corefx binaries
-                                shell("tar -xf ./bin/build.tar.gz")
+                                shell("tar -xf ./bin/build.tar.gz -C ./bin/CoreFxBinDir")
 
                                 // Unzip the tests first.  Exit with 0
                                 shell("unzip -q -o ./bin/tests/tests.zip -d ./bin/tests/Windows_NT.${architecture}.${configuration} || exit 0")
@@ -2886,7 +2887,7 @@ combinedScenarios.each { scenario ->
                 --testNativeBinDir=\"\${WORKSPACE}/bin/obj/${osGroup}.${architecture}.${configuration}/tests\" \\
                 --coreClrBinDir=\"\${WORKSPACE}/bin/Product/${osGroup}.${architecture}.${configuration}\" \\
                 --mscorlibDir=\"\${WORKSPACE}/bin/Product/${osGroup}.${architecture}.${configuration}\" \\
-                --coreFxBinDir=\"\$(pwd)/fx/bin/runtime/netcoreapp-${osGroup}-Release-${architecture}\" \\
+                --coreFxBinDir=\"\${WORKSPACE}/bin/CoreFxBinDir\" \\
                 --limitedDumpGeneration \\
                 ${testEnvOpt} ${serverGCString} ${gcstressStr} ${crossgenStr} ${runcrossgentestsStr} ${runjitstressStr} ${runjitstressregsStr} ${runjitmioptsStr} ${runjitforcerelocsStr} ${runjitdisasmStr} ${sequentialString} ${playlistString}""")
                             }
