@@ -2812,7 +2812,7 @@ combinedScenarios.each { scenario ->
                 --testNativeBinDir=\"\$(pwd)/clr/bin/obj/${osGroup}.${architecture}.${configuration}/tests\" \\
                 --coreClrBinDir=\"\$(pwd)/clr/bin/Product/${osGroup}.${architecture}.${configuration}\" \\
                 --mscorlibDir=\"\$(pwd)/clr/bin/Product/${osGroup}.${architecture}.${configuration}\" \\
-                --coreFxBinDir=\"\$(pwd)/fx/bin/runtime/netcoreapp-${osGroup}-${configuration}-${architecture}\" \\
+                --coreFxBinDir=\"\$(pwd)/fx/bin/runtime/netcoreapp-${osGroup}-Release-${architecture}\" \\
                 --crossgen --runcrossgentests""")
 
                                 // Run coreclr tests w/ server GC & HeapVerify enabled
@@ -2880,7 +2880,7 @@ combinedScenarios.each { scenario ->
                 --testNativeBinDir=\"\${WORKSPACE}/bin/obj/${osGroup}.${architecture}.${configuration}/tests\" \\
                 --coreClrBinDir=\"\${WORKSPACE}/bin/Product/${osGroup}.${architecture}.${configuration}\" \\
                 --mscorlibDir=\"\${WORKSPACE}/bin/Product/${osGroup}.${architecture}.${configuration}\" \\
-                --coreFxBinDir=\"\$(pwd)/fx/bin/runtime/netcoreapp-${osGroup}-${configuration}-${architecture}\" \\
+                --coreFxBinDir=\"\$(pwd)/fx/bin/runtime/netcoreapp-${osGroup}-Release-${architecture}\" \\
                 --limitedDumpGeneration \\
                 ${testEnvOpt} ${serverGCString} ${gcstressStr} ${crossgenStr} ${runcrossgentestsStr} ${runjitstressStr} ${runjitstressregsStr} ${runjitmioptsStr} ${runjitforcerelocsStr} ${runjitdisasmStr} ${sequentialString} ${playlistString}""")
                             }
