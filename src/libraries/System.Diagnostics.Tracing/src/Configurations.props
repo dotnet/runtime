@@ -3,7 +3,8 @@
   <PropertyGroup>
     <BuildConfigurations>
       net461-Windows_NT;
-      netcoreapp;
+      netcoreapp-Windows_NT;
+      netcoreapp-Unix;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>
