@@ -311,13 +311,8 @@ def buildArchConfiguration = ['Debug': 'x86',
                             def useServerGC = (configurationGroup == 'Release' && isPR) ? 'useServerGC' : ''
                             shell("HOME=\$WORKSPACE/tempHome ./build.sh -${configurationGroup.toLowerCase()} -framework:${targetGroup} -os:${osGroup}")
                             shell("HOME=\$WORKSPACE/tempHome ./build-tests.sh -${configurationGroup.toLowerCase()} -framework:${targetGroup} -os:${osGroup} -- ${useServerGC} /p:WithoutCategories=IgnoreForCI")
-                            // Tar up the appropriate bits.  On OSX the tarring is a different syntax for exclusion.
-                            if (osName == 'OSX') {
-                                shell("tar -czf bin/build.tar.gz --exclude *.Tests bin/*.${configurationGroup} bin/ref")
-                            }
-                            else {
-                                shell("tar -czf bin/build.tar.gz bin/*.${configurationGroup} bin/ref --exclude=*.Tests")
-                            }
+                            // Tar up the appropriate bits.
+                            shell("tar -czf bin/build.tar.gz --directory=\"bin/runtime/${targetGroup}-${osGroup}-${configurationGroup}-x64\" .")
                         }
                     }
                 }

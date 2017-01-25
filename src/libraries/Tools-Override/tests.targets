@@ -11,6 +11,7 @@
     <TestDisabled>false</TestDisabled>
     <TestDisabled Condition="'$(IsTestProject)'!='true' Or '$(SkipTests)'=='true' Or '$(RunTestsForProject)'=='false'">true</TestDisabled>
     <TestsSuccessfulSemaphore>tests.passed</TestsSuccessfulSemaphore>
+    <RunningOnNetFx Condition="'$(_bc_TargetGroup)' == 'netfx'">true</RunningOnNetFx>
   </PropertyGroup>
 
   <!-- In case that TestPath is not yet set, default it here -->
@@ -26,32 +27,36 @@
     <UnsupportedPlatformsItems Include="$(UnsupportedPlatforms)"/>
   </ItemGroup>
 
-  <PropertyGroup>
+  <PropertyGroup Condition="'$(RunningOnNetFx)' != 'true'">
     <XunitRuntimeConfig>$(ToolsDir)\xunit.console.netcore.runtimeconfig.json</XunitRuntimeConfig>
     <TestRuntimeEnvVar Condition="'$(OS)' == 'Windows_NT'">%RUNTIME_PATH%\</TestRuntimeEnvVar>
     <TestRuntimeEnvVar Condition="'$(OS)' != 'Windows_NT'">$RUNTIME_PATH/</TestRuntimeEnvVar>
     <TestHostExecutablePath Condition="'$(OS)'=='Windows_NT' AND '$(TestHostExecutablePath)' == ''">$(TestRuntimeEnvVar)dotnet.exe</TestHostExecutablePath>
     <TestHostExecutablePath Condition="'$(OS)'!='Windows_NT' AND '$(TestHostExecutablePath)' == ''">$(TestRuntimeEnvVar)dotnet</TestHostExecutablePath>
 
-    <ExecutionDirEnvVar Condition="'$(OS)' == 'Windows_NT'">%EXECUTION_DIR%\</ExecutionDirEnvVar>
-    <ExecutionDirEnvVar Condition="'$(OS)' != 'Windows_NT'">$EXECUTION_DIR/</ExecutionDirEnvVar>
-    <XunitExecutable Condition="'$(XunitExecutable)' == ''">$(ExecutionDirEnvVar)xunit.console.netcore.exe</XunitExecutable>
+    <XunitExecutable Condition="'$(XunitExecutable)' == ''">xunit.console.netcore.exe</XunitExecutable>
 
     <DebugEngines>{2E36F1D4-B23C-435D-AB41-18E608940038}</DebugEngines>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(RunningOnNetFx)' == 'true'">
+    <XunitExecutable Condition="'$(XunitExecutable)' == ''">xunit.console.exe</XunitExecutable>
   </PropertyGroup>
 
   <!-- General xunit options -->
   <PropertyGroup>
     <XunitResultsFileName>testResults.xml</XunitResultsFileName>
 
-    <XunitOptions Condition="'$(TestWithCore)' != 'true'">$(XunitOptions) -noshadow </XunitOptions>
+    <XunitOptions Condition="'$(RunningOnNetFx)' == 'true'">$(XunitOptions) -noshadow </XunitOptions>
     <XunitOptions>$(XunitOptions) -xml $(XunitResultsFileName)</XunitOptions>
 
     <XunitOptions Condition="'$(Performance)'!='true'">$(XunitOptions) -notrait Benchmark=true</XunitOptions>
 
     <XunitOptions Condition="'$(UseDotNetNativeToolchain)'=='true'">$(XunitOptions) -redirectoutput</XunitOptions>
 
-    <XunitOptions Condition="'$(TestTFM)'!=''">$(XunitOptions) -notrait category=non$(TestTFM)tests</XunitOptions>
+    <!-- Temporary till we fix the whole filtering with  TargetGroup -->
+    <XunitOptions Condition="'$(RunningOnNetFx)' != 'true'">$(XunitOptions) -notrait category=nonnetcoreapp1.1tests</XunitOptions>
+
     <XunitOptions Condition="'$(XunitMaxThreads)'!=''">$(XunitOptions) -maxthreads $(XunitMaxThreads)</XunitOptions>
     <XunitTestAssembly Condition="'$(XunitTestAssembly)' == ''">$(TargetFileName)</XunitTestAssembly>
     <XunitArguments>$(XunitTestAssembly) $(XunitOptions)</XunitArguments>
@@ -72,7 +77,7 @@
   <PropertyGroup Condition="'$(IsTestProject)'=='true'">
     <StartWorkingDirectory Condition="'$(StartWorkingDirectory)'==''">$(TestPath)</StartWorkingDirectory>
     <StartAction Condition="'$(StartAction)'==''">Program</StartAction>
-    <StartProgram Condition="'$(StartProgram)'==''">$(TestProgram)</StartProgram>
+    <StartProgram Condition="'$(StartProgram)'==''">$(TestSharedFxDir)\dotnet.exe</StartProgram>
     <StartArguments Condition="'$(StartArguments)'==''">$(TestArguments) -wait -parallel none</StartArguments>
   </PropertyGroup>
 
@@ -84,9 +89,13 @@
       <RunTestsForProjectInputs Include="@(_DebugSymbolsIntermediatePath)" />
       <RunTestsForProjectInputs Include="@(AllItemsFullPathWithTargetPath)" />
     </ItemGroup>
-    <ItemGroup>
+    <ItemGroup Condition="'$(RunningOnNetFx)' != 'true'">
       <SupplementalTestData Include="$(XunitRuntimeConfig)" />
       <SupplementalTestData Include="$(RuntimePath)xunit.console.netcore.exe" />
+    </ItemGroup>
+    <ItemGroup Condition="'$(RunningOnNetFx)' == 'true'">
+      <SupplementalTestData Include="$(RuntimePath)xunit*.*" />
+      <SupplementalTestData Include="$(RuntimePath)*.xslt" />
     </ItemGroup>
   </Target>
 
@@ -130,6 +139,10 @@
          when the properties are set currently. -->
     <PropertyGroup>
       <TestCommandLine>$(TestCommandLine.Replace('{XunitTraitOptions}', '$(XunitTraitOptions)'))</TestCommandLine>
+
+      <!-- We also need to replace {CoverageFilter} with its true value, which should be evaluated correctly at this point. -->
+      <TestCommandLine>$(TestCommandLine.Replace('{CoverageFilter}', '$(CoverageFilter)'))</TestCommandLine>
+
       <OutputFolderForScriptGenerator>$(TestPath)</OutputFolderForScriptGenerator>
       <OutputPathForScriptGenerator>$(OutputFolderForScriptGenerator)/$(RunnerScriptName)</OutputPathForScriptGenerator>
       <OutputFolderForTestDependencies>$(BinDir)/TestDependencies</OutputFolderForTestDependencies>
@@ -262,4 +275,6 @@
   <Target Name="BuildAndTest" DependsOnTargets="Build;Test" />
   <Target Name="RebuildAndTest" DependsOnTargets="Rebuild;Test" />
 
+  <!-- This helps collect crash dumps and requires python installed -->
+  <Import Project="$(MSBuildThisFileDirectory)Dumpling.targets" Condition="'$(EnableDumpling)' == 'true' OR '$(EnableCloudTest)' == 'true'" />
 </Project>

@@ -3,7 +3,6 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <AssemblyVersion>1.0.0.0</AssemblyVersion>
-    <NuGetTargetMoniker>.NETStandard,Version=v1.0</NuGetTargetMoniker>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Reflection.TestModule.il" />

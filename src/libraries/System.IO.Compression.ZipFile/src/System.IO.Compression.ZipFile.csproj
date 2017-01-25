@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
@@ -11,9 +11,9 @@
   <!-- Default configurations to help VS understand the options -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='net46-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='net46-Windows_NT-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard1.3-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard1.3-Release|AnyCPU'" />
-  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard1.3'">
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netcoreapp-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netcoreapp-Release|AnyCPU'" />
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
     <Compile Include="System\IO\Compression\ZipFile.cs" />
     <Compile Include="System\IO\Compression\ZipFileExtensions.cs" />
     <Compile Include="$(CommonPath)\System\IO\PathInternal.CaseSensitivity.cs">
@@ -22,7 +22,7 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'net46'">
     <ContractProject Include="..\ref\System.IO.Compression.ZipFile.csproj">
-      <TargetGroup>netstandard1.3</TargetGroup>
+      <TargetGroup>netcoreapp</TargetGroup>
     </ContractProject>
     <TargetingPackReference Include="mscorlib" />
     <TargetingPackReference Include="System.IO.Compression.FileSystem" />

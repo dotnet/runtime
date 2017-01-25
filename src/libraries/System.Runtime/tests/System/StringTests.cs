@@ -2313,6 +2313,12 @@ namespace System.Tests
             {
                 Assert.Equal(expected, s.Trim());
             }
+
+            if (trimChars?.Length == 1)
+            {
+                Assert.Equal(expected, s.Trim(trimChars[0]));
+            }
+
             Assert.Equal(expected, s.Trim(trimChars));
         }
 
@@ -2331,6 +2337,12 @@ namespace System.Tests
             {
                 Assert.Equal(expected, s.TrimEnd());
             }
+
+            if (trimChars?.Length == 1)
+            {
+                Assert.Equal(expected, s.TrimEnd(trimChars[0]));
+            }
+
             Assert.Equal(expected, s.TrimEnd(trimChars));
         }
 
@@ -2349,6 +2361,12 @@ namespace System.Tests
             {
                 Assert.Equal(expected, s.TrimStart());
             }
+
+            if (trimChars?.Length == 1)
+            {
+                Assert.Equal(expected, s.TrimStart(trimChars[0]));
+            }
+
             Assert.Equal(expected, s.TrimStart(trimChars));
         }
 

@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
@@ -9,23 +9,22 @@
     <GenFacadesArgs Condition="'$(TargetGroup)' == 'uap101aot' or '$(TargetGroup)' == 'netcoreapp1.2corert'">$(GenFacadesArgs) -ignoreMissingTypes</GenFacadesArgs>
     <!-- Force string resources to be excluded for full facades. -->
     <ResourcesSourceOutputDirectory Condition="'$(TargetGroup)' == 'net463' or '$(TargetGroup)' == 'uap101aot'">None</ResourcesSourceOutputDirectory>
-    <PackageTargetFramework Condition="'$(TargetGroup)' == 'netstandard'">netstandard;uap10.1</PackageTargetFramework>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='uap101aot-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='uap101aot-Windows_NT-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='net461-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='net461-Windows_NT-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netcoreapp-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netcoreapp-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netcoreapp1.2corert-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netcoreapp1.2corert-Release|AnyCPU'" />
   <ItemGroup Condition="'$(TargetGroup)' == 'net461'">
     <ContractProject Include="..\ref\System.Runtime.InteropServices.csproj">
-      <TargetGroup>netstandard</TargetGroup>
+      <TargetGroup>netcoreapp</TargetGroup>
     </ContractProject>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
     <Compile Include="System\Runtime\InteropServices\ComAwareEventInfo.cs" />
     <Compile Include="System\Runtime\InteropServices\HandleCollector.CoreCLR.cs" />
     <Compile Include="System\Runtime\InteropServices\DefaultParameterValueAttribute.cs" />
@@ -66,7 +65,7 @@
     <TargetingPackReference Include="System.Private.Interop" Condition="'$(TargetGroup)' == 'uap101aot' or '$(TargetGroup)' == 'netcoreapp1.2corert'" />
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="System.Private.CoreLib" />
+    <ReferenceFromRuntime Include="System.Private.CoreLib" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

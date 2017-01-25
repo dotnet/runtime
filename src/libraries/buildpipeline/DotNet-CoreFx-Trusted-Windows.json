@@ -105,7 +105,7 @@
       },
       "inputs": {
         "filename": "$(Build.SourcesDirectory)\\corefx\\sync.cmd",
-        "arguments": "-p -- /p:ArchGroup=$(PB_Platform)  /p:RuntimeOS=$(PB_RuntimeOS)",
+        "arguments": "$(PB_SyncArguments)",
         "workingFolder": "corefx",
         "failOnStandardError": "false"
       }
@@ -141,7 +141,7 @@
       },
       "inputs": {
         "filename": "$(Build.SourcesDirectory)\\corefx\\build.cmd",
-        "arguments": "-buildArch=$(PB_Platform) -$(PB_ConfigurationGroup) -- /p:SignType=$(PB_SignType) /p:RuntimeOS=$(PB_RuntimeOS)",
+        "arguments": "$(PB_BuildArguments)",
         "workingFolder": "corefx",
         "failOnStandardError": "false"
       }
@@ -159,7 +159,7 @@
       },
       "inputs": {
         "filename": "$(Build.SourcesDirectory)\\corefx\\build-tests.cmd",
-        "arguments": "-buildArch=$(PB_Platform) -$(PB_ConfigurationGroup) -SkipTests -- /p:RuntimeOS=$(PB_RuntimeOS) /p:ArchiveTests=true",
+        "arguments": "$(PB_BuildTestsArguments)",
         "workingFolder": "corefx",
         "failOnStandardError": "false"
       }
@@ -179,7 +179,7 @@
         "solution": "$(Build.SourcesDirectory)\\corefx\\src\\tests.builds",
         "platform": "",
         "configuration": "",
-        "msbuildArguments": "/t:CloudBuild /p:ArchGroup=$(PB_Platform) /p:ConfigurationGroup=$(PB_ConfigurationGroup) /p:\"EnableCloudTest=$(PB_EnableCloudTest)\" /p:\"BuildMoniker=$(PB_BuildMoniker)\" /p:\"TargetQueue=$(PB_TargetQueue)\" /p:\"TestProduct=$(PB_TestProduct)\" /p:\"Branch=$(SourceBranch)\" /p:\"CloudDropAccountName=$(PB_CloudDropAccountName)\" /p:\"CloudResultsAccountName=$(PB_CloudResultsAccountName)\" /p:\"CloudDropAccessToken=$(CloudDropAccessToken)\" /p:\"CloudResultsAccessToken=$(OutputCloudResultsAccessToken)\" /p:\"TimeoutInSeconds=1200\" /p:\"TargetOS=Windows_NT\" /p:FilterToOSGroup=Windows_NT /p:\"HelixApiAccessKey=$(HelixApiAccessKey)\" /p:HelixApiEndpoint=$(PB_HelixApiEndPoint)",
+        "msbuildArguments": "$(PB_CreateHelixArguments) /p:\"Branch=$(SourceBranch)\" /p:\"CloudDropAccountName=$(PB_CloudDropAccountName)\" /p:\"CloudResultsAccountName=$(PB_CloudResultsAccountName)\" /p:\"CloudDropAccessToken=$(CloudDropAccessToken)\" /p:\"CloudResultsAccessToken=$(OutputCloudResultsAccessToken)\" /p:\"HelixApiAccessKey=$(HelixApiAccessKey)\" /p:\"HelixApiEndpoint=$(PB_HelixApiEndPoint)\" /p:\"OfficialBuildId=$(OfficialBuildId)\"",
         "clean": "false",
         "maximumCpuCount": "false",
         "restoreNugetPackages": "false",
@@ -232,7 +232,7 @@
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
-      "displayName": "Publish symbols path: \\\\cpvsbuild\\drops\\DotNetCore\\$(PB_SymbolsBuildId)\\$(Build.BuildNumber)\\symbols",
+      "displayName": "Publish symbols path: \\\\cpvsbuild\\drops\\DotNetCore\\$(PB_SymbolsBuildIdRoot)$(System.DefinitionId)\\$(Build.BuildNumber)\\symbols",
       "timeoutInMinutes": 0,
       "task": {
         "id": "0675668a-7bba-4ccb-901d-5ad6554ca653",
@@ -240,7 +240,7 @@
         "definitionType": "task"
       },
       "inputs": {
-        "SymbolsPath": "\\\\cpvsbuild\\drops\\DotNetCore\\$(PB_SymbolsBuildId)\\$(Build.BuildNumber)\\symbols",
+        "SymbolsPath": "\\\\cpvsbuild\\drops\\DotNetCore\\$(PB_SymbolsBuildIdRoot)$(System.DefinitionId)\\$(Build.BuildNumber)\\symbols",
         "SearchPattern": "corefx\\bin\\*$(PB_Platform).$(PB_ConfigurationGroup)\\**\\*.pdb",
         "SymbolsFolder": "",
         "SkipIndexing": "false",
@@ -263,7 +263,7 @@
         "definitionType": "task"
       },
       "inputs": {
-        "symbolStore": "\\\\cpvsbuild\\drops\\DotNetCore\\$(PB_SymbolsBuildId)\\$(Build.BuildNumber)\\symbols",
+        "symbolStore": "\\\\cpvsbuild\\drops\\DotNetCore\\$(PB_SymbolsBuildIdRoot)$(System.DefinitionId)\\$(Build.BuildNumber)\\symbols",
         "contacts": "jhendrix;mawilkie",
         "project": "DDE"
       }
@@ -388,18 +388,6 @@
       "value": "false",
       "allowOverride": true
     },
-    "PB_ConfigurationGroup": {
-      "value": "Release",
-      "allowOverride": true
-    },
-    "PB_Platform": {
-      "value": "AnyCPU",
-      "allowOverride": true
-    },
-    "PB_SignType": {
-      "value": "test",
-      "allowOverride": true
-    },
     "PB_CloudDropAccountName": {
       "value": "dotnetbuildoutput"
     },
@@ -452,11 +440,23 @@
     "PB_CleanAgent": {
       "value": "true"
     },
-    "PB_SymbolsBuildId": {
-      "value": "DotNet-CoreFx-$(System.DefinitionId)"
+    "PB_SymbolsBuildIdRoot": {
+      "value": "DotNet-CoreFx-"
     },
-    "PB_EnableCloudTest": {
-      "value": "true",
+    "PB_SyncArguments": {
+      "value": "-p -- /p:ArchGroup=x64  /p:RuntimeOS=win10",
+      "allowOverride": true
+    },
+    "PB_BuildArguments": {
+      "value": "-buildArch=x64 -Release -- /p:SignType=test /p:RuntimeOS=win10",
+      "allowOverride": true
+    },
+    "PB_BuildTestsArguments": {
+      "value": "-buildArch=x64 -Release -SkipTests -- /p:RuntimeOS=win10",
+      "allowOverride": true
+    },
+    "PB_CreateHelixArguments": {
+      "value": "/t:CloudBuild /p:ArchGroup=x64 /p:ConfigurationGroup=Release /p:\"EnableCloudTest=true\" /p:\"BuildMoniker=none\" /p:\"TargetQueue=Windows.10.Amd64\" /p:\"TestProduct=corefx\" /p:\"TimeoutInSeconds=1200\" /p:\"TargetOS=Windows_NT\" /p:FilterToOSGroup=Windows_NT",
       "allowOverride": true
     }
   },

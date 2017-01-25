@@ -34,15 +34,8 @@ namespace System.Linq.Expressions
         /// The <see cref="DynamicExpression.DelegateType">DelegateType</see> property of the
         /// result will be inferred from the types of the arguments and the specified return type.
         /// </remarks>
-        public static DynamicExpression Dynamic(CallSiteBinder binder, Type returnType, IEnumerable<Expression> arguments)
-        {
-            ContractUtils.RequiresNotNull(arguments, nameof(arguments));
-            ContractUtils.RequiresNotNull(returnType, nameof(returnType));
-
-            var args = arguments.ToReadOnly();
-            ContractUtils.RequiresNotEmpty(args, nameof(args));
-            return MakeDynamic(binder, returnType, args);
-        }
+        public static DynamicExpression Dynamic(CallSiteBinder binder, Type returnType, IEnumerable<Expression> arguments) =>
+            DynamicExpression.Dynamic(binder, returnType, arguments);
 
         /// <summary>
         /// Creates a <see cref="DynamicExpression" /> that represents a dynamic operation bound by the provided <see cref="CallSiteBinder" />.
@@ -60,23 +53,8 @@ namespace System.Linq.Expressions
         /// The <see cref="DynamicExpression.DelegateType">DelegateType</see> property of the
         /// result will be inferred from the types of the arguments and the specified return type.
         /// </remarks>
-        public static DynamicExpression Dynamic(CallSiteBinder binder, Type returnType, Expression arg0)
-        {
-            ContractUtils.RequiresNotNull(binder, nameof(binder));
-            ValidateDynamicArgument(arg0, nameof(arg0));
-
-            DelegateHelpers.TypeInfo info = DelegateHelpers.GetNextTypeInfo(
-                returnType,
-                DelegateHelpers.GetNextTypeInfo(
-                    arg0.Type,
-                    DelegateHelpers.NextTypeInfo(typeof(CallSite))
-                )
-            );
-
-            Type delegateType = info.DelegateType ?? info.MakeDelegateType(returnType, arg0);
-
-            return DynamicExpression.Make(returnType, delegateType, binder, arg0);
-        }
+        public static DynamicExpression Dynamic(CallSiteBinder binder, Type returnType, Expression arg0) =>
+            DynamicExpression.Dynamic(binder, returnType, arg0);
 
         /// <summary>
         /// Creates a <see cref="DynamicExpression" /> that represents a dynamic operation bound by the provided <see cref="CallSiteBinder" />.
@@ -95,27 +73,8 @@ namespace System.Linq.Expressions
         /// The <see cref="DynamicExpression.DelegateType">DelegateType</see> property of the
         /// result will be inferred from the types of the arguments and the specified return type.
         /// </remarks>
-        public static DynamicExpression Dynamic(CallSiteBinder binder, Type returnType, Expression arg0, Expression arg1)
-        {
-            ContractUtils.RequiresNotNull(binder, nameof(binder));
-            ValidateDynamicArgument(arg0, nameof(arg0));
-            ValidateDynamicArgument(arg1, nameof(arg1));
-
-            DelegateHelpers.TypeInfo info = DelegateHelpers.GetNextTypeInfo(
-                returnType,
-                DelegateHelpers.GetNextTypeInfo(
-                    arg1.Type,
-                    DelegateHelpers.GetNextTypeInfo(
-                        arg0.Type,
-                        DelegateHelpers.NextTypeInfo(typeof(CallSite))
-                    )
-                )
-            );
-
-            Type delegateType = info.DelegateType ?? info.MakeDelegateType(returnType, arg0, arg1);
-
-            return DynamicExpression.Make(returnType, delegateType, binder, arg0, arg1);
-        }
+        public static DynamicExpression Dynamic(CallSiteBinder binder, Type returnType, Expression arg0, Expression arg1) =>
+            DynamicExpression.Dynamic(binder, returnType, arg0, arg1);
 
         /// <summary>
         /// Creates a <see cref="DynamicExpression" /> that represents a dynamic operation bound by the provided <see cref="CallSiteBinder" />.
@@ -135,35 +94,8 @@ namespace System.Linq.Expressions
         /// The <see cref="DynamicExpression.DelegateType">DelegateType</see> property of the
         /// result will be inferred from the types of the arguments and the specified return type.
         /// </remarks>
-        public static DynamicExpression Dynamic(CallSiteBinder binder, Type returnType, Expression arg0, Expression arg1, Expression arg2)
-        {
-            ContractUtils.RequiresNotNull(binder, nameof(binder));
-            ValidateDynamicArgument(arg0, nameof(arg0));
-            ValidateDynamicArgument(arg1, nameof(arg1));
-            ValidateDynamicArgument(arg2, nameof(arg2));
-
-            DelegateHelpers.TypeInfo info = DelegateHelpers.GetNextTypeInfo(
-                returnType,
-                DelegateHelpers.GetNextTypeInfo(
-                    arg2.Type,
-                    DelegateHelpers.GetNextTypeInfo(
-                        arg1.Type,
-                        DelegateHelpers.GetNextTypeInfo(
-                            arg0.Type,
-                            DelegateHelpers.NextTypeInfo(typeof(CallSite))
-                        )
-                    )
-                )
-            );
-
-            Type delegateType = info.DelegateType;
-            if (delegateType == null)
-            {
-                delegateType = info.MakeDelegateType(returnType, arg0, arg1, arg2);
-            }
-
-            return DynamicExpression.Make(returnType, delegateType, binder, arg0, arg1, arg2);
-        }
+        public static DynamicExpression Dynamic(CallSiteBinder binder, Type returnType, Expression arg0, Expression arg1, Expression arg2) =>
+            DynamicExpression.Dynamic(binder, returnType, arg0, arg1, arg2);
 
         /// <summary>
         /// Creates a <see cref="DynamicExpression" /> that represents a dynamic operation bound by the provided <see cref="CallSiteBinder" />.
@@ -184,35 +116,8 @@ namespace System.Linq.Expressions
         /// The <see cref="DynamicExpression.DelegateType">DelegateType</see> property of the
         /// result will be inferred from the types of the arguments and the specified return type.
         /// </remarks>
-        public static DynamicExpression Dynamic(CallSiteBinder binder, Type returnType, Expression arg0, Expression arg1, Expression arg2, Expression arg3)
-        {
-            ContractUtils.RequiresNotNull(binder, nameof(binder));
-            ValidateDynamicArgument(arg0, nameof(arg0));
-            ValidateDynamicArgument(arg1, nameof(arg1));
-            ValidateDynamicArgument(arg2, nameof(arg2));
-            ValidateDynamicArgument(arg3, nameof(arg3));
-
-            DelegateHelpers.TypeInfo info = DelegateHelpers.GetNextTypeInfo(
-                returnType,
-                DelegateHelpers.GetNextTypeInfo(
-                    arg3.Type,
-                    DelegateHelpers.GetNextTypeInfo(
-                        arg2.Type,
-                        DelegateHelpers.GetNextTypeInfo(
-                            arg1.Type,
-                            DelegateHelpers.GetNextTypeInfo(
-                                arg0.Type,
-                                DelegateHelpers.NextTypeInfo(typeof(CallSite))
-                            )
-                        )
-                    )
-                )
-            );
-
-            Type delegateType = info.DelegateType ?? info.MakeDelegateType(returnType, arg0, arg1, arg2, arg3);
-
-            return DynamicExpression.Make(returnType, delegateType, binder, arg0, arg1, arg2, arg3);
-        }
+        public static DynamicExpression Dynamic(CallSiteBinder binder, Type returnType, Expression arg0, Expression arg1, Expression arg2, Expression arg3) =>
+            DynamicExpression.Dynamic(binder, returnType, arg0, arg1, arg2, arg3);
 
         /// <summary>
         /// Creates a <see cref="DynamicExpression" /> that represents a dynamic operation bound by the provided <see cref="CallSiteBinder" />.
@@ -230,36 +135,8 @@ namespace System.Linq.Expressions
         /// The <see cref="DynamicExpression.DelegateType">DelegateType</see> property of the
         /// result will be inferred from the types of the arguments and the specified return type.
         /// </remarks>
-        public static DynamicExpression Dynamic(CallSiteBinder binder, Type returnType, params Expression[] arguments)
-        {
-            return Dynamic(binder, returnType, (IEnumerable<Expression>)arguments);
-        }
-
-        private static DynamicExpression MakeDynamic(CallSiteBinder binder, Type returnType, ReadOnlyCollection<Expression> args)
-        {
-            ContractUtils.RequiresNotNull(binder, nameof(binder));
-
-            for (int i = 0; i < args.Count; i++)
-            {
-                Expression arg = args[i];
-
-                ValidateDynamicArgument(arg, nameof(arg));
-            }
-
-            Type delegateType = DelegateHelpers.MakeCallSiteDelegate(args, returnType);
-
-            // Since we made a delegate with argument types that exactly match,
-            // we can skip delegate and argument validation
-
-            switch (args.Count)
-            {
-                case 1: return DynamicExpression.Make(returnType, delegateType, binder, args[0]);
-                case 2: return DynamicExpression.Make(returnType, delegateType, binder, args[0], args[1]);
-                case 3: return DynamicExpression.Make(returnType, delegateType, binder, args[0], args[1], args[2]);
-                case 4: return DynamicExpression.Make(returnType, delegateType, binder, args[0], args[1], args[2], args[3]);
-                default: return DynamicExpression.Make(returnType, delegateType, binder, args);
-            }
-        }
+        public static DynamicExpression Dynamic(CallSiteBinder binder, Type returnType, params Expression[] arguments) =>
+            DynamicExpression.Dynamic(binder, returnType, arguments);
 
         /// <summary>
         /// Creates a <see cref="DynamicExpression" /> that represents a dynamic operation bound by the provided <see cref="CallSiteBinder" />.
@@ -274,19 +151,8 @@ namespace System.Linq.Expressions
         /// <see cref="DynamicExpression.Binder">Binder</see>, and
         /// <see cref="DynamicExpression.Arguments">Arguments</see> set to the specified values.
         /// </returns>
-        public static DynamicExpression MakeDynamic(Type delegateType, CallSiteBinder binder, IEnumerable<Expression> arguments)
-        {
-            ContractUtils.RequiresNotNull(delegateType, nameof(delegateType));
-            ContractUtils.RequiresNotNull(binder, nameof(binder));
-            if (!delegateType.IsSubclassOf(typeof(MulticastDelegate))) throw Error.TypeMustBeDerivedFromSystemDelegate();
-
-            var method = GetValidMethodForDynamic(delegateType);
-
-            var args = arguments.ToReadOnly();
-            ValidateArgumentTypes(method, ExpressionType.Dynamic, ref args, nameof(delegateType));
-
-            return DynamicExpression.Make(method.GetReturnType(), delegateType, binder, args);
-        }
+        public static DynamicExpression MakeDynamic(Type delegateType, CallSiteBinder binder, IEnumerable<Expression> arguments) =>
+            DynamicExpression.MakeDynamic(delegateType, binder, arguments);
 
         /// <summary>
         /// Creates a <see cref="DynamicExpression" /> that represents a dynamic operation bound by the provided <see cref="CallSiteBinder" /> and one argument.
@@ -301,21 +167,8 @@ namespace System.Linq.Expressions
         /// <see cref="DynamicExpression.Binder">Binder</see>, and
         /// <see cref="DynamicExpression.Arguments">Arguments</see> set to the specified values.
         /// </returns>
-        public static DynamicExpression MakeDynamic(Type delegateType, CallSiteBinder binder, Expression arg0)
-        {
-            ContractUtils.RequiresNotNull(delegateType, nameof(delegateType));
-            ContractUtils.RequiresNotNull(binder, nameof(binder));
-            if (!delegateType.IsSubclassOf(typeof(MulticastDelegate))) throw Error.TypeMustBeDerivedFromSystemDelegate();
-
-            var method = GetValidMethodForDynamic(delegateType);
-            var parameters = method.GetParametersCached();
-
-            ValidateArgumentCount(method, ExpressionType.Dynamic, 2, parameters);
-            ValidateDynamicArgument(arg0, nameof(arg0));
-            ValidateOneArgument(method, ExpressionType.Dynamic, arg0, parameters[1], nameof(delegateType), nameof(arg0));
-
-            return DynamicExpression.Make(method.GetReturnType(), delegateType, binder, arg0);
-        }
+        public static DynamicExpression MakeDynamic(Type delegateType, CallSiteBinder binder, Expression arg0) =>
+            DynamicExpression.MakeDynamic(delegateType, binder, arg0);
 
         /// <summary>
         /// Creates a <see cref="DynamicExpression" /> that represents a dynamic operation bound by the provided <see cref="CallSiteBinder" /> and two arguments.
@@ -331,23 +184,8 @@ namespace System.Linq.Expressions
         /// <see cref="DynamicExpression.Binder">Binder</see>, and
         /// <see cref="DynamicExpression.Arguments">Arguments</see> set to the specified values.
         /// </returns>
-        public static DynamicExpression MakeDynamic(Type delegateType, CallSiteBinder binder, Expression arg0, Expression arg1)
-        {
-            ContractUtils.RequiresNotNull(delegateType, nameof(delegateType));
-            ContractUtils.RequiresNotNull(binder, nameof(binder));
-            if (!delegateType.IsSubclassOf(typeof(MulticastDelegate))) throw Error.TypeMustBeDerivedFromSystemDelegate();
-
-            var method = GetValidMethodForDynamic(delegateType);
-            var parameters = method.GetParametersCached();
-
-            ValidateArgumentCount(method, ExpressionType.Dynamic, 3, parameters);
-            ValidateDynamicArgument(arg0, nameof(arg0));
-            ValidateOneArgument(method, ExpressionType.Dynamic, arg0, parameters[1], nameof(delegateType), nameof(arg0));
-            ValidateDynamicArgument(arg1, nameof(arg1));
-            ValidateOneArgument(method, ExpressionType.Dynamic, arg1, parameters[2], nameof(delegateType), nameof(arg1));
-
-            return DynamicExpression.Make(method.GetReturnType(), delegateType, binder, arg0, arg1);
-        }
+        public static DynamicExpression MakeDynamic(Type delegateType, CallSiteBinder binder, Expression arg0, Expression arg1) =>
+            DynamicExpression.MakeDynamic(delegateType, binder, arg0, arg1);
 
         /// <summary>
         /// Creates a <see cref="DynamicExpression" /> that represents a dynamic operation bound by the provided <see cref="CallSiteBinder" /> and three arguments.
@@ -364,25 +202,8 @@ namespace System.Linq.Expressions
         /// <see cref="DynamicExpression.Binder">Binder</see>, and
         /// <see cref="DynamicExpression.Arguments">Arguments</see> set to the specified values.
         /// </returns>
-        public static DynamicExpression MakeDynamic(Type delegateType, CallSiteBinder binder, Expression arg0, Expression arg1, Expression arg2)
-        {
-            ContractUtils.RequiresNotNull(delegateType, nameof(delegateType));
-            ContractUtils.RequiresNotNull(binder, nameof(binder));
-            if (!delegateType.IsSubclassOf(typeof(MulticastDelegate))) throw Error.TypeMustBeDerivedFromSystemDelegate();
-
-            var method = GetValidMethodForDynamic(delegateType);
-            var parameters = method.GetParametersCached();
-
-            ValidateArgumentCount(method, ExpressionType.Dynamic, 4, parameters);
-            ValidateDynamicArgument(arg0, nameof(arg0));
-            ValidateOneArgument(method, ExpressionType.Dynamic, arg0, parameters[1], nameof(delegateType), nameof(arg0));
-            ValidateDynamicArgument(arg1, nameof(arg1));
-            ValidateOneArgument(method, ExpressionType.Dynamic, arg1, parameters[2], nameof(delegateType), nameof(arg1));
-            ValidateDynamicArgument(arg2, nameof(arg2));
-            ValidateOneArgument(method, ExpressionType.Dynamic, arg2, parameters[3], nameof(delegateType), nameof(arg2));
-
-            return DynamicExpression.Make(method.GetReturnType(), delegateType, binder, arg0, arg1, arg2);
-        }
+        public static DynamicExpression MakeDynamic(Type delegateType, CallSiteBinder binder, Expression arg0, Expression arg1, Expression arg2) =>
+            DynamicExpression.MakeDynamic(delegateType, binder, arg0, arg1, arg2);
 
         /// <summary>
         /// Creates a <see cref="DynamicExpression" /> that represents a dynamic operation bound by the provided <see cref="CallSiteBinder" /> and four arguments.
@@ -400,27 +221,8 @@ namespace System.Linq.Expressions
         /// <see cref="DynamicExpression.Binder">Binder</see>, and
         /// <see cref="DynamicExpression.Arguments">Arguments</see> set to the specified values.
         /// </returns>
-        public static DynamicExpression MakeDynamic(Type delegateType, CallSiteBinder binder, Expression arg0, Expression arg1, Expression arg2, Expression arg3)
-        {
-            ContractUtils.RequiresNotNull(delegateType, nameof(delegateType));
-            ContractUtils.RequiresNotNull(binder, nameof(binder));
-            if (!delegateType.IsSubclassOf(typeof(MulticastDelegate))) throw Error.TypeMustBeDerivedFromSystemDelegate();
-
-            var method = GetValidMethodForDynamic(delegateType);
-            var parameters = method.GetParametersCached();
-
-            ValidateArgumentCount(method, ExpressionType.Dynamic, 5, parameters);
-            ValidateDynamicArgument(arg0, nameof(arg0));
-            ValidateOneArgument(method, ExpressionType.Dynamic, arg0, parameters[1], nameof(delegateType), nameof(arg0));
-            ValidateDynamicArgument(arg1, nameof(arg1));
-            ValidateOneArgument(method, ExpressionType.Dynamic, arg1, parameters[2], nameof(delegateType), nameof(arg1));
-            ValidateDynamicArgument(arg2, nameof(arg2));
-            ValidateOneArgument(method, ExpressionType.Dynamic, arg2, parameters[3], nameof(delegateType), nameof(arg2));
-            ValidateDynamicArgument(arg3, nameof(arg3));
-            ValidateOneArgument(method, ExpressionType.Dynamic, arg3, parameters[4], nameof(delegateType), nameof(arg3));
-
-            return DynamicExpression.Make(method.GetReturnType(), delegateType, binder, arg0, arg1, arg2, arg3);
-        }
+        public static DynamicExpression MakeDynamic(Type delegateType, CallSiteBinder binder, Expression arg0, Expression arg1, Expression arg2, Expression arg3) =>
+            DynamicExpression.MakeDynamic(delegateType, binder, arg0, arg1, arg2, arg3);
 
         /// <summary>
         /// Creates a <see cref="DynamicExpression" /> that represents a dynamic operation bound by the provided <see cref="CallSiteBinder" />.
@@ -435,31 +237,7 @@ namespace System.Linq.Expressions
         /// <see cref="DynamicExpression.Binder">Binder</see>, and
         /// <see cref="DynamicExpression.Arguments">Arguments</see> set to the specified values.
         /// </returns>
-        public static DynamicExpression MakeDynamic(Type delegateType, CallSiteBinder binder, params Expression[] arguments)
-        {
-            return MakeDynamic(delegateType, binder, (IEnumerable<Expression>)arguments);
-        }
-
-        private static void ValidateDynamicArgument(Expression arg, string paramName)
-        {
-            ValidateDynamicArgument(arg, paramName, -1);
-        }
-
-        private static void ValidateDynamicArgument(Expression arg, string paramName, int index)
-        {
-            ExpressionUtils.RequiresCanRead(arg, paramName, index);
-            var type = arg.Type;
-            ContractUtils.RequiresNotNull(type, nameof(type));
-            TypeUtils.ValidateType(type, nameof(type));
-            if (type == typeof(void)) throw Error.ArgumentTypeCannotBeVoid();
-        }
-
-        private static MethodInfo GetValidMethodForDynamic(Type delegateType)
-        {
-            var method = delegateType.GetMethod("Invoke");
-            var pi = method.GetParametersCached();
-            if (pi.Length == 0 || pi[0].ParameterType != typeof(CallSite)) throw Error.FirstArgumentMustBeCallSite();
-            return method;
-        }
+        public static DynamicExpression MakeDynamic(Type delegateType, CallSiteBinder binder, params Expression[] arguments) =>
+            MakeDynamic(delegateType, binder, (IEnumerable<Expression>)arguments);
     }
 }

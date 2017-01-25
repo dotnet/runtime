@@ -6,6 +6,9 @@
       <SupportedFramework>net463;netcoreapp2.0</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.Security.Principal.Windows.builds" />
+    <ValidatePackageSuppression Include="SuppressNETStandardInference">
+      <Value>.NETCoreApp,Version=v1.1;.NETCoreApp,Version=v2.0</Value>
+    </ValidatePackageSuppression>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

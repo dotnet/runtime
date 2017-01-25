@@ -83,7 +83,7 @@
       },
       "inputs": {
         "filename": "$(Agent.BuildDirectory)/s/corefx/sync.sh",
-        "arguments": "-p -- /p:ArchGroup=$(PB_Platform)",
+        "arguments": "$(PB_SyncArguments)",
         "workingFolder": "$(Agent.BuildDirectory)/s/corefx/",
         "failOnStandardError": "false"
       }
@@ -119,7 +119,7 @@
       },
       "inputs": {
         "filename": "$(Agent.BuildDirectory)/s/corefx/build.sh",
-        "arguments": "-buildArch=$(PB_Platform) -$(PB_ConfigurationGroup)",
+        "arguments": "$(PB_BuildArguments)",
         "workingFolder": "$(Agent.BuildDirectory)/s/corefx/",
         "failOnStandardError": "false"
       }
@@ -137,7 +137,7 @@
       },
       "inputs": {
         "filename": "$(Agent.BuildDirectory)/s/corefx/build-tests.sh",
-        "arguments": "-buildArch=$(PB_Platform) -$(PB_ConfigurationGroup) -SkipTests -- /p:ArchiveTests=true",
+        "arguments": "$(PB_BuildTestsArguments)",
         "workingFolder": "$(Agent.BuildDirectory)/s/corefx/",
         "failOnStandardError": "false"
       }
@@ -155,7 +155,7 @@
       },
       "inputs": {
         "filename": "$(Agent.BuildDirectory)/s/corefx/Tools/msbuild.sh",
-        "arguments": "$(Agent.BuildDirectory)/s/corefx/src/tests.builds /t:CloudBuild /p:ArchGroup=$(PB_Platform) /p:ConfigurationGroup=$(PB_ConfigurationGroup) /p:\"EnableCloudTest=$(PB_EnableCloudTest)\" /p:\"BuildMoniker=$(PB_BuildMoniker)\" /p:\"TargetQueue=$(PB_TargetQueue)\" /p:\"TestProduct=$(PB_TestProduct)\" /p:\"Branch=$(SourceBranch)\" /p:\"CloudDropAccountName=$(PB_CloudDropAccountName)\" /p:\"CloudResultsAccountName=$(PB_CloudResultsAccountName)\" /p:\"CloudDropAccessToken=$(CloudDropAccessToken)\" /p:\"CloudResultsAccessToken=$(OutputCloudResultsAccessToken)\" /p:\"TimeoutInSeconds=1200\" /p:\"TargetOS=OSX\" /p:FilterToOSGroup=OSX /p:\"HelixApiAccessKey=$(HelixApiAccessKey)\" /p:HelixApiEndpoint=$(PB_HelixApiEndPoint)",
+        "arguments": "$(Agent.BuildDirectory)/s/corefx/src/tests.builds $(PB_CreateHelixArguments) /p:\"CloudDropAccountName=$(PB_CloudDropAccountName)\" /p:\"CloudResultsAccountName=$(PB_CloudResultsAccountName)\" /p:\"CloudDropAccessToken=$(CloudDropAccessToken)\" /p:\"CloudResultsAccessToken=$(OutputCloudResultsAccessToken)\" /p:\"HelixApiAccessKey=$(HelixApiAccessKey)\" /p:HelixApiEndpoint=$(PB_HelixApiEndPoint) /p:\"Branch=$(SourceBranch)\" /p:\"TargetQueue=$(PB_TargetQueue)\" /p:\"OfficialBuildId=$(OfficialBuildId)\"",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -237,14 +237,6 @@
       "value": "false",
       "allowOverride": true
     },
-    "PB_Platform": {
-      "value": "x64",
-      "allowOverride": true
-    },
-    "PB_ConfigurationGroup": {
-      "value": "Release",
-      "allowOverride": true
-    },
     "PB_CloudDropAccountName": {
       "value": "dotnetbuildoutput"
     },
@@ -281,8 +273,20 @@
     "Build.Clean": {
       "value": "all"
     },
-    "PB_EnableCloudTest": {
-      "value": "true",
+    "PB_BuildArguments": {
+      "value": "-buildArch=x64 -Release",
+      "allowOverride": true
+    },
+    "PB_BuildTestsArguments": {
+      "value": "-buildArch=x64 -Release -SkipTests",
+      "allowOverride": true
+    },
+    "PB_SyncArguments": {
+      "value": "-p -- /p:ArchGroup=x64",
+      "allowOverride": true
+    },
+    "PB_CreateHelixArguments": {
+      "value": "/t:CloudBuild /p:ArchGroup=x64 /p:ConfigurationGroup=Release /p:\"EnableCloudTest=true /p:\"TestProduct=corefx /p:\"TimeoutInSeconds=1200\" /p:\"TargetOS=OSX\" /p:FilterToOSGroup=OSX",
       "allowOverride": true
     }
   },

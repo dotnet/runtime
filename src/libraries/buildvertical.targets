@@ -10,13 +10,19 @@
 
   <!-- Runs during traversal to select which projects and configurations of those projects to build -->
   <Target Name="AnnotateAndFilterProjects"
-          BeforeTargets="BuildAllProjects;TestAllProjects"
-          Condition="!$(MSBuildProjectFullPath.EndsWith('.proj'))">
+          BeforeTargets="BuildAllProjects;TestAllProjects">
 
     <!-- find the best configuration for each project, projects that shouldn't build for this configuration
          return an empty item.  -->
     <MSBuild Targets="FindBestConfiguration"
-             Projects="@(Project)">
+             Projects="@(Project)"
+             Condition="'$(BuildAllConfigurations)' != 'true'">
+      <Output TaskParameter="TargetOutputs"
+              ItemName="_ProjectBestConfigurations" />
+    </MSBuild>
+    <MSBuild Targets="GetBuildConfigurations"
+             Projects="@(Project)"
+             Condition="'$(BuildAllConfigurations)' == 'true'">
       <Output TaskParameter="TargetOutputs"
               ItemName="_ProjectBestConfigurations" />
     </MSBuild>
@@ -52,35 +58,56 @@
       <_BestConfiguration Condition="'$(BuildConfigurations)' == ''">$(BuildConfiguration)</_BestConfiguration>
     </PropertyGroup>
   </Target>
-
-  <!-- Runs in a leaf project (eg: csproj) to determine best configuration if one exists for purposes of project references -->
-  <Target Name="FindBestConfigurationForProjectReference"
-          DependsOnTargets="FindBestConfiguration"
-          Returns="$(_BestConfiguration)">
-    <Error Condition="'$(_BestConfiguration)' == ''" Text="Could not find a configuration for $(BuildConfiguration) from $(BuildConfigurations)" />
+  
+  <!-- Runs in a leaf project (eg: csproj) to determine all configurations -->
+  <Target Name="GetBuildConfigurations"
+          Returns="$(_AllBuildConfigurations)">
+     <PropertyGroup>
+       <_AllBuildConfigurations>$(BuildConfigurations)</_AllBuildConfigurations>
+       <_AllBuildConfigurations Condition="'$(BuildConfigurations)' == ''">$(BuildConfiguration)</_AllBuildConfigurations>
+     </PropertyGroup>
   </Target>
 
   <!-- Runs in a leaf project (csproj) to determine best configuration for ProjectReferences -->
   <Target Name="AnnotateProjectReference"
-          BeforeTargets="BeforeResolveReferences">
+          BeforeTargets="BeforeResolveReferences"
+          Condition="'@(ProjectReference)' != ''"
+          Inputs="%(ProjectReference.Identity)"
+          Outputs="unused">
 
-    <!-- find the best configuration for each project, projects that do not have an 
-        applicable configuration will fail the build.  -->
-    <MSBuild Targets="FindBestConfigurationForProjectReference"
+    <!-- Get all configurations for each ProjectReference.  We use this 
+         rather than the FindBestConfiguration target since we need to 
+         choose the best configuration for the referencing project's 
+         configuration, not the BuildConfiguration.  -->
+    <MSBuild Targets="GetBuildConfigurations"
              Projects="@(ProjectReference)">
-      <Output TaskParameter="TargetOutputs" ItemName="_ProjectReferenceBestConfigurations" />
+      <Output TaskParameter="TargetOutputs" PropertyName="_projectReferenceBuildConfigurations" />
     </MSBuild>
 
-    <ItemGroup>
-      <!-- transform back to ProjectReference -->
-      <ProjectReferenceWithConfiguration Include="@(_ProjectReferenceBestConfigurations->'%(OriginalItemSpec)')">
-        <AdditionalProperties>Configuration=%(Identity);%(_ProjectReferenceBestConfigurations.AdditionalProperties)</AdditionalProperties>
-      </ProjectReferenceWithConfiguration>
-    </ItemGroup>
+    <!-- Find the best configuration for the current Project's Configuration -->
+    <FindBestConfiguration Properties="@(Property)"
+                           PropertyValues="@(PropertyValue)"
+                           BuildConfigurations="$(_ProjectReferenceBuildConfigurations)"
+                           BuildConfiguration="$(Configuration)">
+      <Output TaskParameter="BestConfiguration" PropertyName="_projectReferenceConfiguration" />
+    </FindBestConfiguration>
+
+    <Error Condition="'$(_projectReferenceConfiguration)' == ''" Text="Could not find a configuration for ProjectReference '@(ProjectReference)' from configurations '$(_projectReferenceBuildConfigurations)' when building '$(MSBuildProjectName)' for configuration '$(Configuration)' ." />
 
     <ItemGroup>
-      <ProjectReference Remove="@(ProjectReference)" />
-      <ProjectReference Include="@(ProjectReferenceWithConfiguration)" />
+      <ProjectReference>
+        <AdditionalProperties>Configuration=$(_projectReferenceConfiguration);%(ProjectReference.AdditionalProperties)</AdditionalProperties>
+      </ProjectReference>
     </ItemGroup>
+  </Target>
+
+  <Target Name="BuildAll">
+    <ItemGroup>
+      <_buildConfigurations Include="$(BuildConfigurations)" />
+      <_buildConfigurations Condition="'@(_buildConfigurations)' == ''" Include="$(BuildConfiguration)" />
+    </ItemGroup>
+
+    <MSBuild Projects="$(MSBuildProjectFullPath)"
+             Properties="Configuration=%(_buildConfigurations.Identity)" />
   </Target>
 </Project>

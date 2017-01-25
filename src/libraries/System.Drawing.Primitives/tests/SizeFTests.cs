@@ -91,6 +91,7 @@ namespace System.Drawing.PrimitivesTest
                 Assert.True(sLeft == sRight);
                 Assert.False(sLeft != sRight);
                 Assert.True(sLeft.Equals(sRight));
+                Assert.True(sLeft.Equals((object)sRight));
                 Assert.Equal(sLeft.GetHashCode(), sRight.GetHashCode());
                 return;
             }
@@ -98,6 +99,7 @@ namespace System.Drawing.PrimitivesTest
             Assert.True(sLeft != sRight);
             Assert.False(sLeft == sRight);
             Assert.False(sLeft.Equals(sRight));
+            Assert.False(sLeft.Equals((object)sRight));
         }
 
         [Fact]
@@ -106,7 +108,8 @@ namespace System.Drawing.PrimitivesTest
             var size = new SizeF(0, 0);
             Assert.False(size.Equals(null));
             Assert.False(size.Equals(0));
-            Assert.False(size.Equals(new Size(0, 0)));
+            Assert.True(size.Equals(new Size(0, 0))); // Implicit cast
+            Assert.False(size.Equals((object)new Size(0, 0))); // No implicit cast
         }
 
         [Fact]

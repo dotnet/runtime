@@ -15,7 +15,10 @@
     <TargetingPackReference Include="System.Private.Interop" Condition="'$(TargetGroup)' == 'netcore50aot'" />
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="System.Private.CoreLib" />
+    <ReferenceFromRuntime Include="System.Private.CoreLib" />
   </ItemGroup>
+  <PropertyGroup Condition="'$(TargetsWindows)'!='true'">
+    <GeneratePlatformNotSupportedAssembly>true</GeneratePlatformNotSupportedAssembly>
+  </PropertyGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

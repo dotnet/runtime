@@ -14,7 +14,7 @@ namespace System.Drawing
     ///    with an ordered pair of width and height.
     /// </summary>
     [Serializable]
-    public struct Size
+    public struct Size : IEquatable<Size>
     {
         /// <summary>
         ///    Initializes a new instance of the <see cref='System.Drawing.Size'/> class.
@@ -166,14 +166,9 @@ namespace System.Drawing
         ///    with the same dimensions as this <see cref='System.Drawing.Size'/>.
         /// </para>
         /// </summary>
-        public override bool Equals(object obj)
-        {
-            if (!(obj is Size))
-                return false;
+        public override bool Equals(object obj) => obj is Size && Equals((Size)obj);
 
-            Size comp = (Size)obj;
-            return (comp._width == _width) && (comp._height == _height);
-        }
+        public bool Equals(Size other) => this == other;
 
         /// <summary>
         ///    <para>

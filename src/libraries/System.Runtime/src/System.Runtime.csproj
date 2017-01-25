@@ -1,28 +1,24 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <ProjectGuid>{56B9D0A9-44D3-488E-8B42-C14A6E30CAB2}</ProjectGuid>
     <AssemblyName>System.Runtime</AssemblyName>
-    <AssemblyVersion Condition="'$(TargetGroup)'=='netstandard1.5'">4.1.1.0</AssemblyVersion>
-    <ContractProject Condition="'$(AssemblyVersion)'=='4.1.1.0'">../ref/4.1.0/System.Runtime.depproj</ContractProject>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <GenFacadesArgs Condition="'$(TargetGroup)' == 'uap101aot' Or '$(TargetGroup)' == 'netcoreapp1.2corert'">$(GenFacadesArgs) -ignoreMissingTypes</GenFacadesArgs>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard1.5-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard1.5-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='net461-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='net461-Windows_NT-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='uap101aot-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='uap101aot-Windows_NT-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netcoreapp1.2corert-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netcoreapp1.2corert-Windows_NT-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netcoreapp-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netcoreapp-Release|AnyCPU'" />
   <ItemGroup Condition="'$(TargetGroup)' == 'net461' OR '$(TargetGroup)' == 'uap101aot' OR '$(TargetGroup)' == 'netcoreapp1.2corert'">
     <ContractProject Include="..\ref\System.Runtime.csproj">
-      <TargetGroup>netstandard</TargetGroup>
+      <TargetGroup>netcoreapp</TargetGroup>
     </ContractProject>
   </ItemGroup>
   <ItemGroup>
@@ -38,18 +34,18 @@
     <Compile Include="System\Runtime\CompilerServices\Attributes.cs" />
     <Compile Include="System\IO\FileAttributes.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' != 'net461' and '$(TargetGroup)' != 'netstandard1.5'">
+  <ItemGroup Condition="'$(TargetGroup)' != 'net461'">
     <Compile Include="System\Runtime\NgenServicingAttributes.cs" />
     <Compile Include="System\IO\HandleInheritability.cs" />
     <Compile Include="System\Runtime\ConstrainedExecution\PrePrepareMethodAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\SpecialNameAttribute.cs" />
     <Compile Include="System\Threading\WaitHandleExtensions.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard1.5' or '$(TargetGroup)' == 'netstandard'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
     <Compile Include="System\ComponentModel\DefaultValueAttribute.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\System.Private.Uri\src\System.Private.Uri.csproj" Condition="'$(TargetGroup)' == 'netstandard1.5' or '$(TargetGroup)' == 'netstandard' or '$(TargetGroup)' == 'uap101aot'" />
+    <ProjectReference Include="..\..\System.Private.Uri\src\System.Private.Uri.csproj" Condition="'$(TargetGroup)' == 'netcoreapp' or '$(TargetGroup)' == 'uap101aot'" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' != 'net461'">
     <TargetingPackReference Include="System.Private.CoreLib" />
@@ -60,7 +56,7 @@
     <TargetingPackReference Include="System.ComponentModel.Composition" />
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="System.Private.CoreLib" />
+    <ReferenceFromRuntime Include="System.Private.CoreLib" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

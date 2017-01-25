@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Text;
 
 namespace System.Net.Http.Headers
@@ -143,6 +144,27 @@ namespace System.Net.Http.Headers
             return _name;
         }
 
+        private void AddToStringBuilder(StringBuilder sb)
+        {
+            if (GetType() != typeof(NameValueHeaderValue))
+            {
+                // If this is a derived instance, we need to give its
+                // ToString a chance.
+                sb.Append(ToString());
+            }
+            else
+            {
+                // Otherwise, we can use the base behavior and avoid
+                // the string concatenation.
+                sb.Append(_name);
+                if (!string.IsNullOrEmpty(_value))
+                {
+                    sb.Append('=');
+                    sb.Append(_value);
+                }
+            }
+        }
+
         internal static void ToString(ObjectCollection<NameValueHeaderValue> values, char separator, bool leadingSeparator,
             StringBuilder destination)
         {
@@ -160,22 +182,8 @@ namespace System.Net.Http.Headers
                     destination.Append(separator);
                     destination.Append(' ');
                 }
-                destination.Append(value.ToString());
+                value.AddToStringBuilder(destination);
             }
-        }
-
-        internal static string ToString(ObjectCollection<NameValueHeaderValue> values, char separator, bool leadingSeparator)
-        {
-            if ((values == null) || (values.Count == 0))
-            {
-                return null;
-            }
-
-            StringBuilder sb = new StringBuilder();
-
-            ToString(values, separator, leadingSeparator, sb);
-
-            return sb.ToString();
         }
 
         internal static int GetHashCode(ObjectCollection<NameValueHeaderValue> values)

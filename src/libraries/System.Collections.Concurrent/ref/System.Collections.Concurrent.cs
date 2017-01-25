@@ -64,6 +64,7 @@ namespace System.Collections.Concurrent
         bool System.Collections.ICollection.IsSynchronized { get { throw null; } }
         object System.Collections.ICollection.SyncRoot { get { throw null; } }
         public void Add(T item) { }
+        public void Clear() { }
         public void CopyTo(T[] array, int index) { }
         public System.Collections.Generic.IEnumerator<T> GetEnumerator() { throw null; }
         bool System.Collections.Concurrent.IProducerConsumerCollection<T>.TryAdd(T item) { throw null; }
@@ -99,17 +100,13 @@ namespace System.Collections.Concurrent
         public System.Collections.Generic.ICollection<TValue> Values { get { throw null; } }
         public TValue AddOrUpdate(TKey key, TValue addValue, System.Func<TKey, TValue, TValue> updateValueFactory) { throw null; }
         public TValue AddOrUpdate(TKey key, System.Func<TKey, TValue> addValueFactory, System.Func<TKey, TValue, TValue> updateValueFactory) { throw null; }
-#if netcoreapp11
         public TValue AddOrUpdate<TArg>(TKey key, System.Func<TKey, TArg, TValue> addValueFactory, System.Func<TKey, TValue, TArg, TValue> updateValueFactory, TArg factoryArgument) { throw null; }
-#endif
         public void Clear() { }
         public bool ContainsKey(TKey key) { throw null; }
         public System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<TKey, TValue>> GetEnumerator() { throw null; }
         public TValue GetOrAdd(TKey key, TValue value) { throw null; }
         public TValue GetOrAdd(TKey key, System.Func<TKey, TValue> valueFactory) { throw null; }
-#if netcoreapp11
         public TValue GetOrAdd<TArg>(TKey key, System.Func<TKey, TArg, TValue> valueFactory, TArg factoryArgument) { throw null; }
-#endif
         void System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>.Add(System.Collections.Generic.KeyValuePair<TKey, TValue> keyValuePair) { }
         bool System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>.Contains(System.Collections.Generic.KeyValuePair<TKey, TValue> keyValuePair) { throw null; }
         void System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>.CopyTo(System.Collections.Generic.KeyValuePair<TKey, TValue>[] array, int index) { }
@@ -136,6 +133,7 @@ namespace System.Collections.Concurrent
         public bool IsEmpty { get { throw null; } }
         bool System.Collections.ICollection.IsSynchronized { get { throw null; } }
         object System.Collections.ICollection.SyncRoot { get { throw null; } }
+        public void Clear() { }
         public void CopyTo(T[] array, int index) { }
         public void Enqueue(T item) { }
         public System.Collections.Generic.IEnumerator<T> GetEnumerator() { throw null; }

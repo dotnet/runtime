@@ -20,9 +20,9 @@ namespace System.Security.Cryptography.Xml
         internal X509IssuerSerial(string issuerName, string serialNumber)
         {
             if (issuerName == null || issuerName.Length == 0)
-                throw new ArgumentException(SecurityResources.GetResourceString("Arg_EmptyOrNullString"), "issuerName");
+                throw new ArgumentException(SR.Arg_EmptyOrNullString, nameof(issuerName));
             if (serialNumber == null || serialNumber.Length == 0)
-                throw new ArgumentException(SecurityResources.GetResourceString("Arg_EmptyOrNullString"), "serialNumber");
+                throw new ArgumentException(SR.Arg_EmptyOrNullString, nameof(serialNumber));
             _issuerName = issuerName;
             _serialNumber = serialNumber;
         }

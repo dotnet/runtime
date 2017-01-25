@@ -147,6 +147,7 @@
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'=='netstandard'">
+    <Compile Include="Generic\Comparers\EqualityComparer.Generic.Serialization.Tests.cs" />
     <Compile Include="$(CommonTestPath)\System\Collections\IEnumerable.NonGeneric.Serialization.Tests.cs">
       <Link>Common\System\Collections\IEnumerable.NonGeneric.Serialization.Tests.cs</Link>
     </Compile>

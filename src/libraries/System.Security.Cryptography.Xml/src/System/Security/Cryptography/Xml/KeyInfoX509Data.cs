@@ -4,6 +4,8 @@
 
 using System;
 using System.Collections;
+using System.Globalization;
+using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
@@ -45,7 +47,7 @@ namespace System.Security.Cryptography.Xml
         public KeyInfoX509Data(X509Certificate cert, X509IncludeOption includeOption)
         {
             if (cert == null)
-                throw new ArgumentNullException("cert");
+                throw new ArgumentNullException(nameof(cert));
 
             X509Certificate2 certificate = new X509Certificate2(cert);
             X509ChainElementCollection elements = null;
@@ -60,10 +62,12 @@ namespace System.Security.Cryptography.Xml
                     // Can't honor the option if we only have a partial chain.
                     if ((chain.ChainStatus.Length > 0) &&
                         ((chain.ChainStatus[0].Status & X509ChainStatusFlags.PartialChain) == X509ChainStatusFlags.PartialChain))
-                        throw new CryptographicException(CAPI.CERT_E_CHAINING);
+                    {
+                        throw new CryptographicException(SR.Cryptography_Partial_Chain);
+                    }
 
-                    elements = (X509ChainElementCollection)chain.ChainElements;
-                    for (int index = 0; index < (X509Utils.IsSelfSigned(chain) ? 1 : elements.Count - 1); index++)
+                elements = (X509ChainElementCollection)chain.ChainElements;
+                    for (int index = 0; index < (Utils.IsSelfSigned(chain) ? 1 : elements.Count - 1); index++)
                     {
                         AddCertificate(elements[index].Certificate);
                     }
@@ -79,7 +83,9 @@ namespace System.Security.Cryptography.Xml
                     // Can't honor the option if we only have a partial chain.
                     if ((chain.ChainStatus.Length > 0) &&
                         ((chain.ChainStatus[0].Status & X509ChainStatusFlags.PartialChain) == X509ChainStatusFlags.PartialChain))
-                        throw new CryptographicException(CAPI.CERT_E_CHAINING);
+                    {
+                        throw new CryptographicException(SR.Cryptography_Partial_Chain);
+                    }
 
                     elements = (X509ChainElementCollection)chain.ChainElements;
                     foreach (X509ChainElement element in elements)
@@ -102,7 +108,7 @@ namespace System.Security.Cryptography.Xml
         public void AddCertificate(X509Certificate certificate)
         {
             if (certificate == null)
-                throw new ArgumentNullException("certificate");
+                throw new ArgumentNullException(nameof(certificate));
 
             if (_certificates == null)
                 _certificates = new ArrayList();
@@ -127,7 +133,7 @@ namespace System.Security.Cryptography.Xml
         {
             if (_subjectKeyIds == null)
                 _subjectKeyIds = new ArrayList();
-            _subjectKeyIds.Add(X509Utils.DecodeHexString(subjectKeyId));
+            _subjectKeyIds.Add(Utils.DecodeHexString(subjectKeyId));
         }
 
         public ArrayList SubjectNames
@@ -149,11 +155,10 @@ namespace System.Security.Cryptography.Xml
 
         public void AddIssuerSerial(string issuerName, string serialNumber)
         {
-            BigInt h = new BigInt();
-            h.FromHexadecimal(serialNumber);
+            BigInteger h = BigInteger.Parse(serialNumber, NumberStyles.AllowHexSpecifier);
             if (_issuerSerials == null)
                 _issuerSerials = new ArrayList();
-            _issuerSerials.Add(new X509IssuerSerial(issuerName, h.ToDecimal()));
+            _issuerSerials.Add(new X509IssuerSerial(issuerName, h.ToString()));
         }
 
         // When we load an X509Data from Xml, we know the serial number is in decimal representation.
@@ -256,7 +261,7 @@ namespace System.Security.Cryptography.Xml
         public override void LoadXml(XmlElement element)
         {
             if (element == null)
-                throw new ArgumentNullException("element");
+                throw new ArgumentNullException(nameof(element));
 
             XmlNamespaceManager nsm = new XmlNamespaceManager(element.OwnerDocument.NameTable);
             nsm.AddNamespace("ds", SignedXml.XmlDsigNamespaceUrl);
@@ -269,7 +274,7 @@ namespace System.Security.Cryptography.Xml
 
             if ((x509CRLNodes.Count == 0 && x509IssuerSerialNodes.Count == 0 && x509SKINodes.Count == 0
                     && x509SubjectNameNodes.Count == 0 && x509CertificateNodes.Count == 0)) // Bad X509Data tag, or Empty tag
-                throw new CryptographicException(SecurityResources.GetResourceString("Cryptography_Xml_InvalidElement"), "X509Data");
+                throw new CryptographicException(SR.Cryptography_Xml_InvalidElement, "X509Data");
 
             // Flush anything in the lists
             Clear();
@@ -282,7 +287,7 @@ namespace System.Security.Cryptography.Xml
                 XmlNode x509IssuerNameNode = issuerSerialNode.SelectSingleNode("ds:X509IssuerName", nsm);
                 XmlNode x509SerialNumberNode = issuerSerialNode.SelectSingleNode("ds:X509SerialNumber", nsm);
                 if (x509IssuerNameNode == null || x509SerialNumberNode == null)
-                    throw new CryptographicException(SecurityResources.GetResourceString("Cryptography_Xml_InvalidElement"), "IssuerSerial");
+                    throw new CryptographicException(SR.Cryptography_Xml_InvalidElement, "IssuerSerial");
                 InternalAddIssuerSerial(x509IssuerNameNode.InnerText.Trim(), x509SerialNumberNode.InnerText.Trim());
             }
 

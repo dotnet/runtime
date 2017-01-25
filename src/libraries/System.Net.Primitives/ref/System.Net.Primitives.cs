@@ -275,14 +275,10 @@ namespace System.Net
 
     public static class HttpVersion
     {
-#if netcoreapp
         public static readonly Version Unknown = new Version(0, 0);
-#endif
         public static readonly Version Version10 = new Version(1, 0);
         public static readonly Version Version11 = new Version(1, 1);
-#if netcoreapp
         public static readonly Version Version20 = new Version(2, 0);
-#endif
     }
 }
 namespace System.Net.Cache
@@ -462,11 +458,9 @@ namespace System.Security.Authentication
         Md5 = 32771,
         None = 0,
         Sha1 = 32772,
-#if netcoreapp
         Sha256 = 32780,
         Sha384 = 32781,
         Sha512 = 32782
-#endif
     }
     [System.FlagsAttribute]
     public enum SslProtocols

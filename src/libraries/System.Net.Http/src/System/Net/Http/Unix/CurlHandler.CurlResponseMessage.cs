@@ -237,10 +237,14 @@ namespace System.Net.Http
                 }
             }
 
-            public override int Read(byte[] buffer, int offset, int count)
-            {
-                return ReadAsync(buffer, offset, count, CancellationToken.None).GetAwaiter().GetResult();
-            }
+            public override int Read(byte[] buffer, int offset, int count) =>
+                ReadAsync(buffer, offset, count, CancellationToken.None).GetAwaiter().GetResult();
+
+            public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback callback, object state) =>
+                TaskToApm.Begin(ReadAsync(buffer, offset, count, CancellationToken.None), callback, state);
+
+            public override int EndRead(IAsyncResult asyncResult) =>
+                TaskToApm.End<int>(asyncResult);
 
             public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
             {

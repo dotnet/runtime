@@ -1,0 +1,23 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <NuGetDeploySourceItem>Reference</NuGetDeploySourceItem>
+    <NuGetTargetMoniker Condition="'$(TargetGroup)' == 'netcoreapp'">.NETFramework,Version=v4.6.1</NuGetTargetMoniker>
+    <NugetRuntimeIdentifier>None</NugetRuntimeIdentifier>
+    <OutputPath>$(NetFxRefPath)</OutputPath>
+  </PropertyGroup>
+  <!-- Filter the targeting pack to just these assemblies which we need netcoreapp shims for -->
+  <ItemGroup>
+    <TargetingPackReference Include="mscorlib" />
+    <TargetingPackReference Include="System" />
+    <TargetingPackReference Include="System.Core" />
+    <TargetingPackReference Include="System.Drawing" />
+    <TargetingPackReference Include="System.Numerics" />
+    <TargetingPackReference Include="System.Runtime.Serialization" />
+    <TargetingPackReference Include="System.Web" />
+    <TargetingPackReference Include="System.Xml" />
+    <TargetingPackReference Include="System.Xml.Linq" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>

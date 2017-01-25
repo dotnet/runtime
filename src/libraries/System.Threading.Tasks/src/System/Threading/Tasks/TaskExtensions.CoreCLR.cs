@@ -166,13 +166,8 @@ namespace System.Threading.Tasks
             // will cause any synchronous continuations to be invoked, which is fine unless we're so deep that doing
             // so overflows.  ContinueWith has built-in support for avoiding such stack dives, but that support is not
             // (yet) part of await's infrastructure, so until it is we mimic it manually.  This matches the behavior
-            // employed by the Unwrap implementation in mscorlib. (If TryEnsureSufficientExecutionStack is made public 
-            // in the future, switch to using it to avoid the try/catch block and exception.)
-            try
-            {
-                RuntimeHelpers.EnsureSufficientExecutionStack();
-            }
-            catch (InsufficientExecutionStackException)
+            // employed by the Unwrap implementation in mscorlib.
+            if (!RuntimeHelpers.TryEnsureSufficientExecutionStack())
             {
                 // This is very rare.  We're too deep to safely invoke
                 // TrySet* synchronously, so do so asynchronously instead.

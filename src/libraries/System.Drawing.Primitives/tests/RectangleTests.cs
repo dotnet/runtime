@@ -137,6 +137,7 @@ namespace System.Drawing.PrimitivesTest
             Assert.True(rect1 != rect2);
             Assert.False(rect1 == rect2);
             Assert.False(rect1.Equals(rect2));
+            Assert.False(rect1.Equals((object)rect2));
         }
 
         [Fact]

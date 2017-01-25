@@ -11,8 +11,8 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="Program.cs" />
-    <Compile Include="$(CommonPath)\System\Diagnostics\CodeAnalysis\ExcludeFromCodeCoverageAttribute.cs">
-      <Link>Common\System\Diagnostics\CodeAnalysis\ExcludeFromCodeCoverageAttribute.cs</Link>
+    <Compile Include="$(CommonPath)\System\Diagnostics\CodeAnalysis\ExcludeFromCodeCoverageAssemblyAttribute.cs">
+      <Link>Common\System\Diagnostics\CodeAnalysis\ExcludeFromCodeCoverageAssemblyAttribute.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>

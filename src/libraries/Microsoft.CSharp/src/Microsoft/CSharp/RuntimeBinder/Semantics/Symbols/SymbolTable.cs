@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using Microsoft.CSharp.RuntimeBinder.Syntax;
@@ -83,7 +84,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         private readonly Dictionary<Key, Symbol> _dictionary;
 
-        private sealed class Key
+        private sealed class Key : IEquatable<Key>
         {
             private readonly Name _name;
             private readonly ParentSymbol _parent;
@@ -94,11 +95,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 _parent = parent;
             }
 
-            public override bool Equals(object obj)
-            {
-                Key k = obj as Key;
-                return k != null && _name.Equals(k._name) && _parent.Equals(k._parent);
-            }
+            public bool Equals(Key other) => other != null && _name.Equals(other._name) && _parent.Equals(other._parent);
+
+            public override bool Equals(object obj) => Equals(obj as Key);
 
             public override int GetHashCode()
             {
