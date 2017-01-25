@@ -18,6 +18,9 @@ namespace Microsoft.DotNet.CoreSetup.Test
         private string _corehostPackages;
         private string _corehostDummyPackages;
 
+        private string _targetRID;
+
+        public string TargetRID => _targetRID;
         public string RepoRoot => _repoRoot;
         public string Artifacts => _artifacts;
         public string HostArtifacts => _hostArtifacts;
@@ -38,9 +41,9 @@ namespace Microsoft.DotNet.CoreSetup.Test
             
             string baseArtifactsFolder = artifacts ?? Path.Combine(_repoRoot, "artifacts");
 
-            var targetRID = Environment.GetEnvironmentVariable("TEST_TARGETRID");
+            _targetRID = Environment.GetEnvironmentVariable("TEST_TARGETRID");
 
-            _artifacts = Path.Combine(baseArtifactsFolder, targetRID);
+            _artifacts = Path.Combine(baseArtifactsFolder, _targetRID);
 
             _hostArtifacts = artifacts ?? Path.Combine(_artifacts, "corehost");
             _nugetPackages = nugetPackages ?? Path.Combine(_repoRoot, ".nuget", "packages");
