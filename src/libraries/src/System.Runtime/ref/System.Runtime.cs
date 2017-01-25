@@ -2099,8 +2099,11 @@ namespace System
         public System.String ToUpper(System.Globalization.CultureInfo culture) { throw null; }
         public string ToUpperInvariant() { throw null; }
         public string Trim() { throw null; }
+        public string Trim(char trimChar) { throw null; }
         public string Trim(params char[] trimChars) { throw null; }
+        public string TrimEnd(char trimChar) { throw null; }
         public string TrimEnd(params char[] trimChars) { throw null; }
+        public string TrimStart(char trimChar) { throw null; }
         public string TrimStart(params char[] trimChars) { throw null; }
     }
     public enum StringComparison
