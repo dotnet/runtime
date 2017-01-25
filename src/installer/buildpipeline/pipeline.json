@@ -90,6 +90,22 @@
           }
         },
         {
+          "Name": "Core-Setup-Signing-Windows-x64-master",
+          "ReportingParameters": {
+            "OperatingSystem": "Windows",
+            "Type": "build/product/",
+            "Platform": "x64"
+          }
+        },
+        {
+          "Name": "Core-Setup-Signing-Windows-x86-master",
+          "ReportingParameters": {
+            "OperatingSystem": "Windows",
+            "Type": "build/product/",
+            "Platform": "x86"
+          }
+        },
+        {
           "Name": "Core-Setup-Ubuntu14.04-x64-master",
           "ReportingParameters": {
             "OperatingSystem": "Ubuntu 14.04",

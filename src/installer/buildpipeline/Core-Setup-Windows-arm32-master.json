@@ -64,9 +64,6 @@
     }
   ],
   "variables": {
-    "RID": {
-      "value": "win8-arm"
-    },
     "NUGET_FEED_URL": {
       "value": "https://dotnet.myget.org/F/dotnet-core"
     },
@@ -79,9 +76,6 @@
     "COREHOST_TRACE": {
       "value": "0"
     },
-    "SASTOKEN": {
-      "value": "PassedViaPipeBuild"
-    },
     "STORAGE_ACCOUNT": {
       "value": "dotnetcli"
     },
@@ -90,9 +84,6 @@
     },
     "CONNECTION_STRING": {
       "value": "PassedViaPipeBuild"
-    },
-    "CERTIFICATE_ID": {
-      "value": "400"
     },
     "PUBLISH_TO_AZURE_BLOB": {
       "value": "true",
