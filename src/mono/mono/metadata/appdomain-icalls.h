@@ -11,19 +11,21 @@
 #include <mono/metadata/handle.h>
 #include <mono/metadata/object-internals.h>
 
-MonoAppDomain *
-ves_icall_System_AppDomain_getCurDomain            (void);
+MonoAppDomainHandle
+ves_icall_System_AppDomain_getCurDomain            (MonoError *error);
 
-MonoAppDomain *
-ves_icall_System_AppDomain_getRootDomain           (void);
+MonoAppDomainHandle
+ves_icall_System_AppDomain_getRootDomain           (MonoError *error);
 
-MonoAppDomain *
-ves_icall_System_AppDomain_createDomain            (MonoString         *friendly_name,
-						    MonoAppDomainSetup *setup);
+MonoAppDomainHandle
+ves_icall_System_AppDomain_createDomain            (MonoStringHandle         friendly_name,
+						    MonoAppDomainSetupHandle setup,
+						    MonoError                *error);
 
-MonoObject *
-ves_icall_System_AppDomain_GetData                 (MonoAppDomain *ad, 
-						    MonoString    *name);
+MonoObjectHandle
+ves_icall_System_AppDomain_GetData                 (MonoAppDomainHandle ad, 
+						    MonoStringHandle    name,
+						    MonoError*          error);
 
 MonoReflectionAssemblyHandle
 ves_icall_System_AppDomain_LoadAssemblyRaw         (MonoAppDomainHandle ad,
@@ -34,15 +36,18 @@ ves_icall_System_AppDomain_LoadAssemblyRaw         (MonoAppDomainHandle ad,
 						    MonoError *error);
 
 void
-ves_icall_System_AppDomain_SetData                 (MonoAppDomain *ad, 
-						    MonoString    *name, 
-						    MonoObject    *data);
+ves_icall_System_AppDomain_SetData                 (MonoAppDomainHandle ad, 
+						    MonoStringHandle    name, 
+						    MonoObjectHandle    data,
+						    MonoError           *error);
 
-MonoAppDomainSetup *
-ves_icall_System_AppDomain_getSetup                (MonoAppDomain *ad);
+MonoAppDomainSetupHandle
+ves_icall_System_AppDomain_getSetup                (MonoAppDomainHandle ad,
+						    MonoError *error);
 
-MonoString *
-ves_icall_System_AppDomain_getFriendlyName         (MonoAppDomain *ad);
+MonoStringHandle
+ves_icall_System_AppDomain_getFriendlyName         (MonoAppDomainHandle ad,
+						    MonoError *error);
 
 MonoArrayHandle
 ves_icall_System_AppDomain_GetAssemblies           (MonoAppDomainHandle ad,
@@ -62,10 +67,11 @@ ves_icall_System_AppDomain_LoadAssembly            (MonoAppDomainHandle ad,
 						    MonoError *error);
 
 gboolean
-ves_icall_System_AppDomain_InternalIsFinalizingForUnload (gint32 domain_id);
+ves_icall_System_AppDomain_InternalIsFinalizingForUnload (gint32 domain_id, MonoError *error);
 
 void
-ves_icall_System_AppDomain_InternalUnload          (gint32 domain_id);
+ves_icall_System_AppDomain_InternalUnload          (gint32 domain_id,
+						    MonoError *error);
 
 void
 ves_icall_System_AppDomain_DoUnhandledException (MonoException *exc);
@@ -76,20 +82,20 @@ ves_icall_System_AppDomain_ExecuteAssembly         (MonoAppDomainHandle ad,
 						    MonoArrayHandle args,
 						    MonoError *error);
 
-MonoAppDomain * 
-ves_icall_System_AppDomain_InternalSetDomain	   (MonoAppDomain *ad);
+MonoAppDomainHandle
+ves_icall_System_AppDomain_InternalSetDomain	   (MonoAppDomainHandle ad, MonoError *error);
 
-MonoAppDomain * 
-ves_icall_System_AppDomain_InternalSetDomainByID   (gint32 domainid);
-
-void
-ves_icall_System_AppDomain_InternalPushDomainRef (MonoAppDomain *ad);
+MonoAppDomainHandle
+ves_icall_System_AppDomain_InternalSetDomainByID   (gint32 domainid, MonoError *error);
 
 void
-ves_icall_System_AppDomain_InternalPushDomainRefByID (gint32 domain_id);
+ves_icall_System_AppDomain_InternalPushDomainRef (MonoAppDomainHandle ad, MonoError *error);
 
 void
-ves_icall_System_AppDomain_InternalPopDomainRef (void);
+ves_icall_System_AppDomain_InternalPushDomainRefByID (gint32 domain_id, MonoError *error);
+
+void
+ves_icall_System_AppDomain_InternalPopDomainRef (MonoError *error);
 
 MonoAppContext * 
 ves_icall_System_AppDomain_InternalGetContext      (void);
@@ -103,8 +109,8 @@ ves_icall_System_AppDomain_InternalSetContext	   (MonoAppContext *mc);
 gint32 
 ves_icall_System_AppDomain_GetIDFromDomain (MonoAppDomain * ad);
 
-MonoString *
-ves_icall_System_AppDomain_InternalGetProcessGuid (MonoString* newguid);
+MonoStringHandle
+ves_icall_System_AppDomain_InternalGetProcessGuid (MonoStringHandle newguid, MonoError *error);
 
 MonoBoolean
 ves_icall_System_CLRConfig_CheckThrowUnobservedTaskExceptions (void);

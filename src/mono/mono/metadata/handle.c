@@ -239,6 +239,12 @@ mono_array_new_handle (MonoDomain *domain, MonoClass *eclass, uintptr_t n, MonoE
 	return MONO_HANDLE_NEW (MonoArray, mono_array_new_checked (domain, eclass, n, error));
 }
 
+MonoArrayHandle
+mono_array_new_full_handle (MonoDomain *domain, MonoClass *array_class, uintptr_t *lengths, intptr_t *lower_bounds, MonoError *error)
+{
+	return MONO_HANDLE_NEW (MonoArray, mono_array_new_full_checked (domain, array_class, lengths, lower_bounds, error));
+}
+
 #ifdef ENABLE_CHECKED_BUILD
 /* Checked build helpers */
 void

@@ -379,6 +379,9 @@ mono_handle_assign (MonoObjectHandleOut dest, MonoObjectHandle src)
 //FIXME this should go somewhere else
 MonoStringHandle mono_string_new_handle (MonoDomain *domain, const char *data, MonoError *error);
 MonoArrayHandle mono_array_new_handle (MonoDomain *domain, MonoClass *eclass, uintptr_t n, MonoError *error);
+MonoArrayHandle
+mono_array_new_full_handle (MonoDomain *domain, MonoClass *array_class, uintptr_t *lengths, intptr_t *lower_bounds, MonoError *error);
+
 
 uintptr_t mono_array_handle_length (MonoArrayHandle arr);
 

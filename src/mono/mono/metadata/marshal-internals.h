@@ -9,6 +9,9 @@
 #include <glib.h>
 #include <mono/metadata/object-internals.h>
 
+MonoObjectHandle
+mono_marshal_xdomain_copy_value_handle (MonoObjectHandle val, MonoError *error);
+
 // On Windows platform implementation of bellow methods are hosted in separate source file
 // masrshal-windows.c or marshal-windows-*.c. On other platforms the implementation is still keept
 // in marshal.c still declared as static and in some places even inlined.

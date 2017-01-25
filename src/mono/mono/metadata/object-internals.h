@@ -171,6 +171,9 @@ struct _MonoAppDomain {
 /* Safely access System.AppDomain from native code */
 TYPED_HANDLE_DECL (MonoAppDomain);
 
+/* Safely access System.AppDomainSetup from native code.  (struct is in domain-internals.h) */
+TYPED_HANDLE_DECL (MonoAppDomainSetup);
+
 typedef struct _MonoStringBuilder MonoStringBuilder;
 
 struct _MonoStringBuilder {
@@ -1480,6 +1483,9 @@ mono_get_constant_value_from_blob (MonoDomain* domain, MonoTypeEnum type, const 
 void
 mono_release_type_locks (MonoInternalThread *thread);
 
+int
+mono_string_handle_length (MonoStringHandle s);
+
 char *
 mono_string_handle_to_utf8 (MonoStringHandle s, MonoError *error);
 
@@ -1490,8 +1496,8 @@ char *
 mono_string_to_utf8_image (MonoImage *image, MonoStringHandle s, MonoError *error);
 
 
-MonoArray*
-mono_array_clone_in_domain (MonoDomain *domain, MonoArray *array, MonoError *error);
+MonoArrayHandle
+mono_array_clone_in_domain (MonoDomain *domain, MonoArrayHandle array, MonoError *error);
 
 MonoArray*
 mono_array_clone_checked (MonoArray *array, MonoError *error);
@@ -1783,6 +1789,9 @@ mono_string_new_checked (MonoDomain *domain, const char *text, MonoError *merror
 
 MonoString *
 mono_string_new_utf16_checked (MonoDomain *domain, const guint16 *text, gint32 len, MonoError *error);
+
+MonoStringHandle
+mono_string_new_utf16_handle (MonoDomain *domain, const guint16 *text, gint32 len, MonoError *error);
 
 MonoString *
 mono_string_from_utf16_checked (mono_unichar2 *data, MonoError *error);

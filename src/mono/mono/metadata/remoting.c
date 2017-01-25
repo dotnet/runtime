@@ -10,8 +10,10 @@
 
 #include "config.h"
 
+#include "mono/metadata/handle.h"
 #include "mono/metadata/remoting.h"
 #include "mono/metadata/marshal.h"
+#include "mono/metadata/marshal-internals.h"
 #include "mono/metadata/abi-details.h"
 #include "mono/metadata/cominterop.h"
 #include "mono/metadata/tabledefs.h"
@@ -1910,19 +1912,44 @@ mono_get_xdomain_marshal_type (MonoType *t)
 	return MONO_MARSHAL_SERIALIZE;
 }
 
-/* mono_marshal_xdomain_copy_value
- * Makes a copy of "val" suitable for the current domain.
+/* Replace the given array element by a copy in the current domain */
+static gboolean
+xdomain_copy_array_element_inplace (MonoArrayHandle arr, int i, MonoError *error)
+{
+	HANDLE_FUNCTION_ENTER ();
+	mono_error_init (error);
+	MonoObjectHandle item = MONO_HANDLE_NEW (MonoObject, NULL);
+	MONO_HANDLE_ARRAY_GETREF (item, arr, i);
+	
+	MonoObjectHandle item_copy = mono_marshal_xdomain_copy_value_handle (item, error);
+	if (!is_ok (error))
+		goto leave;
+	MONO_HANDLE_ARRAY_SETREF (arr, i, item_copy);
+leave:
+	HANDLE_FUNCTION_RETURN_VAL (is_ok (error));
+}
+
+/**
+ * mono_marshal_xdomain_copy_value_handle:
+ * @val: The value to copy.
+ * @error: set on failure.
+ *
+ * Makes a copy of @val suitable for the current domain.
+ * On failure returns NULL and sets @error.
  */
-MonoObject *
-mono_marshal_xdomain_copy_value (MonoObject *val, MonoError *error)
+MonoObjectHandle
+mono_marshal_xdomain_copy_value_handle (MonoObjectHandle val, MonoError *error)
 {
 	mono_error_init (error);
-	MonoDomain *domain;
-	if (val == NULL) return NULL;
+	MonoObjectHandle result = MONO_HANDLE_NEW (MonoObject, NULL);
+	if (MONO_HANDLE_IS_NULL (val))
+		goto leave;
 
-	domain = mono_domain_get ();
+	MonoDomain *domain = mono_domain_get ();
 
-	switch (mono_object_class (val)->byval_arg.type) {
+	MonoClass *klass = mono_handle_class (val);
+
+	switch (klass->byval_arg.type) {
 	case MONO_TYPE_VOID:
 		g_assert_not_reached ();
 		break;
@@ -1938,40 +1965,63 @@ mono_marshal_xdomain_copy_value (MonoObject *val, MonoError *error)
 	case MONO_TYPE_U8:
 	case MONO_TYPE_R4:
 	case MONO_TYPE_R8: {
-		MonoObject *res = mono_value_box_checked (domain, mono_object_class (val), ((char*)val) + sizeof(MonoObject), error);
-		return res;
-
+		uint32_t gchandle = mono_gchandle_from_handle (val, TRUE);
+		MonoObjectHandle res = MONO_HANDLE_NEW (MonoObject, mono_value_box_checked (domain, klass, ((char*)val) + sizeof(MonoObject), error)); /* FIXME use handles in mono_value_box_checked */
+		mono_gchandle_free (gchandle);
+		if (!is_ok (error))
+			goto leave;
+		MONO_HANDLE_ASSIGN (result, res);
+		break;
 	}
 	case MONO_TYPE_STRING: {
-		MonoString *str = (MonoString *) val;
-		MonoObject *res = NULL;
-		res = (MonoObject *) mono_string_new_utf16_checked (domain, mono_string_chars (str), mono_string_length (str), error);
-		return res;
+		MonoStringHandle str = MONO_HANDLE_CAST (MonoString, val);
+		uint32_t gchandle = mono_gchandle_from_handle (val, TRUE);
+		MonoStringHandle res = mono_string_new_utf16_handle (domain, mono_string_chars (MONO_HANDLE_RAW (str)), mono_string_handle_length (str), error);
+		mono_gchandle_free (gchandle);
+		if (!is_ok (error))
+			goto leave;
+		MONO_HANDLE_ASSIGN (result, res);
+		break;
 	}
 	case MONO_TYPE_ARRAY:
 	case MONO_TYPE_SZARRAY: {
-		MonoArray *acopy;
-		MonoXDomainMarshalType mt = mono_get_xdomain_marshal_type (&(mono_object_class (val)->element_class->byval_arg));
-		if (mt == MONO_MARSHAL_SERIALIZE) return NULL;
-		acopy = mono_array_clone_in_domain (domain, (MonoArray *) val, error);
-		return_val_if_nok (error, NULL);
+		MonoArrayHandle arr = MONO_HANDLE_CAST (MonoArray, val);
+		MonoXDomainMarshalType mt = mono_get_xdomain_marshal_type (&klass->element_class->byval_arg);
+		if (mt == MONO_MARSHAL_SERIALIZE)
+			goto leave;
+		MonoArrayHandle acopy = mono_array_clone_in_domain (domain, arr, error);
+		if (!is_ok (error))
+			goto leave;
 
 		if (mt == MONO_MARSHAL_COPY) {
-			int i, len = mono_array_length (acopy);
+			int i, len = mono_array_handle_length (acopy);
 			for (i = 0; i < len; i++) {
-				MonoObject *item = (MonoObject *)mono_array_get (acopy, gpointer, i);
-				MonoObject *item_copy = mono_marshal_xdomain_copy_value (item, error);
-				return_val_if_nok (error, NULL);
-				mono_array_setref (acopy, i, item_copy);
+				if (!xdomain_copy_array_element_inplace (acopy, i, error))
+					goto leave;
 			}
 		}
-		return (MonoObject *) acopy;
+		MONO_HANDLE_ASSIGN (result, acopy);
+		break;
 	}
 	default:
 		break;
 	}
 
-	return NULL;
+leave:
+	return result;
+}
+
+/* mono_marshal_xdomain_copy_value
+ * Makes a copy of "val" suitable for the current domain.
+ */
+MonoObject*
+mono_marshal_xdomain_copy_value (MonoObject* val_raw, MonoError *error)
+{
+	HANDLE_FUNCTION_ENTER ();
+	/* FIXME callers of mono_marshal_xdomain_copy_value should use handles */
+	MONO_HANDLE_DCL (MonoObject, val);
+	MonoObjectHandle result = mono_marshal_xdomain_copy_value_handle (val, error);
+	HANDLE_FUNCTION_RETURN_OBJ (result);
 }
 
 /* mono_marshal_xdomain_copy_value

@@ -64,6 +64,9 @@ free_main_args (void);
 static char *
 mono_string_to_utf8_internal (MonoMemPool *mp, MonoImage *image, MonoString *s, gboolean ignore_error, MonoError *error);
 
+static void
+array_full_copy_unchecked_size (MonoArray *src, MonoArray *dest, MonoClass *klass, uintptr_t size);
+
 static MonoMethod*
 class_get_virtual_method (MonoClass *klass, MonoMethod *method, gboolean is_proxy, MonoError *error);
 
@@ -5603,6 +5606,13 @@ mono_array_full_copy (MonoArray *src, MonoArray *dest)
 	size = mono_array_length (src);
 	g_assert (size == mono_array_length (dest));
 	size *= mono_array_element_size (klass);
+
+	array_full_copy_unchecked_size (src, dest, klass, size);
+}
+
+static void
+array_full_copy_unchecked_size (MonoArray *src, MonoArray *dest, MonoClass *klass, uintptr_t size)
+{
 #ifdef HAVE_SGEN_GC
 	if (klass->element_class->valuetype) {
 		if (klass->element_class->has_references)
@@ -5626,62 +5636,51 @@ mono_array_full_copy (MonoArray *src, MonoArray *dest)
  * This routine returns a copy of the array that is hosted on the
  * specified MonoDomain.  On failure returns NULL and sets @error.
  */
-MonoArray*
-mono_array_clone_in_domain (MonoDomain *domain, MonoArray *array, MonoError *error)
+MonoArrayHandle
+mono_array_clone_in_domain (MonoDomain *domain, MonoArrayHandle array_handle, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
-	MonoArray *o;
-	uintptr_t size, i;
-	uintptr_t *sizes;
-	MonoClass *klass = array->obj.vtable->klass;
+	MonoArrayHandle result = MONO_HANDLE_NEW (MonoArray, NULL);
+	uintptr_t size = 0;
+	MonoClass *klass = mono_handle_class (array_handle);
 
 	mono_error_init (error);
 
-	if (array->bounds == NULL) {
-		size = mono_array_length (array);
-		o = mono_array_new_full_checked (domain, klass, &size, NULL, error);
-		return_val_if_nok (error, NULL);
-
-		size *= mono_array_element_size (klass);
-#ifdef HAVE_SGEN_GC
-		if (klass->element_class->valuetype) {
-			if (klass->element_class->has_references)
-				mono_value_copy_array (o, 0, mono_array_addr_with_size_fast (array, 0, 0), mono_array_length (array));
-			else
-				mono_gc_memmove_atomic (&o->vector, &array->vector, size);
-		} else {
-			mono_array_memcpy_refs (o, 0, array, 0, mono_array_length (array));
-		}
-#else
-		mono_gc_memmove_atomic (&o->vector, &array->vector, size);
-#endif
-		return o;
-	}
+	/* Pin source array here - if bounds is non-NULL, it's a pointer into the object data */
+	uint32_t src_handle = mono_gchandle_from_handle (MONO_HANDLE_CAST (MonoObject, array_handle), TRUE);
 	
-	sizes = (uintptr_t *)alloca (klass->rank * sizeof(intptr_t) * 2);
-	size = mono_array_element_size (klass);
-	for (i = 0; i < klass->rank; ++i) {
-		sizes [i] = array->bounds [i].length;
-		size *= array->bounds [i].length;
-		sizes [i + klass->rank] = array->bounds [i].lower_bound;
-	}
-	o = mono_array_new_full_checked (domain, klass, sizes, (intptr_t*)sizes + klass->rank, error);
-	return_val_if_nok (error, NULL);
-#ifdef HAVE_SGEN_GC
-	if (klass->element_class->valuetype) {
-		if (klass->element_class->has_references)
-			mono_value_copy_array (o, 0, mono_array_addr_with_size_fast (array, 0, 0), mono_array_length (array));
-		else
-			mono_gc_memmove_atomic (&o->vector, &array->vector, size);
+	MonoArrayBounds *array_bounds = MONO_HANDLE_GETVAL (array_handle, bounds);
+	MonoArrayHandle o;
+	if (array_bounds == NULL) {
+		size = mono_array_handle_length (array_handle);
+		o = mono_array_new_full_handle (domain, klass, &size, NULL, error);
+		if (!is_ok (error))
+			goto leave;
+		size *= mono_array_element_size (klass);
 	} else {
-		mono_array_memcpy_refs (o, 0, array, 0, mono_array_length (array));
+		uintptr_t *sizes = (uintptr_t *)alloca (klass->rank * sizeof (uintptr_t));
+		intptr_t *lower_bounds = (intptr_t *)alloca (klass->rank * sizeof (intptr_t));
+		size = mono_array_element_size (klass);
+		for (int i = 0; i < klass->rank; ++i) {
+			sizes [i] = array_bounds [i].length;
+			size *= array_bounds [i].length;
+			lower_bounds [i] = array_bounds [i].lower_bound;
+		}
+		o = mono_array_new_full_handle (domain, klass, sizes, lower_bounds, error);
+		if (!is_ok (error))
+			goto leave;
 	}
-#else
-	mono_gc_memmove_atomic (&o->vector, &array->vector, size);
-#endif
 
-	return o;
+	uint32_t dst_handle = mono_gchandle_from_handle (MONO_HANDLE_CAST (MonoObject, o), TRUE);
+	array_full_copy_unchecked_size (MONO_HANDLE_RAW (array_handle), MONO_HANDLE_RAW (o), klass, size);
+	mono_gchandle_free (dst_handle);
+
+	MONO_HANDLE_ASSIGN (result, o);
+
+leave:
+	mono_gchandle_free (src_handle);
+	return result;
 }
 
 /**
@@ -5710,11 +5709,15 @@ mono_array_clone (MonoArray *array)
  * failure returns NULL and sets @error.
  */
 MonoArray*
-mono_array_clone_checked (MonoArray *array, MonoError *error)
+mono_array_clone_checked (MonoArray *array_raw, MonoError *error)
 {
-
 	MONO_REQ_GC_UNSAFE_MODE;
-	return mono_array_clone_in_domain (((MonoObject *)array)->vtable->domain, array, error);
+	HANDLE_FUNCTION_ENTER ();
+	/* FIXME: callers of mono_array_clone_checked should use handles */
+	mono_error_init (error);
+	MONO_HANDLE_DCL (MonoArray, array);
+	MonoArrayHandle result = mono_array_clone_in_domain (MONO_HANDLE_DOMAIN (array), array, error);
+	HANDLE_FUNCTION_RETURN_OBJ (result);
 }
 
 /* helper macros to check for overflow when calculating the size of arrays */
@@ -6049,6 +6052,21 @@ mono_string_new_utf16_checked (MonoDomain *domain, const guint16 *text, gint32 l
 		memcpy (mono_string_chars (s), text, len * 2);
 
 	return s;
+}
+
+/**
+ * mono_string_new_utf16_handle:
+ * @text: a pointer to an utf16 string
+ * @len: the length of the string
+ * @error: written on error.
+ *
+ * Returns: A newly created string object which contains @text.
+ * On error, returns NULL and sets @error.
+ */
+MonoStringHandle
+mono_string_new_utf16_handle (MonoDomain *domain, const guint16 *text, gint32 len, MonoError *error)
+{
+	return MONO_HANDLE_NEW (MonoString, mono_string_new_utf16_checked (domain, text, len, error));
 }
 
 /**
@@ -8427,6 +8445,21 @@ mono_string_length (MonoString *s)
 
 	return s->length;
 }
+
+/**
+ * mono_string_handle_length:
+ * @s: MonoString
+ *
+ * Returns the lenght in characters of the string
+ */
+int
+mono_string_handle_length (MonoStringHandle s)
+{
+	MONO_REQ_GC_UNSAFE_MODE;
+
+	return MONO_HANDLE_GETVAL (s, length);
+}
+
 
 /**
  * mono_array_length:

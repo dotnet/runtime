@@ -99,6 +99,7 @@ mono_domain_try_unload (MonoDomain *domain, MonoObject **exc);
 MONO_API mono_bool
 mono_domain_is_unloading   (MonoDomain *domain);
 
+MONO_RT_EXTERNAL_ONLY
 MONO_API MonoDomain *
 mono_domain_from_appdomain (MonoAppDomain *appdomain);
 
