@@ -146,9 +146,20 @@ if defined __AgainstPackages (
     set __msbuildCommonArgs=%__msbuildCommonArgs% /p:BuildTestsAgainstPackages=true
 )
 
+REM Prepare the Test Drop
+REM Cleans any NI from the last run
+powershell "Get-ChildItem -path %__TestWorkingDir% -Include '*.ni.*' -Recurse -Force | Remove-Item -force"
+REM Cleans up any lock folder used for synchronization from last run
+powershell "Get-ChildItem -path %__TestWorkingDir% -Include 'lock' -Recurse -Force |  where {$_.Attributes -eq 'Directory'}| Remove-Item -force -Recurse"
+
 if defined CORE_ROOT goto SkipCoreRootSetup
 
 set "CORE_ROOT=%XunitTestBinBase%\Tests\Core_Root"
+echo %__MsgPrefix%Using Default CORE_ROOT as %CORE_ROOT%
+echo %__MsgPrefix%Copying Built binaries from %__BinDir% to %CORE_ROOT%
+if exist "%CORE_ROOT%" rd /s /q "%CORE_ROOT%"
+md "%CORE_ROOT%"
+xcopy /s "%__BinDir%" "%CORE_ROOT%"
 
 :SkipCoreRootSetup
 
@@ -352,6 +363,14 @@ if defined __JitDisasm (
     )
     set RunningJitDisasm=1
 )
+
+set __BuildLogRootName=Tests_GenerateRuntimeLayout
+call :msbuild "%__ProjectFilesDir%\runtest.proj" /p:GenerateRuntimeLayout=true 
+if errorlevel 1 (
+    echo Test Dependency Resolution Failed
+    exit /b 1
+)
+echo %__MsgPrefix%Created the runtime layout with all dependencies in %CORE_ROOT%
 
 exit /b 0
 
