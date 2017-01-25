@@ -15,6 +15,7 @@ usage()
     echo "      - will use ROOTFS_DIR environment variable if set."
     echo "staticLibLink - Optional argument to statically link any native library."
     echo "portableLinux - Optional argument to build native libraries portable over GLIBC based Linux distros."
+    echo "stripSymbols - Optional argument to strip native symbols during the build."
     echo "generateversion - Pass this in to get a version on the build output."
     echo "cmakeargs - user-settable additional arguments passed to CMake."
     exit 1
@@ -196,7 +197,7 @@ while :; do
         release)
             __BuildType=Release
             __CMakeArgs=RELEASE 
-	    ;;
+            ;;
         freebsd)
             __BuildOS=FreeBSD
             ;;
@@ -208,6 +209,9 @@ while :; do
             ;;
         osx)
             __BuildOS=OSX
+            ;;
+        stripsymbols)
+            __CMakeExtraArgs="$__CMakeExtraArgs -DSTRIP_SYMBOLS=true"
             ;;
         --targetgroup)
             shift
