@@ -421,6 +421,7 @@ test=$(basename $testcase)
 testname=$(basename $testcase .exe)
 echo "....Running $testname"
 cp $testcase .
+cp $testcase-*.txt .
 
 chmod u+x ./corerun
 echo "./corerun Microsoft.DotNet.xunit.performance.runner.cli.dll $test -runner xunit.console.netcore.exe -runnerhost ./corerun -verbose -runid perf-$testname"
