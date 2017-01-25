@@ -41,6 +41,7 @@
          CodeCoverageAssemblies can be passed in to the build to gather coverage on additional assemblies. -->
     <ItemGroup>
       <_CodeCoverageAssemblies Include="$(AssemblyBeingTestedName)" /> 
+      <_CodeCoverageAssemblies Include="@(AdditionalCodeCoverageAssemblies)" />
       <_CodeCoverageAssemblies Include="$(CodeCoverageAssemblies)" Condition="'$(CodeCoverageAssemblies)' != ''" />
     </ItemGroup>
     <PropertyGroup>
