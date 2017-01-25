@@ -35,12 +35,57 @@ namespace System.Runtime.CompilerServices.Tests
         }
 
         [Fact]
+        public static void Clear_EmptyTable()
+        {
+            var cwt = new ConditionalWeakTable<object, object>();
+            cwt.Clear(); // no exception
+            cwt.Clear();
+        }
+
+        [Fact]
+        public static void Clear_AddThenEmptyRepeatedly_ItemsRemoved()
+        {
+            var cwt = new ConditionalWeakTable<object, object>();
+            object key = new object(), value = new object();
+            object result;
+            for (int i = 0; i < 3; i++)
+            {
+                cwt.Add(key, value);
+
+                Assert.True(cwt.TryGetValue(key, out result));
+                Assert.Same(value, result);
+
+                cwt.Clear();
+
+                Assert.False(cwt.TryGetValue(key, out result));
+                Assert.Null(result);
+            }
+        }
+
+        [Fact]
+        public static void Clear_AddMany_Clear_AllItemsRemoved()
+        {
+            var cwt = new ConditionalWeakTable<object, object>();
+
+            object[] keys = Enumerable.Range(0, 33).Select(_ => new object()).ToArray();
+            object[] values = Enumerable.Range(0, keys.Length).Select(_ => new object()).ToArray();
+            for (int i = 0; i < keys.Length; i++)
+            {
+                cwt.Add(keys[i], values[i]);
+            }
+
+            Assert.Equal(keys.Length, ((IEnumerable<KeyValuePair<object, object>>)cwt).Count());
+
+            cwt.Clear();
+
+            Assert.Equal(0, ((IEnumerable<KeyValuePair<object, object>>)cwt).Count());
+        }
+
+        [Fact]
         public static void GetEnumerator_Empty_ReturnsEmptyEnumerator()
         {
             var cwt = new ConditionalWeakTable<object, object>();
-            var enumerable = ((object)cwt) as IEnumerable<KeyValuePair<object, object>>;
-
-            Assert.NotNull(enumerable);
+            var enumerable = (IEnumerable<KeyValuePair<object, object>>)cwt;
             Assert.Equal(0, enumerable.Count());
         }
 
@@ -48,7 +93,7 @@ namespace System.Runtime.CompilerServices.Tests
         public static void GetEnumerator_AddedAndRemovedItems_AppropriatelyShowUpInEnumeration()
         {
             var cwt = new ConditionalWeakTable<object, object>();
-            var enumerable = ((object)cwt) as IEnumerable<KeyValuePair<object, object>>;
+            var enumerable = (IEnumerable<KeyValuePair<object, object>>)cwt;
 
             object key1 = new object(), value1 = new object();
 
@@ -70,7 +115,7 @@ namespace System.Runtime.CompilerServices.Tests
         public static void GetEnumerator_CollectedItemsNotEnumerated()
         {
             var cwt = new ConditionalWeakTable<object, object>();
-            var enumerable = ((object)cwt) as IEnumerable<KeyValuePair<object, object>>;
+            var enumerable = (IEnumerable<KeyValuePair<object, object>>)cwt;
 
             // Delegate to add collectible items to the table, separated out 
             // to avoid the JIT extending the lifetimes of the temporaries
@@ -86,7 +131,7 @@ namespace System.Runtime.CompilerServices.Tests
         public static void GetEnumerator_MultipleEnumeratorsReturnSameResults()
         {
             var cwt = new ConditionalWeakTable<object, object>();
-            var enumerable = ((object)cwt) as IEnumerable<KeyValuePair<object, object>>;
+            var enumerable = (IEnumerable<KeyValuePair<object, object>>)cwt;
 
             object[] keys = Enumerable.Range(0, 33).Select(_ => new object()).ToArray();
             object[] values = Enumerable.Range(0, keys.Length).Select(_ => new object()).ToArray();
@@ -114,7 +159,7 @@ namespace System.Runtime.CompilerServices.Tests
         public static void GetEnumerator_RemovedItems_RemovedFromResults()
         {
             var cwt = new ConditionalWeakTable<object, object>();
-            var enumerable = ((object)cwt) as IEnumerable<KeyValuePair<object, object>>;
+            var enumerable = (IEnumerable<KeyValuePair<object, object>>)cwt;
 
             object[] keys = Enumerable.Range(0, 33).Select(_ => new object()).ToArray();
             object[] values = Enumerable.Range(0, keys.Length).Select(_ => new object()).ToArray();
@@ -141,7 +186,7 @@ namespace System.Runtime.CompilerServices.Tests
         public static void GetEnumerator_ItemsAddedAfterGetEnumeratorNotIncluded()
         {
             var cwt = new ConditionalWeakTable<object, object>();
-            var enumerable = ((object)cwt) as IEnumerable<KeyValuePair<object, object>>;
+            var enumerable = (IEnumerable<KeyValuePair<object, object>>)cwt;
 
             object key1 = new object(), key2 = new object(), value1 = new object(), value2 = new object();
 
@@ -173,7 +218,7 @@ namespace System.Runtime.CompilerServices.Tests
         public static void GetEnumerator_ItemsRemovedAfterGetEnumeratorNotIncluded()
         {
             var cwt = new ConditionalWeakTable<object, object>();
-            var enumerable = ((object)cwt) as IEnumerable<KeyValuePair<object, object>>;
+            var enumerable = (IEnumerable<KeyValuePair<object, object>>)cwt;
 
             object key1 = new object(), key2 = new object(), value1 = new object(), value2 = new object();
 
@@ -201,10 +246,36 @@ namespace System.Runtime.CompilerServices.Tests
         }
 
         [Fact]
+        public static void GetEnumerator_ItemsClearedAfterGetEnumeratorNotIncluded()
+        {
+            var cwt = new ConditionalWeakTable<object, object>();
+            var enumerable = (IEnumerable<KeyValuePair<object, object>>)cwt;
+
+            object key1 = new object(), key2 = new object(), value1 = new object(), value2 = new object();
+
+            cwt.Add(key1, value1);
+            cwt.Add(key2, value2);
+            IEnumerator<KeyValuePair<object, object>> enumerator1 = enumerable.GetEnumerator();
+            cwt.Clear();
+            IEnumerator<KeyValuePair<object, object>> enumerator2 = enumerable.GetEnumerator();
+
+            Assert.False(enumerator1.MoveNext());
+            Assert.False(enumerator2.MoveNext());
+
+            enumerator1.Dispose();
+            enumerator2.Dispose();
+
+            GC.KeepAlive(key1);
+            GC.KeepAlive(key2);
+            GC.KeepAlive(value1);
+            GC.KeepAlive(value2);
+        }
+
+        [Fact]
         public static void GetEnumerator_Current_ThrowsOnInvalidUse()
         {
             var cwt = new ConditionalWeakTable<object, object>();
-            var enumerable = ((object)cwt) as IEnumerable<KeyValuePair<object, object>>;
+            var enumerable = (IEnumerable<KeyValuePair<object, object>>)cwt;
 
             object key1 = new object(), value1 = new object();
             cwt.Add(key1, value1);
