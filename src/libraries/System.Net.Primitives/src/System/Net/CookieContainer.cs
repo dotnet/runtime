@@ -727,6 +727,11 @@ namespace System.Net
 
         internal CookieCollection InternalGetCookies(Uri uri)
         {
+            if (_count == 0)
+            {
+                return null;
+            }
+
             bool isSecure = (uri.Scheme == UriScheme.Https);
             int port = uri.Port;
             CookieCollection cookies = null;
