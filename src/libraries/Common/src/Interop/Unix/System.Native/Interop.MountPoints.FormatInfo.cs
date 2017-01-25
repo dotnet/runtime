@@ -146,6 +146,7 @@ internal static partial class Interop
                 case "befs":
                 case "bfs":
                 case "btrfs":
+                case "drvfs":
                 case "ecryptfs":
                 case "efs":
                 case "ext":
@@ -166,6 +167,7 @@ internal static partial class Interop
                 case "jfs":
                 case "jffs":
                 case "jffs2":
+                case "lxfs":
                 case "minix":
                 case "minix_old":
                 case "minix2":
