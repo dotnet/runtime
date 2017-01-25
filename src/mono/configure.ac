@@ -845,8 +845,8 @@ elif test x$with_runtime_preset = xall; then
    with_monotouch_watch_default=yes
    with_monotouch_tv_default=yes
    with_xammac_default=yes
-#   with_winaot_default=yes
-#   with_orbis_default=yes
+   with_winaot_default=yes
+   with_orbis_default=yes
 elif test x$with_runtime_preset = xfullaot; then
    DISABLE_MCS_DOCS_default=yes
    with_testing_aot_full_default=yes
@@ -899,6 +899,19 @@ elif test x$with_runtime_preset = xwinaot; then
    DISABLE_MCS_DOCS_default=yes
    with_winaot_default=yes
    TEST_PROFILE=winaot
+
+   mono_feature_disable_com='yes'
+   mono_feature_disable_remoting='yes'
+   mono_feature_disable_reflection_emit_save='yes'
+   mono_feature_disable_reflection_emit='yes'
+   mono_feature_disable_appdomains='yes'
+
+   AOT_BUILD_FLAGS="--aot=full,$INVARIANT_AOT_OPTIONS"
+   AOT_RUN_FLAGS="--full-aot"
+elif test x$with_runtime_preset = xorbis; then
+   DISABLE_MCS_DOCS_default=yes
+   with_orbis_default=yes
+   TEST_PROFILE=orbis
 
    mono_feature_disable_com='yes'
    mono_feature_disable_remoting='yes'
@@ -990,6 +1003,9 @@ if test -z "$INSTALL_TESTING_AOT_FULL_TRUE"; then :
 fi
 if test -z "$INSTALL_WINAOT_TRUE"; then :
    default_profile=winaot
+fi
+if test -z "$INSTALL_ORBIS_TRUE"; then :
+   default_profile=orbis
 fi
 if test -z "$INSTALL_4_x_TRUE"; then :
    default_profile=net_4_x
@@ -4575,6 +4591,7 @@ echo "
 	Xamarin.TVOS:    $with_monotouch_tv
 	Xamarin.Mac:     $with_xammac
 	Windows AOT:     $with_winaot
+	Orbis:           $with_orbis
 	Test profiles:   AOT Full ($with_testing_aot_full), AOT Hybrid ($with_testing_aot_hybrid)
 	JNI support:     $jdk_headers_found
 	libgdiplus:      $libgdiplus_msg
