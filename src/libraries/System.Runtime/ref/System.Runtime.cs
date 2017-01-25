@@ -6207,12 +6207,15 @@ namespace System.Runtime.CompilerServices
     {
         public CompilerGeneratedAttribute() { }
     }
-    public sealed partial class ConditionalWeakTable<TKey, TValue> where TKey : class where TValue : class
+    public sealed partial class ConditionalWeakTable<TKey, TValue> : System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey,TValue>> where TKey : class where TValue : class
     {
         public ConditionalWeakTable() { }
         public void Add(TKey key, TValue value) { }
         public void AddOrUpdate(TKey key, TValue value) { }
+        public void Clear() { }
         ~ConditionalWeakTable() { }
+        System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<TKey, TValue>> System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey, TValue>>.GetEnumerator() { throw null; }
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
         public TValue GetOrCreateValue(TKey key) { throw null; }
         public TValue GetValue(TKey key, System.Runtime.CompilerServices.ConditionalWeakTable<TKey, TValue>.CreateValueCallback createValueCallback) { throw null; }
         public bool Remove(TKey key) { throw null; }
