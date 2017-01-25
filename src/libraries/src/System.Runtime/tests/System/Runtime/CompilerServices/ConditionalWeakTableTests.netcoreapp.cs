@@ -79,6 +79,9 @@ namespace System.Runtime.CompilerServices.Tests
             cwt.Clear();
 
             Assert.Equal(0, ((IEnumerable<KeyValuePair<object, object>>)cwt).Count());
+
+            GC.KeepAlive(keys);
+            GC.KeepAlive(values);
         }
 
         [Fact]
