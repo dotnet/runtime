@@ -590,7 +590,8 @@ public:
 
     bool isUsedFromMemory() const
     {
-        return ((isContained() && (isMemoryOp() || (OperGet() == GT_LCL_VAR))) || isUsedFromSpillTemp());
+        return ((isContained() && (isMemoryOp() || (OperGet() == GT_LCL_VAR) || (OperGet() == GT_CNS_DBL))) ||
+                isUsedFromSpillTemp());
     }
 
     bool isLclVarUsedFromMemory() const
