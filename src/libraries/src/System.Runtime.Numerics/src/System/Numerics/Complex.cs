@@ -344,7 +344,7 @@ namespace System.Numerics
                 // make the result representable. To avoid this, we re-scale (by exact powers of 2 for accuracy)
                 // when we encounter very large components to avoid intermediate infinities.
                 bool rescale = false;
-                if ((Math.Abs(value._real) >= sqrtLimit) || (Math.Abs(value._imaginary) >= sqrtLimit))
+                if ((Math.Abs(value._real) >= s_sqrtRescaleThreshold) || (Math.Abs(value._imaginary) >= s_sqrtRescaleThreshold))
                 {
                     value._real *= 0.25;
                     value._imaginary *= 0.25;
@@ -377,7 +377,7 @@ namespace System.Numerics
         }
 
         // This is the largest x for which (Hypot(x,x) + x) will not overflow. It is used for branching inside Sqrt.
-        private static readonly double sqrtLimit = Double.MaxValue / (Math.Sqrt(2.0) + 1.0);
+        private static readonly double s_sqrtRescaleThreshold = Double.MaxValue / (Math.Sqrt(2.0) + 1.0);
 
         public static Complex Pow(Complex value, Complex power)
         {
