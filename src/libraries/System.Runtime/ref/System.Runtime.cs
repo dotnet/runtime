@@ -1098,8 +1098,8 @@ namespace System
         public static bool IsDefined(System.Type enumType, object value) { throw null; }
         public static object Parse(System.Type enumType, string value) { throw null; }
         public static object Parse(System.Type enumType, string value, bool ignoreCase) { throw null; }
-        public static TEnum Parse<TEnum>(String value) where TEnum : struct { return default(TEnum); }
-        public static TEnum Parse<TEnum>(String value, bool ignoreCase) where TEnum : struct { return default(TEnum); }
+        public static TEnum Parse<TEnum>(String value) where TEnum : struct { throw null; }
+        public static TEnum Parse<TEnum>(String value, bool ignoreCase) where TEnum : struct { throw null; }
         System.TypeCode System.IConvertible.GetTypeCode() { throw null; }
         bool System.IConvertible.ToBoolean(System.IFormatProvider provider) { throw null; }
         byte System.IConvertible.ToByte(System.IFormatProvider provider) { throw null; }
@@ -1135,8 +1135,8 @@ namespace System
         public string ToString(System.IFormatProvider provider) { throw null; }        
         [System.ObsoleteAttribute("The provider argument is not used. Please use ToString(String).")]
         public string ToString(string format, System.IFormatProvider provider) { throw null; }
-        public static bool TryParse(System.Type enumType, string value, out object result) { result = default(object); return default(bool); }
-        public static bool TryParse(System.Type enumType, string value, bool ignoreCase, out object result) { result = default(object); return default(bool); }
+        public static bool TryParse(System.Type enumType, string value, out object result) { throw null; }
+        public static bool TryParse(System.Type enumType, string value, bool ignoreCase, out object result) { throw null; }
         public static bool TryParse<TEnum>(string value, out TEnum result) where TEnum : struct { throw null; }
         public static bool TryParse<TEnum>(string value, bool ignoreCase, out TEnum result) where TEnum : struct { throw null; }
     }
@@ -1246,7 +1246,7 @@ namespace System
         public static System.GCNotificationStatus WaitForFullGCComplete() { throw null; }
         public static System.GCNotificationStatus WaitForFullGCComplete(int millisecondsTimeout) { throw null; }
         public static void WaitForPendingFinalizers() { }
-        public static long GetAllocatedBytesForCurrentThread() { return default(long); }
+        public static long GetAllocatedBytesForCurrentThread() { throw null; }
     }
     public enum GCCollectionMode
     {
@@ -1491,7 +1491,7 @@ namespace System
         public static int Size { get { throw null; } }
         public static System.IntPtr Add(System.IntPtr pointer, int offset) { throw null; }
         public override bool Equals(object obj) { throw null; }
-        bool IEquatable<IntPtr>.Equals(IntPtr other) { return default(bool); }
+        bool IEquatable<IntPtr>.Equals(IntPtr other) { throw null; }
         public override int GetHashCode() { throw null; }
         void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public static System.IntPtr operator +(System.IntPtr pointer, int offset) { throw null; }
@@ -2054,10 +2054,10 @@ namespace System
         public string Remove(int startIndex, int count) { throw null; }
         public string Replace(char oldChar, char newChar) { throw null; }
         public string Replace(string oldValue, string newValue) { throw null; }
-        public string[] Split(char separator, System.StringSplitOptions options = System.StringSplitOptions.None) { return default(string[]); }
-        public string[] Split(char separator, int count, System.StringSplitOptions options = System.StringSplitOptions.None) { return default(string[]); }
-        public string[] Split(string separator, System.StringSplitOptions options = System.StringSplitOptions.None) { return default(string[]); }
-        public string[] Split(string separator, int count, System.StringSplitOptions options = System.StringSplitOptions.None) { return default(string[]); }
+        public string[] Split(char separator, System.StringSplitOptions options = System.StringSplitOptions.None) { throw null; }
+        public string[] Split(char separator, int count, System.StringSplitOptions options = System.StringSplitOptions.None) { throw null; }
+        public string[] Split(string separator, System.StringSplitOptions options = System.StringSplitOptions.None) { throw null; }
+        public string[] Split(string separator, int count, System.StringSplitOptions options = System.StringSplitOptions.None) { throw null; }
         public string[] Split(params char[] separator) { throw null; }
         public string[] Split(char[] separator, int count) { throw null; }
         public string[] Split(char[] separator, int count, System.StringSplitOptions options) { throw null; }
@@ -2905,7 +2905,7 @@ namespace System
         public static int Size { get { throw null; } }
         public static System.UIntPtr Add(System.UIntPtr pointer, int offset) { throw null; }
         public override bool Equals(object obj) { throw null; }
-        bool IEquatable<UIntPtr>.Equals(UIntPtr other) { return default(bool); }
+        bool IEquatable<UIntPtr>.Equals(UIntPtr other) { throw null; }
         public override int GetHashCode() { throw null; }
         void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public static System.UIntPtr operator +(System.UIntPtr pointer, int offset) { throw null; }
@@ -6353,8 +6353,8 @@ namespace System.Runtime.CompilerServices
         public static void PrepareMethod(System.RuntimeMethodHandle method, System.RuntimeTypeHandle[] instantiation) { }
         [System.Security.SecurityCriticalAttribute]
         public static void ProbeForSufficientStack() { }
-        public static bool TryEnsureSufficientExecutionStack() { return default(bool); }
-        public static object GetUninitializedObject(Type type) { return default(object); }
+        public static bool TryEnsureSufficientExecutionStack() { throw null; }
+        public static object GetUninitializedObject(Type type) { throw null; }
    }
     [System.AttributeUsageAttribute((System.AttributeTargets)(64), Inherited = false, AllowMultiple = false)]
     public partial class StateMachineAttribute : System.Attribute
