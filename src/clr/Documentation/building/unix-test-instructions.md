@@ -36,8 +36,7 @@ Run tests (`Debug` may be replaced with `Release` or `Checked`, depending on whi
 >     --testNativeBinDir=~/coreclr/bin/obj/Linux.x64.Debug/tests
 >     --coreClrBinDir=~/coreclr/bin/Product/Linux.x64.Debug
 >     --mscorlibDir=/media/coreclr/bin/Product/Linux.x64.Debug
->     --coreFxBinDir="~/corefx/bin/Linux.AnyCPU.Debug;~/corefx/bin/Unix.AnyCPU.Debug;~/corefx/bin/AnyOS.AnyCPU.Debug"
->     --coreFxNativeBinDir=~/corefx/bin/Linux.x64.Debug
+>     --coreFxBinDir=~/corefx/bin/runtime/netcoreapp-Linux-Debug-x64
 > ```
 
 The method above will copy dependencies from the set of directories provided to create an 'overlay' directory.
