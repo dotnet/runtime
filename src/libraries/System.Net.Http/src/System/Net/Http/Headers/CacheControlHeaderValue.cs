@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
+using System.IO;
 using System.Text;
 
 namespace System.Net.Http.Headers
@@ -207,7 +208,7 @@ namespace System.Net.Http.Headers
 
         public override string ToString()
         {
-            StringBuilder sb = new StringBuilder();
+            StringBuilder sb = StringBuilderCache.Acquire();
 
             AppendValueIfRequired(sb, _noStore, noStoreString);
             AppendValueIfRequired(sb, _noTransform, noTransformString);
@@ -271,7 +272,7 @@ namespace System.Net.Http.Headers
 
             NameValueHeaderValue.ToString(_extensions, ',', false, sb);
 
-            return sb.ToString();
+            return StringBuilderCache.GetStringAndRelease(sb);
         }
 
         public override bool Equals(object obj)

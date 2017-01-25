@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.IO;
 using System.Text;
 
 namespace System.Net.Http.Headers
@@ -81,7 +82,7 @@ namespace System.Net.Http.Headers
 
         public override string ToString()
         {
-            StringBuilder sb = new StringBuilder();
+            StringBuilder sb = StringBuilderCache.Acquire();
 
             if (!string.IsNullOrEmpty(_protocolName))
             {
@@ -99,7 +100,7 @@ namespace System.Net.Http.Headers
                 sb.Append(_comment);
             }
 
-            return sb.ToString();
+            return StringBuilderCache.GetStringAndRelease(sb);
         }
 
         public override bool Equals(object obj)
