@@ -8,15 +8,9 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <GenerateCodeCoverageReportForAll>true</GenerateCodeCoverageReportForAll>
-  </PropertyGroup>
-
-  <PropertyGroup>
     <BuildPackages Condition="'$(BuildPackages)'==''">true</BuildPackages>
   </PropertyGroup>
 
-  <Import Project="$(ToolsDir)CodeCoverage.targets" Condition="Exists('$(ToolsDir)CodeCoverage.targets')" />
-  <Import Project="$(ToolsDir)PerfTesting.targets" Condition="Exists('$(ToolsDir)PerfTesting.targets') and '$(Performance)' == 'true'"/>
   <Import Project="$(ToolsDir)VersionTools.targets" Condition="Exists('$(ToolsDir)VersionTools.targets')" />
 
   <ItemGroup>
@@ -25,13 +19,6 @@
     <!-- signing must happen before packaging -->
     <Project Include="src\sign.builds" />
     <Project Include="src\packages.builds" Condition="'$(BuildPackages)'=='true'" />
-
-    <!--
-    <Project Include="src\post.builds">
-      <!- For the root traversal default filter the OSGroup to the OSEnvironment which is the OS we are running on -!>
-      <FilterToOSGroup Condition="'$(_OriginalOSGroup)' == ''">$(OSEnvironment)</FilterToOSGroup>
-    </Project>
-    -->
   </ItemGroup>
 
   <Import Project="dir.targets" />
@@ -80,23 +67,6 @@
     <ValidateVSConfigurations ProjectsToValidate="@(ProjectsToCheckHeaders)" />
     <Message Importance="High" Text="Validating configurations for projects ... Done." />
  </Target>
-
-  <!-- TODO: Can we move this archive test build to BuildTools -->
-  <UsingTask TaskName="ZipFileCreateFromDependencyLists" Condition="'$(Platform)' == 'ARM64' and '$(ArchiveTests)' == 'true'" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll"/>
-  <Target Name="ArchiveTestBuild" Condition="'$(Platform)' == 'ARM64' and '$(ArchiveTests)' == 'true'" AfterTargets="Build" >
-    <ItemGroup>
-      <ExcludeFromArchive Include="nupkg$" />
-      <ExcludeFromArchive Include="Microsoft.DotNet.BuildTools" />
-      <ExcludeFromArchive Include="TestData" />
-      <TestDependencyListFile Include="$(BinDir)/TestDependencies/*.dependencylist.txt" />
-    </ItemGroup>
-
-    <ZipFileCreateFromDependencyLists
-      DependencyListFiles="@(TestDependencyListFile)"
-      DestinationArchive="$(TestWorkingDir)$(OSPlatformConfig)/archive/Packages.zip"
-      RelativePathBaseDirectory="$(PackagesDir)"
-      OverwriteDestination="true" />
-  </Target>
 
   <!-- Override CleanAllProjects from dir.traversal.targets and just remove the full BinDir -->
   <Target Name="CleanAllProjects">
