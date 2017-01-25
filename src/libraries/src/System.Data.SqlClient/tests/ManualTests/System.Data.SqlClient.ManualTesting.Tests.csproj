@@ -65,12 +65,14 @@
     <Compile Include="SQL\WeakRefTest\WeakRefTest.cs" />
     <Compile Include="SQL\WeakRefTestYukonSpecific\WeakRefTestYukonSpecific.cs" />
     <Compile Include="XUnitAssemblyAttributes.cs" />
-    <None Include="DDBasics\DDDataTypesTest\data.xml">
+    <Content Include="DDBasics\DDDataTypesTest\data.xml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="ProviderAgnostic\MultipleResultsTest\MultipleResultsTest.bsl">
+      <Link>data.xml</Link>
+    </Content>
+    <Content Include="ProviderAgnostic\MultipleResultsTest\MultipleResultsTest.bsl">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
+      <Link>MultipleResultsTest.bsl</Link>
+    </Content>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
