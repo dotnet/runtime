@@ -2467,7 +2467,7 @@ combinedScenarios.each { scenario ->
                                     copyArtifacts("${corefxFolder}/linuxarmemulator_softfp_cross_${lowerConfiguration}") {
                                         includePatterns('bin/build.tar.gz')
                                         buildSelector {
-                                            latestSaved()
+                                            latestSuccessful(true)
                                         }
                                     }
                                 }
@@ -2787,9 +2787,6 @@ combinedScenarios.each { scenario ->
                                 // Get corefx
                                 shell("git clone https://github.com/dotnet/corefx fx")
 
-                                // CoreFX is changing their output format and scripts, pick a stable version until all that work has landed.
-                                shell("git -C ./fx checkout 551fe49174378adcbf785c0ab12fc69355cef6e8")
-
                                 // Build Linux corefx
                                 shell("./fx/build-native.sh -release -buildArch=x64 -os=Linux")
                                 shell("./fx/build-managed.sh -release -buildArch=x64 -osgroup=Linux -skiptests")
@@ -2815,8 +2812,7 @@ combinedScenarios.each { scenario ->
                 --testNativeBinDir=\"\$(pwd)/clr/bin/obj/${osGroup}.${architecture}.${configuration}/tests\" \\
                 --coreClrBinDir=\"\$(pwd)/clr/bin/Product/${osGroup}.${architecture}.${configuration}\" \\
                 --mscorlibDir=\"\$(pwd)/clr/bin/Product/${osGroup}.${architecture}.${configuration}\" \\
-                --coreFxBinDir=\"\$(pwd)/fx/bin/${osGroup}.AnyCPU.Release;\$(pwd)/fx/bin/Unix.AnyCPU.Release;\$(pwd)/fx/bin/AnyOS.AnyCPU.Release\" \\
-                --coreFxNativeBinDir=\"\$(pwd)/fx/bin/${osGroup}.${architecture}.Release\" \\
+                --coreFxBinDir=\"\$(pwd)/fx/bin/runtime/netcoreapp-${osGroup}-${configuration}-${architecture}\" \\
                 --crossgen --runcrossgentests""")
 
                                 // Run coreclr tests w/ server GC & HeapVerify enabled
@@ -2855,7 +2851,7 @@ combinedScenarios.each { scenario ->
                                 copyArtifacts("${corefxFolder}/${osJobName}_release") {
                                     includePatterns('bin/build.tar.gz')
                                     buildSelector {
-                                        latestSaved()
+                                        latestSuccessful(true)
                                     }
                                 }
                         
@@ -2884,8 +2880,7 @@ combinedScenarios.each { scenario ->
                 --testNativeBinDir=\"\${WORKSPACE}/bin/obj/${osGroup}.${architecture}.${configuration}/tests\" \\
                 --coreClrBinDir=\"\${WORKSPACE}/bin/Product/${osGroup}.${architecture}.${configuration}\" \\
                 --mscorlibDir=\"\${WORKSPACE}/bin/Product/${osGroup}.${architecture}.${configuration}\" \\
-                --coreFxBinDir=\"\${WORKSPACE}/bin/${osGroup}.AnyCPU.Release;\${WORKSPACE}/bin/Unix.AnyCPU.Release;\${WORKSPACE}/bin/AnyOS.AnyCPU.Release\" \\
-                --coreFxNativeBinDir=\"\${WORKSPACE}/bin/${osGroup}.${architecture}.Release\" \\
+                --coreFxBinDir=\"\$(pwd)/fx/bin/runtime/netcoreapp-${osGroup}-${configuration}-${architecture}\" \\
                 --limitedDumpGeneration \\
                 ${testEnvOpt} ${serverGCString} ${gcstressStr} ${crossgenStr} ${runcrossgentestsStr} ${runjitstressStr} ${runjitstressregsStr} ${runjitmioptsStr} ${runjitforcerelocsStr} ${runjitdisasmStr} ${sequentialString} ${playlistString}""")
                             }
