@@ -5,7 +5,6 @@
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using System.IO;
-using System.Runtime.Serialization;
 
 namespace System.Security.Claims
 {
@@ -31,15 +30,18 @@ namespace System.Security.Claims
         }
 
         [NonSerialized]
-        private byte[] _userSerializationData;
-        private string _issuer;
-        private string _originalIssuer;
-        private Dictionary<string, string> _properties = new Dictionary<string, string>();
+        private readonly byte[] _userSerializationData;
+
+        private readonly string _issuer;
+        private readonly string _originalIssuer;
+        private Dictionary<string, string> _properties;
+
         [NonSerialized]
-        private ClaimsIdentity _subject;
-        private string _type;
-        private string _value;
-        private string _valueType;
+        private readonly ClaimsIdentity _subject;
+
+        private readonly string _type;
+        private readonly string _value;
+        private readonly string _valueType;
 
         /// <summary>
         /// Initializes an instance of <see cref="Claim"/> using a <see cref="BinaryReader"/>.
@@ -62,9 +64,85 @@ namespace System.Security.Claims
         public Claim(BinaryReader reader, ClaimsIdentity subject)
         {
             if (reader == null)
+            {
                 throw new ArgumentNullException(nameof(reader));
+            }
 
-            Initialize(reader, subject);
+            _subject = subject;
+
+            SerializationMask mask = (SerializationMask)reader.ReadInt32();
+            int numPropertiesRead = 1;
+            int numPropertiesToRead = reader.ReadInt32();
+            _value = reader.ReadString();
+
+            if ((mask & SerializationMask.NameClaimType) == SerializationMask.NameClaimType)
+            {
+                _type = ClaimsIdentity.DefaultNameClaimType;
+            }
+            else if ((mask & SerializationMask.RoleClaimType) == SerializationMask.RoleClaimType)
+            {
+                _type = ClaimsIdentity.DefaultRoleClaimType;
+            }
+            else
+            {
+                _type = reader.ReadString();
+                numPropertiesRead++;
+            }
+
+            if ((mask & SerializationMask.StringType) == SerializationMask.StringType)
+            {
+                _valueType = reader.ReadString();
+                numPropertiesRead++;
+            }
+            else
+            {
+                _valueType = ClaimValueTypes.String;
+            }
+
+            if ((mask & SerializationMask.Issuer) == SerializationMask.Issuer)
+            {
+                _issuer = reader.ReadString();
+                numPropertiesRead++;
+            }
+            else
+            {
+                _issuer = ClaimsIdentity.DefaultIssuer;
+            }
+
+            if ((mask & SerializationMask.OriginalIssuerEqualsIssuer) == SerializationMask.OriginalIssuerEqualsIssuer)
+            {
+                _originalIssuer = _issuer;
+            }
+            else if ((mask & SerializationMask.OriginalIssuer) == SerializationMask.OriginalIssuer)
+            {
+                _originalIssuer = reader.ReadString();
+                numPropertiesRead++;
+            }
+            else
+            {
+                _originalIssuer = ClaimsIdentity.DefaultIssuer;
+            }
+
+            if ((mask & SerializationMask.HasProperties) == SerializationMask.HasProperties)
+            {
+                int numProperties = reader.ReadInt32();
+                for (int i = 0; i < numProperties; i++)
+                {
+                    Properties.Add(reader.ReadString(), reader.ReadString());
+                }
+            }
+
+            if ((mask & SerializationMask.UserData) == SerializationMask.UserData)
+            {
+                int cb = reader.ReadInt32();
+                _userSerializationData = reader.ReadBytes(cb);
+                numPropertiesRead++;
+            }
+
+            for (int i = numPropertiesRead; i < numPropertiesToRead; i++)
+            {
+                reader.ReadString();
+            }
         }
 
         /// <summary>
@@ -134,7 +212,7 @@ namespace System.Security.Claims
         /// <param name="value">The claim value.</param>
         /// <param name="valueType">The claim value type. If this parameter is null, then <see cref="ClaimValueTypes.String"/> is used.</param>
         /// <param name="issuer">The claim issuer. If this parameter is empty or null, then <see cref="ClaimsIdentity.DefaultIssuer"/> is used.</param>
-        /// <param name="originalIssuer">The original issuer of this claim. If this parameter is empty or null, then orignalIssuer == issuer.</param>
+        /// <param name="originalIssuer">The original issuer of this claim. If this parameter is empty or null, then originalIssuer == issuer.</param>
         /// <exception cref="ArgumentNullException"><paramref name="type"/> or <paramref name="value"/> is null.</exception>
         /// <remarks>
         /// <see cref="Claim.Subject"/> is set to null.
@@ -154,7 +232,7 @@ namespace System.Security.Claims
         /// <param name="value">The claim value.</param>
         /// <param name="valueType">The claim value type. If this parameter is null, then <see cref="ClaimValueTypes.String"/> is used.</param>
         /// <param name="issuer">The claim issuer. If this parameter is empty or null, then <see cref="ClaimsIdentity.DefaultIssuer"/> is used.</param>
-        /// <param name="originalIssuer">The original issuer of this claim. If this parameter is empty or null, then orignalIssuer == issuer.</param>
+        /// <param name="originalIssuer">The original issuer of this claim. If this parameter is empty or null, then originalIssuer == issuer.</param>
         /// <param name="subject">The subject that this claim describes.</param>
         /// <exception cref="ArgumentNullException"><paramref name="type"/> or <paramref name="value"/> is null.</exception>
         /// <seealso cref="ClaimsIdentity"/>
@@ -169,6 +247,12 @@ namespace System.Security.Claims
         /// This internal constructor was added as a performance boost when adding claims that are found in the NTToken.
         /// We need to add a property value to distinguish DeviceClaims from UserClaims.
         /// </summary>
+        /// <param name="type">The claim type.</param>
+        /// <param name="value">The claim value.</param>
+        /// <param name="valueType">The claim value type. If this parameter is null, then <see cref="ClaimValueTypes.String"/> is used.</param>
+        /// <param name="issuer">The claim issuer. If this parameter is empty or null, then <see cref="ClaimsIdentity.DefaultIssuer"/> is used.</param>
+        /// <param name="originalIssuer">The original issuer of this claim. If this parameter is empty or null, then originalIssuer == issuer.</param>
+        /// <param name="subject">The subject that this claim describes.</param>
         /// <param name="propertyKey">This allows adding a property when adding a Claim.</param>
         /// <param name="propertyValue">The value associcated with the property.</param>
         internal Claim(string type, string value, string valueType, string issuer, string originalIssuer, ClaimsIdentity subject, string propertyKey, string propertyValue)
@@ -194,6 +278,7 @@ namespace System.Security.Claims
 
             if (propertyKey != null)
             {
+                _properties = new Dictionary<string, string>();
                 _properties[propertyKey] = propertyValue;
             }
         }
@@ -227,9 +312,9 @@ namespace System.Security.Claims
             _type = other._type;
             _value = other._value;
             _valueType = other._valueType;
-            foreach (var key in other._properties.Keys)
+            if (other._properties != null)
             {
-                _properties.Add(key, other._properties[key]);
+                _properties = new Dictionary<string, string>(other._properties);
             }
 
             if (other._userSerializationData != null)
@@ -239,7 +324,7 @@ namespace System.Security.Claims
         }
 
         /// <summary>
-        /// Contains any additional data provided by a derived type, typically set when calling <see cref="WriteTo(BinaryWriter, byte[])"/>.</param>
+        /// Contains any additional data provided by a derived type, typically set when calling <see cref="WriteTo(BinaryWriter, byte[])"/>.
         /// </summary>
         protected virtual byte[] CustomSerializationData
         {
@@ -277,6 +362,10 @@ namespace System.Security.Claims
         {
             get
             {
+                if (_properties == null)
+                {
+                    _properties = new Dictionary<string, string>();
+                }
                 return _properties;
             }
         }
@@ -287,7 +376,6 @@ namespace System.Security.Claims
         public ClaimsIdentity Subject
         {
             get { return _subject; }
-            internal set { _subject = value; }
         }
 
         /// <summary>
@@ -327,97 +415,11 @@ namespace System.Security.Claims
         /// <summary>
         /// Creates a new instance <see cref="Claim"/> with values copied from this object.
         /// </summary>
-        /// <param name="identity">the value for <see cref="Claim.Subject"/>, which is the <see cref="ClaimsIdentity"/> that has these claims.
+        /// <param name="identity">the value for <see cref="Claim.Subject"/>, which is the <see cref="ClaimsIdentity"/> that has these claims.</param>
         /// <remarks><see cref="Claim.Subject"/> will be set to 'identity'.</remarks>
         public virtual Claim Clone(ClaimsIdentity identity)
         {
             return new Claim(this, identity);
-        }
-
-        private void Initialize(BinaryReader reader, ClaimsIdentity subject)
-        {
-            if (reader == null)
-            {
-                throw new ArgumentNullException(nameof(reader));
-            }
-
-            _subject = subject;
-
-            SerializationMask mask = (SerializationMask)reader.ReadInt32();
-            int numPropertiesRead = 1;
-            int numPropertiesToRead = reader.ReadInt32();
-            _value = reader.ReadString();
-
-            if ((mask & SerializationMask.NameClaimType) == SerializationMask.NameClaimType)
-            {
-                _type = ClaimsIdentity.DefaultNameClaimType;
-            }
-            else if ((mask & SerializationMask.RoleClaimType) == SerializationMask.RoleClaimType)
-            {
-                _type = ClaimsIdentity.DefaultRoleClaimType;
-            }
-            else
-            {
-                _type = reader.ReadString();
-                numPropertiesRead++;
-            }
-
-            if ((mask & SerializationMask.StringType) == SerializationMask.StringType)
-            {
-                _valueType = reader.ReadString();
-                numPropertiesRead++;
-            }
-            else
-            {
-                _valueType = ClaimValueTypes.String;
-            }
-
-            if ((mask & SerializationMask.Issuer) == SerializationMask.Issuer)
-            {
-                _issuer = reader.ReadString();
-                numPropertiesRead++;
-            }
-            else
-            {
-                _issuer = ClaimsIdentity.DefaultIssuer;
-            }
-
-            if ((mask & SerializationMask.OriginalIssuerEqualsIssuer) == SerializationMask.OriginalIssuerEqualsIssuer)
-            {
-                _originalIssuer = _issuer;
-            }
-            else if ((mask & SerializationMask.OriginalIssuer) == SerializationMask.OriginalIssuer)
-            {
-                _originalIssuer = reader.ReadString();
-                numPropertiesRead++;
-            }
-            else
-            {
-                _originalIssuer = ClaimsIdentity.DefaultIssuer;
-            }
-
-            if ((mask & SerializationMask.HasProperties) == SerializationMask.HasProperties)
-            {
-                // TODO - brentsch, maximum # of properties
-                int numProperties = reader.ReadInt32();
-                for (int i = 0; i < numProperties; i++)
-                {
-                    Properties.Add(reader.ReadString(), reader.ReadString());
-                }
-            }
-
-            if ((mask & SerializationMask.UserData) == SerializationMask.UserData)
-            {
-                // TODO - brentschmaltz - maximum size ??
-                int cb = reader.ReadInt32();
-                _userSerializationData = reader.ReadBytes(cb);
-                numPropertiesRead++;
-            }
-
-            for (int i = numPropertiesRead; i < numPropertiesToRead; i++)
-            {
-                reader.ReadString();
-            }
         }
 
         /// <summary>
@@ -442,9 +444,6 @@ namespace System.Security.Claims
             {
                 throw new ArgumentNullException(nameof(writer));
             }
-
-            // TODO - brentsch, given that there may be a bunch of NameClaims and or RoleClaims, we should account for this.
-            // This would require coordination between ClaimsIdentity and Claim since the ClaimsIdentity defines these 'types'. For now just use defaults.
 
             int numberOfPropertiesWritten = 1;
             SerializationMask mask = SerializationMask.None;
@@ -477,27 +476,26 @@ namespace System.Security.Claims
             {
                 mask |= SerializationMask.OriginalIssuerEqualsIssuer;
             }
-            else if (!string.Equals(_originalIssuer, ClaimsIdentity.DefaultIssuer, StringComparison.Ordinal))
+            else if (!string.Equals(_originalIssuer, ClaimsIdentity.DefaultIssuer))
             {
                 numberOfPropertiesWritten++;
                 mask |= SerializationMask.OriginalIssuer;
             }
 
-            if (Properties.Count > 0)
+            if (_properties != null && _properties.Count > 0)
             {
                 numberOfPropertiesWritten++;
                 mask |= SerializationMask.HasProperties;
             }
 
-            // TODO - brentschmaltz - maximum size ??
             if (userData != null && userData.Length > 0)
             {
                 numberOfPropertiesWritten++;
                 mask |= SerializationMask.UserData;
             }
 
-            writer.Write((Int32)mask);
-            writer.Write((Int32)numberOfPropertiesWritten);
+            writer.Write((int)mask);
+            writer.Write(numberOfPropertiesWritten);
             writer.Write(_value);
 
             if (((mask & SerializationMask.NameClaimType) != SerializationMask.NameClaimType) && ((mask & SerializationMask.RoleClaimType) != SerializationMask.RoleClaimType))
@@ -522,17 +520,17 @@ namespace System.Security.Claims
 
             if ((mask & SerializationMask.HasProperties) == SerializationMask.HasProperties)
             {
-                writer.Write(Properties.Count);
-                foreach (var key in Properties.Keys)
+                writer.Write(_properties.Count);
+                foreach (var kvp in _properties)
                 {
-                    writer.Write(key);
-                    writer.Write(Properties[key]);
+                    writer.Write(kvp.Key);
+                    writer.Write(kvp.Value);
                 }
             }
 
             if ((mask & SerializationMask.UserData) == SerializationMask.UserData)
             {
-                writer.Write((Int32)userData.Length);
+                writer.Write(userData.Length);
                 writer.Write(userData);
             }
 
@@ -548,7 +546,7 @@ namespace System.Security.Claims
         /// <returns>The string representation of the <see cref="Claim"/> object.</returns>
         public override string ToString()
         {
-            return String.Format(System.Globalization.CultureInfo.InvariantCulture, "{0}: {1}", _type, _value);
+            return _type + ": " + _value;
         }
     }
 }
