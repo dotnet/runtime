@@ -1783,13 +1783,15 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                 case 'x86lb':
                     def arch = architecture
                     def buildOpts = ''
+                    
+                    // We need to explicitly run build-test.cmd with Exclude for x86compatjit and x86lb, so skip tests.
                     if (architecture == 'x86compatjit') {
                         arch = 'x86'
-                        buildOpts = 'compatjitcrossgen'
+                        buildOpts = 'compatjitcrossgen skiptests'
                     }
                     else if (architecture == 'x86lb') {
                         arch = 'x86'
-                        buildOpts = 'legacyjitcrossgen'
+                        buildOpts = 'legacyjitcrossgen skiptests'
                     }
                     
                     if (Constants.jitStressModeScenarios.containsKey(scenario) ||
@@ -1930,11 +1932,15 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                         }                                        
                         else if (architecture == 'x86compatjit') {
                             def testEnvLocation = "%WORKSPACE%\\tests\\x86\\compatjit_x86_testenv.cmd"
-                            buildCommands += "tests\\runtest.cmd ${runtestArguments} Exclude0 x86_legacy_backend_issues.targets TestEnv ${testEnvLocation}"
+                            def excludeLocation = "%WORKSPACE%\\tests\\x86_legacy_backend_issues.targets"
+                            buildCommands += "build-test.cmd ${runtestArguments} Exclude ${excludeLocation}"
+                            buildCommands += "tests\\runtest.cmd ${runtestArguments} TestEnv ${testEnvLocation}"
                         }
                         else if (architecture == 'x86lb') {
                             def testEnvLocation = "%WORKSPACE%\\tests\\x86\\legacyjit_x86_testenv.cmd"
-                            buildCommands += "tests\\runtest.cmd ${runtestArguments} Exclude0 x86_legacy_backend_issues.targets TestEnv ${testEnvLocation}"
+                            def excludeLocation = "%WORKSPACE%\\tests\\x86_legacy_backend_issues.targets"
+                            buildCommands += "build-test.cmd ${runtestArguments} Exclude ${excludeLocation}"
+                            buildCommands += "tests\\runtest.cmd ${runtestArguments} TestEnv ${testEnvLocation}"
                         }
                     }
 
