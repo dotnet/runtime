@@ -22,22 +22,10 @@
     <DebugType>Portable</DebugType>
 
     <!--
-      Delay signing with the ECMA key currently doesn't work.
-      https://github.com/dotnet/roslyn/issues/2444
-    -->
-    <UseECMAKey>false</UseECMAKey>
-
-    <!--
       Full signing with Open key doesn't work with Portable Csc.
       https://github.com/dotnet/roslyn/issues/8210
     -->
     <UseOpenKey>false</UseOpenKey>
-
-    <!--
-      Mono currently doesn't include VB targets for portable, notably /lib/mono/xbuild/Microsoft/Portable/v4.5/Microsoft.Portable.VisualBasic.targets.
-      Fixed in https://github.com/mono/mono/pull/1726.
-    -->
-    <IncludeVbProjects>false</IncludeVbProjects>
   </PropertyGroup>
   
 </Project>
