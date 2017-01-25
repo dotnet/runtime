@@ -4,6 +4,7 @@
 
 using System.Diagnostics;
 using System.Globalization;
+using System.IO;
 using System.Text;
 
 namespace System.Net.Http.Headers
@@ -74,7 +75,7 @@ namespace System.Net.Http.Headers
 
         public override string ToString()
         {
-            StringBuilder sb = new StringBuilder();
+            StringBuilder sb = StringBuilderCache.Acquire();
 
             // Warning codes are always 3 digits according to RFC2616
             sb.Append(_code.ToString("000", NumberFormatInfo.InvariantInfo));
@@ -91,7 +92,7 @@ namespace System.Net.Http.Headers
                 sb.Append('\"');
             }
 
-            return sb.ToString();
+            return StringBuilderCache.GetStringAndRelease(sb);
         }
 
         public override bool Equals(object obj)
