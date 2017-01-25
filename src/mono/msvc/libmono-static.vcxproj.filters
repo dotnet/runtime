@@ -139,9 +139,6 @@
     <ClCompile Include="..\mono\mini\mini-cross-helpers.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\mono\mini\mini-exceptions-native-unwinder.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\mono\mini\mini-x86-gsharedvt.c">
       <Filter>Source Files</Filter>
     </ClCompile>
