@@ -388,8 +388,7 @@ function precompile_overlay_assemblies {
         for fileToPrecompile in ${filesToPrecompile}
         do
             local filename=${fileToPrecompile}
-            if [ $jitdisasm == 1]; then
-
+            if [ $jitdisasm == 1 ]; then
                 $overlayDir/corerun $overlayDir/jit-dasm.dll --crossgen $overlayDir/crossgen --platform $overlayDir --output $testRootDir/dasm $filename
                 local exitCode=$?
                 if [ $exitCode != 0 ]; then
