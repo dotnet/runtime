@@ -63,7 +63,7 @@ namespace System.Linq
     // To limit the damage, the toolchain makes this type appear in a hidden assembly.
     // (This is also why it is no longer a nested type of Lookup<,>).
     [DebuggerDisplay("{Key}")]
-    [DebuggerTypeProxy(typeof(GroupingDebuggerTypeProxy<,>))]
+    [DebuggerTypeProxy(typeof(GroupingDebuggerProxy<,>))]
     public class Grouping<TKey, TElement> : IGrouping<TKey, TElement>, IList<TElement>
     {
         internal TKey _key;
