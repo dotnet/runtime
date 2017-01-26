@@ -355,7 +355,6 @@ c_runtime/_putenv/test1/paltest_putenv_test1
 c_runtime/_putenv/test2/paltest_putenv_test2
 c_runtime/_putenv/test3/paltest_putenv_test3
 c_runtime/_putenv/test4/paltest_putenv_test4
-c_runtime/_putw/test1/paltest_putw_test1
 c_runtime/_rotl/test1/paltest_rotl_test1
 c_runtime/_rotr/test1/paltest_rotr_test1
 c_runtime/_snprintf_s/test1/paltest_snprintf_test1

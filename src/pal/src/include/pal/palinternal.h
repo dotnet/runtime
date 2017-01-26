@@ -358,6 +358,7 @@ function_name() to call the system's implementation
 #undef memchr
 #undef strlen
 #undef strnlen
+#undef wcsnlen
 #undef stricmp
 #undef strstr
 #undef strcmp
