@@ -7426,57 +7426,6 @@ GenTreePtr Compiler::optFindLocalInit(BasicBlock* block,
     return rhs;
 }
 
-/*****************************************************************************
- *
- *  Return true if "op1" is guaranteed to be less then or equal to "op2".
- */
-
-#if FANCY_ARRAY_OPT
-
-bool Compiler::optIsNoMore(GenTreePtr op1, GenTreePtr op2, int add1, int add2)
-{
-    if (op1->gtOper == GT_CNS_INT && op2->gtOper == GT_CNS_INT)
-    {
-        add1 += op1->gtIntCon.gtIconVal;
-        add2 += op2->gtIntCon.gtIconVal;
-    }
-    else
-    {
-        /* Check for +/- constant on either operand */
-
-        if (op1->gtOper == GT_ADD && op1->gtOp.gtOp2->gtOper == GT_CNS_INT)
-        {
-            add1 += op1->gtOp.gtOp2->gtIntCon.gtIconVal;
-            op1 = op1->gtOp.gtOp1;
-        }
-
-        if (op2->gtOper == GT_ADD && op2->gtOp.gtOp2->gtOper == GT_CNS_INT)
-        {
-            add2 += op2->gtOp.gtOp2->gtIntCon.gtIconVal;
-            op2 = op2->gtOp.gtOp1;
-        }
-
-        /* We only allow local variable references */
-
-        if (op1->gtOper != GT_LCL_VAR)
-            return false;
-        if (op2->gtOper != GT_LCL_VAR)
-            return false;
-        if (op1->gtLclVarCommon.gtLclNum != op2->gtLclVarCommon.gtLclNum)
-            return false;
-
-        /* NOTE: Caller ensures that this variable has only one def */
-
-        // printf("limit [%d]:\n", add1); gtDispTree(op1);
-        // printf("size  [%d]:\n", add2); gtDispTree(op2);
-        // printf("\n");
-    }
-
-    return (bool)(add1 <= add2);
-}
-
-#endif
-
 //------------------------------------------------------------------------------
 // optObtainLoopCloningOpts: Identify optimization candidates and update
 //      the "context" for array optimizations.
