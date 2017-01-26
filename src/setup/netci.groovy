@@ -23,6 +23,7 @@ platformList.each { platform ->
     // Calculate the job name
     def jobName = getBuildJobName(configuration, os, architecture)
     def buildCommand = '';
+    def osForGHTrigger = os
 
     // Calculate build command
     if (os == 'Windows_NT') {
@@ -48,7 +49,7 @@ platformList.each { platform ->
 
             // Trigger a portable Linux build that runs on RHEL7.2
             buildCommand += " --portableLinux"
-            os = "RHEL7.2"
+            osForGHTrigger = "PortableLinux"
         }
     }
 
@@ -73,7 +74,7 @@ platformList.each { platform ->
         Utilities.addXUnitDotNETResults(newJob, '**/*-testResults.xml')
     }
 
-    Utilities.addGithubPRTriggerForBranch(newJob, branch, "${os} ${architecture} ${configuration} Build")
+    Utilities.addGithubPRTriggerForBranch(newJob, branch, "${osForGHTrigger} ${architecture} ${configuration} Build")
 
     ArchivalSettings settings = new ArchivalSettings();
     def archiveString = ["tar.gz", "zip", "deb", "msi", "pkg", "exe", "nupkg"].collect { "artifacts/*/packages/*.${it},artifacts/*/corehost/*.${it},pkg/bin/packages/*.${it}" }.join(",")
