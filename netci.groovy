@@ -50,6 +50,7 @@ platformList.each { platform ->
             // Trigger a portable Linux build that runs on RHEL7.2
             buildCommand += " --portableLinux"
             osForGHTrigger = "PortableLinux"
+            os = "RHEL7.2"
         }
     }
 
