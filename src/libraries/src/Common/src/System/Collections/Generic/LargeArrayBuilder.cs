@@ -55,7 +55,7 @@ namespace System.Collections.Generic
     internal struct LargeArrayBuilder<T>
     {
         private const int StartingCapacity = 4;
-        private const int ResizeLimit = 32;
+        private const int ResizeLimit = 8;
 
         private readonly int _maxCapacity;  // The maximum capacity this builder can have.
         private T[] _first;                 // The first buffer we store items in. Resized until ResizeLimit.
@@ -325,11 +325,11 @@ namespace System.Collections.Generic
                 }
                 else
                 {
-                    // Example scenario: Let's say _count == 256.
-                    // Then our buffers look like this: | 32 | 32 | 64 | 128 |
+                    // Example scenario: Let's say _count == 64.
+                    // Then our buffers look like this: | 8 | 8 | 16 | 32 |
                     // As you can see, our count will be just double the last buffer.
-                    // Now, say _maxCapacity is 500. We will find the right amount to allocate by
-                    // doing min(256, 500 - 256). The lhs represents double the last buffer,
+                    // Now, say _maxCapacity is 100. We will find the right amount to allocate by
+                    // doing min(64, 100 - 64). The lhs represents double the last buffer,
                     // the rhs the limit minus the amount we've already allocated.
 
                     Debug.Assert(_count >= ResizeLimit * 2);
