@@ -4,18 +4,18 @@
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
-      "displayName": "Shell Script build.sh",
+      "displayName": "Run script build.cmd",
       "timeoutInMinutes": 0,
       "task": {
-        "id": "6c731c3c-3c68-459a-a5c9-bde6e6595b5b",
-        "versionSpec": "2.*",
+        "id": "bfc8bf76-e7ac-4a8c-9a55-a944a9f632fd",
+        "versionSpec": "1.*",
         "definitionType": "task"
       },
       "inputs": {
-        "scriptPath": "build.sh",
-        "args": "$(BuildArguments)",
-        "disableAutoCwd": "false",
-        "cwd": "",
+        "filename": "build.cmd",
+        "arguments": "-Configuration Release -Targets Init,Compile,Package,Publish -TargetArch arm -Framework netcoreapp2.0",
+        "modifyEnvironment": "false",
+        "workingFolder": "",
         "failOnStandardError": "false"
       }
     }
@@ -64,21 +64,6 @@
     }
   ],
   "variables": {
-    "BuildConfiguration": {
-      "value": "Release",
-      "allowOverride": true
-    },
-    "BuildArguments": {
-      "value": "--skip-prereqs --configuration $(BuildConfiguration) --targets Default",
-      "allowOverride": true
-    },
-    "CONNECTION_STRING": {
-      "value": "PassedViaPipeBuild"
-    },
-    "PUBLISH_TO_AZURE_BLOB": {
-      "value": "true",
-      "allowOverride": true
-    },
     "NUGET_FEED_URL": {
       "value": "https://dotnet.myget.org/F/dotnet-core"
     },
@@ -87,10 +72,28 @@
     },
     "GITHUB_PASSWORD": {
       "value": "PassedViaPipeBuild"
+    },
+    "COREHOST_TRACE": {
+      "value": "0"
+    },
+    "STORAGE_ACCOUNT": {
+      "value": "dotnetcli"
+    },
+    "STORAGE_CONTAINER": {
+      "value": "dotnet"
+    },
+    "CONNECTION_STRING": {
+      "value": "PassedViaPipeBuild"
+    },
+    "PUBLISH_TO_AZURE_BLOB": {
+      "value": "true",
+      "allowOverride": true
     }
   },
   "demands": [
-    "Agent.OS -equals darwin"
+    "Agent.OS -equals Windows_NT",
+    "DotNetFramework",
+    "Cmd"
   ],
   "retentionRules": [
     {
@@ -102,13 +105,13 @@
         "FilePath",
         "SymbolStore"
       ],
-      "daysToKeep": 2,
+      "daysToKeep": 7,
       "minimumToKeep": 1,
       "deleteBuildRecord": true,
       "deleteTestResults": true
     }
   ],
-  "buildNumberFormat": "$(date:yyyyMMdd)$(rev:.r)",
+  "buildNumberFormat": "$(Date:yyyMMdd)$(Rev:.r)",
   "jobAuthorizationScope": "projectCollection",
   "jobTimeoutInMinutes": 90,
   "badgeEnabled": true,
@@ -131,7 +134,6 @@
     "checkoutSubmodules": false
   },
   "quality": "definition",
-  "defaultBranch": "master",
   "queue": {
     "pool": {
       "id": 39,
@@ -142,8 +144,8 @@
   },
   "path": "\\",
   "type": "build",
-  "id": 3544,
-  "name": "Core-Setup-OSX-x64-master",
+  "id": 4371,
+  "name": "Core-Setup-Windows-arm32",
   "project": {
     "id": "0bdbc590-a062-4c3f-b0f6-9383f67865ee",
     "name": "DevDiv",

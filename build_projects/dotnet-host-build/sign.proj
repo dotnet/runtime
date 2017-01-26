@@ -4,7 +4,7 @@
     <RepoRoot>$(MSBuildThisFileDirectory)/../../</RepoRoot>
   </PropertyGroup>
 
-  <!-- This will be overriden if we're building with MicroBuild. -->
+  <!-- This will be overridden if we're building with MicroBuild. -->
   <Target Name="SignFiles">
     <Message Text="Fake sign target.  Would sign: @(FilesToSign)" />
   </Target>
@@ -19,7 +19,7 @@
       <!-- The OutDir and IntermediateOutputPath properties are required by MicroBuild. MicroBuild only
            signs files that are under these paths. -->
       <OutDir Condition="'$(OutDir)' == ''">$(RepoRoot)artifacts/$(RID)/</OutDir>
-      <IntermediateOutputPath Condition="'$(IntermediateOutputPath)' == ''">$(OutDir)</IntermediateOutputPath>
+      <IntermediateOutputPath Condition="'$(IntermediateOutputPath)' == ''">$(OutDir)intermediate/</IntermediateOutputPath>
     </PropertyGroup>
   </Target>
 
@@ -44,10 +44,10 @@
 
   <Target Name="GetSignSharedFrameworkCrossgenedAssembliesFiles">
     <ItemGroup>
-      <FilesToSign Include="$(OutDir)intermediate/sharedFrameworkPublish/shared/**/Microsoft.*.dll">
+      <FilesToSign Include="$(IntermediateOutputPath)sharedFrameworkPublish/shared/**/Microsoft.*.dll">
         <Authenticode>$(CertificateId)</Authenticode>
       </FilesToSign>
-      <FilesToSign Include="$(OutDir)intermediate/sharedFrameworkPublish/shared/**/System.*.dll">
+      <FilesToSign Include="$(IntermediateOutputPath)sharedFrameworkPublish/shared/**/System.*.dll">
         <Authenticode>$(CertificateId)</Authenticode>
       </FilesToSign>
     </ItemGroup>
@@ -59,7 +59,7 @@
 
   <Target Name="GetSignAssembliesFiles">
     <ItemGroup>
-      <FilesToSign Include="$(OutDir)intermediate/forPackaging/**/*.dll">
+      <FilesToSign Include="$(IntermediateOutputPath)forPackaging/**/*.dll">
         <Authenticode>$(CertificateId)</Authenticode>
       </FilesToSign>
     </ItemGroup>

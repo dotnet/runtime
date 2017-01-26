@@ -32,7 +32,7 @@
       "inputs": {
         "scriptType": "filePath",
         "scriptName": "build_projects/dotnet-host-build/build.ps1",
-        "arguments": "-Configuration $(BuildConfiguration) -Architecture $(BuildArchitecture) -Targets Prepare,CompileCoreHost",
+        "arguments": "-Configuration $(BuildConfiguration) -Targets Prepare,CompileCoreHost",
         "inlineScript": "# You can write your powershell scripts inline here. \n# You can also pass predefined and custom variables to this scripts using arguments\n\n Write-Host \"Hello World\"",
         "workingFolder": "",
         "failOnStandardError": "true"
@@ -80,7 +80,7 @@
         "createLogFile": "false",
         "msbuildLocationMethod": "version",
         "msbuildVersion": "15.0",
-        "msbuildArchitecture": "$(BuildArchitecture)",
+        "msbuildArchitecture": "x64",
         "msbuildLocation": ""
       }
     },
@@ -98,7 +98,7 @@
       "inputs": {
         "scriptType": "filePath",
         "scriptName": "build_projects/dotnet-host-build/build.ps1",
-        "arguments": "-Configuration $(BuildConfiguration) -Architecture $(BuildArchitecture) -Targets Prepare,PackagePkgProjects",
+        "arguments": "-Configuration $(BuildConfiguration) -Targets Prepare,PackagePkgProjects,BuildProjectsForNuGetPackages",
         "inlineScript": "# You can write your powershell scripts inline here. \n# You can also pass predefined and custom variables to this scripts using arguments\n\n Write-Host \"Hello World\"",
         "workingFolder": "",
         "failOnStandardError": "true"
@@ -117,7 +117,7 @@
       },
       "inputs": {
         "filename": "build.cmd",
-        "arguments": "-Configuration $(BuildConfiguration) -Architecture $(BuildArchitecture) -Targets Prepare,PublishSharedFrameworkAndSharedHost",
+        "arguments": "-Configuration $(BuildConfiguration) -Targets Prepare,PublishSharedFrameworkAndSharedHost",
         "modifyEnvironment": "false",
         "workingFolder": "",
         "failOnStandardError": "false"
@@ -146,7 +146,34 @@
         "createLogFile": "false",
         "msbuildLocationMethod": "version",
         "msbuildVersion": "15.0",
-        "msbuildArchitecture": "$(BuildArchitecture)",
+        "msbuildArchitecture": "x64",
+        "msbuildLocation": ""
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Sign Assemblies: *.dll",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "c6c4c611-aa2e-4a33-b606-5eaba2196824",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "solution": "build_projects\\dotnet-host-build\\sign.proj",
+        "platform": "",
+        "configuration": "$(BuildConfiguration)",
+        "msbuildArguments": "/t:SignAssemblies $(MsbuildSigningArguments)",
+        "clean": "false",
+        "maximumCpuCount": "false",
+        "restoreNugetPackages": "false",
+        "logProjectEvents": "false",
+        "createLogFile": "false",
+        "msbuildLocationMethod": "version",
+        "msbuildVersion": "15.0",
+        "msbuildArchitecture": "x64",
         "msbuildLocation": ""
       }
     },
@@ -163,7 +190,7 @@
       },
       "inputs": {
         "filename": "build.cmd",
-        "arguments": "-Configuration $(BuildConfiguration) -Architecture $(BuildArchitecture) -Targets Prepare,Test,GenerateVersionBadge,GenerateZip,GenerateMsis",
+        "arguments": "-Configuration $(BuildConfiguration) -Targets Prepare,Test,InitPackage,GenerateVersionBadge,GenerateZip,GenerateMsis,GenerateNugetPackages",
         "modifyEnvironment": "false",
         "workingFolder": "",
         "failOnStandardError": "false"
@@ -192,7 +219,7 @@
         "createLogFile": "false",
         "msbuildLocationMethod": "version",
         "msbuildVersion": "15.0",
-        "msbuildArchitecture": "$(BuildArchitecture)",
+        "msbuildArchitecture": "x64",
         "msbuildLocation": ""
       }
     },
@@ -209,7 +236,7 @@
       },
       "inputs": {
         "filename": "build.cmd",
-        "arguments": "-Configuration $(BuildConfiguration) -Architecture $(BuildArchitecture) -Targets Prepare,GenerateBundles",
+        "arguments": "-Configuration $(BuildConfiguration) -Targets Prepare,GenerateBundles",
         "modifyEnvironment": "false",
         "workingFolder": "",
         "failOnStandardError": "false"
@@ -228,7 +255,7 @@
       },
       "inputs": {
         "filename": "build.cmd",
-        "arguments": "-Configuration $(BuildConfiguration) -Architecture $(BuildArchitecture) -Targets Prepare,ExtractEngineFromBundle",
+        "arguments": "-Configuration $(BuildConfiguration) -Targets Prepare,ExtractEngineFromBundle",
         "modifyEnvironment": "false",
         "workingFolder": "",
         "failOnStandardError": "false"
@@ -257,7 +284,7 @@
         "createLogFile": "false",
         "msbuildLocationMethod": "version",
         "msbuildVersion": "15.0",
-        "msbuildArchitecture": "$(BuildArchitecture)",
+        "msbuildArchitecture": "x64",
         "msbuildLocation": ""
       }
     },
@@ -274,7 +301,7 @@
       },
       "inputs": {
         "filename": "build.cmd",
-        "arguments": "-Configuration $(BuildConfiguration) -Architecture $(BuildArchitecture) -Targets Prepare,ReattachEngineToBundle",
+        "arguments": "-Configuration $(BuildConfiguration) -Targets Prepare,ReattachEngineToBundle",
         "modifyEnvironment": "false",
         "workingFolder": "",
         "failOnStandardError": "false"
@@ -303,7 +330,7 @@
         "createLogFile": "false",
         "msbuildLocationMethod": "version",
         "msbuildVersion": "15.0",
-        "msbuildArchitecture": "$(BuildArchitecture)",
+        "msbuildArchitecture": "x64",
         "msbuildLocation": ""
       }
     },
@@ -333,7 +360,7 @@
       },
       "inputs": {
         "filename": "build.cmd",
-        "arguments": "-Configuration $(BuildConfiguration) -Architecture $(BuildArchitecture) -Targets Prepare,Publish",
+        "arguments": "-Configuration $(BuildConfiguration) -Targets Prepare,Publish",
         "modifyEnvironment": "false",
         "workingFolder": "",
         "failOnStandardError": "false"
@@ -404,14 +431,14 @@
     "GITHUB_PASSWORD": {
       "value": "PassedViaPipeBuild"
     },
-    "BuildArchitecture": {
-      "value": "x86"
+    "SIGNED_PACKAGES": {
+      "value": "true"
     },
     "CertificateId": {
       "value": "400"
     },
     "RID": {
-      "value": "win81-x86"
+      "value": "win81-x64"
     },
     "MsbuildSigningArguments": {
       "value": "/p:RID=$(RID) /p:CertificateId=$(CertificateId) /v:detailed"
@@ -462,7 +489,7 @@
     "type": "GitHub",
     "name": "dotnet/core-setup",
     "url": "https://github.com/dotnet/core-setup.git",
-    "defaultBranch": "naamunds/signing",
+    "defaultBranch": "master",
     "clean": "true",
     "checkoutSubmodules": false
   },
@@ -478,8 +505,7 @@
   "path": "\\",
   "type": "build",
   "id": 5154,
-  "name": "Core-Setup-Signing-Windows-x86-master",
-  "url": "https://devdiv.visualstudio.com/DefaultCollection/0bdbc590-a062-4c3f-b0f6-9383f67865ee/_apis/build/Definitions/5154",
+  "name": "Core-Setup-Signing-Windows-x64",
   "project": {
     "id": "0bdbc590-a062-4c3f-b0f6-9383f67865ee",
     "name": "DevDiv",
