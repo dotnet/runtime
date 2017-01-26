@@ -10,7 +10,7 @@ namespace System.Dynamic.Utils
     {
         public static bool AreEquivalent(Type t1, Type t2)
         {
-            return t1.IsEquivalentTo(t2);
+            return t1 != null && t1.IsEquivalentTo(t2);
         }
 
         public static bool AreReferenceAssignable(Type dest, Type src)

@@ -775,11 +775,35 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal("(a OrElse b)", e2.ToString());
         }
 
+
+        [Fact]
+        public static void AndAlsoGlobalMethod()
+        {
+            MethodInfo method = GlobalMethod(typeof(int), new[] { typeof(int), typeof(int) });
+            Assert.Throws<ArgumentException>(() => Expression.AndAlso(Expression.Constant(1), Expression.Constant(2), method));
+        }
+
+        [Fact]
+        public static void OrElseGlobalMethod()
+        {
+            MethodInfo method = GlobalMethod(typeof(int), new [] { typeof(int), typeof(int) });
+            Assert.Throws<ArgumentException>(() => Expression.OrElse(Expression.Constant(1), Expression.Constant(2), method));
+        }
+
         private static TypeBuilder GetTypeBuilder()
         {
             AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Name"), AssemblyBuilderAccess.Run);
             ModuleBuilder module = assembly.DefineDynamicModule("Name");
             return module.DefineType("Type");
+        }
+
+        private static MethodInfo GlobalMethod(Type returnType, Type[] parameterTypes)
+        {
+            ModuleBuilder module = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Name"), AssemblyBuilderAccess.Run).DefineDynamicModule("Module");
+            MethodBuilder globalMethod = module.DefineGlobalMethod("GlobalMethod", MethodAttributes.Public | MethodAttributes.Static, returnType, parameterTypes);
+            globalMethod.GetILGenerator().Emit(OpCodes.Ret);
+            module.CreateGlobalFunctions();
+            return module.GetMethod(globalMethod.Name);
         }
 
         public class NonGenericClass

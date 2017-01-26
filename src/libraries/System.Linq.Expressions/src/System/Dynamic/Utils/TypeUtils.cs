@@ -180,6 +180,10 @@ namespace System.Dynamic.Utils
             {
                 return true;
             }
+            if (targetType == null)
+            {
+                return false;
+            }
             if (instanceType.GetTypeInfo().IsValueType)
             {
                 if (AreReferenceAssignable(targetType, typeof(object)))
