@@ -350,6 +350,8 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
         case GT_SUB:
         case GT_MUL:
         {
+            genConsumeOperands(treeNode->AsOp());
+
             const genTreeOps oper = treeNode->OperGet();
             if ((oper == GT_ADD || oper == GT_SUB || oper == GT_MUL) && treeNode->gtOverflow())
             {
@@ -364,56 +366,8 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
             // The arithmetic node must be sitting in a register (since it's not contained)
             noway_assert(targetReg != REG_NA);
 
-            regNumber op1reg = op1->gtRegNum;
-            regNumber op2reg = op2->gtRegNum;
-
-            GenTreePtr dst;
-            GenTreePtr src;
-
-            genConsumeIfReg(op1);
-            genConsumeIfReg(op2);
-
-            if (!varTypeIsFloating(targetType))
-            {
-                // This is the case of reg1 = reg1 op reg2
-                // We're ready to emit the instruction without any moves
-                if (op1reg == targetReg)
-                {
-                    dst = op1;
-                    src = op2;
-                }
-                // We have reg1 = reg2 op reg1
-                // In order for this operation to be correct
-                // we need that op is a commutative operation so
-                // we can convert it into reg1 = reg1 op reg2 and emit
-                // the same code as above
-                else if (op2reg == targetReg)
-                {
-                    assert(GenTree::OperIsCommutative(treeNode->OperGet()));
-                    dst = op2;
-                    src = op1;
-                }
-                // dest, op1 and op2 registers are different:
-                // reg3 = reg1 op reg2
-                // We can implement this by issuing a mov:
-                // reg3 = reg1
-                // reg3 = reg3 op reg2
-                else
-                {
-                    inst_RV_RV(ins_Move_Extend(targetType, true), targetReg, op1reg, op1->gtType);
-                    regTracker.rsTrackRegCopy(targetReg, op1reg);
-                    gcInfo.gcMarkRegPtrVal(targetReg, targetType);
-                    dst = treeNode;
-                    src = op2;
-                }
-
-                regNumber r = emit->emitInsBinary(ins, emitTypeSize(treeNode), dst, src);
-                assert(r == targetReg);
-            }
-            else
-            {
-                emit->emitIns_R_R_R(ins, emitTypeSize(treeNode), targetReg, op1reg, op2reg);
-            }
+            regNumber r = emit->emitInsTernary(ins, emitTypeSize(treeNode), treeNode, op1, op2);
+            assert(r == targetReg);
         }
             genProduceReg(treeNode);
             break;
@@ -1270,13 +1224,12 @@ void CodeGen::genCodeForShift(GenTreePtr tree)
 
     assert(tree->gtRegNum != REG_NA);
 
-    GenTreePtr operand = tree->gtGetOp1();
-    genConsumeReg(operand);
+    genConsumeOperands(tree->AsOp());
 
+    GenTreePtr operand = tree->gtGetOp1();
     GenTreePtr shiftBy = tree->gtGetOp2();
     if (!shiftBy->IsCnsIntOrI())
     {
-        genConsumeReg(shiftBy);
         getEmitter()->emitIns_R_R_R(ins, size, tree->gtRegNum, operand->gtRegNum, shiftBy->gtRegNum);
     }
     else
