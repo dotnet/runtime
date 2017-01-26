@@ -14,7 +14,7 @@
     <ItemGroup>
       <ForPublishing>
         <RelativeBlobPath Condition="'$(PublishTestNativeBins)' != 'true'">$(__BuildType)/%(RecursiveDir)%(Filename)%(Extension)</RelativeBlobPath>
-        <RelativeBlobPath Condition="'$(PublishTestNativeBins)' == 'true'">$(__DistroRid)-$(__BuildArch)/$(__BuildType)/%(RecursiveDir)%(Filename)%(Extension)</RelativeBlobPath>    
+        <RelativeBlobPath Condition="'$(PublishTestNativeBins)' == 'true'">$(__BuildType)/%(RecursiveDir)%(Filename)%(Extension)</RelativeBlobPath>    
       </ForPublishing>
     </ItemGroup>
     <Error Condition="'@(ForPublishing)' == ''" Text="No items were found matching pattern '$(PublishPattern)'." />
@@ -30,9 +30,9 @@
           Condition="'$(ContainerName)' == '' or '$(PublishTestNativeBins)' == 'true'">
     <PropertyGroup>
       <ContainerName Condition="'$(__Container)' == '' and '$(PublishTestNativeBins)' != 'true'">coreclr-$(PreReleaseLabel)-$(BuildNumberMajor)-$(BuildNumberMinor)</ContainerName>
-      <ContainerName Condition="'$(__Container)' == '' and '$(PublishTestNativeBins)' == 'true'">coreclr-$(PreReleaseLabel)-$(BuildNumberMajor)-$(BuildNumberMinor)-test-native-bins</ContainerName>
+      <ContainerName Condition="'$(__Container)' == '' and '$(PublishTestNativeBins)' == 'true'">coreclr-$(PreReleaseLabel)-$(BuildNumberMajor)-$(BuildNumberMinor)-$(__DistroRid)-$(__BuildArch)</ContainerName>
       <ContainerName Condition="'$(__Container)' != '' and '$(PublishTestNativeBins)' != 'true'">$(__Container)</ContainerName>
-      <ContainerName Condition="'$(__Container)' != '' and '$(PublishTestNativeBins)' == 'true'">$(__Container)-test-native-bins</ContainerName>
+      <ContainerName Condition="'$(__Container)' != '' and '$(PublishTestNativeBins)' == 'true'">$(__Container)-$(__DistroRid)-$(__BuildArch)</ContainerName>
     </PropertyGroup>
   </Target>
 
