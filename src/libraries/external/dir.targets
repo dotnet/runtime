@@ -1,4 +1,10 @@
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <ProjectJsonTemplate Condition="'$(ProjectJsonTemplate)' == ''">$(MSBuildThisProjectDirectory)project.json.template</ProjectJsonTemplate>
+    <ProjectJson Condition="Exists('$(ProjectJsonTemplate)')">$(IntermediateOutputPath)project.json</ProjectJson>
+    <ProjectLockJson Condition="Exists('$(ProjectJsonTemplate)')">$(IntermediateOutputPath)project.lock.json</ProjectLockJson>
+  </PropertyGroup>
+
   <Import Project="..\dir.targets" />
 
   <PropertyGroup>
@@ -16,7 +22,7 @@
     <!-- Update project.json template -->
     <WriteLinesToFile
       File="$(ProjectJson)"
-      Lines="$([System.IO.File]::ReadAllText('project.json.template').Replace('{RID}', $(NuGetRuntimeIdentifier)).Replace('{TFM}', $(NuGetTargetMoniker)))"
+      Lines="$([System.IO.File]::ReadAllText('$(ProjectJsonTemplate)').Replace('{RID}', $(NuGetRuntimeIdentifier)).Replace('{TFM}', $(NuGetTargetMoniker)).Replace('{PackageId}', $(TargetingPackNugetPackageId)))"
       Overwrite="true"
                       />
     <ItemGroup>
