@@ -193,6 +193,8 @@ set __msbuildLog=/flp:Verbosity=normal;LogFile="%__BuildLog%"
 set __msbuildWrn=/flp1:WarningsOnly;LogFile="%__BuildWrn%"
 set __msbuildErr=/flp2:ErrorsOnly;LogFile="%__BuildErr%"
 
+set "__TestWorkingDir=%__RootBinDir%\tests\%__BuildOS%.%__BuildArch%.%__BuildType%"
+
 if not defined __BuildAgainstPackages goto SkipRestoreProduct
 REM =========================================================================================
 REM ===
@@ -200,7 +202,6 @@ REM === Restore product binaries from packages
 REM ===
 REM =========================================================================================
 
-set "__TestWorkingDir=%__RootBinDir%\tests\%__BuildOS%.%__BuildArch%.%__BuildType%"
 if not defined XunitTestBinBase       set  XunitTestBinBase=%__TestWorkingDir%
 set "CORE_ROOT=%XunitTestBinBase%\Tests\Core_Root"
 set "CORE_OVERLAY=%XunitTestBinBase%\Tests\Core_Root_%__RuntimeId%"
