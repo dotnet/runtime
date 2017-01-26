@@ -65,10 +65,12 @@
   ],
   "variables": {
     "BuildConfiguration": {
-      "value": "Release"
+      "value": "Release",
+      "allowOverride": true
     },
     "BuildArguments": {
-      "value": "--skip-prereqs --configuration $(BuildConfiguration)  --docker opensuse.13.2 --targets Default"
+      "value": "--skip-prereqs --configuration $(BuildConfiguration) --targets Default",
+      "allowOverride": true
     },
     "CONNECTION_STRING": {
       "value": "PassedViaPipeBuild"
@@ -88,7 +90,7 @@
     }
   },
   "demands": [
-    "Agent.OS -equals linux"
+    "Agent.OS -equals darwin"
   ],
   "retentionRules": [
     {
@@ -106,7 +108,7 @@
       "deleteTestResults": true
     }
   ],
-  "buildNumberFormat": "$(Date:yyyMMdd)$(Rev:.r)",
+  "buildNumberFormat": "$(date:yyyyMMdd)$(rev:.r)",
   "jobAuthorizationScope": "projectCollection",
   "jobTimeoutInMinutes": 90,
   "badgeEnabled": true,
@@ -129,7 +131,6 @@
     "checkoutSubmodules": false
   },
   "quality": "definition",
-  "defaultBranch": "master",
   "queue": {
     "pool": {
       "id": 39,
@@ -140,8 +141,8 @@
   },
   "path": "\\",
   "type": "build",
-  "id": 3587,
-  "name": "Core-Setup-OpenSuse13.2-x64-master",
+  "id": 3544,
+  "name": "Core-Setup-OSX-x64",
   "project": {
     "id": "0bdbc590-a062-4c3f-b0f6-9383f67865ee",
     "name": "DevDiv",
