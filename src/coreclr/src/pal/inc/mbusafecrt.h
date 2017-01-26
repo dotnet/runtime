@@ -56,7 +56,7 @@ extern WCHAR* wcstok_s( WCHAR* inString, const WCHAR* inControl, WCHAR** ioConte
 // strnlen is not required unless the source string is completely untrusted (e.g. anonymous input on a website)
 #ifndef SUPPRESS_STRNLEN
     extern size_t PAL_strnlen( const char* inString, size_t inMaxSize );
-    extern size_t wcsnlen( const WCHAR* inString, size_t inMaxSize );
+    extern size_t PAL_wcsnlen( const WCHAR* inString, size_t inMaxSize );
 #endif
 
 extern errno_t _itoa_s( int inValue, char* outBuffer, size_t inDestBufferSize, int inRadix );
