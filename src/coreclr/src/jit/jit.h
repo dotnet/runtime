@@ -416,14 +416,6 @@ typedef ptrdiff_t ssize_t;
 
 //=============================================================================
 
-#define FANCY_ARRAY_OPT 0 // optimize more complex index checks
-
-//=============================================================================
-
-#define LONG_ASG_OPS 0 // implementation isn't complete yet
-
-//=============================================================================
-
 #define OPT_MULT_ADDSUB 1 // optimize consecutive "lclVar += or -= icon"
 #define OPT_BOOL_OPS 1    // optimize boolean operations
 
