@@ -373,8 +373,8 @@ namespace System.Collections.Generic
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
         public T[] ToArray() { throw null; }
         public void TrimExcess() { }
-        public bool TryDequeue(out T result) { result = default(T); return default(bool); }
-        public bool TryPeek(out T result) { result = default(T); return default(bool); }
+        public bool TryDequeue(out T result) { throw null; }
+        public bool TryPeek(out T result) { throw null; }
         [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
         public partial struct Enumerator : System.Collections.Generic.IEnumerator<T>, System.Collections.IEnumerator, System.IDisposable
         {
@@ -617,8 +617,8 @@ namespace System.Collections.Generic
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
         public T[] ToArray() { throw null; }
         public void TrimExcess() { }
-        public bool TryPeek(out T result) { result = default(T); return default(bool); }
-        public bool TryPop(out T result) { result = default(T); return default(bool); }
+        public bool TryPeek(out T result) { throw null; }
+        public bool TryPop(out T result) { throw null; }
         [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
         public partial struct Enumerator : System.Collections.Generic.IEnumerator<T>, System.Collections.IEnumerator, System.IDisposable
         {
