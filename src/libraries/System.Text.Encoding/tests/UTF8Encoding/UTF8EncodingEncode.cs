@@ -159,6 +159,68 @@ namespace System.Text.Tests
             yield return new object[] { "\uDC00\uD800", 0, 2, unicodeReplacementBytes2 }; // Low, high
             yield return new object[] { "\uDC00\uDC00", 0, 2, unicodeReplacementBytes2 }; // Low, low
         }
+        
+        [Fact]
+        public static unsafe void GetBytes_ValidASCIIUnicode()
+        {
+            Encoding encoding = Encoding.UTF8;
+            // Bytes has enough capacity to accomodate result
+            string s = "T😁est";
+            encoding.GetBytes(s, 0, 2, new byte[4], 0);
+            encoding.GetBytes(s, 0, 3, new byte[5], 0);
+            encoding.GetBytes(s, 0, 4, new byte[6], 0);
+            encoding.GetBytes(s, 0, 5, new byte[7], 0);
+
+            char[] c = s.ToCharArray();
+            encoding.GetBytes(c, 0, 2, new byte[4], 0);
+            encoding.GetBytes(c, 0, 3, new byte[5], 0);
+            encoding.GetBytes(c, 0, 4, new byte[6], 0);
+            encoding.GetBytes(c, 0, 5, new byte[7], 0);
+
+            byte[] b = new byte[8];
+            fixed(char* pChar = c)
+            fixed(byte* pByte = b)
+            {
+                encoding.GetBytes(pChar, 2, pByte, 4);
+                encoding.GetBytes(pChar, 3, pByte, 5);
+                encoding.GetBytes(pChar, 4, pByte, 6);
+                encoding.GetBytes(pChar, 5, pByte, 7);
+            }
+        }
+
+        [Fact]
+        public static unsafe void GetBytes_InvalidASCIIUnicode()
+        {
+            Encoding encoding = Encoding.UTF8;
+            // Bytes does not have enough capacity to accomodate result
+            string s = "T😁est";
+            Assert.Throws<ArgumentException>("bytes", () => encoding.GetBytes(s, 0, 2, new byte[3], 0));
+            Assert.Throws<ArgumentException>("bytes", () => encoding.GetBytes(s, 0, 3, new byte[4], 0));
+            Assert.Throws<ArgumentException>("bytes", () => encoding.GetBytes(s, 0, 4, new byte[5], 0));
+            Assert.Throws<ArgumentException>("bytes", () => encoding.GetBytes(s, 0, 5, new byte[6], 0));
+ 
+            char[] c = s.ToCharArray();           
+            Assert.Throws<ArgumentException>("bytes", () => encoding.GetBytes(c, 0, 2, new byte[3], 0));
+            Assert.Throws<ArgumentException>("bytes", () => encoding.GetBytes(c, 0, 3, new byte[4], 0));
+            Assert.Throws<ArgumentException>("bytes", () => encoding.GetBytes(c, 0, 4, new byte[5], 0));
+            Assert.Throws<ArgumentException>("bytes", () => encoding.GetBytes(c, 0, 5, new byte[6], 0));
+
+            byte[] b = new byte[8];
+            Assert.Throws<ArgumentException>("bytes", () => FixedEncodingHelper(c, 2, b, 3));
+            Assert.Throws<ArgumentException>("bytes", () => FixedEncodingHelper(c, 3, b, 4));
+            Assert.Throws<ArgumentException>("bytes", () => FixedEncodingHelper(c, 4, b, 5));
+            Assert.Throws<ArgumentException>("bytes", () => FixedEncodingHelper(c, 5, b, 6));
+        }
+        
+        private static unsafe void FixedEncodingHelper(char[] c, int charCount, byte[] b, int byteCount)
+        {
+            Encoding encoding = Encoding.UTF8;
+            fixed(char* pChar = c)
+            fixed(byte* pByte = b)
+            {
+                encoding.GetBytes(pChar, charCount, pByte, byteCount);
+            }
+        }
 
         [Theory]
         [MemberData(nameof(Encode_InvalidChars_TestData))]
