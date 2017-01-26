@@ -224,14 +224,39 @@ namespace System.Linq
 
             public TResult[] ToArray()
             {
-                var builder = new LargeArrayBuilder<TResult>(initialize: true);
+                var builder = new SparseArrayBuilder<TResult>(initialize: true);
+                var deferredCopies = new ArrayBuilder<IEnumerable<TResult>>();
 
                 foreach (TSource element in _source)
                 {
+                    IEnumerable<TResult> enumerable = _selector(element);
+
+                    int count;
+                    if (EnumerableHelpers.TryGetCount(enumerable, out count))
+                    {
+                        if (count > 0)
+                        {
+                            builder.Reserve(count);
+                            deferredCopies.Add(enumerable);
+                        }
+                        continue;
+                    }
+
                     builder.AddRange(_selector(element));
                 }
 
-                return builder.ToArray();
+                TResult[] array = builder.ToArray();
+
+                ArrayBuilder<Marker> markers = builder.Markers;
+                for (int i = 0; i < markers.Count; i++)
+                {
+                    Marker marker = markers[i];
+                    IEnumerable<TResult> enumerable = deferredCopies[i];
+
+                    EnumerableHelpers.Copy(enumerable, array, marker.Index, marker.Count);
+                }
+
+                return array;
             }
 
             public List<TResult> ToList()

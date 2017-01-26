@@ -215,19 +215,7 @@ namespace System.Linq
                     index = 1;
                 }
 
-                ICollection<TSource> sourceCollection = _source as ICollection<TSource>;
-                if (sourceCollection != null)
-                {
-                    sourceCollection.CopyTo(array, index);
-                }
-                else
-                {
-                    foreach (TSource item in _source)
-                    {
-                        array[index] = item;
-                        ++index;
-                    }
-                }
+                EnumerableHelpers.Copy(_source, array, index, count - 1);
 
                 if (_appending)
                 {
@@ -431,24 +419,35 @@ namespace System.Linq
             {
                 Debug.Assert(GetCount(onlyIfCheap: true) == -1);
 
-                var builder = new LargeArrayBuilder<TSource>(initialize: true);
+                var builder = new SparseArrayBuilder<TSource>(initialize: true);
 
-                for (SingleLinkedNode<TSource> node = _prepended; node != null; node = node.Linked)
+                if (_prepended != null)
                 {
-                    builder.Add(node.Item);
+                    builder.Reserve(_prepended.Count);
                 }
 
                 builder.AddRange(_source);
 
                 if (_appended != null)
                 {
-                    foreach (TSource item in _appended.ToArray())
-                    {
-                        builder.Add(item);
-                    }
+                    builder.Reserve(_appended.Count);
                 }
 
-                return builder.ToArray();
+                TSource[] array = builder.ToArray();
+
+                int index = 0;
+                for (SingleLinkedNode<TSource> node = _prepended; node != null; node = node.Linked)
+                {
+                    array[index++] = node.Item;
+                }
+
+                index = array.Length - 1;
+                for (SingleLinkedNode<TSource> node = _appended; node != null; node = node.Linked)
+                {
+                    array[index--] = node.Item;
+                }
+
+                return array;
             }
 
             public override TSource[] ToArray()
