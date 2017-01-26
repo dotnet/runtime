@@ -1556,7 +1556,7 @@ namespace System
             {
                 return TrimWhiteSpaceHelper(TrimType.Both);
             }
-            fixed (char* pTrimChars = trimChars)
+            fixed (char* pTrimChars = &trimChars[0])
             {
                 return TrimHelper(pTrimChars, trimChars.Length, TrimType.Both);
             }
@@ -1575,7 +1575,7 @@ namespace System
             {
                 return TrimWhiteSpaceHelper(TrimType.Head);
             }
-            fixed (char* pTrimChars = trimChars)
+            fixed (char* pTrimChars = &trimChars[0])
             {
                 return TrimHelper(pTrimChars, trimChars.Length, TrimType.Head);
             }
@@ -1594,7 +1594,7 @@ namespace System
             {
                 return TrimWhiteSpaceHelper(TrimType.Tail);
             }
-            fixed (char* pTrimChars = trimChars)
+            fixed (char* pTrimChars = &trimChars[0])
             {
                 return TrimHelper(pTrimChars, trimChars.Length, TrimType.Tail);
             }
