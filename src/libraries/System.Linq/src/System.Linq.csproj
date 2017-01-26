@@ -28,8 +28,14 @@
     <Compile Include="$(CommonPath)\System\Collections\Generic\EnumerableHelpers.cs">
       <Link>System\Collections\Generic\EnumerableHelpers.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Collections\Generic\EnumerableHelpers.Linq.cs">
+      <Link>System\Collections\Generic\EnumerableHelpers.Linq.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\Collections\Generic\LargeArrayBuilder.cs">
       <Link>System\Collections\Generic\LargeArrayBuilder.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Collections\Generic\SparseArrayBuilder.cs">
+      <Link>System\Collections\Generic\SparseArrayBuilder.cs</Link>
     </Compile>
     <Compile Include="System\Linq\Aggregate.cs" />
     <Compile Include="System\Linq\AnyAll.cs" />
