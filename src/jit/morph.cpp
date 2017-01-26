@@ -6475,6 +6475,11 @@ GenTreePtr Compiler::fgMorphField(GenTreePtr tree, MorphAddrContext* mac)
                     addr->gtIntCon.gtFieldSeq = fieldSeq;
 
                     tree->SetOper(GT_IND);
+                    // The GTF_FLD_NULLCHECK is the same bit as GTF_IND_ARR_LEN.
+                    // We must clear it when we transform the node.
+                    // TODO-Cleanup: It appears that the GTF_FLD_NULLCHECK flag is never checked, and note
+                    // that the logic above does its own checking to determine whether a nullcheck is needed.
+                    tree->gtFlags &= ~GTF_IND_ARR_LEN;
                     tree->gtOp.gtOp1 = addr;
 
                     return fgMorphSmpOp(tree);
@@ -6514,6 +6519,11 @@ GenTreePtr Compiler::fgMorphField(GenTreePtr tree, MorphAddrContext* mac)
         }
     }
     noway_assert(tree->gtOper == GT_IND);
+    // The GTF_FLD_NULLCHECK is the same bit as GTF_IND_ARR_LEN.
+    // We must clear it when we transform the node.
+    // TODO-Cleanup: It appears that the GTF_FLD_NULLCHECK flag is never checked, and note
+    // that the logic above does its own checking to determine whether a nullcheck is needed.
+    tree->gtFlags &= ~GTF_IND_ARR_LEN;
 
     GenTreePtr res = fgMorphSmpOp(tree);
 
@@ -8502,6 +8512,12 @@ GenTreePtr Compiler::fgMorphOneAsgBlockOp(GenTreePtr tree)
     }
     else
     {
+        // Is this an enregisterable struct that is already a simple assignment?
+        // This can happen if we are re-morphing.
+        if ((dest->OperGet() == GT_IND) && (dest->TypeGet() != TYP_STRUCT) && isCopyBlock)
+        {
+            return tree;
+        }
         noway_assert(dest->OperIsLocal());
         lclVarTree = dest;
         destVarNum = lclVarTree->AsLclVarCommon()->gtLclNum;
