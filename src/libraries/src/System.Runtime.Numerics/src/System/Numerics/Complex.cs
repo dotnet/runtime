@@ -113,37 +113,46 @@ namespace System.Numerics
 
         public static double Abs(Complex value)
         {
-            if (double.IsInfinity(value._real) || double.IsInfinity(value._imaginary))
-            {
-                return double.PositiveInfinity;
-            }
-
             return Hypot(value._real, value._imaginary);
         }
 
         private static double Hypot(double a, double b)
         {
-            // |value| == sqrt(a^2 + b^2)
-            // sqrt(a^2 + b^2) == a/a * sqrt(a^2 + b^2) = a * sqrt(a^2/a^2 + b^2/a^2)
-            // Using the above we can factor out the square of the larger component to dodge overflow.
+            // Using
+            //   sqrt(a^2 + b^2) = |a| * sqrt(a^2/a^2 + b^2/a^2)
+            // we can factor out the larger component to dodge overflow even when a * a would overflow.
 
-            double c = Math.Abs(a);
-            double d = Math.Abs(b);
+            a = Math.Abs(a);
+            b = Math.Abs(b);
 
-            if (c > d)
+            double small, large;
+            if (a < b)
             {
-                double r = d / c;
-                return c * Math.Sqrt(1.0 + r * r);
-            }
-            else if (d == 0.0)
-            {
-                return c;  // c is either 0.0 or NaN
+                small = a;
+                large = b;
             }
             else
             {
-                double r = c / d;
-                return d * Math.Sqrt(1.0 + r * r);
+                small = b;
+                large = a;
             }
+
+            if (small == 0.0)
+            {
+                return (large);
+            }
+            else if (Double.IsPositiveInfinity(large) && !Double.IsNaN(small))
+            {
+                // The NaN test is necessary so we don't return +inf when small=NaN and large=+inf.
+                // NaN in any other place returns NaN without any special handling.
+                return (Double.PositiveInfinity);
+            }
+            else
+            {
+                double ratio = small / large;
+                return (large * Math.Sqrt(1.0 + ratio * ratio));
+            }
+
         }
 
         public static Complex Conjugate(Complex value)
@@ -349,11 +358,22 @@ namespace System.Numerics
                 bool rescale = false;
                 if ((Math.Abs(value._real) >= s_sqrtRescaleThreshold) || (Math.Abs(value._imaginary) >= s_sqrtRescaleThreshold))
                 {
-                    value._real *= 0.25;
-                    value._imaginary *= 0.25;
-                    rescale = true;
+                    if (Double.IsInfinity(value._imaginary) && !Double.IsNaN(value._real))
+                    {
+                        // We need to handle infinite imaginary parts specially because otherwise
+                        // our formulas below produce inf/inf = NaN. The NaN test is necessary
+                        // so that we return NaN rather than (+inf,inf) for (NaN,inf).
+                        return (new Complex(Double.PositiveInfinity, value._imaginary));
+                    }
+                    else
+                    {
+                        value._real *= 0.25;
+                        value._imaginary *= 0.25;
+                        rescale = true;
+                    }
                 }
  
+                // This is the core of the algorithm. Everything else is special case handling.
                 double x, y;
                 if (value._real >= 0.0)
                 {
