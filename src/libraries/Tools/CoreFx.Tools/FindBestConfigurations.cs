@@ -10,43 +10,58 @@ using System.Linq;
 
 namespace Microsoft.DotNet.Build.Tasks
 {
-    public class FindBestConfiguration : ConfigurationTask
+    public class FindBestConfigurations : ConfigurationTask
     {
         [Required]
-        public string BuildConfiguration { get; set; }
+        public ITaskItem[] Configurations { get; set; }
 
         [Required]
-        public string[] BuildConfigurations { get; set; }
+        public string[] SupportedConfigurations { get; set; }
 
         public bool DoNotAllowCompatibleValues { get; set; }
 
         [Output]
-        public ITaskItem BestConfiguration { get; set; }
+        public ITaskItem[] BestConfigurations { get; set; }
 
         public override bool Execute()
         {
             LoadConfiguration();
 
             var supportedProjectConfigurations = new HashSet<Configuration>(
-                BuildConfigurations.Where(c => !string.IsNullOrWhiteSpace(c)).Select(c => ConfigurationFactory.ParseConfiguration(c)),
+                SupportedConfigurations.Where(c => !string.IsNullOrWhiteSpace(c)).Select(c => ConfigurationFactory.ParseConfiguration(c)),
                 Configuration.CompatibleComparer);
 
-            var buildConfiguration = ConfigurationFactory.ParseConfiguration(BuildConfiguration);
+            var bestConfigurations = new List<ITaskItem>();
 
-            var compatibleConfigurations = ConfigurationFactory.GetCompatibleConfigurations(buildConfiguration, DoNotAllowCompatibleValues);
-
-            var bestConfiguration = compatibleConfigurations.FirstOrDefault(c => supportedProjectConfigurations.Contains(c));
-
-            if (bestConfiguration == null)
+            foreach (var configurationItem in Configurations)
             {
-                Log.LogMessage($"Could not find any applicable configuration for '{buildConfiguration}' among projectConfigurations {string.Join(", ", supportedProjectConfigurations.Select(c => c.ToString()))}");
-                Log.LogMessage(MessageImportance.Low, $"Compatible configurations: {string.Join(", ", compatibleConfigurations.Select(c => c.ToString()))}");
+                var buildConfiguration = ConfigurationFactory.ParseConfiguration(configurationItem.ItemSpec);
+
+                var compatibleConfigurations = ConfigurationFactory.GetCompatibleConfigurations(buildConfiguration, DoNotAllowCompatibleValues);
+
+                var bestConfiguration = compatibleConfigurations.FirstOrDefault(c => supportedProjectConfigurations.Contains(c));
+
+                if (bestConfiguration == null)
+                {
+                    Log.LogMessage($"Could not find any applicable configuration for '{buildConfiguration}' among projectConfigurations {string.Join(", ", supportedProjectConfigurations.Select(c => c.ToString()))}");
+                    Log.LogMessage(MessageImportance.Low, $"Compatible configurations: {string.Join(", ", compatibleConfigurations.Select(c => c.ToString()))}");
+                }
+                else
+                {
+                    Log.LogMessage(MessageImportance.Low, $"Chose configuration {bestConfiguration}");
+                    var bestConfigurationItem = new TaskItem(bestConfiguration.ToString(), (IDictionary)bestConfiguration.GetProperties());
+
+                    // preserve metadata on the configuration that selected this
+                    configurationItem.CopyMetadataTo(bestConfigurationItem);
+
+                    // preserve the configuration that selected this
+                    bestConfigurationItem.SetMetadata("BuildConfiguration", configurationItem.ItemSpec);
+
+                    bestConfigurations.Add(bestConfigurationItem);
+                }
             }
-            else
-            {
-                Log.LogMessage(MessageImportance.Low, $"Chose configuration {bestConfiguration}");
-                BestConfiguration = new TaskItem(bestConfiguration.ToString(), (IDictionary)bestConfiguration.GetProperties());
-            }
+
+            BestConfigurations = bestConfigurations.ToArray();
 
             return !Log.HasLoggedErrors;
         }

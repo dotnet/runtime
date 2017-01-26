@@ -10,6 +10,20 @@
     <BinPlaceStuffDependsOn Condition="'$(IsReferenceAssembly)' == 'true' OR '$(IsRuntimeAndReferenceAssembly)' == 'true'">$(BinPlaceStuffDependsOn);BinPlaceReferenceAssembly</BinPlaceStuffDependsOn>
     <BinPlaceStuffDependsOn Condition="'$(IsRuntimeAssembly)' == 'true' OR '$(IsRuntimeAndReferenceAssembly)' == 'true'">$(BinPlaceStuffDependsOn);BinPlaceRuntimeAssembly</BinPlaceStuffDependsOn>
   </PropertyGroup>
+  
+  <ItemGroup>
+    <BinplaceConfiguration Include="$(BuildConfiguration)">
+      <RefPath>$(RefPath)</RefPath>
+      <RuntimePath>$(RuntimePath)</RuntimePath>
+    </BinplaceConfiguration>
+    <BinplaceConfiguration Condition="'$(IsNETCoreApp)' == 'true'" Include="netcoreapp-$(OSGroup)">
+      <RefPath Condition="'$(IsNETCoreAppRef)' == 'true'">$(BinDir)netcoreapp\pkg\ref</RefPath>
+      <RuntimePath>$(BinDir)netcoreapp\pkg\lib</RuntimePath>
+    </BinplaceConfiguration>
+    <BinplaceConfiguration Include="netstandard-$(OSGroup)">
+      <RefPath>$(RefRootPath)netstandard</RefPath>
+    </BinplaceConfiguration>
+  </ItemGroup>
 
   <Target Name="BinPlaceStuff" DependsOnTargets="$(BinPlaceStuffDependsOn)" AfterTargets="CopyFilesToOutputDirectory">
     <Message Importance="low" Text="IsRuntimeAssembly: $(IsRuntimeAssembly)" />
@@ -17,14 +31,14 @@
     <Message Importance="low" Text="IsRuntimeAndReferenceAssembly: $(IsRuntimeAndReferenceAssembly)" />
   </Target>
 
-  <Target Name="BinPlaceReferenceAssembly" DependsOnTargets="GetTargetingPackDir">
+  <Target Name="BinPlaceReferenceAssembly" DependsOnTargets="GetBinplaceDirs">
     <Message Importance="low" Text="TargetingPackDir: @(TargetingPackDir)" />
     <Copy Condition="'@(TargetingPackDir)' != ''" SourceFiles="$(TargetPath)" DestinationFolder="%(TargetingPackDir.Identity)" >
       <Output TaskParameter="DestinationFiles" ItemName="FileWrites" />
     </Copy>
   </Target>
 
-  <Target Name="BinPlaceRuntimeAssembly" DependsOnTargets="GetRuntimeDir">
+  <Target Name="BinPlaceRuntimeAssembly" DependsOnTargets="GetBinplaceDirs">
     <Copy Condition="'@(RuntimeDir)' != ''" SourceFiles="$(TargetPath)" DestinationFolder="%(RuntimeDir.Identity)">
       <Output TaskParameter="DestinationFiles" ItemName="FileWrites" />
     </Copy>
@@ -33,22 +47,22 @@
     </Copy>
   </Target>
 
-  <Target Name="GetTargetingPackDir">
-    <ItemGroup Condition="'$(NuGetTargetMoniker)' == '' Or $(NuGetTargetMoniker.Contains('NETCoreApp')) Or $(NuGetTargetMoniker.Contains('NETStandard')) Or $(NuGetTargetMoniker.Contains('UAP'))">
-      <TargetingPackDir Include="$(RefPath)" />
-      <TargetingPackDir Condition="'$(IsNETCoreAppRef)' == 'true'" Include="$(BinDir)netcoreapp\pkg\ref" />
-    </ItemGroup>
-    <Error Condition="'@(TargetingPackDir)' == ''" Text="No targeting pack directory could be determined for NuGetTargetMoniker:$(NuGetTargetMoniker)" />
-    <Message Text="Got TargetingPackDir:@(TargetingPackDir) from NuGetTargetMoniker:$(NuGetTargetMoniker)" Importance="Low" />
-  </Target>
+  <Target Name="GetBinplaceDirs" DependsOnTargets="GetBuildConfigurations">
+    <!-- find which, if any, build configuration of this project is best
+         for each binplace configuration -->
+    <FindBestConfigurations Properties="@(Property)"
+                            PropertyValues="@(PropertyValue)"
+                            SupportedConfigurations="$(_AllBuildConfigurations)"
+                            Configurations="@(BinplaceConfiguration)">
+      <Output TaskParameter="BestConfigurations" ItemName="_bestBinlaceConfigurations" />
+    </FindBestConfigurations>
+    
+    <ItemGroup>
+      <_currentBinplaceConfigurations Include="@(_bestBinlaceConfigurations)" Condition="'%(Identity)' == '$(Configuration)' OR '%(Identity)-$(ConfigurationGroup)' == '$(Configuration)'" />
 
-  <Target Name="GetRuntimeDir">
-    <ItemGroup Condition="'$(NuGetTargetMoniker)' == '' Or $(NuGetTargetMoniker.Contains('NETCoreApp')) Or $(NuGetTargetMoniker.Contains('NETStandard'))">
-      <RuntimeDir Include="$(RuntimePath)" />
-      <RuntimeDir Condition="'$(IsNETCoreApp)' == 'true'" Include="$(BinDir)netcoreapp\pkg\lib" />
+      <RuntimeDir Include="@(_currentBinplaceConfigurations->'%(RuntimePath)')"/>
+      <TargetingPackDir Include="@(_currentBinplaceConfigurations->'%(RefPath)')"/>
     </ItemGroup>
-    <Error Condition="'@(RuntimeDir)' == ''" Text="No Runtime directory could be determined for NuGetTargetMoniker:$(NuGetTargetMoniker)" />
-    <Message Text="Got RuntimeDir:@(RuntimeDir) from NuGetTargetMoniker:$(NuGetTargetMoniker)" Importance="Low" />
   </Target>
 
   <ItemGroup>
