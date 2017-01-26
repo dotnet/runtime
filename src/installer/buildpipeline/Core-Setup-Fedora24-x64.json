@@ -4,18 +4,18 @@
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
-      "displayName": "Run script build.cmd",
+      "displayName": "Shell Script build.sh",
       "timeoutInMinutes": 0,
       "task": {
-        "id": "bfc8bf76-e7ac-4a8c-9a55-a944a9f632fd",
-        "versionSpec": "1.*",
+        "id": "6c731c3c-3c68-459a-a5c9-bde6e6595b5b",
+        "versionSpec": "2.*",
         "definitionType": "task"
       },
       "inputs": {
-        "filename": "build.cmd",
-        "arguments": "-Configuration Release -Targets Init,Compile,Package,Publish -TargetArch arm -Framework netcoreapp2.0",
-        "modifyEnvironment": "false",
-        "workingFolder": "",
+        "scriptPath": "build.sh",
+        "args": "$(BuildArguments)",
+        "disableAutoCwd": "false",
+        "cwd": "",
         "failOnStandardError": "false"
       }
     }
@@ -64,6 +64,19 @@
     }
   ],
   "variables": {
+    "BuildConfiguration": {
+      "value": "Release"
+    },
+    "BuildArguments": {
+      "value": "--skip-prereqs --configuration $(BuildConfiguration)  --docker fedora.24 --targets Default"
+    },
+    "CONNECTION_STRING": {
+      "value": "PassedViaPipeBuild"
+    },
+    "PUBLISH_TO_AZURE_BLOB": {
+      "value": "true",
+      "allowOverride": true
+    },
     "NUGET_FEED_URL": {
       "value": "https://dotnet.myget.org/F/dotnet-core"
     },
@@ -72,28 +85,10 @@
     },
     "GITHUB_PASSWORD": {
       "value": "PassedViaPipeBuild"
-    },
-    "COREHOST_TRACE": {
-      "value": "0"
-    },
-    "STORAGE_ACCOUNT": {
-      "value": "dotnetcli"
-    },
-    "STORAGE_CONTAINER": {
-      "value": "dotnet"
-    },
-    "CONNECTION_STRING": {
-      "value": "PassedViaPipeBuild"
-    },
-    "PUBLISH_TO_AZURE_BLOB": {
-      "value": "true",
-      "allowOverride": true
     }
   },
   "demands": [
-    "Agent.OS -equals Windows_NT",
-    "DotNetFramework",
-    "Cmd"
+    "Agent.OS -equals linux"
   ],
   "retentionRules": [
     {
@@ -134,7 +129,6 @@
     "checkoutSubmodules": false
   },
   "quality": "definition",
-  "defaultBranch": "master",
   "queue": {
     "pool": {
       "id": 39,
@@ -145,8 +139,8 @@
   },
   "path": "\\",
   "type": "build",
-  "id": 4371,
-  "name": "Core-Setup-Windows-arm32-master",
+  "id": 4339,
+  "name": "Core-Setup-Fedora24-x64",
   "project": {
     "id": "0bdbc590-a062-4c3f-b0f6-9383f67865ee",
     "name": "DevDiv",

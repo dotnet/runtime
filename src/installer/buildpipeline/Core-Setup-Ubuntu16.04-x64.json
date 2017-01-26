@@ -68,7 +68,7 @@
       "value": "Release"
     },
     "BuildArguments": {
-      "value": "--skip-prereqs --configuration $(BuildConfiguration)  --docker opensuse.42.1 --targets Default"
+      "value": "--skip-prereqs --configuration $(BuildConfiguration)  --docker ubuntu.16.04 --targets Default"
     },
     "CONNECTION_STRING": {
       "value": "PassedViaPipeBuild"
@@ -84,6 +84,18 @@
       "value": "PassedViaPipeBuild"
     },
     "GITHUB_PASSWORD": {
+      "value": "PassedViaPipeBuild"
+    },
+    "REPO_ID": {
+      "value": "575f40f3797ef7280505232f"
+    },
+    "REPO_USER": {
+      "value": "dotnet"
+    },
+    "REPO_SERVER": {
+      "value": "azure-apt-cat.cloudapp.net"
+    },
+    "REPO_PASS": {
       "value": "PassedViaPipeBuild"
     }
   },
@@ -129,7 +141,6 @@
     "checkoutSubmodules": false
   },
   "quality": "definition",
-  "defaultBranch": "master",
   "queue": {
     "pool": {
       "id": 39,
@@ -140,8 +151,8 @@
   },
   "path": "\\",
   "type": "build",
-  "id": 4147,
-  "name": "Core-Setup-OpenSuse42.1-x64-master",
+  "id": 3583,
+  "name": "Core-Setup-Ubuntu16.04-x64",
   "project": {
     "id": "0bdbc590-a062-4c3f-b0f6-9383f67865ee",
     "name": "DevDiv",

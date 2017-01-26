@@ -4,34 +4,17 @@
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
-      "displayName": "Docker cleanup",
+      "displayName": "Run script build.cmd",
       "timeoutInMinutes": 0,
       "task": {
-        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "id": "bfc8bf76-e7ac-4a8c-9a55-a944a9f632fd",
         "versionSpec": "1.*",
         "definitionType": "task"
       },
       "inputs": {
-        "filename": "bash",
-        "arguments": "-c \"docker ps -a -q --filter name=$(DockerContainerName) | xargs --no-run-if-empty docker rm -f -v\"",
-        "workingFolder": "",
-        "failOnStandardError": "false"
-      }
-    },
-    {
-      "enabled": true,
-      "continueOnError": false,
-      "alwaysRun": false,
-      "displayName": "Run build.sh in Docker container",
-      "timeoutInMinutes": 0,
-      "task": {
-        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
-        "versionSpec": "1.*",
-        "definitionType": "task"
-      },
-      "inputs": {
-        "filename": "docker",
-        "arguments": "run -t --rm --sig-proxy=true --name $(DockerContainerName) -v $(Build.SourcesDirectory):/opt/code -w /opt/code -e CONNECTION_STRING -e PUBLISH_TO_AZURE_BLOB chcosta/dotnetcore:rhel7_prereqs /bin/bash -c \"git clean -X -d -f; ./build.sh $(BuildArguments)\"",
+        "filename": "build.cmd",
+        "arguments": "-Configuration Release -Targets Init,Compile,Package,Publish -Architecure x64 -TargetArch arm64 -ToolsetDir c:\\tools\\clr -Framework netcoreapp2.0",
+        "modifyEnvironment": "false",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -81,25 +64,6 @@
     }
   ],
   "variables": {
-    "BuildConfiguration": {
-      "value": "Release",
-      "allowOverride": true
-    },
-    "BuildArguments": {
-      "value": "--skip-prereqs --configuration $(BuildConfiguration) --targets Default --portableLinux",
-      "allowOverride": true
-    },
-    "DockerContainerName": {
-      "value": "dotnetcore-setup-build-container-portablelinux",
-      "allowOverride": true
-    },
-    "CONNECTION_STRING": {
-      "value": "PassedViaPipeBuild"
-    },
-    "PUBLISH_TO_AZURE_BLOB": {
-      "value": "true",
-      "allowOverride": true
-    },
     "NUGET_FEED_URL": {
       "value": "https://dotnet.myget.org/F/dotnet-core"
     },
@@ -108,22 +72,40 @@
     },
     "GITHUB_PASSWORD": {
       "value": "PassedViaPipeBuild"
+    },
+    "COREHOST_TRACE": {
+      "value": "0"
+    },
+    "STORAGE_ACCOUNT": {
+      "value": "dotnetcli"
+    },
+    "STORAGE_CONTAINER": {
+      "value": "dotnet"
+    },
+    "CONNECTION_STRING": {
+      "value": "PassedViaPipeBuild"
+    },
+    "PUBLISH_TO_AZURE_BLOB": {
+      "value": "true",
+      "allowOverride": true
     }
   },
   "demands": [
-    "Agent.OS -equals linux"
+    "Agent.OS -equals Windows_NT",
+    "DotNetFramework",
+    "Cmd"
   ],
   "retentionRules": [
     {
       "branches": [
         "+refs/heads/*"
       ],
-      "artifacts": [ ],
+      "artifacts": [],
       "artifactTypesToDelete": [
         "FilePath",
         "SymbolStore"
       ],
-      "daysToKeep": 7,
+      "daysToKeep": 2,
       "minimumToKeep": 1,
       "deleteBuildRecord": true,
       "deleteTestResults": true
@@ -152,7 +134,6 @@
     "checkoutSubmodules": false
   },
   "quality": "definition",
-  "defaultBranch": "master",
   "queue": {
     "pool": {
       "id": 39,
@@ -163,8 +144,8 @@
   },
   "path": "\\",
   "type": "build",
-  "id": 4573,
-  "name": "Core-Setup-PortableLinux-x64-master",
+  "id": 4010,
+  "name": "Core-Setup-Windows-arm64",
   "project": {
     "id": "0bdbc590-a062-4c3f-b0f6-9383f67865ee",
     "name": "DevDiv",

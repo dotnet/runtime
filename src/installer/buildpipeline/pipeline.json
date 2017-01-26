@@ -16,7 +16,7 @@
       },
       "Definitions": [
         {
-          "Name": "Core-Setup-CentOS-x64-master",
+          "Name": "Core-Setup-CentOS-x64",
           "ReportingParameters": {
             "OperatingSystem": "CentOS 7.1",
             "Type": "build/product/",
@@ -24,7 +24,7 @@
           }
         },
         {
-          "Name": "Core-Setup-Debian8-x64-master",
+          "Name": "Core-Setup-Debian8-x64",
           "ReportingParameters": {
             "OperatingSystem": "Debian 8.2",
             "Type": "build/product/",
@@ -32,7 +32,7 @@
           }
         },
         {
-          "Name": "Core-Setup-Fedora23-x64-master",
+          "Name": "Core-Setup-Fedora23-x64",
           "ReportingParameters": {
             "OperatingSystem": "Fedora 23",
             "Type": "build/product/",
@@ -40,7 +40,7 @@
           }
         },
         {
-          "Name": "Core-Setup-Fedora24-x64-master",
+          "Name": "Core-Setup-Fedora24-x64",
           "ReportingParameters": {
             "OperatingSystem": "Fedora 24",
             "Type": "build/product/",
@@ -48,7 +48,7 @@
           }
         },
         {
-          "Name": "Core-Setup-OpenSuse13.2-x64-master",
+          "Name": "Core-Setup-OpenSuse13.2-x64",
           "ReportingParameters": {
             "OperatingSystem": "OpenSuse 13.2",
             "Type": "build/product/",
@@ -56,7 +56,7 @@
           }
         },
         {
-          "Name": "Core-Setup-OpenSuse42.1-x64-master",
+          "Name": "Core-Setup-OpenSuse42.1-x64",
           "ReportingParameters": {
             "OperatingSystem": "OpenSuse 42.1",
             "Type": "build/product/",
@@ -64,7 +64,7 @@
           }
         },
         {
-          "Name": "Core-Setup-OSX-x64-master",
+          "Name": "Core-Setup-OSX-x64",
           "ReportingParameters": {
             "OperatingSystem": "OSX",
             "Type": "build/product/",
@@ -72,7 +72,7 @@
           }
         },
         {
-          "Name": "Core-Setup-PortableLinux-x64-master",
+          "Name": "Core-Setup-PortableLinux-x64",
           "ReportingParameters": {
             "SubType": "PortableLinux",
             "OperatingSystem": "RedHat 7",
@@ -81,7 +81,7 @@
           }
         },
         {
-          "Name": "Core-Setup-RHEL7-x64-master",
+          "Name": "Core-Setup-RHEL7-x64",
           "ReportingParameters": {
             "SubType": "Native",
             "OperatingSystem": "RedHat 7",
@@ -90,7 +90,7 @@
           }
         },
         {
-          "Name": "Core-Setup-Signing-Windows-x64-master",
+          "Name": "Core-Setup-Signing-Windows-x64",
           "ReportingParameters": {
             "OperatingSystem": "Windows",
             "Type": "build/product/",
@@ -98,7 +98,7 @@
           }
         },
         {
-          "Name": "Core-Setup-Signing-Windows-x86-master",
+          "Name": "Core-Setup-Signing-Windows-x86",
           "ReportingParameters": {
             "OperatingSystem": "Windows",
             "Type": "build/product/",
@@ -106,7 +106,7 @@
           }
         },
         {
-          "Name": "Core-Setup-Ubuntu14.04-x64-master",
+          "Name": "Core-Setup-Ubuntu14.04-x64",
           "ReportingParameters": {
             "OperatingSystem": "Ubuntu 14.04",
             "Type": "build/product/",
@@ -114,7 +114,7 @@
           }
         },
         {
-          "Name": "Core-Setup-Ubuntu16.04-x64-master",
+          "Name": "Core-Setup-Ubuntu16.04-x64",
           "ReportingParameters": {
             "OperatingSystem": "Ubuntu 16.04",
             "Type": "build/product/",
@@ -122,7 +122,7 @@
           }
         },
         {
-          "Name": "Core-Setup-Ubuntu16.10-x64-master",
+          "Name": "Core-Setup-Ubuntu16.10-x64",
           "ReportingParameters": {
             "OperatingSystem": "Ubuntu 16.10",
             "Type": "build/product/",
@@ -130,7 +130,7 @@
           }
         },
         {
-          "Name": "Core-Setup-Windows-arm32-master",
+          "Name": "Core-Setup-Windows-arm32",
           "ReportingParameters": {
             "OperatingSystem": "Windows",
             "Type": "build/product/",
@@ -138,7 +138,7 @@
           }
         },
         {
-          "Name": "Core-Setup-Windows-arm64-master",
+          "Name": "Core-Setup-Windows-arm64",
           "ReportingParameters": {
             "OperatingSystem": "Windows",
             "Type": "build/product/",
