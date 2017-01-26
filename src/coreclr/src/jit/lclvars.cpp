@@ -3126,37 +3126,6 @@ void Compiler::lvaMarkLclRefs(GenTreePtr tree)
 #endif
     }
 
-#if FANCY_ARRAY_OPT
-
-    /* Special case: assignment node */
-
-    if (tree->gtOper == GT_ASG)
-    {
-        if (tree->gtType == TYP_INT)
-        {
-            unsigned   lclNum1;
-            LclVarDsc* varDsc1;
-
-            GenTreePtr op1 = tree->gtOp.gtOp1;
-
-            if (op1->gtOper != GT_LCL_VAR)
-                return;
-
-            lclNum1 = op1->gtLclVarCommon.gtLclNum;
-            noway_assert(lclNum1 < lvaCount);
-            varDsc1 = lvaTable + lclNum1;
-
-            if (varDsc1->lvAssignOne)
-                varDsc1->lvAssignTwo = true;
-            else
-                varDsc1->lvAssignOne = true;
-        }
-
-        return;
-    }
-
-#endif
-
 #ifdef _TARGET_XARCH_
     /* Special case: integer shift node by a variable amount */
 
