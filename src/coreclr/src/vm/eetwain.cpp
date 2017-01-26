@@ -3434,6 +3434,12 @@ void UnwindEbpDoubleAlignFrameEpilog(
     pContext->SP = ESP;
 }
 
+inline SIZE_T GetStackParameterSize(hdrInfo * info)
+{
+    SUPPORTS_DAC;
+    return (info->varargs ? 0 : info->argSize); // Note varargs is caller-popped
+}
+
 //****************************************************************************
 // This is the value ESP is incremented by on doing a "return"
 
@@ -3441,8 +3447,7 @@ inline SIZE_T ESPIncrOnReturn(hdrInfo * info)
 {
     SUPPORTS_DAC;
     return sizeof(void *) + // pop off the return address
-           // Note varargs is caller-popped
-           (info->varargs ? 0 : info->argSize);
+           GetStackParameterSize(info);
 }
 
 /*****************************************************************************/
@@ -5921,7 +5926,7 @@ ULONG32 EECodeManager::GetStackParameterSize(EECodeInfo * pCodeInfo)
 
     // We need to subtract 4 here because ESPIncrOnReturn() includes the stack slot containing the return
     // address.
-    return (ULONG32)(ESPIncrOnReturn(pHdrInfo) - 4);
+    return (ULONG32)::GetStackParameterSize(pHdrInfo);
 
 #else
     return 0;
