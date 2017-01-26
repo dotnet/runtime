@@ -389,7 +389,7 @@ void ExceptionTracker::UpdateNonvolatileRegisters(CONTEXT *pContextRecord, REGDI
     do {                                                                                    \
         if (pRegDisplay->pCurrentContextPointers->reg != NULL)                              \
         {                                                                                   \
-            STRESS_LOG3(LF_GCROOTS, LL_INFO100, "Updating reg %p to %p from %p\n",          \
+            STRESS_LOG3(LF_GCROOTS, LL_INFO100, "Updating " #reg " %p to %p from %p\n",     \
                     pContextRecord->reg,                                                    \
                     *pRegDisplay->pCurrentContextPointers->reg,                             \
                     pRegDisplay->pCurrentContextPointers->reg);                             \
