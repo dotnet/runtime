@@ -3,8 +3,17 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <NuGetDeploySourceItem>Reference</NuGetDeploySourceItem>
-    <NuGetTargetMoniker Condition="'$(TargetGroup)' == 'netcoreapp'">.NETFramework,Version=v4.6.1</NuGetTargetMoniker>
     <NugetRuntimeIdentifier>None</NugetRuntimeIdentifier>
+    <OutputPath>$(RefRootPath)/$(TargetGroup)</OutputPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetGroup)' == 'net463'">
+    <!-- Missing 4.6.3 targeting pack, use 462 for now -->
+    <TargetingPackNugetPackageId>Microsoft.TargetingPack.NETFramework.v4.6.2</TargetingPackNugetPackageId>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
+    <!-- For NETCoreApp we need the net461 targeting pack to generate facades -->
+    <NuGetTargetMoniker>.NETFramework,Version=v4.6.1</NuGetTargetMoniker>
+    <TargetingPackNugetPackageId>Microsoft.TargetingPack.NETFramework.v4.6.1</TargetingPackNugetPackageId>
     <OutputPath>$(NetFxRefPath)</OutputPath>
   </PropertyGroup>
   <!-- Filter the targeting pack to just these assemblies which we need netcoreapp shims for -->
