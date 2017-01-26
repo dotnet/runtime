@@ -20,6 +20,9 @@ namespace System.Numerics
 
         private const double InverseOfLog10 = 0.43429448190325; // 1 / Log(10)
 
+        // This is the largest x for which (Hypot(x,x) + x) will not overflow. It is used for branching inside Sqrt.
+        private static readonly double s_sqrtRescaleThreshold = Double.MaxValue / (Math.Sqrt(2.0) + 1.0);
+
         private double _real;
         private double _imaginary;
         
@@ -375,9 +378,6 @@ namespace System.Numerics
             }
             
         }
-
-        // This is the largest x for which (Hypot(x,x) + x) will not overflow. It is used for branching inside Sqrt.
-        private static readonly double s_sqrtRescaleThreshold = Double.MaxValue / (Math.Sqrt(2.0) + 1.0);
 
         public static Complex Pow(Complex value, Complex power)
         {
