@@ -1061,10 +1061,16 @@ namespace System.Reflection.Emit
                 EnumBuilder enumBuilder = DefineEnumNoLock(name, visibility, underlyingType);
 
                 // This enum is not generic, nested, and cannot have any element type.
-                Debug.Assert(name == enumBuilder.FullName);
+
+                // We ought to be able to make the following assertions:
+                //
+                //  Debug.Assert(name == enumBuilder.FullName);
+                //  Debug.Assert(enumBuilder.m_typeBuilder == m_TypeBuilderDict[name]);
+                //
+                // but we can't because an embedded null ('\0') in the name will cause it to be truncated
+                // incorrectly.  Fixing that would be a breaking change.
 
                 // Replace the TypeBuilder object in m_TypeBuilderDict with this EnumBuilder object.
-                Debug.Assert(enumBuilder.m_typeBuilder == m_TypeBuilderDict[name]);
                 m_TypeBuilderDict[name] = enumBuilder;
 
                 return enumBuilder;
