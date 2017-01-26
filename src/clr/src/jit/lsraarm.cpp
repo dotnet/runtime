@@ -695,6 +695,10 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
     JITDUMP("TreeNodeInfoInit for: ");
     DISPNODE(tree);
 
+    NYI_IF(tree->TypeGet() == TYP_STRUCT, "lowering struct");
+    NYI_IF(tree->TypeGet() == TYP_LONG, "lowering long");
+    NYI_IF(tree->TypeGet() == TYP_DOUBLE, "lowering double");
+
     switch (tree->OperGet())
     {
         GenTree* op1;
@@ -1041,13 +1045,16 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
             break;
 
         default:
-#ifdef DEBUG
-            JitTls::GetCompiler()->gtDispTree(tree);
-#endif
             NYI_ARM("TreeNodeInfoInit default case");
         case GT_LCL_FLD:
         case GT_LCL_VAR:
         case GT_LCL_VAR_ADDR:
+        {
+            unsigned   varNum = tree->gtLclVarCommon.gtLclNum;
+            LclVarDsc* varDsc = comp->lvaTable + varNum;
+            NYI_IF(varTypeIsStruct(varDsc), "lowering struct var");
+            NYI_IF(varTypeIsLong(varDsc), "lowering long var");
+        }
         case GT_CLS_VAR_ADDR:
         case GT_IL_OFFSET:
         case GT_CNS_INT:
