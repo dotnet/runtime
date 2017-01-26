@@ -343,9 +343,6 @@ namespace System.Threading {
         ** If Abort is called twice on the same thread, a DuplicateThreadAbort
         ** exception is thrown.
         =========================================================================*/
-#pragma warning disable 618
-        [SecurityPermissionAttribute(SecurityAction.Demand, ControlThread = true)]
-#pragma warning restore 618
         public void Abort()
         {
             AbortInternal();
