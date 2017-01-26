@@ -3892,6 +3892,10 @@ void Compiler::compSetOptimizationLevel()
         }
     }
 #else  // !DEBUG
+#if defined(OPT_CONFIG)
+    theMinOptsValue = JitConfig.JitMinOpts() != 0;
+#endif // OPT_CONFIG
+
     // Retail check if we should force Minopts due to the complexity of the method
     // For PREJIT we never drop down to MinOpts
     // unless unless CLFLG_MINOPT is set
@@ -4444,7 +4448,7 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
         bool doRangeAnalysis = true;
         int  iterations      = 1;
 
-#ifdef DEBUG
+#if defined(OPT_CONFIG)
         doSsa           = (JitConfig.JitDoSsa() != 0);
         doEarlyProp     = doSsa && (JitConfig.JitDoEarlyProp() != 0);
         doValueNum      = doSsa && (JitConfig.JitDoValueNumber() != 0);
@@ -4457,7 +4461,7 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
         {
             iterations = JitConfig.JitOptRepeatCount();
         }
-#endif
+#endif // defined(OPT_CONFIG)
 
         while (iterations > 0)
         {

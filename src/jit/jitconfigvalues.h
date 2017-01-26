@@ -6,6 +6,10 @@
 #error CONFIG_INTEGER, CONFIG_STRING, and CONFIG_METHODSET must be defined before including this file.
 #endif // !defined(CONFIG_INTEGER) || !defined(CONFIG_STRING) || !defined(CONFIG_METHODSET)
 
+#ifdef DEBUG
+#define OPT_CONFIG // Enable optimization level configuration.
+#endif
+
 #if defined(DEBUG)
 CONFIG_INTEGER(AltJitLimit, W("AltJitLimit"), 0)               // Max number of functions to use altjit for (decimal)
 CONFIG_INTEGER(AltJitSkipOnAssert, W("AltJitSkipOnAssert"), 0) // If AltJit hits an assert, fall back to the fallback
@@ -36,13 +40,6 @@ CONFIG_INTEGER(JitDebugLogLoopCloning, W("JitDebugLogLoopCloning"), 0) // In deb
 CONFIG_INTEGER(JitDefaultFill, W("JitDefaultFill"), 0xff) // In debug builds, initialize the memory allocated by the nra
                                                           // with this byte.
 CONFIG_INTEGER(JitDirectAlloc, W("JitDirectAlloc"), 0)
-CONFIG_INTEGER(JitDoAssertionProp, W("JitDoAssertionProp"), 1) // Perform assertion propagation optimization
-CONFIG_INTEGER(JitDoCopyProp, W("JitDoCopyProp"), 1)   // Perform copy propagation on variables that appear redundant
-CONFIG_INTEGER(JitDoEarlyProp, W("JitDoEarlyProp"), 1) // Perform Early Value Propagataion
-CONFIG_INTEGER(JitDoLoopHoisting, W("JitDoLoopHoisting"), 1)   // Perform loop hoisting on loop invariant values
-CONFIG_INTEGER(JitDoRangeAnalysis, W("JitDoRangeAnalysis"), 1) // Perform range check analysis
-CONFIG_INTEGER(JitDoSsa, W("JitDoSsa"), 1) // Perform Static Single Assignment (SSA) numbering on the variables
-CONFIG_INTEGER(JitDoValueNumber, W("JitDoValueNumber"), 1) // Perform value numbering on method expressions
 CONFIG_INTEGER(JitDoubleAlign, W("JitDoubleAlign"), 1)
 CONFIG_INTEGER(JitDumpASCII, W("JitDumpASCII"), 1)         // Uses only ASCII characters in tree dumps
 CONFIG_INTEGER(JitDumpFgDot, W("JitDumpFgDot"), 0)         // Set to non-zero to emit Dot instead of Xml Flowgraph dump
@@ -71,7 +68,6 @@ CONFIG_INTEGER(JitInlineDepth, W("JITInlineDepth"), DEFAULT_MAX_INLINE_DEPTH)
 CONFIG_INTEGER(JitLongAddress, W("JitLongAddress"), 0) // Force using the large pseudo instruction form for long address
 CONFIG_INTEGER(JitMaxTempAssert, W("JITMaxTempAssert"), 1)
 CONFIG_INTEGER(JitMaxUncheckedOffset, W("JitMaxUncheckedOffset"), 8)
-CONFIG_INTEGER(JitMinOpts, W("JITMinOpts"), 0)                                       // Forces MinOpts
 CONFIG_INTEGER(JitMinOptsBbCount, W("JITMinOptsBbCount"), DEFAULT_MIN_OPTS_BB_COUNT) // Internal jit control of MinOpts
 CONFIG_INTEGER(JitMinOptsCodeSize, W("JITMinOptsCodeSize"), DEFAULT_MIN_OPTS_CODE_SIZE)       // Internal jit control of
                                                                                               // MinOpts
@@ -154,8 +150,6 @@ CONFIG_METHODSET(JitNoProcedureSplittingEH, W("JitNoProcedureSplittingEH")) // D
                                                                             // exception handling
 CONFIG_METHODSET(JitStressOnly, W("JitStressOnly")) // Internal Jit stress mode: stress only the specified method(s)
 CONFIG_METHODSET(JitUnwindDump, W("JitUnwindDump")) // Dump the unwind codes for the method
-CONFIG_METHODSET(JitOptRepeat, W("JitOptRepeat"))   // Runs optimizer multiple times on the method
-CONFIG_INTEGER(JitOptRepeatCount, W("JitOptRepeatCount"), 2) // Number of times to repeat opts when repeating
 CONFIG_METHODSET(NgenDisasm, W("NgenDisasm"))                // Same as JitDisasm, but for ngen
 CONFIG_METHODSET(NgenDump, W("NgenDump"))                    // Same as JitDump, but for ngen
 CONFIG_METHODSET(NgenDumpIR, W("NgenDumpIR"))                // Same as JitDumpIR, but for ngen
@@ -235,6 +229,21 @@ CONFIG_INTEGER(JitInlineSIMDMultiplier, W("JitInlineSIMDMultiplier"), 3)
 #if defined(FEATURE_ENABLE_NO_RANGE_CHECKS)
 CONFIG_INTEGER(JitNoRngChks, W("JitNoRngChks"), 0) // If 1, don't generate range checks
 #endif                                             // defined(FEATURE_ENABLE_NO_RANGE_CHECKS)
+
+#if defined(OPT_CONFIG)
+CONFIG_INTEGER(JitDoAssertionProp, W("JitDoAssertionProp"), 1) // Perform assertion propagation optimization
+CONFIG_INTEGER(JitDoCopyProp, W("JitDoCopyProp"), 1)   // Perform copy propagation on variables that appear redundant
+CONFIG_INTEGER(JitDoEarlyProp, W("JitDoEarlyProp"), 1) // Perform Early Value Propagataion
+CONFIG_INTEGER(JitDoLoopHoisting, W("JitDoLoopHoisting"), 1)   // Perform loop hoisting on loop invariant values
+CONFIG_INTEGER(JitDoRangeAnalysis, W("JitDoRangeAnalysis"), 1) // Perform range check analysis
+CONFIG_INTEGER(JitDoSsa, W("JitDoSsa"), 1) // Perform Static Single Assignment (SSA) numbering on the variables
+CONFIG_INTEGER(JitDoValueNumber, W("JitDoValueNumber"), 1) // Perform value numbering on method expressions
+
+CONFIG_INTEGER(JitMinOpts, W("JITMinOpts"), 0)                                       // Forces MinOpts
+
+CONFIG_METHODSET(JitOptRepeat, W("JitOptRepeat"))   // Runs optimizer multiple times on the method
+CONFIG_INTEGER(JitOptRepeatCount, W("JitOptRepeatCount"), 2) // Number of times to repeat opts when repeating
+#endif // defined(OPT_CONFIG)
 
 CONFIG_INTEGER(JitRegisterFP, W("JitRegisterFP"), 3)           // Control FP enregistration
 CONFIG_INTEGER(JitTelemetry, W("JitTelemetry"), 1)             // If non-zero, gather JIT telemetry data
