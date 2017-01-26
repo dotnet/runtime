@@ -4,7 +4,8 @@
   <PropertyGroup>
     <NuGetDeploySourceItem>Reference</NuGetDeploySourceItem>
     <NugetRuntimeIdentifier>None</NugetRuntimeIdentifier>
-    <OutputPath>$(NetStandardRefPath)</OutputPath>
+    <OutputPath>$(RefRootPath)/$(TargetGroup)</OutputPath>
+    <ProjectJsonTemplate Condition="$(NuGetTargetMoniker.Contains('Version=v1.'))">$(MSBuildProjectDirectory)\netstandard1.x\project.json.template</ProjectJsonTemplate>
   </PropertyGroup>
   
   <Target Name="AddNETStandardRefs" AfterTargets="ResolveReferences"
