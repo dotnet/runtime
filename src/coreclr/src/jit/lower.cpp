@@ -3674,18 +3674,19 @@ GenTree* Lowering::TryCreateAddrMode(LIR::Use&& use, bool isIndir)
     // make sure there are not any side effects between def of leaves and use
     if (!doAddrMode || AreSourcesPossiblyModifiedLocals(addr, base, index))
     {
-        JITDUMP("  No addressing mode\n");
+        JITDUMP("No addressing mode:\n  ");
+        DISPNODE(addr);
         return addr;
     }
 
     GenTreePtr arrLength = nullptr;
 
     JITDUMP("Addressing mode:\n");
-    JITDUMP("  Base\n");
+    JITDUMP("  Base\n    ");
     DISPNODE(base);
     if (index != nullptr)
     {
-        JITDUMP("  + Index * %u + %u\n", scale, offset);
+        JITDUMP("  + Index * %u + %u\n    ", scale, offset);
         DISPNODE(index);
     }
     else
