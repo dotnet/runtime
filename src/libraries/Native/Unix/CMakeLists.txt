@@ -164,7 +164,7 @@ endif ()
 
 function(strip_symbols targetName outputFilename)
     if(CLR_CMAKE_PLATFORM_UNIX)
-        if(UPPERCASE_CMAKE_BUILD_TYPE STREQUAL RELEASE)
+        if(STRIP_SYMBOLS)
 
             # On the older version of cmake (2.8.12) used on Ubuntu 14.04 the TARGET_FILE
             # generator expression doesn't work correctly returning the wrong path and on
@@ -201,7 +201,7 @@ function(strip_symbols targetName outputFilename)
             endif(CMAKE_SYSTEM_NAME STREQUAL Darwin)
 
             set(${outputFilename} ${strip_destination_file} PARENT_SCOPE)
-        endif(UPPERCASE_CMAKE_BUILD_TYPE STREQUAL RELEASE)
+        endif(STRIP_SYMBOLS)
     endif(CLR_CMAKE_PLATFORM_UNIX)
 endfunction()
 
